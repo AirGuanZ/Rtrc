@@ -168,7 +168,21 @@ Unique<Device> VulkanInstance::CreateDevice(const DeviceDescription &desc)
         "failed to create vulkan device");
     RTRC_SCOPE_FAIL{ vkDestroyDevice(device, VK_ALLOC); };
 
-    return MakeUnique<VulkanDevice>(instance_.instance, physicalDevice, device);
+    VulkanDevice::QueueFamilyInfo queueFamilies;
+    if(desc.graphicsQueue)
+    {
+        queueFamilies.graphicsFamilyIndex = physicalDevice.GetGraphicsQueueFamily();
+    }
+    if(desc.computeQueue)
+    {
+        queueFamilies.computeFamilyIndex = physicalDevice.GetComputeQueueFamily();
+    }
+    if(desc.transferQueue)
+    {
+        queueFamilies.transferFamilyIndex = physicalDevice.GetTransferQueueFamily();
+    }
+
+    return MakeUnique<VulkanDevice>(instance_.instance, physicalDevice, device, queueFamilies);
 }
 
 RTRC_RHI_VK_END

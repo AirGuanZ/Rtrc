@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 
+#include <Rtrc/Math/Vector2.h>
 #include <Rtrc/Window/Input.h>
 
 RTRC_RHI_BEGIN
@@ -38,6 +39,8 @@ public:
     void SetCloseFlag(bool flag);
 
     Input &GetInput() const;
+
+    Vector2i GetFramebufferSize() const;
 
     Unique<RHI::Surface> CreateVulkanSurface(void *vkInstance);
 

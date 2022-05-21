@@ -42,12 +42,20 @@ int main()
         std::cout << "scroll " << e.relativeOffset << std::endl;
     });
 
-    auto instance = RHI::CreateVulkanInstance(
-        {
+    auto instance = CreateVulkanInstance(
+        RHI::VulkanInstanceDescription{
             .extensions = Window::GetRequiredVulkanInstanceExtensions(),
             .debugMode = true
         });
+
     auto device = instance->CreateDevice();
+
+    auto swapchain = device->CreateSwapchain(
+        RHI::SwapchainDescription{
+            .format = RHI::TexelFormat::B8G8R8A8_UNorm,
+            .imageCount = 3
+        },
+        window);
 
     while(!window.ShouldClose())
     {

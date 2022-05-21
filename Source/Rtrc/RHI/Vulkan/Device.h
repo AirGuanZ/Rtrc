@@ -8,7 +8,18 @@ class VulkanDevice : public Device
 {
 public:
 
-    VulkanDevice(VkInstance instance, VulkanPhysicalDevice physicalDevice, VkDevice device);
+    struct QueueFamilyInfo
+    {
+        std::optional<uint32_t> graphicsFamilyIndex;
+        std::optional<uint32_t> computeFamilyIndex;
+        std::optional<uint32_t> transferFamilyIndex;
+    };
+
+    VulkanDevice(
+        VkInstance             instance,
+        VulkanPhysicalDevice   physicalDevice,
+        VkDevice               device,
+        const QueueFamilyInfo &queueFamilyInfo);
 
     ~VulkanDevice() override;
 
@@ -21,6 +32,13 @@ private:
     VkInstance           instance_;
     VulkanPhysicalDevice physicalDevice_;
     VkDevice             device_;
+
+    VkQueue graphicsQueue_;
+    VkQueue computeQueue_;
+    VkQueue transferQueue_;
+    VkQueue presentQueue_;
+
+    QueueFamilyInfo queueFamilies_;
 };
 
 RTRC_RHI_VK_END

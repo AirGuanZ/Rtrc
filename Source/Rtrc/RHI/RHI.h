@@ -36,6 +36,7 @@ struct DeviceDescription
 struct SwapchainDescription
 {
     TexelFormat format;
+    uint32_t imageCount;
 };
 
 // =============================== rhi interfaces ===============================
