@@ -1,0 +1,422 @@
+#include <array>
+#include <atomic>
+#include <cassert>
+
+#ifdef RTRC_RHI_VULKAN
+#include <volk.h>
+#endif
+#include <GLFW/glfw3.h>
+
+#ifdef RTRC_RHI_VULKAN
+#include <Rtrc/RHI/Vulkan/Surface.h>
+#endif
+#include <Rtrc/Utils/ScopeGuard.h>
+#include <Rtrc/Window/Window.h>
+
+RTRC_BEGIN
+
+struct Window::Impl
+{
+    GLFWwindow *glfwWindow = nullptr;
+    std::unique_ptr<Input> input;
+    Sender<WindowCloseEvent, WindowResizeEvent, WindowFocusEvent> sender;
+
+    bool hasFocus = true;
+};
+
+namespace
+{
+    
+    struct GLFWKeyCodeTable
+    {
+        std::array<KeyCode, GLFW_KEY_LAST + 1> keys;
+
+        GLFWKeyCodeTable()
+            : keys{}
+        {
+            for(auto &k : keys)
+            {
+                k = KeyCode::Unknown;
+            }
+
+            keys[GLFW_KEY_SPACE]      = KeyCode::Space;
+            keys[GLFW_KEY_APOSTROPHE] = KeyCode::Apostrophe;
+            keys[GLFW_KEY_COMMA]      = KeyCode::Comma;
+            keys[GLFW_KEY_MINUS]      = KeyCode::Minus;
+            keys[GLFW_KEY_PERIOD]     = KeyCode::Period;
+            keys[GLFW_KEY_SLASH]      = KeyCode::Slash;
+
+            keys[GLFW_KEY_SEMICOLON] = KeyCode::Semicolon;
+            keys[GLFW_KEY_EQUAL]     = KeyCode::Equal;
+
+            keys[GLFW_KEY_LEFT_BRACKET]  = KeyCode::LeftBracket;
+            keys[GLFW_KEY_BACKSLASH]     = KeyCode::Backslash;
+            keys[GLFW_KEY_RIGHT_BRACKET] = KeyCode::RightBracket;
+            keys[GLFW_KEY_GRAVE_ACCENT]  = KeyCode::GraveAccent;
+            keys[GLFW_KEY_ESCAPE]        = KeyCode::Escape;
+
+            keys[GLFW_KEY_ENTER]     = KeyCode::Enter;
+            keys[GLFW_KEY_TAB]       = KeyCode::Tab;
+            keys[GLFW_KEY_BACKSPACE] = KeyCode::Backspace;
+            keys[GLFW_KEY_INSERT]    = KeyCode::Insert;
+            keys[GLFW_KEY_DELETE]    = KeyCode::Delete;
+
+            keys[GLFW_KEY_RIGHT] = KeyCode::Right;
+            keys[GLFW_KEY_LEFT]  = KeyCode::Left;
+            keys[GLFW_KEY_DOWN]  = KeyCode::Down;
+            keys[GLFW_KEY_UP]    = KeyCode::Up;
+
+            keys[GLFW_KEY_HOME] = KeyCode::Home;
+            keys[GLFW_KEY_END]  = KeyCode::End;
+
+            keys[GLFW_KEY_F1]  = KeyCode::F1;
+            keys[GLFW_KEY_F2]  = KeyCode::F2;
+            keys[GLFW_KEY_F3]  = KeyCode::F3;
+            keys[GLFW_KEY_F4]  = KeyCode::F4;
+            keys[GLFW_KEY_F5]  = KeyCode::F5;
+            keys[GLFW_KEY_F6]  = KeyCode::F6;
+            keys[GLFW_KEY_F7]  = KeyCode::F7;
+            keys[GLFW_KEY_F8]  = KeyCode::F8;
+            keys[GLFW_KEY_F9]  = KeyCode::F9;
+            keys[GLFW_KEY_F10] = KeyCode::F10;
+            keys[GLFW_KEY_F11] = KeyCode::F11;
+            keys[GLFW_KEY_F12] = KeyCode::F12;
+
+            keys[GLFW_KEY_KP_0] = KeyCode::NumPad0;
+            keys[GLFW_KEY_KP_1] = KeyCode::NumPad1;
+            keys[GLFW_KEY_KP_2] = KeyCode::NumPad2;
+            keys[GLFW_KEY_KP_3] = KeyCode::NumPad3;
+            keys[GLFW_KEY_KP_4] = KeyCode::NumPad4;
+            keys[GLFW_KEY_KP_5] = KeyCode::NumPad5;
+            keys[GLFW_KEY_KP_6] = KeyCode::NumPad6;
+            keys[GLFW_KEY_KP_7] = KeyCode::NumPad7;
+            keys[GLFW_KEY_KP_8] = KeyCode::NumPad8;
+            keys[GLFW_KEY_KP_9] = KeyCode::NumPad9;
+
+            keys[GLFW_KEY_KP_DECIMAL]  = KeyCode::NumPadDemical;
+            keys[GLFW_KEY_KP_DIVIDE]   = KeyCode::NumPadDiv;
+            keys[GLFW_KEY_KP_MULTIPLY] = KeyCode::NumPadMul;
+            keys[GLFW_KEY_KP_SUBTRACT] = KeyCode::NumPadSub;
+            keys[GLFW_KEY_KP_ADD]      = KeyCode::NumPadAdd;
+            keys[GLFW_KEY_KP_ENTER]    = KeyCode::NumPadEnter;
+
+            keys[GLFW_KEY_LEFT_SHIFT]    = KeyCode::LeftShift;
+            keys[GLFW_KEY_LEFT_CONTROL]  = KeyCode::LeftCtrl;
+            keys[GLFW_KEY_LEFT_ALT]      = KeyCode::LeftAlt;
+            keys[GLFW_KEY_RIGHT_SHIFT]   = KeyCode::RightShift;
+            keys[GLFW_KEY_RIGHT_CONTROL] = KeyCode::RightCtrl;
+            keys[GLFW_KEY_RIGHT_ALT]     = KeyCode::RightAlt;
+
+            for(int i = 0; i < 9; ++i)
+            {
+                keys['0' + i] = static_cast<KeyCode>(static_cast<int>(KeyCode::D0) + i);
+            }
+
+            for(int i = 0; i < 26; ++i)
+            {
+                keys['A' + i] = static_cast<KeyCode>(static_cast<int>(KeyCode::A) + i);
+            }
+        }
+    };
+
+    int glfwRefCounter = 0;
+
+    std::set<Input *> windowInputs;
+
+    void IncGLFWRefCounter()
+    {
+        const int previousValue = glfwRefCounter++;
+        if(previousValue == 0)
+        {
+            if(glfwInit() != GLFW_TRUE)
+            {
+                throw Exception("failed to initialize glfw");
+            }
+        }
+    }
+
+    void DecGlfwRefCounter()
+    {
+        const int currentValue = --glfwRefCounter;
+        if(currentValue == 0)
+        {
+            glfwTerminate();
+        }
+    }
+
+    void GLFWWindowCloseCallback(GLFWwindow *window)
+    {
+        auto impl = static_cast<Window::Impl *>(glfwGetWindowUserPointer(window));
+        if(impl)
+        {
+            impl->sender.Send(WindowCloseEvent{});
+        }
+    }
+
+    void GLFWWindowResizeCallback(GLFWwindow *window, int width, int height)
+    {
+        auto impl = static_cast<Window::Impl *>(glfwGetWindowUserPointer(window));
+        if(impl)
+        {
+            impl->sender.Send(WindowResizeEvent{ width, height });
+        }
+    }
+
+    void GLFWScrollCallback(GLFWwindow *window, double xoffset, double yoffset)
+    {
+        auto impl = static_cast<Window::Impl *>(glfwGetWindowUserPointer(window));
+        if(impl)
+        {
+            impl->input->_InternalTriggerWheelScroll(static_cast<int>(yoffset));
+        }
+    }
+
+    void GLFWMouseButtonCallback(GLFWwindow *window, int button, int action, int mods)
+    {
+        auto impl = static_cast<Window::Impl *>(glfwGetWindowUserPointer(window));
+        if(!impl)
+        {
+            return;
+        }
+
+        KeyCode keycode;
+        if(button == GLFW_MOUSE_BUTTON_LEFT)
+        {
+            keycode = KeyCode::MouseLeft;
+        }
+        else if(button == GLFW_MOUSE_BUTTON_MIDDLE)
+        {
+            keycode = KeyCode::MouseMiddle;
+        }
+        else if(button == GLFW_MOUSE_BUTTON_RIGHT)
+        {
+            keycode = KeyCode::MouseRight;
+        }
+        else
+        {
+            return;
+        }
+
+        if(action == GLFW_PRESS)
+        {
+            impl->input->_InternalTriggerKeyDown(keycode);
+        }
+        else if(action == GLFW_RELEASE)
+        {
+            impl->input->_InternalTriggerKeyUp(keycode);
+        }
+    }
+
+    void GLFWKeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
+    {
+        auto impl = static_cast<Window::Impl *>(glfwGetWindowUserPointer(window));
+        if(!impl)
+        {
+            return;
+        }
+
+        static const GLFWKeyCodeTable keyCodeTable;
+        if(key < 0 || key >= static_cast<int>(keyCodeTable.keys.size()))
+        {
+            return;
+        }
+
+        const KeyCode keycode = keyCodeTable.keys[key];
+        if(keycode == KeyCode::Unknown)
+        {
+            return;
+        }
+
+        if(action == GLFW_PRESS)
+        {
+            impl->input->_InternalTriggerKeyDown(keycode);
+        }
+        else if(action == GLFW_RELEASE)
+        {
+            impl->input->_InternalTriggerKeyUp(keycode);
+        }
+    }
+
+    void GLFWCharInputCallback(GLFWwindow *window, unsigned int ch)
+    {
+        auto impl = static_cast<Window::Impl *>(glfwGetWindowUserPointer(window));
+        if(impl)
+        {
+            impl->input->_InternalTriggerCharInput(ch);
+        }
+    }
+
+    void GLFWWindowFocusCallback(GLFWwindow *window, int focused)
+    {
+        auto impl = static_cast<Window::Impl *>(glfwGetWindowUserPointer(window));
+        if(impl)
+        {
+            const bool hasFocus = focused != 0;
+            if(hasFocus != impl->hasFocus)
+            {
+                impl->hasFocus = hasFocus;
+                impl->sender.Send(WindowFocusEvent{ hasFocus });
+            }
+        }
+    }
+
+} // namespace anonymous
+
+void Window::DoEvents()
+{
+    assert(glfwRefCounter);
+    for(auto input : windowInputs)
+    {
+        input->_InternalUpdate();
+    }
+    glfwPollEvents();
+}
+
+std::vector<std::string> Window::GetRequiredVulkanInstanceExtensions()
+{
+#ifdef RTRC_RHI_VULKAN
+    RHI::InitializeVulkanBackend();
+
+    uint32_t count;
+    const char **exts = glfwGetRequiredInstanceExtensions(&count);
+    if(!count)
+    {
+        throw Exception("failed to get vulkan instance extensions for window surface");
+    }
+
+    std::vector<std::string> ret;
+    for(uint32_t i = 0; i < count; ++i)
+    {
+        ret.push_back(exts[i]);
+    }
+    return ret;
+#else
+    throw Exception("vulkan backend is not supported");
+#endif
+}
+
+Window::~Window()
+{
+    if(impl_)
+    {
+        return;
+    }
+    assert(impl_->glfwWindow);
+    glfwDestroyWindow(impl_->glfwWindow);
+    windowInputs.erase(impl_->input.get());
+    impl_.reset();
+    DecGlfwRefCounter();
+}
+
+bool Window::IsInitialized() const
+{
+    return impl_ != nullptr;
+}
+
+bool Window::ShouldClose() const
+{
+    assert(impl_);
+    return glfwWindowShouldClose(impl_->glfwWindow);
+}
+
+void Window::SetCloseFlag(bool flag)
+{
+    assert(impl_);
+    glfwSetWindowShouldClose(impl_->glfwWindow, flag ? 1 : 0);
+}
+
+Input &Window::GetInput() const
+{
+    assert(impl_);
+    return *impl_->input;
+}
+
+Unique<RHI::Surface> Window::CreateVulkanSurface(void *vkInstance)
+{
+#ifdef RTRC_RHI_VULKAN
+    VkSurfaceKHR surface;
+    auto instance = static_cast<VkInstance>(vkInstance);
+    VK_CHECK(glfwCreateWindowSurface(instance, impl_->glfwWindow, VK_ALLOC, &surface))
+    {
+        throw Exception("failed to create vulkan surface");
+    };
+    return MakeUnique<RHI::Vk::VulkanSurface>(instance, surface);
+#else
+    throw Exception("vulkan backend is not supported");
+#endif
+}
+
+RTRC_DEFINE_EVENT_SENDER(Window, impl_->sender, WindowCloseEvent)
+RTRC_DEFINE_EVENT_SENDER(Window, impl_->sender, WindowResizeEvent)
+RTRC_DEFINE_EVENT_SENDER(Window, impl_->sender, WindowFocusEvent)
+
+Window::Window(std::unique_ptr<Impl> impl)
+    : impl_(std::move(impl))
+{
+    assert(impl_);
+}
+
+WindowBuilder &WindowBuilder::SetSize(int width, int height)
+{
+    width_ = width;
+    height_ = height;
+    return *this;
+}
+
+WindowBuilder &WindowBuilder::SetMaximized(bool maximized)
+{
+    maximized_ = maximized;
+    return *this;
+}
+
+WindowBuilder &WindowBuilder::SetTitle(std::string title)
+{
+    title_ = std::move(title);
+    return *this;
+}
+
+Window WindowBuilder::CreateWindow() const
+{
+    IncGLFWRefCounter();
+    RTRC_SCOPE_FAIL{ DecGlfwRefCounter(); };
+
+    // create window
+
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    glfwWindowHint(GLFW_MAXIMIZED, maximized_ ? 1 : 0);
+    GLFWwindow *glfwWindow = glfwCreateWindow(width_, height_, title_.c_str(), nullptr, nullptr);
+    if(!glfwWindow)
+    {
+        throw Exception("failed to create glfw window");
+    }
+    RTRC_SCOPE_FAIL{ glfwDestroyWindow(glfwWindow); };
+
+    // bind window <-> impl
+
+    auto impl = std::make_unique<Window::Impl>();
+    impl->glfwWindow = glfwWindow;
+    glfwSetWindowUserPointer(glfwWindow, impl.get());
+
+    // set event callbacks
+
+    glfwSetWindowCloseCallback(glfwWindow, GLFWWindowCloseCallback);
+    glfwSetFramebufferSizeCallback(glfwWindow, GLFWWindowResizeCallback);
+    glfwSetScrollCallback(glfwWindow, GLFWScrollCallback);
+    glfwSetMouseButtonCallback(glfwWindow, GLFWMouseButtonCallback);
+    glfwSetKeyCallback(glfwWindow, GLFWKeyCallback);
+    glfwSetCharCallback(glfwWindow, GLFWCharInputCallback);
+    glfwSetWindowFocusCallback(glfwWindow, GLFWWindowFocusCallback);
+
+    // initial state
+
+    impl->hasFocus = glfwGetWindowAttrib(glfwWindow, GLFW_FOCUSED);
+
+    // input manager
+
+    impl->input = std::unique_ptr<Input>(new Input(glfwWindow));
+    windowInputs.insert(impl->input.get());
+
+    return Window(std::move(impl));
+}
+
+RTRC_END
