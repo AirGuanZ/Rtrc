@@ -8,7 +8,7 @@
 #include <GLFW/glfw3.h>
 
 #ifdef RTRC_RHI_VULKAN
-#include <Rtrc/RHI/Vulkan/Surface.h>
+#include <Rtrc/RHI/Vulkan/Context/Surface.h>
 #endif
 #include <Rtrc/Utils/ScopeGuard.h>
 #include <Rtrc/Window/Window.h>
@@ -119,31 +119,39 @@ namespace
         }
     };
 
-    int glfwRefCounter = 0;
+    struct GLFWDestroyer
+    {
+        bool initialized = false;
+
+        ~GLFWDestroyer()
+        {
+            if(initialized)
+            {
+                glfwTerminate();
+            }
+        }
+    };
+
+    GLFWDestroyer glfwDestroyer;
 
     std::set<Input *> windowInputs;
 
-    void IncGLFWRefCounter()
+    void InitGLFW()
     {
-        const int previousValue = glfwRefCounter++;
-        if(previousValue == 0)
+#ifdef RTRC_RHI_VULKAN
+        RHI::InitializeVulkanBackend();
+        glfwInitVulkanLoader(vkGetInstanceProcAddr);
+#endif
+        if(!glfwDestroyer.initialized)
         {
             if(glfwInit() != GLFW_TRUE)
             {
                 throw Exception("failed to initialize glfw");
             }
+            glfwDestroyer.initialized = true;
         }
     }
-
-    void DecGlfwRefCounter()
-    {
-        const int currentValue = --glfwRefCounter;
-        if(currentValue == 0)
-        {
-            glfwTerminate();
-        }
-    }
-
+    
     void GLFWWindowCloseCallback(GLFWwindow *window)
     {
         auto impl = static_cast<Window::Impl *>(glfwGetWindowUserPointer(window));
@@ -264,7 +272,6 @@ namespace
 
 void Window::DoEvents()
 {
-    assert(glfwRefCounter);
     for(auto input : windowInputs)
     {
         input->_InternalUpdate();
@@ -275,7 +282,7 @@ void Window::DoEvents()
 std::vector<std::string> Window::GetRequiredVulkanInstanceExtensions()
 {
 #ifdef RTRC_RHI_VULKAN
-    RHI::InitializeVulkanBackend();
+    InitGLFW();
 
     uint32_t count;
     const char **exts = glfwGetRequiredInstanceExtensions(&count);
@@ -305,7 +312,6 @@ Window::~Window()
     glfwDestroyWindow(impl_->glfwWindow);
     windowInputs.erase(impl_->input.get());
     impl_.reset();
-    DecGlfwRefCounter();
 }
 
 bool Window::IsInitialized() const
@@ -341,6 +347,8 @@ Vector2i Window::GetFramebufferSize() const
 Unique<RHI::Surface> Window::CreateVulkanSurface(void *vkInstance)
 {
 #ifdef RTRC_RHI_VULKAN
+    InitGLFW();
+
     VkSurfaceKHR surface;
     auto instance = static_cast<VkInstance>(vkInstance);
     VK_CHECK(glfwCreateWindowSurface(instance, impl_->glfwWindow, VK_ALLOC, &surface))
@@ -384,8 +392,7 @@ WindowBuilder &WindowBuilder::SetTitle(std::string title)
 
 Window WindowBuilder::CreateWindow() const
 {
-    IncGLFWRefCounter();
-    RTRC_SCOPE_FAIL{ DecGlfwRefCounter(); };
+    InitGLFW();
 
     // create window
 

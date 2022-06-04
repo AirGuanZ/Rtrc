@@ -1,6 +1,7 @@
 #pragma once
 
 #include <volk.h>
+#include <vk_mem_alloc.h>
 
 #include <Rtrc/RHI/RHI.h>
 
@@ -28,8 +29,45 @@ struct VkResultChecker
 extern VkAllocationCallbacks RtrcGlobalVulkanAllocationCallbacks;
 #define VK_ALLOC (&Rtrc::RHI::Vk::RtrcGlobalVulkanAllocationCallbacks)
 
-VkFormat TranslateTexelFormat(TexelFormat format);
-
 #define RTRC_VULKAN_API_VERSION VK_API_VERSION_1_3
+
+VkFormat                 TranslateTexelFormat           (Format format);
+VkShaderStageFlagBits    TranslateShaderType            (ShaderStage type);
+VkShaderStageFlags       TranslateShaderStageFlag       (EnumFlags<ShaderStage> flag);
+VkPrimitiveTopology      TranslatePrimitiveTopology     (PrimitiveTopology topology);
+VkPolygonMode            TranslateFillMode              (FillMode mode);
+VkCullModeFlags          TranslateCullMode              (CullMode mode);
+VkFrontFace              TranslateFrontFaceMode         (FrontFaceMode mode);
+VkSampleCountFlagBits    TranslateSampleCount           (int count);
+VkCompareOp              TranslateCompareOp             (CompareOp op);
+VkStencilOp              TranslateStencilOp             (StencilOp op);
+VkBlendFactor            TranslateBlendFactor           (BlendFactor factor);
+VkBlendOp                TranslateBlendOp               (BlendOp op);
+VkDescriptorType         TranslateBindingType           (BindingType type);
+VkImageUsageFlags        TranslateTextureUsageFlag      (TextureUsageFlag flag);
+VkImageLayout            TranslateTextureLayout         (TextureLayout layout);
+VkPipelineStageFlags2    TranslatePipelineStageFlag     (PipelineStageFlag flag);
+VkAccessFlags2           TranslateAccessTypeFlag        (AccessTypeFlag flag);
+VkImageAspectFlags       TranslateAspectTypeFlag        (AspectTypeFlag flag);
+VkBufferUsageFlags       TranslateBufferUsageFlag       (BufferUsageFlag flag);
+VkAttachmentLoadOp       TranslateLoadOp                (AttachmentLoadOp op);
+VkAttachmentStoreOp      TranslateStoreOp               (AttachmentStoreOp op);
+VkClearColorValue        TranslateClearColorValue       (const ColorClearValue &value);
+VkClearDepthStencilValue TranslateClearDepthStencilValue(const DepthStencilClearValue &value);
+VkClearValue             TranslateClearValue            (const ClearValue &value);
+VmaAllocationCreateFlags TranslateBufferHostAccessType  (BufferHostAccessType type);
+
+struct VulkanMemoryAllocation
+{
+    VmaAllocator  allocator;
+    VmaAllocation allocation;
+};
+
+enum class ResourceOwnership
+{
+    Allocation,
+    Image,
+    None
+};
 
 RTRC_RHI_VK_END

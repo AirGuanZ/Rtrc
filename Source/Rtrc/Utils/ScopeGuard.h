@@ -5,7 +5,7 @@
 
 RTRC_BEGIN
 
-template<typename T, typename = std::enable_if_t<std::is_invocable_v<T>>>
+template<typename T>
 class ScopeGuard : public Uncopyable
 {
     bool call_ = true;
@@ -29,7 +29,9 @@ public:
     ~ScopeGuard()
     {
         if(call_)
+        {
             func_();
+        }
     }
 
     void Dismiss()
@@ -63,7 +65,9 @@ public:
     {
         const int now_exceptions = std::uncaught_exceptions();
         if((now_exceptions > exceptions_) == ExecuteOnException)
+        {
             func_();
+        }
     }
 };
 

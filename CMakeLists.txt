@@ -12,7 +12,7 @@ SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 #============= glfw =============
 
-SET(GLFW_VULKAN_STATIC ON)
+#SET(GLFW_VULKAN_STATIC ON)
 ADD_SUBDIRECTORY(External/glfw)
 SET_TARGET_PROPERTIES(glfw update_mappings PROPERTIES FOLDER "External")
 
@@ -29,9 +29,13 @@ SET_TARGET_PROPERTIES(mimalloc-static PROPERTIES FOLDER "External")
 #============= vulkan =============
 
 SET(RTRC_RHI_VULKAN ON)
-#IF(RTRC_RHI_VULKAN)
-#    FIND_PACKAGE(Vulkan REQUIRED)
-#ENDIF()
+
+#============= vma =============
+
+ADD_LIBRARY(VulkanMemoryAllocator INTERFACE)
+TARGET_COMPILE_DEFINITIONS(VulkanMemoryAllocator INTERFACE -DVMA_STATIC_VULKAN_FUNCTIONS=0)
+TARGET_COMPILE_DEFINITIONS(VulkanMemoryAllocator INTERFACE -DVMA_DYNAMIC_VULKAN_FUNCTIONS=1)
+TARGET_INCLUDE_DIRECTORIES(VulkanMemoryAllocator INTERFACE "External/VulkanMemoryAllocator/include")
 
 #============= volk =============
 
@@ -42,6 +46,13 @@ ADD_SUBDIRECTORY(External/volk)
 
 ADD_SUBDIRECTORY(External/vk-bootstrap)
 SET_TARGET_PROPERTIES(vk-bootstrap PROPERTIES FOLDER "External")
+
+#============= shader compile =============
+
+SET(RTRC_GLSL_COMPILER glslc)
+FUNCTION(RTRC_COMPILE_GLSL_TO_SPV SHADER SPIRV)
+    EXECUTE_PROCESS(COMMAND ${RTRC_GLSL_COMPILER} ${SHADER} -o ${SPIRV})
+ENDFUNCTION()
 
 #============= rtrc =============
 
@@ -90,7 +101,7 @@ TARGET_INCLUDE_DIRECTORIES(Rtrc PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Source")
 TARGET_LINK_LIBRARIES(Rtrc PUBLIC mimalloc-static fmt glfw)
 
 IF(RTRC_RHI_VULKAN)
-	TARGET_LINK_LIBRARIES(Rtrc PUBLIC vk-bootstrap volk::volk_headers)
+	TARGET_LINK_LIBRARIES(Rtrc PUBLIC vk-bootstrap volk::volk_headers VulkanMemoryAllocator)
 ENDIF()
 
 #============= rhi flags =============
@@ -101,4 +112,5 @@ ENDIF()
 
 #============= samples =============
 
+SET(RTRC_SAMPLE_WORKING_DIR "${CMAKE_SOURCE_DIR}/")
 ADD_SUBDIRECTORY(Samples/HelloWorld)

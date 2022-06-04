@@ -3,11 +3,12 @@
 
 RTRC_RHI_BEGIN
 
-const char *GetTexelFormatName(TexelFormat format)
+const char *GetFormatName(Format format)
 {
-#define ADD_CASE(NAME) case TexelFormat::NAME: return #NAME;
+#define ADD_CASE(NAME) case Format::NAME: return #NAME;
     switch(format)
     {
+    ADD_CASE(Unknown)
     ADD_CASE(B8G8R8A8_UNorm)
     }
     Unreachable();

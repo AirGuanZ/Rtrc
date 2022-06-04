@@ -218,9 +218,13 @@ template<typename Event>
 void ReceiverSet<Event>::Send(const Event &e) const
 {
     for(auto h : handlers_)
+    {
         h->Handle(e);
+    }
     for(auto &h : handlersWithOwnership_)
+    {
         h->Handle(e);
+    }
 }
 
 template<typename Event>
@@ -267,9 +271,13 @@ template<typename Event>
 void ReceiverSet<Event>::DetachAll()
 {
     while(!handlers_.empty())
+    {
         this->Detach(*handlers_.begin());
+    }
     while(!handlersWithOwnership_.empty())
+    {
         this->Detach(*handlersWithOwnership_.begin());
+    }
 }
 
 template<typename...Events>
@@ -344,9 +352,13 @@ template<typename Event>
 void FunctionalReceiver<Event>::SetFunction(std::function<void()> f)
 {
     if(f)
+    {
         f_ = [nf = std::move(f)](const Event &){ nf(); };
+    }
     else
+    {
         f_ = {};
+    }
 }
 
 template<typename Event>
@@ -359,7 +371,9 @@ template<typename Event>
 void FunctionalReceiver<Event>::Handle(const Event &e)
 {
     if(f_)
+    {
         f_(e);
+    }
 }
 
 template<typename Event, typename Class>
@@ -392,7 +406,9 @@ template<typename Event, typename Class>
 void ClassReceiver<Event, Class>::Handle(const Event &e)
 {
     if(c_ && f_)
+    {
         (c_->*f_)(e);
+    }
 }
 
 RTRC_END
