@@ -34,8 +34,6 @@ public:
 
     RC<Texture> GetRenderTarget() const override;
 
-    RC<Texture2DRTV> GetRenderTargetView() const override;
-
 private:
 
     RC<VulkanSurface> surface_;
@@ -46,7 +44,6 @@ private:
     uint32_t frameIndex_;
     uint32_t imageIndex_;
     std::vector<RC<VulkanTexture2D>> images_;
-    std::vector<RC<Texture2DRTV>> imageRTVs_;
     std::vector<RC<VulkanBackBufferSemaphore>> imageAcquireSemaphores_;
     std::vector<RC<VulkanBackBufferSemaphore>> imagePresentSemaphores_;
 };

@@ -496,8 +496,6 @@ public:
     virtual const Texture2DDesc &GetRenderTargetDesc() const = 0;
 
     virtual RC<Texture> GetRenderTarget() const = 0;
-
-    virtual RC<Texture2DRTV> GetRenderTargetView() const = 0;
 };
 
 class BindingGroupLayout : public RHIObject

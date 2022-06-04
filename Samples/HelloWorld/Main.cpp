@@ -64,40 +64,14 @@ void run()
 {
     using namespace Rtrc;
 
+    // window & device
+
     auto window = WindowBuilder()
         .SetSize(800, 600)
         .SetTitle("Hello, world!")
         .CreateWindow();
     
     auto &input = window.GetInput();
-
-    window.Attach([&](const WindowCloseEvent &)
-    {
-        std::cout << "close" << std::endl;
-    });
-
-    window.Attach([&](const WindowResizeEvent &e)
-    {
-        std::cout << "resized: " << e.width << " " << e.height << std::endl;
-    });
-
-    window.Attach([&](const WindowFocusEvent &e)
-    {
-        std::cout << "focus " << e.hasFocus << std::endl;
-    });
-
-    input.Attach([&](const KeyDownEvent &e)
-    {
-        if(e.key == KeyCode('A'))
-        {
-            std::cout << "press A" << std::endl;
-        }
-    });
-
-    input.Attach([&](const WheelScrollEvent &e)
-    {
-        std::cout << "scroll " << e.relativeOffset << std::endl;
-    });
 
     auto instance = CreateVulkanInstance(
         RHI::VulkanInstanceDesc{
@@ -107,13 +81,31 @@ void run()
 
     auto device = instance->CreateDevice();
 
-    auto swapchain = device->CreateSwapchain(
-        RHI::SwapchainDesc{
-            .format = RHI::Format::B8G8R8A8_UNorm,
-            .imageCount = 3
-        },
-        window);
+    // swapchain
 
+    RC<RHI::Swapchain> swapchain;
+
+    auto createSwapchain = [&]
+    {
+        device->WaitIdle();
+        swapchain.reset();
+        swapchain = device->CreateSwapchain(
+            RHI::SwapchainDesc{
+                .format = RHI::Format::B8G8R8A8_UNorm,
+                .imageCount = 3
+            },
+            window);
+    };
+    createSwapchain();
+
+    window.Attach([&](const WindowResizeEvent &e)
+    {
+        createSwapchain();
+    });
+
+    // frame resources
+
+    int frameIndex = 0;
     std::vector<RC<RHI::Fence>> fences;
     std::vector<RC<RHI::CommandPool>> commandPools;
     for(int i = 0; i < swapchain->GetRenderTargetCount(); ++i)
@@ -122,7 +114,8 @@ void run()
         commandPools.push_back(device->GetQueue(RHI::QueueType::Graphics)->CreateCommandPool());
     }
 
-    int frameIndex = 0;
+    // render loop
+
     while(!window.ShouldClose())
     {
         Window::DoEvents();

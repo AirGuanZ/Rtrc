@@ -31,16 +31,6 @@ RTRC_RHI_VK_BEGIN
         images_.push_back(std::move(image));
     }
 
-    // image views
-
-    for(auto &image : images_)
-    {
-        imageRTVs_.push_back(image->Create2DRTV(Texture2DRTVDesc{
-            .format = imageDesc.format,
-            .mipLevel = 0
-        }));
-    }
-
     // back buffer semaphores
 
     const VkSemaphoreCreateInfo semaphoreCreateInfo = {
@@ -134,11 +124,6 @@ const Texture2DDesc &VulkanSwapchain::GetRenderTargetDesc() const
 RC<Texture> VulkanSwapchain::GetRenderTarget() const
 {
     return images_[imageIndex_];
-}
-
-RC<Texture2DRTV> VulkanSwapchain::GetRenderTargetView() const
-{
-    return imageRTVs_[imageIndex_];
 }
 
 RTRC_RHI_VK_END
