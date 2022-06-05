@@ -3,6 +3,7 @@
 #include <vector>
 
 #include <Rtrc/Utils/EnumFlags.h>
+#include <Rtrc/Utils/Span.h>
 #include <Rtrc/Utils/Uncopyable.h>
 #include <Rtrc/Utils/Variant.h>
 #include <Rtrc/Window/Window.h>
@@ -20,7 +21,7 @@ class CommandBuffer;
 class Semaphore;
 class RawShader;
 class BindingGroupLayout;
-class BindingGroupInstance;
+class BindingGroup;
 class BindingLayout;
 class Pipeline;
 class PipelineBuilder;
@@ -28,6 +29,7 @@ class Texture;
 class Texture2DRTV;
 class Texture2DSRV;
 class Buffer;
+class BufferSRV;
 
 // =============================== rhi enums ===============================
 
@@ -324,34 +326,40 @@ struct BindingLayoutDesc
 
 struct Viewport
 {
-    Vector2i upperLeftCorner;
-    Vector2i size;
+    Vector2f lowerLeftCorner;
+    Vector2f size;
     float minDepth;
     float maxDepth;
 };
 
+struct Scissor
+{
+    Vector2i lowerLeftCorner;
+    Vector2i size;
+};
+
 struct Texture2DDesc
 {
-    Format         format;
-    uint32_t       width;
-    uint32_t       height;
-    uint32_t       mipLevels;
-    uint32_t       arraySize;
-    uint32_t       sampleCount;
+    Format           format;
+    uint32_t         width;
+    uint32_t         height;
+    uint32_t         mipLevels;
+    uint32_t         arraySize;
+    uint32_t         sampleCount;
     TextureUsageFlag usage;
     TextureLayout    initialLayout;
 };
 
 struct Texture2DRTVDesc
 {
-    Format format;
+    Format   format;
     uint32_t mipLevel;
     uint32_t arrayLayer;
 };
 
 struct Texture2DSRVDesc
 {
-    Format format;
+    Format   format;
     uint32_t baseMipLevel;
     uint32_t levelCount;
     uint32_t baseArrayLayer;
@@ -360,9 +368,17 @@ struct Texture2DSRVDesc
 
 struct BufferDesc
 {
-    size_t size;
-    BufferUsageFlag usage;
+    size_t               size;
+    BufferUsageFlag      usage;
     BufferHostAccessType hostAccessType;
+};
+
+struct BufferSRVDesc
+{
+    Format   format; // for texel buffer
+    uint32_t offset;
+    uint32_t range;
+    uint32_t stride; // for structured buffer
 };
 
 struct TextureTransitionBarrier
@@ -373,8 +389,8 @@ struct TextureTransitionBarrier
     PipelineStageFlag afterStages;
     AccessTypeFlag    beforeAccess;
     AccessTypeFlag    afterAccess;
-    TextureLayout       beforeLayout;
-    TextureLayout       afterLayout;
+    TextureLayout     beforeLayout;
+    TextureLayout     afterLayout;
     uint32_t          mipLevel;
     uint32_t          arrayLayer;
 };
@@ -395,7 +411,7 @@ struct ColorClearValue
 
 struct DepthStencilClearValue
 {
-    float depth;
+    float    depth;
     uint32_t stencil;
 };
 
@@ -409,6 +425,22 @@ struct RenderPassColorAttachment
     AttachmentStoreOp storeOp;
     ClearValue        clearValue;
 };
+
+struct DynamicViewportCount
+{
+
+};
+
+struct DynamicScissorCount
+{
+
+};
+
+// fixed viewports; dynamic viewports with fixed count; dynamic count
+using Viewports = Variant<std::monostate, std::vector<Viewport>, int, DynamicViewportCount>;
+
+// fixed viewports; dynamic viewports with fixed count; dynamic count
+using Scissors = Variant<std::monostate, std::vector<Scissor>, int, DynamicScissorCount>;
 
 // =============================== rhi interfaces ===============================
 
@@ -465,6 +497,9 @@ public:
 
     virtual RC<BindingGroupLayout> CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc) = 0;
 
+    template<typename T>
+    RC<BindingGroupLayout> CreateBindingGroupLayout();
+
     virtual RC<BindingLayout> CreateBindingLayout(const BindingLayoutDesc &desc) = 0;
 
     virtual RC<Texture> CreateTexture2D(const Texture2DDesc &desc) = 0;
@@ -502,12 +537,17 @@ class BindingGroupLayout : public RHIObject
 {
 public:
 
-    virtual RC<BindingGroupInstance> CreateBindingGroup(bool updateAfterBind) = 0;
+    virtual RC<BindingGroup> CreateBindingGroup(bool updateAfterBind) = 0;
 };
 
-class BindingGroupInstance : public RHIObject
+class BindingGroup : public RHIObject
 {
-    
+public:
+
+    virtual void ModifyMember(int index, const RC<BufferSRV> &bufferSRV) = 0;
+
+    template<typename Struct, typename Member>
+    void ModifyMember(Member Struct::*member, const RC<BufferSRV> &bufferSRV);
 };
 
 class BindingLayout : public RHIObject
@@ -557,12 +597,24 @@ public:
     virtual void End() = 0;
 
     virtual void ExecuteBarriers(
-        const std::vector<TextureTransitionBarrier> &textureTransitions,
-        const std::vector<BufferTransitionBarrier> &bufferTransitions) = 0;
+        Span<TextureTransitionBarrier> textureTransitions,
+        Span<BufferTransitionBarrier> bufferTransitions) = 0;
 
-    virtual void BeginRenderPass(const std::vector<RenderPassColorAttachment> &colorAttachments) = 0;
+    virtual void BeginRenderPass(Span<RenderPassColorAttachment> colorAttachments) = 0;
 
     virtual void EndRenderPass() = 0;
+
+    virtual void BindPipeline(const RC<Pipeline> &pipeline) = 0;
+
+    virtual void SetViewports(Span<Viewport> viewports) = 0;
+
+    virtual void SetScissors(Span<Scissor> scissor) = 0;
+
+    virtual void SetViewportsWithCount(Span<Viewport> viewports) = 0;
+
+    virtual void SetScissorsWithCount(Span<Scissor> scissors) = 0;
+
+    virtual void Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance) = 0;
 };
 
 class RawShader : public RHIObject
@@ -587,6 +639,10 @@ public:
     virtual PipelineBuilder &SetFragmentShader(RC<RawShader> fragmentShader) = 0;
 
     virtual PipelineBuilder &SetBindingLayout(RC<BindingLayout> layout) = 0;
+
+    virtual PipelineBuilder &SetViewports(const Viewports &viewports) = 0;
+
+    virtual PipelineBuilder &SetScissors(const Scissors &scissors) = 0;
 
     // default is trianglelist
     virtual PipelineBuilder &SetPrimitiveTopology(PrimitiveTopology topology) = 0;
@@ -683,6 +739,14 @@ class Buffer : public RHIObject
 {
 public:
 
+    virtual RC<BufferSRV> CreateSRV(const BufferSRVDesc &desc) const = 0;
+};
+
+class BufferSRV : public RHIObject
+{
+public:
+
+    virtual const BufferSRVDesc &GetDesc() const = 0;
 };
 
 // =============================== vulkan backend ===============================

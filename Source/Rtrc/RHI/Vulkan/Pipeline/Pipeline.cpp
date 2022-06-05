@@ -1,4 +1,5 @@
 #include <Rtrc/RHI/Vulkan/Pipeline/Pipeline.h>
+#include <Rtrc/Utils/Enumerate.h>
 #include <Rtrc/Utils/ScopeGuard.h>
 
 RTRC_RHI_VK_BEGIN
@@ -13,6 +14,11 @@ VulkanPipeline::~VulkanPipeline()
 {
     assert(pipeline_);
     vkDestroyPipeline(device_, pipeline_, VK_ALLOC);
+}
+
+VkPipeline VulkanPipeline::GetNativePipeline() const
+{
+    return pipeline_;
 }
 
 VulkanPipelineBuilder::VulkanPipelineBuilder(VkDevice device)
@@ -36,6 +42,18 @@ PipelineBuilder &VulkanPipelineBuilder::SetFragmentShader(RC<RawShader> fragment
 PipelineBuilder &VulkanPipelineBuilder::SetBindingLayout(RC<BindingLayout> layout)
 {
     bindingLayout_ = DynamicCast<VulkanBindingLayout>(std::move(layout));
+    return *this;
+}
+
+PipelineBuilder &VulkanPipelineBuilder::SetViewports(const Viewports &viewports)
+{
+    viewports_ = viewports;
+    return *this;
+}
+
+PipelineBuilder &VulkanPipelineBuilder::SetScissors(const Scissors &scissors)
+{
+    scissors_ = scissors;
     return *this;
 }
 
@@ -163,6 +181,9 @@ PipelineBuilder &VulkanPipelineBuilder::SetDepthStencilAttachment(Format format)
 
 RC<Pipeline> VulkanPipelineBuilder::CreatePipeline() const
 {
+    assert(!viewports_.Is<std::monostate>());
+    assert(!scissors_.Is<std::monostate>());
+
     std::vector<VkFormat> colorAttachments;
     for(auto f : colorAttachments_)
     {
@@ -192,9 +213,41 @@ RC<Pipeline> VulkanPipelineBuilder::CreatePipeline() const
         .topology = TranslatePrimitiveTopology(primitiveTopology_)
     };
 
-    const VkPipelineViewportStateCreateInfo viewportState = {
+    VkPipelineViewportStateCreateInfo viewportState = {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
     };
+
+    std::vector<VkViewport> vkViewports;
+    if(auto vs = viewports_.AsIf<std::vector<Viewport>>())
+    {
+        vkViewports.resize(vs->size());
+        for(auto &&[i, v] : Enumerate(*vs))
+        {
+            vkViewports[i] = TranslateViewport(v);
+        }
+        viewportState.viewportCount = static_cast<uint32_t>(vkViewports.size());
+        viewportState.pViewports = vkViewports.data();
+    }
+    else if(auto c = viewports_.AsIf<int>())
+    {
+        viewportState.viewportCount = static_cast<uint32_t>(*c);
+    }
+
+    std::vector<VkRect2D> vkScissors;
+    if(auto ss = scissors_.AsIf<std::vector<Scissor>>())
+    {
+        vkScissors.resize(ss->size());
+        for(auto &&[i, s] : Enumerate(*ss))
+        {
+            vkScissors[i] = TranslateScissor(s);
+        }
+        viewportState.scissorCount = static_cast<uint32_t>(vkScissors.size());
+        viewportState.pScissors = vkScissors.data();
+    }
+    else if(auto c = scissors_.AsIf<int>())
+    {
+        viewportState.scissorCount = static_cast<uint32_t>(*c);
+    }
 
     const VkPipelineRasterizationStateCreateInfo rasterizationState = {
         .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
@@ -261,13 +314,30 @@ RC<Pipeline> VulkanPipelineBuilder::CreatePipeline() const
         .pAttachments    = blendAttachments.data()
     };
 
-    const VkDynamicState dynamicStates[] = {
-        VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT,
-        VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT
-    };
+    uint32_t dynamicStateCount = 0;
+    VkDynamicState dynamicStates[2];
+
+    if(viewports_.Is<int>())
+    {
+        dynamicStates[dynamicStateCount++] = VK_DYNAMIC_STATE_VIEWPORT;
+    }
+    else if(viewports_.Is<DynamicViewportCount>())
+    {
+        dynamicStates[dynamicStateCount++] = VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT;
+    }
+
+    if(scissors_.Is<int>())
+    {
+        dynamicStates[dynamicStateCount++] = VK_DYNAMIC_STATE_SCISSOR;
+    }
+    else if(scissors_.Is<DynamicScissorCount>())
+    {
+        dynamicStates[dynamicStateCount++] = VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT;
+    }
+
     const VkPipelineDynamicStateCreateInfo dynamicState = {
         .sType             = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-        .dynamicStateCount = GetArraySize(dynamicStates),
+        .dynamicStateCount = dynamicStateCount,
         .pDynamicStates    = dynamicStates
     };
 

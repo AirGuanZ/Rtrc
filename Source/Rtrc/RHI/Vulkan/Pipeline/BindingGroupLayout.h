@@ -20,18 +20,22 @@ public:
     using PoolInfoIterator = std::list<PoolInfo>::iterator;
 
     VulkanBindingGroupLayout(
-        const BindingGroupLayoutDesc &desc,
+        const BindingGroupLayoutDesc             &desc,
         std::vector<VkDescriptorSetLayoutBinding> bindings,
-        VkDevice device,
-        VkDescriptorSetLayout layout);
+        VkDevice                                  device,
+        VkDescriptorSetLayout                     layout);
 
     ~VulkanBindingGroupLayout() override;
 
-    RC<BindingGroupInstance> CreateBindingGroup(bool updateAfterBind) override;
+    RC<BindingGroup> CreateBindingGroup(bool updateAfterBind) override;
 
     VkDescriptorSetLayout GetLayout() const;
 
     void ReleaseSet(VkDescriptorSet set);
+
+    bool IsSlotTexelBuffer(int index) const;
+
+    bool IsSlotStructuredBuffer(int index) const;
 
 private:
 

@@ -42,6 +42,8 @@ public:
 
     Vector2i GetFramebufferSize() const;
 
+    bool HasFocus() const;
+
     Unique<RHI::Surface> CreateVulkanSurface(void *vkInstance);
 
     RTRC_DECLARE_EVENT_SENDER(WindowCloseEvent)

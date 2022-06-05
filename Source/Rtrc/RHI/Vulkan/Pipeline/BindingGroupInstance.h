@@ -4,16 +4,19 @@
 
 RTRC_RHI_VK_BEGIN
 
-class VulkanBindingGroupInstance : public BindingGroupInstance
+class VulkanBindingGroupInstance : public BindingGroup
 {
 public:
 
-    VulkanBindingGroupInstance(VulkanBindingGroupLayout *layout, VkDescriptorSet set);
+    VulkanBindingGroupInstance(VkDevice device, VulkanBindingGroupLayout *layout, VkDescriptorSet set);
 
     ~VulkanBindingGroupInstance() override;
 
+    void ModifyMember(int index, const RC<BufferSRV> &bufferSRV) override;
+
 private:
 
+    VkDevice device_;
     VulkanBindingGroupLayout *layout_;
     VkDescriptorSet set_;
 };

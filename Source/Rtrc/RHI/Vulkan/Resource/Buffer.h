@@ -1,5 +1,7 @@
 #pragma once
 
+#include <map>
+
 #include <Rtrc/RHI/Vulkan/Common.h>
 
 RTRC_RHI_VK_BEGIN
@@ -17,15 +19,29 @@ public:
 
     ~VulkanBuffer() override;
 
+    RC<BufferSRV> CreateSRV(const BufferSRVDesc &desc) const override;
+
     VkBuffer GetNativeBuffer() const;
 
 private:
 
-    BufferDesc             desc_;
-    VkDevice               device_;
-    VkBuffer               buffer_;
-    VulkanMemoryAllocation alloc_;
-    ResourceOwnership      ownership_;
+    struct ViewKey
+    {
+        VkFormat format;
+        uint32_t offset;
+        uint32_t count;
+
+        auto operator<=>(const ViewKey &) const = default;
+    };
+
+    VkBufferView CreateBufferView(const ViewKey &key) const;
+
+    BufferDesc                              desc_;
+    VkDevice                                device_;
+    VkBuffer                                buffer_;
+    VulkanMemoryAllocation                  alloc_;
+    ResourceOwnership                       ownership_;
+    mutable std::map<ViewKey, VkBufferView> views_;
 };
 
 RTRC_RHI_VK_END

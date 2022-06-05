@@ -1,3 +1,4 @@
+#include <Rtrc/RHI/Vulkan/Pipeline/Pipeline.h>
 #include <Rtrc/RHI/Vulkan/Queue/CommandBuffer.h>
 #include <Rtrc/RHI/Vulkan/Resource/Buffer.h>
 #include <Rtrc/RHI/Vulkan/Resource/Texture2D.h>
@@ -47,10 +48,10 @@ void VulkanCommandBuffer::End()
 }
 
 void VulkanCommandBuffer::ExecuteBarriers(
-    const std::vector<TextureTransitionBarrier> &textureTransitions,
-    const std::vector<BufferTransitionBarrier> &bufferTransitions)
+    Span<TextureTransitionBarrier> textureTransitions,
+    Span<BufferTransitionBarrier> bufferTransitions)
 {
-    std::vector<VkImageMemoryBarrier2> imageBarriers(textureTransitions.size());
+    std::vector<VkImageMemoryBarrier2> imageBarriers(textureTransitions.GetSize());
     for(auto &&[i, transition] : Enumerate(textureTransitions))
     {
         imageBarriers[i] = VkImageMemoryBarrier2{
@@ -72,7 +73,7 @@ void VulkanCommandBuffer::ExecuteBarriers(
         };
     }
 
-    std::vector<VkBufferMemoryBarrier2> bufferBarriers(bufferTransitions.size());
+    std::vector<VkBufferMemoryBarrier2> bufferBarriers(bufferTransitions.GetSize());
     for(auto &&[i, transition] : Enumerate(bufferTransitions))
     {
         bufferBarriers[i] = VkBufferMemoryBarrier2{
@@ -97,10 +98,10 @@ void VulkanCommandBuffer::ExecuteBarriers(
     vkCmdPipelineBarrier2(commandBuffer_, &dependencyInfo);
 }
 
-void VulkanCommandBuffer::BeginRenderPass(const std::vector<RenderPassColorAttachment> &colorAttachments)
+void VulkanCommandBuffer::BeginRenderPass(Span<RenderPassColorAttachment> colorAttachments)
 {
-    assert(!colorAttachments.empty());
-    std::vector<VkRenderingAttachmentInfo> vkColorAttachments(colorAttachments.size());
+    assert(!colorAttachments.IsEmpty());
+    std::vector<VkRenderingAttachmentInfo> vkColorAttachments(colorAttachments.GetSize());
     for(auto &&[i, a] : Enumerate(colorAttachments))
     {
         vkColorAttachments[i] = VkRenderingAttachmentInfo{
@@ -115,7 +116,7 @@ void VulkanCommandBuffer::BeginRenderPass(const std::vector<RenderPassColorAttac
     }
 
     const auto &attachment0Desc = static_cast<VulkanTexture2DRTV *>(
-        colorAttachments.front().rtv.get())->GetTexture()->Get2DDesc();
+        colorAttachments[0].rtv.get())->GetTexture()->Get2DDesc();
     const VkRect2D renderArea = {
             .offset = { 0, 0 },
             .extent = { attachment0Desc.width, attachment0Desc.height }
@@ -124,7 +125,7 @@ void VulkanCommandBuffer::BeginRenderPass(const std::vector<RenderPassColorAttac
         .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
         .renderArea           = renderArea,
         .layerCount           = 1,
-        .colorAttachmentCount = static_cast<uint32_t>(colorAttachments.size()),
+        .colorAttachmentCount = colorAttachments.GetSize(),
         .pColorAttachments    = vkColorAttachments.data()
     };
 
@@ -134,6 +135,67 @@ void VulkanCommandBuffer::BeginRenderPass(const std::vector<RenderPassColorAttac
 void VulkanCommandBuffer::EndRenderPass()
 {
     vkCmdEndRendering(commandBuffer_);
+}
+
+void VulkanCommandBuffer::BindPipeline(const RC<Pipeline> &pipeline)
+{
+    if(!pipeline)
+    {
+        vkCmdBindPipeline(commandBuffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, nullptr);
+        return;
+    }
+    auto vkPipeline = static_cast<VulkanPipeline *>(pipeline.get());
+    vkCmdBindPipeline(commandBuffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, vkPipeline->GetNativePipeline());
+}
+
+void VulkanCommandBuffer::SetViewports(Span<Viewport> viewports)
+{
+    std::vector<VkViewport> vkViewports(viewports.GetSize());
+    for(auto &&[i, v] : Enumerate(viewports))
+    {
+        vkViewports[i] = TranslateViewport(v);
+    }
+    vkCmdSetViewport(commandBuffer_, 0, viewports.GetSize(), vkViewports.data());
+}
+
+void VulkanCommandBuffer::SetScissors(Span<Scissor> scissors)
+{
+    std::vector<VkRect2D> vkScissors(scissors.GetSize());
+    for(auto &&[i, s] : Enumerate(scissors))
+    {
+        vkScissors[i] = TranslateScissor(s);
+    }
+    vkCmdSetScissor(commandBuffer_, 0, scissors.GetSize(), vkScissors.data());
+}
+
+void VulkanCommandBuffer::SetViewportsWithCount(Span<Viewport> viewports)
+{
+    std::vector<VkViewport> vkViewports(viewports.GetSize());
+    for(auto &&[i, v] : Enumerate(viewports))
+    {
+        vkViewports[i] = TranslateViewport(v);
+    }
+    vkCmdSetViewportWithCount(commandBuffer_, viewports.GetSize(), vkViewports.data());
+}
+
+void VulkanCommandBuffer::SetScissorsWithCount(Span<Scissor> scissors)
+{
+    std::vector<VkRect2D> vkScissors(scissors.GetSize());
+    for(auto &&[i, s] : Enumerate(scissors))
+    {
+        vkScissors[i] = TranslateScissor(s);
+    }
+    vkCmdSetScissorWithCount(commandBuffer_, scissors.GetSize(), vkScissors.data());
+}
+
+void VulkanCommandBuffer::Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance)
+{
+    vkCmdDraw(
+        commandBuffer_,
+        static_cast<uint32_t>(vertexCount),
+        static_cast<uint32_t>(instanceCount),
+        static_cast<uint32_t>(firstVertex),
+        static_cast<uint32_t>(firstInstance));
 }
 
 VkCommandBuffer VulkanCommandBuffer::GetNativeCommandBuffer() const

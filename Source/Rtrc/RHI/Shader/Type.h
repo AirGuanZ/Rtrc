@@ -135,7 +135,14 @@ namespace ShaderDetail
     static constexpr auto _rtrcShaderStages##NAME = _rtrcBindingParamExtractor##NAME::ShaderStages; \
     RTRC_META_STRUCT_PRE_MEMBER(::Rtrc::ShaderDetail::MemberTag::CBuffer, NAME)                     \
     {                                                                                               \
-        f.template operator()(&_rtrcSelf::NAME, #NAME, _rtrcShaderStages##NAME);                    \
+        if constexpr(::Rtrc::IsLayoutMemberProcessor<F>)                                            \
+        {                                                                                           \
+            f.ProcessCBuffer(&_rtrcSelf::NAME, #NAME, _rtrcShaderStages##NAME);                     \
+        }                                                                                           \
+        else                                                                                        \
+        {                                                                                           \
+            f(&_rtrcSelf::NAME, #NAME, _rtrcShaderStages##NAME);                                    \
+        }                                                                                           \
     }                                                                                               \
     RTRC_META_STRUCT_POST_MEMBER(NAME)                                                              \
     using _rtrcType##NAME = TYPE;                                                                   \
@@ -147,7 +154,7 @@ template<
     TemplateStringParameter TypeNameParam,
     TemplateStringParameter NameParam,
     int                     ArraySizeParam,
-    RHI::ShaderStageFlag       TShaderStages>
+    RHI::ShaderStageFlag    TShaderStages>
 class BindingSlot
 {
 public:
@@ -212,18 +219,25 @@ concept BindingGroupStruct = requires{ typename T::_rtrcBindingGroupTag; };
 
 #define RTRC_BINDING_PARAMETER_WRAPPER(X) ::Rtrc::ShaderDetail::BindingParamWrapper(X),
 
-#define RTRC_BINDING_GROUP_MEMBER(TYPE, NAME, ...)                                                                 \
-    using _rtrcBindingParamExtractor##NAME =                                                                       \
-        ::Rtrc::ShaderDetail::BindingParamExtractor<                                                               \
-            RTRC_MACRO_FOREACH_1(RTRC_BINDING_PARAMETER_WRAPPER, __VA_ARGS__)                                      \
-                ::Rtrc::ShaderDetail::DUMMY_BINDING_PARAM_WRAPPER>;                                                \
-    static constexpr auto _rtrcArraySize##NAME = _rtrcBindingParamExtractor##NAME::ArraySize;                      \
-    static constexpr auto _rtrcShaderStages##NAME = _rtrcBindingParamExtractor##NAME::ShaderStages;                \
-    RTRC_META_STRUCT_PRE_MEMBER(::Rtrc::ShaderDetail::MemberTag::Binding, NAME)                                    \
-    {                                                                                                              \
-        f.template operator()<::Rtrc::BindingSlot<#TYPE, #NAME, _rtrcArraySize##NAME, _rtrcShaderStages##NAME>>(); \
-    }                                                                                                              \
-    RTRC_META_STRUCT_POST_MEMBER(NAME)                                                                             \
+#define RTRC_BINDING_GROUP_MEMBER(TYPE, NAME, ...)                                                  \
+    using _rtrcBindingParamExtractor##NAME =                                                        \
+        ::Rtrc::ShaderDetail::BindingParamExtractor<                                                \
+            RTRC_MACRO_FOREACH_1(RTRC_BINDING_PARAMETER_WRAPPER, __VA_ARGS__)                       \
+                ::Rtrc::ShaderDetail::DUMMY_BINDING_PARAM_WRAPPER>;                                 \
+    static constexpr auto _rtrcArraySize##NAME = _rtrcBindingParamExtractor##NAME::ArraySize;       \
+    static constexpr auto _rtrcShaderStages##NAME = _rtrcBindingParamExtractor##NAME::ShaderStages; \
+    RTRC_META_STRUCT_PRE_MEMBER(::Rtrc::ShaderDetail::MemberTag::Binding, NAME)                     \
+    {                                                                                               \
+        if constexpr(::Rtrc::IsLayoutMemberProcessor<F>)                                            \
+        {                                                                                           \
+            f.ProcessBinding(&_rtrcSelf::NAME);                                                     \
+        }                                                                                           \
+        else                                                                                        \
+        {                                                                                           \
+            f(&_rtrcSelf::NAME);                                                                    \
+        }                                                                                           \
+    }                                                                                               \
+    RTRC_META_STRUCT_POST_MEMBER(NAME)                                                              \
     ::Rtrc::BindingSlot<#TYPE, #NAME, _rtrcArraySize##NAME, _rtrcShaderStages##NAME> NAME;
 
 #define $group_begin  RTRC_BINDING_GROUP_BEGIN
@@ -234,14 +248,55 @@ concept BindingGroupStruct = requires{ typename T::_rtrcBindingGroupTag; };
 #define $variable     RTRC_STRUCT_MEMBER
 #define $cbuffer      RTRC_CBUFFER_USING_EXTERNAL_TYPE
 
+template<typename T>
+concept IsLayoutMemberProcessor = requires { typename T::LayoutMemberProcessorTag; };
+
+template<typename BindingProcessor, typename CBufferProcessor>
+class LayoutMemberProcessor
+{
+    mutable BindingProcessor bindingProcessor_;
+    mutable CBufferProcessor cbufferProcessor_;
+
+public:
+
+    struct LayoutMemberProcessorTag { };
+
+    LayoutMemberProcessor(BindingProcessor bindingProcessor, CBufferProcessor cbufferProcessor)
+        : bindingProcessor_(std::move(bindingProcessor)), cbufferProcessor_(std::move(cbufferProcessor))
+    {
+        
+    }
+
+    template<typename Struct, typename CBuffer>
+    void ProcessCBuffer(CBuffer Struct::*p, const char *name, RHI::ShaderStageFlag stages) const
+    {
+        cbufferProcessor_(p, name, stages);
+    }
+
+    template<typename Struct, typename Binding>
+    void ProcessBinding(Binding Struct::*p) const
+    {
+        bindingProcessor_(p);
+    }
+};
+
+struct DefaultMemberProcessor
+{
+    template<typename...Args>
+    void operator()(const Args&...) const
+    {
+        
+    }
+};
+
 template<BindingGroupStruct Struct>
 const RHI::BindingGroupLayoutDesc &GetBindingGroupLayoutDesc();
 
 template<BindingGroupStruct Struct, typename Member>
 void ModifyBindingGroupInstance(
-    const RC<RHI::BindingGroupInstance> &instance,
-    Member Struct::                     *member,
-    const RC<RHI::Texture2DSRV>         &srv);
+    RHI::BindingGroup        *instance,
+    Member Struct::          *member,
+    const RC<RHI::BufferSRV> &srv);
 
 RTRC_END
 

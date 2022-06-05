@@ -55,6 +55,8 @@ VkAttachmentStoreOp      TranslateStoreOp               (AttachmentStoreOp op);
 VkClearColorValue        TranslateClearColorValue       (const ColorClearValue &value);
 VkClearDepthStencilValue TranslateClearDepthStencilValue(const DepthStencilClearValue &value);
 VkClearValue             TranslateClearValue            (const ClearValue &value);
+VkViewport               TranslateViewport              (const Viewport &viewport);
+VkRect2D                 TranslateScissor               (const Scissor &scissor);
 VmaAllocationCreateFlags TranslateBufferHostAccessType  (BufferHostAccessType type);
 
 struct VulkanMemoryAllocation

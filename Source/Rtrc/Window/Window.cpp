@@ -344,6 +344,11 @@ Vector2i Window::GetFramebufferSize() const
     return Vector2i(w, h);
 }
 
+bool Window::HasFocus() const
+{
+    return impl_->hasFocus;
+}
+
 Unique<RHI::Surface> Window::CreateVulkanSurface(void *vkInstance)
 {
 #ifdef RTRC_RHI_VULKAN

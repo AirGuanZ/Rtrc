@@ -13,10 +13,12 @@ public:
 
     ~VulkanPipeline() override;
 
+    VkPipeline GetNativePipeline() const;
+
 private:
 
-    VkDevice   device_;
-    VkPipeline pipeline_;
+    VkDevice            device_;
+    VkPipeline          pipeline_;
 };
 
 class VulkanPipelineBuilder : public PipelineBuilder
@@ -30,6 +32,10 @@ public:
     PipelineBuilder &SetFragmentShader(RC<RawShader> fragmentShader) override;
 
     PipelineBuilder &SetBindingLayout(RC<BindingLayout> layout) override;
+
+    PipelineBuilder &SetViewports(const Viewports &viewports) override;
+
+    PipelineBuilder &SetScissors(const Scissors &scissors) override;
 
     PipelineBuilder &SetPrimitiveTopology(PrimitiveTopology topology) override;
 
@@ -96,6 +102,9 @@ private:
     RC<VulkanShader> fragmentShader_;
 
     RC<VulkanBindingLayout> bindingLayout_;
+
+    Viewports viewports_;
+    Scissors scissors_;
 
     PrimitiveTopology primitiveTopology_ = PrimitiveTopology::TriangleList;
     FillMode          fillMode_          = FillMode::Fill;

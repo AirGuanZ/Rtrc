@@ -389,6 +389,32 @@ VkClearValue TranslateClearValue(const ClearValue &value)
     return result;
 }
 
+VkViewport TranslateViewport(const Viewport &viewport)
+{
+    return VkViewport{
+        .x        = viewport.lowerLeftCorner.x,
+        .y        = viewport.size.y - viewport.lowerLeftCorner.y,
+        .width    = viewport.size.x,
+        .height   = -viewport.size.y,
+        .minDepth = viewport.minDepth,
+        .maxDepth = viewport.maxDepth
+    };
+}
+
+VkRect2D TranslateScissor(const Scissor &scissor)
+{
+    return VkRect2D{
+        .offset = {
+            static_cast<int32_t>(scissor.lowerLeftCorner.x),
+            static_cast<int32_t>(scissor.lowerLeftCorner.y)
+        },
+        .extent = {
+            static_cast<uint32_t>(scissor.size.x),
+            static_cast<uint32_t>(scissor.size.y)
+        }
+    };
+}
+
 VmaAllocationCreateFlags TranslateBufferHostAccessType(BufferHostAccessType type)
 {
     switch(type)

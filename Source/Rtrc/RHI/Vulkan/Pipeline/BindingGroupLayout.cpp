@@ -45,7 +45,7 @@ VulkanBindingGroupLayout::~VulkanBindingGroupLayout()
     vkDestroyDescriptorSetLayout(device_, layout_, VK_ALLOC);
 }
 
-RC<BindingGroupInstance> VulkanBindingGroupLayout::CreateBindingGroup(bool updateAfterBind)
+RC<BindingGroup> VulkanBindingGroupLayout::CreateBindingGroup(bool updateAfterBind)
 {
     auto &freeSets = updateAfterBind ? freeSetsUpdateAfterBind_ : freeSetsRegular_;
     if(freeSets.empty())
@@ -54,7 +54,7 @@ RC<BindingGroupInstance> VulkanBindingGroupLayout::CreateBindingGroup(bool updat
     }
     auto set = freeSets.back();
     freeSets.pop_back();
-    return MakeRC<VulkanBindingGroupInstance>(this, set);
+    return MakeRC<VulkanBindingGroupInstance>(device_, this, set);
 }
 
 VkDescriptorSetLayout VulkanBindingGroupLayout::GetLayout() const
@@ -65,6 +65,16 @@ VkDescriptorSetLayout VulkanBindingGroupLayout::GetLayout() const
 void VulkanBindingGroupLayout::ReleaseSet(VkDescriptorSet set)
 {
     freeSetsRegular_.push_back(set);
+}
+
+bool VulkanBindingGroupLayout::IsSlotTexelBuffer(int index) const
+{
+    return desc_.bindings[index].front().type == BindingType::Buffer;
+}
+
+bool VulkanBindingGroupLayout::IsSlotStructuredBuffer(int index) const
+{
+    return desc_.bindings[index].front().type == BindingType::StructuredBuffer;
 }
 
 void VulkanBindingGroupLayout::TransferNode(std::list<PoolInfo> &from, std::list<PoolInfo> &to, std::list<PoolInfo>::iterator iter)
@@ -106,7 +116,7 @@ void VulkanBindingGroupLayout::AllocateNewDescriptorPool(bool updateAfterBind)
         "failed to create vulkan descriptor pool");
     RTRC_SCOPE_FAIL{ vkDestroyDescriptorPool(device_, pool, VK_ALLOC); };
 
-    auto &freeSets = updateAfterBind ? freeSetsRegular_ : freeSetsUpdateAfterBind_;
+    auto &freeSets = updateAfterBind ? freeSetsUpdateAfterBind_ : freeSetsRegular_;
     freeSets.reserve(freeSets.size() + maxSets);
     const size_t oldSize = freeSets.size();
     RTRC_SCOPE_FAIL{ freeSets.resize(oldSize); };

@@ -8,44 +8,27 @@ RTRC_RHI_BEGIN
 
 class Shader : public Uncopyable
 {
-    
-};
-
-class BindingGroupInstanceVisitor : public Uncopyable
-{
 public:
 
-    explicit BindingGroupInstanceVisitor(TypeIndex typeIndex);
+    RC<RawShader> GetVertexShader() const;
 
-    virtual ~BindingGroupInstanceVisitor() = default;
-
-    template<typename C>
-    void ModifyInstance(const RC<BindingGroupInstance> &instance, const C &group);
-
-    template<typename C, typename M, typename V>
-    void ModifyInstanceMember(const RC<BindingGroupInstance> &instance, const M C::*memberPtr, const V &value);
-
-protected:
-
-    virtual void ModifyInstance(const RC<BindingGroupInstance> &instance, const void *bindingGroupStruct) const = 0;
-
-    virtual void ModifyInstanceMember(const RC<BindingGroupInstance> &instance, int memberIndex, const void *value) = 0;
-
-    TypeIndex typeIndex_;
+    RC<RawShader> GetFragmentShader() const;
 };
 
 class ShaderCompiler : public Uncopyable
 {
 public:
 
-    void SetVertexShaderSource(std::string source);
+    void SetVertexShaderSource(std::string source, std::string entry);
 
-    void SetFragmentShaderSource(std::string source);
+    void SetFragmentShaderSource(std::string source, std::string entry);
 
     template<BindingGroupStruct BindingGroup>
     void AddBindingGroup();
 
     RC<Shader> Compile() const;
+
+    RC<BindingLayout> GenerateBindingLayout() const;
 };
 
 RTRC_RHI_END
