@@ -34,7 +34,19 @@ template<typename T>
 constexpr EnumFlags<T> operator|(const EnumFlags<T> &a, const EnumFlags<T> &b);
 
 template<typename T>
+constexpr EnumFlags<T> operator|(const EnumFlags<T> &a, const T &b);
+
+template<typename T>
+constexpr EnumFlags<T> operator|(const T &a, const EnumFlags<T> &b);
+
+template<typename T>
 constexpr EnumFlags<T> operator&(const EnumFlags<T> &a, const EnumFlags<T> &b);
+
+template<typename T>
+constexpr EnumFlags<T> operator&(const EnumFlags<T> &a, const T &b);
+
+template<typename T>
+constexpr EnumFlags<T> operator&(const T &a, const EnumFlags<T> &b);
 
 template<typename T>
 constexpr bool operator==(const EnumFlags<T> &a, const EnumFlags<T> &b);
@@ -43,7 +55,7 @@ template<typename T, typename R>
 constexpr EnumFlags<T> &operator|=(EnumFlags<T> &a, R b);
 
 #define RTRC_DEFINE_ENUM_FLAGS(Enum)                                    \
-    inline ::Rtrc::EnumFlags<Enum> operator|(Enum a, Enum b)            \
+    inline constexpr ::Rtrc::EnumFlags<Enum> operator|(Enum a, Enum b)  \
     {                                                                   \
         return ::Rtrc::EnumFlags<Enum>(a) | ::Rtrc::EnumFlags<Enum>(b); \
     }
@@ -93,9 +105,33 @@ constexpr EnumFlags<T> operator|(const EnumFlags<T> &a, const EnumFlags<T> &b)
 }
 
 template<typename T>
+constexpr EnumFlags<T> operator|(const EnumFlags<T> &a, const T &b)
+{
+    return a | EnumFlags<T>(b);
+}
+
+template<typename T>
+constexpr EnumFlags<T> operator|(const T &a, const EnumFlags<T> &b)
+{
+    return EnumFlags<T>(a) | b;
+}
+
+template<typename T>
 constexpr EnumFlags<T> operator&(const EnumFlags<T> &a, const EnumFlags<T> &b)
 {
     return EnumFlags<T>(a.GetInteger() & b.GetInteger());
+}
+
+template<typename T>
+constexpr EnumFlags<T> operator&(const EnumFlags<T> &a, const T &b)
+{
+    return a & EnumFlags<T>(b);
+}
+
+template<typename T>
+constexpr EnumFlags<T> operator&(const T &a, const EnumFlags<T> &b)
+{
+    return EnumFlags<T>(a) & b;
 }
 
 template<typename T>

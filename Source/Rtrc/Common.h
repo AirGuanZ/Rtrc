@@ -9,6 +9,9 @@
 #define RTRC_RHI_BEGIN RTRC_BEGIN namespace RHI {
 #define RTRC_RHI_END   } RTRC_END
 
+#define RTRC_DSL_BEGIN RTRC_BEGIN namespace DSL {
+#define RTRC_DSL_END   } RTRC_END
+
 RTRC_BEGIN
 
 class Exception : public std::runtime_error

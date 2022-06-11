@@ -8,6 +8,14 @@
 #include <Rtrc/Utils/Variant.h>
 #include <Rtrc/Window/Window.h>
 
+#include "Rtrc/Shader/Struct.h"
+
+RTRC_BEGIN
+
+struct StructInfo;
+
+RTRC_END
+
 RTRC_RHI_BEGIN
 
 class Instance;
@@ -43,7 +51,8 @@ enum class QueueType : uint8_t
 enum class Format : uint32_t
 {
     Unknown,
-    B8G8R8A8_UNorm
+    B8G8R8A8_UNorm,
+    R32G32_Float,
 };
 
 const char *GetFormatName(Format format);
@@ -62,8 +71,8 @@ namespace ShaderStageFlags
 {
 
     constexpr auto VS  = ShaderStageFlag(ShaderStage::VertexShader);
-    constexpr auto PS  = ShaderStageFlag(ShaderStage::FragmentShader);
-    constexpr auto All = VS | PS;
+    constexpr auto FS  = ShaderStageFlag(ShaderStage::FragmentShader);
+    constexpr auto All = VS | FS;
 
 } // namespace ShaderStageFlags
 
@@ -138,14 +147,23 @@ enum class BlendOp
 
 enum class BindingType
 {
-    Texture,
-    RWTexture,
+    Texture2D,
+    RWTexture2D,
     Buffer,
     StructuredBuffer,
     RWBuffer,
     RWStructuredBuffer,
     ConstantBuffer,
     Sampler,
+};
+
+enum class BindingTemplateParameterType
+{
+    Undefined,
+    Int,   Int2,   Int3,   Int4,
+    UInt,  UInt2,  UInt3,  UInt4,
+    Float, Float2, Float3, Float4,
+    Struct,
 };
 
 enum class TextureDimension
@@ -175,7 +193,7 @@ enum class BufferUsage : uint32_t
     ShaderRWBuffer,
     ShaderStructuredBuffer,
     ShaderRWStructuredBuffer,
-    ShaderUniformBuffer,
+    ShaderConstantBuffer,
     IndexBuffer,
     VertexBuffer,
     IndirectBuffer
@@ -192,23 +210,69 @@ enum class BufferHostAccessType
     Random
 };
 
-enum class TextureLayout
+constexpr uint32_t _rtrcUninitializedBase         = 1 << 0;
+constexpr uint32_t _rtrcRenderTargetBase          = 1 << 1;
+constexpr uint32_t _rtrcDepthBase                 = 1 << 2;
+constexpr uint32_t _rtrcStencilBase               = 1 << 3;
+constexpr uint32_t _rtrcConstantBufferBase        = 1 << 4;
+constexpr uint32_t _rtrcTextureBase               = 1 << 5;
+constexpr uint32_t _rtrcRWTextureBase             = 1 << 6;
+constexpr uint32_t _rtrcBufferBase                = 1 << 7;
+constexpr uint32_t _rtrcRWBufferBase              = 1 << 8;
+constexpr uint32_t _rtrcStructuredBufferBase      = 1 << 9;
+constexpr uint32_t _rtrcRWStructuredBufferBase    = 1 << 10;
+constexpr uint32_t _rtrcCopyBase                  = 1 << 11;
+constexpr uint32_t _rtrcResolveBase               = 1 << 12;
+constexpr uint32_t _rtrcPresentBase               = 1 << 13;
+constexpr uint32_t _rtrcDepthReadStencilWriteBase = 1 << 14;
+constexpr uint32_t _rtrcDepthWriteStencilReadBase = 1 << 15;
+constexpr uint32_t _rtrcVSBase                    = 1u << 20;
+constexpr uint32_t _rtrcFSBase                    = 1u << 21;
+constexpr uint32_t _rtrcReadBase                  = 1u << 30;
+constexpr uint32_t _rtrcWriteBase                 = 1u << 31;
+
+enum class ResourceState : uint32_t
 {
-    Undefined,
-    RenderTarget,
-    ShaderResource,
-    DepthStencilReadWrite,
-    DepthStencilReadOnly,
-    DepthReadOnlyStencilReadWrite,
-    DepthReadWriteStencilReadOnly,
-    DepthReadWrite,
-    DepthReadOnly,
-    StencilReadWrite,
-    StencilReadOnly,
-    TransferDst,
-    TransferSrc,
-    Present
+    Uninitialized               = _rtrcUninitializedBase,
+    RenderTargetReadWrite       = _rtrcRenderTargetBase | _rtrcReadBase | _rtrcWriteBase,
+    RenderTargetWrite           = _rtrcRenderTargetBase | _rtrcWriteBase,
+    DepthStencilReadWrite       = _rtrcDepthBase | _rtrcStencilBase | _rtrcReadBase | _rtrcWriteBase,
+    DepthStencilReadOnly        = _rtrcDepthBase | _rtrcStencilBase | _rtrcReadBase,
+    DepthStencilWriteOnly       = _rtrcDepthBase | _rtrcStencilBase | _rtrcWriteBase,
+    DepthReadWrite              = _rtrcDepthBase | _rtrcReadBase | _rtrcWriteBase,
+    DepthRead                   = _rtrcDepthBase | _rtrcReadBase,
+    DepthWrite                  = _rtrcDepthBase | _rtrcWriteBase,
+    StencilReadWrite            = _rtrcStencilBase | _rtrcReadBase | _rtrcWriteBase,
+    StencilRead                 = _rtrcStencilBase | _rtrcReadBase,
+    StencilWrite                = _rtrcStencilBase | _rtrcWriteBase,
+    DepthReadStencilWrite       = _rtrcDepthReadStencilWriteBase | _rtrcReadBase | _rtrcWriteBase,
+    DepthWriteStencilRead       = _rtrcDepthWriteStencilReadBase | _rtrcReadBase | _rtrcWriteBase,
+    ConstantBufferRead          = _rtrcConstantBufferBase | _rtrcReadBase,                       // must be used together with stage mask
+    TextureRead                 = _rtrcTextureBase | _rtrcReadBase,                             // must be used together with stage mask
+    RWTextureRead               = _rtrcRWTextureBase | _rtrcReadBase,                           // must be used together with stage mask
+    RWTextureWrite              = _rtrcRWTextureBase | _rtrcWriteBase,                          // must be used together with stage mask
+    RWTextureReadWrite          = _rtrcRWTextureBase | _rtrcReadBase | _rtrcWriteBase,          // must be used together with stage mask
+    BufferRead                  = _rtrcBufferBase | _rtrcReadBase,                              // must be used together with stage mask
+    RWBufferRead                = _rtrcRWBufferBase | _rtrcReadBase,                            // must be used together with stage mask
+    RWBufferWrite               = _rtrcRWBufferBase | _rtrcWriteBase,                           // must be used together with stage mask
+    RWBufferReadWrite           = _rtrcRWBufferBase | _rtrcReadBase | _rtrcWriteBase,           // must be used together with stage mask
+    StructuredBufferRead        = _rtrcStructuredBufferBase | _rtrcReadBase,                    // must be used together with stage mask
+    RWStructuredBufferRead      = _rtrcRWStructuredBufferBase | _rtrcReadBase,                  // must be used together with stage mask
+    RWStructuredBufferWrite     = _rtrcRWStructuredBufferBase | _rtrcWriteBase,                 // must be used together with stage mask
+    RWStructuredBufferReadWrite = _rtrcRWStructuredBufferBase | _rtrcReadBase | _rtrcWriteBase, // must be used together with stage mask
+    CopySrc                     = _rtrcCopyBase | _rtrcReadBase,
+    CopyDst                     = _rtrcCopyBase | _rtrcWriteBase,
+    ResolveSrc                  = _rtrcResolveBase | _rtrcReadBase,
+    ResolveDst                  = _rtrcResolveBase | _rtrcWriteBase,
+    Present                     = _rtrcPresentBase | _rtrcReadBase,
+
+    VS = _rtrcVSBase,
+    FS = _rtrcFSBase
 };
+
+RTRC_DEFINE_ENUM_FLAGS(ResourceState)
+
+using ResourceStateFlag = EnumFlags<ResourceState>;
 
 enum class AspectType : uint8_t
 {
@@ -245,36 +309,6 @@ RTRC_DEFINE_ENUM_FLAGS(PipelineStage)
 
 using PipelineStageFlag = EnumFlags<PipelineStage>;
 
-enum class AccessType : uint32_t
-{
-    None                      = 1 << 0,
-    IndirectCommandRead       = 1 << 1,
-    IndexRead                 = 1 << 2,
-    VertexAttributeRead       = 1 << 3,
-    UniformBufferRead         = 1 << 4,
-    ImageRead                 = 1 << 5,
-    BufferRead                = 1 << 6,
-    StructuredBufferRead      = 1 << 7,
-    RWImageRead               = 1 << 8,
-    RWBufferRead              = 1 << 9,
-    RWStructuredBufferRead    = 1 << 10,
-    RWImageWrite              = 1 << 11,
-    RWBufferWrite             = 1 << 12,
-    RWStructuredBufferWrite   = 1 << 13,
-    ColorAttachmentRead       = 1 << 14,
-    ColorAttachmentWrite      = 1 << 15,
-    DepthStencilRead          = 1 << 16,
-    DepthStencilWrite         = 1 << 17,
-    TransferRead              = 1 << 18,
-    TransferWrite             = 1 << 19,
-    HostRead                  = 1 << 20,
-    HostWrite                 = 1 << 21,
-};
-
-RTRC_DEFINE_ENUM_FLAGS(AccessType)
-
-using AccessTypeFlag = EnumFlags<AccessType>;
-
 enum class AttachmentLoadOp
 {
     Load,
@@ -286,6 +320,12 @@ enum class AttachmentStoreOp
 {
     Store,
     DontCare,
+};
+
+enum class QueueConcurrentAccessMode
+{
+    Exclusive, // exclusively accessed by one queue
+    Concurrent // concurrently accessed by graphics/compute queues
 };
 
 // =============================== rhi descriptions ===============================
@@ -306,10 +346,21 @@ struct SwapchainDesc
 
 struct BindingDesc
 {
-    BindingType           type;
-    EnumFlags<ShaderStage> shaderStages;
-    bool                  isArray;
-    uint32_t              arraySize;
+    std::string                  name;
+    BindingType                  type;
+    ShaderStageFlag              shaderStages      = ShaderStageFlags::All;
+    bool                         isArray           = false;
+    uint32_t                     arraySize         = 1;
+    const StructInfo            *structInfo        = nullptr;
+    BindingTemplateParameterType templateParameter = BindingTemplateParameterType::Struct;
+
+    std::strong_ordering operator<=>(const BindingDesc &other) const
+    {
+        const uint32_t thisArraySize = isArray ? arraySize : 0;
+        const uint32_t otherArraySize = other.isArray ? other.arraySize : 0;
+        return std::tie(name, type, shaderStages, isArray, thisArraySize) <=>
+               std::tie(other.name, other.type, other.shaderStages, other.isArray, otherArraySize);
+    }
 };
 
 using AliasedBindingsDesc = std::vector<BindingDesc>;
@@ -317,11 +368,15 @@ using AliasedBindingsDesc = std::vector<BindingDesc>;
 struct BindingGroupLayoutDesc
 {
     std::vector<AliasedBindingsDesc> bindings;
+
+    auto operator<=>(const BindingGroupLayoutDesc &other) const = default;
 };
 
 struct BindingLayoutDesc
 {
     std::vector<RC<BindingGroupLayout>> groups;
+
+    auto operator<=>(const BindingLayoutDesc &) const = default;
 };
 
 struct Viewport
@@ -340,14 +395,15 @@ struct Scissor
 
 struct Texture2DDesc
 {
-    Format           format;
-    uint32_t         width;
-    uint32_t         height;
-    uint32_t         mipLevels;
-    uint32_t         arraySize;
-    uint32_t         sampleCount;
-    TextureUsageFlag usage;
-    TextureLayout    initialLayout;
+    Format                    format;
+    uint32_t                  width;
+    uint32_t                  height;
+    uint32_t                  mipLevels;
+    uint32_t                  arraySize;
+    uint32_t                  sampleCount;
+    TextureUsageFlag          usage;
+    ResourceState             initialState;
+    QueueConcurrentAccessMode concurrentAccessMode;
 };
 
 struct Texture2DRTVDesc
@@ -368,9 +424,10 @@ struct Texture2DSRVDesc
 
 struct BufferDesc
 {
-    size_t               size;
-    BufferUsageFlag      usage;
-    BufferHostAccessType hostAccessType;
+    size_t                    size;
+    BufferUsageFlag           usage;
+    BufferHostAccessType      hostAccessType;
+    QueueConcurrentAccessMode concurrentAccessMode;
 };
 
 struct BufferSRVDesc
@@ -385,24 +442,43 @@ struct TextureTransitionBarrier
 {
     RC<Texture>       texture;
     AspectTypeFlag    aspectTypeFlag;
-    PipelineStageFlag beforeStages;
-    PipelineStageFlag afterStages;
-    AccessTypeFlag    beforeAccess;
-    AccessTypeFlag    afterAccess;
-    TextureLayout     beforeLayout;
-    TextureLayout     afterLayout;
     uint32_t          mipLevel;
     uint32_t          arrayLayer;
+    ResourceStateFlag beforeState;
+    ResourceStateFlag afterState;
 };
+
+struct TextureReleaseBarrier
+{
+    RC<Texture>       texture;
+    AspectTypeFlag    aspectTypeFlag;
+    uint32_t          mipLevel;
+    uint32_t          arrayLayer;
+    ResourceStateFlag beforeState;
+    ResourceStateFlag afterState;
+    RC<Queue>         beforeQueue;
+    RC<Queue>         afterQueue;
+};
+
+using TextureAcquireBarrier = TextureReleaseBarrier;
 
 struct BufferTransitionBarrier
 {
     RC<Buffer>        buffer;
-    PipelineStageFlag beforeStages;
-    PipelineStageFlag afterStages;
-    AccessTypeFlag    beforeAccess;
-    AccessTypeFlag    afterAccess;
+    ResourceStateFlag beforeState;
+    ResourceStateFlag afterState;
 };
+
+struct BufferReleaseBarrier
+{
+    RC<Buffer>        buffer;
+    ResourceStateFlag beforeState;
+    ResourceStateFlag afterState;
+    RC<Queue>         beforeQueue;
+    RC<Queue>         afterQueue;
+};
+
+using BufferAcquireBarrier = BufferReleaseBarrier;
 
 struct ColorClearValue
 {
@@ -420,7 +496,6 @@ using ClearValue = Variant<ColorClearValue, DepthStencilClearValue>;
 struct RenderPassColorAttachment
 {
     RC<Texture2DRTV>  rtv;
-    TextureLayout     layout;
     AttachmentLoadOp  loadOp;
     AttachmentStoreOp storeOp;
     ClearValue        clearValue;
@@ -483,19 +558,9 @@ public:
 
     virtual RC<RawShader> CreateShader(const void *data, size_t size, std::string entryPoint, ShaderStage type) = 0;
 
-    RC<RawShader> CreateVertexShader(const void *data, size_t size, std::string entryPoint)
-    {
-        return this->CreateShader(data, size, std::move(entryPoint), ShaderStage::VertexShader);
-    }
-
-    RC<RawShader> CreateFragmentShader(const void *data, size_t size, std::string entryPoint)
-    {
-        return this->CreateShader(data, size, std::move(entryPoint), ShaderStage::FragmentShader);
-    }
-
     virtual RC<PipelineBuilder> CreatePipelineBuilder() = 0;
 
-    virtual RC<BindingGroupLayout> CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc) = 0;
+    virtual RC<BindingGroupLayout> CreateBindingGroupLayout(const BindingGroupLayoutDesc *desc) = 0;
 
     template<typename T>
     RC<BindingGroupLayout> CreateBindingGroupLayout();
@@ -546,8 +611,13 @@ public:
 
     virtual void ModifyMember(int index, const RC<BufferSRV> &bufferSRV) = 0;
 
+    virtual void ModifyMember(int index, const RC<Texture2DSRV> &textureSRV) = 0;
+
     template<typename Struct, typename Member>
     void ModifyMember(Member Struct::*member, const RC<BufferSRV> &bufferSRV);
+
+    template<typename Struct, typename Member>
+    void ModifyMember(Member Struct::*member, const RC<Texture2DSRV> &textureSRV);
 };
 
 class BindingLayout : public RHIObject
@@ -559,15 +629,19 @@ class Queue : public RHIObject
 {
 public:
 
+    virtual QueueType GetType() const = 0;
+
     virtual RC<CommandPool> CreateCommandPool() = 0;
 
+    virtual void WaitIdle() = 0;
+
     virtual void Submit(
-        const RC<BackBufferSemaphore>        &waitBackBufferSemaphore,
-        PipelineStage                         waitBackBufferStages,
-        const std::vector<RC<CommandBuffer>> &commandBuffers,
-        const RC<BackBufferSemaphore>        &signalBackBufferSemaphore,
-        PipelineStage                         signalBackBufferStages,
-        const RC<Fence>                      &signalFence) = 0;
+        const RC<BackBufferSemaphore> &waitBackBufferSemaphore,
+        PipelineStage                  waitBackBufferStages,
+        Span<RC<CommandBuffer>>        commandBuffers,
+        const RC<BackBufferSemaphore> &signalBackBufferSemaphore,
+        PipelineStage                  signalBackBufferStages,
+        const RC<Fence>               &signalFence) = 0;
 };
 
 class Fence : public RHIObject
@@ -598,13 +672,19 @@ public:
 
     virtual void ExecuteBarriers(
         Span<TextureTransitionBarrier> textureTransitions,
-        Span<BufferTransitionBarrier> bufferTransitions) = 0;
+        Span<BufferTransitionBarrier>  bufferTransitions,
+        Span<TextureReleaseBarrier>    textureReleaseBarriers,
+        Span<TextureAcquireBarrier>    textureAcquireBarriers,
+        Span<BufferReleaseBarrier>     bufferReleaseBarriers,
+        Span<BufferAcquireBarrier>     bufferAcquireBarriers) = 0;
 
     virtual void BeginRenderPass(Span<RenderPassColorAttachment> colorAttachments) = 0;
 
     virtual void EndRenderPass() = 0;
 
     virtual void BindPipeline(const RC<Pipeline> &pipeline) = 0;
+
+    virtual void BindGroups(int startIndex, Span<RC<BindingGroup>> groups) = 0;
 
     virtual void SetViewports(Span<Viewport> viewports) = 0;
 
@@ -739,7 +819,13 @@ class Buffer : public RHIObject
 {
 public:
 
+    virtual const BufferDesc &GetDesc() const = 0;
+
     virtual RC<BufferSRV> CreateSRV(const BufferSRVDesc &desc) const = 0;
+
+    virtual void *Map(size_t offset, size_t size) const = 0;
+
+    virtual void Unmap() = 0;
 };
 
 class BufferSRV : public RHIObject

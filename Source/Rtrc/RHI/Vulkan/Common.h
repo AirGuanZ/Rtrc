@@ -45,9 +45,7 @@ VkBlendFactor            TranslateBlendFactor           (BlendFactor factor);
 VkBlendOp                TranslateBlendOp               (BlendOp op);
 VkDescriptorType         TranslateBindingType           (BindingType type);
 VkImageUsageFlags        TranslateTextureUsageFlag      (TextureUsageFlag flag);
-VkImageLayout            TranslateTextureLayout         (TextureLayout layout);
 VkPipelineStageFlags2    TranslatePipelineStageFlag     (PipelineStageFlag flag);
-VkAccessFlags2           TranslateAccessTypeFlag        (AccessTypeFlag flag);
 VkImageAspectFlags       TranslateAspectTypeFlag        (AspectTypeFlag flag);
 VkBufferUsageFlags       TranslateBufferUsageFlag       (BufferUsageFlag flag);
 VkAttachmentLoadOp       TranslateLoadOp                (AttachmentLoadOp op);
@@ -59,6 +57,12 @@ VkViewport               TranslateViewport              (const Viewport &viewpor
 VkRect2D                 TranslateScissor               (const Scissor &scissor);
 VmaAllocationCreateFlags TranslateBufferHostAccessType  (BufferHostAccessType type);
 
+bool IsResourceStateValid(ResourceStateFlag state);
+
+VkPipelineStageFlags2 ExtractPipelineStageFlag(ResourceStateFlag state);
+VkImageLayout         ExtractImageLayout      (ResourceStateFlag state);
+VkAccessFlags2        ExtractAccessFlag       (ResourceStateFlag state);
+
 struct VulkanMemoryAllocation
 {
     VmaAllocator  allocator;
@@ -68,7 +72,7 @@ struct VulkanMemoryAllocation
 enum class ResourceOwnership
 {
     Allocation,
-    Image,
+    Resource,
     None
 };
 

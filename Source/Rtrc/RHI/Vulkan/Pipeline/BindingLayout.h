@@ -12,7 +12,7 @@ public:
 
     ~VulkanBindingLayout() override;
 
-    VkPipelineLayout GetLayout() const;
+    VkPipelineLayout GetNativeLayout() const;
 
 private:
 

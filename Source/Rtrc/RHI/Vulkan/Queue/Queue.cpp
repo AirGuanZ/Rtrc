@@ -7,10 +7,15 @@
 
 RTRC_RHI_VK_BEGIN
 
-VulkanQueue::VulkanQueue(VkDevice device, VkQueue queue, uint32_t queueFamilyIndex)
-    : device_(device), queue_(queue), queueFamilyIndex_(queueFamilyIndex)
+VulkanQueue::VulkanQueue(VkDevice device, VkQueue queue, QueueType type, uint32_t queueFamilyIndex)
+    : device_(device), queue_(queue), type_(type), queueFamilyIndex_(queueFamilyIndex)
 {
 
+}
+
+QueueType VulkanQueue::GetType() const
+{
+    return type_;
 }
 
 RC<CommandPool> VulkanQueue::CreateCommandPool()
@@ -27,18 +32,18 @@ RC<CommandPool> VulkanQueue::CreateCommandPool()
     return MakeRC<VulkanCommandPool>(device_, pool);
 }
 
-VkQueue VulkanQueue::GetQueue() const
+void VulkanQueue::WaitIdle()
 {
-    return queue_;
+    VK_FAIL_MSG(vkQueueWaitIdle(queue_), "failed to wait queue idle");
 }
 
 void VulkanQueue::Submit(
-    const RC<BackBufferSemaphore>        &waitBackBufferSemaphore,
-    PipelineStage                         waitBackBufferStages,
-    const std::vector<RC<CommandBuffer>> &commandBuffers,
-    const RC<BackBufferSemaphore>        &signalBackBufferSemaphore,
-    PipelineStage                         signalBackBufferStages,
-    const RC<Fence>                      &signalFence)
+    const RC<BackBufferSemaphore> &waitBackBufferSemaphore,
+    PipelineStage                  waitBackBufferStages,
+    Span<RC<CommandBuffer>>        commandBuffers,
+    const RC<BackBufferSemaphore> &signalBackBufferSemaphore,
+    PipelineStage                  signalBackBufferStages,
+    const RC<Fence>               &signalFence)
 {
     std::vector<VkCommandBufferSubmitInfo> vkCommandBuffers(commandBuffers.size());
     for(auto &&[i, cb] : Enumerate(commandBuffers))
@@ -81,6 +86,16 @@ void VulkanQueue::Submit(
     VK_FAIL_MSG(
         vkQueueSubmit2(queue_, 1, &submitInfo, fence),
         "failed to submit to vulkan queue");
+}
+
+VkQueue VulkanQueue::GetNativeQueue() const
+{
+    return queue_;
+}
+
+uint32_t VulkanQueue::GetNativeFamilyIndex() const
+{
+    return queueFamilyIndex_;
 }
 
 RTRC_RHI_VK_END

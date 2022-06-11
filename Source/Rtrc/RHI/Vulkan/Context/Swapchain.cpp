@@ -108,7 +108,7 @@ void VulkanSwapchain::Present()
         .pSwapchains        = &swapchain_,
         .pImageIndices      = &imageIndex_
     };
-    (void)vkQueuePresentKHR(presentQueue_->GetQueue(), &presentInfo);
+    (void)vkQueuePresentKHR(presentQueue_->GetNativeQueue(), &presentInfo);
 }
 
 int VulkanSwapchain::GetRenderTargetCount() const

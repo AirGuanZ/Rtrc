@@ -20,7 +20,7 @@ public:
     using PoolInfoIterator = std::list<PoolInfo>::iterator;
 
     VulkanBindingGroupLayout(
-        const BindingGroupLayoutDesc             &desc,
+        const BindingGroupLayoutDesc             *desc,
         std::vector<VkDescriptorSetLayoutBinding> bindings,
         VkDevice                                  device,
         VkDescriptorSetLayout                     layout);
@@ -37,13 +37,15 @@ public:
 
     bool IsSlotStructuredBuffer(int index) const;
 
+    bool IsSlotTexture2D(int index) const;
+
 private:
 
     void TransferNode(std::list<PoolInfo> &from, std::list<PoolInfo> &to, std::list<PoolInfo>::iterator iter);
 
     void AllocateNewDescriptorPool(bool updateAfterBind);
 
-    BindingGroupLayoutDesc desc_;
+    const BindingGroupLayoutDesc *desc_;
     std::vector<VkDescriptorSetLayoutBinding> bindings_;
 
     VkDevice device_;

@@ -20,7 +20,7 @@ public:
         
     }
 
-    constexpr size_t GetHash() const
+    size_t GetHash() const
     {
         return std::hash<std::string_view>()(std::string_view(name_));
     }

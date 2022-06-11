@@ -14,6 +14,10 @@ public:
 
     void ModifyMember(int index, const RC<BufferSRV> &bufferSRV) override;
 
+    void ModifyMember(int index, const RC<Texture2DSRV> &textureSRV) override;
+
+    VkDescriptorSet GetNativeSet() const;
+
 private:
 
     VkDevice device_;

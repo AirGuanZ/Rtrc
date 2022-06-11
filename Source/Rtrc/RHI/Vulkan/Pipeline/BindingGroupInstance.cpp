@@ -1,5 +1,6 @@
 #include <Rtrc/RHI/Vulkan/Pipeline/BindingGroupInstance.h>
 #include <Rtrc/RHI/Vulkan/Resource/BufferSRV.h>
+#include <Rtrc/RHI/Vulkan/Resource/Texture2DSRV.h>
 
 RTRC_RHI_VK_BEGIN
 
@@ -55,6 +56,31 @@ void VulkanBindingGroupInstance::ModifyMember(int index, const RC<BufferSRV> &bu
         };
         vkUpdateDescriptorSets(device_, 1, &write, 0, nullptr);
     }
+}
+
+void VulkanBindingGroupInstance::ModifyMember(int index, const RC<Texture2DSRV> &textureSRV)
+{
+    auto rawTexSRV = static_cast<VulkanTexture2DSRV *>(textureSRV.get());
+    assert(layout_->IsSlotTexture2D(index));
+    const VkDescriptorImageInfo imageInfo = {
+        .imageView   = rawTexSRV->GetImageView(),
+        .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+    };
+    const VkWriteDescriptorSet write = {
+        .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+        .dstSet          = set_,
+        .dstBinding      = static_cast<uint32_t>(index),
+        .dstArrayElement = 0,
+        .descriptorCount = 1,
+        .descriptorType  = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+        .pImageInfo      = &imageInfo
+    };
+    vkUpdateDescriptorSets(device_, 1, &write, 0, nullptr);
+}
+
+VkDescriptorSet VulkanBindingGroupInstance::GetNativeSet() const
+{
+    return set_;
 }
 
 RTRC_RHI_VK_END

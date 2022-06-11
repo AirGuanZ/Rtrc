@@ -10,9 +10,10 @@ const char *GetFormatName(Format format)
     {
     ADD_CASE(Unknown)
     ADD_CASE(B8G8R8A8_UNorm)
+    ADD_CASE(R32G32_Float)
     }
     Unreachable();
-#undef  ADD_CASE
+#undef ADD_CASE
 }
 
 RTRC_RHI_END

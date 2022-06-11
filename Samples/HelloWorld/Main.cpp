@@ -6,24 +6,30 @@
 #include <Rtrc/Window/Window.h>
 #include <Rtrc/Utils/File.h>
 
-#include <Rtrc/RHI/Shader/Type.h>
+#include <Rtrc/Shader/Binding.h>
+#include <Rtrc/Shader/Shader.h>
 
 constexpr int DADADA_ARRAY_SIZE = 128;
 
+$struct_begin(MyCBuffer)
+    $variable(float, x)
+    $variable(float, y)
+    $variable(float, z)
+    $variable(float, w)
+$struct_end()
+
 $group_begin(MyGroup)
-    $binding(Texture2D<float4>,       albedo)               // Texture2D<float> albedo, accessible in all stages
-    $binding(Texture2D<int4>,         textureArray, 37, PS) // Texture2D<int4> textureArray[37], accessible in PS
-    $binding(Buffer<float>,           myBuffer)
-    $binding(Buffer<uint>,            myBufferArray, DADADA_ARRAY_SIZE, VS | PS)
-    $binding(StructuredBuffer<uint4>, myStructuredBuffer, VS)
-    $binding(Sampler, mySampler, All)
-    $struct_begin(MyCBuffer)
-        $variable(float, x)
-        $variable(float, y)
-        $variable(float, z)
-        $variable(float, w)
-    $struct_end()
-    $cbuffer(MyCBuffer, myCBuffer, All)
+    $binding(Texture2D<float4>,         albedo)               // Texture2D<float> albedo, accessible in all stages
+    $binding(Texture2D<int4>,           textureArray, 37, FS) // Texture2D<int4> textureArray[37], accessible in PS
+    $binding(Buffer<float>,             myBuffer)
+    $binding(Buffer<uint>,              myBufferArray, DADADA_ARRAY_SIZE, VS | FS)
+    $binding(StructuredBuffer<uint4>,   myStructuredBuffer, VS)
+    $binding(Sampler,                   mySampler, All)
+    $binding(ConstantBuffer<MyCBuffer>, myCBuffer, All)
+$group_end()
+
+$group_begin(TestGroup)
+    $binding(Buffer<float2>, VertexPositionBuffer, VS)
 $group_end()
 
 void run()
@@ -36,7 +42,7 @@ void run()
         .SetSize(800, 600)
         .SetTitle("Hello, world!")
         .CreateWindow();
-    
+
     auto &input = window.GetInput();
 
     auto instance = CreateVulkanInstance(
@@ -86,41 +92,57 @@ void run()
 
     // pipeline
 
-    auto vertexShaderCode = File::ReadBinaryFile("Asset/HelloWorld/HelloWorld.vert.spv");
-    auto vertexShader = device->CreateVertexShader(vertexShaderCode.data(), vertexShaderCode.size(), "main");
+    auto shaderText = File::ReadTextFile("Asset/HelloWorld/HelloWorldShader.hlsl");
 
-    auto fragmentShaderCode = File::ReadBinaryFile("Asset/HelloWorld/HelloWorld.frag.spv");
-    auto fragmentShader = device->CreateFragmentShader(fragmentShaderCode.data(), fragmentShaderCode.size(), "main");
+    auto shader = ShaderCompiler()
+        .SetVertexShaderSource(shaderText, "VSMain")
+        .SetFragmentShaderSource(shaderText, "PSMain")
+        .SetDebugMode(true)
+        .SetTarget(ShaderCompiler::Target::Vulkan)
+        .AddBindingGroup<TestGroup>()
+        .Compile(*device);
 
-    auto bindingLayout = device->CreateBindingLayout({});
+    auto bindingGroupLayout = device->CreateBindingGroupLayout<TestGroup>();
+    auto bindingLayout = device->CreateBindingLayout(RHI::BindingLayoutDesc{ { bindingGroupLayout } });
+
     auto pipelineBuilder = device->CreatePipelineBuilder();
     auto pipeline = (*pipelineBuilder)
-        .SetVertexShader(vertexShader)
-        .SetFragmentShader(fragmentShader)
+        .SetVertexShader(shader->GetVertexShader())
+        .SetFragmentShader(shader->GetFragmentShader())
         .AddColorAttachment(swapchain->GetRenderTargetDesc().format)
         .SetBindingLayout(bindingLayout)
         .SetViewports(1)
         .SetScissors(1)
         .CreatePipeline();
 
-    // test binding
+    auto vertexPositionBuffer = device->CreateBuffer(RHI::BufferDesc
+    {
+        .size                 = sizeof(Vector2f) * 3,
+        .usage                = RHI::BufferUsage::ShaderBuffer,
+        .hostAccessType       = RHI::BufferHostAccessType::SequentialWrite,
+        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
+    });
 
-    auto bindingGroupLayout = device->CreateBindingGroupLayout<MyGroup>();
-    auto bindingGroup = bindingGroupLayout->CreateBindingGroup(false);
-    auto buffer = device->CreateBuffer(RHI::BufferDesc
-    {
-        .size = 64,
-        .usage = RHI::BufferUsage::ShaderStructuredBuffer,
-        .hostAccessType = RHI::BufferHostAccessType::None
-    });
-    auto bufferSRV = buffer->CreateSRV(RHI::BufferSRVDesc
-    {
-        .format = RHI::Format::Unknown,
+    auto vertexPositionBufferSRV = vertexPositionBuffer->CreateSRV(RHI::BufferSRVDesc{
+        .format = RHI::Format::R32G32_Float,
         .offset = 0,
-        .range  = 64,
-        .stride = 32
+        .range  = sizeof(Vector2f) * 3
     });
-    bindingGroup->ModifyMember(&MyGroup::myStructuredBuffer, bufferSRV);
+
+    {
+        const Vector2f positions[] =
+        {
+            Vector2f(0.0f, 0.5f),
+            Vector2f(0.5f, -0.5f),
+            Vector2f(-0.5f, -0.5f)
+        };
+        auto p = vertexPositionBuffer->Map(0, sizeof(positions));
+        std::memcpy(p, positions, sizeof(positions));
+        vertexPositionBuffer->Unmap();
+    }
+
+    auto bindingGroup = bindingGroupLayout->CreateBindingGroup(false);
+    bindingGroup->ModifyMember(&TestGroup::VertexPositionBuffer, vertexPositionBufferSRV);
 
     // render loop
 
@@ -144,7 +166,7 @@ void run()
 
         if(!swapchain->Acquire())
         {
-            continue;;
+            continue;
         }
 
         commandPools[frameIndex]->Reset();
@@ -164,26 +186,23 @@ void run()
         {
             .texture        = image,
             .aspectTypeFlag = RHI::AspectType::Color,
-            .beforeStages   = RHI::PipelineStage::ColorAttachmentOutput,
-            .afterStages    = RHI::PipelineStage::ColorAttachmentOutput,
-            .beforeAccess   = RHI::AccessType::None,
-            .afterAccess    = RHI::AccessType::ColorAttachmentWrite,
-            .beforeLayout   = RHI::TextureLayout::Undefined,
-            .afterLayout    = RHI::TextureLayout::RenderTarget,
             .mipLevel       = 0,
-            .arrayLayer     = 0
-        }, {});
+            .arrayLayer     = 0,
+            .beforeState    = RHI::ResourceState::Present,
+            .afterState     = RHI::ResourceState::RenderTargetWrite
+        }, {}, {}, {}, {}, {});
 
         commandBuffer->BeginRenderPass(RHI::RenderPassColorAttachment
         {
             .rtv        = rtv,
-            .layout     = RHI::TextureLayout::RenderTarget,
             .loadOp     = RHI::AttachmentLoadOp::Clear,
             .storeOp    = RHI::AttachmentStoreOp::Store,
             .clearValue = RHI::ColorClearValue{ 0, 1, 1, 1 }
         });
 
         commandBuffer->BindPipeline(pipeline);
+
+        commandBuffer->BindGroups(0, bindingGroup);
 
         commandBuffer->SetViewports(RHI::Viewport
         {
@@ -207,15 +226,11 @@ void run()
         {
             .texture        = image,
             .aspectTypeFlag = RHI::AspectType::Color,
-            .beforeStages   = RHI::PipelineStage::ColorAttachmentOutput,
-            .afterStages    = RHI::PipelineStage::None,
-            .beforeAccess   = RHI::AccessType::ColorAttachmentWrite,
-            .afterAccess    = RHI::AccessType::None,
-            .beforeLayout   = RHI::TextureLayout::RenderTarget,
-            .afterLayout    = RHI::TextureLayout::Present,
             .mipLevel       = 0,
-            .arrayLayer     = 0
-        }, {});
+            .arrayLayer     = 0,
+            .beforeState    = RHI::ResourceState::RenderTargetWrite,
+            .afterState     = RHI::ResourceState::Present
+        }, {}, {}, {}, {}, {});
 
         commandBuffer->End();
 
@@ -223,7 +238,7 @@ void run()
         queue->Submit(
             swapchain->GetAcquireSemaphore(),
             RHI::PipelineStage::ColorAttachmentOutput,
-            { commandBuffer },
+            commandBuffer,
             swapchain->GetPresentSemaphore(),
             RHI::PipelineStage::ColorAttachmentOutput,
             fences[frameIndex]);
@@ -236,7 +251,7 @@ void run()
 
 int main()
 {
-#if defined(_DEBUG) || defined(DEBUG)
+#if false && defined(_DEBUG) || defined(DEBUG)
     run();
 #else
     try

@@ -1,5 +1,7 @@
+#include <Rtrc/RHI/Vulkan/Pipeline/BindingGroupInstance.h>
 #include <Rtrc/RHI/Vulkan/Pipeline/Pipeline.h>
 #include <Rtrc/RHI/Vulkan/Queue/CommandBuffer.h>
+#include <Rtrc/RHI/Vulkan/Queue/Queue.h>
 #include <Rtrc/RHI/Vulkan/Resource/Buffer.h>
 #include <Rtrc/RHI/Vulkan/Resource/Texture2D.h>
 #include <Rtrc/RHI/Vulkan/Resource/Texture2DRTV.h>
@@ -49,43 +51,331 @@ void VulkanCommandBuffer::End()
 
 void VulkanCommandBuffer::ExecuteBarriers(
     Span<TextureTransitionBarrier> textureTransitions,
-    Span<BufferTransitionBarrier> bufferTransitions)
+    Span<BufferTransitionBarrier>  bufferTransitions,
+    Span<TextureReleaseBarrier>    textureReleaseBarriers,
+    Span<TextureAcquireBarrier>    textureAcquireBarriers,
+    Span<BufferReleaseBarrier>     bufferReleaseBarriers,
+    Span<BufferAcquireBarrier>     bufferAcquireBarriers)
 {
-    std::vector<VkImageMemoryBarrier2> imageBarriers(textureTransitions.GetSize());
-    for(auto &&[i, transition] : Enumerate(textureTransitions))
+    // texture barriers
+
+    std::vector<VkImageMemoryBarrier2> imageBarriers;
+    imageBarriers.reserve(
+        textureTransitions.GetSize() + textureReleaseBarriers.GetSize() + textureAcquireBarriers.GetSize());
+
+    for(auto &transition: textureTransitions)
     {
-        imageBarriers[i] = VkImageMemoryBarrier2{
-            .sType            = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-            .srcStageMask     = TranslatePipelineStageFlag(transition.beforeStages),
-            .srcAccessMask    = TranslateAccessTypeFlag(transition.beforeAccess),
-            .dstStageMask     = TranslatePipelineStageFlag(transition.afterStages),
-            .dstAccessMask    = TranslateAccessTypeFlag(transition.afterAccess),
-            .oldLayout        = TranslateTextureLayout(transition.beforeLayout),
-            .newLayout        = TranslateTextureLayout(transition.afterLayout),
-            .image            = GetVulkanImage(transition.texture),
-            .subresourceRange = VkImageSubresourceRange{
+        auto srcStage = ExtractPipelineStageFlag(transition.beforeState);
+        auto srcAccess = ExtractAccessFlag(transition.beforeState);
+        auto srcLayout = ExtractImageLayout(transition.beforeState);
+
+        auto dstStage = ExtractPipelineStageFlag(transition.afterState);
+        auto dstAccess = ExtractAccessFlag(transition.afterState);
+        auto dstLayout = ExtractImageLayout(transition.afterState);
+
+        if(transition.beforeState == ResourceState::Present)
+        {
+            srcStage = dstStage;
+            srcAccess = VK_PIPELINE_STAGE_2_NONE;
+            srcLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        }
+
+        if(transition.afterState == ResourceState::Present)
+        {
+            dstStage = VK_PIPELINE_STAGE_2_NONE;
+            dstAccess = VK_ACCESS_2_NONE;
+            dstLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+        }
+
+        imageBarriers.push_back(VkImageMemoryBarrier2{
+            .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+            .srcStageMask        = srcStage,
+            .srcAccessMask       = srcAccess,
+            .dstStageMask        = dstStage,
+            .dstAccessMask       = dstAccess,
+            .oldLayout           = srcLayout,
+            .newLayout           = dstLayout,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image               = GetVulkanImage(transition.texture),
+            .subresourceRange    = VkImageSubresourceRange{
                 .aspectMask     = TranslateAspectTypeFlag(transition.aspectTypeFlag),
                 .baseMipLevel   = transition.mipLevel,
                 .levelCount     = 1,
                 .baseArrayLayer = transition.arrayLayer,
                 .layerCount     = 1
             }
-        };
+        });
     }
 
-    std::vector<VkBufferMemoryBarrier2> bufferBarriers(bufferTransitions.GetSize());
-    for(auto &&[i, transition] : Enumerate(bufferTransitions))
+    for(auto &release : textureReleaseBarriers)
     {
-        bufferBarriers[i] = VkBufferMemoryBarrier2{
-            .sType         = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2,
-            .srcStageMask  = TranslatePipelineStageFlag(transition.beforeStages),
-            .srcAccessMask = TranslateAccessTypeFlag(transition.beforeAccess),
-            .dstStageMask  = TranslatePipelineStageFlag(transition.afterStages),
-            .dstAccessMask = TranslateAccessTypeFlag(transition.afterAccess),
-            .buffer        = static_cast<VulkanBuffer*>(transition.buffer.get())->GetNativeBuffer(),
-            .offset        = 0,
-            .size          = VK_WHOLE_SIZE
-        };
+        assert(release.texture->Get2DDesc().concurrentAccessMode == QueueConcurrentAccessMode::Exclusive);
+
+        auto beforeQueue = static_cast<VulkanQueue *>(release.beforeQueue.get());
+        auto afterQueue = static_cast<VulkanQueue *>(release.afterQueue.get());
+
+        // perform a normal barrier when queues are of the same family
+        if(beforeQueue->GetNativeFamilyIndex() == afterQueue->GetNativeFamilyIndex())
+        {
+            // graphics < compute < copy
+            // use fronter queue to submit the barrier
+            if(beforeQueue->GetType() < afterQueue->GetType())
+            {
+                auto srcStage = ExtractPipelineStageFlag(release.beforeState);
+                auto srcAccess = ExtractAccessFlag(release.beforeState);
+                auto srcLayout = ExtractImageLayout(release.beforeState);
+
+                auto dstStage = ExtractPipelineStageFlag(release.afterState);
+                auto dstAccess = ExtractAccessFlag(release.afterState);
+                auto dstLayout = ExtractImageLayout(release.afterState);
+                
+                imageBarriers.push_back(VkImageMemoryBarrier2{
+                    .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+                    .srcStageMask        = srcStage,
+                    .srcAccessMask       = srcAccess,
+                    .dstStageMask        = dstStage,
+                    .dstAccessMask       = dstAccess,
+                    .oldLayout           = srcLayout,
+                    .newLayout           = dstLayout,
+                    .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                    .image               = GetVulkanImage(release.texture),
+                    .subresourceRange    = VkImageSubresourceRange{
+                        .aspectMask     = TranslateAspectTypeFlag(release.aspectTypeFlag),
+                        .baseMipLevel   = release.mipLevel,
+                        .levelCount     = 1,
+                        .baseArrayLayer = release.arrayLayer,
+                        .layerCount     = 1
+                    }
+                });
+            }
+        }
+        else
+        {
+            const auto srcStage = ExtractPipelineStageFlag(release.beforeState);
+            const auto srcAccess = ExtractAccessFlag(release.beforeState);
+            const auto srcLayout = ExtractImageLayout(release.beforeState);
+            const auto dstLayout = ExtractImageLayout(release.afterState);
+
+            imageBarriers.push_back(VkImageMemoryBarrier2{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+                .srcStageMask        = srcStage,
+                .srcAccessMask       = srcAccess,
+                .dstStageMask        = srcStage,
+                .dstAccessMask       = VK_ACCESS_2_NONE,
+                .oldLayout           = srcLayout,
+                .newLayout           = dstLayout,
+                .srcQueueFamilyIndex = beforeQueue->GetNativeFamilyIndex(),
+                .dstQueueFamilyIndex = afterQueue->GetNativeFamilyIndex(),
+                .image               = GetVulkanImage(release.texture),
+                .subresourceRange    = VkImageSubresourceRange{
+                    .aspectMask     = TranslateAspectTypeFlag(release.aspectTypeFlag),
+                    .baseMipLevel   = release.mipLevel,
+                    .levelCount     = 1,
+                    .baseArrayLayer = release.arrayLayer,
+                    .layerCount     = 1
+                }
+            });
+        }
+    }
+
+    for(auto &acquire : textureAcquireBarriers)
+    {
+        auto beforeQueue = static_cast<VulkanQueue *>(acquire.beforeQueue.get());
+        auto afterQueue = static_cast<VulkanQueue *>(acquire.afterQueue.get());
+
+        if(beforeQueue->GetNativeFamilyIndex() == afterQueue->GetNativeFamilyIndex())
+        {
+            if(beforeQueue->GetType() > afterQueue->GetType())
+            {
+                auto srcStage = ExtractPipelineStageFlag(acquire.beforeState);
+                auto srcAccess = ExtractAccessFlag(acquire.beforeState);
+                auto srcLayout = ExtractImageLayout(acquire.beforeState);
+
+                auto dstStage = ExtractPipelineStageFlag(acquire.afterState);
+                auto dstAccess = ExtractAccessFlag(acquire.afterState);
+                auto dstLayout = ExtractImageLayout(acquire.afterState);
+                
+                imageBarriers.push_back(VkImageMemoryBarrier2{
+                    .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+                    .srcStageMask        = srcStage,
+                    .srcAccessMask       = srcAccess,
+                    .dstStageMask        = dstStage,
+                    .dstAccessMask       = dstAccess,
+                    .oldLayout           = srcLayout,
+                    .newLayout           = dstLayout,
+                    .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                    .image               = GetVulkanImage(acquire.texture),
+                    .subresourceRange    = VkImageSubresourceRange{
+                        .aspectMask     = TranslateAspectTypeFlag(acquire.aspectTypeFlag),
+                        .baseMipLevel   = acquire.mipLevel,
+                        .levelCount     = 1,
+                        .baseArrayLayer = acquire.arrayLayer,
+                        .layerCount     = 1
+                    }
+                });
+            }
+        }
+        else
+        {
+            auto srcLayout = ExtractImageLayout(acquire.beforeState);
+            auto dstStage = ExtractPipelineStageFlag(acquire.afterState);
+            auto dstAccess = ExtractAccessFlag(acquire.afterState);
+            auto dstLayout = ExtractImageLayout(acquire.afterState);
+            
+            imageBarriers.push_back(VkImageMemoryBarrier2{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+                .srcStageMask        = dstStage,
+                .srcAccessMask       = VK_ACCESS_2_NONE,
+                .dstStageMask        = dstStage,
+                .dstAccessMask       = dstAccess,
+                .oldLayout           = srcLayout,
+                .newLayout           = dstLayout,
+                .srcQueueFamilyIndex = beforeQueue->GetNativeFamilyIndex(),
+                .dstQueueFamilyIndex = afterQueue->GetNativeFamilyIndex(),
+                .image               = GetVulkanImage(acquire.texture),
+                .subresourceRange    = VkImageSubresourceRange{
+                    .aspectMask     = TranslateAspectTypeFlag(acquire.aspectTypeFlag),
+                    .baseMipLevel   = acquire.mipLevel,
+                    .levelCount     = 1,
+                    .baseArrayLayer = acquire.arrayLayer,
+                    .layerCount     = 1
+                }
+            });
+        }
+    }
+
+    // buffer barriers
+
+    std::vector<VkBufferMemoryBarrier2> bufferBarriers;
+    bufferBarriers.reserve(
+        bufferTransitions.GetSize() + bufferReleaseBarriers.GetSize() + bufferAcquireBarriers.GetSize());
+
+    for(auto &transition: bufferTransitions)
+    {
+        auto srcStage = ExtractPipelineStageFlag(transition.beforeState);
+        auto srcAccess = ExtractAccessFlag(transition.beforeState);
+
+        auto dstStage = ExtractPipelineStageFlag(transition.afterState);
+        auto dstAccess = ExtractAccessFlag(transition.afterState);
+
+        bufferBarriers.push_back(VkBufferMemoryBarrier2{
+            .sType               = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2,
+            .srcStageMask        = srcStage,
+            .srcAccessMask       = srcAccess,
+            .dstStageMask        = dstStage,
+            .dstAccessMask       = dstAccess,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .buffer              = static_cast<VulkanBuffer*>(transition.buffer.get())->GetNativeBuffer(),
+            .offset              = 0,
+            .size                = VK_WHOLE_SIZE
+        });
+    }
+
+    for(auto &release : bufferReleaseBarriers)
+    {
+        assert(release.buffer->GetDesc().concurrentAccessMode == QueueConcurrentAccessMode::Exclusive);
+
+        auto beforeQueue = static_cast<VulkanQueue *>(release.beforeQueue.get());
+        auto afterQueue = static_cast<VulkanQueue *>(release.afterQueue.get());
+
+        // perform a normal barrier when queues are of the same family
+        if(beforeQueue->GetNativeFamilyIndex() == afterQueue->GetNativeFamilyIndex())
+        {
+            // graphics < compute < copy
+            // use fronter queue to submit the barrier
+            if(beforeQueue->GetType() < afterQueue->GetType())
+            {
+                auto srcStage = ExtractPipelineStageFlag(release.beforeState);
+                auto srcAccess = ExtractAccessFlag(release.beforeState);
+                
+                auto dstStage = ExtractPipelineStageFlag(release.afterState);
+                auto dstAccess = ExtractAccessFlag(release.afterState);
+                
+                bufferBarriers.push_back(VkBufferMemoryBarrier2{
+                    .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+                    .srcStageMask        = srcStage,
+                    .srcAccessMask       = srcAccess,
+                    .dstStageMask        = dstStage,
+                    .dstAccessMask       = dstAccess,
+                    .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                    .buffer              = static_cast<VulkanBuffer*>(release.buffer.get())->GetNativeBuffer(),
+                    .offset              = 0,
+                    .size                = VK_WHOLE_SIZE
+                });
+            }
+        }
+        else
+        {
+            const auto srcStage = ExtractPipelineStageFlag(release.beforeState);
+            const auto srcAccess = ExtractAccessFlag(release.beforeState);
+            
+            bufferBarriers.push_back(VkBufferMemoryBarrier2{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+                .srcStageMask        = srcStage,
+                .srcAccessMask       = srcAccess,
+                .dstStageMask        = srcStage,
+                .dstAccessMask       = VK_ACCESS_2_NONE,
+                .srcQueueFamilyIndex = beforeQueue->GetNativeFamilyIndex(),
+                .dstQueueFamilyIndex = afterQueue->GetNativeFamilyIndex(),
+                .buffer              = static_cast<VulkanBuffer*>(release.buffer.get())->GetNativeBuffer(),
+                .offset              = 0,
+                .size                = VK_WHOLE_SIZE
+            });
+        }
+    }
+
+    for(auto &acquire : bufferAcquireBarriers)
+    {
+        auto beforeQueue = static_cast<VulkanQueue *>(acquire.beforeQueue.get());
+        auto afterQueue = static_cast<VulkanQueue *>(acquire.afterQueue.get());
+
+        if(beforeQueue->GetNativeFamilyIndex() == afterQueue->GetNativeFamilyIndex())
+        {
+            if(beforeQueue->GetType() > afterQueue->GetType())
+            {
+                auto srcStage = ExtractPipelineStageFlag(acquire.beforeState);
+                auto srcAccess = ExtractAccessFlag(acquire.beforeState);
+                
+                auto dstStage = ExtractPipelineStageFlag(acquire.afterState);
+                auto dstAccess = ExtractAccessFlag(acquire.afterState);
+                
+                bufferBarriers.push_back(VkBufferMemoryBarrier2{
+                    .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+                    .srcStageMask        = srcStage,
+                    .srcAccessMask       = srcAccess,
+                    .dstStageMask        = dstStage,
+                    .dstAccessMask       = dstAccess,
+                    .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                    .buffer              = static_cast<VulkanBuffer*>(acquire.buffer.get())->GetNativeBuffer(),
+                    .offset              = 0,
+                    .size                = VK_WHOLE_SIZE
+                });
+            }
+        }
+        else
+        {
+            auto dstStage = ExtractPipelineStageFlag(acquire.afterState);
+            auto dstAccess = ExtractAccessFlag(acquire.afterState);
+            
+            bufferBarriers.push_back(VkBufferMemoryBarrier2{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+                .srcStageMask        = dstStage,
+                .srcAccessMask       = VK_ACCESS_2_NONE,
+                .dstStageMask        = dstStage,
+                .dstAccessMask       = dstAccess,
+                .srcQueueFamilyIndex = beforeQueue->GetNativeFamilyIndex(),
+                .dstQueueFamilyIndex = afterQueue->GetNativeFamilyIndex(),
+                .buffer              = static_cast<VulkanBuffer*>(acquire.buffer.get())->GetNativeBuffer(),
+                .offset              = 0,
+                .size                = VK_WHOLE_SIZE
+            });
+        }
     }
 
     const VkDependencyInfo dependencyInfo = {
@@ -107,7 +397,7 @@ void VulkanCommandBuffer::BeginRenderPass(Span<RenderPassColorAttachment> colorA
         vkColorAttachments[i] = VkRenderingAttachmentInfo{
             .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .imageView   = static_cast<VulkanTexture2DRTV *>(a.rtv.get())->GetNativeImageView(),
-            .imageLayout = TranslateTextureLayout(a.layout),
+            .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             .resolveMode = VK_RESOLVE_MODE_NONE,
             .loadOp      = TranslateLoadOp(a.loadOp),
             .storeOp     = TranslateStoreOp(a.storeOp),
@@ -142,10 +432,25 @@ void VulkanCommandBuffer::BindPipeline(const RC<Pipeline> &pipeline)
     if(!pipeline)
     {
         vkCmdBindPipeline(commandBuffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, nullptr);
+        currentPipeline_ = nullptr;
         return;
     }
     auto vkPipeline = static_cast<VulkanPipeline *>(pipeline.get());
     vkCmdBindPipeline(commandBuffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, vkPipeline->GetNativePipeline());
+    currentPipeline_ = DynamicCast<VulkanPipeline>(pipeline);
+}
+
+void VulkanCommandBuffer::BindGroups(int startIndex, Span<RC<BindingGroup>> groups)
+{
+    auto layout = currentPipeline_->GetLayout();
+    std::vector<VkDescriptorSet> sets(groups.GetSize());
+    for(auto &&[i, g] : Enumerate(groups))
+    {
+        sets[i] = g ? static_cast<VulkanBindingGroupInstance *>(g.get())->GetNativeSet() : VK_NULL_HANDLE;
+    }
+    vkCmdBindDescriptorSets(
+        commandBuffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
+        layout->GetNativeLayout(), startIndex, 1, sets.data(), 0, nullptr);
 }
 
 void VulkanCommandBuffer::SetViewports(Span<Viewport> viewports)

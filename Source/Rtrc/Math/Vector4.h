@@ -25,7 +25,8 @@ public:
 };
 
 using Vector4f = Vector4<float>;
-using Vector4i = Vector4<int>;
+using Vector4i = Vector4<int32_t>;
+using Vector4u = Vector4<uint32_t>;
 
 template<typename T>
 auto operator<=>(const Vector4<T> &a, const Vector4<T> &b);

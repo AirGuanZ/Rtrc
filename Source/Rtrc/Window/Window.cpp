@@ -138,10 +138,6 @@ namespace
 
     void InitGLFW()
     {
-#ifdef RTRC_RHI_VULKAN
-        RHI::InitializeVulkanBackend();
-        glfwInitVulkanLoader(vkGetInstanceProcAddr);
-#endif
         if(!glfwDestroyer.initialized)
         {
             if(glfwInit() != GLFW_TRUE)
@@ -150,6 +146,14 @@ namespace
             }
             glfwDestroyer.initialized = true;
         }
+    }
+
+    void InitGLFWVulkan()
+    {
+#ifdef RTRC_RHI_VULKAN
+        RHI::InitializeVulkanBackend();
+        glfwInitVulkanLoader(vkGetInstanceProcAddr);
+#endif
     }
     
     void GLFWWindowCloseCallback(GLFWwindow *window)
@@ -283,6 +287,7 @@ std::vector<std::string> Window::GetRequiredVulkanInstanceExtensions()
 {
 #ifdef RTRC_RHI_VULKAN
     InitGLFW();
+    InitGLFWVulkan();
 
     uint32_t count;
     const char **exts = glfwGetRequiredInstanceExtensions(&count);
@@ -353,6 +358,7 @@ Unique<RHI::Surface> Window::CreateVulkanSurface(void *vkInstance)
 {
 #ifdef RTRC_RHI_VULKAN
     InitGLFW();
+    InitGLFWVulkan();
 
     VkSurfaceKHR surface;
     auto instance = static_cast<VkInstance>(vkInstance);

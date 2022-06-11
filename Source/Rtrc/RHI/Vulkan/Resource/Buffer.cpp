@@ -25,10 +25,15 @@ VulkanBuffer::~VulkanBuffer()
     {
         vmaDestroyBuffer(alloc_.allocator, buffer_, alloc_.allocation);
     }
-    else if(ownership_ == ResourceOwnership::Image)
+    else if(ownership_ == ResourceOwnership::Resource)
     {
         vkDestroyBuffer(device_, buffer_, VK_ALLOC);
     }
+}
+
+const BufferDesc &VulkanBuffer::GetDesc() const
+{
+    return desc_;
 }
 
 RC<BufferSRV> VulkanBuffer::CreateSRV(const BufferSRVDesc &desc) const
@@ -47,6 +52,23 @@ RC<BufferSRV> VulkanBuffer::CreateSRV(const BufferSRVDesc &desc) const
         view = nullptr;
     }
     return MakeRC<VulkanBufferSRV>(this, desc, view);
+}
+
+void *VulkanBuffer::Map(size_t offset, size_t size) const
+{
+    assert(ownership_ == ResourceOwnership::Allocation);
+    assert(alloc_.allocator && alloc_.allocation);
+    void *result;
+    VK_FAIL_MSG(
+        vmaMapMemory(alloc_.allocator, alloc_.allocation, &result),
+        "failed to map vulkan buffer memory");
+    return result;
+}
+
+void VulkanBuffer::Unmap()
+{
+    assert(ownership_ == ResourceOwnership::Allocation);
+    vmaUnmapMemory(alloc_.allocator, alloc_.allocation);
 }
 
 VkBuffer VulkanBuffer::GetNativeBuffer() const

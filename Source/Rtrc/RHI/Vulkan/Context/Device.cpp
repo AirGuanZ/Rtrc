@@ -16,6 +16,7 @@
 #include <Rtrc/RHI/Vulkan/Resource/Buffer.h>
 #include <Rtrc/RHI/Vulkan/Resource/Texture2D.h>
 #include <Rtrc/Utils/Enumerate.h>
+#include <Rtrc/Utils/StaticVector.h>
 #include <Rtrc/Utils/Unreachable.h>
 
 RTRC_RHI_VK_BEGIN
@@ -49,6 +50,31 @@ namespace
         return false;
     }
 
+    std::pair<VkSharingMode, StaticVector<uint32_t, 3>> GetVulkanSharingMode(
+        QueueConcurrentAccessMode accessMode, const VulkanDevice::QueueFamilyInfo &families)
+    {
+        StaticVector<uint32_t, 3> sharingQueueFamilyIndices;
+
+        if(accessMode == QueueConcurrentAccessMode::Concurrent)
+        {
+            auto addIndex = [&](const std::optional<uint32_t> &index)
+            {
+                if(index.has_value() && !sharingQueueFamilyIndices.Contains(index.value()))
+                {
+                    sharingQueueFamilyIndices.PushBack(index.value());
+                }
+            };
+            addIndex(families.graphicsFamilyIndex);
+            addIndex(families.computeFamilyIndex);
+            addIndex(families.transferFamilyIndex);
+        }
+
+        const VkSharingMode sharingMode =
+            sharingQueueFamilyIndices.GetSize() > 1 ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
+
+        return { sharingMode, sharingQueueFamilyIndices };
+    }
+
 } // namespace anonymous
 
 VulkanDevice::VulkanDevice(
@@ -79,32 +105,7 @@ VulkanDevice::VulkanDevice(
 
     const VmaVulkanFunctions vmaFunctions = {
         .vkGetInstanceProcAddr = vkGetInstanceProcAddr,
-        .vkGetDeviceProcAddr = vkGetDeviceProcAddr,
-        /* // need when VMA_DYNAMIC_VULKAN_FUNCTIONS is 0
-        .vkGetPhysicalDeviceProperties           = vkGetPhysicalDeviceProperties,
-        .vkGetPhysicalDeviceMemoryProperties     = vkGetPhysicalDeviceMemoryProperties,
-        .vkAllocateMemory                        = vkAllocateMemory,
-        .vkFreeMemory                            = vkFreeMemory,
-        .vkMapMemory                             = vkMapMemory,
-        .vkUnmapMemory                           = vkUnmapMemory,
-        .vkFlushMappedMemoryRanges               = vkFlushMappedMemoryRanges,
-        .vkInvalidateMappedMemoryRanges          = vkInvalidateMappedMemoryRanges,
-        .vkBindBufferMemory                      = vkBindBufferMemory,
-        .vkBindImageMemory                       = vkBindImageMemory,
-        .vkGetBufferMemoryRequirements           = vkGetBufferMemoryRequirements,
-        .vkGetImageMemoryRequirements            = vkGetImageMemoryRequirements,
-        .vkCreateBuffer                          = vkCreateBuffer,
-        .vkDestroyBuffer                         = vkDestroyBuffer,
-        .vkCreateImage                           = vkCreateImage,
-        .vkDestroyImage                          = vkDestroyImage,
-        .vkCmdCopyBuffer                         = vkCmdCopyBuffer,
-        .vkGetBufferMemoryRequirements2KHR       = vkGetBufferMemoryRequirements2KHR,
-        .vkGetImageMemoryRequirements2KHR        = vkGetImageMemoryRequirements2KHR,
-        .vkBindBufferMemory2KHR                  = vkBindBufferMemory2KHR,
-        .vkBindImageMemory2KHR                   = vkBindImageMemory2KHR,
-        .vkGetPhysicalDeviceMemoryProperties2KHR = vkGetPhysicalDeviceMemoryProperties2KHR,
-        .vkGetDeviceBufferMemoryRequirements     = vkGetDeviceBufferMemoryRequirements,
-        .vkGetDeviceImageMemoryRequirements      = vkGetDeviceImageMemoryRequirements*/
+        .vkGetDeviceProcAddr = vkGetDeviceProcAddr
     };
     const VmaAllocatorCreateInfo vmaCreateInfo = {
         .physicalDevice       = physicalDevice_.GetNativeHandle(),
@@ -129,9 +130,15 @@ RC<Queue> VulkanDevice::GetQueue(QueueType type)
 {
     switch(type)
     {
-    case QueueType::Graphics: return MakeRC<VulkanQueue>(device_, graphicsQueue_, *queueFamilies_.graphicsFamilyIndex);
-    case QueueType::Compute: return MakeRC<VulkanQueue>(device_, computeQueue_, *queueFamilies_.computeFamilyIndex);
-    case QueueType::Transfer: return MakeRC<VulkanQueue>(device_, transferQueue_, *queueFamilies_.transferFamilyIndex);
+    case QueueType::Graphics:
+        return MakeRC<VulkanQueue>(
+            device_, graphicsQueue_, QueueType::Graphics, *queueFamilies_.graphicsFamilyIndex);
+    case QueueType::Compute:
+        return MakeRC<VulkanQueue>(
+            device_, computeQueue_, QueueType::Compute, *queueFamilies_.computeFamilyIndex);
+    case QueueType::Transfer:
+        return MakeRC<VulkanQueue>(
+            device_, transferQueue_, QueueType::Transfer, *queueFamilies_.transferFamilyIndex);
     }
     Unreachable();
 }
@@ -252,14 +259,17 @@ RC<Swapchain> VulkanDevice::CreateSwapchain(const SwapchainDesc &desc, Window &w
 
     // construct result
 
-    auto queue = MakeRC<VulkanQueue>(device_, presentQueue_, queueFamilies_.graphicsFamilyIndex.value());
+    auto queue = MakeRC<VulkanQueue>(
+        device_, presentQueue_, QueueType::Graphics, queueFamilies_.graphicsFamilyIndex.value());
     const Texture2DDesc imageDescription = {
-        .format      = desc.format,
-        .width       = extent.width,
-        .height      = extent.height,
-        .mipLevels   = 1,
-        .arraySize   = 1,
-        .sampleCount = 1
+        .format               = desc.format,
+        .width                = extent.width,
+        .height               = extent.height,
+        .mipLevels            = 1,
+        .arraySize            = 1,
+        .sampleCount          = 1,
+        .initialState         = ResourceState::Uninitialized,
+        .concurrentAccessMode = QueueConcurrentAccessMode::Exclusive
     };
     return MakeRC<VulkanSwapchain>(std::move(surface), std::move(queue), imageDescription, device_, swapchain);
 }
@@ -284,10 +294,10 @@ RC<PipelineBuilder> VulkanDevice::CreatePipelineBuilder()
     return MakeRC<VulkanPipelineBuilder>(device_);
 }
 
-RC<BindingGroupLayout> VulkanDevice::CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc)
+RC<BindingGroupLayout> VulkanDevice::CreateBindingGroupLayout(const BindingGroupLayoutDesc *desc)
 {
     std::vector<VkDescriptorSetLayoutBinding> descSetBindings;
-    for(auto &aliasedBinding : desc.bindings)
+    for(auto &aliasedBinding : desc->bindings)
     {
         {
             auto &binding = aliasedBinding.front();
@@ -374,18 +384,23 @@ RC<BindingLayout> VulkanDevice::CreateBindingLayout(const BindingLayoutDesc &des
 
 RC<Texture> VulkanDevice::CreateTexture2D(const Texture2DDesc &desc)
 {
+    const auto [sharingMode, sharingQueueFamilyIndices] =
+        GetVulkanSharingMode(desc.concurrentAccessMode, queueFamilies_);
+
     const VkImageCreateInfo imageCreateInfo = {
-        .sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-        .imageType     = VK_IMAGE_TYPE_2D,
-        .format        = TranslateTexelFormat(desc.format),
-        .extent        = VkExtent3D{ desc.width, desc.height, 1 },
-        .mipLevels     = desc.mipLevels,
-        .arrayLayers   = desc.arraySize,
-        .samples       = TranslateSampleCount(desc.sampleCount),
-        .tiling        = VK_IMAGE_TILING_OPTIMAL,
-        .usage         = TranslateTextureUsageFlag(desc.usage),
-        .sharingMode   = VK_SHARING_MODE_EXCLUSIVE,
-        .initialLayout = TranslateTextureLayout(desc.initialLayout)
+        .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+        .imageType             = VK_IMAGE_TYPE_2D,
+        .format                = TranslateTexelFormat(desc.format),
+        .extent                = VkExtent3D{ desc.width, desc.height, 1 },
+        .mipLevels             = desc.mipLevels,
+        .arrayLayers           = desc.arraySize,
+        .samples               = TranslateSampleCount(desc.sampleCount),
+        .tiling                = VK_IMAGE_TILING_OPTIMAL,
+        .usage                 = TranslateTextureUsageFlag(desc.usage),
+        .sharingMode           = sharingMode,
+        .queueFamilyIndexCount = static_cast<uint32_t>(sharingQueueFamilyIndices.GetSize()),
+        .pQueueFamilyIndices   = sharingQueueFamilyIndices.GetData(),
+        .initialLayout         = ExtractImageLayout(desc.initialState)
     };
     const VmaAllocationCreateInfo allocCreateInfo = {
         .usage = VMA_MEMORY_USAGE_AUTO
@@ -407,11 +422,16 @@ RC<Texture> VulkanDevice::CreateTexture2D(const Texture2DDesc &desc)
 
 RC<Buffer> VulkanDevice::CreateBuffer(const BufferDesc &desc)
 {
+    const auto [sharingMode, sharingQueueFamilyIndices] =
+        GetVulkanSharingMode(desc.concurrentAccessMode, queueFamilies_);
+
     const VkBufferCreateInfo createInfo = {
-        .sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        .size        = desc.size,
-        .usage       = TranslateBufferUsageFlag(desc.usage),
-        .sharingMode = VK_SHARING_MODE_EXCLUSIVE
+        .sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        .size                  = desc.size,
+        .usage                 = TranslateBufferUsageFlag(desc.usage),
+        .sharingMode           = sharingMode,
+        .queueFamilyIndexCount = static_cast<uint32_t>(sharingQueueFamilyIndices.GetSize()),
+        .pQueueFamilyIndices   = sharingQueueFamilyIndices.GetData()
     };
     const VmaAllocationCreateInfo allocCreateInfo = {
         .flags = TranslateBufferHostAccessType(desc.hostAccessType),

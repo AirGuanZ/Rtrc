@@ -33,7 +33,7 @@ public:
 
     RC<PipelineBuilder> CreatePipelineBuilder() override;
 
-    RC<BindingGroupLayout> CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc) override;
+    RC<BindingGroupLayout> CreateBindingGroupLayout(const BindingGroupLayoutDesc *desc) override;
 
     RC<BindingLayout> CreateBindingLayout(const BindingLayoutDesc &desc) override;
 

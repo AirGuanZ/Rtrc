@@ -23,6 +23,27 @@ namespace
         mi_free(ptr);
     }
 
+    auto SplitResourceStateFlag(ResourceStateFlag state)
+    {
+        using enum ResourceState;
+
+        constexpr ResourceStateFlag TYPE_MASK =
+            _rtrcUninitializedBase | _rtrcRenderTargetBase | _rtrcDepthBase | _rtrcStencilBase |
+            _rtrcConstantBufferBase | _rtrcTextureBase | _rtrcBufferBase | _rtrcStructuredBufferBase |
+            _rtrcCopyBase | _rtrcResolveBase | _rtrcPresentBase | _rtrcDepthReadStencilWriteBase | _rtrcDepthWriteStencilReadBase;
+        const auto type = state & TYPE_MASK;
+
+        const ResourceStateFlag STAGE_MASK = _rtrcVSBase | _rtrcFSBase;
+        const auto stage = state & STAGE_MASK;
+
+        const ResourceStateFlag READWRITE_MASK = _rtrcReadBase | _rtrcWriteBase;
+        const auto readwrite = state & READWRITE_MASK;
+
+        return std::make_tuple(type, stage, readwrite);
+    }
+
+    using ResourceStateInteger = std::underlying_type_t<ResourceState>;
+
 } // namespace anonymous
 
 VkAllocationCallbacks RtrcGlobalVulkanAllocationCallbacks = {
@@ -39,6 +60,7 @@ VkFormat TranslateTexelFormat(Format format)
     {
     case Format::Unknown:        return VK_FORMAT_UNDEFINED;
     case Format::B8G8R8A8_UNorm: return VK_FORMAT_B8G8R8A8_UNORM;
+    case Format::R32G32_Float:   return VK_FORMAT_R32G32_SFLOAT;
     }
     Unreachable();
 }
@@ -181,8 +203,8 @@ VkDescriptorType TranslateBindingType(BindingType type)
 {
     switch(type)
     {
-    case BindingType::Texture:            return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-    case BindingType::RWTexture:          return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+    case BindingType::Texture2D:          return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+    case BindingType::RWTexture2D:        return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
     case BindingType::Buffer:             return VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
     case BindingType::RWBuffer:           return VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
     case BindingType::StructuredBuffer:
@@ -223,28 +245,6 @@ VkImageUsageFlags TranslateTextureUsageFlag(TextureUsageFlag flags)
     return result;
 }
 
-VkImageLayout TranslateTextureLayout(TextureLayout layout)
-{
-    switch(layout)
-    {
-    case TextureLayout::Undefined:                     return VK_IMAGE_LAYOUT_UNDEFINED;
-    case TextureLayout::RenderTarget:                  return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    case TextureLayout::ShaderResource:                return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    case TextureLayout::DepthStencilReadWrite:         return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-    case TextureLayout::DepthStencilReadOnly:          return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-    case TextureLayout::DepthReadWriteStencilReadOnly: return VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL;
-    case TextureLayout::DepthReadOnlyStencilReadWrite: return VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL;
-    case TextureLayout::DepthReadWrite:                return VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
-    case TextureLayout::DepthReadOnly:                 return VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL;
-    case TextureLayout::StencilReadWrite:              return VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL;
-    case TextureLayout::StencilReadOnly:               return VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL;
-    case TextureLayout::TransferDst:                   return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    case TextureLayout::TransferSrc:                   return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-    case TextureLayout::Present:                       return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-    }
-    Unreachable();
-}
-
 VkPipelineStageFlags2 TranslatePipelineStageFlag(PipelineStageFlag flag)
 {
     VkPipelineStageFlags2 result = 0;
@@ -265,36 +265,6 @@ VkPipelineStageFlags2 TranslatePipelineStageFlag(PipelineStageFlag flag)
     ADD_CASE(Blit,                  VK_PIPELINE_STAGE_2_BLIT_BIT)
     ADD_CASE(Clear,                 VK_PIPELINE_STAGE_2_CLEAR_BIT)
     ADD_CASE(Host,                  VK_PIPELINE_STAGE_2_HOST_BIT)
-#undef ADD_CASE
-    return result;
-}
-
-VkAccessFlags2 TranslateAccessTypeFlag(AccessTypeFlag flag)
-{
-    VkAccessFlags2 result = 0;
-#define ADD_CASE(FLAG, VAL) if(flag.contains(AccessType::FLAG)) { result |= VAL; }
-    ADD_CASE(None,                    VK_ACCESS_2_NONE)
-    ADD_CASE(IndirectCommandRead,     VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT)
-    ADD_CASE(IndexRead,               VK_ACCESS_2_INDEX_READ_BIT)
-    ADD_CASE(VertexAttributeRead,     VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT)
-    ADD_CASE(UniformBufferRead,       VK_ACCESS_2_UNIFORM_READ_BIT)
-    ADD_CASE(ImageRead,               VK_ACCESS_2_SHADER_SAMPLED_READ_BIT)
-    ADD_CASE(BufferRead,              VK_ACCESS_2_SHADER_SAMPLED_READ_BIT)
-    ADD_CASE(StructuredBufferRead,    VK_ACCESS_2_SHADER_STORAGE_READ_BIT)
-    ADD_CASE(RWImageRead,             VK_ACCESS_2_SHADER_STORAGE_READ_BIT)
-    ADD_CASE(RWBufferRead,            VK_ACCESS_2_SHADER_STORAGE_READ_BIT)
-    ADD_CASE(RWStructuredBufferRead,  VK_ACCESS_2_SHADER_STORAGE_READ_BIT)
-    ADD_CASE(RWImageWrite,            VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT)
-    ADD_CASE(RWBufferWrite,           VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT)
-    ADD_CASE(RWStructuredBufferWrite, VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT)
-    ADD_CASE(ColorAttachmentRead,     VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT)
-    ADD_CASE(ColorAttachmentWrite,    VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT)
-    ADD_CASE(DepthStencilRead,        VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT)
-    ADD_CASE(DepthStencilWrite,       VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)
-    ADD_CASE(TransferRead,            VK_ACCESS_2_TRANSFER_READ_BIT)
-    ADD_CASE(TransferWrite,           VK_ACCESS_2_TRANSFER_WRITE_BIT)
-    ADD_CASE(HostRead,                VK_ACCESS_2_HOST_READ_BIT)
-    ADD_CASE(HostWrite,               VK_ACCESS_2_HOST_WRITE_BIT)
 #undef ADD_CASE
     return result;
 }
@@ -327,7 +297,7 @@ VkBufferUsageFlags TranslateBufferUsageFlag(BufferUsageFlag flag)
     ADD_CASE(ShaderRWBuffer,           VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT)
     ADD_CASE(ShaderStructuredBuffer,   VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
     ADD_CASE(ShaderRWStructuredBuffer, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
-    ADD_CASE(ShaderUniformBuffer,      VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT)
+    ADD_CASE(ShaderConstantBuffer,      VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT)
     ADD_CASE(IndexBuffer,              VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
     ADD_CASE(VertexBuffer,             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
     ADD_CASE(IndirectBuffer,           VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT)
@@ -424,6 +394,261 @@ VmaAllocationCreateFlags TranslateBufferHostAccessType(BufferHostAccessType type
     case BufferHostAccessType::Random:          return VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT;
     }
     Unreachable();
+}
+
+bool IsResourceStateValid(ResourceStateFlag state)
+{
+    using enum ResourceState;
+    auto [type, stage, readwrite] = SplitResourceStateFlag(state);
+
+    switch(ResourceStateInteger(type))
+    {
+    case _rtrcUninitializedBase:
+        return !stage && !readwrite;
+    case _rtrcRenderTargetBase:
+    case _rtrcDepthBase:
+    case _rtrcStencilBase:
+    case _rtrcDepthBase | _rtrcStencilBase:
+        return !stage && readwrite;
+    case _rtrcConstantBufferBase:
+    case _rtrcTextureBase:
+    case _rtrcBufferBase:
+    case _rtrcStructuredBufferBase:
+        return stage && readwrite == ResourceStateFlag(_rtrcReadBase);
+    case _rtrcRWTextureBase:
+    case _rtrcRWBufferBase:
+    case _rtrcRWStructuredBufferBase:
+        return stage && readwrite;
+    case _rtrcCopyBase:
+    case _rtrcResolveBase:
+        return bool(readwrite & ResourceStateFlag(_rtrcReadBase)) ^ bool(readwrite & ResourceStateFlag(_rtrcWriteBase));
+    case _rtrcPresentBase:
+        return !stage && readwrite == ResourceStateFlag(_rtrcReadBase);
+    case _rtrcDepthReadStencilWriteBase:
+    case _rtrcDepthWriteStencilReadBase:
+        return !stage && readwrite == ResourceStateFlag(_rtrcReadBase | _rtrcWriteBase);
+    default:
+        return false;
+    }
+}
+
+VkPipelineStageFlags2 ExtractPipelineStageFlag(ResourceStateFlag state)
+{
+    assert(IsResourceStateValid(state));
+
+    using enum ResourceState;
+    auto [type, stage, readwrite] = SplitResourceStateFlag(state);
+
+    auto convertStage = [stage]
+    {
+        VkPipelineStageFlags2 result = 0;
+        if(stage.contains(_rtrcVSBase))
+        {
+            result |= VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
+        }
+        if(stage.contains(_rtrcFSBase))
+        {
+            result |= VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
+        }
+        return result;
+    };
+
+    switch(ResourceStateInteger(type))
+    {
+    case _rtrcUninitializedBase:
+        return VK_PIPELINE_STAGE_2_NONE;
+    case _rtrcRenderTargetBase:
+        return VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+    case _rtrcDepthBase:
+    case _rtrcStencilBase:
+    case _rtrcDepthBase | _rtrcStencilBase:
+    case _rtrcDepthReadStencilWriteBase:
+    case _rtrcDepthWriteStencilReadBase:
+        return VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
+    case _rtrcConstantBufferBase:
+    case _rtrcTextureBase:
+    case _rtrcRWTextureBase:
+    case _rtrcBufferBase:
+    case _rtrcRWBufferBase:
+    case _rtrcStructuredBufferBase:
+    case _rtrcRWStructuredBufferBase:
+        return convertStage();
+    case _rtrcCopyBase:
+        return VK_PIPELINE_STAGE_2_COPY_BIT;
+    case _rtrcResolveBase:
+        return VK_PIPELINE_STAGE_2_RESOLVE_BIT;
+    case _rtrcPresentBase:
+        return VK_PIPELINE_STAGE_2_NONE;
+    default:
+        Unreachable();
+    }
+}
+
+VkImageLayout ExtractImageLayout(ResourceStateFlag state)
+{
+    assert(IsResourceStateValid(state));
+
+    using enum ResourceState;
+    auto [type, stage, readwrite] = SplitResourceStateFlag(state);
+
+    assert(type != ResourceStateFlag(_rtrcBufferBase)   && type != ResourceStateFlag(_rtrcStructuredBufferBase) &&
+           type != ResourceStateFlag(_rtrcRWBufferBase) && type != ResourceStateFlag(_rtrcRWStructuredBufferBase));
+
+    switch(ResourceStateInteger(type))
+    {
+    case _rtrcUninitializedBase:
+        return VK_IMAGE_LAYOUT_UNDEFINED;
+    case _rtrcRenderTargetBase:
+        return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    case _rtrcDepthBase:
+        if(readwrite == ResourceStateFlag(_rtrcReadBase))
+        {
+            return VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL;
+        }
+        return VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+    case _rtrcStencilBase:
+        if(readwrite == ResourceStateFlag(_rtrcReadBase))
+        {
+            return VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL;
+        }
+        return VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL;
+    case _rtrcDepthBase | _rtrcStencilBase:
+        if(readwrite == ResourceStateFlag(_rtrcReadBase))
+        {
+            return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+        }
+        return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    case _rtrcTextureBase:
+        return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    case _rtrcRWTextureBase:
+        return VK_IMAGE_LAYOUT_GENERAL;
+    case _rtrcCopyBase:
+        if(readwrite == ResourceStateFlag(_rtrcReadBase))
+        {
+            return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        }
+        assert(readwrite == ResourceStateFlag(_rtrcWriteBase));
+        return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    case _rtrcResolveBase:
+        if(readwrite == ResourceStateFlag(_rtrcReadBase))
+        {
+            return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        }
+        assert(readwrite == ResourceStateFlag(_rtrcWriteBase));
+        return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    case _rtrcPresentBase:
+        return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    case _rtrcDepthReadStencilWriteBase:
+        return VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL;
+    case _rtrcDepthWriteStencilReadBase:
+        return VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL;
+    default:
+        Unreachable();
+    }
+}
+
+VkAccessFlags2 ExtractAccessFlag(ResourceStateFlag state)
+{
+    assert(IsResourceStateValid(state));
+
+    using enum ResourceState;
+    auto [type, stage, readwrite] = SplitResourceStateFlag(state);
+
+    switch(ResourceStateInteger(type))
+    {
+    case _rtrcUninitializedBase:
+        return VK_ACCESS_2_NONE;
+    case _rtrcRenderTargetBase:
+    {
+        VkAccessFlags2 result = 0;
+        if(readwrite.contains(_rtrcReadBase))
+        {
+            result |= VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT;
+        }
+        if(readwrite.contains(_rtrcWriteBase))
+        {
+            result |= VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
+        }
+        return result;
+    }
+    case _rtrcDepthBase:
+    case _rtrcStencilBase:
+    case _rtrcDepthBase | _rtrcStencilBase:
+    {
+        VkAccessFlags2 result = 0;
+        if(readwrite.contains(_rtrcReadBase))
+        {
+            result |= VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+        }
+        if(readwrite.contains(_rtrcWriteBase))
+        {
+            result |= VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+        }
+        return result;
+    }
+    case _rtrcDepthReadStencilWriteBase:
+    case _rtrcDepthWriteStencilReadBase:
+        return VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    case _rtrcConstantBufferBase:
+        return VK_ACCESS_2_UNIFORM_READ_BIT;
+    case _rtrcTextureBase:
+        return VK_ACCESS_2_SHADER_SAMPLED_READ_BIT;
+    case _rtrcRWTextureBase:
+    {
+        VkAccessFlags2 result = 0;
+        if(readwrite.contains(_rtrcReadBase))
+        {
+            result |= VK_ACCESS_2_SHADER_STORAGE_READ_BIT;
+        }
+        if(readwrite.contains(_rtrcWriteBase))
+        {
+            result |= VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT;
+        }
+        return result;
+    }
+    case _rtrcBufferBase:
+        return VK_ACCESS_2_SHADER_SAMPLED_READ_BIT;
+    case _rtrcRWBufferBase:
+    {
+        VkAccessFlags2 result = 0;
+        if(readwrite.contains(_rtrcReadBase))
+        {
+            result |= VK_ACCESS_2_SHADER_STORAGE_READ_BIT;
+        }
+        if(readwrite.contains(_rtrcWriteBase))
+        {
+            result |= VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT;
+        }
+        return result;
+    }
+    case _rtrcStructuredBufferBase:
+        return VK_ACCESS_2_SHADER_STORAGE_READ_BIT;
+    case _rtrcRWStructuredBufferBase:
+    {
+        VkAccessFlags2 result = 0;
+        if(readwrite.contains(_rtrcReadBase))
+        {
+            result |= VK_ACCESS_2_SHADER_STORAGE_READ_BIT;
+        }
+        if(readwrite.contains(_rtrcWriteBase))
+        {
+            result |= VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT;
+        }
+        return result;
+    }
+    case _rtrcCopyBase:
+    case _rtrcResolveBase:
+        if(readwrite == ResourceStateFlag(_rtrcReadBase))
+        {
+            return VK_ACCESS_2_TRANSFER_READ_BIT;
+        }
+        assert(readwrite == ResourceStateFlag(_rtrcWriteBase));
+        return VK_ACCESS_2_TRANSFER_WRITE_BIT;
+    case _rtrcPresentBase:
+        return VK_ACCESS_2_NONE;
+    default:
+        Unreachable();
+    }
 }
 
 RTRC_RHI_VK_END

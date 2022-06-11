@@ -14,7 +14,7 @@ VulkanBindingLayout::~VulkanBindingLayout()
     vkDestroyPipelineLayout(device_, layout_, VK_ALLOC);
 }
 
-VkPipelineLayout VulkanBindingLayout::GetLayout() const
+VkPipelineLayout VulkanBindingLayout::GetNativeLayout() const
 {
     return layout_;
 }

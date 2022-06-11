@@ -1,3 +1,4 @@
+#include <Rtrc/RHI/Vulkan/Queue/Queue.h>
 #include <Rtrc/RHI/Vulkan/Resource/Texture2D.h>
 #include <Rtrc/RHI/Vulkan/Resource/Texture2DRTV.h>
 #include <Rtrc/RHI/Vulkan/Resource/Texture2DSRV.h>
@@ -27,7 +28,7 @@ VulkanTexture2D::~VulkanTexture2D()
     {
         vmaDestroyImage(alloc_.allocator, image_, alloc_.allocation);
     }
-    else if(ownership_ == ResourceOwnership::Image)
+    else if(ownership_ == ResourceOwnership::Resource)
     {
         vkDestroyImage(device_, image_, VK_ALLOC);
     }

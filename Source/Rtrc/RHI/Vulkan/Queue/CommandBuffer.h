@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/RHI/Vulkan/Common.h>
+#include <Rtrc/RHI/Vulkan/Pipeline/Pipeline.h>
 
 RTRC_RHI_VK_BEGIN
 
@@ -18,13 +18,19 @@ public:
 
     void ExecuteBarriers(
         Span<TextureTransitionBarrier> textureTransitions,
-        Span<BufferTransitionBarrier> bufferTransitions) override;
+        Span<BufferTransitionBarrier>  bufferTransitions,
+        Span<TextureReleaseBarrier>    textureReleaseBarriers,
+        Span<TextureAcquireBarrier>    textureAcquireBarriers,
+        Span<BufferReleaseBarrier>     bufferReleaseBarriers,
+        Span<BufferAcquireBarrier>     bufferAcquireBarriers) override;
 
     void BeginRenderPass(Span<RenderPassColorAttachment> colorAttachments) override;
 
     void EndRenderPass() override;
 
     void BindPipeline(const RC<Pipeline> &pipeline) override;
+    
+    void BindGroups(int startIndex, Span<RC<BindingGroup>> groups) override;
 
     void SetViewports(Span<Viewport> viewports) override;
 
@@ -43,6 +49,8 @@ private:
     VkDevice        device_;
     VkCommandPool   pool_;
     VkCommandBuffer commandBuffer_;
+
+    RC<VulkanPipeline> currentPipeline_;
 };
 
 RTRC_RHI_VK_END

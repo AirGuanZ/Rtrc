@@ -4,8 +4,8 @@
 
 RTRC_RHI_VK_BEGIN
 
-VulkanPipeline::VulkanPipeline(VkDevice device, VkPipeline pipeline)
-    : device_(device), pipeline_(pipeline)
+VulkanPipeline::VulkanPipeline(RC<VulkanBindingLayout> layout, VkDevice device, VkPipeline pipeline)
+    : layout_(std::move(layout)), device_(device), pipeline_(pipeline)
 {
     
 }
@@ -19,6 +19,11 @@ VulkanPipeline::~VulkanPipeline()
 VkPipeline VulkanPipeline::GetNativePipeline() const
 {
     return pipeline_;
+}
+
+const VulkanBindingLayout *VulkanPipeline::GetLayout() const
+{
+    return layout_.get();
 }
 
 VulkanPipelineBuilder::VulkanPipelineBuilder(VkDevice device)
@@ -354,7 +359,7 @@ RC<Pipeline> VulkanPipelineBuilder::CreatePipeline() const
         .pDepthStencilState  = &depthStencilState,
         .pColorBlendState    = &colorBlendState,
         .pDynamicState       = &dynamicState,
-        .layout              = bindingLayout_->GetLayout()
+        .layout              = bindingLayout_->GetNativeLayout()
     };
 
     VkPipeline pipeline;
@@ -363,7 +368,7 @@ RC<Pipeline> VulkanPipelineBuilder::CreatePipeline() const
         "failed to create vulkan graphics pipeline");
     RTRC_SCOPE_FAIL{ vkDestroyPipeline(device_, pipeline, VK_ALLOC); };
 
-    return MakeRC<VulkanPipeline>(device_, pipeline);
+    return MakeRC<VulkanPipeline>(bindingLayout_, device_, pipeline);
 }
 
 RTRC_RHI_VK_END

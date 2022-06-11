@@ -4,7 +4,7 @@
 RTRC_RHI_VK_BEGIN
 
 VulkanBindingGroupLayout::VulkanBindingGroupLayout(
-    const BindingGroupLayoutDesc             &desc,
+    const BindingGroupLayoutDesc             *desc,
     std::vector<VkDescriptorSetLayoutBinding> bindings,
     VkDevice                                  device,
     VkDescriptorSetLayout                     layout)
@@ -69,12 +69,17 @@ void VulkanBindingGroupLayout::ReleaseSet(VkDescriptorSet set)
 
 bool VulkanBindingGroupLayout::IsSlotTexelBuffer(int index) const
 {
-    return desc_.bindings[index].front().type == BindingType::Buffer;
+    return desc_->bindings[index].front().type == BindingType::Buffer;
 }
 
 bool VulkanBindingGroupLayout::IsSlotStructuredBuffer(int index) const
 {
-    return desc_.bindings[index].front().type == BindingType::StructuredBuffer;
+    return desc_->bindings[index].front().type == BindingType::StructuredBuffer;
+}
+
+bool VulkanBindingGroupLayout::IsSlotTexture2D(int index) const
+{
+    return desc_->bindings[index].front().type == BindingType::Texture2D;
 }
 
 void VulkanBindingGroupLayout::TransferNode(std::list<PoolInfo> &from, std::list<PoolInfo> &to, std::list<PoolInfo>::iterator iter)

@@ -9,16 +9,20 @@ class VulkanPipeline : public Pipeline
 {
 public:
 
-    VulkanPipeline(VkDevice device, VkPipeline pipeline);
+    VulkanPipeline(RC<VulkanBindingLayout> layout, VkDevice device, VkPipeline pipeline);
 
     ~VulkanPipeline() override;
 
     VkPipeline GetNativePipeline() const;
 
+    const VulkanBindingLayout *GetLayout() const;
+
 private:
 
-    VkDevice            device_;
-    VkPipeline          pipeline_;
+    RC<VulkanBindingLayout> layout_;
+
+    VkDevice   device_;
+    VkPipeline pipeline_;
 };
 
 class VulkanPipelineBuilder : public PipelineBuilder
