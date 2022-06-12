@@ -60,6 +60,8 @@ inline std::string AlignLeft(std::string_view str, size_t width, char padder = '
 // align_right("xyz", 5) -> "  xyz"
 inline std::string AlignRight(std::string_view str, size_t width, char padder = ' ');
 
+constexpr uint32_t Hash(std::string_view str);
+
 // ========================== impl ==========================
 
 inline bool IsLower(char c)
@@ -346,6 +348,17 @@ inline std::string AlignRight(std::string_view str, size_t width, char padder)
     if(str.length() >= width)
         return std::string(str);
     return std::string(width - str.length(), padder) + std::string(str);
+}
+
+constexpr uint32_t Hash(std::string_view str)
+{
+    // https://stackoverflow.com/questions/2351087/what-is-the-best-32bit-hash-function-for-short-strings-tag-names
+    uint32_t h = 0;
+    for(char c : str)
+    {
+        h = 37 * h + static_cast<uint32_t>(c);
+    }
+    return h;
 }
 
 RTRC_END

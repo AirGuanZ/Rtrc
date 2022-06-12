@@ -442,15 +442,25 @@ void VulkanCommandBuffer::BindPipeline(const RC<Pipeline> &pipeline)
 
 void VulkanCommandBuffer::BindGroups(int startIndex, Span<RC<BindingGroup>> groups)
 {
-    auto layout = currentPipeline_->GetLayout();
+    auto layout = static_cast<const VulkanBindingLayout *>(currentPipeline_->GetBindingLayout().get());
     std::vector<VkDescriptorSet> sets(groups.GetSize());
     for(auto &&[i, g] : Enumerate(groups))
     {
-        sets[i] = g ? static_cast<VulkanBindingGroupInstance *>(g.get())->GetNativeSet() : VK_NULL_HANDLE;
+        sets[i] = static_cast<VulkanBindingGroupInstance *>(g.get())->GetNativeSet();
     }
     vkCmdBindDescriptorSets(
         commandBuffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
-        layout->GetNativeLayout(), startIndex, 1, sets.data(), 0, nullptr);
+        layout->GetNativeLayout(), startIndex,
+        static_cast<uint32_t>(sets.size()), sets.data(), 0, nullptr);
+}
+
+void VulkanCommandBuffer::BindGroup(int index, const RC<BindingGroup> &group)
+{
+    auto layout = static_cast<const VulkanBindingLayout *>(currentPipeline_->GetBindingLayout().get());
+    VkDescriptorSet set = static_cast<VulkanBindingGroupInstance *>(group.get())->GetNativeSet();
+    vkCmdBindDescriptorSets(
+        commandBuffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
+        layout->GetNativeLayout(), index, 1, &set, 0, nullptr);
 }
 
 void VulkanCommandBuffer::SetViewports(Span<Viewport> viewports)
@@ -501,6 +511,11 @@ void VulkanCommandBuffer::Draw(int vertexCount, int instanceCount, int firstVert
         static_cast<uint32_t>(instanceCount),
         static_cast<uint32_t>(firstVertex),
         static_cast<uint32_t>(firstInstance));
+}
+
+const RC<Pipeline> &VulkanCommandBuffer::GetCurrentPipeline() const
+{
+    return currentPipeline_;
 }
 
 VkCommandBuffer VulkanCommandBuffer::GetNativeCommandBuffer() const

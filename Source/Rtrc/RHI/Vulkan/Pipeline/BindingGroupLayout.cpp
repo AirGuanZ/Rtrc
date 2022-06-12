@@ -9,8 +9,7 @@ VulkanBindingGroupLayout::VulkanBindingGroupLayout(
     VkDevice                                  device,
     VkDescriptorSetLayout                     layout)
     : desc_(desc), bindings_(std::move(bindings)),
-      device_(device), layout_(layout),
-      poolCountRegular_(0), poolCountUpdateAfterBind_(0)
+      device_(device), layout_(layout), poolCount_(0)
 {
     for(auto &binding : bindings_)
     {
@@ -45,15 +44,14 @@ VulkanBindingGroupLayout::~VulkanBindingGroupLayout()
     vkDestroyDescriptorSetLayout(device_, layout_, VK_ALLOC);
 }
 
-RC<BindingGroup> VulkanBindingGroupLayout::CreateBindingGroup(bool updateAfterBind)
+RC<BindingGroup> VulkanBindingGroupLayout::CreateBindingGroup()
 {
-    auto &freeSets = updateAfterBind ? freeSetsUpdateAfterBind_ : freeSetsRegular_;
-    if(freeSets.empty())
+    if(freeSets_.empty())
     {
-        AllocateNewDescriptorPool(updateAfterBind);
+        AllocateNewDescriptorPool();
     }
-    auto set = freeSets.back();
-    freeSets.pop_back();
+    auto set = freeSets_.back();
+    freeSets_.pop_back();
     return MakeRC<VulkanBindingGroupInstance>(device_, this, set);
 }
 
@@ -64,7 +62,7 @@ VkDescriptorSetLayout VulkanBindingGroupLayout::GetLayout() const
 
 void VulkanBindingGroupLayout::ReleaseSet(VkDescriptorSet set)
 {
-    freeSetsRegular_.push_back(set);
+    freeSets_.push_back(set);
 }
 
 bool VulkanBindingGroupLayout::IsSlotTexelBuffer(int index) const
@@ -82,21 +80,19 @@ bool VulkanBindingGroupLayout::IsSlotTexture2D(int index) const
     return desc_->bindings[index].front().type == BindingType::Texture2D;
 }
 
+const TypeIndex &VulkanBindingGroupLayout::GetGroupStructTypeIndex() const
+{
+    return desc_->groupStructType;
+}
+
 void VulkanBindingGroupLayout::TransferNode(std::list<PoolInfo> &from, std::list<PoolInfo> &to, std::list<PoolInfo>::iterator iter)
 {
     to.splice(to.begin(), from, iter);
 }
 
-void VulkanBindingGroupLayout::AllocateNewDescriptorPool(bool updateAfterBind)
+void VulkanBindingGroupLayout::AllocateNewDescriptorPool()
 {
-    const int existedPoolCount = updateAfterBind ? poolCountUpdateAfterBind_ : poolCountRegular_;
-    const int maxSets = (std::min)(8192, 64 << (existedPoolCount >> 1));
-
-    VkDescriptorPoolCreateFlags flags = 0;
-    if(updateAfterBind)
-    {
-        flags |= VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
-    }
+    const int maxSets = (std::min)(8192, 64 << (poolCount_ >> 1));
 
     std::vector<VkDescriptorPoolSize> poolSizes;
     poolSizes.reserve(singleSetPoolSizes_.size());
@@ -110,7 +106,6 @@ void VulkanBindingGroupLayout::AllocateNewDescriptorPool(bool updateAfterBind)
 
     const VkDescriptorPoolCreateInfo createInfo = {
         .sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-        .flags         = flags,
         .maxSets       = static_cast<uint32_t>(maxSets),
         .poolSizeCount = static_cast<uint32_t>(poolSizes.size()),
         .pPoolSizes    = poolSizes.data()
@@ -121,10 +116,9 @@ void VulkanBindingGroupLayout::AllocateNewDescriptorPool(bool updateAfterBind)
         "failed to create vulkan descriptor pool");
     RTRC_SCOPE_FAIL{ vkDestroyDescriptorPool(device_, pool, VK_ALLOC); };
 
-    auto &freeSets = updateAfterBind ? freeSetsUpdateAfterBind_ : freeSetsRegular_;
-    freeSets.reserve(freeSets.size() + maxSets);
-    const size_t oldSize = freeSets.size();
-    RTRC_SCOPE_FAIL{ freeSets.resize(oldSize); };
+    freeSets_.reserve(freeSets_.size() + maxSets);
+    const size_t oldSize = freeSets_.size();
+    RTRC_SCOPE_FAIL{ freeSets_.resize(oldSize); };
 
     const VkDescriptorSetAllocateInfo allocInfo = {
         .sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
@@ -138,19 +132,11 @@ void VulkanBindingGroupLayout::AllocateNewDescriptorPool(bool updateAfterBind)
         VK_FAIL_MSG(
             vkAllocateDescriptorSets(device_, &allocInfo, &set),
             "failed to allocate vulkan descriptor set");
-        freeSets.push_back(set);
+        freeSets_.push_back(set);
     }
 
     pools_.push_back(pool);
-
-    if(updateAfterBind)
-    {
-        ++poolCountUpdateAfterBind_;
-    }
-    else
-    {
-        ++poolCountRegular_;
-    }
+    ++poolCount_;
 }
 
 RTRC_RHI_VK_END

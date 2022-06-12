@@ -4,11 +4,10 @@
 
 #include <Rtrc/Utils/EnumFlags.h>
 #include <Rtrc/Utils/Span.h>
+#include <Rtrc/Utils/TypeIndex.h>
 #include <Rtrc/Utils/Uncopyable.h>
 #include <Rtrc/Utils/Variant.h>
 #include <Rtrc/Window/Window.h>
-
-#include "Rtrc/Shader/Struct.h"
 
 RTRC_BEGIN
 
@@ -368,6 +367,7 @@ using AliasedBindingsDesc = std::vector<BindingDesc>;
 struct BindingGroupLayoutDesc
 {
     std::vector<AliasedBindingsDesc> bindings;
+    TypeIndex groupStructType;
 
     auto operator<=>(const BindingGroupLayoutDesc &other) const = default;
 };
@@ -602,7 +602,7 @@ class BindingGroupLayout : public RHIObject
 {
 public:
 
-    virtual RC<BindingGroup> CreateBindingGroup(bool updateAfterBind) = 0;
+    virtual RC<BindingGroup> CreateBindingGroup() = 0;
 };
 
 class BindingGroup : public RHIObject
@@ -622,7 +622,9 @@ public:
 
 class BindingLayout : public RHIObject
 {
-    
+public:
+
+    virtual int GetGroupIndex(const TypeIndex &groupStructType) const = 0;
 };
 
 class Queue : public RHIObject
@@ -686,6 +688,11 @@ public:
 
     virtual void BindGroups(int startIndex, Span<RC<BindingGroup>> groups) = 0;
 
+    virtual void BindGroup(int index, const RC<BindingGroup> &group) = 0;
+
+    template<typename Struct>
+    void BindGroup(const RC<BindingGroup> &group);
+
     virtual void SetViewports(Span<Viewport> viewports) = 0;
 
     virtual void SetScissors(Span<Scissor> scissor) = 0;
@@ -695,6 +702,10 @@ public:
     virtual void SetScissorsWithCount(Span<Scissor> scissors) = 0;
 
     virtual void Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance) = 0;
+
+protected:
+
+    virtual const RC<Pipeline> &GetCurrentPipeline() const = 0;
 };
 
 class RawShader : public RHIObject
@@ -708,6 +719,7 @@ class Pipeline : public RHIObject
 {
 public:
 
+    virtual const RC<BindingLayout> &GetBindingLayout() const = 0;
 };
 
 class PipelineBuilder : public RHIObject

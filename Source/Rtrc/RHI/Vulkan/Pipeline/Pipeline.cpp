@@ -16,14 +16,14 @@ VulkanPipeline::~VulkanPipeline()
     vkDestroyPipeline(device_, pipeline_, VK_ALLOC);
 }
 
+const RC<BindingLayout> &VulkanPipeline::GetBindingLayout() const
+{
+    return layout_;
+}
+
 VkPipeline VulkanPipeline::GetNativePipeline() const
 {
     return pipeline_;
-}
-
-const VulkanBindingLayout *VulkanPipeline::GetLayout() const
-{
-    return layout_.get();
 }
 
 VulkanPipelineBuilder::VulkanPipelineBuilder(VkDevice device)

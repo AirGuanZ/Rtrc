@@ -1,3 +1,7 @@
+#ifdef _MSC_VER
+#define _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING
+#endif
+
 #include <locale>
 #include <codecvt>
 
@@ -33,13 +37,19 @@ namespace
     {
     public:
 
+        virtual ~CustomIncludeHandler() = default;
+
         HRESULT STDMETHODCALLTYPE LoadSource(
             _In_ LPCWSTR pFilename, _COM_Outptr_result_maybenull_ IDxcBlob **ppIncludeSource) override
         {
             if(auto it = virtualFiles->find(ToString(pFilename)); it != virtualFiles->end())
             {
                 ComPtr<IDxcBlobEncoding> pEncoding;
-                utils->CreateBlob(it->second.data(), it->second.size(), CP_UTF8, pEncoding.GetAddressOf());
+                if(FAILED(utils->CreateBlob(
+                    it->second.data(), static_cast<uint32_t>(it->second.size()), CP_UTF8, pEncoding.GetAddressOf())))
+                {
+                    return S_FALSE;
+                }
                 *ppIncludeSource = pEncoding.Detach();
                 return S_OK;
             }
@@ -131,6 +141,7 @@ std::vector<unsigned char> DXC::Compile(
     arguments.push_back(L"-fvk-use-dx-layout");
     arguments.push_back(L"-fvk-use-dx-position-w");
     arguments.push_back(L"-fspv-target-env=vulkan1.3");
+
     arguments.push_back(L"-T");
     switch(target)
     {

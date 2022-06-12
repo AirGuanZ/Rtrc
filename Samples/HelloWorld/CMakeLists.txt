@@ -11,11 +11,3 @@ IF(MSVC)
 ENDIF()
 
 TARGET_LINK_LIBRARIES(HelloWorld PUBLIC Rtrc)
-
-#RTRC_COMPILE_GLSL_TO_SPV(
-#    "${CMAKE_CURRENT_SOURCE_DIR}/HelloWorld.vert"
-#    "${RTRC_SAMPLE_WORKING_DIR}/Asset/HelloWorld/HelloWorld.vert.spv")
-#
-#RTRC_COMPILE_GLSL_TO_SPV(
-#    "${CMAKE_CURRENT_SOURCE_DIR}/HelloWorld.frag"
-#    "${RTRC_SAMPLE_WORKING_DIR}/Asset/HelloWorld/HelloWorld.frag.spv")

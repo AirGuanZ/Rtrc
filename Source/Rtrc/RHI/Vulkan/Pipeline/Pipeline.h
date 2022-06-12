@@ -13,13 +13,13 @@ public:
 
     ~VulkanPipeline() override;
 
-    VkPipeline GetNativePipeline() const;
+    const RC<BindingLayout> &GetBindingLayout() const override;
 
-    const VulkanBindingLayout *GetLayout() const;
+    VkPipeline GetNativePipeline() const;
 
 private:
 
-    RC<VulkanBindingLayout> layout_;
+    RC<BindingLayout> layout_;
 
     VkDevice   device_;
     VkPipeline pipeline_;

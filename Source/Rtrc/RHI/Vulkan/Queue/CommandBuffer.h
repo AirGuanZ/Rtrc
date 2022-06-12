@@ -32,6 +32,8 @@ public:
     
     void BindGroups(int startIndex, Span<RC<BindingGroup>> groups) override;
 
+    void BindGroup(int index, const RC<BindingGroup> &group) override;
+
     void SetViewports(Span<Viewport> viewports) override;
 
     void SetScissors(Span<Scissor> scissors) override;
@@ -44,13 +46,17 @@ public:
 
     VkCommandBuffer GetNativeCommandBuffer() const;
 
+protected:
+
+    const RC<Pipeline> &GetCurrentPipeline() const override;
+
 private:
 
     VkDevice        device_;
     VkCommandPool   pool_;
     VkCommandBuffer commandBuffer_;
 
-    RC<VulkanPipeline> currentPipeline_;
+    RC<Pipeline> currentPipeline_;
 };
 
 RTRC_RHI_VK_END

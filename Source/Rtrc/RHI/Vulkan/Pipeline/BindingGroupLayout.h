@@ -27,7 +27,7 @@ public:
 
     ~VulkanBindingGroupLayout() override;
 
-    RC<BindingGroup> CreateBindingGroup(bool updateAfterBind) override;
+    RC<BindingGroup> CreateBindingGroup() override;
 
     VkDescriptorSetLayout GetLayout() const;
 
@@ -39,11 +39,13 @@ public:
 
     bool IsSlotTexture2D(int index) const;
 
+    const TypeIndex &GetGroupStructTypeIndex() const;
+
 private:
 
     void TransferNode(std::list<PoolInfo> &from, std::list<PoolInfo> &to, std::list<PoolInfo>::iterator iter);
 
-    void AllocateNewDescriptorPool(bool updateAfterBind);
+    void AllocateNewDescriptorPool();
 
     const BindingGroupLayoutDesc *desc_;
     std::vector<VkDescriptorSetLayoutBinding> bindings_;
@@ -53,11 +55,9 @@ private:
     std::vector<VkDescriptorPoolSize> singleSetPoolSizes_;
 
     std::vector<VkDescriptorPool> pools_;
-    int poolCountRegular_;
-    int poolCountUpdateAfterBind_;
+    int poolCount_;
 
-    std::vector<VkDescriptorSet> freeSetsRegular_;
-    std::vector<VkDescriptorSet> freeSetsUpdateAfterBind_;
+    std::vector<VkDescriptorSet> freeSets_;
 };
 
 RTRC_RHI_VK_END

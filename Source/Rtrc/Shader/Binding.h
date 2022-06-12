@@ -181,10 +181,10 @@ namespace ShaderDetail
 } // namespace ShaderDetail
 
 template<
-    typename                TemplateParam,
-    RHI::BindingType        BindingTypeParam,
-    int                     ArraySizeParam,
-    RHI::ShaderStageFlag    ShaderStagesParam>
+    typename             TemplateParam,
+    RHI::BindingType     BindingTypeParam,
+    int                  ArraySizeParam,
+    RHI::ShaderStageFlag ShaderStagesParam>
 class BindingSlot
 {
 public:
@@ -280,7 +280,7 @@ const RHI::BindingGroupLayoutDesc *GetBindingGroupLayoutDesc()
                 .isArray      = Member::IsArray,
                 .arraySize    = static_cast<uint32_t>(Member::ArraySize)
             };
-#define ADD_CASE(TYPE, VAL) \
+#define ADD_CASE(TYPE, VAL)                                                        \
             if constexpr(std::is_same_v<typename Member::TemplateParameter, TYPE>) \
             {                                                                      \
                 desc.templateParameter = RHI::BindingTemplateParameterType::VAL;   \
@@ -306,6 +306,7 @@ const RHI::BindingGroupLayoutDesc *GetBindingGroupLayoutDesc()
             }
             groupLayoutDesc.bindings.push_back({ desc });
         });
+        groupLayoutDesc.groupStructType = TypeIndex::Get<Struct>();
         return groupLayoutDesc;
     }();
     return &result;
@@ -313,8 +314,8 @@ const RHI::BindingGroupLayoutDesc *GetBindingGroupLayoutDesc()
 
 template<BindingGroupStruct Struct, typename Member>
 void ModifyBindingGroupInstance(
-    RHI::BindingGroup        *instance,
-    Member Struct::          *member,
+    RHI::BindingGroup *instance,
+    Member Struct::* member,
     const RC<RHI::BufferSRV> &srv)
 {
     int index = 0;
@@ -334,8 +335,8 @@ void ModifyBindingGroupInstance(
 
 template<BindingGroupStruct Struct, typename Member>
 void ModifyBindingGroupInstance(
-    RHI::BindingGroup           *instance,
-    Member Struct::             *member,
+    RHI::BindingGroup *instance,
+    Member Struct::* member,
     const RC<RHI::Texture2DSRV> &srv)
 {
     int index = 0;
@@ -369,6 +370,18 @@ template<typename Struct, typename Member>
 void RHI::BindingGroup::ModifyMember(Member Struct::*member, const RC<Texture2DSRV> &textureSRV)
 {
     ModifyBindingGroupInstance(this, member, textureSRV);
+}
+
+template<typename Struct>
+void RHI::CommandBuffer::BindGroup(const RC<BindingGroup> &group)
+{
+    const auto &pipeline = this->GetCurrentPipeline();
+    const int index = pipeline->GetBindingLayout()->GetGroupIndex(GetBindingGroupLayoutDesc<Struct>()->groupStructType);
+    if(index < 0)
+    {
+        throw Exception("binding group not found in binding layout");
+    }
+    this->BindGroup(index, group);
 }
 
 RTRC_END

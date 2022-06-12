@@ -141,7 +141,7 @@ void run()
         vertexPositionBuffer->Unmap();
     }
 
-    auto bindingGroup = bindingGroupLayout->CreateBindingGroup(false);
+    auto bindingGroup = bindingGroupLayout->CreateBindingGroup();
     bindingGroup->ModifyMember(&TestGroup::VertexPositionBuffer, vertexPositionBufferSRV);
 
     // render loop
@@ -202,7 +202,7 @@ void run()
 
         commandBuffer->BindPipeline(pipeline);
 
-        commandBuffer->BindGroups(0, bindingGroup);
+        commandBuffer->BindGroup<TestGroup>(bindingGroup);
 
         commandBuffer->SetViewports(RHI::Viewport
         {

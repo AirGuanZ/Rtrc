@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/Common.h>
+#include <Rtrc/Utils/String.h>
 
 RTRC_BEGIN
 
@@ -14,35 +14,43 @@ public:
         return TypeIndex(typeid(T).name());
     }
 
-    constexpr TypeIndex(const char *name = nullptr)
-        : name_(name)
+    constexpr explicit TypeIndex(const char *name = nullptr)
     {
-        
+        if(name)
+        {
+            name_ = name;
+            hash_ = Hash(name_);
+        }
+        else
+        {
+            hash_ = 0;
+        }
     }
 
-    size_t GetHash() const
+    constexpr size_t GetHash() const
     {
-        return std::hash<std::string_view>()(std::string_view(name_));
+        return hash_;
     }
 
     constexpr operator bool() const
     {
-        return name_ != nullptr;
+        return !name_.empty();
     }
 
     constexpr auto operator<=>(const TypeIndex &rhs) const
     {
-        return std::string_view(name_) <=> std::string_view(rhs.name_);
+        return hash_ == rhs.hash_ ? (name_ <=> rhs.name_) : (hash_ <=> rhs.hash_);
     }
 
     constexpr bool operator==(const TypeIndex &rhs) const
     {
-        return name_ == rhs.name_ || std::string_view(name_) == std::string(rhs.name_);
+        return hash_ == rhs.hash_ && name_.data() == rhs.name_.data() && name_ == rhs.name_;
     }
 
 private:
 
-    const char *name_;
+    uint32_t hash_;
+    std::string_view name_;
 };
 
 RTRC_END
@@ -59,4 +67,4 @@ namespace std
         }
     };
 
-} // namespac estd
+} // namespace std

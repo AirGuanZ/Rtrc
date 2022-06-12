@@ -49,11 +49,6 @@ SET_TARGET_PROPERTIES(vk-bootstrap PROPERTIES FOLDER "External")
 
 #============= shader compile =============
 
-#SET(RTRC_GLSL_COMPILER glslc)
-#FUNCTION(RTRC_COMPILE_GLSL_TO_SPV SHADER SPIRV)
-#    EXECUTE_PROCESS(COMMAND ${RTRC_GLSL_COMPILER} ${SHADER} -o ${SPIRV})
-#ENDFUNCTION()
-
 ADD_SUBDIRECTORY(External/dxc)
 
 #============= rtrc =============
