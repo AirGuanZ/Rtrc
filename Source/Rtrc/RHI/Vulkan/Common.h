@@ -56,6 +56,9 @@ VkClearValue             TranslateClearValue            (const ClearValue &value
 VkViewport               TranslateViewport              (const Viewport &viewport);
 VkRect2D                 TranslateScissor               (const Scissor &scissor);
 VmaAllocationCreateFlags TranslateBufferHostAccessType  (BufferHostAccessType type);
+VkFilter                 TranslateSamplerFilterMode     (FilterMode mode);
+VkSamplerMipmapMode      TranslateSamplerMipmapMode     (FilterMode mode);
+VkSamplerAddressMode     TranslateSamplerAddressMode    (AddressMode mode);
 
 bool IsResourceStateValid(ResourceStateFlag state);
 

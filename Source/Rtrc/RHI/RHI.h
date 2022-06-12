@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <vector>
 
 #include <Rtrc/Utils/EnumFlags.h>
@@ -37,6 +38,7 @@ class Texture2DRTV;
 class Texture2DSRV;
 class Buffer;
 class BufferSRV;
+class Sampler;
 
 // =============================== rhi enums ===============================
 
@@ -207,6 +209,20 @@ enum class BufferHostAccessType
     None,
     SequentialWrite,
     Random
+};
+
+enum class FilterMode
+{
+    Point,
+    Linear
+};
+
+enum class AddressMode
+{
+    Repeat,
+    Mirror,
+    Clamp,
+    Border
 };
 
 constexpr uint32_t _rtrcUninitializedBase         = 1 << 0;
@@ -438,6 +454,29 @@ struct BufferSRVDesc
     uint32_t stride; // for structured buffer
 };
 
+struct SamplerDesc
+{
+    FilterMode  magFilter;
+    FilterMode  minFilter;
+    FilterMode  mipFilter;
+
+    AddressMode addressModeU;
+    AddressMode addressModeV;
+    AddressMode addressModeW;
+
+    float mipLODBias;
+    float minLOD;
+    float maxLOD;
+
+    bool enableAnisotropy;
+    int  maxAnisotropy;
+
+    bool      enableComparision;
+    CompareOp compareOp;
+
+    std::array<float, 4> borderColor;
+};
+
 struct TextureTransitionBarrier
 {
     RC<Texture>       texture;
@@ -562,16 +601,18 @@ public:
 
     virtual RC<BindingGroupLayout> CreateBindingGroupLayout(const BindingGroupLayoutDesc *desc) = 0;
 
-    template<typename T>
-    RC<BindingGroupLayout> CreateBindingGroupLayout();
-
     virtual RC<BindingLayout> CreateBindingLayout(const BindingLayoutDesc &desc) = 0;
 
     virtual RC<Texture> CreateTexture2D(const Texture2DDesc &desc) = 0;
 
     virtual RC<Buffer> CreateBuffer(const BufferDesc &desc) = 0;
 
+    virtual RC<Sampler> CreateSampler(const SamplerDesc &desc) = 0;
+
     virtual void WaitIdle() = 0;
+
+    template<typename T>
+    RC<BindingGroupLayout> CreateBindingGroupLayout();
 };
 
 class BackBufferSemaphore : public RHIObject
@@ -845,6 +886,13 @@ class BufferSRV : public RHIObject
 public:
 
     virtual const BufferSRVDesc &GetDesc() const = 0;
+};
+
+class Sampler : public RHIObject
+{
+public:
+
+    virtual const SamplerDesc &GetDesc() const = 0;
 };
 
 // =============================== vulkan backend ===============================

@@ -14,6 +14,7 @@
 #include <Rtrc/RHI/Vulkan/Queue/Fence.h>
 #include <Rtrc/RHI/Vulkan/Queue/Queue.h>
 #include <Rtrc/RHI/Vulkan/Resource/Buffer.h>
+#include <Rtrc/RHI/Vulkan/Resource/Sampler.h>
 #include <Rtrc/RHI/Vulkan/Resource/Texture2D.h>
 #include <Rtrc/Utils/Enumerate.h>
 #include <Rtrc/Utils/StaticVector.h>
@@ -325,28 +326,8 @@ RC<BindingGroupLayout> VulkanDevice::CreateBindingGroupLayout(const BindingGroup
         }
     }
 
-    /*std::vector<VkDescriptorBindingFlags> flags(descSetBindings.size(), 0);
-    for(auto &&[i, alias] : Enumerate(desc.bindings))
-    {
-        auto &binding = alias.front();
-        if(binding.isBindless)
-        {
-            assert(i == desc.bindings.size() - 1);
-            flags[i] = VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT
-                     | VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT
-                     | VK_DESCRIPTOR_BINDING_UPDATE_UNUSED_WHILE_PENDING_BIT;
-        }
-    }
-
-    const VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsCreateInfo = {
-        .sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,
-        .bindingCount  = static_cast<uint32_t>(flags.size()),
-        .pBindingFlags = flags.data()
-    };*/
-
     const VkDescriptorSetLayoutCreateInfo createInfo = {
         .sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-        //.pNext        = &bindingFlagsCreateInfo ,
         .bindingCount = static_cast<uint32_t>(descSetBindings.size()),
         .pBindings    = descSetBindings.data()
     };
@@ -450,6 +431,63 @@ RC<Buffer> VulkanDevice::CreateBuffer(const BufferDesc &desc)
     };
 
     return MakeRC<VulkanBuffer>(desc, device_, buffer, memoryAlloc, ResourceOwnership::Allocation);
+}
+
+RC<Sampler> VulkanDevice::CreateSampler(const SamplerDesc &desc)
+{
+    VkSamplerCreateInfo createInfo = {
+        .sType            = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+        .magFilter        = TranslateSamplerFilterMode(desc.magFilter),
+        .minFilter        = TranslateSamplerFilterMode(desc.minFilter),
+        .mipmapMode       = TranslateSamplerMipmapMode(desc.mipFilter),
+        .addressModeU     = TranslateSamplerAddressMode(desc.addressModeU),
+        .addressModeV     =  TranslateSamplerAddressMode(desc.addressModeV),
+        .addressModeW     = TranslateSamplerAddressMode(desc.addressModeW),
+        .mipLodBias       = desc.mipLODBias,
+        .anisotropyEnable = desc.enableAnisotropy,
+        .maxAnisotropy    = static_cast<float>(desc.maxAnisotropy),
+        .compareEnable    = desc.enableComparision,
+        .compareOp        = TranslateCompareOp(desc.compareOp),
+        .minLod           = desc.minLOD,
+        .maxLod           = desc.maxLOD
+    };
+
+    VkSamplerCustomBorderColorCreateInfoEXT borderColorCreateInfo;
+
+    using BorderColor = std::array<float, 4>;
+    if(desc.borderColor == BorderColor{ 0, 0, 0, 1 })
+    {
+        createInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
+    }
+    else if(desc.borderColor == BorderColor{ 1, 1, 1, 1 })
+    {
+        createInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+    }
+    else if(desc.borderColor == BorderColor{ 0, 0, 0, 0 })
+    {
+        createInfo.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
+    }
+    else
+    {
+        borderColorCreateInfo.sType                        = VK_STRUCTURE_TYPE_SAMPLER_CUSTOM_BORDER_COLOR_CREATE_INFO_EXT;
+        borderColorCreateInfo.pNext                        = nullptr;
+        borderColorCreateInfo.customBorderColor.float32[0] = desc.borderColor[0];
+        borderColorCreateInfo.customBorderColor.float32[1] = desc.borderColor[1];
+        borderColorCreateInfo.customBorderColor.float32[2] = desc.borderColor[2];
+        borderColorCreateInfo.customBorderColor.float32[3] = desc.borderColor[3];
+        borderColorCreateInfo.format                       = VK_FORMAT_UNDEFINED;
+
+        createInfo.borderColor = VK_BORDER_COLOR_FLOAT_CUSTOM_EXT;
+        createInfo.pNext       = &borderColorCreateInfo;
+    }
+
+    VkSampler sampler;
+    VK_FAIL_MSG(
+        vkCreateSampler(device_, &createInfo, VK_ALLOC, &sampler),
+        "failed to create vulkan sampler");
+    RTRC_SCOPE_FAIL{ vkDestroySampler(device_, sampler, VK_ALLOC); };
+
+    return MakeRC<VulkanSampler>(desc, device_, sampler);
 }
 
 void VulkanDevice::WaitIdle()

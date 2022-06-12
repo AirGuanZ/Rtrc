@@ -41,6 +41,8 @@ public:
 
     RC<Buffer> CreateBuffer(const BufferDesc &desc) override;
 
+    RC<Sampler> CreateSampler(const SamplerDesc &desc) override;
+
     void WaitIdle() override;
 
 private:

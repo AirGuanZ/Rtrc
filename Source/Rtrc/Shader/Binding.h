@@ -4,25 +4,12 @@
 #include <Rtrc/Shader/Struct.h>
 #include <Rtrc/Utils/EnumFlags.h>
 #include <Rtrc/Utils/MacroForEach.h>
-#include <Rtrc/Utils/String.h>
 #include <Rtrc/Utils/TemplateStringParameter.h>
 
 RTRC_BEGIN
 
 namespace ShaderDetail
 {
-
-    template<typename Ret>
-    constexpr Ret BoolListToValue()
-    {
-        return Ret{};
-    }
-
-    template<typename Ret, typename V1, typename...Vs>
-    constexpr Ret BoolListToValue(bool isFirst, V1 value1, Vs...vs)
-    {
-        return isFirst ? Ret(value1) : BoolListToValue<Ret>(vs...);
-    }
 
     template<typename T>
     struct GetArraySizeAux

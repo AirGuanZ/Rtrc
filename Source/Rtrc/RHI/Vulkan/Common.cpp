@@ -396,6 +396,38 @@ VmaAllocationCreateFlags TranslateBufferHostAccessType(BufferHostAccessType type
     Unreachable();
 }
 
+VkFilter TranslateSamplerFilterMode(FilterMode mode)
+{
+    switch(mode)
+    {
+    case FilterMode::Point:  return VK_FILTER_NEAREST;
+    case FilterMode::Linear: return VK_FILTER_LINEAR;
+    }
+    Unreachable();
+}
+
+VkSamplerMipmapMode TranslateSamplerMipmapMode(FilterMode mode)
+{
+    switch(mode)
+    {
+    case FilterMode::Point:  return VK_SAMPLER_MIPMAP_MODE_NEAREST;
+    case FilterMode::Linear: return VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    }
+    Unreachable();
+}
+
+VkSamplerAddressMode TranslateSamplerAddressMode(AddressMode mode)
+{
+    switch(mode)
+    {
+    case AddressMode::Repeat: return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    case AddressMode::Mirror: return VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+    case AddressMode::Clamp:  return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    case AddressMode::Border: return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+    }
+    Unreachable();
+}
+
 bool IsResourceStateValid(ResourceStateFlag state)
 {
     using enum ResourceState;

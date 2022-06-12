@@ -48,8 +48,14 @@ namespace
 
         // features
 
+        VkPhysicalDeviceCustomBorderColorFeaturesEXT customBorderColorFeatures = {
+            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_FEATURES_EXT,
+            .customBorderColors = true,
+            .customBorderColorWithoutFormat = true
+        };
         VkPhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeatures = {
             .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES,
+            .pNext = &customBorderColorFeatures,
             .dynamicRendering = true
         };
         VkPhysicalDeviceTimelineSemaphoreFeatures timelineSemaphoreFeatures = {
@@ -67,7 +73,9 @@ namespace
         feature2.pNext = &sync2Features;
 
         vkGetPhysicalDeviceFeatures2(device, &feature2);
-        if(!dynamicRenderingFeatures.dynamicRendering ||
+        if(!customBorderColorFeatures.customBorderColors ||
+           !customBorderColorFeatures.customBorderColorWithoutFormat ||
+           !dynamicRenderingFeatures.dynamicRendering ||
            !timelineSemaphoreFeatures.timelineSemaphore ||
            !sync2Features.synchronization2)
         {
@@ -146,6 +154,11 @@ std::vector<const char*> VulkanPhysicalDevice::GetRequiredExtensions(const Devic
 
 VkPhysicalDeviceFeatures2* VulkanPhysicalDevice::GetRequiredFeatures(ObjectReleaser &arena)
 {
+    auto customBorderColorFeature = arena.Create<VkPhysicalDeviceCustomBorderColorFeaturesEXT>();
+    customBorderColorFeature->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_FEATURES_EXT;
+    customBorderColorFeature->customBorderColors = true;
+    customBorderColorFeature->customBorderColorWithoutFormat = true;
+
     auto dynamicRenderingFeature = arena.Create<VkPhysicalDeviceDynamicRenderingFeatures>();
     dynamicRenderingFeature->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES;
     dynamicRenderingFeature->dynamicRendering = VK_TRUE;
@@ -162,7 +175,8 @@ VkPhysicalDeviceFeatures2* VulkanPhysicalDevice::GetRequiredFeatures(ObjectRelea
     std::memset(features2, 0, sizeof(VkPhysicalDeviceFeatures2));
     features2->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 
-    dynamicRenderingFeature->pNext = nullptr;
+    customBorderColorFeature->pNext = nullptr;
+    dynamicRenderingFeature->pNext = customBorderColorFeature;
     timelineFeature->pNext = dynamicRenderingFeature;
     sync2Feature->pNext = timelineFeature;
     features2->pNext = sync2Feature;
