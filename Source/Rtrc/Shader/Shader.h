@@ -48,10 +48,10 @@ public:
 
     ShaderCompiler &AddMacro(std::string name, std::string value);
 
-    ShaderCompiler &AddBindingGroup(const RHI::BindingGroupLayoutDesc *groupLayoutDesc);
+    ShaderCompiler &AddBindingGroup(const BindingGroupLayoutInfo *info);
 
     template<BindingGroupStruct BindingGroup>
-    ShaderCompiler &AddBindingGroup() { return AddBindingGroup(GetBindingGroupLayoutDesc<BindingGroup>()); }
+    ShaderCompiler &AddBindingGroup() { return this->AddBindingGroup(GetBindingGroupLayoutInfo<BindingGroup>()); }
 
     RC<Shader> Compile(RHI::Device &device) const;
 
@@ -73,7 +73,7 @@ private:
     ShaderSource computeShaderSource_;
     std::map<std::string, std::string> macros_;
 
-    std::vector<const RHI::BindingGroupLayoutDesc *> bindingGroupLayoutDescs_;
+    std::vector<const BindingGroupLayoutInfo *> bindingGroupLayouts_;
 };
 
 RTRC_END

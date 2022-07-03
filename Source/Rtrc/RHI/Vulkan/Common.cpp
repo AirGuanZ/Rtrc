@@ -28,12 +28,25 @@ namespace
         using enum ResourceState;
 
         constexpr ResourceStateFlag TYPE_MASK =
-            _rtrcUninitializedBase | _rtrcRenderTargetBase | _rtrcDepthBase | _rtrcStencilBase |
-            _rtrcConstantBufferBase | _rtrcTextureBase | _rtrcBufferBase | _rtrcStructuredBufferBase |
-            _rtrcCopyBase | _rtrcResolveBase | _rtrcPresentBase | _rtrcDepthReadStencilWriteBase | _rtrcDepthWriteStencilReadBase;
+            _rtrcUninitializedBase         |
+            _rtrcRenderTargetBase          |
+            _rtrcDepthBase                 |
+            _rtrcStencilBase               |
+            _rtrcConstantBufferBase        |
+            _rtrcTextureBase               |
+            _rtrcRWTextureBase             |
+            _rtrcBufferBase                |
+            _rtrcRWBufferBase              |
+            _rtrcStructuredBufferBase      |
+            _rtrcRWStructuredBufferBase    |
+            _rtrcCopyBase                  |
+            _rtrcResolveBase               |
+            _rtrcPresentBase               |
+            _rtrcDepthReadStencilWriteBase |
+            _rtrcDepthWriteStencilReadBase;
         const auto type = state & TYPE_MASK;
 
-        const ResourceStateFlag STAGE_MASK = _rtrcVSBase | _rtrcFSBase;
+        const ResourceStateFlag STAGE_MASK = _rtrcVSBase | _rtrcFSBase | _rtrcCSBase;
         const auto stage = state & STAGE_MASK;
 
         const ResourceStateFlag READWRITE_MASK = _rtrcReadBase | _rtrcWriteBase;
@@ -58,9 +71,10 @@ VkFormat TranslateTexelFormat(Format format)
 {
     switch(format)
     {
-    case Format::Unknown:        return VK_FORMAT_UNDEFINED;
-    case Format::B8G8R8A8_UNorm: return VK_FORMAT_B8G8R8A8_UNORM;
-    case Format::R32G32_Float:   return VK_FORMAT_R32G32_SFLOAT;
+    case Format::Unknown:            return VK_FORMAT_UNDEFINED;
+    case Format::B8G8R8A8_UNorm:     return VK_FORMAT_B8G8R8A8_UNORM;
+    case Format::R32G32_Float:       return VK_FORMAT_R32G32_SFLOAT;
+    case Format::R32G32B32A32_Float: return VK_FORMAT_R32G32B32A32_SFLOAT;
     }
     Unreachable();
 }
@@ -299,7 +313,7 @@ VkBufferUsageFlags TranslateBufferUsageFlag(BufferUsageFlag flag)
     ADD_CASE(ShaderRWBuffer,           VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT)
     ADD_CASE(ShaderStructuredBuffer,   VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
     ADD_CASE(ShaderRWStructuredBuffer, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
-    ADD_CASE(ShaderConstantBuffer,      VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT)
+    ADD_CASE(ShaderConstantBuffer,     VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
     ADD_CASE(IndexBuffer,              VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
     ADD_CASE(VertexBuffer,             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
     ADD_CASE(IndirectBuffer,           VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT)

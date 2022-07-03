@@ -11,11 +11,11 @@ RTRC_BEGIN
 namespace
 {
 
-    std::string GenerateArraySizeSpecifier(const RHI::BindingDesc &desc)
+    std::string GenerateArraySizeSpecifier(const BindingInfo &desc)
     {
-        if(desc.isArray)
+        if(desc.arraySize.has_value())
         {
-            return fmt::format("[{}]", desc.arraySize);
+            return fmt::format("[{}]", desc.arraySize.value());
         }
         return {};
     }
@@ -103,10 +103,10 @@ namespace
     }
 
     std::string GenerateHLSLBindingDeclarationForVulkan(
-        std::set<std::string> &generatedStructName, const RHI::BindingGroupLayoutDesc &desc, int setIndex)
+        std::set<std::string> &generatedStructName, const BindingGroupLayoutInfo &info, int setIndex)
     {
         std::string result;
-        for(auto &&[bindingIndex, aliasedBindings] : Enumerate(desc.bindings))
+        for(auto &&[bindingIndex, aliasedBindings] : Enumerate(info.bindings))
         {
             for(auto &binding : aliasedBindings)
             {
@@ -225,9 +225,9 @@ ShaderCompiler &ShaderCompiler::AddMacro(std::string name, std::string value)
     return *this;
 }
 
-ShaderCompiler &ShaderCompiler::AddBindingGroup(const RHI::BindingGroupLayoutDesc *groupLayoutDesc)
+ShaderCompiler &ShaderCompiler::AddBindingGroup(const BindingGroupLayoutInfo *info)
 {
-    bindingGroupLayoutDescs_.push_back(groupLayoutDesc);
+    bindingGroupLayouts_.push_back(info);
     return *this;
 }
 
@@ -246,7 +246,7 @@ RC<Shader> ShaderCompiler::CompileHLSLForVulkan(RHI::Device &device) const
     std::set<std::string> generatedStructNames;
 
     std::string bindingDeclarations;
-    for(auto &&[setIndex, group] : Enumerate(bindingGroupLayoutDescs_))
+    for(auto &&[setIndex, group] : Enumerate(bindingGroupLayouts_))
     {
         auto decl = GenerateHLSLBindingDeclarationForVulkan(generatedStructNames, *group, static_cast<int>(setIndex));
         bindingDeclarations += decl;

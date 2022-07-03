@@ -27,7 +27,7 @@ public:
 
     void *Map(size_t offset, size_t size) const override;
 
-    void Unmap() override;
+    void Unmap(size_t offset, size_t size) override;
 
     VkBuffer GetNativeBuffer() const;
 

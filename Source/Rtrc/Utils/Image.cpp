@@ -253,17 +253,17 @@ ImageDynamic ImageDynamic::To(TexelType newTexelType) const
     });
 }
 
-int ImageDynamic::GetWidth() const
+uint32_t ImageDynamic::GetWidth() const
 {
     return image_.Match(
-        [](std::monostate) { return 0; },
+        [](std::monostate) { return 0u; },
         [](auto &image) { return image.GetWidth(); });
 }
 
-int ImageDynamic::GetHeight() const
+uint32_t ImageDynamic::GetHeight() const
 {
     return image_.Match(
-        [](std::monostate) { return 0; },
+        [](std::monostate) { return 0u; },
         [](auto &image) { return image.GetHeight(); });
 }
 

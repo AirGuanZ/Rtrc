@@ -1,5 +1,6 @@
-#include <Rtrc/RHI/Vulkan/Pipeline/BindingGroupInstance.h>
+#include <Rtrc/RHI/Vulkan/Pipeline/BindingGroup.h>
 #include <Rtrc/RHI/Vulkan/Pipeline/BindingLayout.h>
+#include <Rtrc/RHI/Vulkan/Pipeline/ComputePipeline.h>
 #include <Rtrc/RHI/Vulkan/Pipeline/GraphicsPipeline.h>
 #include <Rtrc/RHI/Vulkan/Queue/CommandBuffer.h>
 #include <Rtrc/RHI/Vulkan/Queue/Queue.h>
@@ -467,17 +468,30 @@ void VulkanCommandBuffer::BindPipeline(const RC<GraphicsPipeline> &pipeline)
     if(!pipeline)
     {
         vkCmdBindPipeline(commandBuffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, nullptr);
-        currentPipeline_ = nullptr;
+        currentGraphicsPipeline_ = nullptr;
         return;
     }
     auto vkPipeline = static_cast<VulkanGraphicsPipeline *>(pipeline.get());
     vkCmdBindPipeline(commandBuffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, vkPipeline->GetNativePipeline());
-    currentPipeline_ = DynamicCast<VulkanGraphicsPipeline>(pipeline);
+    currentGraphicsPipeline_ = DynamicCast<VulkanGraphicsPipeline>(pipeline);
 }
 
-void VulkanCommandBuffer::BindGroups(int startIndex, Span<RC<BindingGroup>> groups)
+void VulkanCommandBuffer::BindPipeline(const RC<ComputePipeline> &pipeline)
 {
-    auto layout = static_cast<const VulkanBindingLayout *>(currentPipeline_->GetBindingLayout().get());
+    if(!pipeline)
+    {
+        vkCmdBindPipeline(commandBuffer_, VK_PIPELINE_BIND_POINT_COMPUTE, nullptr);
+        currentGraphicsPipeline_ = nullptr;
+        return;
+    }
+    auto vkPipeline = static_cast<VulkanComputePipeline *>(pipeline.get());
+    vkCmdBindPipeline(commandBuffer_, VK_PIPELINE_BIND_POINT_COMPUTE, vkPipeline->GetNativePipeline());
+    currentComputePipeline_ = DynamicCast<VulkanComputePipeline>(pipeline);
+}
+
+void VulkanCommandBuffer::BindGroupsToGraphicsPipeline(int startIndex, Span<RC<BindingGroup>> groups)
+{
+    auto layout = static_cast<const VulkanBindingLayout *>(currentGraphicsPipeline_->GetBindingLayout().get());
     std::vector<VkDescriptorSet> sets(groups.GetSize());
     for(auto &&[i, g] : Enumerate(groups))
     {
@@ -489,12 +503,35 @@ void VulkanCommandBuffer::BindGroups(int startIndex, Span<RC<BindingGroup>> grou
         static_cast<uint32_t>(sets.size()), sets.data(), 0, nullptr);
 }
 
-void VulkanCommandBuffer::BindGroup(int index, const RC<BindingGroup> &group)
+void VulkanCommandBuffer::BindGroupsToComputePipeline(int startIndex, Span<RC<BindingGroup>> groups)
 {
-    auto layout = static_cast<const VulkanBindingLayout *>(currentPipeline_->GetBindingLayout().get());
+    auto layout = static_cast<const VulkanBindingLayout *>(currentComputePipeline_->GetBindingLayout().get());
+    std::vector<VkDescriptorSet> sets(groups.GetSize());
+    for(auto &&[i, g] : Enumerate(groups))
+    {
+        sets[i] = static_cast<VulkanBindingGroupInstance *>(g.get())->GetNativeSet();
+    }
+    vkCmdBindDescriptorSets(
+        commandBuffer_, VK_PIPELINE_BIND_POINT_COMPUTE,
+        layout->GetNativeLayout(), startIndex,
+        static_cast<uint32_t>(sets.size()), sets.data(), 0, nullptr);
+}
+
+void VulkanCommandBuffer::BindGroupToGraphicsPipeline(int index, const RC<BindingGroup> &group)
+{
+    auto layout = static_cast<const VulkanBindingLayout *>(currentGraphicsPipeline_->GetBindingLayout().get());
     VkDescriptorSet set = static_cast<VulkanBindingGroupInstance *>(group.get())->GetNativeSet();
     vkCmdBindDescriptorSets(
         commandBuffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
+        layout->GetNativeLayout(), index, 1, &set, 0, nullptr);
+}
+
+void VulkanCommandBuffer::BindGroupToComputePipeline(int index, const RC<BindingGroup> &group)
+{
+    auto layout = static_cast<const VulkanBindingLayout *>(currentComputePipeline_->GetBindingLayout().get());
+    VkDescriptorSet set = static_cast<VulkanBindingGroupInstance *>(group.get())->GetNativeSet();
+    vkCmdBindDescriptorSets(
+        commandBuffer_, VK_PIPELINE_BIND_POINT_COMPUTE,
         layout->GetNativeLayout(), index, 1, &set, 0, nullptr);
 }
 
@@ -546,6 +583,15 @@ void VulkanCommandBuffer::Draw(int vertexCount, int instanceCount, int firstVert
         static_cast<uint32_t>(instanceCount),
         static_cast<uint32_t>(firstVertex),
         static_cast<uint32_t>(firstInstance));
+}
+
+void VulkanCommandBuffer::Dispatch(int groupCountX, int groupCountY, int groupCountZ)
+{
+    vkCmdDispatch(
+        commandBuffer_,
+        static_cast<uint32_t>(groupCountX),
+        static_cast<uint32_t>(groupCountY),
+        static_cast<uint32_t>(groupCountZ));
 }
 
 void VulkanCommandBuffer::CopyBuffer(
@@ -610,7 +656,7 @@ void VulkanCommandBuffer::CopyTextureToBuffer(
 
 const RC<GraphicsPipeline> &VulkanCommandBuffer::GetCurrentPipeline() const
 {
-    return currentPipeline_;
+    return currentGraphicsPipeline_;
 }
 
 VkCommandBuffer VulkanCommandBuffer::GetNativeCommandBuffer() const

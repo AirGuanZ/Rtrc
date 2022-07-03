@@ -84,10 +84,11 @@ void *VulkanBuffer::Map(size_t offset, size_t size) const
     return result;
 }
 
-void VulkanBuffer::Unmap()
+void VulkanBuffer::Unmap(size_t offset, size_t size)
 {
     assert(ownership_ == ResourceOwnership::Allocation);
     vmaUnmapMemory(alloc_.allocator, alloc_.allocation);
+    vmaFlushAllocation(alloc_.allocator, alloc_.allocation, offset, size);
 }
 
 VkBuffer VulkanBuffer::GetNativeBuffer() const

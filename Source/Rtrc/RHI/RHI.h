@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <optional>
 #include <vector>
 
 #include <Rtrc/Utils/EnumFlags.h>
@@ -58,6 +59,7 @@ enum class Format : uint32_t
     Unknown,
     B8G8R8A8_UNorm,
     R32G32_Float,
+    R32G32B32A32_Float,
 };
 
 const char *GetFormatName(Format format);
@@ -373,18 +375,13 @@ struct BindingDesc
 {
     std::string                  name;
     BindingType                  type;
-    ShaderStageFlag              shaderStages      = ShaderStageFlags::All;
-    bool                         isArray           = false;
-    uint32_t                     arraySize         = 1;
-    const StructInfo            *structInfo        = nullptr;
-    BindingTemplateParameterType templateParameter = BindingTemplateParameterType::Struct;
+    ShaderStageFlag              shaderStages = ShaderStageFlags::All;
+    std::optional<uint32_t>      arraySize;
 
     std::strong_ordering operator<=>(const BindingDesc &other) const
     {
-        const uint32_t thisArraySize = isArray ? arraySize : 0;
-        const uint32_t otherArraySize = other.isArray ? other.arraySize : 0;
-        return std::tie(name, type, shaderStages, isArray, thisArraySize) <=>
-               std::tie(other.name, other.type, other.shaderStages, other.isArray, otherArraySize);
+        return std::tie(name, type, shaderStages, arraySize) <=>
+               std::tie(other.name, other.type, other.shaderStages, other.arraySize);
     }
 };
 
@@ -393,8 +390,6 @@ using AliasedBindingsDesc = std::vector<BindingDesc>;
 struct BindingGroupLayoutDesc
 {
     std::vector<AliasedBindingsDesc> bindings;
-    std::string groupStructTypeIdentifier;
-    TypeIndex groupStructType;
 
     auto operator<=>(const BindingGroupLayoutDesc &other) const = default;
 };
@@ -634,9 +629,6 @@ public:
     virtual RC<Sampler> CreateSampler(const SamplerDesc &desc) = 0;
 
     virtual void WaitIdle() = 0;
-
-    template<typename T>
-    RC<BindingGroupLayout> CreateBindingGroupLayout();
 };
 
 class BackBufferSemaphore : public RHIObject
@@ -688,30 +680,12 @@ public:
 
     virtual void ModifyMember(int index, const RC<Sampler> &sampler) = 0;
 
-    template<typename Struct, typename Member>
-    void ModifyMember(Member Struct::*member, const RC<BufferSRV> &bufferSRV);
-
-    template<typename Struct, typename Member>
-    void ModifyMember(Member Struct::*member, const RC<BufferUAV> &bufferUAV);
-
-    template<typename Struct, typename Member>
-    void ModifyMember(Member Struct::*member, const RC<Texture2DSRV> &textureSRV);
-
-    template<typename Struct, typename Member>
-    void ModifyMember(Member Struct::*member, const RC<Texture2DUAV> &textureUAV);
-
-    template<typename Struct, typename Member>
-    void ModifyMember(Member Struct::*member, const RC<Sampler> &sampler);
-
-    template<typename Struct>
-    void Modify(const Struct &members);
+    virtual void ModifyMember(int index, const RC<Buffer> &uniformBuffer, size_t offset, size_t range) = 0;
 };
 
 class BindingLayout : public RHIObject
 {
-public:
 
-    virtual int GetGroupIndex(const TypeIndex &groupStructType) const = 0;
 };
 
 class Queue : public RHIObject
@@ -773,11 +747,15 @@ public:
 
     virtual void BindPipeline(const RC<GraphicsPipeline> &pipeline) = 0;
 
-    virtual void BindGroups(int startIndex, Span<RC<BindingGroup>> groups) = 0;
+    virtual void BindPipeline(const RC<ComputePipeline> &pipeline) = 0;
 
-    virtual void BindGroup(int index, const RC<BindingGroup> &group) = 0;
+    virtual void BindGroupsToGraphicsPipeline(int startIndex, Span<RC<BindingGroup>> groups) = 0;
 
-    void BindGroup(const RC<BindingGroup> &group);
+    virtual void BindGroupsToComputePipeline(int startIndex, Span<RC<BindingGroup>> groups) = 0;
+
+    virtual void BindGroupToGraphicsPipeline(int index, const RC<BindingGroup> &group) = 0;
+
+    virtual void BindGroupToComputePipeline(int index, const RC<BindingGroup> &group) = 0;
 
     virtual void SetViewports(Span<Viewport> viewports) = 0;
 
@@ -788,6 +766,8 @@ public:
     virtual void SetScissorsWithCount(Span<Scissor> scissors) = 0;
 
     virtual void Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance) = 0;
+
+    virtual void Dispatch(int groupCountX, int groupCountY, int groupCountZ) = 0;
 
     virtual void CopyBuffer(
         const RC<Buffer> &dst, size_t dstOffset,
@@ -964,7 +944,7 @@ public:
 
     virtual void *Map(size_t offset, size_t size) const = 0;
 
-    virtual void Unmap() = 0;
+    virtual void Unmap(size_t offset, size_t size) = 0;
 };
 
 class BufferSRV : public RHIObject

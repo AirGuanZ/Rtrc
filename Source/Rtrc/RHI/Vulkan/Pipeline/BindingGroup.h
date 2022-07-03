@@ -24,6 +24,8 @@ public:
 
     void ModifyMember(int index, const RC<Sampler> &sampler) override;
 
+    void ModifyMember(int index, const RC<Buffer> &uniformBuffer, size_t offset, size_t range) override;
+
     VkDescriptorSet GetNativeSet() const;
 
 private:

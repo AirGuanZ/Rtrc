@@ -312,7 +312,7 @@ RC<BindingGroupLayout> VulkanDevice::CreateBindingGroupLayout(const BindingGroup
             descSetBindings.push_back(VkDescriptorSetLayoutBinding{
                 .binding         = static_cast<uint32_t>(descSetBindings.size()),
                 .descriptorType  = vkType,
-                .descriptorCount = binding.isArray ? binding.arraySize : 1,
+                .descriptorCount = binding.arraySize.value_or(1),
                 .stageFlags      = TranslateShaderStageFlag(binding.shaderStages)
             });
         }
@@ -323,7 +323,7 @@ RC<BindingGroupLayout> VulkanDevice::CreateBindingGroupLayout(const BindingGroup
             {
                 throw Exception("aliasing between different descriptor types is not allowed");
             }
-            const uint32_t arraySize = binding.isArray ? binding.arraySize : 1;
+            const uint32_t arraySize = binding.arraySize.value_or(1);
             if(arraySize != descSetBindings.back().descriptorCount)
             {
                 throw Exception("aliasing between descriptor arrays with different sizes is not allowed");

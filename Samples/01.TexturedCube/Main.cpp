@@ -80,7 +80,7 @@ void Run()
         .AddBindingGroup<TestGroup>()
         .Compile(*device);
 
-    auto bindingGroupLayout = device->CreateBindingGroupLayout<TestGroup>();
+    auto bindingGroupLayout = device->CreateBindingGroupLayout(GetBindingGroupLayoutDesc<TestGroup>());
     auto bindingLayout = device->CreateBindingLayout(RHI::BindingLayoutDesc{ { bindingGroupLayout } });
 
     auto pipelineBuilder = device->CreateGraphicsPipelineBuilder();
@@ -205,11 +205,14 @@ void Run()
     TestGroup bindingGroupStruct;
     bindingGroupStruct.VertexPositionBuffer = vertexPositionBufferSRV;
     bindingGroupStruct.VertexTexCoordBuffer = vertexTexCoordBufferSRV;
-    bindingGroupStruct.MainTexture = mainTexSRV;
-    bindingGroupStruct.MainSampler = mainSampler;
+    bindingGroupStruct.MainTexture          = mainTexSRV;
+    bindingGroupStruct.MainSampler          = mainSampler;
 
     auto bindingGroup = bindingGroupLayout->CreateBindingGroup();
-    bindingGroup->Modify(bindingGroupStruct);
+    ModifyBindingGroup(bindingGroup.get(), &TestGroup::VertexPositionBuffer, vertexPositionBufferSRV);
+    ModifyBindingGroup(bindingGroup.get(), &TestGroup::VertexTexCoordBuffer, vertexTexCoordBufferSRV);
+    ModifyBindingGroup(bindingGroup.get(), &TestGroup::MainTexture,          mainTexSRV);
+    ModifyBindingGroup(bindingGroup.get(), &TestGroup::MainSampler,          mainSampler);
 
     // render loop
 
@@ -272,7 +275,7 @@ void Run()
 
         commandBuffer->BindPipeline(pipeline);
 
-        commandBuffer->BindGroup(bindingGroup);
+        commandBuffer->BindGroupToGraphicsPipeline(0, bindingGroup);
 
         commandBuffer->SetViewports(RHI::Viewport
         {

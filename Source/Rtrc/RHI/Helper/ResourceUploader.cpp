@@ -28,7 +28,7 @@ BufferAcquireBarrier ResourceUploader::Upload(
     {
         auto p = buffer->Map(offset, range);
         std::memcpy(p, data, range);
-        buffer->Unmap();
+        buffer->Unmap(offset, range);
         return {};
     }
 
@@ -42,7 +42,7 @@ BufferAcquireBarrier ResourceUploader::Upload(
 
     auto p = stagingBuffer->Map(0, range);
     std::memcpy(p, data, range);
-    stagingBuffer->Unmap();
+    stagingBuffer->Unmap(0, range);
 
     if(pendingStagingBuffers_.empty())
     {
@@ -116,7 +116,7 @@ TextureAcquireBarrier ResourceUploader::Upload(
 
     auto p = stagingBuffer->Map(0, stagingBufferSize);
     std::memcpy(p, data, stagingBufferSize);
-    stagingBuffer->Unmap();
+    stagingBuffer->Unmap(0, stagingBufferSize);
 
     if(pendingStagingBuffers_.empty())
     {

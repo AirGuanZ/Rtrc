@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include <Rtrc/RHI/RHI.h>
 #include <Rtrc/Shader/Struct.h>
 #include <Rtrc/Utils/EnumFlags.h>
@@ -259,6 +261,24 @@ concept BindingGroupStruct = requires{ typename T::_rtrcBindingGroupTag; };
 #define $group_end   RTRC_BINDING_GROUP_END
 #define $binding     RTRC_BINDING_GROUP_MEMBER
 
+struct BindingInfo
+{
+    std::string                       name;
+    RHI::BindingType                  type;
+    RHI::ShaderStageFlag              shaderStages;
+    std::optional<uint32_t>           arraySize;
+    const StructInfo                 *structInfo;
+    RHI::BindingTemplateParameterType templateParameter;
+};
+
+using AliasedBindingsInfo = std::vector<BindingInfo>;
+
+struct BindingGroupLayoutInfo
+{
+    std::vector<AliasedBindingsInfo> bindings;
+    TypeIndex groupStructType;
+};
+
 template<BindingGroupStruct Struct>
 const RHI::BindingGroupLayoutDesc *GetBindingGroupLayoutDesc()
 {
@@ -270,10 +290,36 @@ const RHI::BindingGroupLayoutDesc *GetBindingGroupLayoutDesc()
             RHI::BindingDesc desc = {
                 .name         = name,
                 .type         = Member::BindingType,
-                .shaderStages = Member::ShaderStages,
-                .isArray      = Member::IsArray,
-                .arraySize    = static_cast<uint32_t>(Member::ArraySize)
+                .shaderStages = Member::ShaderStages
             };
+            if constexpr(Member::IsArray)
+            {
+                desc.arraySize = static_cast<uint32_t>(Member::ArraySize);
+            }
+            groupLayoutDesc.bindings.push_back({ desc });
+        });
+        return groupLayoutDesc;
+    }();
+    return &result;
+}
+
+template<BindingGroupStruct Struct>
+const BindingGroupLayoutInfo *GetBindingGroupLayoutInfo()
+{
+    static const BindingGroupLayoutInfo result = []
+    {
+        BindingGroupLayoutInfo groupLayoutDesc;
+        Struct::template ForEachMember([&]<typename Member>(Member Struct:: *, const char *name)
+        {
+            BindingInfo desc = {
+                .name         = name,
+                .type         = Member::BindingType,
+                .shaderStages = Member::ShaderStages
+            };
+            if constexpr(Member::IsArray)
+            {
+                desc.arraySize = static_cast<uint32_t>(Member::ArraySize);
+            }
 #define ADD_CASE(TYPE, VAL)                                                        \
             if constexpr(std::is_same_v<typename Member::TemplateParameter, TYPE>) \
             {                                                                      \
@@ -307,7 +353,7 @@ const RHI::BindingGroupLayoutDesc *GetBindingGroupLayoutDesc()
 }
 
 template<BindingGroupStruct Struct, typename Member>
-void ModifyBindingGroupInstance(
+void ModifyBindingGroup(
     RHI::BindingGroup *instance,
     Member Struct::* member,
     const RC<RHI::BufferSRV> &srv)
@@ -328,7 +374,7 @@ void ModifyBindingGroupInstance(
 }
 
 template<BindingGroupStruct Struct, typename Member>
-void ModifyBindingGroupInstance(
+void ModifyBindingGroup(
     RHI::BindingGroup *instance,
     Member Struct::* member,
     const RC<RHI::BufferUAV> &uav)
@@ -349,7 +395,7 @@ void ModifyBindingGroupInstance(
 }
 
 template<BindingGroupStruct Struct, typename Member>
-void ModifyBindingGroupInstance(
+void ModifyBindingGroup(
     RHI::BindingGroup *instance,
     Member Struct::* member,
     const RC<RHI::Texture2DSRV> &srv)
@@ -370,7 +416,7 @@ void ModifyBindingGroupInstance(
 }
 
 template<BindingGroupStruct Struct, typename Member>
-void ModifyBindingGroupInstance(
+void ModifyBindingGroup(
     RHI::BindingGroup *instance,
     Member Struct::* member,
     const RC<RHI::Texture2DUAV> &uav)
@@ -391,7 +437,7 @@ void ModifyBindingGroupInstance(
 }
 
 template<BindingGroupStruct Struct, typename Member>
-void ModifyBindingGroupInstance(
+void ModifyBindingGroup(
     RHI::BindingGroup *instance,
     Member Struct::*member,
     const RC<RHI::Sampler> &sampler)
@@ -411,50 +457,27 @@ void ModifyBindingGroupInstance(
     Struct::ForEachMember(processBinding);
 }
 
-template<typename T>
-RC<RHI::BindingGroupLayout> RHI::Device::CreateBindingGroupLayout()
+template<BindingGroupStruct Struct, typename Member>
+void ModifyBindingGroup(
+    RHI::BindingGroup *instance,
+    Member Struct:: *member,
+    const RC<RHI::Buffer> &uniformBuffer,
+    size_t offset,
+    size_t range)
 {
-    return this->CreateBindingGroupLayout(GetBindingGroupLayoutDesc<T>());
-}
-
-template<typename Struct, typename Member>
-void RHI::BindingGroup::ModifyMember(Member Struct::*member, const RC<BufferSRV> &bufferSRV)
-{
-    ModifyBindingGroupInstance(this, member, bufferSRV);
-}
-
-template<typename Struct, typename Member>
-void RHI::BindingGroup::ModifyMember(Member Struct::*member, const RC<BufferUAV> &bufferUAV)
-{
-    ModifyBindingGroupInstance(this, member, bufferUAV);
-}
-
-template<typename Struct, typename Member>
-void RHI::BindingGroup::ModifyMember(Member Struct::*member, const RC<Texture2DSRV> &textureSRV)
-{
-    ModifyBindingGroupInstance(this, member, textureSRV);
-}
-
-template<typename Struct, typename Member>
-void RHI::BindingGroup::ModifyMember(Member Struct::*member, const RC<Texture2DUAV> &textureUAV)
-{
-    ModifyBindingGroupInstance(this, member, textureUAV);
-}
-
-template<typename Struct, typename Member>
-void RHI::BindingGroup::ModifyMember(Member Struct::*member, const RC<Sampler> &sampler)
-{
-    ModifyBindingGroupInstance(this, member, sampler);
-}
-
-template<typename Struct>
-void RHI::BindingGroup::Modify(const Struct &members)
-{
-    static_assert(BindingGroupStruct<Struct>);
-    Struct::ForEachMember([&]<typename Member>(Member Struct::*ptr, const char *)
+    int index = 0;
+    auto processBinding = [&]<typename Binding>(Binding Struct:: * p, const char *)
     {
-        this->ModifyMember(ptr, (members.*ptr).GetValue());
-    });
+        if constexpr(std::is_same_v<Binding, Member>)
+        {
+            if(GetMemberOffset(p) == GetMemberOffset(member))
+            {
+                instance->ModifyMember(index, uniformBuffer, offset, range);
+            }
+        }
+        ++index;
+    };
+    Struct::ForEachMember(processBinding);
 }
 
 RTRC_END

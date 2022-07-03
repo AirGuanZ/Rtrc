@@ -14,8 +14,6 @@ public:
 
     ~VulkanBindingLayout() override;
 
-    int GetGroupIndex(const TypeIndex &groupStructType) const override;
-
     VkPipelineLayout GetNativeLayout() const;
 
 private:
@@ -23,8 +21,6 @@ private:
     BindingLayoutDesc desc_;
     VkDevice device_;
     VkPipelineLayout layout_;
-
-    std::map<TypeIndex, int> groupType2Index_;
 };
 
 RTRC_RHI_VK_END

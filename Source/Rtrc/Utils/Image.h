@@ -30,7 +30,7 @@ public:
 
     Image();
 
-    Image(int width, int height);
+    Image(uint32_t width, uint32_t height);
 
     Image(const Image &other);
 
@@ -46,9 +46,9 @@ public:
 
     operator bool() const;
 
-    int GetWidth() const;
+    uint32_t GetWidth() const;
 
-    int GetHeight() const;
+    uint32_t GetHeight() const;
 
     Texel &operator()(int x, int y);
 
@@ -76,8 +76,8 @@ public:
 
 private:
 
-    int width_;
-    int height_;
+    uint32_t width_;
+    uint32_t height_;
     std::vector<Texel> data_;
 };
 
@@ -127,9 +127,9 @@ public:
     template<typename T>
     ImageDynamic To() const;
 
-    int GetWidth() const;
+    uint32_t GetWidth() const;
 
-    int GetHeight() const;
+    uint32_t GetHeight() const;
 
     template<typename...Vs>
     auto Match(Vs &&...vs) const;
@@ -384,7 +384,7 @@ Image<T>::Image()
 }
 
 template<typename T>
-Image<T>::Image(int width, int height)
+Image<T>::Image(uint32_t width, uint32_t height)
     : width_(width), height_(height)
 {
     assert(width > 0 && height > 0);
@@ -437,13 +437,13 @@ Image<T>::operator bool() const
 }
 
 template<typename T>
-int Image<T>::GetWidth() const
+uint32_t Image<T>::GetWidth() const
 {
     return width_;
 }
 
 template<typename T>
-int Image<T>::GetHeight() const
+uint32_t Image<T>::GetHeight() const
 {
     return height_;
 }

@@ -47,8 +47,6 @@ public:
 
     bool IsSlotRWTexture2D(int index) const;
 
-    const TypeIndex &GetGroupStructTypeIndex() const;
-
 private:
 
     void TransferNode(std::list<PoolInfo> &from, std::list<PoolInfo> &to, std::list<PoolInfo>::iterator iter);

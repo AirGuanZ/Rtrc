@@ -11,9 +11,9 @@ public:
 
     using Component = T;
 
-    explicit Vector2(T value = T());
+    explicit constexpr Vector2(T value = T());
 
-    Vector2(T x, T y);
+    constexpr Vector2(T x, T y);
 
     T operator[](size_t i) const;
 
@@ -36,14 +36,14 @@ template<typename T>
 bool operator==(const Vector2<T> &a, const Vector2<T> &b);
 
 template<typename T>
-Vector2<T>::Vector2(T value)
+constexpr Vector2<T>::Vector2(T value)
     : Vector2(value, value)
 {
     
 }
 
 template<typename T>
-Vector2<T>::Vector2(T x, T y)
+constexpr Vector2<T>::Vector2(T x, T y)
     : x(x), y(y)
 {
     

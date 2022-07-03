@@ -29,10 +29,16 @@ public:
     void EndRenderPass() override;
 
     void BindPipeline(const RC<GraphicsPipeline> &pipeline) override;
-    
-    void BindGroups(int startIndex, Span<RC<BindingGroup>> groups) override;
 
-    void BindGroup(int index, const RC<BindingGroup> &group) override;
+    void BindPipeline(const RC<ComputePipeline> &pipeline) override;
+    
+    void BindGroupsToGraphicsPipeline(int startIndex, Span<RC<BindingGroup>> groups) override;
+
+    void BindGroupsToComputePipeline(int startIndex, Span<RC<BindingGroup>> groups) override;
+
+    void BindGroupToGraphicsPipeline(int index, const RC<BindingGroup> &group) override;
+
+    void BindGroupToComputePipeline(int index, const RC<BindingGroup> &group) override;
 
     void SetViewports(Span<Viewport> viewports) override;
 
@@ -43,6 +49,8 @@ public:
     void SetScissorsWithCount(Span<Scissor> scissors) override;
 
     void Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance) override;
+
+    void Dispatch(int groupCountX, int groupCountY, int groupCountZ) override;
 
     void CopyBuffer(
         const RC<Buffer> &dst, size_t dstOffset,
@@ -68,7 +76,8 @@ private:
     VkCommandPool   pool_;
     VkCommandBuffer commandBuffer_;
 
-    RC<GraphicsPipeline> currentPipeline_;
+    RC<GraphicsPipeline> currentGraphicsPipeline_;
+    RC<ComputePipeline>  currentComputePipeline_;
 };
 
 RTRC_RHI_VK_END

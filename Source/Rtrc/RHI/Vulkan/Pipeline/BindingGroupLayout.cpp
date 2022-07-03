@@ -1,4 +1,4 @@
-#include <Rtrc/RHI/Vulkan/Pipeline/BindingGroupInstance.h>
+#include <Rtrc/RHI/Vulkan/Pipeline/BindingGroup.h>
 #include <Rtrc/Utils/ScopeGuard.h>
 
 RTRC_RHI_VK_BEGIN
@@ -98,11 +98,6 @@ bool VulkanBindingGroupLayout::IsSlotTexture2D(int index) const
 bool VulkanBindingGroupLayout::IsSlotRWTexture2D(int index) const
 {
     return desc_->bindings[index].front().type == BindingType::RWTexture2D;
-}
-
-const TypeIndex &VulkanBindingGroupLayout::GetGroupStructTypeIndex() const
-{
-    return desc_->groupStructType;
 }
 
 void VulkanBindingGroupLayout::TransferNode(std::list<PoolInfo> &from, std::list<PoolInfo> &to, std::list<PoolInfo>::iterator iter)
