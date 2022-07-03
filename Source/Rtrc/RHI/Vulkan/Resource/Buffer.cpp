@@ -1,4 +1,5 @@
 #include <Rtrc/RHI/Vulkan/Resource/BufferSRV.h>
+#include <Rtrc/RHI/Vulkan/Resource/BufferUAV.h>
 #include <Rtrc/Utils/ScopeGuard.h>
 
 RTRC_RHI_VK_BEGIN
@@ -52,6 +53,24 @@ RC<BufferSRV> VulkanBuffer::CreateSRV(const BufferSRVDesc &desc) const
         view = nullptr;
     }
     return MakeRC<VulkanBufferSRV>(this, desc, view);
+}
+
+RC<BufferUAV> VulkanBuffer::CreateUAV(const BufferUAVDesc &desc) const
+{
+    VkBufferView view;
+    if(desc.format != Format::Unknown)
+    {
+        view = CreateBufferView(ViewKey{
+            .format = TranslateTexelFormat(desc.format),
+            .offset = desc.offset,
+            .count  = desc.range
+        });
+    }
+    else
+    {
+        view = nullptr;
+    }
+    return MakeRC<VulkanBufferUAV>(this, desc, view);
 }
 
 void *VulkanBuffer::Map(size_t offset, size_t size) const

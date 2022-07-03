@@ -12,9 +12,17 @@ public:
 
     ~VulkanBindingGroupInstance() override;
 
+    const BindingGroupLayout *GetLayout() const override;
+
     void ModifyMember(int index, const RC<BufferSRV> &bufferSRV) override;
 
+    void ModifyMember(int index, const RC<BufferUAV> &bufferUAV) override;
+
     void ModifyMember(int index, const RC<Texture2DSRV> &textureSRV) override;
+
+    void ModifyMember(int index, const RC<Texture2DUAV> &textureUAV) override;
+
+    void ModifyMember(int index, const RC<Sampler> &sampler) override;
 
     VkDescriptorSet GetNativeSet() const;
 

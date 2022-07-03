@@ -1,58 +1,36 @@
 #include <iostream>
 
-#include <fmt/format.h>
-
-#include <Rtrc/RHI/RHI.h>
-#include <Rtrc/Window/Window.h>
-#include <Rtrc/Utils/File.h>
-
-#include <Rtrc/Shader/Binding.h>
-#include <Rtrc/Shader/Shader.h>
-
-constexpr int DADADA_ARRAY_SIZE = 128;
-
-$struct_begin(MyCBuffer)
-    $variable(float, x)
-    $variable(float, y)
-    $variable(float, z)
-    $variable(float, w)
-$struct_end()
-
-$group_begin(MyGroup)
-    $binding(Texture2D<float4>,         albedo)               // Texture2D<float> albedo, accessible in all stages
-    $binding(Texture2D<int4>,           textureArray, 37, FS) // Texture2D<int4> textureArray[37], accessible in PS
-    $binding(Buffer<float>,             myBuffer)
-    $binding(Buffer<uint>,              myBufferArray, DADADA_ARRAY_SIZE, VS | FS)
-    $binding(StructuredBuffer<uint4>,   myStructuredBuffer, VS)
-    $binding(Sampler,                   mySampler, All)
-    $binding(ConstantBuffer<MyCBuffer>, myCBuffer, All)
-$group_end()
+#include <Rtrc/Rtrc.h>
 
 $group_begin(TestGroup)
-    $binding(Buffer<float2>, VertexPositionBuffer, VS)
+    $binding(Buffer<float2>,    VertexPositionBuffer, VS)
+    $binding(Buffer<float2>,    VertexTexCoordBuffer, VS)
+    $binding(Texture2D<float4>, MainTexture,          FS)
+    $binding(Sampler,           MainSampler,          FS)
 $group_end()
 
-void run()
+void Run()
 {
     using namespace Rtrc;
 
     // window & device
 
     auto window = WindowBuilder()
-        .SetSize(800, 600)
-        .SetTitle("Hello, world!")
-        .CreateWindow();
+        .SetSize(800, 800)
+        .SetTitle("Rtrc Sample TexturedQuad")
+        .Create();
 
     auto &input = window.GetInput();
 
-    auto instance = CreateVulkanInstance(
-        RHI::VulkanInstanceDesc
+    auto instance = CreateVulkanInstance(RHI::VulkanInstanceDesc
         {
             .extensions = Window::GetRequiredVulkanInstanceExtensions(),
             .debugMode = true
         });
 
     auto device = instance->CreateDevice();
+
+    auto graphicsQueue = device->GetQueue(RHI::QueueType::Graphics);
 
     // swapchain
 
@@ -92,7 +70,7 @@ void run()
 
     // pipeline
 
-    auto shaderText = File::ReadTextFile("Asset/HelloWorld/HelloWorldShader.hlsl");
+    auto shaderText = File::ReadTextFile("Asset/01.TexturedQuad/Quad.hlsl");
 
     auto shader = ShaderCompiler()
         .SetVertexShaderSource(shaderText, "VSMain")
@@ -105,7 +83,7 @@ void run()
     auto bindingGroupLayout = device->CreateBindingGroupLayout<TestGroup>();
     auto bindingLayout = device->CreateBindingLayout(RHI::BindingLayoutDesc{ { bindingGroupLayout } });
 
-    auto pipelineBuilder = device->CreatePipelineBuilder();
+    auto pipelineBuilder = device->CreateGraphicsPipelineBuilder();
     auto pipeline = (*pipelineBuilder)
         .SetVertexShader(shader->GetVertexShader())
         .SetFragmentShader(shader->GetFragmentShader())
@@ -115,34 +93,123 @@ void run()
         .SetScissors(1)
         .CreatePipeline();
 
+    // uploader
+
+    RHI::ResourceUploader uploader(device);
+    std::vector<RHI::BufferAcquireBarrier> uploadBufferAcquireBarriers;
+    std::vector<RHI::TextureAcquireBarrier> uploadTextureAcquireBarriers;
+
+    // vertex position buffer
+
+    const std::array vertexPositionData =
+    {
+        Vector2f(-0.8f, -0.8f),
+        Vector2f(-0.8f, +0.8f),
+        Vector2f(+0.8f, +0.8f),
+        Vector2f(-0.8f, -0.8f),
+        Vector2f(+0.8f, +0.8f),
+        Vector2f(+0.8f, -0.8f)
+    };
+
     auto vertexPositionBuffer = device->CreateBuffer(RHI::BufferDesc
     {
-        .size                 = sizeof(Vector2f) * 3,
+        .size                 = sizeof(vertexPositionData),
         .usage                = RHI::BufferUsage::ShaderBuffer,
-        .hostAccessType       = RHI::BufferHostAccessType::SequentialWrite,
+        .hostAccessType       = RHI::BufferHostAccessType::None,
         .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
     });
 
     auto vertexPositionBufferSRV = vertexPositionBuffer->CreateSRV(RHI::BufferSRVDesc{
         .format = RHI::Format::R32G32_Float,
         .offset = 0,
-        .range  = sizeof(Vector2f) * 3
+        .range  = sizeof(vertexPositionData)
     });
 
-    {
-        const Vector2f positions[] =
-        {
-            Vector2f(0.0f, 0.5f),
-            Vector2f(0.5f, -0.5f),
-            Vector2f(-0.5f, -0.5f)
-        };
-        auto p = vertexPositionBuffer->Map(0, sizeof(positions));
-        std::memcpy(p, positions, sizeof(positions));
-        vertexPositionBuffer->Unmap();
-    }
+    uploadBufferAcquireBarriers.push_back(uploader.Upload(
+        vertexPositionBuffer, 0, sizeof(vertexPositionData), vertexPositionData.data(),
+        graphicsQueue, RHI::ResourceState::BufferRead | RHI::ResourceState::VS));
+
+    // vertex texcoord buffer
+
+    const std::array vertexTexCoordData = {
+        Vector2f(0.0f, 1.0f),
+        Vector2f(0.0f, 0.0f),
+        Vector2f(1.0f, 0.0f),
+        Vector2f(0.0f, 1.0f),
+        Vector2f(1.0f, 0.0f),
+        Vector2f(1.0f, 1.0f)
+    };
+
+    auto vertexTexCoordBuffer = device->CreateBuffer(RHI::BufferDesc{
+        .size                 = sizeof(vertexTexCoordData),
+        .usage                = RHI::BufferUsage::ShaderBuffer,
+        .hostAccessType       = RHI::BufferHostAccessType::None,
+        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
+    });
+
+    auto vertexTexCoordBufferSRV = vertexTexCoordBuffer->CreateSRV(RHI::BufferSRVDesc{
+        .format = RHI::Format::R32G32_Float,
+        .offset = 0,
+        .range  = sizeof(vertexTexCoordData)
+    });
+
+    uploadBufferAcquireBarriers.push_back(uploader.Upload(
+        vertexTexCoordBuffer, 0, sizeof(vertexTexCoordData), vertexTexCoordData.data(),
+        graphicsQueue, RHI::ResourceState::BufferRead | RHI::ResourceState::VS));
+
+    // main texture
+
+    auto mainTexData = ImageDynamic::Load("Asset/01.TexturedQuad/MainTexture.png");
+
+    auto mainTex = device->CreateTexture2D(RHI::Texture2DDesc{
+        .format               = RHI::Format::B8G8R8A8_UNorm,
+        .width                = static_cast<uint32_t>(mainTexData.GetWidth()),
+        .height               = static_cast<uint32_t>(mainTexData.GetHeight()),
+        .mipLevels            = 1,
+        .arraySize            = 1,
+        .sampleCount          = 1,
+        .usage                = RHI::TextureUsage::ShaderResource | RHI::TextureUsage::TransferDst,
+        .initialState         = RHI::ResourceState::Uninitialized,
+        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
+    });
+
+    auto mainTexSRV = mainTex->Create2DSRV(RHI::Texture2DSRVDesc{
+        .format         = RHI::Format::Unknown,
+        .baseMipLevel   = 0,
+        .levelCount     = 1,
+        .baseArrayLayer = 0,
+        .layerCount     = 1
+    });
+
+    uploadTextureAcquireBarriers.push_back(uploader.Upload(
+        mainTex, RHI::AspectType::Color, 0, 0, mainTexData,
+        graphicsQueue, RHI::ResourceState::TextureRead | RHI::ResourceState::FS));
+
+    // main sampler
+
+    auto mainSampler = device->CreateSampler(RHI::SamplerDesc{
+        .magFilter = RHI::FilterMode::Linear,
+        .minFilter = RHI::FilterMode::Linear,
+        .mipFilter = RHI::FilterMode::Point,
+        .addressModeU = RHI::AddressMode::Clamp,
+        .addressModeV = RHI::AddressMode::Clamp,
+        .addressModeW = RHI::AddressMode::Clamp
+    });
+
+    // upload
+
+    uploader.SubmitAndSync();
+
+    // binding group
+
+    TestGroup bindingGroupStruct;
+    bindingGroupStruct.VertexPositionBuffer = vertexPositionBufferSRV;
+    bindingGroupStruct.VertexTexCoordBuffer = vertexTexCoordBufferSRV;
+    bindingGroupStruct.MainTexture = mainTexSRV;
+    bindingGroupStruct.MainSampler = mainSampler;
 
     auto bindingGroup = bindingGroupLayout->CreateBindingGroup();
-    bindingGroup->ModifyMember(&TestGroup::VertexPositionBuffer, vertexPositionBufferSRV);
+    bindingGroup->Modify(bindingGroupStruct);
 
     // render loop
 
@@ -190,7 +257,10 @@ void run()
             .arrayLayer     = 0,
             .beforeState    = RHI::ResourceState::Present,
             .afterState     = RHI::ResourceState::RenderTargetWrite
-        }, {}, {}, {}, {}, {});
+        }, {}, {}, uploadTextureAcquireBarriers, {}, uploadBufferAcquireBarriers);
+
+        uploadTextureAcquireBarriers.clear();
+        uploadBufferAcquireBarriers.clear();
 
         commandBuffer->BeginRenderPass(RHI::RenderPassColorAttachment
         {
@@ -202,7 +272,7 @@ void run()
 
         commandBuffer->BindPipeline(pipeline);
 
-        commandBuffer->BindGroup<TestGroup>(bindingGroup);
+        commandBuffer->BindGroup(bindingGroup);
 
         commandBuffer->SetViewports(RHI::Viewport
         {
@@ -218,7 +288,7 @@ void run()
             .size = Vector2i(image->Get2DDesc().width, image->Get2DDesc().height),
         });
 
-        commandBuffer->Draw(3, 1, 0, 0);
+        commandBuffer->Draw(6, 1, 0, 0);
 
         commandBuffer->EndRenderPass();
 
@@ -234,8 +304,7 @@ void run()
 
         commandBuffer->End();
 
-        auto queue = device->GetQueue(RHI::QueueType::Graphics);
-        queue->Submit(
+        graphicsQueue->Submit(
             swapchain->GetAcquireSemaphore(),
             RHI::PipelineStage::ColorAttachmentOutput,
             commandBuffer,
@@ -251,16 +320,12 @@ void run()
 
 int main()
 {
-#if false && defined(_DEBUG) || defined(DEBUG)
-    run();
-#else
     try
     {
-        run();
+        Run();
     }
     catch(const std::exception &e)
     {
         std::cerr << e.what() << std::endl;
     }
-#endif
 }

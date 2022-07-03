@@ -44,6 +44,11 @@ VulkanBindingGroupLayout::~VulkanBindingGroupLayout()
     vkDestroyDescriptorSetLayout(device_, layout_, VK_ALLOC);
 }
 
+const BindingGroupLayoutDesc *VulkanBindingGroupLayout::GetDesc() const
+{
+    return desc_;
+}
+
 RC<BindingGroup> VulkanBindingGroupLayout::CreateBindingGroup()
 {
     if(freeSets_.empty())
@@ -70,14 +75,29 @@ bool VulkanBindingGroupLayout::IsSlotTexelBuffer(int index) const
     return desc_->bindings[index].front().type == BindingType::Buffer;
 }
 
+bool VulkanBindingGroupLayout::IsSlotStorageTexelBuffer(int index) const
+{
+    return desc_->bindings[index].front().type == BindingType::RWBuffer;
+}
+
 bool VulkanBindingGroupLayout::IsSlotStructuredBuffer(int index) const
 {
     return desc_->bindings[index].front().type == BindingType::StructuredBuffer;
 }
 
+bool VulkanBindingGroupLayout::IsSlotRWStructuredBuffer(int index) const
+{
+    return desc_->bindings[index].front().type == BindingType::RWStructuredBuffer;
+}
+
 bool VulkanBindingGroupLayout::IsSlotTexture2D(int index) const
 {
     return desc_->bindings[index].front().type == BindingType::Texture2D;
+}
+
+bool VulkanBindingGroupLayout::IsSlotRWTexture2D(int index) const
+{
+    return desc_->bindings[index].front().type == BindingType::RWTexture2D;
 }
 
 const TypeIndex &VulkanBindingGroupLayout::GetGroupStructTypeIndex() const

@@ -401,7 +401,7 @@ WindowBuilder &WindowBuilder::SetTitle(std::string title)
     return *this;
 }
 
-Window WindowBuilder::CreateWindow() const
+Window WindowBuilder::Create() const
 {
     InitGLFW();
 

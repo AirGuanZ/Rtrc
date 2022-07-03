@@ -13,7 +13,7 @@ const Texture2DSRVDesc &VulkanTexture2DSRV::GetDesc() const
     return desc_;
 }
 
-VkImageView VulkanTexture2DSRV::GetImageView() const
+VkImageView VulkanTexture2DSRV::GetNativeImageView() const
 {
     return imageView_;
 }

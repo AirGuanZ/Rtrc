@@ -12,7 +12,6 @@ SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 #============= glfw =============
 
-#SET(GLFW_VULKAN_STATIC ON)
 ADD_SUBDIRECTORY(External/glfw)
 SET_TARGET_PROPERTIES(glfw update_mappings PROPERTIES FOLDER "External")
 
@@ -21,14 +20,35 @@ SET_TARGET_PROPERTIES(glfw update_mappings PROPERTIES FOLDER "External")
 ADD_SUBDIRECTORY(External/fmt)
 SET_TARGET_PROPERTIES(fmt PROPERTIES FOLDER "External")
 
+#============= stb =============
+
+ADD_SUBDIRECTORY(External/stb)
+SET_TARGET_PROPERTIES(stb PROPERTIES FOLDER "External")
+
+#============= tinyexr =============
+
+ADD_SUBDIRECTORY(External/tinyexr)
+SET_TARGET_PROPERTIES(tinyexr PROPERTIES FOLDER "External")
+
+#============= tinyobjloader =============
+
+ADD_SUBDIRECTORY(External/tinyobjloader)
+SET_TARGET_PROPERTIES(tinyobjloader PROPERTIES FOLDER "External")
+
 #============= mimalloc =============
 
 ADD_SUBDIRECTORY(External/mimalloc-2.0.6)
 SET_TARGET_PROPERTIES(mimalloc-static PROPERTIES FOLDER "External")
 
-#============= vulkan =============
+#============= backends =============
 
 SET(RTRC_RHI_VULKAN ON)
+
+IF(WIN32)
+    SET(RTRC_RHI_DIRECTX12 ON)
+ELSE()
+    SET(RTRC_RHI_DIRECTX12 OFF)
+ENDIF()
 
 #============= vma =============
 
@@ -37,15 +57,26 @@ TARGET_COMPILE_DEFINITIONS(VulkanMemoryAllocator INTERFACE -DVMA_STATIC_VULKAN_F
 TARGET_COMPILE_DEFINITIONS(VulkanMemoryAllocator INTERFACE -DVMA_DYNAMIC_VULKAN_FUNCTIONS=1)
 TARGET_INCLUDE_DIRECTORIES(VulkanMemoryAllocator INTERFACE "External/VulkanMemoryAllocator/include")
 
+#============= dma =============
+
+IF(RTRC_RHI_DIRECTX12)
+    ADD_SUBDIRECTORY(External/D3D12MemAlloc)
+SET_TARGET_PROPERTIES(D3D12MemAlloc PROPERTIES FOLDER "External")
+ENDIF()
+
 #============= volk =============
 
-SET(VOLK_HEADERS_ONLY ON)
-ADD_SUBDIRECTORY(External/volk)
+IF(RTRC_RHI_VULKAN)
+    SET(VOLK_HEADERS_ONLY ON)
+    ADD_SUBDIRECTORY(External/volk)
+ENDIF()
 
 #============= vk-bootstrap =============
 
-ADD_SUBDIRECTORY(External/vk-bootstrap)
-SET_TARGET_PROPERTIES(vk-bootstrap PROPERTIES FOLDER "External")
+IF(RTRC_RHI_VULKAN)
+    ADD_SUBDIRECTORY(External/vk-bootstrap)
+    SET_TARGET_PROPERTIES(vk-bootstrap PROPERTIES FOLDER "External")
+ENDIF()
 
 #============= shader compile =============
 
@@ -76,9 +107,18 @@ FILE(GLOB_RECURSE RTRC_VULKAN_SRC
         "${CMAKE_CURRENT_SOURCE_DIR}/Source/Rtrc/RHI/Vulkan/*.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/Source/Rtrc/RHI/Vulkan/*.inl"
         "${CMAKE_CURRENT_SOURCE_DIR}/Source/Rtrc/RHI/Vulkan/*.h")
+        
+FILE(GLOB_RECURSE RTRC_DIRECTX12_SRC
+        "${CMAKE_CURRENT_SOURCE_DIR}/Source/Rtrc/RHI/DirectX12/*.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Source/Rtrc/RHI/DirectX12/*.inl"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Source/Rtrc/RHI/DirectX12/*.h")
 
 IF(NOT RTRC_RHI_VULKAN)
     LIST(REMOVE_ITEM RTRC_CPP_SRC ${RTRC_VULKAN_SRC})
+ENDIF()
+
+IF(NOT RTRC_RHI_DIRECTX12)
+    LIST(REMOVE_ITEM RTRC_CPP_SRC ${RTRC_DIRECTX12_SRC})
 ENDIF()
 
 ADD_LIBRARY(Rtrc STATIC ${RTRC_CPP_SRC})
@@ -93,11 +133,20 @@ ENDFOREACH()
 RTRC_SET_CXX_LANG_VERSION(Rtrc)
 
 TARGET_INCLUDE_DIRECTORIES(Rtrc PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Source")
+TARGET_LINK_LIBRARIES(Rtrc PUBLIC mimalloc-static fmt)
+TARGET_LINK_LIBRARIES(Rtrc PRIVATE stb tinyexr tinyobjloader glfw)
 
-TARGET_LINK_LIBRARIES(Rtrc PUBLIC mimalloc-static fmt glfw)
+IF(RTRC_RHI_VULKAN OR RTRC_RHI_DIRECTX12)
+	TARGET_LINK_LIBRARIES(Rtrc PRIVATE vk-bootstrap volk::volk_headers VulkanMemoryAllocator)
+ENDIF()
 
 IF(RTRC_RHI_VULKAN)
-	TARGET_LINK_LIBRARIES(Rtrc PUBLIC dxc vk-bootstrap volk::volk_headers VulkanMemoryAllocator)
+	TARGET_LINK_LIBRARIES(Rtrc PRIVATE dxc vk-bootstrap volk::volk_headers VulkanMemoryAllocator)
+ENDIF()
+
+IF(RTRC_RHI_DIRECTX12)
+    TARGET_INCLUDE_DIRECTORIES(Rtrc PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/External/d3dx12")
+    TARGET_LINK_LIBRARIES(Rtrc PRIVATE d3d12.lib dxgi.lib d3dcompiler.lib dxguid.lib D3D12MemAlloc)
 ENDIF()
 
 #============= rhi flags =============
@@ -106,7 +155,12 @@ IF(RTRC_RHI_VULKAN)
     TARGET_COMPILE_DEFINITIONS(Rtrc PUBLIC RTRC_RHI_VULKAN)
 ENDIF()
 
+IF(RTRC_RHI_DIRECTX12)
+    TARGET_COMPILE_DEFINITIONS(Rtrc PUBLIC RTRC_RHI_DIRECTX12)
+ENDIF()
+
 #============= samples =============
 
 SET(RTRC_SAMPLE_WORKING_DIR "${CMAKE_SOURCE_DIR}/")
-ADD_SUBDIRECTORY(Samples/HelloWorld)
+ADD_SUBDIRECTORY(Samples/01.TexturedCube)
+ADD_SUBDIRECTORY(Samples/02.ComputeShader)

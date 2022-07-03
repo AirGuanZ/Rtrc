@@ -27,6 +27,7 @@ public:
 using Vector3f = Vector3<float>;
 using Vector3i = Vector3<int32_t>;
 using Vector3u = Vector3<uint32_t>;
+using Vector3b = Vector3<uint8_t>;
 
 template<typename T>
 auto operator<=>(const Vector3<T> &a, const Vector3<T> &b);

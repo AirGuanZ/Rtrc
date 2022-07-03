@@ -31,13 +31,17 @@ class RawShader;
 class BindingGroupLayout;
 class BindingGroup;
 class BindingLayout;
-class Pipeline;
-class PipelineBuilder;
+class GraphicsPipeline;
+class GraphicsPipelineBuilder;
+class ComputePipeline;
+class ComputePipelineBuilder;
 class Texture;
 class Texture2DRTV;
 class Texture2DSRV;
+class Texture2DUAV;
 class Buffer;
 class BufferSRV;
+class BufferUAV;
 class Sampler;
 
 // =============================== rhi enums ===============================
@@ -58,10 +62,13 @@ enum class Format : uint32_t
 
 const char *GetFormatName(Format format);
 
+size_t GetTexelSize(Format format);
+
 enum class ShaderStage : uint8_t
 {
     VertexShader   = 0b0001,
-    FragmentShader = 0b0010
+    FragmentShader = 0b0010,
+    ComputeShader  = 0b0100
 };
 
 RTRC_DEFINE_ENUM_FLAGS(ShaderStage)
@@ -73,7 +80,8 @@ namespace ShaderStageFlags
 
     constexpr auto VS  = ShaderStageFlag(ShaderStage::VertexShader);
     constexpr auto FS  = ShaderStageFlag(ShaderStage::FragmentShader);
-    constexpr auto All = VS | FS;
+    constexpr auto CS  = ShaderStageFlag(ShaderStage::ComputeShader);
+    constexpr auto All = VS | FS | CS;
 
 } // namespace ShaderStageFlags
 
@@ -243,6 +251,7 @@ constexpr uint32_t _rtrcDepthReadStencilWriteBase = 1 << 14;
 constexpr uint32_t _rtrcDepthWriteStencilReadBase = 1 << 15;
 constexpr uint32_t _rtrcVSBase                    = 1u << 20;
 constexpr uint32_t _rtrcFSBase                    = 1u << 21;
+constexpr uint32_t _rtrcCSBase                    = 1u << 22;
 constexpr uint32_t _rtrcReadBase                  = 1u << 30;
 constexpr uint32_t _rtrcWriteBase                 = 1u << 31;
 
@@ -282,7 +291,8 @@ enum class ResourceState : uint32_t
     Present                     = _rtrcPresentBase | _rtrcReadBase,
 
     VS = _rtrcVSBase,
-    FS = _rtrcFSBase
+    FS = _rtrcFSBase,
+    CS = _rtrcCSBase
 };
 
 RTRC_DEFINE_ENUM_FLAGS(ResourceState)
@@ -383,6 +393,7 @@ using AliasedBindingsDesc = std::vector<BindingDesc>;
 struct BindingGroupLayoutDesc
 {
     std::vector<AliasedBindingsDesc> bindings;
+    std::string groupStructTypeIdentifier;
     TypeIndex groupStructType;
 
     auto operator<=>(const BindingGroupLayoutDesc &other) const = default;
@@ -438,6 +449,15 @@ struct Texture2DSRVDesc
     uint32_t layerCount;
 };
 
+struct Texture2DUAVDesc
+{
+    Format   format;
+    uint32_t baseMipLevel;
+    uint32_t levelCount;
+    uint32_t baseArrayLayer;
+    uint32_t layerCount;
+};
+
 struct BufferDesc
 {
     size_t                    size;
@@ -454,11 +474,13 @@ struct BufferSRVDesc
     uint32_t stride; // for structured buffer
 };
 
+using BufferUAVDesc = BufferSRVDesc;
+
 struct SamplerDesc
 {
-    FilterMode  magFilter;
-    FilterMode  minFilter;
-    FilterMode  mipFilter;
+    FilterMode magFilter;
+    FilterMode minFilter;
+    FilterMode mipFilter;
 
     AddressMode addressModeU;
     AddressMode addressModeV;
@@ -597,7 +619,9 @@ public:
 
     virtual RC<RawShader> CreateShader(const void *data, size_t size, std::string entryPoint, ShaderStage type) = 0;
 
-    virtual RC<PipelineBuilder> CreatePipelineBuilder() = 0;
+    virtual RC<GraphicsPipelineBuilder> CreateGraphicsPipelineBuilder() = 0;
+
+    virtual RC<ComputePipelineBuilder> CreateComputePipelineBuilder() = 0;
 
     virtual RC<BindingGroupLayout> CreateBindingGroupLayout(const BindingGroupLayoutDesc *desc) = 0;
 
@@ -643,6 +667,8 @@ class BindingGroupLayout : public RHIObject
 {
 public:
 
+    virtual const BindingGroupLayoutDesc *GetDesc() const = 0;
+
     virtual RC<BindingGroup> CreateBindingGroup() = 0;
 };
 
@@ -650,15 +676,35 @@ class BindingGroup : public RHIObject
 {
 public:
 
+    virtual const BindingGroupLayout *GetLayout() const = 0;
+
     virtual void ModifyMember(int index, const RC<BufferSRV> &bufferSRV) = 0;
 
+    virtual void ModifyMember(int index, const RC<BufferUAV> &bufferUAV) = 0;
+
     virtual void ModifyMember(int index, const RC<Texture2DSRV> &textureSRV) = 0;
+
+    virtual void ModifyMember(int index, const RC<Texture2DUAV> &textureUAV) = 0;
+
+    virtual void ModifyMember(int index, const RC<Sampler> &sampler) = 0;
 
     template<typename Struct, typename Member>
     void ModifyMember(Member Struct::*member, const RC<BufferSRV> &bufferSRV);
 
     template<typename Struct, typename Member>
+    void ModifyMember(Member Struct::*member, const RC<BufferUAV> &bufferUAV);
+
+    template<typename Struct, typename Member>
     void ModifyMember(Member Struct::*member, const RC<Texture2DSRV> &textureSRV);
+
+    template<typename Struct, typename Member>
+    void ModifyMember(Member Struct::*member, const RC<Texture2DUAV> &textureUAV);
+
+    template<typename Struct, typename Member>
+    void ModifyMember(Member Struct::*member, const RC<Sampler> &sampler);
+
+    template<typename Struct>
+    void Modify(const Struct &members);
 };
 
 class BindingLayout : public RHIObject
@@ -725,13 +771,12 @@ public:
 
     virtual void EndRenderPass() = 0;
 
-    virtual void BindPipeline(const RC<Pipeline> &pipeline) = 0;
+    virtual void BindPipeline(const RC<GraphicsPipeline> &pipeline) = 0;
 
     virtual void BindGroups(int startIndex, Span<RC<BindingGroup>> groups) = 0;
 
     virtual void BindGroup(int index, const RC<BindingGroup> &group) = 0;
 
-    template<typename Struct>
     void BindGroup(const RC<BindingGroup> &group);
 
     virtual void SetViewports(Span<Viewport> viewports) = 0;
@@ -744,9 +789,21 @@ public:
 
     virtual void Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance) = 0;
 
+    virtual void CopyBuffer(
+        const RC<Buffer> &dst, size_t dstOffset,
+        const RC<Buffer> &src, size_t srcOffset, size_t range) = 0;
+
+    virtual void CopyBufferToTexture(
+        const RC<Texture> &dst, AspectTypeFlag aspect, uint32_t mipLevel, uint32_t arrayLayer,
+        const RC<Buffer> &src, size_t srcOffset) = 0;
+
+    virtual void CopyTextureToBuffer(
+        const RC<Buffer> &dst, size_t dstOffset,
+        const RC<Texture> &src, AspectTypeFlag aspect, uint32_t mipLevel, uint32_t arrayLayer) = 0;
+
 protected:
 
-    virtual const RC<Pipeline> &GetCurrentPipeline() const = 0;
+    virtual const RC<GraphicsPipeline> &GetCurrentPipeline() const = 0;
 };
 
 class RawShader : public RHIObject
@@ -756,53 +813,53 @@ public:
     virtual ShaderStage GetType() const = 0;
 };
 
-class Pipeline : public RHIObject
+class GraphicsPipeline : public RHIObject
 {
 public:
 
     virtual const RC<BindingLayout> &GetBindingLayout() const = 0;
 };
 
-class PipelineBuilder : public RHIObject
+class GraphicsPipelineBuilder : public RHIObject
 {
 public:
 
-    virtual PipelineBuilder &SetVertexShader(RC<RawShader> vertexShader) = 0;
+    virtual GraphicsPipelineBuilder &SetVertexShader(RC<RawShader> vertexShader) = 0;
 
-    virtual PipelineBuilder &SetFragmentShader(RC<RawShader> fragmentShader) = 0;
+    virtual GraphicsPipelineBuilder &SetFragmentShader(RC<RawShader> fragmentShader) = 0;
 
-    virtual PipelineBuilder &SetBindingLayout(RC<BindingLayout> layout) = 0;
+    virtual GraphicsPipelineBuilder &SetBindingLayout(RC<BindingLayout> layout) = 0;
 
-    virtual PipelineBuilder &SetViewports(const Viewports &viewports) = 0;
+    virtual GraphicsPipelineBuilder &SetViewports(const Viewports &viewports) = 0;
 
-    virtual PipelineBuilder &SetScissors(const Scissors &scissors) = 0;
+    virtual GraphicsPipelineBuilder &SetScissors(const Scissors &scissors) = 0;
 
     // default is trianglelist
-    virtual PipelineBuilder &SetPrimitiveTopology(PrimitiveTopology topology) = 0;
+    virtual GraphicsPipelineBuilder &SetPrimitiveTopology(PrimitiveTopology topology) = 0;
 
     // default is fill
-    virtual PipelineBuilder &SetFillMode(FillMode mode) = 0;
+    virtual GraphicsPipelineBuilder &SetFillMode(FillMode mode) = 0;
 
     // default is cullnone
-    virtual PipelineBuilder &SetCullMode(CullMode mode) = 0;
+    virtual GraphicsPipelineBuilder &SetCullMode(CullMode mode) = 0;
 
     // default is cw
-    virtual PipelineBuilder &SetFrontFace(FrontFaceMode mode) = 0;
+    virtual GraphicsPipelineBuilder &SetFrontFace(FrontFaceMode mode) = 0;
 
     // default is 0
-    virtual PipelineBuilder &SetDepthBias(float constFactor, float slopeFactor, float clamp) = 0;
+    virtual GraphicsPipelineBuilder &SetDepthBias(float constFactor, float slopeFactor, float clamp) = 0;
 
     // default is 1
-    virtual PipelineBuilder &SetMultisample(int sampleCount) = 0;
+    virtual GraphicsPipelineBuilder &SetMultisample(int sampleCount) = 0;
 
     // default is disabled
-    virtual PipelineBuilder &SetDepthTest(bool enableTest, bool enableWrite, CompareOp compareOp) = 0;
+    virtual GraphicsPipelineBuilder &SetDepthTest(bool enableTest, bool enableWrite, CompareOp compareOp) = 0;
 
     // default is disabled
-    virtual PipelineBuilder &SetStencilTest(bool enableTest) = 0;
+    virtual GraphicsPipelineBuilder &SetStencilTest(bool enableTest) = 0;
 
     // default is keep, keep, keep, always, 0xff, 0xff
-    virtual PipelineBuilder &SetStencilFrontOp(
+    virtual GraphicsPipelineBuilder &SetStencilFrontOp(
         StencilOp depthFailOp,
         StencilOp failOp,
         StencilOp passOp,
@@ -811,7 +868,7 @@ public:
         uint32_t  writeMask) = 0;
 
     // default is keep, keep, keep, always, 0xff, 0xff
-    virtual PipelineBuilder &SetStencilBackOp(
+    virtual GraphicsPipelineBuilder &SetStencilBackOp(
         StencilOp depthFailOp,
         StencilOp failOp,
         StencilOp passOp,
@@ -823,7 +880,7 @@ public:
     // src: from fragment shader
     // dst: from render target
     // out = srcFactor * src op dstFactor * dst
-    virtual PipelineBuilder &SetBlending(
+    virtual GraphicsPipelineBuilder &SetBlending(
         bool        enableBlending,
         BlendFactor srcColorFactor,
         BlendFactor dstColorFactor,
@@ -833,12 +890,30 @@ public:
         BlendOp     alphaOp) = 0;
 
     // default is empty
-    virtual PipelineBuilder &AddColorAttachment(Format format) = 0;
+    virtual GraphicsPipelineBuilder &AddColorAttachment(Format format) = 0;
 
     // default is undefined
-    virtual PipelineBuilder &SetDepthStencilAttachment(Format format) = 0;
+    virtual GraphicsPipelineBuilder &SetDepthStencilAttachment(Format format) = 0;
 
-    virtual RC<Pipeline> CreatePipeline() const = 0;
+    virtual RC<GraphicsPipeline> CreatePipeline() const = 0;
+};
+
+class ComputePipeline : public RHIObject
+{
+public:
+
+    virtual const RC<BindingLayout> &GetBindingLayout() const = 0;
+};
+
+class ComputePipelineBuilder : public RHIObject
+{
+public:
+
+    virtual ComputePipelineBuilder &SetComputeShader(RC<RawShader> shader) = 0;
+
+    virtual ComputePipelineBuilder &SetBindingLayout(RC<BindingLayout> layout) = 0;
+
+    virtual RC<ComputePipeline> CreatePipeline() const = 0;
 };
 
 class Texture : public RHIObject
@@ -852,6 +927,8 @@ public:
     virtual RC<Texture2DRTV> Create2DRTV(const Texture2DRTVDesc &desc) const = 0;
 
     virtual RC<Texture2DSRV> Create2DSRV(const Texture2DSRVDesc &desc) const = 0;
+
+    virtual RC<Texture2DUAV> Create2DUAV(const Texture2DUAVDesc &desc) const = 0;
 };
 
 class Texture2DRTV : public RHIObject
@@ -868,6 +945,13 @@ public:
     virtual const Texture2DSRVDesc &GetDesc() const = 0;
 };
 
+class Texture2DUAV : public RHIObject
+{
+public:
+
+    virtual const Texture2DUAVDesc &GetDesc() const = 0;
+};
+
 class Buffer : public RHIObject
 {
 public:
@@ -875,6 +959,8 @@ public:
     virtual const BufferDesc &GetDesc() const = 0;
 
     virtual RC<BufferSRV> CreateSRV(const BufferSRVDesc &desc) const = 0;
+
+    virtual RC<BufferUAV> CreateUAV(const BufferUAVDesc &desc) const = 0;
 
     virtual void *Map(size_t offset, size_t size) const = 0;
 
@@ -888,6 +974,13 @@ public:
     virtual const BufferSRVDesc &GetDesc() const = 0;
 };
 
+class BufferUAV : public RHIObject
+{
+public:
+
+    virtual const BufferUAVDesc &GetDesc() const = 0;
+};
+
 class Sampler : public RHIObject
 {
 public:
@@ -897,10 +990,10 @@ public:
 
 // =============================== vulkan backend ===============================
 
+#ifdef RTRC_RHI_VULKAN
+
 // can be called multiple times
 void InitializeVulkanBackend();
-
-#ifdef RTRC_RHI_VULKAN
 
 struct VulkanInstanceDesc
 {
@@ -909,6 +1002,22 @@ struct VulkanInstanceDesc
 };
 
 Unique<Instance> CreateVulkanInstance(const VulkanInstanceDesc &desc);
+
+#endif
+
+// =============================== directx12 backend ===============================
+
+#ifdef RTRC_RHI_DIRECTX12
+
+void InitializeDirectX12Backend();
+
+struct DirectX12InstanceDesc
+{
+    bool debugMode = false;
+    bool gpuValidation = false;
+};
+
+Unique<Instance> CreateDirectX12Instance(const DirectX12InstanceDesc &desc);
 
 #endif
 

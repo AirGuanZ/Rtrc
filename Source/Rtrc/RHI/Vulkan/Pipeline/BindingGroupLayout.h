@@ -27,6 +27,8 @@ public:
 
     ~VulkanBindingGroupLayout() override;
 
+    const BindingGroupLayoutDesc *GetDesc() const override;
+
     RC<BindingGroup> CreateBindingGroup() override;
 
     VkDescriptorSetLayout GetLayout() const;
@@ -35,9 +37,15 @@ public:
 
     bool IsSlotTexelBuffer(int index) const;
 
+    bool IsSlotStorageTexelBuffer(int index) const;
+
     bool IsSlotStructuredBuffer(int index) const;
 
+    bool IsSlotRWStructuredBuffer(int index) const;
+
     bool IsSlotTexture2D(int index) const;
+
+    bool IsSlotRWTexture2D(int index) const;
 
     const TypeIndex &GetGroupStructTypeIndex() const;
 

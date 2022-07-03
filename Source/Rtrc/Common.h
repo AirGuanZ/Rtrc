@@ -12,6 +12,12 @@
 #define RTRC_DSL_BEGIN RTRC_BEGIN namespace DSL {
 #define RTRC_DSL_END   } RTRC_END
 
+#if defined(DEBUG) || defined(_DEBUG)
+#define RTRC_DEBUG 1
+#else
+#define RTRC_DEBUG 0
+#endif
+
 RTRC_BEGIN
 
 class Exception : public std::runtime_error

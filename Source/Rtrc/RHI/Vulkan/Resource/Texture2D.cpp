@@ -1,7 +1,7 @@
-#include <Rtrc/RHI/Vulkan/Queue/Queue.h>
 #include <Rtrc/RHI/Vulkan/Resource/Texture2D.h>
 #include <Rtrc/RHI/Vulkan/Resource/Texture2DRTV.h>
 #include <Rtrc/RHI/Vulkan/Resource/Texture2DSRV.h>
+#include <Rtrc/RHI/Vulkan/Resource/Texture2DUAV.h>
 #include <Rtrc/Utils/ScopeGuard.h>
 
 RTRC_RHI_VK_BEGIN
@@ -68,6 +68,19 @@ RC<Texture2DSRV> VulkanTexture2D::Create2DSRV(const Texture2DSRVDesc &desc) cons
         .layerCount     = desc.layerCount
     });
     return MakeRC<VulkanTexture2DSRV>(desc, imageView);
+}
+
+RC<Texture2DUAV> VulkanTexture2D::Create2DUAV(const Texture2DUAVDesc &desc) const
+{
+    auto imageView = CreateImageView(ViewKey{
+        .aspect         = VK_IMAGE_ASPECT_COLOR_BIT,
+        .format         = TranslateTexelFormat(desc.format == Format::Unknown ? desc_.format : desc.format),
+        .baseMipLevel   = desc.baseMipLevel,
+        .levelCount     = desc.levelCount,
+        .baseArrayLayer = desc.baseArrayLayer,
+        .layerCount     = desc.layerCount
+    });
+    return MakeRC<VulkanTexture2DUAV>(desc, imageView);
 }
 
 VkImage VulkanTexture2D::GetNativeImage() const

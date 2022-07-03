@@ -1,5 +1,6 @@
 #include <Rtrc/RHI/Vulkan/Pipeline/BindingGroupInstance.h>
-#include <Rtrc/RHI/Vulkan/Pipeline/Pipeline.h>
+#include <Rtrc/RHI/Vulkan/Pipeline/BindingLayout.h>
+#include <Rtrc/RHI/Vulkan/Pipeline/GraphicsPipeline.h>
 #include <Rtrc/RHI/Vulkan/Queue/CommandBuffer.h>
 #include <Rtrc/RHI/Vulkan/Queue/Queue.h>
 #include <Rtrc/RHI/Vulkan/Resource/Buffer.h>
@@ -65,6 +66,11 @@ void VulkanCommandBuffer::ExecuteBarriers(
 
     for(auto &transition: textureTransitions)
     {
+        if(!transition.texture)
+        {
+            continue;
+        }
+
         auto srcStage = ExtractPipelineStageFlag(transition.beforeState);
         auto srcAccess = ExtractAccessFlag(transition.beforeState);
         auto srcLayout = ExtractImageLayout(transition.beforeState);
@@ -110,17 +116,23 @@ void VulkanCommandBuffer::ExecuteBarriers(
 
     for(auto &release : textureReleaseBarriers)
     {
+        if(!release.texture)
+        {
+            continue;
+        }
+
         assert(release.texture->Get2DDesc().concurrentAccessMode == QueueConcurrentAccessMode::Exclusive);
 
         auto beforeQueue = static_cast<VulkanQueue *>(release.beforeQueue.get());
         auto afterQueue = static_cast<VulkanQueue *>(release.afterQueue.get());
+        assert(beforeQueue != afterQueue);
 
         // perform a normal barrier when queues are of the same family
         if(beforeQueue->GetNativeFamilyIndex() == afterQueue->GetNativeFamilyIndex())
         {
             // graphics < compute < copy
             // use fronter queue to submit the barrier
-            if(beforeQueue->GetType() < afterQueue->GetType())
+            if(beforeQueue->GetType() <= afterQueue->GetType())
             {
                 auto srcStage = ExtractPipelineStageFlag(release.beforeState);
                 auto srcAccess = ExtractAccessFlag(release.beforeState);
@@ -129,7 +141,7 @@ void VulkanCommandBuffer::ExecuteBarriers(
                 auto dstStage = ExtractPipelineStageFlag(release.afterState);
                 auto dstAccess = ExtractAccessFlag(release.afterState);
                 auto dstLayout = ExtractImageLayout(release.afterState);
-                
+
                 imageBarriers.push_back(VkImageMemoryBarrier2{
                     .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
                     .srcStageMask        = srcStage,
@@ -182,8 +194,14 @@ void VulkanCommandBuffer::ExecuteBarriers(
 
     for(auto &acquire : textureAcquireBarriers)
     {
+        if(!acquire.texture)
+        {
+            continue;
+        }
+
         auto beforeQueue = static_cast<VulkanQueue *>(acquire.beforeQueue.get());
         auto afterQueue = static_cast<VulkanQueue *>(acquire.afterQueue.get());
+        assert(beforeQueue != afterQueue);
 
         if(beforeQueue->GetNativeFamilyIndex() == afterQueue->GetNativeFamilyIndex())
         {
@@ -196,7 +214,7 @@ void VulkanCommandBuffer::ExecuteBarriers(
                 auto dstStage = ExtractPipelineStageFlag(acquire.afterState);
                 auto dstAccess = ExtractAccessFlag(acquire.afterState);
                 auto dstLayout = ExtractImageLayout(acquire.afterState);
-                
+
                 imageBarriers.push_back(VkImageMemoryBarrier2{
                     .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
                     .srcStageMask        = srcStage,
@@ -255,6 +273,11 @@ void VulkanCommandBuffer::ExecuteBarriers(
 
     for(auto &transition: bufferTransitions)
     {
+        if(!transition.buffer)
+        {
+            continue;
+        }
+
         auto srcStage = ExtractPipelineStageFlag(transition.beforeState);
         auto srcAccess = ExtractAccessFlag(transition.beforeState);
 
@@ -277,26 +300,32 @@ void VulkanCommandBuffer::ExecuteBarriers(
 
     for(auto &release : bufferReleaseBarriers)
     {
+        if(!release.buffer)
+        {
+            continue;
+        }
+
         assert(release.buffer->GetDesc().concurrentAccessMode == QueueConcurrentAccessMode::Exclusive);
 
         auto beforeQueue = static_cast<VulkanQueue *>(release.beforeQueue.get());
         auto afterQueue = static_cast<VulkanQueue *>(release.afterQueue.get());
+        assert(beforeQueue != afterQueue);
 
         // perform a normal barrier when queues are of the same family
         if(beforeQueue->GetNativeFamilyIndex() == afterQueue->GetNativeFamilyIndex())
         {
             // graphics < compute < copy
             // use fronter queue to submit the barrier
-            if(beforeQueue->GetType() < afterQueue->GetType())
+            if(beforeQueue->GetType() <= afterQueue->GetType())
             {
                 auto srcStage = ExtractPipelineStageFlag(release.beforeState);
                 auto srcAccess = ExtractAccessFlag(release.beforeState);
-                
+
                 auto dstStage = ExtractPipelineStageFlag(release.afterState);
                 auto dstAccess = ExtractAccessFlag(release.afterState);
-                
+
                 bufferBarriers.push_back(VkBufferMemoryBarrier2{
-                    .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+                    .sType               = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2,
                     .srcStageMask        = srcStage,
                     .srcAccessMask       = srcAccess,
                     .dstStageMask        = dstStage,
@@ -313,9 +342,9 @@ void VulkanCommandBuffer::ExecuteBarriers(
         {
             const auto srcStage = ExtractPipelineStageFlag(release.beforeState);
             const auto srcAccess = ExtractAccessFlag(release.beforeState);
-            
+
             bufferBarriers.push_back(VkBufferMemoryBarrier2{
-                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+                .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2,
                 .srcStageMask        = srcStage,
                 .srcAccessMask       = srcAccess,
                 .dstStageMask        = srcStage,
@@ -331,8 +360,14 @@ void VulkanCommandBuffer::ExecuteBarriers(
 
     for(auto &acquire : bufferAcquireBarriers)
     {
+        if(!acquire.buffer)
+        {
+            continue;
+        }
+
         auto beforeQueue = static_cast<VulkanQueue *>(acquire.beforeQueue.get());
         auto afterQueue = static_cast<VulkanQueue *>(acquire.afterQueue.get());
+        assert(beforeQueue != afterQueue);
 
         if(beforeQueue->GetNativeFamilyIndex() == afterQueue->GetNativeFamilyIndex())
         {
@@ -340,12 +375,12 @@ void VulkanCommandBuffer::ExecuteBarriers(
             {
                 auto srcStage = ExtractPipelineStageFlag(acquire.beforeState);
                 auto srcAccess = ExtractAccessFlag(acquire.beforeState);
-                
+
                 auto dstStage = ExtractPipelineStageFlag(acquire.afterState);
                 auto dstAccess = ExtractAccessFlag(acquire.afterState);
-                
+
                 bufferBarriers.push_back(VkBufferMemoryBarrier2{
-                    .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+                    .sType               = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2,
                     .srcStageMask        = srcStage,
                     .srcAccessMask       = srcAccess,
                     .dstStageMask        = dstStage,
@@ -364,7 +399,7 @@ void VulkanCommandBuffer::ExecuteBarriers(
             auto dstAccess = ExtractAccessFlag(acquire.afterState);
             
             bufferBarriers.push_back(VkBufferMemoryBarrier2{
-                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+                .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2,
                 .srcStageMask        = dstStage,
                 .srcAccessMask       = VK_ACCESS_2_NONE,
                 .dstStageMask        = dstStage,
@@ -427,7 +462,7 @@ void VulkanCommandBuffer::EndRenderPass()
     vkCmdEndRendering(commandBuffer_);
 }
 
-void VulkanCommandBuffer::BindPipeline(const RC<Pipeline> &pipeline)
+void VulkanCommandBuffer::BindPipeline(const RC<GraphicsPipeline> &pipeline)
 {
     if(!pipeline)
     {
@@ -435,9 +470,9 @@ void VulkanCommandBuffer::BindPipeline(const RC<Pipeline> &pipeline)
         currentPipeline_ = nullptr;
         return;
     }
-    auto vkPipeline = static_cast<VulkanPipeline *>(pipeline.get());
+    auto vkPipeline = static_cast<VulkanGraphicsPipeline *>(pipeline.get());
     vkCmdBindPipeline(commandBuffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, vkPipeline->GetNativePipeline());
-    currentPipeline_ = DynamicCast<VulkanPipeline>(pipeline);
+    currentPipeline_ = DynamicCast<VulkanGraphicsPipeline>(pipeline);
 }
 
 void VulkanCommandBuffer::BindGroups(int startIndex, Span<RC<BindingGroup>> groups)
@@ -513,7 +548,67 @@ void VulkanCommandBuffer::Draw(int vertexCount, int instanceCount, int firstVert
         static_cast<uint32_t>(firstInstance));
 }
 
-const RC<Pipeline> &VulkanCommandBuffer::GetCurrentPipeline() const
+void VulkanCommandBuffer::CopyBuffer(
+    const RC<Buffer> &dst, size_t dstOffset,
+    const RC<Buffer> &src, size_t srcOffset, size_t range)
+{
+    const VkBufferCopy copy = {
+        .srcOffset = srcOffset,
+        .dstOffset = dstOffset,
+        .size      = range
+    };
+    auto vkSrc = static_cast<VulkanBuffer *>(src.get())->GetNativeBuffer();
+    auto vkDst = static_cast<VulkanBuffer *>(dst.get())->GetNativeBuffer();
+    vkCmdCopyBuffer(commandBuffer_, vkSrc, vkDst, 1, &copy);
+}
+
+void VulkanCommandBuffer::CopyBufferToTexture(
+    const RC<Texture> &dst, AspectTypeFlag aspect, uint32_t mipLevel, uint32_t arrayLayer,
+    const RC<Buffer> &src, size_t srcOffset)
+{
+    auto &texDesc = dst->Get2DDesc();
+    const VkBufferImageCopy copy = {
+        .bufferOffset      = srcOffset,
+        .bufferRowLength   = 0,
+        .bufferImageHeight = 0,
+        .imageSubresource  = VkImageSubresourceLayers{
+            .aspectMask     = TranslateAspectTypeFlag(aspect),
+            .mipLevel       = mipLevel,
+            .baseArrayLayer = arrayLayer,
+            .layerCount     = 1
+        },
+        .imageOffset = { 0, 0, 0 },
+        .imageExtent = { texDesc.width, texDesc.height, 1 }
+    };
+    auto vkSrc = static_cast<VulkanBuffer *>(src.get())->GetNativeBuffer();
+    auto vkDst = GetVulkanImage(dst);
+    vkCmdCopyBufferToImage(commandBuffer_, vkSrc, vkDst, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
+}
+
+void VulkanCommandBuffer::CopyTextureToBuffer(
+    const RC<Buffer> &dst, size_t dstOffset,
+    const RC<Texture> &src, AspectTypeFlag aspect, uint32_t mipLevel, uint32_t arrayLayer)
+{
+    auto &texDesc = src->Get2DDesc();
+    const VkBufferImageCopy copy = {
+        .bufferOffset      = dstOffset,
+        .bufferRowLength   = 0,
+        .bufferImageHeight = 0,
+        .imageSubresource  = VkImageSubresourceLayers{
+            .aspectMask     = TranslateAspectTypeFlag(aspect),
+            .mipLevel       = mipLevel,
+            .baseArrayLayer = arrayLayer,
+            .layerCount     = 1
+        },
+        .imageOffset = { 0, 0, 0 },
+        .imageExtent = { texDesc.width, texDesc.height, 1 }
+    };
+    auto vkSrc = GetVulkanImage(src);
+    auto vkDst = static_cast<VulkanBuffer *>(dst.get())->GetNativeBuffer();
+    vkCmdCopyImageToBuffer(commandBuffer_, vkSrc, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, vkDst, 1, &copy);
+}
+
+const RC<GraphicsPipeline> &VulkanCommandBuffer::GetCurrentPipeline() const
 {
     return currentPipeline_;
 }

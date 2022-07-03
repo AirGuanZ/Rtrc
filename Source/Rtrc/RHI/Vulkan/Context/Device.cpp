@@ -9,7 +9,8 @@
 #include <Rtrc/RHI/Vulkan/Context/Swapchain.h>
 #include <Rtrc/RHI/Vulkan/Pipeline/BindingGroupLayout.h>
 #include <Rtrc/RHI/Vulkan/Pipeline/BindingLayout.h>
-#include <Rtrc/RHI/Vulkan/Pipeline/Pipeline.h>
+#include <Rtrc/RHI/Vulkan/Pipeline/ComputePipeline.h>
+#include <Rtrc/RHI/Vulkan/Pipeline/GraphicsPipeline.h>
 #include <Rtrc/RHI/Vulkan/Pipeline/Shader.h>
 #include <Rtrc/RHI/Vulkan/Queue/Fence.h>
 #include <Rtrc/RHI/Vulkan/Queue/Queue.h>
@@ -290,9 +291,14 @@ RC<RawShader> VulkanDevice::CreateShader(const void *data, size_t size, std::str
     return MakeRC<VulkanShader>(device_, shaderModule, std::move(entryPoint), type);
 }
 
-RC<PipelineBuilder> VulkanDevice::CreatePipelineBuilder()
+RC<GraphicsPipelineBuilder> VulkanDevice::CreateGraphicsPipelineBuilder()
 {
-    return MakeRC<VulkanPipelineBuilder>(device_);
+    return MakeRC<VulkanGraphicsPipelineBuilder>(device_);
+}
+
+RC<ComputePipelineBuilder> VulkanDevice::CreateComputePipelineBuilder()
+{
+    return MakeRC<VulkanComputePipelineBuilder>(device_);
 }
 
 RC<BindingGroupLayout> VulkanDevice::CreateBindingGroupLayout(const BindingGroupLayoutDesc *desc)

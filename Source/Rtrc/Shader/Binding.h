@@ -165,6 +165,12 @@ namespace ShaderDetail
         using Type = RC<RHI::BufferSRV>;
     };
 
+    template<>
+    struct BindingTypeToValueType<RHI::BindingType::Sampler>
+    {
+        using Type = RC<RHI::Sampler>;
+    };
+
 } // namespace ShaderDetail
 
 template<
@@ -207,6 +213,7 @@ private:
     struct _rtrcBindingGroupTag { };                                \
     static constexpr auto VS  = ::Rtrc::RHI::ShaderStageFlags::VS;  \
     static constexpr auto FS  = ::Rtrc::RHI::ShaderStageFlags::FS;  \
+    static constexpr auto CS  = ::Rtrc::RHI::ShaderStageFlags::CS;  \
     static constexpr auto All = ::Rtrc::RHI::ShaderStageFlags::All; \
     using float2              = ::Rtrc::Vector2f;                   \
     using float3              = ::Rtrc::Vector3f;                   \
@@ -324,6 +331,27 @@ template<BindingGroupStruct Struct, typename Member>
 void ModifyBindingGroupInstance(
     RHI::BindingGroup *instance,
     Member Struct::* member,
+    const RC<RHI::BufferUAV> &uav)
+{
+    int index = 0;
+    auto processBinding = [&]<typename Binding>(Binding Struct:: * p, const char *)
+    {
+        if constexpr(std::is_same_v<Binding, Member>)
+        {
+            if(GetMemberOffset(p) == GetMemberOffset(member))
+            {
+                instance->ModifyMember(index, uav);
+            }
+        }
+        ++index;
+    };
+    Struct::ForEachMember(processBinding);
+}
+
+template<BindingGroupStruct Struct, typename Member>
+void ModifyBindingGroupInstance(
+    RHI::BindingGroup *instance,
+    Member Struct::* member,
     const RC<RHI::Texture2DSRV> &srv)
 {
     int index = 0;
@@ -334,6 +362,48 @@ void ModifyBindingGroupInstance(
             if(GetMemberOffset(p) == GetMemberOffset(member))
             {
                 instance->ModifyMember(index, srv);
+            }
+        }
+        ++index;
+    };
+    Struct::ForEachMember(processBinding);
+}
+
+template<BindingGroupStruct Struct, typename Member>
+void ModifyBindingGroupInstance(
+    RHI::BindingGroup *instance,
+    Member Struct::* member,
+    const RC<RHI::Texture2DUAV> &uav)
+{
+    int index = 0;
+    auto processBinding = [&]<typename Binding>(Binding Struct::* p, const char *)
+    {
+        if constexpr(std::is_same_v<Binding, Member>)
+        {
+            if(GetMemberOffset(p) == GetMemberOffset(member))
+            {
+                instance->ModifyMember(index, uav);
+            }
+        }
+        ++index;
+    };
+    Struct::ForEachMember(processBinding);
+}
+
+template<BindingGroupStruct Struct, typename Member>
+void ModifyBindingGroupInstance(
+    RHI::BindingGroup *instance,
+    Member Struct::*member,
+    const RC<RHI::Sampler> &sampler)
+{
+    int index = 0;
+    auto processBinding = [&]<typename Binding>(Binding Struct:: * p, const char *)
+    {
+        if constexpr(std::is_same_v<Binding, Member>)
+        {
+            if(GetMemberOffset(p) == GetMemberOffset(member))
+            {
+                instance->ModifyMember(index, sampler);
             }
         }
         ++index;
@@ -354,21 +424,37 @@ void RHI::BindingGroup::ModifyMember(Member Struct::*member, const RC<BufferSRV>
 }
 
 template<typename Struct, typename Member>
+void RHI::BindingGroup::ModifyMember(Member Struct::*member, const RC<BufferUAV> &bufferUAV)
+{
+    ModifyBindingGroupInstance(this, member, bufferUAV);
+}
+
+template<typename Struct, typename Member>
 void RHI::BindingGroup::ModifyMember(Member Struct::*member, const RC<Texture2DSRV> &textureSRV)
 {
     ModifyBindingGroupInstance(this, member, textureSRV);
 }
 
-template<typename Struct>
-void RHI::CommandBuffer::BindGroup(const RC<BindingGroup> &group)
+template<typename Struct, typename Member>
+void RHI::BindingGroup::ModifyMember(Member Struct::*member, const RC<Texture2DUAV> &textureUAV)
 {
-    const auto &pipeline = this->GetCurrentPipeline();
-    const int index = pipeline->GetBindingLayout()->GetGroupIndex(GetBindingGroupLayoutDesc<Struct>()->groupStructType);
-    if(index < 0)
+    ModifyBindingGroupInstance(this, member, textureUAV);
+}
+
+template<typename Struct, typename Member>
+void RHI::BindingGroup::ModifyMember(Member Struct::*member, const RC<Sampler> &sampler)
+{
+    ModifyBindingGroupInstance(this, member, sampler);
+}
+
+template<typename Struct>
+void RHI::BindingGroup::Modify(const Struct &members)
+{
+    static_assert(BindingGroupStruct<Struct>);
+    Struct::ForEachMember([&]<typename Member>(Member Struct::*ptr, const char *)
     {
-        throw Exception("binding group not found in binding layout");
-    }
-    this->BindGroup(index, group);
+        this->ModifyMember(ptr, (members.*ptr).GetValue());
+    });
 }
 
 RTRC_END

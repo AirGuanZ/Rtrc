@@ -34,6 +34,8 @@ public:
 
     RC<Texture2DSRV> Create2DSRV(const Texture2DSRVDesc &desc) const override;
 
+    RC<Texture2DUAV> Create2DUAV(const Texture2DUAVDesc &desc) const override;
+
     VkImage GetNativeImage() const override;
 
 private:
@@ -41,11 +43,11 @@ private:
     struct ViewKey
     {
         VkImageAspectFlags aspect;
-        VkFormat format;
-        uint32_t baseMipLevel;
-        uint32_t levelCount;
-        uint32_t baseArrayLayer;
-        uint32_t layerCount;
+        VkFormat           format;
+        uint32_t           baseMipLevel;
+        uint32_t           levelCount;
+        uint32_t           baseArrayLayer;
+        uint32_t           layerCount;
 
         auto operator<=>(const ViewKey &) const = default;
     };

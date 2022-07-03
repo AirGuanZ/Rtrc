@@ -1,92 +1,94 @@
-#include <Rtrc/RHI/Vulkan/Pipeline/Pipeline.h>
+#include <Rtrc/RHI/Vulkan/Pipeline/BindingLayout.h>
+#include <Rtrc/RHI/Vulkan/Pipeline/GraphicsPipeline.h>
+#include <Rtrc/RHI/Vulkan/Pipeline/Shader.h>
 #include <Rtrc/Utils/Enumerate.h>
 #include <Rtrc/Utils/ScopeGuard.h>
 
 RTRC_RHI_VK_BEGIN
 
-VulkanPipeline::VulkanPipeline(RC<VulkanBindingLayout> layout, VkDevice device, VkPipeline pipeline)
+VulkanGraphicsPipeline::VulkanGraphicsPipeline(RC<BindingLayout> layout, VkDevice device, VkPipeline pipeline)
     : layout_(std::move(layout)), device_(device), pipeline_(pipeline)
 {
     
 }
 
-VulkanPipeline::~VulkanPipeline()
+VulkanGraphicsPipeline::~VulkanGraphicsPipeline()
 {
     assert(pipeline_);
     vkDestroyPipeline(device_, pipeline_, VK_ALLOC);
 }
 
-const RC<BindingLayout> &VulkanPipeline::GetBindingLayout() const
+const RC<BindingLayout> &VulkanGraphicsPipeline::GetBindingLayout() const
 {
     return layout_;
 }
 
-VkPipeline VulkanPipeline::GetNativePipeline() const
+VkPipeline VulkanGraphicsPipeline::GetNativePipeline() const
 {
     return pipeline_;
 }
 
-VulkanPipelineBuilder::VulkanPipelineBuilder(VkDevice device)
+VulkanGraphicsPipelineBuilder::VulkanGraphicsPipelineBuilder(VkDevice device)
     : device_(device)
 {
     
 }
 
-PipelineBuilder &VulkanPipelineBuilder::SetVertexShader(RC<RawShader> vertexShader)
+GraphicsPipelineBuilder &VulkanGraphicsPipelineBuilder::SetVertexShader(RC<RawShader> vertexShader)
 {
-    vertexShader_ = DynamicCast<VulkanShader>(std::move(vertexShader));
+    vertexShader_ = std::move(vertexShader);
     return *this;
 }
 
-PipelineBuilder &VulkanPipelineBuilder::SetFragmentShader(RC<RawShader> fragmentShader)
+GraphicsPipelineBuilder &VulkanGraphicsPipelineBuilder::SetFragmentShader(RC<RawShader> fragmentShader)
 {
-    fragmentShader_ = DynamicCast<VulkanShader>(std::move(fragmentShader));
+    fragmentShader_ = std::move(fragmentShader);
     return *this;
 }
 
-PipelineBuilder &VulkanPipelineBuilder::SetBindingLayout(RC<BindingLayout> layout)
+GraphicsPipelineBuilder &VulkanGraphicsPipelineBuilder::SetBindingLayout(RC<BindingLayout> layout)
 {
-    bindingLayout_ = DynamicCast<VulkanBindingLayout>(std::move(layout));
+    bindingLayout_ = std::move(layout);
     return *this;
 }
 
-PipelineBuilder &VulkanPipelineBuilder::SetViewports(const Viewports &viewports)
+GraphicsPipelineBuilder &VulkanGraphicsPipelineBuilder::SetViewports(const Viewports &viewports)
 {
     viewports_ = viewports;
     return *this;
 }
 
-PipelineBuilder &VulkanPipelineBuilder::SetScissors(const Scissors &scissors)
+GraphicsPipelineBuilder &VulkanGraphicsPipelineBuilder::SetScissors(const Scissors &scissors)
 {
     scissors_ = scissors;
     return *this;
 }
 
-PipelineBuilder &VulkanPipelineBuilder::SetPrimitiveTopology(PrimitiveTopology topology)
+GraphicsPipelineBuilder &VulkanGraphicsPipelineBuilder::SetPrimitiveTopology(PrimitiveTopology topology)
 {
     primitiveTopology_ = topology;
     return *this;
 }
 
-PipelineBuilder &VulkanPipelineBuilder::SetFillMode(FillMode mode)
+GraphicsPipelineBuilder &VulkanGraphicsPipelineBuilder::SetFillMode(FillMode mode)
 {
     fillMode_ = mode;
     return *this;
 }
 
-PipelineBuilder &VulkanPipelineBuilder::SetCullMode(CullMode mode)
+GraphicsPipelineBuilder &VulkanGraphicsPipelineBuilder::SetCullMode(CullMode mode)
 {
     cullMode_ = mode;
     return *this;
 }
 
-PipelineBuilder &VulkanPipelineBuilder::SetFrontFace(FrontFaceMode mode)
+GraphicsPipelineBuilder &VulkanGraphicsPipelineBuilder::SetFrontFace(FrontFaceMode mode)
 {
     frontFaceMode_ = mode;
     return *this;
 }
 
-PipelineBuilder &VulkanPipelineBuilder::SetDepthBias(float constFactor, float slopeFactor, float clamp)
+GraphicsPipelineBuilder &VulkanGraphicsPipelineBuilder::SetDepthBias(float constFactor, float slopeFactor, float clamp)
 {
     enableDepthBias_ = true;
     depthBiasConstFactor_ = constFactor;
@@ -95,13 +97,13 @@ PipelineBuilder &VulkanPipelineBuilder::SetDepthBias(float constFactor, float sl
     return *this;
 }
 
-PipelineBuilder &VulkanPipelineBuilder::SetMultisample(int sampleCount)
+GraphicsPipelineBuilder &VulkanGraphicsPipelineBuilder::SetMultisample(int sampleCount)
 {
     multisampleCount_ = sampleCount;
     return *this;
 }
 
-PipelineBuilder &VulkanPipelineBuilder::SetDepthTest(bool enableTest, bool enableWrite, CompareOp compareOp)
+GraphicsPipelineBuilder &VulkanGraphicsPipelineBuilder::SetDepthTest(bool enableTest, bool enableWrite, CompareOp compareOp)
 {
     enableDepthTest_ = enableTest;
     enableDepthWrite_ = enableWrite;
@@ -109,13 +111,13 @@ PipelineBuilder &VulkanPipelineBuilder::SetDepthTest(bool enableTest, bool enabl
     return *this;
 }
 
-PipelineBuilder &VulkanPipelineBuilder::SetStencilTest(bool enableTest)
+GraphicsPipelineBuilder &VulkanGraphicsPipelineBuilder::SetStencilTest(bool enableTest)
 {
     enableStencilTest_ = enableTest;
     return *this;
 }
 
-PipelineBuilder &VulkanPipelineBuilder::SetStencilFrontOp(
+GraphicsPipelineBuilder &VulkanGraphicsPipelineBuilder::SetStencilFrontOp(
     StencilOp depthFailOp,
     StencilOp failOp,
     StencilOp passOp,
@@ -134,7 +136,7 @@ PipelineBuilder &VulkanPipelineBuilder::SetStencilFrontOp(
     return *this;
 }
 
-PipelineBuilder &VulkanPipelineBuilder::SetStencilBackOp(
+GraphicsPipelineBuilder &VulkanGraphicsPipelineBuilder::SetStencilBackOp(
     StencilOp depthFailOp,
     StencilOp failOp,
     StencilOp passOp,
@@ -153,7 +155,7 @@ PipelineBuilder &VulkanPipelineBuilder::SetStencilBackOp(
     return *this;
 }
 
-PipelineBuilder &VulkanPipelineBuilder::SetBlending(
+GraphicsPipelineBuilder &VulkanGraphicsPipelineBuilder::SetBlending(
     bool        enableBlending,
     BlendFactor srcColorFactor,
     BlendFactor dstColorFactor,
@@ -172,19 +174,19 @@ PipelineBuilder &VulkanPipelineBuilder::SetBlending(
     return *this;
 }
 
-PipelineBuilder &VulkanPipelineBuilder::AddColorAttachment(Format format)
+GraphicsPipelineBuilder &VulkanGraphicsPipelineBuilder::AddColorAttachment(Format format)
 {
     colorAttachments_.push_back(format);
     return *this;
 }
 
-PipelineBuilder &VulkanPipelineBuilder::SetDepthStencilAttachment(Format format)
+GraphicsPipelineBuilder &VulkanGraphicsPipelineBuilder::SetDepthStencilAttachment(Format format)
 {
     depthStencilFormat_ = format;
     return *this;
 }
 
-RC<Pipeline> VulkanPipelineBuilder::CreatePipeline() const
+RC<GraphicsPipeline> VulkanGraphicsPipelineBuilder::CreatePipeline() const
 {
     assert(!viewports_.Is<std::monostate>());
     assert(!scissors_.Is<std::monostate>());
@@ -205,8 +207,8 @@ RC<Pipeline> VulkanPipelineBuilder::CreatePipeline() const
     };
 
     const VkPipelineShaderStageCreateInfo stages[] = {
-        vertexShader_->GetStageCreateInfo(),
-        fragmentShader_->GetStageCreateInfo()
+        static_cast<VulkanShader*>(vertexShader_.get())->GetStageCreateInfo(),
+        static_cast<VulkanShader *>(fragmentShader_.get())->GetStageCreateInfo()
     };
 
     const VkPipelineVertexInputStateCreateInfo vertexInputState = {
@@ -346,6 +348,7 @@ RC<Pipeline> VulkanPipelineBuilder::CreatePipeline() const
         .pDynamicStates    = dynamicStates
     };
 
+    auto vkBindingLayout = static_cast<VulkanBindingLayout *>(bindingLayout_.get());
     const VkGraphicsPipelineCreateInfo pipelineCreateInfo = {
         .sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
         .pNext               = &renderingCreateInfo,
@@ -359,7 +362,7 @@ RC<Pipeline> VulkanPipelineBuilder::CreatePipeline() const
         .pDepthStencilState  = &depthStencilState,
         .pColorBlendState    = &colorBlendState,
         .pDynamicState       = &dynamicState,
-        .layout              = bindingLayout_->GetNativeLayout()
+        .layout              = vkBindingLayout->GetNativeLayout()
     };
 
     VkPipeline pipeline;
@@ -368,7 +371,7 @@ RC<Pipeline> VulkanPipelineBuilder::CreatePipeline() const
         "failed to create vulkan graphics pipeline");
     RTRC_SCOPE_FAIL{ vkDestroyPipeline(device_, pipeline, VK_ALLOC); };
 
-    return MakeRC<VulkanPipeline>(bindingLayout_, device_, pipeline);
+    return MakeRC<VulkanGraphicsPipeline>(bindingLayout_, device_, pipeline);
 }
 
 RTRC_RHI_VK_END

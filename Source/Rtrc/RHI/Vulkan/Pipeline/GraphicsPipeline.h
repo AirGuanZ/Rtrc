@@ -1,17 +1,16 @@
 #pragma once
 
-#include <Rtrc/RHI/Vulkan/Pipeline/BindingLayout.h>
-#include <Rtrc/RHI/Vulkan/Pipeline/Shader.h>
+#include <Rtrc/RHI/Vulkan/Common.h>
 
 RTRC_RHI_VK_BEGIN
 
-class VulkanPipeline : public Pipeline
+class VulkanGraphicsPipeline : public GraphicsPipeline
 {
 public:
 
-    VulkanPipeline(RC<VulkanBindingLayout> layout, VkDevice device, VkPipeline pipeline);
+    VulkanGraphicsPipeline(RC<BindingLayout> layout, VkDevice device, VkPipeline pipeline);
 
-    ~VulkanPipeline() override;
+    ~VulkanGraphicsPipeline() override;
 
     const RC<BindingLayout> &GetBindingLayout() const override;
 
@@ -25,39 +24,39 @@ private:
     VkPipeline pipeline_;
 };
 
-class VulkanPipelineBuilder : public PipelineBuilder
+class VulkanGraphicsPipelineBuilder : public GraphicsPipelineBuilder
 {
 public:
 
-    explicit VulkanPipelineBuilder(VkDevice device);
+    explicit VulkanGraphicsPipelineBuilder(VkDevice device);
 
-    PipelineBuilder &SetVertexShader(RC<RawShader> vertexShader) override;
+    GraphicsPipelineBuilder &SetVertexShader(RC<RawShader> vertexShader) override;
 
-    PipelineBuilder &SetFragmentShader(RC<RawShader> fragmentShader) override;
+    GraphicsPipelineBuilder &SetFragmentShader(RC<RawShader> fragmentShader) override;
 
-    PipelineBuilder &SetBindingLayout(RC<BindingLayout> layout) override;
+    GraphicsPipelineBuilder &SetBindingLayout(RC<BindingLayout> layout) override;
 
-    PipelineBuilder &SetViewports(const Viewports &viewports) override;
+    GraphicsPipelineBuilder &SetViewports(const Viewports &viewports) override;
 
-    PipelineBuilder &SetScissors(const Scissors &scissors) override;
+    GraphicsPipelineBuilder &SetScissors(const Scissors &scissors) override;
 
-    PipelineBuilder &SetPrimitiveTopology(PrimitiveTopology topology) override;
+    GraphicsPipelineBuilder &SetPrimitiveTopology(PrimitiveTopology topology) override;
 
-    PipelineBuilder &SetFillMode(FillMode mode) override;
+    GraphicsPipelineBuilder &SetFillMode(FillMode mode) override;
 
-    PipelineBuilder &SetCullMode(CullMode mode) override;
+    GraphicsPipelineBuilder &SetCullMode(CullMode mode) override;
 
-    PipelineBuilder &SetFrontFace(FrontFaceMode mode) override;
+    GraphicsPipelineBuilder &SetFrontFace(FrontFaceMode mode) override;
 
-    PipelineBuilder &SetDepthBias(float constFactor, float slopeFactor, float clamp) override;
+    GraphicsPipelineBuilder &SetDepthBias(float constFactor, float slopeFactor, float clamp) override;
 
-    PipelineBuilder &SetMultisample(int sampleCount) override;
+    GraphicsPipelineBuilder &SetMultisample(int sampleCount) override;
 
-    PipelineBuilder &SetDepthTest(bool enableTest, bool enableWrite, CompareOp compareOp) override;
+    GraphicsPipelineBuilder &SetDepthTest(bool enableTest, bool enableWrite, CompareOp compareOp) override;
 
-    PipelineBuilder &SetStencilTest(bool enableTest) override;
+    GraphicsPipelineBuilder &SetStencilTest(bool enableTest) override;
 
-    PipelineBuilder &SetStencilFrontOp(
+    GraphicsPipelineBuilder &SetStencilFrontOp(
         StencilOp depthFailOp,
         StencilOp failOp,
         StencilOp passOp,
@@ -65,7 +64,7 @@ public:
         uint32_t  compareMask,
         uint32_t  writeMask) override;
 
-    PipelineBuilder &SetStencilBackOp(
+    GraphicsPipelineBuilder &SetStencilBackOp(
         StencilOp depthFailOp,
         StencilOp failOp,
         StencilOp passOp,
@@ -73,7 +72,7 @@ public:
         uint32_t  compareMask,
         uint32_t  writeMask) override;
 
-    PipelineBuilder &SetBlending(
+    GraphicsPipelineBuilder &SetBlending(
         bool        enableBlending,
         BlendFactor srcColorFactor,
         BlendFactor dstColorFactor,
@@ -82,11 +81,11 @@ public:
         BlendFactor dstAlphaFactor,
         BlendOp     alphaOp) override;
 
-    PipelineBuilder &AddColorAttachment(Format format) override;
+    GraphicsPipelineBuilder &AddColorAttachment(Format format) override;
 
-    PipelineBuilder &SetDepthStencilAttachment(Format format) override;
+    GraphicsPipelineBuilder &SetDepthStencilAttachment(Format format) override;
 
-    RC<Pipeline> CreatePipeline() const override;
+    RC<GraphicsPipeline> CreatePipeline() const override;
 
 private:
 
@@ -102,10 +101,10 @@ private:
 
     VkDevice device_;
 
-    RC<VulkanShader> vertexShader_;
-    RC<VulkanShader> fragmentShader_;
+    RC<RawShader> vertexShader_;
+    RC<RawShader> fragmentShader_;
 
-    RC<VulkanBindingLayout> bindingLayout_;
+    RC<BindingLayout> bindingLayout_;
 
     Viewports viewports_;
     Scissors scissors_;

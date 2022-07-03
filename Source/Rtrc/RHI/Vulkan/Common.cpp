@@ -71,6 +71,7 @@ VkShaderStageFlagBits TranslateShaderType(ShaderStage type)
     {
     case ShaderStage::VertexShader:   return VK_SHADER_STAGE_VERTEX_BIT;
     case ShaderStage::FragmentShader: return VK_SHADER_STAGE_FRAGMENT_BIT;
+    case ShaderStage::ComputeShader:  return VK_SHADER_STAGE_COMPUTE_BIT;
     }
     Unreachable();
 }
@@ -80,6 +81,7 @@ VkShaderStageFlags TranslateShaderStageFlag(EnumFlags<ShaderStage> flags)
     VkShaderStageFlags result = 0;
     result |= flags.contains(ShaderStage::VertexShader) ? VK_SHADER_STAGE_VERTEX_BIT : 0;
     result |= flags.contains(ShaderStage::FragmentShader) ? VK_SHADER_STAGE_FRAGMENT_BIT : 0;
+    result |= flags.contains(ShaderStage::ComputeShader) ? VK_SHADER_STAGE_COMPUTE_BIT : 0;
     return result;
 }
 
@@ -453,7 +455,11 @@ bool IsResourceStateValid(ResourceStateFlag state)
         return stage && readwrite;
     case _rtrcCopyBase:
     case _rtrcResolveBase:
-        return bool(readwrite & ResourceStateFlag(_rtrcReadBase)) ^ bool(readwrite & ResourceStateFlag(_rtrcWriteBase));
+    {
+        const bool read = readwrite & ResourceStateFlag(_rtrcReadBase);
+        const bool write = readwrite & ResourceStateFlag(_rtrcWriteBase);
+        return !stage && (read ^ write);
+    }
     case _rtrcPresentBase:
         return !stage && readwrite == ResourceStateFlag(_rtrcReadBase);
     case _rtrcDepthReadStencilWriteBase:
@@ -481,6 +487,10 @@ VkPipelineStageFlags2 ExtractPipelineStageFlag(ResourceStateFlag state)
         if(stage.contains(_rtrcFSBase))
         {
             result |= VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
+        }
+        if(stage.contains(_rtrcCSBase))
+        {
+            result |= VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
         }
         return result;
     };

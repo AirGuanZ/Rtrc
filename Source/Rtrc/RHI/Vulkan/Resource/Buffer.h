@@ -23,6 +23,8 @@ public:
 
     RC<BufferSRV> CreateSRV(const BufferSRVDesc &desc) const override;
 
+    RC<BufferUAV> CreateUAV(const BufferUAVDesc &desc) const override;
+
     void *Map(size_t offset, size_t size) const override;
 
     void Unmap() override;

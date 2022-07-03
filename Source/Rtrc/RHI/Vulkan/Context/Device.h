@@ -31,7 +31,9 @@ public:
 
     RC<RawShader> CreateShader(const void *data, size_t size, std::string entryPoint, ShaderStage type) override;
 
-    RC<PipelineBuilder> CreatePipelineBuilder() override;
+    RC<GraphicsPipelineBuilder> CreateGraphicsPipelineBuilder() override;
+
+    RC<ComputePipelineBuilder> CreateComputePipelineBuilder() override;
 
     RC<BindingGroupLayout> CreateBindingGroupLayout(const BindingGroupLayoutDesc *desc) override;
 

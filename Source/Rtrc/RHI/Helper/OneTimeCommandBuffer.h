@@ -28,7 +28,7 @@ private:
 
     OneTimeCommandBuffer(RC<Queue> queue, RC<CommandPool> pool, RC<CommandBuffer> buffer);
 
-#if defined(_DEBUG) || defined(DEBUG)
+#if RTRC_DEBUG
     bool submitted_ = false;
 #endif
     RC<Queue> queue_;

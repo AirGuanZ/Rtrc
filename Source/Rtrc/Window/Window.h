@@ -69,7 +69,7 @@ public:
 
     WindowBuilder &SetTitle(std::string title);
 
-    Window CreateWindow() const;
+    Window Create() const;
 
 private:
 

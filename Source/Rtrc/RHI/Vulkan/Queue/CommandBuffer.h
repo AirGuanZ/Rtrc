@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/RHI/Vulkan/Pipeline/Pipeline.h>
+#include <Rtrc/RHI/Vulkan/Common.h>
 
 RTRC_RHI_VK_BEGIN
 
@@ -28,7 +28,7 @@ public:
 
     void EndRenderPass() override;
 
-    void BindPipeline(const RC<Pipeline> &pipeline) override;
+    void BindPipeline(const RC<GraphicsPipeline> &pipeline) override;
     
     void BindGroups(int startIndex, Span<RC<BindingGroup>> groups) override;
 
@@ -44,11 +44,23 @@ public:
 
     void Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance) override;
 
+    void CopyBuffer(
+        const RC<Buffer> &dst, size_t dstOffset,
+        const RC<Buffer> &src, size_t srcOffset, size_t range) override;
+
+    void CopyBufferToTexture(
+        const RC<Texture> &dst, AspectTypeFlag aspect, uint32_t mipLevel, uint32_t arrayLayer,
+        const RC<Buffer> &src, size_t srcOffset) override;
+
+    void CopyTextureToBuffer(
+        const RC<Buffer> &dst, size_t dstOffset,
+        const RC<Texture> &src, AspectTypeFlag aspect, uint32_t mipLevel, uint32_t arrayLayer) override;
+
     VkCommandBuffer GetNativeCommandBuffer() const;
 
 protected:
 
-    const RC<Pipeline> &GetCurrentPipeline() const override;
+    const RC<GraphicsPipeline> &GetCurrentPipeline() const override;
 
 private:
 
@@ -56,7 +68,7 @@ private:
     VkCommandPool   pool_;
     VkCommandBuffer commandBuffer_;
 
-    RC<Pipeline> currentPipeline_;
+    RC<GraphicsPipeline> currentPipeline_;
 };
 
 RTRC_RHI_VK_END

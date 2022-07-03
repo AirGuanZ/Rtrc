@@ -12,7 +12,7 @@ public:
 
     const Texture2DSRVDesc &GetDesc() const override;
 
-    VkImageView GetImageView() const;
+    VkImageView GetNativeImageView() const;
 
 private:
 

@@ -163,8 +163,10 @@ namespace
 
 } // namespace anonymous
 
-Shader::Shader(RC<RHI::RawShader> vertexShader, RC<RHI::RawShader> fragmentShader)
-    : vertexShader_(std::move(vertexShader)), fragmentShader_(std::move(fragmentShader))
+Shader::Shader(RC<RHI::RawShader> vertexShader, RC<RHI::RawShader> fragmentShader, RC<RHI::RawShader> computeShader)
+    : vertexShader_(std::move(vertexShader)),
+      fragmentShader_(std::move(fragmentShader)),
+      computeShader_(std::move(computeShader))
 {
     
 }
@@ -177,6 +179,11 @@ const RC<RHI::RawShader> &Shader::GetVertexShader() const
 const RC<RHI::RawShader> &Shader::GetFragmentShader() const
 {
     return fragmentShader_;
+}
+
+const RC<RHI::RawShader> &Shader::GetComputeShader() const
+{
+    return computeShader_;
 }
 
 ShaderCompiler &ShaderCompiler::SetTarget(Target target)
@@ -202,6 +209,13 @@ ShaderCompiler &ShaderCompiler::SetFragmentShaderSource(std::string source, std:
 {
     fragmentShaderSource_.source = std::move(source);
     fragmentShaderSource_.entry = std::move(entry);
+    return *this;
+}
+
+ShaderCompiler &ShaderCompiler::SetComputeShaderSource(std::string source, std::string entry)
+{
+    computeShaderSource_.source = std::move(source);
+    computeShaderSource_.entry = std::move(entry);
     return *this;
 }
 
@@ -242,27 +256,50 @@ RC<Shader> ShaderCompiler::CompileHLSLForVulkan(RHI::Device &device) const
     const std::map<std::string, std::string> virtualFiles = { { "./RtrcBindings", bindingDeclarations }};
 
     DXC dxc;
-    const auto vertexShaderBlob = dxc.Compile(
-        DXC::ShaderInfo{
-            .source = std::move(vertexShaderSource_.source),
-            .entryPoint = vertexShaderSource_.entry
-        },
-        DXC::Target::Vulkan_1_3_VS_6_0, debug_, virtualFiles);
-    const auto fragmentShaderBlob = dxc.Compile(
-        DXC::ShaderInfo{
-            .source = std::move(fragmentShaderSource_.source),
-            .entryPoint = fragmentShaderSource_.entry
-        },
-        DXC::Target::Vulkan_1_3_PS_6_0, debug_, virtualFiles);
+    RC<RHI::RawShader> vertexShader, fragmentShader, computeShader;
 
-    auto vertexShader = device.CreateShader(
-        vertexShaderBlob.data(), vertexShaderBlob.size(),
-        vertexShaderSource_.entry, RHI::ShaderStage::VertexShader);
-    auto fragmentShader = device.CreateShader(
-        fragmentShaderBlob.data(), fragmentShaderBlob.size(),
-        fragmentShaderSource_.entry, RHI::ShaderStage::FragmentShader);
+    if(!vertexShaderSource_.source.empty())
+    {
+        const auto vertexShaderBlob = dxc.Compile(
+            DXC::ShaderInfo{
+                .source = vertexShaderSource_.source,
+                .entryPoint = vertexShaderSource_.entry
+            },
+            DXC::Target::Vulkan_1_3_VS_6_0, debug_, virtualFiles);
 
-    return MakeRC<Shader>(std::move(vertexShader), std::move(fragmentShader));
+        vertexShader = device.CreateShader(
+            vertexShaderBlob.data(), vertexShaderBlob.size(),
+            vertexShaderSource_.entry, RHI::ShaderStage::VertexShader);
+    }
+
+    if(!fragmentShaderSource_.source.empty())
+    {
+        const auto fragmentShaderBlob = dxc.Compile(
+            DXC::ShaderInfo{
+                .source = fragmentShaderSource_.source,
+                .entryPoint = fragmentShaderSource_.entry
+            },
+            DXC::Target::Vulkan_1_3_PS_6_0, debug_, virtualFiles);
+        fragmentShader = device.CreateShader(
+            fragmentShaderBlob.data(), fragmentShaderBlob.size(),
+            fragmentShaderSource_.entry, RHI::ShaderStage::FragmentShader);
+    }
+
+    if(!computeShaderSource_.source.empty())
+    {
+        const auto computeShaderBlob = dxc.Compile(
+            DXC::ShaderInfo{
+                .source = computeShaderSource_.source,
+                .entryPoint = computeShaderSource_.entry
+            },
+            DXC::Target::Vulkan_1_3_CS_6_0, debug_, virtualFiles);
+
+        computeShader = device.CreateShader(
+            computeShaderBlob.data(), computeShaderBlob.size(),
+            computeShaderSource_.entry, RHI::ShaderStage::ComputeShader);
+    }
+
+    return MakeRC<Shader>(std::move(vertexShader), std::move(fragmentShader), std::move(computeShader));
 }
 
 RTRC_END

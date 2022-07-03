@@ -17,7 +17,7 @@ OneTimeCommandBuffer::OneTimeCommandBuffer(OneTimeCommandBuffer &&other) noexcep
 
 OneTimeCommandBuffer::~OneTimeCommandBuffer()
 {
-#if defined(_DEBUG) || defined(DEBUG)
+#if RTRC_DEBUG
     assert((submitted_ || !buffer_) && "unsubmitted one-time command buffer");
 #endif
 }
@@ -33,7 +33,7 @@ void OneTimeCommandBuffer::Swap(OneTimeCommandBuffer &other) noexcept
     queue_.swap(other.queue_);
     pool_.swap(other.pool_);
     buffer_.swap(other.buffer_);
-#if defined(_DEBUG) || defined(DEBUG)
+#if RTRC_DEBUG
     std::swap(submitted_, other.submitted_);
 #endif
 }
@@ -45,7 +45,9 @@ RC<CommandBuffer> OneTimeCommandBuffer::operator->()
 
 void OneTimeCommandBuffer::SubmitAndWait()
 {
+#if RTRC_DEBUG
     submitted_ = true;
+#endif
     queue_->Submit({}, {}, buffer_, {}, {}, {});
     queue_->WaitIdle();
 }

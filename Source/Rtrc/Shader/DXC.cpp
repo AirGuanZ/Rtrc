@@ -141,6 +141,7 @@ std::vector<unsigned char> DXC::Compile(
     arguments.push_back(L"-fvk-use-dx-layout");
     arguments.push_back(L"-fvk-use-dx-position-w");
     arguments.push_back(L"-fspv-target-env=vulkan1.3");
+    arguments.push_back(L"-fvk-stage-io-order=alpha");
 
     arguments.push_back(L"-T");
     switch(target)
@@ -150,6 +151,9 @@ std::vector<unsigned char> DXC::Compile(
         break;
     case Target::Vulkan_1_3_PS_6_0:
         arguments.push_back(L"ps_6_0");
+        break;
+    case Target::Vulkan_1_3_CS_6_0:
+        arguments.push_back(L"cs_6_0");
         break;
     }
 
