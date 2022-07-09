@@ -4,15 +4,15 @@
 
 using namespace Rtrc;
 
-$struct_begin(ScaleSetting)
-    $variable(float, Factor)
-$struct_end()
+$StructBegin(ScaleSettingStruct)
+    $Variable(float, Factor)
+$StructEnd()
 
-$group_begin(ScaleGroup)
-    $binding(ConstantBuffer<ScaleSetting>, ScaleSettingCBuffer, CS)
-    $binding(Texture2D<float4>,            InputTexture,        CS)
-    $binding(RWTexture2D<float4>,          OutputTexture,       CS)
-$group_end()
+$GroupBegin(ScaleGroup)
+    $Binding(ConstantBuffer<ScaleSettingStruct>, ScaleSetting,  CS)
+    $Binding(Texture2D<float4>,                  InputTexture,  CS)
+    $Binding(RWTexture2D<float4>,                OutputTexture, CS)
+$GroupEnd()
 
 void Run()
 {
@@ -29,14 +29,15 @@ void Run()
 
     // create pipeline
 
-    const std::string shaderSource = File::ReadTextFile("Asset/02.ComputeShader/Shader.hlsl");
+    std::string preprocessed;
 
-    auto computeShader = ShaderCompiler()
-        .SetComputeShaderSource(shaderSource, "CSMain")
+    auto shader = ShaderCompiler(device)
         .AddBindingGroup<ScaleGroup>()
-        .SetDebugMode(true)
-        .SetTarget(ShaderCompiler::Target::Vulkan)
-        .Compile(*device)->GetComputeShader();
+        .AddSources(CSSource{ "Asset/02.ComputeShader/Shader.hlsl", "CSMain" })
+        .DumpPreprocessedSource(RHI::ShaderStage::ComputeShader, &preprocessed)
+        .Compile()->GetRawComputeShader();
+
+    std::cout << preprocessed << std::endl;
 
     auto bindingGroupLayout = device->CreateBindingGroupLayout(GetBindingGroupLayoutDesc<ScaleGroup>());
     auto bindingLayout = device->CreateBindingLayout(RHI::BindingLayoutDesc{
@@ -44,13 +45,13 @@ void Run()
     });
 
     auto pipeline = (*device->CreateComputePipelineBuilder())
-        .SetComputeShader(computeShader)
+        .SetComputeShader(shader)
         .SetBindingLayout(bindingLayout)
         .CreatePipeline();
 
     // input texture
 
-    const auto inputImageData = ImageDynamic::Load("Asset/02.ComputeShader/InputTexture.png");
+    const auto inputImageData = ImageDynamic::Load("Asset/01.TexturedQuad/MainTexture.png");
 
     auto inputTexture = device->CreateTexture2D(RHI::Texture2DDesc{
         .format       = RHI::Format::B8G8R8A8_UNorm,
@@ -108,7 +109,7 @@ void Run()
     // readback staging buffer
 
     auto readBackStagingBuffer = device->CreateBuffer(RHI::BufferDesc{
-        .size                 = inputImageData.GetWidth() * inputImageData.GetHeight() * 4,
+        .size                 = static_cast<size_t>(inputImageData.GetWidth() * inputImageData.GetHeight() * 4),
         .usage                = RHI::BufferUsage::TransferDst,
         .hostAccessType       = RHI::BufferHostAccessType::Random,
         .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
@@ -134,9 +135,9 @@ void Run()
 
     auto bindingGroup = bindingGroupLayout->CreateBindingGroup();
 
-    ModifyBindingGroup(bindingGroup.get(), &ScaleGroup::ScaleSettingCBuffer, constantBuffer, 0, 16);
-    ModifyBindingGroup(bindingGroup.get(), &ScaleGroup::InputTexture, inputTextureSRV);
-    ModifyBindingGroup(bindingGroup.get(), &ScaleGroup::OutputTexture, outputTextureUAV);
+    ModifyBindingGroup(bindingGroup.Get(), &ScaleGroup::ScaleSetting, constantBuffer, 0, 16);
+    ModifyBindingGroup(bindingGroup.Get(), &ScaleGroup::InputTexture, inputTextureSRV);
+    ModifyBindingGroup(bindingGroup.Get(), &ScaleGroup::OutputTexture, outputTextureUAV);
 
     // queue & command pool & buffer
 
@@ -189,7 +190,7 @@ void Run()
 
     computeQueue->Submit({}, {}, commandBuffer, {}, {}, {});
 
-    // readback
+    // read back
 
     computeQueue->WaitIdle();
 
@@ -210,11 +211,12 @@ void Run()
 
     // save output image
 
-    outputImageData.Save("02.ComputeShader_Output.png");
+    outputImageData.Save("./Asset/02.ComputeShader/Output.png");
 }
 
 int main()
 {
+    EnableMemoryLeakReporter();
     try
     {
         Run();

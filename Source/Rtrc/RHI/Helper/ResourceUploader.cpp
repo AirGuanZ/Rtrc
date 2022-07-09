@@ -2,7 +2,7 @@
 
 RTRC_RHI_BEGIN
 
-ResourceUploader::ResourceUploader(RC<Device> device)
+ResourceUploader::ResourceUploader(Ptr<Device> device)
     : device_(std::move(device)), pendingStagingBufferSize_(0)
 {
     queue_ = device_->GetQueue(QueueType::Transfer);
@@ -16,12 +16,12 @@ ResourceUploader::~ResourceUploader()
 }
 
 BufferAcquireBarrier ResourceUploader::Upload(
-    const RC<Buffer> &buffer,
-    size_t            offset,
-    size_t            range,
-    const void       *data,
-    const RC<Queue>  &afterQueue,
-    ResourceStateFlag afterState)
+    const Ptr<Buffer> &buffer,
+    size_t             offset,
+    size_t             range,
+    const void        *data,
+    const Ptr<Queue>  &afterQueue,
+    ResourceStateFlag  afterState)
 {
     if(buffer->GetDesc().hostAccessType == BufferHostAccessType::SequentialWrite ||
        buffer->GetDesc().hostAccessType == BufferHostAccessType::Random)
@@ -91,13 +91,13 @@ BufferAcquireBarrier ResourceUploader::Upload(
 }
 
 TextureAcquireBarrier ResourceUploader::Upload(
-    const RC<Texture> &texture,
-    AspectTypeFlag     aspect,
-    uint32_t           mipLevel,
-    uint32_t           arrayLayer,
-    const void        *data,
-    const RC<Queue>   &afterQueue,
-    ResourceStateFlag  afterState)
+    const Ptr<Texture> &texture,
+    AspectTypeFlag      aspect,
+    uint32_t            mipLevel,
+    uint32_t            arrayLayer,
+    const void         *data,
+    const Ptr<Queue>   &afterQueue,
+    ResourceStateFlag   afterState)
 {
     assert(texture->GetDimension() == TextureDimension::Tex2D);
     auto &texDesc = texture->Get2DDesc();
@@ -190,13 +190,13 @@ TextureAcquireBarrier ResourceUploader::Upload(
 }
 
 TextureAcquireBarrier ResourceUploader::Upload(
-    const RC<Texture>  &texture,
-    AspectTypeFlag      aspect,
-    uint32_t            mipLevel,
-    uint32_t            arrayLayer,
-    const ImageDynamic &image,
-    const RC<Queue>    &afterQueue,
-    ResourceStateFlag   afterState)
+    const Ptr<Texture>  &texture,
+    AspectTypeFlag       aspect,
+    uint32_t             mipLevel,
+    uint32_t             arrayLayer,
+    const ImageDynamic  &image,
+    const Ptr<Queue>    &afterQueue,
+    ResourceStateFlag    afterState)
 {
     assert(texture->GetDimension() == TextureDimension::Tex2D);
     auto &texDesc = texture->Get2DDesc();

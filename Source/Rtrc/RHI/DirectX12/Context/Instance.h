@@ -8,7 +8,7 @@ class DirectX12Instance : public Instance
 {
 public:
 
-    RC<Device> CreateDevice(const DeviceDesc &desc) override;
+    Ptr<Device> CreateDevice(const DeviceDesc &desc) override;
 };
 
 RTRC_RHI_DIRECTX12_END

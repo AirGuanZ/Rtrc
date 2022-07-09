@@ -36,72 +36,72 @@ DirectX12Device::DirectX12Device(const DeviceDesc &desc, ComPtr<ID3D12Device> de
     }
 }
 
-RC<Queue> DirectX12Device::GetQueue(QueueType type)
+Ptr<Queue> DirectX12Device::GetQueue(QueueType type)
 {
     switch(type)
     {
-    case QueueType::Graphics: return MakeRC<DirectX12Queue>(type, graphicsQueue_);
-    case QueueType::Compute:  return MakeRC<DirectX12Queue>(type, computeQueue_);
-    case QueueType::Transfer: return MakeRC<DirectX12Queue>(type, copyQueue_);
+    case QueueType::Graphics: return MakePtr<DirectX12Queue>(type, graphicsQueue_);
+    case QueueType::Compute:  return MakePtr<DirectX12Queue>(type, computeQueue_);
+    case QueueType::Transfer: return MakePtr<DirectX12Queue>(type, copyQueue_);
     }
     Unreachable();
 }
 
-RC<Fence> DirectX12Device::CreateFence(bool signaled)
+Ptr<Fence> DirectX12Device::CreateFence(bool signaled)
 {
     // TODO
     return {};
 }
 
-RC<Swapchain> DirectX12Device::CreateSwapchain(const SwapchainDesc &desc, Window &window)
+Ptr<Swapchain> DirectX12Device::CreateSwapchain(const SwapchainDesc &desc, Window &window)
 {
     // TODO
     return {};
 }
 
-RC<RawShader> DirectX12Device::CreateShader(const void *data, size_t size, std::string entryPoint, ShaderStage type)
+Ptr<RawShader> DirectX12Device::CreateShader(const void *data, size_t size, std::string entryPoint, ShaderStage type)
 {
     // TODO
     return {};
 }
 
-RC<GraphicsPipelineBuilder> DirectX12Device::CreateGraphicsPipelineBuilder()
+Ptr<GraphicsPipelineBuilder> DirectX12Device::CreateGraphicsPipelineBuilder()
 {
     // TODO
     return {};
 }
 
-RC<ComputePipelineBuilder> DirectX12Device::CreateComputePipelineBuilder()
+Ptr<ComputePipelineBuilder> DirectX12Device::CreateComputePipelineBuilder()
 {
     // TODO
     return {};
 }
 
-RC<BindingGroupLayout> DirectX12Device::CreateBindingGroupLayout(const BindingGroupLayoutDesc *desc)
+Ptr<BindingGroupLayout> DirectX12Device::CreateBindingGroupLayout(const BindingGroupLayoutDesc *desc)
 {
     // TODO
     return {};
 }
 
-RC<BindingLayout> DirectX12Device::CreateBindingLayout(const BindingLayoutDesc &desc)
+Ptr<BindingLayout> DirectX12Device::CreateBindingLayout(const BindingLayoutDesc &desc)
 {
     // TODO
     return {};
 }
 
-RC<Texture> DirectX12Device::CreateTexture2D(const Texture2DDesc &desc)
+Ptr<Texture> DirectX12Device::CreateTexture2D(const Texture2DDesc &desc)
 {
     // TODO
     return {};
 }
 
-RC<Buffer> DirectX12Device::CreateBuffer(const BufferDesc &desc)
+Ptr<Buffer> DirectX12Device::CreateBuffer(const BufferDesc &desc)
 {
     // TODO
     return {};
 }
 
-RC<Sampler> DirectX12Device::CreateSampler(const SamplerDesc &desc)
+Ptr<Sampler> DirectX12Device::CreateSampler(const SamplerDesc &desc)
 {
     // TODO
     return {};

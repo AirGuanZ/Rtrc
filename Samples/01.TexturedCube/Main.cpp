@@ -1,18 +1,19 @@
 #include <iostream>
+#include <mimalloc.h>
 
 #include <Rtrc/Rtrc.h>
 
-$group_begin(TestGroup)
-    $binding(Buffer<float2>,    VertexPositionBuffer, VS)
-    $binding(Buffer<float2>,    VertexTexCoordBuffer, VS)
-    $binding(Texture2D<float4>, MainTexture,          FS)
-    $binding(Sampler,           MainSampler,          FS)
-$group_end()
+$GroupBegin(TestGroup)
+    $Binding(Buffer<float2>,    VertexPositionBuffer, VS)
+    $Binding(Buffer<float2>,    VertexTexCoordBuffer, VS)
+    $Binding(Texture2D<float4>, MainTexture,          FS)
+    $Binding(Sampler,           MainSampler,          FS)
+$GroupEnd()
+
+using namespace Rtrc;
 
 void Run()
 {
-    using namespace Rtrc;
-
     // window & device
 
     auto window = WindowBuilder()
@@ -34,12 +35,12 @@ void Run()
 
     // swapchain
 
-    RC<RHI::Swapchain> swapchain;
+    RHI::Ptr<RHI::Swapchain> swapchain;
 
     auto createSwapchain = [&]
     {
         device->WaitIdle();
-        swapchain.reset();
+        swapchain.Reset();
         swapchain = device->CreateSwapchain(RHI::SwapchainDesc
         {
             .format = RHI::Format::B8G8R8A8_UNorm,
@@ -60,8 +61,9 @@ void Run()
     // frame resources
 
     int frameIndex = 0;
-    std::vector<RC<RHI::Fence>> fences;
-    std::vector<RC<RHI::CommandPool>> commandPools;
+    std::vector<RHI::Ptr<RHI::Fence>> fences;
+    std::vector<RHI::Ptr<RHI::CommandPool>> commandPools;
+
     for(int i = 0; i < swapchain->GetRenderTargetCount(); ++i)
     {
         fences.push_back(device->CreateFence(true));
@@ -70,23 +72,26 @@ void Run()
 
     // pipeline
 
-    auto shaderText = File::ReadTextFile("Asset/01.TexturedQuad/Quad.hlsl");
+    std::string preprocessedShaderSource;
 
-    auto shader = ShaderCompiler()
-        .SetVertexShaderSource(shaderText, "VSMain")
-        .SetFragmentShaderSource(shaderText, "PSMain")
-        .SetDebugMode(true)
-        .SetTarget(ShaderCompiler::Target::Vulkan)
+    auto shader = ShaderCompiler(device)
+        .SetDefaultFileLoader("./Asset/01.TexturedQuad")
         .AddBindingGroup<TestGroup>()
-        .Compile(*device);
+        .AddSources(
+            VSSource{ "Quad.hlsl", "VSMain" },
+            FSSource{ "Quad.hlsl", "FSMain" })
+        .DumpPreprocessedSource(RHI::ShaderStage::VertexShader, &preprocessedShaderSource)
+        .Compile();
+
+    std::cout << preprocessedShaderSource << std::endl;
 
     auto bindingGroupLayout = device->CreateBindingGroupLayout(GetBindingGroupLayoutDesc<TestGroup>());
     auto bindingLayout = device->CreateBindingLayout(RHI::BindingLayoutDesc{ { bindingGroupLayout } });
 
     auto pipelineBuilder = device->CreateGraphicsPipelineBuilder();
     auto pipeline = (*pipelineBuilder)
-        .SetVertexShader(shader->GetVertexShader())
-        .SetFragmentShader(shader->GetFragmentShader())
+        .SetVertexShader(shader->GetRawVertexShader())
+        .SetFragmentShader(shader->GetRawFragmentShader())
         .AddColorAttachment(swapchain->GetRenderTargetDesc().format)
         .SetBindingLayout(bindingLayout)
         .SetViewports(1)
@@ -163,8 +168,8 @@ void Run()
 
     auto mainTex = device->CreateTexture2D(RHI::Texture2DDesc{
         .format               = RHI::Format::B8G8R8A8_UNorm,
-        .width                = static_cast<uint32_t>(mainTexData.GetWidth()),
-        .height               = static_cast<uint32_t>(mainTexData.GetHeight()),
+        .width                = mainTexData.GetWidth(),
+        .height               = mainTexData.GetHeight(),
         .mipLevels            = 1,
         .arraySize            = 1,
         .sampleCount          = 1,
@@ -202,17 +207,11 @@ void Run()
 
     // binding group
 
-    TestGroup bindingGroupStruct;
-    bindingGroupStruct.VertexPositionBuffer = vertexPositionBufferSRV;
-    bindingGroupStruct.VertexTexCoordBuffer = vertexTexCoordBufferSRV;
-    bindingGroupStruct.MainTexture          = mainTexSRV;
-    bindingGroupStruct.MainSampler          = mainSampler;
-
     auto bindingGroup = bindingGroupLayout->CreateBindingGroup();
-    ModifyBindingGroup(bindingGroup.get(), &TestGroup::VertexPositionBuffer, vertexPositionBufferSRV);
-    ModifyBindingGroup(bindingGroup.get(), &TestGroup::VertexTexCoordBuffer, vertexTexCoordBufferSRV);
-    ModifyBindingGroup(bindingGroup.get(), &TestGroup::MainTexture,          mainTexSRV);
-    ModifyBindingGroup(bindingGroup.get(), &TestGroup::MainSampler,          mainSampler);
+    ModifyBindingGroup(bindingGroup.Get(), &TestGroup::VertexPositionBuffer, vertexPositionBufferSRV);
+    ModifyBindingGroup(bindingGroup.Get(), &TestGroup::VertexTexCoordBuffer, vertexTexCoordBufferSRV);
+    ModifyBindingGroup(bindingGroup.Get(), &TestGroup::MainTexture,          mainTexSRV);
+    ModifyBindingGroup(bindingGroup.Get(), &TestGroup::MainSampler,          mainSampler);
 
     // render loop
 
@@ -280,7 +279,7 @@ void Run()
         commandBuffer->SetViewports(RHI::Viewport
         {
             .lowerLeftCorner = Vector2f(0.0f, 0.0f),
-            .size            = Vector2f(image->Get2DDesc().width, image->Get2DDesc().height),
+            .size            = Vector2f(static_cast<float>(image->Get2DDesc().width), static_cast<float>(image->Get2DDesc().height)),
             .minDepth        = 0,
             .maxDepth        = 1
         });
@@ -288,7 +287,7 @@ void Run()
         commandBuffer->SetScissors(RHI::Scissor
         {
             .lowerLeftCorner = Vector2i(0, 0),
-            .size = Vector2i(image->Get2DDesc().width, image->Get2DDesc().height),
+            .size = Vector2i(static_cast<int>(image->Get2DDesc().width), static_cast<int>(image->Get2DDesc().height)),
         });
 
         commandBuffer->Draw(6, 1, 0, 0);
@@ -323,6 +322,7 @@ void Run()
 
 int main()
 {
+    EnableMemoryLeakReporter();
     try
     {
         Run();

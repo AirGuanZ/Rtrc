@@ -9,9 +9,10 @@
 #include <Rtrc/RHI/RHI.h>
 
 #include <Rtrc/Shader/Binding.h>
-#include <Rtrc/Shader/Shader.h>
+#include <Rtrc/Shader/ShaderCompiler.h>
 
 #include <Rtrc/Utils/File.h>
+#include <Rtrc/Utils/Malloc.h>
 
 #include <Rtrc/Window/Input.h>
 #include <Rtrc/Window/Window.h>

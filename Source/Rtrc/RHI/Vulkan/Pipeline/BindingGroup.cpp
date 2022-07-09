@@ -24,9 +24,9 @@ const BindingGroupLayout *VulkanBindingGroupInstance::GetLayout() const
     return layout_;
 }
 
-void VulkanBindingGroupInstance::ModifyMember(int index, const RC<BufferSRV> &bufferSRV)
+void VulkanBindingGroupInstance::ModifyMember(int index, const Ptr<BufferSRV> &bufferSRV)
 {
-    auto rawBufferSRV = static_cast<VulkanBufferSRV *>(bufferSRV.get());
+    auto rawBufferSRV = static_cast<VulkanBufferSRV *>(bufferSRV.Get());
     auto &desc = rawBufferSRV->GetDesc();
 
     if(layout_->IsSlotTexelBuffer(index))
@@ -66,9 +66,9 @@ void VulkanBindingGroupInstance::ModifyMember(int index, const RC<BufferSRV> &bu
     }
 }
 
-void VulkanBindingGroupInstance::ModifyMember(int index, const RC<BufferUAV> &bufferUAV)
+void VulkanBindingGroupInstance::ModifyMember(int index, const Ptr<BufferUAV> &bufferUAV)
 {
-    auto rawBufferUAV = static_cast<VulkanBufferUAV *>(bufferUAV.get());
+    auto rawBufferUAV = static_cast<VulkanBufferUAV *>(bufferUAV.Get());
     auto &desc = rawBufferUAV->GetDesc();
 
     if(layout_->IsSlotStorageTexelBuffer(index))
@@ -108,9 +108,9 @@ void VulkanBindingGroupInstance::ModifyMember(int index, const RC<BufferUAV> &bu
     }
 }
 
-void VulkanBindingGroupInstance::ModifyMember(int index, const RC<Texture2DSRV> &textureSRV)
+void VulkanBindingGroupInstance::ModifyMember(int index, const Ptr<Texture2DSRV> &textureSRV)
 {
-    auto rawTexSRV = static_cast<VulkanTexture2DSRV *>(textureSRV.get());
+    auto rawTexSRV = static_cast<VulkanTexture2DSRV *>(textureSRV.Get());
     assert(layout_->IsSlotTexture2D(index));
     const VkDescriptorImageInfo imageInfo = {
         .imageView   = rawTexSRV->GetNativeImageView(),
@@ -128,9 +128,9 @@ void VulkanBindingGroupInstance::ModifyMember(int index, const RC<Texture2DSRV> 
     vkUpdateDescriptorSets(device_, 1, &write, 0, nullptr);
 }
 
-void VulkanBindingGroupInstance::ModifyMember(int index, const RC<Texture2DUAV> &textureUAV)
+void VulkanBindingGroupInstance::ModifyMember(int index, const Ptr<Texture2DUAV> &textureUAV)
 {
-    auto rawTexUAV = static_cast<VulkanTexture2DUAV *>(textureUAV.get());
+    auto rawTexUAV = static_cast<VulkanTexture2DUAV *>(textureUAV.Get());
     assert(layout_->IsSlotRWTexture2D(index));
     const VkDescriptorImageInfo imageInfo = {
         .imageView   = rawTexUAV->GetNativeImageView(),
@@ -148,9 +148,9 @@ void VulkanBindingGroupInstance::ModifyMember(int index, const RC<Texture2DUAV> 
     vkUpdateDescriptorSets(device_, 1, &write, 0, nullptr);
 }
 
-void VulkanBindingGroupInstance::ModifyMember(int index, const RC<Sampler> &sampler)
+void VulkanBindingGroupInstance::ModifyMember(int index, const Ptr<Sampler> &sampler)
 {
-    auto rawSampler = static_cast<VulkanSampler *>(sampler.get());
+    auto rawSampler = static_cast<VulkanSampler *>(sampler.Get());
     const VkDescriptorImageInfo samplerInfo = {
         .sampler = rawSampler->GetNativeSampler()
     };
@@ -166,10 +166,10 @@ void VulkanBindingGroupInstance::ModifyMember(int index, const RC<Sampler> &samp
     vkUpdateDescriptorSets(device_, 1, &write, 0, nullptr);
 }
 
-void VulkanBindingGroupInstance::ModifyMember(int index, const RC<Buffer> &uniformBuffer, size_t offset, size_t range)
+void VulkanBindingGroupInstance::ModifyMember(int index, const Ptr<Buffer> &uniformBuffer, size_t offset, size_t range)
 {
     const VkDescriptorBufferInfo bufferInfo = {
-        .buffer = static_cast<VulkanBuffer *>(uniformBuffer.get())->GetNativeBuffer(),
+        .buffer = static_cast<VulkanBuffer *>(uniformBuffer.Get())->GetNativeBuffer(),
         .offset = offset,
         .range  = range
     };

@@ -21,9 +21,9 @@ public:
 
     const BufferDesc &GetDesc() const override;
 
-    RC<BufferSRV> CreateSRV(const BufferSRVDesc &desc) const override;
+    Ptr<BufferSRV> CreateSRV(const BufferSRVDesc &desc) const override;
 
-    RC<BufferUAV> CreateUAV(const BufferUAVDesc &desc) const override;
+    Ptr<BufferUAV> CreateUAV(const BufferUAVDesc &desc) const override;
 
     void *Map(size_t offset, size_t size) const override;
 

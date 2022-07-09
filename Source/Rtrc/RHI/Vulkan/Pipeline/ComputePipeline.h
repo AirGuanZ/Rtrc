@@ -8,17 +8,17 @@ class VulkanComputePipeline : public ComputePipeline
 {
 public:
 
-    VulkanComputePipeline(RC<BindingLayout> layout, VkDevice device, VkPipeline pipeline);
+    VulkanComputePipeline(Ptr<BindingLayout> layout, VkDevice device, VkPipeline pipeline);
 
     ~VulkanComputePipeline() override;
 
-    const RC<BindingLayout> &GetBindingLayout() const override;
+    const Ptr<BindingLayout> &GetBindingLayout() const override;
 
     VkPipeline GetNativePipeline() const;
 
 private:
 
-    RC<BindingLayout> layout_;
+    Ptr<BindingLayout> layout_;
 
     VkDevice   device_;
     VkPipeline pipeline_;
@@ -30,16 +30,16 @@ public:
 
     explicit VulkanComputePipelineBuilder(VkDevice device);
 
-    ComputePipelineBuilder &SetComputeShader(RC<RawShader> shader) override;
+    ComputePipelineBuilder &SetComputeShader(Ptr<RawShader> shader) override;
 
-    ComputePipelineBuilder &SetBindingLayout(RC<BindingLayout> layout) override;
+    ComputePipelineBuilder &SetBindingLayout(Ptr<BindingLayout> layout) override;
 
-    RC<ComputePipeline> CreatePipeline() const override;
+    Ptr<ComputePipeline> CreatePipeline() const override;
 
 private:
 
-    RC<RawShader> computeShader_;
-    RC<BindingLayout> bindingLayout_;
+    Ptr<RawShader> computeShader_;
+    Ptr<BindingLayout> bindingLayout_;
 
     VkDevice device_;
 };

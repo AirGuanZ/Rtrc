@@ -8,17 +8,17 @@ class VulkanGraphicsPipeline : public GraphicsPipeline
 {
 public:
 
-    VulkanGraphicsPipeline(RC<BindingLayout> layout, VkDevice device, VkPipeline pipeline);
+    VulkanGraphicsPipeline(Ptr<BindingLayout> layout, VkDevice device, VkPipeline pipeline);
 
     ~VulkanGraphicsPipeline() override;
 
-    const RC<BindingLayout> &GetBindingLayout() const override;
+    const Ptr<BindingLayout> &GetBindingLayout() const override;
 
     VkPipeline GetNativePipeline() const;
 
 private:
 
-    RC<BindingLayout> layout_;
+    Ptr<BindingLayout> layout_;
 
     VkDevice   device_;
     VkPipeline pipeline_;
@@ -30,11 +30,11 @@ public:
 
     explicit VulkanGraphicsPipelineBuilder(VkDevice device);
 
-    GraphicsPipelineBuilder &SetVertexShader(RC<RawShader> vertexShader) override;
+    GraphicsPipelineBuilder &SetVertexShader(Ptr<RawShader> vertexShader) override;
 
-    GraphicsPipelineBuilder &SetFragmentShader(RC<RawShader> fragmentShader) override;
+    GraphicsPipelineBuilder &SetFragmentShader(Ptr<RawShader> fragmentShader) override;
 
-    GraphicsPipelineBuilder &SetBindingLayout(RC<BindingLayout> layout) override;
+    GraphicsPipelineBuilder &SetBindingLayout(Ptr<BindingLayout> layout) override;
 
     GraphicsPipelineBuilder &SetViewports(const Viewports &viewports) override;
 
@@ -85,7 +85,7 @@ public:
 
     GraphicsPipelineBuilder &SetDepthStencilAttachment(Format format) override;
 
-    RC<GraphicsPipeline> CreatePipeline() const override;
+    Ptr<GraphicsPipeline> CreatePipeline() const override;
 
 private:
 
@@ -101,10 +101,10 @@ private:
 
     VkDevice device_;
 
-    RC<RawShader> vertexShader_;
-    RC<RawShader> fragmentShader_;
+    Ptr<RawShader> vertexShader_;
+    Ptr<RawShader> fragmentShader_;
 
-    RC<BindingLayout> bindingLayout_;
+    Ptr<BindingLayout> bindingLayout_;
 
     Viewports viewports_;
     Scissors scissors_;

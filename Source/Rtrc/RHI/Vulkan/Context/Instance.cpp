@@ -16,7 +16,7 @@ void InitializeVulkanBackend()
     std::call_once(initVolkFlag, [] { volkInitialize(); });
 }
 
-Unique<Instance> CreateVulkanInstance(const VulkanInstanceDesc &desc)
+Ptr<Instance> CreateVulkanInstance(const VulkanInstanceDesc &desc)
 {
     InitializeVulkanBackend();
 
@@ -49,7 +49,7 @@ Unique<Instance> CreateVulkanInstance(const VulkanInstanceDesc &desc)
     RTRC_SCOPE_FAIL{ destroy_instance(instance); };
     volkLoadInstance(instance.instance);
 
-    return MakeUnique<Vk::VulkanInstance>(instance);
+    return MakePtr<Vk::VulkanInstance>(instance);
 }
 
 RTRC_RHI_END
@@ -67,7 +67,7 @@ VulkanInstance::~VulkanInstance()
     destroy_instance(instance_);
 }
 
-RC<Device> VulkanInstance::CreateDevice(const DeviceDesc &desc)
+Ptr<Device> VulkanInstance::CreateDevice(const DeviceDesc &desc)
 {
     // physical device
 
@@ -182,7 +182,7 @@ RC<Device> VulkanInstance::CreateDevice(const DeviceDesc &desc)
         queueFamilies.transferFamilyIndex = physicalDevice.GetTransferQueueFamily();
     }
 
-    return MakeRC<VulkanDevice>(instance_.instance, physicalDevice, device, queueFamilies);
+    return MakePtr<VulkanDevice>(instance_.instance, physicalDevice, device, queueFamilies);
 }
 
 RTRC_RHI_VK_END

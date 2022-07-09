@@ -49,7 +49,7 @@ const BindingGroupLayoutDesc *VulkanBindingGroupLayout::GetDesc() const
     return desc_;
 }
 
-RC<BindingGroup> VulkanBindingGroupLayout::CreateBindingGroup()
+Ptr<BindingGroup> VulkanBindingGroupLayout::CreateBindingGroup()
 {
     if(freeSets_.empty())
     {
@@ -57,7 +57,7 @@ RC<BindingGroup> VulkanBindingGroupLayout::CreateBindingGroup()
     }
     auto set = freeSets_.back();
     freeSets_.pop_back();
-    return MakeRC<VulkanBindingGroupInstance>(device_, this, set);
+    return MakePtr<VulkanBindingGroupInstance>(device_, this, set);
 }
 
 VkDescriptorSetLayout VulkanBindingGroupLayout::GetLayout() const

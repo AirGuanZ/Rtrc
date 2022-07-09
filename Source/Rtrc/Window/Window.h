@@ -4,6 +4,7 @@
 #include <string>
 
 #include <Rtrc/Math/Vector2.h>
+#include <Rtrc/Utils/ReferenceCounted.h>
 #include <Rtrc/Window/Input.h>
 
 RTRC_RHI_BEGIN
@@ -44,7 +45,7 @@ public:
 
     bool HasFocus() const;
 
-    Unique<RHI::Surface> CreateVulkanSurface(void *vkInstance);
+    ReferenceCountedPtr<RHI::Surface> CreateVulkanSurface(void *vkInstance);
 
     RTRC_DECLARE_EVENT_SENDER(WindowCloseEvent)
     RTRC_DECLARE_EVENT_SENDER(WindowResizeEvent)

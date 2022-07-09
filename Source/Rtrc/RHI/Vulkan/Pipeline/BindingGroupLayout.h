@@ -29,7 +29,7 @@ public:
 
     const BindingGroupLayoutDesc *GetDesc() const override;
 
-    RC<BindingGroup> CreateBindingGroup() override;
+    Ptr<BindingGroup> CreateBindingGroup() override;
 
     VkDescriptorSetLayout GetLayout() const;
 

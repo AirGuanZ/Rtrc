@@ -21,7 +21,7 @@ void VulkanCommandPool::Reset()
     nextFreeBufferIndex_ = 0;
 }
 
-RC<CommandBuffer> VulkanCommandPool::NewCommandBuffer()
+Ptr<CommandBuffer> VulkanCommandPool::NewCommandBuffer()
 {
     if(nextFreeBufferIndex_ >= commandBuffers_.size())
     {
@@ -43,7 +43,7 @@ void VulkanCommandPool::CreateCommandBuffer()
         vkAllocateCommandBuffers(device_, &allocateInfo, &newBuffer),
         "failed to allocate new command buffer");
     RTRC_SCOPE_FAIL{ vkFreeCommandBuffers(device_, pool_, 1, &newBuffer); };
-    commandBuffers_.push_back(MakeRC<VulkanCommandBuffer>(device_, pool_, newBuffer));
+    commandBuffers_.push_back(MakePtr<VulkanCommandBuffer>(device_, pool_, newBuffer));
 }
 
 RTRC_RHI_VK_END

@@ -30,11 +30,11 @@ public:
 
     const Texture2DDesc &Get2DDesc() const override;
 
-    RC<Texture2DRTV> Create2DRTV(const Texture2DRTVDesc &desc) const override;
+    Ptr<Texture2DRTV> Create2DRTV(const Texture2DRTVDesc &desc) const override;
 
-    RC<Texture2DSRV> Create2DSRV(const Texture2DSRVDesc &desc) const override;
+    Ptr<Texture2DSRV> Create2DSRV(const Texture2DSRVDesc &desc) const override;
 
-    RC<Texture2DUAV> Create2DUAV(const Texture2DUAVDesc &desc) const override;
+    Ptr<Texture2DUAV> Create2DUAV(const Texture2DUAVDesc &desc) const override;
 
     VkImage GetNativeImage() const override;
 

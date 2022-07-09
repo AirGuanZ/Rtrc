@@ -2,7 +2,7 @@
 
 RTRC_RHI_BEGIN
 
-OneTimeCommandBuffer OneTimeCommandBuffer::Create(RC<Queue> queue)
+OneTimeCommandBuffer OneTimeCommandBuffer::Create(Ptr<Queue> queue)
 {
     auto pool = queue->CreateCommandPool();
     auto commandBuffer = pool->NewCommandBuffer();
@@ -30,15 +30,15 @@ OneTimeCommandBuffer &OneTimeCommandBuffer::operator=(OneTimeCommandBuffer &&oth
 
 void OneTimeCommandBuffer::Swap(OneTimeCommandBuffer &other) noexcept
 {
-    queue_.swap(other.queue_);
-    pool_.swap(other.pool_);
-    buffer_.swap(other.buffer_);
+    queue_.Swap(other.queue_);
+    pool_.Swap(other.pool_);
+    buffer_.Swap(other.buffer_);
 #if RTRC_DEBUG
     std::swap(submitted_, other.submitted_);
 #endif
 }
 
-RC<CommandBuffer> OneTimeCommandBuffer::operator->()
+Ptr<CommandBuffer> OneTimeCommandBuffer::operator->()
 {
     return buffer_;
 }
@@ -52,7 +52,7 @@ void OneTimeCommandBuffer::SubmitAndWait()
     queue_->WaitIdle();
 }
 
-OneTimeCommandBuffer::OneTimeCommandBuffer(RC<Queue> queue, RC<CommandPool> pool, RC<CommandBuffer> buffer)
+OneTimeCommandBuffer::OneTimeCommandBuffer(Ptr<Queue> queue, Ptr<CommandPool> pool, Ptr<CommandBuffer> buffer)
     : queue_(std::move(queue)), pool_(std::move(pool)), buffer_(std::move(buffer))
 {
     

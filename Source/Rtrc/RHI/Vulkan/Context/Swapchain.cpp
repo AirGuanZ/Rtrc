@@ -3,9 +3,10 @@
 #include <Rtrc/Utils/ScopeGuard.h>
 
 RTRC_RHI_VK_BEGIN
-    VulkanSwapchain::VulkanSwapchain(
-    RC<VulkanSurface>    surface,
-    RC<VulkanQueue>      presentQueue,
+
+VulkanSwapchain::VulkanSwapchain(
+    Ptr<VulkanSurface>   surface,
+    Ptr<VulkanQueue>     presentQueue,
     const Texture2DDesc &imageDesc,
     VkDevice             device,
     VkSwapchainKHR       swapchain)
@@ -25,7 +26,7 @@ RTRC_RHI_VK_BEGIN
 
     for(auto vkImage : images)
     {
-        auto image = MakeRC<VulkanTexture2D>(
+        auto image = MakePtr<VulkanTexture2D>(
             imageDesc, device_, vkImage,
             VulkanMemoryAllocation{ nullptr, nullptr }, ResourceOwnership::None);
         images_.push_back(std::move(image));
@@ -45,7 +46,7 @@ RTRC_RHI_VK_BEGIN
                 vkCreateSemaphore(device_, &semaphoreCreateInfo, VK_ALLOC, &semaphore),
                 "failed to create vulkan semaphores for swapchain");
             RTRC_SCOPE_FAIL{ vkDestroySemaphore(device_, semaphore, VK_ALLOC); };
-            imageAcquireSemaphores_.push_back(MakeRC<VulkanBackBufferSemaphore>(device_, semaphore));
+            imageAcquireSemaphores_.push_back(MakePtr<VulkanBackBufferSemaphore>(device_, semaphore));
         }
 
         {
@@ -53,7 +54,7 @@ RTRC_RHI_VK_BEGIN
                 vkCreateSemaphore(device_, &semaphoreCreateInfo, VK_ALLOC, &semaphore),
                 "failed to create vulkan semaphores for swapchain");
             RTRC_SCOPE_FAIL{ vkDestroySemaphore(device_, semaphore, VK_ALLOC); };
-            imagePresentSemaphores_.push_back(MakeRC<VulkanBackBufferSemaphore>(device_, semaphore));
+            imagePresentSemaphores_.push_back(MakePtr<VulkanBackBufferSemaphore>(device_, semaphore));
         }
     }
 
@@ -87,12 +88,12 @@ bool VulkanSwapchain::Acquire()
     throw Exception("failed to acquire vulkan swapchain image");
 }
 
-RC<BackBufferSemaphore> VulkanSwapchain::GetAcquireSemaphore()
+Ptr<BackBufferSemaphore> VulkanSwapchain::GetAcquireSemaphore()
 {
     return imageAcquireSemaphores_[frameIndex_];
 }
 
-RC<BackBufferSemaphore> VulkanSwapchain::GetPresentSemaphore()
+Ptr<BackBufferSemaphore> VulkanSwapchain::GetPresentSemaphore()
 {
     return imagePresentSemaphores_[frameIndex_];
 }
@@ -121,7 +122,7 @@ const Texture2DDesc &VulkanSwapchain::GetRenderTargetDesc() const
     return images_.front()->Get2DDesc();
 }
 
-RC<Texture> VulkanSwapchain::GetRenderTarget() const
+Ptr<Texture> VulkanSwapchain::GetRenderTarget() const
 {
     return images_[imageIndex_];
 }

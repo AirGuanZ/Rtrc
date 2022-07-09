@@ -14,17 +14,17 @@ public:
 
     const BindingGroupLayout *GetLayout() const override;
 
-    void ModifyMember(int index, const RC<BufferSRV> &bufferSRV) override;
+    void ModifyMember(int index, const Ptr<BufferSRV> &bufferSRV) override;
 
-    void ModifyMember(int index, const RC<BufferUAV> &bufferUAV) override;
+    void ModifyMember(int index, const Ptr<BufferUAV> &bufferUAV) override;
 
-    void ModifyMember(int index, const RC<Texture2DSRV> &textureSRV) override;
+    void ModifyMember(int index, const Ptr<Texture2DSRV> &textureSRV) override;
 
-    void ModifyMember(int index, const RC<Texture2DUAV> &textureUAV) override;
+    void ModifyMember(int index, const Ptr<Texture2DUAV> &textureUAV) override;
 
-    void ModifyMember(int index, const RC<Sampler> &sampler) override;
+    void ModifyMember(int index, const Ptr<Sampler> &sampler) override;
 
-    void ModifyMember(int index, const RC<Buffer> &uniformBuffer, size_t offset, size_t range) override;
+    void ModifyMember(int index, const Ptr<Buffer> &uniformBuffer, size_t offset, size_t range) override;
 
     VkDescriptorSet GetNativeSet() const;
 

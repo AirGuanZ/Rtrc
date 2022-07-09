@@ -84,7 +84,11 @@ VulkanDevice::VulkanDevice(
     VulkanPhysicalDevice   physicalDevice,
     VkDevice               device,
     const QueueFamilyInfo &queueFamilyInfo)
-    : instance_(instance), physicalDevice_(physicalDevice), device_(device), queueFamilies_(queueFamilyInfo)
+    : instance_(instance),
+      physicalDevice_(physicalDevice),
+      device_(device),
+      queueFamilies_(queueFamilyInfo),
+      allocator_()
 {
     std::map<uint32_t, uint32_t> familyIndexToNextQueueIndex;
     auto getNextQueue = [&](const std::optional<uint32_t> &familyIndex) -> VkQueue
@@ -128,24 +132,24 @@ VulkanDevice::~VulkanDevice()
     vkDestroyDevice(device_, VK_ALLOC);
 }
 
-RC<Queue> VulkanDevice::GetQueue(QueueType type)
+Ptr<Queue> VulkanDevice::GetQueue(QueueType type)
 {
     switch(type)
     {
     case QueueType::Graphics:
-        return MakeRC<VulkanQueue>(
+        return MakePtr<VulkanQueue>(
             device_, graphicsQueue_, QueueType::Graphics, *queueFamilies_.graphicsFamilyIndex);
     case QueueType::Compute:
-        return MakeRC<VulkanQueue>(
+        return MakePtr<VulkanQueue>(
             device_, computeQueue_, QueueType::Compute, *queueFamilies_.computeFamilyIndex);
     case QueueType::Transfer:
-        return MakeRC<VulkanQueue>(
+        return MakePtr<VulkanQueue>(
             device_, transferQueue_, QueueType::Transfer, *queueFamilies_.transferFamilyIndex);
     }
     Unreachable();
 }
 
-RC<Fence> VulkanDevice::CreateFence(bool signaled)
+Ptr<Fence> VulkanDevice::CreateFence(bool signaled)
 {
     const VkFenceCreateInfo createInfo = {
         .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
@@ -156,13 +160,13 @@ RC<Fence> VulkanDevice::CreateFence(bool signaled)
         vkCreateFence(device_, &createInfo, VK_ALLOC, &fence),
         "failed to create vulkan fence");
     RTRC_SCOPE_FAIL{ vkDestroyFence(device_, fence, VK_ALLOC); };
-    return MakeRC<VulkanFence>(device_, fence);
+    return MakePtr<VulkanFence>(device_, fence);
 }
 
-RC<Swapchain> VulkanDevice::CreateSwapchain(const SwapchainDesc &desc, Window &window)
+Ptr<Swapchain> VulkanDevice::CreateSwapchain(const SwapchainDesc &desc, Window &window)
 {
     assert(presentQueue_);
-    auto surface = ToShared(DynamicCast<VulkanSurface>(window.CreateVulkanSurface(instance_)));
+    auto surface = DynamicCast<VulkanSurface>(window.CreateVulkanSurface(instance_));
 
     // surface capabilities
 
@@ -261,7 +265,7 @@ RC<Swapchain> VulkanDevice::CreateSwapchain(const SwapchainDesc &desc, Window &w
 
     // construct result
 
-    auto queue = MakeRC<VulkanQueue>(
+    auto queue = MakePtr<VulkanQueue>(
         device_, presentQueue_, QueueType::Graphics, queueFamilies_.graphicsFamilyIndex.value());
     const Texture2DDesc imageDescription = {
         .format               = desc.format,
@@ -273,10 +277,10 @@ RC<Swapchain> VulkanDevice::CreateSwapchain(const SwapchainDesc &desc, Window &w
         .initialState         = ResourceState::Uninitialized,
         .concurrentAccessMode = QueueConcurrentAccessMode::Exclusive
     };
-    return MakeRC<VulkanSwapchain>(std::move(surface), std::move(queue), imageDescription, device_, swapchain);
+    return MakePtr<VulkanSwapchain>(std::move(surface), std::move(queue), imageDescription, device_, swapchain);
 }
 
-RC<RawShader> VulkanDevice::CreateShader(const void *data, size_t size, std::string entryPoint, ShaderStage type)
+Ptr<RawShader> VulkanDevice::CreateShader(const void *data, size_t size, std::string entryPoint, ShaderStage type)
 {
     const VkShaderModuleCreateInfo createInfo = {
         .sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
@@ -288,20 +292,20 @@ RC<RawShader> VulkanDevice::CreateShader(const void *data, size_t size, std::str
         vkCreateShaderModule(device_, &createInfo, VK_ALLOC, &shaderModule),
         "failed to create vulkan shader module");
     RTRC_SCOPE_FAIL{ vkDestroyShaderModule(device_, shaderModule, VK_ALLOC); };
-    return MakeRC<VulkanShader>(device_, shaderModule, std::move(entryPoint), type);
+    return MakePtr<VulkanShader>(device_, shaderModule, std::move(entryPoint), type);
 }
 
-RC<GraphicsPipelineBuilder> VulkanDevice::CreateGraphicsPipelineBuilder()
+Ptr<GraphicsPipelineBuilder> VulkanDevice::CreateGraphicsPipelineBuilder()
 {
-    return MakeRC<VulkanGraphicsPipelineBuilder>(device_);
+    return MakePtr<VulkanGraphicsPipelineBuilder>(device_);
 }
 
-RC<ComputePipelineBuilder> VulkanDevice::CreateComputePipelineBuilder()
+Ptr<ComputePipelineBuilder> VulkanDevice::CreateComputePipelineBuilder()
 {
-    return MakeRC<VulkanComputePipelineBuilder>(device_);
+    return MakePtr<VulkanComputePipelineBuilder>(device_);
 }
 
-RC<BindingGroupLayout> VulkanDevice::CreateBindingGroupLayout(const BindingGroupLayoutDesc *desc)
+Ptr<BindingGroupLayout> VulkanDevice::CreateBindingGroupLayout(const BindingGroupLayoutDesc *desc)
 {
     std::vector<VkDescriptorSetLayoutBinding> descSetBindings;
     for(auto &aliasedBinding : desc->bindings)
@@ -344,15 +348,15 @@ RC<BindingGroupLayout> VulkanDevice::CreateBindingGroupLayout(const BindingGroup
         "failed to create vulkan descriptor set layout");
     RTRC_SCOPE_FAIL{ vkDestroyDescriptorSetLayout(device_, layout, VK_ALLOC); };
 
-    return MakeRC<VulkanBindingGroupLayout>(desc, std::move(descSetBindings), device_, layout);
+    return MakePtr<VulkanBindingGroupLayout>(desc, std::move(descSetBindings), device_, layout);
 }
 
-RC<BindingLayout> VulkanDevice::CreateBindingLayout(const BindingLayoutDesc &desc)
+Ptr<BindingLayout> VulkanDevice::CreateBindingLayout(const BindingLayoutDesc &desc)
 {
     std::vector<VkDescriptorSetLayout> setLayouts;
     for(auto &group : desc.groups)
     {
-        setLayouts.push_back(reinterpret_cast<VulkanBindingGroupLayout *>(group.get())->GetLayout());
+        setLayouts.push_back(reinterpret_cast<VulkanBindingGroupLayout *>(group.Get())->GetLayout());
     }
     const VkPipelineLayoutCreateInfo createInfo = {
         .sType          = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
@@ -366,10 +370,10 @@ RC<BindingLayout> VulkanDevice::CreateBindingLayout(const BindingLayoutDesc &des
         "failed to create vulkan pipeline layout");
     RTRC_SCOPE_FAIL{ vkDestroyPipelineLayout(device_, layout, VK_ALLOC); };
 
-    return MakeRC<VulkanBindingLayout>(desc, device_, layout);
+    return MakePtr<VulkanBindingLayout>(desc, device_, layout);
 }
 
-RC<Texture> VulkanDevice::CreateTexture2D(const Texture2DDesc &desc)
+Ptr<Texture> VulkanDevice::CreateTexture2D(const Texture2DDesc &desc)
 {
     const auto [sharingMode, sharingQueueFamilyIndices] =
         GetVulkanSharingMode(desc.concurrentAccessMode, queueFamilies_);
@@ -381,7 +385,7 @@ RC<Texture> VulkanDevice::CreateTexture2D(const Texture2DDesc &desc)
         .extent                = VkExtent3D{ desc.width, desc.height, 1 },
         .mipLevels             = desc.mipLevels,
         .arrayLayers           = desc.arraySize,
-        .samples               = TranslateSampleCount(desc.sampleCount),
+        .samples               = TranslateSampleCount(static_cast<int>(desc.sampleCount)),
         .tiling                = VK_IMAGE_TILING_OPTIMAL,
         .usage                 = TranslateTextureUsageFlag(desc.usage),
         .sharingMode           = sharingMode,
@@ -404,10 +408,10 @@ RC<Texture> VulkanDevice::CreateTexture2D(const Texture2DDesc &desc)
         .allocation = alloc
     };
 
-    return MakeRC<VulkanTexture2D>(desc, device_, image, memoryAlloc, ResourceOwnership::Allocation);
+    return MakePtr<VulkanTexture2D>(desc, device_, image, memoryAlloc, ResourceOwnership::Allocation);
 }
 
-RC<Buffer> VulkanDevice::CreateBuffer(const BufferDesc &desc)
+Ptr<Buffer> VulkanDevice::CreateBuffer(const BufferDesc &desc)
 {
     const auto [sharingMode, sharingQueueFamilyIndices] =
         GetVulkanSharingMode(desc.concurrentAccessMode, queueFamilies_);
@@ -436,10 +440,10 @@ RC<Buffer> VulkanDevice::CreateBuffer(const BufferDesc &desc)
         .allocation = alloc
     };
 
-    return MakeRC<VulkanBuffer>(desc, device_, buffer, memoryAlloc, ResourceOwnership::Allocation);
+    return MakePtr<VulkanBuffer>(desc, device_, buffer, memoryAlloc, ResourceOwnership::Allocation);
 }
 
-RC<Sampler> VulkanDevice::CreateSampler(const SamplerDesc &desc)
+Ptr<Sampler> VulkanDevice::CreateSampler(const SamplerDesc &desc)
 {
     VkSamplerCreateInfo createInfo = {
         .sType            = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
@@ -493,7 +497,7 @@ RC<Sampler> VulkanDevice::CreateSampler(const SamplerDesc &desc)
         "failed to create vulkan sampler");
     RTRC_SCOPE_FAIL{ vkDestroySampler(device_, sampler, VK_ALLOC); };
 
-    return MakeRC<VulkanSampler>(desc, device_, sampler);
+    return MakePtr<VulkanSampler>(desc, device_, sampler);
 }
 
 void VulkanDevice::WaitIdle()

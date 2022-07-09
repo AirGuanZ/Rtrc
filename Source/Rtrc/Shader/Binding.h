@@ -7,6 +7,7 @@
 #include <Rtrc/Utils/EnumFlags.h>
 #include <Rtrc/Utils/MacroForEach.h>
 #include <Rtrc/Utils/TemplateStringParameter.h>
+#include <Rtrc/Utils/TypeIndex.h>
 
 RTRC_BEGIN
 
@@ -255,11 +256,11 @@ concept BindingGroupStruct = requires{ typename T::_rtrcBindingGroupTag; };
         _rtrcBindingTemplateParam##NAME,                                                            \
         _rtrcBindingTypeParam##NAME,                                                                \
         _rtrcArraySize##NAME,                                                                       \
-        _rtrcShaderStages##NAME> NAME;
+        _rtrcShaderStages##NAME> NAME = {};
 
-#define $group_begin RTRC_BINDING_GROUP_BEGIN
-#define $group_end   RTRC_BINDING_GROUP_END
-#define $binding     RTRC_BINDING_GROUP_MEMBER
+#define $GroupBegin RTRC_BINDING_GROUP_BEGIN
+#define $GroupEnd RTRC_BINDING_GROUP_END
+#define $Binding RTRC_BINDING_GROUP_MEMBER
 
 struct BindingInfo
 {
@@ -354,9 +355,9 @@ const BindingGroupLayoutInfo *GetBindingGroupLayoutInfo()
 
 template<BindingGroupStruct Struct, typename Member>
 void ModifyBindingGroup(
-    RHI::BindingGroup *instance,
-    Member Struct::* member,
-    const RC<RHI::BufferSRV> &srv)
+    RHI::BindingGroup              *instance,
+    Member Struct::                *member,
+    const RHI::Ptr<RHI::BufferSRV> &srv)
 {
     int index = 0;
     auto processBinding = [&]<typename Binding>(Binding Struct::* p, const char*)
@@ -375,9 +376,9 @@ void ModifyBindingGroup(
 
 template<BindingGroupStruct Struct, typename Member>
 void ModifyBindingGroup(
-    RHI::BindingGroup *instance,
-    Member Struct::* member,
-    const RC<RHI::BufferUAV> &uav)
+    RHI::BindingGroup              *instance,
+    Member Struct::                *member,
+    const RHI::Ptr<RHI::BufferUAV> &uav)
 {
     int index = 0;
     auto processBinding = [&]<typename Binding>(Binding Struct:: * p, const char *)
@@ -396,9 +397,9 @@ void ModifyBindingGroup(
 
 template<BindingGroupStruct Struct, typename Member>
 void ModifyBindingGroup(
-    RHI::BindingGroup *instance,
-    Member Struct::* member,
-    const RC<RHI::Texture2DSRV> &srv)
+    RHI::BindingGroup                 *instance,
+    Member Struct::                   *member,
+    const RHI::Ptr<RHI::Texture2DSRV> &srv)
 {
     int index = 0;
     auto processBinding = [&]<typename Binding>(Binding Struct::* p, const char *)
@@ -417,9 +418,9 @@ void ModifyBindingGroup(
 
 template<BindingGroupStruct Struct, typename Member>
 void ModifyBindingGroup(
-    RHI::BindingGroup *instance,
-    Member Struct::* member,
-    const RC<RHI::Texture2DUAV> &uav)
+    RHI::BindingGroup                 *instance,
+    Member Struct::                   *member,
+    const RHI::Ptr<RHI::Texture2DUAV> &uav)
 {
     int index = 0;
     auto processBinding = [&]<typename Binding>(Binding Struct::* p, const char *)
@@ -438,9 +439,9 @@ void ModifyBindingGroup(
 
 template<BindingGroupStruct Struct, typename Member>
 void ModifyBindingGroup(
-    RHI::BindingGroup *instance,
-    Member Struct::*member,
-    const RC<RHI::Sampler> &sampler)
+    RHI::BindingGroup            *instance,
+    Member Struct::              *member,
+    const RHI::Ptr<RHI::Sampler> &sampler)
 {
     int index = 0;
     auto processBinding = [&]<typename Binding>(Binding Struct:: * p, const char *)
@@ -459,11 +460,11 @@ void ModifyBindingGroup(
 
 template<BindingGroupStruct Struct, typename Member>
 void ModifyBindingGroup(
-    RHI::BindingGroup *instance,
-    Member Struct:: *member,
-    const RC<RHI::Buffer> &uniformBuffer,
-    size_t offset,
-    size_t range)
+    RHI::BindingGroup           *instance,
+    Member Struct::             *member,
+    const RHI::Ptr<RHI::Buffer> &uniformBuffer,
+    size_t                 offset,
+    size_t                 range)
 {
     int index = 0;
     auto processBinding = [&]<typename Binding>(Binding Struct:: * p, const char *)

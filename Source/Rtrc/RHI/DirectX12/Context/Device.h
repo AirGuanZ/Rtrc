@@ -10,27 +10,27 @@ public:
 
     DirectX12Device(const DeviceDesc &desc, ComPtr<ID3D12Device> device);
 
-    RC<Queue> GetQueue(QueueType type) override;
+    Ptr<Queue> GetQueue(QueueType type) override;
 
-    RC<Fence> CreateFence(bool signaled) override;
+    Ptr<Fence> CreateFence(bool signaled) override;
 
-    RC<Swapchain> CreateSwapchain(const SwapchainDesc &desc, Window &window) override;
+    Ptr<Swapchain> CreateSwapchain(const SwapchainDesc &desc, Window &window) override;
 
-    RC<RawShader> CreateShader(const void *data, size_t size, std::string entryPoint, ShaderStage type) override;
+    Ptr<RawShader> CreateShader(const void *data, size_t size, std::string entryPoint, ShaderStage type) override;
 
-    RC<GraphicsPipelineBuilder> CreateGraphicsPipelineBuilder() override;
+    Ptr<GraphicsPipelineBuilder> CreateGraphicsPipelineBuilder() override;
 
-    RC<ComputePipelineBuilder> CreateComputePipelineBuilder() override;
+    Ptr<ComputePipelineBuilder> CreateComputePipelineBuilder() override;
 
-    RC<BindingGroupLayout> CreateBindingGroupLayout(const BindingGroupLayoutDesc *desc) override;
+    Ptr<BindingGroupLayout> CreateBindingGroupLayout(const BindingGroupLayoutDesc *desc) override;
 
-    RC<BindingLayout> CreateBindingLayout(const BindingLayoutDesc &desc) override;
+    Ptr<BindingLayout> CreateBindingLayout(const BindingLayoutDesc &desc) override;
 
-    RC<Texture> CreateTexture2D(const Texture2DDesc &desc) override;
+    Ptr<Texture> CreateTexture2D(const Texture2DDesc &desc) override;
 
-    RC<Buffer> CreateBuffer(const BufferDesc &desc) override;
+    Ptr<Buffer> CreateBuffer(const BufferDesc &desc) override;
 
-    RC<Sampler> CreateSampler(const SamplerDesc &desc) override;
+    Ptr<Sampler> CreateSampler(const SamplerDesc &desc) override;
 
     void WaitIdle() override;
 

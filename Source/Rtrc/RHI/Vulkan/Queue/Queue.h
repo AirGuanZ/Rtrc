@@ -12,17 +12,17 @@ public:
 
     QueueType GetType() const override;
 
-    RC<CommandPool> CreateCommandPool() override;
+    Ptr<CommandPool> CreateCommandPool() override;
 
     void WaitIdle() override;
 
     void Submit(
-        const RC<BackBufferSemaphore> &waitBackBufferSemaphore,
-        PipelineStage                  waitBackBufferStages,
-        Span<RC<CommandBuffer>>        commandBuffers,
-        const RC<BackBufferSemaphore> &signalBackBufferSemaphore,
-        PipelineStage                  signalBackBufferStages,
-        const RC<Fence>               &signalFence) override;
+        const Ptr<BackBufferSemaphore> &waitBackBufferSemaphore,
+        PipelineStage                   waitBackBufferStages,
+        Span<Ptr<CommandBuffer>>        commandBuffers,
+        const Ptr<BackBufferSemaphore> &signalBackBufferSemaphore,
+        PipelineStage                   signalBackBufferStages,
+        const Ptr<Fence>               &signalFence) override;
 
     VkQueue GetNativeQueue() const;
 

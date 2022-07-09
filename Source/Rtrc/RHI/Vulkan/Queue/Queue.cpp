@@ -18,7 +18,7 @@ QueueType VulkanQueue::GetType() const
     return type_;
 }
 
-RC<CommandPool> VulkanQueue::CreateCommandPool()
+Ptr<CommandPool> VulkanQueue::CreateCommandPool()
 {
     const VkCommandPoolCreateInfo createInfo = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
@@ -29,7 +29,7 @@ RC<CommandPool> VulkanQueue::CreateCommandPool()
         vkCreateCommandPool(device_, &createInfo, VK_ALLOC, &pool),
         "failed to create vulkan command pool");
     RTRC_SCOPE_FAIL{ vkDestroyCommandPool(device_, pool, VK_ALLOC); };
-    return MakeRC<VulkanCommandPool>(device_, pool);
+    return MakePtr<VulkanCommandPool>(device_, pool);
 }
 
 void VulkanQueue::WaitIdle()
@@ -38,24 +38,24 @@ void VulkanQueue::WaitIdle()
 }
 
 void VulkanQueue::Submit(
-    const RC<BackBufferSemaphore> &waitBackBufferSemaphore,
-    PipelineStage                  waitBackBufferStages,
-    Span<RC<CommandBuffer>>        commandBuffers,
-    const RC<BackBufferSemaphore> &signalBackBufferSemaphore,
-    PipelineStage                  signalBackBufferStages,
-    const RC<Fence>               &signalFence)
+    const Ptr<BackBufferSemaphore> &waitBackBufferSemaphore,
+    PipelineStage                   waitBackBufferStages,
+    Span<Ptr<CommandBuffer>>        commandBuffers,
+    const Ptr<BackBufferSemaphore> &signalBackBufferSemaphore,
+    PipelineStage                   signalBackBufferStages,
+    const Ptr<Fence>               &signalFence)
 {
     std::vector<VkCommandBufferSubmitInfo> vkCommandBuffers(commandBuffers.size());
     for(auto &&[i, cb] : Enumerate(commandBuffers))
     {
         vkCommandBuffers[i] = VkCommandBufferSubmitInfo{
             .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
-            .commandBuffer = static_cast<VulkanCommandBuffer *>(cb.get())->GetNativeCommandBuffer()
+            .commandBuffer = static_cast<VulkanCommandBuffer *>(cb.Get())->GetNativeCommandBuffer()
         };
     }
 
     VkSemaphore vkWaitBackBufferSemaphore = waitBackBufferSemaphore ?
-        static_cast<VulkanBackBufferSemaphore *>(waitBackBufferSemaphore.get())->GetBinarySemaphore() : nullptr;
+        static_cast<VulkanBackBufferSemaphore *>(waitBackBufferSemaphore.Get())->GetBinarySemaphore() : nullptr;
 
     const VkSemaphoreSubmitInfo waitBackBufferSemaphoreSubmitInfo = {
         .sType     = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
@@ -64,7 +64,7 @@ void VulkanQueue::Submit(
     };
 
     VkSemaphore vkSignalBackBufferSemaphore = signalBackBufferSemaphore ?
-        static_cast<VulkanBackBufferSemaphore *>(signalBackBufferSemaphore.get())->GetBinarySemaphore() : nullptr;
+        static_cast<VulkanBackBufferSemaphore *>(signalBackBufferSemaphore.Get())->GetBinarySemaphore() : nullptr;
 
     const VkSemaphoreSubmitInfo signalBackBufferSemaphoreSubmitInfo = {
         .sType     = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
@@ -82,7 +82,7 @@ void VulkanQueue::Submit(
         .pSignalSemaphoreInfos    = vkSignalBackBufferSemaphore ? &signalBackBufferSemaphoreSubmitInfo : nullptr
     };
 
-    auto fence = signalFence ? static_cast<VulkanFence *>(signalFence.get())->GetNativeFence() : nullptr;
+    auto fence = signalFence ? static_cast<VulkanFence *>(signalFence.Get())->GetNativeFence() : nullptr;
     VK_FAIL_MSG(
         vkQueueSubmit2(queue_, 1, &submitInfo, fence),
         "failed to submit to vulkan queue");

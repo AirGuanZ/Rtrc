@@ -6,7 +6,7 @@
 
 RTRC_RHI_VK_BEGIN
 
-VulkanGraphicsPipeline::VulkanGraphicsPipeline(RC<BindingLayout> layout, VkDevice device, VkPipeline pipeline)
+VulkanGraphicsPipeline::VulkanGraphicsPipeline(Ptr<BindingLayout> layout, VkDevice device, VkPipeline pipeline)
     : layout_(std::move(layout)), device_(device), pipeline_(pipeline)
 {
     
@@ -18,7 +18,7 @@ VulkanGraphicsPipeline::~VulkanGraphicsPipeline()
     vkDestroyPipeline(device_, pipeline_, VK_ALLOC);
 }
 
-const RC<BindingLayout> &VulkanGraphicsPipeline::GetBindingLayout() const
+const Ptr<BindingLayout> &VulkanGraphicsPipeline::GetBindingLayout() const
 {
     return layout_;
 }
@@ -34,19 +34,19 @@ VulkanGraphicsPipelineBuilder::VulkanGraphicsPipelineBuilder(VkDevice device)
     
 }
 
-GraphicsPipelineBuilder &VulkanGraphicsPipelineBuilder::SetVertexShader(RC<RawShader> vertexShader)
+GraphicsPipelineBuilder &VulkanGraphicsPipelineBuilder::SetVertexShader(Ptr<RawShader> vertexShader)
 {
     vertexShader_ = std::move(vertexShader);
     return *this;
 }
 
-GraphicsPipelineBuilder &VulkanGraphicsPipelineBuilder::SetFragmentShader(RC<RawShader> fragmentShader)
+GraphicsPipelineBuilder &VulkanGraphicsPipelineBuilder::SetFragmentShader(Ptr<RawShader> fragmentShader)
 {
     fragmentShader_ = std::move(fragmentShader);
     return *this;
 }
 
-GraphicsPipelineBuilder &VulkanGraphicsPipelineBuilder::SetBindingLayout(RC<BindingLayout> layout)
+GraphicsPipelineBuilder &VulkanGraphicsPipelineBuilder::SetBindingLayout(Ptr<BindingLayout> layout)
 {
     bindingLayout_ = std::move(layout);
     return *this;
@@ -186,7 +186,7 @@ GraphicsPipelineBuilder &VulkanGraphicsPipelineBuilder::SetDepthStencilAttachmen
     return *this;
 }
 
-RC<GraphicsPipeline> VulkanGraphicsPipelineBuilder::CreatePipeline() const
+Ptr<GraphicsPipeline> VulkanGraphicsPipelineBuilder::CreatePipeline() const
 {
     assert(!viewports_.Is<std::monostate>());
     assert(!scissors_.Is<std::monostate>());
@@ -207,8 +207,8 @@ RC<GraphicsPipeline> VulkanGraphicsPipelineBuilder::CreatePipeline() const
     };
 
     const VkPipelineShaderStageCreateInfo stages[] = {
-        static_cast<VulkanShader*>(vertexShader_.get())->GetStageCreateInfo(),
-        static_cast<VulkanShader *>(fragmentShader_.get())->GetStageCreateInfo()
+        static_cast<VulkanShader*>(vertexShader_.Get())->GetStageCreateInfo(),
+        static_cast<VulkanShader *>(fragmentShader_.Get())->GetStageCreateInfo()
     };
 
     const VkPipelineVertexInputStateCreateInfo vertexInputState = {
@@ -348,7 +348,7 @@ RC<GraphicsPipeline> VulkanGraphicsPipelineBuilder::CreatePipeline() const
         .pDynamicStates    = dynamicStates
     };
 
-    auto vkBindingLayout = static_cast<VulkanBindingLayout *>(bindingLayout_.get());
+    auto vkBindingLayout = static_cast<VulkanBindingLayout *>(bindingLayout_.Get());
     const VkGraphicsPipelineCreateInfo pipelineCreateInfo = {
         .sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
         .pNext               = &renderingCreateInfo,
@@ -371,7 +371,7 @@ RC<GraphicsPipeline> VulkanGraphicsPipelineBuilder::CreatePipeline() const
         "failed to create vulkan graphics pipeline");
     RTRC_SCOPE_FAIL{ vkDestroyPipeline(device_, pipeline, VK_ALLOC); };
 
-    return MakeRC<VulkanGraphicsPipeline>(bindingLayout_, device_, pipeline);
+    return MakePtr<VulkanGraphicsPipeline>(bindingLayout_, device_, pipeline);
 }
 
 RTRC_RHI_VK_END

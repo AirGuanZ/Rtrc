@@ -8,7 +8,7 @@ class OneTimeCommandBuffer : public Uncopyable
 {
 public:
 
-    static OneTimeCommandBuffer Create(RC<Queue> queue);
+    static OneTimeCommandBuffer Create(Ptr<Queue> queue);
 
     OneTimeCommandBuffer() = default;
 
@@ -20,20 +20,20 @@ public:
 
     void Swap(OneTimeCommandBuffer &other) noexcept;
 
-    RC<CommandBuffer> operator->();
+    Ptr<CommandBuffer> operator->();
 
     void SubmitAndWait();
 
 private:
 
-    OneTimeCommandBuffer(RC<Queue> queue, RC<CommandPool> pool, RC<CommandBuffer> buffer);
+    OneTimeCommandBuffer(Ptr<Queue> queue, Ptr<CommandPool> pool, Ptr<CommandBuffer> buffer);
 
 #if RTRC_DEBUG
     bool submitted_ = false;
 #endif
-    RC<Queue> queue_;
-    RC<CommandPool> pool_;
-    RC<CommandBuffer> buffer_;
+    Ptr<Queue> queue_;
+    Ptr<CommandPool> pool_;
+    Ptr<CommandBuffer> buffer_;
 };
 
 RTRC_RHI_END

@@ -15,11 +15,14 @@ public:
 
     constexpr Vector2(T x, T y);
 
-    T operator[](size_t i) const;
+    constexpr T operator[](size_t i) const;
 
-    T &operator[](size_t i);
+    constexpr T &operator[](size_t i);
 
-    std::tuple<T, T> ToTuple() const;
+    constexpr std::tuple<T, T> ToTuple() const;
+
+    template<typename U>
+    constexpr Vector2<U> To() const;
 
     T x, y;
 };
@@ -50,21 +53,28 @@ constexpr Vector2<T>::Vector2(T x, T y)
 }
 
 template<typename T>
-T &Vector2<T>::operator[](size_t i)
+constexpr T &Vector2<T>::operator[](size_t i)
 {
     return *(&x + i);
 }
 
 template<typename T>
-T Vector2<T>::operator[](size_t i) const
+constexpr T Vector2<T>::operator[](size_t i) const
 {
     return *(&x + i);
 }
 
 template<typename T>
-std::tuple<T, T> Vector2<T>::ToTuple() const
+constexpr std::tuple<T, T> Vector2<T>::ToTuple() const
 {
     return std::make_tuple(x, y);
+}
+
+template <typename T>
+template <typename U>
+constexpr Vector2<U> Vector2<T>::To() const
+{
+    return Vector2<U>(static_cast<U>(x), static_cast<U>(y));
 }
 
 template<typename T>

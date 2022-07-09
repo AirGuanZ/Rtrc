@@ -12,8 +12,8 @@ class VulkanSwapchain : public Swapchain
 public:
 
     VulkanSwapchain(
-        RC<VulkanSurface>    surface,
-        RC<VulkanQueue>      presentQueue,
+        Ptr<VulkanSurface>   surface,
+        Ptr<VulkanQueue>     presentQueue,
         const Texture2DDesc &imageDesc,
         VkDevice             device,
         VkSwapchainKHR       swapchain);
@@ -22,9 +22,9 @@ public:
 
     bool Acquire() override;
 
-    RC<BackBufferSemaphore> GetAcquireSemaphore() override;
+    Ptr<BackBufferSemaphore> GetAcquireSemaphore() override;
 
-    RC<BackBufferSemaphore> GetPresentSemaphore() override;
+    Ptr<BackBufferSemaphore> GetPresentSemaphore() override;
 
     void Present() override;
 
@@ -32,20 +32,20 @@ public:
 
     const Texture2DDesc &GetRenderTargetDesc() const override;
 
-    RC<Texture> GetRenderTarget() const override;
+    Ptr<Texture> GetRenderTarget() const override;
 
 private:
 
-    RC<VulkanSurface> surface_;
-    RC<VulkanQueue>   presentQueue_;
-    VkDevice          device_;
-    VkSwapchainKHR    swapchain_;
+    Ptr<VulkanSurface> surface_;
+    Ptr<VulkanQueue>   presentQueue_;
+    VkDevice           device_;
+    VkSwapchainKHR     swapchain_;
 
     uint32_t frameIndex_;
     uint32_t imageIndex_;
-    std::vector<RC<VulkanTexture2D>> images_;
-    std::vector<RC<VulkanBackBufferSemaphore>> imageAcquireSemaphores_;
-    std::vector<RC<VulkanBackBufferSemaphore>> imagePresentSemaphores_;
+    std::vector<Ptr<VulkanTexture2D>> images_;
+    std::vector<Ptr<VulkanBackBufferSemaphore>> imageAcquireSemaphores_;
+    std::vector<Ptr<VulkanBackBufferSemaphore>> imagePresentSemaphores_;
 };
 
 RTRC_RHI_VK_END

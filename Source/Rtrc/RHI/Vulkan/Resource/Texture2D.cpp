@@ -44,7 +44,7 @@ const Texture2DDesc &VulkanTexture2D::Get2DDesc() const
     return desc_;
 }
 
-RC<Texture2DRTV> VulkanTexture2D::Create2DRTV(const Texture2DRTVDesc &desc) const
+Ptr<Texture2DRTV> VulkanTexture2D::Create2DRTV(const Texture2DRTVDesc &desc) const
 {
     auto imageView = CreateImageView(ViewKey{
         .aspect         = VK_IMAGE_ASPECT_COLOR_BIT,
@@ -54,10 +54,10 @@ RC<Texture2DRTV> VulkanTexture2D::Create2DRTV(const Texture2DRTVDesc &desc) cons
         .baseArrayLayer = desc.arrayLayer,
         .layerCount     = 1
     });
-    return MakeRC<VulkanTexture2DRTV>(this, desc, imageView);
+    return MakePtr<VulkanTexture2DRTV>(this, desc, imageView);
 }
 
-RC<Texture2DSRV> VulkanTexture2D::Create2DSRV(const Texture2DSRVDesc &desc) const
+Ptr<Texture2DSRV> VulkanTexture2D::Create2DSRV(const Texture2DSRVDesc &desc) const
 {
     auto imageView = CreateImageView(ViewKey{
         .aspect         = VK_IMAGE_ASPECT_COLOR_BIT,
@@ -67,10 +67,10 @@ RC<Texture2DSRV> VulkanTexture2D::Create2DSRV(const Texture2DSRVDesc &desc) cons
         .baseArrayLayer = desc.baseArrayLayer,
         .layerCount     = desc.layerCount
     });
-    return MakeRC<VulkanTexture2DSRV>(desc, imageView);
+    return MakePtr<VulkanTexture2DSRV>(desc, imageView);
 }
 
-RC<Texture2DUAV> VulkanTexture2D::Create2DUAV(const Texture2DUAVDesc &desc) const
+Ptr<Texture2DUAV> VulkanTexture2D::Create2DUAV(const Texture2DUAVDesc &desc) const
 {
     auto imageView = CreateImageView(ViewKey{
         .aspect         = VK_IMAGE_ASPECT_COLOR_BIT,
@@ -80,7 +80,7 @@ RC<Texture2DUAV> VulkanTexture2D::Create2DUAV(const Texture2DUAVDesc &desc) cons
         .baseArrayLayer = desc.baseArrayLayer,
         .layerCount     = desc.layerCount
     });
-    return MakeRC<VulkanTexture2DUAV>(desc, imageView);
+    return MakePtr<VulkanTexture2DUAV>(desc, imageView);
 }
 
 VkImage VulkanTexture2D::GetNativeImage() const

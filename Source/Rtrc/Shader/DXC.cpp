@@ -42,18 +42,19 @@ namespace
         HRESULT STDMETHODCALLTYPE LoadSource(
             _In_ LPCWSTR pFilename, _COM_Outptr_result_maybenull_ IDxcBlob **ppIncludeSource) override
         {
-            if(auto it = virtualFiles->find(ToString(pFilename)); it != virtualFiles->end())
+            std::string result;
+            if(!dxcHandler->Handle(ToString(pFilename), result))
             {
-                ComPtr<IDxcBlobEncoding> pEncoding;
-                if(FAILED(utils->CreateBlob(
-                    it->second.data(), static_cast<uint32_t>(it->second.size()), CP_UTF8, pEncoding.GetAddressOf())))
-                {
-                    return S_FALSE;
-                }
-                *ppIncludeSource = pEncoding.Detach();
-                return S_OK;
+                return S_FALSE;
             }
-            return defaultHandler->LoadSource(pFilename, ppIncludeSource);
+            ComPtr<IDxcBlobEncoding> pEncoding;
+            if(FAILED(utils->CreateBlob(
+                result.data(), static_cast<uint32_t>(result.size()), CP_UTF8, pEncoding.GetAddressOf())))
+            {
+                return S_FALSE;
+            }
+            *ppIncludeSource = pEncoding.Detach();
+            return S_OK;
         }
 
         HRESULT STDMETHODCALLTYPE QueryInterface(
@@ -67,7 +68,7 @@ namespace
 
         ComPtr<IDxcUtils> utils;
         ComPtr<IDxcIncludeHandler> defaultHandler;
-        const std::map<std::string, std::string> *virtualFiles;
+        const DXC::IncludeHandler *dxcHandler = nullptr;
     };
 
 } // namespace anonymous
@@ -77,7 +78,7 @@ using Microsoft::WRL::ComPtr;
 struct DXC::Impl
 {
     ComPtr<IDxcUtils>          utils;
-    ComPtr<IDxcCompiler3>      compiler;
+    ComPtr<IDxcCompiler>       compiler;
     ComPtr<IDxcIncludeHandler> defaultHandler;
 };
 
@@ -108,10 +109,11 @@ DXC::~DXC()
 }
 
 std::vector<unsigned char> DXC::Compile(
-    const ShaderInfo                         &shaderInfo,
-    Target                                    target,
-    bool                                      debugMode,
-    const std::map<std::string, std::string> &virtualFiles) const
+    const ShaderInfo     &shaderInfo,
+    Target                target,
+    bool                  debugMode,
+    const IncludeHandler *includeHandler,
+    std::string          *preprocessOutput) const
 {
     ComPtr<IDxcBlobEncoding> sourceBlob;
     if(FAILED(impl_->utils->CreateBlob(
@@ -123,18 +125,20 @@ std::vector<unsigned char> DXC::Compile(
     std::vector<LPCWSTR> arguments;
 
     const auto entryPoint = ToWString(shaderInfo.entryPoint);
-    arguments.push_back(L"-E");
-    arguments.push_back(entryPoint.c_str());
 
     std::vector<std::wstring> macros;
     for(auto &m : shaderInfo.macros)
     {
-        macros.push_back(ToWString(m.first + "=" + m.second));
+        macros.push_back(ToWString(m.first));
+        macros.push_back(ToWString(m.second));
     }
-    for(auto &m : macros)
+    std::vector<DxcDefine> defines;
+    for(size_t i = 0; i < macros.size(); i += 2)
     {
-        arguments.push_back(L"-D");
-        arguments.push_back(m.c_str());
+        defines.push_back(DxcDefine{
+            .Name = macros[i].c_str(),
+            .Value = macros[i + 1].c_str()
+        });
     }
 
     arguments.push_back(L"-spirv");
@@ -142,25 +146,19 @@ std::vector<unsigned char> DXC::Compile(
     arguments.push_back(L"-fvk-use-dx-position-w");
     arguments.push_back(L"-fspv-target-env=vulkan1.3");
     arguments.push_back(L"-fvk-stage-io-order=alpha");
-
-    arguments.push_back(L"-T");
+    
+    std::wstring targetProfile;
     switch(target)
     {
-    case Target::Vulkan_1_3_VS_6_0:
-        arguments.push_back(L"vs_6_0");
-        break;
-    case Target::Vulkan_1_3_PS_6_0:
-        arguments.push_back(L"ps_6_0");
-        break;
-    case Target::Vulkan_1_3_CS_6_0:
-        arguments.push_back(L"cs_6_0");
-        break;
+    case Target::Vulkan_1_3_VS_6_0: targetProfile = L"vs_6_0"; break;
+    case Target::Vulkan_1_3_PS_6_0: targetProfile = L"ps_6_0"; break;
+    case Target::Vulkan_1_3_CS_6_0: targetProfile = L"cs_6_0"; break;
     }
 
-    CustomIncludeHandler includeHandler;
-    includeHandler.utils = impl_->utils;
-    includeHandler.defaultHandler = impl_->defaultHandler;
-    includeHandler.virtualFiles = &virtualFiles;
+    CustomIncludeHandler customIncludeHandler;
+    customIncludeHandler.utils = impl_->utils;
+    customIncludeHandler.defaultHandler = impl_->defaultHandler;
+    customIncludeHandler.dxcHandler = includeHandler;
 
     if(debugMode)
     {
@@ -171,39 +169,57 @@ std::vector<unsigned char> DXC::Compile(
         arguments.push_back(L"-O3");
     }
 
-    DxcBuffer sourceBuffer;
-    sourceBuffer.Ptr = sourceBlob->GetBufferPointer();
-    sourceBuffer.Size = sourceBlob->GetBufferSize();
-    sourceBuffer.Encoding = 0;
+    if(preprocessOutput)
+    {
+        arguments.push_back(L"-P ~");
+    }
 
-    ComPtr<IDxcResult> result;
+    ComPtr<IDxcOperationResult> oprResult;
     if(FAILED(impl_->compiler->Compile(
-        &sourceBuffer,
+        sourceBlob.Get(), ToWString(shaderInfo.sourceFilename).c_str(),
+        entryPoint.c_str(), targetProfile.c_str(),
         arguments.data(), static_cast<uint32_t>(arguments.size()),
-        &includeHandler, IID_PPV_ARGS(result.GetAddressOf()))))
+        defines.data(), static_cast<uint32_t>(defines.size()),
+        &customIncludeHandler, oprResult.GetAddressOf())))
     {
         throw Exception("failed to call DXC::Compile");
     }
 
-    ComPtr<IDxcBlobUtf8> errors;
-    if(FAILED(result->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(errors.GetAddressOf()), nullptr)))
+    HRESULT status;
+    if(FAILED(oprResult->GetStatus(&status)))
     {
-        throw Exception("failed to get dxc compile errors");
+        throw Exception("failed to get dxc operation status");
     }
 
-    if(errors && errors->GetStringLength() > 0)
+    if(FAILED(status))
     {
-        throw Exception(fmt::format("dxc compile error. {}", static_cast<const char*>(errors->GetBufferPointer())));
+        ComPtr<IDxcBlobEncoding> errorBuffer;
+        if(FAILED(oprResult->GetErrorBuffer(errorBuffer.GetAddressOf())))
+        {
+            throw Exception("failed to get dxc error buffer");
+        }
+        if(errorBuffer && errorBuffer->GetBufferSize() > 0)
+        {
+            throw Exception(fmt::format(
+                "dxc compile error. {}", static_cast<const char *>(errorBuffer->GetBufferPointer())));
+        }
+        throw Exception("dxc: an unknown error occurred");
     }
 
-    ComPtr<IDxcBlob> code;
-    if(FAILED(result->GetResult(code.GetAddressOf())))
+    ComPtr<IDxcBlob> result;
+    if(FAILED(oprResult->GetResult(result.GetAddressOf())))
     {
         throw Exception("failed to get dxc compile result");
     }
 
-    std::vector<unsigned char> ret(code->GetBufferSize());
-    std::memcpy(ret.data(), code->GetBufferPointer(), code->GetBufferSize());
+    if(preprocessOutput)
+    {
+        *preprocessOutput = reinterpret_cast<const char *>(result->GetBufferPointer());
+        return {};
+    }
+
+    std::vector<unsigned char> ret(result->GetBufferSize());
+    std::memcpy(ret.data(), result->GetBufferPointer(), result->GetBufferSize());
     return ret;
 }
 

@@ -13,13 +13,19 @@ QueueType DirectX12Queue::GetType() const
     return type_;
 }
 
-RC<CommandPool> DirectX12Queue::CreateCommandPool()
+Ptr<CommandPool> DirectX12Queue::CreateCommandPool()
 {
     // TODO
     return {};
 }
 
-void DirectX12Queue::Submit(const RC<BackBufferSemaphore> &waitBackBufferSemaphore, PipelineStage waitBackBufferStages, Span<RC<CommandBuffer>> commandBuffers, const RC<BackBufferSemaphore> &signalBackBufferSemaphore, PipelineStage signalBackBufferStages, const RC<Fence> &signalFence)
+void DirectX12Queue::Submit(
+    const Ptr<BackBufferSemaphore> &waitBackBufferSemaphore,
+    PipelineStage                   waitBackBufferStages,
+    Span<Ptr<CommandBuffer>>        commandBuffers,
+    const Ptr<BackBufferSemaphore> &signalBackBufferSemaphore,
+    PipelineStage                   signalBackBufferStages,
+    const Ptr<Fence>               &signalFence)
 {
     // TODO
 }

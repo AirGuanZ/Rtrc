@@ -11,7 +11,7 @@ void InitializeDirectX12Backend()
     // do nothing
 }
 
-Unique<Instance> CreateDirectX12Instance(const DirectX12InstanceDesc &desc)
+Ptr<Instance> CreateDirectX12Instance(const DirectX12InstanceDesc &desc)
 {
     using namespace DirectX12;
 
@@ -43,14 +43,14 @@ Unique<Instance> CreateDirectX12Instance(const DirectX12InstanceDesc &desc)
         }
     }
 
-    return MakeUnique<DirectX12Instance>();
+    return MakePtr<DirectX12Instance>();
 }
 
 RTRC_RHI_END
 
 RTRC_RHI_DIRECTX12_BEGIN
 
-RC<Device> DirectX12Instance::CreateDevice(const DeviceDesc &desc)
+Ptr<Device> DirectX12Instance::CreateDevice(const DeviceDesc &desc)
 {
     ComPtr<IDXGIFactory4> factory;
     D3D12_FAIL_MSG(
@@ -67,7 +67,7 @@ RC<Device> DirectX12Instance::CreateDevice(const DeviceDesc &desc)
         D3D12CreateDevice(adaptor.Get(), D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(device.GetAddressOf())),
         "failed to create d3d12 device");
 
-    return MakeRC<DirectX12Device>(desc, std::move(device));
+    return MakePtr<DirectX12Device>(desc, std::move(device));
 }
 
 RTRC_RHI_DIRECTX12_END

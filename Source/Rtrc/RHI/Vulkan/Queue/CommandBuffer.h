@@ -28,17 +28,17 @@ public:
 
     void EndRenderPass() override;
 
-    void BindPipeline(const RC<GraphicsPipeline> &pipeline) override;
+    void BindPipeline(const Ptr<GraphicsPipeline> &pipeline) override;
 
-    void BindPipeline(const RC<ComputePipeline> &pipeline) override;
+    void BindPipeline(const Ptr<ComputePipeline> &pipeline) override;
     
     void BindGroupsToGraphicsPipeline(int startIndex, Span<RC<BindingGroup>> groups) override;
 
     void BindGroupsToComputePipeline(int startIndex, Span<RC<BindingGroup>> groups) override;
 
-    void BindGroupToGraphicsPipeline(int index, const RC<BindingGroup> &group) override;
+    void BindGroupToGraphicsPipeline(int index, const Ptr<BindingGroup> &group) override;
 
-    void BindGroupToComputePipeline(int index, const RC<BindingGroup> &group) override;
+    void BindGroupToComputePipeline(int index, const Ptr<BindingGroup> &group) override;
 
     void SetViewports(Span<Viewport> viewports) override;
 
@@ -53,22 +53,22 @@ public:
     void Dispatch(int groupCountX, int groupCountY, int groupCountZ) override;
 
     void CopyBuffer(
-        const RC<Buffer> &dst, size_t dstOffset,
-        const RC<Buffer> &src, size_t srcOffset, size_t range) override;
+        const Ptr<Buffer> &dst, size_t dstOffset,
+        const Ptr<Buffer> &src, size_t srcOffset, size_t range) override;
 
     void CopyBufferToTexture(
-        const RC<Texture> &dst, AspectTypeFlag aspect, uint32_t mipLevel, uint32_t arrayLayer,
-        const RC<Buffer> &src, size_t srcOffset) override;
+        const Ptr<Texture> &dst, AspectTypeFlag aspect, uint32_t mipLevel, uint32_t arrayLayer,
+        const Ptr<Buffer> &src, size_t srcOffset) override;
 
     void CopyTextureToBuffer(
-        const RC<Buffer> &dst, size_t dstOffset,
-        const RC<Texture> &src, AspectTypeFlag aspect, uint32_t mipLevel, uint32_t arrayLayer) override;
+        const Ptr<Buffer> &dst, size_t dstOffset,
+        const Ptr<Texture> &src, AspectTypeFlag aspect, uint32_t mipLevel, uint32_t arrayLayer) override;
 
     VkCommandBuffer GetNativeCommandBuffer() const;
 
 protected:
 
-    const RC<GraphicsPipeline> &GetCurrentPipeline() const override;
+    const Ptr<GraphicsPipeline> &GetCurrentPipeline() const override;
 
 private:
 
@@ -76,8 +76,8 @@ private:
     VkCommandPool   pool_;
     VkCommandBuffer commandBuffer_;
 
-    RC<GraphicsPipeline> currentGraphicsPipeline_;
-    RC<ComputePipeline>  currentComputePipeline_;
+    Ptr<GraphicsPipeline> currentGraphicsPipeline_;
+    Ptr<ComputePipeline>  currentComputePipeline_;
 };
 
 RTRC_RHI_VK_END

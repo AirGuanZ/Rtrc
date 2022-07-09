@@ -71,9 +71,9 @@ struct StructInfo
     using _rtrcType##NAME = TYPE;                       \
     _rtrcType##NAME NAME;
 
-#define $struct_begin RTRC_STRUCT_BEGIN
-#define $struct_end   RTRC_STRUCT_END
-#define $variable     RTRC_STRUCT_MEMBER
+#define $StructBegin RTRC_STRUCT_BEGIN
+#define $StructEnd   RTRC_STRUCT_END
+#define $Variable     RTRC_STRUCT_MEMBER
 
 template<typename T>
 concept RtrcStructType = requires { typename T::_rtrcStructTypeTag; };

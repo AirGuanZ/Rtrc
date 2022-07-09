@@ -14,7 +14,7 @@ public:
 
     void Reset() override;
 
-    RC<CommandBuffer> NewCommandBuffer() override;
+    Ptr<CommandBuffer> NewCommandBuffer() override;
 
 private:
 
@@ -23,7 +23,7 @@ private:
     VkDevice device_;
     VkCommandPool pool_;
     size_t nextFreeBufferIndex_;
-    std::vector<RC<VulkanCommandBuffer>> commandBuffers_;
+    std::vector<Ptr<VulkanCommandBuffer>> commandBuffers_;
 };
 
 RTRC_RHI_VK_END

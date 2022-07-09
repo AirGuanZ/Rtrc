@@ -354,7 +354,7 @@ bool Window::HasFocus() const
     return impl_->hasFocus;
 }
 
-Unique<RHI::Surface> Window::CreateVulkanSurface(void *vkInstance)
+ReferenceCountedPtr<RHI::Surface> Window::CreateVulkanSurface(void *vkInstance)
 {
 #ifdef RTRC_RHI_VULKAN
     InitGLFW();
@@ -366,7 +366,7 @@ Unique<RHI::Surface> Window::CreateVulkanSurface(void *vkInstance)
     {
         throw Exception("failed to create vulkan surface");
     };
-    return MakeUnique<RHI::Vk::VulkanSurface>(instance, surface);
+    return MakeReferenceCountedPtr<RHI::Vk::VulkanSurface>(instance, surface);
 #else
     throw Exception("vulkan backend is not supported");
 #endif

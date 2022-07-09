@@ -50,9 +50,9 @@ public:
 
     uint32_t GetHeight() const;
 
-    Texel &operator()(int x, int y);
+    Texel &operator()(uint32_t x, uint32_t y);
 
-    const Texel &operator()(int x, int y) const;
+    const Texel &operator()(uint32_t x, uint32_t y) const;
 
     template<typename U>
     Image<U> To() const;
@@ -223,7 +223,7 @@ namespace ImageDetail
     {
         constexpr T DEFAULT_ALPHA = static_cast<T>(std::is_same_v<T, uint8_t> ? 255 : 1);
 
-        std::array<T, DstComps> ret;
+        std::array<T, DstComps> ret = {};
         if constexpr(SrcComps == DstComps)
         {
             for(int i = 0; i < SrcComps; ++i)
@@ -287,7 +287,7 @@ namespace ImageDetail
         std::array<FromComp, ToComps> convertedChannels =
             ConvertComps<FromComp, FromComps, ToComps>(reinterpret_cast<const FromComp *>(&from));
 
-        std::array<ToComp, ToComps> resultChannels;
+        std::array<ToComp, ToComps> resultChannels = {};
         for(int i = 0; i < ToComps; ++i)
         {
             resultChannels[i] = ToComponent<ToComp>(convertedChannels[i]);
@@ -402,21 +402,21 @@ template<typename T>
 Image<T>::Image(Image &&other) noexcept
     : Image()
 {
-    Swap(other);
+    this->Swap(other);
 }
 
 template<typename T>
 Image<T> &Image<T>::operator=(const Image &other)
 {
     Image t(other);
-    Swap(t);
+    this->Swap(t);
     return *this;
 }
 
 template<typename T>
 Image<T> &Image<T>::operator=(Image &&other) noexcept
 {
-    Swap(other);
+    this->Swap(other);
     return *this;
 }
 
@@ -449,19 +449,19 @@ uint32_t Image<T>::GetHeight() const
 }
 
 template<typename T>
-typename Image<T>::Texel &Image<T>::operator()(int x, int y)
+typename Image<T>::Texel &Image<T>::operator()(uint32_t x, uint32_t y)
 {
-    assert(0 <= x && x < width_);
-    assert(0 <= y && y < height_);
+    assert(x < width_);
+    assert(y < height_);
     const int idx = y * width_ + x;
     return data_[idx];
 }
 
 template<typename T>
-const typename Image<T>::Texel &Image<T>::operator()(int x, int y) const
+const typename Image<T>::Texel &Image<T>::operator()(uint32_t x, uint32_t y) const
 {
-    assert(0 <= x && x < width_);
-    assert(0 <= y && y < height_);
+    assert(x < width_);
+    assert(y < height_);
     const int idx = y * width_ + x;
     return data_[idx];
 }
@@ -472,7 +472,7 @@ Image<U> Image<T>::To() const
 {
     assert(!!*this);
     Image<U> result(width_, height_);
-    for(int i = 0; i < width_ * height_; ++i)
+    for(uint32_t i = 0; i < width_ * height_; ++i)
     {
         result.GetData()[i] = ImageDetail::To<U>(data_[i]);
     }
@@ -553,7 +553,7 @@ void Image<T>::Save(const std::string &filename, ImageFormat format) const
         }
         break;
     }
-    default:
+    case ImageFormat::Auto:
         Unreachable();
     }
 }
