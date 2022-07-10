@@ -32,6 +32,20 @@ public:
 
     Ptr<Sampler> CreateSampler(const SamplerDesc &desc) override;
 
+    Ptr<MemoryPropertyRequirements> GetMemoryRequirements(
+        const Texture2DDesc &desc, size_t *size, size_t *alignment) const override;
+
+    Ptr<MemoryPropertyRequirements> GetMemoryRequirements(
+        const BufferDesc &desc, size_t *size, size_t *alignment) const override;
+
+    Ptr<MemoryBlock> CreateMemoryBlock(const MemoryBlockDesc &desc) override;
+
+    Ptr<Texture> CreatePlacedTexture2D(
+        const Texture2DDesc &desc, const Ptr<MemoryBlock> &memoryBlock, size_t offsetInMemoryBlock) override;
+
+    Ptr<Buffer> CreatePlacedBuffer(
+        const BufferDesc &desc, const Ptr<MemoryBlock> &memoryBlock, size_t offsetInMemoryBlock) override;
+
     void WaitIdle() override;
 
 private:

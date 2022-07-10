@@ -208,10 +208,10 @@ void Run()
     // binding group
 
     auto bindingGroup = bindingGroupLayout->CreateBindingGroup();
-    ModifyBindingGroup(bindingGroup.Get(), &TestGroup::VertexPositionBuffer, vertexPositionBufferSRV);
-    ModifyBindingGroup(bindingGroup.Get(), &TestGroup::VertexTexCoordBuffer, vertexTexCoordBufferSRV);
-    ModifyBindingGroup(bindingGroup.Get(), &TestGroup::MainTexture,          mainTexSRV);
-    ModifyBindingGroup(bindingGroup.Get(), &TestGroup::MainSampler,          mainSampler);
+    ModifyBindingGroup(bindingGroup, &TestGroup::VertexPositionBuffer, vertexPositionBufferSRV);
+    ModifyBindingGroup(bindingGroup, &TestGroup::VertexTexCoordBuffer, vertexTexCoordBufferSRV);
+    ModifyBindingGroup(bindingGroup, &TestGroup::MainTexture,          mainTexSRV);
+    ModifyBindingGroup(bindingGroup, &TestGroup::MainSampler,          mainSampler);
 
     // render loop
 

@@ -44,6 +44,8 @@ class Buffer;
 class BufferSRV;
 class BufferUAV;
 class Sampler;
+class MemoryPropertyRequirements;
+class MemoryBlock;
 
 template<typename T>
 using Ptr = ReferenceCountedPtr<T>;
@@ -284,18 +286,18 @@ enum class ResourceState : uint32_t
     DepthReadStencilWrite       = _rtrcDepthReadStencilWriteBase | _rtrcReadBase | _rtrcWriteBase,
     DepthWriteStencilRead       = _rtrcDepthWriteStencilReadBase | _rtrcReadBase | _rtrcWriteBase,
     ConstantBufferRead          = _rtrcConstantBufferBase | _rtrcReadBase,                       // must be used together with stage mask
-    TextureRead                 = _rtrcTextureBase | _rtrcReadBase,                             // must be used together with stage mask
-    RWTextureRead               = _rtrcRWTextureBase | _rtrcReadBase,                           // must be used together with stage mask
-    RWTextureWrite              = _rtrcRWTextureBase | _rtrcWriteBase,                          // must be used together with stage mask
-    RWTextureReadWrite          = _rtrcRWTextureBase | _rtrcReadBase | _rtrcWriteBase,          // must be used together with stage mask
-    BufferRead                  = _rtrcBufferBase | _rtrcReadBase,                              // must be used together with stage mask
-    RWBufferRead                = _rtrcRWBufferBase | _rtrcReadBase,                            // must be used together with stage mask
-    RWBufferWrite               = _rtrcRWBufferBase | _rtrcWriteBase,                           // must be used together with stage mask
-    RWBufferReadWrite           = _rtrcRWBufferBase | _rtrcReadBase | _rtrcWriteBase,           // must be used together with stage mask
-    StructuredBufferRead        = _rtrcStructuredBufferBase | _rtrcReadBase,                    // must be used together with stage mask
-    RWStructuredBufferRead      = _rtrcRWStructuredBufferBase | _rtrcReadBase,                  // must be used together with stage mask
-    RWStructuredBufferWrite     = _rtrcRWStructuredBufferBase | _rtrcWriteBase,                 // must be used together with stage mask
-    RWStructuredBufferReadWrite = _rtrcRWStructuredBufferBase | _rtrcReadBase | _rtrcWriteBase, // must be used together with stage mask
+    TextureRead                 = _rtrcTextureBase | _rtrcReadBase,                              // must be used together with stage mask
+    RWTextureRead               = _rtrcRWTextureBase | _rtrcReadBase,                            // must be used together with stage mask
+    RWTextureWrite              = _rtrcRWTextureBase | _rtrcWriteBase,                           // must be used together with stage mask
+    RWTextureReadWrite          = _rtrcRWTextureBase | _rtrcReadBase | _rtrcWriteBase,           // must be used together with stage mask
+    BufferRead                  = _rtrcBufferBase | _rtrcReadBase,                               // must be used together with stage mask
+    RWBufferRead                = _rtrcRWBufferBase | _rtrcReadBase,                             // must be used together with stage mask
+    RWBufferWrite               = _rtrcRWBufferBase | _rtrcWriteBase,                            // must be used together with stage mask
+    RWBufferReadWrite           = _rtrcRWBufferBase | _rtrcReadBase | _rtrcWriteBase,            // must be used together with stage mask
+    StructuredBufferRead        = _rtrcStructuredBufferBase | _rtrcReadBase,                     // must be used together with stage mask
+    RWStructuredBufferRead      = _rtrcRWStructuredBufferBase | _rtrcReadBase,                   // must be used together with stage mask
+    RWStructuredBufferWrite     = _rtrcRWStructuredBufferBase | _rtrcWriteBase,                  // must be used together with stage mask
+    RWStructuredBufferReadWrite = _rtrcRWStructuredBufferBase | _rtrcReadBase | _rtrcWriteBase,  // must be used together with stage mask
     CopySrc                     = _rtrcCopyBase | _rtrcReadBase,
     CopyDst                     = _rtrcCopyBase | _rtrcWriteBase,
     ResolveSrc                  = _rtrcResolveBase | _rtrcReadBase,
@@ -383,10 +385,10 @@ struct SwapchainDesc
 
 struct BindingDesc
 {
-    std::string                  name;
-    BindingType                  type;
-    ShaderStageFlag              shaderStages = ShaderStageFlags::All;
-    std::optional<uint32_t>      arraySize;
+    std::string             name;
+    BindingType             type;
+    ShaderStageFlag         shaderStages = ShaderStageFlags::All;
+    std::optional<uint32_t> arraySize;
 
     std::strong_ordering operator<=>(const BindingDesc &other) const
     {
@@ -506,7 +508,7 @@ struct SamplerDesc
 
 struct TextureTransitionBarrier
 {
-    Ptr<Texture>      texture;
+    Texture          *texture;
     AspectTypeFlag    aspectTypeFlag;
     uint32_t          mipLevel;
     uint32_t          arrayLayer;
@@ -516,32 +518,32 @@ struct TextureTransitionBarrier
 
 struct TextureReleaseBarrier
 {
-    Ptr<Texture>      texture;
+    Texture          *texture;
     AspectTypeFlag    aspectTypeFlag;
     uint32_t          mipLevel;
     uint32_t          arrayLayer;
     ResourceStateFlag beforeState;
     ResourceStateFlag afterState;
-    Ptr<Queue>        beforeQueue;
-    Ptr<Queue>        afterQueue;
+    Queue            *beforeQueue;
+    Queue            *afterQueue;
 };
 
 using TextureAcquireBarrier = TextureReleaseBarrier;
 
 struct BufferTransitionBarrier
 {
-    Ptr<Buffer>       buffer;
+    Buffer           *buffer;
     ResourceStateFlag beforeState;
     ResourceStateFlag afterState;
 };
 
 struct BufferReleaseBarrier
 {
-    Ptr<Buffer>       buffer;
+    Buffer           *buffer;
     ResourceStateFlag beforeState;
     ResourceStateFlag afterState;
-    Ptr<Queue>        beforeQueue;
-    Ptr<Queue>        afterQueue;
+    Queue            *beforeQueue;
+    Queue            *afterQueue;
 };
 
 using BufferAcquireBarrier = BufferReleaseBarrier;
@@ -561,7 +563,7 @@ using ClearValue = Variant<ColorClearValue, DepthStencilClearValue>;
 
 struct RenderPassColorAttachment
 {
-    Ptr<Texture2DRTV> rtv;
+    Texture2DRTV     *rtv;
     AttachmentLoadOp  loadOp;
     AttachmentStoreOp storeOp;
     ClearValue        clearValue;
@@ -582,6 +584,13 @@ using Viewports = Variant<std::monostate, std::vector<Viewport>, int, DynamicVie
 
 // fixed viewports; dynamic viewports with fixed count; dynamic count
 using Scissors = Variant<std::monostate, std::vector<Scissor>, int, DynamicScissorCount>;
+
+struct MemoryBlockDesc
+{
+    size_t size;
+    size_t alignment;
+    Ptr<MemoryPropertyRequirements> properties;
+};
 
 // =============================== rhi interfaces ===============================
 
@@ -637,6 +646,20 @@ public:
     virtual Ptr<Buffer> CreateBuffer(const BufferDesc &desc) = 0;
 
     virtual Ptr<Sampler> CreateSampler(const SamplerDesc &desc) = 0;
+
+    virtual Ptr<MemoryPropertyRequirements> GetMemoryRequirements(
+        const Texture2DDesc &desc, size_t *size, size_t *alignment) const = 0;
+
+    virtual Ptr<MemoryPropertyRequirements> GetMemoryRequirements(
+        const BufferDesc &desc, size_t *size, size_t *alignment) const = 0;
+
+    virtual Ptr<MemoryBlock> CreateMemoryBlock(const MemoryBlockDesc &desc) = 0;
+
+    virtual Ptr<Texture> CreatePlacedTexture2D(
+        const Texture2DDesc &desc, const Ptr<MemoryBlock> &memoryBlock, size_t offsetInMemoryBlock) = 0;
+
+    virtual Ptr<Buffer> CreatePlacedBuffer(
+        const BufferDesc &desc, const Ptr<MemoryBlock> &memoryBlock, size_t offsetInMemoryBlock) = 0;
 
     virtual void WaitIdle() = 0;
 };
@@ -780,16 +803,16 @@ public:
     virtual void Dispatch(int groupCountX, int groupCountY, int groupCountZ) = 0;
 
     virtual void CopyBuffer(
-        const Ptr<Buffer> &dst, size_t dstOffset,
-        const Ptr<Buffer> &src, size_t srcOffset, size_t range) = 0;
+        Buffer *dst, size_t dstOffset,
+        Buffer *src, size_t srcOffset, size_t range) = 0;
 
     virtual void CopyBufferToTexture(
-        const Ptr<Texture> &dst, AspectTypeFlag aspect, uint32_t mipLevel, uint32_t arrayLayer,
-        const Ptr<Buffer> &src, size_t srcOffset) = 0;
+        Texture *dst, AspectTypeFlag aspect, uint32_t mipLevel, uint32_t arrayLayer,
+        Buffer *src, size_t srcOffset) = 0;
 
     virtual void CopyTextureToBuffer(
-        const Ptr<Buffer> &dst, size_t dstOffset,
-        const Ptr<Texture> &src, AspectTypeFlag aspect, uint32_t mipLevel, uint32_t arrayLayer) = 0;
+        Buffer *dst, size_t dstOffset,
+        Texture *src, AspectTypeFlag aspect, uint32_t mipLevel, uint32_t arrayLayer) = 0;
 
 protected:
 
@@ -976,6 +999,25 @@ class Sampler : public RHIObject
 public:
 
     virtual const SamplerDesc &GetDesc() const = 0;
+};
+
+// all memory requirements other than size & alignment
+class MemoryPropertyRequirements : public RHIObject
+{
+public:
+
+    virtual bool IsValid() const = 0;
+
+    virtual bool Merge(const MemoryPropertyRequirements &other) = 0;
+
+    virtual Ptr<MemoryPropertyRequirements> Clone() const = 0;
+};
+
+class MemoryBlock : public RHIObject
+{
+public:
+
+    virtual const MemoryBlockDesc &GetDesc() const = 0;
 };
 
 // =============================== vulkan backend ===============================

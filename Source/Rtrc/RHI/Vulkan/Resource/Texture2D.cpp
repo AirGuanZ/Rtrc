@@ -1,3 +1,5 @@
+#include <ranges>
+
 #include <Rtrc/RHI/Vulkan/Resource/Texture2D.h>
 #include <Rtrc/RHI/Vulkan/Resource/Texture2DRTV.h>
 #include <Rtrc/RHI/Vulkan/Resource/Texture2DSRV.h>
@@ -19,11 +21,10 @@ VulkanTexture2D::VulkanTexture2D(
 
 VulkanTexture2D::~VulkanTexture2D()
 {
-    for(auto &[_, view] : views_)
+    for(VkImageView view : std::ranges::views::values(views_))
     {
         vkDestroyImageView(device_, view, VK_ALLOC);
     }
-
     if(ownership_ == ResourceOwnership::Allocation)
     {
         vmaDestroyImage(alloc_.allocator, image_, alloc_.allocation);

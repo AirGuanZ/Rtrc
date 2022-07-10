@@ -75,11 +75,13 @@ void Run()
 
     RHI::ResourceUploader uploader(device);
 
+    auto computeQueue = device->GetQueue(RHI::QueueType::Compute);
+
     std::vector<RHI::TextureAcquireBarrier> pendingTextureAcquireBarriers;
     pendingTextureAcquireBarriers.push_back(uploader.Upload(
         inputTexture,  RHI::AspectType::Color, 0, 0,
         inputImageData,
-        device->GetQueue(RHI::QueueType::Compute),
+        computeQueue,
         RHI::ResourceState::TextureRead | RHI::ResourceState::CS));
 
     uploader.SubmitAndSync();
@@ -135,13 +137,11 @@ void Run()
 
     auto bindingGroup = bindingGroupLayout->CreateBindingGroup();
 
-    ModifyBindingGroup(bindingGroup.Get(), &ScaleGroup::ScaleSetting, constantBuffer, 0, 16);
-    ModifyBindingGroup(bindingGroup.Get(), &ScaleGroup::InputTexture, inputTextureSRV);
-    ModifyBindingGroup(bindingGroup.Get(), &ScaleGroup::OutputTexture, outputTextureUAV);
+    ModifyBindingGroup(bindingGroup, &ScaleGroup::ScaleSetting, constantBuffer, 0, 16);
+    ModifyBindingGroup(bindingGroup, &ScaleGroup::InputTexture, inputTextureSRV);
+    ModifyBindingGroup(bindingGroup, &ScaleGroup::OutputTexture, outputTextureUAV);
 
     // queue & command pool & buffer
-
-    auto computeQueue = device->GetQueue(RHI::QueueType::Compute);
 
     auto commandPool = computeQueue->CreateCommandPool();
     auto commandBuffer = commandPool->NewCommandBuffer();

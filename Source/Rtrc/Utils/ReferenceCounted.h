@@ -113,6 +113,11 @@ public:
         return ReferenceCountedPtr<U>(ptr);
     }
 
+    operator T *() const
+    {
+        return ptr_;
+    }
+
     T *operator->() const
     {
         return ptr_;

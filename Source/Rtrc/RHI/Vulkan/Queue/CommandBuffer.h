@@ -53,16 +53,16 @@ public:
     void Dispatch(int groupCountX, int groupCountY, int groupCountZ) override;
 
     void CopyBuffer(
-        const Ptr<Buffer> &dst, size_t dstOffset,
-        const Ptr<Buffer> &src, size_t srcOffset, size_t range) override;
+        Buffer *dst, size_t dstOffset,
+        Buffer *src, size_t srcOffset, size_t range) override;
 
     void CopyBufferToTexture(
-        const Ptr<Texture> &dst, AspectTypeFlag aspect, uint32_t mipLevel, uint32_t arrayLayer,
-        const Ptr<Buffer> &src, size_t srcOffset) override;
+        Texture *dst, AspectTypeFlag aspect, uint32_t mipLevel, uint32_t arrayLayer,
+        Buffer *src, size_t srcOffset) override;
 
     void CopyTextureToBuffer(
-        const Ptr<Buffer> &dst, size_t dstOffset,
-        const Ptr<Texture> &src, AspectTypeFlag aspect, uint32_t mipLevel, uint32_t arrayLayer) override;
+        Buffer *dst, size_t dstOffset,
+        Texture *src, AspectTypeFlag aspect, uint32_t mipLevel, uint32_t arrayLayer) override;
 
     VkCommandBuffer GetNativeCommandBuffer() const;
 

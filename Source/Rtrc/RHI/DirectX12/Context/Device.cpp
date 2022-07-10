@@ -107,6 +107,40 @@ Ptr<Sampler> DirectX12Device::CreateSampler(const SamplerDesc &desc)
     return {};
 }
 
+Ptr<MemoryPropertyRequirements> DirectX12Device::GetMemoryRequirements(
+    const Texture2DDesc &desc, size_t *size, size_t *alignment) const
+{
+    // TODO
+    return {};
+}
+
+Ptr<MemoryPropertyRequirements> DirectX12Device::GetMemoryRequirements(
+    const BufferDesc &desc, size_t *size, size_t *alignment) const
+{
+    // TODO
+    return {};
+}
+
+Ptr<MemoryBlock> DirectX12Device::CreateMemoryBlock(const MemoryBlockDesc &desc)
+{
+    // TODO
+    return {};
+}
+
+Ptr<Texture> DirectX12Device::CreatePlacedTexture2D(
+    const Texture2DDesc &desc, const Ptr<MemoryBlock> &memoryBlock, size_t offsetInMemoryBlock)
+{
+    // TODO
+    return {};
+}
+
+Ptr<Buffer> DirectX12Device::CreatePlacedBuffer(
+    const BufferDesc &desc, const Ptr<MemoryBlock> &memoryBlock, size_t offsetInMemoryBlock)
+{
+    // TODO
+    return {};
+}
+
 void DirectX12Device::WaitIdle()
 {
     // TODO

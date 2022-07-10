@@ -14,31 +14,31 @@ public:
     ~ResourceUploader();
 
     BufferAcquireBarrier Upload(
-        const Ptr<Buffer> &buffer,
-        size_t             offset,
-        size_t             range,
-        const void        *data,
-        const Ptr<Queue>  &afterQueue,
-        ResourceStateFlag  afterState);
+        Buffer           *buffer,
+        size_t            offset,
+        size_t            range,
+        const void       *data,
+        Queue            *afterQueue,
+        ResourceStateFlag afterState);
 
     // use width * texelBytes if rowBytes is 0
     TextureAcquireBarrier Upload(
-        const Ptr<Texture> &texture,
+        Texture          *texture,
+        AspectTypeFlag    aspect,
+        uint32_t          mipLevel,
+        uint32_t          arrayLayer,
+        const void       *data,
+        Queue            *afterQueue,
+        ResourceStateFlag afterState);
+
+    TextureAcquireBarrier Upload(
+        Texture            *texture,
         AspectTypeFlag      aspect,
         uint32_t            mipLevel,
         uint32_t            arrayLayer,
-        const void         *data,
-        const Ptr<Queue>   &afterQueue,
+        const ImageDynamic &image,
+        Queue              *afterQueue,
         ResourceStateFlag   afterState);
-
-    TextureAcquireBarrier Upload(
-        const Ptr<Texture>  &texture,
-        AspectTypeFlag       aspect,
-        uint32_t             mipLevel,
-        uint32_t             arrayLayer,
-        const ImageDynamic  &image,
-        const Ptr<Queue>    &afterQueue,
-        ResourceStateFlag    afterState);
 
     void SubmitAndSync();
 

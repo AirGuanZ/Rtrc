@@ -14,9 +14,9 @@ RTRC_RHI_VK_BEGIN
 namespace
 {
 
-    VkImage GetVulkanImage(const Ptr<Texture> &tex)
+    VkImage GetVulkanImage(Texture *tex)
     {
-        return static_cast<VulkanTexture *>(tex.Get())->GetNativeImage();
+        return static_cast<VulkanTexture *>(tex)->GetNativeImage();
     }
 
 } // namespace anonymous
@@ -124,8 +124,8 @@ void VulkanCommandBuffer::ExecuteBarriers(
 
         assert(release.texture->Get2DDesc().concurrentAccessMode == QueueConcurrentAccessMode::Exclusive);
 
-        auto beforeQueue = static_cast<VulkanQueue *>(release.beforeQueue.Get());
-        auto afterQueue = static_cast<VulkanQueue *>(release.afterQueue.Get());
+        auto beforeQueue = static_cast<VulkanQueue *>(release.beforeQueue);
+        auto afterQueue = static_cast<VulkanQueue *>(release.afterQueue);
         assert(beforeQueue != afterQueue);
 
         // perform a normal barrier when queues are of the same family
@@ -200,8 +200,8 @@ void VulkanCommandBuffer::ExecuteBarriers(
             continue;
         }
 
-        auto beforeQueue = static_cast<VulkanQueue *>(acquire.beforeQueue.Get());
-        auto afterQueue = static_cast<VulkanQueue *>(acquire.afterQueue.Get());
+        auto beforeQueue = static_cast<VulkanQueue *>(acquire.beforeQueue);
+        auto afterQueue = static_cast<VulkanQueue *>(acquire.afterQueue);
         assert(beforeQueue != afterQueue);
 
         if(beforeQueue->GetNativeFamilyIndex() == afterQueue->GetNativeFamilyIndex())
@@ -293,7 +293,7 @@ void VulkanCommandBuffer::ExecuteBarriers(
             .dstAccessMask       = dstAccess,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .buffer              = static_cast<VulkanBuffer*>(transition.buffer.Get())->GetNativeBuffer(),
+            .buffer              = static_cast<VulkanBuffer*>(transition.buffer)->GetNativeBuffer(),
             .offset              = 0,
             .size                = VK_WHOLE_SIZE
         });
@@ -308,8 +308,8 @@ void VulkanCommandBuffer::ExecuteBarriers(
 
         assert(release.buffer->GetDesc().concurrentAccessMode == QueueConcurrentAccessMode::Exclusive);
 
-        auto beforeQueue = static_cast<VulkanQueue *>(release.beforeQueue.Get());
-        auto afterQueue = static_cast<VulkanQueue *>(release.afterQueue.Get());
+        auto beforeQueue = static_cast<VulkanQueue *>(release.beforeQueue);
+        auto afterQueue = static_cast<VulkanQueue *>(release.afterQueue);
         assert(beforeQueue != afterQueue);
 
         // perform a normal barrier when queues are of the same family
@@ -333,7 +333,7 @@ void VulkanCommandBuffer::ExecuteBarriers(
                     .dstAccessMask       = dstAccess,
                     .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                     .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                    .buffer              = static_cast<VulkanBuffer*>(release.buffer.Get())->GetNativeBuffer(),
+                    .buffer              = static_cast<VulkanBuffer*>(release.buffer)->GetNativeBuffer(),
                     .offset              = 0,
                     .size                = VK_WHOLE_SIZE
                 });
@@ -352,7 +352,7 @@ void VulkanCommandBuffer::ExecuteBarriers(
                 .dstAccessMask       = VK_ACCESS_2_NONE,
                 .srcQueueFamilyIndex = beforeQueue->GetNativeFamilyIndex(),
                 .dstQueueFamilyIndex = afterQueue->GetNativeFamilyIndex(),
-                .buffer              = static_cast<VulkanBuffer*>(release.buffer.Get())->GetNativeBuffer(),
+                .buffer              = static_cast<VulkanBuffer*>(release.buffer)->GetNativeBuffer(),
                 .offset              = 0,
                 .size                = VK_WHOLE_SIZE
             });
@@ -366,8 +366,8 @@ void VulkanCommandBuffer::ExecuteBarriers(
             continue;
         }
 
-        auto beforeQueue = static_cast<VulkanQueue *>(acquire.beforeQueue.Get());
-        auto afterQueue = static_cast<VulkanQueue *>(acquire.afterQueue.Get());
+        auto beforeQueue = static_cast<VulkanQueue *>(acquire.beforeQueue);
+        auto afterQueue = static_cast<VulkanQueue *>(acquire.afterQueue);
         assert(beforeQueue != afterQueue);
 
         if(beforeQueue->GetNativeFamilyIndex() == afterQueue->GetNativeFamilyIndex())
@@ -388,7 +388,7 @@ void VulkanCommandBuffer::ExecuteBarriers(
                     .dstAccessMask       = dstAccess,
                     .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                     .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                    .buffer              = static_cast<VulkanBuffer*>(acquire.buffer.Get())->GetNativeBuffer(),
+                    .buffer              = static_cast<VulkanBuffer*>(acquire.buffer)->GetNativeBuffer(),
                     .offset              = 0,
                     .size                = VK_WHOLE_SIZE
                 });
@@ -407,7 +407,7 @@ void VulkanCommandBuffer::ExecuteBarriers(
                 .dstAccessMask       = dstAccess,
                 .srcQueueFamilyIndex = beforeQueue->GetNativeFamilyIndex(),
                 .dstQueueFamilyIndex = afterQueue->GetNativeFamilyIndex(),
-                .buffer              = static_cast<VulkanBuffer*>(acquire.buffer.Get())->GetNativeBuffer(),
+                .buffer              = static_cast<VulkanBuffer*>(acquire.buffer)->GetNativeBuffer(),
                 .offset              = 0,
                 .size                = VK_WHOLE_SIZE
             });
@@ -432,7 +432,7 @@ void VulkanCommandBuffer::BeginRenderPass(Span<RenderPassColorAttachment> colorA
     {
         vkColorAttachments[i] = VkRenderingAttachmentInfo{
             .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-            .imageView   = static_cast<VulkanTexture2DRTV *>(a.rtv.Get())->GetNativeImageView(),
+            .imageView   = static_cast<VulkanTexture2DRTV *>(a.rtv)->GetNativeImageView(),
             .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             .resolveMode = VK_RESOLVE_MODE_NONE,
             .loadOp      = TranslateLoadOp(a.loadOp),
@@ -442,7 +442,7 @@ void VulkanCommandBuffer::BeginRenderPass(Span<RenderPassColorAttachment> colorA
     }
 
     const auto &attachment0Desc = static_cast<VulkanTexture2DRTV *>(
-        colorAttachments[0].rtv.Get())->GetTexture()->Get2DDesc();
+        colorAttachments[0].rtv)->GetTexture()->Get2DDesc();
     const VkRect2D renderArea = {
             .offset = { 0, 0 },
             .extent = { attachment0Desc.width, attachment0Desc.height }
@@ -595,22 +595,22 @@ void VulkanCommandBuffer::Dispatch(int groupCountX, int groupCountY, int groupCo
 }
 
 void VulkanCommandBuffer::CopyBuffer(
-    const Ptr<Buffer> &dst, size_t dstOffset,
-    const Ptr<Buffer> &src, size_t srcOffset, size_t range)
+    Buffer *dst, size_t dstOffset,
+    Buffer *src, size_t srcOffset, size_t range)
 {
     const VkBufferCopy copy = {
         .srcOffset = srcOffset,
         .dstOffset = dstOffset,
         .size      = range
     };
-    auto vkSrc = static_cast<VulkanBuffer *>(src.Get())->GetNativeBuffer();
-    auto vkDst = static_cast<VulkanBuffer *>(dst.Get())->GetNativeBuffer();
+    auto vkSrc = static_cast<VulkanBuffer *>(src)->GetNativeBuffer();
+    auto vkDst = static_cast<VulkanBuffer *>(dst)->GetNativeBuffer();
     vkCmdCopyBuffer(commandBuffer_, vkSrc, vkDst, 1, &copy);
 }
 
 void VulkanCommandBuffer::CopyBufferToTexture(
-    const Ptr<Texture> &dst, AspectTypeFlag aspect, uint32_t mipLevel, uint32_t arrayLayer,
-    const Ptr<Buffer> &src, size_t srcOffset)
+    Texture *dst, AspectTypeFlag aspect, uint32_t mipLevel, uint32_t arrayLayer,
+    Buffer *src, size_t srcOffset)
 {
     auto &texDesc = dst->Get2DDesc();
     const VkBufferImageCopy copy = {
@@ -626,14 +626,14 @@ void VulkanCommandBuffer::CopyBufferToTexture(
         .imageOffset = { 0, 0, 0 },
         .imageExtent = { texDesc.width, texDesc.height, 1 }
     };
-    auto vkSrc = static_cast<VulkanBuffer *>(src.Get())->GetNativeBuffer();
+    auto vkSrc = static_cast<VulkanBuffer *>(src)->GetNativeBuffer();
     auto vkDst = GetVulkanImage(dst);
     vkCmdCopyBufferToImage(commandBuffer_, vkSrc, vkDst, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
 }
 
 void VulkanCommandBuffer::CopyTextureToBuffer(
-    const Ptr<Buffer> &dst, size_t dstOffset,
-    const Ptr<Texture> &src, AspectTypeFlag aspect, uint32_t mipLevel, uint32_t arrayLayer)
+    Buffer *dst, size_t dstOffset,
+    Texture *src, AspectTypeFlag aspect, uint32_t mipLevel, uint32_t arrayLayer)
 {
     auto &texDesc = src->Get2DDesc();
     const VkBufferImageCopy copy = {
@@ -650,7 +650,7 @@ void VulkanCommandBuffer::CopyTextureToBuffer(
         .imageExtent = { texDesc.width, texDesc.height, 1 }
     };
     auto vkSrc = GetVulkanImage(src);
-    auto vkDst = static_cast<VulkanBuffer *>(dst.Get())->GetNativeBuffer();
+    auto vkDst = static_cast<VulkanBuffer *>(dst)->GetNativeBuffer();
     vkCmdCopyImageToBuffer(commandBuffer_, vkSrc, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, vkDst, 1, &copy);
 }
 

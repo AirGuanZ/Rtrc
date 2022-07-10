@@ -1,3 +1,5 @@
+#include <ranges>
+
 #include <Rtrc/RHI/Vulkan/Resource/BufferSRV.h>
 #include <Rtrc/RHI/Vulkan/Resource/BufferUAV.h>
 #include <Rtrc/Utils/ScopeGuard.h>
@@ -17,7 +19,7 @@ VulkanBuffer::VulkanBuffer(
 
 VulkanBuffer::~VulkanBuffer()
 {
-    for(auto &[_, view] : views_)
+    for(VkBufferView view : std::ranges::views::values(views_))
     {
         vkDestroyBufferView(device_, view, VK_ALLOC);
     }
@@ -81,6 +83,9 @@ void *VulkanBuffer::Map(size_t offset, size_t size) const
     VK_FAIL_MSG(
         vmaMapMemory(alloc_.allocator, alloc_.allocation, &result),
         "failed to map vulkan buffer memory");
+    VK_FAIL_MSG(
+        vmaInvalidateAllocation(alloc_.allocator, alloc_.allocation, offset, size),
+        "failed to invalidate mapped buffer memory");
     return result;
 }
 
@@ -88,7 +93,9 @@ void VulkanBuffer::Unmap(size_t offset, size_t size)
 {
     assert(ownership_ == ResourceOwnership::Allocation);
     vmaUnmapMemory(alloc_.allocator, alloc_.allocation);
-    vmaFlushAllocation(alloc_.allocator, alloc_.allocation, offset, size);
+    VK_FAIL_MSG(
+        vmaFlushAllocation(alloc_.allocator, alloc_.allocation, offset, size),
+        "failed to flush unmapped buffer memory");
 }
 
 VkBuffer VulkanBuffer::GetNativeBuffer() const

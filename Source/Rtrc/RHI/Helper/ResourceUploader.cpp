@@ -16,12 +16,12 @@ ResourceUploader::~ResourceUploader()
 }
 
 BufferAcquireBarrier ResourceUploader::Upload(
-    const Ptr<Buffer> &buffer,
-    size_t             offset,
-    size_t             range,
-    const void        *data,
-    const Ptr<Queue>  &afterQueue,
-    ResourceStateFlag  afterState)
+    Buffer           *buffer,
+    size_t            offset,
+    size_t            range,
+    const void       *data,
+    Queue            *afterQueue,
+    ResourceStateFlag afterState)
 {
     if(buffer->GetDesc().hostAccessType == BufferHostAccessType::SequentialWrite ||
        buffer->GetDesc().hostAccessType == BufferHostAccessType::Random)
@@ -53,9 +53,9 @@ BufferAcquireBarrier ResourceUploader::Upload(
     pendingStagingBuffers_.push_back(stagingBuffer);
     pendingBufferReleaseBarriers_.reserve(pendingBufferReleaseBarriers_.size() + 1);
 
-    commandBuffer_->CopyBuffer(buffer, offset, stagingBuffer, 0, range);
+    commandBuffer_->CopyBuffer(buffer, offset, stagingBuffer.Get(), 0, range);
 
-    if(afterQueue != queue_)
+    if(afterQueue != queue_.Get())
     {
         // TODO: remove this barrier unless release/acquire is actually needed
         // TODO: since sync between different queues with same family index is ensured by waitidle
@@ -64,7 +64,7 @@ BufferAcquireBarrier ResourceUploader::Upload(
                 .buffer      = buffer,
                 .beforeState = ResourceState::CopyDst,
                 .afterState  = afterState,
-                .beforeQueue = queue_,
+                .beforeQueue = queue_.Get(),
                 .afterQueue  = afterQueue
             });
     }
@@ -75,7 +75,7 @@ BufferAcquireBarrier ResourceUploader::Upload(
         SubmitAndSync();
     }
 
-    if(afterQueue != queue_)
+    if(afterQueue != queue_.Get())
     {
         // TODO: remove this barrier unless release/acquire is actually needed
         return BufferAcquireBarrier
@@ -83,7 +83,7 @@ BufferAcquireBarrier ResourceUploader::Upload(
             .buffer      = buffer,
             .beforeState = ResourceState::CopyDst,
             .afterState  = afterState,
-            .beforeQueue = queue_,
+            .beforeQueue = queue_.Get(),
             .afterQueue  = afterQueue
         };
     }
@@ -91,13 +91,13 @@ BufferAcquireBarrier ResourceUploader::Upload(
 }
 
 TextureAcquireBarrier ResourceUploader::Upload(
-    const Ptr<Texture> &texture,
-    AspectTypeFlag      aspect,
-    uint32_t            mipLevel,
-    uint32_t            arrayLayer,
-    const void         *data,
-    const Ptr<Queue>   &afterQueue,
-    ResourceStateFlag   afterState)
+    Texture          *texture,
+    AspectTypeFlag    aspect,
+    uint32_t          mipLevel,
+    uint32_t          arrayLayer,
+    const void       *data,
+    Queue            *afterQueue,
+    ResourceStateFlag afterState)
 {
     assert(texture->GetDimension() == TextureDimension::Tex2D);
     auto &texDesc = texture->Get2DDesc();
@@ -136,9 +136,9 @@ TextureAcquireBarrier ResourceUploader::Upload(
         .afterState     = ResourceState::CopyDst
     }, {}, {}, {}, {}, {});
 
-    commandBuffer_->CopyBufferToTexture(texture, aspect, mipLevel, arrayLayer, stagingBuffer, 0);
+    commandBuffer_->CopyBufferToTexture(texture, aspect, mipLevel, arrayLayer, stagingBuffer.Get(), 0);
     
-    if(afterQueue != queue_)
+    if(afterQueue != queue_.Get())
     {
         pendingTextureReleaseBarriers_.push_back(TextureReleaseBarrier
             {
@@ -148,7 +148,7 @@ TextureAcquireBarrier ResourceUploader::Upload(
                 .arrayLayer     = arrayLayer,
                 .beforeState    = ResourceState::CopyDst,
                 .afterState     = afterState,
-                .beforeQueue    = queue_,
+                .beforeQueue    = queue_.Get(),
                 .afterQueue     = afterQueue
             });
     }
@@ -172,7 +172,7 @@ TextureAcquireBarrier ResourceUploader::Upload(
         SubmitAndSync();
     }
 
-    if(afterQueue != queue_)
+    if(afterQueue != queue_.Get())
     {
         return TextureAcquireBarrier
             {
@@ -182,7 +182,7 @@ TextureAcquireBarrier ResourceUploader::Upload(
                 .arrayLayer     = arrayLayer,
                 .beforeState    = ResourceState::CopyDst,
                 .afterState     = afterState,
-                .beforeQueue    = queue_,
+                .beforeQueue    = queue_.Get(),
                 .afterQueue     = afterQueue
             };
     }
@@ -190,17 +190,16 @@ TextureAcquireBarrier ResourceUploader::Upload(
 }
 
 TextureAcquireBarrier ResourceUploader::Upload(
-    const Ptr<Texture>  &texture,
-    AspectTypeFlag       aspect,
-    uint32_t             mipLevel,
-    uint32_t             arrayLayer,
-    const ImageDynamic  &image,
-    const Ptr<Queue>    &afterQueue,
-    ResourceStateFlag    afterState)
+    Texture            *texture,
+    AspectTypeFlag      aspect,
+    uint32_t            mipLevel,
+    uint32_t            arrayLayer,
+    const ImageDynamic &image,
+    Queue              *afterQueue,
+    ResourceStateFlag   afterState)
 {
     assert(texture->GetDimension() == TextureDimension::Tex2D);
     auto &texDesc = texture->Get2DDesc();
-
     switch(texDesc.format)
     {
     case Format::B8G8R8A8_UNorm:
@@ -211,6 +210,12 @@ TextureAcquireBarrier ResourceUploader::Upload(
             {
                 v = Vector4b(v.z, v.y, v.x, v.w);
             }
+            return Upload(texture, aspect, mipLevel, arrayLayer, data.GetData(), afterQueue, afterState);
+        }
+    case Format::R32G32B32A32_Float:
+        {
+            auto tdata = image.To(ImageDynamic::F32x4);
+            auto &data = tdata.As<Image<Vector4f>>();
             return Upload(texture, aspect, mipLevel, arrayLayer, data.GetData(), afterQueue, afterState);
         }
     default:
