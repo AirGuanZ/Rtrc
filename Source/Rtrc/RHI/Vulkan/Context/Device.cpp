@@ -96,7 +96,7 @@ namespace
             .sharingMode           = sharingMode,
             .queueFamilyIndexCount = static_cast<uint32_t>(sharingQueueFamilyIndices.GetSize()),
             .pQueueFamilyIndices   = sharingQueueFamilyIndices.GetData(),
-            .initialLayout         = ExtractImageLayout(desc.initialState)
+            .initialLayout         = TranslateImageLayout(desc.initialLayout)
         };
         return imageCreateInfo;
     }
@@ -306,7 +306,7 @@ Ptr<Swapchain> VulkanDevice::CreateSwapchain(const SwapchainDesc &desc, Window &
         .mipLevels            = 1,
         .arraySize            = 1,
         .sampleCount          = 1,
-        .initialState         = ResourceState::Uninitialized,
+        .initialLayout        = TextureLayout::Undefined,
         .concurrentAccessMode = QueueConcurrentAccessMode::Exclusive
     };
     return MakePtr<VulkanSwapchain>(std::move(surface), presentQueue_, imageDescription, device_, swapchain);

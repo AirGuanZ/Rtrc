@@ -22,41 +22,7 @@ namespace
     {
         mi_free(ptr);
     }
-
-    auto SplitResourceStateFlag(ResourceStateFlag state)
-    {
-        using enum ResourceState;
-
-        constexpr ResourceStateFlag TYPE_MASK =
-            _rtrcUninitializedBase         |
-            _rtrcRenderTargetBase          |
-            _rtrcDepthBase                 |
-            _rtrcStencilBase               |
-            _rtrcConstantBufferBase        |
-            _rtrcTextureBase               |
-            _rtrcRWTextureBase             |
-            _rtrcBufferBase                |
-            _rtrcRWBufferBase              |
-            _rtrcStructuredBufferBase      |
-            _rtrcRWStructuredBufferBase    |
-            _rtrcCopyBase                  |
-            _rtrcResolveBase               |
-            _rtrcPresentBase               |
-            _rtrcDepthReadStencilWriteBase |
-            _rtrcDepthWriteStencilReadBase;
-        const auto type = state & TYPE_MASK;
-
-        const ResourceStateFlag STAGE_MASK = _rtrcVSBase | _rtrcFSBase | _rtrcCSBase;
-        const auto stage = state & STAGE_MASK;
-
-        const ResourceStateFlag READWRITE_MASK = _rtrcReadBase | _rtrcWriteBase;
-        const auto readwrite = state & READWRITE_MASK;
-
-        return std::make_tuple(type, stage, readwrite);
-    }
-
-    using ResourceStateInteger = std::underlying_type_t<ResourceState>;
-
+    
 } // namespace anonymous
 
 VkAllocationCallbacks RtrcGlobalVulkanAllocationCallbacks = {
@@ -261,30 +227,6 @@ VkImageUsageFlags TranslateTextureUsageFlag(TextureUsageFlag flags)
     return result;
 }
 
-VkPipelineStageFlags2 TranslatePipelineStageFlag(PipelineStageFlag flag)
-{
-    VkPipelineStageFlags2 result = 0;
-#define ADD_CASE(FLAG, VAL) if(flag.contains(PipelineStage::FLAG)) { result |= VAL; }
-    ADD_CASE(All,                   VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT)
-    ADD_CASE(None,                  VK_PIPELINE_STAGE_2_NONE)
-    ADD_CASE(DrawIndirect,          VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT)
-    ADD_CASE(VertexInput,           VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT)
-    ADD_CASE(IndexInput,            VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT)
-    ADD_CASE(VertexShader,          VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT)
-    ADD_CASE(FragmentShader,        VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT)
-    ADD_CASE(EarlyFragmentTests,    VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT)
-    ADD_CASE(LateFragmentTests,     VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT)
-    ADD_CASE(ColorAttachmentOutput, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT)
-    ADD_CASE(ComputeShader,         VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT)
-    ADD_CASE(Copy,                  VK_PIPELINE_STAGE_2_COPY_BIT)
-    ADD_CASE(Resolve,               VK_PIPELINE_STAGE_2_RESOLVE_BIT)
-    ADD_CASE(Blit,                  VK_PIPELINE_STAGE_2_BLIT_BIT)
-    ADD_CASE(Clear,                 VK_PIPELINE_STAGE_2_CLEAR_BIT)
-    ADD_CASE(Host,                  VK_PIPELINE_STAGE_2_HOST_BIT)
-#undef ADD_CASE
-    return result;
-}
-
 VkImageAspectFlags TranslateAspectTypeFlag(AspectTypeFlag flag)
 {
     VkImageAspectFlags result = 0;
@@ -306,7 +248,7 @@ VkImageAspectFlags TranslateAspectTypeFlag(AspectTypeFlag flag)
 VkBufferUsageFlags TranslateBufferUsageFlag(BufferUsageFlag flag)
 {
     VkBufferUsageFlags result = 0;
-#define ADD_CASE(FLAG, VAL) if(flag.contains(BufferUsage::FLAG)) { result |= VAL; }
+#define ADD_CASE(FLAG, VAL) if(flag.contains(BufferUsage::FLAG)) { result |= (VAL); }
     ADD_CASE(TransferDst,              VK_BUFFER_USAGE_TRANSFER_DST_BIT)
     ADD_CASE(TransferSrc,              VK_BUFFER_USAGE_TRANSFER_SRC_BIT)
     ADD_CASE(ShaderBuffer,             VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT)
@@ -444,267 +386,82 @@ VkSamplerAddressMode TranslateSamplerAddressMode(AddressMode mode)
     Unreachable();
 }
 
-bool IsResourceStateValid(ResourceStateFlag state)
+VkPipelineStageFlags2 TranslatePipelineStageFlag(PipelineStageFlag flag)
 {
-    using enum ResourceState;
-    auto [type, stage, readwrite] = SplitResourceStateFlag(state);
-
-    switch(ResourceStateInteger(type))
+    static const VkPipelineStageFlags2 bitToFlag[] =
     {
-    case _rtrcUninitializedBase:
-        return !stage && !readwrite;
-    case _rtrcRenderTargetBase:
-    case _rtrcDepthBase:
-    case _rtrcStencilBase:
-    case _rtrcDepthBase | _rtrcStencilBase:
-        return !stage && readwrite;
-    case _rtrcConstantBufferBase:
-    case _rtrcTextureBase:
-    case _rtrcBufferBase:
-    case _rtrcStructuredBufferBase:
-        return stage && readwrite == ResourceStateFlag(_rtrcReadBase);
-    case _rtrcRWTextureBase:
-    case _rtrcRWBufferBase:
-    case _rtrcRWStructuredBufferBase:
-        return stage && readwrite;
-    case _rtrcCopyBase:
-    case _rtrcResolveBase:
-    {
-        const bool read = readwrite & ResourceStateFlag(_rtrcReadBase);
-        const bool write = readwrite & ResourceStateFlag(_rtrcWriteBase);
-        return !stage && (read ^ write);
-    }
-    case _rtrcPresentBase:
-        return !stage && readwrite == ResourceStateFlag(_rtrcReadBase);
-    case _rtrcDepthReadStencilWriteBase:
-    case _rtrcDepthWriteStencilReadBase:
-        return !stage && readwrite == ResourceStateFlag(_rtrcReadBase | _rtrcWriteBase);
-    default:
-        return false;
-    }
-}
-
-VkPipelineStageFlags2 ExtractPipelineStageFlag(ResourceStateFlag state)
-{
-    assert(IsResourceStateValid(state));
-
-    using enum ResourceState;
-    auto [type, stage, readwrite] = SplitResourceStateFlag(state);
-
-    auto convertStage = [stage]
-    {
-        VkPipelineStageFlags2 result = 0;
-        if(stage.contains(_rtrcVSBase))
-        {
-            result |= VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
-        }
-        if(stage.contains(_rtrcFSBase))
-        {
-            result |= VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
-        }
-        if(stage.contains(_rtrcCSBase))
-        {
-            result |= VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
-        }
-        return result;
+        VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT,
+        VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
+        VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+        VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+        VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
+        VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+        VK_PIPELINE_STAGE_2_COPY_BIT,
+        VK_PIPELINE_STAGE_2_RESOLVE_BIT
     };
-
-    switch(ResourceStateInteger(type))
+    VkPipelineStageFlags2 result = 0;
+    for(size_t i = 0; i < GetArraySize(bitToFlag); ++i)
     {
-    case _rtrcUninitializedBase:
-        return VK_PIPELINE_STAGE_2_NONE;
-    case _rtrcRenderTargetBase:
-        return VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
-    case _rtrcDepthBase:
-    case _rtrcStencilBase:
-    case _rtrcDepthBase | _rtrcStencilBase:
-    case _rtrcDepthReadStencilWriteBase:
-    case _rtrcDepthWriteStencilReadBase:
-        return VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
-    case _rtrcConstantBufferBase:
-    case _rtrcTextureBase:
-    case _rtrcRWTextureBase:
-    case _rtrcBufferBase:
-    case _rtrcRWBufferBase:
-    case _rtrcStructuredBufferBase:
-    case _rtrcRWStructuredBufferBase:
-        return convertStage();
-    case _rtrcCopyBase:
-        return VK_PIPELINE_STAGE_2_COPY_BIT;
-    case _rtrcResolveBase:
-        return VK_PIPELINE_STAGE_2_RESOLVE_BIT;
-    case _rtrcPresentBase:
-        return VK_PIPELINE_STAGE_2_NONE;
-    default:
-        Unreachable();
+        if(flag.contains(1 << i))
+        {
+            result |= bitToFlag[i];
+        }
     }
+    return result;
 }
 
-VkImageLayout ExtractImageLayout(ResourceStateFlag state)
+VkAccessFlags2 TranslateAccessFlag(ResourceAccessFlag flag)
 {
-    assert(IsResourceStateValid(state));
-
-    using enum ResourceState;
-    auto [type, stage, readwrite] = SplitResourceStateFlag(state);
-
-    assert(type != ResourceStateFlag(_rtrcBufferBase)   && type != ResourceStateFlag(_rtrcStructuredBufferBase) &&
-           type != ResourceStateFlag(_rtrcRWBufferBase) && type != ResourceStateFlag(_rtrcRWStructuredBufferBase));
-
-    switch(ResourceStateInteger(type))
+    static constexpr VkAccessFlags2 bitToFlag[] =
     {
-    case _rtrcUninitializedBase:
-        return VK_IMAGE_LAYOUT_UNDEFINED;
-    case _rtrcRenderTargetBase:
-        return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    case _rtrcDepthBase:
-        if(readwrite == ResourceStateFlag(_rtrcReadBase))
+        VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT,
+        VK_ACCESS_2_INDEX_READ_BIT,
+        VK_ACCESS_2_UNIFORM_READ_BIT,
+        VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT,
+        VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+        VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
+        VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+        VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+        VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+        VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+        VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+        VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+        VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+        VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+        VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
+        VK_ACCESS_2_TRANSFER_READ_BIT,
+        VK_ACCESS_2_TRANSFER_WRITE_BIT,
+        VK_ACCESS_2_TRANSFER_READ_BIT,
+        VK_ACCESS_2_TRANSFER_WRITE_BIT
+    };
+    VkAccessFlags2 result = 0;
+    for(size_t i = 0; i < GetArraySize(bitToFlag); ++i)
+    {
+        if(flag.contains(1 << i))
         {
-            return VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL;
+            result |= bitToFlag[i];
         }
-        return VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
-    case _rtrcStencilBase:
-        if(readwrite == ResourceStateFlag(_rtrcReadBase))
-        {
-            return VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL;
-        }
-        return VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL;
-    case _rtrcDepthBase | _rtrcStencilBase:
-        if(readwrite == ResourceStateFlag(_rtrcReadBase))
-        {
-            return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-        }
-        return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-    case _rtrcTextureBase:
-        return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    case _rtrcRWTextureBase:
-        return VK_IMAGE_LAYOUT_GENERAL;
-    case _rtrcCopyBase:
-        if(readwrite == ResourceStateFlag(_rtrcReadBase))
-        {
-            return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-        }
-        assert(readwrite == ResourceStateFlag(_rtrcWriteBase));
-        return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    case _rtrcResolveBase:
-        if(readwrite == ResourceStateFlag(_rtrcReadBase))
-        {
-            return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-        }
-        assert(readwrite == ResourceStateFlag(_rtrcWriteBase));
-        return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    case _rtrcPresentBase:
-        return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-    case _rtrcDepthReadStencilWriteBase:
-        return VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL;
-    case _rtrcDepthWriteStencilReadBase:
-        return VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL;
-    default:
-        Unreachable();
     }
+    return result;
 }
 
-VkAccessFlags2 ExtractAccessFlag(ResourceStateFlag state)
+VkImageLayout TranslateImageLayout(TextureLayout layout)
 {
-    assert(IsResourceStateValid(state));
-
-    using enum ResourceState;
-    auto [type, stage, readwrite] = SplitResourceStateFlag(state);
-
-    switch(ResourceStateInteger(type))
+    switch(layout)
     {
-    case _rtrcUninitializedBase:
-        return VK_ACCESS_2_NONE;
-    case _rtrcRenderTargetBase:
-    {
-        VkAccessFlags2 result = 0;
-        if(readwrite.contains(_rtrcReadBase))
-        {
-            result |= VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT;
-        }
-        if(readwrite.contains(_rtrcWriteBase))
-        {
-            result |= VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
-        }
-        return result;
+    case TextureLayout::Undefined:            return VK_IMAGE_LAYOUT_UNDEFINED;
+    case TextureLayout::RenderTarget:         return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    case TextureLayout::DepthStencil:         return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    case TextureLayout::DepthStencilReadOnly: return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+    case TextureLayout::ShaderTexture:        return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    case TextureLayout::ShaderRWTexture:      return VK_IMAGE_LAYOUT_GENERAL;
+    case TextureLayout::CopySrc:              return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    case TextureLayout::CopyDst:              return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    case TextureLayout::ResolveSrc:           return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    case TextureLayout::ResolveDst:           return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    case TextureLayout::Present:              return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
     }
-    case _rtrcDepthBase:
-    case _rtrcStencilBase:
-    case _rtrcDepthBase | _rtrcStencilBase:
-    {
-        VkAccessFlags2 result = 0;
-        if(readwrite.contains(_rtrcReadBase))
-        {
-            result |= VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
-        }
-        if(readwrite.contains(_rtrcWriteBase))
-        {
-            result |= VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-        }
-        return result;
-    }
-    case _rtrcDepthReadStencilWriteBase:
-    case _rtrcDepthWriteStencilReadBase:
-        return VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-    case _rtrcConstantBufferBase:
-        return VK_ACCESS_2_UNIFORM_READ_BIT;
-    case _rtrcTextureBase:
-        return VK_ACCESS_2_SHADER_SAMPLED_READ_BIT;
-    case _rtrcRWTextureBase:
-    {
-        VkAccessFlags2 result = 0;
-        if(readwrite.contains(_rtrcReadBase))
-        {
-            result |= VK_ACCESS_2_SHADER_STORAGE_READ_BIT;
-        }
-        if(readwrite.contains(_rtrcWriteBase))
-        {
-            result |= VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT;
-        }
-        return result;
-    }
-    case _rtrcBufferBase:
-        return VK_ACCESS_2_SHADER_SAMPLED_READ_BIT;
-    case _rtrcRWBufferBase:
-    {
-        VkAccessFlags2 result = 0;
-        if(readwrite.contains(_rtrcReadBase))
-        {
-            result |= VK_ACCESS_2_SHADER_STORAGE_READ_BIT;
-        }
-        if(readwrite.contains(_rtrcWriteBase))
-        {
-            result |= VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT;
-        }
-        return result;
-    }
-    case _rtrcStructuredBufferBase:
-        return VK_ACCESS_2_SHADER_STORAGE_READ_BIT;
-    case _rtrcRWStructuredBufferBase:
-    {
-        VkAccessFlags2 result = 0;
-        if(readwrite.contains(_rtrcReadBase))
-        {
-            result |= VK_ACCESS_2_SHADER_STORAGE_READ_BIT;
-        }
-        if(readwrite.contains(_rtrcWriteBase))
-        {
-            result |= VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT;
-        }
-        return result;
-    }
-    case _rtrcCopyBase:
-    case _rtrcResolveBase:
-        if(readwrite == ResourceStateFlag(_rtrcReadBase))
-        {
-            return VK_ACCESS_2_TRANSFER_READ_BIT;
-        }
-        assert(readwrite == ResourceStateFlag(_rtrcWriteBase));
-        return VK_ACCESS_2_TRANSFER_WRITE_BIT;
-    case _rtrcPresentBase:
-        return VK_ACCESS_2_NONE;
-    default:
-        Unreachable();
-    }
+    Unreachable();
 }
 
 RTRC_RHI_VK_END

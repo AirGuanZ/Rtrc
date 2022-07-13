@@ -247,71 +247,65 @@ enum class AddressMode
     Border
 };
 
-constexpr uint32_t _rtrcUninitializedBase         = 1 << 0;
-constexpr uint32_t _rtrcRenderTargetBase          = 1 << 1;
-constexpr uint32_t _rtrcDepthBase                 = 1 << 2;
-constexpr uint32_t _rtrcStencilBase               = 1 << 3;
-constexpr uint32_t _rtrcConstantBufferBase        = 1 << 4;
-constexpr uint32_t _rtrcTextureBase               = 1 << 5;
-constexpr uint32_t _rtrcRWTextureBase             = 1 << 6;
-constexpr uint32_t _rtrcBufferBase                = 1 << 7;
-constexpr uint32_t _rtrcRWBufferBase              = 1 << 8;
-constexpr uint32_t _rtrcStructuredBufferBase      = 1 << 9;
-constexpr uint32_t _rtrcRWStructuredBufferBase    = 1 << 10;
-constexpr uint32_t _rtrcCopyBase                  = 1 << 11;
-constexpr uint32_t _rtrcResolveBase               = 1 << 12;
-constexpr uint32_t _rtrcPresentBase               = 1 << 13;
-constexpr uint32_t _rtrcDepthReadStencilWriteBase = 1 << 14;
-constexpr uint32_t _rtrcDepthWriteStencilReadBase = 1 << 15;
-constexpr uint32_t _rtrcVSBase                    = 1u << 20;
-constexpr uint32_t _rtrcFSBase                    = 1u << 21;
-constexpr uint32_t _rtrcCSBase                    = 1u << 22;
-constexpr uint32_t _rtrcReadBase                  = 1u << 30;
-constexpr uint32_t _rtrcWriteBase                 = 1u << 31;
-
-enum class ResourceState : uint32_t
+enum class TextureLayout
 {
-    Uninitialized               = _rtrcUninitializedBase,
-    RenderTargetReadWrite       = _rtrcRenderTargetBase | _rtrcReadBase | _rtrcWriteBase,
-    RenderTargetWrite           = _rtrcRenderTargetBase | _rtrcWriteBase,
-    DepthStencilReadWrite       = _rtrcDepthBase | _rtrcStencilBase | _rtrcReadBase | _rtrcWriteBase,
-    DepthStencilReadOnly        = _rtrcDepthBase | _rtrcStencilBase | _rtrcReadBase,
-    DepthStencilWriteOnly       = _rtrcDepthBase | _rtrcStencilBase | _rtrcWriteBase,
-    DepthReadWrite              = _rtrcDepthBase | _rtrcReadBase | _rtrcWriteBase,
-    DepthRead                   = _rtrcDepthBase | _rtrcReadBase,
-    DepthWrite                  = _rtrcDepthBase | _rtrcWriteBase,
-    StencilReadWrite            = _rtrcStencilBase | _rtrcReadBase | _rtrcWriteBase,
-    StencilRead                 = _rtrcStencilBase | _rtrcReadBase,
-    StencilWrite                = _rtrcStencilBase | _rtrcWriteBase,
-    DepthReadStencilWrite       = _rtrcDepthReadStencilWriteBase | _rtrcReadBase | _rtrcWriteBase,
-    DepthWriteStencilRead       = _rtrcDepthWriteStencilReadBase | _rtrcReadBase | _rtrcWriteBase,
-    ConstantBufferRead          = _rtrcConstantBufferBase | _rtrcReadBase,                       // must be used together with stage mask
-    TextureRead                 = _rtrcTextureBase | _rtrcReadBase,                              // must be used together with stage mask
-    RWTextureRead               = _rtrcRWTextureBase | _rtrcReadBase,                            // must be used together with stage mask
-    RWTextureWrite              = _rtrcRWTextureBase | _rtrcWriteBase,                           // must be used together with stage mask
-    RWTextureReadWrite          = _rtrcRWTextureBase | _rtrcReadBase | _rtrcWriteBase,           // must be used together with stage mask
-    BufferRead                  = _rtrcBufferBase | _rtrcReadBase,                               // must be used together with stage mask
-    RWBufferRead                = _rtrcRWBufferBase | _rtrcReadBase,                             // must be used together with stage mask
-    RWBufferWrite               = _rtrcRWBufferBase | _rtrcWriteBase,                            // must be used together with stage mask
-    RWBufferReadWrite           = _rtrcRWBufferBase | _rtrcReadBase | _rtrcWriteBase,            // must be used together with stage mask
-    StructuredBufferRead        = _rtrcStructuredBufferBase | _rtrcReadBase,                     // must be used together with stage mask
-    RWStructuredBufferRead      = _rtrcRWStructuredBufferBase | _rtrcReadBase,                   // must be used together with stage mask
-    RWStructuredBufferWrite     = _rtrcRWStructuredBufferBase | _rtrcWriteBase,                  // must be used together with stage mask
-    RWStructuredBufferReadWrite = _rtrcRWStructuredBufferBase | _rtrcReadBase | _rtrcWriteBase,  // must be used together with stage mask
-    CopySrc                     = _rtrcCopyBase | _rtrcReadBase,
-    CopyDst                     = _rtrcCopyBase | _rtrcWriteBase,
-    ResolveSrc                  = _rtrcResolveBase | _rtrcReadBase,
-    ResolveDst                  = _rtrcResolveBase | _rtrcWriteBase,
-    Present                     = _rtrcPresentBase | _rtrcReadBase,
-
-    VS = _rtrcVSBase,
-    FS = _rtrcFSBase,
-    CS = _rtrcCSBase
+    Undefined,
+    RenderTarget,
+    DepthStencil,
+    DepthStencilReadOnly,
+    ShaderTexture,
+    ShaderRWTexture,
+    CopySrc,
+    CopyDst,
+    ResolveSrc,
+    ResolveDst,
+    Present
 };
 
-RTRC_DEFINE_ENUM_FLAGS(ResourceState)
+enum class PipelineStage : uint32_t
+{
+    None           = 0,
+    InputAssembler = 1 << 0,
+    VertexShader   = 1 << 1,
+    FragmentShader = 1 << 2,
+    ComputeShader  = 1 << 3,
+    DepthStencil   = 1 << 4,
+    RenderTarget   = 1 << 5,
+    Copy           = 1 << 6,
+    Resolve        = 1 << 7
+};
 
-using ResourceStateFlag = EnumFlags<ResourceState>;
+RTRC_DEFINE_ENUM_FLAGS(PipelineStage)
+
+using PipelineStageFlag = EnumFlags<PipelineStage>;
+
+enum class ResourceAccess : uint32_t
+{
+    None                    = 0,
+    VertexBufferRead        = 1 << 0,
+    IndexBufferRead         = 1 << 1,
+    ConstantBufferRead      = 1 << 2,
+    RenderTargetRead        = 1 << 3,
+    RenderTargetWrite       = 1 << 4,
+    DepthStencilRead        = 1 << 5,
+    DepthStencilWrite       = 1 << 6,
+    TextureRead             = 1 << 7,
+    RWTextureRead           = 1 << 8,
+    RWTextureWrite          = 1 << 9,
+    BufferRead              = 1 << 10,
+    RWBufferRead            = 1 << 11,
+    RWBufferWrite           = 1 << 12,
+    RWStructuredBufferRead  = 1 << 13,
+    RWStructuredBufferWrite = 1 << 14,
+    CopyRead                = 1 << 15,
+    CopyWrite               = 1 << 16,
+    ResolveRead             = 1 << 17,
+    ResolveWrite            = 1 << 18,
+};
+
+RTRC_DEFINE_ENUM_FLAGS(ResourceAccess)
+
+using ResourceAccessFlag = EnumFlags<ResourceAccess>;
 
 enum class AspectType : uint8_t
 {
@@ -323,30 +317,6 @@ enum class AspectType : uint8_t
 RTRC_DEFINE_ENUM_FLAGS(AspectType)
 
 using AspectTypeFlag = EnumFlags<AspectType>;
-
-enum class PipelineStage : uint32_t
-{
-    All                   = 1 << 0,
-    None                  = 1 << 1,
-    DrawIndirect          = 1 << 2,
-    VertexInput           = 1 << 3,
-    IndexInput            = 1 << 4,
-    VertexShader          = 1 << 5,
-    FragmentShader        = 1 << 6,
-    EarlyFragmentTests    = 1 << 7,
-    LateFragmentTests     = 1 << 8,
-    ColorAttachmentOutput = 1 << 9,
-    ComputeShader         = 1 << 10,
-    Copy                  = 1 << 11,
-    Resolve               = 1 << 12,
-    Blit                  = 1 << 13,
-    Clear                 = 1 << 14,
-    Host                  = 1 << 15,
-};
-
-RTRC_DEFINE_ENUM_FLAGS(PipelineStage)
-
-using PipelineStageFlag = EnumFlags<PipelineStage>;
 
 enum class AttachmentLoadOp
 {
@@ -436,7 +406,7 @@ struct Texture2DDesc
     uint32_t                  arraySize;
     uint32_t                  sampleCount;
     TextureUsageFlag          usage;
-    ResourceState             initialState;
+    TextureLayout             initialLayout;
     QueueConcurrentAccessMode concurrentAccessMode;
 };
 
@@ -506,47 +476,87 @@ struct SamplerDesc
     std::array<float, 4> borderColor;
 };
 
+struct TextureSubresourceRange
+{
+    uint32_t       mipLevel;
+    uint32_t       levelCount;
+    uint32_t       arrayLayer;
+    uint32_t       layerCount;
+    AspectTypeFlag aspects;
+};
+
 struct TextureTransitionBarrier
 {
-    Texture          *texture;
-    AspectTypeFlag    aspectTypeFlag;
-    uint32_t          mipLevel;
-    uint32_t          arrayLayer;
-    ResourceStateFlag beforeState;
-    ResourceStateFlag afterState;
+    Texture                *texture;
+    AspectTypeFlag          aspectTypeFlag;
+    uint32_t                mipLevel;
+    uint32_t                arrayLayer;
+    PipelineStageFlag       beforeStages;
+    ResourceAccessFlag      beforeAccesses;
+    TextureLayout           beforeLayout;
+    PipelineStageFlag       afterStages;
+    ResourceAccessFlag      afterAccesses;
+    TextureLayout           afterLayout;
+    TextureSubresourceRange range;
 };
 
+// for non-sharing resource, every cross-queue sync needs a release/acquire pair
 struct TextureReleaseBarrier
 {
-    Texture          *texture;
-    AspectTypeFlag    aspectTypeFlag;
-    uint32_t          mipLevel;
-    uint32_t          arrayLayer;
-    ResourceStateFlag beforeState;
-    ResourceStateFlag afterState;
-    Queue            *beforeQueue;
-    Queue            *afterQueue;
+    Texture                *texture;
+    AspectTypeFlag          aspectTypeFlag;
+    uint32_t                mipLevel;
+    uint32_t                arrayLayer;
+    PipelineStageFlag       beforeStages;
+    ResourceAccessFlag      beforeAccesses;
+    TextureLayout           beforeLayout;
+    TextureLayout           afterLayout;
+    Queue                  *beforeQueue;
+    Queue                  *afterQueue;
+    TextureSubresourceRange range;
 };
 
-using TextureAcquireBarrier = TextureReleaseBarrier;
+struct TextureAcquireBarrier
+{
+    Texture                *texture;
+    AspectTypeFlag          aspectTypeFlag;
+    uint32_t                mipLevel;
+    uint32_t                arrayLayer;
+    TextureLayout           beforeLayout;
+    PipelineStageFlag       afterStages;
+    ResourceAccessFlag      afterAccesses;
+    TextureLayout           afterLayout;
+    Queue                  *beforeQueue;
+    Queue                  *afterQueue;
+    TextureSubresourceRange range;
+};
 
 struct BufferTransitionBarrier
 {
-    Buffer           *buffer;
-    ResourceStateFlag beforeState;
-    ResourceStateFlag afterState;
+    Buffer            *buffer;
+    PipelineStageFlag  beforeStages;
+    PipelineStageFlag  afterStages;
+    ResourceAccessFlag beforeAccesses;
+    ResourceAccessFlag afterAccesses;
 };
 
 struct BufferReleaseBarrier
 {
-    Buffer           *buffer;
-    ResourceStateFlag beforeState;
-    ResourceStateFlag afterState;
-    Queue            *beforeQueue;
-    Queue            *afterQueue;
+    Buffer            *buffer;
+    PipelineStageFlag  beforeStages;
+    ResourceAccessFlag beforeAccesses;
+    Queue             *beforeQueue;
+    Queue             *afterQueue;
 };
 
-using BufferAcquireBarrier = BufferReleaseBarrier;
+struct BufferAcquireBarrier
+{
+    Buffer            *buffer;
+    PipelineStageFlag  afterStages;
+    ResourceAccessFlag afterAccesses;
+    Queue             *beforeQueue;
+    Queue             *afterQueue;
+};
 
 struct ColorClearValue
 {

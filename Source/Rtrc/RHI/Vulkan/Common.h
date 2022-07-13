@@ -59,12 +59,9 @@ VmaAllocationCreateFlags TranslateBufferHostAccessType  (BufferHostAccessType ty
 VkFilter                 TranslateSamplerFilterMode     (FilterMode mode);
 VkSamplerMipmapMode      TranslateSamplerMipmapMode     (FilterMode mode);
 VkSamplerAddressMode     TranslateSamplerAddressMode    (AddressMode mode);
-
-bool IsResourceStateValid(ResourceStateFlag state);
-
-VkPipelineStageFlags2 ExtractPipelineStageFlag(ResourceStateFlag state);
-VkImageLayout         ExtractImageLayout      (ResourceStateFlag state);
-VkAccessFlags2        ExtractAccessFlag       (ResourceStateFlag state);
+VkPipelineStageFlags2    TranslatePipelineStageFlag     (PipelineStageFlag flag);
+VkAccessFlags2           TranslateAccessFlag            (ResourceAccessFlag flag);
+VkImageLayout            TranslateImageLayout           (TextureLayout layout);
 
 struct VulkanMemoryAllocation
 {

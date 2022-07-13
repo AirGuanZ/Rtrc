@@ -132,7 +132,7 @@ void Run()
 
     uploadBufferAcquireBarriers.push_back(uploader.Upload(
         vertexPositionBuffer, 0, sizeof(vertexPositionData), vertexPositionData.data(),
-        graphicsQueue, RHI::ResourceState::BufferRead | RHI::ResourceState::VS));
+        graphicsQueue, RHI::PipelineStage::VertexShader, RHI::ResourceAccess::BufferRead));
 
     // vertex texcoord buffer
 
@@ -160,7 +160,7 @@ void Run()
 
     uploadBufferAcquireBarriers.push_back(uploader.Upload(
         vertexTexCoordBuffer, 0, sizeof(vertexTexCoordData), vertexTexCoordData.data(),
-        graphicsQueue, RHI::ResourceState::BufferRead | RHI::ResourceState::VS));
+        graphicsQueue, RHI::PipelineStage::VertexShader, RHI::ResourceAccess::BufferRead));
 
     // main texture
 
@@ -174,7 +174,7 @@ void Run()
         .arraySize            = 1,
         .sampleCount          = 1,
         .usage                = RHI::TextureUsage::ShaderResource | RHI::TextureUsage::TransferDst,
-        .initialState         = RHI::ResourceState::Uninitialized,
+        .initialLayout        = RHI::TextureLayout::Undefined,
         .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
     });
 
@@ -188,7 +188,10 @@ void Run()
 
     uploadTextureAcquireBarriers.push_back(uploader.Upload(
         mainTex, RHI::AspectType::Color, 0, 0, mainTexData,
-        graphicsQueue, RHI::ResourceState::TextureRead | RHI::ResourceState::FS));
+        graphicsQueue,
+        RHI::PipelineStage::FragmentShader,
+        RHI::ResourceAccess::TextureRead,
+        RHI::TextureLayout::ShaderTexture));
 
     // main sampler
 
@@ -257,8 +260,10 @@ void Run()
             .aspectTypeFlag = RHI::AspectType::Color,
             .mipLevel       = 0,
             .arrayLayer     = 0,
-            .beforeState    = RHI::ResourceState::Present,
-            .afterState     = RHI::ResourceState::RenderTargetWrite
+            .beforeLayout   = RHI::TextureLayout::Present,
+            .afterStages    = RHI::PipelineStage::RenderTarget,
+            .afterAccesses  = RHI::ResourceAccess::RenderTargetWrite,
+            .afterLayout    = RHI::TextureLayout::RenderTarget
         }, {}, {}, uploadTextureAcquireBarriers, {}, uploadBufferAcquireBarriers);
 
         uploadTextureAcquireBarriers.clear();
@@ -300,18 +305,20 @@ void Run()
             .aspectTypeFlag = RHI::AspectType::Color,
             .mipLevel       = 0,
             .arrayLayer     = 0,
-            .beforeState    = RHI::ResourceState::RenderTargetWrite,
-            .afterState     = RHI::ResourceState::Present
+            .beforeStages   = RHI::PipelineStage::RenderTarget,
+            .beforeAccesses = RHI::ResourceAccess::RenderTargetWrite,
+            .beforeLayout   = RHI::TextureLayout::RenderTarget,
+            .afterLayout    = RHI::TextureLayout::Present
         }, {}, {}, {}, {}, {});
 
         commandBuffer->End();
 
         graphicsQueue->Submit(
             swapchain->GetAcquireSemaphore(),
-            RHI::PipelineStage::ColorAttachmentOutput,
+            RHI::PipelineStage::RenderTarget,
             commandBuffer,
             swapchain->GetPresentSemaphore(),
-            RHI::PipelineStage::ColorAttachmentOutput,
+            RHI::PipelineStage::RenderTarget,
             fences[frameIndex]);
 
         swapchain->Present();

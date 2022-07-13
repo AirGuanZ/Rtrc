@@ -14,22 +14,25 @@ public:
     ~ResourceUploader();
 
     BufferAcquireBarrier Upload(
-        Buffer           *buffer,
-        size_t            offset,
-        size_t            range,
-        const void       *data,
-        Queue            *afterQueue,
-        ResourceStateFlag afterState);
+        Buffer            *buffer,
+        size_t             offset,
+        size_t             range,
+        const void        *data,
+        Queue             *afterQueue,
+        PipelineStageFlag  afterStages,
+        ResourceAccessFlag afterAccesses);
 
     // use width * texelBytes if rowBytes is 0
     TextureAcquireBarrier Upload(
-        Texture          *texture,
-        AspectTypeFlag    aspect,
-        uint32_t          mipLevel,
-        uint32_t          arrayLayer,
-        const void       *data,
-        Queue            *afterQueue,
-        ResourceStateFlag afterState);
+        Texture           *texture,
+        AspectTypeFlag     aspect,
+        uint32_t           mipLevel,
+        uint32_t           arrayLayer,
+        const void        *data,
+        Queue             *afterQueue,
+        PipelineStageFlag  afterStages,
+        ResourceAccessFlag afterAccesses,
+        TextureLayout      afterLayout);
 
     TextureAcquireBarrier Upload(
         Texture            *texture,
@@ -38,7 +41,9 @@ public:
         uint32_t            arrayLayer,
         const ImageDynamic &image,
         Queue              *afterQueue,
-        ResourceStateFlag   afterState);
+        PipelineStageFlag   afterStages,
+        ResourceAccessFlag  afterAccesses,
+        TextureLayout       afterLayout);
 
     void SubmitAndSync();
 

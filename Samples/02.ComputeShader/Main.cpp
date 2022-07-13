@@ -61,7 +61,7 @@ void Run()
         .arraySize    = 1,
         .sampleCount  = 1,
         .usage        = RHI::TextureUsage::TransferDst | RHI::TextureUsage::ShaderResource,
-        .initialState = RHI::ResourceState::Uninitialized,
+        .initialLayout = RHI::TextureLayout::Undefined,
         .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
     });
 
@@ -82,7 +82,9 @@ void Run()
         inputTexture,  RHI::AspectType::Color, 0, 0,
         inputImageData,
         computeQueue,
-        RHI::ResourceState::TextureRead | RHI::ResourceState::CS));
+        RHI::PipelineStage::ComputeShader,
+        RHI::ResourceAccess::TextureRead,
+        RHI::TextureLayout::ShaderTexture));
 
     uploader.SubmitAndSync();
 
@@ -96,7 +98,7 @@ void Run()
         .arraySize            = 1,
         .sampleCount          = 1,
         .usage                = RHI::TextureUsage::TransferSrc | RHI::TextureUsage::UnorderAccess,
-        .initialState         = RHI::ResourceState::Uninitialized,
+        .initialLayout        = RHI::TextureLayout::Undefined,
         .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
     });
 
@@ -155,8 +157,12 @@ void Run()
         .aspectTypeFlag = RHI::AspectType::Color,
         .mipLevel       = 0,
         .arrayLayer     = 0,
-        .beforeState    = RHI::ResourceState::Uninitialized,
-        .afterState     = RHI::ResourceState::RWTextureWrite | RHI::ResourceState::CS
+        .beforeStages   = RHI::PipelineStage::None,
+        .beforeAccesses = RHI::ResourceAccess::None,
+        .beforeLayout   = RHI::TextureLayout::Undefined,
+        .afterStages    = RHI::PipelineStage::ComputeShader,
+        .afterAccesses  = RHI::ResourceAccess::RWTextureWrite,
+        .afterLayout    = RHI::TextureLayout::ShaderRWTexture
     };
 
     commandBuffer->ExecuteBarriers(
@@ -178,8 +184,12 @@ void Run()
             .aspectTypeFlag = RHI::AspectType::Color,
             .mipLevel       = 0,
             .arrayLayer     = 0,
-            .beforeState    = RHI::ResourceState::RWTextureWrite | RHI::ResourceState::CS,
-            .afterState     = RHI::ResourceState::CopySrc
+            .beforeStages   = RHI::PipelineStage::ComputeShader,
+            .beforeAccesses = RHI::ResourceAccess::RWTextureWrite,
+            .beforeLayout   = RHI::TextureLayout::ShaderRWTexture,
+            .afterStages    = RHI::PipelineStage::Copy,
+            .afterAccesses  = RHI::ResourceAccess::CopyRead,
+            .afterLayout    = RHI::TextureLayout::CopySrc
         }, {}, {}, {}, {}, {});
 
     commandBuffer->CopyTextureToBuffer(readBackStagingBuffer, 0, outputTexture, RHI::AspectType::Color, 0, 0);
