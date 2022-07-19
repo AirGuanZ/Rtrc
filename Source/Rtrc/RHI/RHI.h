@@ -19,34 +19,6 @@ RTRC_END
 
 RTRC_RHI_BEGIN
 
-class Instance;
-class Device;
-class BackBufferSemaphore;
-class Swapchain;
-class Queue;
-class Fence;
-class CommandPool;
-class CommandBuffer;
-class Semaphore;
-class RawShader;
-class BindingGroupLayout;
-class BindingGroup;
-class BindingLayout;
-class GraphicsPipeline;
-class GraphicsPipelineBuilder;
-class ComputePipeline;
-class ComputePipelineBuilder;
-class Texture;
-class Texture2DRTV;
-class Texture2DSRV;
-class Texture2DUAV;
-class Buffer;
-class BufferSRV;
-class BufferUAV;
-class Sampler;
-class MemoryPropertyRequirements;
-class MemoryBlock;
-
 template<typename T>
 using Ptr = ReferenceCountedPtr<T>;
 
@@ -56,6 +28,37 @@ Ptr<T> MakePtr(Args&&...args)
     T *object = new T(std::forward<Args>(args)...);
     return Ptr<T>(object);
 }
+
+#define RTRC_RHI_FORWARD_DECL(CLASS) class CLASS; using CLASS##Ptr = Ptr<CLASS>;
+
+RTRC_RHI_FORWARD_DECL(Instance)
+RTRC_RHI_FORWARD_DECL(Device)
+RTRC_RHI_FORWARD_DECL(BackBufferSemaphore)
+RTRC_RHI_FORWARD_DECL(Swapchain)
+RTRC_RHI_FORWARD_DECL(Queue)
+RTRC_RHI_FORWARD_DECL(Fence)
+RTRC_RHI_FORWARD_DECL(CommandPool)
+RTRC_RHI_FORWARD_DECL(CommandBuffer)
+RTRC_RHI_FORWARD_DECL(RawShader)
+RTRC_RHI_FORWARD_DECL(BindingGroupLayout)
+RTRC_RHI_FORWARD_DECL(BindingGroup)
+RTRC_RHI_FORWARD_DECL(BindingLayout)
+RTRC_RHI_FORWARD_DECL(GraphicsPipeline)
+RTRC_RHI_FORWARD_DECL(GraphicsPipelineBuilder)
+RTRC_RHI_FORWARD_DECL(ComputePipeline)
+RTRC_RHI_FORWARD_DECL(ComputePipelineBuilder)
+RTRC_RHI_FORWARD_DECL(Texture)
+RTRC_RHI_FORWARD_DECL(Texture2DRTV)
+RTRC_RHI_FORWARD_DECL(Texture2DSRV)
+RTRC_RHI_FORWARD_DECL(Texture2DUAV)
+RTRC_RHI_FORWARD_DECL(Buffer)
+RTRC_RHI_FORWARD_DECL(BufferSRV)
+RTRC_RHI_FORWARD_DECL(BufferUAV)
+RTRC_RHI_FORWARD_DECL(Sampler)
+RTRC_RHI_FORWARD_DECL(MemoryPropertyRequirements)
+RTRC_RHI_FORWARD_DECL(MemoryBlock)
+
+#undef RTRC_RHI_FORWARD_DECL
 
 // =============================== rhi enums ===============================
 

@@ -24,7 +24,7 @@ public:
     enum class Target
     {
         Vulkan_1_3_VS_6_0,
-        Vulkan_1_3_PS_6_0,
+        Vulkan_1_3_FS_6_0,
         Vulkan_1_3_CS_6_0
     };
 

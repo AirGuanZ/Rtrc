@@ -27,6 +27,16 @@ void Run()
         .supportSwapchain = false
     });
 
+    // TODO: temp test
+    ShaderManager shaderManager;
+    shaderManager.SetFileLoader("Asset/02.ComputeShader/");
+    shaderManager.AddShader({
+        .VS = {
+            .filename = "TestParser.hlsl",
+            .entry = "DaDaDa"
+        }
+    });
+
     // create pipeline
 
     std::string preprocessed;

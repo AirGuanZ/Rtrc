@@ -7,7 +7,7 @@
 
 RTRC_BEGIN
 
-class Shader : public Uncopyable
+class ShaderCompileResult : public Uncopyable
 {
 public:
 
@@ -77,6 +77,7 @@ protected:
     std::filesystem::path rootDir_;
 };
 
+// TODO: replace this with ShaderManager
 class ShaderCompiler : public Uncopyable
 {
 public:
@@ -105,7 +106,7 @@ public:
 
     ShaderCompiler &DumpPreprocessedSource(RHI::ShaderStage stage, std::string *output);
 
-    RC<Shader> Compile();
+    RC<ShaderCompileResult> Compile();
 
 private:
 

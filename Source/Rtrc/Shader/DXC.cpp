@@ -7,7 +7,6 @@
 
 #include <Windows.h>
 #include <dxc/dxcapi.h>
-
 #include <fmt/format.h>
 #include <wrl/client.h>
 
@@ -151,7 +150,7 @@ std::vector<unsigned char> DXC::Compile(
     switch(target)
     {
     case Target::Vulkan_1_3_VS_6_0: targetProfile = L"vs_6_0"; break;
-    case Target::Vulkan_1_3_PS_6_0: targetProfile = L"ps_6_0"; break;
+    case Target::Vulkan_1_3_FS_6_0: targetProfile = L"ps_6_0"; break;
     case Target::Vulkan_1_3_CS_6_0: targetProfile = L"cs_6_0"; break;
     }
 

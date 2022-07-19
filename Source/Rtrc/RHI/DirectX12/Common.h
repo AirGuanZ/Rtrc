@@ -6,6 +6,10 @@
 
 #include <Rtrc/RHI/RHI.h>
 
+/*
+ * IMPORTANT: waiting for driver implementation of 'Enhanced Barriers'
+ */
+
 #define RTRC_RHI_DIRECTX12_BEGIN RTRC_RHI_BEGIN namespace DirectX12 {
 #define RTRC_RHI_DIRECTX12_END } RTRC_RHI_END
 

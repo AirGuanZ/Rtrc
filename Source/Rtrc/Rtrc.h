@@ -10,6 +10,7 @@
 
 #include <Rtrc/Shader/Binding.h>
 #include <Rtrc/Shader/ShaderCompiler.h>
+#include <Rtrc/Shader/ShaderManager.h>
 
 #include <Rtrc/Utils/File.h>
 #include <Rtrc/Utils/Malloc.h>

@@ -33,22 +33,22 @@ namespace
 
 } // namespace anonymous
 
-RHI::Ptr<RHI::RawShader> Shader::GetRawVertexShader() const
+RHI::Ptr<RHI::RawShader> ShaderCompileResult::GetRawVertexShader() const
 {
     return vertexShader_;
 }
 
-RHI::Ptr<RHI::RawShader> Shader::GetRawFragmentShader() const
+RHI::Ptr<RHI::RawShader> ShaderCompileResult::GetRawFragmentShader() const
 {
     return fragmentShader_;
 }
 
-RHI::Ptr<RHI::RawShader> Shader::GetRawComputeShader() const
+RHI::Ptr<RHI::RawShader> ShaderCompileResult::GetRawComputeShader() const
 {
     return computeShader_;
 }
 
-std::span<const BindingGroupLayoutInfo*const> Shader::GetBindingGroups() const
+std::span<const BindingGroupLayoutInfo*const> ShaderCompileResult::GetBindingGroups() const
 {
     return std::span(bindingGroups_.data(), bindingGroups_.size());
 }
@@ -135,7 +135,7 @@ ShaderCompiler& ShaderCompiler::DumpPreprocessedSource(RHI::ShaderStage stage, s
     return *this;
 }
 
-RC<Shader> ShaderCompiler::Compile()
+RC<ShaderCompileResult> ShaderCompiler::Compile()
 {
     if(!fileLoader_)
     {
@@ -146,7 +146,7 @@ RC<Shader> ShaderCompiler::Compile()
     std::set<std::string> structNames;
     GenerateResourceDefinitions(resourceDefinitions, structNames);
 
-    auto shader = MakeRC<Shader>();
+    auto shader = MakeRC<ShaderCompileResult>();
     if(!vsSource_.filename.empty())
     {
         shader->vertexShader_ = InternalCompileShader(
@@ -211,7 +211,7 @@ RHI::Ptr<RHI::RawShader> ShaderCompiler::InternalCompileShader(
     switch(shaderType)
     {
     case RHI::ShaderStage::VertexShader:   target = DXC::Target::Vulkan_1_3_VS_6_0; break;
-    case RHI::ShaderStage::FragmentShader: target = DXC::Target::Vulkan_1_3_PS_6_0; break;
+    case RHI::ShaderStage::FragmentShader: target = DXC::Target::Vulkan_1_3_FS_6_0; break;
     case RHI::ShaderStage::ComputeShader:  target = DXC::Target::Vulkan_1_3_CS_6_0; break;
     }
 
