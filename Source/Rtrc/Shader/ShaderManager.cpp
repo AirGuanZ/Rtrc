@@ -337,32 +337,53 @@ RHI::RawShaderPtr ShaderManager::CompileShader(
 
     // parse binding groups
 
-    ShaderBindingParser parser(preprocessedSource);
-    std::vector<ShaderBindingParser::ParsedBindingGroup> parsedBindingGroups;
-    while(true)
+    std::vector<ShaderBindingGroupRewriter::ParsedBindingGroup> parsedBindingGroups;
     {
-        ShaderBindingParser::ParsedBindingGroup group;
-        if(parser.ProcessNextBindingGroup(group))
+        ShaderBindingGroupRewriter bindingGroupParser(preprocessedSource);
+        while(true)
         {
-            printf("parsed group: %s\n", group.name.c_str());
-            for(auto &aliasedNames : group.bindings)
+            ShaderBindingGroupRewriter::ParsedBindingGroup group;
+            if(bindingGroupParser.RewriteNextBindingGroup(group))
             {
-                for(auto &n : aliasedNames)
+                printf("parsed group: %s\n    ", group.name.c_str());
+                for(auto &aliasedNames : group.bindings)
                 {
-                    printf("%s ", n.c_str());
+                    for(auto &n : aliasedNames)
+                    {
+                        printf("%s ", n.c_str());
+                    }
                 }
                 printf("\n");
+                parsedBindingGroups.push_back(std::move(group));
             }
-            parsedBindingGroups.push_back(std::move(group));
+            else
+            {
+                break;
+            }
         }
-        else
+        preprocessedSource = bindingGroupParser.GetFinalSource();
+    }
+
+    // parse bindings
+
+    std::vector<ShaderBindingParser::ParsedBinding> parsedBindings;
+    {
+        ShaderBindingParser bindingParser(preprocessedSource);
+        printf("parsed bindings:\n");
+        while(true)
         {
-            break;
+            ShaderBindingParser::ParsedBinding binding;
+            if(bindingParser.FindNextBinding(binding))
+            {
+                parsedBindings.push_back(binding);
+                printf("    %s\n", binding.name.c_str());
+            }
+            else
+            {
+                break;
+            }
         }
     }
-    preprocessedSource = parser.GetFinalSource();
-
-    //printf("%s\n", preprocessedSource.c_str());
 
     // TODO
     return {};

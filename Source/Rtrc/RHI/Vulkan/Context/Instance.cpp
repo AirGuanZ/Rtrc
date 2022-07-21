@@ -42,7 +42,7 @@ Ptr<Instance> CreateVulkanInstance(const VulkanInstanceDesc &desc)
     auto buildInstanceResult = instanceBuilder.build();
     if(!buildInstanceResult)
     {
-        throw Exception("failed to create vulkan instance");
+        throw Exception("failed to create vulkan instance: " + buildInstanceResult.error().message());
     }
 
     auto instance = buildInstanceResult.value();
