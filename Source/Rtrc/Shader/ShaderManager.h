@@ -97,6 +97,7 @@ public:
     ~Shader();
 
     const RHI::RawShaderPtr &GetRawShader(RHI::ShaderStage stage) const;
+    const RHI::BindingLayoutPtr &GetRHIBindingLayout() const;
 
     const RC<BindingGroupLayout> GetBindingGroupLayoutByName(std::string_view name) const;
     const RC<BindingGroupLayout> GetBindingGroupLayoutByIndex(int index) const;
@@ -110,14 +111,21 @@ private:
     struct BindingGroupLayoutRecord
     {
         RC<BindingGroupLayout> layout;
-        std::atomic<int> shaderCounter;
+        int shaderCounter = 0; // a record is kept in parentManager_ until there is no shader referencing it
 
         BindingGroupLayoutRecord() = default;
         BindingGroupLayoutRecord(const BindingGroupLayoutRecord &other);
         BindingGroupLayoutRecord &operator=(const BindingGroupLayoutRecord &other);
     };
 
+    struct BindingLayoutRecord
+    {
+        RHI::BindingLayoutPtr layout;
+        int shaderCounter = 0;
+    };
+
     using BindingGroupLayoutRecordIt = std::map<RHI::BindingGroupLayoutDesc, BindingGroupLayoutRecord>::iterator;
+    using BindingLayoutRecordIt = std::map<RHI::BindingLayoutDesc, BindingLayoutRecord>::iterator;
 
     ShaderManager *parentManager_ = nullptr;
 
@@ -128,6 +136,7 @@ private:
     std::map<std::string, int, std::less<>> nameToBindingGroupLayoutIndex_;
     std::vector<RC<BindingGroupLayout>>     bindingGroupLayouts_;
     std::vector<BindingGroupLayoutRecordIt> bindingGroupLayoutIterators_;
+    BindingLayoutRecordIt                   bindingLayoutIterator_;
 };
 
 class ShaderManager : public Uncopyable
@@ -163,7 +172,7 @@ public:
 
     const RC<BindingGroupLayout> &GetBindingGroupLayoutByName(std::string_view name) const;
 
-    void OnShaderDestroyed(std::vector<Shader::BindingGroupLayoutRecordIt> &its);
+    void OnShaderDestroyed(std::vector<Shader::BindingGroupLayoutRecordIt> &its, Shader::BindingLayoutRecordIt itt);
 
 private:
 
@@ -187,6 +196,8 @@ private:
     std::map<std::string, RC<BindingGroupLayout>, std::less<>> nameToBindingGroupLayout_;
 
     std::map<RHI::BindingGroupLayoutDesc, Shader::BindingGroupLayoutRecord> descToBindingGroupLayout_;
+
+    std::map<RHI::BindingLayoutDesc, Shader::BindingLayoutRecord> descToBindingLayout_;
 };
 
 RTRC_END

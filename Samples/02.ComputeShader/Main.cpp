@@ -20,19 +20,14 @@ void Run()
     ShaderManager shaderManager(device);
     shaderManager.SetFileLoader("Asset/02.ComputeShader/");
     auto shader = shaderManager.AddShader({
-        .CS = {
-            .filename = "Shader.hlsl",
-            .entry = "CSMain"
-        }
+        .CS = { .filename = "Shader.hlsl", .entry = "CSMain" }
     });
 
     // create pipeline
 
     auto bindingGroupLayout = shaderManager.GetBindingGroupLayoutByName("ScaleGroup");
 
-    auto bindingLayout = device->CreateBindingLayout(RHI::BindingLayoutDesc{
-        .groups = { bindingGroupLayout->GetRHIBindingGroupLayout() }
-    });
+    auto bindingLayout = shader->GetRHIBindingLayout();
 
     auto pipeline = (*device->CreateComputePipelineBuilder())
         .SetComputeShader(shader->GetRawShader(RHI::ShaderStage::ComputeShader))

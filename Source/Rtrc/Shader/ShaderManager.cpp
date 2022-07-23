@@ -199,7 +199,7 @@ RHI::BindingGroupLayoutPtr BindingGroupLayout::GetRHIBindingGroupLayout()
 Shader::~Shader()
 {
     assert(parentManager_);
-    parentManager_->OnShaderDestroyed(bindingGroupLayoutIterators_);
+    parentManager_->OnShaderDestroyed(bindingGroupLayoutIterators_, bindingLayoutIterator_);
 }
 
 const RHI::RawShaderPtr &Shader::GetRawShader(RHI::ShaderStage stage) const
@@ -211,6 +211,11 @@ const RHI::RawShaderPtr &Shader::GetRawShader(RHI::ShaderStage stage) const
     case RHI::ShaderStage::ComputeShader:  return CS_;
     }
     Unreachable();
+}
+
+const RHI::BindingLayoutPtr &Shader::GetRHIBindingLayout() const
+{
+    return bindingLayoutIterator_->second.layout;
 }
 
 const RC<BindingGroupLayout> Shader::GetBindingGroupLayoutByName(std::string_view name) const
@@ -235,7 +240,7 @@ int Shader::GetBindingGroupIndexByName(std::string_view name) const
 }
 
 Shader::BindingGroupLayoutRecord::BindingGroupLayoutRecord(const BindingGroupLayoutRecord &other)
-    : layout(other.layout), shaderCounter(other.shaderCounter.load())
+    : layout(other.layout), shaderCounter(other.shaderCounter)
 {
     
 }
@@ -245,7 +250,7 @@ Shader::BindingGroupLayoutRecord &Shader::BindingGroupLayoutRecord::operator=(co
     if(this != &other)
     {
         layout = other.layout;
-        shaderCounter = other.shaderCounter.load();
+        shaderCounter = other.shaderCounter;
     }
     return *this;
 }
@@ -336,8 +341,25 @@ RC<Shader> ShaderManager::AddShader(const ShaderDescription &desc)
     shader->FS_ = FS;
     shader->CS_ = CS;
     shader->nameToBindingGroupLayoutIndex_ = std::move(nameToGroupIndex);
-    shader->bindingGroupLayouts_ = std::move(bindingGroupLayouts);
-    shader->bindingGroupLayoutIterators_ = std::move(bindingGroupLayoutIterators);
+    shader->bindingGroupLayouts_           = std::move(bindingGroupLayouts);
+    shader->bindingGroupLayoutIterators_   = std::move(bindingGroupLayoutIterators);
+
+    RHI::BindingLayoutDesc bindingLayoutDesc;
+    for(auto &g : shader->bindingGroupLayouts_)
+    {
+        bindingLayoutDesc.groups.push_back(g->GetRHIBindingGroupLayout());
+    }
+    if(auto it = descToBindingLayout_.find(bindingLayoutDesc); it != descToBindingLayout_.end())
+    {
+        shader->bindingLayoutIterator_ = it;
+        ++it->second.shaderCounter;
+    }
+    else
+    {
+        auto layout = rhiDevice_->CreateBindingLayout(bindingLayoutDesc);
+        shader->bindingLayoutIterator_ = descToBindingLayout_.insert({ bindingLayoutDesc, { layout, 1 } }).first;
+    }
+
     return shader;
 }
 
@@ -355,7 +377,8 @@ const RC<BindingGroupLayout> &ShaderManager::GetBindingGroupLayoutByName(std::st
     return it->second;
 }
 
-void ShaderManager::OnShaderDestroyed(std::vector<Shader::BindingGroupLayoutRecordIt> &its)
+void ShaderManager::OnShaderDestroyed(
+    std::vector<Shader::BindingGroupLayoutRecordIt> &its, Shader::BindingLayoutRecordIt itt)
 {
     for(auto &it : its)
     {
@@ -370,6 +393,11 @@ void ShaderManager::OnShaderDestroyed(std::vector<Shader::BindingGroupLayoutReco
             }
             descToBindingGroupLayout_.erase(it);
         }
+    }
+
+    if(!--itt->second.shaderCounter)
+    {
+        descToBindingLayout_.erase(itt);
     }
 }
 
@@ -587,6 +615,10 @@ RHI::RawShaderPtr ShaderManager::CompileShader(
                 {
                     nameToBindingGroupLayout_[group.name] = recordIt->second.layout;
                 }
+            }
+            else
+            {
+                ++recordIt->second.shaderCounter;
             }
 
             const int groupIndex = static_cast<int>(bindingGroupLayouts.size());

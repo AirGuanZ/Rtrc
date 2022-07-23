@@ -1,5 +1,4 @@
 #include <iostream>
-#include <mimalloc.h>
 
 #include <Rtrc/Rtrc.h>
 
@@ -78,8 +77,7 @@ void Run()
     std::cout << preprocessedShaderSource << std::endl;
 
     auto bindingGroupLayout = shaderManager.GetBindingGroupLayoutByName("TestGroup");
-    auto bindingLayout = device->CreateBindingLayout(
-        RHI::BindingLayoutDesc{ { bindingGroupLayout->GetRHIBindingGroupLayout() } });
+    auto bindingLayout = shader->GetRHIBindingLayout();
 
     auto pipelineBuilder = device->CreateGraphicsPipelineBuilder();
     auto pipeline = (*pipelineBuilder)
