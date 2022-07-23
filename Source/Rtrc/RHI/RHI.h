@@ -363,20 +363,19 @@ struct BindingDesc
     ShaderStageFlag         shaderStages = ShaderStageFlags::All;
     std::optional<uint32_t> arraySize;
 
-    std::strong_ordering operator<=>(const BindingDesc &other) const
-    {
-        return std::tie(name, type, shaderStages, arraySize) <=>
-               std::tie(other.name, other.type, other.shaderStages, other.arraySize);
-    }
+    auto operator<=>(const BindingDesc &other) const = default;
+    bool operator==(const BindingDesc &) const = default;
 };
 
 using AliasedBindingsDesc = std::vector<BindingDesc>;
 
 struct BindingGroupLayoutDesc
 {
+    std::string name;
     std::vector<AliasedBindingsDesc> bindings;
 
     auto operator<=>(const BindingGroupLayoutDesc &other) const = default;
+    bool operator==(const BindingGroupLayoutDesc &) const = default;
 };
 
 struct BindingLayoutDesc
@@ -384,6 +383,7 @@ struct BindingLayoutDesc
     std::vector<Ptr<BindingGroupLayout>> groups;
 
     auto operator<=>(const BindingLayoutDesc &) const = default;
+    bool operator==(const BindingLayoutDesc &) const = default;
 };
 
 struct Viewport

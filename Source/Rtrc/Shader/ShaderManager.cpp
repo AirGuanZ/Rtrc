@@ -6,6 +6,7 @@
 #include <Rtrc/Shader/DXC.h>
 #include <Rtrc/Shader/ShaderBindingParser.h>
 #include <Rtrc/Shader/ShaderManager.h>
+#include <Rtrc/Utils/Enumerate.h>
 #include <Rtrc/Utils/File.h>
 #include <Rtrc/Utils/Unreachable.h>
 
@@ -163,6 +164,12 @@ RC<BindingGroup> BindingGroupLayout::AllocateBindingGroup() const
     return MakeRC<BindingGroup>(this, std::move(rhiGroup));
 }
 
+Shader::~Shader()
+{
+    assert(parentManager_);
+    parentManager_->OnShaderDestroyed(bindingGroupLayoutIterators_);
+}
+
 const RHI::RawShaderPtr &Shader::GetRawShader(RHI::ShaderStage stage) const
 {
     switch(stage)
@@ -195,10 +202,32 @@ int Shader::GetBindingGroupIndexByName(std::string_view name) const
     return it->second;
 }
 
-ShaderManager::ShaderManager()
-    : debug_(RTRC_DEBUG)
+Shader::BindingGroupLayoutRecord::BindingGroupLayoutRecord(const BindingGroupLayoutRecord &other)
+    : layout(other.layout), shaderCounter(other.shaderCounter.load())
 {
     
+}
+
+Shader::BindingGroupLayoutRecord &Shader::BindingGroupLayoutRecord::operator=(const BindingGroupLayoutRecord &other)
+{
+    if(this != &other)
+    {
+        layout = other.layout;
+        shaderCounter = other.shaderCounter.load();
+    }
+    return *this;
+}
+
+ShaderManager::ShaderManager(RHI::DevicePtr device)
+    : rhiDevice_(std::move(device)), debug_(RTRC_DEBUG)
+{
+    
+}
+
+void ShaderManager::SetDevice(RHI::DevicePtr device)
+{
+    assert(!rhiDevice_);
+    rhiDevice_ = std::move(device);
 }
 
 void ShaderManager::SetDebugMode(bool enableDebug)
@@ -245,35 +274,38 @@ RC<Shader> ShaderManager::AddShader(const ShaderDescription &desc)
         debug = desc.overrideDebugMode.value();
     }
 
-    std::map<std::string, int, std::less<>> nameToGroupIndex;
-    std::vector<RC<BindingGroupLayout>> bindingGroupLayouts;
+    std::map<std::string, int, std::less<>>         nameToGroupIndex;
+    std::vector<RC<BindingGroupLayout>>             bindingGroupLayouts;
+    std::vector<Shader::BindingGroupLayoutRecordIt> bindingGroupLayoutIterators;
 
     RHI::RawShaderPtr VS, FS, CS;
     if(!desc.VS.filename.empty() || !desc.VS.source.empty())
     {
         VS = CompileShader(
             debug, fileLoader, macros, desc.VS, RHI::ShaderStage::VertexShader,
-            nameToGroupIndex, bindingGroupLayouts);
+            nameToGroupIndex, bindingGroupLayouts, bindingGroupLayoutIterators);
     }
     if(!desc.FS.filename.empty() || !desc.FS.source.empty())
     {
         FS = CompileShader(
             debug, fileLoader, macros, desc.FS, RHI::ShaderStage::FragmentShader,
-            nameToGroupIndex, bindingGroupLayouts);
+            nameToGroupIndex, bindingGroupLayouts, bindingGroupLayoutIterators);
     }
     if(!desc.CS.filename.empty() || !desc.CS.source.empty())
     {
         CS = CompileShader(
             debug, fileLoader, macros, desc.CS, RHI::ShaderStage::ComputeShader,
-            nameToGroupIndex, bindingGroupLayouts);
+            nameToGroupIndex, bindingGroupLayouts, bindingGroupLayoutIterators);
     }
 
     RC<Shader> shader = MakeRC<Shader>();
+    shader->parentManager_ = this;
     shader->VS_ = VS;
     shader->FS_ = FS;
     shader->CS_ = CS;
     shader->nameToBindingGroupLayoutIndex_ = std::move(nameToGroupIndex);
     shader->bindingGroupLayouts_ = std::move(bindingGroupLayouts);
+    shader->bindingGroupLayoutIterators_ = std::move(bindingGroupLayoutIterators);
     return shader;
 }
 
@@ -291,14 +323,33 @@ const RC<BindingGroupLayout> &ShaderManager::GetBindingGroupLayoutByName(std::st
     return it->second;
 }
 
+void ShaderManager::OnShaderDestroyed(std::vector<Shader::BindingGroupLayoutRecordIt> &its)
+{
+    for(auto &it : its)
+    {
+        if(!--it->second.shaderCounter)
+        {
+            if(auto sit = nameToBindingGroupLayout_.find(it->first.name); sit != nameToBindingGroupLayout_.end())
+            {
+                if(sit->second == it->second.layout)
+                {
+                    nameToBindingGroupLayout_.erase(sit);
+                }
+            }
+            descToBindingGroupLayout_.erase(it);
+        }
+    }
+}
+
 RHI::RawShaderPtr ShaderManager::CompileShader(
-    bool                                      debug,
-    const RC<ShaderFileLoader>               &fileLoader,
-    const std::map<std::string, std::string> &macros,
-    const ShaderSource                       &source,
-    RHI::ShaderStage                          stage,
-    std::map<std::string, int, std::less<>>  &outputNameToGroupIndex,
-    std::vector<RC<BindingGroupLayout>>      &outputBindingGroupLayouts)
+    bool                                             debug,
+    const RC<ShaderFileLoader>                      &fileLoader,
+    const std::map<std::string, std::string>        &macros,
+    const ShaderSource                              &source,
+    RHI::ShaderStage                                 stage,
+    std::map<std::string, int, std::less<>>         &outputNameToGroupIndex,
+    std::vector<RC<BindingGroupLayout>>             &bindingGroupLayouts,
+    std::vector<Shader::BindingGroupLayoutRecordIt> &outputBindingGroupLayouts)
 {
     DXCIncludeHandlerWrapper includeHandler;
     includeHandler.loader = fileLoader;
@@ -326,7 +377,7 @@ RHI::RawShaderPtr ShaderManager::CompileShader(
     }
 
     std::string preprocessedSource;
-    const DXC::ShaderInfo shaderInfo =
+    DXC::ShaderInfo shaderInfo =
     {
         .source         = rawSource,
         .sourceFilename = source.filename.empty() ? "anonymous.hlsl" : source.filename,
@@ -345,15 +396,6 @@ RHI::RawShaderPtr ShaderManager::CompileShader(
             ShaderBindingGroupRewriter::ParsedBindingGroup group;
             if(bindingGroupParser.RewriteNextBindingGroup(group))
             {
-                printf("parsed group: %s\n    ", group.name.c_str());
-                for(auto &aliasedNames : group.bindings)
-                {
-                    for(auto &n : aliasedNames)
-                    {
-                        printf("%s ", n.c_str());
-                    }
-                }
-                printf("\n");
                 parsedBindingGroups.push_back(std::move(group));
             }
             else
@@ -369,24 +411,196 @@ RHI::RawShaderPtr ShaderManager::CompileShader(
     std::vector<ShaderBindingParser::ParsedBinding> parsedBindings;
     {
         ShaderBindingParser bindingParser(preprocessedSource);
-        printf("parsed bindings:\n");
         while(true)
         {
             ShaderBindingParser::ParsedBinding binding;
             if(bindingParser.FindNextBinding(binding))
             {
                 parsedBindings.push_back(binding);
-                printf("    %s\n", binding.name.c_str());
             }
             else
             {
                 break;
             }
         }
+        preprocessedSource = bindingParser.GetFinalSource();
     }
 
-    // TODO
-    return {};
+    // map binding name to (group, slot)
+
+    struct BindingRecord
+    {
+        int groupIndex;
+        int slotIndex;
+        const ShaderBindingParser::ParsedBinding *parsedBinding;
+    };
+
+    std::map<std::string, BindingRecord> bindingNameToRecord;
+    for(auto &&[groupIndex, group] : Enumerate(parsedBindingGroups))
+    {
+        for(auto &&[slotIndex, aliasedBindings] : Enumerate(group.bindings))
+        {
+            for(auto &binding : aliasedBindings)
+            {
+                if(bindingNameToRecord.find(binding.name) != bindingNameToRecord.end())
+                {
+                    throw Exception(fmt::format(
+                        "binding name {} appears in more than one binding groups", binding.name));
+                }
+                bindingNameToRecord[binding.name] = {
+                    static_cast<int>(groupIndex),
+                    static_cast<int>(slotIndex),
+                    nullptr
+                };
+            }
+        }
+    }
+
+    // register grouped bindings, and remove ungrouped ones
+
+    for(auto &binding : parsedBindings)
+    {
+        auto it = bindingNameToRecord.find(binding.name);
+        if(it != bindingNameToRecord.end())
+        {
+            it->second.parsedBinding = &binding;
+        }
+        else
+        {
+            for(size_t i = binding.begPosInSource; i < binding.endPosInSource; ++i)
+            {
+                char &c = preprocessedSource[i];
+                if(!std::isspace(c))
+                {
+                    c = ' ';
+                }
+            }
+        }
+    }
+
+    // generate groups
+
+    std::map<std::string, std::pair<int, int>> bindingNameToFinalSlots;
+
+    for(auto &group : parsedBindingGroups)
+    {
+        RHI::BindingGroupLayoutDesc rhiLayoutDesc;
+        rhiLayoutDesc.name = group.name;
+
+        for(auto &aliasedBindings : group.bindings)
+        {
+            RHI::AliasedBindingsDesc rhiAliasedBindingsDesc;
+            for(auto &binding : aliasedBindings)
+            {
+                auto it = bindingNameToRecord.find(binding.name);
+                if(it == bindingNameToRecord.end() || !it->second.parsedBinding)
+                {
+                    throw Exception(fmt::format("binding {} in group {} is not defined", binding.name, group.name));
+                }
+                const BindingRecord &record = it->second;
+
+                RHI::BindingDesc rhiBindingDesc;
+                rhiBindingDesc.name         = record.parsedBinding->name;
+                rhiBindingDesc.type         = record.parsedBinding->type;
+                rhiBindingDesc.shaderStages = binding.stages;
+                rhiBindingDesc.arraySize    = record.parsedBinding->arraySize;
+                rhiAliasedBindingsDesc.push_back(rhiBindingDesc);
+            }
+            rhiLayoutDesc.bindings.push_back(rhiAliasedBindingsDesc);
+        }
+
+        if(auto it = outputNameToGroupIndex.find(group.name); it != outputNameToGroupIndex.end())
+        {
+            if(rhiLayoutDesc != *bindingGroupLayouts[it->second]->rhiLayout_->GetDesc())
+            {
+                throw Exception("binding group {} appears in multiple stages with different definitions");
+            }
+
+            for(auto &&[slotIndex, aliasedBindings] : Enumerate(group.bindings))
+            {
+                for(auto &binding : aliasedBindings)
+                {
+                    bindingNameToFinalSlots[binding.name] = { it->second, static_cast<int>(slotIndex) };
+                }
+            }
+        }
+        else
+        {
+            auto recordIt = descToBindingGroupLayout_.find(rhiLayoutDesc);
+            if(recordIt == descToBindingGroupLayout_.end())
+            {
+                auto layout = MakeRC<BindingGroupLayout>();
+                layout->groupName_ = group.name;
+                layout->rhiLayout_ = rhiDevice_->CreateBindingGroupLayout(&rhiLayoutDesc);
+                for(auto &&[slot, aliasedBindings] : Enumerate(group.bindings))
+                {
+                    for(auto &binding : aliasedBindings)
+                    {
+                        layout->bindingNameToSlot_[binding.name] = static_cast<int>(slot);
+                    }
+                }
+
+                Shader::BindingGroupLayoutRecord record;
+                record.layout = std::move(layout);
+                record.shaderCounter = 1;
+                recordIt = descToBindingGroupLayout_.insert({ rhiLayoutDesc, record }).first;
+
+                if(auto sit = nameToBindingGroupLayout_.find(group.name); sit != nameToBindingGroupLayout_.end())
+                {
+                    if(sit->second != recordIt->second.layout)
+                    {
+                        sit->second = nullptr;
+                    }
+                }
+                else
+                {
+                    nameToBindingGroupLayout_[group.name] = recordIt->second.layout;
+                }
+            }
+
+            const int groupIndex = static_cast<int>(bindingGroupLayouts.size());
+
+            outputNameToGroupIndex[group.name] = groupIndex;
+            bindingGroupLayouts.push_back(recordIt->second.layout);
+            outputBindingGroupLayouts.push_back(recordIt);
+
+            for(auto &&[slotIndex, aliasedBindings] : Enumerate(group.bindings))
+            {
+                for(auto &binding : aliasedBindings)
+                {
+                    bindingNameToFinalSlots[binding.name] = { groupIndex, static_cast<int>(slotIndex) };
+                }
+            }
+        }
+    }
+
+    // rewrite definitions
+
+    std::sort(
+        parsedBindings.begin(), parsedBindings.end(),
+        [](const ShaderBindingParser::ParsedBinding &a, const ShaderBindingParser::ParsedBinding &b)
+    {
+        return a.begPosInSource > b.begPosInSource;
+    });
+
+    for(auto &parsedBinding : parsedBindings)
+    {
+        auto it = bindingNameToFinalSlots.find(parsedBinding.name);
+        if(it == bindingNameToFinalSlots.end())
+        {
+            continue;
+        }
+
+        const int set = it->second.first;
+        const int slot = it->second.second;
+        const std::string bindingDeclaration = fmt::format("[[vk::binding({}, {})]] ", slot, set);
+        preprocessedSource.insert(parsedBinding.begPosInSource, bindingDeclaration);
+    }
+
+    shaderInfo.source = preprocessedSource;
+    const std::vector<unsigned char> compileData = dxc.Compile(shaderInfo, target, debug, &includeHandler, nullptr);
+
+    return rhiDevice_->CreateShader(compileData.data(), compileData.size(), source.entry, stage);
 }
 
 RTRC_END

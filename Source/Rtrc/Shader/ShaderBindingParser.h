@@ -11,7 +11,13 @@ class ShaderBindingGroupRewriter
 {
 public:
 
-    using AliasedBindingNames = std::vector<std::string>;
+    struct Binding
+    {
+        std::string name;
+        RHI::ShaderStageFlag stages;
+    };
+
+    using AliasedBindingNames = std::vector<Binding>;
 
     struct ParsedBindingGroup
     {
@@ -48,15 +54,18 @@ public:
 
     struct ParsedBinding
     {
-        size_t             posInSource;
-        RHI::BindingType   type;
-        std::string        name;
-        std::optional<int> arraySize;
+        size_t                  begPosInSource;
+        size_t                  endPosInSource;
+        RHI::BindingType        type;
+        std::string             name;
+        std::optional<uint32_t> arraySize;
     };
 
     explicit ShaderBindingParser(std::string source);
 
     bool FindNextBinding(ParsedBinding &outBinding);
+
+    const std::string &GetFinalSource() const;
 
 private:
 
@@ -68,7 +77,7 @@ private:
 
     std::string FindBindingName(size_t curPos, size_t &outEndPos) const;
     
-    std::optional<int> FindOptionalArraySize(size_t curPos) const;
+    std::optional<uint32_t> FindOptionalArraySize(size_t &inoutCurPos) const;
 
     size_t pos_;
     std::string source_;

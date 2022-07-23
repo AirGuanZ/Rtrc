@@ -28,12 +28,12 @@ void Run()
     });
 
     // TODO: temp test
-    ShaderManager shaderManager;
+    ShaderManager shaderManager(device);
     shaderManager.SetFileLoader("Asset/02.ComputeShader/");
     shaderManager.AddShader({
-        .VS = {
+        .CS = {
             .filename = "TestParser.hlsl",
-            .entry = "DaDaDa"
+            .entry = "CSMain"
         }
     });
 
