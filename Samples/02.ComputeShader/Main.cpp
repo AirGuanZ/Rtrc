@@ -4,16 +4,6 @@
 
 using namespace Rtrc;
 
-$StructBegin(ScaleSettingStruct)
-    $Variable(float, Factor)
-$StructEnd()
-
-$GroupBegin(ScaleGroup)
-    $Binding(ConstantBuffer<ScaleSettingStruct>, ScaleSetting,  CS)
-    $Binding(Texture2D<float4>,                  InputTexture,  CS)
-    $Binding(RWTexture2D<float4>,                OutputTexture, CS)
-$GroupEnd()
-
 void Run()
 {
     auto instance = CreateVulkanInstance(RHI::VulkanInstanceDesc{
@@ -27,35 +17,25 @@ void Run()
         .supportSwapchain = false
     });
 
-    // TODO: temp test
     ShaderManager shaderManager(device);
     shaderManager.SetFileLoader("Asset/02.ComputeShader/");
-    shaderManager.AddShader({
+    auto shader = shaderManager.AddShader({
         .CS = {
-            .filename = "TestParser.hlsl",
+            .filename = "Shader.hlsl",
             .entry = "CSMain"
         }
     });
 
     // create pipeline
 
-    std::string preprocessed;
+    auto bindingGroupLayout = shaderManager.GetBindingGroupLayoutByName("ScaleGroup");
 
-    auto shader = ShaderCompiler(device)
-        .AddBindingGroup<ScaleGroup>()
-        .AddSources(CSSource{ "Asset/02.ComputeShader/Shader.hlsl", "CSMain" })
-        .DumpPreprocessedSource(RHI::ShaderStage::ComputeShader, &preprocessed)
-        .Compile()->GetRawComputeShader();
-
-    std::cout << preprocessed << std::endl;
-
-    auto bindingGroupLayout = device->CreateBindingGroupLayout(GetBindingGroupLayoutDesc<ScaleGroup>());
     auto bindingLayout = device->CreateBindingLayout(RHI::BindingLayoutDesc{
-        .groups = { bindingGroupLayout }
+        .groups = { bindingGroupLayout->GetRHIBindingGroupLayout() }
     });
 
     auto pipeline = (*device->CreateComputePipelineBuilder())
-        .SetComputeShader(shader)
+        .SetComputeShader(shader->GetRawShader(RHI::ShaderStage::ComputeShader))
         .SetBindingLayout(bindingLayout)
         .CreatePipeline();
 
@@ -147,11 +127,10 @@ void Run()
 
     // create binding group
 
-    auto bindingGroup = bindingGroupLayout->CreateBindingGroup();
-
-    ModifyBindingGroup(bindingGroup, &ScaleGroup::ScaleSetting, constantBuffer, 0, 16);
-    ModifyBindingGroup(bindingGroup, &ScaleGroup::InputTexture, inputTextureSRV);
-    ModifyBindingGroup(bindingGroup, &ScaleGroup::OutputTexture, outputTextureUAV);
+    auto bindingGroup = bindingGroupLayout->AllocateBindingGroup();
+    bindingGroup->Set("ScaleSetting", constantBuffer, 0, 16);
+    bindingGroup->Set("InputTexture", inputTextureSRV);
+    bindingGroup->Set("OutputTexture", outputTextureUAV);
 
     // queue & command pool & buffer
 
@@ -179,7 +158,7 @@ void Run()
         outputTextureInitialStateTransitionBarrier, {}, {}, pendingTextureAcquireBarriers, {}, {});
 
     commandBuffer->BindPipeline(pipeline);
-    commandBuffer->BindGroupToComputePipeline(0, bindingGroup);
+    commandBuffer->BindGroupToComputePipeline(0, bindingGroup->GetRHIBindingGroup());
 
     constexpr Vector2i GROUP_SIZE = Vector2i(8, 8);
     const Vector2i groupCount = {

@@ -337,10 +337,10 @@ Ptr<ComputePipelineBuilder> VulkanDevice::CreateComputePipelineBuilder()
     return MakePtr<VulkanComputePipelineBuilder>(device_);
 }
 
-Ptr<BindingGroupLayout> VulkanDevice::CreateBindingGroupLayout(const BindingGroupLayoutDesc *desc)
+Ptr<BindingGroupLayout> VulkanDevice::CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc)
 {
     std::vector<VkDescriptorSetLayoutBinding> descSetBindings;
-    for(auto &aliasedBinding : desc->bindings)
+    for(auto &aliasedBinding : desc.bindings)
     {
         {
             auto &binding = aliasedBinding.front();

@@ -20,14 +20,14 @@ public:
     using PoolInfoIterator = std::list<PoolInfo>::iterator;
 
     VulkanBindingGroupLayout(
-        const BindingGroupLayoutDesc             *desc,
+        const BindingGroupLayoutDesc             &desc,
         std::vector<VkDescriptorSetLayoutBinding> bindings,
         VkDevice                                  device,
         VkDescriptorSetLayout                     layout);
 
     ~VulkanBindingGroupLayout() override;
 
-    const BindingGroupLayoutDesc *GetDesc() const override;
+    const BindingGroupLayoutDesc &GetDesc() const override;
 
     Ptr<BindingGroup> CreateBindingGroup() override;
 
@@ -53,7 +53,7 @@ private:
 
     void AllocateNewDescriptorPool();
 
-    const BindingGroupLayoutDesc *desc_;
+    const BindingGroupLayoutDesc desc_;
     std::vector<VkDescriptorSetLayoutBinding> bindings_;
 
     VkDevice device_;

@@ -77,7 +77,7 @@ Ptr<ComputePipelineBuilder> DirectX12Device::CreateComputePipelineBuilder()
     return {};
 }
 
-Ptr<BindingGroupLayout> DirectX12Device::CreateBindingGroupLayout(const BindingGroupLayoutDesc *desc)
+Ptr<BindingGroupLayout> DirectX12Device::CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc)
 {
     // TODO
     return {};

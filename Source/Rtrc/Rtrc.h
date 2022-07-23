@@ -8,8 +8,6 @@
 #include <Rtrc/RHI/Helper/ResourceUploader.h>
 #include <Rtrc/RHI/RHI.h>
 
-#include <Rtrc/Shader/Binding.h>
-#include <Rtrc/Shader/ShaderCompiler.h>
 #include <Rtrc/Shader/ShaderManager.h>
 
 #include <Rtrc/Utils/File.h>

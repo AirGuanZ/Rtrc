@@ -22,7 +22,7 @@ public:
 
     Ptr<ComputePipelineBuilder> CreateComputePipelineBuilder() override;
 
-    Ptr<BindingGroupLayout> CreateBindingGroupLayout(const BindingGroupLayoutDesc *desc) override;
+    Ptr<BindingGroupLayout> CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc) override;
 
     Ptr<BindingLayout> CreateBindingLayout(const BindingLayoutDesc &desc) override;
 

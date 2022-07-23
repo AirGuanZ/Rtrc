@@ -4,7 +4,7 @@
 RTRC_RHI_VK_BEGIN
 
 VulkanBindingGroupLayout::VulkanBindingGroupLayout(
-    const BindingGroupLayoutDesc             *desc,
+    const BindingGroupLayoutDesc             &desc,
     std::vector<VkDescriptorSetLayoutBinding> bindings,
     VkDevice                                  device,
     VkDescriptorSetLayout                     layout)
@@ -44,7 +44,7 @@ VulkanBindingGroupLayout::~VulkanBindingGroupLayout()
     vkDestroyDescriptorSetLayout(device_, layout_, VK_ALLOC);
 }
 
-const BindingGroupLayoutDesc *VulkanBindingGroupLayout::GetDesc() const
+const BindingGroupLayoutDesc &VulkanBindingGroupLayout::GetDesc() const
 {
     return desc_;
 }
@@ -72,32 +72,32 @@ void VulkanBindingGroupLayout::ReleaseSet(VkDescriptorSet set)
 
 bool VulkanBindingGroupLayout::IsSlotTexelBuffer(int index) const
 {
-    return desc_->bindings[index].front().type == BindingType::Buffer;
+    return desc_.bindings[index].front().type == BindingType::Buffer;
 }
 
 bool VulkanBindingGroupLayout::IsSlotStorageTexelBuffer(int index) const
 {
-    return desc_->bindings[index].front().type == BindingType::RWBuffer;
+    return desc_.bindings[index].front().type == BindingType::RWBuffer;
 }
 
 bool VulkanBindingGroupLayout::IsSlotStructuredBuffer(int index) const
 {
-    return desc_->bindings[index].front().type == BindingType::StructuredBuffer;
+    return desc_.bindings[index].front().type == BindingType::StructuredBuffer;
 }
 
 bool VulkanBindingGroupLayout::IsSlotRWStructuredBuffer(int index) const
 {
-    return desc_->bindings[index].front().type == BindingType::RWStructuredBuffer;
+    return desc_.bindings[index].front().type == BindingType::RWStructuredBuffer;
 }
 
 bool VulkanBindingGroupLayout::IsSlotTexture2D(int index) const
 {
-    return desc_->bindings[index].front().type == BindingType::Texture2D;
+    return desc_.bindings[index].front().type == BindingType::Texture2D;
 }
 
 bool VulkanBindingGroupLayout::IsSlotRWTexture2D(int index) const
 {
-    return desc_->bindings[index].front().type == BindingType::RWTexture2D;
+    return desc_.bindings[index].front().type == BindingType::RWTexture2D;
 }
 
 void VulkanBindingGroupLayout::TransferNode(std::list<PoolInfo> &from, std::list<PoolInfo> &to, std::list<PoolInfo>::iterator iter)

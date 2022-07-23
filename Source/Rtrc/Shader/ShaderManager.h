@@ -38,15 +38,21 @@ public:
 
     BindingGroup(const BindingGroupLayout *parentLayout, RHI::BindingGroupPtr rhiGroup);
 
+    void Set(int slot, const RHI::BufferPtr &cbuffer, size_t offset, size_t bytes);
+    void Set(int slot, const RHI::SamplerPtr &sampler);
     void Set(int slot, const RHI::BufferSRVPtr &srv);
     void Set(int slot, const RHI::BufferUAVPtr &uav);
     void Set(int slot, const RHI::Texture2DSRVPtr &srv);
     void Set(int slot, const RHI::Texture2DUAVPtr &uav);
 
+    void Set(std::string_view name, const RHI::BufferPtr &cbuffer, size_t offset, size_t bytes);
+    void Set(std::string_view name, const RHI::SamplerPtr &sampler);
     void Set(std::string_view name, const RHI::BufferSRVPtr &srv);
     void Set(std::string_view name, const RHI::BufferUAVPtr &uav);
     void Set(std::string_view name, const RHI::Texture2DSRVPtr &srv);
     void Set(std::string_view name, const RHI::Texture2DUAVPtr &uav);
+
+    RHI::BindingGroupPtr GetRHIBindingGroup();
 
 private:
 
@@ -63,6 +69,8 @@ public:
     int GetBindingSlotByName(std::string_view bindingName) const;
 
     RC<BindingGroup> AllocateBindingGroup() const;
+
+    RHI::BindingGroupLayoutPtr GetRHIBindingGroupLayout();
 
 private:
 

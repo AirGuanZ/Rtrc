@@ -183,15 +183,6 @@ enum class BindingType
     Sampler,
 };
 
-enum class BindingTemplateParameterType
-{
-    Undefined,
-    Int,   Int2,   Int3,   Int4,
-    UInt,  UInt2,  UInt3,  UInt4,
-    Float, Float2, Float3, Float4,
-    Struct,
-};
-
 enum class TextureDimension
 {
     Tex2D
@@ -358,7 +349,6 @@ struct SwapchainDesc
 
 struct BindingDesc
 {
-    std::string             name;
     BindingType             type;
     ShaderStageFlag         shaderStages = ShaderStageFlags::All;
     std::optional<uint32_t> arraySize;
@@ -650,7 +640,7 @@ public:
 
     virtual Ptr<ComputePipelineBuilder> CreateComputePipelineBuilder() = 0;
 
-    virtual Ptr<BindingGroupLayout> CreateBindingGroupLayout(const BindingGroupLayoutDesc *desc) = 0;
+    virtual Ptr<BindingGroupLayout> CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc) = 0;
 
     virtual Ptr<BindingLayout> CreateBindingLayout(const BindingLayoutDesc &desc) = 0;
 
@@ -705,7 +695,7 @@ class BindingGroupLayout : public RHIObject
 {
 public:
 
-    virtual const BindingGroupLayoutDesc *GetDesc() const = 0;
+    virtual const BindingGroupLayoutDesc &GetDesc() const = 0;
 
     virtual Ptr<BindingGroup> CreateBindingGroup() = 0;
 };

@@ -1,3 +1,17 @@
+struct ScaleSettingCStruct
+{
+    float Factor;
+};
+
+ConstantBuffer<ScaleSettingCStruct> ScaleSetting;
+Texture2D<float4> InputTexture;
+RWTexture2D<float4> OutputTexture;
+
+group ScaleGroup
+{
+    ScaleSetting, InputTexture, OutputTexture
+}
+
 float4 CalculateResult(float4 input)
 {
     return float4(ScaleSetting.Factor * input.rgb, input.a);

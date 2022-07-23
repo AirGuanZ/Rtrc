@@ -3,13 +3,6 @@
 
 #include <Rtrc/Rtrc.h>
 
-$GroupBegin(TestGroup)
-    $Binding(Buffer<float2>,    VertexPositionBuffer, VS)
-    $Binding(Buffer<float2>,    VertexTexCoordBuffer, VS)
-    $Binding(Texture2D<float4>, MainTexture,          FS)
-    $Binding(Sampler,           MainSampler,          FS)
-$GroupEnd()
-
 using namespace Rtrc;
 
 void Run()
@@ -74,24 +67,24 @@ void Run()
 
     std::string preprocessedShaderSource;
 
-    auto shader = ShaderCompiler(device)
-        .SetDefaultFileLoader("./Asset/01.TexturedQuad")
-        .AddBindingGroup<TestGroup>()
-        .AddSources(
-            VSSource{ "Quad.hlsl", "VSMain" },
-            FSSource{ "Quad.hlsl", "FSMain" })
-        .DumpPreprocessedSource(RHI::ShaderStage::VertexShader, &preprocessedShaderSource)
-        .Compile();
+    ShaderManager shaderManager(device);
+    shaderManager.SetFileLoader("Asset/01.TexturedQuad/");
+
+    auto shader = shaderManager.AddShader({
+        .VS = { .filename = "Quad.hlsl", .entry = "VSMain" },
+        .FS = { .filename = "Quad.hlsl", .entry = "FSMain" }
+    });
 
     std::cout << preprocessedShaderSource << std::endl;
 
-    auto bindingGroupLayout = device->CreateBindingGroupLayout(GetBindingGroupLayoutDesc<TestGroup>());
-    auto bindingLayout = device->CreateBindingLayout(RHI::BindingLayoutDesc{ { bindingGroupLayout } });
+    auto bindingGroupLayout = shaderManager.GetBindingGroupLayoutByName("TestGroup");
+    auto bindingLayout = device->CreateBindingLayout(
+        RHI::BindingLayoutDesc{ { bindingGroupLayout->GetRHIBindingGroupLayout() } });
 
     auto pipelineBuilder = device->CreateGraphicsPipelineBuilder();
     auto pipeline = (*pipelineBuilder)
-        .SetVertexShader(shader->GetRawVertexShader())
-        .SetFragmentShader(shader->GetRawFragmentShader())
+        .SetVertexShader(shader->GetRawShader(RHI::ShaderStage::VertexShader))
+        .SetFragmentShader(shader->GetRawShader(RHI::ShaderStage::FragmentShader))
         .AddColorAttachment(swapchain->GetRenderTargetDesc().format)
         .SetBindingLayout(bindingLayout)
         .SetViewports(1)
@@ -210,11 +203,11 @@ void Run()
 
     // binding group
 
-    auto bindingGroup = bindingGroupLayout->CreateBindingGroup();
-    ModifyBindingGroup(bindingGroup, &TestGroup::VertexPositionBuffer, vertexPositionBufferSRV);
-    ModifyBindingGroup(bindingGroup, &TestGroup::VertexTexCoordBuffer, vertexTexCoordBufferSRV);
-    ModifyBindingGroup(bindingGroup, &TestGroup::MainTexture,          mainTexSRV);
-    ModifyBindingGroup(bindingGroup, &TestGroup::MainSampler,          mainSampler);
+    auto bindingGroup = bindingGroupLayout->AllocateBindingGroup();
+    bindingGroup->Set("VertexPositionBuffer", vertexPositionBufferSRV);
+    bindingGroup->Set("VertexTexCoordBuffer", vertexTexCoordBufferSRV);
+    bindingGroup->Set("MainTexture", mainTexSRV);
+    bindingGroup->Set("MainSampler", mainSampler);
 
     // render loop
 
@@ -279,7 +272,7 @@ void Run()
 
         commandBuffer->BindPipeline(pipeline);
 
-        commandBuffer->BindGroupToGraphicsPipeline(0, bindingGroup);
+        commandBuffer->BindGroupToGraphicsPipeline(0, bindingGroup->GetRHIBindingGroup());
 
         commandBuffer->SetViewports(RHI::Viewport
         {

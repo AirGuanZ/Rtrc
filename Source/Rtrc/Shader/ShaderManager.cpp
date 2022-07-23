@@ -99,6 +99,16 @@ BindingGroup::BindingGroup(const BindingGroupLayout *parentLayout, RHI::BindingG
     
 }
 
+void BindingGroup::Set(int slot, const RHI::BufferPtr &cbuffer, size_t offset, size_t bytes)
+{
+    rhiGroup_->ModifyMember(slot, cbuffer, offset, bytes);
+}
+
+void BindingGroup::Set(int slot, const RHI::SamplerPtr &sampler)
+{
+    rhiGroup_->ModifyMember(slot, sampler);
+}
+
 void BindingGroup::Set(int slot, const RHI::BufferSRVPtr &srv)
 {
     rhiGroup_->ModifyMember(slot, srv);
@@ -117,6 +127,18 @@ void BindingGroup::Set(int slot, const RHI::Texture2DSRVPtr &srv)
 void BindingGroup::Set(int slot, const RHI::Texture2DUAVPtr &uav)
 {
     rhiGroup_->ModifyMember(slot, uav);
+}
+
+void BindingGroup::Set(std::string_view name, const RHI::BufferPtr &cbuffer, size_t offset, size_t bytes)
+{
+    const int slot = parentLayout_->GetBindingSlotByName(name);
+    Set(slot, cbuffer, offset, bytes);
+}
+
+void BindingGroup::Set(std::string_view name, const RHI::SamplerPtr &sampler)
+{
+    const int slot = parentLayout_->GetBindingSlotByName(name);
+    Set(slot, sampler);
 }
 
 void BindingGroup::Set(std::string_view name, const RHI::BufferSRVPtr &srv)
@@ -143,6 +165,11 @@ void BindingGroup::Set(std::string_view name, const RHI::Texture2DUAVPtr &uav)
     Set(slot, uav);
 }
 
+RHI::BindingGroupPtr BindingGroup::GetRHIBindingGroup()
+{
+    return rhiGroup_;
+}
+
 const std::string &BindingGroupLayout::GetGroupName() const
 {
     return groupName_;
@@ -162,6 +189,11 @@ RC<BindingGroup> BindingGroupLayout::AllocateBindingGroup() const
 {
     RHI::BindingGroupPtr rhiGroup = rhiLayout_->CreateBindingGroup();
     return MakeRC<BindingGroup>(this, std::move(rhiGroup));
+}
+
+RHI::BindingGroupLayoutPtr BindingGroupLayout::GetRHIBindingGroupLayout()
+{
+    return rhiLayout_;
 }
 
 Shader::~Shader()
@@ -500,7 +532,6 @@ RHI::RawShaderPtr ShaderManager::CompileShader(
                 const BindingRecord &record = it->second;
 
                 RHI::BindingDesc rhiBindingDesc;
-                rhiBindingDesc.name         = record.parsedBinding->name;
                 rhiBindingDesc.type         = record.parsedBinding->type;
                 rhiBindingDesc.shaderStages = binding.stages;
                 rhiBindingDesc.arraySize    = record.parsedBinding->arraySize;
@@ -511,7 +542,7 @@ RHI::RawShaderPtr ShaderManager::CompileShader(
 
         if(auto it = outputNameToGroupIndex.find(group.name); it != outputNameToGroupIndex.end())
         {
-            if(rhiLayoutDesc != *bindingGroupLayouts[it->second]->rhiLayout_->GetDesc())
+            if(rhiLayoutDesc != bindingGroupLayouts[it->second]->rhiLayout_->GetDesc())
             {
                 throw Exception("binding group {} appears in multiple stages with different definitions");
             }
@@ -531,7 +562,7 @@ RHI::RawShaderPtr ShaderManager::CompileShader(
             {
                 auto layout = MakeRC<BindingGroupLayout>();
                 layout->groupName_ = group.name;
-                layout->rhiLayout_ = rhiDevice_->CreateBindingGroupLayout(&rhiLayoutDesc);
+                layout->rhiLayout_ = rhiDevice_->CreateBindingGroupLayout(rhiLayoutDesc);
                 for(auto &&[slot, aliasedBindings] : Enumerate(group.bindings))
                 {
                     for(auto &binding : aliasedBindings)
