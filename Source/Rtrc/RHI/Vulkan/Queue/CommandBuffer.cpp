@@ -106,13 +106,7 @@ void VulkanCommandBuffer::ExecuteBarriers(
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .image               = GetVulkanImage(transition.texture),
-            .subresourceRange    = VkImageSubresourceRange{
-                .aspectMask     = TranslateAspectTypeFlag(transition.aspectTypeFlag),
-                .baseMipLevel   = transition.mipLevel,
-                .levelCount     = 1,
-                .baseArrayLayer = transition.arrayLayer,
-                .layerCount     = 1
-            }
+            .subresourceRange    = TranslateImageSubresources(transition.subresources)
         });
     }
 
@@ -156,13 +150,7 @@ void VulkanCommandBuffer::ExecuteBarriers(
                 .srcQueueFamilyIndex = beforeQueue->GetNativeFamilyIndex(),
                 .dstQueueFamilyIndex = afterQueue->GetNativeFamilyIndex(),
                 .image               = GetVulkanImage(release.texture),
-                .subresourceRange    = VkImageSubresourceRange{
-                    .aspectMask     = TranslateAspectTypeFlag(release.aspectTypeFlag),
-                    .baseMipLevel   = release.mipLevel,
-                    .levelCount     = 1,
-                    .baseArrayLayer = release.arrayLayer,
-                    .layerCount     = 1
-                }
+                .subresourceRange    = TranslateImageSubresources(release.subresources)
             });
         }
     }
@@ -202,13 +190,7 @@ void VulkanCommandBuffer::ExecuteBarriers(
                 .srcQueueFamilyIndex = beforeQueue->GetNativeFamilyIndex(),
                 .dstQueueFamilyIndex = afterQueue->GetNativeFamilyIndex(),
                 .image               = GetVulkanImage(acquire.texture),
-                .subresourceRange    = VkImageSubresourceRange{
-                    .aspectMask     = TranslateAspectTypeFlag(acquire.aspectTypeFlag),
-                    .baseMipLevel   = acquire.mipLevel,
-                    .levelCount     = 1,
-                    .baseArrayLayer = acquire.arrayLayer,
-                    .layerCount     = 1
-                }
+                .subresourceRange    = TranslateImageSubresources(acquire.subresources)
             });
         }
     }

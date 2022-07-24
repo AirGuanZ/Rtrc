@@ -17,12 +17,12 @@ public:
     void WaitIdle() override;
 
     void Submit(
-        const Ptr<BackBufferSemaphore> &waitBackBufferSemaphore,
-        PipelineStage                   waitBackBufferStages,
-        Span<Ptr<CommandBuffer>>        commandBuffers,
-        const Ptr<BackBufferSemaphore> &signalBackBufferSemaphore,
-        PipelineStage                   signalBackBufferStages,
-        const Ptr<Fence>               &signalFence) override;
+        BackBufferSemaphoreDependency waitBackBufferSemaphore,
+        Span<SemaphoreDependency>     waitSemaphores,
+        Span<Ptr<CommandBuffer>>      commandBuffers,
+        BackBufferSemaphoreDependency signalBackBufferSemaphore,
+        Span<SemaphoreDependency>     signalSemaphores,
+        const Ptr<Fence>             &signalFence) override;
 
 private:
 

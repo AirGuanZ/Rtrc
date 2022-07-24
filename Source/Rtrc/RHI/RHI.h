@@ -34,6 +34,7 @@ Ptr<T> MakePtr(Args&&...args)
 RTRC_RHI_FORWARD_DECL(Instance)
 RTRC_RHI_FORWARD_DECL(Device)
 RTRC_RHI_FORWARD_DECL(BackBufferSemaphore)
+RTRC_RHI_FORWARD_DECL(Semaphore)
 RTRC_RHI_FORWARD_DECL(Swapchain)
 RTRC_RHI_FORWARD_DECL(Queue)
 RTRC_RHI_FORWARD_DECL(Fence)
@@ -390,6 +391,22 @@ struct Scissor
     Vector2i size;
 };
 
+struct TextureSubresource
+{
+    AspectType aspect;
+    uint32_t   mipLevel;
+    uint32_t   arrayLayer;
+};
+
+struct TextureSubresources
+{
+    AspectTypeFlag aspects;
+    uint32_t       mipLevel;
+    uint32_t       levelCount = 1;
+    uint32_t       arrayLayer;
+    uint32_t       layerCount = 1;
+};
+
 struct Texture2DDesc
 {
     Format                    format;
@@ -469,59 +486,41 @@ struct SamplerDesc
     std::array<float, 4> borderColor;
 };
 
-struct TextureSubresourceRange
-{
-    uint32_t       mipLevel;
-    uint32_t       levelCount;
-    uint32_t       arrayLayer;
-    uint32_t       layerCount;
-    AspectTypeFlag aspects;
-};
-
 struct TextureTransitionBarrier
 {
     Texture                *texture;
-    AspectTypeFlag          aspectTypeFlag;
-    uint32_t                mipLevel;
-    uint32_t                arrayLayer;
+    TextureSubresources     subresources;
     PipelineStageFlag       beforeStages;
     ResourceAccessFlag      beforeAccesses;
     TextureLayout           beforeLayout;
     PipelineStageFlag       afterStages;
     ResourceAccessFlag      afterAccesses;
     TextureLayout           afterLayout;
-    TextureSubresourceRange range;
 };
 
 // for non-sharing resource, every cross-queue sync needs a release/acquire pair
 struct TextureReleaseBarrier
 {
     Texture                *texture;
-    AspectTypeFlag          aspectTypeFlag;
-    uint32_t                mipLevel;
-    uint32_t                arrayLayer;
+    TextureSubresources     subresources;
     PipelineStageFlag       beforeStages;
     ResourceAccessFlag      beforeAccesses;
     TextureLayout           beforeLayout;
     TextureLayout           afterLayout;
     Queue                  *beforeQueue;
     Queue                  *afterQueue;
-    TextureSubresourceRange range;
 };
 
 struct TextureAcquireBarrier
 {
     Texture                *texture;
-    AspectTypeFlag          aspectTypeFlag;
-    uint32_t                mipLevel;
-    uint32_t                arrayLayer;
+    TextureSubresources     subresources;
     TextureLayout           beforeLayout;
     PipelineStageFlag       afterStages;
     ResourceAccessFlag      afterAccesses;
     TextureLayout           afterLayout;
     Queue                  *beforeQueue;
     Queue                  *afterQueue;
-    TextureSubresourceRange range;
 };
 
 struct BufferTransitionBarrier
@@ -634,6 +633,8 @@ public:
 
     virtual Ptr<Swapchain> CreateSwapchain(const SwapchainDesc &desc, Window &window) = 0;
 
+    virtual Ptr<Semaphore> CreateSemaphore(uint64_t initialValue) = 0;
+
     virtual Ptr<RawShader> CreateShader(const void *data, size_t size, std::string entryPoint, ShaderStage type) = 0;
 
     virtual Ptr<GraphicsPipelineBuilder> CreateGraphicsPipelineBuilder() = 0;
@@ -670,6 +671,13 @@ public:
 class BackBufferSemaphore : public RHIObject
 {
 
+};
+
+class Semaphore : public RHIObject
+{
+public:
+
+    virtual uint64_t GetValue() const = 0;
 };
 
 class Swapchain : public RHIObject
@@ -728,6 +736,19 @@ class Queue : public RHIObject
 {
 public:
 
+    struct BackBufferSemaphoreDependency
+    {
+        Ptr<BackBufferSemaphore> semaphore;
+        PipelineStageFlag        stages;
+    };
+
+    struct SemaphoreDependency
+    {
+        Ptr<Semaphore>    semaphore;
+        PipelineStageFlag stages;
+        uint64_t          value;
+    };
+
     virtual QueueType GetType() const = 0;
 
     virtual Ptr<CommandPool> CreateCommandPool() = 0;
@@ -735,12 +756,12 @@ public:
     virtual void WaitIdle() = 0;
 
     virtual void Submit(
-        const Ptr<BackBufferSemaphore>  &waitBackBufferSemaphore,
-        PipelineStage                    waitBackBufferStages,
-        Span<Ptr<CommandBuffer>>         commandBuffers,
-        const Ptr<BackBufferSemaphore>  &signalBackBufferSemaphore,
-        PipelineStage                    signalBackBufferStages,
-        const Ptr<Fence>               &signalFence) = 0;
+        BackBufferSemaphoreDependency waitBackBufferSemaphore,
+        Span<SemaphoreDependency>     waitSemaphores,
+        Span<Ptr<CommandBuffer>>      commandBuffers,
+        BackBufferSemaphoreDependency signalBackBufferSemaphore,
+        Span<SemaphoreDependency>     signalSemaphores,
+        const Ptr<Fence>             &signalFence) = 0;
 };
 
 class Fence : public RHIObject

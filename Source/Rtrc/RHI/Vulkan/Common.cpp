@@ -464,4 +464,15 @@ VkImageLayout TranslateImageLayout(TextureLayout layout)
     Unreachable();
 }
 
+VkImageSubresourceRange TranslateImageSubresources(const TextureSubresources &subresources)
+{
+    return VkImageSubresourceRange{
+        .aspectMask     = TranslateAspectTypeFlag(subresources.aspects),
+        .baseMipLevel   = subresources.mipLevel,
+        .levelCount     = subresources.levelCount,
+        .baseArrayLayer = subresources.arrayLayer,
+        .layerCount     = subresources.layerCount
+    };
+}
+
 RTRC_RHI_VK_END

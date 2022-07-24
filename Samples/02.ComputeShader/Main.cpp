@@ -122,7 +122,7 @@ void Run()
 
     // create binding group
 
-    auto bindingGroup = bindingGroupLayout->AllocateBindingGroup();
+    auto bindingGroup = bindingGroupLayout->CreateBindingGroup();
     bindingGroup->Set("ScaleSetting", constantBuffer, 0, 16);
     bindingGroup->Set("InputTexture", inputTextureSRV);
     bindingGroup->Set("OutputTexture", outputTextureUAV);
@@ -137,10 +137,12 @@ void Run()
     commandBuffer->Begin();
 
     const RHI::TextureTransitionBarrier outputTextureInitialStateTransitionBarrier = {
-        .texture        = outputTexture,
-        .aspectTypeFlag = RHI::AspectType::Color,
-        .mipLevel       = 0,
-        .arrayLayer     = 0,
+        .texture      = outputTexture,
+        .subresources = {
+            .aspects    = RHI::AspectType::Color,
+            .mipLevel   = 0,
+            .arrayLayer = 0
+        },
         .beforeStages   = RHI::PipelineStage::None,
         .beforeAccesses = RHI::ResourceAccess::None,
         .beforeLayout   = RHI::TextureLayout::Undefined,
@@ -164,10 +166,12 @@ void Run()
 
     commandBuffer->ExecuteBarriers(
         RHI::TextureTransitionBarrier{
-            .texture        = outputTexture,
-            .aspectTypeFlag = RHI::AspectType::Color,
-            .mipLevel       = 0,
-            .arrayLayer     = 0,
+            .texture      = outputTexture,
+            .subresources = {
+                .aspects    = RHI::AspectType::Color,
+                .mipLevel   = 0,
+                .arrayLayer = 0
+            },
             .beforeStages   = RHI::PipelineStage::ComputeShader,
             .beforeAccesses = RHI::ResourceAccess::RWTextureWrite,
             .beforeLayout   = RHI::TextureLayout::ShaderRWTexture,

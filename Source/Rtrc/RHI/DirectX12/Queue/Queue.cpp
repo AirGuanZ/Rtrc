@@ -20,12 +20,12 @@ Ptr<CommandPool> DirectX12Queue::CreateCommandPool()
 }
 
 void DirectX12Queue::Submit(
-    const Ptr<BackBufferSemaphore> &waitBackBufferSemaphore,
-    PipelineStage                   waitBackBufferStages,
-    Span<Ptr<CommandBuffer>>        commandBuffers,
-    const Ptr<BackBufferSemaphore> &signalBackBufferSemaphore,
-    PipelineStage                   signalBackBufferStages,
-    const Ptr<Fence>               &signalFence)
+    BackBufferSemaphoreDependency waitBackBufferSemaphore,
+    Span<SemaphoreDependency>     waitSemaphores,
+    Span<Ptr<CommandBuffer>>      commandBuffers,
+    BackBufferSemaphoreDependency signalBackBufferSemaphore,
+    Span<SemaphoreDependency>     signalSemaphores,
+    const Ptr<Fence>             &signalFence)
 {
     // TODO
 }

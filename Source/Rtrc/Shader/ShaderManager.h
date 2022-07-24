@@ -65,12 +65,10 @@ class BindingGroupLayout : public Uncopyable
 public:
 
     const std::string &GetGroupName() const;
-
     int GetBindingSlotByName(std::string_view bindingName) const;
-
-    RC<BindingGroup> AllocateBindingGroup() const;
-
     RHI::BindingGroupLayoutPtr GetRHIBindingGroupLayout();
+
+    RC<BindingGroup> CreateBindingGroup() const;
 
 private:
 
@@ -148,6 +146,8 @@ public:
         std::string filename;
         std::string source;
         std::string entry;
+
+        std::string *dumpedPreprocessedSource = nullptr;
     };
 
     struct ShaderDescription

@@ -59,6 +59,12 @@ Ptr<Swapchain> DirectX12Device::CreateSwapchain(const SwapchainDesc &desc, Windo
     return {};
 }
 
+Ptr<Semaphore> DirectX12Device::CreateSemaphoreA(uint64_t initialValue)
+{
+    // TODO
+    return {};
+}
+
 Ptr<RawShader> DirectX12Device::CreateShader(const void *data, size_t size, std::string entryPoint, ShaderStage type)
 {
     // TODO

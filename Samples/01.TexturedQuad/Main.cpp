@@ -64,17 +64,15 @@ void Run()
 
     // pipeline
 
-    std::string preprocessedShaderSource;
-
     ShaderManager shaderManager(device);
     shaderManager.SetFileLoader("Asset/01.TexturedQuad/");
 
+    std::string preprocessedSource;
     auto shader = shaderManager.AddShader({
-        .VS = { .filename = "Quad.hlsl", .entry = "VSMain" },
+        .VS = { .filename = "Quad.hlsl", .entry = "VSMain", .dumpedPreprocessedSource = &preprocessedSource },
         .FS = { .filename = "Quad.hlsl", .entry = "FSMain" }
     });
-
-    std::cout << preprocessedShaderSource << std::endl;
+    std::cout << preprocessedSource << std::endl;
 
     auto bindingGroupLayout = shaderManager.GetBindingGroupLayoutByName("TestGroup");
     auto bindingLayout = shader->GetRHIBindingLayout();
@@ -201,7 +199,7 @@ void Run()
 
     // binding group
 
-    auto bindingGroup = bindingGroupLayout->AllocateBindingGroup();
+    auto bindingGroup = bindingGroupLayout->CreateBindingGroup();
     bindingGroup->Set("VertexPositionBuffer", vertexPositionBufferSRV);
     bindingGroup->Set("VertexTexCoordBuffer", vertexTexCoordBufferSRV);
     bindingGroup->Set("MainTexture", mainTexSRV);
@@ -247,14 +245,16 @@ void Run()
 
         commandBuffer->ExecuteBarriers(RHI::TextureTransitionBarrier
         {
-            .texture        = image,
-            .aspectTypeFlag = RHI::AspectType::Color,
-            .mipLevel       = 0,
-            .arrayLayer     = 0,
-            .beforeLayout   = RHI::TextureLayout::Present,
-            .afterStages    = RHI::PipelineStage::RenderTarget,
-            .afterAccesses  = RHI::ResourceAccess::RenderTargetWrite,
-            .afterLayout    = RHI::TextureLayout::RenderTarget
+            .texture       = image,
+            .subresources  = {
+                .aspects    = RHI::AspectType::Color,
+                .mipLevel   = 0,
+                .arrayLayer = 0
+            },
+            .beforeLayout  = RHI::TextureLayout::Present,
+            .afterStages   = RHI::PipelineStage::RenderTarget,
+            .afterAccesses = RHI::ResourceAccess::RenderTargetWrite,
+            .afterLayout   = RHI::TextureLayout::RenderTarget
         }, {}, {}, uploadTextureAcquireBarriers, {}, uploadBufferAcquireBarriers);
 
         uploadTextureAcquireBarriers.clear();
@@ -292,10 +292,12 @@ void Run()
 
         commandBuffer->ExecuteBarriers(RHI::TextureTransitionBarrier
         {
-            .texture        = image,
-            .aspectTypeFlag = RHI::AspectType::Color,
-            .mipLevel       = 0,
-            .arrayLayer     = 0,
+            .texture      = image,
+            .subresources = {
+                .aspects    = RHI::AspectType::Color,
+                .mipLevel   = 0,
+                .arrayLayer = 0,
+            },
             .beforeStages   = RHI::PipelineStage::RenderTarget,
             .beforeAccesses = RHI::ResourceAccess::RenderTargetWrite,
             .beforeLayout   = RHI::TextureLayout::RenderTarget,
@@ -305,11 +307,11 @@ void Run()
         commandBuffer->End();
 
         graphicsQueue->Submit(
-            swapchain->GetAcquireSemaphore(),
-            RHI::PipelineStage::RenderTarget,
+            { swapchain->GetAcquireSemaphore(), RHI::PipelineStage::RenderTarget },
+            {},
             commandBuffer,
-            swapchain->GetPresentSemaphore(),
-            RHI::PipelineStage::RenderTarget,
+            { swapchain->GetPresentSemaphore(), RHI::PipelineStage::RenderTarget },
+            {},
             fences[frameIndex]);
 
         swapchain->Present();

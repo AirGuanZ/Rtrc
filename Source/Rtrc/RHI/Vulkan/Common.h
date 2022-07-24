@@ -62,6 +62,7 @@ VkSamplerAddressMode     TranslateSamplerAddressMode    (AddressMode mode);
 VkPipelineStageFlags2    TranslatePipelineStageFlag     (PipelineStageFlag flag);
 VkAccessFlags2           TranslateAccessFlag            (ResourceAccessFlag flag);
 VkImageLayout            TranslateImageLayout           (TextureLayout layout);
+VkImageSubresourceRange  TranslateImageSubresources     (const TextureSubresources &subresources);
 
 struct VulkanMemoryAllocation
 {

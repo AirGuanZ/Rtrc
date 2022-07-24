@@ -16,6 +16,8 @@ public:
 
     Ptr<Swapchain> CreateSwapchain(const SwapchainDesc &desc, Window &window) override;
 
+    Ptr<Semaphore> CreateSemaphoreA(uint64_t initialValue) override;
+
     Ptr<RawShader> CreateShader(const void *data, size_t size, std::string entryPoint, ShaderStage type) override;
 
     Ptr<GraphicsPipelineBuilder> CreateGraphicsPipelineBuilder() override;

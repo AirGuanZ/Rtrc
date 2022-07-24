@@ -131,13 +131,15 @@ TextureAcquireBarrier ResourceUploader::Upload(
     pendingBufferReleaseBarriers_.reserve(pendingBufferReleaseBarriers_.size() + 1);
 
     commandBuffer_->ExecuteBarriers(TextureTransitionBarrier{
-        .texture        = texture,
-        .aspectTypeFlag = AspectType::Color,
-        .mipLevel       = mipLevel,
-        .arrayLayer     = arrayLayer,
+        .texture      = texture,
+        .subresources = {
+            .aspects    = AspectType::Color,
+            .mipLevel   = mipLevel,
+            .arrayLayer = arrayLayer
+        },
         .beforeStages   = PipelineStage::None,
         .beforeAccesses = ResourceAccess::None,
-        .beforeLayout = TextureLayout::Undefined,
+        .beforeLayout   = TextureLayout::Undefined,
         .afterStages    = PipelineStage::Copy,
         .afterAccesses  = ResourceAccess::CopyWrite,
         .afterLayout    = TextureLayout::CopyDst
@@ -149,10 +151,12 @@ TextureAcquireBarrier ResourceUploader::Upload(
     {
         pendingTextureReleaseBarriers_.push_back(TextureReleaseBarrier
             {
-                .texture        = texture,
-                .aspectTypeFlag = aspect,
-                .mipLevel       = mipLevel,
-                .arrayLayer     = arrayLayer,
+                .texture      = texture,
+                .subresources = {
+                    .aspects    = aspect,
+                    .mipLevel   = mipLevel,
+                    .arrayLayer = arrayLayer
+                },
                 .beforeStages   = PipelineStage::Copy,
                 .beforeAccesses = ResourceAccess::CopyWrite,
                 .beforeLayout   = TextureLayout::CopyDst,
@@ -166,10 +170,12 @@ TextureAcquireBarrier ResourceUploader::Upload(
         // add a regular barrier when before/after usages are on the same queue
         pendingTextureTransitionBarriers_.push_back(TextureTransitionBarrier
         {
-            .texture        = texture,
-            .aspectTypeFlag = aspect,
-            .mipLevel       = mipLevel,
-            .arrayLayer     = arrayLayer,
+            .texture      = texture,
+            .subresources = {
+                .aspects    = aspect,
+                .mipLevel   = mipLevel,
+                .arrayLayer = arrayLayer
+            },
             .beforeStages   = PipelineStage::Copy,
             .beforeAccesses = ResourceAccess::CopyWrite,
             .beforeLayout   = TextureLayout::CopyDst,
@@ -189,10 +195,12 @@ TextureAcquireBarrier ResourceUploader::Upload(
     {
         return TextureAcquireBarrier
             {
-                .texture        = texture,
-                .aspectTypeFlag = aspect,
-                .mipLevel       = mipLevel,
-                .arrayLayer     = arrayLayer,
+                .texture      = texture,
+                .subresources = {
+                    .aspects    = aspect,
+                    .mipLevel   = mipLevel,
+                    .arrayLayer = arrayLayer
+                },
                 .beforeLayout   = TextureLayout::CopyDst,
                 .afterStages    = afterStages,
                 .afterAccesses  = afterAccesses,

@@ -2,6 +2,7 @@
 #include <Rtrc/RHI/Vulkan/Queue/CommandPool.h>
 #include <Rtrc/RHI/Vulkan/Queue/Fence.h>
 #include <Rtrc/RHI/Vulkan/Queue/Queue.h>
+#include <Rtrc/RHI/Vulkan/Queue/Semaphore.h>
 #include <Rtrc/Utils/Enumerate.h>
 #include <Rtrc/Utils/ScopeGuard.h>
 
@@ -38,12 +39,12 @@ void VulkanQueue::WaitIdle()
 }
 
 void VulkanQueue::Submit(
-    const Ptr<BackBufferSemaphore> &waitBackBufferSemaphore,
-    PipelineStage                   waitBackBufferStages,
-    Span<Ptr<CommandBuffer>>        commandBuffers,
-    const Ptr<BackBufferSemaphore> &signalBackBufferSemaphore,
-    PipelineStage                   signalBackBufferStages,
-    const Ptr<Fence>               &signalFence)
+    BackBufferSemaphoreDependency waitBackBufferSemaphore,
+    Span<SemaphoreDependency>     waitSemaphores,
+    Span<Ptr<CommandBuffer>>      commandBuffers,
+    BackBufferSemaphoreDependency signalBackBufferSemaphore,
+    Span<SemaphoreDependency>     signalSemaphores,
+    const Ptr<Fence>             &signalFence)
 {
     std::vector<VkCommandBufferSubmitInfo> vkCommandBuffers(commandBuffers.size());
     for(auto &&[i, cb] : Enumerate(commandBuffers))
@@ -54,34 +55,53 @@ void VulkanQueue::Submit(
         };
     }
 
-    VkSemaphore vkWaitBackBufferSemaphore = waitBackBufferSemaphore ?
-        static_cast<VulkanBackBufferSemaphore *>(waitBackBufferSemaphore.Get())->GetBinarySemaphore() : nullptr;
+    std::vector<VkSemaphoreSubmitInfo> waitSemaphoreSubmitInfo;
+    if(waitBackBufferSemaphore.semaphore)
+    {
+        waitSemaphoreSubmitInfo.push_back({
+            .sType     = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
+            .semaphore = static_cast<VulkanBackBufferSemaphore *>(waitBackBufferSemaphore.semaphore.Get())->GetBinarySemaphore(),
+            .stageMask = TranslatePipelineStageFlag(waitBackBufferSemaphore.stages),
+        });
+    }
+    for(auto &s : waitSemaphores)
+    {
+        waitSemaphoreSubmitInfo.push_back({
+            .sType     = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
+            .semaphore = static_cast<VulkanSemaphore*>(s.semaphore.Get())->GetNativeSemaphore(),
+            .value     = s.value,
+            .stageMask = TranslatePipelineStageFlag(s.stages)
+        });
+    }
 
-    const VkSemaphoreSubmitInfo waitBackBufferSemaphoreSubmitInfo = {
-        .sType     = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
-        .semaphore = vkWaitBackBufferSemaphore,
-        .stageMask = TranslatePipelineStageFlag(waitBackBufferStages),
-    };
+    std::vector<VkSemaphoreSubmitInfo> signalSemaphoreSubmitInfo;
+    if(signalBackBufferSemaphore.semaphore)
+    {
+        signalSemaphoreSubmitInfo.push_back({
+            .sType     = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
+            .semaphore = static_cast<VulkanBackBufferSemaphore *>(signalBackBufferSemaphore.semaphore.Get())->GetBinarySemaphore(),
+            .stageMask = TranslatePipelineStageFlag(signalBackBufferSemaphore.stages)
+        });
+    }
+    for(auto &s : signalSemaphores)
+    {
+        signalSemaphoreSubmitInfo.push_back({
+            .sType     = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
+            .semaphore = static_cast<VulkanSemaphore*>(s.semaphore.Get())->GetNativeSemaphore(),
+            .value     = s.value,
+            .stageMask = TranslatePipelineStageFlag(s.stages)
+        });
+    }
 
-    VkSemaphore vkSignalBackBufferSemaphore = signalBackBufferSemaphore ?
-        static_cast<VulkanBackBufferSemaphore *>(signalBackBufferSemaphore.Get())->GetBinarySemaphore() : nullptr;
-
-    const VkSemaphoreSubmitInfo signalBackBufferSemaphoreSubmitInfo = {
-        .sType     = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
-        .semaphore = vkSignalBackBufferSemaphore,
-        .stageMask = TranslatePipelineStageFlag(signalBackBufferStages)
-    };
-
-    VkSubmitInfo2 submitInfo = {
+    const VkSubmitInfo2 submitInfo = {
         .sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2,
-        .waitSemaphoreInfoCount   = vkWaitBackBufferSemaphore ? 1u : 0u,
-        .pWaitSemaphoreInfos      = vkWaitBackBufferSemaphore ? &waitBackBufferSemaphoreSubmitInfo : nullptr,
+        .waitSemaphoreInfoCount   = static_cast<uint32_t>(waitSemaphoreSubmitInfo.size()),
+        .pWaitSemaphoreInfos      = waitSemaphoreSubmitInfo.data(),
         .commandBufferInfoCount   = static_cast<uint32_t>(vkCommandBuffers.size()),
         .pCommandBufferInfos      = vkCommandBuffers.data(),
-        .signalSemaphoreInfoCount = vkSignalBackBufferSemaphore ? 1u : 0u,
-        .pSignalSemaphoreInfos    = vkSignalBackBufferSemaphore ? &signalBackBufferSemaphoreSubmitInfo : nullptr
+        .signalSemaphoreInfoCount = static_cast<uint32_t>(signalSemaphoreSubmitInfo.size()),
+        .pSignalSemaphoreInfos    = signalSemaphoreSubmitInfo.data()
     };
-
     auto fence = signalFence ? static_cast<VulkanFence *>(signalFence.Get())->GetNativeFence() : nullptr;
     VK_FAIL_MSG(
         vkQueueSubmit2(queue_, 1, &submitInfo, fence),

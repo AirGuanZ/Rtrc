@@ -185,15 +185,15 @@ int BindingGroupLayout::GetBindingSlotByName(std::string_view bindingName) const
     return it->second;
 }
 
-RC<BindingGroup> BindingGroupLayout::AllocateBindingGroup() const
-{
-    RHI::BindingGroupPtr rhiGroup = rhiLayout_->CreateBindingGroup();
-    return MakeRC<BindingGroup>(this, std::move(rhiGroup));
-}
-
 RHI::BindingGroupLayoutPtr BindingGroupLayout::GetRHIBindingGroupLayout()
 {
     return rhiLayout_;
+}
+
+RC<BindingGroup> BindingGroupLayout::CreateBindingGroup() const
+{
+    RHI::BindingGroupPtr rhiGroup = rhiLayout_->CreateBindingGroup();
+    return MakeRC<BindingGroup>(this, std::move(rhiGroup));
 }
 
 Shader::~Shader()
@@ -658,6 +658,11 @@ RHI::RawShaderPtr ShaderManager::CompileShader(
         const int slot = it->second.second;
         const std::string bindingDeclaration = fmt::format("[[vk::binding({}, {})]] ", slot, set);
         preprocessedSource.insert(parsedBinding.begPosInSource, bindingDeclaration);
+    }
+
+    if(source.dumpedPreprocessedSource)
+    {
+        *source.dumpedPreprocessedSource = preprocessedSource;
     }
 
     shaderInfo.source = preprocessedSource;

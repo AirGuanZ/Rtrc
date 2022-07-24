@@ -9,8 +9,8 @@
 #define RTRC_RHI_BEGIN RTRC_BEGIN namespace RHI {
 #define RTRC_RHI_END   } RTRC_END
 
-#define RTRC_DSL_BEGIN RTRC_BEGIN namespace DSL {
-#define RTRC_DSL_END   } RTRC_END
+#define RTRC_RG_BEGIN RTRC_BEGIN namespace RG {
+#define RTRC_RG_END   } RTRC_END
 
 #if defined(DEBUG) || defined(_DEBUG)
 #define RTRC_DEBUG 1

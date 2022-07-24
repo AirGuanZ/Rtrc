@@ -14,6 +14,7 @@
 #include <Rtrc/RHI/Vulkan/Pipeline/Shader.h>
 #include <Rtrc/RHI/Vulkan/Queue/Fence.h>
 #include <Rtrc/RHI/Vulkan/Queue/Queue.h>
+#include <Rtrc/RHI/Vulkan/Queue/Semaphore.h>
 #include <Rtrc/RHI/Vulkan/Resource/Buffer.h>
 #include <Rtrc/RHI/Vulkan/Resource/MemoryBlock.h>
 #include <Rtrc/RHI/Vulkan/Resource/Sampler.h>
@@ -310,6 +311,28 @@ Ptr<Swapchain> VulkanDevice::CreateSwapchain(const SwapchainDesc &desc, Window &
         .concurrentAccessMode = QueueConcurrentAccessMode::Exclusive
     };
     return MakePtr<VulkanSwapchain>(std::move(surface), presentQueue_, imageDescription, device_, swapchain);
+}
+
+Ptr<Semaphore> VulkanDevice::CreateSemaphore(uint64_t initialValue)
+{
+    const VkSemaphoreTypeCreateInfo typeCreateInfo = {
+        .sType         = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
+        .semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE,
+        .initialValue  = initialValue
+    };
+
+    const VkSemaphoreCreateInfo createInfo = {
+        .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+        .pNext = &typeCreateInfo
+    };
+
+    VkSemaphore semaphore;
+    VK_FAIL_MSG(
+        vkCreateSemaphore(device_, &createInfo, VK_ALLOC, &semaphore),
+        "failed to create vulkan semaphore");
+    RTRC_SCOPE_FAIL{ vkDestroySemaphore(device_, semaphore, VK_ALLOC); };
+
+    return MakePtr<VulkanSemaphore>(device_, semaphore);
 }
 
 Ptr<RawShader> VulkanDevice::CreateShader(const void *data, size_t size, std::string entryPoint, ShaderStage type)
