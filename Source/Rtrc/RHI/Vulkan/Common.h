@@ -46,7 +46,6 @@ VkBlendOp                TranslateBlendOp               (BlendOp op);
 VkDescriptorType         TranslateBindingType           (BindingType type);
 VkImageUsageFlags        TranslateTextureUsageFlag      (TextureUsageFlag flag);
 VkPipelineStageFlags2    TranslatePipelineStageFlag     (PipelineStageFlag flag);
-VkImageAspectFlags       TranslateAspectTypeFlag        (AspectTypeFlag flag);
 VkBufferUsageFlags       TranslateBufferUsageFlag       (BufferUsageFlag flag);
 VkAttachmentLoadOp       TranslateLoadOp                (AttachmentLoadOp op);
 VkAttachmentStoreOp      TranslateStoreOp               (AttachmentStoreOp op);
@@ -62,7 +61,11 @@ VkSamplerAddressMode     TranslateSamplerAddressMode    (AddressMode mode);
 VkPipelineStageFlags2    TranslatePipelineStageFlag     (PipelineStageFlag flag);
 VkAccessFlags2           TranslateAccessFlag            (ResourceAccessFlag flag);
 VkImageLayout            TranslateImageLayout           (TextureLayout layout);
-VkImageSubresourceRange  TranslateImageSubresources     (const TextureSubresources &subresources);
+VkImageSubresourceRange  TranslateImageSubresources     (Format format, const TextureSubresources &subresources);
+
+bool HasColorAspect(Format format);
+bool HasDepthStencilAspect(Format format);
+VkImageAspectFlags GetAllAspects(Format format);
 
 struct VulkanMemoryAllocation
 {

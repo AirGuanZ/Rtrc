@@ -302,17 +302,6 @@ RTRC_DEFINE_ENUM_FLAGS(ResourceAccess)
 
 using ResourceAccessFlag = EnumFlags<ResourceAccess>;
 
-enum class AspectType : uint8_t
-{
-    Color   = 1 << 0,
-    Depth   = 1 << 1,
-    Stencil = 1 << 2
-};
-
-RTRC_DEFINE_ENUM_FLAGS(AspectType)
-
-using AspectTypeFlag = EnumFlags<AspectType>;
-
 enum class AttachmentLoadOp
 {
     Load,
@@ -393,18 +382,16 @@ struct Scissor
 
 struct TextureSubresource
 {
-    AspectType aspect;
-    uint32_t   mipLevel;
-    uint32_t   arrayLayer;
+    uint32_t mipLevel;
+    uint32_t arrayLayer;
 };
 
 struct TextureSubresources
 {
-    AspectTypeFlag aspects;
-    uint32_t       mipLevel;
-    uint32_t       levelCount = 1;
-    uint32_t       arrayLayer;
-    uint32_t       layerCount = 1;
+    uint32_t mipLevel;
+    uint32_t levelCount = 1;
+    uint32_t arrayLayer;
+    uint32_t layerCount = 1;
 };
 
 struct Texture2DDesc
@@ -826,17 +813,13 @@ public:
 
     virtual void Dispatch(int groupCountX, int groupCountY, int groupCountZ) = 0;
 
-    virtual void CopyBuffer(
-        Buffer *dst, size_t dstOffset,
-        Buffer *src, size_t srcOffset, size_t range) = 0;
+    virtual void CopyBuffer(Buffer *dst, size_t dstOffset, Buffer *src, size_t srcOffset, size_t range) = 0;
 
-    virtual void CopyBufferToTexture(
-        Texture *dst, AspectTypeFlag aspect, uint32_t mipLevel, uint32_t arrayLayer,
-        Buffer *src, size_t srcOffset) = 0;
+    virtual void CopyBufferToColorTexture(
+        Texture *dst, uint32_t mipLevel, uint32_t arrayLayer, Buffer *src, size_t srcOffset) = 0;
 
-    virtual void CopyTextureToBuffer(
-        Buffer *dst, size_t dstOffset,
-        Texture *src, AspectTypeFlag aspect, uint32_t mipLevel, uint32_t arrayLayer) = 0;
+    virtual void CopyColorTextureToBuffer(
+        Buffer *dst, size_t dstOffset, Texture *src, uint32_t mipLevel, uint32_t arrayLayer) = 0;
 
 protected:
 
@@ -960,6 +943,8 @@ public:
     virtual TextureDimension GetDimension() const = 0;
 
     virtual const Texture2DDesc &Get2DDesc() const = 0;
+
+    virtual Format GetFormat() const = 0;
 
     virtual Ptr<Texture2DRTV> Create2DRTV(const Texture2DRTVDesc &desc) const = 0;
 

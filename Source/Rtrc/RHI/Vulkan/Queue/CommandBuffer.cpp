@@ -106,7 +106,7 @@ void VulkanCommandBuffer::ExecuteBarriers(
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .image               = GetVulkanImage(transition.texture),
-            .subresourceRange    = TranslateImageSubresources(transition.subresources)
+            .subresourceRange    = TranslateImageSubresources(transition.texture->GetFormat(), transition.subresources)
         });
     }
 
@@ -150,7 +150,7 @@ void VulkanCommandBuffer::ExecuteBarriers(
                 .srcQueueFamilyIndex = beforeQueue->GetNativeFamilyIndex(),
                 .dstQueueFamilyIndex = afterQueue->GetNativeFamilyIndex(),
                 .image               = GetVulkanImage(release.texture),
-                .subresourceRange    = TranslateImageSubresources(release.subresources)
+                .subresourceRange    = TranslateImageSubresources(release.texture->GetFormat(), release.subresources)
             });
         }
     }
@@ -190,7 +190,7 @@ void VulkanCommandBuffer::ExecuteBarriers(
                 .srcQueueFamilyIndex = beforeQueue->GetNativeFamilyIndex(),
                 .dstQueueFamilyIndex = afterQueue->GetNativeFamilyIndex(),
                 .image               = GetVulkanImage(acquire.texture),
-                .subresourceRange    = TranslateImageSubresources(acquire.subresources)
+                .subresourceRange    = TranslateImageSubresources(acquire.texture->GetFormat(), acquire.subresources)
             });
         }
     }
@@ -486,9 +486,8 @@ void VulkanCommandBuffer::CopyBuffer(
     vkCmdCopyBuffer(commandBuffer_, vkSrc, vkDst, 1, &copy);
 }
 
-void VulkanCommandBuffer::CopyBufferToTexture(
-    Texture *dst, AspectTypeFlag aspect, uint32_t mipLevel, uint32_t arrayLayer,
-    Buffer *src, size_t srcOffset)
+void VulkanCommandBuffer::CopyBufferToColorTexture(
+    Texture *dst, uint32_t mipLevel, uint32_t arrayLayer, Buffer *src, size_t srcOffset)
 {
     auto &texDesc = dst->Get2DDesc();
     const VkBufferImageCopy copy = {
@@ -496,7 +495,7 @@ void VulkanCommandBuffer::CopyBufferToTexture(
         .bufferRowLength   = 0,
         .bufferImageHeight = 0,
         .imageSubresource  = VkImageSubresourceLayers{
-            .aspectMask     = TranslateAspectTypeFlag(aspect),
+            .aspectMask     = GetAllAspects(texDesc.format),
             .mipLevel       = mipLevel,
             .baseArrayLayer = arrayLayer,
             .layerCount     = 1
@@ -509,9 +508,8 @@ void VulkanCommandBuffer::CopyBufferToTexture(
     vkCmdCopyBufferToImage(commandBuffer_, vkSrc, vkDst, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
 }
 
-void VulkanCommandBuffer::CopyTextureToBuffer(
-    Buffer *dst, size_t dstOffset,
-    Texture *src, AspectTypeFlag aspect, uint32_t mipLevel, uint32_t arrayLayer)
+void VulkanCommandBuffer::CopyColorTextureToBuffer(
+    Buffer *dst, size_t dstOffset, Texture *src, uint32_t mipLevel, uint32_t arrayLayer)
 {
     auto &texDesc = src->Get2DDesc();
     const VkBufferImageCopy copy = {
@@ -519,7 +517,7 @@ void VulkanCommandBuffer::CopyTextureToBuffer(
         .bufferRowLength   = 0,
         .bufferImageHeight = 0,
         .imageSubresource  = VkImageSubresourceLayers{
-            .aspectMask     = TranslateAspectTypeFlag(aspect),
+            .aspectMask     = GetAllAspects(texDesc.format),
             .mipLevel       = mipLevel,
             .baseArrayLayer = arrayLayer,
             .layerCount     = 1

@@ -93,7 +93,6 @@ BufferAcquireBarrier ResourceUploader::Upload(
 
 TextureAcquireBarrier ResourceUploader::Upload(
     Texture           *texture,
-    AspectTypeFlag     aspect,
     uint32_t           mipLevel,
     uint32_t           arrayLayer,
     const void        *data,
@@ -133,7 +132,6 @@ TextureAcquireBarrier ResourceUploader::Upload(
     commandBuffer_->ExecuteBarriers(TextureTransitionBarrier{
         .texture      = texture,
         .subresources = {
-            .aspects    = AspectType::Color,
             .mipLevel   = mipLevel,
             .arrayLayer = arrayLayer
         },
@@ -145,7 +143,7 @@ TextureAcquireBarrier ResourceUploader::Upload(
         .afterLayout    = TextureLayout::CopyDst
     }, {}, {}, {}, {}, {});
 
-    commandBuffer_->CopyBufferToTexture(texture, aspect, mipLevel, arrayLayer, stagingBuffer.Get(), 0);
+    commandBuffer_->CopyBufferToColorTexture(texture, mipLevel, arrayLayer, stagingBuffer.Get(), 0);
     
     if(afterQueue != queue_.Get())
     {
@@ -153,7 +151,6 @@ TextureAcquireBarrier ResourceUploader::Upload(
             {
                 .texture      = texture,
                 .subresources = {
-                    .aspects    = aspect,
                     .mipLevel   = mipLevel,
                     .arrayLayer = arrayLayer
                 },
@@ -172,7 +169,6 @@ TextureAcquireBarrier ResourceUploader::Upload(
         {
             .texture      = texture,
             .subresources = {
-                .aspects    = aspect,
                 .mipLevel   = mipLevel,
                 .arrayLayer = arrayLayer
             },
@@ -197,7 +193,6 @@ TextureAcquireBarrier ResourceUploader::Upload(
             {
                 .texture      = texture,
                 .subresources = {
-                    .aspects    = aspect,
                     .mipLevel   = mipLevel,
                     .arrayLayer = arrayLayer
                 },
@@ -214,7 +209,6 @@ TextureAcquireBarrier ResourceUploader::Upload(
 
 TextureAcquireBarrier ResourceUploader::Upload(
     Texture            *texture,
-    AspectTypeFlag      aspect,
     uint32_t            mipLevel,
     uint32_t            arrayLayer,
     const ImageDynamic &image,
@@ -236,7 +230,7 @@ TextureAcquireBarrier ResourceUploader::Upload(
                 v = Vector4b(v.z, v.y, v.x, v.w);
             }
             return Upload(
-                texture, aspect, mipLevel, arrayLayer, data.GetData(),
+                texture, mipLevel, arrayLayer, data.GetData(),
                 afterQueue, afterStages, afterAccesses, afterLayout);
         }
     case Format::R32G32B32A32_Float:
@@ -244,7 +238,7 @@ TextureAcquireBarrier ResourceUploader::Upload(
             auto tdata = image.To(ImageDynamic::F32x4);
             auto &data = tdata.As<Image<Vector4f>>();
             return Upload(
-                texture, aspect, mipLevel, arrayLayer, data.GetData(),
+                texture, mipLevel, arrayLayer, data.GetData(),
                 afterQueue, afterStages, afterAccesses, afterLayout);
         }
     default:

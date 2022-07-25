@@ -227,24 +227,6 @@ VkImageUsageFlags TranslateTextureUsageFlag(TextureUsageFlag flags)
     return result;
 }
 
-VkImageAspectFlags TranslateAspectTypeFlag(AspectTypeFlag flag)
-{
-    VkImageAspectFlags result = 0;
-    if(flag.contains(AspectType::Color))
-    {
-        result |= VK_IMAGE_ASPECT_COLOR_BIT;
-    }
-    if(flag.contains(AspectType::Depth))
-    {
-        result |= VK_IMAGE_ASPECT_DEPTH_BIT;
-    }
-    if(flag.contains(AspectType::Stencil))
-    {
-        result |= VK_IMAGE_ASPECT_STENCIL_BIT;
-    }
-    return result;
-}
-
 VkBufferUsageFlags TranslateBufferUsageFlag(BufferUsageFlag flag)
 {
     VkBufferUsageFlags result = 0;
@@ -464,15 +446,31 @@ VkImageLayout TranslateImageLayout(TextureLayout layout)
     Unreachable();
 }
 
-VkImageSubresourceRange TranslateImageSubresources(const TextureSubresources &subresources)
+VkImageSubresourceRange TranslateImageSubresources(Format format, const TextureSubresources &subresources)
 {
     return VkImageSubresourceRange{
-        .aspectMask     = TranslateAspectTypeFlag(subresources.aspects),
+        .aspectMask     = GetAllAspects(format),
         .baseMipLevel   = subresources.mipLevel,
         .levelCount     = subresources.levelCount,
         .baseArrayLayer = subresources.arrayLayer,
         .layerCount     = subresources.layerCount
     };
+}
+
+bool HasColorAspect(Format format)
+{
+    return !HasDepthStencilAspect(format);
+}
+
+bool HasDepthStencilAspect(Format format)
+{
+    // no format contains depth/stencil aspects currently
+    return false;
+}
+
+VkImageAspectFlags GetAllAspects(Format format)
+{
+    return VK_IMAGE_ASPECT_COLOR_BIT;
 }
 
 RTRC_RHI_VK_END

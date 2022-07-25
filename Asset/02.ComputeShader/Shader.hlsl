@@ -4,8 +4,8 @@ struct ScaleSettingCStruct
 };
 
 ConstantBuffer<ScaleSettingCStruct> ScaleSetting;
-Texture2D<float4> InputTexture;
-RWTexture2D<float4> OutputTexture;
+Texture2D<float4>                   InputTexture;
+RWTexture2D<float4>                 OutputTexture;
 
 group ScaleGroup
 {

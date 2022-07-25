@@ -30,6 +30,8 @@ public:
 
     const Texture2DDesc &Get2DDesc() const override;
 
+    Format GetFormat() const override;
+
     Ptr<Texture2DRTV> Create2DRTV(const Texture2DRTVDesc &desc) const override;
 
     Ptr<Texture2DSRV> Create2DSRV(const Texture2DSRVDesc &desc) const override;

@@ -45,6 +45,11 @@ const Texture2DDesc &VulkanTexture2D::Get2DDesc() const
     return desc_;
 }
 
+Format VulkanTexture2D::GetFormat() const
+{
+    return desc_.format;
+}
+
 Ptr<Texture2DRTV> VulkanTexture2D::Create2DRTV(const Texture2DRTVDesc &desc) const
 {
     auto imageView = CreateImageView(ViewKey{

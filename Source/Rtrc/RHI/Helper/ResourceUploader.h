@@ -25,7 +25,6 @@ public:
     // use width * texelBytes if rowBytes is 0
     TextureAcquireBarrier Upload(
         Texture           *texture,
-        AspectTypeFlag     aspect,
         uint32_t           mipLevel,
         uint32_t           arrayLayer,
         const void        *data,
@@ -36,7 +35,6 @@ public:
 
     TextureAcquireBarrier Upload(
         Texture            *texture,
-        AspectTypeFlag      aspect,
         uint32_t            mipLevel,
         uint32_t            arrayLayer,
         const ImageDynamic &image,

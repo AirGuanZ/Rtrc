@@ -1,11 +1,14 @@
-Buffer<float2> VertexPositionBuffer;
-Buffer<float2> VertexTexCoordBuffer;
+Buffer<float2>    VertexPositionBuffer;
+Buffer<float2>    VertexTexCoordBuffer;
 Texture2D<float4> MainTexture;
-SamplerState MainSampler;
+SamplerState      MainSampler;
 
 group TestGroup
 {
-    VertexPositionBuffer, VertexTexCoordBuffer, MainTexture, MainSampler
+    VertexPositionBuffer,
+    VertexTexCoordBuffer,
+    MainTexture,
+    MainSampler
 }
 
 struct VSInput

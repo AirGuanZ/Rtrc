@@ -64,7 +64,7 @@ void Run()
 
     std::vector<RHI::TextureAcquireBarrier> pendingTextureAcquireBarriers;
     pendingTextureAcquireBarriers.push_back(uploader.Upload(
-        inputTexture,  RHI::AspectType::Color, 0, 0,
+        inputTexture, 0, 0,
         inputImageData,
         computeQueue,
         RHI::PipelineStage::ComputeShader,
@@ -139,7 +139,6 @@ void Run()
     const RHI::TextureTransitionBarrier outputTextureInitialStateTransitionBarrier = {
         .texture      = outputTexture,
         .subresources = {
-            .aspects    = RHI::AspectType::Color,
             .mipLevel   = 0,
             .arrayLayer = 0
         },
@@ -168,7 +167,6 @@ void Run()
         RHI::TextureTransitionBarrier{
             .texture      = outputTexture,
             .subresources = {
-                .aspects    = RHI::AspectType::Color,
                 .mipLevel   = 0,
                 .arrayLayer = 0
             },
@@ -180,7 +178,7 @@ void Run()
             .afterLayout    = RHI::TextureLayout::CopySrc
         }, {}, {}, {}, {}, {});
 
-    commandBuffer->CopyTextureToBuffer(readBackStagingBuffer, 0, outputTexture, RHI::AspectType::Color, 0, 0);
+    commandBuffer->CopyColorTextureToBuffer(readBackStagingBuffer, 0, outputTexture, 0, 0);
 
     commandBuffer->End();
 

@@ -13,7 +13,7 @@ const char *GetFormatName(Format format)
     ADD_CASE(R32G32_Float)
     ADD_CASE(R32G32B32A32_Float)
     }
-    Unreachable();
+    throw Exception("unknown format: " + std::to_string(static_cast<int>(format)));
 #undef ADD_CASE
 }
 
@@ -26,7 +26,7 @@ size_t GetTexelSize(Format format)
     case Format::R32G32_Float:       return 8;
     case Format::R32G32B32A32_Float: return 16;
     }
-    Unreachable();
+    throw Exception("unknown format: " + std::to_string(static_cast<int>(format)));
 }
 
 RTRC_RHI_END

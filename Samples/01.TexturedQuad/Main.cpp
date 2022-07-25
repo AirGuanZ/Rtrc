@@ -176,7 +176,7 @@ void Run()
     });
 
     uploadTextureAcquireBarriers.push_back(uploader.Upload(
-        mainTex, RHI::AspectType::Color, 0, 0, mainTexData,
+        mainTex, 0, 0, mainTexData,
         graphicsQueue,
         RHI::PipelineStage::FragmentShader,
         RHI::ResourceAccess::TextureRead,
@@ -247,7 +247,6 @@ void Run()
         {
             .texture       = image,
             .subresources  = {
-                .aspects    = RHI::AspectType::Color,
                 .mipLevel   = 0,
                 .arrayLayer = 0
             },
@@ -294,7 +293,6 @@ void Run()
         {
             .texture      = image,
             .subresources = {
-                .aspects    = RHI::AspectType::Color,
                 .mipLevel   = 0,
                 .arrayLayer = 0,
             },
