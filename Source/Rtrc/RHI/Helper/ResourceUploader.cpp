@@ -1,6 +1,8 @@
 #include <Rtrc/RHI/Helper/ResourceUploader.h>
 
-RTRC_RHI_BEGIN
+RTRC_BEGIN
+
+using namespace RHI;
 
 ResourceUploader::ResourceUploader(Ptr<Device> device)
     : device_(std::move(device)), pendingStagingBufferSize_(0)
@@ -141,7 +143,7 @@ TextureAcquireBarrier ResourceUploader::Upload(
         .afterStages    = PipelineStage::Copy,
         .afterAccesses  = ResourceAccess::CopyWrite,
         .afterLayout    = TextureLayout::CopyDst
-    }, {}, {}, {}, {}, {});
+    });
 
     commandBuffer_->CopyBufferToColorTexture(texture, mipLevel, arrayLayer, stagingBuffer.Get(), 0);
     
@@ -254,9 +256,7 @@ void ResourceUploader::SubmitAndSync()
     }
 
     commandBuffer_->ExecuteBarriers(
-        pendingTextureTransitionBarriers_, {},
-        pendingTextureReleaseBarriers_, {},
-        pendingBufferReleaseBarriers_, {});
+        pendingTextureTransitionBarriers_, pendingTextureReleaseBarriers_, pendingBufferReleaseBarriers_);
     commandBuffer_->End();
 
     queue_->Submit({}, {}, commandBuffer_, {}, {}, {});
@@ -270,4 +270,4 @@ void ResourceUploader::SubmitAndSync()
     pendingTextureTransitionBarriers_.clear();
 }
 
-RTRC_RHI_END
+RTRC_END

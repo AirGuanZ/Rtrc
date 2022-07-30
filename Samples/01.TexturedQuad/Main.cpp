@@ -52,15 +52,7 @@ void Run()
 
     // frame resources
 
-    int frameIndex = 0;
-    std::vector<RHI::Ptr<RHI::Fence>> fences;
-    std::vector<RHI::Ptr<RHI::CommandPool>> commandPools;
-
-    for(int i = 0; i < swapchain->GetRenderTargetCount(); ++i)
-    {
-        fences.push_back(device->CreateFence(true));
-        commandPools.push_back(device->GetQueue(RHI::QueueType::Graphics)->CreateCommandPool());
-    }
+    FrameResourceManager frameResources(device, swapchain->GetRenderTargetCount());
 
     // pipeline
 
@@ -89,7 +81,7 @@ void Run()
 
     // uploader
 
-    RHI::ResourceUploader uploader(device);
+    ResourceUploader uploader(device);
     std::vector<RHI::BufferAcquireBarrier> uploadBufferAcquireBarriers;
     std::vector<RHI::TextureAcquireBarrier> uploadTextureAcquireBarriers;
 
@@ -221,17 +213,14 @@ void Run()
             continue;
         }
 
-        frameIndex = (frameIndex + 1) % swapchain->GetRenderTargetCount();
-        fences[frameIndex]->Wait();
-        fences[frameIndex]->Reset();
+        frameResources.BeginFrame();
 
         if(!swapchain->Acquire())
         {
             continue;
         }
-
-        commandPools[frameIndex]->Reset();
-        auto commandBuffer = commandPools[frameIndex]->NewCommandBuffer();
+        
+        auto commandBuffer = frameResources.AllocateCommandBuffer(RHI::QueueType::Graphics);
 
         auto image = swapchain->GetRenderTarget();
         auto rtv = image->Create2DRTV(RHI::Texture2DRTVDesc
@@ -246,15 +235,12 @@ void Run()
         commandBuffer->ExecuteBarriers(RHI::TextureTransitionBarrier
         {
             .texture       = image,
-            .subresources  = {
-                .mipLevel   = 0,
-                .arrayLayer = 0
-            },
+            .subresources  = { .mipLevel = 0, .arrayLayer = 0 },
             .beforeLayout  = RHI::TextureLayout::Present,
             .afterStages   = RHI::PipelineStage::RenderTarget,
             .afterAccesses = RHI::ResourceAccess::RenderTargetWrite,
             .afterLayout   = RHI::TextureLayout::RenderTarget
-        }, {}, {}, uploadTextureAcquireBarriers, {}, uploadBufferAcquireBarriers);
+        }, uploadTextureAcquireBarriers, uploadBufferAcquireBarriers);
 
         uploadTextureAcquireBarriers.clear();
         uploadBufferAcquireBarriers.clear();
@@ -292,15 +278,12 @@ void Run()
         commandBuffer->ExecuteBarriers(RHI::TextureTransitionBarrier
         {
             .texture      = image,
-            .subresources = {
-                .mipLevel   = 0,
-                .arrayLayer = 0,
-            },
+            .subresources = { .mipLevel = 0, .arrayLayer = 0, },
             .beforeStages   = RHI::PipelineStage::RenderTarget,
             .beforeAccesses = RHI::ResourceAccess::RenderTargetWrite,
             .beforeLayout   = RHI::TextureLayout::RenderTarget,
             .afterLayout    = RHI::TextureLayout::Present
-        }, {}, {}, {}, {}, {});
+        });
 
         commandBuffer->End();
 
@@ -310,7 +293,7 @@ void Run()
             commandBuffer,
             { swapchain->GetPresentSemaphore(), RHI::PipelineStage::RenderTarget },
             {},
-            fences[frameIndex]);
+            frameResources.GetFrameFence());
 
         swapchain->Present();
     }

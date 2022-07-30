@@ -58,7 +58,7 @@ void Run()
         .layerCount     = 1
     });
 
-    RHI::ResourceUploader uploader(device);
+    ResourceUploader uploader(device);
 
     auto computeQueue = device->GetQueue(RHI::QueueType::Compute);
 
@@ -150,8 +150,7 @@ void Run()
         .afterLayout    = RHI::TextureLayout::ShaderRWTexture
     };
 
-    commandBuffer->ExecuteBarriers(
-        outputTextureInitialStateTransitionBarrier, {}, {}, pendingTextureAcquireBarriers, {}, {});
+    commandBuffer->ExecuteBarriers(outputTextureInitialStateTransitionBarrier, pendingTextureAcquireBarriers);
 
     commandBuffer->BindPipeline(pipeline);
     commandBuffer->BindGroupToComputePipeline(0, bindingGroup->GetRHIBindingGroup());
@@ -176,7 +175,7 @@ void Run()
             .afterStages    = RHI::PipelineStage::Copy,
             .afterAccesses  = RHI::ResourceAccess::CopyRead,
             .afterLayout    = RHI::TextureLayout::CopySrc
-        }, {}, {}, {}, {}, {});
+        });
 
     commandBuffer->CopyColorTextureToBuffer(readBackStagingBuffer, 0, outputTexture, 0, 0);
 

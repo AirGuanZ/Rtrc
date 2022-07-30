@@ -16,14 +16,6 @@ public:
 
     void End() override;
 
-    void ExecuteBarriers(
-        Span<TextureTransitionBarrier> textureTransitions,
-        Span<BufferTransitionBarrier>  bufferTransitions,
-        Span<TextureReleaseBarrier>    textureReleaseBarriers,
-        Span<TextureAcquireBarrier>    textureAcquireBarriers,
-        Span<BufferReleaseBarrier>     bufferReleaseBarriers,
-        Span<BufferAcquireBarrier>     bufferAcquireBarriers) override;
-
     void BeginRenderPass(Span<RenderPassColorAttachment> colorAttachments) override;
 
     void EndRenderPass() override;
@@ -64,7 +56,13 @@ public:
 
 protected:
 
-    const Ptr<GraphicsPipeline> &GetCurrentPipeline() const override;
+    void ExecuteBarriersInternal(
+        Span<TextureTransitionBarrier> textureTransitions,
+        Span<BufferTransitionBarrier>  bufferTransitions,
+        Span<TextureReleaseBarrier>    textureReleaseBarriers,
+        Span<TextureAcquireBarrier>    textureAcquireBarriers,
+        Span<BufferReleaseBarrier>     bufferReleaseBarriers,
+        Span<BufferAcquireBarrier>     bufferAcquireBarriers) override;
 
 private:
 

@@ -67,7 +67,9 @@ enum class QueueType : uint8_t
 {
     Graphics,
     Compute,
-    Transfer
+    Transfer,
+
+    Count
 };
 
 enum class Format : uint32_t
@@ -777,13 +779,8 @@ public:
 
     virtual void End() = 0;
 
-    virtual void ExecuteBarriers(
-        Span<TextureTransitionBarrier> textureTransitions,
-        Span<BufferTransitionBarrier>  bufferTransitions,
-        Span<TextureReleaseBarrier>    textureReleaseBarriers,
-        Span<TextureAcquireBarrier>    textureAcquireBarriers,
-        Span<BufferReleaseBarrier>     bufferReleaseBarriers,
-        Span<BufferAcquireBarrier>     bufferAcquireBarriers) = 0;
+    template<typename...Ts>
+    void ExecuteBarriers(Ts...ts);
 
     virtual void BeginRenderPass(Span<RenderPassColorAttachment> colorAttachments) = 0;
 
@@ -823,7 +820,13 @@ public:
 
 protected:
 
-    virtual const Ptr<GraphicsPipeline> &GetCurrentPipeline() const = 0;
+    virtual void ExecuteBarriersInternal(
+        Span<TextureTransitionBarrier> textureTransitions,
+        Span<BufferTransitionBarrier>  bufferTransitions,
+        Span<TextureReleaseBarrier>    textureReleaseBarriers,
+        Span<TextureAcquireBarrier>    textureAcquireBarriers,
+        Span<BufferReleaseBarrier>     bufferReleaseBarriers,
+        Span<BufferAcquireBarrier>     bufferAcquireBarriers) = 0;
 };
 
 class RawShader : public RHIObject
@@ -1061,5 +1064,57 @@ struct DirectX12InstanceDesc
 Ptr<Instance> CreateDirectX12Instance(const DirectX12InstanceDesc &desc);
 
 #endif
+
+// =============================== inlined implementation ===============================
+
+template <typename...Ts>
+void CommandBuffer::ExecuteBarriers(Ts...ts)
+{
+    // TODO: avoid unnecessary memory allocations
+
+    std::vector<TextureTransitionBarrier> textureTs;
+    std::vector<TextureAcquireBarrier>    textureAs;
+    std::vector<TextureReleaseBarrier>    textureRs;
+
+    std::vector<BufferTransitionBarrier> bufferTs;
+    std::vector<BufferAcquireBarrier>    bufferAs;
+    std::vector<BufferReleaseBarrier>    bufferRs;
+
+    auto process = [&]<typename T>(const T &t)
+    {
+        using ET = typename std::remove_reference_t<decltype(Span(t))>::ElementType;
+        auto span = Span<ET>(t);
+        for(auto &s : span)
+        {
+            if constexpr(std::is_same_v<ET, TextureTransitionBarrier>)
+            {
+                textureTs.push_back(s);
+            }
+            else if constexpr(std::is_same_v<ET, TextureAcquireBarrier>)
+            {
+                textureAs.push_back(s);
+            }
+            else if constexpr(std::is_same_v<ET, TextureReleaseBarrier>)
+            {
+                textureRs.push_back(s);
+            }
+            else if constexpr(std::is_same_v<ET, BufferTransitionBarrier>)
+            {
+                bufferTs.push_back(s);
+            }
+            else if constexpr(std::is_same_v<ET, BufferAcquireBarrier>)
+            {
+                bufferAs.push_back(s);
+            }
+            else
+            {
+                static_assert(std::is_same_v<ET, BufferReleaseBarrier>);
+                bufferRs.push_back(s);
+            }
+        }
+    };
+    (process(ts), ...);
+    this->ExecuteBarriersInternal(textureTs, bufferTs, textureRs, textureAs, bufferRs, bufferAs);
+}
 
 RTRC_RHI_END

@@ -12,6 +12,8 @@ class Span
 {
 public:
 
+    using ElementType = T;
+
     Span() : Span(nullptr, 0u) { }
 
     Span(const T &value) : Span(&value, 1) { }

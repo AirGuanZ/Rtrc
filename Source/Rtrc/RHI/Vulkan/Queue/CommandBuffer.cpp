@@ -51,7 +51,240 @@ void VulkanCommandBuffer::End()
         "failed to end vulkan command buffer");
 }
 
-void VulkanCommandBuffer::ExecuteBarriers(
+void VulkanCommandBuffer::BeginRenderPass(Span<RenderPassColorAttachment> colorAttachments)
+{
+    assert(!colorAttachments.IsEmpty());
+    std::vector<VkRenderingAttachmentInfo> vkColorAttachments(colorAttachments.GetSize());
+    for(auto &&[i, a] : Enumerate(colorAttachments))
+    {
+        vkColorAttachments[i] = VkRenderingAttachmentInfo{
+            .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+            .imageView   = static_cast<VulkanTexture2DRTV *>(a.rtv)->GetNativeImageView(),
+            .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .resolveMode = VK_RESOLVE_MODE_NONE,
+            .loadOp      = TranslateLoadOp(a.loadOp),
+            .storeOp     = TranslateStoreOp(a.storeOp),
+            .clearValue  = TranslateClearValue(a.clearValue)
+        };
+    }
+
+    const auto &attachment0Desc = static_cast<VulkanTexture2DRTV *>(
+        colorAttachments[0].rtv)->GetTexture()->Get2DDesc();
+    const VkRect2D renderArea = {
+            .offset = { 0, 0 },
+            .extent = { attachment0Desc.width, attachment0Desc.height }
+    };
+    const VkRenderingInfo renderingInfo = {
+        .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
+        .renderArea           = renderArea,
+        .layerCount           = 1,
+        .colorAttachmentCount = colorAttachments.GetSize(),
+        .pColorAttachments    = vkColorAttachments.data()
+    };
+
+    vkCmdBeginRendering(commandBuffer_, &renderingInfo);
+}
+
+void VulkanCommandBuffer::EndRenderPass()
+{
+    vkCmdEndRendering(commandBuffer_);
+}
+
+void VulkanCommandBuffer::BindPipeline(const Ptr<GraphicsPipeline> &pipeline)
+{
+    if(!pipeline)
+    {
+        vkCmdBindPipeline(commandBuffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, nullptr);
+        currentGraphicsPipeline_ = nullptr;
+        return;
+    }
+    auto vkPipeline = static_cast<VulkanGraphicsPipeline *>(pipeline.Get());
+    vkCmdBindPipeline(commandBuffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, vkPipeline->GetNativePipeline());
+    currentGraphicsPipeline_ = DynamicCast<VulkanGraphicsPipeline>(pipeline);
+}
+
+void VulkanCommandBuffer::BindPipeline(const Ptr<ComputePipeline> &pipeline)
+{
+    if(!pipeline)
+    {
+        vkCmdBindPipeline(commandBuffer_, VK_PIPELINE_BIND_POINT_COMPUTE, nullptr);
+        currentGraphicsPipeline_ = nullptr;
+        return;
+    }
+    auto vkPipeline = static_cast<VulkanComputePipeline *>(pipeline.Get());
+    vkCmdBindPipeline(commandBuffer_, VK_PIPELINE_BIND_POINT_COMPUTE, vkPipeline->GetNativePipeline());
+    currentComputePipeline_ = DynamicCast<VulkanComputePipeline>(pipeline);
+}
+
+void VulkanCommandBuffer::BindGroupsToGraphicsPipeline(int startIndex, Span<RC<BindingGroup>> groups)
+{
+    auto layout = static_cast<const VulkanBindingLayout *>(currentGraphicsPipeline_->GetBindingLayout().Get());
+    std::vector<VkDescriptorSet> sets(groups.GetSize());
+    for(auto &&[i, g] : Enumerate(groups))
+    {
+        sets[i] = static_cast<VulkanBindingGroupInstance *>(g.get())->GetNativeSet();
+    }
+    vkCmdBindDescriptorSets(
+        commandBuffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
+        layout->GetNativeLayout(), startIndex,
+        static_cast<uint32_t>(sets.size()), sets.data(), 0, nullptr);
+}
+
+void VulkanCommandBuffer::BindGroupsToComputePipeline(int startIndex, Span<RC<BindingGroup>> groups)
+{
+    auto layout = static_cast<const VulkanBindingLayout *>(currentComputePipeline_->GetBindingLayout().Get());
+    std::vector<VkDescriptorSet> sets(groups.GetSize());
+    for(auto &&[i, g] : Enumerate(groups))
+    {
+        sets[i] = static_cast<VulkanBindingGroupInstance *>(g.get())->GetNativeSet();
+    }
+    vkCmdBindDescriptorSets(
+        commandBuffer_, VK_PIPELINE_BIND_POINT_COMPUTE,
+        layout->GetNativeLayout(), startIndex,
+        static_cast<uint32_t>(sets.size()), sets.data(), 0, nullptr);
+}
+
+void VulkanCommandBuffer::BindGroupToGraphicsPipeline(int index, const Ptr<BindingGroup> &group)
+{
+    auto layout = static_cast<const VulkanBindingLayout *>(currentGraphicsPipeline_->GetBindingLayout().Get());
+    VkDescriptorSet set = static_cast<VulkanBindingGroupInstance *>(group.Get())->GetNativeSet();
+    vkCmdBindDescriptorSets(
+        commandBuffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
+        layout->GetNativeLayout(), index, 1, &set, 0, nullptr);
+}
+
+void VulkanCommandBuffer::BindGroupToComputePipeline(int index, const Ptr<BindingGroup> &group)
+{
+    auto layout = static_cast<const VulkanBindingLayout *>(currentComputePipeline_->GetBindingLayout().Get());
+    VkDescriptorSet set = static_cast<VulkanBindingGroupInstance *>(group.Get())->GetNativeSet();
+    vkCmdBindDescriptorSets(
+        commandBuffer_, VK_PIPELINE_BIND_POINT_COMPUTE,
+        layout->GetNativeLayout(), index, 1, &set, 0, nullptr);
+}
+
+void VulkanCommandBuffer::SetViewports(Span<Viewport> viewports)
+{
+    std::vector<VkViewport> vkViewports(viewports.GetSize());
+    for(auto &&[i, v] : Enumerate(viewports))
+    {
+        vkViewports[i] = TranslateViewport(v);
+    }
+    vkCmdSetViewport(commandBuffer_, 0, viewports.GetSize(), vkViewports.data());
+}
+
+void VulkanCommandBuffer::SetScissors(Span<Scissor> scissors)
+{
+    std::vector<VkRect2D> vkScissors(scissors.GetSize());
+    for(auto &&[i, s] : Enumerate(scissors))
+    {
+        vkScissors[i] = TranslateScissor(s);
+    }
+    vkCmdSetScissor(commandBuffer_, 0, scissors.GetSize(), vkScissors.data());
+}
+
+void VulkanCommandBuffer::SetViewportsWithCount(Span<Viewport> viewports)
+{
+    std::vector<VkViewport> vkViewports(viewports.GetSize());
+    for(auto &&[i, v] : Enumerate(viewports))
+    {
+        vkViewports[i] = TranslateViewport(v);
+    }
+    vkCmdSetViewportWithCount(commandBuffer_, viewports.GetSize(), vkViewports.data());
+}
+
+void VulkanCommandBuffer::SetScissorsWithCount(Span<Scissor> scissors)
+{
+    std::vector<VkRect2D> vkScissors(scissors.GetSize());
+    for(auto &&[i, s] : Enumerate(scissors))
+    {
+        vkScissors[i] = TranslateScissor(s);
+    }
+    vkCmdSetScissorWithCount(commandBuffer_, scissors.GetSize(), vkScissors.data());
+}
+
+void VulkanCommandBuffer::Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance)
+{
+    vkCmdDraw(
+        commandBuffer_,
+        static_cast<uint32_t>(vertexCount),
+        static_cast<uint32_t>(instanceCount),
+        static_cast<uint32_t>(firstVertex),
+        static_cast<uint32_t>(firstInstance));
+}
+
+void VulkanCommandBuffer::Dispatch(int groupCountX, int groupCountY, int groupCountZ)
+{
+    vkCmdDispatch(
+        commandBuffer_,
+        static_cast<uint32_t>(groupCountX),
+        static_cast<uint32_t>(groupCountY),
+        static_cast<uint32_t>(groupCountZ));
+}
+
+void VulkanCommandBuffer::CopyBuffer(
+    Buffer *dst, size_t dstOffset,
+    Buffer *src, size_t srcOffset, size_t range)
+{
+    const VkBufferCopy copy = {
+        .srcOffset = srcOffset,
+        .dstOffset = dstOffset,
+        .size      = range
+    };
+    auto vkSrc = static_cast<VulkanBuffer *>(src)->GetNativeBuffer();
+    auto vkDst = static_cast<VulkanBuffer *>(dst)->GetNativeBuffer();
+    vkCmdCopyBuffer(commandBuffer_, vkSrc, vkDst, 1, &copy);
+}
+
+void VulkanCommandBuffer::CopyBufferToColorTexture(
+    Texture *dst, uint32_t mipLevel, uint32_t arrayLayer, Buffer *src, size_t srcOffset)
+{
+    auto &texDesc = dst->Get2DDesc();
+    const VkBufferImageCopy copy = {
+        .bufferOffset      = srcOffset,
+        .bufferRowLength   = 0,
+        .bufferImageHeight = 0,
+        .imageSubresource  = VkImageSubresourceLayers{
+            .aspectMask     = GetAllAspects(texDesc.format),
+            .mipLevel       = mipLevel,
+            .baseArrayLayer = arrayLayer,
+            .layerCount     = 1
+        },
+        .imageOffset = { 0, 0, 0 },
+        .imageExtent = { texDesc.width, texDesc.height, 1 }
+    };
+    auto vkSrc = static_cast<VulkanBuffer *>(src)->GetNativeBuffer();
+    auto vkDst = GetVulkanImage(dst);
+    vkCmdCopyBufferToImage(commandBuffer_, vkSrc, vkDst, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
+}
+
+void VulkanCommandBuffer::CopyColorTextureToBuffer(
+    Buffer *dst, size_t dstOffset, Texture *src, uint32_t mipLevel, uint32_t arrayLayer)
+{
+    auto &texDesc = src->Get2DDesc();
+    const VkBufferImageCopy copy = {
+        .bufferOffset      = dstOffset,
+        .bufferRowLength   = 0,
+        .bufferImageHeight = 0,
+        .imageSubresource  = VkImageSubresourceLayers{
+            .aspectMask     = GetAllAspects(texDesc.format),
+            .mipLevel       = mipLevel,
+            .baseArrayLayer = arrayLayer,
+            .layerCount     = 1
+        },
+        .imageOffset = { 0, 0, 0 },
+        .imageExtent = { texDesc.width, texDesc.height, 1 }
+    };
+    auto vkSrc = GetVulkanImage(src);
+    auto vkDst = static_cast<VulkanBuffer *>(dst)->GetNativeBuffer();
+    vkCmdCopyImageToBuffer(commandBuffer_, vkSrc, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, vkDst, 1, &copy);
+}
+
+VkCommandBuffer VulkanCommandBuffer::GetNativeCommandBuffer() const
+{
+    return commandBuffer_;
+}
+
+void VulkanCommandBuffer::ExecuteBarriersInternal(
     Span<TextureTransitionBarrier> textureTransitions,
     Span<BufferTransitionBarrier>  bufferTransitions,
     Span<TextureReleaseBarrier>    textureReleaseBarriers,
@@ -300,244 +533,6 @@ void VulkanCommandBuffer::ExecuteBarriers(
         .pImageMemoryBarriers     = imageBarriers.data()
     };
     vkCmdPipelineBarrier2(commandBuffer_, &dependencyInfo);
-}
-
-void VulkanCommandBuffer::BeginRenderPass(Span<RenderPassColorAttachment> colorAttachments)
-{
-    assert(!colorAttachments.IsEmpty());
-    std::vector<VkRenderingAttachmentInfo> vkColorAttachments(colorAttachments.GetSize());
-    for(auto &&[i, a] : Enumerate(colorAttachments))
-    {
-        vkColorAttachments[i] = VkRenderingAttachmentInfo{
-            .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-            .imageView   = static_cast<VulkanTexture2DRTV *>(a.rtv)->GetNativeImageView(),
-            .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            .resolveMode = VK_RESOLVE_MODE_NONE,
-            .loadOp      = TranslateLoadOp(a.loadOp),
-            .storeOp     = TranslateStoreOp(a.storeOp),
-            .clearValue  = TranslateClearValue(a.clearValue)
-        };
-    }
-
-    const auto &attachment0Desc = static_cast<VulkanTexture2DRTV *>(
-        colorAttachments[0].rtv)->GetTexture()->Get2DDesc();
-    const VkRect2D renderArea = {
-            .offset = { 0, 0 },
-            .extent = { attachment0Desc.width, attachment0Desc.height }
-    };
-    const VkRenderingInfo renderingInfo = {
-        .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
-        .renderArea           = renderArea,
-        .layerCount           = 1,
-        .colorAttachmentCount = colorAttachments.GetSize(),
-        .pColorAttachments    = vkColorAttachments.data()
-    };
-
-    vkCmdBeginRendering(commandBuffer_, &renderingInfo);
-}
-
-void VulkanCommandBuffer::EndRenderPass()
-{
-    vkCmdEndRendering(commandBuffer_);
-}
-
-void VulkanCommandBuffer::BindPipeline(const Ptr<GraphicsPipeline> &pipeline)
-{
-    if(!pipeline)
-    {
-        vkCmdBindPipeline(commandBuffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, nullptr);
-        currentGraphicsPipeline_ = nullptr;
-        return;
-    }
-    auto vkPipeline = static_cast<VulkanGraphicsPipeline *>(pipeline.Get());
-    vkCmdBindPipeline(commandBuffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, vkPipeline->GetNativePipeline());
-    currentGraphicsPipeline_ = DynamicCast<VulkanGraphicsPipeline>(pipeline);
-}
-
-void VulkanCommandBuffer::BindPipeline(const Ptr<ComputePipeline> &pipeline)
-{
-    if(!pipeline)
-    {
-        vkCmdBindPipeline(commandBuffer_, VK_PIPELINE_BIND_POINT_COMPUTE, nullptr);
-        currentGraphicsPipeline_ = nullptr;
-        return;
-    }
-    auto vkPipeline = static_cast<VulkanComputePipeline *>(pipeline.Get());
-    vkCmdBindPipeline(commandBuffer_, VK_PIPELINE_BIND_POINT_COMPUTE, vkPipeline->GetNativePipeline());
-    currentComputePipeline_ = DynamicCast<VulkanComputePipeline>(pipeline);
-}
-
-void VulkanCommandBuffer::BindGroupsToGraphicsPipeline(int startIndex, Span<RC<BindingGroup>> groups)
-{
-    auto layout = static_cast<const VulkanBindingLayout *>(currentGraphicsPipeline_->GetBindingLayout().Get());
-    std::vector<VkDescriptorSet> sets(groups.GetSize());
-    for(auto &&[i, g] : Enumerate(groups))
-    {
-        sets[i] = static_cast<VulkanBindingGroupInstance *>(g.get())->GetNativeSet();
-    }
-    vkCmdBindDescriptorSets(
-        commandBuffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
-        layout->GetNativeLayout(), startIndex,
-        static_cast<uint32_t>(sets.size()), sets.data(), 0, nullptr);
-}
-
-void VulkanCommandBuffer::BindGroupsToComputePipeline(int startIndex, Span<RC<BindingGroup>> groups)
-{
-    auto layout = static_cast<const VulkanBindingLayout *>(currentComputePipeline_->GetBindingLayout().Get());
-    std::vector<VkDescriptorSet> sets(groups.GetSize());
-    for(auto &&[i, g] : Enumerate(groups))
-    {
-        sets[i] = static_cast<VulkanBindingGroupInstance *>(g.get())->GetNativeSet();
-    }
-    vkCmdBindDescriptorSets(
-        commandBuffer_, VK_PIPELINE_BIND_POINT_COMPUTE,
-        layout->GetNativeLayout(), startIndex,
-        static_cast<uint32_t>(sets.size()), sets.data(), 0, nullptr);
-}
-
-void VulkanCommandBuffer::BindGroupToGraphicsPipeline(int index, const Ptr<BindingGroup> &group)
-{
-    auto layout = static_cast<const VulkanBindingLayout *>(currentGraphicsPipeline_->GetBindingLayout().Get());
-    VkDescriptorSet set = static_cast<VulkanBindingGroupInstance *>(group.Get())->GetNativeSet();
-    vkCmdBindDescriptorSets(
-        commandBuffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
-        layout->GetNativeLayout(), index, 1, &set, 0, nullptr);
-}
-
-void VulkanCommandBuffer::BindGroupToComputePipeline(int index, const Ptr<BindingGroup> &group)
-{
-    auto layout = static_cast<const VulkanBindingLayout *>(currentComputePipeline_->GetBindingLayout().Get());
-    VkDescriptorSet set = static_cast<VulkanBindingGroupInstance *>(group.Get())->GetNativeSet();
-    vkCmdBindDescriptorSets(
-        commandBuffer_, VK_PIPELINE_BIND_POINT_COMPUTE,
-        layout->GetNativeLayout(), index, 1, &set, 0, nullptr);
-}
-
-void VulkanCommandBuffer::SetViewports(Span<Viewport> viewports)
-{
-    std::vector<VkViewport> vkViewports(viewports.GetSize());
-    for(auto &&[i, v] : Enumerate(viewports))
-    {
-        vkViewports[i] = TranslateViewport(v);
-    }
-    vkCmdSetViewport(commandBuffer_, 0, viewports.GetSize(), vkViewports.data());
-}
-
-void VulkanCommandBuffer::SetScissors(Span<Scissor> scissors)
-{
-    std::vector<VkRect2D> vkScissors(scissors.GetSize());
-    for(auto &&[i, s] : Enumerate(scissors))
-    {
-        vkScissors[i] = TranslateScissor(s);
-    }
-    vkCmdSetScissor(commandBuffer_, 0, scissors.GetSize(), vkScissors.data());
-}
-
-void VulkanCommandBuffer::SetViewportsWithCount(Span<Viewport> viewports)
-{
-    std::vector<VkViewport> vkViewports(viewports.GetSize());
-    for(auto &&[i, v] : Enumerate(viewports))
-    {
-        vkViewports[i] = TranslateViewport(v);
-    }
-    vkCmdSetViewportWithCount(commandBuffer_, viewports.GetSize(), vkViewports.data());
-}
-
-void VulkanCommandBuffer::SetScissorsWithCount(Span<Scissor> scissors)
-{
-    std::vector<VkRect2D> vkScissors(scissors.GetSize());
-    for(auto &&[i, s] : Enumerate(scissors))
-    {
-        vkScissors[i] = TranslateScissor(s);
-    }
-    vkCmdSetScissorWithCount(commandBuffer_, scissors.GetSize(), vkScissors.data());
-}
-
-void VulkanCommandBuffer::Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance)
-{
-    vkCmdDraw(
-        commandBuffer_,
-        static_cast<uint32_t>(vertexCount),
-        static_cast<uint32_t>(instanceCount),
-        static_cast<uint32_t>(firstVertex),
-        static_cast<uint32_t>(firstInstance));
-}
-
-void VulkanCommandBuffer::Dispatch(int groupCountX, int groupCountY, int groupCountZ)
-{
-    vkCmdDispatch(
-        commandBuffer_,
-        static_cast<uint32_t>(groupCountX),
-        static_cast<uint32_t>(groupCountY),
-        static_cast<uint32_t>(groupCountZ));
-}
-
-void VulkanCommandBuffer::CopyBuffer(
-    Buffer *dst, size_t dstOffset,
-    Buffer *src, size_t srcOffset, size_t range)
-{
-    const VkBufferCopy copy = {
-        .srcOffset = srcOffset,
-        .dstOffset = dstOffset,
-        .size      = range
-    };
-    auto vkSrc = static_cast<VulkanBuffer *>(src)->GetNativeBuffer();
-    auto vkDst = static_cast<VulkanBuffer *>(dst)->GetNativeBuffer();
-    vkCmdCopyBuffer(commandBuffer_, vkSrc, vkDst, 1, &copy);
-}
-
-void VulkanCommandBuffer::CopyBufferToColorTexture(
-    Texture *dst, uint32_t mipLevel, uint32_t arrayLayer, Buffer *src, size_t srcOffset)
-{
-    auto &texDesc = dst->Get2DDesc();
-    const VkBufferImageCopy copy = {
-        .bufferOffset      = srcOffset,
-        .bufferRowLength   = 0,
-        .bufferImageHeight = 0,
-        .imageSubresource  = VkImageSubresourceLayers{
-            .aspectMask     = GetAllAspects(texDesc.format),
-            .mipLevel       = mipLevel,
-            .baseArrayLayer = arrayLayer,
-            .layerCount     = 1
-        },
-        .imageOffset = { 0, 0, 0 },
-        .imageExtent = { texDesc.width, texDesc.height, 1 }
-    };
-    auto vkSrc = static_cast<VulkanBuffer *>(src)->GetNativeBuffer();
-    auto vkDst = GetVulkanImage(dst);
-    vkCmdCopyBufferToImage(commandBuffer_, vkSrc, vkDst, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
-}
-
-void VulkanCommandBuffer::CopyColorTextureToBuffer(
-    Buffer *dst, size_t dstOffset, Texture *src, uint32_t mipLevel, uint32_t arrayLayer)
-{
-    auto &texDesc = src->Get2DDesc();
-    const VkBufferImageCopy copy = {
-        .bufferOffset      = dstOffset,
-        .bufferRowLength   = 0,
-        .bufferImageHeight = 0,
-        .imageSubresource  = VkImageSubresourceLayers{
-            .aspectMask     = GetAllAspects(texDesc.format),
-            .mipLevel       = mipLevel,
-            .baseArrayLayer = arrayLayer,
-            .layerCount     = 1
-        },
-        .imageOffset = { 0, 0, 0 },
-        .imageExtent = { texDesc.width, texDesc.height, 1 }
-    };
-    auto vkSrc = GetVulkanImage(src);
-    auto vkDst = static_cast<VulkanBuffer *>(dst)->GetNativeBuffer();
-    vkCmdCopyImageToBuffer(commandBuffer_, vkSrc, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, vkDst, 1, &copy);
-}
-
-const Ptr<GraphicsPipeline> &VulkanCommandBuffer::GetCurrentPipeline() const
-{
-    return currentGraphicsPipeline_;
-}
-
-VkCommandBuffer VulkanCommandBuffer::GetNativeCommandBuffer() const
-{
-    return commandBuffer_;
 }
 
 RTRC_RHI_VK_END

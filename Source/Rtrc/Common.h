@@ -36,6 +36,9 @@ using Shared = std::shared_ptr<T>;
 template<typename T>
 using RC = Shared<T>;
 
+template<typename T>
+using Box = Unique<T>;
+
 template<typename D, typename T>
 Unique<D> DynamicCast(Unique<T> ptr)
 {
@@ -77,6 +80,12 @@ RC<T> MakeRC(Args&&...args)
     return MakeShared<T>(std::forward<Args>(args)...);
 }
 
+template<typename T, typename...Args>
+Box<T> MakeBox(Args&&...args)
+{
+    return MakeUnique<T>(std::forward<Args>(args)...);
+}
+
 template<typename R = size_t, typename T, size_t N>
 constexpr R GetArraySize(const T (&arr)[N])
 {
@@ -88,5 +97,8 @@ constexpr size_t GetMemberOffset(M C::*p)
 {
     return reinterpret_cast<size_t>(&(static_cast<C*>(nullptr)->*p));
 }
+
+template<typename T> requires std::is_scoped_enum_v<T>
+constexpr size_t EnumValueCount = static_cast<size_t>(T::Count);
 
 RTRC_END
