@@ -1,5 +1,6 @@
 #include <ranges>
 
+#include <Rtrc/RHI/Vulkan/Context/Device.h>
 #include <Rtrc/RHI/Vulkan/Resource/BufferSRV.h>
 #include <Rtrc/RHI/Vulkan/Resource/BufferUAV.h>
 #include <Rtrc/Utils/ScopeGuard.h>
@@ -8,7 +9,7 @@ RTRC_RHI_VK_BEGIN
 
 VulkanBuffer::VulkanBuffer(
     const BufferDesc      &desc,
-    VkDevice               device,
+    VulkanDevice          *device,
     VkBuffer               buffer,
     VulkanMemoryAllocation alloc,
     ResourceOwnership      ownership)
@@ -21,7 +22,7 @@ VulkanBuffer::~VulkanBuffer()
 {
     for(VkBufferView view : std::ranges::views::values(views_))
     {
-        vkDestroyBufferView(device_, view, VK_ALLOC);
+        vkDestroyBufferView(device_->GetNativeDevice(), view, VK_ALLOC);
     }
 
     if(ownership_ == ResourceOwnership::Allocation)
@@ -30,7 +31,7 @@ VulkanBuffer::~VulkanBuffer()
     }
     else if(ownership_ == ResourceOwnership::Resource)
     {
-        vkDestroyBuffer(device_, buffer_, VK_ALLOC);
+        vkDestroyBuffer(device_->GetNativeDevice(), buffer_, VK_ALLOC);
     }
 }
 
@@ -120,9 +121,9 @@ VkBufferView VulkanBuffer::CreateBufferView(const ViewKey &key) const
 
     VkBufferView view;
     VK_FAIL_MSG(
-        vkCreateBufferView(device_, &createInfo, VK_ALLOC, &view),
+        vkCreateBufferView(device_->GetNativeDevice(), &createInfo, VK_ALLOC, &view),
         "failed to create vulkan buffer view");
-    RTRC_SCOPE_FAIL{ vkDestroyBufferView(device_, view, VK_ALLOC); };
+    RTRC_SCOPE_FAIL{ vkDestroyBufferView(device_->GetNativeDevice(), view, VK_ALLOC); };
 
     views_[key] = view;
     return view;

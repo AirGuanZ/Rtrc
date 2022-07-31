@@ -80,4 +80,15 @@ enum class ResourceOwnership
     None
 };
 
+class VulkanDevice;
+
+void SetObjectName(VulkanDevice *device, VkObjectType type, void *object, const char *name);
+
+#define VK_SET_OBJECT_NAME(DEVICE, OBJECT, TYPE)                                            \
+    void SetName(std::string name) override                                                 \
+    {                                                                                       \
+        RHIObject::SetName(std::move(name));                                                \
+        ::Rtrc::RHI::Vk::SetObjectName(DEVICE, TYPE, OBJECT, RHIObject::GetName().c_str()); \
+    }
+
 RTRC_RHI_VK_END

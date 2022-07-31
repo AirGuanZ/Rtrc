@@ -1,5 +1,6 @@
 #include <ranges>
 
+#include <Rtrc/RHI/Vulkan/Context/Device.h>
 #include <Rtrc/RHI/Vulkan/Resource/Texture2D.h>
 #include <Rtrc/RHI/Vulkan/Resource/Texture2DRTV.h>
 #include <Rtrc/RHI/Vulkan/Resource/Texture2DSRV.h>
@@ -7,10 +8,9 @@
 #include <Rtrc/Utils/ScopeGuard.h>
 
 RTRC_RHI_VK_BEGIN
-
-VulkanTexture2D::VulkanTexture2D(
+    VulkanTexture2D::VulkanTexture2D(
     const Texture2DDesc          &desc,
-    VkDevice                      device,
+    VulkanDevice                 *device,
     VkImage                       image,
     const VulkanMemoryAllocation &alloc,
     ResourceOwnership             ownership)
@@ -23,7 +23,7 @@ VulkanTexture2D::~VulkanTexture2D()
 {
     for(VkImageView view : std::ranges::views::values(views_))
     {
-        vkDestroyImageView(device_, view, VK_ALLOC);
+        vkDestroyImageView(device_->GetNativeDevice(), view, VK_ALLOC);
     }
     if(ownership_ == ResourceOwnership::Allocation)
     {
@@ -31,7 +31,7 @@ VulkanTexture2D::~VulkanTexture2D()
     }
     else if(ownership_ == ResourceOwnership::Resource)
     {
-        vkDestroyImage(device_, image_, VK_ALLOC);
+        vkDestroyImage(device_->GetNativeDevice(), image_, VK_ALLOC);
     }
 }
 
@@ -123,9 +123,9 @@ VkImageView VulkanTexture2D::CreateImageView(const ViewKey &key) const
 
     VkImageView imageView;
     VK_FAIL_MSG(
-        vkCreateImageView(device_, &createInfo, VK_ALLOC, &imageView),
+        vkCreateImageView(device_->GetNativeDevice(), &createInfo, VK_ALLOC, &imageView),
         "failed to create vulkan image view");
-    RTRC_SCOPE_FAIL{ vkDestroyImageView(device_, imageView, VK_ALLOC); };
+    RTRC_SCOPE_FAIL{ vkDestroyImageView(device_->GetNativeDevice(), imageView, VK_ALLOC); };
     
     views_[key] = imageView;
     return imageView;

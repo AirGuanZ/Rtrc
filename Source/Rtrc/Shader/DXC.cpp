@@ -76,9 +76,9 @@ using Microsoft::WRL::ComPtr;
 
 struct DXC::Impl
 {
-    ComPtr<IDxcUtils>          utils;
-    ComPtr<IDxcCompiler>       compiler;
-    ComPtr<IDxcIncludeHandler> defaultHandler;
+    ComPtr<IDxcUtils>           utils;
+    ComPtr<IDxcCompiler3>       compiler;
+    ComPtr<IDxcIncludeHandler>  defaultHandler;
 };
 
 DXC::DXC()
@@ -123,12 +123,31 @@ std::vector<unsigned char> DXC::Compile(
 
     std::vector<LPCWSTR> arguments;
 
+    std::wstring filename;
+    if(!shaderInfo.sourceFilename.empty())
+    {
+        filename = ToWString(shaderInfo.sourceFilename);
+        arguments.push_back(filename.c_str());
+    }
+
     const auto entryPoint = ToWString(shaderInfo.entryPoint);
+    arguments.push_back(L"-E");
+    arguments.push_back(entryPoint.c_str());
+
+    std::wstring targetProfile;
+    switch(target)
+    {
+    case Target::Vulkan_1_3_VS_6_0: targetProfile = L"vs_6_0"; break;
+    case Target::Vulkan_1_3_FS_6_0: targetProfile = L"ps_6_0"; break;
+    case Target::Vulkan_1_3_CS_6_0: targetProfile = L"cs_6_0"; break;
+    }
+    arguments.push_back(L"-T");
+    arguments.push_back(targetProfile.c_str());
 
     std::vector<std::wstring> macros;
     for(auto &m : shaderInfo.macros)
     {
-        macros.push_back(ToWString(m.first));
+        macros.push_back(ToWString("-D" + m.first));
         macros.push_back(ToWString(m.second));
     }
     std::vector<DxcDefine> defines;
@@ -145,14 +164,6 @@ std::vector<unsigned char> DXC::Compile(
     arguments.push_back(L"-fvk-use-dx-position-w");
     arguments.push_back(L"-fspv-target-env=vulkan1.3");
     arguments.push_back(L"-fvk-stage-io-order=alpha");
-    
-    std::wstring targetProfile;
-    switch(target)
-    {
-    case Target::Vulkan_1_3_VS_6_0: targetProfile = L"vs_6_0"; break;
-    case Target::Vulkan_1_3_FS_6_0: targetProfile = L"ps_6_0"; break;
-    case Target::Vulkan_1_3_CS_6_0: targetProfile = L"cs_6_0"; break;
-    }
 
     CustomIncludeHandler customIncludeHandler;
     customIncludeHandler.utils = impl_->utils;
@@ -162,6 +173,8 @@ std::vector<unsigned char> DXC::Compile(
     if(debugMode)
     {
         arguments.push_back(L"-Od");
+        arguments.push_back(L"-Zi");
+        arguments.push_back(L"-fspv-debug=vulkan-with-source");
     }
     else
     {
@@ -170,43 +183,44 @@ std::vector<unsigned char> DXC::Compile(
 
     if(preprocessOutput)
     {
-        arguments.push_back(L"-P ~");
+        arguments.push_back(L"-P");
+        arguments.push_back(L"~");
     }
 
-    ComPtr<IDxcOperationResult> oprResult;
+    const DxcBuffer sourceBuffer = {
+        .Ptr = sourceBlob->GetBufferPointer(),
+        .Size = sourceBlob->GetBufferSize()
+    };
+    ComPtr<IDxcResult> compileResult;
     if(FAILED(impl_->compiler->Compile(
-        sourceBlob.Get(), ToWString(shaderInfo.sourceFilename).c_str(),
-        entryPoint.c_str(), targetProfile.c_str(),
-        arguments.data(), static_cast<uint32_t>(arguments.size()),
-        defines.data(), static_cast<uint32_t>(defines.size()),
-        &customIncludeHandler, oprResult.GetAddressOf())))
+        &sourceBuffer, arguments.data(), static_cast<uint32_t>(arguments.size()),
+        &customIncludeHandler, IID_PPV_ARGS(compileResult.GetAddressOf()))))
     {
         throw Exception("failed to call DXC::Compile");
     }
 
     HRESULT status;
-    if(FAILED(oprResult->GetStatus(&status)))
+    if(FAILED(compileResult->GetStatus(&status)))
     {
         throw Exception("failed to get dxc operation status");
     }
 
     if(FAILED(status))
     {
-        ComPtr<IDxcBlobEncoding> errorBuffer;
-        if(FAILED(oprResult->GetErrorBuffer(errorBuffer.GetAddressOf())))
+        ComPtr<IDxcBlobUtf8> errors;
+        if(FAILED(compileResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(errors.GetAddressOf()), nullptr)))
         {
-            throw Exception("failed to get dxc error buffer");
+            throw Exception("failed to get error message from DXC");
         }
-        if(errorBuffer && errorBuffer->GetBufferSize() > 0)
+        if(errors && errors->GetStringLength() > 0)
         {
-            throw Exception(fmt::format(
-                "dxc compile error. {}", static_cast<const char *>(errorBuffer->GetBufferPointer())));
+            throw Exception(fmt::format("dxc compile error. {}", errors->GetStringPointer()));
         }
         throw Exception("dxc: an unknown error occurred");
     }
 
     ComPtr<IDxcBlob> result;
-    if(FAILED(oprResult->GetResult(result.GetAddressOf())))
+    if(FAILED(compileResult->GetResult(result.GetAddressOf())))
     {
         throw Exception("failed to get dxc compile result");
     }

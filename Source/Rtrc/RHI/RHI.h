@@ -587,8 +587,6 @@ struct MemoryBlockDesc
 
 class RHIObject : public ReferenceCounted, public Uncopyable
 {
-protected:
-
     std::string RHIObjectName_;
 
 public:
@@ -618,39 +616,31 @@ public:
 
     virtual Ptr<Queue> GetQueue(QueueType type) = 0;
 
-    virtual Ptr<Fence> CreateFence(bool signaled) = 0;
-
     virtual Ptr<Swapchain> CreateSwapchain(const SwapchainDesc &desc, Window &window) = 0;
 
+    virtual Ptr<Fence>     CreateFence(bool signaled) = 0;
     virtual Ptr<Semaphore> CreateSemaphore(uint64_t initialValue) = 0;
 
     virtual Ptr<RawShader> CreateShader(const void *data, size_t size, std::string entryPoint, ShaderStage type) = 0;
 
     virtual Ptr<GraphicsPipelineBuilder> CreateGraphicsPipelineBuilder() = 0;
-
-    virtual Ptr<ComputePipelineBuilder> CreateComputePipelineBuilder() = 0;
+    virtual Ptr<ComputePipelineBuilder>  CreateComputePipelineBuilder() = 0;
 
     virtual Ptr<BindingGroupLayout> CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc) = 0;
-
-    virtual Ptr<BindingLayout> CreateBindingLayout(const BindingLayoutDesc &desc) = 0;
+    virtual Ptr<BindingLayout>      CreateBindingLayout(const BindingLayoutDesc &desc) = 0;
 
     virtual Ptr<Texture> CreateTexture2D(const Texture2DDesc &desc) = 0;
-
-    virtual Ptr<Buffer> CreateBuffer(const BufferDesc &desc) = 0;
-
+    virtual Ptr<Buffer>  CreateBuffer(const BufferDesc &desc) = 0;
     virtual Ptr<Sampler> CreateSampler(const SamplerDesc &desc) = 0;
 
     virtual Ptr<MemoryPropertyRequirements> GetMemoryRequirements(
         const Texture2DDesc &desc, size_t *size, size_t *alignment) const = 0;
-
     virtual Ptr<MemoryPropertyRequirements> GetMemoryRequirements(
         const BufferDesc &desc, size_t *size, size_t *alignment) const = 0;
-
     virtual Ptr<MemoryBlock> CreateMemoryBlock(const MemoryBlockDesc &desc) = 0;
 
     virtual Ptr<Texture> CreatePlacedTexture2D(
         const Texture2DDesc &desc, const Ptr<MemoryBlock> &memoryBlock, size_t offsetInMemoryBlock) = 0;
-
     virtual Ptr<Buffer> CreatePlacedBuffer(
         const BufferDesc &desc, const Ptr<MemoryBlock> &memoryBlock, size_t offsetInMemoryBlock) = 0;
 
@@ -674,18 +664,14 @@ class Swapchain : public RHIObject
 public:
 
     virtual bool Acquire() = 0;
-
-    virtual Ptr<BackBufferSemaphore> GetAcquireSemaphore() = 0;
-
-    virtual Ptr<BackBufferSemaphore> GetPresentSemaphore() = 0;
-
     virtual void Present() = 0;
 
-    virtual int GetRenderTargetCount() const = 0;
+    virtual Ptr<BackBufferSemaphore> GetAcquireSemaphore() = 0;
+    virtual Ptr<BackBufferSemaphore> GetPresentSemaphore() = 0;
 
+    virtual int                  GetRenderTargetCount() const = 0;
     virtual const Texture2DDesc &GetRenderTargetDesc() const = 0;
-
-    virtual Ptr<Texture> GetRenderTarget() const = 0;
+    virtual Ptr<Texture>         GetRenderTarget() const = 0;
 };
 
 class BindingGroupLayout : public RHIObject
@@ -703,17 +689,12 @@ public:
 
     virtual const BindingGroupLayout *GetLayout() const = 0;
 
-    virtual void ModifyMember(int index, const Ptr<BufferSRV> &bufferSRV) = 0;
-
-    virtual void ModifyMember(int index, const Ptr<BufferUAV> &bufferUAV) = 0;
-
+    virtual void ModifyMember(int index, const Ptr<BufferSRV>    &bufferSRV) = 0;
+    virtual void ModifyMember(int index, const Ptr<BufferUAV>    &bufferUAV) = 0;
     virtual void ModifyMember(int index, const Ptr<Texture2DSRV> &textureSRV) = 0;
-
     virtual void ModifyMember(int index, const Ptr<Texture2DUAV> &textureUAV) = 0;
-
-    virtual void ModifyMember(int index, const Ptr<Sampler> &sampler) = 0;
-
-    virtual void ModifyMember(int index, const Ptr<Buffer> &uniformBuffer, size_t offset, size_t range) = 0;
+    virtual void ModifyMember(int index, const Ptr<Sampler>      &sampler) = 0;
+    virtual void ModifyMember(int index, const Ptr<Buffer>       &uniformBuffer, size_t offset, size_t range) = 0;
 };
 
 class BindingLayout : public RHIObject
@@ -783,38 +764,30 @@ public:
     void ExecuteBarriers(Ts...ts);
 
     virtual void BeginRenderPass(Span<RenderPassColorAttachment> colorAttachments) = 0;
-
     virtual void EndRenderPass() = 0;
 
     virtual void BindPipeline(const Ptr<GraphicsPipeline> &pipeline) = 0;
-
-    virtual void BindPipeline(const Ptr<ComputePipeline> &pipeline) = 0;
+    virtual void BindPipeline(const Ptr<ComputePipeline>  &pipeline) = 0;
 
     virtual void BindGroupsToGraphicsPipeline(int startIndex, Span<RC<BindingGroup>> groups) = 0;
-
-    virtual void BindGroupsToComputePipeline(int startIndex, Span<RC<BindingGroup>> groups) = 0;
+    virtual void BindGroupsToComputePipeline (int startIndex, Span<RC<BindingGroup>> groups) = 0;
 
     virtual void BindGroupToGraphicsPipeline(int index, const Ptr<BindingGroup> &group) = 0;
-
-    virtual void BindGroupToComputePipeline(int index, const Ptr<BindingGroup> &group) = 0;
+    virtual void BindGroupToComputePipeline (int index, const Ptr<BindingGroup> &group) = 0;
 
     virtual void SetViewports(Span<Viewport> viewports) = 0;
-
-    virtual void SetScissors(Span<Scissor> scissor) = 0;
+    virtual void SetScissors (Span<Scissor> scissor) = 0;
 
     virtual void SetViewportsWithCount(Span<Viewport> viewports) = 0;
-
-    virtual void SetScissorsWithCount(Span<Scissor> scissors) = 0;
+    virtual void SetScissorsWithCount (Span<Scissor> scissors) = 0;
 
     virtual void Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance) = 0;
 
     virtual void Dispatch(int groupCountX, int groupCountY, int groupCountZ) = 0;
 
     virtual void CopyBuffer(Buffer *dst, size_t dstOffset, Buffer *src, size_t srcOffset, size_t range) = 0;
-
     virtual void CopyBufferToColorTexture(
         Texture *dst, uint32_t mipLevel, uint32_t arrayLayer, Buffer *src, size_t srcOffset) = 0;
-
     virtual void CopyColorTextureToBuffer(
         Buffer *dst, size_t dstOffset, Texture *src, uint32_t mipLevel, uint32_t arrayLayer) = 0;
 
@@ -848,14 +821,12 @@ class GraphicsPipelineBuilder : public RHIObject
 public:
 
     virtual GraphicsPipelineBuilder &SetVertexShader(Ptr<RawShader> vertexShader) = 0;
-
     virtual GraphicsPipelineBuilder &SetFragmentShader(Ptr<RawShader> fragmentShader) = 0;
 
     virtual GraphicsPipelineBuilder &SetBindingLayout(Ptr<BindingLayout> layout) = 0;
 
     virtual GraphicsPipelineBuilder &SetViewports(const Viewports &viewports) = 0;
-
-    virtual GraphicsPipelineBuilder &SetScissors(const Scissors &scissors) = 0;
+    virtual GraphicsPipelineBuilder &SetScissors (const Scissors &scissors) = 0;
 
     // default is trianglelist
     virtual GraphicsPipelineBuilder &SetPrimitiveTopology(PrimitiveTopology topology) = 0;
@@ -943,16 +914,12 @@ class Texture : public RHIObject
 {
 public:
 
-    virtual TextureDimension GetDimension() const = 0;
-
+    virtual TextureDimension     GetDimension() const = 0;
     virtual const Texture2DDesc &Get2DDesc() const = 0;
-
-    virtual Format GetFormat() const = 0;
+    virtual Format               GetFormat() const = 0;
 
     virtual Ptr<Texture2DRTV> Create2DRTV(const Texture2DRTVDesc &desc) const = 0;
-
     virtual Ptr<Texture2DSRV> Create2DSRV(const Texture2DSRVDesc &desc) const = 0;
-
     virtual Ptr<Texture2DUAV> Create2DUAV(const Texture2DUAVDesc &desc) const = 0;
 };
 
@@ -984,11 +951,9 @@ public:
     virtual const BufferDesc &GetDesc() const = 0;
 
     virtual Ptr<BufferSRV> CreateSRV(const BufferSRVDesc &desc) const = 0;
-
     virtual Ptr<BufferUAV> CreateUAV(const BufferUAVDesc &desc) const = 0;
 
     virtual void *Map(size_t offset, size_t size) const = 0;
-
     virtual void Unmap(size_t offset, size_t size) = 0;
 };
 

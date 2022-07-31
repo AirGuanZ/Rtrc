@@ -17,9 +17,11 @@ class VulkanTexture2D : public VulkanTexture
 {
 public:
 
+    VK_SET_OBJECT_NAME(device_, image_, VK_OBJECT_TYPE_IMAGE)
+
     VulkanTexture2D(
         const Texture2DDesc          &desc,
-        VkDevice                      device,
+        VulkanDevice                 *device,
         VkImage                       image,
         const VulkanMemoryAllocation &alloc,
         ResourceOwnership             ownership);
@@ -57,7 +59,7 @@ private:
     VkImageView CreateImageView(const ViewKey &key) const;
 
     Texture2DDesc                          desc_;
-    VkDevice                               device_;
+    VulkanDevice                          *device_;
     VkImage                                image_;
     VulkanMemoryAllocation                 alloc_;
     ResourceOwnership                      ownership_;

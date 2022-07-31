@@ -10,7 +10,7 @@ class VulkanInstance : public Instance
 {
 public:
 
-    explicit VulkanInstance(vkb::Instance instance);
+    VulkanInstance(VulkanInstanceDesc desc, vkb::Instance instance);
 
     ~VulkanInstance() override;
 
@@ -18,6 +18,7 @@ public:
 
 private:
 
+    VulkanInstanceDesc desc_;
     vkb::Instance instance_;
 };
 

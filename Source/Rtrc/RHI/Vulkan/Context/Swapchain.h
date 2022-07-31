@@ -15,7 +15,7 @@ public:
         Ptr<VulkanSurface>   surface,
         Ptr<VulkanQueue>     presentQueue,
         const Texture2DDesc &imageDesc,
-        VkDevice             device,
+        VulkanDevice        *device,
         VkSwapchainKHR       swapchain);
 
     ~VulkanSwapchain() override;
@@ -38,7 +38,7 @@ private:
 
     Ptr<VulkanSurface> surface_;
     Ptr<VulkanQueue>   presentQueue_;
-    VkDevice           device_;
+    VulkanDevice      *device_;
     VkSwapchainKHR     swapchain_;
 
     uint32_t frameIndex_;

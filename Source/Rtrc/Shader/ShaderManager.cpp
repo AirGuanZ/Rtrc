@@ -27,21 +27,27 @@ namespace
 
         bool Load(std::string_view filename, std::string &output) const override
         {
-            std::filesystem::path path = filename;
-            if(path.is_relative())
-            {
-                path = rootDir_ / path;
-            }
-            path = path.lexically_normal();
+            const std::string path = GetMappedSourceFilename(filename);
             try
             {
-                output = File::ReadTextFile(path.string());
+                output = File::ReadTextFile(path);
                 return true;
             }
             catch(...)
             {
                 return false;
             }
+        }
+
+        std::string GetMappedSourceFilename(std::string_view filename) const override
+        {
+            std::filesystem::path path = filename;
+            if(path.is_relative())
+            {
+                path = rootDir_ / path;
+            }
+            path = path.lexically_normal();
+            return path.string();
         }
 
     private:
@@ -56,6 +62,11 @@ namespace
         bool Load(std::string_view filename, std::string &output) const override
         {
             return false;
+        }
+
+        std::string GetMappedSourceFilename(std::string_view filename) const override
+        {
+            return {};
         }
     };
 
@@ -439,8 +450,9 @@ RHI::RawShaderPtr ShaderManager::CompileShader(
     std::string preprocessedSource;
     DXC::ShaderInfo shaderInfo =
     {
-        .source         = rawSource,
-        .sourceFilename = source.filename.empty() ? "anonymous.hlsl" : source.filename,
+        .source = rawSource,
+        .sourceFilename = source.filename.empty() ?
+                          "anonymous.hlsl" : fileLoader->GetMappedSourceFilename(source.filename),
         .entryPoint     = source.entry,
         .macros         = macros
     };

@@ -7,7 +7,7 @@ using namespace Rtrc;
 void Run()
 {
     auto instance = CreateVulkanInstance(RHI::VulkanInstanceDesc{
-        .debugMode = true
+        .debugMode = RTRC_DEBUG
     });
 
     auto device = instance->CreateDevice(RHI::DeviceDesc{
@@ -112,6 +112,8 @@ void Run()
         .hostAccessType       = RHI::BufferHostAccessType::SequentialWrite,
         .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
     });
+
+    constantBuffer->SetName("test");
 
     {
         const float scaleFactor = 2.0f;

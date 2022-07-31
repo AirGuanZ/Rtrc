@@ -28,6 +28,10 @@ public:
         Vulkan_1_3_CS_6_0
     };
 
+    // Be careful!
+    // When debugging vulkan-with-source is enabled, dxc will always try to load source content from `sourceFilename`,
+    // instead of using `source` directly. This can cause issue when file `sourceFilename` is not available or doesn't
+    // match `source`.
     struct ShaderInfo
     {
         std::string source;

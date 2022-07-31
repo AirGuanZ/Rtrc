@@ -1,6 +1,7 @@
-#define VMA_IMPLEMENTATION
 #include <mimalloc.h>
-#include <Rtrc/RHI/Vulkan/Common.h>
+
+#define VMA_IMPLEMENTATION
+#include <Rtrc/RHI/Vulkan/Context/Device.h>
 #include <Rtrc/Utils/Unreachable.h>
 
 RTRC_RHI_VK_BEGIN
@@ -471,6 +472,11 @@ bool HasDepthStencilAspect(Format format)
 VkImageAspectFlags GetAllAspects(Format format)
 {
     return VK_IMAGE_ASPECT_COLOR_BIT;
+}
+
+void SetObjectName(VulkanDevice* device, VkObjectType type, void* object, const char* name)
+{
+    device->SetObjectName(type, object, name);
 }
 
 RTRC_RHI_VK_END

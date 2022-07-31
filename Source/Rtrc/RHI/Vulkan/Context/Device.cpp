@@ -124,8 +124,10 @@ VulkanDevice::VulkanDevice(
     VkInstance             instance,
     VulkanPhysicalDevice   physicalDevice,
     VkDevice               device,
-    const QueueFamilyInfo &queueFamilyInfo)
-    : instance_(instance),
+    const QueueFamilyInfo &queueFamilyInfo,
+    bool                   enableDebug)
+    : enableDebug_(enableDebug),
+      instance_(instance),
       physicalDevice_(physicalDevice),
       device_(device),
       queueFamilies_(queueFamilyInfo),
@@ -310,7 +312,7 @@ Ptr<Swapchain> VulkanDevice::CreateSwapchain(const SwapchainDesc &desc, Window &
         .initialLayout        = TextureLayout::Undefined,
         .concurrentAccessMode = QueueConcurrentAccessMode::Exclusive
     };
-    return MakePtr<VulkanSwapchain>(std::move(surface), presentQueue_, imageDescription, device_, swapchain);
+    return MakePtr<VulkanSwapchain>(std::move(surface), presentQueue_, imageDescription, this, swapchain);
 }
 
 Ptr<Semaphore> VulkanDevice::CreateSemaphore(uint64_t initialValue)
@@ -444,7 +446,7 @@ Ptr<Texture> VulkanDevice::CreateTexture2D(const Texture2DDesc &desc)
         .allocation = alloc
     };
 
-    return MakePtr<VulkanTexture2D>(desc, device_, image, memoryAlloc, ResourceOwnership::Allocation);
+    return MakePtr<VulkanTexture2D>(desc, this, image, memoryAlloc, ResourceOwnership::Allocation);
 }
 
 Ptr<Buffer> VulkanDevice::CreateBuffer(const BufferDesc &desc)
@@ -466,7 +468,7 @@ Ptr<Buffer> VulkanDevice::CreateBuffer(const BufferDesc &desc)
         .allocation = alloc
     };
 
-    return MakePtr<VulkanBuffer>(desc, device_, buffer, memoryAlloc, ResourceOwnership::Allocation);
+    return MakePtr<VulkanBuffer>(desc, this, buffer, memoryAlloc, ResourceOwnership::Allocation);
 }
 
 Ptr<Sampler> VulkanDevice::CreateSampler(const SamplerDesc &desc)
@@ -607,7 +609,7 @@ Ptr<Texture> VulkanDevice::CreatePlacedTexture2D(
         "failed to bind vma memory with placed vulkan image");
 
     const VulkanMemoryAllocation vmaAlloc = { allocator_, vkMemoryBlock->GetAllocation() };
-    return MakePtr<VulkanTexture2D>(desc, device_, image, vmaAlloc, ResourceOwnership::Resource);
+    return MakePtr<VulkanTexture2D>(desc, this, image, vmaAlloc, ResourceOwnership::Resource);
 }
 
 Ptr<Buffer> VulkanDevice::CreatePlacedBuffer(
@@ -626,7 +628,7 @@ Ptr<Buffer> VulkanDevice::CreatePlacedBuffer(
         "failed to bind vma memory with placed vulkan buffer");
 
     const VulkanMemoryAllocation vmaAlloc = { allocator_, vkMemoryBlock->GetAllocation() };
-    return MakePtr<VulkanBuffer>(desc, device_, buffer, vmaAlloc, ResourceOwnership::Resource);
+    return MakePtr<VulkanBuffer>(desc, this, buffer, vmaAlloc, ResourceOwnership::Resource);
 }
 
 void VulkanDevice::WaitIdle()
@@ -634,6 +636,26 @@ void VulkanDevice::WaitIdle()
     VK_FAIL_MSG(
         vkDeviceWaitIdle(device_),
         "failed to call vkDeviceWaitIdle");
+}
+
+VkDevice VulkanDevice::GetNativeDevice()
+{
+    return device_;
+}
+
+void VulkanDevice::SetObjectName(VkObjectType objectType, void *objectHandle, const char* name)
+{
+    if(enableDebug_ && vkSetDebugUtilsObjectNameEXT)
+    {
+        const VkDebugUtilsObjectNameInfoEXT imageNameInfo =
+        {
+            .sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+            .objectType   = objectType,
+            .objectHandle = reinterpret_cast<uint64_t>(objectHandle),
+            .pObjectName  = name
+        };
+        vkSetDebugUtilsObjectNameEXT(device_, &imageNameInfo);
+    }
 }
 
 RTRC_RHI_VK_END

@@ -159,6 +159,8 @@ void Run()
         .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
     });
 
+    mainTex->SetName("MainTexture");
+
     auto mainTexSRV = mainTex->Create2DSRV(RHI::Texture2DSRVDesc{
         .format         = RHI::Format::Unknown,
         .baseMipLevel   = 0,

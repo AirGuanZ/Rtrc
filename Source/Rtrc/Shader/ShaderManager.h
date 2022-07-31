@@ -86,6 +86,8 @@ public:
     virtual ~ShaderFileLoader() = default;
 
     virtual bool Load(std::string_view filename, std::string &output) const = 0;
+
+    virtual std::string GetMappedSourceFilename(std::string_view filename) const = 0;
 };
 
 class Shader : public Uncopyable

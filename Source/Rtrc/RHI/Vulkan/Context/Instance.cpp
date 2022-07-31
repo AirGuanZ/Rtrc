@@ -49,15 +49,15 @@ Ptr<Instance> CreateVulkanInstance(const VulkanInstanceDesc &desc)
     RTRC_SCOPE_FAIL{ destroy_instance(instance); };
     volkLoadInstance(instance.instance);
 
-    return MakePtr<Vk::VulkanInstance>(instance);
+    return MakePtr<Vk::VulkanInstance>(desc, instance);
 }
 
 RTRC_RHI_END
 
 RTRC_RHI_VK_BEGIN
 
-VulkanInstance::VulkanInstance(vkb::Instance instance)
-    : instance_(instance)
+VulkanInstance::VulkanInstance(VulkanInstanceDesc desc, vkb::Instance instance)
+    : desc_(desc), instance_(instance)
 {
 
 }
@@ -182,7 +182,7 @@ Ptr<Device> VulkanInstance::CreateDevice(const DeviceDesc &desc)
         queueFamilies.transferFamilyIndex = physicalDevice.GetTransferQueueFamily();
     }
 
-    return MakePtr<VulkanDevice>(instance_.instance, physicalDevice, device, queueFamilies);
+    return MakePtr<VulkanDevice>(instance_.instance, physicalDevice, device, queueFamilies, desc_.debugMode);
 }
 
 RTRC_RHI_VK_END

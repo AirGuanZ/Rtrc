@@ -10,9 +10,11 @@ class VulkanBuffer : public Buffer
 {
 public:
 
+    VK_SET_OBJECT_NAME(device_, buffer_, VK_OBJECT_TYPE_BUFFER)
+
     VulkanBuffer(
         const BufferDesc      &desc,
-        VkDevice               device,
+        VulkanDevice          *device,
         VkBuffer               buffer,
         VulkanMemoryAllocation alloc,
         ResourceOwnership      ownership);
@@ -45,7 +47,7 @@ private:
     VkBufferView CreateBufferView(const ViewKey &key) const;
 
     BufferDesc                              desc_;
-    VkDevice                                device_;
+    VulkanDevice                           *device_;
     VkBuffer                                buffer_;
     VulkanMemoryAllocation                  alloc_;
     ResourceOwnership                       ownership_;

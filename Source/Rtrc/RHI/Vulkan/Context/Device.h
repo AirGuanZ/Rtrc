@@ -20,7 +20,8 @@ public:
         VkInstance             instance,
         VulkanPhysicalDevice   physicalDevice,
         VkDevice               device,
-        const QueueFamilyInfo &queueFamilyInfo);
+        const QueueFamilyInfo &queueFamilyInfo,
+        bool                   enableDebug);
 
     ~VulkanDevice() override;
 
@@ -64,7 +65,13 @@ public:
 
     void WaitIdle() override;
 
+    VkDevice GetNativeDevice();
+
+    void SetObjectName(VkObjectType objectType, void *objectHandle, const char *name);
+
 private:
+
+    bool enableDebug_;
 
     VkInstance           instance_;
     VulkanPhysicalDevice physicalDevice_;

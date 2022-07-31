@@ -1,3 +1,4 @@
+#include <Rtrc/RHI/Vulkan/Context/Device.h>
 #include <Rtrc/RHI/Vulkan/Context/Swapchain.h>
 #include <Rtrc/RHI/Vulkan/Resource/Texture2D.h>
 #include <Rtrc/Utils/ScopeGuard.h>
@@ -8,7 +9,7 @@ VulkanSwapchain::VulkanSwapchain(
     Ptr<VulkanSurface>   surface,
     Ptr<VulkanQueue>     presentQueue,
     const Texture2DDesc &imageDesc,
-    VkDevice             device,
+    VulkanDevice        *device,
     VkSwapchainKHR       swapchain)
     : surface_(std::move(surface)), presentQueue_(std::move(presentQueue)), device_(device), swapchain_(swapchain)
 {
@@ -16,12 +17,12 @@ VulkanSwapchain::VulkanSwapchain(
 
     uint32_t imageCount;
     VK_FAIL_MSG(
-        vkGetSwapchainImagesKHR(device_, swapchain_, &imageCount, nullptr),
+        vkGetSwapchainImagesKHR(device_->GetNativeDevice(), swapchain_, &imageCount, nullptr),
         "failed to get vulkan swapchain image count");
 
     std::vector<VkImage> images(imageCount);
     VK_FAIL_MSG(
-        vkGetSwapchainImagesKHR(device_, swapchain_, &imageCount, images.data()),
+        vkGetSwapchainImagesKHR(device_->GetNativeDevice(), swapchain_, &imageCount, images.data()),
         "failed to get vulkan swapchain images");
 
     for(auto vkImage : images)
@@ -43,18 +44,20 @@ VulkanSwapchain::VulkanSwapchain(
 
         {
             VK_FAIL_MSG(
-                vkCreateSemaphore(device_, &semaphoreCreateInfo, VK_ALLOC, &semaphore),
+                vkCreateSemaphore(device_->GetNativeDevice(), &semaphoreCreateInfo, VK_ALLOC, &semaphore),
                 "failed to create vulkan semaphores for swapchain");
-            RTRC_SCOPE_FAIL{ vkDestroySemaphore(device_, semaphore, VK_ALLOC); };
-            imageAcquireSemaphores_.push_back(MakePtr<VulkanBackBufferSemaphore>(device_, semaphore));
+            RTRC_SCOPE_FAIL{ vkDestroySemaphore(device_->GetNativeDevice(), semaphore, VK_ALLOC); };
+            imageAcquireSemaphores_.push_back(
+                MakePtr<VulkanBackBufferSemaphore>(device_->GetNativeDevice(), semaphore));
         }
 
         {
             VK_FAIL_MSG(
-                vkCreateSemaphore(device_, &semaphoreCreateInfo, VK_ALLOC, &semaphore),
+                vkCreateSemaphore(device_->GetNativeDevice(), &semaphoreCreateInfo, VK_ALLOC, &semaphore),
                 "failed to create vulkan semaphores for swapchain");
-            RTRC_SCOPE_FAIL{ vkDestroySemaphore(device_, semaphore, VK_ALLOC); };
-            imagePresentSemaphores_.push_back(MakePtr<VulkanBackBufferSemaphore>(device_, semaphore));
+            RTRC_SCOPE_FAIL{ vkDestroySemaphore(device_->GetNativeDevice(), semaphore, VK_ALLOC); };
+            imagePresentSemaphores_.push_back(
+                MakePtr<VulkanBackBufferSemaphore>(device_->GetNativeDevice(), semaphore));
         }
     }
 
@@ -64,7 +67,7 @@ VulkanSwapchain::VulkanSwapchain(
 
 VulkanSwapchain::~VulkanSwapchain()
 {
-    vkDestroySwapchainKHR(device_, swapchain_, VK_ALLOC);
+    vkDestroySwapchainKHR(device_->GetNativeDevice(), swapchain_, VK_ALLOC);
 }
 
 bool VulkanSwapchain::Acquire()
@@ -73,7 +76,8 @@ bool VulkanSwapchain::Acquire()
 
     auto &imageAcquireSemaphore = imageAcquireSemaphores_[frameIndex_];
     const VkResult acquireResult = vkAcquireNextImageKHR(
-        device_, swapchain_, UINT64_MAX, imageAcquireSemaphore->GetBinarySemaphore(), nullptr, &imageIndex_);
+        device_->GetNativeDevice(), swapchain_, UINT64_MAX,
+        imageAcquireSemaphore->GetBinarySemaphore(), nullptr, &imageIndex_);
 
     if(acquireResult == VK_ERROR_OUT_OF_DATE_KHR)
     {
