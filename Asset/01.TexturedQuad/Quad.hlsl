@@ -38,6 +38,7 @@ struct FSOutput
 FSOutput FSMain(VSOutput input)
 {
     FSOutput output;
-    output.color = float4(MainTexture.Sample(MainSampler, input.texCoord).rgb, 1);
+    output.color = float4(MainTexture.Sample(MainSampler, input.texCoord).rgb, 1.0);
+	output.color.a = func(0.0f);
     return output;
 }

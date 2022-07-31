@@ -1,4 +1,5 @@
 #include <filesystem>
+#include <fstream>
 #include <iterator>
 
 #include <fmt/format.h>
@@ -8,6 +9,8 @@
 #include <Rtrc/Shader/ShaderManager.h>
 #include <Rtrc/Utils/Enumerate.h>
 #include <Rtrc/Utils/File.h>
+#include <Rtrc/Utils/ScopeGuard.h>
+#include <Rtrc/Utils/TemporalFile.h>
 #include <Rtrc/Utils/Unreachable.h>
 
 RTRC_BEGIN
@@ -18,12 +21,6 @@ namespace
     class DefaultShaderFileLoader : public ShaderFileLoader
     {
     public:
-
-        explicit DefaultShaderFileLoader(std::string_view rootDir)
-            : rootDir_(absolute(std::filesystem::path(rootDir)).lexically_normal())
-        {
-            
-        }
 
         bool Load(std::string_view filename, std::string &output) const override
         {
@@ -39,35 +36,19 @@ namespace
             }
         }
 
-        std::string GetMappedSourceFilename(std::string_view filename) const override
+        std::string GetMappedSourceFilename(std::string_view filename) const
         {
             std::filesystem::path path = filename;
+            path = path.lexically_normal();
             if(path.is_relative())
             {
-                path = rootDir_ / path;
+                path = rootDir / path;
             }
             path = path.lexically_normal();
             return path.string();
         }
 
-    private:
-
-        std::filesystem::path rootDir_;
-    };
-
-    class FakeShaderFileLoader : public ShaderFileLoader
-    {
-    public:
-
-        bool Load(std::string_view filename, std::string &output) const override
-        {
-            return false;
-        }
-
-        std::string GetMappedSourceFilename(std::string_view filename) const override
-        {
-            return {};
-        }
+        std::filesystem::path rootDir;
     };
 
     class DXCIncludeHandlerWrapper : public DXC::IncludeHandler
@@ -285,12 +266,7 @@ void ShaderManager::SetDebugMode(bool enableDebug)
 
 void ShaderManager::SetFileLoader(std::string_view rootDir)
 {
-    fileLoader_ = MakeRC<DefaultShaderFileLoader>(rootDir);
-}
-
-void ShaderManager::SetCustomFileLoader(RC<ShaderFileLoader> customLoader)
-{
-    fileLoader_ = std::move(customLoader);
+    rootDir_ = absolute(std::filesystem::path(rootDir)).lexically_normal();
 }
 
 void ShaderManager::AddMacro(std::string key, std::string value)
@@ -304,16 +280,6 @@ RC<Shader> ShaderManager::AddShader(const ShaderDescription &desc)
     for(auto &[k, v] : desc.overrideMacros)
     {
         macros_[k] = v;
-    }
-
-    if(!fileLoader_)
-    {
-        fileLoader_ = MakeRC<FakeShaderFileLoader>();
-    }
-    RC<ShaderFileLoader> fileLoader = fileLoader_;
-    if(desc.overrideFileLoader)
-    {
-        fileLoader = desc.overrideFileLoader;
     }
 
     bool debug = debug_;
@@ -330,19 +296,19 @@ RC<Shader> ShaderManager::AddShader(const ShaderDescription &desc)
     if(!desc.VS.filename.empty() || !desc.VS.source.empty())
     {
         VS = CompileShader(
-            debug, fileLoader, macros, desc.VS, RHI::ShaderStage::VertexShader,
+            debug, macros, desc.VS, RHI::ShaderStage::VertexShader,
             nameToGroupIndex, bindingGroupLayouts, bindingGroupLayoutIterators);
     }
     if(!desc.FS.filename.empty() || !desc.FS.source.empty())
     {
         FS = CompileShader(
-            debug, fileLoader, macros, desc.FS, RHI::ShaderStage::FragmentShader,
+            debug, macros, desc.FS, RHI::ShaderStage::FragmentShader,
             nameToGroupIndex, bindingGroupLayouts, bindingGroupLayoutIterators);
     }
     if(!desc.CS.filename.empty() || !desc.CS.source.empty())
     {
         CS = CompileShader(
-            debug, fileLoader, macros, desc.CS, RHI::ShaderStage::ComputeShader,
+            debug, macros, desc.CS, RHI::ShaderStage::ComputeShader,
             nameToGroupIndex, bindingGroupLayouts, bindingGroupLayoutIterators);
     }
 
@@ -414,7 +380,6 @@ void ShaderManager::OnShaderDestroyed(
 
 RHI::RawShaderPtr ShaderManager::CompileShader(
     bool                                             debug,
-    const RC<ShaderFileLoader>                      &fileLoader,
     const std::map<std::string, std::string>        &macros,
     const ShaderSource                              &source,
     RHI::ShaderStage                                 stage,
@@ -422,6 +387,14 @@ RHI::RawShaderPtr ShaderManager::CompileShader(
     std::vector<RC<BindingGroupLayout>>             &bindingGroupLayouts,
     std::vector<Shader::BindingGroupLayoutRecordIt> &outputBindingGroupLayouts)
 {
+    // When vulkan-with-source is enabled, dxc will always try to load source content from `sourceFilename`,
+    // instead of using `source` directly. This can cause problems when file `sourceFilename` is not available or
+    // its content doesn't strictly match `source`. We work around this problem by creating a temporary source file.
+    const bool needTempSourceFile = !source.source.empty() && !source.filename.empty();
+
+    auto fileLoader = MakeRC<DefaultShaderFileLoader>();
+    fileLoader->rootDir = rootDir_;
+
     DXCIncludeHandlerWrapper includeHandler;
     includeHandler.loader = fileLoader;
 
@@ -433,29 +406,75 @@ RHI::RawShaderPtr ShaderManager::CompileShader(
     case RHI::ShaderStage::ComputeShader:  target = DXC::Target::Vulkan_1_3_CS_6_0; break;
     }
 
-    DXC dxc;
-
-    // preprocess
+    // load source
 
     std::string rawSource;
     if(!source.source.empty())
     {
         rawSource = source.source;
     }
-    else if(!fileLoader_->Load(source.filename, rawSource))
+    else if(!fileLoader->Load(source.filename, rawSource))
     {
         throw Exception("failed to load shader source file: " + source.filename);
+    }
+
+    // temporary source file
+
+    std::string sourceFilename, tempFilename;
+    if(needTempSourceFile)
+    {
+        std::string tempFilePrefix;
+        if(!source.filename.empty())
+        {
+            tempFilePrefix = std::filesystem::path(source.filename).filename().string();
+        }
+        tempFilename = GenerateTemporalFilename(tempFilePrefix) + ".hlsl";
+        {
+            std::ofstream fout(tempFilename, std::ofstream::out | std::ofstream::trunc);
+            if(!fout)
+            {
+                throw Exception("failed to create temporal source file");
+            }
+            fout << rawSource;
+        }
+        sourceFilename = tempFilename;
+    }
+    else if(!source.filename.empty())
+    {
+        sourceFilename = fileLoader->GetMappedSourceFilename(source.filename);
+    }
+    else
+    {
+        sourceFilename = "anonymous.hlsl";
+    }
+    RTRC_SCOPE_EXIT
+    {
+        if(needTempSourceFile)
+        {
+            std::filesystem::remove(tempFilename);
+        }
+    };
+
+    // preprocess
+
+    std::vector<std::string> includeDirs;
+    includeDirs.push_back(rootDir_.string());
+    if(!source.filename.empty())
+    {
+        includeDirs.push_back(
+            absolute(std::filesystem::path(source.filename)).parent_path().lexically_normal().string());
     }
 
     std::string preprocessedSource;
     DXC::ShaderInfo shaderInfo =
     {
-        .source = rawSource,
-        .sourceFilename = source.filename.empty() ?
-                          "anonymous.hlsl" : fileLoader->GetMappedSourceFilename(source.filename),
+        .source         = rawSource,
+        .sourceFilename = sourceFilename,
         .entryPoint     = source.entry,
+        .includeDirs    = includeDirs,
         .macros         = macros
     };
+    DXC dxc;
     dxc.Compile(shaderInfo, target, debug, &includeHandler, &preprocessedSource);
 
     // parse binding groups

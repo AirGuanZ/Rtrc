@@ -86,8 +86,6 @@ public:
     virtual ~ShaderFileLoader() = default;
 
     virtual bool Load(std::string_view filename, std::string &output) const = 0;
-
-    virtual std::string GetMappedSourceFilename(std::string_view filename) const = 0;
 };
 
 class Shader : public Uncopyable
@@ -158,7 +156,6 @@ public:
         ShaderSource FS;
         ShaderSource CS;
         std::optional<bool>                overrideDebugMode;
-        RC<ShaderFileLoader>               overrideFileLoader;
         std::map<std::string, std::string> overrideMacros;
     };
 
@@ -167,7 +164,6 @@ public:
     void SetDevice(RHI::DevicePtr device);
     void SetDebugMode(bool enableDebug);
     void SetFileLoader(std::string_view rootDir);
-    void SetCustomFileLoader(RC<ShaderFileLoader> customLoader);
     void AddMacro(std::string key, std::string value);
 
     RC<Shader> AddShader(const ShaderDescription &desc);
@@ -180,7 +176,6 @@ private:
 
     RHI::RawShaderPtr CompileShader(
         bool                                             debug,
-        const RC<ShaderFileLoader>                      &fileLoader,
         const std::map<std::string, std::string>        &macros,
         const ShaderSource                              &source,
         RHI::ShaderStage                                 stage,
@@ -191,7 +186,7 @@ private:
     RHI::DevicePtr rhiDevice_;
 
     bool debug_;
-    RC<ShaderFileLoader> fileLoader_;
+    std::filesystem::path rootDir_;
     std::map<std::string, std::string> macros_;
 
     // when value is nil, there is multiple binding groups sharing the same name

@@ -2,8 +2,9 @@
 #define _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING
 #endif
 
-#include <locale>
 #include <codecvt>
+#include <filesystem>
+#include <locale>
 
 #include <Windows.h>
 #include <dxc/dxcapi.h>
@@ -128,6 +129,17 @@ std::vector<unsigned char> DXC::Compile(
     {
         filename = ToWString(shaderInfo.sourceFilename);
         arguments.push_back(filename.c_str());
+    }
+
+    std::vector<std::wstring> includeDirs;
+    for(auto &inc : shaderInfo.includeDirs)
+    {
+        includeDirs.push_back(ToWString(inc));
+    }
+    for(auto &inc : includeDirs)
+    {
+        arguments.push_back(L"-I");
+        arguments.push_back(inc.c_str());
     }
 
     const auto entryPoint = ToWString(shaderInfo.entryPoint);
