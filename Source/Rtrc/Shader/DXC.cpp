@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <locale>
 
+// TODO: dxc for linux
 #include <Windows.h>
 #include <dxc/dxcapi.h>
 #include <fmt/format.h>
@@ -184,7 +185,7 @@ std::vector<unsigned char> DXC::Compile(
 
     if(debugMode)
     {
-        arguments.push_back(L"-Od");
+        arguments.push_back(L"-O0");
         arguments.push_back(L"-Zi");
         arguments.push_back(L"-fspv-debug=vulkan-with-source");
     }
