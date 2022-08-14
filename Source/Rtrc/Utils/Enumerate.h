@@ -46,7 +46,7 @@ class Enumerate
 
 public:
 
-    template<typename U>
+    template<typename U> requires !std::is_same_v<Enumerate, std::remove_reference_t<U>>
     explicit Enumerate(U &&container)
         : container_(std::forward<U>(container))
     {

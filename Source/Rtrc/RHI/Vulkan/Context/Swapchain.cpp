@@ -123,10 +123,10 @@ int VulkanSwapchain::GetRenderTargetCount() const
 
 const Texture2DDesc &VulkanSwapchain::GetRenderTargetDesc() const
 {
-    return images_.front()->Get2DDesc();
+    return images_.front()->GetDesc();
 }
 
-Ptr<Texture> VulkanSwapchain::GetRenderTarget() const
+Ptr<Texture2D> VulkanSwapchain::GetRenderTarget() const
 {
     return images_[imageIndex_];
 }

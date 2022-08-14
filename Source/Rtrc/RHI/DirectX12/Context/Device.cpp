@@ -95,7 +95,7 @@ Ptr<BindingLayout> DirectX12Device::CreateBindingLayout(const BindingLayoutDesc 
     return {};
 }
 
-Ptr<Texture> DirectX12Device::CreateTexture2D(const Texture2DDesc &desc)
+Ptr<Texture2D> DirectX12Device::CreateTexture2D(const Texture2DDesc &desc)
 {
     // TODO
     return {};
@@ -133,7 +133,7 @@ Ptr<MemoryBlock> DirectX12Device::CreateMemoryBlock(const MemoryBlockDesc &desc)
     return {};
 }
 
-Ptr<Texture> DirectX12Device::CreatePlacedTexture2D(
+Ptr<Texture2D> DirectX12Device::CreatePlacedTexture2D(
     const Texture2DDesc &desc, const Ptr<MemoryBlock> &memoryBlock, size_t offsetInMemoryBlock)
 {
     // TODO

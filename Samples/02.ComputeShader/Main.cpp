@@ -179,7 +179,7 @@ void Run()
             .afterLayout    = RHI::TextureLayout::CopySrc
         });
 
-    commandBuffer->CopyColorTextureToBuffer(readBackStagingBuffer, 0, outputTexture, 0, 0);
+    commandBuffer->CopyColorTexture2DToBuffer(readBackStagingBuffer, 0, outputTexture, 0, 0);
 
     commandBuffer->End();
 

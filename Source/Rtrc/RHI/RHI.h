@@ -11,9 +11,10 @@
 #include <Rtrc/Utils/Variant.h>
 #include <Rtrc/Window/Window.h>
 
-RTRC_BEGIN
+#include "RHI.h"
 
-struct StructInfo;
+RTRC_BEGIN
+    struct StructInfo;
 
 RTRC_END
 
@@ -48,7 +49,9 @@ RTRC_RHI_FORWARD_DECL(GraphicsPipeline)
 RTRC_RHI_FORWARD_DECL(GraphicsPipelineBuilder)
 RTRC_RHI_FORWARD_DECL(ComputePipeline)
 RTRC_RHI_FORWARD_DECL(ComputePipelineBuilder)
+RTRC_RHI_FORWARD_DECL(Resource)
 RTRC_RHI_FORWARD_DECL(Texture)
+RTRC_RHI_FORWARD_DECL(Texture2D)
 RTRC_RHI_FORWARD_DECL(Texture2DRTV)
 RTRC_RHI_FORWARD_DECL(Texture2DSRV)
 RTRC_RHI_FORWARD_DECL(Texture2DUAV)
@@ -304,6 +307,8 @@ RTRC_DEFINE_ENUM_FLAGS(ResourceAccess)
 
 using ResourceAccessFlag = EnumFlags<ResourceAccess>;
 
+bool IsReadOnly(ResourceAccessFlag access);
+
 enum class AttachmentLoadOp
 {
     Load,
@@ -386,6 +391,9 @@ struct TextureSubresource
 {
     uint32_t mipLevel;
     uint32_t arrayLayer;
+
+    auto operator<=>(const TextureSubresource &) const = default;
+    bool operator==(const TextureSubresource &) const = default;
 };
 
 struct TextureSubresources
@@ -407,6 +415,8 @@ struct Texture2DDesc
     TextureUsageFlag          usage;
     TextureLayout             initialLayout;
     QueueConcurrentAccessMode concurrentAccessMode;
+
+    auto operator<=>(const Texture2DDesc &) const = default;
 };
 
 struct Texture2DRTVDesc
@@ -440,6 +450,8 @@ struct BufferDesc
     BufferUsageFlag           usage;
     BufferHostAccessType      hostAccessType;
     QueueConcurrentAccessMode concurrentAccessMode;
+
+    auto operator<=>(const BufferDesc &) const = default;
 };
 
 struct BufferSRVDesc
@@ -629,7 +641,7 @@ public:
     virtual Ptr<BindingGroupLayout> CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc) = 0;
     virtual Ptr<BindingLayout>      CreateBindingLayout(const BindingLayoutDesc &desc) = 0;
 
-    virtual Ptr<Texture> CreateTexture2D(const Texture2DDesc &desc) = 0;
+    virtual Ptr<Texture2D> CreateTexture2D(const Texture2DDesc &desc) = 0;
     virtual Ptr<Buffer>  CreateBuffer(const BufferDesc &desc) = 0;
     virtual Ptr<Sampler> CreateSampler(const SamplerDesc &desc) = 0;
 
@@ -639,7 +651,7 @@ public:
         const BufferDesc &desc, size_t *size, size_t *alignment) const = 0;
     virtual Ptr<MemoryBlock> CreateMemoryBlock(const MemoryBlockDesc &desc) = 0;
 
-    virtual Ptr<Texture> CreatePlacedTexture2D(
+    virtual Ptr<Texture2D> CreatePlacedTexture2D(
         const Texture2DDesc &desc, const Ptr<MemoryBlock> &memoryBlock, size_t offsetInMemoryBlock) = 0;
     virtual Ptr<Buffer> CreatePlacedBuffer(
         const BufferDesc &desc, const Ptr<MemoryBlock> &memoryBlock, size_t offsetInMemoryBlock) = 0;
@@ -671,7 +683,7 @@ public:
 
     virtual int                  GetRenderTargetCount() const = 0;
     virtual const Texture2DDesc &GetRenderTargetDesc() const = 0;
-    virtual Ptr<Texture>         GetRenderTarget() const = 0;
+    virtual Ptr<Texture2D>         GetRenderTarget() const = 0;
 };
 
 class BindingGroupLayout : public RHIObject
@@ -786,10 +798,10 @@ public:
     virtual void Dispatch(int groupCountX, int groupCountY, int groupCountZ) = 0;
 
     virtual void CopyBuffer(Buffer *dst, size_t dstOffset, Buffer *src, size_t srcOffset, size_t range) = 0;
-    virtual void CopyBufferToColorTexture(
-        Texture *dst, uint32_t mipLevel, uint32_t arrayLayer, Buffer *src, size_t srcOffset) = 0;
-    virtual void CopyColorTextureToBuffer(
-        Buffer *dst, size_t dstOffset, Texture *src, uint32_t mipLevel, uint32_t arrayLayer) = 0;
+    virtual void CopyBufferToColorTexture2D(
+        Texture2D *dst, uint32_t mipLevel, uint32_t arrayLayer, Buffer *src, size_t srcOffset) = 0;
+    virtual void CopyColorTexture2DToBuffer(
+        Buffer *dst, size_t dstOffset, Texture2D *src, uint32_t mipLevel, uint32_t arrayLayer) = 0;
 
 protected:
 
@@ -910,13 +922,50 @@ public:
     virtual Ptr<ComputePipeline> CreatePipeline() const = 0;
 };
 
-class Texture : public RHIObject
+class Resource : public RHIObject
 {
 public:
 
-    virtual TextureDimension     GetDimension() const = 0;
-    virtual const Texture2DDesc &Get2DDesc() const = 0;
-    virtual Format               GetFormat() const = 0;
+    virtual QueueConcurrentAccessMode GetConcurrentAccessMode() const = 0;
+
+    virtual bool IsBuffer() const { return false; }
+    virtual BufferPtr AsBuffer() { return nullptr; }
+
+    virtual bool IsTexture() const { return false; }
+    virtual TexturePtr AsTexture() { return nullptr; }
+
+    virtual bool IsTexture2D() const { return false; }
+    virtual Texture2DPtr AsTexture2D() { return nullptr; }
+};
+
+class Texture : public Resource
+{
+public:
+
+    bool IsTexture() const final { return true; }
+    TexturePtr AsTexture() final { return TexturePtr(this); }
+
+    virtual TextureDimension GetDimension() const = 0;
+    virtual Format           GetFormat()    const = 0;
+    virtual uint32_t         GetMipLevels() const = 0;
+    virtual uint32_t         GetArraySize() const = 0;
+};
+
+class Texture2D : public Texture
+{
+public:
+
+    bool IsTexture2D() const override { return true; }
+    Texture2DPtr AsTexture2D() override { return Texture2DPtr(this); }
+
+    QueueConcurrentAccessMode GetConcurrentAccessMode() const final { return GetDesc().concurrentAccessMode; }
+
+    TextureDimension GetDimension() const final { return TextureDimension::Tex2D; }
+    Format           GetFormat()    const final { return GetDesc().format; }
+    uint32_t         GetMipLevels() const final { return GetDesc().mipLevels; }
+    uint32_t         GetArraySize() const final { return GetDesc().arraySize; }
+
+    virtual const Texture2DDesc &GetDesc() const = 0;
 
     virtual Ptr<Texture2DRTV> Create2DRTV(const Texture2DRTVDesc &desc) const = 0;
     virtual Ptr<Texture2DSRV> Create2DSRV(const Texture2DSRVDesc &desc) const = 0;
@@ -944,9 +993,14 @@ public:
     virtual const Texture2DUAVDesc &GetDesc() const = 0;
 };
 
-class Buffer : public RHIObject
+class Buffer : public Resource
 {
 public:
+
+    bool IsBuffer() const final { return true; }
+    BufferPtr AsBuffer() override { return BufferPtr(this); }
+
+    QueueConcurrentAccessMode GetConcurrentAccessMode() const final { return GetDesc().concurrentAccessMode; }
 
     virtual const BufferDesc &GetDesc() const = 0;
 

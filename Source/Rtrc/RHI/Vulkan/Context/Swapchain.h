@@ -32,7 +32,7 @@ public:
 
     const Texture2DDesc &GetRenderTargetDesc() const override;
 
-    Ptr<Texture> GetRenderTarget() const override;
+    Ptr<Texture2D> GetRenderTarget() const override;
 
 private:
 

@@ -29,4 +29,23 @@ size_t GetTexelSize(Format format)
     throw Exception("unknown format: " + std::to_string(static_cast<int>(format)));
 }
 
+bool IsReadOnly(ResourceAccessFlag access)
+{
+    using enum ResourceAccess;
+    constexpr ResourceAccessFlag READONLY_MASK =
+        VertexBufferRead
+      | IndexBufferRead
+      | ConstantBufferRead
+      | RenderTargetRead
+      | DepthStencilRead
+      | TextureRead
+      | RWTextureRead
+      | BufferRead
+      | RWBufferRead
+      | RWStructuredBufferRead
+      | CopyRead
+      | ResolveRead;
+    return (access & READONLY_MASK) == access;
+}
+
 RTRC_RHI_END

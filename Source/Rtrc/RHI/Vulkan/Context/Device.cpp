@@ -430,7 +430,7 @@ Ptr<BindingLayout> VulkanDevice::CreateBindingLayout(const BindingLayoutDesc &de
     return MakePtr<VulkanBindingLayout>(desc, device_, layout);
 }
 
-Ptr<Texture> VulkanDevice::CreateTexture2D(const Texture2DDesc &desc)
+Ptr<Texture2D> VulkanDevice::CreateTexture2D(const Texture2DDesc &desc)
 {
     const VkImageCreateInfo imageCreateInfo = TranslateImageCreateInfo(desc, queueFamilies_);
     const VmaAllocationCreateInfo allocCreateInfo = { .usage = VMA_MEMORY_USAGE_AUTO };
@@ -593,7 +593,7 @@ Ptr<MemoryBlock> VulkanDevice::CreateMemoryBlock(const MemoryBlockDesc &desc)
     return MakePtr<VulkanMemoryBlock>(desc, allocator_, alloc);
 }
 
-Ptr<Texture> VulkanDevice::CreatePlacedTexture2D(
+Ptr<Texture2D> VulkanDevice::CreatePlacedTexture2D(
     const Texture2DDesc &desc, const Ptr<MemoryBlock> &memoryBlock, size_t offsetInMemoryBlock)
 {
     const VkImageCreateInfo imageCreateInfo = TranslateImageCreateInfo(desc, queueFamilies_);

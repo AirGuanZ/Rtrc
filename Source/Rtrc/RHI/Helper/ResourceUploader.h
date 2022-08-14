@@ -24,7 +24,7 @@ public:
 
     // use width * texelBytes if rowBytes is 0
     RHI::TextureAcquireBarrier Upload(
-        RHI::Texture           *texture,
+        RHI::Texture2D         *texture,
         uint32_t                mipLevel,
         uint32_t                arrayLayer,
         const void             *data,
@@ -34,7 +34,7 @@ public:
         RHI::TextureLayout      afterLayout);
 
     RHI::TextureAcquireBarrier Upload(
-        RHI::Texture            *texture,
+        RHI::Texture2D          *texture,
         uint32_t                 mipLevel,
         uint32_t                 arrayLayer,
         const ImageDynamic      &image,

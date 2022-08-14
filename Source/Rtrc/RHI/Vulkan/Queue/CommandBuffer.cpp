@@ -16,7 +16,11 @@ namespace
 
     VkImage GetVulkanImage(Texture *tex)
     {
-        return static_cast<VulkanTexture *>(tex)->GetNativeImage();
+        switch(tex->GetDimension())
+        {
+        case TextureDimension::Tex2D: return static_cast<VulkanTexture *>(tex)->GetNativeImage();
+        }
+        throw Exception("unknown vulkan texture dimension");
     }
 
 } // namespace anonymous
@@ -69,7 +73,7 @@ void VulkanCommandBuffer::BeginRenderPass(Span<RenderPassColorAttachment> colorA
     }
 
     const auto &attachment0Desc = static_cast<VulkanTexture2DRTV *>(
-        colorAttachments[0].rtv)->GetTexture()->Get2DDesc();
+        colorAttachments[0].rtv)->GetTexture()->GetDesc();
     const VkRect2D renderArea = {
             .offset = { 0, 0 },
             .extent = { attachment0Desc.width, attachment0Desc.height }
@@ -235,10 +239,10 @@ void VulkanCommandBuffer::CopyBuffer(
     vkCmdCopyBuffer(commandBuffer_, vkSrc, vkDst, 1, &copy);
 }
 
-void VulkanCommandBuffer::CopyBufferToColorTexture(
-    Texture *dst, uint32_t mipLevel, uint32_t arrayLayer, Buffer *src, size_t srcOffset)
+void VulkanCommandBuffer::CopyBufferToColorTexture2D(
+    Texture2D *dst, uint32_t mipLevel, uint32_t arrayLayer, Buffer *src, size_t srcOffset)
 {
-    auto &texDesc = dst->Get2DDesc();
+    auto &texDesc = dst->GetDesc();
     const VkBufferImageCopy copy = {
         .bufferOffset      = srcOffset,
         .bufferRowLength   = 0,
@@ -257,10 +261,10 @@ void VulkanCommandBuffer::CopyBufferToColorTexture(
     vkCmdCopyBufferToImage(commandBuffer_, vkSrc, vkDst, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
 }
 
-void VulkanCommandBuffer::CopyColorTextureToBuffer(
-    Buffer *dst, size_t dstOffset, Texture *src, uint32_t mipLevel, uint32_t arrayLayer)
+void VulkanCommandBuffer::CopyColorTexture2DToBuffer(
+    Buffer *dst, size_t dstOffset, Texture2D *src, uint32_t mipLevel, uint32_t arrayLayer)
 {
-    auto &texDesc = src->Get2DDesc();
+    auto &texDesc = src->GetDesc();
     const VkBufferImageCopy copy = {
         .bufferOffset      = dstOffset,
         .bufferRowLength   = 0,
@@ -350,7 +354,7 @@ void VulkanCommandBuffer::ExecuteBarriersInternal(
             continue;
         }
 
-        assert(release.texture->Get2DDesc().concurrentAccessMode == QueueConcurrentAccessMode::Exclusive);
+        // assert(release.texture->GetDesc().concurrentAccessMode == QueueConcurrentAccessMode::Exclusive);
 
         auto beforeQueue = static_cast<VulkanQueue *>(release.beforeQueue);
         auto afterQueue = static_cast<VulkanQueue *>(release.afterQueue);

@@ -4,7 +4,8 @@
 #include <fmt/format.h>
 
 #include <Rtrc/Shader/ShaderBindingParser.h>
-#include <Rtrc/Utils/ScopeGuard.h>
+
+// TODO: rewrite this piece of shit
 
 RTRC_BEGIN
 

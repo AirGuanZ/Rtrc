@@ -1,14 +1,22 @@
+#include <Rtrc/RenderGraph/Compiler.h>
 #include <Rtrc/RenderGraph/Executable.h>
 
 RTRC_RG_BEGIN
 
-Executer::Executer(RHI::DevicePtr device)
-    : device_(std::move(device))
+Executer::Executer(RHI::DevicePtr device, RC<CommandBufferAllocator> commandBufferAllocator)
+    : device_(std::move(device)), commandBufferAllocator_(std::move(commandBufferAllocator))
 {
     
 }
 
-void Executer::Execute(const ExecutableGraph &graph, CommandBufferAllocator &commandBufferAllocator)
+void Executer::Execute(const RenderGraph &graph)
+{
+    ExecutableGraph compiledResult;
+    Compiler(device_).Compile(graph, compiledResult);
+    Execute(compiledResult);
+}
+
+void Executer::Execute(const ExecutableGraph &graph)
 {
     // prepare semaphores
 
@@ -31,7 +39,7 @@ void Executer::Execute(const ExecutableGraph &graph, CommandBufferAllocator &com
 
     for(auto &section : graph.sections)
     {
-        auto commandBuffer = commandBufferAllocator.AllocateCommandBuffer(section->queue->GetType());
+        auto commandBuffer = commandBufferAllocator_->AllocateCommandBuffer(section->queue->GetType());
         commandBuffer->Begin();
 
         if(section->passes.empty())
@@ -56,7 +64,7 @@ void Executer::Execute(const ExecutableGraph &graph, CommandBufferAllocator &com
 
             if(pass.callback)
             {
-                PassContext passContext;
+                PassContext passContext(graph.resources, commandBuffer);
                 (*pass.callback)(passContext);
             }
         }

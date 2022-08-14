@@ -18,6 +18,8 @@
 #define RTRC_DEBUG 0
 #endif
 
+#define RTRC_MAYBE_UNUSED(X) ((void)X)
+
 RTRC_BEGIN
 
 class Exception : public std::runtime_error

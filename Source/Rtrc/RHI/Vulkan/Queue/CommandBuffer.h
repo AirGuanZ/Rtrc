@@ -46,11 +46,11 @@ public:
 
     void CopyBuffer(Buffer *dst, size_t dstOffset, Buffer *src, size_t srcOffset, size_t range) override;
 
-    void CopyBufferToColorTexture(
-        Texture *dst, uint32_t mipLevel, uint32_t arrayLayer, Buffer *src, size_t srcOffset) override;
+    void CopyBufferToColorTexture2D(
+        Texture2D *dst, uint32_t mipLevel, uint32_t arrayLayer, Buffer *src, size_t srcOffset) override;
 
-    void CopyColorTextureToBuffer(
-        Buffer *dst, size_t dstOffset, Texture *src, uint32_t mipLevel, uint32_t arrayLayer) override;
+    void CopyColorTexture2DToBuffer(
+        Buffer *dst, size_t dstOffset, Texture2D *src, uint32_t mipLevel, uint32_t arrayLayer) override;
 
     VkCommandBuffer GetNativeCommandBuffer() const;
 

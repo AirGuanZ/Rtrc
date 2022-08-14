@@ -94,7 +94,7 @@ BufferAcquireBarrier ResourceUploader::Upload(
 }
 
 TextureAcquireBarrier ResourceUploader::Upload(
-    Texture           *texture,
+    Texture2D         *texture,
     uint32_t           mipLevel,
     uint32_t           arrayLayer,
     const void        *data,
@@ -103,8 +103,7 @@ TextureAcquireBarrier ResourceUploader::Upload(
     ResourceAccessFlag afterAccesses,
     TextureLayout      afterLayout)
 {
-    assert(texture->GetDimension() == TextureDimension::Tex2D);
-    auto &texDesc = texture->Get2DDesc();
+    auto &texDesc = texture->GetDesc();
 
     const size_t rowBytes = GetTexelSize(texDesc.format) * texDesc.width;
     const size_t stagingBufferSize = rowBytes * texDesc.height;
@@ -145,7 +144,7 @@ TextureAcquireBarrier ResourceUploader::Upload(
         .afterLayout    = TextureLayout::CopyDst
     });
 
-    commandBuffer_->CopyBufferToColorTexture(texture, mipLevel, arrayLayer, stagingBuffer.Get(), 0);
+    commandBuffer_->CopyBufferToColorTexture2D(texture, mipLevel, arrayLayer, stagingBuffer.Get(), 0);
     
     if(afterQueue != queue_.Get())
     {
@@ -210,7 +209,7 @@ TextureAcquireBarrier ResourceUploader::Upload(
 }
 
 TextureAcquireBarrier ResourceUploader::Upload(
-    Texture            *texture,
+    Texture2D          *texture,
     uint32_t            mipLevel,
     uint32_t            arrayLayer,
     const ImageDynamic &image,
@@ -219,8 +218,7 @@ TextureAcquireBarrier ResourceUploader::Upload(
     ResourceAccessFlag  afterAccesses,
     TextureLayout       afterLayout)
 {
-    assert(texture->GetDimension() == TextureDimension::Tex2D);
-    auto &texDesc = texture->Get2DDesc();
+    auto &texDesc = texture->GetDesc();
     switch(texDesc.format)
     {
     case Format::B8G8R8A8_UNorm:

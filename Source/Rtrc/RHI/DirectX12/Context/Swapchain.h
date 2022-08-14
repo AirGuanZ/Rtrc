@@ -18,7 +18,7 @@ public:
 
     void Present() override;
 
-    RC<Texture> GetRenderTarget() const override;
+    RC<Texture2D> GetRenderTarget() const override;
 
     const Texture2DDesc &GetRenderTargetDesc() const override;
 

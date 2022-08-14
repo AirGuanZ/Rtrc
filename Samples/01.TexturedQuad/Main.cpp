@@ -262,7 +262,7 @@ void Run()
         commandBuffer->SetViewports(RHI::Viewport
         {
             .lowerLeftCorner = Vector2f(0.0f, 0.0f),
-            .size            = Vector2f(static_cast<float>(image->Get2DDesc().width), static_cast<float>(image->Get2DDesc().height)),
+            .size            = Vector2f(static_cast<float>(image->GetDesc().width), static_cast<float>(image->GetDesc().height)),
             .minDepth        = 0,
             .maxDepth        = 1
         });
@@ -270,7 +270,7 @@ void Run()
         commandBuffer->SetScissors(RHI::Scissor
         {
             .lowerLeftCorner = Vector2i(0, 0),
-            .size = Vector2i(static_cast<int>(image->Get2DDesc().width), static_cast<int>(image->Get2DDesc().height)),
+            .size = Vector2i(static_cast<int>(image->GetDesc().width), static_cast<int>(image->GetDesc().height)),
         });
 
         commandBuffer->Draw(6, 1, 0, 0);

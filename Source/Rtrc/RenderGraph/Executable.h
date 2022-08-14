@@ -5,6 +5,15 @@
 
 RTRC_RG_BEGIN
 
+struct ExecutableResources
+{
+    std::vector<RC<RHI::StatefulBuffer>>  indexToRHIBuffers;
+    std::vector<RC<RHI::StatefulTexture>> indexToRHITextures;
+
+    std::vector<RHI::StatefulBuffer::State> indexToFinalBufferStates;
+    std::vector<RHI::TextureSubresourceMap<RHI::StatefulTexture::State>> indexToFinalTextureStates;
+};
+
 struct ExecutablePass
 {
     std::vector<RHI::TextureTransitionBarrier> beforeTextureBarriers;
@@ -45,6 +54,7 @@ struct ExecutableSection
 struct ExecutableGraph
 {
     int semaphoreCount;
+    ExecutableResources resources;
     std::vector<Box<ExecutableSection>> sections;
 };
 
@@ -52,9 +62,9 @@ class Executer
 {
 public:
 
-    explicit Executer(RHI::DevicePtr device);
+    Executer(RHI::DevicePtr device, RC<CommandBufferAllocator> commandBufferAllocator);
 
-    void Execute(const ExecutableGraph &graph, CommandBufferAllocator &commandBufferAllocator);
+    void Execute(const RenderGraph &graph);
 
 private:
 
@@ -64,7 +74,10 @@ private:
         RHI::SemaphorePtr semaphore;
     };
 
-    RHI::DevicePtr device_;
+    void Execute(const ExecutableGraph &graph);
+
+    RHI::DevicePtr               device_;
+    RC<CommandBufferAllocator>   commandBufferAllocator_;
     std::vector<SemaphoreRecord> semaphorePool_;
 };
 

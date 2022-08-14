@@ -28,7 +28,7 @@ public:
 
     Ptr<BindingLayout> CreateBindingLayout(const BindingLayoutDesc &desc) override;
 
-    Ptr<Texture> CreateTexture2D(const Texture2DDesc &desc) override;
+    Ptr<Texture2D> CreateTexture2D(const Texture2DDesc &desc) override;
 
     Ptr<Buffer> CreateBuffer(const BufferDesc &desc) override;
 
@@ -42,7 +42,7 @@ public:
 
     Ptr<MemoryBlock> CreateMemoryBlock(const MemoryBlockDesc &desc) override;
 
-    Ptr<Texture> CreatePlacedTexture2D(
+    Ptr<Texture2D> CreatePlacedTexture2D(
         const Texture2DDesc &desc, const Ptr<MemoryBlock> &memoryBlock, size_t offsetInMemoryBlock) override;
 
     Ptr<Buffer> CreatePlacedBuffer(

@@ -35,19 +35,9 @@ VulkanTexture2D::~VulkanTexture2D()
     }
 }
 
-TextureDimension VulkanTexture2D::GetDimension() const
-{
-    return TextureDimension::Tex2D;
-}
-
-const Texture2DDesc &VulkanTexture2D::Get2DDesc() const
+const Texture2DDesc &VulkanTexture2D::GetDesc() const
 {
     return desc_;
-}
-
-Format VulkanTexture2D::GetFormat() const
-{
-    return desc_.format;
 }
 
 Ptr<Texture2DRTV> VulkanTexture2D::Create2DRTV(const Texture2DRTVDesc &desc) const

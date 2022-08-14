@@ -6,7 +6,7 @@
 
 RTRC_RHI_VK_BEGIN
 
-class VulkanTexture : public Texture
+class VulkanTexture : public Texture2D
 {
 public:
 
@@ -28,16 +28,10 @@ public:
 
     ~VulkanTexture2D() override;
 
-    TextureDimension GetDimension() const override;
-
-    const Texture2DDesc &Get2DDesc() const override;
-
-    Format GetFormat() const override;
+    const Texture2DDesc &GetDesc() const override;
 
     Ptr<Texture2DRTV> Create2DRTV(const Texture2DRTVDesc &desc) const override;
-
     Ptr<Texture2DSRV> Create2DSRV(const Texture2DSRVDesc &desc) const override;
-
     Ptr<Texture2DUAV> Create2DUAV(const Texture2DUAVDesc &desc) const override;
 
     VkImage GetNativeImage() const override;

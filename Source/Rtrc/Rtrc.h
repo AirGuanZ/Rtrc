@@ -7,6 +7,7 @@
 #include <Rtrc/RHI/Helper/FrameResourceManager.h>
 #include <Rtrc/RHI/Helper/OneTimeCommandBuffer.h>
 #include <Rtrc/RHI/Helper/ResourceUploader.h>
+#include <Rtrc/RHI/Helper/StatefulResource.h>
 #include <Rtrc/RHI/RHI.h>
 
 #include <Rtrc/Shader/ShaderManager.h>
