@@ -3,7 +3,7 @@
 #include <cassert>
 #include <vector>
 
-#include <Rtrc/Common.h>
+#include <Rtrc/Utils/StaticVector.h>
 
 RTRC_BEGIN
 
@@ -24,7 +24,10 @@ public:
 
     Span(const T *begin, const T *end) : Span(begin, end - begin) { }
 
-    Span(const std::vector<T> &data) : Span(data.data(), data.size()) { }
+    Span(const std::vector<T> &data) : Span(data.data(), static_cast<uint32_t>(data.size())) { }
+
+    template<size_t N>
+    Span(const StaticVector<T, N> &data) : Span(data.GetData(), data.GetSize()) { }
 
     bool IsEmpty() const { return size_ == 0; }
 

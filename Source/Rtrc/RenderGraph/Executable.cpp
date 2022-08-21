@@ -3,8 +3,13 @@
 
 RTRC_RG_BEGIN
 
-Executer::Executer(RHI::DevicePtr device, RC<CommandBufferAllocator> commandBufferAllocator)
-    : device_(std::move(device)), commandBufferAllocator_(std::move(commandBufferAllocator))
+Executer::Executer(
+    RHI::DevicePtr               device,
+    RC<CommandBufferAllocator>   commandBufferAllocator,
+    RC<TransientResourceManager> transientResourceManager)
+    : device_(std::move(device))
+    , commandBufferAllocator_(std::move(commandBufferAllocator))
+    , transientResourceManager_(std::move(transientResourceManager))
 {
     
 }
@@ -12,52 +17,22 @@ Executer::Executer(RHI::DevicePtr device, RC<CommandBufferAllocator> commandBuff
 void Executer::Execute(const RenderGraph &graph)
 {
     ExecutableGraph compiledResult;
-    Compiler(device_).Compile(graph, compiledResult);
+    Compiler(device_, *transientResourceManager_).Compile(graph, compiledResult);
+    graph.executableResource_ = &compiledResult.resources;
     Execute(compiledResult);
+    graph.executableResource_ = nullptr;
 }
 
 void Executer::Execute(const ExecutableGraph &graph)
 {
-    // prepare semaphores
-
-    semaphorePool_.reserve(graph.semaphoreCount);
-    for(int i = static_cast<int>(semaphorePool_.size()); i < graph.semaphoreCount; ++i)
-    {
-        semaphorePool_.push_back(
-        {
-            .signaledValue = 0,
-            .semaphore = device_->CreateSemaphore(0)
-        });
-    }
-
-    for(int i = 0; i < graph.semaphoreCount; ++i)
-    {
-        ++semaphorePool_[i].signaledValue;
-    }
-
-    // execute
-
     for(auto &section : graph.sections)
     {
-        auto commandBuffer = commandBufferAllocator_->AllocateCommandBuffer(section->queue->GetType());
+        auto commandBuffer = commandBufferAllocator_->AllocateCommandBuffer(graph.queue->GetType());
         commandBuffer->Begin();
 
-        if(section->passes.empty())
+        for(auto &pass : section.passes)
         {
-            commandBuffer->ExecuteBarriers(section->acquireTextureBarriers, section->acquireBufferBarriers);
-        }
-
-        for(size_t i = 0; i < section->passes.size(); ++i)
-        {
-            auto &pass = *section->passes[i];
-
-            if(i == 0)
-            {
-                commandBuffer->ExecuteBarriers(
-                    section->acquireTextureBarriers, section->acquireBufferBarriers,
-                    pass.beforeTextureBarriers, pass.beforeBufferBarriers);
-            }
-            else
+            if(!pass.beforeBufferBarriers.empty() || !pass.beforeTextureBarriers.empty())
             {
                 commandBuffer->ExecuteBarriers(pass.beforeTextureBarriers, pass.beforeBufferBarriers);
             }
@@ -69,52 +44,51 @@ void Executer::Execute(const ExecutableGraph &graph)
             }
         }
 
-        commandBuffer->ExecuteBarriers(
-            section->afterTextureBarriers, section->afterBufferBarriers,
-            section->releaseTextureBarriers, section->releaseBufferBarriers);
+        if(!section.afterTextureBarriers.IsEmpty())
+        {
+            commandBuffer->ExecuteBarriers(section.afterTextureBarriers);
+        }
+
         commandBuffer->End();
 
-        std::vector<RHI::Queue::SemaphoreDependency> waitSemaphoreDependencies;
-        assert(section->waitSemaphores.size() == section->waitSemaphoreStages.size());
-        for(size_t i = 0; i < section->waitSemaphores.size(); ++i)
-        {
-            auto &semaphoreRecord = semaphorePool_[section->waitSemaphores[i]];
-            waitSemaphoreDependencies.push_back(
-                {
-                    .semaphore = semaphoreRecord.semaphore,
-                    .stages = section->waitSemaphoreStages[i],
-                    .value = semaphoreRecord.signaledValue
-                });
-        }
-
-        std::vector<RHI::Queue::SemaphoreDependency> signalSemaphoreDependencies;
-        assert(section->signalSemaphores.size() == section->signalSemaphoreStages.size());
-        for(size_t i = 0; i < section->signalSemaphores.size(); ++i)
-        {
-            auto &semaphoreRecord = semaphorePool_[section->signalSemaphores[i]];
-            signalSemaphoreDependencies.push_back(
-                {
-                    .semaphore = semaphoreRecord.semaphore,
-                    .stages = section->signalSemaphoreStages[i],
-                    .value = semaphoreRecord.signaledValue
-                });
-        }
-
-        section->queue->Submit(
+        graph.queue->Submit(
             RHI::Queue::BackBufferSemaphoreDependency
             {
-                .semaphore = section->waitAcquireSemaphore,
-                .stages = section->waitAcquireSemaphoreStages
+                .semaphore = section.waitAcquireSemaphore,
+                .stages = section.waitAcquireSemaphoreStages
             },
-            waitSemaphoreDependencies,
+            {},
             commandBuffer,
             RHI::Queue::BackBufferSemaphoreDependency
             {
-                .semaphore = section->signalPresentSemaphore,
-                .stages = section->signalPresentSemaphoreStages
+                .semaphore = section.signalPresentSemaphore,
+                .stages = section.signalPresentSemaphoreStages
             },
-            signalSemaphoreDependencies,
-            section->signalFence);
+            {},
+            section.signalFence);
+    }
+
+    for(auto &record : graph.resources.indexToBuffer)
+    {
+        if(record.buffer)
+        {
+            record.buffer->SetUnsynchronizedState(record.finalState);
+        }
+    }
+
+    for(auto &record : graph.resources.indexToTexture)
+    {
+        if(record.texture)
+        {
+            for(auto subrsc : RHI::EnumerateSubTextures(record.finalState))
+            {
+                auto &optionalState = record.finalState(subrsc.mipLevel, subrsc.arrayLayer);
+                if(optionalState)
+                {
+                    record.texture->SetUnsynchronizedState(subrsc.mipLevel, subrsc.arrayLayer, optionalState.value());
+                }
+            }
+        }
     }
 }
 

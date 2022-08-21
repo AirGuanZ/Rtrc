@@ -69,11 +69,11 @@ void TransientResourceManager::Allocate(
         lifeTimeIndexToDesc[lifeTimeIndex].Match(
             [&](const RHI::BufferDesc &bufferDesc)
             {
-                resources.indexToRHIBuffers[resourceIndex] = reuseAcrossFrame_->AllocateBuffer(bufferDesc);
+                resources.indexToBuffer[resourceIndex].buffer = reuseAcrossFrame_->AllocateBuffer(bufferDesc);
             },
             [&](const RHI::Texture2DDesc &tex2DDesc)
             {
-                resources.indexToRHITextures[resourceIndex] = reuseAcrossFrame_->AllocateTexture2D(tex2DDesc);
+                resources.indexToTexture[resourceIndex].texture = reuseAcrossFrame_->AllocateTexture2D(tex2DDesc);
             });
     }
 }

@@ -2,7 +2,7 @@
 
 #include <map>
 
-#include <Rtrc/RHI/Helper/StatefulResource.h>
+#include <Rtrc/RenderGraph/StatefulResource.h>
 
 RTRC_RG_BEGIN
 
@@ -15,20 +15,20 @@ public:
 
     void BeginFrame();
 
-    RC<RHI::StatefulBuffer> AllocateBuffer(const RHI::BufferDesc &desc);
-    RC<RHI::StatefulTexture> AllocateTexture2D(const RHI::Texture2DDesc &desc);
+    RC<StatefulBuffer> AllocateBuffer(const RHI::BufferDesc &desc);
+    RC<StatefulTexture> AllocateTexture2D(const RHI::Texture2DDesc &desc);
 
 private:
 
     struct BufferRecord
     {
-        RC<RHI::StatefulBuffer> buffer;
+        RC<StatefulBuffer> buffer;
         int freeFrameCount;
     };
 
     struct Texture2DRecord
     {
-        RC<RHI::StatefulTexture> texture;
+        RC<StatefulTexture> texture;
         int freeFrameCount;
     };
 

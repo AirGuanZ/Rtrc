@@ -6,8 +6,10 @@
 
 RTRC_RG_BEGIN
 
-Compiler::Compiler(RHI::DevicePtr device)
-    : device_(std::move(device)), graph_(nullptr), semaphoreCount_(0)
+Compiler::Compiler(RHI::DevicePtr device, TransientResourceManager &transientResourceManager)
+    : device_(std::move(device))
+    , transientResourceManager_(transientResourceManager)
+    , graph_(nullptr)
 {
     
 }
@@ -20,20 +22,22 @@ void Compiler::Compile(const RenderGraph &graph, ExecutableGraph &result)
     CollectResourceUsers();
 
     GenerateSections();
-    SortPassesInSections();
     GenerateSemaphores();
-    result.semaphoreCount = semaphoreCount_;
 
-    result.resources.indexToRHIBuffers.resize(graph_->buffers_.size());
-    result.resources.indexToRHITextures.resize(graph_->textures_.size());
-    result.resources.indexToFinalBufferStates.resize(graph_->buffers_.size());
-    result.resources.indexToFinalTextureStates.resize(graph_->textures_.size());
+    result.resources.indexToBuffer.resize(graph_->buffers_.size());
+    result.resources.indexToTexture.resize(graph_->textures_.size());
     FillExternalResources(result.resources);
     AllocateInternalResources(result.resources);
 
-    // TODO: generate barriers
-    // TODO: move/merge/reduce barriers
-    // TODO: generate final states for persistent resources
+    sortedCompilePasses_.resize(sortedPasses_.size());
+    for(auto &p : sortedCompilePasses_)
+    {
+        p = MakeBox<CompilePass>();
+    }
+    GenerateBarriers(result.resources);
+
+    result.queue = graph.queue_;
+    FillSections(result);
 }
 
 bool Compiler::DontNeedBarrier(const Pass::BufferUsage &a, const Pass::BufferUsage &b)
@@ -46,7 +50,7 @@ bool Compiler::DontNeedBarrier(const Pass::SubTexUsage &a, const Pass::SubTexUsa
     return a.layout == b.layout && IsReadOnly(a.accesses) && IsReadOnly(b.accesses);
 }
 
-bool Compiler::IsInSection(int passIndex, const Section *section) const
+bool Compiler::IsInSection(int passIndex, const CompileSection *section) const
 {
     return passToSection_.at(passIndex) == section;
 }
@@ -91,7 +95,7 @@ void Compiler::TopologySortPasses()
         throw Exception("cycle detected in pass dependency graph");
     }
 
-    sortedPasses_.reserve(passes.size());
+    sortedPasses_.resize(passes.size());
     for(size_t i = 0; i < sortedPassIndices.size(); ++i)
     {
         const Pass *pass = passes[sortedPassIndices[i]].get();
@@ -139,9 +143,9 @@ void Compiler::CollectResourceUsers()
 void Compiler::GenerateSections()
 {
     // need splitting when:
-    //      next pass is in another queue
     //      signaling fence is not nil
     //      be the last user of swapchain texture
+    //      next pass is the first user of swapchain texture
 
     const SubTexUsers *swapchainTexUsers = nullptr;
     if(graph_->swapchainTexture_)
@@ -152,185 +156,34 @@ void Compiler::GenerateSections()
         }
     }
 
-    bool needNewSection = false;
+    bool needNewSection = true;
     for(int passIndex = 0; passIndex < static_cast<int>(sortedPasses_.size()); ++passIndex)
     {
         const Pass *pass = sortedPasses_[passIndex];
-        if(sections_.empty() || sections_.back()->queue != pass->queue_)
-        {
-            needNewSection = true;
-        }
         if(needNewSection)
         {
-            sections_.push_back(MakeBox<Section>());
-            sections_.back()->queue = pass->queue_;
+            sections_.push_back(MakeBox<CompileSection>());
         }
+
         assert(!sections_.empty());
-        sections_.back()->passes.push_back(passIndex);
-        passToSection_.push_back(sections_.back().get());
-        needNewSection = pass->signalFence_ || (swapchainTexUsers && passIndex == swapchainTexUsers->back().passIndex);
-    }
+        auto &section = sections_.back();
+        section->passes.push_back(passIndex);
+        passToSection_.push_back(section.get());
 
-    for(auto &section : sections_)
-    {
-        for(int passIndex : section->passes)
+        assert(!section->signalFence);
+        section->signalFence = pass->signalFence_;
+        needNewSection = pass->signalFence_ != nullptr;
+
+        if(swapchainTexUsers)
         {
-            const Pass *pass = sortedPasses_[passIndex];
-            for(const Pass *succ : pass->succs_)
-            {
-                const int succIndex = passToSortedIndex_.at(succ);
-                Section *succSection = passToSection_[succIndex];
-                if(succSection != section.get())
-                {
-                    succSection->directPrevs.insert(section.get());
-                }
-            }
+            needNewSection |= passIndex == swapchainTexUsers->back().passIndex;
+            needNewSection |= passIndex + 1 == swapchainTexUsers->front().passIndex;
         }
     }
-
-    // sections are naturally topology-sorted
-
-    for(auto &section : sections_)
-    {
-        for(auto directPrev : section->directPrevs)
-        {
-            for(auto indirectPrev : directPrev->directPrevs)
-            {
-                section->indirectPrevs.insert(indirectPrev);
-            }
-            for(auto indirectPrev : directPrev->indirectPrevs)
-            {
-                section->indirectPrevs.insert(indirectPrev);
-            }
-        }
-    }
-
-    // remove indirect section dependencies
-
-    for(auto &section : sections_)
-    {
-        std::set<Section *, std::less<>> newDirectPrevs;
-        for(auto directPrev : section->directPrevs)
-        {
-            if(!section->indirectPrevs.contains(directPrev))
-            {
-                newDirectPrevs.insert(directPrev);
-            }
-        }
-        section->directPrevs = std::move(newDirectPrevs);
-    }
-
-    for(auto &section : sections_)
-    {
-        for(Section *prev : section->directPrevs)
-        {
-            prev->directSuccs.insert(section.get());
-        }
-    }
-}
-
-void Compiler::SortPassesInSections()
-{
-    // TODO
 }
 
 void Compiler::GenerateSemaphores()
 {
-    // fill signalSemaphoreIndex
-
-    auto FillSignalSemaphoreForUsers = [&](auto &users)
-    {
-        for(int i = 0; i + 1 < static_cast<int>(users.size()); ++i)
-        {
-            Section *thisSection = passToSection_.at(users[i].passIndex);
-            Section *nextSection = passToSection_.at(users[i + 1].passIndex);
-            if(thisSection->queue != nextSection->queue)
-            {
-                if(thisSection->signalSemaphoreIndex < 0)
-                {
-                    thisSection->signalSemaphoreIndex = semaphoreCount_++;
-                }
-                thisSection->signalStages |= users[i].usage.stages;
-                auto ShouldContinue = [&](int j)
-                {
-                    return j >= 0 && IsInSection(users[j].passIndex, thisSection)
-                                  && DontNeedBarrier(users[j].usage, users[i].usage);
-                };
-                for(int j = i - 1; ShouldContinue(j); --j)
-                {
-                    thisSection->signalStages |= users[j].usage.stages;
-                }
-            }
-        }
-    };
-
-    for(auto &users : std::ranges::views::values(bufferUsers_))
-    {
-        FillSignalSemaphoreForUsers(users);
-    }
-
-    for(auto &users : std::ranges::views::values(subTexUsers_))
-    {
-        FillSignalSemaphoreForUsers(users);
-    }
-
-    // fill waitSemaphoreIndex
-
-    auto IsReachable = [](const Section *from, const Section *to)
-    {
-        return from == to || to->directPrevs.contains(from) || to->indirectPrevs.contains(from);
-    };
-
-    auto FillWaitSemaphoreForUsers = [&](auto &users)
-    {
-        for(int i = 1; i < static_cast<int>(users.size()); ++i)
-        {
-            Section *lastSection = passToSection_.at(users[i - 1].passIndex);
-            Section *thisSection = passToSection_.at(users[i].passIndex);
-            if(thisSection->queue != lastSection->queue)
-            {
-                assert(lastSection->signalSemaphoreIndex >= 0);
-                bool hasValidPrev = false;
-                for(Section *directPrev : thisSection->directPrevs)
-                {
-                    if(IsReachable(lastSection, directPrev))
-                    {
-                        hasValidPrev = true;
-                        const int waitSemaphoreIndex = lastSection->signalSemaphoreIndex;
-                        RHI::PipelineStageFlag &stages = thisSection->waitSemaphoreIndexToStages[waitSemaphoreIndex];
-                        stages |= users[i].usage.stages;
-                        auto ShouldContinue = [&](int j)
-                        {
-                            return j < static_cast<int>(users.size()) && IsInSection(users[j].passIndex, thisSection)
-                                                                      && DontNeedBarrier(users[j].usage, users[i].usage);
-                        };
-                        for(int j = i + 1; ShouldContinue(j); ++j)
-                        {
-                            stages |= users[j].usage.stages;
-                        }
-                        break;
-                    }
-                }
-                if(!hasValidPrev)
-                {
-                    throw Exception("resource usages across sections don't have a proper dependency");
-                }
-            }
-        }
-    };
-
-    for(auto &users : std::ranges::views::values(bufferUsers_))
-    {
-        FillWaitSemaphoreForUsers(users);
-    }
-
-    for(auto &users : std::ranges::views::values(subTexUsers_))
-    {
-        FillWaitSemaphoreForUsers(users);
-    }
-
-    // swapchain texture
-
     const SubTexUsers *swapchainTextureUsers = nullptr;
     for(auto &[subTexKey, users] : subTexUsers_)
     {
@@ -345,29 +198,19 @@ void Compiler::GenerateSemaphores()
     {
         const SubTexUsers &users = *swapchainTextureUsers;
 
-        Section *firstSection = passToSection_.at(users[0].passIndex);
+        CompileSection *firstSection = passToSection_.at(users[0].passIndex);
         firstSection->waitBackbufferSemaphore = true;
         firstSection->waitBackbufferSemaphoreStages |= users[0].usage.stages;
-        auto ShouldContinue = [&](int j)
-        {
-            return j < static_cast<int>(users.size()) &&
-                   IsInSection(users[j].passIndex, firstSection) &&
-                   DontNeedBarrier(users[j].usage, users[0].usage);
-        };
-        for(int j = 1; ShouldContinue(j); ++j)
+        for(int j = 1; j < static_cast<int>(users.size()) && DontNeedBarrier(users[j].usage, users[0].usage); ++j)
         {
             firstSection->waitBackbufferSemaphoreStages |= users[j].usage.stages;
         }
 
-        Section *lastSection = passToSection_.at(users.back().passIndex);
+        CompileSection *lastSection = passToSection_.at(users.back().passIndex);
         lastSection->signalBackbufferSemaphore = true;
         lastSection->signalBackbufferSemaphoreStages |= users.back().usage.stages;
-        auto ShouldContinue2 = [&](int j)
-        {
-            return j >= 0 && IsInSection(users[j].passIndex, lastSection)
-                          && DontNeedBarrier(users[j].usage, users.back().usage);
-        };
-        for(int j = static_cast<int>(users.size()) - 1; ShouldContinue2(j); --j)
+        for(int j = static_cast<int>(users.size()) - 1;
+            j >= 0 && DontNeedBarrier(users[j].usage, users.back().usage); --j)
         {
             lastSection->signalBackbufferSemaphoreStages |= users[j].usage.stages;
         }
@@ -378,26 +221,58 @@ void Compiler::FillExternalResources(ExecutableResources &output)
 {
     for(auto &buffer : graph_->buffers_)
     {
-        if(auto ext = dynamic_cast<RenderGraph::ExternalBufferResource*>(buffer.get()))
+        if(auto ext = TryCastResource<RenderGraph::ExternalBufferResource>(buffer.get()))
         {
             const int index = ext->GetResourceIndex();
-            output.indexToRHIBuffers[index] = ext->buffer;
-            output.indexToFinalBufferStates[index] = bufferUsers_.at(ext).back().usage;
+            output.indexToBuffer[index].buffer = ext->buffer;
+
+            auto &users = bufferUsers_.at(ext);
+            RHI::PipelineStageFlag stages = users.back().usage.stages;
+            RHI::ResourceAccessFlag accesses = users.back().usage.accesses;
+            for(int j = static_cast<int>(users.size()) - 1;
+                j >= 0 && DontNeedBarrier(users[j].usage, users.back().usage); --j)
+            {
+                stages |= users[j].usage.stages;
+                accesses |= users[j].usage.accesses;
+            }
+            output.indexToBuffer[index].finalState = { stages, accesses };
         }
     }
 
     for(auto &texture : graph_->textures_)
     {
-        if(auto ext = dynamic_cast<RenderGraph::ExternalTextureResource*>(texture.get()))
+        if(auto ext = TryCastResource<RenderGraph::ExternalTextureResource>(texture.get()))
         {
             const int index = ext->GetResourceIndex();
-            output.indexToRHITextures[index] = ext->texture;
-            output.indexToFinalTextureStates[index] =
-                RHI::TextureSubresourceMap<RHI::StatefulTexture::State>(ext->GetMipLevels(), ext->GetArraySize());
-            for(auto subrsc : RHI::EnumerateSubTextures(ext->GetMipLevels(), ext->GetArraySize()))
+            output.indexToTexture[index].texture = ext->texture;
+
+            auto &finalStates = output.indexToTexture[index].finalState;
+            finalStates = RHI::TextureSubresourceMap<std::optional<StatefulTexture::State>>(ext->texture->GetRHITexture());
+            if(TryCastResource<RenderGraph::SwapchainTexture>(ext))
             {
-                auto &finalUsage = subTexUsers_.at({ ext, subrsc }).back().usage;
-                output.indexToFinalTextureStates[index](subrsc.mipLevel, subrsc.arrayLayer) = finalUsage;
+                finalStates(0, 0) = StatefulTexture::State
+                {
+                    .layout = RHI::TextureLayout::Present,
+                    .stages = RHI::PipelineStage::None,
+                    .accesses = RHI::ResourceAccess::None
+                };
+            }
+            else
+            {
+                for(auto subrsc : RHI::EnumerateSubTextures(ext->GetMipLevels(), ext->GetArraySize()))
+                {
+                    auto &users = subTexUsers_.at({ ext, subrsc });
+                    const RHI::TextureLayout layout = users.back().usage.layout;
+                    RHI::PipelineStageFlag stages = users.back().usage.stages;
+                    RHI::ResourceAccessFlag accesses = users.back().usage.accesses;
+                    for(int j = static_cast<int>(users.size()) - 1;
+                        j >= 0 && DontNeedBarrier(users[j].usage, users.back().usage); --j)
+                    {
+                        stages |= users[j].usage.stages;
+                        accesses |= users[j].usage.accesses;
+                    }
+                    finalStates(subrsc.mipLevel, subrsc.arrayLayer) = { layout, stages, accesses };
+                }
             }
         }
     }
@@ -405,7 +280,306 @@ void Compiler::FillExternalResources(ExecutableResources &output)
 
 void Compiler::AllocateInternalResources(ExecutableResources &output)
 {
-    // TODO
+    // create bidir map resourceIndex <-> lifetimeIndex and fill final states
+
+    assert(graph_->buffers_.size() == graph_->textures_.size());
+    std::vector<int> resourceIndexToLifetimeIndex(graph_->buffers_.size(), -1);
+
+    std::vector<int> lifetimeIndexToResourceIndex;
+    std::vector<TransientResourceManager::ResourceDesc> lifetimeIndexToResourceDesc;
+    lifetimeIndexToResourceIndex.reserve(graph_->buffers_.size());
+    lifetimeIndexToResourceDesc.reserve(graph_->buffers_.size());
+
+    for(auto &buffer : graph_->buffers_)
+    {
+        if(auto intRsc = TryCastResource<RenderGraph::InternalBufferResource>(buffer.get()))
+        {
+            const int resourceIndex = intRsc->GetResourceIndex();
+            resourceIndexToLifetimeIndex[resourceIndex] = static_cast<int>(lifetimeIndexToResourceIndex.size());
+            lifetimeIndexToResourceIndex.push_back(resourceIndex);
+            lifetimeIndexToResourceDesc.push_back(intRsc->rhiDesc);
+
+            auto &users = bufferUsers_.at(intRsc);
+            RHI::PipelineStageFlag stages = users.back().usage.stages;
+            RHI::ResourceAccessFlag accesses = users.back().usage.accesses;
+            for(int j = static_cast<int>(users.size()) - 1;
+                j >= 0 && DontNeedBarrier(users[j].usage, users.back().usage); --j)
+            {
+                stages |= users[j].usage.stages;
+                accesses |= users[j].usage.accesses;
+            }
+            output.indexToBuffer[resourceIndex].finalState = { stages, accesses };
+        }
+    }
+
+    for(auto &texture : graph_->textures_)
+    {
+        if(auto intRsc = TryCastResource<RenderGraph::InternalTextureResource>(texture.get()))
+        {
+            const int resourceIndex = intRsc->GetResourceIndex();
+            resourceIndexToLifetimeIndex[resourceIndex] = static_cast<int>(lifetimeIndexToResourceIndex.size());
+            lifetimeIndexToResourceIndex.push_back(resourceIndex);
+
+            auto intTex2D = TryCastResource<RenderGraph::InternalTexture2DResource>(intRsc);
+            assert(intTex2D);
+            lifetimeIndexToResourceDesc.push_back(intTex2D->rhiDesc);
+
+            auto &finalStates = output.indexToTexture[resourceIndex].finalState;
+            finalStates = RHI::TextureSubresourceMap<std::optional<StatefulTexture::State>>(
+                intTex2D->GetMipLevels(), intTex2D->GetArraySize());
+            for(auto subrsc : RHI::EnumerateSubTextures(intRsc->GetMipLevels(), intRsc->GetArraySize()))
+            {
+                auto &users = subTexUsers_.at({ intRsc, subrsc });
+                const RHI::TextureLayout layout = users.back().usage.layout;
+                RHI::PipelineStageFlag stages = users.back().usage.stages;
+                RHI::ResourceAccessFlag accesses = users.back().usage.accesses;
+                for(int j = static_cast<int>(users.size()) - 1;
+                    j >= 0 && DontNeedBarrier(users[j].usage, users.back().usage); --j)
+                {
+                    stages |= users[j].usage.stages;
+                    accesses |= users[j].usage.accesses;
+                }
+                finalStates(subrsc.mipLevel, subrsc.arrayLayer) = { layout, stages, accesses };
+            }
+        }
+    }
+
+    // fill lifetime mask
+
+    const int resourceCount = static_cast<int>(lifetimeIndexToResourceIndex.size());
+    const int passCount = static_cast<int>(sortedPasses_.size());
+
+    // TODO: current allocation strategy doesn't need lifetime info
+    ResourceLifetimeManager lifetimeManager(resourceCount, passCount);
+
+    // allocate resources
+
+    transientResourceManager_.Allocate(
+        lifetimeManager, lifetimeIndexToResourceDesc, lifetimeIndexToResourceIndex, output);
+}
+
+void Compiler::GenerateBarriers(const ExecutableResources &resources)
+{
+    for(auto &[buffer, users] : bufferUsers_)
+    {
+        StatefulBuffer::State lastState =
+            resources.indexToBuffer[buffer->GetResourceIndex()].buffer->GetUnsynchronizedState();
+
+        size_t userIndex = 0;
+        while(userIndex < users.size())
+        {
+            size_t nextUserIndex = userIndex + 1;
+            while(nextUserIndex < users.size() && DontNeedBarrier(users[userIndex].usage, users[nextUserIndex].usage))
+            {
+                ++nextUserIndex;
+            }
+            RTRC_SCOPE_EXIT{ userIndex = nextUserIndex; };
+
+            StatefulBuffer::State currState;
+            RTRC_SCOPE_EXIT{ lastState = currState; };
+            for(size_t i = userIndex; i < nextUserIndex; ++i)
+            {
+                currState.stages |= users[i].usage.stages;
+                currState.accesses |= users[i].usage.accesses;
+            }
+
+            if(DontNeedBarrier(lastState, currState))
+            {
+                continue;
+            }
+
+            const int minBarrierPass = userIndex > 0 ? (users[userIndex - 1].passIndex + 1) : 0;
+            const int maxBarrierPass = users[userIndex].passIndex;
+            int barrierPass = users[userIndex].passIndex;
+            for(int i = maxBarrierPass - 1; i >= minBarrierPass; --i)
+            {
+                const bool hasBarrier = !sortedCompilePasses_[i]->beforeBufferTransitions.empty()
+                                     || !sortedCompilePasses_[i]->beforeTextureTransitions.empty();
+                if(hasBarrier)
+                {
+                    barrierPass = i;
+                    break;
+                }
+            }
+
+            sortedCompilePasses_[barrierPass]->beforeBufferTransitions.push_back(RHI::BufferTransitionBarrier
+            {
+                .buffer         = resources.indexToBuffer[buffer->GetResourceIndex()].buffer->GetRHIBuffer(),
+                .beforeStages   = lastState.stages,
+                .beforeAccesses = lastState.accesses,
+                .afterStages    = currState.stages,
+                .afterAccesses  = currState.accesses
+            });
+        }
+    }
+
+    for(auto &[subTexKey, users] : subTexUsers_)
+    {
+        auto [tex, subrsc] = subTexKey;
+        const bool isSwapchainTex = TryCastResource<RenderGraph::SwapchainTexture>(tex);
+        StatefulTexture::State lastState = resources.indexToTexture[tex->GetResourceIndex()].texture
+                                         ->GetUnsynchronizedState(subrsc.mipLevel, subrsc.arrayLayer);
+
+        size_t userIndex = 0;
+        while(userIndex < users.size())
+        {
+            size_t nextUserIndex = userIndex + 1;
+            while(nextUserIndex < users.size() && DontNeedBarrier(users[userIndex].usage, users[nextUserIndex].usage))
+            {
+                ++nextUserIndex;
+            }
+            RTRC_SCOPE_EXIT{ userIndex = nextUserIndex; };
+
+            StatefulTexture::State currState;
+            RTRC_SCOPE_EXIT{ lastState = currState; };
+            currState.layout = users[userIndex].usage.layout;
+            for(size_t i = userIndex; i < nextUserIndex; ++i)
+            {
+                currState.stages |= users[i].usage.stages;
+                currState.accesses |= users[i].usage.accesses;
+            }
+
+            if(DontNeedBarrier(lastState, currState))
+            {
+                continue;
+            }
+
+            int minBarrierPass = userIndex > 0 ? (users[userIndex - 1].passIndex + 1) : 0;
+            if(userIndex == 0 && TryCastResource<RenderGraph::SwapchainTexture>(tex))
+            {
+                while(passToSection_[minBarrierPass] != passToSection_[userIndex])
+                {
+                    ++minBarrierPass;
+                }
+            }
+
+            const int maxBarrierPass = users[userIndex].passIndex;
+            int barrierPass = users[userIndex].passIndex;
+            for(int i = maxBarrierPass - 1; i >= minBarrierPass; --i)
+            {
+                const bool hasBarrier = !sortedCompilePasses_[i]->beforeBufferTransitions.empty()
+                                     || !sortedCompilePasses_[i]->beforeTextureTransitions.empty();
+                if(hasBarrier)
+                {
+                    barrierPass = i;
+                    break;
+                }
+            }
+
+            if(isSwapchainTex && userIndex == 0)
+            {
+                assert(lastState.accesses == RHI::ResourceAccess::None);
+                assert(lastState.layout == RHI::TextureLayout::Undefined);
+                sortedCompilePasses_[barrierPass]->beforeTextureTransitions.push_back(RHI::TextureTransitionBarrier
+                {
+                    .texture      = resources.indexToTexture[tex->GetResourceIndex()].texture->GetRHITexture(),
+                    .subresources = RHI::TextureSubresources
+                    {
+                        .mipLevel = subrsc.mipLevel,
+                        .levelCount = 1,
+                        .arrayLayer = subrsc.arrayLayer,
+                        .layerCount = 1
+                    },
+                    .beforeStages   = currState.stages,
+                    .beforeAccesses = lastState.accesses,
+                    .beforeLayout   = lastState.layout,
+                    .afterStages    = currState.stages,
+                    .afterAccesses  = currState.accesses,
+                    .afterLayout    = currState.layout
+                });
+            }
+            else
+            {
+                sortedCompilePasses_[barrierPass]->beforeTextureTransitions.push_back(RHI::TextureTransitionBarrier
+                {
+                    .texture      = resources.indexToTexture[tex->GetResourceIndex()].texture->GetRHITexture(),
+                    .subresources = RHI::TextureSubresources
+                    {
+                        .mipLevel = subrsc.mipLevel,
+                        .levelCount = 1,
+                        .arrayLayer = subrsc.arrayLayer,
+                        .layerCount = 1
+                    },
+                    .beforeStages   = lastState.stages,
+                    .beforeAccesses = lastState.accesses,
+                    .beforeLayout   = lastState.layout,
+                    .afterStages    = currState.stages,
+                    .afterAccesses  = currState.accesses,
+                    .afterLayout    = currState.layout
+                });
+            }
+        }
+
+        if(isSwapchainTex)
+        {
+            passToSection_[users.back().passIndex]->swapchainPresentBarrier = RHI::TextureTransitionBarrier
+            {
+                .texture        = resources.indexToTexture[tex->GetResourceIndex()].texture->GetRHITexture(),
+                .beforeStages   = lastState.stages,
+                .beforeAccesses = lastState.accesses,
+                .beforeLayout   = lastState.layout,
+                .afterStages    = RHI::PipelineStage::None,
+                .afterAccesses  = RHI::ResourceAccess::None,
+                .afterLayout    = RHI::TextureLayout::Present
+            };
+        }
+    }
+}
+
+void Compiler::FillSections(ExecutableGraph &output)
+{
+    output.sections.clear();
+    output.sections.reserve(sections_.size());
+    for(auto &compileSection : sections_)
+    {
+        auto &section = output.sections.emplace_back();
+
+        if(compileSection->waitBackbufferSemaphore)
+        {
+            section.waitAcquireSemaphore = graph_->swapchainTexture_->acquireSemaphore;
+            section.waitAcquireSemaphoreStages = compileSection->waitBackbufferSemaphoreStages;
+        }
+        else
+        {
+            section.waitAcquireSemaphore = nullptr;
+            section.waitAcquireSemaphoreStages = RHI::PipelineStage::None;
+        }
+
+        if(compileSection->signalBackbufferSemaphore)
+        {
+            section.signalPresentSemaphore = graph_->swapchainTexture_->presentSemaphore;
+            section.signalPresentSemaphoreStages = compileSection->signalBackbufferSemaphoreStages;
+        }
+        else
+        {
+            section.signalPresentSemaphore = nullptr;
+            section.signalPresentSemaphoreStages = RHI::PipelineStage::None;
+        }
+
+        if(compileSection->swapchainPresentBarrier)
+        {
+            section.afterTextureBarriers.PushBack(compileSection->swapchainPresentBarrier.value());
+        }
+
+        section.signalFence = compileSection->signalFence;
+
+        section.passes.reserve(compileSection->passes.size());
+        for(int compilePassIndex : compileSection->passes)
+        {
+            auto &compilePass = sortedCompilePasses_[compilePassIndex];
+            auto &pass = section.passes.emplace_back();
+            pass.beforeBufferBarriers = compilePass->beforeBufferTransitions;
+            pass.beforeTextureBarriers = compilePass->beforeTextureTransitions;
+            if(sortedPasses_[compilePassIndex]->callback_)
+            {
+                pass.callback = &sortedPasses_[compilePassIndex]->callback_;
+            }
+            else
+            {
+                pass.callback = nullptr;
+            }
+        }
+    }
 }
 
 RTRC_RG_END

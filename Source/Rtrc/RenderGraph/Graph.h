@@ -2,7 +2,7 @@
 
 #include <map>
 
-#include <Rtrc/RHI/Helper/StatefulResource.h>
+#include <Rtrc/RenderGraph/StatefulResource.h>
 
 RTRC_RG_BEGIN
 
@@ -13,24 +13,64 @@ class Executer;
 class Pass;
 class Compiler;
 
+struct UseInfo
+{
+    RHI::TextureLayout      layout   = RHI::TextureLayout::Undefined;
+    RHI::PipelineStageFlag  stages   = RHI::PipelineStage::None;
+    RHI::ResourceAccessFlag accesses = RHI::ResourceAccess::None;
+};
+
+inline constexpr UseInfo RENDER_TARGET =
+{
+    .layout   = RHI::TextureLayout::RenderTarget,
+    .stages   = RHI::PipelineStage::RenderTarget,
+    .accesses = RHI::ResourceAccess::RenderTargetWrite | RHI::ResourceAccess::RenderTargetRead
+};
+
+inline constexpr UseInfo RENDER_TARGET_READ =
+{
+    .layout   = RHI::TextureLayout::RenderTarget,
+    .stages   = RHI::PipelineStage::RenderTarget,
+    .accesses = RHI::ResourceAccess::RenderTargetRead
+};
+
+inline constexpr UseInfo RENDER_TARGET_WRITE =
+{
+    .layout   = RHI::TextureLayout::RenderTarget,
+    .stages   = RHI::PipelineStage::RenderTarget,
+    .accesses = RHI::ResourceAccess::RenderTargetWrite
+};
+
 class Resource : public Uncopyable
 {
     int index_;
 
 public:
 
-    explicit Resource(int resourceIndex) : index_(resourceIndex) { }
+    Resource(const RenderGraph *graph, int resourceIndex) : graph_(graph), index_(resourceIndex) { }
 
     virtual ~Resource() = default;
 
     int GetResourceIndex() const { return index_; }
+
+protected:
+
+    const RenderGraph *graph_;
 };
+
+template<typename T>
+const T *TryCastResource(const Resource *rsc) { return dynamic_cast<const T *>(rsc); }
+
+template<typename T>
+T *TryCastResource(Resource *rsc) { return dynamic_cast<T *>(rsc); }
 
 class BufferResource : public Resource
 {
 public:
 
     using Resource::Resource;
+
+    RHI::BufferPtr GetRHI() const;
 };
 
 class TextureResource : public Resource
@@ -41,6 +81,8 @@ public:
 
     virtual uint32_t GetMipLevels() const = 0;
     virtual uint32_t GetArraySize() const = 0;
+
+    RHI::TexturePtr GetRHI() const;
 };
 
 class PassContext : public Uncopyable
@@ -89,25 +131,28 @@ public:
         RHI::PipelineStageFlag         stages,
         RHI::ResourceAccessFlag        accesses);
 
+    void Use(BufferResource *buffer, const UseInfo &info);
+    void Use(TextureResource *texture, const UseInfo &info);
+    void Use(TextureResource *texture, const RHI::TextureSubresource &subrsc, const UseInfo &info);
+
     void SetCallback(Callback callback);
 
     void SetSignalFence(RHI::FencePtr fence);
 
 private:
 
-    using SubTexUsage = RHI::StatefulTexture::State;
-    using BufferUsage = RHI::StatefulBuffer::State;
+    using SubTexUsage = StatefulTexture::State;
+    using BufferUsage = StatefulBuffer::State;
 
     using TextureUsage = RHI::TextureSubresourceMap<std::optional<SubTexUsage>>;
 
     friend class RenderGraph;
     friend class Compiler;
 
-    Pass(int index, std::string name, RHI::QueuePtr queue);
+    Pass(int index, std::string name);
 
     int           index_;
     std::string   name_;
-    RHI::QueuePtr queue_;
     Callback      callback_;
     RHI::FencePtr signalFence_;
 
@@ -122,24 +167,29 @@ class RenderGraph : public Uncopyable
 {
 public:
 
-    RenderGraph();
+    explicit RenderGraph(RHI::QueuePtr queue = nullptr);
+
+    void SetQueue(RHI::QueuePtr queue);
 
     BufferResource  *CreateBuffer(const RHI::BufferDesc &desc);
     TextureResource *CreateTexture2D(const RHI::Texture2DDesc &desc);
 
-    BufferResource  *RegisterBuffer(RC<RHI::StatefulBuffer> buffer);
-    TextureResource *RegisterTexture(RC<RHI::StatefulTexture> texture);
+    BufferResource  *RegisterBuffer(RC<StatefulBuffer> buffer);
+    TextureResource *RegisterTexture(RC<StatefulTexture> texture);
 
     TextureResource *RegisterSwapchainTexture(
-        RC<RHI::StatefulTexture>    texture,
+        RHI::Texture2DPtr           rhiTexture,
         RHI::BackBufferSemaphorePtr acquireSemaphore,
         RHI::BackBufferSemaphorePtr presentSemaphore);
 
-    Pass *CreatePass(std::string name, RHI::QueuePtr queue);
+    Pass *CreatePass(std::string name = {});
 
 private:
 
     friend class Compiler;
+    friend class Executer;
+    friend class BufferResource;
+    friend class TextureResource;
 
     class ExternalBufferResource : public BufferResource
     {
@@ -147,7 +197,7 @@ private:
 
         using BufferResource::BufferResource;
 
-        RC<RHI::StatefulBuffer> buffer;
+        RC<StatefulBuffer> buffer;
     };
 
     class ExternalTextureResource : public TextureResource
@@ -159,7 +209,7 @@ private:
         uint32_t GetMipLevels() const override;
         uint32_t GetArraySize() const override;
 
-        RC<RHI::StatefulTexture> texture;
+        RC<StatefulTexture> texture;
     };
 
     class InternalBufferResource : public BufferResource
@@ -200,9 +250,12 @@ private:
         RHI::BackBufferSemaphorePtr presentSemaphore;
     };
 
+    RHI::QueuePtr queue_;
+
     std::vector<Box<BufferResource>>  buffers_;
     std::vector<Box<TextureResource>> textures_;
     SwapchainTexture                 *swapchainTexture_;
+    mutable ExecutableResources      *executableResource_;
 
     std::vector<Box<Pass>> passes_;
 };

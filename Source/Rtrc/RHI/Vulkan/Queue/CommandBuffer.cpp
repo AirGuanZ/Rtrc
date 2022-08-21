@@ -63,7 +63,7 @@ void VulkanCommandBuffer::BeginRenderPass(Span<RenderPassColorAttachment> colorA
     {
         vkColorAttachments[i] = VkRenderingAttachmentInfo{
             .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-            .imageView   = static_cast<VulkanTexture2DRTV *>(a.rtv)->GetNativeImageView(),
+            .imageView   = static_cast<VulkanTexture2DRTV *>(a.renderTargetView)->GetNativeImageView(),
             .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             .resolveMode = VK_RESOLVE_MODE_NONE,
             .loadOp      = TranslateLoadOp(a.loadOp),
@@ -73,7 +73,7 @@ void VulkanCommandBuffer::BeginRenderPass(Span<RenderPassColorAttachment> colorA
     }
 
     const auto &attachment0Desc = static_cast<VulkanTexture2DRTV *>(
-        colorAttachments[0].rtv)->GetTexture()->GetDesc();
+        colorAttachments[0].renderTargetView)->GetTexture()->GetDesc();
     const VkRect2D renderArea = {
             .offset = { 0, 0 },
             .extent = { attachment0Desc.width, attachment0Desc.height }
@@ -529,14 +529,17 @@ void VulkanCommandBuffer::ExecuteBarriersInternal(
         }
     }
 
-    const VkDependencyInfo dependencyInfo = {
-        .sType                    = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-        .bufferMemoryBarrierCount = static_cast<uint32_t>(bufferBarriers.size()),
-        .pBufferMemoryBarriers    = bufferBarriers.data(),
-        .imageMemoryBarrierCount  = static_cast<uint32_t>(imageBarriers.size()),
-        .pImageMemoryBarriers     = imageBarriers.data()
-    };
-    vkCmdPipelineBarrier2(commandBuffer_, &dependencyInfo);
+    if(!bufferBarriers.empty() || !imageBarriers.empty())
+    {
+        const VkDependencyInfo dependencyInfo = {
+            .sType                    = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+            .bufferMemoryBarrierCount = static_cast<uint32_t>(bufferBarriers.size()),
+            .pBufferMemoryBarriers    = bufferBarriers.data(),
+            .imageMemoryBarrierCount  = static_cast<uint32_t>(imageBarriers.size()),
+            .pImageMemoryBarriers     = imageBarriers.data()
+        };
+        vkCmdPipelineBarrier2(commandBuffer_, &dependencyInfo);
+    }
 }
 
 RTRC_RHI_VK_END

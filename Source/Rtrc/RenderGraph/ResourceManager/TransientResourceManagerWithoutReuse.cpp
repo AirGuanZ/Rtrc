@@ -51,7 +51,7 @@ void TransientResourceManagerWithoutReuse::BeginFrame()
     allocatedTextures_.clear();
 }
 
-RC<RHI::StatefulBuffer> TransientResourceManagerWithoutReuse::AllocateBuffer(const RHI::BufferDesc &desc)
+RC<StatefulBuffer> TransientResourceManagerWithoutReuse::AllocateBuffer(const RHI::BufferDesc &desc)
 {
     if(auto it = availableBuffers_.find(desc); it != availableBuffers_.end())
     {
@@ -62,13 +62,13 @@ RC<RHI::StatefulBuffer> TransientResourceManagerWithoutReuse::AllocateBuffer(con
     else
     {
         auto newRHIBuffer = device_->CreateBuffer(desc);
-        auto newStatefulBuffer = MakeRC<RHI::StatefulBuffer>(std::move(newRHIBuffer));
+        auto newStatefulBuffer = MakeRC<StatefulBuffer>(std::move(newRHIBuffer));
         allocatedBuffers_.push_back(BufferRecord{ std::move(newStatefulBuffer), 0 });
     }
     return allocatedBuffers_.back().buffer;
 }
 
-RC<RHI::StatefulTexture> TransientResourceManagerWithoutReuse::AllocateTexture2D(const RHI::Texture2DDesc &desc)
+RC<StatefulTexture> TransientResourceManagerWithoutReuse::AllocateTexture2D(const RHI::Texture2DDesc &desc)
 {
     if(auto it = availableTexture2Ds_.find(desc); it != availableTexture2Ds_.end())
     {
@@ -79,7 +79,7 @@ RC<RHI::StatefulTexture> TransientResourceManagerWithoutReuse::AllocateTexture2D
     else
     {
         auto newRHITexture = device_->CreateTexture2D(desc);
-        auto newStatefulTexture = MakeRC<RHI::StatefulTexture>(std::move(newRHITexture));
+        auto newStatefulTexture = MakeRC<StatefulTexture>(std::move(newRHITexture));
         allocatedTextures_.push_back(Texture2DRecord{ std::move(newStatefulTexture), 0 });
     }
     return allocatedTextures_.back().texture;

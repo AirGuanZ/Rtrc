@@ -132,6 +132,13 @@ public:
         
     }
 
+    template<typename T>
+    explicit EnumerateSubTextures(const TextureSubresourceMap<T> &map)
+        : EnumerateSubTextures(map.GetMipLevelCount(), map.GetArrayLayerCount())
+    {
+        
+    }
+
     auto begin() const
     {
         return Iterator{ 0, 0, mipLevelCount_ };

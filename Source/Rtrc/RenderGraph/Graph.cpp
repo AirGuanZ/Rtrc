@@ -3,6 +3,24 @@
 
 RTRC_RG_BEGIN
 
+RHI::BufferPtr BufferResource::GetRHI() const
+{
+    if(!graph_->executableResource_)
+    {
+        throw Exception("BufferResource::GetRHI can not be called during graph execution");
+    }
+    return graph_->executableResource_->indexToBuffer[GetResourceIndex()].buffer->GetRHIBuffer();
+}
+
+RHI::TexturePtr TextureResource::GetRHI() const
+{
+    if(!graph_->executableResource_)
+    {
+        throw Exception("TextureResource::GetRHI can not be called during graph execution");
+    }
+    return graph_->executableResource_->indexToTexture[GetResourceIndex()].texture->GetRHITexture();
+}
+
 const RHI::CommandBufferPtr &PassContext::GetRHICommandBuffer()
 {
     return commandBuffer_;
@@ -10,14 +28,14 @@ const RHI::CommandBufferPtr &PassContext::GetRHICommandBuffer()
 
 RHI::BufferPtr PassContext::GetRHIBuffer(const BufferResource *resource)
 {
-    auto &result = resources_.indexToRHIBuffers[resource->GetResourceIndex()];
+    auto &result = resources_.indexToBuffer[resource->GetResourceIndex()].buffer;
     assert(result);
     return result->GetRHIBuffer();
 }
 
 RHI::TexturePtr PassContext::GetRHITexture(const TextureResource *resource)
 {
-    auto &result = resources_.indexToRHITextures[resource->GetResourceIndex()];
+    auto &result = resources_.indexToTexture[resource->GetResourceIndex()].texture;
     assert(result);
     return result->GetRHITexture();
 }
@@ -65,8 +83,27 @@ void Pass::Use(
     RHI::ResourceAccessFlag        accesses)
 {
     TextureUsage &usageMap = textureUsages_[texture];
+    if(!usageMap.GetArrayLayerCount())
+    {
+        usageMap = TextureUsage(texture->GetMipLevels(), texture->GetArraySize());
+    }
     assert(!usageMap(subresource.mipLevel, subresource.arrayLayer).has_value());
     usageMap(subresource.mipLevel, subresource.arrayLayer) = SubTexUsage{ layout, stages, accesses };
+}
+
+void Pass::Use(BufferResource *buffer, const UseInfo &info)
+{
+    Use(buffer, info.stages, info.accesses);
+}
+
+void Pass::Use(TextureResource *texture, const UseInfo &info)
+{
+    Use(texture, info.layout, info.stages, info.accesses);
+}
+
+void Pass::Use(TextureResource *texture, const RHI::TextureSubresource &subrsc, const UseInfo &info)
+{
+    Use(texture, subrsc, info.layout, info.stages, info.accesses);
 }
 
 void Pass::SetCallback(Callback callback)
@@ -79,22 +116,27 @@ void Pass::SetSignalFence(RHI::FencePtr fence)
     signalFence_ = std::move(fence);
 }
 
-Pass::Pass(int index, std::string name, RHI::QueuePtr queue)
-    : index_(index), name_(std::move(name)), queue_(std::move(queue))
+Pass::Pass(int index, std::string name)
+    : index_(index), name_(std::move(name))
 {
     
 }
 
-RenderGraph::RenderGraph()
-    : swapchainTexture_(nullptr)
+RenderGraph::RenderGraph(RHI::QueuePtr queue)
+    : queue_(std::move(queue)), swapchainTexture_(nullptr), executableResource_(nullptr)
 {
     
+}
+
+void RenderGraph::SetQueue(RHI::QueuePtr queue)
+{
+    queue_ = std::move(queue);
 }
 
 BufferResource *RenderGraph::CreateBuffer(const RHI::BufferDesc &desc)
 {
     const int index = static_cast<int>(buffers_.size());
-    auto resource = MakeBox<InternalBufferResource>(index);
+    auto resource = MakeBox<InternalBufferResource>(this, index);
     resource->rhiDesc = desc;
     buffers_.push_back(std::move(resource));
     textures_.push_back(nullptr);
@@ -104,27 +146,27 @@ BufferResource *RenderGraph::CreateBuffer(const RHI::BufferDesc &desc)
 TextureResource *RenderGraph::CreateTexture2D(const RHI::Texture2DDesc &desc)
 {
     const int index = static_cast<int>(textures_.size());
-    auto resource = MakeBox<InternalTexture2DResource>(index);
+    auto resource = MakeBox<InternalTexture2DResource>(this, index);
     resource->rhiDesc = desc;
     textures_.push_back(std::move(resource));
     buffers_.push_back(nullptr);
     return textures_.back().get();
 }
 
-BufferResource *RenderGraph::RegisterBuffer(RC<RHI::StatefulBuffer> buffer)
+BufferResource *RenderGraph::RegisterBuffer(RC<StatefulBuffer> buffer)
 {
     const int index = static_cast<int>(buffers_.size());
-    auto resource = MakeBox<ExternalBufferResource>(index);
+    auto resource = MakeBox<ExternalBufferResource>(this, index);
     resource->buffer = std::move(buffer);
     buffers_.push_back(std::move(resource));
     textures_.push_back(nullptr);
     return buffers_.back().get();
 }
 
-TextureResource *RenderGraph::RegisterTexture(RC<RHI::StatefulTexture> texture)
+TextureResource *RenderGraph::RegisterTexture(RC<StatefulTexture> texture)
 {
     const int index = static_cast<int>(textures_.size());
-    auto resource = MakeBox<ExternalTextureResource>(index);
+    auto resource = MakeBox<ExternalTextureResource>(this, index);
     resource->texture = std::move(texture);
     textures_.push_back(std::move(resource));
     buffers_.push_back(nullptr);
@@ -132,13 +174,14 @@ TextureResource *RenderGraph::RegisterTexture(RC<RHI::StatefulTexture> texture)
 }
 
 TextureResource *RenderGraph::RegisterSwapchainTexture(
-    RC<RHI::StatefulTexture>    texture,
+    RHI::Texture2DPtr           rhiTexture,
     RHI::BackBufferSemaphorePtr acquireSemaphore,
     RHI::BackBufferSemaphorePtr presentSemaphore)
 {
+    auto texture = MakeRC<StatefulTexture>(std::move(rhiTexture));
     assert(!swapchainTexture_);
     const int index = static_cast<int>(textures_.size());
-    auto resource = MakeBox<SwapchainTexture>(index);
+    auto resource = MakeBox<SwapchainTexture>(this, index);
     resource->texture = std::move(texture);
     resource->acquireSemaphore = std::move(acquireSemaphore);
     resource->presentSemaphore = std::move(presentSemaphore);
@@ -148,10 +191,10 @@ TextureResource *RenderGraph::RegisterSwapchainTexture(
     return swapchainTexture_;
 }
 
-Pass *RenderGraph::CreatePass(std::string name, RHI::QueuePtr queue)
+Pass *RenderGraph::CreatePass(std::string name)
 {
     const int index = static_cast<int>(passes_.size());
-    auto pass = Box<Pass>(new Pass(index, std::move(name), std::move(queue)));
+    auto pass = Box<Pass>(new Pass(index, std::move(name)));
     passes_.push_back(std::move(pass));
     return passes_.back().get();
 }

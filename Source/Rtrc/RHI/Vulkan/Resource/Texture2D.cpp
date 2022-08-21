@@ -59,9 +59,9 @@ Ptr<Texture2DSRV> VulkanTexture2D::Create2DSRV(const Texture2DSRVDesc &desc) con
         .aspect         = VK_IMAGE_ASPECT_COLOR_BIT,
         .format         = TranslateTexelFormat(desc.format == Format::Unknown ? desc_.format : desc.format),
         .baseMipLevel   = desc.baseMipLevel,
-        .levelCount     = desc.levelCount,
+        .levelCount     = desc.levelCount > 0 ? desc.levelCount : desc_.mipLevels,
         .baseArrayLayer = desc.baseArrayLayer,
-        .layerCount     = desc.layerCount
+        .layerCount     = desc.layerCount > 0 ? desc.layerCount : desc_.arraySize
     });
     return MakePtr<VulkanTexture2DSRV>(desc, imageView);
 }
@@ -72,9 +72,9 @@ Ptr<Texture2DUAV> VulkanTexture2D::Create2DUAV(const Texture2DUAVDesc &desc) con
         .aspect         = VK_IMAGE_ASPECT_COLOR_BIT,
         .format         = TranslateTexelFormat(desc.format == Format::Unknown ? desc_.format : desc.format),
         .baseMipLevel   = desc.baseMipLevel,
-        .levelCount     = desc.levelCount,
+        .levelCount     = desc.levelCount > 0 ? desc.levelCount : desc_.mipLevels,
         .baseArrayLayer = desc.baseArrayLayer,
-        .layerCount     = desc.layerCount
+        .layerCount     = desc.layerCount > 0 ? desc.layerCount : desc_.arraySize
     });
     return MakePtr<VulkanTexture2DUAV>(desc, imageView);
 }

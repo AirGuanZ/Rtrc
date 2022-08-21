@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Rtrc/RenderGraph/Executable.h>
+#include <Rtrc/RenderGraph/TransientResourceManager.h>
 
 RTRC_RG_BEGIN
 
@@ -8,7 +9,7 @@ class Compiler : public Uncopyable
 {
 public:
 
-    explicit Compiler(RHI::DevicePtr device);
+    Compiler(RHI::DevicePtr device, TransientResourceManager &transientResourceManager);
 
     void Compile(const RenderGraph &graph, ExecutableGraph &result);
 
@@ -29,17 +30,9 @@ private:
     using SubTexKey     = std::pair<TextureResource*, RHI::TextureSubresource>;
     using SubTexUserMap = std::map<SubTexKey, SubTexUsers>;
 
-    struct Section
+    struct CompileSection
     {
-        RHI::QueuePtr queue;
         std::vector<int> passes;
-        std::set<Section *, std::less<>> directPrevs;
-        std::set<Section *, std::less<>> directSuccs;
-        std::set<Section *, std::less<>> indirectPrevs; // can reach this section from which sections
-
-        int signalSemaphoreIndex = -1;
-        RHI::PipelineStageFlag signalStages = RHI::PipelineStage::None;
-        std::map<int, RHI::PipelineStageFlag> waitSemaphoreIndexToStages;
 
         bool waitBackbufferSemaphore = false;
         RHI::PipelineStageFlag waitBackbufferSemaphoreStages = RHI::PipelineStage::None;
@@ -47,16 +40,20 @@ private:
         bool signalBackbufferSemaphore = false;
         RHI::PipelineStageFlag signalBackbufferSemaphoreStages = RHI::PipelineStage::None;
 
-        bool CanReachFrom(const Section *prev) const
-        {
-            return prev == this || directPrevs.contains(prev) || indirectPrevs.contains(prev);
-        }
+        RHI::FencePtr signalFence;
+        std::optional<RHI::TextureTransitionBarrier> swapchainPresentBarrier;
+    };
+
+    struct CompilePass
+    {
+        std::vector<RHI::TextureTransitionBarrier> beforeTextureTransitions;
+        std::vector<RHI::BufferTransitionBarrier> beforeBufferTransitions;
     };
 
     static bool DontNeedBarrier(const Pass::BufferUsage &a, const Pass::BufferUsage &b);
     static bool DontNeedBarrier(const Pass::SubTexUsage &a, const Pass::SubTexUsage &b);
 
-    bool IsInSection(int passIndex, const Section *section) const;
+    bool IsInSection(int passIndex, const CompileSection *section) const;
 
     void TopologySortPasses();
 
@@ -64,27 +61,29 @@ private:
 
     void GenerateSections();
 
-    void SortPassesInSections();
-
     void GenerateSemaphores();
 
     void FillExternalResources(ExecutableResources &output);
 
     void AllocateInternalResources(ExecutableResources &output);
 
-    RHI::DevicePtr device_;
-    const RenderGraph *graph_;
+    void GenerateBarriers(const ExecutableResources &resources);
 
-    std::vector<const Pass*>    sortedPasses_;
-    std::map<const Pass *, int> passToSortedIndex_;
+    void FillSections(ExecutableGraph &output);
+
+    RHI::DevicePtr            device_;
+    TransientResourceManager &transientResourceManager_;
+    const RenderGraph        *graph_;
+
+    std::vector<const Pass*>      sortedPasses_;
+    std::vector<Box<CompilePass>> sortedCompilePasses_;
+    std::map<const Pass *, int>   passToSortedIndex_;
 
     BufferUserMap bufferUsers_;
     SubTexUserMap subTexUsers_;
 
-    std::vector<Box<Section>> sections_;
-    std::vector<Section *> passToSection_;
-
-    int semaphoreCount_;
+    std::vector<Box<CompileSection>> sections_;
+    std::vector<CompileSection *>    passToSection_;
 };
 
 RTRC_RG_END

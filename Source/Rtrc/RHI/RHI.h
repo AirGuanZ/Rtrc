@@ -373,20 +373,6 @@ struct BindingLayoutDesc
     bool operator==(const BindingLayoutDesc &) const = default;
 };
 
-struct Viewport
-{
-    Vector2f lowerLeftCorner;
-    Vector2f size;
-    float minDepth;
-    float maxDepth;
-};
-
-struct Scissor
-{
-    Vector2i lowerLeftCorner;
-    Vector2i size;
-};
-
 struct TextureSubresource
 {
     uint32_t mipLevel;
@@ -421,27 +407,27 @@ struct Texture2DDesc
 
 struct Texture2DRTVDesc
 {
-    Format   format;
-    uint32_t mipLevel;
-    uint32_t arrayLayer;
+    Format   format     = Format::Unknown;
+    uint32_t mipLevel   = 0;
+    uint32_t arrayLayer = 0;
 };
 
 struct Texture2DSRVDesc
 {
-    Format   format;
-    uint32_t baseMipLevel;
-    uint32_t levelCount;
-    uint32_t baseArrayLayer;
-    uint32_t layerCount;
+    Format   format         = Format::Unknown;
+    uint32_t baseMipLevel   = 0;
+    uint32_t levelCount     = 0; // all levels
+    uint32_t baseArrayLayer = 0;
+    uint32_t layerCount     = 0; // all layers
 };
 
 struct Texture2DUAVDesc
 {
-    Format   format;
-    uint32_t baseMipLevel;
-    uint32_t levelCount;
-    uint32_t baseArrayLayer;
-    uint32_t layerCount;
+    Format   format         = Format::Unknown;
+    uint32_t baseMipLevel   = 0;
+    uint32_t levelCount     = 1; // base level
+    uint32_t baseArrayLayer = 0;
+    uint32_t layerCount     = 1; // base layer
 };
 
 struct BufferDesc
@@ -528,8 +514,8 @@ struct BufferTransitionBarrier
 {
     Buffer            *buffer;
     PipelineStageFlag  beforeStages;
-    PipelineStageFlag  afterStages;
     ResourceAccessFlag beforeAccesses;
+    PipelineStageFlag  afterStages;
     ResourceAccessFlag afterAccesses;
 };
 
@@ -551,6 +537,39 @@ struct BufferAcquireBarrier
     Queue             *afterQueue;
 };
 
+struct Viewport
+{
+    Vector2f lowerLeftCorner;
+    Vector2f size;
+    float minDepth;
+    float maxDepth;
+
+    static Viewport Create(const Texture2DDesc &desc, float minDepth = 0, float maxDepth = 1)
+    {
+        return Viewport{
+            .lowerLeftCorner = { 0, 0 },
+            .size            = { static_cast<float>(desc.width), static_cast<float>(desc.height) },
+            .minDepth        = minDepth,
+            .maxDepth        = maxDepth
+        };
+    }
+
+    static Viewport Create(const Texture2DPtr &tex, float minDepth = 0, float maxDepth = 1);
+};
+
+struct Scissor
+{
+    Vector2i lowerLeftCorner;
+    Vector2i size;
+
+    static Scissor Create(const Texture2DDesc &desc)
+    {
+        return Scissor{ { 0, 0 }, { static_cast<int>(desc.width), static_cast<int>(desc.height) } };
+    }
+
+    static Scissor Create(const Texture2DPtr &tex);
+};
+
 struct ColorClearValue
 {
     float r, g, b, a;
@@ -566,7 +585,7 @@ using ClearValue = Variant<ColorClearValue, DepthStencilClearValue>;
 
 struct RenderPassColorAttachment
 {
-    Texture2DRTV     *rtv;
+    Texture2DRTV     *renderTargetView;
     AttachmentLoadOp  loadOp;
     AttachmentStoreOp storeOp;
     ClearValue        clearValue;
@@ -773,7 +792,7 @@ public:
     virtual void End() = 0;
 
     template<typename...Ts>
-    void ExecuteBarriers(Ts...ts);
+    void ExecuteBarriers(const Ts&...ts);
 
     virtual void BeginRenderPass(Span<RenderPassColorAttachment> colorAttachments) = 0;
     virtual void EndRenderPass() = 0;
@@ -967,9 +986,9 @@ public:
 
     virtual const Texture2DDesc &GetDesc() const = 0;
 
-    virtual Ptr<Texture2DRTV> Create2DRTV(const Texture2DRTVDesc &desc) const = 0;
-    virtual Ptr<Texture2DSRV> Create2DSRV(const Texture2DSRVDesc &desc) const = 0;
-    virtual Ptr<Texture2DUAV> Create2DUAV(const Texture2DUAVDesc &desc) const = 0;
+    virtual Ptr<Texture2DRTV> Create2DRTV(const Texture2DRTVDesc &desc = {}) const = 0;
+    virtual Ptr<Texture2DSRV> Create2DSRV(const Texture2DSRVDesc &desc = {}) const = 0;
+    virtual Ptr<Texture2DUAV> Create2DUAV(const Texture2DUAVDesc &desc = {}) const = 0;
 };
 
 class Texture2DRTV : public RHIObject
@@ -1086,8 +1105,18 @@ Ptr<Instance> CreateDirectX12Instance(const DirectX12InstanceDesc &desc);
 
 // =============================== inlined implementation ===============================
 
+inline Viewport Viewport::Create(const Texture2DPtr &tex, float minDepth, float maxDepth)
+{
+    return Create(tex->GetDesc(), minDepth, maxDepth);
+}
+
+inline Scissor Scissor::Create(const Texture2DPtr &tex)
+{
+    return Create(tex->GetDesc());
+}
+
 template <typename...Ts>
-void CommandBuffer::ExecuteBarriers(Ts...ts)
+void CommandBuffer::ExecuteBarriers(const Ts&...ts)
 {
     // TODO: avoid unnecessary memory allocations
 

@@ -37,7 +37,7 @@ public:
         RTRC_SCOPE_FAIL{ Destruct(); };
         while(size_ < other.GetSize())
         {
-            new(&At(size_)) T(other.At(size_));
+            new(GetData() + size_) T(other.At(size_));
             ++size_;
         }
     }
@@ -71,7 +71,7 @@ public:
         static_assert(noexcept(std::swap(std::declval<T &>(), std::declval<T &>())));
         static_assert(std::is_nothrow_move_constructible_v<T>);
 
-        const size_t swappedCount = std::min(size_, other.size_);
+        const size_t swappedCount = (std::min)(size_, other.size_);
         for(size_t i = 0; i < swappedCount; ++i)
         {
             std::swap(At(i), other.At(i));
@@ -100,14 +100,14 @@ public:
     void PushBack(const T &value)
     {
         assert(size_ < Capacity);
-        new (&At(size_)) T(value);
+        new (reinterpret_cast<T *>(&data_) + size_) T(value);
         ++size_;
     }
 
     void PushBack(T &&value) noexcept
     {
         assert(size_ < Capacity);
-        new (&At(size_)) T(std::move(value));
+        new (reinterpret_cast<T *>(&data_) + size_) T(std::move(value));
         ++size_;
     }
 
