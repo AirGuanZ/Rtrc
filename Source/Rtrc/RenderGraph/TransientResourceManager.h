@@ -1,10 +1,11 @@
 #pragma once
 
-#include <Rtrc/RenderGraph/Executable.h>
 #include <Rtrc/RenderGraph/ResourceManager/TransientResourceManagerWithoutReuse.h>
 #include <Rtrc/Utils/Uncopyable.h>
 
 RTRC_RG_BEGIN
+
+struct ExecutableResources;
 
 class ResourceLifetimeManager
 {

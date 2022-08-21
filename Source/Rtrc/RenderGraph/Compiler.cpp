@@ -566,13 +566,22 @@ void Compiler::FillSections(ExecutableGraph &output)
         section.passes.reserve(compileSection->passes.size());
         for(int compilePassIndex : compileSection->passes)
         {
+            auto &rawPass = sortedPasses_[compilePassIndex];
             auto &compilePass = sortedCompilePasses_[compilePassIndex];
             auto &pass = section.passes.emplace_back();
             pass.beforeBufferBarriers = compilePass->beforeBufferTransitions;
             pass.beforeTextureBarriers = compilePass->beforeTextureTransitions;
+            if(rawPass->name_.empty())
+            {
+                pass.name = nullptr;
+            }
+            else
+            {
+                pass.name = &rawPass->name_;
+            }
             if(sortedPasses_[compilePassIndex]->callback_)
             {
-                pass.callback = &sortedPasses_[compilePassIndex]->callback_;
+                pass.callback = &rawPass->callback_;
             }
             else
             {

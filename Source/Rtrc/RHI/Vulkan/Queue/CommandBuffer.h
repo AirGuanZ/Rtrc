@@ -52,6 +52,9 @@ public:
     void CopyColorTexture2DToBuffer(
         Buffer *dst, size_t dstOffset, Texture2D *src, uint32_t mipLevel, uint32_t arrayLayer) override;
 
+    void BeginDebugEvent(const DebugLabel &label) override;
+    void EndDebugEvent() override;
+
     VkCommandBuffer GetNativeCommandBuffer() const;
 
 protected:

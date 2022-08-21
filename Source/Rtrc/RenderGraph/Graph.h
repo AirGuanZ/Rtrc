@@ -182,6 +182,8 @@ public:
         RHI::BackBufferSemaphorePtr acquireSemaphore,
         RHI::BackBufferSemaphorePtr presentSemaphore);
 
+    TextureResource *RegisterSwapchainTexture(const RHI::SwapchainPtr &swapchain);
+
     Pass *CreatePass(std::string name = {});
 
 private:

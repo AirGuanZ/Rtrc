@@ -2,8 +2,6 @@
 
 #include <Rtrc/Rtrc.h>
 
-#include "Rtrc/RenderGraph/TransientResourceManager.h"
-
 using namespace Rtrc;
 
 void Run()
@@ -218,10 +216,7 @@ void Run()
 
     // render graph
 
-    auto transientResourceManager = MakeRC<RG::TransientResourceManager>(
-        device, RG::TransientResourceManager::Strategy::ReuseAcrossFrame, swapchain->GetRenderTargetCount());
-
-    RG::Executer executer(device, frameResources, transientResourceManager);
+    RG::Executer executer(device, frameResources, frameResources->GetTransicentResourceManager());
 
     // render loop
 
@@ -240,7 +235,6 @@ void Run()
         }
 
         frameResources->BeginFrame();
-        transientResourceManager->BeginFrame();
 
         if(!swapchain->Acquire())
         {
@@ -250,8 +244,7 @@ void Run()
         RG::RenderGraph graph;
         graph.SetQueue(graphicsQueue);
         
-        auto renderTarget = graph.RegisterSwapchainTexture(
-            swapchain->GetRenderTarget(), swapchain->GetAcquireSemaphore(), swapchain->GetPresentSemaphore());
+        auto renderTarget = graph.RegisterSwapchainTexture(swapchain);
 
         auto quadPass = graph.CreatePass("DrawQuad");
         quadPass->Use(renderTarget, RG::RENDER_TARGET);

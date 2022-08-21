@@ -191,6 +191,12 @@ TextureResource *RenderGraph::RegisterSwapchainTexture(
     return swapchainTexture_;
 }
 
+TextureResource *RenderGraph::RegisterSwapchainTexture(const RHI::SwapchainPtr &swapchain)
+{
+    return RegisterSwapchainTexture(
+        swapchain->GetRenderTarget(), swapchain->GetAcquireSemaphore(), swapchain->GetPresentSemaphore());
+}
+
 Pass *RenderGraph::CreatePass(std::string name)
 {
     const int index = static_cast<int>(passes_.size());

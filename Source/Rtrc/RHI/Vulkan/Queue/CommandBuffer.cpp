@@ -283,6 +283,35 @@ void VulkanCommandBuffer::CopyColorTexture2DToBuffer(
     vkCmdCopyImageToBuffer(commandBuffer_, vkSrc, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, vkDst, 1, &copy);
 }
 
+void VulkanCommandBuffer::BeginDebugEvent(const DebugLabel &label)
+{
+    VkDebugUtilsLabelEXT vkLabel =
+    {
+        .sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
+        .pLabelName = label.name.c_str()
+    };
+    if(label.color)
+    {
+        vkLabel.color[0] = label.color.value()[0];
+        vkLabel.color[1] = label.color.value()[1];
+        vkLabel.color[2] = label.color.value()[2];
+        vkLabel.color[3] = label.color.value()[3];
+    }
+    else
+    {
+        vkLabel.color[0] = 0.0f;
+        vkLabel.color[1] = 0.0f;
+        vkLabel.color[2] = 0.0f;
+        vkLabel.color[3] = 0.0f;
+    }
+    vkCmdBeginDebugUtilsLabelEXT(commandBuffer_, &vkLabel);
+}
+
+void VulkanCommandBuffer::EndDebugEvent()
+{
+    vkCmdEndDebugUtilsLabelEXT(commandBuffer_);
+}
+
 VkCommandBuffer VulkanCommandBuffer::GetNativeCommandBuffer() const
 {
     return commandBuffer_;

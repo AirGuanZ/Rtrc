@@ -30,6 +30,7 @@ struct ExecutablePass
     std::vector<RHI::TextureTransitionBarrier> beforeTextureBarriers;
     std::vector<RHI::BufferTransitionBarrier>  beforeBufferBarriers;
     const Pass::Callback *callback;
+    const std::string *name;
 };
 
 struct ExecutableSection

@@ -71,13 +71,15 @@ RHI::FencePtr FrameSynchronizer::GetFrameFence() const
 FrameResourceManager::FrameResourceManager(RHI::DevicePtr device, int frameCount)
     : synchronizer_(device, frameCount), commandBufferManager_(device, frameCount)
 {
-    
+    transientResourceManager_ = MakeRC<RG::TransientResourceManager>(
+        device, RG::TransientResourceManager::Strategy::ReuseAcrossFrame, frameCount);
 }
 
 void FrameResourceManager::BeginFrame()
 {
     synchronizer_.BeginFrame();
     commandBufferManager_.BeginFrame(synchronizer_.GetFrameIndex());
+    transientResourceManager_->BeginFrame();
 }
 
 int FrameResourceManager::GetFrameIndex() const
@@ -93,6 +95,11 @@ RHI::FencePtr FrameResourceManager::GetFrameFence() const
 RHI::CommandBufferPtr FrameResourceManager::AllocateCommandBuffer(RHI::QueueType type)
 {
     return commandBufferManager_.AllocateCommandBuffer(type);
+}
+
+const RC<RG::TransientResourceManager> &FrameResourceManager::GetTransicentResourceManager() const
+{
+    return transientResourceManager_;
 }
 
 RTRC_END

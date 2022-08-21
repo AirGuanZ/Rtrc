@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/RHI/RHI.h>
+#include <Rtrc/RenderGraph/TransientResourceManager.h>
 
 RTRC_BEGIN
 
@@ -68,10 +68,13 @@ public:
 
     RHI::CommandBufferPtr AllocateCommandBuffer(RHI::QueueType type) override;
 
+    const RC<RG::TransientResourceManager> &GetTransicentResourceManager() const;
+
 private:
 
-    FrameSynchronizer         synchronizer_;
-    FrameCommandBufferManager commandBufferManager_;
+    FrameSynchronizer                synchronizer_;
+    FrameCommandBufferManager        commandBufferManager_;
+    RC<RG::TransientResourceManager> transientResourceManager_;
 };
 
 RTRC_END

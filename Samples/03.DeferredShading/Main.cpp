@@ -1,6 +1,13 @@
 #include <iostream>
 
-// TODO
+#include <Rtrc/Rtrc.h>
+
+using namespace Rtrc;
+
+void Run()
+{
+    
+}
 
 int main()
 {

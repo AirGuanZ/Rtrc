@@ -4,6 +4,7 @@
 #include <optional>
 #include <vector>
 
+#include <Rtrc/Math/Vector4.h>
 #include <Rtrc/Utils/EnumFlags.h>
 #include <Rtrc/Utils/ReferenceCounted.h>
 #include <Rtrc/Utils/Span.h>
@@ -11,10 +12,9 @@
 #include <Rtrc/Utils/Variant.h>
 #include <Rtrc/Window/Window.h>
 
-#include "RHI.h"
-
 RTRC_BEGIN
-    struct StructInfo;
+
+struct StructInfo;
 
 RTRC_END
 
@@ -614,6 +614,12 @@ struct MemoryBlockDesc
     Ptr<MemoryPropertyRequirements> properties;
 };
 
+struct DebugLabel
+{
+    std::string name;
+    std::optional<Vector4f> color;
+};
+
 // =============================== rhi interfaces ===============================
 
 class RHIObject : public ReferenceCounted, public Uncopyable
@@ -821,6 +827,9 @@ public:
         Texture2D *dst, uint32_t mipLevel, uint32_t arrayLayer, Buffer *src, size_t srcOffset) = 0;
     virtual void CopyColorTexture2DToBuffer(
         Buffer *dst, size_t dstOffset, Texture2D *src, uint32_t mipLevel, uint32_t arrayLayer) = 0;
+
+    virtual void BeginDebugEvent(const DebugLabel &label) = 0;
+    virtual void EndDebugEvent() = 0;
 
 protected:
 

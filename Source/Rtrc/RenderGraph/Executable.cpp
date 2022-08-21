@@ -36,11 +36,18 @@ void Executer::Execute(const ExecutableGraph &graph)
             {
                 commandBuffer->ExecuteBarriers(pass.beforeTextureBarriers, pass.beforeBufferBarriers);
             }
-
+            if(pass.name)
+            {
+                commandBuffer->BeginDebugEvent(RHI::DebugLabel{ .name = *pass.name });
+            }
             if(pass.callback)
             {
                 PassContext passContext(graph.resources, commandBuffer);
                 (*pass.callback)(passContext);
+            }
+            if(pass.name)
+            {
+                commandBuffer->EndDebugEvent();
             }
         }
 

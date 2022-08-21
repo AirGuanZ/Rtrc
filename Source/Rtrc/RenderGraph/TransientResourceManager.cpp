@@ -1,3 +1,4 @@
+#include <Rtrc/RenderGraph/Executable.h>
 #include <Rtrc/RenderGraph/TransientResourceManager.h>
 
 RTRC_RG_BEGIN
