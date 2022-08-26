@@ -4,6 +4,15 @@
 
 RTRC_BEGIN
 
+class FrameEndEventManager
+{
+public:
+
+    virtual ~FrameEndEventManager() = default;
+
+    virtual void OnGPUFrameEnd(std::function<void()> func) = 0;
+};
+
 class CommandBufferAllocator
 {
 public:
@@ -31,11 +40,13 @@ private:
     std::vector<std::vector<RHI::CommandPoolPtr>> pools_; // usage: pools_[frame][queue]
 };
 
-class FrameSynchronizer : public Uncopyable
+class FrameSynchronizer : public Uncopyable, public FrameEndEventManager
 {
 public:
 
-    FrameSynchronizer(const RHI::DevicePtr &device, int frameCount);
+    FrameSynchronizer(RHI::DevicePtr device, int frameCount);
+
+    ~FrameSynchronizer() override;
 
     void BeginFrame();
 
@@ -44,17 +55,26 @@ public:
     // call queue->submit(frameFence) at the end of each frame
     RHI::FencePtr GetFrameFence() const;
 
+    void OnGPUFrameEnd(std::function<void()> func) override;
+
 private:
 
+    struct FrameRecord
+    {
+        RHI::FencePtr fence;
+        std::vector<std::function<void()>> completeCallbacks;
+    };
+
+    RHI::DevicePtr device_;
     int frameIndex_;
-    std::vector<RHI::FencePtr> fences_;
+    std::vector<FrameRecord> frames_;
 
 #if RTRC_DEBUG
     mutable bool getFrameFenceCalled_;
 #endif
 };
 
-class FrameResourceManager : public Uncopyable, public CommandBufferAllocator
+class FrameResourceManager : public Uncopyable, public CommandBufferAllocator, public FrameEndEventManager
 {
 public:
 
@@ -67,6 +87,8 @@ public:
     RHI::FencePtr GetFrameFence() const;
 
     RHI::CommandBufferPtr AllocateCommandBuffer(RHI::QueueType type) override;
+
+    void OnGPUFrameEnd(std::function<void()> func) override;
 
     const RC<RG::TransientResourceManager> &GetTransicentResourceManager() const;
 

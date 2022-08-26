@@ -283,6 +283,24 @@ void VulkanCommandBuffer::CopyColorTexture2DToBuffer(
     vkCmdCopyImageToBuffer(commandBuffer_, vkSrc, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, vkDst, 1, &copy);
 }
 
+void VulkanCommandBuffer::ClearColorTexture2D(Texture2D *dst, const ColorClearValue &clearValue)
+{
+    auto vkTexture = static_cast<VulkanTexture2D *>(dst);
+    const VkClearColorValue vkClearValue = TranslateClearColorValue(clearValue);
+    const VkImageSubresourceRange range =
+    {
+        .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+        .baseMipLevel   = 0,
+        .levelCount     = 1,
+        .baseArrayLayer = 0,
+        .layerCount     = 1
+    };
+    vkCmdClearColorImage(
+        commandBuffer_,
+        vkTexture->GetNativeImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        &vkClearValue, 1, &range);
+}
+
 void VulkanCommandBuffer::BeginDebugEvent(const DebugLabel &label)
 {
     VkDebugUtilsLabelEXT vkLabel =

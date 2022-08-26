@@ -307,9 +307,26 @@ std::vector<std::string> Window::GetRequiredVulkanInstanceExtensions()
 #endif
 }
 
+Window::Window()
+{
+    
+}
+
+Window::Window(Window &&other) noexcept
+    : Window()
+{
+    impl_.swap(other.impl_);
+}
+
+Window &Window::operator=(Window &&other) noexcept
+{
+    impl_.swap(other.impl_);
+    return *this;
+}
+
 Window::~Window()
 {
-    if(impl_)
+    if(!impl_)
     {
         return;
     }

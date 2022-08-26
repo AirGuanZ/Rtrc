@@ -479,43 +479,24 @@ RHI::RawShaderPtr ShaderManager::CompileShader(
 
     // parse binding groups
 
-    std::vector<ShaderBindingGroupRewriter::ParsedBindingGroup> parsedBindingGroups;
+    std::vector<ShaderBindingGroupRewrite::ParsedBindingGroup> parsedBindingGroups;
+    while(true)
     {
-        ShaderBindingGroupRewriter bindingGroupParser(preprocessedSource);
-        while(true)
+        ShaderBindingGroupRewrite::ParsedBindingGroup group;
+        if(RewriteNextBindingGroup(preprocessedSource, group))
         {
-            ShaderBindingGroupRewriter::ParsedBindingGroup group;
-            if(bindingGroupParser.RewriteNextBindingGroup(group))
-            {
-                parsedBindingGroups.push_back(std::move(group));
-            }
-            else
-            {
-                break;
-            }
+            parsedBindingGroups.push_back(group);
         }
-        preprocessedSource = bindingGroupParser.GetFinalSource();
+        else
+        {
+            break;
+        }
     }
 
     // parse bindings
 
-    std::vector<ShaderBindingParser::ParsedBinding> parsedBindings;
-    {
-        ShaderBindingParser bindingParser(preprocessedSource);
-        while(true)
-        {
-            ShaderBindingParser::ParsedBinding binding;
-            if(bindingParser.FindNextBinding(binding))
-            {
-                parsedBindings.push_back(binding);
-            }
-            else
-            {
-                break;
-            }
-        }
-        preprocessedSource = bindingParser.GetFinalSource();
-    }
+    std::vector<ShaderBindingParse::ParsedBinding> parsedBindings;
+    ParseBindings(preprocessedSource, parsedBindings);
 
     // map binding name to (group, slot)
 
@@ -523,7 +504,7 @@ RHI::RawShaderPtr ShaderManager::CompileShader(
     {
         int groupIndex;
         int slotIndex;
-        const ShaderBindingParser::ParsedBinding *parsedBinding;
+        const ShaderBindingParse::ParsedBinding *parsedBinding;
     };
 
     std::map<std::string, BindingRecord> bindingNameToRecord;
@@ -672,7 +653,7 @@ RHI::RawShaderPtr ShaderManager::CompileShader(
 
     std::sort(
         parsedBindings.begin(), parsedBindings.end(),
-        [](const ShaderBindingParser::ParsedBinding &a, const ShaderBindingParser::ParsedBinding &b)
+        [](const ShaderBindingParse::ParsedBinding &a, const ShaderBindingParse::ParsedBinding &b)
     {
         return a.begPosInSource > b.begPosInSource;
     });

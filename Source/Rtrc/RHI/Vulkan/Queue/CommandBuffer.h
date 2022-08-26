@@ -13,31 +13,23 @@ public:
     ~VulkanCommandBuffer() override;
 
     void Begin() override;
-
     void End() override;
 
     void BeginRenderPass(Span<RenderPassColorAttachment> colorAttachments) override;
-
     void EndRenderPass() override;
 
     void BindPipeline(const Ptr<GraphicsPipeline> &pipeline) override;
-
     void BindPipeline(const Ptr<ComputePipeline> &pipeline) override;
     
     void BindGroupsToGraphicsPipeline(int startIndex, Span<RC<BindingGroup>> groups) override;
-
     void BindGroupsToComputePipeline(int startIndex, Span<RC<BindingGroup>> groups) override;
-
     void BindGroupToGraphicsPipeline(int index, const Ptr<BindingGroup> &group) override;
-
     void BindGroupToComputePipeline(int index, const Ptr<BindingGroup> &group) override;
 
     void SetViewports(Span<Viewport> viewports) override;
-
     void SetScissors(Span<Scissor> scissors) override;
 
     void SetViewportsWithCount(Span<Viewport> viewports) override;
-
     void SetScissorsWithCount(Span<Scissor> scissors) override;
 
     void Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance) override;
@@ -48,9 +40,10 @@ public:
 
     void CopyBufferToColorTexture2D(
         Texture2D *dst, uint32_t mipLevel, uint32_t arrayLayer, Buffer *src, size_t srcOffset) override;
-
     void CopyColorTexture2DToBuffer(
         Buffer *dst, size_t dstOffset, Texture2D *src, uint32_t mipLevel, uint32_t arrayLayer) override;
+
+    void ClearColorTexture2D(Texture2D *dst, const ColorClearValue &clearValue) override;
 
     void BeginDebugEvent(const DebugLabel &label) override;
     void EndDebugEvent() override;

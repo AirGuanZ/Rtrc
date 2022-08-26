@@ -7,9 +7,8 @@
 
 RTRC_BEGIN
 
-class ShaderBindingGroupRewriter
+namespace ShaderBindingGroupRewrite
 {
-public:
 
     struct Binding
     {
@@ -25,33 +24,12 @@ public:
         std::vector<AliasedBindingNames> bindings;
     };
 
-    explicit ShaderBindingGroupRewriter(std::string source);
+    bool RewriteNextBindingGroup(std::string &source, ParsedBindingGroup &bindings);
 
-    /*
-        group GroupName
-        {
-            BindingName0,
-            BindingName1,
-            BindingName2,
-            [ AliasedBindingName0, AliasedBindingName1(,) ](,)
-        };
-    */
-    bool RewriteNextBindingGroup(ParsedBindingGroup &bindings);
+} // namespace ShaderBindingGroupRewrite
 
-    const std::string &GetFinalSource() const;
-
-private:
-
-    size_t FindNextBindingGroupKeyword();
-
-    size_t pos_;
-    std::string source_;
-};
-
-class ShaderBindingParser
+namespace ShaderBindingParse
 {
-public:
-
     struct ParsedBinding
     {
         size_t                  begPosInSource;
@@ -61,26 +39,8 @@ public:
         std::optional<uint32_t> arraySize;
     };
 
-    explicit ShaderBindingParser(std::string source);
+    void ParseBindings(std::string &source, std::vector<ParsedBinding> &bindings);
 
-    bool FindNextBinding(ParsedBinding &outBinding);
-
-    const std::string &GetFinalSource() const;
-
-private:
-
-    size_t SkipWhitespaces(size_t pos) const;
-
-    bool FindNextBindingKeyword(size_t &outBegPos, size_t &outEndPos, RHI::BindingType &outType);
-
-    size_t FindEndOfTemplateParameter(size_t curPos) const;
-
-    std::string FindBindingName(size_t curPos, size_t &outEndPos) const;
-    
-    std::optional<uint32_t> FindOptionalArraySize(size_t &inoutCurPos) const;
-
-    size_t pos_;
-    std::string source_;
-};
+} // namespace ShaderBindingParse
 
 RTRC_END

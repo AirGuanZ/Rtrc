@@ -29,7 +29,11 @@ public:
 
     static std::vector<std::string> GetRequiredVulkanInstanceExtensions();
 
-    Window() = default;
+    Window();
+
+    Window(Window &&other) noexcept;
+
+    Window &operator=(Window &&other) noexcept;
 
     ~Window();
 

@@ -31,24 +31,43 @@ RHI::CommandBufferPtr FrameCommandBufferManager::AllocateCommandBuffer(RHI::Queu
     return pool->NewCommandBuffer();
 }
 
-FrameSynchronizer::FrameSynchronizer(const RHI::DevicePtr &device, int frameCount)
-    : frameIndex_(frameCount - 1)
+FrameSynchronizer::FrameSynchronizer(RHI::DevicePtr device, int frameCount)
+    : device_(std::move(device)), frameIndex_(frameCount - 1)
 #if RTRC_DEBUG
     , getFrameFenceCalled_(true)
 #endif
 {
-    fences_.resize(frameCount);
-    for(auto &f : fences_)
+    frames_.resize(frameCount);
+    for(auto &f : frames_)
     {
-        f = device->CreateFence(true);
+        f.fence = device_->CreateFence(true);
+    }
+}
+
+FrameSynchronizer::~FrameSynchronizer()
+{
+    assert(device_);
+    device_->WaitIdle();
+    for(auto &record : frames_)
+    {
+        for(auto &callback : record.completeCallbacks)
+        {
+            std::invoke(std::move(callback));
+        }
     }
 }
 
 void FrameSynchronizer::BeginFrame()
 {
-    frameIndex_ = (frameIndex_ + 1) % static_cast<int>(fences_.size());
-    fences_[frameIndex_]->Wait();
-    fences_[frameIndex_]->Reset();
+    frameIndex_ = (frameIndex_ + 1) % static_cast<int>(frames_.size());
+    frames_[frameIndex_].fence->Wait();
+    frames_[frameIndex_].fence->Reset();
+    for(auto &callback : frames_[frameIndex_].completeCallbacks)
+    {
+        std::invoke(std::move(callback));
+    }
+    frames_[frameIndex_].completeCallbacks.clear();
+
 #if RTRC_DEBUG
     assert(getFrameFenceCalled_ && "FrameSynchronizer::GetFrameFence haven't been called at last frame");
     getFrameFenceCalled_ = false;
@@ -65,7 +84,12 @@ int FrameSynchronizer::GetFrameIndex() const
 
 RHI::FencePtr FrameSynchronizer::GetFrameFence() const
 {
-    return fences_[frameIndex_];
+    return frames_[frameIndex_].fence;
+}
+
+void FrameSynchronizer::OnGPUFrameEnd(std::function<void()> func)
+{
+    frames_[frameIndex_].completeCallbacks.push_back(std::move(func));
 }
 
 FrameResourceManager::FrameResourceManager(RHI::DevicePtr device, int frameCount)
@@ -95,6 +119,11 @@ RHI::FencePtr FrameResourceManager::GetFrameFence() const
 RHI::CommandBufferPtr FrameResourceManager::AllocateCommandBuffer(RHI::QueueType type)
 {
     return commandBufferManager_.AllocateCommandBuffer(type);
+}
+
+void FrameResourceManager::OnGPUFrameEnd(std::function<void()> func)
+{
+    synchronizer_.OnGPUFrameEnd(std::move(func));
 }
 
 const RC<RG::TransientResourceManager> &FrameResourceManager::GetTransicentResourceManager() const

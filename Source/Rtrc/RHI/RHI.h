@@ -259,6 +259,7 @@ enum class TextureLayout
     CopyDst,
     ResolveSrc,
     ResolveDst,
+    ClearDst,
     Present
 };
 
@@ -272,7 +273,8 @@ enum class PipelineStage : uint32_t
     DepthStencil   = 1 << 4,
     RenderTarget   = 1 << 5,
     Copy           = 1 << 6,
-    Resolve        = 1 << 7
+    Clear          = 1 << 7,
+    Resolve        = 1 << 8
 };
 
 RTRC_DEFINE_ENUM_FLAGS(PipelineStage)
@@ -301,6 +303,7 @@ enum class ResourceAccess : uint32_t
     CopyWrite               = 1 << 16,
     ResolveRead             = 1 << 17,
     ResolveWrite            = 1 << 18,
+    ClearWrite              = 1 << 19
 };
 
 RTRC_DEFINE_ENUM_FLAGS(ResourceAccess)
@@ -827,6 +830,8 @@ public:
         Texture2D *dst, uint32_t mipLevel, uint32_t arrayLayer, Buffer *src, size_t srcOffset) = 0;
     virtual void CopyColorTexture2DToBuffer(
         Buffer *dst, size_t dstOffset, Texture2D *src, uint32_t mipLevel, uint32_t arrayLayer) = 0;
+
+    virtual void ClearColorTexture2D(Texture2D *dst, const ColorClearValue &clearValue) = 0;
 
     virtual void BeginDebugEvent(const DebugLabel &label) = 0;
     virtual void EndDebugEvent() = 0;

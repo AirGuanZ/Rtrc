@@ -30,6 +30,7 @@ VulkanSwapchain::VulkanSwapchain(
         auto image = MakePtr<VulkanTexture2D>(
             imageDesc, device_, vkImage,
             VulkanMemoryAllocation{ nullptr, nullptr }, ResourceOwnership::None);
+        image->SetName("SwapchainImage");
         images_.push_back(std::move(image));
     }
 

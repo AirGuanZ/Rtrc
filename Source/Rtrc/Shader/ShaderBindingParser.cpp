@@ -5,18 +5,16 @@
 
 #include <Rtrc/Shader/ShaderBindingParser.h>
 
-// TODO: rewrite this piece of shit
-
 RTRC_BEGIN
 
 namespace
 {
-
+    
     class ShaderTokenStream
     {
     public:
 
-        ShaderTokenStream(std::string_view source, size_t startPos)
+        ShaderTokenStream(std::string &source, size_t startPos)
             : nextPos_(startPos), source_(source)
         {
             Next();
@@ -32,9 +30,27 @@ namespace
             return currentToken_;
         }
 
+        void ReplaceCurrentSingleCharToken(char c)
+        {
+            assert(nextPos_ > 0);
+            assert(currentToken_.size() == 1);
+            currentToken_ = c;
+            source_[nextPos_ - 1] = c;
+        }
+
         size_t GetCurrentPosition() const
         {
             return nextPos_;
+        }
+
+        void RemoveCurrentToken()
+        {
+            assert(!currentToken_.empty());
+            for(size_t i = nextPos_ - currentToken_.size(); i < nextPos_; ++i)
+            {
+                assert(!std::isspace(source_[i]));
+                source_[i] = ' ';
+            }
         }
 
         void Next()
@@ -96,6 +112,12 @@ namespace
             nextPos_ = endPos;
         }
 
+        void RemoveAndNext()
+        {
+            RemoveCurrentToken();
+            Next();
+        }
+
         [[noreturn]] void ThrowWithLineAndFilename(std::string_view msg) const
         {
             assert(nextPos_ > 0);
@@ -133,7 +155,7 @@ namespace
                     {
                         ++filenameEnd;
                     }
-                    const std::string_view filename = source_.substr(filenameStart, filenameEnd - filenameStart);
+                    const std::string filename = source_.substr(filenameStart, filenameEnd - filenameStart);
 
                     throw Exception(fmt::format("parsing error at {}, line {}. {}", filename, line, msg));
                 }
@@ -148,7 +170,7 @@ namespace
 
         size_t nextPos_;
         std::string currentToken_;
-        std::string_view source_;
+        std::string &source_;
     };
 
     bool IsIdentifier(std::string_view str)
@@ -169,80 +191,110 @@ namespace
             }
         }
         return true;
+    }
+
+    bool IsNonIdentifierChar(char c)
+    {
+        return !std::isalnum(c) && c != '_';
+    }
+
+    size_t FindFirstBindingGroupKeyword(const std::string &source)
+    {
+        size_t initPos = 0;
+        for(;;)
+        {
+            const size_t pos = source.find("group", initPos);
+            if(pos == std::string::npos)
+            {
+                return std::string::npos;
+            }
+            if((pos == 0 || IsNonIdentifierChar(source[pos - 1])) && IsNonIdentifierChar(source[pos + 5]))
+            {
+                return pos;
+            }
+            initPos = pos + 6;
+        }
+    }
+
+    const std::map<std::string, RHI::BindingType, std::less<>> NAME_TO_BINDING_TYPE =
+    {
+        { "Texture2D",          RHI::BindingType::Texture2D },
+        { "RWTexture2D",        RHI::BindingType::RWTexture2D },
+        { "Buffer",             RHI::BindingType::Buffer },
+        { "RWBuffer",           RHI::BindingType::RWBuffer },
+        { "StructuredBuffer",   RHI::BindingType::StructuredBuffer },
+        { "RWStructuredBuffer", RHI::BindingType::RWStructuredBuffer },
+        { "ConstantBuffer",     RHI::BindingType::ConstantBuffer },
+        { "SamplerState",       RHI::BindingType::Sampler }
     };
 
 } // namespace anonymous
 
-ShaderBindingGroupRewriter::ShaderBindingGroupRewriter(std::string source)
-    : pos_(0), source_(std::move(source))
+bool ShaderBindingGroupRewrite::RewriteNextBindingGroup(std::string &source, ParsedBindingGroup &bindings)
 {
-
-}
-
-bool ShaderBindingGroupRewriter::RewriteNextBindingGroup(ParsedBindingGroup &bindings)
-{
-    const size_t keywordPos = FindNextBindingGroupKeyword();
-    if(keywordPos == std::string::npos)
+    const size_t groupKeywordPos = FindFirstBindingGroupKeyword(source);
+    if(groupKeywordPos == std::string::npos)
     {
         return false;
     }
+    ShaderTokenStream tokens(source, groupKeywordPos);
+    assert(!tokens.IsFinished() && tokens.GetCurrentToken() == "group");
+    tokens.RemoveAndNext();
 
-    ShaderTokenStream tokenStream(source_, keywordPos);
-    assert(!tokenStream.IsFinished() && tokenStream.GetCurrentToken() == "group");
+    // binding name
 
-    // extract group name
-
-    tokenStream.Next();
-    if(tokenStream.IsFinished())
+    if(!IsIdentifier(tokens.GetCurrentToken()))
     {
-        tokenStream.ThrowWithLineAndFilename("group name expected");
+        tokens.ThrowWithLineAndFilename("group name expected");
     }
-    bindings.name = tokenStream.GetCurrentToken();
+    bindings.name = tokens.GetCurrentToken();
+    tokens.RemoveAndNext();
 
-    tokenStream.Next();
-    if(tokenStream.GetCurrentToken() != "{")
+    // {
+
+    if(tokens.GetCurrentToken() != "{")
     {
-        tokenStream.ThrowWithLineAndFilename("'{' expected");
+        tokens.ThrowWithLineAndFilename("'{' expected");
     }
-    tokenStream.Next();
+    tokens.RemoveAndNext();
 
-    // extract binding names
+    // bindings
 
-    bindings.bindings.clear();
-
-    auto parseShaderStages = [&]
+    auto ParseStages = [&]
     {
-        if(tokenStream.GetCurrentToken() != ":")
+        if(tokens.GetCurrentToken() != ":")
         {
-            return RHI::ShaderStage::VertexShader |
-                   RHI::ShaderStage::FragmentShader |
-                   RHI::ShaderStage::ComputeShader;
+            return RHI::ShaderStage::VertexShader
+                 | RHI::ShaderStage::FragmentShader
+                 | RHI::ShaderStage::ComputeShader;
         }
-        tokenStream.Next();
+        tokens.RemoveAndNext();
 
         RHI::ShaderStageFlag result = 0;
         while(true)
         {
-            if(tokenStream.GetCurrentToken() == "VS")
+            std::string_view curr = tokens.GetCurrentToken();
+            if(curr == "VS")
             {
                 result |= RHI::ShaderStage::VertexShader;
             }
-            else if(tokenStream.GetCurrentToken() == "FS")
+            else if(curr == "FS" || curr == "PS")
             {
                 result |= RHI::ShaderStage::FragmentShader;
             }
-            else if(tokenStream.GetCurrentToken() == "CS")
+            else if(curr == "CS")
             {
                 result |= RHI::ShaderStage::ComputeShader;
             }
             else
             {
-                tokenStream.ThrowWithLineAndFilename("shader stage expected");
+                tokens.ThrowWithLineAndFilename(fmt::format("unknown shader stage: {}", curr));
             }
-            tokenStream.Next();
-            if(tokenStream.GetCurrentToken() == "|")
+            tokens.RemoveAndNext();
+
+            if(tokens.GetCurrentToken() == "|")
             {
-                tokenStream.Next();
+                tokens.RemoveAndNext();
             }
             else
             {
@@ -251,273 +303,270 @@ bool ShaderBindingGroupRewriter::RewriteNextBindingGroup(ParsedBindingGroup &bin
         }
     };
 
-    for(;;)
-    {
-        if(tokenStream.IsFinished())
-        {
-            tokenStream.ThrowWithLineAndFilename("binding name or '}' is expected");
-        }
+    bool parsingAliasedBindings = false;
 
-        if(tokenStream.GetCurrentToken() == "}")
+    std::vector<Binding> aliasedNames;
+
+    assert(bindings.bindings.empty());
+    while(true)
+    {
+        if(tokens.GetCurrentToken() == "}")
         {
+            if(parsingAliasedBindings)
+            {
+                tokens.ThrowWithLineAndFilename("unexpected token: '}'");
+            }
+            tokens.RemoveAndNext();
             break;
         }
-        if(IsIdentifier(tokenStream.GetCurrentToken()))
+
+        if(tokens.GetCurrentToken() == "]")
         {
-            std::string name(tokenStream.GetCurrentToken());
-            tokenStream.Next();
-            const auto stages = parseShaderStages();
-            bindings.bindings.push_back(AliasedBindingNames{ { std::move(name), stages, } });
-        }
-        else if(tokenStream.GetCurrentToken() == "[")
-        {
-            tokenStream.Next();
-            bindings.bindings.emplace_back();
-            auto &aliasedNames = bindings.bindings.back();
-            for(;;)
+            if(!parsingAliasedBindings)
             {
-                if(!IsIdentifier(tokenStream.GetCurrentToken()))
+                tokens.ThrowWithLineAndFilename("unexpected token: ']'");
+            }
+            tokens.RemoveAndNext();
+            parsingAliasedBindings = false;
+            bindings.bindings.push_back(std::move(aliasedNames));
+            aliasedNames.clear();
+            continue;
+        }
+
+        if(tokens.GetCurrentToken() == "[")
+        {
+            if(parsingAliasedBindings)
+            {
+                tokens.ThrowWithLineAndFilename("aliased bindings cannot be nested");
+            }
+            tokens.RemoveAndNext();
+            assert(aliasedNames.empty());
+            parsingAliasedBindings = true;
+            continue;
+        }
+
+        if(IsIdentifier(tokens.GetCurrentToken()))
+        {
+            std::string_view id = tokens.GetCurrentToken();
+            if(auto it = NAME_TO_BINDING_TYPE.find(id); it == NAME_TO_BINDING_TYPE.end())
+            {
+                std::string name(tokens.GetCurrentToken());
+                tokens.RemoveAndNext();
+
+                const RHI::ShaderStageFlag stages = ParseStages();
+                if(parsingAliasedBindings)
                 {
-                    tokenStream.ThrowWithLineAndFilename("binding name expected");
+                    aliasedNames.push_back({ std::move(name), stages });
                 }
-                std::string name(tokenStream.GetCurrentToken());
-                tokenStream.Next();
-                const auto stages = parseShaderStages();
-                aliasedNames.push_back({ name, stages });
-                if(tokenStream.GetCurrentToken() == ",")
+                else
                 {
-                    tokenStream.Next();
-                    if(tokenStream.GetCurrentToken() == "]")
+                    bindings.bindings.push_back({ { std::move(name), stages } });
+                }
+
+                if(tokens.GetCurrentToken() == "," || tokens.GetCurrentToken() == ";")
+                {
+                    tokens.RemoveAndNext();
+                }
+                else if(tokens.GetCurrentToken() != "}" && tokens.GetCurrentToken() != "]")
+                {
+                    tokens.ThrowWithLineAndFilename("',' or ';' expected");
+                }
+            }
+            else
+            {
+                tokens.Next();
+                const RHI::BindingType bindingType = it->second;
+
+                const bool hasTypeParam = bindingType != RHI::BindingType::Sampler;
+                if(hasTypeParam)
+                {
+                    if(tokens.GetCurrentToken() != "<")
                     {
-                        tokenStream.Next();
-                        break;
+                        tokens.ThrowWithLineAndFilename("'<' expected");
                     }
-                    continue;
+                    tokens.Next();
+
+                    if(!IsIdentifier(tokens.GetCurrentToken()))
+                    {
+                        tokens.ThrowWithLineAndFilename("type parameter expected");
+                    }
+                    tokens.Next();
+
+                    if(tokens.GetCurrentToken() != ">")
+                    {
+                        tokens.ThrowWithLineAndFilename("'>' expected");
+                    }
+                    tokens.Next();
                 }
-                if(tokenStream.GetCurrentToken() == "]")
+
+                if(!IsIdentifier(tokens.GetCurrentToken()))
                 {
-                    tokenStream.Next();
+                    tokens.ThrowWithLineAndFilename("binding name expected");
+                }
+                std::string name(tokens.GetCurrentToken());
+                tokens.Next();
+
+                if(tokens.GetCurrentToken() == "[")
+                {
+                    tokens.Next();
+                    tokens.Next(); // skip array size
+                    if(tokens.GetCurrentToken() != "]")
+                    {
+                        tokens.ThrowWithLineAndFilename("']' expected");
+                    }
+                    tokens.Next();
+                }
+
+                const RHI::ShaderStageFlag stages = ParseStages();
+                if(parsingAliasedBindings)
+                {
+                    aliasedNames.push_back({ std::move(name), stages });
+                }
+                else
+                {
+                    bindings.bindings.push_back({ { std::move(name), stages } });
+                }
+
+                if(tokens.GetCurrentToken() == ",")
+                {
+                    tokens.ReplaceCurrentSingleCharToken(';');
+                }
+                else if(tokens.GetCurrentToken() != ";" &&
+                        tokens.GetCurrentToken() != "}" &&
+                        tokens.GetCurrentToken() != "]")
+                {
+                    tokens.ThrowWithLineAndFilename("';' expected after resource definition");
+                }
+                tokens.Next();
+            }
+            continue;
+        }
+
+        tokens.ThrowWithLineAndFilename(fmt::format("unexpected token: {}", tokens.GetCurrentToken()));
+    }
+
+    return true;
+}
+
+void ShaderBindingParse::ParseBindings(std::string &source, std::vector<ParsedBinding> &bindings)
+{
+    assert(bindings.empty());
+    while(true)
+    {
+        const size_t searchBegPos = bindings.empty() ? 0 : bindings.back().endPosInSource;
+
+        // find keyword
+
+        size_t keywordBegPos; RHI::BindingType bindingType;
+        {
+            size_t initPos = searchBegPos;
+            while(true)
+            {
+                size_t candidatePos = std::string::npos, candidateLength = 0;
+                RHI::BindingType candidateType = RHI::BindingType::Sampler;
+                for(auto &[name, type] : NAME_TO_BINDING_TYPE)
+                {
+                    const size_t pos = source.find(name, initPos);
+                    if(pos < candidatePos)
+                    {
+                        candidatePos = pos;
+                        candidateType = type;
+                        candidateLength = name.size();
+                    }
+                }
+                if(candidatePos == std::string::npos)
+                {
+                    return;
+                }
+                if((candidatePos == 0 || IsNonIdentifierChar(source[candidatePos - 1])) &&
+                    IsNonIdentifierChar(source[candidatePos + candidateLength]))
+                {
+                    keywordBegPos = candidatePos;
+                    bindingType = candidateType;
                     break;
                 }
-                tokenStream.ThrowWithLineAndFilename("',' or ']' expected");
+                initPos = candidatePos + candidateLength;
             }
         }
-        else
+
+        // token stream
+
+        ShaderTokenStream tokens(source, keywordBegPos);
+        tokens.Next();
+
+        // skip type parameter
+
+        const bool hasTypeParam = bindingType != RHI::BindingType::Sampler;
+        if(hasTypeParam)
         {
-            tokenStream.ThrowWithLineAndFilename("(aliased) binding name(s) expected");
-        }
-
-        if(tokenStream.GetCurrentToken() == ",")
-        {
-            tokenStream.Next();
-        }
-        else if(tokenStream.GetCurrentToken() != "}")
-        {
-            tokenStream.ThrowWithLineAndFilename("'}' or ',' expected");
-        }
-    }
-
-    for(size_t i = keywordPos; i < tokenStream.GetCurrentPosition(); ++i)
-    {
-        char &c = source_[i];
-        if(c != '\n')
-            c = ' ';
-    }
-
-    return true;
-}
-
-const std::string &ShaderBindingGroupRewriter::GetFinalSource() const
-{
-    return source_;
-}
-
-size_t ShaderBindingGroupRewriter::FindNextBindingGroupKeyword()
-{
-    auto isOtherChar = [](char c)
-    {
-        return !std::isalnum(c) && c != '_';
-    };
-
-    for(;;)
-    {
-        const size_t p = source_.find("group", pos_);
-        if(p == std::string::npos)
-        {
-            return std::string::npos;
-        }
-        if((p == 0 || isOtherChar(source_[p - 1])) && isOtherChar(source_[p + 5]))
-        {
-            return p;
-        }
-        pos_ = p + 6;
-    }
-}
-
-ShaderBindingParser::ShaderBindingParser(std::string source)
-    : pos_(0), source_(std::move(source))
-{
-    
-}
-
-bool ShaderBindingParser::FindNextBinding(ParsedBinding &outBinding)
-{
-    size_t keywordEndPos;
-    if(!FindNextBindingKeyword(outBinding.begPosInSource, keywordEndPos, outBinding.type))
-    {
-        return false;
-    }
-    bool hasTypeParameter = true;
-    if(outBinding.type == RHI::BindingType::Sampler)
-    {
-        hasTypeParameter = false;
-    }
-    size_t curPos = keywordEndPos;
-    if(hasTypeParameter)
-    {
-        curPos = FindEndOfTemplateParameter(keywordEndPos);
-    }
-    outBinding.name = FindBindingName(curPos, curPos);
-    outBinding.arraySize = FindOptionalArraySize(curPos);
-    ShaderTokenStream tokenStream(source_, curPos);
-    if(tokenStream.GetCurrentToken() != ";")
-    {
-        tokenStream.ThrowWithLineAndFilename("';' expected");
-    }
-    outBinding.endPosInSource = curPos + 1;
-    pos_ = curPos + 1;
-    return true;
-}
-
-const std::string &ShaderBindingParser::GetFinalSource() const
-{
-    return source_;
-}
-
-size_t ShaderBindingParser::SkipWhitespaces(size_t pos) const
-{
-    while(pos < source_.size() && std::isspace(source_[pos]))
-    {
-        ++pos;
-    }
-    return pos;
-}
-
-bool ShaderBindingParser::FindNextBindingKeyword(size_t &outBegPos, size_t &outEndPos, RHI::BindingType &outType)
-{
-    auto isOtherChar = [](char c)
-    {
-        return !std::isalnum(c) && c != '_';
-    };
-
-    for(;;)
-    {
-        static const std::map<std::string, RHI::BindingType> nameToType = {
-            { "Texture2D",          RHI::BindingType::Texture2D },
-            { "RWTexture2D",        RHI::BindingType::RWTexture2D },
-            { "Buffer",             RHI::BindingType::Buffer },
-            { "RWBuffer",           RHI::BindingType::RWBuffer },
-            { "StructuredBuffer",   RHI::BindingType::StructuredBuffer },
-            { "RWStructuredBuffer", RHI::BindingType::RWStructuredBuffer },
-            { "ConstantBuffer",     RHI::BindingType::ConstantBuffer },
-            { "SamplerState",       RHI::BindingType::Sampler }
-        };
-        size_t p = std::string::npos, n = 0;
-        for(auto &[name, type] : nameToType)
-        {
-            const size_t np = source_.find(name, pos_);
-            if(np < p)
+            if(tokens.GetCurrentToken() != "<")
             {
-                p = np;
-                n = name.size();
-                outType = type;
+                tokens.ThrowWithLineAndFilename("'<' expected");
             }
+            tokens.Next();
+
+            if(!IsIdentifier(tokens.GetCurrentToken()))
+            {
+                tokens.ThrowWithLineAndFilename("type parameter expected");
+            }
+            tokens.Next();
+
+            if(tokens.GetCurrentToken() != ">")
+            {
+                tokens.ThrowWithLineAndFilename("'>' expected");
+            }
+            tokens.Next();
         }
-        if(p == std::string::npos)
+
+        // name
+
+        if(!IsIdentifier(tokens.GetCurrentToken()))
         {
-            return false;
+            tokens.ThrowWithLineAndFilename("binding name expected");
         }
-        if((p == 0 || isOtherChar(source_[p - 1])) && isOtherChar(source_[p + n]))
+        std::string name(tokens.GetCurrentToken());
+        tokens.Next();
+
+        // array size
+
+        std::optional<uint32_t> arraySize;
+        if(tokens.GetCurrentToken() == "[")
         {
-            outBegPos = p;
-            outEndPos = p + n;
-            return true;
+            tokens.Next();
+            try
+            {
+                arraySize = std::stoul(std::string(tokens.GetCurrentToken()));
+            }
+            catch(...)
+            {
+                tokens.ThrowWithLineAndFilename("invalid array size");
+            }
+            tokens.Next();
+            if(tokens.GetCurrentToken() != "]")
+            {
+                tokens.ThrowWithLineAndFilename("']' expected");
+            }
+            tokens.Next();
         }
-        pos_ = p + n;
-    }
-}
 
-size_t ShaderBindingParser::FindEndOfTemplateParameter(size_t curPos) const
-{
-    ShaderTokenStream tokenStream(source_, curPos);
+        // eventually...
 
-    if(tokenStream.GetCurrentToken() != "<")
-    {
-        tokenStream.ThrowWithLineAndFilename("'<' expected");
-    }
-    tokenStream.Next();
+        const size_t endPos = tokens.GetCurrentPosition();
+        if(tokens.GetCurrentToken() != ";")
+        {
+            tokens.ThrowWithLineAndFilename("';' expected");
+        }
+        tokens.Next();
 
-    if(!IsIdentifier(tokenStream.GetCurrentToken()))
-    {
-        tokenStream.ThrowWithLineAndFilename("template parameter expected");
+        bindings.push_back(ParsedBinding
+        {
+            .begPosInSource = keywordBegPos,
+            .endPosInSource = endPos,
+            .type           = bindingType,
+            .name           = std::move(name),
+            .arraySize      = arraySize
+        });
     }
-    tokenStream.Next();
-
-    if(tokenStream.GetCurrentToken() != ">")
-    {
-        tokenStream.ThrowWithLineAndFilename("'>' expected");
-    }
-
-    return tokenStream.GetCurrentPosition();
-}
-
-std::string ShaderBindingParser::FindBindingName(size_t curPos, size_t &outEndPos) const
-{
-    ShaderTokenStream tokenStream(source_, curPos);
-    if(!IsIdentifier(tokenStream.GetCurrentToken()))
-    {
-        tokenStream.ThrowWithLineAndFilename("binding name expected");
-    }
-    outEndPos = tokenStream.GetCurrentPosition();
-    return std::string(tokenStream.GetCurrentToken());
-}
-
-std::optional<uint32_t> ShaderBindingParser::FindOptionalArraySize(size_t &inoutCurPos) const
-{
-    ShaderTokenStream tokenStream(source_, inoutCurPos);
-
-    if(tokenStream.GetCurrentToken() != "[")
-    {
-        return std::nullopt;
-    }
-    tokenStream.Next();
-
-    if(tokenStream.IsFinished())
-    {
-        tokenStream.ThrowWithLineAndFilename("array size expected");
-    }
-    uint32_t arraySize;
-    try
-    {
-        arraySize = std::stoul(std::string(tokenStream.GetCurrentToken()));
-    }
-    catch(...)
-    {
-        tokenStream.ThrowWithLineAndFilename("invalid array size syntax");
-    }
-    if(arraySize <= 0)
-    {
-        tokenStream.ThrowWithLineAndFilename("invalid array size: " + std::to_string(arraySize));
-    }
-    tokenStream.Next();
-
-    if(tokenStream.GetCurrentToken() != "]")
-    {
-        tokenStream.ThrowWithLineAndFilename("']' expected");
-    }
-
-    inoutCurPos = tokenStream.GetCurrentPosition();
-    return arraySize;
 }
 
 RTRC_END

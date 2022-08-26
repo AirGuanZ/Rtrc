@@ -10,7 +10,7 @@ void Run()
 
     auto window = WindowBuilder()
         .SetSize(800, 800)
-        .SetTitle("Rtrc Sample TexturedQuad")
+        .SetTitle("Rtrc Sample: TexturedQuad")
         .Create();
 
     auto &input = window.GetInput();
@@ -18,7 +18,7 @@ void Run()
     auto instance = CreateVulkanInstance(RHI::VulkanInstanceDesc
     {
         .extensions = Window::GetRequiredVulkanInstanceExtensions(),
-        .debugMode = true
+        .debugMode = RTRC_DEBUG
     });
 
     auto device = instance->CreateDevice();

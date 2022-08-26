@@ -41,6 +41,13 @@ inline constexpr UseInfo RENDER_TARGET_WRITE =
     .accesses = RHI::ResourceAccess::RenderTargetWrite
 };
 
+inline constexpr UseInfo CLEAR_DST =
+{
+    .layout   = RHI::TextureLayout::ClearDst,
+    .stages   = RHI::PipelineStage::Clear,
+    .accesses = RHI::ResourceAccess::ClearWrite
+};
+
 class Resource : public Uncopyable
 {
     int index_;

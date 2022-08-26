@@ -380,6 +380,7 @@ VkPipelineStageFlags2 TranslatePipelineStageFlag(PipelineStageFlag flag)
         VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
         VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
         VK_PIPELINE_STAGE_2_COPY_BIT,
+        VK_PIPELINE_STAGE_2_CLEAR_BIT,
         VK_PIPELINE_STAGE_2_RESOLVE_BIT
     };
     VkPipelineStageFlags2 result = 0;
@@ -415,6 +416,7 @@ VkAccessFlags2 TranslateAccessFlag(ResourceAccessFlag flag)
         VK_ACCESS_2_TRANSFER_READ_BIT,
         VK_ACCESS_2_TRANSFER_WRITE_BIT,
         VK_ACCESS_2_TRANSFER_READ_BIT,
+        VK_ACCESS_2_TRANSFER_WRITE_BIT,
         VK_ACCESS_2_TRANSFER_WRITE_BIT
     };
     VkAccessFlags2 result = 0;
@@ -442,6 +444,7 @@ VkImageLayout TranslateImageLayout(TextureLayout layout)
     case TextureLayout::CopyDst:              return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     case TextureLayout::ResolveSrc:           return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
     case TextureLayout::ResolveDst:           return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    case TextureLayout::ClearDst:             return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     case TextureLayout::Present:              return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
     }
     Unreachable();
