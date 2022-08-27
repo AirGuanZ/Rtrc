@@ -1,3 +1,5 @@
+#include <iterator>
+
 #include <Rtrc/RHI/Vulkan/Pipeline/BindingLayout.h>
 #include <Rtrc/RHI/Vulkan/Pipeline/GraphicsPipeline.h>
 #include <Rtrc/RHI/Vulkan/Pipeline/Shader.h>
@@ -61,6 +63,24 @@ GraphicsPipelineBuilder &VulkanGraphicsPipelineBuilder::SetViewports(const Viewp
 GraphicsPipelineBuilder &VulkanGraphicsPipelineBuilder::SetScissors(const Scissors &scissors)
 {
     scissors_ = scissors;
+    return *this;
+}
+
+GraphicsPipelineBuilder &VulkanGraphicsPipelineBuilder::AddVertexInputBuffers(Span<VertexInputBuffer> buffers)
+{
+    assert(!buffers.IsEmpty());
+    const size_t initSize = vertexBuffers_.size();
+    vertexBuffers_.resize(initSize + buffers.size());
+    std::copy(buffers.begin(), buffers.end(), &vertexBuffers_[initSize]);
+    return *this;
+}
+
+GraphicsPipelineBuilder &VulkanGraphicsPipelineBuilder::AddVertexInputAttributes(Span<VertexInputAttribute> attributes)
+{
+    assert(!attributes.IsEmpty());
+    const size_t initSize = vertexBuffers_.size();
+    vertexAttributs_.resize(initSize + attributes.size());
+    std::copy(attributes.begin(), attributes.end(), &vertexAttributs_[initSize]);
     return *this;
 }
 
@@ -211,8 +231,31 @@ Ptr<GraphicsPipeline> VulkanGraphicsPipelineBuilder::CreatePipeline() const
         static_cast<VulkanShader *>(fragmentShader_.Get())->GetStageCreateInfo()
     };
 
+    std::vector<VkVertexInputBindingDescription> inputBindingDescs;
+    for(auto &&[index, buffer] : Enumerate(vertexBuffers_))
+    {
+        auto &binding = inputBindingDescs.emplace_back();
+        binding.binding = static_cast<uint32_t>(index);
+        binding.stride = buffer.elementSize;
+        binding.inputRate = buffer.perInstance ? VK_VERTEX_INPUT_RATE_INSTANCE : VK_VERTEX_INPUT_RATE_VERTEX;
+    }
+
+    std::vector<VkVertexInputAttributeDescription> inputAttributeDescs;
+    for(auto &&[index, attrib] : Enumerate(vertexAttributs_))
+    {
+        auto &output = inputAttributeDescs.emplace_back();
+        output.location = attrib.location;
+        output.binding = attrib.inputBufferIndex;
+        output.format = TranslateInputAttributeType(attrib.type);
+        output.offset = attrib.byteOffsetInBuffer;
+    }
+
     const VkPipelineVertexInputStateCreateInfo vertexInputState = {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+        .vertexBindingDescriptionCount = static_cast<uint32_t>(inputBindingDescs.size()),
+        .pVertexBindingDescriptions = inputBindingDescs.data(),
+        .vertexAttributeDescriptionCount = static_cast<uint32_t>(inputAttributeDescs.size()),
+        .pVertexAttributeDescriptions = inputAttributeDescs.data()
     };
 
     const VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = {

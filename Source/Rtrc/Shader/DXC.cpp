@@ -188,6 +188,10 @@ std::vector<unsigned char> DXC::Compile(
         arguments.push_back(L"-O0");
         arguments.push_back(L"-Zi");
         arguments.push_back(L"-fspv-debug=vulkan-with-source");
+        //arguments.push_back(L"-fspv-extension=SPV_GOOGLE_hlsl_functionality1");
+        //arguments.push_back(L"-fspv-extension=SPV_GOOGLE_user_type");
+        //arguments.push_back(L"-fspv-extension=SPV_KHR_non_semantic_info");
+        //arguments.push_back(L"-fspv-reflect");
     }
     else
     {

@@ -83,6 +83,22 @@ enum class Format : uint32_t
     R32G32B32A32_Float,
 };
 
+enum class VertexAttributeType : uint32_t
+{
+    UInt,
+    UInt2,
+    UInt3,
+    UInt4,
+    Int,
+    Int2,
+    Int3,
+    Int4,
+    Float,
+    Float2,
+    Float3,
+    Float4
+};
+
 const char *GetFormatName(Format format);
 
 size_t GetTexelSize(Format format);
@@ -610,6 +626,20 @@ using Viewports = Variant<std::monostate, std::vector<Viewport>, int, DynamicVie
 // fixed viewports; dynamic viewports with fixed count; dynamic count
 using Scissors = Variant<std::monostate, std::vector<Scissor>, int, DynamicScissorCount>;
 
+struct VertexInputBuffer
+{
+    uint32_t elementSize;
+    bool     perInstance;
+};
+
+struct VertexInputAttribute
+{
+    uint32_t location;
+    uint32_t inputBufferIndex;
+    uint32_t byteOffsetInBuffer;
+    VertexAttributeType type;
+};
+
 struct MemoryBlockDesc
 {
     size_t size;
@@ -872,6 +902,9 @@ public:
 
     virtual GraphicsPipelineBuilder &SetViewports(const Viewports &viewports) = 0;
     virtual GraphicsPipelineBuilder &SetScissors (const Scissors &scissors) = 0;
+
+    virtual GraphicsPipelineBuilder &AddVertexInputBuffers(Span<VertexInputBuffer> buffers) = 0;
+    virtual GraphicsPipelineBuilder &AddVertexInputAttributes(Span<VertexInputAttribute> attributes) = 0;
 
     // default is trianglelist
     virtual GraphicsPipelineBuilder &SetPrimitiveTopology(PrimitiveTopology topology) = 0;

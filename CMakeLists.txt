@@ -81,6 +81,7 @@ ENDIF()
 #============= shader compile =============
 
 ADD_SUBDIRECTORY(External/dxc)
+ADD_SUBDIRECTORY(External/SPIRV-Reflect)
 
 #============= rtrc =============
 
@@ -141,7 +142,7 @@ IF(RTRC_RHI_VULKAN OR RTRC_RHI_DIRECTX12)
 ENDIF()
 
 IF(RTRC_RHI_VULKAN)
-	TARGET_LINK_LIBRARIES(Rtrc PRIVATE dxc vk-bootstrap volk::volk_headers VulkanMemoryAllocator)
+	TARGET_LINK_LIBRARIES(Rtrc PRIVATE dxc spirv_reflect vk-bootstrap volk::volk_headers VulkanMemoryAllocator)
 ENDIF()
 
 IF(RTRC_RHI_DIRECTX12)

@@ -62,6 +62,7 @@ VkPipelineStageFlags2    TranslatePipelineStageFlag     (PipelineStageFlag flag)
 VkAccessFlags2           TranslateAccessFlag            (ResourceAccessFlag flag);
 VkImageLayout            TranslateImageLayout           (TextureLayout layout);
 VkImageSubresourceRange  TranslateImageSubresources     (Format format, const TextureSubresources &subresources);
+VkFormat                 TranslateInputAttributeType    (VertexAttributeType type);
 
 bool HasColorAspect(Format format);
 bool HasDepthStencilAspect(Format format);

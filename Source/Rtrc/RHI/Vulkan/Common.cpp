@@ -461,6 +461,27 @@ VkImageSubresourceRange TranslateImageSubresources(Format format, const TextureS
     };
 }
 
+VkFormat TranslateInputAttributeType(VertexAttributeType type)
+{
+    using enum VertexAttributeType;
+    switch(type)
+    {
+    case Int:  return VK_FORMAT_R32_SINT;
+    case Int2: return VK_FORMAT_R32G32_SINT;
+    case Int3: return VK_FORMAT_R32G32B32_SINT;
+    case Int4: return VK_FORMAT_R32G32B32A32_SINT;
+    case UInt:  return VK_FORMAT_R32_UINT;
+    case UInt2: return VK_FORMAT_R32G32_UINT;
+    case UInt3: return VK_FORMAT_R32G32B32_UINT;
+    case UInt4: return VK_FORMAT_R32G32B32A32_UINT;
+    case Float:  return VK_FORMAT_R32_SFLOAT;
+    case Float2: return VK_FORMAT_R32G32_SFLOAT;
+    case Float3: return VK_FORMAT_R32G32B32_SFLOAT;
+    case Float4: return VK_FORMAT_R32G32B32A32_SFLOAT;
+    }
+    Unreachable();
+}
+
 bool HasColorAspect(Format format)
 {
     return !HasDepthStencilAspect(format);

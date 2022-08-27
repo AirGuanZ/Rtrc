@@ -1,105 +1,38 @@
 #pragma once
 
+#include <filesystem>
 #include <map>
 
-#include <Rtrc/RHI/RHI.h>
+#include <Rtrc/Shader/ShaderBindingGroup.h>
+#include <Rtrc/Shader/ShaderReflection.h>
 
 RTRC_BEGIN
 
 class BindingGroupLayout;
 class ShaderManager;
 
-class ParsedBindingGroupLayout : public Uncopyable
-{
-public:
-
-    using ParsedBindingDescription = RHI::BindingDesc;
-
-    void AppendSlot(Span<ParsedBindingDescription> aliasedDescs);
-
-    int GetBindingSlotCount() const;
-    Span<ParsedBindingDescription> GetBindingDescriptionsBySlot(int slot) const;
-
-private:
-
-    struct Record
-    {
-        uint32_t offset;
-        uint32_t count;
-    };
-
-    std::vector<Record> slotRecords_;
-    std::vector<ParsedBindingDescription> allDescs_;
-};
-
-class BindingGroup : public Uncopyable
-{
-public:
-
-    BindingGroup(const BindingGroupLayout *parentLayout, RHI::BindingGroupPtr rhiGroup);
-
-    void Set(int slot, const RHI::BufferPtr &cbuffer, size_t offset, size_t bytes);
-    void Set(int slot, const RHI::SamplerPtr &sampler);
-    void Set(int slot, const RHI::BufferSRVPtr &srv);
-    void Set(int slot, const RHI::BufferUAVPtr &uav);
-    void Set(int slot, const RHI::Texture2DSRVPtr &srv);
-    void Set(int slot, const RHI::Texture2DUAVPtr &uav);
-
-    void Set(std::string_view name, const RHI::BufferPtr &cbuffer, size_t offset, size_t bytes);
-    void Set(std::string_view name, const RHI::SamplerPtr &sampler);
-    void Set(std::string_view name, const RHI::BufferSRVPtr &srv);
-    void Set(std::string_view name, const RHI::BufferUAVPtr &uav);
-    void Set(std::string_view name, const RHI::Texture2DSRVPtr &srv);
-    void Set(std::string_view name, const RHI::Texture2DUAVPtr &uav);
-
-    RHI::BindingGroupPtr GetRHIBindingGroup();
-
-private:
-
-    const BindingGroupLayout *parentLayout_;
-    RHI::BindingGroupPtr rhiGroup_;
-};
-
-class BindingGroupLayout : public Uncopyable
-{
-public:
-
-    const std::string &GetGroupName() const;
-    int GetBindingSlotByName(std::string_view bindingName) const;
-    RHI::BindingGroupLayoutPtr GetRHIBindingGroupLayout();
-
-    RC<BindingGroup> CreateBindingGroup() const;
-
-private:
-
-    friend class ShaderManager;
-
-    std::string groupName_;
-    std::map<std::string, int, std::less<>> bindingNameToSlot_;
-    RHI::BindingGroupLayoutPtr rhiLayout_;
-};
-
-class ShaderFileLoader
-{
-public:
-
-    virtual ~ShaderFileLoader() = default;
-
-    virtual bool Load(std::string_view filename, std::string &output) const = 0;
-};
-
 class Shader : public Uncopyable
 {
 public:
+
+    class ShaderFileLoader
+    {
+    public:
+
+        virtual ~ShaderFileLoader() = default;
+
+        virtual bool Load(std::string_view filename, std::string &output) const = 0;
+    };
 
     ~Shader();
 
     const RHI::RawShaderPtr &GetRawShader(RHI::ShaderStage stage) const;
     const RHI::BindingLayoutPtr &GetRHIBindingLayout() const;
 
+    Span<ShaderIOVar> GetInputVariables() const;
+
     const RC<BindingGroupLayout> GetBindingGroupLayoutByName(std::string_view name) const;
     const RC<BindingGroupLayout> GetBindingGroupLayoutByIndex(int index) const;
-
     int GetBindingGroupIndexByName(std::string_view name) const;
 
 private:
@@ -130,6 +63,10 @@ private:
     RHI::RawShaderPtr VS_;
     RHI::RawShaderPtr FS_;
     RHI::RawShaderPtr CS_;
+
+    ShaderReflection VSRefl_;
+    ShaderReflection FSRefl_;
+    ShaderReflection CSRefl_;
 
     std::map<std::string, int, std::less<>> nameToBindingGroupLayoutIndex_;
     std::vector<RC<BindingGroupLayout>>     bindingGroupLayouts_;
@@ -181,7 +118,8 @@ private:
         RHI::ShaderStage                                 stage,
         std::map<std::string, int, std::less<>>         &outputNameToGroupIndex,
         std::vector<RC<BindingGroupLayout>>             &bindingGroupLayouts,
-        std::vector<Shader::BindingGroupLayoutRecordIt> &outputBindingGroupLayouts);
+        std::vector<Shader::BindingGroupLayoutRecordIt> &outputBindingGroupLayouts,
+        ShaderReflection                                &outputRefl);
 
     RHI::DevicePtr rhiDevice_;
 

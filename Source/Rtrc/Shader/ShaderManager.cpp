@@ -1,6 +1,4 @@
-#include <filesystem>
 #include <fstream>
-#include <iterator>
 
 #include <fmt/format.h>
 
@@ -18,7 +16,7 @@ RTRC_BEGIN
 namespace
 {
 
-    class DefaultShaderFileLoader : public ShaderFileLoader
+    class DefaultShaderFileLoader : public Shader::ShaderFileLoader
     {
     public:
 
@@ -60,133 +58,10 @@ namespace
             return loader->Load(filename, output);
         }
 
-        RC<ShaderFileLoader> loader;
+        RC<Shader::ShaderFileLoader> loader;
     };
 
 } // namespace anonymouse
-
-void ParsedBindingGroupLayout::AppendSlot(Span<ParsedBindingDescription> aliasedDescs)
-{
-    const uint32_t offset = static_cast<uint32_t>(allDescs_.size());
-    allDescs_.reserve(allDescs_.size() + aliasedDescs.size());
-    std::copy(aliasedDescs.begin(), aliasedDescs.end(), std::back_inserter(allDescs_));
-    slotRecords_.push_back({ offset, aliasedDescs.GetSize() });
-}
-
-int ParsedBindingGroupLayout::GetBindingSlotCount() const
-{
-    return static_cast<int>(slotRecords_.size());
-}
-
-Span<ParsedBindingGroupLayout::ParsedBindingDescription>
-    ParsedBindingGroupLayout::GetBindingDescriptionsBySlot(int slot) const
-{
-    const Record &record = slotRecords_[slot];
-    return Span(&allDescs_[record.offset], record.count);
-}
-
-BindingGroup::BindingGroup(const BindingGroupLayout *parentLayout, RHI::BindingGroupPtr rhiGroup)
-    : parentLayout_(parentLayout), rhiGroup_(std::move(rhiGroup))
-{
-    
-}
-
-void BindingGroup::Set(int slot, const RHI::BufferPtr &cbuffer, size_t offset, size_t bytes)
-{
-    rhiGroup_->ModifyMember(slot, cbuffer, offset, bytes);
-}
-
-void BindingGroup::Set(int slot, const RHI::SamplerPtr &sampler)
-{
-    rhiGroup_->ModifyMember(slot, sampler);
-}
-
-void BindingGroup::Set(int slot, const RHI::BufferSRVPtr &srv)
-{
-    rhiGroup_->ModifyMember(slot, srv);
-}
-
-void BindingGroup::Set(int slot, const RHI::BufferUAVPtr &uav)
-{
-    rhiGroup_->ModifyMember(slot, uav);
-}
-
-void BindingGroup::Set(int slot, const RHI::Texture2DSRVPtr &srv)
-{
-    rhiGroup_->ModifyMember(slot, srv);
-}
-
-void BindingGroup::Set(int slot, const RHI::Texture2DUAVPtr &uav)
-{
-    rhiGroup_->ModifyMember(slot, uav);
-}
-
-void BindingGroup::Set(std::string_view name, const RHI::BufferPtr &cbuffer, size_t offset, size_t bytes)
-{
-    const int slot = parentLayout_->GetBindingSlotByName(name);
-    Set(slot, cbuffer, offset, bytes);
-}
-
-void BindingGroup::Set(std::string_view name, const RHI::SamplerPtr &sampler)
-{
-    const int slot = parentLayout_->GetBindingSlotByName(name);
-    Set(slot, sampler);
-}
-
-void BindingGroup::Set(std::string_view name, const RHI::BufferSRVPtr &srv)
-{
-    const int slot = parentLayout_->GetBindingSlotByName(name);
-    Set(slot, srv);
-}
-
-void BindingGroup::Set(std::string_view name, const RHI::BufferUAVPtr &uav)
-{
-    const int slot = parentLayout_->GetBindingSlotByName(name);
-    Set(slot, uav);
-}
-
-void BindingGroup::Set(std::string_view name, const RHI::Texture2DSRVPtr &srv)
-{
-    const int slot = parentLayout_->GetBindingSlotByName(name);
-    Set(slot, srv);
-}
-
-void BindingGroup::Set(std::string_view name, const RHI::Texture2DUAVPtr &uav)
-{
-    const int slot = parentLayout_->GetBindingSlotByName(name);
-    Set(slot, uav);
-}
-
-RHI::BindingGroupPtr BindingGroup::GetRHIBindingGroup()
-{
-    return rhiGroup_;
-}
-
-const std::string &BindingGroupLayout::GetGroupName() const
-{
-    return groupName_;
-}
-
-int BindingGroupLayout::GetBindingSlotByName(std::string_view bindingName) const
-{
-    const auto it = bindingNameToSlot_.find(bindingName);
-    if(it == bindingNameToSlot_.end())
-    {
-        throw Exception(fmt::format("unknown binding name '{}' in group '{}'", bindingName, groupName_));
-    }
-    return it->second;
-}
-
-RHI::BindingGroupLayoutPtr BindingGroupLayout::GetRHIBindingGroupLayout()
-{
-    return rhiLayout_;
-}
-
-RC<BindingGroup> BindingGroupLayout::CreateBindingGroup() const
-{
-    RHI::BindingGroupPtr rhiGroup = rhiLayout_->CreateBindingGroup();
-    return MakeRC<BindingGroup>(this, std::move(rhiGroup));
-}
 
 Shader::~Shader()
 {
@@ -208,6 +83,11 @@ const RHI::RawShaderPtr &Shader::GetRawShader(RHI::ShaderStage stage) const
 const RHI::BindingLayoutPtr &Shader::GetRHIBindingLayout() const
 {
     return bindingLayoutIterator_->second.layout;
+}
+
+Span<ShaderIOVar> Shader::GetInputVariables() const
+{
+    return VSRefl_.inputVariables;
 }
 
 const RC<BindingGroupLayout> Shader::GetBindingGroupLayoutByName(std::string_view name) const
@@ -292,31 +172,28 @@ RC<Shader> ShaderManager::AddShader(const ShaderDescription &desc)
     std::vector<RC<BindingGroupLayout>>             bindingGroupLayouts;
     std::vector<Shader::BindingGroupLayoutRecordIt> bindingGroupLayoutIterators;
 
-    RHI::RawShaderPtr VS, FS, CS;
+    RC<Shader> shader = MakeRC<Shader>();
+    
     if(!desc.VS.filename.empty() || !desc.VS.source.empty())
     {
-        VS = CompileShader(
+        shader->VS_ = CompileShader(
             debug, macros, desc.VS, RHI::ShaderStage::VertexShader,
-            nameToGroupIndex, bindingGroupLayouts, bindingGroupLayoutIterators);
+            nameToGroupIndex, bindingGroupLayouts, bindingGroupLayoutIterators, shader->VSRefl_);
     }
     if(!desc.FS.filename.empty() || !desc.FS.source.empty())
     {
-        FS = CompileShader(
+        shader->FS_ = CompileShader(
             debug, macros, desc.FS, RHI::ShaderStage::FragmentShader,
-            nameToGroupIndex, bindingGroupLayouts, bindingGroupLayoutIterators);
+            nameToGroupIndex, bindingGroupLayouts, bindingGroupLayoutIterators, shader->FSRefl_);
     }
     if(!desc.CS.filename.empty() || !desc.CS.source.empty())
     {
-        CS = CompileShader(
+        shader->CS_ = CompileShader(
             debug, macros, desc.CS, RHI::ShaderStage::ComputeShader,
-            nameToGroupIndex, bindingGroupLayouts, bindingGroupLayoutIterators);
+            nameToGroupIndex, bindingGroupLayouts, bindingGroupLayoutIterators, shader->CSRefl_);
     }
 
-    RC<Shader> shader = MakeRC<Shader>();
     shader->parentManager_ = this;
-    shader->VS_ = VS;
-    shader->FS_ = FS;
-    shader->CS_ = CS;
     shader->nameToBindingGroupLayoutIndex_ = std::move(nameToGroupIndex);
     shader->bindingGroupLayouts_           = std::move(bindingGroupLayouts);
     shader->bindingGroupLayoutIterators_   = std::move(bindingGroupLayoutIterators);
@@ -385,7 +262,8 @@ RHI::RawShaderPtr ShaderManager::CompileShader(
     RHI::ShaderStage                                 stage,
     std::map<std::string, int, std::less<>>         &outputNameToGroupIndex,
     std::vector<RC<BindingGroupLayout>>             &bindingGroupLayouts,
-    std::vector<Shader::BindingGroupLayoutRecordIt> &outputBindingGroupLayouts)
+    std::vector<Shader::BindingGroupLayoutRecordIt> &outputBindingGroupLayouts,
+    ShaderReflection                                &outputRefl)
 {
     // When vulkan-with-source is enabled, dxc will always try to load source content from `sourceFilename`,
     // instead of using `source` directly. This can cause problems when file `sourceFilename` is not available or
@@ -514,7 +392,7 @@ RHI::RawShaderPtr ShaderManager::CompileShader(
         {
             for(auto &binding : aliasedBindings)
             {
-                if(bindingNameToRecord.find(binding.name) != bindingNameToRecord.end())
+                if(bindingNameToRecord.contains(binding.name))
                 {
                     throw Exception(fmt::format(
                         "binding name {} appears in more than one binding groups", binding.name));
@@ -680,6 +558,7 @@ RHI::RawShaderPtr ShaderManager::CompileShader(
     shaderInfo.source = preprocessedSource;
     const std::vector<unsigned char> compileData = dxc.Compile(shaderInfo, target, debug, &includeHandler, nullptr);
 
+    ReflectSPIRV(compileData, source.entry.c_str(), outputRefl);
     return rhiDevice_->CreateShader(compileData.data(), compileData.size(), source.entry, stage);
 }
 

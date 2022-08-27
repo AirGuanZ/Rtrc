@@ -40,6 +40,10 @@ public:
 
     GraphicsPipelineBuilder &SetScissors(const Scissors &scissors) override;
 
+    GraphicsPipelineBuilder &AddVertexInputBuffers(Span<VertexInputBuffer> buffers) override;
+
+    GraphicsPipelineBuilder &AddVertexInputAttributes(Span<VertexInputAttribute> attributes) override;
+
     GraphicsPipelineBuilder &SetPrimitiveTopology(PrimitiveTopology topology) override;
 
     GraphicsPipelineBuilder &SetFillMode(FillMode mode) override;
@@ -109,12 +113,15 @@ private:
     Viewports viewports_;
     Scissors scissors_;
 
+    std::vector<VertexInputBuffer>    vertexBuffers_;
+    std::vector<VertexInputAttribute> vertexAttributs_;
+
     PrimitiveTopology primitiveTopology_ = PrimitiveTopology::TriangleList;
     FillMode          fillMode_          = FillMode::Fill;
     CullMode          cullMode_          = CullMode::DontCull;
     FrontFaceMode     frontFaceMode_     = FrontFaceMode::Clockwise;
 
-    bool enableDepthBias_       = false;
+    bool  enableDepthBias_      = false;
     float depthBiasConstFactor_ = 0;
     float depthBiasSlopeFactor_ = 0;
     float depthBiasClampValue_  = 0;
