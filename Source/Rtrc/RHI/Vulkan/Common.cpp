@@ -9,17 +9,17 @@ RTRC_RHI_VK_BEGIN
 namespace
 {
 
-    void *VkAlloc(void *pUserData, size_t size, size_t alignment, VkSystemAllocationScope scope)
+    void *VKAPI_PTR VkAlloc(void *pUserData, size_t size, size_t alignment, VkSystemAllocationScope scope)
     {
         return mi_aligned_alloc(alignment, (size + alignment - 1) / alignment * alignment);
     }
 
-    void *VkRealloc(void *pUserData, void *orig, size_t size, size_t alignment, VkSystemAllocationScope scope)
+    void *VKAPI_PTR VkRealloc(void *pUserData, void *orig, size_t size, size_t alignment, VkSystemAllocationScope scope)
     {
         return mi_realloc_aligned(orig, size, alignment);
     }
 
-    void VkFree(void *pUserData, void *ptr)
+    void VKAPI_PTR VkFree(void *pUserData, void *ptr)
     {
         mi_free(ptr);
     }
