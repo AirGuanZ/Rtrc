@@ -54,7 +54,7 @@ Ptr<ComputePipeline> VulkanComputePipelineBuilder::CreatePipeline() const
     };
     VkPipeline pipeline;
     VK_FAIL_MSG(
-        vkCreateComputePipelines(device_, nullptr, 1, &pipelineCreateInfo, VK_ALLOC, &pipeline),
+        vkCreateComputePipelines(device_, VK_NULL_HANDLE, 1, &pipelineCreateInfo, VK_ALLOC, &pipeline),
         "failed to create vulkan compute pipeline");
     RTRC_SCOPE_FAIL{ vkDestroyPipeline(device_, pipeline, VK_ALLOC); };
     return MakePtr<VulkanComputePipeline>(bindingLayout_, device_, pipeline);

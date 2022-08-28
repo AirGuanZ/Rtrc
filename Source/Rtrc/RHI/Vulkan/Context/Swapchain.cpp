@@ -78,7 +78,7 @@ bool VulkanSwapchain::Acquire()
     auto &imageAcquireSemaphore = imageAcquireSemaphores_[frameIndex_];
     const VkResult acquireResult = vkAcquireNextImageKHR(
         device_->GetNativeDevice(), swapchain_, UINT64_MAX,
-        imageAcquireSemaphore->GetBinarySemaphore(), nullptr, &imageIndex_);
+        imageAcquireSemaphore->GetBinarySemaphore(), VK_NULL_HANDLE, &imageIndex_);
 
     if(acquireResult == VK_ERROR_OUT_OF_DATE_KHR)
     {

@@ -98,7 +98,7 @@ void VulkanCommandBuffer::BindPipeline(const Ptr<GraphicsPipeline> &pipeline)
 {
     if(!pipeline)
     {
-        vkCmdBindPipeline(commandBuffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, nullptr);
+        vkCmdBindPipeline(commandBuffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, VK_NULL_HANDLE);
         currentGraphicsPipeline_ = nullptr;
         return;
     }
@@ -111,7 +111,7 @@ void VulkanCommandBuffer::BindPipeline(const Ptr<ComputePipeline> &pipeline)
 {
     if(!pipeline)
     {
-        vkCmdBindPipeline(commandBuffer_, VK_PIPELINE_BIND_POINT_COMPUTE, nullptr);
+        vkCmdBindPipeline(commandBuffer_, VK_PIPELINE_BIND_POINT_COMPUTE, VK_NULL_HANDLE);
         currentGraphicsPipeline_ = nullptr;
         return;
     }

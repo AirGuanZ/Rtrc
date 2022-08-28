@@ -53,7 +53,7 @@ Ptr<BufferSRV> VulkanBuffer::CreateSRV(const BufferSRVDesc &desc) const
     }
     else
     {
-        view = nullptr;
+        view = VK_NULL_HANDLE;
     }
     return MakePtr<VulkanBufferSRV>(this, desc, view);
 }
@@ -71,7 +71,7 @@ Ptr<BufferUAV> VulkanBuffer::CreateUAV(const BufferUAVDesc &desc) const
     }
     else
     {
-        view = nullptr;
+        view = VK_NULL_HANDLE;
     }
     return MakePtr<VulkanBufferUAV>(this, desc, view);
 }

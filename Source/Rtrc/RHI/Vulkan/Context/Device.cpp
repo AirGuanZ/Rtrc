@@ -643,7 +643,7 @@ VkDevice VulkanDevice::GetNativeDevice()
     return device_;
 }
 
-void VulkanDevice::SetObjectName(VkObjectType objectType, void *objectHandle, const char* name)
+void VulkanDevice::SetObjectName(VkObjectType objectType, uint64_t objectHandle, const char* name)
 {
     if(enableDebug_ && vkSetDebugUtilsObjectNameEXT)
     {
@@ -651,7 +651,7 @@ void VulkanDevice::SetObjectName(VkObjectType objectType, void *objectHandle, co
         {
             .sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
             .objectType   = objectType,
-            .objectHandle = reinterpret_cast<uint64_t>(objectHandle),
+            .objectHandle = objectHandle,
             .pObjectName  = name
         };
         vkSetDebugUtilsObjectNameEXT(device_, &imageNameInfo);

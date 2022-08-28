@@ -410,7 +410,7 @@ Ptr<GraphicsPipeline> VulkanGraphicsPipelineBuilder::CreatePipeline() const
 
     VkPipeline pipeline;
     VK_FAIL_MSG(
-        vkCreateGraphicsPipelines(device_, nullptr, 1, &pipelineCreateInfo, VK_ALLOC, &pipeline),
+        vkCreateGraphicsPipelines(device_, VK_NULL_HANDLE, 1, &pipelineCreateInfo, VK_ALLOC, &pipeline),
         "failed to create vulkan graphics pipeline");
     RTRC_SCOPE_FAIL{ vkDestroyPipeline(device_, pipeline, VK_ALLOC); };
 

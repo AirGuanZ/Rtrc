@@ -8,9 +8,6 @@
 
 RTRC_BEGIN
 
-class BindingGroupLayout;
-class ShaderManager;
-
 class Shader : public Uncopyable
 {
 public:

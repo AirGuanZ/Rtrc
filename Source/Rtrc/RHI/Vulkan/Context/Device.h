@@ -67,7 +67,7 @@ public:
 
     VkDevice GetNativeDevice();
 
-    void SetObjectName(VkObjectType objectType, void *objectHandle, const char *name);
+    void SetObjectName(VkObjectType objectType, uint64_t objectHandle, const char *name);
 
 private:
 

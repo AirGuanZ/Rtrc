@@ -443,7 +443,7 @@ VkImageLayout TranslateImageLayout(TextureLayout layout)
     case TextureLayout::CopySrc:              return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
     case TextureLayout::CopyDst:              return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     case TextureLayout::ResolveSrc:           return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-    case TextureLayout::ResolveDst:           return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    case TextureLayout::ResolveDst:
     case TextureLayout::ClearDst:             return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     case TextureLayout::Present:              return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
     }
@@ -498,9 +498,9 @@ VkImageAspectFlags GetAllAspects(Format format)
     return VK_IMAGE_ASPECT_COLOR_BIT;
 }
 
-void SetObjectName(VulkanDevice* device, VkObjectType type, void* object, const char* name)
+void SetObjectName(VulkanDevice* device, VkObjectType type, VkCommonHandle object, const char* name)
 {
-    device->SetObjectName(type, object, name);
+    device->SetObjectName(type, uint64_t(object), name);
 }
 
 RTRC_RHI_VK_END

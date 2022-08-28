@@ -102,7 +102,7 @@ void VulkanQueue::Submit(
         .signalSemaphoreInfoCount = static_cast<uint32_t>(signalSemaphoreSubmitInfo.size()),
         .pSignalSemaphoreInfos    = signalSemaphoreSubmitInfo.data()
     };
-    auto fence = signalFence ? static_cast<VulkanFence *>(signalFence.Get())->GetNativeFence() : nullptr;
+    auto fence = signalFence ? static_cast<VulkanFence *>(signalFence.Get())->GetNativeFence() : VK_NULL_HANDLE;
     VK_FAIL_MSG(
         vkQueueSubmit2(queue_, 1, &submitInfo, fence),
         "failed to submit to vulkan queue");

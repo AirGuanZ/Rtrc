@@ -83,7 +83,13 @@ enum class ResourceOwnership
 
 class VulkanDevice;
 
-void SetObjectName(VulkanDevice *device, VkObjectType type, void *object, const char *name);
+#if VK_USE_64_BIT_PTR_DEFINES
+using VkCommonHandle = void *;
+#else
+using VkCommonHandle = uint64_t;
+#endif
+
+void SetObjectName(VulkanDevice *device, VkObjectType type, VkCommonHandle object, const char *name);
 
 #define VK_SET_OBJECT_NAME(DEVICE, OBJECT, TYPE)                                            \
     void SetName(std::string name) override                                                 \
