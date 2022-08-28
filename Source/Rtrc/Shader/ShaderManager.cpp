@@ -65,8 +65,10 @@ namespace
 
 Shader::~Shader()
 {
-    assert(parentManager_);
-    parentManager_->OnShaderDestroyed(bindingGroupLayoutIterators_, bindingLayoutIterator_);
+    if(parentManager_)
+    {
+        parentManager_->OnShaderDestroyed(bindingGroupLayoutIterators_, bindingLayoutIterator_);
+    }
 }
 
 const RHI::RawShaderPtr &Shader::GetRawShader(RHI::ShaderStage stage) const
