@@ -103,6 +103,12 @@ const char *GetFormatName(Format format);
 
 size_t GetTexelSize(Format format);
 
+enum class IndexBufferFormat
+{
+    UInt16,
+    UInt32
+};
+
 enum class ShaderStage : uint8_t
 {
     VertexShader   = 0b0001,
@@ -327,6 +333,7 @@ RTRC_DEFINE_ENUM_FLAGS(ResourceAccess)
 using ResourceAccessFlag = EnumFlags<ResourceAccess>;
 
 bool IsReadOnly(ResourceAccessFlag access);
+bool IsWriteOnly(ResourceAccessFlag access);
 
 enum class AttachmentLoadOp
 {

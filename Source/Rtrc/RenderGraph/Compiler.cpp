@@ -6,6 +6,23 @@
 
 RTRC_RG_BEGIN
 
+namespace
+{
+
+    void RemoveUnnecessaryAccessMask(RHI::ResourceAccessFlag &beforeAccess, RHI::ResourceAccessFlag &afterAccess)
+    {
+        if(IsReadOnly(beforeAccess))
+        {
+            beforeAccess = RHI::ResourceAccess::None;
+        }
+        if(IsWriteOnly(afterAccess))
+        {
+            afterAccess = RHI::ResourceAccess::None;
+        }
+    }
+
+} // namespace anonymous
+
 Compiler::Compiler(RHI::DevicePtr device, TransientResourceManager &transientResourceManager)
     : device_(std::move(device))
     , transientResourceManager_(transientResourceManager)
@@ -516,7 +533,7 @@ void Compiler::GenerateBarriers(const ExecutableResources &resources)
             {
                 .texture        = resources.indexToTexture[tex->GetResourceIndex()].texture->GetRHITexture(),
                 .beforeStages   = lastState.stages,
-                .beforeAccesses = lastState.accesses,
+                .beforeAccesses = IsReadOnly(lastState.accesses) ? RHI::ResourceAccess::None : lastState.accesses,
                 .beforeLayout   = lastState.layout,
                 .afterStages    = RHI::PipelineStage::None,
                 .afterAccesses  = RHI::ResourceAccess::None,
@@ -569,8 +586,19 @@ void Compiler::FillSections(ExecutableGraph &output)
             auto &rawPass = sortedPasses_[compilePassIndex];
             auto &compilePass = sortedCompilePasses_[compilePassIndex];
             auto &pass = section.passes.emplace_back();
-            pass.beforeBufferBarriers = compilePass->beforeBufferTransitions;
-            pass.beforeTextureBarriers = compilePass->beforeTextureTransitions;
+
+            pass.beforeBufferBarriers = std::move(compilePass->beforeBufferTransitions);
+            for(auto &b : pass.beforeBufferBarriers)
+            {
+                RemoveUnnecessaryAccessMask(b.beforeAccesses, b.afterAccesses);
+            }
+
+            pass.beforeTextureBarriers = std::move(compilePass->beforeTextureTransitions);
+            for(auto &b : pass.beforeTextureBarriers)
+            {
+                RemoveUnnecessaryAccessMask(b.beforeAccesses, b.afterAccesses);
+            }
+
             if(rawPass->name_.empty())
             {
                 pass.name = nullptr;

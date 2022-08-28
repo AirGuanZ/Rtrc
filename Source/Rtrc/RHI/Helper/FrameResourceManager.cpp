@@ -2,6 +2,11 @@
 
 RTRC_BEGIN
 
+void FrameEndEventManager::DelayedRelease(RHI::Ptr<RHI::RHIObject> ptr)
+{
+    OnGPUFrameEnd([p = std::move(ptr)] {});
+}
+
 FrameCommandBufferManager::FrameCommandBufferManager(RHI::DevicePtr device, int frameCount)
     : device_(std::move(device)), frameIndex_(0)
 {

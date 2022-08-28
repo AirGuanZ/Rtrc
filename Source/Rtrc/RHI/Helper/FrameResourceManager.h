@@ -1,16 +1,17 @@
 #pragma once
 
 #include <Rtrc/RenderGraph/TransientResourceManager.h>
+#include <Rtrc/RHI/Helper/DelayedRHIObjectReleaser.h>
 
 RTRC_BEGIN
 
-class FrameEndEventManager
+class FrameEndEventManager : public DelayedRHIResourceReleaser
 {
 public:
 
-    virtual ~FrameEndEventManager() = default;
-
     virtual void OnGPUFrameEnd(std::function<void()> func) = 0;
+
+    void DelayedRelease(RHI::Ptr<RHI::RHIObject> ptr) override;
 };
 
 class CommandBufferAllocator

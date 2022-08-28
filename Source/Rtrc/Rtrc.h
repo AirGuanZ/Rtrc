@@ -4,6 +4,8 @@
 #include <Rtrc/Math/Vector3.h>
 #include <Rtrc/Math/Vector4.h>
 
+#include <Rtrc/Mesh/Mesh.h>
+
 #include <Rtrc/RenderGraph/Executable.h>
 
 #include <Rtrc/RHI/Helper/FrameResourceManager.h>
