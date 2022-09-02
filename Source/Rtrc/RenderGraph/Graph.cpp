@@ -52,13 +52,14 @@ void Connect(Pass *head, Pass *tail)
     tail->prevs_.insert(head);
 }
 
-void Pass::Use(BufferResource *buffer, RHI::PipelineStageFlag stages, RHI::ResourceAccessFlag accesses)
+Pass *Pass::Use(BufferResource *buffer, RHI::PipelineStageFlag stages, RHI::ResourceAccessFlag accesses)
 {
     assert(!bufferUsages_.contains(buffer));
     bufferUsages_.insert({ buffer, BufferUsage{ stages, accesses } });
+    return this;
 }
 
-void Pass::Use(
+Pass *Pass::Use(
     TextureResource        *texture,
     RHI::TextureLayout      layout,
     RHI::PipelineStageFlag  stages,
@@ -73,9 +74,10 @@ void Pass::Use(
             Use(texture, RHI::TextureSubresource{ mi, ai }, layout, stages, accesses);
         }
     }
+    return this;
 }
 
-void Pass::Use(
+Pass *Pass::Use(
     TextureResource               *texture,
     const RHI::TextureSubresource &subresource,
     RHI::TextureLayout             layout,
@@ -89,31 +91,37 @@ void Pass::Use(
     }
     assert(!usageMap(subresource.mipLevel, subresource.arrayLayer).has_value());
     usageMap(subresource.mipLevel, subresource.arrayLayer) = SubTexUsage{ layout, stages, accesses };
+    return this;
 }
 
-void Pass::Use(BufferResource *buffer, const UseInfo &info)
+Pass *Pass::Use(BufferResource *buffer, const UseInfo &info)
 {
     Use(buffer, info.stages, info.accesses);
+    return this;
 }
 
-void Pass::Use(TextureResource *texture, const UseInfo &info)
+Pass *Pass::Use(TextureResource *texture, const UseInfo &info)
 {
     Use(texture, info.layout, info.stages, info.accesses);
+    return this;
 }
 
-void Pass::Use(TextureResource *texture, const RHI::TextureSubresource &subrsc, const UseInfo &info)
+Pass *Pass::Use(TextureResource *texture, const RHI::TextureSubresource &subrsc, const UseInfo &info)
 {
     Use(texture, subrsc, info.layout, info.stages, info.accesses);
+    return this;
 }
 
-void Pass::SetCallback(Callback callback)
+Pass *Pass::SetCallback(Callback callback)
 {
     callback_ = std::move(callback);
+    return this;
 }
 
-void Pass::SetSignalFence(RHI::FencePtr fence)
+Pass *Pass::SetSignalFence(RHI::FencePtr fence)
 {
     signalFence_ = std::move(fence);
+    return this;
 }
 
 Pass::Pass(int index, std::string name)

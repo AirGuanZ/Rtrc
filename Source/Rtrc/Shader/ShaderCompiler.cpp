@@ -4,7 +4,7 @@
 
 #include <Rtrc/Shader/DXC.h>
 #include <Rtrc/Shader/ShaderBindingParser.h>
-#include <Rtrc/Shader/ShaderManager.h>
+#include <Rtrc/Shader/ShaderCompiler.h>
 #include <Rtrc/Utils/Enumerate.h>
 #include <Rtrc/Utils/File.h>
 #include <Rtrc/Utils/ScopeGuard.h>
@@ -16,7 +16,7 @@ RTRC_BEGIN
 namespace
 {
 
-    class DefaultShaderFileLoader : public Shader::ShaderFileLoader
+    class DefaultShaderFileLoader : public ShaderCompiler::FileLoader
     {
     public:
 
@@ -58,7 +58,7 @@ namespace
             return loader->Load(filename, output);
         }
 
-        RC<Shader::ShaderFileLoader> loader;
+        RC<ShaderCompiler::FileLoader> loader;
     };
 
 } // namespace anonymouse
@@ -129,41 +129,30 @@ Shader::BindingGroupLayoutRecord &Shader::BindingGroupLayoutRecord::operator=(co
     return *this;
 }
 
-ShaderManager::ShaderManager(RHI::DevicePtr device)
+ShaderCompiler::ShaderCompiler(RHI::DevicePtr device)
     : rhiDevice_(std::move(device)), debug_(RTRC_DEBUG)
 {
     
 }
 
-void ShaderManager::SetDevice(RHI::DevicePtr device)
+void ShaderCompiler::SetDevice(RHI::DevicePtr device)
 {
     assert(!rhiDevice_);
     rhiDevice_ = std::move(device);
 }
 
-void ShaderManager::SetDebugMode(bool enableDebug)
+void ShaderCompiler::SetDebugMode(bool enableDebug)
 {
     debug_ = enableDebug;
 }
 
-void ShaderManager::SetFileLoader(std::string_view rootDir)
+void ShaderCompiler::SetFileLoader(std::string_view rootDir)
 {
     rootDir_ = absolute(std::filesystem::path(rootDir)).lexically_normal();
 }
 
-void ShaderManager::AddMacro(std::string key, std::string value)
+RC<Shader> ShaderCompiler::Compile(const ShaderDescription &desc)
 {
-    macros_[std::move(key)] = std::move(value);
-}
-
-RC<Shader> ShaderManager::AddShader(const ShaderDescription &desc)
-{
-    std::map<std::string, std::string> macros = macros_;
-    for(auto &[k, v] : desc.overrideMacros)
-    {
-        macros_[k] = v;
-    }
-
     bool debug = debug_;
     if(desc.overrideDebugMode.has_value())
     {
@@ -179,19 +168,19 @@ RC<Shader> ShaderManager::AddShader(const ShaderDescription &desc)
     if(!desc.VS.filename.empty() || !desc.VS.source.empty())
     {
         shader->VS_ = CompileShader(
-            debug, macros, desc.VS, RHI::ShaderStage::VertexShader,
+            debug, desc.macros, desc.VS, RHI::ShaderStage::VertexShader,
             nameToGroupIndex, bindingGroupLayouts, bindingGroupLayoutIterators, shader->VSRefl_);
     }
     if(!desc.FS.filename.empty() || !desc.FS.source.empty())
     {
         shader->FS_ = CompileShader(
-            debug, macros, desc.FS, RHI::ShaderStage::FragmentShader,
+            debug, desc.macros, desc.FS, RHI::ShaderStage::FragmentShader,
             nameToGroupIndex, bindingGroupLayouts, bindingGroupLayoutIterators, shader->FSRefl_);
     }
     if(!desc.CS.filename.empty() || !desc.CS.source.empty())
     {
         shader->CS_ = CompileShader(
-            debug, macros, desc.CS, RHI::ShaderStage::ComputeShader,
+            debug, desc.macros, desc.CS, RHI::ShaderStage::ComputeShader,
             nameToGroupIndex, bindingGroupLayouts, bindingGroupLayoutIterators, shader->CSRefl_);
     }
 
@@ -219,7 +208,7 @@ RC<Shader> ShaderManager::AddShader(const ShaderDescription &desc)
     return shader;
 }
 
-const RC<BindingGroupLayout> &ShaderManager::GetBindingGroupLayoutByName(std::string_view name) const
+const RC<BindingGroupLayout> &ShaderCompiler::GetBindingGroupLayoutByName(std::string_view name) const
 {
     const auto it = nameToBindingGroupLayout_.find(name);
     if(it == nameToBindingGroupLayout_.end())
@@ -233,7 +222,7 @@ const RC<BindingGroupLayout> &ShaderManager::GetBindingGroupLayoutByName(std::st
     return it->second;
 }
 
-void ShaderManager::OnShaderDestroyed(
+void ShaderCompiler::OnShaderDestroyed(
     std::vector<Shader::BindingGroupLayoutRecordIt> &its, Shader::BindingLayoutRecordIt itt)
 {
     for(auto &it : its)
@@ -257,7 +246,7 @@ void ShaderManager::OnShaderDestroyed(
     }
 }
 
-RHI::RawShaderPtr ShaderManager::CompileShader(
+RHI::RawShaderPtr ShaderCompiler::CompileShader(
     bool                                             debug,
     const std::map<std::string, std::string>        &macros,
     const ShaderSource                              &source,

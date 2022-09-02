@@ -8,18 +8,12 @@
 
 RTRC_BEGIN
 
+// TODO: 禁止custom file loader，用-I保证dxc能正确生成debug符号，还是先preprocess，再parse，再正式编译
+// TODO: 用weak_ptr替代shaderCounter
+
 class Shader : public Uncopyable
 {
 public:
-
-    class ShaderFileLoader
-    {
-    public:
-
-        virtual ~ShaderFileLoader() = default;
-
-        virtual bool Load(std::string_view filename, std::string &output) const = 0;
-    };
 
     ~Shader();
 
@@ -34,7 +28,7 @@ public:
 
 private:
 
-    friend class ShaderManager;
+    friend class ShaderCompiler;
 
     struct BindingGroupLayoutRecord
     {
@@ -55,7 +49,7 @@ private:
     using BindingGroupLayoutRecordIt = std::map<RHI::BindingGroupLayoutDesc, BindingGroupLayoutRecord>::iterator;
     using BindingLayoutRecordIt = std::map<RHI::BindingLayoutDesc, BindingLayoutRecord>::iterator;
 
-    ShaderManager *parentManager_ = nullptr;
+    ShaderCompiler *parentManager_ = nullptr;
 
     RHI::RawShaderPtr VS_;
     RHI::RawShaderPtr FS_;
@@ -71,9 +65,18 @@ private:
     BindingLayoutRecordIt                   bindingLayoutIterator_;
 };
 
-class ShaderManager : public Uncopyable
+class ShaderCompiler : public Uncopyable
 {
 public:
+
+    class FileLoader
+    {
+    public:
+
+        virtual ~FileLoader() = default;
+
+        virtual bool Load(std::string_view filename, std::string& output) const = 0;
+    };
 
     struct ShaderSource
     {
@@ -89,18 +92,17 @@ public:
         ShaderSource VS;
         ShaderSource FS;
         ShaderSource CS;
-        std::optional<bool>                overrideDebugMode;
-        std::map<std::string, std::string> overrideMacros;
+        std::optional<bool> overrideDebugMode;
+        std::map<std::string, std::string> macros;
     };
 
-    explicit ShaderManager(RHI::DevicePtr device = nullptr);
+    explicit ShaderCompiler(RHI::DevicePtr device = nullptr);
 
     void SetDevice(RHI::DevicePtr device);
     void SetDebugMode(bool enableDebug);
     void SetFileLoader(std::string_view rootDir);
-    void AddMacro(std::string key, std::string value);
 
-    RC<Shader> AddShader(const ShaderDescription &desc);
+    RC<Shader> Compile(const ShaderDescription &desc);
 
     const RC<BindingGroupLayout> &GetBindingGroupLayoutByName(std::string_view name) const;
 
@@ -122,14 +124,12 @@ private:
 
     bool debug_;
     std::filesystem::path rootDir_;
-    std::map<std::string, std::string> macros_;
 
     // when value is nil, there is multiple binding groups sharing the same name
     std::map<std::string, RC<BindingGroupLayout>, std::less<>> nameToBindingGroupLayout_;
 
     std::map<RHI::BindingGroupLayoutDesc, Shader::BindingGroupLayoutRecord> descToBindingGroupLayout_;
-
-    std::map<RHI::BindingLayoutDesc, Shader::BindingLayoutRecord> descToBindingLayout_;
+    std::map<RHI::BindingLayoutDesc, Shader::BindingLayoutRecord>           descToBindingLayout_;
 };
 
 RTRC_END

@@ -102,21 +102,22 @@ public:
         auto renderTarget = graph.RegisterSwapchainTexture(swapchain_);
 
         auto clearPass = graph.CreatePass("Clear Render Target");
-        clearPass->Use(renderTarget, RG::RENDER_TARGET_WRITE);
-        clearPass->SetCallback([&](RG::PassContext &context)
-        {
-            auto rt = renderTarget->GetRHI()->AsTexture2D();
-            auto commandBuffer = context.GetRHICommandBuffer();
-            commandBuffer->BeginRenderPass(RHI::RenderPassColorAttachment
+        clearPass
+            ->Use(renderTarget, RG::RENDER_TARGET_WRITE)
+            ->SetCallback([&](RG::PassContext &context)
             {
-                .renderTargetView = rt->Create2DRTV(),
-                .loadOp           = RHI::AttachmentLoadOp::Clear,
-                .storeOp          = RHI::AttachmentStoreOp::Store,
-                .clearValue       = RHI::ColorClearValue{ 0, 1, 1, 0 }
-            });
-            commandBuffer->EndRenderPass();
-        });
-        clearPass->SetSignalFence(frameResources_->GetFrameFence());
+                auto rt = renderTarget->GetRHI()->AsTexture2D();
+                auto commandBuffer = context.GetRHICommandBuffer();
+                commandBuffer->BeginRenderPass(RHI::RenderPassColorAttachment
+                {
+                    .renderTargetView = rt->Create2DRTV(),
+                    .loadOp           = RHI::AttachmentLoadOp::Clear,
+                    .storeOp          = RHI::AttachmentStoreOp::Store,
+                    .clearValue       = RHI::ColorClearValue{ 0, 1, 1, 0 }
+                });
+                commandBuffer->EndRenderPass();
+            })
+            ->SetSignalFence(frameResources_->GetFrameFence());
 
         executer_->Execute(graph);
         swapchain_->Present();

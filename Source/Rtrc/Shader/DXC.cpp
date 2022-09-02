@@ -175,7 +175,7 @@ std::vector<unsigned char> DXC::Compile(
     arguments.push_back(L"-spirv");
     arguments.push_back(L"-fvk-use-dx-layout");
     arguments.push_back(L"-fvk-use-dx-position-w");
-    arguments.push_back(L"-fspv-target-env=vulkan1.3");
+    arguments.push_back(L"-fspv-target-env=vulkan1.1");
     arguments.push_back(L"-fvk-stage-io-order=alpha");
 
     CustomIncludeHandler customIncludeHandler;
@@ -231,7 +231,7 @@ std::vector<unsigned char> DXC::Compile(
         }
         if(errors && errors->GetStringLength() > 0)
         {
-            throw Exception(fmt::format("dxc compile error. {}", errors->GetStringPointer()));
+            throw Exception(errors->GetStringPointer());
         }
         throw Exception("dxc: an unknown error occurred");
     }

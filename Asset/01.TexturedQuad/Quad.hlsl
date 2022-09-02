@@ -22,12 +22,19 @@ struct VSOutput
     float2 texCoord : TexCoord;
 };
 
-VSOutput VSMain(VSInput input)
+/*
+ * hahaha
+ *
+ *
+ */
+
+VSOutput VSMain(VSInput input) // this is good
 {
     VSOutput output;
     output.position = float4(VertexPositionBuffer[input.vertexID], 0.0, 1.0f);
     output.texCoord = VertexTexCoordBuffer[input.vertexID];
     return output;
+    // bad
 }
 
 struct FSOutput

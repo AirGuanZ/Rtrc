@@ -56,11 +56,11 @@ void Run()
 
     // pipeline
 
-    ShaderManager shaderManager(device);
+    ShaderCompiler shaderManager(device);
     shaderManager.SetFileLoader("Asset/01.TexturedQuad/");
 
     std::string preprocessedSource;
-    auto shader = shaderManager.AddShader({
+    auto shader = shaderManager.Compile({
         .VS = { .filename = "Quad.hlsl", .entry = "VSMain", .dumpedPreprocessedSource = &preprocessedSource },
         .FS = { .filename = "Quad.hlsl", .entry = "FSMain" }
     });

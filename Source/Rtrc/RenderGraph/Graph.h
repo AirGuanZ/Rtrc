@@ -120,31 +120,31 @@ public:
 
     friend void Connect(Pass *head, Pass *tail);
 
-    void Use(
+    Pass *Use(
         BufferResource         *buffer,
         RHI::PipelineStageFlag  stages,
         RHI::ResourceAccessFlag accesses);
 
-    void Use(
+    Pass *Use(
         TextureResource        *texture,
         RHI::TextureLayout      layout,
         RHI::PipelineStageFlag  stages,
         RHI::ResourceAccessFlag accesses);
 
-    void Use(
+    Pass *Use(
         TextureResource               *texture,
         const RHI::TextureSubresource &subresource,
         RHI::TextureLayout             layout,
         RHI::PipelineStageFlag         stages,
         RHI::ResourceAccessFlag        accesses);
 
-    void Use(BufferResource *buffer, const UseInfo &info);
-    void Use(TextureResource *texture, const UseInfo &info);
-    void Use(TextureResource *texture, const RHI::TextureSubresource &subrsc, const UseInfo &info);
+    Pass *Use(BufferResource *buffer, const UseInfo &info);
+    Pass *Use(TextureResource *texture, const UseInfo &info);
+    Pass *Use(TextureResource *texture, const RHI::TextureSubresource &subrsc, const UseInfo &info);
 
-    void SetCallback(Callback callback);
+    Pass *SetCallback(Callback callback);
 
-    void SetSignalFence(RHI::FencePtr fence);
+    Pass *SetSignalFence(RHI::FencePtr fence);
 
 private:
 

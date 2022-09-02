@@ -316,7 +316,7 @@ bool ShaderBindingGroupRewrite::RewriteNextBindingGroup(std::string &source, Par
             {
                 tokens.ThrowWithLineAndFilename("unexpected token: '}'");
             }
-            tokens.RemoveAndNext();
+            tokens.RemoveCurrentToken();
             break;
         }
 
@@ -556,7 +556,6 @@ void ShaderBindingParse::ParseBindings(std::string &source, std::vector<ParsedBi
         {
             tokens.ThrowWithLineAndFilename("';' expected");
         }
-        tokens.Next();
 
         bindings.push_back(ParsedBinding
         {

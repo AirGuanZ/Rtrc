@@ -7,7 +7,7 @@
 RTRC_BEGIN
 
 class BindingGroupLayout;
-class ShaderManager;
+class ShaderCompiler;
 
 class ParsedBindingGroupLayout : public Uncopyable
 {
@@ -72,7 +72,7 @@ public:
 
 private:
 
-    friend class ShaderManager;
+    friend class ShaderCompiler;
 
     std::string groupName_;
     std::map<std::string, int, std::less<>> bindingNameToSlot_;

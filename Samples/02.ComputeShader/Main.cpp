@@ -17,9 +17,9 @@ void Run()
         .supportSwapchain = false
     });
 
-    ShaderManager shaderManager(device);
+    ShaderCompiler shaderManager(device);
     shaderManager.SetFileLoader("Asset/02.ComputeShader/");
-    auto shader = shaderManager.AddShader({
+    auto shader = shaderManager.Compile({
         .CS = { .filename = "Shader.hlsl", .entry = "CSMain" }
     });
 
