@@ -12,15 +12,6 @@ class DXC : public Uncopyable
 {
 public:
 
-    class IncludeHandler
-    {
-    public:
-
-        virtual ~IncludeHandler() = default;
-
-        virtual bool Handle(const std::string &filename, std::string &output) const = 0;
-    };
-
     enum class Target
     {
         Vulkan_1_3_VS_6_0,
@@ -46,7 +37,6 @@ public:
         const ShaderInfo     &shaderInfo,
         Target                target,
         bool                  debugMode,
-        const IncludeHandler *includeHandler,
         std::string          *preprocessOutput) const;
 
 private:

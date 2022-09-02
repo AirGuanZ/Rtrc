@@ -69,15 +69,6 @@ class ShaderCompiler : public Uncopyable
 {
 public:
 
-    class FileLoader
-    {
-    public:
-
-        virtual ~FileLoader() = default;
-
-        virtual bool Load(std::string_view filename, std::string& output) const = 0;
-    };
-
     struct ShaderSource
     {
         std::string filename;
@@ -119,6 +110,8 @@ private:
         std::vector<RC<BindingGroupLayout>>             &bindingGroupLayouts,
         std::vector<Shader::BindingGroupLayoutRecordIt> &outputBindingGroupLayouts,
         ShaderReflection                                &outputRefl);
+
+    std::string GetMappedFilename(const std::string& filename);
 
     RHI::DevicePtr rhiDevice_;
 

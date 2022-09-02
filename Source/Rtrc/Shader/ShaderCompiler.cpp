@@ -1,5 +1,3 @@
-#include <fstream>
-
 #include <fmt/format.h>
 
 #include <Rtrc/Shader/DXC.h>
@@ -7,61 +5,9 @@
 #include <Rtrc/Shader/ShaderCompiler.h>
 #include <Rtrc/Utils/Enumerate.h>
 #include <Rtrc/Utils/File.h>
-#include <Rtrc/Utils/ScopeGuard.h>
-#include <Rtrc/Utils/TemporalFile.h>
 #include <Rtrc/Utils/Unreachable.h>
 
 RTRC_BEGIN
-
-namespace
-{
-
-    class DefaultShaderFileLoader : public ShaderCompiler::FileLoader
-    {
-    public:
-
-        bool Load(std::string_view filename, std::string &output) const override
-        {
-            const std::string path = GetMappedSourceFilename(filename);
-            try
-            {
-                output = File::ReadTextFile(path);
-                return true;
-            }
-            catch(...)
-            {
-                return false;
-            }
-        }
-
-        std::string GetMappedSourceFilename(std::string_view filename) const
-        {
-            std::filesystem::path path = filename;
-            path = path.lexically_normal();
-            if(path.is_relative())
-            {
-                path = rootDir / path;
-            }
-            path = path.lexically_normal();
-            return path.string();
-        }
-
-        std::filesystem::path rootDir;
-    };
-
-    class DXCIncludeHandlerWrapper : public DXC::IncludeHandler
-    {
-    public:
-
-        bool Handle(const std::string &filename, std::string &output) const override
-        {
-            return loader->Load(filename, output);
-        }
-
-        RC<ShaderCompiler::FileLoader> loader;
-    };
-
-} // namespace anonymouse
 
 Shader::~Shader()
 {
@@ -256,17 +202,6 @@ RHI::RawShaderPtr ShaderCompiler::CompileShader(
     std::vector<Shader::BindingGroupLayoutRecordIt> &outputBindingGroupLayouts,
     ShaderReflection                                &outputRefl)
 {
-    // When vulkan-with-source is enabled, dxc will always try to load source content from `sourceFilename`,
-    // instead of using `source` directly. This can cause problems when file `sourceFilename` is not available or
-    // its content doesn't strictly match `source`. We work around this problem by creating a temporary source file.
-    const bool needTempSourceFile = !source.source.empty() && !source.filename.empty();
-
-    auto fileLoader = MakeRC<DefaultShaderFileLoader>();
-    fileLoader->rootDir = rootDir_;
-
-    DXCIncludeHandlerWrapper includeHandler;
-    includeHandler.loader = fileLoader;
-
     DXC::Target target = {};
     switch(stage)
     {
@@ -277,61 +212,31 @@ RHI::RawShaderPtr ShaderCompiler::CompileShader(
 
     // load source
 
+    std::string sourceFilename;
+    if (!source.filename.empty())
+    {
+        sourceFilename = GetMappedFilename(source.filename);
+    }
+
     std::string rawSource;
     if(!source.source.empty())
     {
         rawSource = source.source;
     }
-    else if(!fileLoader->Load(source.filename, rawSource))
-    {
-        throw Exception("failed to load shader source file: " + source.filename);
-    }
-
-    // temporary source file
-
-    std::string sourceFilename, tempFilename;
-    if(needTempSourceFile)
-    {
-        std::string tempFilePrefix;
-        if(!source.filename.empty())
-        {
-            tempFilePrefix = std::filesystem::path(source.filename).filename().string();
-        }
-        tempFilename = GenerateTemporalFilename(tempFilePrefix) + ".hlsl";
-        {
-            std::ofstream fout(tempFilename, std::ofstream::out | std::ofstream::trunc);
-            if(!fout)
-            {
-                throw Exception("failed to create temporal source file");
-            }
-            fout << rawSource;
-        }
-        sourceFilename = tempFilename;
-    }
-    else if(!source.filename.empty())
-    {
-        sourceFilename = fileLoader->GetMappedSourceFilename(source.filename);
-    }
     else
     {
-        sourceFilename = "anonymous.hlsl";
+        assert(!sourceFilename.empty());
+        rawSource = File::ReadTextFile(sourceFilename);
     }
-    RTRC_SCOPE_EXIT
-    {
-        if(needTempSourceFile)
-        {
-            std::filesystem::remove(tempFilename);
-        }
-    };
 
     // preprocess
 
     std::vector<std::string> includeDirs;
     includeDirs.push_back(rootDir_.string());
-    if(!source.filename.empty())
+    if(!sourceFilename.empty())
     {
         includeDirs.push_back(
-            absolute(std::filesystem::path(source.filename)).parent_path().lexically_normal().string());
+            absolute(std::filesystem::path(sourceFilename)).parent_path().lexically_normal().string());
     }
 
     std::string preprocessedSource;
@@ -344,7 +249,7 @@ RHI::RawShaderPtr ShaderCompiler::CompileShader(
         .macros         = macros
     };
     DXC dxc;
-    dxc.Compile(shaderInfo, target, debug, &includeHandler, &preprocessedSource);
+    dxc.Compile(shaderInfo, target, debug, &preprocessedSource);
 
     // parse binding groups
 
@@ -547,10 +452,22 @@ RHI::RawShaderPtr ShaderCompiler::CompileShader(
     }
 
     shaderInfo.source = preprocessedSource;
-    const std::vector<unsigned char> compileData = dxc.Compile(shaderInfo, target, debug, &includeHandler, nullptr);
+    const std::vector<unsigned char> compileData = dxc.Compile(shaderInfo, target, debug, nullptr);
 
     ReflectSPIRV(compileData, source.entry.c_str(), outputRefl);
     return rhiDevice_->CreateShader(compileData.data(), compileData.size(), source.entry, stage);
+}
+
+std::string ShaderCompiler::GetMappedFilename(const std::string &filename)
+{
+    std::filesystem::path path = filename;
+    path = path.lexically_normal();
+    if (path.is_relative())
+    {
+        path = rootDir_ / path;
+    }
+    path = path.lexically_normal();
+    return path.string();
 }
 
 RTRC_END

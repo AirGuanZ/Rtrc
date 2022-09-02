@@ -34,44 +34,6 @@ namespace
         return gConvertor.to_bytes(s);
     }
 
-    class CustomIncludeHandler : public IDxcIncludeHandler
-    {
-    public:
-
-        virtual ~CustomIncludeHandler() = default;
-
-        HRESULT STDMETHODCALLTYPE LoadSource(
-            _In_ LPCWSTR pFilename, _COM_Outptr_result_maybenull_ IDxcBlob **ppIncludeSource) override
-        {
-            std::string result;
-            if(!dxcHandler->Handle(ToString(pFilename), result))
-            {
-                return S_FALSE;
-            }
-            ComPtr<IDxcBlobEncoding> pEncoding;
-            if(FAILED(utils->CreateBlob(
-                result.data(), static_cast<uint32_t>(result.size()), CP_UTF8, pEncoding.GetAddressOf())))
-            {
-                return S_FALSE;
-            }
-            *ppIncludeSource = pEncoding.Detach();
-            return S_OK;
-        }
-
-        HRESULT STDMETHODCALLTYPE QueryInterface(
-            REFIID riid, _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppvObject) override
-        {
-            return defaultHandler->QueryInterface(riid, ppvObject);
-        }
-
-        ULONG STDMETHODCALLTYPE AddRef(void) override { return 0; }
-        ULONG STDMETHODCALLTYPE Release(void) override { return 0; }
-
-        ComPtr<IDxcUtils> utils;
-        ComPtr<IDxcIncludeHandler> defaultHandler;
-        const DXC::IncludeHandler *dxcHandler = nullptr;
-    };
-
 } // namespace anonymous
 
 using Microsoft::WRL::ComPtr;
@@ -113,7 +75,6 @@ std::vector<unsigned char> DXC::Compile(
     const ShaderInfo     &shaderInfo,
     Target                target,
     bool                  debugMode,
-    const IncludeHandler *includeHandler,
     std::string          *preprocessOutput) const
 {
     ComPtr<IDxcBlobEncoding> sourceBlob;
@@ -163,31 +124,18 @@ std::vector<unsigned char> DXC::Compile(
         macros.push_back(ToWString("-D" + m.first));
         macros.push_back(ToWString(m.second));
     }
-    std::vector<DxcDefine> defines;
-    for(size_t i = 0; i < macros.size(); i += 2)
-    {
-        defines.push_back(DxcDefine{
-            .Name = macros[i].c_str(),
-            .Value = macros[i + 1].c_str()
-        });
-    }
 
     arguments.push_back(L"-spirv");
     arguments.push_back(L"-fvk-use-dx-layout");
     arguments.push_back(L"-fvk-use-dx-position-w");
-    arguments.push_back(L"-fspv-target-env=vulkan1.1");
+    arguments.push_back(L"-fspv-target-env=vulkan1.3");
     arguments.push_back(L"-fvk-stage-io-order=alpha");
-
-    CustomIncludeHandler customIncludeHandler;
-    customIncludeHandler.utils = impl_->utils;
-    customIncludeHandler.defaultHandler = impl_->defaultHandler;
-    customIncludeHandler.dxcHandler = includeHandler;
 
     if(debugMode)
     {
         arguments.push_back(L"-O0");
         arguments.push_back(L"-Zi");
-        arguments.push_back(L"-fspv-debug=vulkan-with-source");
+        //arguments.push_back(L"-fspv-debug=vulkan-with-source");
         //arguments.push_back(L"-fspv-extension=SPV_GOOGLE_hlsl_functionality1");
         //arguments.push_back(L"-fspv-extension=SPV_GOOGLE_user_type");
         //arguments.push_back(L"-fspv-extension=SPV_KHR_non_semantic_info");
@@ -211,7 +159,7 @@ std::vector<unsigned char> DXC::Compile(
     ComPtr<IDxcResult> compileResult;
     if(FAILED(impl_->compiler->Compile(
         &sourceBuffer, arguments.data(), static_cast<uint32_t>(arguments.size()),
-        &customIncludeHandler, IID_PPV_ARGS(compileResult.GetAddressOf()))))
+        impl_->defaultHandler.Get(), IID_PPV_ARGS(compileResult.GetAddressOf()))))
     {
         throw Exception("failed to call DXC::Compile");
     }
