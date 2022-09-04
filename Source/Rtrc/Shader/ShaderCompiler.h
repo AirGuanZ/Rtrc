@@ -5,17 +5,13 @@
 
 #include <Rtrc/Shader/ShaderBindingGroup.h>
 #include <Rtrc/Shader/ShaderReflection.h>
+#include <Rtrc/Utils/SharedObjectPool.h>
 
 RTRC_BEGIN
-
-// TODO: 禁止custom file loader，用-I保证dxc能正确生成debug符号，还是先preprocess，再parse，再正式编译
-// TODO: 用weak_ptr替代shaderCounter
 
 class Shader : public Uncopyable
 {
 public:
-
-    ~Shader();
 
     const RHI::RawShaderPtr &GetRawShader(RHI::ShaderStage stage) const;
     const RHI::BindingLayoutPtr &GetRHIBindingLayout() const;
@@ -30,27 +26,6 @@ private:
 
     friend class ShaderCompiler;
 
-    struct BindingGroupLayoutRecord
-    {
-        RC<BindingGroupLayout> layout;
-        int shaderCounter = 0; // a record is kept in parentManager_ until there is no shader referencing it
-
-        BindingGroupLayoutRecord() = default;
-        BindingGroupLayoutRecord(const BindingGroupLayoutRecord &other);
-        BindingGroupLayoutRecord &operator=(const BindingGroupLayoutRecord &other);
-    };
-
-    struct BindingLayoutRecord
-    {
-        RHI::BindingLayoutPtr layout;
-        int shaderCounter = 0;
-    };
-
-    using BindingGroupLayoutRecordIt = std::map<RHI::BindingGroupLayoutDesc, BindingGroupLayoutRecord>::iterator;
-    using BindingLayoutRecordIt = std::map<RHI::BindingLayoutDesc, BindingLayoutRecord>::iterator;
-
-    ShaderCompiler *parentManager_ = nullptr;
-
     RHI::RawShaderPtr VS_;
     RHI::RawShaderPtr FS_;
     RHI::RawShaderPtr CS_;
@@ -61,68 +36,58 @@ private:
 
     std::map<std::string, int, std::less<>> nameToBindingGroupLayoutIndex_;
     std::vector<RC<BindingGroupLayout>>     bindingGroupLayouts_;
-    std::vector<BindingGroupLayoutRecordIt> bindingGroupLayoutIterators_;
-    BindingLayoutRecordIt                   bindingLayoutIterator_;
+    RC<RHI::BindingLayoutPtr>               rhiBindingLayout_;
 };
 
 class ShaderCompiler : public Uncopyable
 {
 public:
 
+    using Macros = std::map<std::string, std::string>;
+
     struct ShaderSource
     {
         std::string filename;
         std::string source;
-        std::string entry;
 
-        std::string *dumpedPreprocessedSource = nullptr;
+        std::string VSEntry;
+        std::string FSEntry;
+        std::string CSEntry;
     };
-
-    struct ShaderDescription
-    {
-        ShaderSource VS;
-        ShaderSource FS;
-        ShaderSource CS;
-        std::optional<bool> overrideDebugMode;
-        std::map<std::string, std::string> macros;
-    };
-
-    explicit ShaderCompiler(RHI::DevicePtr device = nullptr);
 
     void SetDevice(RHI::DevicePtr device);
-    void SetDebugMode(bool enableDebug);
-    void SetFileLoader(std::string_view rootDir);
 
-    RC<Shader> Compile(const ShaderDescription &desc);
+    void SetRootDirectory(std::string_view rootDir);
 
-    const RC<BindingGroupLayout> &GetBindingGroupLayoutByName(std::string_view name) const;
+    RC<Shader> Compile(
+        const ShaderSource &desc,
+        bool                debug = RTRC_DEBUG,
+        const Macros       &macros = {},
+        bool                skipPreprocess = false);
 
-    void OnShaderDestroyed(std::vector<Shader::BindingGroupLayoutRecordIt> &its, Shader::BindingLayoutRecordIt itt);
+    std::string Preprocess(std::string source, std::string filename, const Macros &macros);
+
+    std::string GetMappedFilename(const std::string &filename);
 
 private:
 
     RHI::RawShaderPtr CompileShader(
+        const std::string                               &source,
+        const std::string                               &filename,
+        const std::string                               &entry,
         bool                                             debug,
         const std::map<std::string, std::string>        &macros,
-        const ShaderSource                              &source,
         RHI::ShaderStage                                 stage,
+        bool                                             skipPreprocess,
         std::map<std::string, int, std::less<>>         &outputNameToGroupIndex,
-        std::vector<RC<BindingGroupLayout>>             &bindingGroupLayouts,
-        std::vector<Shader::BindingGroupLayoutRecordIt> &outputBindingGroupLayouts,
+        std::vector<RC<BindingGroupLayout>>             &outBindingGroupLayouts,
         ShaderReflection                                &outputRefl);
 
-    std::string GetMappedFilename(const std::string& filename);
-
     RHI::DevicePtr rhiDevice_;
-
-    bool debug_;
     std::filesystem::path rootDir_;
 
-    // when value is nil, there is multiple binding groups sharing the same name
-    std::map<std::string, RC<BindingGroupLayout>, std::less<>> nameToBindingGroupLayout_;
-
-    std::map<RHI::BindingGroupLayoutDesc, Shader::BindingGroupLayoutRecord> descToBindingGroupLayout_;
-    std::map<RHI::BindingLayoutDesc, Shader::BindingLayoutRecord>           descToBindingLayout_;
+    SharedObjectPool<RHI::BindingGroupLayoutDesc, BindingGroupLayout, true> bindingGroupLayoutPool_;
+    SharedObjectPool<RHI::BindingLayoutDesc, RHI::BindingLayoutPtr, true>   bindingLayoutPool_;
 };
 
 RTRC_END

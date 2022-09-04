@@ -29,11 +29,6 @@ namespace
         return gConvertor.from_bytes(s);
     }
 
-    std::string ToString(const std::wstring &s)
-    {
-        return gConvertor.to_bytes(s);
-    }
-
 } // namespace anonymous
 
 using Microsoft::WRL::ComPtr;
@@ -121,8 +116,18 @@ std::vector<unsigned char> DXC::Compile(
     std::vector<std::wstring> macros;
     for(auto &m : shaderInfo.macros)
     {
-        macros.push_back(ToWString("-D" + m.first));
-        macros.push_back(ToWString(m.second));
+        if(!m.second.empty())
+        {
+            macros.push_back(ToWString("-D" + m.first + "=" + m.second));
+        }
+        else
+        {
+            macros.push_back(ToWString("-D" + m.first));
+        }
+    }
+    for(auto &m : macros)
+    {
+        arguments.push_back(m.c_str());
     }
 
     arguments.push_back(L"-spirv");

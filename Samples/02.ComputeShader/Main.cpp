@@ -17,15 +17,14 @@ void Run()
         .supportSwapchain = false
     });
 
-    ShaderCompiler shaderManager(device);
-    shaderManager.SetFileLoader("Asset/02.ComputeShader/");
-    auto shader = shaderManager.Compile({
-        .CS = { .filename = "Shader.hlsl", .entry = "CSMain" }
-    });
+    ShaderCompiler shaderCompiler;
+    shaderCompiler.SetDevice(device);
+    shaderCompiler.SetRootDirectory("Asset/02.ComputeShader/");
+    auto shader = shaderCompiler.Compile({ .filename = "Shader.hlsl", .CSEntry = "CSMain" });
 
     // create pipeline
 
-    auto bindingGroupLayout = shaderManager.GetBindingGroupLayoutByName("ScaleGroup");
+    auto bindingGroupLayout = shader->GetBindingGroupLayoutByName("ScaleGroup");
 
     auto bindingLayout = shader->GetRHIBindingLayout();
 

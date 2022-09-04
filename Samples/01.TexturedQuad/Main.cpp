@@ -56,17 +56,15 @@ void Run()
 
     // pipeline
 
-    ShaderCompiler shaderManager(device);
-    shaderManager.SetFileLoader("Asset/01.TexturedQuad/");
+    ShaderManager shaderManager;
+    shaderManager.SetDevice(device);
+    shaderManager.SetRootDirectory("Asset/01.TexturedQuad/");
 
-    std::string preprocessedSource;
-    auto shader = shaderManager.Compile({
-        .VS = { .filename = "Quad.hlsl", .entry = "VSMain", .dumpedPreprocessedSource = &preprocessedSource },
-        .FS = { .filename = "Quad.hlsl", .entry = "FSMain" }
-    });
-    std::cout << preprocessedSource << std::endl;
+    shaderManager.AddShaderFile("Quad.shader");
+    auto shaderTemplate = shaderManager.GetShaderTemplate("Quad");
+    auto shader = shaderTemplate->GetShader({});
 
-    auto bindingGroupLayout = shaderManager.GetBindingGroupLayoutByName("TestGroup");
+    auto bindingGroupLayout = shader->GetBindingGroupLayoutByName("TestGroup");
     auto bindingLayout = shader->GetRHIBindingLayout();
 
     auto pipelineBuilder = device->CreateGraphicsPipelineBuilder();

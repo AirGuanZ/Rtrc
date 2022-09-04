@@ -82,6 +82,7 @@ ENDIF()
 
 ADD_SUBDIRECTORY(External/dxc)
 ADD_SUBDIRECTORY(External/SPIRV-Reflect)
+SET_TARGET_PROPERTIES(spirv_reflect PROPERTIES FOLDER "External")
 
 #============= rtrc =============
 

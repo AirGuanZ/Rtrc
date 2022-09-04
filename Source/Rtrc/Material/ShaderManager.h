@@ -1,60 +1,66 @@
 #pragma once
 
+#include <Rtrc/Material/Keyword.h>
+#include <Rtrc/Shader/ShaderBindingParser.h>
 #include <Rtrc/Shader/ShaderCompiler.h>
-#include <Rtrc/Utils/StringPool.h>
-
-/*
-ShaderTemplate:
-    Path path
-    KeywordSet keywords
-ShaderManager:
-    Map<Path, (KeywordSet, Map<KeywordMap, Shader>)> shaders
-    map: keywords + path -> shader
-Material:
-    Map<Tag, Pass> passes
-Pass:
-    Optional<PipelineState> overridePipelineStates
-    KeywordMap overrideKeywords
-    Shader GetShader(KeywordMap keywordContext)
-*/
 
 RTRC_BEGIN
 
-struct KeywordStringTag { };
+class ShaderManager;
 
-using Keyword    = PooledString<KeywordStringTag>;
-using KeywordSet = std::set<Keyword>;
-using KeywordMap = std::map<Keyword, std::string>;
-
-class ShaderTemplate
+// Keywords -> Shader
+class ShaderTemplate : public Uncopyable
 {
 public:
 
-    RC<Shader> GetShader(const KeywordMap &keywordContext) const;
+    RC<Shader> GetShader(const KeywordValues &keywordMap);
+
+    void GC();
 
 private:
 
-    KeywordSet keywords_;
-    std::function<RC<Shader>(const KeywordMap &)> keywordsToShader_;
+    friend class ShaderManager;
+
+    // Necessary info for compilation
+
+    bool debug_ = RTRC_DEBUG;
+    Keywords keywords_;
+    ShaderCompiler::ShaderSource source_;
+
+    // External compiler
+
+    ShaderCompiler *shaderCompiler_ = nullptr;
+
+    // Result
+
+    SharedObjectPool<KeywordValues, Shader, true> compiledShaders_;
 };
 
-class ShaderManager
+class ShaderManager : public Uncopyable
 {
 public:
 
-    // `keywordMap` must only contain necessary keywords
-    // This function should never be called directly in user code. use it indirectly by ShaderTemplate
-    RC<Shader> GetShader(const std::string &path, const KeywordMap &keywordMap);
+    void SetDevice(RHI::DevicePtr device);
+    void SetRootDirectory(std::string_view rootDir);
+
+    RC<ShaderTemplate> GetShaderTemplate(std::string_view name) const;
+
+    void AddShaderTemplate(
+        const std::string &name,
+        const std::string &source,
+        const std::string &filename,
+        bool               debug = RTRC_DEBUG);
+
+    void AddShaderFile(const std::string &filename, bool debug = RTRC_DEBUG);
 
 private:
 
-    struct ShaderKey
-    {
-        std::string path;
-        std::vector<std::string> keywordValues;
-    };
+    std::string rootDirectory_;
 
-    std::map<ShaderKey, std::weak_ptr<Shader>> keyToShader_;
+    ShaderCompiler shaderCompiler_;
+
+    std::map<std::string, RC<ShaderTemplate>, std::less<>> nameToTemplate_;
+    mutable std::mutex mutex_;
 };
 
 RTRC_END

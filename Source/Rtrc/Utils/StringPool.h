@@ -13,17 +13,19 @@ class PooledString
 public:
 
     PooledString();
-    explicit PooledString(std::string_view str);
+    PooledString(std::string_view str);
+    PooledString(const char *c);
 
     operator bool() const;
     uint32_t GetIndex() const;
+    const std::string &GetString() const;
 
     auto operator<=>(const PooledString &) const = default;
     bool operator==(const PooledString &) const = default;
 
 private:
 
-    uint32_t index_;
+    int32_t index_;
 };
 
 template<typename Tag>
@@ -44,18 +46,25 @@ class StringPool
         {
             return it->second;
         }
-        const uint32_t newIndex = static_cast<uint32_t>(stringToIndex_.size()) + 1;
+        const uint32_t newIndex = static_cast<int32_t>(stringToIndex_.size());
         stringToIndex_.insert({ std::string(str), newIndex });
+        indexToString_.push_back(std::string(str));
         return newIndex;
     }
 
-    std::map<std::string, uint32_t, std::less<>> stringToIndex_;
+    const std::string &GetString(const PooledString<Tag> &str)
+    {
+        return indexToString_[str.GetIndex()];
+    }
+
+    std::map<std::string, int32_t, std::less<>> stringToIndex_;
+    std::vector<std::string> indexToString_;
     std::mutex mutex_;
 };
 
 template <typename Tag>
 PooledString<Tag>::PooledString()
-    : index_(0)
+    : index_(-1)
 {
     
 }
@@ -68,15 +77,29 @@ PooledString<Tag>::PooledString(std::string_view str)
 }
 
 template <typename Tag>
+PooledString<Tag>::PooledString(const char *c)
+    : PooledString(std::string_view(c))
+{
+    
+}
+
+template <typename Tag>
 PooledString<Tag>::operator bool() const
 {
-    return index_ > 0;
+    return index_ >= 0;
 }
 
 template <typename Tag>
 uint32_t PooledString<Tag>::GetIndex() const
 {
     return index_;
+}
+
+template <typename Tag>
+const std::string &PooledString<Tag>::GetString() const
+{
+    assert(index_ >= 0);
+    return StringPool<Tag>::GetInstance().GetString(*this);
 }
 
 RTRC_END
