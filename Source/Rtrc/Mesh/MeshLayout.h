@@ -52,7 +52,16 @@ namespace MeshLayoutDSL
         auto operator<=>(const Buffer &) const = default;
 
         std::vector<Attribute> attributes;
+        bool perInstance = false;
     };
+
+    template<typename...Ts>
+    Buffer PerInstanceBuffer(Ts...attribs)
+    {
+        auto buffer = Buffer(std::move(attribs)...);
+        buffer.perInstance = true;
+        return buffer;
+    }
 
     struct LayoutDesc
     {
@@ -94,6 +103,7 @@ public:
 
     static RC<VertexBufferLayout> Create(const MeshLayoutDSL::Buffer &desc);
 
+    bool IsPerInstance() const;
     int GetElementStride() const;
     Span<VertexAttribute> GetAttributes() const;
 
@@ -105,6 +115,7 @@ public:
 
 private:
 
+    bool perInstance_ = false;
     int stride_ = 0;
     std::vector<VertexAttribute> attribs_;
     std::map<std::string, int, std::less<>> semanticToAttribIndex_;

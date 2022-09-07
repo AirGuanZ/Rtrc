@@ -4,7 +4,7 @@
 #include <Rtrc/Math/Vector3.h>
 #include <Rtrc/Math/Vector4.h>
 
-#include <Rtrc/Material/ShaderManager.h>
+#include <Rtrc/Material/Material.h>
 
 #include <Rtrc/Mesh/Mesh.h>
 

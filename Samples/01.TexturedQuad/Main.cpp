@@ -56,13 +56,16 @@ void Run()
 
     // pipeline
 
-    ShaderManager shaderManager;
-    shaderManager.SetDevice(device);
-    shaderManager.SetRootDirectory("Asset/01.TexturedQuad/");
+    MaterialManager materialManager;
+    materialManager.SetDevice(device);
+    materialManager.SetRootDirectory("Asset/01.TexturedQuad/");
 
-    shaderManager.AddShaderFile("Quad.shader");
-    auto shaderTemplate = shaderManager.GetShaderTemplate("Quad");
-    auto shader = shaderTemplate->GetShader({});
+    KeywordValueContext keywords;
+    keywords.Set(RTRC_KEYWORD(DADADA), 1);
+
+    auto material = materialManager.GetMaterial("Quad");
+    auto subMaterial = material->GetSubMaterialByTag("Default");
+    auto shader = subMaterial->GetShader(keywords);
 
     auto bindingGroupLayout = shader->GetBindingGroupLayoutByName("TestGroup");
     auto bindingLayout = shader->GetRHIBindingLayout();

@@ -161,8 +161,7 @@ std::string ShaderCompiler::GetMappedFilename(const std::string &filename)
     {
         path = rootDir_ / path;
     }
-    path = path.lexically_normal();
-    return path.string();
+    return absolute(path).lexically_normal().string();
 }
 
 RHI::RawShaderPtr ShaderCompiler::CompileShader(

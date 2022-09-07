@@ -2,22 +2,25 @@
 
 #include <map>
 #include <mutex>
+#include <limits>
 
 #include <Rtrc/Common.h>
 
 RTRC_BEGIN
 
-template<typename Tag>
+template<typename Tag, typename Index>
 class PooledString
 {
 public:
+
+    static constexpr Index INVALID_INDEX = std::numeric_limits<Index>::max();
 
     PooledString();
     PooledString(std::string_view str);
     PooledString(const char *c);
 
     operator bool() const;
-    uint32_t GetIndex() const;
+    Index GetIndex() const;
     const std::string &GetString() const;
 
     auto operator<=>(const PooledString &) const = default;
@@ -25,13 +28,13 @@ public:
 
 private:
 
-    int32_t index_;
+    Index index_;
 };
 
-template<typename Tag>
+template<typename Tag, typename Index>
 class StringPool
 {
-    friend class PooledString<Tag>;
+    friend class PooledString<Tag, Index>;
 
     static StringPool &GetInstance()
     {
@@ -39,67 +42,67 @@ class StringPool
         return ret;
     }
 
-    uint32_t GetIndex(std::string_view str)
+    Index GetIndex(std::string_view str)
     {
         std::lock_guard lock(mutex_);
         if(auto it = stringToIndex_.find(str); it != stringToIndex_.end())
         {
             return it->second;
         }
-        const uint32_t newIndex = static_cast<int32_t>(stringToIndex_.size());
+        const Index newIndex = static_cast<Index>(stringToIndex_.size());
         stringToIndex_.insert({ std::string(str), newIndex });
         indexToString_.push_back(std::string(str));
         return newIndex;
     }
 
-    const std::string &GetString(const PooledString<Tag> &str)
+    const std::string &GetString(const PooledString<Tag, Index> &str)
     {
         return indexToString_[str.GetIndex()];
     }
 
-    std::map<std::string, int32_t, std::less<>> stringToIndex_;
+    std::map<std::string, Index, std::less<>> stringToIndex_;
     std::vector<std::string> indexToString_;
     std::mutex mutex_;
 };
 
-template <typename Tag>
-PooledString<Tag>::PooledString()
-    : index_(-1)
+template <typename Tag, typename Index>
+PooledString<Tag, Index>::PooledString()
+    : index_(INVALID_INDEX)
 {
     
 }
 
-template <typename Tag>
-PooledString<Tag>::PooledString(std::string_view str)
-    : index_(StringPool<Tag>::GetInstance().GetIndex(str))
+template <typename Tag, typename Index>
+PooledString<Tag, Index>::PooledString(std::string_view str)
+    : index_(StringPool<Tag, Index>::GetInstance().GetIndex(str))
 {
     
 }
 
-template <typename Tag>
-PooledString<Tag>::PooledString(const char *c)
+template <typename Tag, typename Index>
+PooledString<Tag, Index>::PooledString(const char *c)
     : PooledString(std::string_view(c))
 {
     
 }
 
-template <typename Tag>
-PooledString<Tag>::operator bool() const
+template <typename Tag, typename Index>
+PooledString<Tag, Index>::operator bool() const
 {
-    return index_ >= 0;
+    return index_ != INVALID_INDEX;
 }
 
-template <typename Tag>
-uint32_t PooledString<Tag>::GetIndex() const
+template <typename Tag, typename Index>
+Index PooledString<Tag, Index>::GetIndex() const
 {
     return index_;
 }
 
-template <typename Tag>
-const std::string &PooledString<Tag>::GetString() const
+template <typename Tag, typename Index>
+const std::string &PooledString<Tag, Index>::GetString() const
 {
-    assert(index_ >= 0);
-    return StringPool<Tag>::GetInstance().GetString(*this);
+    assert(index_ != INVALID_INDEX);
+    return StringPool<Tag, Index>::GetInstance().GetString(*this);
 }
 
 RTRC_END
@@ -107,12 +110,12 @@ RTRC_END
 namespace std
 {
 
-    template<typename Tag>
-    struct hash<Rtrc::PooledString<Tag>>
+    template<typename Tag, typename Index>
+    struct hash<Rtrc::PooledString<Tag, Index>>
     {
-        size_t operator()(const Rtrc::PooledString<Tag> &s) const noexcept
+        size_t operator()(const Rtrc::PooledString<Tag, Index> &s) const noexcept
         {
-            return std::hash<uint32_t>{}(s.GetIndex());
+            return std::hash<Index>{}(s.GetIndex());
         }
     };
 

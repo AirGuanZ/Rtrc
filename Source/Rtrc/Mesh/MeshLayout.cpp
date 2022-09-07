@@ -78,9 +78,16 @@ RC<VertexBufferLayout> VertexBufferLayout::Create(const Buffer &desc)
         stride += VertexAttributeTypeToByteSize(desc.attributes[i].type);
         newLayout->semanticToAttribIndex_[desc.attributes[i].semantic] = static_cast<int>(i);
     }
+
+    newLayout->perInstance_ = desc.perInstance;
     newLayout->stride_ = stride;
     vertexBufferLayoutPool[desc] = newLayout;
     return newLayout;
+}
+
+bool VertexBufferLayout::IsPerInstance() const
+{
+    return perInstance_;
 }
 
 int VertexBufferLayout::GetElementStride() const

@@ -64,15 +64,18 @@ public:
     {
         DoWithThreadSafeGuard([&]
         {
-            KeyToValue newKeyToValue;
+            std::vector<typename KeyToValue::iterator> invalidIters;
             for(auto it = keyToValue_.begin(); it != keyToValue_.end(); ++it)
             {
-                if(!it->second.expired())
+                if(it->second.expired())
                 {
-                    newKeyToValue.insert(std::make_pair(it->first, std::move(it->second)));
+                    invalidIters.push_back(it);
                 }
             }
-            keyToValue_.swap(newKeyToValue);
+            for(auto &iter : invalidIters)
+            {
+                keyToValue_.erase(iter);
+            }
         });
     }
 

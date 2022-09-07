@@ -3,6 +3,8 @@ Shader "Quad"
     #vert VSMain
     #frag FSMain
 
+    #keyword DADADA
+
     // Buffer<float2>    VertexPositionBuffer;
     // Buffer<float2>    VertexTexCoordBuffer;
     // Texture2D<float4> MainTexture;
@@ -43,7 +45,20 @@ Shader "Quad"
     FSOutput FSMain(VSOutput input)
     {
         FSOutput output;
+#if DADADA
         output.color = float4(MainTexture.Sample(MainSampler, input.texCoord).rgb, 1.0);
+#else
+        output.color = float4(2 * MainTexture.Sample(MainSampler, input.texCoord).rgb, 1.0);
+#endif
         return output;
+    }
+}
+
+Material "Quad"
+{
+    Pass
+    {
+        Tag "Default"
+        ShaderRef "Quad"
     }
 }
