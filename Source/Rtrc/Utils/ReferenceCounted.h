@@ -25,6 +25,11 @@ class ReferenceCounted
         return --counter_;
     }
 
+    uint32_t GetCounter() const
+    {
+        return counter_;
+    }
+
     mutable std::atomic<uint32_t> counter_ = 0;
 };
 
@@ -131,6 +136,11 @@ public:
     T &operator*() const
     {
         return *ptr_;
+    }
+
+    uint32_t GetCounter() const
+    {
+        return ptr_->ReferenceCounted::GetCounter();
     }
 
 private:

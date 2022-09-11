@@ -2,7 +2,7 @@
 
 #include <map>
 
-#include <Rtrc/RHI/RHI.h>
+#include <Rtrc/Graphics/RHI/RHI.h>
 
 RTRC_BEGIN
 

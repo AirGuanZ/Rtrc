@@ -61,7 +61,7 @@ public:
         InitializeVulkan();
 
         frameResources_ = MakeRC<FrameResourceManager>(device_, swapchain_->GetRenderTargetCount());
-        executer_ = MakeBox<RG::Executer>(device_, frameResources_, frameResources_->GetTransicentResourceManager());
+        executer_ = MakeBox<RG::Executer>(frameResources_.get());
     }
 
     ~Application()
@@ -106,11 +106,11 @@ public:
             ->Use(renderTarget, RG::RENDER_TARGET_WRITE)
             ->SetCallback([&](RG::PassContext &context)
             {
-                auto rt = renderTarget->GetRHI()->AsTexture2D();
+                auto rt = renderTarget->GetRHI();
                 auto commandBuffer = context.GetRHICommandBuffer();
                 commandBuffer->BeginRenderPass(RHI::RenderPassColorAttachment
                 {
-                    .renderTargetView = rt->Create2DRTV(),
+                    .renderTargetView = rt->CreateRTV(),
                     .loadOp           = RHI::AttachmentLoadOp::Clear,
                     .storeOp          = RHI::AttachmentStoreOp::Store,
                     .clearValue       = RHI::ColorClearValue{ 0, 1, 1, 0 }

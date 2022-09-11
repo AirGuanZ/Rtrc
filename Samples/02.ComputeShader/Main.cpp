@@ -28,34 +28,28 @@ void Run()
 
     auto bindingLayout = shader->GetRHIBindingLayout();
 
-    auto pipeline = (*device->CreateComputePipelineBuilder())
+    auto pipeline = RHI::ComputePipelineBuilder()
         .SetComputeShader(shader->GetRawShader(RHI::ShaderStage::ComputeShader))
         .SetBindingLayout(bindingLayout)
-        .CreatePipeline();
+        .CreatePipeline(device);
 
     // input texture
 
     const auto inputImageData = ImageDynamic::Load("Asset/01.TexturedQuad/MainTexture.png");
 
-    auto inputTexture = device->CreateTexture2D(RHI::Texture2DDesc{
+    auto inputTexture = device->CreateTexture(RHI::TextureDesc{
         .format       = RHI::Format::B8G8R8A8_UNorm,
         .width        = inputImageData.GetWidth(),
         .height       = inputImageData.GetHeight(),
-        .mipLevels    = 1,
         .arraySize    = 1,
+        .mipLevels    = 1,
         .sampleCount  = 1,
         .usage        = RHI::TextureUsage::TransferDst | RHI::TextureUsage::ShaderResource,
         .initialLayout = RHI::TextureLayout::Undefined,
         .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
     });
 
-    auto inputTextureSRV = inputTexture->Create2DSRV(RHI::Texture2DSRVDesc{
-        .format         = RHI::Format::Unknown,
-        .baseMipLevel   = 0,
-        .levelCount     = 1,
-        .baseArrayLayer = 0,
-        .layerCount     = 1
-    });
+    auto inputTextureSRV = inputTexture->CreateSRV();
 
     ResourceUploader uploader(device);
 
@@ -74,25 +68,19 @@ void Run()
 
     // output texture
 
-    auto outputTexture = device->CreateTexture2D(RHI::Texture2DDesc{
+    auto outputTexture = device->CreateTexture(RHI::TextureDesc{
         .format               = RHI::Format::B8G8R8A8_UNorm,
         .width                = inputImageData.GetWidth(),
         .height               = inputImageData.GetHeight(),
-        .mipLevels            = 1,
         .arraySize            = 1,
+        .mipLevels            = 1,
         .sampleCount          = 1,
         .usage                = RHI::TextureUsage::TransferSrc | RHI::TextureUsage::UnorderAccess,
         .initialLayout        = RHI::TextureLayout::Undefined,
         .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
     });
 
-    auto outputTextureUAV = outputTexture->Create2DUAV(RHI::Texture2DUAVDesc{
-        .format         = RHI::Format::Unknown,
-        .baseMipLevel   = 0,
-        .levelCount     = 1,
-        .baseArrayLayer = 0,
-        .layerCount     = 1
-    });
+    auto outputTextureUAV = outputTexture->CreateUAV();
 
     // readback staging buffer
 
@@ -130,7 +118,7 @@ void Run()
 
     // queue & command pool & buffer
 
-    auto commandPool = computeQueue->CreateCommandPool();
+    auto commandPool = device->CreateCommandPool(computeQueue);
     auto commandBuffer = commandPool->NewCommandBuffer();
 
     // record

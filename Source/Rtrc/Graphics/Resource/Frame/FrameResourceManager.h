@@ -1,0 +1,56 @@
+#pragma once
+
+#include <mutex>
+
+#include <Rtrc/Graphics/RenderGraph/TransientResourceManager.h>
+#include <Rtrc/Graphics/Resource/Frame/FrameCommandBufferManager.h>
+#include <Rtrc/Graphics/Resource/Frame/FrameSynchronizer.h>
+
+RTRC_BEGIN
+
+/* Usage:
+    while(!done)
+    {
+        // Call this before anything related to GPU
+        frameResources.BeginFrame();
+        ...
+        // Signal frame fence when submitting last GPU work in this frame
+        queue.submit(..., frameResources.GetFrameFence());
+    }
+*/
+class FrameResourceManager : public Uncopyable, public CommandBufferAllocator
+{
+public:
+
+    FrameResourceManager(RHI::DevicePtr device, int frameCount);
+    ~FrameResourceManager() override;
+
+    const RHI::DevicePtr &GetDeviceWithFrameResourceProtection() const;
+
+    void BeginFrame();
+
+    RHI::FencePtr GetFrameFence() const;
+
+    int GetFrameIndex() const;
+
+    RHI::CommandBufferPtr AllocateCommandBuffer(RHI::QueueType type) override;
+
+    void OnGPUFrameEnd(std::function<void()> func);
+
+    RG::TransientResourceManager *GetTransicentResourceManager() const;
+
+    void RegisterFrameResourceProtection(RHI::RHIObjectPtr object);
+
+private:
+
+    RHI::DevicePtr                   device_;
+    RHI::DevicePtr                   deviceWithFrameResourceProtection_;
+    FrameSynchronizer                synchronizer_;
+    FrameCommandBufferManager        commandBufferManager_;
+    RC<RG::TransientResourceManager> transientResourceManager_;
+
+    std::set<RHI::Ptr<RHI::RHIObject>> resources_;
+    std::mutex resourcesMutex_;
+};
+
+RTRC_END

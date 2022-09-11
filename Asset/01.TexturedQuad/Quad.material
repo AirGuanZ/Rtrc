@@ -12,10 +12,10 @@ Shader "Quad"
 
     group TestGroup
     {
-        Buffer<float2>    VertexPositionBuffer;
-        Buffer<float2>    VertexTexCoordBuffer;
-        Texture2D<float4> MainTexture;
-        SamplerState      MainSampler;
+        Buffer<float2>         VertexPositionBuffer;
+        Buffer<float2>         VertexTexCoordBuffer;
+        Texture2DArray<float4> MainTexture;
+        SamplerState           MainSampler;
     };
 
     struct VSInput
@@ -46,9 +46,9 @@ Shader "Quad"
     {
         FSOutput output;
 #if DADADA
-        output.color = float4(MainTexture.Sample(MainSampler, input.texCoord).rgb, 1.0);
+        output.color = float4(MainTexture.Sample(MainSampler, float3(input.texCoord, 0)).rgb, 1.0);
 #else
-        output.color = float4(2 * MainTexture.Sample(MainSampler, input.texCoord).rgb, 1.0);
+        output.color = float4(2 * MainTexture.Sample(MainSampler, float3(input.texCoord, 0)).rgb, 1.0);
 #endif
         return output;
     }

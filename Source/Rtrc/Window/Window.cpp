@@ -8,7 +8,7 @@
 #include <GLFW/glfw3.h>
 
 #ifdef RTRC_RHI_VULKAN
-#include <Rtrc/RHI/Vulkan/Context/Surface.h>
+#include <Rtrc/Graphics/RHI/Vulkan/Context/Surface.h>
 #endif
 #include <Rtrc/Utils/ScopeGuard.h>
 #include <Rtrc/Window/Window.h>

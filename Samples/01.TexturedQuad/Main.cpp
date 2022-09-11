@@ -6,10 +6,12 @@ using namespace Rtrc;
 
 void Run()
 {
+    constexpr int WIDTH = 800, HEIGHT = 800, IMAGE_COUNT = 3;
+
     // window & device
 
     auto window = WindowBuilder()
-        .SetSize(800, 800)
+        .SetSize(WIDTH, HEIGHT)
         .SetTitle("Rtrc Sample: TexturedQuad")
         .Create();
 
@@ -21,7 +23,9 @@ void Run()
         .debugMode = RTRC_DEBUG
     });
 
-    auto device = instance->CreateDevice();
+    auto rawDevice = instance->CreateDevice();
+    FrameResourceManager frameResources(rawDevice, IMAGE_COUNT);
+    auto device = frameResources.GetDeviceWithFrameResourceProtection();
 
     auto graphicsQueue = device->GetQueue(RHI::QueueType::Graphics);
 
@@ -36,7 +40,7 @@ void Run()
         swapchain = device->CreateSwapchain(RHI::SwapchainDesc
         {
             .format = RHI::Format::B8G8R8A8_UNorm,
-            .imageCount = 3
+            .imageCount = IMAGE_COUNT
         }, window);
     };
 
@@ -49,10 +53,6 @@ void Run()
             createSwapchain();
         }
     });
-
-    // frame resources
-
-    auto frameResources = MakeRC<FrameResourceManager>(device, swapchain->GetRenderTargetCount());
 
     // pipeline
 
@@ -70,15 +70,14 @@ void Run()
     auto bindingGroupLayout = shader->GetBindingGroupLayoutByName("TestGroup");
     auto bindingLayout = shader->GetRHIBindingLayout();
 
-    auto pipelineBuilder = device->CreateGraphicsPipelineBuilder();
-    auto pipeline = (*pipelineBuilder)
+    auto pipeline = RHI::GraphicsPipelineBuilder()
         .SetVertexShader(shader->GetRawShader(RHI::ShaderStage::VertexShader))
         .SetFragmentShader(shader->GetRawShader(RHI::ShaderStage::FragmentShader))
         .AddColorAttachment(swapchain->GetRenderTargetDesc().format)
         .SetBindingLayout(bindingLayout)
         .SetViewports(1)
         .SetScissors(1)
-        .CreatePipeline();
+        .CreatePipeline(device);
 
     // uploader
 
@@ -151,13 +150,13 @@ void Run()
 
     auto mainTexData = ImageDynamic::Load("Asset/01.TexturedQuad/MainTexture.png");
 
-    auto mainTex = device->CreateTexture2D(RHI::Texture2DDesc
+    auto mainTex = device->CreateTexture(RHI::TextureDesc
     {
         .format               = RHI::Format::B8G8R8A8_UNorm,
         .width                = mainTexData.GetWidth(),
         .height               = mainTexData.GetHeight(),
-        .mipLevels            = 1,
         .arraySize            = 1,
+        .mipLevels            = 1,
         .sampleCount          = 1,
         .usage                = RHI::TextureUsage::ShaderResource | RHI::TextureUsage::TransferDst,
         .initialLayout        = RHI::TextureLayout::Undefined,
@@ -166,14 +165,7 @@ void Run()
 
     mainTex->SetName("MainTexture");
 
-    auto mainTexSRV = mainTex->Create2DSRV(RHI::Texture2DSRVDesc
-    {
-        .format         = RHI::Format::Unknown,
-        .baseMipLevel   = 0,
-        .levelCount     = 1,
-        .baseArrayLayer = 0,
-        .layerCount     = 1
-    });
+    auto mainTexSRV = mainTex->CreateSRV({ .isArray = true });
 
     uploadTextureAcquireBarriers.push_back(uploader.Upload(
         mainTex, 0, 0, mainTexData,
@@ -198,7 +190,7 @@ void Run()
 
     {
         uploader.SubmitAndSync();
-        auto uploadCommandBuffer = RHI::OneTimeCommandBuffer::Create(graphicsQueue);
+        auto uploadCommandBuffer = StandaloneCommandBuffer::Create(device, graphicsQueue);
         uploadCommandBuffer->Begin();
         uploadCommandBuffer->ExecuteBarriers(uploadTextureAcquireBarriers, uploadBufferAcquireBarriers);
         uploadTextureAcquireBarriers.clear();
@@ -217,7 +209,7 @@ void Run()
 
     // render graph
 
-    RG::Executer executer(device, frameResources, frameResources->GetTransicentResourceManager());
+    RG::Executer executer(&frameResources);
 
     // render loop
 
@@ -235,7 +227,7 @@ void Run()
             continue;
         }
 
-        frameResources->BeginFrame();
+        frameResources.BeginFrame();
 
         if(!swapchain->Acquire())
         {
@@ -251,11 +243,11 @@ void Run()
         quadPass->Use(renderTarget, RG::RENDER_TARGET);
         quadPass->SetCallback([&](RG::PassContext &context)
         {
-            auto rt = renderTarget->GetRHI()->AsTexture2D();
+            auto rt = renderTarget->GetRHI();
             auto commandBuffer = context.GetRHICommandBuffer();
             commandBuffer->BeginRenderPass(RHI::RenderPassColorAttachment
             {
-                .renderTargetView = rt->Create2DRTV(),
+                .renderTargetView = rt->CreateRTV(),
                 .loadOp           = RHI::AttachmentLoadOp::Clear,
                 .storeOp          = RHI::AttachmentStoreOp::Store,
                 .clearValue       = RHI::ColorClearValue{ 0, 1, 1, 1 }
@@ -267,7 +259,7 @@ void Run()
             commandBuffer->Draw(6, 1, 0, 0);
             commandBuffer->EndRenderPass();
         });
-        quadPass->SetSignalFence(frameResources->GetFrameFence());
+        quadPass->SetSignalFence(frameResources.GetFrameFence());
 
         executer.Execute(graph);
 

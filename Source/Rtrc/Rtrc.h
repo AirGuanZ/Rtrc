@@ -4,18 +4,19 @@
 #include <Rtrc/Math/Vector3.h>
 #include <Rtrc/Math/Vector4.h>
 
-#include <Rtrc/Material/Material.h>
+#include <Rtrc/Graphics/Material/Material.h>
 
 #include <Rtrc/Mesh/Mesh.h>
 
-#include <Rtrc/RenderGraph/Executable.h>
+#include <Rtrc/Graphics/RenderGraph/Executable.h>
 
-#include <Rtrc/RHI/Helper/FrameResourceManager.h>
-#include <Rtrc/RHI/Helper/OneTimeCommandBuffer.h>
-#include <Rtrc/RHI/Helper/ResourceUploader.h>
-#include <Rtrc/RHI/RHI.h>
+#include <Rtrc/Graphics/Resource/Frame/FrameResourceManager.h>
+#include <Rtrc/Graphics/Resource/ResourceUploader.h>
+#include <Rtrc/Graphics/Resource/StandaloneCommandBuffer.h>
 
-#include <Rtrc/Shader/ShaderCompiler.h>
+#include <Rtrc/Graphics/RHI/RHI.h>
+
+#include <Rtrc/Graphics/Shader/ShaderCompiler.h>
 
 #include <Rtrc/Utils/File.h>
 #include <Rtrc/Utils/Malloc.h>
