@@ -1,11 +1,33 @@
 #include <iostream>
 
+#include <fmt/format.h>
+
 #include <Rtrc/Rtrc.h>
 
 using namespace Rtrc;
 
+cbuffer_begin(S)
+    cbuffer_var(float, x)
+cbuffer_end()
+
+cbuffer_begin(Test)
+    cbuffer_var(float, a)
+    cbuffer_var(Vector2f[3], b)
+    cbuffer_var(S, c)
+    cbuffer_var(float, d)
+    cbuffer_var(Vector2f, e)
+cbuffer_end()
+
 void Run()
 {
+    std::cout << ConstantBuffer::CalculateSize<Test>() << std::endl;
+
+    fmt::print("{:<30} {:<5} {:<13} {:<15}\n", "type", "name", "host offset", "device offset");
+    ConstantBuffer::ForEachFlattenMember<Test>([&]<typename T>(const char *name, size_t hostOffset, size_t offset)
+    {
+        fmt::print("{:<30} {:<5} {:<13} {:<15}\n", typeid(T).name(), name, hostOffset, offset);
+    });
+
     constexpr int WIDTH = 800, HEIGHT = 800, IMAGE_COUNT = 3;
 
     // window & device
@@ -24,8 +46,8 @@ void Run()
     });
 
     auto rawDevice = instance->CreateDevice();
-    FrameResourceManager frameResources(rawDevice, IMAGE_COUNT);
-    auto device = frameResources.GetDeviceWithFrameResourceProtection();
+    ResourceManager resourceManager(rawDevice, IMAGE_COUNT);
+    auto device = resourceManager.GetDeviceWithFrameResourceProtection();
 
     auto graphicsQueue = device->GetQueue(RHI::QueueType::Graphics);
 
@@ -209,7 +231,7 @@ void Run()
 
     // render graph
 
-    RG::Executer executer(&frameResources);
+    RG::Executer executer(&resourceManager);
 
     // render loop
 
@@ -227,7 +249,7 @@ void Run()
             continue;
         }
 
-        frameResources.BeginFrame();
+        resourceManager.BeginFrame();
 
         if(!swapchain->Acquire())
         {
@@ -259,7 +281,7 @@ void Run()
             commandBuffer->Draw(6, 1, 0, 0);
             commandBuffer->EndRenderPass();
         });
-        quadPass->SetSignalFence(frameResources.GetFrameFence());
+        quadPass->SetSignalFence(resourceManager.GetFrameFence());
 
         executer.Execute(graph);
 

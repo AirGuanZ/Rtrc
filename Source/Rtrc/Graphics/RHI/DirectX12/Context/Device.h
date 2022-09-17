@@ -52,6 +52,8 @@ public:
     Ptr<Buffer> CreatePlacedBuffer(
         const BufferDesc &desc, const Ptr<MemoryBlock> &memoryBlock, size_t offsetInMemoryBlock) override;
 
+    size_t GetConstantBufferAlignment() const override;
+
     void WaitIdle() override;
 
 private:

@@ -204,13 +204,20 @@ VkPhysicalDevice VulkanPhysicalDevice::GetNativeHandle() const
     return physicalDevice_;
 }
 
+const VkPhysicalDeviceProperties &VulkanPhysicalDevice::GetNativeProperties() const
+{
+    return properties_;
+}
+
 VulkanPhysicalDevice::VulkanPhysicalDevice(VkPhysicalDevice device)
-    : physicalDevice_(device)
+    : physicalDevice_(device), properties_{}
 {
     if(!device)
     {
         return;
     }
+
+    vkGetPhysicalDeviceProperties(physicalDevice_, &properties_);
 
     uint32_t queueFamilyCount;
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);

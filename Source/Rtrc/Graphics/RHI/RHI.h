@@ -376,6 +376,7 @@ struct SwapchainDesc
 
 struct BindingDesc
 {
+    std::string             name;
     BindingType             type;
     ShaderStageFlag         shaderStages = ShaderStageFlags::All;
     std::optional<uint32_t> arraySize;
@@ -803,6 +804,8 @@ public:
     virtual Ptr<Buffer> CreatePlacedBuffer(
         const BufferDesc &desc, const Ptr<MemoryBlock> &memoryBlock, size_t offsetInMemoryBlock) = 0;
 
+    virtual size_t GetConstantBufferAlignment() const = 0;
+
     virtual void WaitIdle() = 0;
 };
 
@@ -1151,8 +1154,10 @@ public:
     virtual Ptr<BufferSRV> CreateSRV(const BufferSRVDesc &desc) const = 0;
     virtual Ptr<BufferUAV> CreateUAV(const BufferUAVDesc &desc) const = 0;
 
-    virtual void *Map(size_t offset, size_t size) const = 0;
-    virtual void Unmap(size_t offset, size_t size) = 0;
+    virtual void *Map(size_t offset, size_t size, bool invalidate = false) = 0;
+    virtual void Unmap(size_t offset, size_t size, bool flush = false) = 0;
+    virtual void InvalidateBeforeRead(size_t offset, size_t size) = 0;
+    virtual void FlushAfterWrite(size_t offset, size_t size) = 0;
 };
 
 class BufferSRV : public RHIObject

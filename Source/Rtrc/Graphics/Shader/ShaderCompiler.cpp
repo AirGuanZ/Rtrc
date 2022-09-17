@@ -1,3 +1,5 @@
+#include <ranges>
+
 #include <fmt/format.h>
 
 #include <Rtrc/Graphics/Shader/DXC.h>
@@ -5,51 +7,8 @@
 #include <Rtrc/Graphics/Shader/ShaderCompiler.h>
 #include <Rtrc/Utils/Enumerate.h>
 #include <Rtrc/Utils/File.h>
-#include <Rtrc/Utils/Unreachable.h>
 
 RTRC_BEGIN
-
-const RHI::RawShaderPtr &Shader::GetRawShader(RHI::ShaderStage stage) const
-{
-    switch(stage)
-    {
-    case RHI::ShaderStage::VertexShader:   return VS_;
-    case RHI::ShaderStage::FragmentShader: return FS_;
-    case RHI::ShaderStage::ComputeShader:  return CS_;
-    }
-    Unreachable();
-}
-
-const RHI::BindingLayoutPtr &Shader::GetRHIBindingLayout() const
-{
-    return bindingLayout_->rhiPtr;
-}
-
-Span<ShaderIOVar> Shader::GetInputVariables() const
-{
-    return VSRefl_.inputVariables;
-}
-
-const RC<BindingGroupLayout> Shader::GetBindingGroupLayoutByName(std::string_view name) const
-{
-    const int index = GetBindingGroupIndexByName(name);
-    return GetBindingGroupLayoutByIndex(index);
-}
-
-const RC<BindingGroupLayout> Shader::GetBindingGroupLayoutByIndex(int index) const
-{
-    return bindingGroupLayouts_[index];
-}
-
-int Shader::GetBindingGroupIndexByName(std::string_view name) const
-{
-    const auto it = nameToBindingGroupLayoutIndex_.find(name);
-    if(it == nameToBindingGroupLayoutIndex_.end())
-    {
-        throw Exception(fmt::format("unknown binding group layout '{}' in shader", name));
-    }
-    return it->second;
-}
 
 void ShaderCompiler::SetDevice(RHI::DevicePtr device)
 {
@@ -82,25 +41,62 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &desc, bool debug, const M
         filename = "anonymous.hlsl";
     }
 
+    Box<ShaderReflection> VSRefl, FSRefl, CSRefl;
     if(!desc.VSEntry.empty())
     {
         shader->VS_ = CompileShader(
             source, filename, desc.VSEntry, debug, macros, RHI::ShaderStage::VertexShader,
-            skipPreprocess, nameToGroupIndex, bindingGroupLayouts, shader->VSRefl_);
+            skipPreprocess, nameToGroupIndex, bindingGroupLayouts, VSRefl);
+        shader->VSInput_ = VSRefl->GetInputVariables();
     }
     if(!desc.FSEntry.empty())
     {
         shader->FS_ = CompileShader(
             source, filename, desc.FSEntry, debug, macros, RHI::ShaderStage::FragmentShader,
-            skipPreprocess, nameToGroupIndex, bindingGroupLayouts, shader->FSRefl_);
+            skipPreprocess, nameToGroupIndex, bindingGroupLayouts, FSRefl);
     }
     if(!desc.CSEntry.empty())
     {
         shader->CS_ = CompileShader(
             source, filename, desc.CSEntry, debug, macros, RHI::ShaderStage::ComputeShader,
-            skipPreprocess, nameToGroupIndex, bindingGroupLayouts, shader->CSRefl_);
+            skipPreprocess, nameToGroupIndex, bindingGroupLayouts, CSRefl);
     }
-    
+
+    // (group, indexInGroup) -> cbuffer
+    std::map<std::pair<int, int>, ShaderConstantBuffer> slotToCBuffer;
+    auto MergeCBufferInfo = [&](const ShaderReflection &refl)
+    {
+        auto cbuffers = refl.GetConstantBuffers();
+        for(auto &cbuffer : cbuffers)
+        {
+            const std::pair key{ cbuffer.group, cbuffer.indexInGroup };
+            auto it = slotToCBuffer.find(key);
+            if(it == slotToCBuffer.end())
+            {
+                slotToCBuffer.insert({ key, cbuffer });
+            }
+#if RTRC_DEBUG
+            else
+            {
+                assert(it->second == cbuffer);
+            }
+#endif
+        }
+    };
+    if(VSRefl)
+    {
+        MergeCBufferInfo(*VSRefl);
+    }
+    if(FSRefl)
+    {
+        MergeCBufferInfo(*FSRefl);
+    }
+    if(CSRefl)
+    {
+        MergeCBufferInfo(*CSRefl);
+    }
+    std::ranges::copy(std::ranges::views::values(slotToCBuffer), std::back_inserter(shader->constantBuffers_));
+
     shader->nameToBindingGroupLayoutIndex_ = std::move(nameToGroupIndex);
     shader->bindingGroupLayouts_           = std::move(bindingGroupLayouts);
 
@@ -165,6 +161,24 @@ std::string ShaderCompiler::GetMappedFilename(const std::string &filename)
     return absolute(path).lexically_normal().string();
 }
 
+RC<BindingGroupLayout> ShaderCompiler::GetBindingGroupLayout(const RHI::BindingGroupLayoutDesc &desc)
+{
+    return bindingGroupLayoutPool_.GetOrCreate(desc, [&]
+    {
+        auto layout = MakeRC<BindingGroupLayout>();
+        layout->device_ = rhiDevice_;
+        layout->rhiLayout_ = rhiDevice_->CreateBindingGroupLayout(desc);
+        for(auto &&[slot, aliasedBindings] : Enumerate(desc.bindings))
+        {
+            for(auto &binding : aliasedBindings)
+            {
+                layout->bindingNameToSlot_[binding.name] = static_cast<int>(slot);
+            }
+        }
+        return layout;
+    });
+}
+
 RHI::RawShaderPtr ShaderCompiler::CompileShader(
     const std::string                               &source,
     const std::string                               &filename,
@@ -175,7 +189,7 @@ RHI::RawShaderPtr ShaderCompiler::CompileShader(
     bool                                             skipPreprocess,
     std::map<std::string, int, std::less<>>         &outputNameToGroupIndex,
     std::vector<RC<BindingGroupLayout>>             &outBindingGroupLayouts,
-    ShaderReflection                                &outputRefl)
+    Box<ShaderReflection>                           &outputRefl)
 {
     DXC::Target target = {};
     switch(stage)
@@ -312,6 +326,7 @@ RHI::RawShaderPtr ShaderCompiler::CompileShader(
                 const BindingRecord &record = it->second;
 
                 RHI::BindingDesc rhiBindingDesc;
+                rhiBindingDesc.name         = record.parsedBinding->name;
                 rhiBindingDesc.type         = record.parsedBinding->type;
                 rhiBindingDesc.shaderStages = binding.stages;
                 rhiBindingDesc.arraySize    = record.parsedBinding->arraySize;
@@ -337,22 +352,7 @@ RHI::RawShaderPtr ShaderCompiler::CompileShader(
         }
         else
         {
-            auto groupLayout = bindingGroupLayoutPool_.GetOrCreate(rhiLayoutDesc, [&]
-            {
-                auto layout = MakeRC<BindingGroupLayout>();
-                layout->groupName_ = group.name;
-                layout->device_ = rhiDevice_;
-                layout->rhiLayout_ = rhiDevice_->CreateBindingGroupLayout(rhiLayoutDesc);
-                for(auto &&[slot, aliasedBindings] : Enumerate(group.bindings))
-                {
-                    for(auto &binding : aliasedBindings)
-                    {
-                        layout->bindingNameToSlot_[binding.name] = static_cast<int>(slot);
-                    }
-                }
-                return layout;
-            });
-
+            auto groupLayout = GetBindingGroupLayout(rhiLayoutDesc);
             const int groupIndex = static_cast<int>(outBindingGroupLayouts.size());
 
             outputNameToGroupIndex[group.name] = groupIndex;
@@ -394,7 +394,7 @@ RHI::RawShaderPtr ShaderCompiler::CompileShader(
     shaderInfo.source = preprocessedSource;
     const std::vector<unsigned char> compileData = dxc.Compile(shaderInfo, target, debug, nullptr);
 
-    ReflectSPIRV(compileData, entry.c_str(), outputRefl);
+    outputRefl = MakeBox<SPIRVReflection>(compileData, entry);
     return rhiDevice_->CreateShader(compileData.data(), compileData.size(), entry, stage);
 }
 

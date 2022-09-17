@@ -66,7 +66,6 @@ class BindingGroupLayout : public Uncopyable
 {
 public:
 
-    const std::string &GetGroupName() const;
     int GetBindingSlotByName(std::string_view bindingName) const;
     RHI::BindingGroupLayoutPtr GetRHIBindingGroupLayout();
 
@@ -76,7 +75,6 @@ private:
 
     friend class ShaderCompiler;
 
-    std::string groupName_;
     std::map<std::string, int, std::less<>> bindingNameToSlot_;
     RHI::DevicePtr device_;
     RHI::BindingGroupLayoutPtr rhiLayout_;

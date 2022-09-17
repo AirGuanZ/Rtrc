@@ -1,4 +1,4 @@
-#include <Rtrc/Graphics/Resource/Frame/FrameResourceManager.h>
+#include <Rtrc/Graphics/Resource/Frame/ResourceManager.h>
 
 RTRC_BEGIN
 
@@ -14,7 +14,7 @@ namespace
         // We don't need to protect resource views(RTV, DSV, SRV, UAV)
         //  since they are internally referenced by resource objects.
 
-        DeviceWithFrameResourceProtection(DevicePtr underlyingDevice, FrameResourceManager *frameResourceManager)
+        DeviceWithFrameResourceProtection(DevicePtr underlyingDevice, ResourceManager *frameResourceManager)
             : underlyingDevice_(std::move(underlyingDevice)), frameResourceManager_(frameResourceManager)
         {
 
@@ -152,6 +152,11 @@ namespace
             return ret;
         }
 
+        size_t GetConstantBufferAlignment() const override
+        {
+            return underlyingDevice_->GetConstantBufferAlignment();
+        }
+
         void WaitIdle() override
         {
             underlyingDevice_->WaitIdle();
@@ -160,13 +165,16 @@ namespace
     private:
 
         DevicePtr underlyingDevice_;
-        FrameResourceManager *frameResourceManager_;
+        ResourceManager *frameResourceManager_;
     };
 
 } // namespace anonymous
 
-FrameResourceManager::FrameResourceManager(DevicePtr device, int frameCount)
-    : device_(device), synchronizer_(device, frameCount), commandBufferManager_(device, frameCount)
+ResourceManager::ResourceManager(DevicePtr device, int frameCount)
+    : device_(device),
+      synchronizer_(device, frameCount),
+      commandBufferManager_(device, frameCount),
+      constantBufferManager_(device, frameCount)
 {
     transientResourceManager_ = MakeRC<RG::TransientResourceManager>(
         device, RG::TransientResourceManager::Strategy::ReuseAcrossFrame, frameCount);
@@ -174,17 +182,17 @@ FrameResourceManager::FrameResourceManager(DevicePtr device, int frameCount)
     deviceWithFrameResourceProtection_ = MakePtr<DeviceWithFrameResourceProtection>(device_, this);
 }
 
-FrameResourceManager::~FrameResourceManager()
+ResourceManager::~ResourceManager()
 {
     device_->WaitIdle();
 }
 
-const DevicePtr &FrameResourceManager::GetDeviceWithFrameResourceProtection() const
+const DevicePtr &ResourceManager::GetDeviceWithFrameResourceProtection() const
 {
     return deviceWithFrameResourceProtection_;
 }
 
-void FrameResourceManager::BeginFrame()
+void ResourceManager::BeginFrame()
 {
     std::vector<RHIObjectPtr> removedPtrs;
     {
@@ -211,35 +219,41 @@ void FrameResourceManager::BeginFrame()
 
     synchronizer_.BeginFrame();
     commandBufferManager_.BeginFrame(synchronizer_.GetFrameIndex());
+    constantBufferManager_.BeginFrame();
     transientResourceManager_->BeginFrame();
 }
 
-int FrameResourceManager::GetFrameIndex() const
+int ResourceManager::GetFrameIndex() const
 {
     return synchronizer_.GetFrameIndex();
 }
 
-FencePtr FrameResourceManager::GetFrameFence() const
+FencePtr ResourceManager::GetFrameFence() const
 {
     return synchronizer_.GetFrameFence();
 }
 
-CommandBufferPtr FrameResourceManager::AllocateCommandBuffer(QueueType type)
+CommandBufferPtr ResourceManager::AllocateCommandBuffer(QueueType type)
 {
     return commandBufferManager_.AllocateCommandBuffer(type);
 }
 
-void FrameResourceManager::OnGPUFrameEnd(std::function<void()> func)
+Box<ConstantBuffer> ResourceManager::AllocateConstantBuffer(size_t size)
+{
+    return constantBufferManager_.AllocateConstantBuffer(size);
+}
+
+void ResourceManager::OnGPUFrameEnd(std::function<void()> func)
 {
     synchronizer_.OnGPUFrameEnd(std::move(func));
 }
 
-RG::TransientResourceManager *FrameResourceManager::GetTransicentResourceManager() const
+RG::TransientResourceManager *ResourceManager::GetTransicentResourceManager() const
 {
     return transientResourceManager_.get();
 }
 
-void FrameResourceManager::RegisterFrameResourceProtection(RHIObjectPtr object)
+void ResourceManager::RegisterFrameResourceProtection(RHIObjectPtr object)
 {
     std::lock_guard lock(resourcesMutex_);
     resources_.insert(std::move(object));

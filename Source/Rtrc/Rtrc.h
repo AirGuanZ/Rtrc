@@ -10,7 +10,8 @@
 
 #include <Rtrc/Graphics/RenderGraph/Executable.h>
 
-#include <Rtrc/Graphics/Resource/Frame/FrameResourceManager.h>
+#include <Rtrc/Graphics/Resource/ConstantBuffer.h>
+#include <Rtrc/Graphics/Resource/Frame/ResourceManager.h>
 #include <Rtrc/Graphics/Resource/ResourceUploader.h>
 #include <Rtrc/Graphics/Resource/StandaloneCommandBuffer.h>
 

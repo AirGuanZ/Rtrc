@@ -3,46 +3,10 @@
 #include <filesystem>
 #include <map>
 
-#include <Rtrc/Graphics/Shader/ShaderBindingGroup.h>
-#include <Rtrc/Graphics/Shader/ShaderReflection.h>
+#include <Rtrc/Graphics/Shader/Shader.h>
 #include <Rtrc/Utils/SharedObjectPool.h>
 
 RTRC_BEGIN
-
-class Shader : public Uncopyable
-{
-public:
-
-    const RHI::RawShaderPtr &GetRawShader(RHI::ShaderStage stage) const;
-    const RHI::BindingLayoutPtr &GetRHIBindingLayout() const;
-
-    Span<ShaderIOVar> GetInputVariables() const;
-
-    const RC<BindingGroupLayout> GetBindingGroupLayoutByName(std::string_view name) const;
-    const RC<BindingGroupLayout> GetBindingGroupLayoutByIndex(int index) const;
-    int GetBindingGroupIndexByName(std::string_view name) const;
-
-private:
-
-    friend class ShaderCompiler;
-
-    struct BindingLayout
-    {
-        RHI::BindingLayoutPtr rhiPtr;
-    };
-
-    RHI::RawShaderPtr VS_;
-    RHI::RawShaderPtr FS_;
-    RHI::RawShaderPtr CS_;
-
-    ShaderReflection VSRefl_;
-    ShaderReflection FSRefl_;
-    ShaderReflection CSRefl_;
-
-    std::map<std::string, int, std::less<>> nameToBindingGroupLayoutIndex_;
-    std::vector<RC<BindingGroupLayout>>     bindingGroupLayouts_;
-    RC<BindingLayout>                       bindingLayout_;
-};
 
 class ShaderCompiler : public Uncopyable
 {
@@ -70,25 +34,27 @@ public:
 
     std::string GetMappedFilename(const std::string &filename);
 
+    RC<BindingGroupLayout> GetBindingGroupLayout(const RHI::BindingGroupLayoutDesc &desc);
+
 private:
 
     RHI::RawShaderPtr CompileShader(
-        const std::string                               &source,
-        const std::string                               &filename,
-        const std::string                               &entry,
-        bool                                             debug,
-        const std::map<std::string, std::string>        &macros,
-        RHI::ShaderStage                                 stage,
-        bool                                             skipPreprocess,
-        std::map<std::string, int, std::less<>>         &outputNameToGroupIndex,
-        std::vector<RC<BindingGroupLayout>>             &outBindingGroupLayouts,
-        ShaderReflection                                &outputRefl);
+        const std::string                        &source,
+        const std::string                        &filename,
+        const std::string                        &entry,
+        bool                                      debug,
+        const std::map<std::string, std::string> &macros,
+        RHI::ShaderStage                          stage,
+        bool                                      skipPreprocess,
+        std::map<std::string, int, std::less<>>  &outputNameToGroupIndex,
+        std::vector<RC<BindingGroupLayout>>      &outBindingGroupLayouts,
+        Box<ShaderReflection>                    &outputRefl);
 
     RHI::DevicePtr rhiDevice_;
     std::filesystem::path rootDir_;
 
     SharedObjectPool<RHI::BindingGroupLayoutDesc, BindingGroupLayout, true> bindingGroupLayoutPool_;
-    SharedObjectPool<RHI::BindingLayoutDesc, Shader::BindingLayout, true>   bindingLayoutPool_;
+    SharedObjectPool<RHI::BindingLayoutDesc, Shader::BindingLayout, true> bindingLayoutPool_;
 };
 
 RTRC_END

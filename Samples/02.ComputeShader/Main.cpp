@@ -4,6 +4,15 @@
 
 using namespace Rtrc;
 
+cbuffer_begin(X)
+    cbuffer_var(float, x)
+cbuffer_end()
+
+cbuffer_begin(ScaleSetting)
+    cbuffer_var(X[2], xx)
+    cbuffer_var(Vector4f, y)
+cbuffer_end()
+
 void Run()
 {
     auto instance = CreateVulkanInstance(RHI::VulkanInstanceDesc{
@@ -93,26 +102,18 @@ void Run()
 
     // create constant buffer
 
-    auto constantBuffer = device->CreateBuffer(RHI::BufferDesc{
-        .size                 = 16,
-        .usage                = RHI::BufferUsage::ShaderConstantBuffer,
-        .hostAccessType       = RHI::BufferHostAccessType::SequentialWrite,
-        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
-    });
-
-    constantBuffer->SetName("test");
-
+    ResourceManager resourceManager(device, 1);
+    auto constantBuffer = resourceManager.AllocateConstantBuffer<ScaleSetting>();
     {
-        const float scaleFactor = 2.0f;
-        auto mappedConstantBuffer = constantBuffer->Map(0, 16);
-        std::memcpy(mappedConstantBuffer, &scaleFactor, sizeof(scaleFactor));
-        constantBuffer->Unmap(0, 16);
+        ScaleSetting scaleSetting = {};
+        scaleSetting.y.x = 2.0f;
+        constantBuffer->SetData(scaleSetting);
     }
 
     // create binding group
 
     auto bindingGroup = bindingGroupLayout->CreateBindingGroup();
-    bindingGroup->Set("ScaleSetting", constantBuffer, 0, 16);
+    bindingGroup->Set("ScaleSetting", constantBuffer->GetBuffer(), constantBuffer->GetOffset(), constantBuffer->GetSize());
     bindingGroup->Set("InputTexture", inputTextureSRV);
     bindingGroup->Set("OutputTexture", outputTextureUAV);
 
@@ -180,7 +181,7 @@ void Run()
 
     Image<Vector4b> outputImageData(inputImageData.GetWidth(), inputImageData.GetHeight());
 
-    auto mappedOutputBuffer = readBackStagingBuffer->Map(0, readBackStagingBuffer->GetDesc().size);
+    auto mappedOutputBuffer = readBackStagingBuffer->Map(0, readBackStagingBuffer->GetDesc().size, true);
     std::memcpy(outputImageData.GetData(), mappedOutputBuffer, readBackStagingBuffer->GetDesc().size);
     readBackStagingBuffer->Unmap(0, readBackStagingBuffer->GetDesc().size);
 

@@ -14,7 +14,7 @@ Executer::Executer(
     
 }
 
-Executer::Executer(FrameResourceManager *frameResourceManager)
+Executer::Executer(ResourceManager *frameResourceManager)
     : Executer(
         frameResourceManager->GetDeviceWithFrameResourceProtection(), frameResourceManager, frameResourceManager->GetTransicentResourceManager())
 {

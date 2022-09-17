@@ -159,6 +159,12 @@ Ptr<Buffer> DirectX12Device::CreatePlacedBuffer(
     return {};
 }
 
+size_t DirectX12Device::GetConstantBufferAlignment() const
+{
+    // TODO
+    return 0;
+}
+
 void DirectX12Device::WaitIdle()
 {
     // TODO

@@ -111,17 +111,12 @@ RHI::BindingGroupPtr BindingGroup::GetRHIBindingGroup()
     return rhiGroup_;
 }
 
-const std::string &BindingGroupLayout::GetGroupName() const
-{
-    return groupName_;
-}
-
 int BindingGroupLayout::GetBindingSlotByName(std::string_view bindingName) const
 {
     const auto it = bindingNameToSlot_.find(bindingName);
     if(it == bindingNameToSlot_.end())
     {
-        throw Exception(fmt::format("unknown binding name '{}' in group '{}'", bindingName, groupName_));
+        throw Exception(fmt::format("unknown binding name '{}' in group", bindingName));
     }
     return it->second;
 }

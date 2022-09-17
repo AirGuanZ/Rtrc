@@ -24,10 +24,12 @@ public:
     std::optional<uint32_t> GetTransferQueueFamily() const;
 
     VkPhysicalDevice GetNativeHandle() const;
+    const VkPhysicalDeviceProperties &GetNativeProperties() const;
 
 private:
 
     VkPhysicalDevice physicalDevice_;
+    VkPhysicalDeviceProperties properties_;
 
     std::optional<uint32_t> graphicsQueueFamily_;
     std::optional<uint32_t> computeQueueFamily_;

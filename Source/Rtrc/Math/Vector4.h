@@ -11,7 +11,9 @@ public:
 
     using Component = T;
 
-    explicit Vector4(T value = T());
+    Vector4();
+
+    explicit Vector4(T value);
 
     Vector4(T x, T y, T z, T w);
 
@@ -34,6 +36,13 @@ auto operator<=>(const Vector4<T> &a, const Vector4<T> &b);
 
 template<typename T>
 bool operator==(const Vector4<T> &a, const Vector4<T> &b);
+
+template <typename T>
+Vector4<T>::Vector4()
+    : Vector4(0, 0, 0, 0)
+{
+    
+}
 
 template<typename T>
 Vector4<T>::Vector4(T value)

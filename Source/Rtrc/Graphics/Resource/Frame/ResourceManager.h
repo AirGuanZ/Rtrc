@@ -3,6 +3,7 @@
 #include <mutex>
 
 #include <Rtrc/Graphics/RenderGraph/TransientResourceManager.h>
+#include <Rtrc/Graphics/Resource/ConstantBuffer.h>
 #include <Rtrc/Graphics/Resource/Frame/FrameCommandBufferManager.h>
 #include <Rtrc/Graphics/Resource/Frame/FrameSynchronizer.h>
 
@@ -18,12 +19,12 @@ RTRC_BEGIN
         queue.submit(..., frameResources.GetFrameFence());
     }
 */
-class FrameResourceManager : public Uncopyable, public CommandBufferAllocator
+class ResourceManager : public Uncopyable, public CommandBufferAllocator
 {
 public:
 
-    FrameResourceManager(RHI::DevicePtr device, int frameCount);
-    ~FrameResourceManager() override;
+    ResourceManager(RHI::DevicePtr device, int frameCount);
+    ~ResourceManager() override;
 
     const RHI::DevicePtr &GetDeviceWithFrameResourceProtection() const;
 
@@ -34,6 +35,11 @@ public:
     int GetFrameIndex() const;
 
     RHI::CommandBufferPtr AllocateCommandBuffer(RHI::QueueType type) override;
+
+    Box<ConstantBuffer> AllocateConstantBuffer(size_t size);
+
+    template<CBDetail::ConstantBufferStruct T>
+    Box<ConstantBuffer> AllocateConstantBuffer();
 
     void OnGPUFrameEnd(std::function<void()> func);
 
@@ -47,10 +53,17 @@ private:
     RHI::DevicePtr                   deviceWithFrameResourceProtection_;
     FrameSynchronizer                synchronizer_;
     FrameCommandBufferManager        commandBufferManager_;
+    FrameConstantBufferAllocator     constantBufferManager_;
     RC<RG::TransientResourceManager> transientResourceManager_;
 
     std::set<RHI::Ptr<RHI::RHIObject>> resources_;
     std::mutex resourcesMutex_;
 };
+
+template <CBDetail::ConstantBufferStruct T>
+Box<ConstantBuffer> ResourceManager::AllocateConstantBuffer()
+{
+    return constantBufferManager_.AllocateConstantBuffer<T>();
+}
 
 RTRC_END

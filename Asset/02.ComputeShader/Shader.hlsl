@@ -1,6 +1,12 @@
+struct X
+{
+    float x;
+};
+
 struct ScaleSettingCStruct
 {
-    float Factor;
+    X xx[2];
+    float4 y;
 };
 
 ConstantBuffer<ScaleSettingCStruct> ScaleSetting;
@@ -14,7 +20,7 @@ group ScaleGroup
 
 float4 CalculateResult(float4 input)
 {
-    return float4(ScaleSetting.Factor * input.rgb, input.a);
+    return float4(ScaleSetting.y.x * input.rgb, input.a);
 }
 
 [numthreads(8, 8, 1)]

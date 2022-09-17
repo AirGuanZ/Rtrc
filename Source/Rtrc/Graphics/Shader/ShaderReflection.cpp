@@ -1,3 +1,5 @@
+#include <map>
+
 #include <fmt/format.h>
 #include <spirv_reflect.h>
 
@@ -52,24 +54,24 @@ namespace
     }
 
     void ReflectInputVariables(
-        const SpvReflectShaderModule &shaderModule, const char *entryPoint, ShaderReflection &result)
+        const SpvReflectShaderModule &shaderModule, const char *entryPoint, std::vector<ShaderIOVar> &result)
     {
-        assert(result.inputVariables.empty());
+        assert(result.empty());
 
         uint32_t count;
         Check(
             spvReflectEnumerateEntryPointInputVariables(&shaderModule, entryPoint, &count, nullptr),
-            "failed to reflect input variable count of spv shader");
+            "Failed to reflect input variable count of spv shader");
         std::vector<SpvReflectInterfaceVariable*> inputVars(count);
         Check(
             spvReflectEnumerateEntryPointInputVariables(&shaderModule, entryPoint, &count, inputVars.data()),
-            "failed to reflect input variables of spv shader");
+            "Failed to reflect input variables of spv shader");
 
-        result.inputVariables.reserve(count);
+        result.reserve(count);
         for(uint32_t i = 0; i < count; ++i)
         {
             auto &in = *inputVars[i];
-            auto &out = result.inputVariables.emplace_back();
+            auto &out = result.emplace_back();
             out.semantic = in.semantic ? in.semantic : std::string{};
             out.location = static_cast<int>(in.location);
             out.isBuiltin = (in.decoration_flags & SPV_REFLECT_DECORATION_BUILT_IN) != 0;
@@ -87,24 +89,134 @@ namespace
             case SPV_REFLECT_FORMAT_R32G32_SFLOAT:       out.type = RHI::VertexAttributeType::Float2; break;
             case SPV_REFLECT_FORMAT_R32G32B32_SFLOAT:    out.type = RHI::VertexAttributeType::Float3; break;
             case SPV_REFLECT_FORMAT_R32G32B32A32_SFLOAT: out.type = RHI::VertexAttributeType::Float4; break;
-            default: throw Exception("unsupported input variable format");
+            default: throw Exception("Unsupported input variable format");
             }
+        }
+    }
+
+    const SpvReflectTypeDescription *GetArraySize(
+        const SpvReflectTypeDescription *typeDesc, StaticVector<int, 16> &arraySizes)
+    {
+        if(typeDesc->op == SpvOpTypeArray)
+        {
+            for(uint32_t i = 0; i < typeDesc->traits.array.dims_count; ++i)
+            {
+                arraySizes.PushBack(static_cast<int>(typeDesc->traits.array.dims[i]));
+            }
+
+        }
+    }
+
+    Box<ShaderStruct> GetShaderStruct(std::string name, uint32_t memberCount, const SpvReflectTypeDescription *members)
+    {
+        auto ret = MakeBox<ShaderStruct>();
+        ret->typeName = std::move(name);
+
+        for(uint32_t i = 0; i < memberCount; ++i)
+        {
+            const SpvReflectTypeDescription *memberDesc = &members[i];
+            auto &newMember = ret->members.emplace_back();
+
+            newMember.name = memberDesc->struct_member_name;
+
+            if(memberDesc->type_flags & SPV_REFLECT_TYPE_FLAG_ARRAY)
+            {
+                assert(memberDesc->op == SpvOpTypeArray);
+                for(uint32_t j = 0; j < memberDesc->traits.array.dims_count; ++j)
+                {
+                    newMember.arraySizes.PushBack(static_cast<int>(memberDesc->traits.array.dims[j]));
+                }
+            }
+
+            if(memberDesc->type_flags & SPV_REFLECT_TYPE_FLAG_FLOAT)
+            {
+                newMember.elementType = ShaderStruct::Member::ElementType::Float;
+            }
+            else if(memberDesc->type_flags & SPV_REFLECT_TYPE_FLAG_INT)
+            {
+                newMember.elementType = ShaderStruct::Member::ElementType::Int;
+            }
+            else if(memberDesc->type_flags & SPV_REFLECT_TYPE_FLAG_STRUCT)
+            {
+                newMember.elementType = ShaderStruct::Member::ElementType::Struct;
+                newMember.structInfo = GetShaderStruct(
+                    memberDesc->type_name, memberDesc->member_count, memberDesc->members);
+            }
+            else
+            {
+                throw Exception("Unsupported basic element type in constant buffer struct");
+            }
+
+            if(memberDesc->type_flags & SPV_REFLECT_TYPE_FLAG_VECTOR)
+            {
+                newMember.matrixType = ShaderStruct::Member::MatrixType::Vector;
+                newMember.rowSize = static_cast<int>(memberDesc->traits.numeric.vector.component_count);
+            }
+            else if(memberDesc->type_flags & SPV_REFLECT_TYPE_FLAG_MATRIX)
+            {
+                newMember.matrixType = ShaderStruct::Member::MatrixType::Matrix;
+                newMember.rowSize = static_cast<int>(memberDesc->traits.numeric.matrix.row_count);
+                newMember.colSize = static_cast<int>(memberDesc->traits.numeric.matrix.column_count);
+            }
+        }
+
+        return ret;
+    }
+
+    void ReflectConstantBuffers(const SpvReflectShaderModule &shaderModule, std::vector<ShaderConstantBuffer> &result)
+    {
+        for(uint32_t i = 0; i < shaderModule.descriptor_binding_count; ++i)
+        {
+            const SpvReflectDescriptorBinding &binding = shaderModule.descriptor_bindings[i];
+            if(binding.descriptor_type != SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+            {
+                continue;
+            }
+            ShaderConstantBuffer cbuffer;
+            cbuffer.name = binding.name;
+            cbuffer.group = static_cast<int>(binding.set);
+            cbuffer.indexInGroup = static_cast<int>(binding.binding);
+            cbuffer.typeInfo = GetShaderStruct(
+                binding.type_description->type_name,
+                binding.type_description->member_count,
+                binding.type_description->members);
+            result.push_back(std::move(cbuffer));
         }
     }
 
 } // namespace anonymous
 
-void ReflectSPIRV(Span<unsigned char> code, const char *entryPoint, ShaderReflection &result)
+SPIRVReflection::SPIRVReflection(Span<unsigned char> code, std::string entryPoint)
+    : entry_(std::move(entryPoint))
 {
-    SpvReflectShaderModule shaderModule = {};
+    auto shadermodule = new SpvReflectShaderModule{};
+    RTRC_SCOPE_FAIL{ delete shadermodule; };
     Check(
-        spvReflectCreateShaderModule(code.size(), code.GetData(), &shaderModule),
-        "failed to reflect spv shader");
-    RTRC_SCOPE_EXIT{ spvReflectDestroyShaderModule(&shaderModule); };
+        spvReflectCreateShaderModule(code.size(), code.GetData(), shadermodule),
+        "Failed to reflect spv shader");
+    shaderModule_.reset(shadermodule);
+}
 
-    if(shaderModule.shader_stage == SPV_REFLECT_SHADER_STAGE_VERTEX_BIT)
+std::vector<ShaderIOVar> SPIRVReflection::GetInputVariables() const
+{
+    std::vector<ShaderIOVar> result;
+    ReflectInputVariables(*shaderModule_, entry_.c_str(), result);
+    return result;
+}
+
+std::vector<ShaderConstantBuffer> SPIRVReflection::GetConstantBuffers() const
+{
+    std::vector<ShaderConstantBuffer> result;
+    ReflectConstantBuffers(*shaderModule_, result);
+    return result;
+}
+
+void SPIRVReflection::DeleteShaderModule::operator()(SpvReflectShaderModule *ptr) const
+{
+    if(ptr)
     {
-        ReflectInputVariables(shaderModule, entryPoint, result);
+        spvReflectDestroyShaderModule(ptr);
+        delete ptr;
     }
 }
 

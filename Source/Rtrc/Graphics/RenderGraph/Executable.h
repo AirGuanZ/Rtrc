@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Rtrc/Graphics/RenderGraph/Graph.h>
-#include <Rtrc/Graphics/Resource/Frame/FrameResourceManager.h>
+#include <Rtrc/Graphics/Resource/Frame/ResourceManager.h>
 
 RTRC_RG_BEGIN
 
@@ -64,7 +64,7 @@ public:
         CommandBufferAllocator   *commandBufferAllocator,
         TransientResourceManager *transientResourceManager);
 
-    explicit Executer(FrameResourceManager *frameResourceManager);
+    explicit Executer(ResourceManager *frameResourceManager);
 
     void Execute(const RenderGraph &graph);
 

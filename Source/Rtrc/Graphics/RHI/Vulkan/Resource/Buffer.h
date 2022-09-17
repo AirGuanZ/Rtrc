@@ -27,9 +27,13 @@ public:
 
     Ptr<BufferUAV> CreateUAV(const BufferUAVDesc &desc) const override;
 
-    void *Map(size_t offset, size_t size) const override;
+    void *Map(size_t offset, size_t size, bool invalidate) override;
 
-    void Unmap(size_t offset, size_t size) override;
+    void Unmap(size_t offset, size_t size, bool flush) override;
+
+    void InvalidateBeforeRead(size_t offset, size_t size) override;
+
+    void FlushAfterWrite(size_t offset, size_t size) override;
 
     VkBuffer GetNativeBuffer() const;
 

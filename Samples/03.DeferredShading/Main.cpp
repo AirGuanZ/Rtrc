@@ -14,7 +14,7 @@ class Application : public Uncopyable
     RHI::QueuePtr     graphicsQueue_;
     RHI::SwapchainPtr swapchain_;
 
-    RC<FrameResourceManager> frameResources_;
+    RC<ResourceManager> resourceManager_;
     Box<RG::Executer> executer_;
 
     void InitializeVulkan()
@@ -60,8 +60,8 @@ public:
     {
         InitializeVulkan();
 
-        frameResources_ = MakeRC<FrameResourceManager>(device_, swapchain_->GetRenderTargetCount());
-        executer_ = MakeBox<RG::Executer>(frameResources_.get());
+        resourceManager_ = MakeRC<ResourceManager>(device_, swapchain_->GetRenderTargetCount());
+        executer_ = MakeBox<RG::Executer>(resourceManager_.get());
     }
 
     ~Application()
@@ -88,7 +88,7 @@ public:
 
         // begin frame
 
-        frameResources_->BeginFrame();
+        resourceManager_->BeginFrame();
         if(!swapchain_->Acquire())
         {
             return true;
@@ -117,7 +117,7 @@ public:
                 });
                 commandBuffer->EndRenderPass();
             })
-            ->SetSignalFence(frameResources_->GetFrameFence());
+            ->SetSignalFence(resourceManager_->GetFrameFence());
 
         executer_->Execute(graph);
         swapchain_->Present();

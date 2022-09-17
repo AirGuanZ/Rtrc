@@ -76,7 +76,7 @@ Ptr<BufferUAV> VulkanBuffer::CreateUAV(const BufferUAVDesc &desc) const
     return MakePtr<VulkanBufferUAV>(this, desc, view);
 }
 
-void *VulkanBuffer::Map(size_t offset, size_t size) const
+void *VulkanBuffer::Map(size_t offset, size_t size, bool invalidate)
 {
     assert(ownership_ == ResourceOwnership::Allocation);
     assert(alloc_.allocator && alloc_.allocation);
@@ -84,19 +84,35 @@ void *VulkanBuffer::Map(size_t offset, size_t size) const
     VK_FAIL_MSG(
         vmaMapMemory(alloc_.allocator, alloc_.allocation, &result),
         "failed to map vulkan buffer memory");
-    VK_FAIL_MSG(
-        vmaInvalidateAllocation(alloc_.allocator, alloc_.allocation, offset, size),
-        "failed to invalidate mapped buffer memory");
+    if(invalidate)
+    {
+        InvalidateBeforeRead(offset, size);
+    }
     return result;
 }
 
-void VulkanBuffer::Unmap(size_t offset, size_t size)
+void VulkanBuffer::Unmap(size_t offset, size_t size, bool flush)
 {
     assert(ownership_ == ResourceOwnership::Allocation);
     vmaUnmapMemory(alloc_.allocator, alloc_.allocation);
+    if(flush)
+    {
+        FlushAfterWrite(offset, size);
+    }
+}
+
+void VulkanBuffer::InvalidateBeforeRead(size_t offset, size_t size)
+{
+    VK_FAIL_MSG(
+        vmaInvalidateAllocation(alloc_.allocator, alloc_.allocation, offset, size),
+        "failed to invalidate mapped buffer memory");
+}
+
+void VulkanBuffer::FlushAfterWrite(size_t offset, size_t size)
+{
     VK_FAIL_MSG(
         vmaFlushAllocation(alloc_.allocator, alloc_.allocation, offset, size),
-        "failed to flush unmapped buffer memory");
+        "failed to flush buffer memory");
 }
 
 VkBuffer VulkanBuffer::GetNativeBuffer() const

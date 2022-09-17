@@ -235,6 +235,11 @@ RC<ShaderTemplate> MaterialManager::GetShaderTemplate(std::string_view name)
     return shaderPool_.GetOrCreate(name, [&] { return CreateShaderTemplate(name); });
 }
 
+RC<BindingGroupLayout> MaterialManager::GetBindingGroupLayout(const RHI::BindingGroupLayoutDesc &desc)
+{
+    return shaderCompiler_.GetBindingGroupLayout(desc);
+}
+
 void MaterialManager::GC()
 {
     materialPool_.GC();

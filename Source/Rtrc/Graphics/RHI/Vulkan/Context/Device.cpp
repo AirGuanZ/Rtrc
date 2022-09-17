@@ -863,6 +863,11 @@ Ptr<Buffer> VulkanDevice::CreatePlacedBuffer(
     return MakePtr<VulkanBuffer>(desc, this, buffer, vmaAlloc, ResourceOwnership::Resource);
 }
 
+size_t VulkanDevice::GetConstantBufferAlignment() const
+{
+    return physicalDevice_.GetNativeProperties().limits.minUniformBufferOffsetAlignment;
+}
+
 void VulkanDevice::WaitIdle()
 {
     VK_FAIL_MSG(

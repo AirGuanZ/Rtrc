@@ -81,7 +81,7 @@ public:
         {
             for(size_t i = other.size_; i < size_; ++i)
             {
-                new (&other.At(i)) T(std::move(At(i)));
+                new (other.GetData() + i) T(std::move(At(i)));
                 At(i).~T();
             }
         }
@@ -89,7 +89,7 @@ public:
         {
             for(size_t i = size_; i < other.size_; ++i)
             {
-                new (&At(i)) T(std::move(other.At(i)));
+                new (GetData() + i) T(std::move(other.At(i)));
                 other.At(i).~T();
             }
         }
@@ -168,6 +168,22 @@ public:
     bool Contains(const T &val) const
     {
         return std::find(begin(), end(), val) != end();
+    }
+
+    bool operator==(const StaticVector &rhs) const
+    {
+        if(size_ != rhs.size_)
+        {
+            return false;
+        }
+        for(size_t i = 0; i < size_; ++i)
+        {
+            if(At(i) != rhs.At(i))
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     auto begin() { return reinterpret_cast<T *>(&data_); }

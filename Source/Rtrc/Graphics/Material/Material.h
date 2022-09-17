@@ -57,6 +57,8 @@ public:
     RC<Material> GetMaterial(std::string_view name);
     RC<ShaderTemplate> GetShaderTemplate(std::string_view name);
 
+    RC<BindingGroupLayout> GetBindingGroupLayout(const RHI::BindingGroupLayoutDesc &desc);
+
     void GC();
 
 private:
