@@ -17,12 +17,6 @@ namespace CBDetail
     template<typename T>
     concept ConstantBufferStruct = requires { typename T::_rtrcCBufferTypeFlag; };
 
-    template<typename T>
-    consteval size_t GetConstantBufferDWordCount();
-
-    template<typename T, typename F>
-    constexpr void ForEachFlattenMember(const char *name, const F &f, size_t hostOffset, size_t deviceOffset);
-
 } // namespace CBDetail
 
 #define cbuffer_begin(NAME) RTRC_META_STRUCT_BEGIN(NAME) struct _rtrcCBufferTypeFlag{};
@@ -34,30 +28,14 @@ namespace CBDetail
     using _rtrcMemberType##NAME = TYPE;                 \
     _rtrcMemberType##NAME NAME;
 
-template<CBDetail::ConstantBufferStruct T>
-constexpr size_t ConstantBufferSize = CBDetail::GetConstantBufferDWordCount<T>() * 4;
-
-template<CBDetail::ConstantBufferStruct T, typename F>
-constexpr void ForEachFlattenMemberInConstantBuffer(const F &f)
-{
-    CBDetail::ForEachFlattenMember<T>("struct", f, 0, 0);
-}
-
 class ConstantBuffer : public Uncopyable
 {
 public:
 
     template<CBDetail::ConstantBufferStruct T>
-    static constexpr size_t CalculateSize()
-    {
-        return ConstantBufferSize<T>;
-    }
-
+    static constexpr size_t CalculateSize();
     template<CBDetail::ConstantBufferStruct T, typename F>
-    static constexpr void ForEachFlattenMember(const F &f)
-    {
-        ::Rtrc::ForEachFlattenMemberInConstantBuffer<T, F>(f);
-    }
+    static constexpr void ForEachFlattenMember(const F &f);
 
     ConstantBuffer();
     ConstantBuffer(RHI::BufferPtr buffer, unsigned char *mappedPtr, size_t offset, size_t size);
@@ -249,5 +227,17 @@ namespace CBDetail
     }
 
 } // namespace CBDetail
+
+template<CBDetail::ConstantBufferStruct T>
+constexpr size_t ConstantBuffer::CalculateSize()
+{
+    return CBDetail::GetConstantBufferDWordCount<T>() * 4;
+}
+
+template<CBDetail::ConstantBufferStruct T, typename F>
+constexpr void ConstantBuffer::ForEachFlattenMember(const F &f)
+{
+    CBDetail::ForEachFlattenMember<T>("struct", f, 0, 0);
+}
 
 RTRC_END

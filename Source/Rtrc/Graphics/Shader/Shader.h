@@ -17,8 +17,10 @@ public:
     Span<ShaderIOVar> GetInputVariables() const;
     Span<ShaderConstantBuffer> GetConstantBuffers() const;
 
-    const RC<BindingGroupLayout> GetBindingGroupLayoutByName(std::string_view name) const;
-    const RC<BindingGroupLayout> GetBindingGroupLayoutByIndex(int index) const;
+    int GetBindingGroupCount() const;
+    const std::string &GetBindingGroupNameByIndex(int index) const;
+    const RC<BindingGroupLayout> &GetBindingGroupLayoutByName(std::string_view name) const;
+    const RC<BindingGroupLayout> &GetBindingGroupLayoutByIndex(int index) const;
     int GetBindingGroupIndexByName(std::string_view name) const;
 
 private:
@@ -39,6 +41,7 @@ private:
 
     std::map<std::string, int, std::less<>> nameToBindingGroupLayoutIndex_;
     std::vector<RC<BindingGroupLayout>>     bindingGroupLayouts_;
+    std::vector<std::string>                bindingGroupNames_;
     RC<BindingLayout>                       bindingLayout_;
 };
 

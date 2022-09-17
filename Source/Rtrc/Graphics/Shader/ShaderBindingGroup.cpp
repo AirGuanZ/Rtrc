@@ -28,10 +28,15 @@ Span<ParsedBindingGroupLayout::ParsedBindingDescription>
     return Span(&allDescs_[record.offset], record.count);
 }
 
-BindingGroup::BindingGroup(const BindingGroupLayout *parentLayout, RHI::BindingGroupPtr rhiGroup)
-    : parentLayout_(parentLayout), rhiGroup_(std::move(rhiGroup))
+BindingGroup::BindingGroup(RC<const BindingGroupLayout> parentLayout, RHI::BindingGroupPtr rhiGroup)
+    : parentLayout_(std::move(parentLayout)), rhiGroup_(std::move(rhiGroup))
 {
     boundObjects_.resize(rhiGroup_->GetLayout()->GetDesc().bindings.size());
+}
+
+const RC<const BindingGroupLayout> &BindingGroup::GetBindingGroupLayout()
+{
+    return parentLayout_;
 }
 
 void BindingGroup::Set(int slot, const RHI::BufferPtr &cbuffer, size_t offset, size_t bytes)
@@ -129,7 +134,7 @@ RHI::BindingGroupLayoutPtr BindingGroupLayout::GetRHIBindingGroupLayout()
 RC<BindingGroup> BindingGroupLayout::CreateBindingGroup() const
 {
     RHI::BindingGroupPtr rhiGroup = device_->CreateBindingGroup(rhiLayout_);
-    return MakeRC<BindingGroup>(this, std::move(rhiGroup));
+    return MakeRC<BindingGroup>(shared_from_this(), std::move(rhiGroup));
 }
 
 RTRC_END

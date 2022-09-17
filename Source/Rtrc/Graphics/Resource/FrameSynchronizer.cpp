@@ -1,4 +1,4 @@
-#include <Rtrc/Graphics/Resource/Frame/FrameSynchronizer.h>
+#include <Rtrc/Graphics/Resource/FrameSynchronizer.h>
 
 RTRC_BEGIN
 

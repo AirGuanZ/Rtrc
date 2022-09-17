@@ -20,9 +20,8 @@ cbuffer_end()
 
 void Run()
 {
-    std::cout << ConstantBuffer::CalculateSize<Test>() << std::endl;
-
     fmt::print("{:<30} {:<5} {:<13} {:<15}\n", "type", "name", "host offset", "device offset");
+
     ConstantBuffer::ForEachFlattenMember<Test>([&]<typename T>(const char *name, size_t hostOffset, size_t offset)
     {
         fmt::print("{:<30} {:<5} {:<13} {:<15}\n", typeid(T).name(), name, hostOffset, offset);

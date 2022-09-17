@@ -25,6 +25,7 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &desc, bool debug, const M
 {
     std::map<std::string, int, std::less<>> nameToGroupIndex;
     std::vector<RC<BindingGroupLayout>>     bindingGroupLayouts;
+    std::vector<std::string>                bindingGroupNames;
 
     RC<Shader> shader = MakeRC<Shader>();
 
@@ -46,20 +47,20 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &desc, bool debug, const M
     {
         shader->VS_ = CompileShader(
             source, filename, desc.VSEntry, debug, macros, RHI::ShaderStage::VertexShader,
-            skipPreprocess, nameToGroupIndex, bindingGroupLayouts, VSRefl);
+            skipPreprocess, nameToGroupIndex, bindingGroupLayouts, bindingGroupNames, VSRefl);
         shader->VSInput_ = VSRefl->GetInputVariables();
     }
     if(!desc.FSEntry.empty())
     {
         shader->FS_ = CompileShader(
             source, filename, desc.FSEntry, debug, macros, RHI::ShaderStage::FragmentShader,
-            skipPreprocess, nameToGroupIndex, bindingGroupLayouts, FSRefl);
+            skipPreprocess, nameToGroupIndex, bindingGroupLayouts, bindingGroupNames, FSRefl);
     }
     if(!desc.CSEntry.empty())
     {
         shader->CS_ = CompileShader(
             source, filename, desc.CSEntry, debug, macros, RHI::ShaderStage::ComputeShader,
-            skipPreprocess, nameToGroupIndex, bindingGroupLayouts, CSRefl);
+            skipPreprocess, nameToGroupIndex, bindingGroupLayouts, bindingGroupNames, CSRefl);
     }
 
     // (group, indexInGroup) -> cbuffer
@@ -99,6 +100,7 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &desc, bool debug, const M
 
     shader->nameToBindingGroupLayoutIndex_ = std::move(nameToGroupIndex);
     shader->bindingGroupLayouts_           = std::move(bindingGroupLayouts);
+    shader->bindingGroupNames_             = std::move(bindingGroupNames);
 
     RHI::BindingLayoutDesc bindingLayoutDesc;
     for(auto &g : shader->bindingGroupLayouts_)
@@ -180,16 +182,17 @@ RC<BindingGroupLayout> ShaderCompiler::GetBindingGroupLayout(const RHI::BindingG
 }
 
 RHI::RawShaderPtr ShaderCompiler::CompileShader(
-    const std::string                               &source,
-    const std::string                               &filename,
-    const std::string                               &entry,
-    bool                                             debug,
-    const std::map<std::string, std::string>        &macros,
-    RHI::ShaderStage                                 stage,
-    bool                                             skipPreprocess,
-    std::map<std::string, int, std::less<>>         &outputNameToGroupIndex,
-    std::vector<RC<BindingGroupLayout>>             &outBindingGroupLayouts,
-    Box<ShaderReflection>                           &outputRefl)
+    const std::string                        &source,
+    const std::string                        &filename,
+    const std::string                        &entry,
+    bool                                      debug,
+    const std::map<std::string, std::string> &macros,
+    RHI::ShaderStage                          stage,
+    bool                                      skipPreprocess,
+    std::map<std::string, int, std::less<>>  &outputNameToGroupIndex,
+    std::vector<RC<BindingGroupLayout>>      &outBindingGroupLayouts,
+    std::vector<std::string>                 &outBindingGroupNames,
+    Box<ShaderReflection>                    &outputRefl)
 {
     DXC::Target target = {};
     switch(stage)
@@ -357,6 +360,7 @@ RHI::RawShaderPtr ShaderCompiler::CompileShader(
 
             outputNameToGroupIndex[group.name] = groupIndex;
             outBindingGroupLayouts.push_back(groupLayout);
+            outBindingGroupNames.push_back(group.name);
 
             for(auto &&[slotIndex, aliasedBindings] : Enumerate(group.bindings))
             {

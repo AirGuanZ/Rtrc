@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Rtrc/Graphics/RenderGraph/Graph.h>
-#include <Rtrc/Graphics/Resource/Frame/ResourceManager.h>
+#include <Rtrc/Graphics/Resource/ResourceManager.h>
 
 RTRC_RG_BEGIN
 

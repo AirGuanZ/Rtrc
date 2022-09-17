@@ -31,13 +31,23 @@ Span<ShaderConstantBuffer> Shader::GetConstantBuffers() const
     return constantBuffers_;
 }
 
-const RC<BindingGroupLayout> Shader::GetBindingGroupLayoutByName(std::string_view name) const
+int Shader::GetBindingGroupCount() const
+{
+    return static_cast<int>(bindingGroupLayouts_.size());
+}
+
+const std::string &Shader::GetBindingGroupNameByIndex(int index) const
+{
+    return bindingGroupNames_[index];
+}
+
+const RC<BindingGroupLayout> &Shader::GetBindingGroupLayoutByName(std::string_view name) const
 {
     const int index = GetBindingGroupIndexByName(name);
     return GetBindingGroupLayoutByIndex(index);
 }
 
-const RC<BindingGroupLayout> Shader::GetBindingGroupLayoutByIndex(int index) const
+const RC<BindingGroupLayout> &Shader::GetBindingGroupLayoutByIndex(int index) const
 {
     return bindingGroupLayouts_[index];
 }

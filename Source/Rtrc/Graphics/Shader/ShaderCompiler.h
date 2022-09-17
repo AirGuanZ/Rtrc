@@ -48,6 +48,7 @@ private:
         bool                                      skipPreprocess,
         std::map<std::string, int, std::less<>>  &outputNameToGroupIndex,
         std::vector<RC<BindingGroupLayout>>      &outBindingGroupLayouts,
+        std::vector<std::string>                 &outBindingGroupNames,
         Box<ShaderReflection>                    &outputRefl);
 
     RHI::DevicePtr rhiDevice_;

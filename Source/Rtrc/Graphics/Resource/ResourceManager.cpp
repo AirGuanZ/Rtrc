@@ -1,4 +1,4 @@
-#include <Rtrc/Graphics/Resource/Frame/ResourceManager.h>
+#include <Rtrc/Graphics/Resource/ResourceManager.h>
 
 RTRC_BEGIN
 

@@ -4,8 +4,8 @@
 
 #include <Rtrc/Graphics/RenderGraph/TransientResourceManager.h>
 #include <Rtrc/Graphics/Resource/ConstantBuffer.h>
-#include <Rtrc/Graphics/Resource/Frame/FrameCommandBufferManager.h>
-#include <Rtrc/Graphics/Resource/Frame/FrameSynchronizer.h>
+#include <Rtrc/Graphics/Resource/FrameCommandBufferManager.h>
+#include <Rtrc/Graphics/Resource/FrameSynchronizer.h>
 
 RTRC_BEGIN
 

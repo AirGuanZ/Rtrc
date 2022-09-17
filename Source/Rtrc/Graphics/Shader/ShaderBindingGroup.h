@@ -37,7 +37,9 @@ class BindingGroup : public Uncopyable
 {
 public:
 
-    BindingGroup(const BindingGroupLayout *parentLayout, RHI::BindingGroupPtr rhiGroup);
+    BindingGroup(RC<const BindingGroupLayout> parentLayout, RHI::BindingGroupPtr rhiGroup);
+
+    const RC<const BindingGroupLayout> &GetBindingGroupLayout();
 
     void Set(int slot, const RHI::BufferPtr &cbuffer, size_t offset, size_t bytes);
     void Set(int slot, const RHI::SamplerPtr &sampler);
@@ -57,12 +59,12 @@ public:
 
 private:
 
-    const BindingGroupLayout *parentLayout_;
+    RC<const BindingGroupLayout> parentLayout_;
     RHI::BindingGroupPtr rhiGroup_;
     std::vector<RHI::Ptr<RHI::RHIObject>> boundObjects_;
 };
 
-class BindingGroupLayout : public Uncopyable
+class BindingGroupLayout : public Uncopyable, public std::enable_shared_from_this<BindingGroupLayout>
 {
 public:
 
