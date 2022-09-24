@@ -17,7 +17,7 @@ ResourceUploader::~ResourceUploader()
     assert(pendingStagingBuffers_.empty());
 }
 
-BufferAcquireBarrier ResourceUploader::Upload(
+ResourceUploadHandle<BufferAcquireBarrier> ResourceUploader::Upload(
     Buffer            *buffer,
     size_t             offset,
     size_t             range,
@@ -31,9 +31,8 @@ BufferAcquireBarrier ResourceUploader::Upload(
     {
         auto p = buffer->Map(offset, range);
         std::memcpy(p, data, range);
-        buffer->Unmap(offset, range);
-        buffer->FlushAfterWrite(offset, range);
-        return {};
+        buffer->Unmap(offset, range, true);
+        return ResourceUploadHandle({}, BufferAcquireBarrier{});
     }
 
     auto stagingBuffer = device_->CreateBuffer(BufferDesc
@@ -74,28 +73,33 @@ BufferAcquireBarrier ResourceUploader::Upload(
             });
     }
 
+    TimelineSemaphoreWaiter waiter;
     if(pendingStagingBufferSize_ >= MAX_ALLOWED_STAGING_BUFFER_SIZE ||
        pendingStagingBuffers_.size() >= MAX_ALLOWED_STAGING_BUFFER_COUNT)
     {
         SubmitAndSync();
     }
+    else
+    {
+        waiter = timelineSemaphore_.CreateWaiter();
+    }
 
     if(afterQueue != queue_.Get())
     {
         // TODO: remove this barrier unless release/acquire is actually needed
-        return BufferAcquireBarrier
+        return ResourceUploadHandle(waiter, BufferAcquireBarrier
         {
             .buffer        = buffer,
             .afterStages   = afterStages,
             .afterAccesses = afterAccesses,
             .beforeQueue   = queue_.Get(),
             .afterQueue    = afterQueue
-        };
+        });
     }
-    return {};
+    return ResourceUploadHandle(waiter, BufferAcquireBarrier{});
 }
 
-TextureAcquireBarrier ResourceUploader::Upload(
+ResourceUploadHandle<TextureAcquireBarrier> ResourceUploader::Upload(
     Texture           *texture,
     uint32_t           mipLevel,
     uint32_t           arrayLayer,
@@ -185,15 +189,20 @@ TextureAcquireBarrier ResourceUploader::Upload(
         });
     }
 
+    TimelineSemaphoreWaiter waiter;
     if(pendingStagingBufferSize_ >= MAX_ALLOWED_STAGING_BUFFER_SIZE ||
        pendingStagingBuffers_.size() >= MAX_ALLOWED_STAGING_BUFFER_COUNT)
     {
         SubmitAndSync();
     }
+    else
+    {
+        waiter = timelineSemaphore_.CreateWaiter();
+    }
 
     if(afterQueue != queue_.Get())
     {
-        return TextureAcquireBarrier
+        return ResourceUploadHandle(waiter, TextureAcquireBarrier
             {
                 .texture      = texture,
                 .subresources = {
@@ -206,12 +215,12 @@ TextureAcquireBarrier ResourceUploader::Upload(
                 .afterLayout    = afterLayout,
                 .beforeQueue    = queue_.Get(),
                 .afterQueue     = afterQueue
-            };
+            });
     }
-    return {};
+    return ResourceUploadHandle(waiter, TextureAcquireBarrier{});
 }
 
-TextureAcquireBarrier ResourceUploader::Upload(
+ResourceUploadHandle<TextureAcquireBarrier> ResourceUploader::Upload(
     Texture            *texture,
     uint32_t            mipLevel,
     uint32_t            arrayLayer,
@@ -262,6 +271,7 @@ void ResourceUploader::SubmitAndSync()
 
     queue_->Submit({}, {}, commandBuffer_, {}, {}, {});
     queue_->WaitIdle();
+    timelineSemaphore_.Signal();
     commandPool_->Reset();
 
     pendingStagingBufferSize_ = 0;

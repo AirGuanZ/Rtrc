@@ -71,7 +71,7 @@ void Run()
         computeQueue,
         RHI::PipelineStage::ComputeShader,
         RHI::ResourceAccess::TextureRead,
-        RHI::TextureLayout::ShaderTexture));
+        RHI::TextureLayout::ShaderTexture).GetAcquireBarrier());
 
     uploader.SubmitAndSync();
 
@@ -103,17 +103,17 @@ void Run()
     // create constant buffer
 
     ResourceManager resourceManager(device, 1);
-    auto constantBuffer = resourceManager.AllocateConstantBuffer<ScaleSetting>();
+    auto constantBuffer = resourceManager.AllocatePersistentConstantBuffer<ScaleSetting>();
     {
         ScaleSetting scaleSetting = {};
         scaleSetting.y.x = 2.0f;
-        constantBuffer->SetData(scaleSetting);
+        constantBuffer.SetData(scaleSetting);
     }
 
     // create binding group
 
     auto bindingGroup = bindingGroupLayout->CreateBindingGroup();
-    bindingGroup->Set("ScaleSetting", constantBuffer->GetBuffer(), constantBuffer->GetOffset(), constantBuffer->GetSize());
+    bindingGroup->Set("ScaleSetting", constantBuffer.GetBuffer(), constantBuffer.GetOffset(), constantBuffer.GetSize());
     bindingGroup->Set("InputTexture", inputTextureSRV);
     bindingGroup->Set("OutputTexture", outputTextureUAV);
 

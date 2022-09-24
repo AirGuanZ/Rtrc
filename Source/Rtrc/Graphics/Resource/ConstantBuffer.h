@@ -19,16 +19,9 @@ namespace CBDetail
 
 } // namespace CBDetail
 
-#define cbuffer_begin(NAME) RTRC_META_STRUCT_BEGIN(NAME) struct _rtrcCBufferTypeFlag{};
-#define cbuffer_end() RTRC_META_STRUCT_END()
-#define cbuffer_var(TYPE, NAME)                        \
-    RTRC_META_STRUCT_PRE_MEMBER(NAME)                   \
-        f.template operator()(&_rtrcSelf::NAME, #NAME); \
-    RTRC_META_STRUCT_POST_MEMBER(NAME)                  \
-    using _rtrcMemberType##NAME = TYPE;                 \
-    _rtrcMemberType##NAME NAME;
+class PersistentConstantBufferManager;
 
-class ConstantBuffer : public Uncopyable
+class FrameConstantBuffer
 {
 public:
 
@@ -37,24 +30,57 @@ public:
     template<CBDetail::ConstantBufferStruct T, typename F>
     static constexpr void ForEachFlattenMember(const F &f);
 
-    ConstantBuffer();
-    ConstantBuffer(RHI::BufferPtr buffer, unsigned char *mappedPtr, size_t offset, size_t size);
+    FrameConstantBuffer() = default;
+    FrameConstantBuffer(RHI::BufferPtr buffer, unsigned char *mappedPtr, size_t offset, size_t size);
 
     void SetData(const void *data, size_t size);
 
     template<CBDetail::ConstantBufferStruct T>
     void SetData(const T &data);
 
-    const RHI::BufferPtr &GetBuffer() const;
-    size_t GetOffset() const;
-    size_t GetSize() const;
+    const RHI::BufferPtr &GetBuffer() const { return buffer_; }
+    size_t GetOffset() const { return offset_; }
+    size_t GetSize() const { return size_; }
 
 private:
 
     RHI::BufferPtr buffer_;
-    unsigned char *mappedPtr_;
-    size_t offset_;
-    size_t size_;
+    unsigned char *mappedPtr_ = nullptr;
+    size_t offset_ = 0;
+    size_t size_ = 0;
+};
+
+class PersistentConstantBuffer : public Uncopyable
+{
+public:
+
+    PersistentConstantBuffer() = default;
+    ~PersistentConstantBuffer();
+
+    PersistentConstantBuffer(PersistentConstantBuffer &&other) noexcept;
+    PersistentConstantBuffer &operator=(PersistentConstantBuffer &&other) noexcept;
+    void Swap(PersistentConstantBuffer &other) noexcept;
+
+    void SetData(const void *data, size_t size);
+
+    template<CBDetail::ConstantBufferStruct T>
+    void SetData(const T &data);
+
+    const RHI::BufferPtr &GetBuffer() const { return buffer_; }
+    size_t GetOffset() const { return offset_; }
+    size_t GetSize() const { return size_; }
+
+private:
+
+    friend class PersistentConstantBufferManager;
+
+    PersistentConstantBufferManager *parentManager_ = nullptr;
+    RHI::BufferPtr buffer_;
+    size_t offset_ = 0;
+    size_t size_ = 0;
+
+    int chunkIndex_ = -1;
+    int slabIndex_ = -1;
 };
 
 class FrameConstantBufferAllocator : public Uncopyable
@@ -66,10 +92,10 @@ public:
 
     void BeginFrame();
 
-    Box<ConstantBuffer> AllocateConstantBuffer(size_t size);
+    FrameConstantBuffer AllocateConstantBuffer(size_t size);
 
     template<CBDetail::ConstantBufferStruct T>
-    Box<ConstantBuffer> AllocateConstantBuffer();
+    FrameConstantBuffer AllocateConstantBuffer();
 
 private:
 
@@ -92,10 +118,68 @@ private:
     std::vector<FrameRecord> frameRecords_;
 };
 
-template <CBDetail::ConstantBufferStruct T>
-void ConstantBuffer::SetData(const T &data)
+class PersistentConstantBufferManager : public Uncopyable
 {
-    constexpr size_t deviceSize = ConstantBuffer::CalculateSize<T>();
+public:
+
+    PersistentConstantBufferManager(RHI::DevicePtr device, int frameCount, size_t chunkSize = 2 * 1024 * 1024);
+    ~PersistentConstantBufferManager();
+
+    void BeginFrame();
+
+    PersistentConstantBuffer AllocateConstantBuffer(size_t size);
+
+    template<CBDetail::ConstantBufferStruct T>
+    PersistentConstantBuffer AllocateConstantBuffer();
+
+    // return mapped ptr
+    void *_AllocateInternal(PersistentConstantBuffer &buffer);
+    void _FreeInternal(PersistentConstantBuffer &buffer);
+
+private:
+
+    struct Chunk
+    {
+        RHI::BufferPtr buffer;
+        void *mappedPtr;
+    };
+
+    struct Record
+    {
+        int chunkIndex = 0;
+        size_t offsetInBuffer = 0;
+    };
+
+    struct PendingRecord : Record
+    {
+        int slabIndex = 0;
+        int pendingFrames = 0;
+    };
+
+    static int CalculateSlabIndex(size_t size);
+
+    RHI::DevicePtr device_;
+    int frameCount_;
+    size_t chunkSize_;
+
+    std::vector<Chunk> chunks_;
+    std::vector<std::vector<Record>> slabs_;
+    std::vector<PendingRecord> pendingRecords_;
+};
+
+#define cbuffer_begin(NAME) RTRC_META_STRUCT_BEGIN(NAME) struct _rtrcCBufferTypeFlag{};
+#define cbuffer_end() RTRC_META_STRUCT_END()
+#define cbuffer_var(TYPE, NAME)                         \
+    RTRC_META_STRUCT_PRE_MEMBER(NAME)                   \
+        f.template operator()(&_rtrcSelf::NAME, #NAME); \
+    RTRC_META_STRUCT_POST_MEMBER(NAME)                  \
+    using _rtrcMemberType##NAME = TYPE;                 \
+    _rtrcMemberType##NAME NAME;
+
+template <CBDetail::ConstantBufferStruct T>
+void FrameConstantBuffer::SetData(const T &data)
+{
+    constexpr size_t deviceSize = FrameConstantBuffer::CalculateSize<T>();
     assert(deviceSize <= size_);
     ForEachFlattenMember<T>([&]<typename M>(const char *, size_t hostOffset, size_t deviceOffset)
     {
@@ -105,9 +189,29 @@ void ConstantBuffer::SetData(const T &data)
 }
 
 template <CBDetail::ConstantBufferStruct T>
-Box<ConstantBuffer> FrameConstantBufferAllocator::AllocateConstantBuffer()
+void PersistentConstantBuffer::SetData(const T &data)
 {
-    return this->AllocateConstantBuffer(ConstantBuffer::CalculateSize<T>());
+    constexpr size_t deviceSize = FrameConstantBuffer::CalculateSize<T>();
+    assert(deviceSize <= size_);
+    assert(parentManager_);
+    auto mappedPtr = static_cast<unsigned char *>(parentManager_->_AllocateInternal(*this));
+    FrameConstantBuffer::ForEachFlattenMember<T>([&]<typename M>(const char *, size_t hostOffset, size_t deviceOffset)
+    {
+        std::memcpy(mappedPtr + deviceOffset, reinterpret_cast<const unsigned char *>(&data) + hostOffset, sizeof(M));
+    });
+    buffer_->FlushAfterWrite(offset_, deviceSize);
+}
+
+template <CBDetail::ConstantBufferStruct T>
+FrameConstantBuffer FrameConstantBufferAllocator::AllocateConstantBuffer()
+{
+    return this->AllocateConstantBuffer(FrameConstantBuffer::CalculateSize<T>());
+}
+
+template <CBDetail::ConstantBufferStruct T>
+PersistentConstantBuffer PersistentConstantBufferManager::AllocateConstantBuffer()
+{
+    return this->AllocateConstantBuffer(FrameConstantBuffer::CalculateSize<T>());
 }
 
 namespace CBDetail
@@ -229,13 +333,13 @@ namespace CBDetail
 } // namespace CBDetail
 
 template<CBDetail::ConstantBufferStruct T>
-constexpr size_t ConstantBuffer::CalculateSize()
+constexpr size_t FrameConstantBuffer::CalculateSize()
 {
     return CBDetail::GetConstantBufferDWordCount<T>() * 4;
 }
 
 template<CBDetail::ConstantBufferStruct T, typename F>
-constexpr void ConstantBuffer::ForEachFlattenMember(const F &f)
+constexpr void FrameConstantBuffer::ForEachFlattenMember(const F &f)
 {
     CBDetail::ForEachFlattenMember<T>("struct", f, 0, 0);
 }

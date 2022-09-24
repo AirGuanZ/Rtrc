@@ -30,6 +30,13 @@ namespace
         }
     }
 
+    const std::set<std::string, std::less<>> VALUE_PROPERTY_NAMES =
+    {
+        "float", "float2", "float3", "float4",
+        "uint", "uint2", "uint3", "uint4",
+        "int", "int2", "int3", "int4"
+    };
+
     const std::map<std::string, RHI::BindingType, std::less<>> NAME_TO_BINDING_TYPE =
     {
         { "Texture2DArray",     RHI::BindingType::Texture2DArray },
@@ -277,6 +284,7 @@ bool ShaderBindingGroupRewrite::RewriteNextBindingGroup(std::string &source, Par
     bool parsingAliasedBindings = false;
 
     std::vector<Binding> aliasedNames;
+    std::vector<std::string> valuePropertyDefinitions;
 
     assert(bindings.bindings.empty());
     while(true)
@@ -287,7 +295,11 @@ bool ShaderBindingGroupRewrite::RewriteNextBindingGroup(std::string &source, Par
             {
                 tokens.Throw("unexpected token: '}'");
             }
-            tokens.RemoveCurrentToken();
+            tokens.RemoveAndNext();
+            if(tokens.GetCurrentToken() == ";")
+            {
+                tokens.RemoveAndNext();
+            }
             break;
         }
 
@@ -319,7 +331,35 @@ bool ShaderBindingGroupRewrite::RewriteNextBindingGroup(std::string &source, Par
         if(ShaderTokenStream::IsIdentifier(tokens.GetCurrentToken()))
         {
             std::string_view id = tokens.GetCurrentToken();
-            if(auto it = NAME_TO_BINDING_TYPE.find(id); it == NAME_TO_BINDING_TYPE.end())
+            if(VALUE_PROPERTY_NAMES.contains(id))
+            {
+                if(parsingAliasedBindings)
+                {
+                    tokens.Throw("Cannot use property in aliased bindings");
+                }
+
+                std::string type(id);
+                tokens.RemoveAndNext();
+
+                if(!ShaderTokenStream::IsIdentifier(tokens.GetCurrentToken()))
+                {
+                    tokens.Throw("Property name expected");
+                }
+                std::string name(tokens.GetCurrentToken());
+                tokens.RemoveAndNext();
+
+                if(tokens.GetCurrentToken() == ";" || tokens.GetCurrentToken() == ",")
+                {
+                    tokens.RemoveAndNext();
+                }
+                else if(tokens.GetCurrentToken() != "}")
+                {
+                    tokens.Throw("',' or ';' expected");
+                }
+
+                valuePropertyDefinitions.push_back(fmt::format("{} {};", type, name));
+            }
+            else if(auto it = NAME_TO_BINDING_TYPE.find(id); it == NAME_TO_BINDING_TYPE.end())
             {
                 std::string name(tokens.GetCurrentToken());
                 tokens.RemoveAndNext();
@@ -414,6 +454,22 @@ bool ShaderBindingGroupRewrite::RewriteNextBindingGroup(std::string &source, Par
         }
 
         tokens.Throw(fmt::format("unexpected token: {}", tokens.GetCurrentToken()));
+    }
+
+    if(!valuePropertyDefinitions.empty())
+    {
+        std::string structDefinition = fmt::format("struct __RtrcGeneratedStruct{}__{{", bindings.name);
+        for(auto &d : valuePropertyDefinitions)
+        {
+            structDefinition += d;
+        }
+        structDefinition += "};";
+
+        std::string cbufferDefinition = fmt::format(
+            "FrameConstantBuffer<__RtrcGeneratedStruct{}__> {};", bindings.name, bindings.name);
+
+        source.insert(groupKeywordPos, structDefinition + cbufferDefinition);
+        bindings.bindings.push_back({ Binding{ bindings.name, RHI::ShaderStageFlags::All } });
     }
 
     return true;

@@ -13,10 +13,10 @@ RTRC_BEGIN
     while(!done)
     {
         // Call this before anything related to GPU
-        frameResources.BeginFrame();
+        resourceManager.BeginFrame();
         ...
         // Signal frame fence when submitting last GPU work in this frame
-        queue.submit(..., frameResources.GetFrameFence());
+        queue.submit(..., resourceManager.GetFrameFence());
     }
 */
 class ResourceManager : public Uncopyable, public CommandBufferAllocator
@@ -36,10 +36,15 @@ public:
 
     RHI::CommandBufferPtr AllocateCommandBuffer(RHI::QueueType type) override;
 
-    Box<ConstantBuffer> AllocateConstantBuffer(size_t size);
+    FrameConstantBuffer AllocateFrameConstantBuffer(size_t size);
 
     template<CBDetail::ConstantBufferStruct T>
-    Box<ConstantBuffer> AllocateConstantBuffer();
+    FrameConstantBuffer AllocateFrameConstantBuffer();
+
+    PersistentConstantBuffer AllocatePersistentConstantBuffer(size_t size);
+
+    template<CBDetail::ConstantBufferStruct T>
+    PersistentConstantBuffer AllocatePersistentConstantBuffer();
 
     void OnGPUFrameEnd(std::function<void()> func);
 
@@ -53,7 +58,8 @@ private:
     RHI::DevicePtr                   deviceWithFrameResourceProtection_;
     FrameSynchronizer                synchronizer_;
     FrameCommandBufferManager        commandBufferManager_;
-    FrameConstantBufferAllocator     constantBufferManager_;
+    FrameConstantBufferAllocator     frameConstantBufferManager_;
+    PersistentConstantBufferManager  persistentConstantBufferManager_;
     RC<RG::TransientResourceManager> transientResourceManager_;
 
     std::set<RHI::Ptr<RHI::RHIObject>> resources_;
@@ -61,9 +67,15 @@ private:
 };
 
 template <CBDetail::ConstantBufferStruct T>
-Box<ConstantBuffer> ResourceManager::AllocateConstantBuffer()
+FrameConstantBuffer ResourceManager::AllocateFrameConstantBuffer()
 {
-    return constantBufferManager_.AllocateConstantBuffer<T>();
+    return frameConstantBufferManager_.AllocateConstantBuffer<T>();
+}
+
+template <CBDetail::ConstantBufferStruct T>
+PersistentConstantBuffer ResourceManager::AllocatePersistentConstantBuffer()
+{
+    return persistentConstantBufferManager_.AllocateConstantBuffer<T>();
 }
 
 RTRC_END

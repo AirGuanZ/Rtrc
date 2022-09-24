@@ -1,3 +1,6 @@
+#include <algorithm>
+#include <ranges>
+
 #include <fmt/format.h>
 
 #include <Rtrc/Graphics/Material/Material.h>
@@ -115,15 +118,47 @@ namespace
 
 } // namespace anonymous
 
+MaterialPropertyHostLayout::MaterialPropertyHostLayout(std::vector<MaterialProperty> properties)
+    : sortedProperties_(std::move(properties))
+{
+    std::ranges::partition(sortedProperties_, [&](const MaterialProperty &a){ return a.IsValue(); });
+
+    valueBufferSize_ = 0;
+    for(auto &p : sortedProperties_)
+    {
+        if(!p.IsValue())
+        {
+            break;
+        }
+        valueIndexToOffset_.push_back(valueBufferSize_);
+        valueBufferSize_ += p.GetValueSize();
+    }
+
+    for(auto &&[index, prop] : Enumerate(sortedProperties_))
+    {
+        nameToIndex_.insert({ prop.name, static_cast<int>(index) });
+    }
+}
+
+size_t MaterialPropertyHostLayout::GetValueOffset(std::string_view name) const
+{
+    auto it = nameToIndex_.find(name);
+    if(it == nameToIndex_.end())
+    {
+        throw Exception(fmt::format("Property name not found: {}", name));
+    }
+    return GetValueOffset(it->second);
+}
+
 SubMaterial::SubMaterial()
 {
     static std::atomic<uint32_t> nextInstanceID = 0;
-    subMaterialInstanceID_ = nextInstanceID++;
+    subMaterialID_ = nextInstanceID++;
 }
 
 uint32_t SubMaterial::GetSubMaterialInstanceID() const
 {
-    return subMaterialInstanceID_;
+    return subMaterialID_;
 }
 
 const std::set<std::string> &SubMaterial::GetTags() const
@@ -152,6 +187,11 @@ RC<SubMaterial> Material::GetSubMaterialByTag(std::string_view tag)
 {
     const int index = GetSubMaterialIndexByTag(tag);
     return GetSubMaterialByIndex(index);
+}
+
+Span<MaterialProperty> Material::GetProperties() const
+{
+    return propertyLayout_->GetProperties();
 }
 
 int Material::GetSubMaterialIndexByTag(std::string_view tag) const
@@ -306,10 +346,31 @@ RC<Material> MaterialManager::CreateMaterial(std::string_view name)
     ShaderPreprocess::RemoveComments(source);
     ShaderTokenStream tokens(source, fileRef.beginPos, ShaderTokenStream::ErrorMode::Material);
 
+    std::vector<MaterialProperty> properties;
     std::vector<RC<SubMaterial>> subMaterials;
+
+    using enum MaterialProperty::Type;
+    static const std::map<std::string, MaterialProperty::Type, std::less<>> NAME_TO_PROPERTY_TYPE =
+    {
+        { "float",     Float     },
+        { "float2",    Float2    },
+        { "float3",    Float3    },
+        { "float4",    Float4    },
+        { "uint",      UInt      },
+        { "uint2",     UInt2     },
+        { "uint3",     UInt3     },
+        { "uint4",     UInt4     },
+        { "int",       Int       },
+        { "int2",      Int2      },
+        { "int3",      Int3      },
+        { "int4",      Int4      },
+        { "Buffer",    Buffer    },
+        { "Texture2D", Texture2D },
+    };
+
     while(true)
     {
-        if(tokens.GetCurrentToken() == "Pass")
+        if(tokens.GetCurrentToken() == "Pass" || tokens.GetCurrentToken() == "SubMaterial")
         {
             tokens.Next();
             if(tokens.GetCurrentToken() != "{")
@@ -328,6 +389,10 @@ RC<Material> MaterialManager::CreateMaterial(std::string_view name)
                 tokens.Next();
             }
         }
+        else if(auto jt = NAME_TO_PROPERTY_TYPE.find(tokens.GetCurrentToken()); jt != NAME_TO_PROPERTY_TYPE.end())
+        {
+            properties.push_back(ParseProperty(jt->second, tokens));
+        }
         else if(tokens.IsFinished())
         {
             break;
@@ -337,6 +402,31 @@ RC<Material> MaterialManager::CreateMaterial(std::string_view name)
             tokens.Throw(fmt::format("unexpected token '{}'", tokens.GetCurrentToken()));
         }
     }
+
+    // Material properties
+
+    auto propertyLayout = MakeRC<MaterialPropertyHostLayout>(std::move(properties));
+
+    std::map<std::string, std::string> propMacros;
+    for(auto &prop : propertyLayout->GetValueProperties())
+    {
+        const char *valueTypeName = prop.GetValueTypeName();
+        propMacros.insert(
+    {
+            fmt::format("__PER_MATERIAL_VALUE_PROPERTY_{}", prop.name),
+            fmt::format("{} {}", valueTypeName, prop.name)
+        });
+    }
+    propMacros.insert({ "MATERIAL_VALUE_PROPERTY(X)", "__PER_MATERIAL_VALUE_PROPERTY_##X" });
+
+    auto sharedCompileEnvir = MakeRC<ShaderTemplate::SharedCompileEnvironment>();
+    sharedCompileEnvir->macros = std::move(propMacros);
+    for(auto &subMat : subMaterials)
+    {
+        subMat->shaderTemplate_->sharedEnvir_ = sharedCompileEnvir;
+    }
+
+    // Material tag
 
     auto material = MakeRC<Material>();
     for(auto &&[index, subMaterial] : Enumerate(subMaterials))
@@ -352,6 +442,8 @@ RC<Material> MaterialManager::CreateMaterial(std::string_view name)
     }
     material->name_ = name;
     material->subMaterials_ = std::move(subMaterials);
+    material->propertyLayout_ = std::move(propertyLayout);
+
     return material;
 }
 
@@ -425,6 +517,7 @@ RC<SubMaterial> MaterialManager::ParsePass(ShaderTokenStream &tokens)
 
     std::set<std::string> passTags;
     RC<ShaderTemplate> shaderTemplate;
+    KeywordValueContext keywordValues;
 
     auto ParseShader = [&]
     {
@@ -510,6 +603,29 @@ RC<SubMaterial> MaterialManager::ParsePass(ShaderTokenStream &tokens)
         }
     };
 
+    auto ParseKeywordValue = [&]
+    {
+        assert(tokens.GetCurrentToken() == "Keyword");
+        tokens.Next();
+
+        if(!ShaderTokenStream::IsIdentifier(tokens.GetCurrentToken()))
+        {
+            tokens.Throw("Expect keyword name");
+        }
+        const Keyword keyword(tokens.GetCurrentToken());
+        tokens.Next();
+
+        const std::string valueStr(tokens.GetCurrentToken());
+        const int value = std::atoi(valueStr.c_str());
+        keywordValues.Set(keyword, value);
+        tokens.Next();
+
+        if(tokens.GetCurrentToken() == ";")
+        {
+            tokens.Next();
+        }
+    };
+
     while(true)
     {
         if(tokens.GetCurrentToken() == "Shader")
@@ -523,6 +639,10 @@ RC<SubMaterial> MaterialManager::ParsePass(ShaderTokenStream &tokens)
         else if(tokens.GetCurrentToken() == "Tag")
         {
             ParseTags();
+        }
+        else if(tokens.GetCurrentToken() == "Keyword")
+        {
+            ParseKeywordValue();
         }
         else
         {
@@ -538,7 +658,33 @@ RC<SubMaterial> MaterialManager::ParsePass(ShaderTokenStream &tokens)
     auto subMaterial = MakeRC<SubMaterial>();
     subMaterial->tags_ = std::move(passTags);
     subMaterial->shaderTemplate_ = std::move(shaderTemplate);
+    subMaterial->overrideKeywords_ = subMaterial->shaderTemplate_->keywordSet_.GeneratePartialValue(keywordValues);
+
     return subMaterial;
+}
+
+MaterialProperty MaterialManager::ParseProperty(MaterialProperty::Type propertyType, ShaderTokenStream &tokens)
+{
+    tokens.Next();
+
+    // Property name
+    if (!ShaderTokenStream::IsIdentifier(tokens.GetCurrentToken()))
+    {
+        tokens.Throw("Property name expected");
+    }
+    std::string propertyName = tokens.GetCurrentToken();
+    tokens.Next();
+
+    // Optional ";"
+    if (tokens.GetCurrentToken() == ";")
+    {
+        tokens.Next();
+    }
+
+    MaterialProperty prop;
+    prop.type = propertyType;
+    prop.name = std::move(propertyName);
+    return prop;
 }
 
 RTRC_END

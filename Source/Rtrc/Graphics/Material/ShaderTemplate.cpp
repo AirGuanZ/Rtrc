@@ -15,7 +15,7 @@ RC<Shader> ShaderTemplate::GetShader(KeywordSet::ValueMask keywordValueMask)
 {
     return compiledShaders_.GetOrCreate(keywordValueMask, [&]
     {
-        ShaderCompiler::Macros macros;
+        ShaderCompiler::Macros macros = sharedEnvir_->macros;
         keywordSet_.ForEachKeywordAndValue(keywordValueMask, [&](const Keyword &keyword, uint8_t value)
         {
             macros[keyword.GetString()] = std::to_string(value);

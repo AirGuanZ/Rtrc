@@ -10,6 +10,11 @@ class ShaderTemplate : public Uncopyable
 {
 public:
 
+    struct SharedCompileEnvironment
+    {
+        std::map<std::string, std::string> macros;
+    };
+
     RC<Shader> GetShader(const KeywordValueContext &keywordValueContext);
     RC<Shader> GetShader(KeywordSet::ValueMask keywordValueMask);
 
@@ -26,6 +31,7 @@ private:
     bool debug_ = RTRC_DEBUG;
     KeywordSet keywordSet_;
     ShaderCompiler::ShaderSource source_;
+    RC<SharedCompileEnvironment> sharedEnvir_;
 
     // External compiler
 
@@ -33,7 +39,7 @@ private:
 
     // Result
 
-    SharedObjectPool<KeywordSet::ValueMask, Shader, true> compiledShaders_; // TODO IMPROVE: keyword trie
+    SharedObjectPool<KeywordSet::ValueMask, Shader, true> compiledShaders_;
 };
 
 RTRC_END

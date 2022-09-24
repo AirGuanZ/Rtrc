@@ -22,7 +22,7 @@ void Run()
 {
     fmt::print("{:<30} {:<5} {:<13} {:<15}\n", "type", "name", "host offset", "device offset");
 
-    ConstantBuffer::ForEachFlattenMember<Test>([&]<typename T>(const char *name, size_t hostOffset, size_t offset)
+    FrameConstantBuffer::ForEachFlattenMember<Test>([&]<typename T>(const char *name, size_t hostOffset, size_t offset)
     {
         fmt::print("{:<30} {:<5} {:<13} {:<15}\n", typeid(T).name(), name, hostOffset, offset);
     });
@@ -135,7 +135,7 @@ void Run()
 
     uploadBufferAcquireBarriers.push_back(uploader.Upload(
         vertexPositionBuffer, 0, sizeof(vertexPositionData), vertexPositionData.data(),
-        graphicsQueue, RHI::PipelineStage::VertexShader, RHI::ResourceAccess::BufferRead));
+        graphicsQueue, RHI::PipelineStage::VertexShader, RHI::ResourceAccess::BufferRead).GetAcquireBarrier());
 
     // vertex texcoord buffer
 
@@ -165,7 +165,7 @@ void Run()
 
     uploadBufferAcquireBarriers.push_back(uploader.Upload(
         vertexTexCoordBuffer, 0, sizeof(vertexTexCoordData), vertexTexCoordData.data(),
-        graphicsQueue, RHI::PipelineStage::VertexShader, RHI::ResourceAccess::BufferRead));
+        graphicsQueue, RHI::PipelineStage::VertexShader, RHI::ResourceAccess::BufferRead).GetAcquireBarrier());
 
     // main texture
 
@@ -193,7 +193,7 @@ void Run()
         graphicsQueue,
         RHI::PipelineStage::FragmentShader,
         RHI::ResourceAccess::TextureRead,
-        RHI::TextureLayout::ShaderTexture));
+        RHI::TextureLayout::ShaderTexture).GetAcquireBarrier());
 
     // main sampler
 

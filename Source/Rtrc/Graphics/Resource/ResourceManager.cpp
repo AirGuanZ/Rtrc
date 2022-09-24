@@ -174,7 +174,8 @@ ResourceManager::ResourceManager(DevicePtr device, int frameCount)
     : device_(device),
       synchronizer_(device, frameCount),
       commandBufferManager_(device, frameCount),
-      constantBufferManager_(device, frameCount)
+      frameConstantBufferManager_(device, frameCount),
+      persistentConstantBufferManager_(device, frameCount)
 {
     transientResourceManager_ = MakeRC<RG::TransientResourceManager>(
         device, RG::TransientResourceManager::Strategy::ReuseAcrossFrame, frameCount);
@@ -219,7 +220,7 @@ void ResourceManager::BeginFrame()
 
     synchronizer_.BeginFrame();
     commandBufferManager_.BeginFrame(synchronizer_.GetFrameIndex());
-    constantBufferManager_.BeginFrame();
+    frameConstantBufferManager_.BeginFrame();
     transientResourceManager_->BeginFrame();
 }
 
@@ -238,9 +239,14 @@ CommandBufferPtr ResourceManager::AllocateCommandBuffer(QueueType type)
     return commandBufferManager_.AllocateCommandBuffer(type);
 }
 
-Box<ConstantBuffer> ResourceManager::AllocateConstantBuffer(size_t size)
+FrameConstantBuffer ResourceManager::AllocateFrameConstantBuffer(size_t size)
 {
-    return constantBufferManager_.AllocateConstantBuffer(size);
+    return frameConstantBufferManager_.AllocateConstantBuffer(size);
+}
+
+PersistentConstantBuffer ResourceManager::AllocatePersistentConstantBuffer(size_t size)
+{
+    return persistentConstantBufferManager_.AllocateConstantBuffer(size);
 }
 
 void ResourceManager::OnGPUFrameEnd(std::function<void()> func)

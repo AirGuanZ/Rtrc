@@ -59,6 +59,7 @@ Material "Quad"
     Pass
     {
         Tag "Default"
+        //Keyword DADADA 0
         ShaderRef "Quad"
     }
 }

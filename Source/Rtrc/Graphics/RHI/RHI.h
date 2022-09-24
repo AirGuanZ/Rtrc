@@ -1266,28 +1266,46 @@ void CommandBuffer::ExecuteBarriers(const Ts&...ts)
         {
             if constexpr(std::is_same_v<ET, TextureTransitionBarrier>)
             {
-                textureTs.push_back(s);
+                if(s.texture)
+                {
+                    textureTs.push_back(s);
+                }
             }
             else if constexpr(std::is_same_v<ET, TextureAcquireBarrier>)
             {
-                textureAs.push_back(s);
+                if(s.texture)
+                {
+                    textureAs.push_back(s);
+                }
             }
             else if constexpr(std::is_same_v<ET, TextureReleaseBarrier>)
             {
-                textureRs.push_back(s);
+                if(s.texture)
+                {
+                    textureRs.push_back(s);
+                }
             }
             else if constexpr(std::is_same_v<ET, BufferTransitionBarrier>)
             {
-                bufferTs.push_back(s);
+                if(s.buffer)
+                {
+                    bufferTs.push_back(s);
+                }
             }
             else if constexpr(std::is_same_v<ET, BufferAcquireBarrier>)
             {
-                bufferAs.push_back(s);
+                if(s.buffer)
+                {
+                    bufferAs.push_back(s);
+                }
             }
             else
             {
                 static_assert(std::is_same_v<ET, BufferReleaseBarrier>);
-                bufferRs.push_back(s);
+                if(s.buffer)
+                {
+                    bufferRs.push_back(s);
+                }
             }
         }
     };

@@ -60,7 +60,7 @@ public:
         return currentToken_.empty() && nextPos_ >= source_.size();
     }
 
-    std::string_view GetCurrentToken() const
+    const std::string &GetCurrentToken() const
     {
         return currentToken_;
     }
@@ -121,13 +121,16 @@ public:
 
         if(std::isdigit(ch))
         {
-            size_t endPos = nextPos_ + 1;
-            while(endPos < source_.size() && std::isdigit(source_[endPos]))
-            {
-                ++endPos;
-            }
+            const size_t endPos = FindEndOfNumber(nextPos_);
             currentToken_ = source_.substr(nextPos_, endPos - nextPos_);
             nextPos_ = endPos;
+            //size_t endPos = nextPos_ + 1;
+            //while(endPos < source_.size() && std::isdigit(source_[endPos]))
+            //{
+            //    ++endPos;
+            //}
+            //currentToken_ = source_.substr(nextPos_, endPos - nextPos_);
+            //nextPos_ = endPos;
             return;
         }
 
@@ -240,6 +243,34 @@ private:
             }
         }
         throw Exception(fmt::format("parsing error at {}. {}", line, msg));
+    }
+
+    size_t FindEndOfNumber(size_t start) const
+    {
+        assert(std::isdigit(source_[start]) || source_[start] == '.');
+        bool meetDot = false;
+        if(source_[start] == '.')
+        {
+            meetDot = true;
+            ++start;
+        }
+        if(!meetDot)
+        {
+            while(std::isdigit(source_[start]))
+            {
+                ++start;
+            }
+            if(source_[start] != '.')
+            {
+                return start;
+            }
+            ++start;
+        }
+        while(std::isdigit(source_[start]))
+        {
+            ++start;
+        }
+        return start;
     }
 
     size_t nextPos_;

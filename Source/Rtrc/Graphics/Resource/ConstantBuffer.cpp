@@ -5,38 +5,56 @@
 
 RTRC_BEGIN
 
-ConstantBuffer::ConstantBuffer()
-    : mappedPtr_(nullptr), offset_(0), size_(0)
-{
-    
-}
-
-ConstantBuffer::ConstantBuffer(RHI::BufferPtr buffer, unsigned char *mappedPtr, size_t offset, size_t size)
+FrameConstantBuffer::FrameConstantBuffer(RHI::BufferPtr buffer, unsigned char *mappedPtr, size_t offset, size_t size)
     : buffer_(std::move(buffer)), mappedPtr_(mappedPtr + offset), offset_(offset), size_(size)
 {
 
 }
 
-void ConstantBuffer::SetData(const void *data, size_t size)
+void FrameConstantBuffer::SetData(const void *data, size_t size)
 {
     assert(buffer_ && size <= size_);
     std::memcpy(mappedPtr_, data, size);
     buffer_->FlushAfterWrite(offset_, size);
 }
 
-const RHI::BufferPtr &ConstantBuffer::GetBuffer() const
+PersistentConstantBuffer::~PersistentConstantBuffer()
 {
-    return buffer_;
+    if(parentManager_)
+    {
+        parentManager_->_FreeInternal(*this);
+    }
 }
 
-size_t ConstantBuffer::GetOffset() const
+PersistentConstantBuffer::PersistentConstantBuffer(PersistentConstantBuffer &&other) noexcept
+    : PersistentConstantBuffer()
 {
-    return offset_;
+    Swap(other);
 }
 
-size_t ConstantBuffer::GetSize() const
+PersistentConstantBuffer &PersistentConstantBuffer::operator=(PersistentConstantBuffer &&other) noexcept
 {
-    return size_;
+    Swap(other);
+    return *this;
+}
+
+void PersistentConstantBuffer::Swap(PersistentConstantBuffer &other) noexcept
+{
+    std::swap(parentManager_, other.parentManager_);
+    buffer_.Swap(other.buffer_);
+    std::swap(offset_, other.offset_);
+    std::swap(size_, other.size_);
+    std::swap(chunkIndex_, other.chunkIndex_);
+    std::swap(slabIndex_, other.slabIndex_);
+}
+
+void PersistentConstantBuffer::SetData(const void *data, size_t size)
+{
+    assert(parentManager_);
+    assert(size <= size_);
+    auto mappedPtr = parentManager_->_AllocateInternal(*this);
+    std::memcpy(mappedPtr, data, size);
+    buffer_->FlushAfterWrite(offset_, size);
 }
 
 FrameConstantBufferAllocator::FrameConstantBufferAllocator(RHI::DevicePtr device, int frameCount, size_t chunkSize)
@@ -70,7 +88,7 @@ void FrameConstantBufferAllocator::BeginFrame()
     frameRecords_[frameIndex_].availableSizeToBufferRecord.swap(newRecords);
 }
 
-Box<ConstantBuffer> FrameConstantBufferAllocator::AllocateConstantBuffer(size_t size)
+FrameConstantBuffer FrameConstantBufferAllocator::AllocateConstantBuffer(size_t size)
 {
     auto &records = frameRecords_[frameIndex_].availableSizeToBufferRecord;
 
@@ -97,7 +115,133 @@ Box<ConstantBuffer> FrameConstantBufferAllocator::AllocateConstantBuffer(size_t 
     node.key() -= newOffset - oldOffset;
     records.insert(std::move(node));
 
-    return MakeBox<ConstantBuffer>(bufferRecord.buffer, bufferRecord.mappedPtr, oldOffset, size);
+    return FrameConstantBuffer(bufferRecord.buffer, bufferRecord.mappedPtr, oldOffset, size);
+}
+
+PersistentConstantBufferManager::PersistentConstantBufferManager(RHI::DevicePtr device, int frameCount, size_t chunkSize)
+    : device_(std::move(device)), frameCount_(frameCount)
+{
+    int s = 0;
+    while((2u << s) <= chunkSize)
+    {
+        ++s;
+    }
+    assert((1u << s) <= chunkSize && (2u << s) > chunkSize);
+    chunkSize_ = 1u << s;
+    // 1 << 0, 1 << 1, 1 << 2, 1 << 3, ..., 1 << s
+    slabs_.resize(s + 1);
+}
+
+PersistentConstantBufferManager::~PersistentConstantBufferManager()
+{
+    for(auto &c : chunks_)
+    {
+        c.buffer->Unmap(0, c.buffer->GetDesc().size);
+    }
+}
+
+void PersistentConstantBufferManager::BeginFrame()
+{
+    std::vector<PendingRecord> newPendingRecords;
+    for(PendingRecord &r : pendingRecords_)
+    {
+        if(--r.pendingFrames)
+        {
+            newPendingRecords.push_back(r);
+            continue;
+        }
+        slabs_[r.slabIndex].push_back(r);
+    }
+    pendingRecords_ = std::move(newPendingRecords);
+}
+
+PersistentConstantBuffer PersistentConstantBufferManager::AllocateConstantBuffer(size_t size)
+{
+    PersistentConstantBuffer ret;
+    ret.parentManager_ = this;
+    ret.size_ = size;
+    return ret;
+}
+
+void *PersistentConstantBufferManager::_AllocateInternal(PersistentConstantBuffer &buffer)
+{
+    assert(buffer.size_ <= chunkSize_);
+
+    int slabIndex = -1;
+    if(buffer.buffer_)
+    {
+        slabIndex = buffer.slabIndex_;
+
+        PendingRecord record;
+        record.chunkIndex = buffer.chunkIndex_;
+        record.offsetInBuffer = buffer.offset_;
+        record.slabIndex = buffer.slabIndex_;
+        record.pendingFrames = frameCount_;
+        pendingRecords_.push_back(record);
+    }
+
+    if(slabIndex < 0)
+    {
+        slabIndex = CalculateSlabIndex(buffer.size_);
+    }
+
+    auto slab = slabs_[slabIndex];
+    if(slab.empty())
+    {
+        auto newBuffer = device_->CreateBuffer(RHI::BufferDesc
+        {
+            .size = chunkSize_,
+            .usage = RHI::BufferUsage::ShaderConstantBuffer,
+            .hostAccessType = RHI::BufferHostAccessType::SequentialWrite,
+            .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
+        });
+
+        auto mappedPtr = newBuffer->Map(0, chunkSize_);
+
+        const int newBufferIndex = static_cast<int>(chunks_.size());
+        chunks_.push_back({ std::move(newBuffer), mappedPtr });
+
+        const size_t recordSize = 1 << slabIndex;
+        for(size_t offset = 0; offset + recordSize < chunkSize_; offset += recordSize)
+        {
+            slab.push_back(Record{ newBufferIndex, offset });
+        }
+    }
+
+    auto r = slab.back();
+    slab.pop_back();
+
+    buffer.buffer_ = chunks_[r.chunkIndex].buffer;
+    buffer.offset_ = r.offsetInBuffer;
+    buffer.chunkIndex_ = r.chunkIndex;
+    buffer.slabIndex_ = slabIndex;
+
+    return static_cast<unsigned char *>(chunks_[r.chunkIndex].mappedPtr) + r.offsetInBuffer;
+}
+
+void PersistentConstantBufferManager::_FreeInternal(PersistentConstantBuffer &buffer)
+{
+    PendingRecord record;
+    record.chunkIndex = buffer.chunkIndex_;
+    record.offsetInBuffer = buffer.offset_;
+    record.slabIndex = buffer.slabIndex_;
+    record.pendingFrames = frameCount_;
+    pendingRecords_.push_back(record);
+
+    buffer.buffer_ = nullptr;
+    buffer.offset_ = 0;
+    buffer.slabIndex_ = -1;
+    buffer.chunkIndex_ = -1;
+}
+
+int PersistentConstantBufferManager::CalculateSlabIndex(size_t size)
+{
+    int ret = 0;
+    while((1u << ret) < size)
+    {
+        ++ret;
+    }
+    return ret;
 }
 
 RTRC_END
