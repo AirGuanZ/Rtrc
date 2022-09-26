@@ -2,8 +2,6 @@
 #include <Windows.h>
 #endif
 
-#include <fmt/format.h>
-
 #include <Rtrc/Utils/TemporalFile.h>
 
 RTRC_BEGIN

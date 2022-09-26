@@ -1,7 +1,5 @@
 #include <iostream>
 
-#include <fmt/format.h>
-
 #include <Rtrc/Rtrc.h>
 
 #include "Rtrc/Graphics/Material/Material.h"

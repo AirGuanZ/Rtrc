@@ -1,8 +1,6 @@
 #include <algorithm>
 #include <ranges>
 
-#include <fmt/format.h>
-
 #include <Rtrc/Graphics/Material/Material.h>
 #include <Rtrc/Graphics/Material/MaterialInstance.h>
 #include <Rtrc/Graphics/Shader/ShaderBindingParser.h>
@@ -12,7 +10,6 @@
 #include <Rtrc/Utils/File.h>
 #include <Rtrc/Utils/String.h>
 #include <Rtrc/Utils/Unreachable.h>
-
 
 RTRC_BEGIN
 
@@ -142,26 +139,6 @@ MaterialPropertyHostLayout::MaterialPropertyHostLayout(std::vector<MaterialPrope
     {
         nameToIndex_.insert({ prop.name, static_cast<int>(index) });
     }
-}
-
-size_t MaterialPropertyHostLayout::GetValueOffset(std::string_view name) const
-{
-    auto it = nameToIndex_.find(name);
-    if(it == nameToIndex_.end())
-    {
-        throw Exception(fmt::format("Property name not found: {}", name));
-    }
-    return GetValueOffset(it->second);
-}
-
-const MaterialProperty &MaterialPropertyHostLayout::GetPropertyByName(std::string_view name) const
-{
-    const int index = GetPropertyIndexByName(name);
-    if(index < 0)
-    {
-        throw Exception(fmt::format("Unknown material property: {}", name));
-    }
-    return GetProperties()[index];
 }
 
 SubMaterialPropertyLayout::SubMaterialPropertyLayout(const MaterialPropertyHostLayout &materialPropertyLayout, const Shader &shader)
@@ -702,7 +679,6 @@ RC<SubMaterial> MaterialManager::ParsePass(ShaderTokenStream &tokens)
 
     std::set<std::string> passTags;
     RC<ShaderTemplate> shaderTemplate;
-    KeywordValueContext keywordValues;
 
     auto ParseShader = [&]
     {
@@ -788,29 +764,6 @@ RC<SubMaterial> MaterialManager::ParsePass(ShaderTokenStream &tokens)
         }
     };
 
-    auto ParseKeywordValue = [&]
-    {
-        assert(tokens.GetCurrentToken() == "Keyword");
-        tokens.Next();
-
-        if(!ShaderTokenStream::IsIdentifier(tokens.GetCurrentToken()))
-        {
-            tokens.Throw("Expect keyword name");
-        }
-        const Keyword keyword(tokens.GetCurrentToken());
-        tokens.Next();
-
-        const std::string valueStr(tokens.GetCurrentToken());
-        const int value = std::atoi(valueStr.c_str());
-        keywordValues.Set(keyword, value);
-        tokens.Next();
-
-        if(tokens.GetCurrentToken() == ";")
-        {
-            tokens.Next();
-        }
-    };
-
     while(true)
     {
         if(tokens.GetCurrentToken() == "Shader")
@@ -824,10 +777,6 @@ RC<SubMaterial> MaterialManager::ParsePass(ShaderTokenStream &tokens)
         else if(tokens.GetCurrentToken() == "Tag")
         {
             ParseTags();
-        }
-        else if(tokens.GetCurrentToken() == "Keyword")
-        {
-            ParseKeywordValue();
         }
         else
         {
@@ -843,7 +792,6 @@ RC<SubMaterial> MaterialManager::ParsePass(ShaderTokenStream &tokens)
     auto subMaterial = MakeRC<SubMaterial>();
     subMaterial->tags_ = std::move(passTags);
     subMaterial->shaderTemplate_ = std::move(shaderTemplate);
-    subMaterial->overrideKeywords_ = subMaterial->shaderTemplate_->keywordSet_.GeneratePartialValue(keywordValues);
     subMaterial->subMaterialPropertyLayouts_.resize(
         1 << subMaterial->shaderTemplate_->GetKeywordSet().GetTotalBitCount());
 

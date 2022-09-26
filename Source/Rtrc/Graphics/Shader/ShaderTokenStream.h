@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cassert>
-#include <fmt/format.h>
 
 #include <Rtrc/Common.h>
 

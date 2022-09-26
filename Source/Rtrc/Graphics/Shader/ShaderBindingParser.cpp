@@ -1,8 +1,6 @@
 #include <cassert>
 #include <map>
 
-#include <fmt/format.h>
-
 #include <Rtrc/Graphics/Shader/ShaderBindingParser.h>
 #include <Rtrc/Graphics/Shader/ShaderTokenStream.h>
 

@@ -9,7 +9,6 @@
 // TODO: dxc for linux
 #include <Windows.h>
 #include <dxc/dxcapi.h>
-#include <fmt/format.h>
 #include <wrl/client.h>
 
 #include <Rtrc/Graphics/Shader/DXC.h>

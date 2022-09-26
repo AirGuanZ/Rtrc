@@ -1,8 +1,6 @@
 #include <filesystem>
 #include <iterator>
 
-#include <fmt/format.h>
-
 #include <Rtrc/Graphics/Shader/ShaderBindingGroup.h>
 #include <Rtrc/Utils/Enumerate.h>
 

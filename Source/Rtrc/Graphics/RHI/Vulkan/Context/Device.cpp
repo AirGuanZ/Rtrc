@@ -2,8 +2,6 @@
 #include <array>
 #include <map>
 
-#include <fmt/format.h>
-
 #include <Rtrc/Graphics/RHI/Vulkan/Context/Device.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Context/Surface.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Context/Swapchain.h>

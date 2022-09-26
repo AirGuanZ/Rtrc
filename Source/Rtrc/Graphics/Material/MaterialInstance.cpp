@@ -1,5 +1,3 @@
-#include <fmt/format.h>
-
 #include <Rtrc/Graphics/Material/MaterialInstance.h>
 
 RTRC_BEGIN
@@ -105,7 +103,6 @@ void SubMaterialInstance::BindComputeProperties(
 template <bool Graphics>
 void SubMaterialInstance::BindPropertiesImpl(KeywordSet::ValueMask mask, const RHI::CommandBufferPtr &commandBuffer)
 {
-    mask = subMaterial_->GetOverrideKeywordValueMask().Apply(mask);
     Record &record = keywordMaskToRecord_[mask];
 
     auto subLayout = subMaterial_->GetPropertyLayout(mask);

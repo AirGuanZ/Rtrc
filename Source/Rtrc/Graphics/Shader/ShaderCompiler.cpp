@@ -1,7 +1,5 @@
 #include <ranges>
 
-#include <fmt/format.h>
-
 #include <Rtrc/Graphics/Shader/DXC.h>
 #include <Rtrc/Graphics/Shader/ShaderBindingParser.h>
 #include <Rtrc/Graphics/Shader/ShaderCompiler.h>

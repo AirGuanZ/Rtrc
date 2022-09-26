@@ -1,5 +1,3 @@
-#include <fmt/format.h>
-
 #include <Rtrc/Graphics/Shader/ShaderCompiler.h>
 #include <Rtrc/Utils/Unreachable.h>
 

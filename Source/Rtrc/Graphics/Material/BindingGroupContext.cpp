@@ -1,7 +1,5 @@
 #include <ranges>
 
-#include <fmt/format.h>
-
 #include <Rtrc/Graphics/Material/BindingGroupContext.h>
 #include <Rtrc/Graphics/Shader/Shader.h>
 

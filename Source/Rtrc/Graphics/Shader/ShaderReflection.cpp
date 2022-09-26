@@ -1,6 +1,5 @@
 #include <map>
 
-#include <fmt/format.h>
 #include <spirv_reflect.h>
 
 #include <Rtrc/Graphics/Shader/ShaderReflection.h>
