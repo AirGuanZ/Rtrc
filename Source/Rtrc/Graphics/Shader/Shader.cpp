@@ -47,6 +47,13 @@ const RC<BindingGroupLayout> &Shader::GetBindingGroupLayoutByName(std::string_vi
     return GetBindingGroupLayoutByIndex(index);
 }
 
+const RC<BindingGroupLayout> &Shader::TryGetBindingGroupLayoutByName(std::string_view name) const
+{
+    static const RC<BindingGroupLayout> nil;
+    const auto it = nameToBindingGroupLayoutIndex_.find(name);
+    return it != nameToBindingGroupLayoutIndex_.end() ? GetBindingGroupLayoutByIndex(it->second) : nil;
+}
+
 const RC<BindingGroupLayout> &Shader::GetBindingGroupLayoutByIndex(int index) const
 {
     return bindingGroupLayouts_[index];
@@ -60,6 +67,12 @@ int Shader::GetBindingGroupIndexByName(std::string_view name) const
         throw Exception(fmt::format("unknown binding group layout '{}' in shader", name));
     }
     return it->second;
+}
+
+int Shader::TryGetBindingGroupIndexByName(std::string_view name) const
+{
+    const auto it = nameToBindingGroupLayoutIndex_.find(name);
+    return it != nameToBindingGroupLayoutIndex_.end() ? it->second : -1;
 }
 
 RTRC_END

@@ -12,8 +12,12 @@ Shader "Quad"
 
     group TestGroup
     {
-        Buffer<float2>         VertexPositionBuffer;
-        Buffer<float2>         VertexTexCoordBuffer;
+        Buffer<float2> VertexPositionBuffer;
+        Buffer<float2> VertexTexCoordBuffer;
+    };
+
+    group PerMaterial
+    {
         Texture2DArray<float4> MainTexture;
         SamplerState           MainSampler;
     };
@@ -56,6 +60,9 @@ Shader "Quad"
 
 Material "Quad"
 {
+    Texture2D MainTexture;
+    SamplerState MainSampler;
+
     Pass
     {
         Tag "Default"

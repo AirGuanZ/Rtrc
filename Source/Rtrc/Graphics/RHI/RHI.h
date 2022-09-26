@@ -214,6 +214,29 @@ enum class BindingType
     Sampler,
 };
 
+inline const char *GetBindingTypeName(BindingType type)
+{
+    static const char *NAMES[] =
+    {
+        "Texture2D",
+        "RWTexture2D",
+        "Texture3D",
+        "RWTexture3D",
+        "Texture2DArray",
+        "RWTexture2DArray",
+        "Texture3DArray",
+        "RWTexture3DArray",
+        "Buffer",
+        "StructuredBuffer",
+        "RWBuffer",
+        "RWStructuredBuffer",
+        "ConstantBuffer",
+        "Sampler",
+    };
+    assert(static_cast<int>(type) < GetArraySize(NAMES));
+    return NAMES[static_cast<int>(type)];
+}
+
 enum class TextureDimension
 {
     Tex2D,

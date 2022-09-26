@@ -20,8 +20,10 @@ public:
     int GetBindingGroupCount() const;
     const std::string &GetBindingGroupNameByIndex(int index) const;
     const RC<BindingGroupLayout> &GetBindingGroupLayoutByName(std::string_view name) const;
+    const RC<BindingGroupLayout> &TryGetBindingGroupLayoutByName(std::string_view name) const;
     const RC<BindingGroupLayout> &GetBindingGroupLayoutByIndex(int index) const;
     int GetBindingGroupIndexByName(std::string_view name) const;
+    int TryGetBindingGroupIndexByName(std::string_view name) const; // return -1 when not found
 
 private:
 

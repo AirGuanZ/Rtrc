@@ -4,11 +4,15 @@
 #include <fmt/format.h>
 
 #include <Rtrc/Graphics/Material/Material.h>
+#include <Rtrc/Graphics/Material/MaterialInstance.h>
 #include <Rtrc/Graphics/Shader/ShaderBindingParser.h>
+#include <Rtrc/Graphics/Shader/ShaderReflection.h>
 #include <Rtrc/Graphics/Shader/ShaderTokenStream.h>
 #include <Rtrc/Utils/Enumerate.h>
 #include <Rtrc/Utils/File.h>
 #include <Rtrc/Utils/String.h>
+#include <Rtrc/Utils/Unreachable.h>
+
 
 RTRC_BEGIN
 
@@ -150,69 +154,245 @@ size_t MaterialPropertyHostLayout::GetValueOffset(std::string_view name) const
     return GetValueOffset(it->second);
 }
 
-SubMaterial::SubMaterial()
+const MaterialProperty &MaterialPropertyHostLayout::GetPropertyByName(std::string_view name) const
 {
-    static std::atomic<uint32_t> nextInstanceID = 0;
-    subMaterialID_ = nextInstanceID++;
+    const int index = GetPropertyIndexByName(name);
+    if(index < 0)
+    {
+        throw Exception(fmt::format("Unknown material property: {}", name));
+    }
+    return GetProperties()[index];
 }
 
-uint32_t SubMaterial::GetSubMaterialInstanceID() const
+SubMaterialPropertyLayout::SubMaterialPropertyLayout(const MaterialPropertyHostLayout &materialPropertyLayout, const Shader &shader)
+    : constantBufferSize_(0), constantBufferIndexInBindingGroup_(-1), bindingGroupIndex_(-1)
 {
-    return subMaterialID_;
+    // Constant buffer
+
+    const ShaderConstantBuffer *cbuffer = nullptr;
+    for(auto &cb : shader.GetConstantBuffers())
+    {
+        if(cb.name == "PerMaterial")
+        {
+            cbuffer = &cb;
+            break;
+        }
+    }
+
+    bindingGroupIndex_ = shader.TryGetBindingGroupIndexByName("PerMaterial");
+    if(bindingGroupIndex_ >= 0)
+    {
+        bindingGroupLayout_ = shader.GetBindingGroupLayoutByIndex(bindingGroupIndex_);
+    }
+
+    if(cbuffer)
+    {
+        if(cbuffer->group != bindingGroupIndex_)
+        {
+            throw Exception("Constant buffer 'Material' must be defined in 'Material' binding group");
+        }
+
+        int dwordOffset = 0;
+        for(auto &member : cbuffer->typeInfo->members)
+        {
+            if((member.elementType != ShaderStruct::Member::ElementType::Int &&
+                member.elementType != ShaderStruct::Member::ElementType::Float) ||
+               (member.matrixType != ShaderStruct::Member::MatrixType::Scalar &&
+                member.matrixType != ShaderStruct::Member::MatrixType::Vector))
+            {
+                throw Exception("Only int/uint/float0123 properties are supported in 'Material' cbuffer");
+            }
+
+            const int memberDWordCount =
+                member.matrixType == ShaderStruct::Member::MatrixType::Scalar ? 1 : member.rowSize;
+            const bool needNewLine = memberDWordCount >= 4 || (dwordOffset % 4) + memberDWordCount > 4;
+            if(needNewLine)
+            {
+                dwordOffset = (dwordOffset + 3) / 4 * 4;
+            }
+
+            size_t offsetInValueBuffer;
+            {
+                using enum ShaderStruct::Member::ElementType;
+                using enum ShaderStruct::Member::MatrixType;
+
+                using Tuple = std::tuple<ShaderStruct::Member::ElementType, ShaderStruct::Member::MatrixType, int>;
+                static const Tuple typeToMemberInfo[] =
+                {
+                    { Float, Scalar, 0 }, { Float, Vector, 2 }, { Float, Vector, 3 }, { Float, Vector, 4 },
+                    { Int,   Scalar, 0 }, { Int,   Vector, 2 }, { Int,   Vector, 3 }, { Int,   Vector, 4 },
+                    { Int,   Scalar, 0 }, { Int,   Vector, 2 }, { Int,   Vector, 3 }, { Int,   Vector, 4 },
+                };
+
+                const int propIndex = materialPropertyLayout.GetPropertyIndexByName(member.name);
+                if(propIndex == -1)
+                {
+                    throw Exception(fmt::format("Value property {} is not found in 'Material' cbuffer", member.name));
+                }
+                const MaterialProperty &prop = materialPropertyLayout.GetProperties()[propIndex];
+                if(!prop.IsValue())
+                {
+                    throw Exception(fmt::format("Property {} is not declared as value type in material", member.name));
+                }
+
+                const auto requiredMemberInfo = typeToMemberInfo[static_cast<int>(prop.type)];
+                if(member.elementType != std::get<0>(requiredMemberInfo) ||
+                   member.matrixType  != std::get<1>(requiredMemberInfo) ||
+                   member.rowSize     != std::get<2>(requiredMemberInfo))
+                {
+                    throw Exception(fmt::format(
+                        "Type of value property {} doesn't match its declaration in material", member.name));
+                }
+
+                offsetInValueBuffer = materialPropertyLayout.GetValueOffset(propIndex);
+            }
+
+            ValueReference ref;
+            ref.offsetInValueBuffer = offsetInValueBuffer;
+            ref.offsetInConstantBuffer = dwordOffset * 4;
+            ref.sizeInConstantBuffer = memberDWordCount * 4;
+            valueReferences_.push_back(ref);
+        }
+
+        constantBufferSize_ = dwordOffset * 4;
+        constantBufferIndexInBindingGroup_ = cbuffer->indexInGroup;
+    }
+
+    // TODO optimize: merge neighboring values
+
+    // Resources
+
+    if(bindingGroupLayout_)
+    {
+        auto &desc = bindingGroupLayout_->GetRHIBindingGroupLayout()->GetDesc();
+        for(auto &&[bindingIndex, aliased] : Enumerate(desc.bindings))
+        {
+            if(aliased.size() > 1)
+            {
+                throw Exception("Binding aliasing are not supported in 'Material' binding group");
+            }
+            const RHI::BindingDesc &binding = aliased[0];
+
+            if(binding.type == RHI::BindingType::ConstantBuffer)
+            {
+                if(binding.name != "PerMaterial")
+                {
+                    throw Exception("Constant buffer in 'Material' binding group must have name 'Material'");
+                }
+                continue;
+            }
+
+            MaterialProperty::Type propType;
+            switch(binding.type)
+            {
+            case RHI::BindingType::Texture2D:
+            case RHI::BindingType::Texture3D:
+            case RHI::BindingType::Texture2DArray:
+            case RHI::BindingType::RWTexture3DArray:
+                propType = MaterialProperty::Type::Texture2D;
+                break;
+            case RHI::BindingType::Buffer:
+            case RHI::BindingType::StructuredBuffer:
+                propType = MaterialProperty::Type::Buffer;
+                break;
+            case RHI::BindingType::Sampler:
+                propType = MaterialProperty::Type::Sampler;
+                break;
+            default:
+                throw Exception(fmt::format(
+                    "Unsupported binding type in 'Material' group: {} {}",
+                    GetBindingTypeName(binding.type), binding.name));
+            }
+
+            const int indexInProperties = materialPropertyLayout.GetPropertyIndexByName(binding.name)
+                                        - materialPropertyLayout.GetValuePropertyCount();
+            if(indexInProperties < 0)
+            {
+                throw Exception(fmt::format(
+                    "Binding '{} {}' in 'Material' binding group is not declared in material",
+                    GetBindingTypeName(binding.type), binding.name));
+            }
+
+            ResourceReference ref;
+            ref.type = propType;
+            ref.indexInProperties = indexInProperties;
+            ref.indexInBindingGroup = bindingIndex;
+            resourceReferences_.push_back(ref);
+        }
+    }
 }
 
-const std::set<std::string> &SubMaterial::GetTags() const
+void SubMaterialPropertyLayout::FillConstantBufferContent(const void *valueBuffer, void *outputData) const
 {
-    return tags_;
+    auto input = static_cast<const unsigned char *>(valueBuffer);
+    auto output = static_cast<unsigned char *>(outputData);
+    for(auto &ref : valueReferences_)
+    {
+        std::memcpy(output + ref.offsetInConstantBuffer, input + ref.offsetInValueBuffer, ref.sizeInConstantBuffer);
+    }
 }
 
-RC<Shader> SubMaterial::GetShader(const KeywordValueContext &keywordValues)
+void SubMaterialPropertyLayout::FillBindingGroup(
+    BindingGroup                   &bindingGroup,
+    Span<RHI::RHIObjectPtr>         materialResources,
+    const PersistentConstantBuffer &cbuffer) const
 {
-    KeywordSet::ValueMask mask = shaderTemplate_->GetKeywordValueMask(keywordValues);
-    mask = overrideKeywords_.Apply(mask);
-    return shaderTemplate_->GetShader(mask);
-}
+    // Constant buffer
 
-const std::string &Material::GetName() const
-{
-    return name_;
-}
+    if(constantBufferIndexInBindingGroup_ >= 0)
+    {
+        bindingGroup.Set(
+            constantBufferIndexInBindingGroup_, cbuffer.GetBuffer(), cbuffer.GetOffset(), cbuffer.GetOffset());
+    }
 
-RC<SubMaterial> Material::GetSubMaterialByIndex(int index)
-{
-    return subMaterials_[index];
+    // Other resources
+
+    for(auto &ref : resourceReferences_)
+    {
+        auto &resource = materialResources[ref.indexInProperties];
+        switch(ref.type)
+        {
+        case MaterialProperty::Type::Buffer:
+            bindingGroup.Set(ref.indexInBindingGroup, DynamicCast<RHI::BufferSRV>(resource));
+            break;
+        case MaterialProperty::Type::Texture2D:
+            bindingGroup.Set(ref.indexInBindingGroup, DynamicCast<RHI::TextureSRV>(resource));
+            break;
+        case MaterialProperty::Type::Sampler:
+            bindingGroup.Set(ref.indexInBindingGroup, DynamicCast<RHI::Sampler>(resource));
+            break;
+        default:
+            Unreachable();
+        }
+    }
 }
 
 RC<SubMaterial> Material::GetSubMaterialByTag(std::string_view tag)
 {
     const int index = GetSubMaterialIndexByTag(tag);
-    return GetSubMaterialByIndex(index);
-}
-
-Span<MaterialProperty> Material::GetProperties() const
-{
-    return propertyLayout_->GetProperties();
-}
-
-int Material::GetSubMaterialIndexByTag(std::string_view tag) const
-{
-    auto it = tagToIndex_.find(tag);
-    if(it == tagToIndex_.end())
+    if(index < 0)
     {
         throw Exception(fmt::format("Tag {} not found in material {}", tag, name_));
     }
-    return it->second;
+    return GetSubMaterialByIndex(index);
+}
+
+RC<MaterialInstance> Material::CreateInstance() const
+{
+    return MakeRC<MaterialInstance>(shared_from_this(), resourceManager_);
 }
 
 MaterialManager::MaterialManager()
 {
+    resourceManager_ = nullptr;
     debug_ = RTRC_DEBUG;
 }
 
-void MaterialManager::SetDevice(RHI::DevicePtr device)
+void MaterialManager::SetResourceManager(ResourceManager *resourceManager)
 {
-    device_ = device;
-    shaderCompiler_.SetDevice(std::move(device));
+    assert(resourceManager);
+    resourceManager_ = resourceManager;
+    shaderCompiler_.SetDevice(resourceManager->GetDeviceWithFrameResourceProtection());
 }
 
 void MaterialManager::SetRootDirectory(std::string_view directory)
@@ -352,20 +532,21 @@ RC<Material> MaterialManager::CreateMaterial(std::string_view name)
     using enum MaterialProperty::Type;
     static const std::map<std::string, MaterialProperty::Type, std::less<>> NAME_TO_PROPERTY_TYPE =
     {
-        { "float",     Float     },
-        { "float2",    Float2    },
-        { "float3",    Float3    },
-        { "float4",    Float4    },
-        { "uint",      UInt      },
-        { "uint2",     UInt2     },
-        { "uint3",     UInt3     },
-        { "uint4",     UInt4     },
-        { "int",       Int       },
-        { "int2",      Int2      },
-        { "int3",      Int3      },
-        { "int4",      Int4      },
-        { "Buffer",    Buffer    },
-        { "Texture2D", Texture2D },
+        { "float",        Float     },
+        { "float2",       Float2    },
+        { "float3",       Float3    },
+        { "float4",       Float4    },
+        { "uint",         UInt      },
+        { "uint2",        UInt2     },
+        { "uint3",        UInt3     },
+        { "uint4",        UInt4     },
+        { "int",          Int       },
+        { "int2",         Int2      },
+        { "int3",         Int3      },
+        { "int4",         Int4      },
+        { "Buffer",       Buffer    },
+        { "Texture2D",    Texture2D },
+        { "SamplerState", Sampler   }
     };
 
     while(true)
@@ -410,7 +591,7 @@ RC<Material> MaterialManager::CreateMaterial(std::string_view name)
     std::map<std::string, std::string> propMacros;
     for(auto &prop : propertyLayout->GetValueProperties())
     {
-        const char *valueTypeName = prop.GetValueTypeName();
+        const char *valueTypeName = prop.GetTypeName();
         propMacros.insert(
     {
             fmt::format("__PER_MATERIAL_VALUE_PROPERTY_{}", prop.name),
@@ -423,6 +604,7 @@ RC<Material> MaterialManager::CreateMaterial(std::string_view name)
     sharedCompileEnvir->macros = std::move(propMacros);
     for(auto &subMat : subMaterials)
     {
+        subMat->parentPropertyLayout_ = propertyLayout.get();
         subMat->shaderTemplate_->sharedEnvir_ = sharedCompileEnvir;
     }
 
@@ -440,6 +622,7 @@ RC<Material> MaterialManager::CreateMaterial(std::string_view name)
             material->tagToIndex_.insert({ tag, static_cast<int>(index) });
         }
     }
+    material->resourceManager_ = resourceManager_;
     material->name_ = name;
     material->subMaterials_ = std::move(subMaterials);
     material->propertyLayout_ = std::move(propertyLayout);
@@ -497,6 +680,7 @@ RC<ShaderTemplate> MaterialManager::CreateShaderTemplate(std::string_view name)
     {
         keywordSet.AddKeyword(Keyword(s), 1);
     }
+    const int totalKeywordBitCount = keywordSet.GetTotalBitCount();
 
     auto shaderTemplate = MakeRC<ShaderTemplate>();
     shaderTemplate->debug_           = debug_;
@@ -507,13 +691,14 @@ RC<ShaderTemplate> MaterialManager::CreateShaderTemplate(std::string_view name)
     shaderTemplate->source_.FSEntry  = std::move(FSEntry);
     shaderTemplate->source_.CSEntry  = std::move(CSEntry);
     shaderTemplate->shaderCompiler_  = &shaderCompiler_;
+    shaderTemplate->compiledShaders_.resize(1 << totalKeywordBitCount);
 
     return shaderTemplate;
 }
 
 RC<SubMaterial> MaterialManager::ParsePass(ShaderTokenStream &tokens)
 {
-    // TODO: partial keyword values
+    // Parse submaterial source
 
     std::set<std::string> passTags;
     RC<ShaderTemplate> shaderTemplate;
@@ -659,6 +844,8 @@ RC<SubMaterial> MaterialManager::ParsePass(ShaderTokenStream &tokens)
     subMaterial->tags_ = std::move(passTags);
     subMaterial->shaderTemplate_ = std::move(shaderTemplate);
     subMaterial->overrideKeywords_ = subMaterial->shaderTemplate_->keywordSet_.GeneratePartialValue(keywordValues);
+    subMaterial->subMaterialPropertyLayouts_.resize(
+        1 << subMaterial->shaderTemplate_->GetKeywordSet().GetTotalBitCount());
 
     return subMaterial;
 }

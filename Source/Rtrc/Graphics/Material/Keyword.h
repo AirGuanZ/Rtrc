@@ -63,13 +63,9 @@ public:
     {
         assert(bitCount <= 8);
         records_.push_back({ keyword, bitCount });
+        totalBitCount_ += bitCount;
 #if RTRC_DEBUG
-        int totalBits = 0;
-        for(auto &r : records_)
-        {
-            totalBits += r.bitCountInMask;
-        }
-        assert(totalBits <= MAX_TOTAL_VALUE_BIT_COUNT && "number of keyword value bits exceeds max limit (32)");
+        assert(totalBitCount_ <= MAX_TOTAL_VALUE_BIT_COUNT && "number of keyword value bits exceeds max limit (32)");
 #endif
     }
 
@@ -126,6 +122,11 @@ public:
         }
     }
 
+    int GetTotalBitCount() const
+    {
+        return totalBitCount_;
+    }
+
 private:
 
     static uint8_t BitCountToMask(uint8_t count)
@@ -151,6 +152,7 @@ private:
         Keyword keyword;
         uint8_t bitCountInMask;
     };
+    int totalBitCount_ = 0;
     std::vector<Record> records_;
 };
 

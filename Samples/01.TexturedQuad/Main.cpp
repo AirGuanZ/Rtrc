@@ -4,6 +4,9 @@
 
 #include <Rtrc/Rtrc.h>
 
+#include "Rtrc/Graphics/Material/Material.h"
+#include "Rtrc/Graphics/Material/MaterialInstance.h"
+
 using namespace Rtrc;
 
 cbuffer_begin(S)
@@ -78,7 +81,7 @@ void Run()
     // pipeline
 
     MaterialManager materialManager;
-    materialManager.SetDevice(device);
+    materialManager.SetResourceManager(&resourceManager);
     materialManager.SetRootDirectory("Asset/01.TexturedQuad/");
 
     KeywordValueContext keywords;
@@ -88,7 +91,8 @@ void Run()
     auto subMaterial = material->GetSubMaterialByTag("Default");
     auto shader = subMaterial->GetShader(keywords);
 
-    auto bindingGroupLayout = shader->GetBindingGroupLayoutByName("TestGroup");
+    const int bindingGroupIndex = shader->GetBindingGroupIndexByName("TestGroup");
+    auto bindingGroupLayout = shader->GetBindingGroupLayoutByIndex(bindingGroupIndex);
     auto bindingLayout = shader->GetRHIBindingLayout();
 
     auto pipeline = RHI::GraphicsPipelineBuilder()
@@ -220,13 +224,17 @@ void Run()
         uploadCommandBuffer.SubmitAndWait();
     }
 
+    auto materialInstance = material->CreateInstance();
+    materialInstance->Set("MainTexture", mainTexSRV);
+    materialInstance->Set("MainSampler", mainSampler);
+
     // binding group
 
     auto bindingGroup = bindingGroupLayout->CreateBindingGroup();
     bindingGroup->Set("VertexPositionBuffer", vertexPositionBufferSRV);
     bindingGroup->Set("VertexTexCoordBuffer", vertexTexCoordBufferSRV);
-    bindingGroup->Set("MainTexture", mainTexSRV);
-    bindingGroup->Set("MainSampler", mainSampler);
+    //bindingGroup->Set("MainTexture", mainTexSRV);
+    //bindingGroup->Set("MainSampler", mainSampler);
 
     // render graph
 
@@ -274,7 +282,8 @@ void Run()
                 .clearValue       = RHI::ColorClearValue{ 0, 1, 1, 1 }
             });
             commandBuffer->BindPipeline(pipeline);
-            commandBuffer->BindGroupToGraphicsPipeline(0, bindingGroup->GetRHIBindingGroup());
+            commandBuffer->BindGroupToGraphicsPipeline(bindingGroupIndex, bindingGroup->GetRHIBindingGroup());
+            materialInstance->GetSubMaterialInstance(0)->BindGraphicsProperties(keywords, commandBuffer);
             commandBuffer->SetViewports(RHI::Viewport::Create(rt));
             commandBuffer->SetScissors(RHI::Scissor::Create(rt));
             commandBuffer->Draw(6, 1, 0, 0);
