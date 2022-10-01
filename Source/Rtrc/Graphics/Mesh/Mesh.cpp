@@ -1,4 +1,4 @@
-#include <Rtrc/Mesh/Mesh.h>
+#include <Rtrc/Graphics/Mesh/Mesh.h>
 
 RTRC_BEGIN
 

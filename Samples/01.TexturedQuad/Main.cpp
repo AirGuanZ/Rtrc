@@ -5,6 +5,8 @@
 #include "Rtrc/Graphics/Material/Material.h"
 #include "Rtrc/Graphics/Material/MaterialInstance.h"
 
+#include "Rtrc/Graphics/Object/ConstantBuffer.h"
+
 using namespace Rtrc;
 
 cbuffer_begin(S)
@@ -225,6 +227,7 @@ void Run()
     auto materialInstance = material->CreateInstance();
     materialInstance->Set("MainTexture", mainTexSRV);
     materialInstance->Set("MainSampler", mainSampler);
+    materialInstance->Set("scale", 1.5f);
 
     // binding group
 

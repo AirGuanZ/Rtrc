@@ -236,6 +236,7 @@ void PersistentConstantBufferManager::_FreeInternal(PersistentConstantBuffer &bu
 
 int PersistentConstantBufferManager::CalculateSlabIndex(size_t size)
 {
+    size = std::max(size, static_cast<size_t>(256));
     int ret = 0;
     while((1u << ret) < size)
     {

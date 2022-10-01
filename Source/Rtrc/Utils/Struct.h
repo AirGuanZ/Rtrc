@@ -22,12 +22,17 @@ namespace StructDetail
     struct Sizer { char _data[N]; };
 
     static_assert(sizeof(Sizer<19>) == 19);
-    
+
+    template<typename T, int I>
+    using MemberDesc = std::remove_pointer_t<decltype(T::_rtrcMemberIndexToDesc(static_cast<Int2Type<I> *>(0)))>;
+
     template<typename T, typename F, int I>
     constexpr void CallForMember(const F &f)
     {
-        using MemberDesc = std::remove_pointer_t<decltype(T::_rtrcMemberIndexToDesc(static_cast<Int2Type<I> *>(0)))>;
-        MemberDesc::template Process<F>(f);
+        if constexpr(requires { typename MemberDesc<T, I>; })
+        {
+            MemberDesc<T, I>::template Process<F>(f);
+        }
     }
 
     template<typename T, typename F, int...Is>
@@ -49,13 +54,7 @@ namespace StructDetail
     {                                                                         \
         using _rtrcSelf = NAME;                                               \
         static constexpr std::string_view _rtrcSelfName = #NAME;              \
-        static ::Rtrc::StructDetail::Sizer<1> _rtrcMemberCounter(...);        \
-        struct _rtrcEmptyDesc                                                 \
-        {                                                                     \
-            template<typename F>                                              \
-            static constexpr void Process(const F &f) { }                     \
-        };                                                                    \
-        static _rtrcEmptyDesc *_rtrcMemberIndexToDesc(...);
+        static ::Rtrc::StructDetail::Sizer<1> _rtrcMemberCounter(...);
 
 #define RTRC_META_STRUCT_END()                                 \
         template<typename F>                                   \

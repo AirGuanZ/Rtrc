@@ -16,10 +16,11 @@ Shader "Quad"
         Buffer<float2> VertexTexCoordBuffer;
     };
 
-    group PerMaterial
+    group Material
     {
         Texture2DArray<float4> MainTexture;
         SamplerState           MainSampler;
+        float scale;
     };
 
     struct VSInput
@@ -54,6 +55,7 @@ Shader "Quad"
 #else
         output.color = float4(2 * MainTexture.Sample(MainSampler, float3(input.texCoord, 0)).rgb, 1.0);
 #endif
+        output.color *= Material.scale;
         return output;
     }
 }
@@ -62,6 +64,7 @@ Material "Quad"
 {
     Texture2D MainTexture;
     SamplerState MainSampler;
+    float scale;
 
     Pass
     {

@@ -26,13 +26,23 @@ public:
     ResourceManager(RHI::DevicePtr device, int frameCount);
     ~ResourceManager() override;
 
+    // Wrapped device
+
     const RHI::DevicePtr &GetDeviceWithFrameResourceProtection() const;
+
+    void RegisterFrameResourceProtection(RHI::RHIObjectPtr object);
+
+    // Frame management
 
     void BeginFrame();
 
     RHI::FencePtr GetFrameFence() const;
 
     int GetFrameIndex() const;
+
+    void OnFrameEnd(std::function<void()> func);
+
+    // Frame resource allocation
 
     RHI::CommandBufferPtr AllocateCommandBuffer(RHI::QueueType type) override;
 
@@ -41,16 +51,14 @@ public:
     template<CBDetail::ConstantBufferStruct T>
     FrameConstantBuffer AllocateFrameConstantBuffer();
 
+    RG::TransientResourceManager* GetTransicentResourceManager() const;
+
+    // Persistent resource allocation
+
     PersistentConstantBuffer AllocatePersistentConstantBuffer(size_t size);
 
     template<CBDetail::ConstantBufferStruct T>
     PersistentConstantBuffer AllocatePersistentConstantBuffer();
-
-    void OnGPUFrameEnd(std::function<void()> func);
-
-    RG::TransientResourceManager *GetTransicentResourceManager() const;
-
-    void RegisterFrameResourceProtection(RHI::RHIObjectPtr object);
 
 private:
 

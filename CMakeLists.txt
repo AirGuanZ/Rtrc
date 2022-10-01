@@ -40,6 +40,11 @@ SET_TARGET_PROPERTIES(tinyobjloader PROPERTIES FOLDER "External")
 ADD_SUBDIRECTORY(External/mimalloc-2.0.6)
 SET_TARGET_PROPERTIES(mimalloc-static PROPERTIES FOLDER "External")
 
+#============= mimalloc =============
+
+SET(TBB_DIR "${CMAKE_SOURCE_DIR}/External/oneapi-tbb-2021.6.0/lib/cmake/tbb")
+FIND_PACKAGE(TBB REQUIRED)
+
 #============= backends =============
 
 SET(RTRC_RHI_VULKAN ON)
@@ -135,7 +140,8 @@ ENDFOREACH()
 RTRC_SET_CXX_LANG_VERSION(Rtrc)
 
 TARGET_INCLUDE_DIRECTORIES(Rtrc PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Source")
-TARGET_LINK_LIBRARIES(Rtrc PUBLIC mimalloc-static fmt)
+TARGET_INCLUDE_DIRECTORIES(Rtrc PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/External/oneapi-tbb-2021.6.0/include")
+TARGET_LINK_LIBRARIES(Rtrc PUBLIC mimalloc-static fmt TBB::tbb)
 TARGET_LINK_LIBRARIES(Rtrc PRIVATE stb tinyexr tinyobjloader glfw)
 
 IF(RTRC_RHI_VULKAN OR RTRC_RHI_DIRECTX12)

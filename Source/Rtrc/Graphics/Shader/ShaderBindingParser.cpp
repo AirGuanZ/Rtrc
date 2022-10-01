@@ -464,7 +464,7 @@ bool ShaderBindingGroupRewrite::RewriteNextBindingGroup(std::string &source, Par
         structDefinition += "};";
 
         std::string cbufferDefinition = fmt::format(
-            "FrameConstantBuffer<__RtrcGeneratedStruct{}__> {};", bindings.name, bindings.name);
+            "ConstantBuffer<__RtrcGeneratedStruct{}__> {};", bindings.name, bindings.name);
 
         source.insert(groupKeywordPos, structDefinition + cbufferDefinition);
         bindings.bindings.push_back({ Binding{ bindings.name, RHI::ShaderStageFlags::All } });

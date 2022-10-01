@@ -4,7 +4,7 @@
 
 RTRC_BEGIN
 
-inline uint32_t NextPowerOfTwo(uint32_t x)
+/*inline uint32_t NextPowerOfTwo(uint32_t x)
 {
     x--;
     x |= x >> 1;
@@ -14,6 +14,17 @@ inline uint32_t NextPowerOfTwo(uint32_t x)
     x |= x >> 16;
     x++;
     return x;
+}*/
+
+template<std::integral T>
+T NextPowerOfTwo(T x)
+{
+    T r = 1;
+    while(r < x)
+    {
+        r <<= 1;
+    }
+    return r;
 }
 
 RTRC_END

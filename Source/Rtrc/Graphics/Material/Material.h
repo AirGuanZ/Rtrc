@@ -172,24 +172,17 @@ class Material : public Uncopyable, public std::enable_shared_from_this<Material
 {
 public:
 
-    const std::string &GetName() const { return name_; }
-    Span<MaterialProperty> GetProperties() const { return propertyLayout_->GetProperties(); }
-    RC<SubMaterial> GetSubMaterialByIndex(int index) { return subMaterials_[index]; }
-
-    RC<SubMaterial> GetSubMaterialByTag(std::string_view tag);
+    const std::string &GetName() const;
+    Span<MaterialProperty> GetProperties() const;
+    auto &GetPropertyLayout() const;
 
     // return -1 when not found
-    int GetSubMaterialIndexByTag(std::string_view tag) const
-    {
-        auto it = tagToIndex_.find(tag);
-        return it != tagToIndex_.end() ? it->second : -1;
-    }
-
-    auto &GetPropertyLayout() const { return propertyLayout_; }
+    int GetSubMaterialIndexByTag(std::string_view tag) const;
+    RC<SubMaterial> GetSubMaterialByIndex(int index);
+    RC<SubMaterial> GetSubMaterialByTag(std::string_view tag);
+    Span<RC<SubMaterial>> GetSubMaterials() const;
 
     RC<MaterialInstance> CreateInstance() const;
-
-    Span<RC<SubMaterial>> GetSubMaterials() const { return subMaterials_; }
 
 private:
 
@@ -423,6 +416,48 @@ inline const SubMaterialPropertyLayout *SubMaterial::GetPropertyLayout(const Key
 inline auto &SubMaterial::GetShaderTemplate() const
 {
     return shaderTemplate_;
+}
+
+inline const std::string &Material::GetName() const
+{
+    return name_;
+}
+
+inline Span<MaterialProperty> Material::GetProperties() const
+{
+    return propertyLayout_->GetProperties();
+}
+
+inline RC<SubMaterial> Material::GetSubMaterialByIndex(int index)
+{
+    return subMaterials_[index];
+}
+
+inline RC<SubMaterial> Material::GetSubMaterialByTag(std::string_view tag)
+{
+    const int index = GetSubMaterialIndexByTag(tag);
+    if(index < 0)
+    {
+        throw Exception(fmt::format("Tag {} not found in material {}", tag, name_));
+    }
+    return GetSubMaterialByIndex(index);
+}
+
+// return -1 when not found
+inline int Material::GetSubMaterialIndexByTag(std::string_view tag) const
+{
+    auto it = tagToIndex_.find(tag);
+    return it != tagToIndex_.end() ? it->second : -1;
+}
+
+inline auto &Material::GetPropertyLayout() const
+{
+    return propertyLayout_;
+}
+
+inline Span<RC<SubMaterial>> Material::GetSubMaterials() const
+{
+    return subMaterials_;
 }
 
 RTRC_END

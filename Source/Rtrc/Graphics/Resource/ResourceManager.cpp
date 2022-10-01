@@ -249,7 +249,7 @@ PersistentConstantBuffer ResourceManager::AllocatePersistentConstantBuffer(size_
     return persistentConstantBufferManager_.AllocateConstantBuffer(size);
 }
 
-void ResourceManager::OnGPUFrameEnd(std::function<void()> func)
+void ResourceManager::OnFrameEnd(std::function<void()> func)
 {
     synchronizer_.OnGPUFrameEnd(std::move(func));
 }

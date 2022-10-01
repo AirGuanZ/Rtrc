@@ -59,7 +59,9 @@ namespace
 
             if (source[nameBegPos] != '"' && source[nameBegPos != '\''])
             {
-                throw Exception(fmt::format("{} name expected after '{}'", keyword, keyword));
+                begPos = matKeywordPos + keyword.size();
+                continue;
+                //throw Exception(fmt::format("{} name expected after '{}'", keyword, keyword));
             }
             const char delimiter = source[nameBegPos++];
             size_t nameEndPos = nameBegPos;
@@ -149,14 +151,14 @@ SubMaterialPropertyLayout::SubMaterialPropertyLayout(const MaterialPropertyHostL
     const ShaderConstantBuffer *cbuffer = nullptr;
     for(auto &cb : shader.GetConstantBuffers())
     {
-        if(cb.name == "PerMaterial")
+        if(cb.name == "Material")
         {
             cbuffer = &cb;
             break;
         }
     }
 
-    bindingGroupIndex_ = shader.TryGetBindingGroupIndexByName("PerMaterial");
+    bindingGroupIndex_ = shader.TryGetBindingGroupIndexByName("Material");
     if(bindingGroupIndex_ >= 0)
     {
         bindingGroupLayout_ = shader.GetBindingGroupLayoutByIndex(bindingGroupIndex_);
@@ -229,6 +231,8 @@ SubMaterialPropertyLayout::SubMaterialPropertyLayout(const MaterialPropertyHostL
             ref.offsetInConstantBuffer = dwordOffset * 4;
             ref.sizeInConstantBuffer = memberDWordCount * 4;
             valueReferences_.push_back(ref);
+
+            dwordOffset += memberDWordCount;
         }
 
         constantBufferSize_ = dwordOffset * 4;
@@ -252,7 +256,7 @@ SubMaterialPropertyLayout::SubMaterialPropertyLayout(const MaterialPropertyHostL
 
             if(binding.type == RHI::BindingType::ConstantBuffer)
             {
-                if(binding.name != "PerMaterial")
+                if(binding.name != "Material")
                 {
                     throw Exception("Constant buffer in 'Material' binding group must have name 'Material'");
                 }
@@ -319,7 +323,7 @@ void SubMaterialPropertyLayout::FillBindingGroup(
     if(constantBufferIndexInBindingGroup_ >= 0)
     {
         bindingGroup.Set(
-            constantBufferIndexInBindingGroup_, cbuffer.GetBuffer(), cbuffer.GetOffset(), cbuffer.GetOffset());
+            constantBufferIndexInBindingGroup_, cbuffer.GetBuffer(), cbuffer.GetOffset(), cbuffer.GetSize());
     }
 
     // Other resources
@@ -342,16 +346,6 @@ void SubMaterialPropertyLayout::FillBindingGroup(
             Unreachable();
         }
     }
-}
-
-RC<SubMaterial> Material::GetSubMaterialByTag(std::string_view tag)
-{
-    const int index = GetSubMaterialIndexByTag(tag);
-    if(index < 0)
-    {
-        throw Exception(fmt::format("Tag {} not found in material {}", tag, name_));
-    }
-    return GetSubMaterialByIndex(index);
 }
 
 RC<MaterialInstance> Material::CreateInstance() const

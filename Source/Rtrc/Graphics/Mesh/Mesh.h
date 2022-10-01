@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/Mesh/MeshLayout.h>
+#include <Rtrc/Graphics/Mesh/MeshLayout.h>
 
 RTRC_BEGIN
 

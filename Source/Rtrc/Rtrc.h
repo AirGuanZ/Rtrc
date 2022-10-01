@@ -6,7 +6,7 @@
 
 #include <Rtrc/Graphics/Material/Material.h>
 
-#include <Rtrc/Mesh/Mesh.h>
+#include <Rtrc/Graphics/Mesh/Mesh.h>
 
 #include <Rtrc/Graphics/RenderGraph/Executable.h>
 

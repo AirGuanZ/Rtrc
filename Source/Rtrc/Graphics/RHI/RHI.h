@@ -872,6 +872,13 @@ class BindingGroup : public RHIObject
 {
 public:
 
+    struct UniformBufferModifyParameters
+    {
+        Ptr<Buffer> buffer;
+        size_t      offset;
+        size_t      range;
+    };
+
     virtual const BindingGroupLayout *GetLayout() const = 0;
 
     virtual void ModifyMember(int index, const Ptr<BufferSRV>  &bufferSRV) = 0;
