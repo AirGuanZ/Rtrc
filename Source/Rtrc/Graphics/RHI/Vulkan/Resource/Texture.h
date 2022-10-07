@@ -2,6 +2,8 @@
 
 #include <map>
 
+#include <tbb/spin_rw_mutex.h>
+
 #include <Rtrc/Graphics/RHI/Vulkan/Common.h>
 
 RTRC_RHI_VK_BEGIN
@@ -52,6 +54,8 @@ private:
     VulkanMemoryAllocation                 alloc_;
     ResourceOwnership                      ownership_;
     mutable std::map<ViewKey, VkImageView> views_;
+    mutable tbb::spin_rw_mutex             viewsMutex_;
+
 };
 
 RTRC_RHI_VK_END

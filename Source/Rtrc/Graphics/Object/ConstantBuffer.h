@@ -1,8 +1,8 @@
 #pragma once
 
-#include <tbb/spin_mutex.h>
 #include <tbb/spin_rw_mutex.h>
 
+#include <Rtrc/Graphics/Object/BatchReleaseHelper.h>
 #include <Rtrc/Graphics/RHI/RHI.h>
 #include <Rtrc/Math/Vector2.h>
 #include <Rtrc/Math/Vector3.h>
@@ -22,22 +22,15 @@ namespace ConstantBufferDetail
     template<typename T>
     concept ConstantBufferStruct = requires { typename T::_rtrcCBufferTypeFlag; };
 
-    struct ConstantBufferSharedData : Uncopyable
-    {
-    };
-
 } // namespace ConstantBufferDetail
 
 /*
     Usage:
     
         ConstantBuffer cb = mgr.Create();
-        cb.SetData(..., false);
+        cb.SetData(...);
         // ...use cb
-        cb.SetData(..., false);
-        // ...use cb
-        cb.setData(..., true);
-        mgr.UploadStaticBuffers(...);
+        cb.SetData(...);
         // ...use cb
 */
 class ConstantBuffer : public Uncopyable
@@ -87,12 +80,19 @@ public:
     ConstantBufferManager(HostSynchronizer &hostSync, RHI::DevicePtr device, size_t chunkSize = 4 * 1024 * 1024);
     ~ConstantBufferManager();
 
-    ConstantBuffer Create();
+    RC<ConstantBuffer> Create();
 
-    void _SetDataInternal(ConstantBuffer &buffer, const void *data, size_t size);
-    void _FreeInternal(ConstantBuffer &buffer);
+    void _rtrcSetDataInternal(ConstantBuffer &buffer, const void *data, size_t size);
+    void _rtrcFreeInternal(ConstantBuffer &buffer);
 
 private:
+
+    struct BatchReleaseData
+    {
+        int slabIndex;
+        int chunkIndex;
+        size_t offset;
+    };
 
     struct Chunk
     {
@@ -114,7 +114,7 @@ private:
 
     void ComputeSlabIndex(size_t size, int &slabIndex, size_t &allocateSize) const;
 
-    HostSynchronizer &hostSync_;
+    BatchReleaseHelper<BatchReleaseData> batchRelease_;
     RHI::DevicePtr device_;
 
     size_t chunkSize_;
@@ -286,7 +286,7 @@ void ConstantBuffer::SetData(const T &data)
         auto src = reinterpret_cast<const unsigned char *>(&data) + hostOffset;
         std::memcpy(dst, src, sizeof(M));
     });
-    manager_->_SetDataInternal(*this, deviceData.data(), deviceSize);
+    manager_->_rtrcSetDataInternal(*this, deviceData.data(), deviceSize);
 }
 
 RTRC_END

@@ -1,10 +1,11 @@
+#include <Rtrc/Graphics/RHI/Vulkan/Context/Device.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/CommandPool.h>
 #include <Rtrc/Utils/ScopeGuard.h>
 
 RTRC_RHI_VK_BEGIN
 
-VulkanCommandPool::VulkanCommandPool(VkDevice device, VkCommandPool pool)
-    : device_(device), pool_(pool), nextFreeBufferIndex_(0)
+VulkanCommandPool::VulkanCommandPool(VulkanDevice *device, QueueType type, VkCommandPool pool)
+    : device_(device), type_(type), pool_(pool), nextFreeBufferIndex_(0)
 {
     
 }
@@ -12,13 +13,18 @@ VulkanCommandPool::VulkanCommandPool(VkDevice device, VkCommandPool pool)
 VulkanCommandPool::~VulkanCommandPool()
 {
     commandBuffers_.clear();
-    vkDestroyCommandPool(device_, pool_, VK_ALLOC);
+    vkDestroyCommandPool(device_->GetNativeDevice(), pool_, VK_ALLOC);
 }
 
 void VulkanCommandPool::Reset()
 {
-    vkResetCommandPool(device_, pool_, 0);
+    vkResetCommandPool(device_->GetNativeDevice(), pool_, 0);
     nextFreeBufferIndex_ = 0;
+}
+
+QueueType VulkanCommandPool::GetType() const
+{
+    return type_;
 }
 
 Ptr<CommandBuffer> VulkanCommandPool::NewCommandBuffer()
@@ -40,9 +46,9 @@ void VulkanCommandPool::CreateCommandBuffer()
     };
     VkCommandBuffer newBuffer;
     VK_FAIL_MSG(
-        vkAllocateCommandBuffers(device_, &allocateInfo, &newBuffer),
+        vkAllocateCommandBuffers(device_->GetNativeDevice(), &allocateInfo, &newBuffer),
         "failed to allocate new command buffer");
-    RTRC_SCOPE_FAIL{ vkFreeCommandBuffers(device_, pool_, 1, &newBuffer); };
+    RTRC_SCOPE_FAIL{ vkFreeCommandBuffers(device_->GetNativeDevice(), pool_, 1, &newBuffer); };
     commandBuffers_.push_back(MakePtr<VulkanCommandBuffer>(device_, pool_, newBuffer));
 }
 

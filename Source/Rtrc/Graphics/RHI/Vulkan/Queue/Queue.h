@@ -8,7 +8,7 @@ class VulkanQueue : public Queue
 {
 public:
 
-    VulkanQueue(VkDevice device, VkQueue queue, QueueType type, uint32_t queueFamilyIndex);
+    VulkanQueue(VulkanDevice *device, VkQueue queue, QueueType type, uint32_t queueFamilyIndex);
 
     QueueType GetType() const override;
 
@@ -30,7 +30,7 @@ public:
 
 private:
 
-    VkDevice device_;
+    VulkanDevice *device_;
     VkQueue queue_;
     QueueType type_;
     uint32_t queueFamilyIndex_;

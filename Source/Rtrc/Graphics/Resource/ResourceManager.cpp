@@ -34,9 +34,7 @@ namespace
 
         Ptr<Swapchain> CreateSwapchain(const SwapchainDesc &desc, Window &window) override
         {
-            auto ret = underlyingDevice_->CreateSwapchain(desc, window);
-            frameResourceManager_->RegisterFrameResourceProtection(ret);
-            return ret;
+            return underlyingDevice_->CreateSwapchain(desc, window);
         }
 
         Ptr<Fence> CreateFence(bool signaled) override

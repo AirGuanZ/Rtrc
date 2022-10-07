@@ -98,10 +98,9 @@ FrameConstantBuffer FrameConstantBufferAllocator::AllocateConstantBuffer(size_t 
         const size_t allocatedSize = NextPowerOfTwo(static_cast<uint32_t>(std::max(size, chunkSize_)));
         FrameRecord::BufferRecord newRecord;
         newRecord.buffer = device_->CreateBuffer(RHI::BufferDesc{
-            .size                 = allocatedSize,
-            .usage                = RHI::BufferUsage::ShaderConstantBuffer,
-            .hostAccessType       = RHI::BufferHostAccessType::SequentialWrite,
-            .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
+            .size           = allocatedSize,
+            .usage          = RHI::BufferUsage::ShaderConstantBuffer,
+            .hostAccessType = RHI::BufferHostAccessType::SequentialWrite
         });
         newRecord.mappedPtr = static_cast<unsigned char *>(newRecord.buffer->Map(0, allocatedSize));
         it = records.insert({ allocatedSize, std::move(newRecord) });
@@ -192,8 +191,7 @@ void *PersistentConstantBufferManager::_AllocateInternal(PersistentConstantBuffe
         {
             .size = chunkSize_,
             .usage = RHI::BufferUsage::ShaderConstantBuffer,
-            .hostAccessType = RHI::BufferHostAccessType::SequentialWrite,
-            .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
+            .hostAccessType = RHI::BufferHostAccessType::SequentialWrite
         });
 
         auto mappedPtr = newBuffer->Map(0, chunkSize_);

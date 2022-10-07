@@ -500,10 +500,9 @@ struct TextureUAVDesc
 
 struct BufferDesc
 {
-    size_t                    size;
-    BufferUsageFlag           usage;
-    BufferHostAccessType      hostAccessType;
-    QueueConcurrentAccessMode concurrentAccessMode;
+    size_t               size;
+    BufferUsageFlag      usage;
+    BufferHostAccessType hostAccessType;
 
     auto operator<=>(const BufferDesc &) const = default;
 };
@@ -562,8 +561,8 @@ struct TextureReleaseBarrier
     ResourceAccessFlag      beforeAccesses;
     TextureLayout           beforeLayout;
     TextureLayout           afterLayout;
-    Queue                  *beforeQueue;
-    Queue                  *afterQueue;
+    QueueType               beforeQueue;
+    QueueType               afterQueue;
 };
 
 struct TextureAcquireBarrier
@@ -574,8 +573,8 @@ struct TextureAcquireBarrier
     PipelineStageFlag       afterStages;
     ResourceAccessFlag      afterAccesses;
     TextureLayout           afterLayout;
-    Queue                  *beforeQueue;
-    Queue                  *afterQueue;
+    QueueType               beforeQueue;
+    QueueType               afterQueue;
 };
 
 struct BufferTransitionBarrier
@@ -585,24 +584,6 @@ struct BufferTransitionBarrier
     ResourceAccessFlag beforeAccesses;
     PipelineStageFlag  afterStages;
     ResourceAccessFlag afterAccesses;
-};
-
-struct BufferReleaseBarrier
-{
-    Buffer            *buffer;
-    PipelineStageFlag  beforeStages;
-    ResourceAccessFlag beforeAccesses;
-    Queue             *beforeQueue;
-    Queue             *afterQueue;
-};
-
-struct BufferAcquireBarrier
-{
-    Buffer            *buffer;
-    PipelineStageFlag  afterStages;
-    ResourceAccessFlag afterAccesses;
-    Queue             *beforeQueue;
-    Queue             *afterQueue;
 };
 
 struct Viewport
@@ -793,7 +774,7 @@ public:
 class Device : public RHIObject
 {
 public:
-
+    
     virtual Ptr<Queue> GetQueue(QueueType type) = 0;
 
     virtual Ptr<CommandPool> CreateCommandPool(const Ptr<Queue> &queue) = 0;
@@ -864,8 +845,6 @@ class BindingGroupLayout : public RHIObject
 public:
 
     virtual const BindingGroupLayoutDesc &GetDesc() const = 0;
-
-    //virtual Ptr<BindingGroup> CreateBindingGroup() = 0;
 };
 
 class BindingGroup : public RHIObject
@@ -913,8 +892,6 @@ public:
 
     virtual QueueType GetType() const = 0;
 
-    //virtual Ptr<CommandPool> CreateCommandPool() = 0;
-
     virtual void WaitIdle() = 0;
 
     virtual void Submit(
@@ -940,6 +917,8 @@ class CommandPool : public RHIObject
 public:
 
     virtual void Reset() = 0;
+
+    virtual QueueType GetType() const = 0;
 
     virtual Ptr<CommandBuffer> NewCommandBuffer() = 0;
 };
@@ -994,9 +973,7 @@ protected:
         Span<TextureTransitionBarrier> textureTransitions,
         Span<BufferTransitionBarrier>  bufferTransitions,
         Span<TextureReleaseBarrier>    textureReleaseBarriers,
-        Span<TextureAcquireBarrier>    textureAcquireBarriers,
-        Span<BufferReleaseBarrier>     bufferReleaseBarriers,
-        Span<BufferAcquireBarrier>     bufferAcquireBarriers) = 0;
+        Span<TextureAcquireBarrier>    textureAcquireBarriers) = 0;
 };
 
 class RawShader : public RHIObject
@@ -1116,8 +1093,6 @@ class Resource : public RHIObject
 {
 public:
 
-    virtual QueueConcurrentAccessMode GetConcurrentAccessMode() const = 0;
-
     virtual bool IsBuffer() const { return false; }
     virtual BufferPtr AsBuffer() { return nullptr; }
 
@@ -1132,7 +1107,7 @@ public:
     bool IsTexture() const final { return true; }
     TexturePtr AsTexture() final { return TexturePtr(this); }
 
-    QueueConcurrentAccessMode GetConcurrentAccessMode() const final { return GetDesc().concurrentAccessMode; }
+    QueueConcurrentAccessMode GetConcurrentAccessMode() const { return GetDesc().concurrentAccessMode; }
 
     TextureDimension GetDimension() const { return GetDesc().dim; }
     Format           GetFormat()    const { return GetDesc().format; }
@@ -1176,8 +1151,6 @@ public:
 
     bool IsBuffer() const final { return true; }
     BufferPtr AsBuffer() override { return BufferPtr(this); }
-
-    QueueConcurrentAccessMode GetConcurrentAccessMode() const final { return GetDesc().concurrentAccessMode; }
 
     virtual const BufferDesc &GetDesc() const = 0;
 
@@ -1285,8 +1258,6 @@ void CommandBuffer::ExecuteBarriers(const Ts&...ts)
     std::vector<TextureReleaseBarrier>    textureRs;
 
     std::vector<BufferTransitionBarrier> bufferTs;
-    std::vector<BufferAcquireBarrier>    bufferAs;
-    std::vector<BufferReleaseBarrier>    bufferRs;
 
     auto process = [&]<typename T>(const T &t)
     {
@@ -1315,32 +1286,18 @@ void CommandBuffer::ExecuteBarriers(const Ts&...ts)
                     textureRs.push_back(s);
                 }
             }
-            else if constexpr(std::is_same_v<ET, BufferTransitionBarrier>)
+            else
             {
+                static_assert(std::is_same_v<ET, BufferTransitionBarrier>);
                 if(s.buffer)
                 {
                     bufferTs.push_back(s);
                 }
             }
-            else if constexpr(std::is_same_v<ET, BufferAcquireBarrier>)
-            {
-                if(s.buffer)
-                {
-                    bufferAs.push_back(s);
-                }
-            }
-            else
-            {
-                static_assert(std::is_same_v<ET, BufferReleaseBarrier>);
-                if(s.buffer)
-                {
-                    bufferRs.push_back(s);
-                }
-            }
         }
     };
     (process(ts), ...);
-    this->ExecuteBarriersInternal(textureTs, bufferTs, textureRs, textureAs, bufferRs, bufferAs);
+    this->ExecuteBarriersInternal(textureTs, bufferTs, textureRs, textureAs);
 }
 
 RTRC_RHI_END

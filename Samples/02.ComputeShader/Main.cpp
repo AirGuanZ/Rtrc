@@ -19,12 +19,7 @@ void Run()
         .debugMode = RTRC_DEBUG
     });
 
-    auto device = instance->CreateDevice(RHI::DeviceDesc{
-        .graphicsQueue    = false,
-        .computeQueue     = true,
-        .transferQueue    = true,
-        .supportSwapchain = false
-    });
+    auto device = instance->CreateDevice();
 
     ShaderCompiler shaderCompiler;
     shaderCompiler.SetDevice(device);
@@ -62,7 +57,7 @@ void Run()
 
     ResourceUploader uploader(device);
 
-    auto computeQueue = device->GetQueue(RHI::QueueType::Compute);
+    auto computeQueue = device->GetQueue(RHI::QueueType::Graphics);
 
     std::vector<RHI::TextureAcquireBarrier> pendingTextureAcquireBarriers;
     pendingTextureAcquireBarriers.push_back(uploader.Upload(
@@ -94,10 +89,9 @@ void Run()
     // readback staging buffer
 
     auto readBackStagingBuffer = device->CreateBuffer(RHI::BufferDesc{
-        .size                 = static_cast<size_t>(inputImageData.GetWidth() * inputImageData.GetHeight() * 4),
-        .usage                = RHI::BufferUsage::TransferDst,
-        .hostAccessType       = RHI::BufferHostAccessType::Random,
-        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
+        .size           = static_cast<size_t>(inputImageData.GetWidth() * inputImageData.GetHeight() * 4),
+        .usage          = RHI::BufferUsage::TransferDst,
+        .hostAccessType = RHI::BufferHostAccessType::Random
     });
 
     // create constant buffer

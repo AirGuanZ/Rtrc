@@ -75,6 +75,10 @@ public:
 
     void SetObjectName(VkObjectType objectType, uint64_t objectHandle, const char *name);
 
+    uint32_t GetQueueFamilyIndex(QueueType type) const;
+
+    VkDevice GetNativeDevice() const;
+
 private:
 
     bool enableDebug_;

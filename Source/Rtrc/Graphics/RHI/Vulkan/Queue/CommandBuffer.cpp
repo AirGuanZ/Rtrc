@@ -1,9 +1,9 @@
+#include <Rtrc/Graphics/RHI/Vulkan/Context/Device.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/BindingGroup.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/BindingLayout.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/ComputePipeline.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/GraphicsPipeline.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/CommandBuffer.h>
-#include <Rtrc/Graphics/RHI/Vulkan/Queue/Queue.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Buffer.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Texture.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/TextureRTV.h>
@@ -21,7 +21,7 @@ namespace
 
 } // namespace anonymous
 
-VulkanCommandBuffer::VulkanCommandBuffer(VkDevice device, VkCommandPool pool, VkCommandBuffer commandBuffer)
+VulkanCommandBuffer::VulkanCommandBuffer(VulkanDevice *device, VkCommandPool pool, VkCommandBuffer commandBuffer)
     : device_(device), pool_(pool), commandBuffer_(commandBuffer)
 {
     
@@ -30,7 +30,7 @@ VulkanCommandBuffer::VulkanCommandBuffer(VkDevice device, VkCommandPool pool, Vk
 VulkanCommandBuffer::~VulkanCommandBuffer()
 {
     assert(commandBuffer_);
-    vkFreeCommandBuffers(device_, pool_, 1, &commandBuffer_);
+    vkFreeCommandBuffers(device_->GetNativeDevice(), pool_, 1, &commandBuffer_);
 }
 
 void VulkanCommandBuffer::Begin()
@@ -335,9 +335,7 @@ void VulkanCommandBuffer::ExecuteBarriersInternal(
     Span<TextureTransitionBarrier> textureTransitions,
     Span<BufferTransitionBarrier>  bufferTransitions,
     Span<TextureReleaseBarrier>    textureReleaseBarriers,
-    Span<TextureAcquireBarrier>    textureAcquireBarriers,
-    Span<BufferReleaseBarrier>     bufferReleaseBarriers,
-    Span<BufferAcquireBarrier>     bufferAcquireBarriers)
+    Span<TextureAcquireBarrier>    textureAcquireBarriers)
 {
     // texture barriers
 
@@ -399,17 +397,16 @@ void VulkanCommandBuffer::ExecuteBarriersInternal(
 
         // assert(release.texture->GetDesc().concurrentAccessMode == QueueConcurrentAccessMode::Exclusive);
 
-        auto beforeQueue = static_cast<VulkanQueue *>(release.beforeQueue);
-        auto afterQueue = static_cast<VulkanQueue *>(release.afterQueue);
-        assert(beforeQueue != afterQueue);
-
+        const uint32_t beforeQueueFamilyIndex = device_->GetQueueFamilyIndex(release.beforeQueue);
+        const uint32_t afterQueueFamilyIndex = device_->GetQueueFamilyIndex(release.afterQueue);
         bool shouldEmitBarrier = true;
+
         // perform a normal barrier when queues are of the same family
-        if(beforeQueue->GetNativeFamilyIndex() == afterQueue->GetNativeFamilyIndex())
+        if(beforeQueueFamilyIndex == afterQueueFamilyIndex)
         {
             // graphics < compute < copy
             // use fronter queue to submit the barrier
-            shouldEmitBarrier = beforeQueue->GetType() <= afterQueue->GetType();
+            shouldEmitBarrier = release.beforeQueue <= release.afterQueue;
         }
 
         if(shouldEmitBarrier)
@@ -427,8 +424,8 @@ void VulkanCommandBuffer::ExecuteBarriersInternal(
                 .dstAccessMask       = VK_PIPELINE_STAGE_2_NONE,
                 .oldLayout           = srcLayout,
                 .newLayout           = dstLayout,
-                .srcQueueFamilyIndex = beforeQueue->GetNativeFamilyIndex(),
-                .dstQueueFamilyIndex = afterQueue->GetNativeFamilyIndex(),
+                .srcQueueFamilyIndex = beforeQueueFamilyIndex,
+                .dstQueueFamilyIndex = afterQueueFamilyIndex,
                 .image               = GetVulkanImage(release.texture),
                 .subresourceRange    = TranslateImageSubresources(release.texture->GetFormat(), release.subresources)
             });
@@ -442,14 +439,13 @@ void VulkanCommandBuffer::ExecuteBarriersInternal(
             continue;
         }
 
-        auto beforeQueue = static_cast<VulkanQueue *>(acquire.beforeQueue);
-        auto afterQueue = static_cast<VulkanQueue *>(acquire.afterQueue);
-        assert(beforeQueue != afterQueue);
+        const uint32_t beforeQueueFamilyIndex = device_->GetQueueFamilyIndex(acquire.beforeQueue);
+        const uint32_t afterQueueFamilyIndex = device_->GetQueueFamilyIndex(acquire.afterQueue);
 
         bool shouldEmitBarrier = true;
-        if(beforeQueue->GetNativeFamilyIndex() == afterQueue->GetNativeFamilyIndex())
+        if(beforeQueueFamilyIndex == afterQueueFamilyIndex)
         {
-            shouldEmitBarrier = beforeQueue->GetType() > afterQueue->GetType();
+            shouldEmitBarrier = acquire.beforeQueue > acquire.afterQueue;
         }
 
         if(shouldEmitBarrier)
@@ -467,8 +463,8 @@ void VulkanCommandBuffer::ExecuteBarriersInternal(
                 .dstAccessMask       = dstAccess,
                 .oldLayout           = srcLayout,
                 .newLayout           = dstLayout,
-                .srcQueueFamilyIndex = beforeQueue->GetNativeFamilyIndex(),
-                .dstQueueFamilyIndex = afterQueue->GetNativeFamilyIndex(),
+                .srcQueueFamilyIndex = beforeQueueFamilyIndex,
+                .dstQueueFamilyIndex = afterQueueFamilyIndex,
                 .image               = GetVulkanImage(acquire.texture),
                 .subresourceRange    = TranslateImageSubresources(acquire.texture->GetFormat(), acquire.subresources)
             });
@@ -478,8 +474,7 @@ void VulkanCommandBuffer::ExecuteBarriersInternal(
     // buffer barriers
 
     std::vector<VkBufferMemoryBarrier2> bufferBarriers;
-    bufferBarriers.reserve(
-        bufferTransitions.GetSize() + bufferReleaseBarriers.GetSize() + bufferAcquireBarriers.GetSize());
+    bufferBarriers.reserve(bufferTransitions.GetSize());
 
     for(auto &transition: bufferTransitions)
     {
@@ -506,70 +501,6 @@ void VulkanCommandBuffer::ExecuteBarriersInternal(
             .offset              = 0,
             .size                = VK_WHOLE_SIZE
         });
-    }
-
-    for(auto &release : bufferReleaseBarriers)
-    {
-        if(!release.buffer)
-        {
-            continue;
-        }
-
-        assert(release.buffer->GetDesc().concurrentAccessMode == QueueConcurrentAccessMode::Exclusive);
-
-        auto beforeQueue = static_cast<VulkanQueue *>(release.beforeQueue);
-        auto afterQueue = static_cast<VulkanQueue *>(release.afterQueue);
-        assert(beforeQueue != afterQueue);
-
-        if(beforeQueue->GetNativeFamilyIndex() != afterQueue->GetNativeFamilyIndex())
-        {
-            const auto srcStage = TranslatePipelineStageFlag(release.beforeStages);
-            const auto srcAccess = TranslateAccessFlag(release.beforeAccesses);
-
-            bufferBarriers.push_back(VkBufferMemoryBarrier2{
-                .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2,
-                .srcStageMask        = srcStage,
-                .srcAccessMask       = srcAccess,
-                .dstStageMask        = srcStage,
-                .dstAccessMask       = VK_ACCESS_2_NONE,
-                .srcQueueFamilyIndex = beforeQueue->GetNativeFamilyIndex(),
-                .dstQueueFamilyIndex = afterQueue->GetNativeFamilyIndex(),
-                .buffer              = static_cast<VulkanBuffer*>(release.buffer)->GetNativeBuffer(),
-                .offset              = 0,
-                .size                = VK_WHOLE_SIZE
-            });
-        }
-    }
-
-    for(auto &acquire : bufferAcquireBarriers)
-    {
-        if(!acquire.buffer)
-        {
-            continue;
-        }
-
-        auto beforeQueue = static_cast<VulkanQueue *>(acquire.beforeQueue);
-        auto afterQueue = static_cast<VulkanQueue *>(acquire.afterQueue);
-        assert(beforeQueue != afterQueue);
-        
-        if(beforeQueue->GetNativeFamilyIndex() != afterQueue->GetNativeFamilyIndex())
-        {
-            auto dstStage = TranslatePipelineStageFlag(acquire.afterStages);
-            auto dstAccess = TranslateAccessFlag(acquire.afterAccesses);
-            
-            bufferBarriers.push_back(VkBufferMemoryBarrier2{
-                .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2,
-                .srcStageMask        = dstStage,
-                .srcAccessMask       = VK_ACCESS_2_NONE,
-                .dstStageMask        = dstStage,
-                .dstAccessMask       = dstAccess,
-                .srcQueueFamilyIndex = beforeQueue->GetNativeFamilyIndex(),
-                .dstQueueFamilyIndex = afterQueue->GetNativeFamilyIndex(),
-                .buffer              = static_cast<VulkanBuffer*>(acquire.buffer)->GetNativeBuffer(),
-                .offset              = 0,
-                .size                = VK_WHOLE_SIZE
-            });
-        }
     }
 
     if(!bufferBarriers.empty() || !imageBarriers.empty())

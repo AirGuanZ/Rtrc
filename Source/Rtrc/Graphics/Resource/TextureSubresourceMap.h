@@ -33,6 +33,18 @@ public:
         data_.resize(mipLevelCount * arrayLayerCount, value);
     }
 
+    void Swap(TextureSubresourceMap &other) noexcept
+    {
+        std::swap(mipLevelCount_, other.mipLevelCount_);
+        std::swap(arrayLayerCount_, other.arrayLayerCount_);
+        data_.swap(other.data_);
+    }
+
+    bool IsEmpty() const
+    {
+        return data_.empty();
+    }
+
     uint32_t GetMipLevelCount() const
     {
         return mipLevelCount_;

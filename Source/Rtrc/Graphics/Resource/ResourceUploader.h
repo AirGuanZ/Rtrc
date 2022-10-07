@@ -36,11 +36,13 @@ class ResourceUploader : public Uncopyable
 {
 public:
 
+    struct DummyAcquire { };
+
     explicit ResourceUploader(RHI::Ptr<RHI::Device> device);
 
     ~ResourceUploader();
 
-    ResourceUploadHandle<RHI::BufferAcquireBarrier> Upload(
+    ResourceUploadHandle<DummyAcquire> Upload(
         RHI::Buffer            *buffer,
         size_t                  offset,
         size_t                  range,
@@ -87,7 +89,6 @@ private:
 
     size_t                                     pendingStagingBufferSize_;
     std::vector<RHI::Ptr<RHI::Buffer>>         pendingStagingBuffers_;
-    std::vector<RHI::BufferReleaseBarrier>     pendingBufferReleaseBarriers_;
     std::vector<RHI::TextureReleaseBarrier>    pendingTextureReleaseBarriers_;
     std::vector<RHI::TextureTransitionBarrier> pendingTextureTransitionBarriers_;
 };

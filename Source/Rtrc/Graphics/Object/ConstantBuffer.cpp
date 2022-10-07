@@ -1,5 +1,3 @@
-#include "ConstantBuffer.h"
-
 #include <shared_mutex>
 
 #include <Rtrc/Graphics/Object/ConstantBuffer.h>
@@ -18,7 +16,7 @@ ConstantBuffer::~ConstantBuffer()
 {
     if(manager_)
     {
-        manager_->_FreeInternal(*this);
+        manager_->_rtrcFreeInternal(*this);
     }
 }
 
@@ -45,7 +43,7 @@ void ConstantBuffer::Swap(ConstantBuffer &other) noexcept
 void ConstantBuffer::SetData(const void *data, size_t size)
 {
     assert(manager_);
-    manager_->_SetDataInternal(*this, data, size);
+    manager_->_rtrcSetDataInternal(*this, data, size);
 }
 
 const RHI::BufferPtr &ConstantBuffer::GetBuffer() const
@@ -64,8 +62,17 @@ size_t ConstantBuffer::GetSize() const
 }
 
 ConstantBufferManager::ConstantBufferManager(HostSynchronizer &hostSync, RHI::DevicePtr device, size_t chunkSize)
-    : hostSync_(hostSync), device_(std::move(device))
+    : batchRelease_(hostSync), device_(std::move(device))
 {
+    using ReleaseDataList = BatchReleaseHelper<BatchReleaseData>::DataList;
+    batchRelease_.SetReleaseCallback([this](int, const ReleaseDataList &dataList)
+    {
+        for(auto &data : dataList)
+        {
+            slabs_[data.slabIndex].freeBuffers.push_back({ data.chunkIndex, data.offset });
+        }
+    });
+
     cbufferAlignment_ = device_->GetConstantBufferAlignment();
     chunkSize_ = std::max(NextPowerOfTwo(chunkSize), cbufferAlignment_);
 
@@ -89,19 +96,19 @@ ConstantBufferManager::~ConstantBufferManager()
     });
 }
 
-ConstantBuffer ConstantBufferManager::Create()
+RC<ConstantBuffer> ConstantBufferManager::Create()
 {
     ConstantBuffer ret;
     ret.manager_ = this;
-    return ret;
+    return MakeRC<ConstantBuffer>(std::move(ret));
 }
 
-void ConstantBufferManager::_SetDataInternal(ConstantBuffer &buffer, const void *data, size_t size)
+void ConstantBufferManager::_rtrcSetDataInternal(ConstantBuffer &buffer, const void *data, size_t size)
 {
     int newSlabIndex; size_t blockSize;
     ComputeSlabIndex(size, newSlabIndex, blockSize);
 
-    _FreeInternal(buffer);
+    _rtrcFreeInternal(buffer);
 
     // TODO: thread-local allocator
 
@@ -121,8 +128,7 @@ void ConstantBufferManager::_SetDataInternal(ConstantBuffer &buffer, const void 
             {
                 .size = chunkSize_,
                 .usage = RHI::BufferUsage::ShaderConstantBuffer,
-                .hostAccessType = RHI::BufferHostAccessType::SequentialWrite,
-                .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
+                .hostAccessType = RHI::BufferHostAccessType::SequentialWrite
             });
             newChunk.mappedPtr = newChunk.buffer->Map(0, chunkSize_);
             for(size_t offset = 0; offset < chunkSize_; offset += blockSize)
@@ -150,15 +156,11 @@ void ConstantBufferManager::_SetDataInternal(ConstantBuffer &buffer, const void 
     buffer.rhiBuffer_->FlushAfterWrite(record.offset, size);
 }
 
-void ConstantBufferManager::_FreeInternal(ConstantBuffer &buffer)
+void ConstantBufferManager::_rtrcFreeInternal(ConstantBuffer &buffer)
 {
     if(buffer.rhiBuffer_)
     {
-        hostSync_.OnCurrentFrameComplete(
-            [this, slabIndex = buffer.slabIndex_, chunkIndex = buffer.chunkIndex_, offset = buffer.offset_]
-        {
-            slabs_[slabIndex].freeBuffers.push_back({ chunkIndex, offset });
-        });
+        batchRelease_.AddToCurrentBatch({ buffer.slabIndex_, buffer.chunkIndex_, buffer.offset_ });
         buffer.rhiBuffer_ = nullptr;
     }
 }

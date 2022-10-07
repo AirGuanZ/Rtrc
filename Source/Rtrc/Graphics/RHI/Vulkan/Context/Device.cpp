@@ -104,20 +104,45 @@ namespace
         return imageCreateInfo;
     }
 
-    VkBufferCreateInfo TranslateBufferCreateInfo(
+    struct BufferCreateInfoWrapper
+    {
+        BufferCreateInfoWrapper() = default;
+        BufferCreateInfoWrapper(const BufferCreateInfoWrapper &other)
+            : createInfo(other.createInfo), queueFamilyIndices(other.queueFamilyIndices)
+        {
+            *this = other;
+        }
+        BufferCreateInfoWrapper &operator=(const BufferCreateInfoWrapper &other)
+        {
+            createInfo = other.createInfo;
+            queueFamilyIndices = other.queueFamilyIndices;
+            if(createInfo.sharingMode == VK_SHARING_MODE_CONCURRENT)
+            {
+                createInfo.pQueueFamilyIndices = queueFamilyIndices.GetData();
+            }
+            return *this;
+        }
+
+        VkBufferCreateInfo createInfo = {};
+        StaticVector<uint32_t, 3> queueFamilyIndices;
+    };
+
+    BufferCreateInfoWrapper TranslateBufferCreateInfo(
         const BufferDesc &desc, const VulkanDevice::QueueFamilyInfo &queueFamilies)
     {
         const auto [sharingMode, sharingQueueFamilyIndices] =
-            GetVulkanSharingMode(desc.concurrentAccessMode, queueFamilies);
-        const VkBufferCreateInfo createInfo = {
+            GetVulkanSharingMode(QueueConcurrentAccessMode::Concurrent, queueFamilies);
+        BufferCreateInfoWrapper ret;
+        ret.queueFamilyIndices = sharingQueueFamilyIndices;
+        ret.createInfo = VkBufferCreateInfo{
             .sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
             .size                  = desc.size,
             .usage                 = TranslateBufferUsageFlag(desc.usage),
             .sharingMode           = sharingMode,
-            .queueFamilyIndexCount = static_cast<uint32_t>(sharingQueueFamilyIndices.GetSize()),
-            .pQueueFamilyIndices   = sharingQueueFamilyIndices.GetData()
+            .queueFamilyIndexCount = static_cast<uint32_t>(ret.queueFamilyIndices.GetSize()),
+            .pQueueFamilyIndices   = ret.queueFamilyIndices.GetData()
         };
-        return createInfo;
+        return ret;
     }
 
 } // namespace anonymous
@@ -146,12 +171,12 @@ VulkanDevice::VulkanDevice(
         auto &queueIndex = familyIndexToNextQueueIndex[familyIndex.value()];
         vkGetDeviceQueue(device_, familyIndex.value(), queueIndex, &queue);
         ++queueIndex;
-        return MakePtr<VulkanQueue>(device_, queue, type, familyIndex.value());
+        return MakePtr<VulkanQueue>(this, queue, type, familyIndex.value());
     };
 
     graphicsQueue_ = getNextQueue(queueFamilies_.graphicsFamilyIndex, QueueType::Graphics);
-    presentQueue_ = getNextQueue(queueFamilies_.graphicsFamilyIndex, QueueType::Graphics);
-    computeQueue_ = getNextQueue(queueFamilies_.computeFamilyIndex, QueueType::Compute);
+    presentQueue_  = getNextQueue(queueFamilies_.graphicsFamilyIndex, QueueType::Graphics);
+    computeQueue_  = getNextQueue(queueFamilies_.computeFamilyIndex, QueueType::Compute);
     transferQueue_ = getNextQueue(queueFamilies_.transferFamilyIndex, QueueType::Transfer);
 
     const VmaVulkanFunctions vmaFunctions = {
@@ -681,7 +706,7 @@ Ptr<Texture> VulkanDevice::CreateTexture(const TextureDesc &desc)
 
 Ptr<Buffer> VulkanDevice::CreateBuffer(const BufferDesc &desc)
 {
-    const VkBufferCreateInfo createInfo = TranslateBufferCreateInfo(desc, queueFamilies_);
+    const BufferCreateInfoWrapper createInfo = TranslateBufferCreateInfo(desc, queueFamilies_);
     const VmaAllocationCreateInfo allocCreateInfo = {
         .flags = TranslateBufferHostAccessType(desc.hostAccessType),
         .usage = VMA_MEMORY_USAGE_AUTO
@@ -689,7 +714,7 @@ Ptr<Buffer> VulkanDevice::CreateBuffer(const BufferDesc &desc)
 
     VkBuffer buffer; VmaAllocation alloc;
     VK_FAIL_MSG(
-        vmaCreateBuffer(allocator_, &createInfo, &allocCreateInfo, &buffer, &alloc, nullptr),
+        vmaCreateBuffer(allocator_, &createInfo.createInfo, &allocCreateInfo, &buffer, &alloc, nullptr),
         "failed to create vulkan buffer");
     RTRC_SCOPE_FAIL{ vmaDestroyBuffer(allocator_, buffer, alloc); };
 
@@ -783,10 +808,10 @@ Ptr<MemoryPropertyRequirements> VulkanDevice::GetMemoryRequirements(
 Ptr<MemoryPropertyRequirements> VulkanDevice::GetMemoryRequirements(
     const BufferDesc &desc, size_t *size, size_t *alignment) const
 {
-    const VkBufferCreateInfo bufferCreateInfo = TranslateBufferCreateInfo(desc, queueFamilies_);
+    const BufferCreateInfoWrapper bufferCreateInfo = TranslateBufferCreateInfo(desc, queueFamilies_);
     const VkDeviceBufferMemoryRequirements queryInfo = {
         .sType = VK_STRUCTURE_TYPE_DEVICE_BUFFER_MEMORY_REQUIREMENTS,
-        .pCreateInfo = &bufferCreateInfo
+        .pCreateInfo = &bufferCreateInfo.createInfo
     };
 
     VkMemoryRequirements2 requirements = { .sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2 };
@@ -845,10 +870,10 @@ Ptr<Texture> VulkanDevice::CreatePlacedTexture(
 Ptr<Buffer> VulkanDevice::CreatePlacedBuffer(
     const BufferDesc &desc, const Ptr<MemoryBlock> &memoryBlock, size_t offsetInMemoryBlock)
 {
-    const VkBufferCreateInfo bufferCreateInfo = TranslateBufferCreateInfo(desc, queueFamilies_);
+    const BufferCreateInfoWrapper bufferCreateInfo = TranslateBufferCreateInfo(desc, queueFamilies_);
     VkBuffer buffer;
     VK_FAIL_MSG(
-        vkCreateBuffer(device_, &bufferCreateInfo, VK_ALLOC, &buffer),
+        vkCreateBuffer(device_, &bufferCreateInfo.createInfo, VK_ALLOC, &buffer),
         "failed to create placed vulkan buffer");
     RTRC_SCOPE_FAIL{ vkDestroyBuffer(device_, buffer, VK_ALLOC); };
 
@@ -891,6 +916,22 @@ void VulkanDevice::SetObjectName(VkObjectType objectType, uint64_t objectHandle,
         };
         vkSetDebugUtilsObjectNameEXT(device_, &imageNameInfo);
     }
+}
+
+uint32_t VulkanDevice::GetQueueFamilyIndex(QueueType type) const
+{
+    switch(type)
+    {
+    case QueueType::Graphics: return graphicsQueue_->GetNativeFamilyIndex();
+    case QueueType::Compute: return computeQueue_->GetNativeFamilyIndex();
+    case QueueType::Transfer: return transferQueue_->GetNativeFamilyIndex();
+    }
+    Unreachable();
+}
+
+VkDevice VulkanDevice::GetNativeDevice() const
+{
+    return device_;
 }
 
 RTRC_RHI_VK_END

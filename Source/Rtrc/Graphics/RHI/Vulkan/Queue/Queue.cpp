@@ -1,4 +1,5 @@
 #include <Rtrc/Graphics/RHI/Vulkan/Context/BackBufferSemaphore.h>
+#include <Rtrc/Graphics/RHI/Vulkan/Context/Device.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/CommandPool.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/Fence.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/Queue.h>
@@ -8,7 +9,7 @@
 
 RTRC_RHI_VK_BEGIN
 
-VulkanQueue::VulkanQueue(VkDevice device, VkQueue queue, QueueType type, uint32_t queueFamilyIndex)
+VulkanQueue::VulkanQueue(VulkanDevice *device, VkQueue queue, QueueType type, uint32_t queueFamilyIndex)
     : device_(device), queue_(queue), type_(type), queueFamilyIndex_(queueFamilyIndex)
 {
 
@@ -112,10 +113,10 @@ Ptr<CommandPool> VulkanQueue::CreateCommandPoolImpl() const
     };
     VkCommandPool pool;
     VK_FAIL_MSG(
-        vkCreateCommandPool(device_, &createInfo, VK_ALLOC, &pool),
+        vkCreateCommandPool(device_->GetNativeDevice(), &createInfo, VK_ALLOC, &pool),
         "failed to create vulkan command pool");
-    RTRC_SCOPE_FAIL{ vkDestroyCommandPool(device_, pool, VK_ALLOC); };
-    return MakePtr<VulkanCommandPool>(device_, pool);
+    RTRC_SCOPE_FAIL{ vkDestroyCommandPool(device_->GetNativeDevice(), pool, VK_ALLOC); };
+    return MakePtr<VulkanCommandPool>(device_, GetType(), pool);
 }
 
 RTRC_RHI_VK_END

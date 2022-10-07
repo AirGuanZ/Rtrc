@@ -107,7 +107,6 @@ void Run()
     // uploader
 
     ResourceUploader uploader(device);
-    std::vector<RHI::BufferAcquireBarrier> uploadBufferAcquireBarriers;
     std::vector<RHI::TextureAcquireBarrier> uploadTextureAcquireBarriers;
 
     // vertex position buffer
@@ -124,10 +123,9 @@ void Run()
 
     auto vertexPositionBuffer = device->CreateBuffer(RHI::BufferDesc
     {
-        .size                 = sizeof(vertexPositionData),
-        .usage                = RHI::BufferUsage::ShaderBuffer,
-        .hostAccessType       = RHI::BufferHostAccessType::None,
-        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
+        .size           = sizeof(vertexPositionData),
+        .usage          = RHI::BufferUsage::ShaderBuffer,
+        .hostAccessType = RHI::BufferHostAccessType::None
     });
 
     auto vertexPositionBufferSRV = vertexPositionBuffer->CreateSRV(RHI::BufferSRVDesc
@@ -137,9 +135,9 @@ void Run()
         .range  = sizeof(vertexPositionData)
     });
 
-    uploadBufferAcquireBarriers.push_back(uploader.Upload(
+    uploader.Upload(
         vertexPositionBuffer, 0, sizeof(vertexPositionData), vertexPositionData.data(),
-        graphicsQueue, RHI::PipelineStage::VertexShader, RHI::ResourceAccess::BufferRead).GetAcquireBarrier());
+        graphicsQueue, RHI::PipelineStage::VertexShader, RHI::ResourceAccess::BufferRead);
 
     // vertex texcoord buffer
 
@@ -154,10 +152,9 @@ void Run()
 
     auto vertexTexCoordBuffer = device->CreateBuffer(RHI::BufferDesc
     {
-        .size                 = sizeof(vertexTexCoordData),
-        .usage                = RHI::BufferUsage::ShaderBuffer,
-        .hostAccessType       = RHI::BufferHostAccessType::None,
-        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
+        .size           = sizeof(vertexTexCoordData),
+        .usage          = RHI::BufferUsage::ShaderBuffer,
+        .hostAccessType = RHI::BufferHostAccessType::None
     });
 
     auto vertexTexCoordBufferSRV = vertexTexCoordBuffer->CreateSRV(RHI::BufferSRVDesc
@@ -167,9 +164,9 @@ void Run()
         .range  = sizeof(vertexTexCoordData)
     });
 
-    uploadBufferAcquireBarriers.push_back(uploader.Upload(
+    uploader.Upload(
         vertexTexCoordBuffer, 0, sizeof(vertexTexCoordData), vertexTexCoordData.data(),
-        graphicsQueue, RHI::PipelineStage::VertexShader, RHI::ResourceAccess::BufferRead).GetAcquireBarrier());
+        graphicsQueue, RHI::PipelineStage::VertexShader, RHI::ResourceAccess::BufferRead);
 
     // main texture
 
@@ -217,9 +214,8 @@ void Run()
         uploader.SubmitAndSync();
         auto uploadCommandBuffer = StandaloneCommandBuffer::Create(device, graphicsQueue);
         uploadCommandBuffer->Begin();
-        uploadCommandBuffer->ExecuteBarriers(uploadTextureAcquireBarriers, uploadBufferAcquireBarriers);
+        uploadCommandBuffer->ExecuteBarriers(uploadTextureAcquireBarriers);
         uploadTextureAcquireBarriers.clear();
-        uploadBufferAcquireBarriers.clear();
         uploadCommandBuffer->End();
         uploadCommandBuffer.SubmitAndWait();
     }

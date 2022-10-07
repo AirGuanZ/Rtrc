@@ -50,7 +50,7 @@ FIND_PACKAGE(TBB REQUIRED)
 SET(RTRC_RHI_VULKAN ON)
 
 IF(WIN32)
-    SET(RTRC_RHI_DIRECTX12 ON)
+    SET(RTRC_RHI_DIRECTX12 OFF)
 ELSE()
     SET(RTRC_RHI_DIRECTX12 OFF)
 ENDIF()
@@ -66,7 +66,7 @@ TARGET_INCLUDE_DIRECTORIES(VulkanMemoryAllocator INTERFACE "External/VulkanMemor
 
 IF(RTRC_RHI_DIRECTX12)
     ADD_SUBDIRECTORY(External/D3D12MemAlloc)
-SET_TARGET_PROPERTIES(D3D12MemAlloc PROPERTIES FOLDER "External")
+    SET_TARGET_PROPERTIES(D3D12MemAlloc PROPERTIES FOLDER "External")
 ENDIF()
 
 #============= volk =============
@@ -111,14 +111,14 @@ FILE(GLOB_RECURSE RTRC_CPP_SRC
 		"${CMAKE_CURRENT_SOURCE_DIR}/Source/*.h")
 
 FILE(GLOB_RECURSE RTRC_VULKAN_SRC
-        "${CMAKE_CURRENT_SOURCE_DIR}/Source/Rtrc/RHI/Vulkan/*.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Source/Rtrc/RHI/Vulkan/*.inl"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Source/Rtrc/RHI/Vulkan/*.h")
+        "${CMAKE_CURRENT_SOURCE_DIR}/Source/Rtrc/Graphics/RHI/Vulkan/*.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Source/Rtrc/Graphics/RHI/Vulkan/*.inl"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Source/Rtrc/Graphics/RHI/Vulkan/*.h")
         
 FILE(GLOB_RECURSE RTRC_DIRECTX12_SRC
-        "${CMAKE_CURRENT_SOURCE_DIR}/Source/Rtrc/RHI/DirectX12/*.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Source/Rtrc/RHI/DirectX12/*.inl"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Source/Rtrc/RHI/DirectX12/*.h")
+        "${CMAKE_CURRENT_SOURCE_DIR}/Source/Rtrc/Graphics/RHI/DirectX12/*.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Source/Rtrc/Graphics/RHI/DirectX12/*.inl"
+        "${CMAKE_CURRENT_SOURCE_DIR}/Source/Rtrc/Graphics/RHI/DirectX12/*.h")
 
 IF(NOT RTRC_RHI_VULKAN)
     LIST(REMOVE_ITEM RTRC_CPP_SRC ${RTRC_VULKAN_SRC})

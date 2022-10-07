@@ -4,11 +4,13 @@
 
 RTRC_RHI_VK_BEGIN
 
+class VulkanDevice;
+
 class VulkanCommandBuffer : public CommandBuffer
 {
 public:
 
-    VulkanCommandBuffer(VkDevice device, VkCommandPool pool, VkCommandBuffer commandBuffer);
+    VulkanCommandBuffer(VulkanDevice *device, VkCommandPool pool, VkCommandBuffer commandBuffer);
 
     ~VulkanCommandBuffer() override;
 
@@ -56,13 +58,11 @@ protected:
         Span<TextureTransitionBarrier> textureTransitions,
         Span<BufferTransitionBarrier>  bufferTransitions,
         Span<TextureReleaseBarrier>    textureReleaseBarriers,
-        Span<TextureAcquireBarrier>    textureAcquireBarriers,
-        Span<BufferReleaseBarrier>     bufferReleaseBarriers,
-        Span<BufferAcquireBarrier>     bufferAcquireBarriers) override;
+        Span<TextureAcquireBarrier>    textureAcquireBarriers) override;
 
 private:
 
-    VkDevice        device_;
+    VulkanDevice   *device_;
     VkCommandPool   pool_;
     VkCommandBuffer commandBuffer_;
 

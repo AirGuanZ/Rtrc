@@ -8,11 +8,13 @@ class VulkanCommandPool : public CommandPool
 {
 public:
 
-    VulkanCommandPool(VkDevice device, VkCommandPool pool);
+    VulkanCommandPool(VulkanDevice *device, QueueType type, VkCommandPool pool);
 
     ~VulkanCommandPool() override;
 
     void Reset() override;
+
+    QueueType GetType() const override;
 
     Ptr<CommandBuffer> NewCommandBuffer() override;
 
@@ -20,7 +22,8 @@ private:
 
     void CreateCommandBuffer();
 
-    VkDevice device_;
+    VulkanDevice *device_;
+    QueueType type_;
     VkCommandPool pool_;
     size_t nextFreeBufferIndex_;
     std::vector<Ptr<VulkanCommandBuffer>> commandBuffers_;

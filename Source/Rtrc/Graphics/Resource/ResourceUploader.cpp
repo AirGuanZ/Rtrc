@@ -17,7 +17,7 @@ ResourceUploader::~ResourceUploader()
     assert(pendingStagingBuffers_.empty());
 }
 
-ResourceUploadHandle<BufferAcquireBarrier> ResourceUploader::Upload(
+ResourceUploadHandle<ResourceUploader::DummyAcquire> ResourceUploader::Upload(
     Buffer            *buffer,
     size_t             offset,
     size_t             range,
@@ -32,15 +32,14 @@ ResourceUploadHandle<BufferAcquireBarrier> ResourceUploader::Upload(
         auto p = buffer->Map(offset, range);
         std::memcpy(p, data, range);
         buffer->Unmap(offset, range, true);
-        return ResourceUploadHandle({}, BufferAcquireBarrier{});
+        return ResourceUploadHandle<DummyAcquire>({}, {});
     }
 
     auto stagingBuffer = device_->CreateBuffer(BufferDesc
         {
-            .size                 = range,
-            .usage                = BufferUsage::TransferSrc,
-            .hostAccessType       = BufferHostAccessType::SequentialWrite,
-            .concurrentAccessMode = QueueConcurrentAccessMode::Exclusive
+            .size           = range,
+            .usage          = BufferUsage::TransferSrc,
+            .hostAccessType = BufferHostAccessType::SequentialWrite
         });
 
     auto p = stagingBuffer->Map(0, range);
@@ -55,23 +54,8 @@ ResourceUploadHandle<BufferAcquireBarrier> ResourceUploader::Upload(
 
     pendingStagingBufferSize_ += range;
     pendingStagingBuffers_.push_back(stagingBuffer);
-    pendingBufferReleaseBarriers_.reserve(pendingBufferReleaseBarriers_.size() + 1);
 
     commandBuffer_->CopyBuffer(buffer, offset, stagingBuffer.Get(), 0, range);
-
-    if(afterQueue != queue_.Get())
-    {
-        // TODO: remove this barrier unless release/acquire is actually needed
-        // TODO: since sync between different queues with same family index is ensured by waitidle
-        pendingBufferReleaseBarriers_.push_back(BufferReleaseBarrier
-            {
-                .buffer         = buffer,
-                .beforeStages   =  PipelineStage::Copy,
-                .beforeAccesses = ResourceAccess::CopyWrite,
-                .beforeQueue    = queue_.Get(),
-                .afterQueue     = afterQueue
-            });
-    }
 
     TimelineSemaphoreWaiter waiter;
     if(pendingStagingBufferSize_ >= MAX_ALLOWED_STAGING_BUFFER_SIZE ||
@@ -83,20 +67,7 @@ ResourceUploadHandle<BufferAcquireBarrier> ResourceUploader::Upload(
     {
         waiter = timelineSemaphore_.CreateWaiter();
     }
-
-    if(afterQueue != queue_.Get())
-    {
-        // TODO: remove this barrier unless release/acquire is actually needed
-        return ResourceUploadHandle(waiter, BufferAcquireBarrier
-        {
-            .buffer        = buffer,
-            .afterStages   = afterStages,
-            .afterAccesses = afterAccesses,
-            .beforeQueue   = queue_.Get(),
-            .afterQueue    = afterQueue
-        });
-    }
-    return ResourceUploadHandle(waiter, BufferAcquireBarrier{});
+    return ResourceUploadHandle(waiter, DummyAcquire{});
 }
 
 ResourceUploadHandle<TextureAcquireBarrier> ResourceUploader::Upload(
@@ -117,10 +88,9 @@ ResourceUploadHandle<TextureAcquireBarrier> ResourceUploader::Upload(
 
     auto stagingBuffer = device_->CreateBuffer(BufferDesc
         {
-            .size                 = stagingBufferSize,
-            .usage                = BufferUsage::TransferSrc,
-            .hostAccessType       = BufferHostAccessType::SequentialWrite,
-            .concurrentAccessMode = QueueConcurrentAccessMode::Exclusive
+            .size           = stagingBufferSize,
+            .usage          = BufferUsage::TransferSrc,
+            .hostAccessType = BufferHostAccessType::SequentialWrite
         });
 
     auto p = stagingBuffer->Map(0, stagingBufferSize);
@@ -135,7 +105,6 @@ ResourceUploadHandle<TextureAcquireBarrier> ResourceUploader::Upload(
 
     pendingStagingBufferSize_ += stagingBufferSize;
     pendingStagingBuffers_.push_back(stagingBuffer);
-    pendingBufferReleaseBarriers_.reserve(pendingBufferReleaseBarriers_.size() + 1);
 
     commandBuffer_->ExecuteBarriers(TextureTransitionBarrier{
         .texture      = texture,
@@ -153,7 +122,7 @@ ResourceUploadHandle<TextureAcquireBarrier> ResourceUploader::Upload(
 
     commandBuffer_->CopyBufferToColorTexture2D(texture, mipLevel, arrayLayer, stagingBuffer.Get(), 0);
     
-    if(afterQueue != queue_.Get())
+    if(afterQueue->GetType() != queue_->GetType())
     {
         pendingTextureReleaseBarriers_.push_back(TextureReleaseBarrier
             {
@@ -166,8 +135,8 @@ ResourceUploadHandle<TextureAcquireBarrier> ResourceUploader::Upload(
                 .beforeAccesses = ResourceAccess::CopyWrite,
                 .beforeLayout   = TextureLayout::CopyDst,
                 .afterLayout    = afterLayout,
-                .beforeQueue    = queue_.Get(),
-                .afterQueue     = afterQueue
+                .beforeQueue    = queue_->GetType(),
+                .afterQueue     = afterQueue->GetType()
             });
     }
     else
@@ -200,7 +169,7 @@ ResourceUploadHandle<TextureAcquireBarrier> ResourceUploader::Upload(
         waiter = timelineSemaphore_.CreateWaiter();
     }
 
-    if(afterQueue != queue_.Get())
+    if(afterQueue->GetType() != queue_->GetType())
     {
         return ResourceUploadHandle(waiter, TextureAcquireBarrier
             {
@@ -213,8 +182,8 @@ ResourceUploadHandle<TextureAcquireBarrier> ResourceUploader::Upload(
                 .afterStages    = afterStages,
                 .afterAccesses  = afterAccesses,
                 .afterLayout    = afterLayout,
-                .beforeQueue    = queue_.Get(),
-                .afterQueue     = afterQueue
+                .beforeQueue    = queue_->GetType(),
+                .afterQueue     = afterQueue->GetType()
             });
     }
     return ResourceUploadHandle(waiter, TextureAcquireBarrier{});
@@ -265,8 +234,7 @@ void ResourceUploader::SubmitAndSync()
         return;
     }
 
-    commandBuffer_->ExecuteBarriers(
-        pendingTextureTransitionBarriers_, pendingTextureReleaseBarriers_, pendingBufferReleaseBarriers_);
+    commandBuffer_->ExecuteBarriers(pendingTextureTransitionBarriers_, pendingTextureReleaseBarriers_);
     commandBuffer_->End();
 
     queue_->Submit({}, {}, commandBuffer_, {}, {}, {});
@@ -276,7 +244,6 @@ void ResourceUploader::SubmitAndSync()
 
     pendingStagingBufferSize_ = 0;
     pendingStagingBuffers_.clear();
-    pendingBufferReleaseBarriers_.clear();
     pendingTextureReleaseBarriers_.clear();
     pendingTextureTransitionBarriers_.clear();
 }

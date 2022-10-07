@@ -1,3 +1,5 @@
+#include <ranges>
+
 #include <tbb/enumerable_thread_specific.h>
 
 #include <Rtrc/Graphics/Object/HostSynchronizer.h>
@@ -35,7 +37,7 @@ struct HostSynchronizer::FrameRecord
 };
 
 HostSynchronizer::HostSynchronizer(RHI::DevicePtr device, RHI::QueuePtr queue)
-    : device_(std::move(device)), queue_(std::move(queue)), frameIndex_(0)
+    : device_(std::move(device)), queue_(std::move(queue)), frameIndex_(0), nextRegisterKey_(0)
 {
     nonLoopCallbacks_ = MakeBox<CallbackSet>();
 }
@@ -43,6 +45,26 @@ HostSynchronizer::HostSynchronizer(RHI::DevicePtr device, RHI::QueuePtr queue)
 HostSynchronizer::~HostSynchronizer()
 {
     WaitIdle();
+}
+
+const RHI::QueuePtr &HostSynchronizer::GetQueue() const
+{
+    return queue_;
+}
+
+void HostSynchronizer::SetRenderThreadID(std::thread::id id)
+{
+    renderThreadID_ = id;
+}
+
+std::thread::id HostSynchronizer::GetRenderThreadID() const
+{
+    return renderThreadID_;
+}
+
+bool HostSynchronizer::IsInRenderThread() const
+{
+    return std::this_thread::get_id() == GetRenderThreadID();
 }
 
 void HostSynchronizer::OnCurrentFrameComplete(std::function<void()> callback)
@@ -60,6 +82,7 @@ void HostSynchronizer::OnCurrentFrameComplete(std::function<void()> callback)
 void HostSynchronizer::WaitIdle()
 {
     queue_->WaitIdle();
+    OnNewBatch();
     nonLoopCallbacks_->ExecuteAndClear();
     for(auto &f : frameRecords_)
     {
@@ -84,11 +107,7 @@ void HostSynchronizer::BeginRenderLoop(int maxFlightFrameCount)
 void HostSynchronizer::EndRenderLoop()
 {
     assert(!frameRecords_.empty());
-    for(auto &f : frameRecords_)
-    {
-        f->fence->Wait();
-        f->callbacks.ExecuteAndClear();
-    }
+    WaitIdle();
     frameRecords_.clear();
 }
 
@@ -98,11 +117,32 @@ void HostSynchronizer::BeginFrame()
     auto &frame = frameRecords_[frameIndex_];
     frame->fence->Wait();
     frame->callbacks.ExecuteAndClear();
+    OnNewBatch();
 }
 
 const RHI::FencePtr &HostSynchronizer::GetFrameFence()
 {
     return frameRecords_[frameIndex_]->fence;
+}
+
+HostSynchronizer::RegisterKey HostSynchronizer::RegisterNewBatchEvent(std::function<void()> callback)
+{
+    const RegisterKey key = ++nextRegisterKey_;
+    newBatchCallbacks_.insert({ key, std::move(callback) });
+    return key;
+}
+
+void HostSynchronizer::UnregisterNewBatchEvent(RegisterKey key)
+{
+    newBatchCallbacks_.erase(key);
+}
+
+void HostSynchronizer::OnNewBatch()
+{
+    for(auto &c : std::ranges::views::values(newBatchCallbacks_))
+    {
+        c();
+    }
 }
 
 RTRC_END
