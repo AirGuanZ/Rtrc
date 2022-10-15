@@ -3,9 +3,8 @@
 #include <tbb/concurrent_queue.h>
 #include <tbb/spin_rw_mutex.h>
 
-#include <Rtrc/Graphics/Object/BindingGroupManager.h>
-#include <Rtrc/Graphics/Object/PipelineManager.h>
-#include <Rtrc/Graphics/Object/TextureManager.h>
+#include <Rtrc/Graphics/Object/BindingGroup.h>
+#include <Rtrc/Graphics/Object/Pipeline.h>
 
 RTRC_BEGIN
 

@@ -2,12 +2,13 @@
 
 #include <thread>
 
-#include <Rtrc/Graphics/Object/BindingGroupManager.h>
-#include <Rtrc/Graphics/Object/BufferManager.h>
+#include <Rtrc/Graphics/Object/BindingGroup.h>
+#include <Rtrc/Graphics/Object/Buffer.h>
 #include <Rtrc/Graphics/Object/ConstantBuffer.h>
-#include <Rtrc/Graphics/Object/PipelineManager.h>
-#include <Rtrc/Graphics/Object/SamplerManager.h>
-#include <Rtrc/Graphics/Object/TextureManager.h>
+#include <Rtrc/Graphics/Object/CopyContext.h>
+#include <Rtrc/Graphics/Object/Pipeline.h>
+#include <Rtrc/Graphics/Object/Sampler.h>
+#include <Rtrc/Graphics/Object/Texture.h>
 
 RTRC_BEGIN
 
@@ -37,6 +38,8 @@ public:
 
     bool BeginFrame();
     void WaitIdle();
+
+    CopyContext &GetCopyContext();
 
     const RHI::FencePtr &GetFrameFence();
 
@@ -95,6 +98,7 @@ private:
     Box<PipelineManager>       pipelineManager_;
     Box<SamplerManager>        samplerManager_;
     Box<TextureManager>        textureManager_;
+    Box<CopyContext>           copyContext_;
     
     std::chrono::milliseconds GCInterval_ = std::chrono::milliseconds(50);
     std::jthread              GCThread_;

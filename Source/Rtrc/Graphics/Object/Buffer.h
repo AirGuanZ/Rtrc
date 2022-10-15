@@ -155,6 +155,7 @@ inline void Buffer::Swap(Buffer &other) noexcept
 {
     std::swap(manager_, other.manager_);
     std::swap(size_, other.size_);
+    std::swap(allowReuse_, other.allowReuse_);
     rhiBuffer_.Swap(other.rhiBuffer_);
     std::swap(unsyncAccess_, other.unsyncAccess_);
 }

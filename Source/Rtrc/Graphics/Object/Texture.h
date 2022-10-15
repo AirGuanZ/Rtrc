@@ -4,9 +4,7 @@
 #include <map>
 
 #include <Rtrc/Graphics/Object/BatchReleaseHelper.h>
-#include <Rtrc/Graphics/Object/CommandBuffer.h>
 #include <Rtrc/Graphics/Resource/TextureSubresourceMap.h>
-#include <Rtrc/Utils/SlotVector.h>
 
 RTRC_BEGIN
 

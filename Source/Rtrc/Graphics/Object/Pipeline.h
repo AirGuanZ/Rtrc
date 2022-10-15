@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/Graphics/Object/GeneralGPUObjectManager.h>
+#include <Rtrc/Graphics/Object/GeneralGPUObject.h>
 
 RTRC_BEGIN
 

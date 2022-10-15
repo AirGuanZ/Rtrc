@@ -15,6 +15,7 @@ RenderContext::RenderContext(RHI::DevicePtr device, bool isComputeOnly)
     pipelineManager_ = MakeBox<PipelineManager>(*generalGPUObjectManager_);
     samplerManager_ = MakeBox<SamplerManager>(hostSync_, device);
     textureManager_ = MakeBox<TextureManager>(hostSync_, device);
+    copyContext_ = MakeBox<CopyContext>(device, bufferManager_.get());
 
     stop_token_ = stop_source_.get_token();
     GCThread_ = std::jthread(&RenderContext::GCThreadFunc, this);
@@ -46,6 +47,7 @@ RenderContext::~RenderContext()
     GCThread_.join();
 
     bindingLayoutManager_.reset();
+    copyContext_.reset();
     bufferManager_.reset();
     commandBufferManager_.reset();
     constantBufferManager_.reset();
@@ -114,6 +116,11 @@ bool RenderContext::BeginFrame()
 void RenderContext::WaitIdle()
 {
     hostSync_.WaitIdle();
+}
+
+CopyContext &RenderContext::GetCopyContext()
+{
+    return *copyContext_;
 }
 
 const RHI::FencePtr &RenderContext::GetFrameFence()

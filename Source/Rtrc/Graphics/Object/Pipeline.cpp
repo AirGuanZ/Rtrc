@@ -1,5 +1,5 @@
-#include <Rtrc/Graphics/Object/BindingGroupManager.h>
-#include <Rtrc/Graphics/Object/PipelineManager.h>
+#include <Rtrc/Graphics/Object/BindingGroup.h>
+#include <Rtrc/Graphics/Object/Pipeline.h>
 #include <Rtrc/Graphics/Mesh/MeshLayout.h>
 #include <Rtrc/Graphics/Shader/Shader.h>
 

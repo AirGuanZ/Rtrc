@@ -1,6 +1,6 @@
 #include <shared_mutex>
 
-#include <Rtrc/Graphics/Object/SamplerManager.h>
+#include <Rtrc/Graphics/Object/Sampler.h>
 
 RTRC_BEGIN
 

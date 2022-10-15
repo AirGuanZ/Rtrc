@@ -1,10 +1,10 @@
 #include <shared_mutex>
 
-#include <Rtrc/Graphics/Object/BindingGroupManager.h>
-#include <Rtrc/Graphics/Object/BufferManager.h>
+#include <Rtrc/Graphics/Object/BindingGroup.h>
+#include <Rtrc/Graphics/Object/Buffer.h>
 #include <Rtrc/Graphics/Object/ConstantBuffer.h>
-#include <Rtrc/Graphics/Object/SamplerManager.h>
-#include <Rtrc/Graphics/Object/TextureManager.h>
+#include <Rtrc/Graphics/Object/Sampler.h>
+#include <Rtrc/Graphics/Object/Texture.h>
 
 RTRC_BEGIN
 

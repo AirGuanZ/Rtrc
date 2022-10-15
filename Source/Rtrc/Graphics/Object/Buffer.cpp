@@ -1,6 +1,6 @@
 #include <mutex>
 
-#include <Rtrc/Graphics/Object/BufferManager.h>
+#include <Rtrc/Graphics/Object/Buffer.h>
 #include <Rtrc/Graphics/Object/CommandBuffer.h>
 
 RTRC_BEGIN
@@ -125,6 +125,7 @@ void BufferManager::_rtrcReleaseInternal(Buffer &buf)
         std::lock_guard lock(pendingReleaseBuffersMutex_);
         pendingReleaseBuffers_.push_back({ std::move(buf.rhiBuffer_), buf.unsyncAccess_, buf.allowReuse_ });
     }
+    buf.manager_ = nullptr;
 }
 
 void BufferManager::ReleaseImpl(ReleaseRecord buf)

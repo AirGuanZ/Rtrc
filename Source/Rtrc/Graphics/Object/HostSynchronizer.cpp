@@ -33,13 +33,14 @@ private:
 struct HostSynchronizer::FrameRecord
 {
     RHI::FencePtr fence;
-    CallbackSet callbacks;
+    Box<CallbackSet> callbacks;
 };
 
 HostSynchronizer::HostSynchronizer(RHI::DevicePtr device, RHI::QueuePtr queue)
     : device_(std::move(device)), queue_(std::move(queue)), frameIndex_(0), nextRegisterKey_(0)
 {
     nonLoopCallbacks_ = MakeBox<CallbackSet>();
+    backupNonLoopCallbacks_ = MakeBox<CallbackSet>();
 }
 
 HostSynchronizer::~HostSynchronizer()
@@ -75,19 +76,27 @@ void HostSynchronizer::OnCurrentFrameComplete(std::function<void()> callback)
     }
     else
     {
-        frameRecords_[frameIndex_]->callbacks.Add(std::move(callback));
+        frameRecords_[frameIndex_]->callbacks->Add(std::move(callback));
     }
 }
 
 void HostSynchronizer::WaitIdle()
 {
     queue_->WaitIdle();
-    nonLoopCallbacks_->ExecuteAndClear();
-    for(auto &f : frameRecords_)
+
+    backupNonLoopCallbacks_.swap(nonLoopCallbacks_);
+    for(size_t i = 0; i < frameRecords_.size(); ++i)
     {
-        f->callbacks.ExecuteAndClear();
+        backUpFrameRecords_[i].swap(frameRecords_[i]->callbacks);
     }
+
     OnNewBatch();
+
+    backupNonLoopCallbacks_->ExecuteAndClear();
+    for(auto &f : backUpFrameRecords_)
+    {
+        f->ExecuteAndClear();
+    }
 }
 
 void HostSynchronizer::End()
@@ -96,22 +105,24 @@ void HostSynchronizer::End()
     nonLoopCallbacks_->ExecuteAndClear();
     for(auto &f : frameRecords_)
     {
-        f->callbacks.ExecuteAndClear();
+        f->callbacks->ExecuteAndClear();
     }
 }
 
 void HostSynchronizer::BeginRenderLoop(int maxFlightFrameCount)
 {
-    queue_->WaitIdle();
-    nonLoopCallbacks_->ExecuteAndClear();
-
     assert(frameRecords_.empty());
+    WaitIdle();
     frameRecords_.resize(maxFlightFrameCount);
     for(auto &f : frameRecords_)
     {
         f = MakeBox<FrameRecord>();
         f->fence = device_->CreateFence(true);
+        f->callbacks = MakeBox<CallbackSet>();
     }
+    backUpFrameRecords_.resize(maxFlightFrameCount);
+    for(auto &f : backUpFrameRecords_)
+        f = MakeBox<CallbackSet>();
 }
 
 void HostSynchronizer::EndRenderLoop()
@@ -119,6 +130,7 @@ void HostSynchronizer::EndRenderLoop()
     assert(!frameRecords_.empty());
     WaitIdle();
     frameRecords_.clear();
+    backUpFrameRecords_.clear();
 }
 
 void HostSynchronizer::WaitForOldFrame()
@@ -126,8 +138,10 @@ void HostSynchronizer::WaitForOldFrame()
     frameIndex_ = (frameIndex_ + 1) % static_cast<int>(frameRecords_.size());
     auto &frame = frameRecords_[frameIndex_];
     frame->fence->Wait();
-    frame->callbacks.ExecuteAndClear();
+
+    backUpFrameRecords_[frameIndex_].swap(frame->callbacks);
     OnNewBatch();
+    backUpFrameRecords_[frameIndex_]->ExecuteAndClear();
 }
 
 void HostSynchronizer::BeginNewFrame()

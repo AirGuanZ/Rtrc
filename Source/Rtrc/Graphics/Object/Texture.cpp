@@ -1,6 +1,6 @@
 #include <mutex>
 
-#include <Rtrc/Graphics/Object/TextureManager.h>
+#include <Rtrc/Graphics/Object/Texture.h>
 
 RTRC_BEGIN
 

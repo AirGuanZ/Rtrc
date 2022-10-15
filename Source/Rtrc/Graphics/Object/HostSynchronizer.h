@@ -88,9 +88,11 @@ private:
     std::atomic<std::thread::id> renderThreadID_;
 
     Box<CallbackSet> nonLoopCallbacks_;
+    Box<CallbackSet> backupNonLoopCallbacks_;
 
     int frameIndex_;
     std::vector<Box<FrameRecord>> frameRecords_;
+    std::vector<Box<CallbackSet>> backUpFrameRecords_;
 
     std::atomic<RegisterKey> nextRegisterKey_;
     std::map<RegisterKey, std::function<void()>> newBatchCallbacks_;

@@ -6,16 +6,12 @@ using namespace Rtrc;
 
 void Run()
 {
-    constexpr int WIDTH = 800, HEIGHT = 800;
-
     // render context
 
     auto window = WindowBuilder()
-        .SetSize(WIDTH, HEIGHT)
+        .SetSize(800, 800)
         .SetTitle("Rtrc Sample: TexturedQuad")
         .Create();
-
-    auto &input = window.GetInput();
 
     auto instance = CreateVulkanInstance(RHI::VulkanInstanceDesc
     {
@@ -25,6 +21,7 @@ void Run()
 
     auto device = instance->CreateDevice();
     RenderContext renderContext(device, &window);
+    auto &copyContext = renderContext.GetCopyContext();
     auto graphicsQueue = renderContext.GetMainQueue();
 
     // pipeline
@@ -65,9 +62,12 @@ void Run()
         Vector2f(+0.8f, +0.8f),
         Vector2f(+0.8f, -0.8f)
     };
-
-    auto vertexPositionBuffer = renderContext.CreateBuffer(
-        sizeof(vertexPositionData), RHI::BufferUsage::ShaderBuffer, RHI::BufferHostAccessType::None, false);
+    
+    auto vertexPositionBuffer = copyContext.CreateBuffer(
+        sizeof(vertexPositionData),
+        RHI::BufferUsage::ShaderBuffer,
+        RHI::BufferHostAccessType::None,
+        vertexPositionData.data());
 
     auto vertexPositionBufferSRV = vertexPositionBuffer->GetSRV(RHI::BufferSRVDesc
     {
@@ -75,10 +75,6 @@ void Run()
         .offset = 0,
         .range = sizeof(vertexPositionData)
     });
-
-    uploader.Upload(
-        vertexPositionBuffer->GetRHIObject(), 0, sizeof(vertexPositionData), vertexPositionData.data(),
-        graphicsQueue, RHI::PipelineStage::VertexShader, RHI::ResourceAccess::BufferRead);
 
     // vertex texcoord buffer
 
@@ -90,9 +86,12 @@ void Run()
         Vector2f(1.0f, 0.0f),
         Vector2f(1.0f, 1.0f)
     };
-
-    auto vertexTexCoordBuffer = renderContext.CreateBuffer(
-        sizeof(vertexTexCoordData), RHI::BufferUsage::ShaderBuffer, RHI::BufferHostAccessType::None, false);
+    
+    auto vertexTexCoordBuffer = copyContext.CreateBuffer(
+        sizeof(vertexTexCoordData),
+        RHI::BufferUsage::ShaderBuffer,
+        RHI::BufferHostAccessType::None,
+        vertexTexCoordData.data());
 
     auto vertexTexCoordBufferSRV = vertexTexCoordBuffer->GetSRV(RHI::BufferSRVDesc
     {
@@ -100,10 +99,6 @@ void Run()
         .offset = 0,
         .range  = sizeof(vertexTexCoordData)
     });
-
-    uploader.Upload(
-        vertexTexCoordBuffer->GetRHIObject(), 0, sizeof(vertexTexCoordData), vertexTexCoordData.data(),
-        graphicsQueue, RHI::PipelineStage::VertexShader, RHI::ResourceAccess::BufferRead);
 
     // main texture
 
@@ -153,6 +148,8 @@ void Run()
     materialInstance->Set("MainSampler", mainSampler);
     materialInstance->Set("scale", 1.5f);
 
+    auto subMaterialInstance = materialInstance->GetSubMaterialInstance(0);
+
     // binding group
 
     auto bindingGroup = bindingGroupLayout->CreateBindingGroup();
@@ -173,7 +170,7 @@ void Run()
             continue;
         }
 
-        if(input.IsKeyDown(KeyCode::Escape))
+        if(window.GetInput().IsKeyDown(KeyCode::Escape))
         {
             window.SetCloseFlag(true);
         }
@@ -198,7 +195,7 @@ void Run()
             });
             commandBuffer.BindPipeline(pipeline);
             commandBuffer.BindGraphicsGroup(bindingGroupIndex, bindingGroup);
-            materialInstance->GetSubMaterialInstance(0)->BindGraphicsProperties(keywords, commandBuffer);
+            commandBuffer.BindGraphicsSubMaterial(subMaterialInstance, keywords);
             commandBuffer.SetViewports(rt->GetViewport());
             commandBuffer.SetScissors(rt->GetScissor());
             commandBuffer.Draw(6, 1, 0, 0);

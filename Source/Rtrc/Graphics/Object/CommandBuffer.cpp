@@ -1,6 +1,6 @@
 #include <shared_mutex>
 
-#include <Rtrc/Graphics/Object/BufferManager.h>
+#include <Rtrc/Graphics/Object/Buffer.h>
 #include <Rtrc/Graphics/Material/MaterialInstance.h>
 #include <Rtrc/Graphics/Object/CommandBuffer.h>
 
@@ -38,7 +38,9 @@ void CommandBuffer::Swap(CommandBuffer &other) noexcept
     rhiCommandBuffer_.Swap(other.rhiCommandBuffer_);
     std::swap(queueType_, other.queueType_);
     std::swap(pool_, other.pool_);
+#if RTRC_DEBUG
     std::swap(threadID_, other.threadID_);
+#endif
 }
 
 const RHI::CommandBufferPtr &CommandBuffer::GetRHIObject() const
@@ -93,6 +95,11 @@ void CommandBuffer::BindGraphicsGroup(int index, const RC<BindingGroup> &group)
 void CommandBuffer::BindGraphicsSubMaterial(const SubMaterialInstance *subMatInst, const KeywordValueContext &keywords)
 {
     subMatInst->BindGraphicsProperties(keywords, *this);
+}
+
+void CommandBuffer::BindComputeSubMaterial(const SubMaterialInstance *subMatInst, const KeywordValueContext &keywords)
+{
+    subMatInst->BindComputeProperties(keywords, *this);
 }
 
 void CommandBuffer::SetViewports(Span<Viewport> viewports)
@@ -215,7 +222,9 @@ void CommandBufferManager::_rtrcFreeInternal(CommandBuffer &cmdBuf)
     --cmdBuf.pool_->activeUserCount;
     cmdBuf.rhiCommandBuffer_ = {};
     cmdBuf.pool_ = {};
+#if RTRC_DEBUG
     cmdBuf.threadID_ = {};
+#endif
 }
 
 RTRC_END
