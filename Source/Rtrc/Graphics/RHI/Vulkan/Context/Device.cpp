@@ -77,7 +77,30 @@ namespace
         return { sharingMode, sharingQueueFamilyIndices };
     }
 
-    VkImageCreateInfo TranslateImageCreateInfo(
+    struct ImageCreateInfoWrapper
+    {
+        ImageCreateInfoWrapper() = default;
+        ImageCreateInfoWrapper(const ImageCreateInfoWrapper &other)
+            : createInfo(other.createInfo), queueFamilyIndices(other.queueFamilyIndices)
+        {
+            *this = other;
+        }
+        ImageCreateInfoWrapper &operator=(const ImageCreateInfoWrapper &other)
+        {
+            createInfo = other.createInfo;
+            queueFamilyIndices = other.queueFamilyIndices;
+            if(createInfo.sharingMode == VK_SHARING_MODE_CONCURRENT)
+            {
+                createInfo.pQueueFamilyIndices = queueFamilyIndices.GetData();
+            }
+            return *this;
+        }
+
+        VkImageCreateInfo createInfo = {};
+        StaticVector<uint32_t, 3> queueFamilyIndices;
+    };
+
+    ImageCreateInfoWrapper TranslateImageCreateInfo(
         const TextureDesc &desc, const VulkanDevice::QueueFamilyInfo &queueFamilies)
     {
         const auto [sharingMode, sharingQueueFamilyIndices] =
@@ -85,8 +108,9 @@ namespace
 
         const uint32_t arrayLayers = desc.dim != TextureDimension::Tex3D ? desc.arraySize : 1;
         const uint32_t depth = desc.dim == TextureDimension::Tex3D ? desc.depth : 1;
-
-        const VkImageCreateInfo imageCreateInfo = {
+        ImageCreateInfoWrapper ret;
+        ret.queueFamilyIndices = sharingQueueFamilyIndices;
+        ret.createInfo = VkImageCreateInfo{
             .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
             .imageType             = TranslateTextureDimension(desc.dim),
             .format                = TranslateTexelFormat(desc.format),
@@ -97,11 +121,11 @@ namespace
             .tiling                = VK_IMAGE_TILING_OPTIMAL,
             .usage                 = TranslateTextureUsageFlag(desc.usage),
             .sharingMode           = sharingMode,
-            .queueFamilyIndexCount = static_cast<uint32_t>(sharingQueueFamilyIndices.GetSize()),
-            .pQueueFamilyIndices   = sharingQueueFamilyIndices.GetData(),
+            .queueFamilyIndexCount = static_cast<uint32_t>(ret.queueFamilyIndices.GetSize()),
+            .pQueueFamilyIndices   = ret.queueFamilyIndices.GetData(),
             .initialLayout         = TranslateImageLayout(desc.initialLayout)
         };
-        return imageCreateInfo;
+        return ret;
     }
 
     struct BufferCreateInfoWrapper
@@ -687,12 +711,12 @@ Ptr<BindingLayout> VulkanDevice::CreateBindingLayout(const BindingLayoutDesc &de
 
 Ptr<Texture> VulkanDevice::CreateTexture(const TextureDesc &desc)
 {
-    const VkImageCreateInfo imageCreateInfo = TranslateImageCreateInfo(desc, queueFamilies_);
+    const auto imageCreateInfo = TranslateImageCreateInfo(desc, queueFamilies_);
     const VmaAllocationCreateInfo allocCreateInfo = { .usage = VMA_MEMORY_USAGE_AUTO };
 
     VkImage image; VmaAllocation alloc;
     VK_FAIL_MSG(
-        vmaCreateImage(allocator_, &imageCreateInfo, &allocCreateInfo, &image, &alloc, nullptr),
+        vmaCreateImage(allocator_, &imageCreateInfo.createInfo, &allocCreateInfo, &image, &alloc, nullptr),
         "failed to create vulkan image");
     RTRC_SCOPE_FAIL{ vmaDestroyImage(allocator_, image, alloc); };
 
@@ -785,10 +809,10 @@ Ptr<Sampler> VulkanDevice::CreateSampler(const SamplerDesc &desc)
 Ptr<MemoryPropertyRequirements> VulkanDevice::GetMemoryRequirements(
     const TextureDesc &desc, size_t *size, size_t *alignment) const
 {
-    const VkImageCreateInfo imageCreateInfo = TranslateImageCreateInfo(desc, queueFamilies_);
+    const auto imageCreateInfo = TranslateImageCreateInfo(desc, queueFamilies_);
     const VkDeviceImageMemoryRequirements queryInfo = {
         .sType = VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS,
-        .pCreateInfo = &imageCreateInfo,
+        .pCreateInfo = &imageCreateInfo.createInfo,
     };
 
     VkMemoryRequirements2 requirements = { .sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2 };
@@ -851,10 +875,10 @@ Ptr<MemoryBlock> VulkanDevice::CreateMemoryBlock(const MemoryBlockDesc &desc)
 Ptr<Texture> VulkanDevice::CreatePlacedTexture(
     const TextureDesc &desc, const Ptr<MemoryBlock> &memoryBlock, size_t offsetInMemoryBlock)
 {
-    const VkImageCreateInfo imageCreateInfo = TranslateImageCreateInfo(desc, queueFamilies_);
+    const auto imageCreateInfo = TranslateImageCreateInfo(desc, queueFamilies_);
     VkImage image;
     VK_FAIL_MSG(
-        vkCreateImage(device_, &imageCreateInfo, VK_ALLOC, &image),
+        vkCreateImage(device_, &imageCreateInfo.createInfo, VK_ALLOC, &image),
         "failed to create placed vulkan image");
     RTRC_SCOPE_FAIL{ vkDestroyImage(device_, image, VK_ALLOC); };
 

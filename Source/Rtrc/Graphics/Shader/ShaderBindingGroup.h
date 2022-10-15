@@ -7,7 +7,7 @@
 
 RTRC_BEGIN
 
-class BindingGroupLayout;
+class TempBindingGroupLayout;
 class ShaderCompiler;
 
 class ParsedBindingGroupLayout : public Uncopyable
@@ -33,13 +33,13 @@ private:
     std::vector<ParsedBindingDescription> allDescs_;
 };
 
-class BindingGroup : public Uncopyable
+class TempBindingGroup : public Uncopyable
 {
 public:
 
-    BindingGroup(RC<const BindingGroupLayout> parentLayout, RHI::BindingGroupPtr rhiGroup);
+    TempBindingGroup(RC<const TempBindingGroupLayout> parentLayout, RHI::BindingGroupPtr rhiGroup);
 
-    const RC<const BindingGroupLayout> &GetBindingGroupLayout();
+    const RC<const TempBindingGroupLayout> &GetBindingGroupLayout();
 
     void Set(int slot, const RHI::BufferPtr &cbuffer, size_t offset, size_t bytes);
     void Set(int slot, const RHI::SamplerPtr &sampler);
@@ -59,19 +59,19 @@ public:
 
 private:
 
-    RC<const BindingGroupLayout> parentLayout_;
+    RC<const TempBindingGroupLayout> parentLayout_;
     RHI::BindingGroupPtr rhiGroup_;
     std::vector<RHI::Ptr<RHI::RHIObject>> boundObjects_;
 };
 
-class BindingGroupLayout : public Uncopyable, public std::enable_shared_from_this<BindingGroupLayout>
+class TempBindingGroupLayout : public Uncopyable, public std::enable_shared_from_this<TempBindingGroupLayout>
 {
 public:
 
     int GetBindingSlotByName(std::string_view bindingName) const;
     RHI::BindingGroupLayoutPtr GetRHIBindingGroupLayout();
 
-    RC<BindingGroup> CreateBindingGroup() const;
+    RC<TempBindingGroup> CreateBindingGroup() const;
 
 private:
 

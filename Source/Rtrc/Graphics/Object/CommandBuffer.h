@@ -3,12 +3,25 @@
 #include <tbb/concurrent_queue.h>
 #include <tbb/spin_rw_mutex.h>
 
-#include <Rtrc/Graphics/Object/BatchReleaseHelper.h>
+#include <Rtrc/Graphics/Object/BindingGroupManager.h>
+#include <Rtrc/Graphics/Object/PipelineManager.h>
+#include <Rtrc/Graphics/Object/TextureManager.h>
 
 RTRC_BEGIN
 
 class Buffer;
 class CommandBufferManager;
+class KeywordValueContext;
+class SubMaterialInstance;
+
+using AttachmentLoadOp = RHI::AttachmentLoadOp;
+using AttachmentStoreOp = RHI::AttachmentStoreOp;
+using ColorClearValue = RHI::ColorClearValue;
+
+using Viewport = RHI::Viewport;
+using Scissor = RHI::Scissor;
+
+using ColorAttachment = RHI::RenderPassColorAttachment;
 
 /*
     Usage:
@@ -30,14 +43,29 @@ public:
 
     void Swap(CommandBuffer &other) noexcept;
 
-    RHI::CommandBufferPtr &operator->();
     RHI::QueueType GetQueueType() const;
+
+    const RHI::CommandBufferPtr &GetRHIObject() const;
 
     // Once begin, the command buffer object is bound with current thread, and cannot be used in any other thread.
     void Begin();
     void End();
 
     void CopyBuffer(Buffer &dst, size_t dstOffset, const Buffer &src, size_t srcOffset, size_t size);
+
+    void BeginRenderPass(Span<ColorAttachment> colorAttachments);
+    void EndRenderPass();
+
+    void BindPipeline(const RC<GraphicsPipeline> &graphicsPipeline);
+
+    void BindGraphicsGroup(int index, const RC<BindingGroup> &group);
+    void BindGraphicsSubMaterial(const SubMaterialInstance *subMatInst, const KeywordValueContext &keywords);
+    void BindComputeSubMaterial(const SubMaterialInstance *subMatInst, const KeywordValueContext &keywords);
+
+    void SetViewports(Span<Viewport> viewports);
+    void SetScissors(Span<Scissor> scissors);
+
+    void Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance);
 
 private:
 
@@ -84,7 +112,6 @@ private:
     struct PendingReleasePool
     {
         RHI::CommandPoolPtr rhiCommandPool;
-        RHI::QueueType type;
     };
 
     RHI::DevicePtr device_;
@@ -96,11 +123,6 @@ private:
     BatchReleaseHelper<PendingReleasePool> batchRelease_;
     tbb::concurrent_queue<RHI::CommandPoolPtr> freePools_;
 };
-
-inline RHI::CommandBufferPtr &CommandBuffer::operator->()
-{
-    return rhiCommandBuffer_;
-}
 
 inline RHI::QueueType CommandBuffer::GetQueueType() const
 {

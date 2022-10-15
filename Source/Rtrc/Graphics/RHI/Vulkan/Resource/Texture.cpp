@@ -101,6 +101,11 @@ VkImageView VulkanTexture::CreateImageView(const ViewKey &key) const
 
     std::unique_lock lock(viewsMutex_);
 
+    if(auto it = views_.find(key); it != views_.end())
+    {
+        return it->second;
+    }
+
     VkImageViewType viewType;
     switch(desc_.dim)
     {

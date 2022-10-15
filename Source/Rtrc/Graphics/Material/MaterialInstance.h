@@ -1,16 +1,17 @@
 #pragma once
 
 #include <Rtrc/Graphics/Material/Material.h>
-#include <Rtrc/Graphics/Resource/ConstantBuffer.h>
-#include <Rtrc/Graphics/Resource/ResourceManager.h>
 
 RTRC_BEGIN
 
+class CommandBuffer;
 class MaterialInstance;
 
 class MaterialPropertySheet
 {
 public:
+
+    using MaterialResource = SubMaterialPropertyLayout::MaterialResource;
 
     explicit MaterialPropertySheet(RC<MaterialPropertyHostLayout> layout);
 
@@ -29,12 +30,12 @@ public:
     void Set(std::string_view name, const Vector3i &value);
     void Set(std::string_view name, const Vector4i &value);
 
-    void Set(std::string_view name, const RHI::TextureSRVPtr &srv);
-    void Set(std::string_view name, const RHI::BufferSRVPtr &srv);
-    void Set(std::string_view name, const RHI::SamplerPtr &sampler);
+    void Set(std::string_view name, const TextureSRV &srv);
+    void Set(std::string_view name, const BufferSRV &srv);
+    void Set(std::string_view name, RC<Sampler> sampler);
 
     const unsigned char *GetValueBuffer() const { return valueBuffer_.data(); }
-    Span<RHI::RHIObjectPtr> GetResources() const { return resources_; }
+    Span<MaterialResource> GetResources() const { return resources_; }
 
 private:
 
@@ -43,9 +44,19 @@ private:
 
     RC<MaterialPropertyHostLayout> layout_;
     std::vector<unsigned char> valueBuffer_;
-    std::vector<RHI::RHIObjectPtr> resources_;
+    std::vector<MaterialResource> resources_;
 };
 
+/*
+    Thread Safety:
+
+        TS(1)
+            BindGraphicsProperties
+            BindComputeProperties
+
+        TS(0)
+            ParentMaterialInstance::Set
+*/
 class SubMaterialInstance
 {
 public:
@@ -53,11 +64,11 @@ public:
     RC<Shader> GetShader(const KeywordValueContext &keywordValues);
     RC<Shader> GetShader(KeywordSet::ValueMask keywordMask);
 
-    void BindGraphicsProperties(const KeywordValueContext &keywordValues, const RHI::CommandBufferPtr &commandBuffer);
-    void BindGraphicsProperties(KeywordSet::ValueMask mask, const RHI::CommandBufferPtr &commandBuffer);
+    void BindGraphicsProperties(const KeywordValueContext &keywordValues, const CommandBuffer &commandBuffer) const;
+    void BindGraphicsProperties(KeywordSet::ValueMask mask, const CommandBuffer &commandBuffer) const;
 
-    void BindComputeProperties(const KeywordValueContext &keywordValues, const RHI::CommandBufferPtr &commandBuffer);
-    void BindComputeProperties(KeywordSet::ValueMask mask, const RHI::CommandBufferPtr &commandBuffer);
+    void BindComputeProperties(const KeywordValueContext &keywordValues, const CommandBuffer &commandBuffer) const;
+    void BindComputeProperties(KeywordSet::ValueMask mask, const CommandBuffer &commandBuffer) const;
 
 private:
 
@@ -65,26 +76,29 @@ private:
 
     struct Record
     {
-        RC<BindingGroup> bindingGroup;
-        Box<PersistentConstantBuffer> constantBuffer;
-        bool isConstantBufferDirty = true;
+        mutable RC<BindingGroup> bindingGroup;
+        mutable RC<ConstantBuffer> constantBuffer;
+        mutable bool isConstantBufferDirty = true;
+        mutable tbb::spin_rw_mutex mutex;
     };
 
     // return binding group index
     template<bool Graphics>
-    void BindPropertiesImpl(KeywordSet::ValueMask mask, const RHI::CommandBufferPtr &commandBuffer);
+    void BindPropertiesImpl(KeywordSet::ValueMask mask, const RHI::CommandBufferPtr &commandBuffer) const;
 
-    ResourceManager *resourceManager_ = nullptr;
+    RenderContext *renderContext_ = nullptr;
     const MaterialInstance *parentMaterialInstance_ = nullptr;
     RC<SubMaterial> subMaterial_;
-    std::vector<Record> keywordMaskToRecord_;
+
+    std::unique_ptr<Record[]> keywordMaskToRecord_;
+    int recordCount_;
 };
 
 class MaterialInstance
 {
 public:
 
-    MaterialInstance(RC<const Material> material, ResourceManager *resourceManager);
+    MaterialInstance(RC<const Material> material, RenderContext *renderContext);
 
     template<typename T>
     void Set(std::string_view name, const T &value)
@@ -115,9 +129,9 @@ public:
     void Set(std::string_view name, const Vector3i &value) { SetPropertyImpl<true>(name, value); }
     void Set(std::string_view name, const Vector4i &value) { SetPropertyImpl<true>(name, value); }
 
-    void Set(std::string_view name, const RHI::TextureSRVPtr &srv)  { SetPropertyImpl<false>(name, srv); }
-    void Set(std::string_view name, const RHI::BufferSRVPtr &srv)   { SetPropertyImpl<false>(name, srv); }
-    void Set(std::string_view name, const RHI::SamplerPtr &sampler) { SetPropertyImpl<false>(name, sampler); }
+    void Set(std::string_view name, const TextureSRV &srv) { SetPropertyImpl<false>(name, srv); }
+    void Set(std::string_view name, const BufferSRV &srv)  { SetPropertyImpl<false>(name, srv); }
+    void Set(std::string_view name, RC<Sampler> sampler)   { SetPropertyImpl<false>(name, sampler); }
 
 private:
 

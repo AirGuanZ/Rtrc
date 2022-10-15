@@ -46,13 +46,13 @@ void BindingGroupContext::BindForGraphicsPipeline(const RHI::CommandBufferPtr &c
         }
 
         auto &record = it->second;
-        if(record.group->GetBindingGroupLayout() != shader->GetBindingGroupLayoutByIndex(i))
+        if(record.group->GetLayout() != shader->GetBindingGroupLayoutByIndex(i))
         {
             throw Exception(fmt::format(
                 "Layouts of binding group {} in shader/bindingGroupContext must be exactly same", groupName));
         }
 
-        commandBuffer->BindGroupToGraphicsPipeline(i, record.group->GetRHIBindingGroup());
+        commandBuffer->BindGroupToGraphicsPipeline(i, record.group->GetRHIObject());
     }
 }
 
@@ -72,13 +72,13 @@ void BindingGroupContext::BindForComputePipeline(const RHI::CommandBufferPtr &co
         }
 
         auto &record = it->second;
-        if(record.group->GetBindingGroupLayout() != shader->GetBindingGroupLayoutByIndex(i))
+        if(record.group->GetLayout() != shader->GetBindingGroupLayoutByIndex(i))
         {
             throw Exception(fmt::format(
                 "Layouts of binding group {} in shader/bindingGroupContext must be exactly same", groupName));
         }
 
-        commandBuffer->BindGroupToComputePipeline(i, record.group->GetRHIBindingGroup());
+        commandBuffer->BindGroupToComputePipeline(i, record.group->GetRHIObject());
     }
 }
 

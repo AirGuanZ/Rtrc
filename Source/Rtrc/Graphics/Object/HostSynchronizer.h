@@ -15,7 +15,7 @@ RTRC_BEGIN
         mgr.BeginRenderLoop(3);
         while(true)
         {
-            mgr.BeginFrame();
+            mgr.WaitForOldFrame();
             mgr.OnCurrentFrameComplete(...);
         }
         mgr.EndRenderLoop();
@@ -26,18 +26,18 @@ RTRC_BEGIN
             OnCurrentFrameComplete
             GetFrameFence
             GetCurrentBatchIdentifier
-            GetRenderThreadID
-            IsInRenderThread
+            GetOwnerThreadID
+            IsInOwnerThread
         TS(0):
-            SetRenderThreadID
+            SetOwnerThreadID
             WaitIdle
             BeginRenderLoop
             EndRenderLoop
-            BeginFrame
+            WaitForOldFrame
             RegisterNewBatchEvent
             UnregisterNewBatchEvent
 
-        Callbacks specified by OnCurrentFrameComplete are executed during WaitIdle/BeginFrame/Destruction
+        Callbacks specified by OnCurrentFrameComplete are executed during WaitIdle/WaitForOldFrame/Destruction
             
 */
 class HostSynchronizer : public Uncopyable
@@ -51,21 +51,23 @@ public:
 
     const RHI::QueuePtr &GetQueue() const;
 
-    void SetRenderThreadID(std::thread::id id);
-    std::thread::id GetRenderThreadID() const;
-    bool IsInRenderThread() const;
+    void SetOwnerThreadID(std::thread::id id);
+    std::thread::id GetOwnerThreadID() const;
+    bool IsInOwnerThread() const;
 
     // Common
 
     void OnCurrentFrameComplete(std::function<void()> callback);
     void WaitIdle();
+    void End();
 
     // Render loop
     
     void BeginRenderLoop(int maxFlightFrameCount);
     void EndRenderLoop();
 
-    void BeginFrame();
+    void WaitForOldFrame();
+    void BeginNewFrame();
     const RHI::FencePtr &GetFrameFence();
 
     // Batch info

@@ -1,28 +1,26 @@
 #pragma once
 
+#include <Rtrc/Graphics/Object/RenderContext.h>
 #include <Rtrc/Graphics/RenderGraph/Graph.h>
-#include <Rtrc/Graphics/Resource/ResourceManager.h>
 
 RTRC_RG_BEGIN
-
-class TransientResourceManager;
 
 struct ExecutableResources
 {
     struct BufferRecord
     {
-        RC<StatefulBuffer>    buffer;
-        StatefulBuffer::State finalState;
+        RC<Buffer> buffer;
+        UnsynchronizedBufferAccess finalState;
     };
 
-    struct TextureRecord
+    struct Texture2DRecord
     {
-        RC<StatefulTexture>                                          texture;
-        TextureSubresourceMap<std::optional<StatefulTexture::State>> finalState;
+        RC<Texture2D> texture;
+        TextureSubresourceMap<std::optional<UnsynchronizedTextureAccess>> finalState;
     };
 
-    std::vector<BufferRecord>  indexToBuffer;
-    std::vector<TextureRecord> indexToTexture;
+    std::vector<BufferRecord> indexToBuffer;
+    std::vector<Texture2DRecord> indexToTexture2D;
 };
 
 struct ExecutablePass
@@ -59,12 +57,7 @@ class Executer
 {
 public:
 
-    Executer(
-        RHI::DevicePtr            device,
-        CommandBufferAllocator   *commandBufferAllocator,
-        TransientResourceManager *transientResourceManager);
-
-    explicit Executer(ResourceManager *frameResourceManager);
+    Executer(RenderContext &renderContext);
 
     void Execute(const RenderGraph &graph);
 
@@ -72,9 +65,7 @@ private:
 
     void Execute(const ExecutableGraph &graph);
 
-    RHI::DevicePtr            device_;
-    CommandBufferAllocator   *commandBufferAllocator_;
-    TransientResourceManager *transientResourceManager_;
+    RenderContext &renderContext_;
 };
 
 RTRC_RG_END

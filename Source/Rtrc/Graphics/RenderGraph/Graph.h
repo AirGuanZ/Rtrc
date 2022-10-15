@@ -2,7 +2,13 @@
 
 #include <map>
 
-#include <Rtrc/Graphics/RenderGraph/StatefulResource.h>
+#include <Rtrc/Graphics/Object/RenderContext.h>
+
+RTRC_BEGIN
+
+class CommandBuffer;
+
+RTRC_END
 
 RTRC_RG_BEGIN
 
@@ -77,7 +83,7 @@ public:
 
     using Resource::Resource;
 
-    RHI::BufferPtr GetRHI() const;
+    RC<Buffer> Get() const;
 };
 
 class TextureResource : public Resource
@@ -89,25 +95,26 @@ public:
     virtual uint32_t GetMipLevels() const = 0;
     virtual uint32_t GetArraySize() const = 0;
 
-    RHI::TexturePtr GetRHI() const;
+    RC<Texture2D> Get() const;
 };
 
 class PassContext : public Uncopyable
 {
 public:
 
-    const RHI::CommandBufferPtr &GetRHICommandBuffer();
-    RHI::BufferPtr GetRHIBuffer(const BufferResource *resource);
-    RHI::TexturePtr GetRHITexture(const TextureResource *resource);
+    CommandBuffer &GetCommandBuffer();
+
+    RC<Buffer> GetBuffer(const BufferResource *resource);
+    RC<Texture2D> GetTexture2D(const TextureResource *resource);
 
 private:
 
     friend class Executer;
 
-    PassContext(const ExecutableResources &resources, RHI::CommandBufferPtr commandBuffer);
+    PassContext(const ExecutableResources &resources, CommandBuffer &commandBuffer);
 
     const ExecutableResources &resources_;
-    RHI::CommandBufferPtr commandBuffer_;
+    CommandBuffer &commandBuffer_;
 };
 
 void Connect(Pass *head, Pass *tail);
@@ -148,8 +155,8 @@ public:
 
 private:
 
-    using SubTexUsage = StatefulTexture::State;
-    using BufferUsage = StatefulBuffer::State;
+    using SubTexUsage = UnsynchronizedTextureAccess;
+    using BufferUsage = UnsynchronizedBufferAccess;
 
     using TextureUsage = TextureSubresourceMap<std::optional<SubTexUsage>>;
 
@@ -181,8 +188,8 @@ public:
     BufferResource  *CreateBuffer(const RHI::BufferDesc &desc);
     TextureResource *CreateTexture2D(const RHI::TextureDesc &desc);
 
-    BufferResource  *RegisterBuffer(RC<StatefulBuffer> buffer);
-    TextureResource *RegisterTexture(RC<StatefulTexture> texture);
+    BufferResource  *RegisterBuffer(RC<Buffer> buffer);
+    TextureResource *RegisterTexture(RC<Texture2D> texture);
 
     TextureResource *RegisterSwapchainTexture(
         RHI::TexturePtr             rhiTexture,
@@ -206,7 +213,7 @@ private:
 
         using BufferResource::BufferResource;
 
-        RC<StatefulBuffer> buffer;
+        RC<Buffer> buffer;
     };
 
     class ExternalTextureResource : public TextureResource
@@ -218,7 +225,7 @@ private:
         uint32_t GetMipLevels() const override;
         uint32_t GetArraySize() const override;
 
-        RC<StatefulTexture> texture;
+        RC<Texture2D> texture;
     };
 
     class InternalBufferResource : public BufferResource

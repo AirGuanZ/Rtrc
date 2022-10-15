@@ -21,8 +21,10 @@ void Run()
 
     auto device = instance->CreateDevice();
 
+    RenderContext renderContext(device);
+
     ShaderCompiler shaderCompiler;
-    shaderCompiler.SetDevice(device);
+    shaderCompiler.SetRenderContext(&renderContext);
     shaderCompiler.SetRootDirectory("Asset/02.ComputeShader/");
     auto shader = shaderCompiler.Compile({ .filename = "Shader.hlsl", .CSEntry = "CSMain" });
 
@@ -41,50 +43,40 @@ void Run()
 
     const auto inputImageData = ImageDynamic::Load("Asset/01.TexturedQuad/MainTexture.png");
 
-    auto inputTexture = device->CreateTexture(RHI::TextureDesc{
-        .format       = RHI::Format::B8G8R8A8_UNorm,
-        .width        = inputImageData.GetWidth(),
-        .height       = inputImageData.GetHeight(),
-        .arraySize    = 1,
-        .mipLevels    = 1,
-        .sampleCount  = 1,
-        .usage        = RHI::TextureUsage::TransferDst | RHI::TextureUsage::ShaderResource,
-        .initialLayout = RHI::TextureLayout::Undefined,
-        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
-    });
+    auto inputTexture = renderContext.CreateTexture2D(
+        inputImageData.GetWidth(),
+        inputImageData.GetHeight(),
+        1, 1, RHI::Format::B8G8R8A8_UNorm,
+        RHI::TextureUsage::TransferDst | RHI::TextureUsage::ShaderResource,
+        RHI::QueueConcurrentAccessMode::Concurrent, 1, true);
 
-    auto inputTextureSRV = inputTexture->CreateSRV();
+    auto inputTextureSRV = inputTexture->GetSRV();
 
     ResourceUploader uploader(device);
 
     auto computeQueue = device->GetQueue(RHI::QueueType::Graphics);
 
-    std::vector<RHI::TextureAcquireBarrier> pendingTextureAcquireBarriers;
-    pendingTextureAcquireBarriers.push_back(uploader.Upload(
-        inputTexture, 0, 0,
+    uploader.Upload(
+        inputTexture->GetRHIObject(), 0, 0,
         inputImageData,
         computeQueue,
         RHI::PipelineStage::ComputeShader,
         RHI::ResourceAccess::TextureRead,
-        RHI::TextureLayout::ShaderTexture).GetAcquireBarrier());
+        RHI::TextureLayout::ShaderTexture);
 
     uploader.SubmitAndSync();
 
     // output texture
 
-    auto outputTexture = device->CreateTexture(RHI::TextureDesc{
-        .format               = RHI::Format::B8G8R8A8_UNorm,
-        .width                = inputImageData.GetWidth(),
-        .height               = inputImageData.GetHeight(),
-        .arraySize            = 1,
-        .mipLevels            = 1,
-        .sampleCount          = 1,
-        .usage                = RHI::TextureUsage::TransferSrc | RHI::TextureUsage::UnorderAccess,
-        .initialLayout        = RHI::TextureLayout::Undefined,
-        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
-    });
+    auto outputTexture = renderContext.CreateTexture2D(
+        inputImageData.GetWidth(),
+        inputImageData.GetHeight(),
+        1, 1, RHI::Format::B8G8R8A8_UNorm,
+        RHI::TextureUsage::TransferSrc | RHI::TextureUsage::UnorderAccess,
+        RHI::QueueConcurrentAccessMode::Concurrent,
+        1, true);
 
-    auto outputTextureUAV = outputTexture->CreateUAV();
+    auto outputTextureUAV = outputTexture->GetUAV();
 
     // readback staging buffer
 
@@ -96,18 +88,18 @@ void Run()
 
     // create constant buffer
 
-    ResourceManager resourceManager(device, 1);
-    auto constantBuffer = resourceManager.AllocatePersistentConstantBuffer<ScaleSetting>();
+    //ResourceManager resourceManager(device, 1);
+    auto constantBuffer = renderContext.CreateConstantBuffer();
     {
         ScaleSetting scaleSetting = {};
         scaleSetting.y.x = 2.0f;
-        constantBuffer.SetData(scaleSetting);
+        constantBuffer->SetData(scaleSetting);
     }
 
     // create binding group
 
     auto bindingGroup = bindingGroupLayout->CreateBindingGroup();
-    bindingGroup->Set("ScaleSetting", constantBuffer.GetBuffer(), constantBuffer.GetOffset(), constantBuffer.GetSize());
+    bindingGroup->Set("ScaleSetting", constantBuffer);
     bindingGroup->Set("InputTexture", inputTextureSRV);
     bindingGroup->Set("OutputTexture", outputTextureUAV);
 

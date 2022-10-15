@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Rtrc/Graphics/RenderGraph/Executable.h>
-#include <Rtrc/Graphics/RenderGraph/TransientResourceManager.h>
 
 RTRC_RG_BEGIN
 
@@ -9,7 +8,7 @@ class Compiler : public Uncopyable
 {
 public:
 
-    Compiler(RHI::DevicePtr device, TransientResourceManager &transientResourceManager);
+    Compiler(RenderContext &renderContext);
 
     void Compile(const RenderGraph &graph, ExecutableGraph &result);
 
@@ -71,9 +70,8 @@ private:
 
     void FillSections(ExecutableGraph &output);
 
-    RHI::DevicePtr            device_;
-    TransientResourceManager &transientResourceManager_;
-    const RenderGraph        *graph_;
+    RenderContext &renderContext_;
+    const RenderGraph *graph_;
 
     std::vector<const Pass*>      sortedPasses_;
     std::vector<Box<CompilePass>> sortedCompilePasses_;

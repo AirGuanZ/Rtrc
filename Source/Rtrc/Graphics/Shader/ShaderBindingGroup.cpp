@@ -26,95 +26,95 @@ Span<ParsedBindingGroupLayout::ParsedBindingDescription>
     return Span(&allDescs_[record.offset], record.count);
 }
 
-BindingGroup::BindingGroup(RC<const BindingGroupLayout> parentLayout, RHI::BindingGroupPtr rhiGroup)
+TempBindingGroup::TempBindingGroup(RC<const TempBindingGroupLayout> parentLayout, RHI::BindingGroupPtr rhiGroup)
     : parentLayout_(std::move(parentLayout)), rhiGroup_(std::move(rhiGroup))
 {
     boundObjects_.resize(rhiGroup_->GetLayout()->GetDesc().bindings.size());
 }
 
-const RC<const BindingGroupLayout> &BindingGroup::GetBindingGroupLayout()
+const RC<const TempBindingGroupLayout> &TempBindingGroup::GetBindingGroupLayout()
 {
     return parentLayout_;
 }
 
-void BindingGroup::Set(int slot, const RHI::BufferPtr &cbuffer, size_t offset, size_t bytes)
+void TempBindingGroup::Set(int slot, const RHI::BufferPtr &cbuffer, size_t offset, size_t bytes)
 {
     rhiGroup_->ModifyMember(slot, cbuffer, offset, bytes);
     boundObjects_[slot] = cbuffer;
 }
 
-void BindingGroup::Set(int slot, const RHI::SamplerPtr &sampler)
+void TempBindingGroup::Set(int slot, const RHI::SamplerPtr &sampler)
 {
     rhiGroup_->ModifyMember(slot, sampler);
     boundObjects_[slot] = sampler;
 }
 
-void BindingGroup::Set(int slot, const RHI::BufferSRVPtr &srv)
+void TempBindingGroup::Set(int slot, const RHI::BufferSRVPtr &srv)
 {
     rhiGroup_->ModifyMember(slot, srv);
     boundObjects_[slot] = srv;
 }
 
-void BindingGroup::Set(int slot, const RHI::BufferUAVPtr &uav)
+void TempBindingGroup::Set(int slot, const RHI::BufferUAVPtr &uav)
 {
     rhiGroup_->ModifyMember(slot, uav);
     boundObjects_[slot] = uav;
 }
 
-void BindingGroup::Set(int slot, const RHI::TextureSRVPtr &srv)
+void TempBindingGroup::Set(int slot, const RHI::TextureSRVPtr &srv)
 {
     rhiGroup_->ModifyMember(slot, srv);
     boundObjects_[slot] = srv;
 }
 
-void BindingGroup::Set(int slot, const RHI::TextureUAVPtr &uav)
+void TempBindingGroup::Set(int slot, const RHI::TextureUAVPtr &uav)
 {
     rhiGroup_->ModifyMember(slot, uav);
     boundObjects_[slot] = uav;
 }
 
-void BindingGroup::Set(std::string_view name, const RHI::BufferPtr &cbuffer, size_t offset, size_t bytes)
+void TempBindingGroup::Set(std::string_view name, const RHI::BufferPtr &cbuffer, size_t offset, size_t bytes)
 {
     const int slot = parentLayout_->GetBindingSlotByName(name);
     Set(slot, cbuffer, offset, bytes);
 }
 
-void BindingGroup::Set(std::string_view name, const RHI::SamplerPtr &sampler)
+void TempBindingGroup::Set(std::string_view name, const RHI::SamplerPtr &sampler)
 {
     const int slot = parentLayout_->GetBindingSlotByName(name);
     Set(slot, sampler);
 }
 
-void BindingGroup::Set(std::string_view name, const RHI::BufferSRVPtr &srv)
+void TempBindingGroup::Set(std::string_view name, const RHI::BufferSRVPtr &srv)
 {
     const int slot = parentLayout_->GetBindingSlotByName(name);
     Set(slot, srv);
 }
 
-void BindingGroup::Set(std::string_view name, const RHI::BufferUAVPtr &uav)
+void TempBindingGroup::Set(std::string_view name, const RHI::BufferUAVPtr &uav)
 {
     const int slot = parentLayout_->GetBindingSlotByName(name);
     Set(slot, uav);
 }
 
-void BindingGroup::Set(std::string_view name, const RHI::TextureSRVPtr &srv)
+void TempBindingGroup::Set(std::string_view name, const RHI::TextureSRVPtr &srv)
 {
     const int slot = parentLayout_->GetBindingSlotByName(name);
     Set(slot, srv);
 }
 
-void BindingGroup::Set(std::string_view name, const RHI::TextureUAVPtr &uav)
+void TempBindingGroup::Set(std::string_view name, const RHI::TextureUAVPtr &uav)
 {
     const int slot = parentLayout_->GetBindingSlotByName(name);
     Set(slot, uav);
 }
 
-RHI::BindingGroupPtr BindingGroup::GetRHIBindingGroup()
+RHI::BindingGroupPtr TempBindingGroup::GetRHIBindingGroup()
 {
     return rhiGroup_;
 }
 
-int BindingGroupLayout::GetBindingSlotByName(std::string_view bindingName) const
+int TempBindingGroupLayout::GetBindingSlotByName(std::string_view bindingName) const
 {
     const auto it = bindingNameToSlot_.find(bindingName);
     if(it == bindingNameToSlot_.end())
@@ -124,15 +124,15 @@ int BindingGroupLayout::GetBindingSlotByName(std::string_view bindingName) const
     return it->second;
 }
 
-RHI::BindingGroupLayoutPtr BindingGroupLayout::GetRHIBindingGroupLayout()
+RHI::BindingGroupLayoutPtr TempBindingGroupLayout::GetRHIBindingGroupLayout()
 {
     return rhiLayout_;
 }
 
-RC<BindingGroup> BindingGroupLayout::CreateBindingGroup() const
+RC<TempBindingGroup> TempBindingGroupLayout::CreateBindingGroup() const
 {
     RHI::BindingGroupPtr rhiGroup = device_->CreateBindingGroup(rhiLayout_);
-    return MakeRC<BindingGroup>(shared_from_this(), std::move(rhiGroup));
+    return MakeRC<TempBindingGroup>(shared_from_this(), std::move(rhiGroup));
 }
 
 RTRC_END

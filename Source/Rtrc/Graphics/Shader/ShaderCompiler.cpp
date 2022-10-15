@@ -8,10 +8,10 @@
 
 RTRC_BEGIN
 
-void ShaderCompiler::SetDevice(RHI::DevicePtr device)
+void ShaderCompiler::SetRenderContext(RenderContext *renderContext)
 {
-    assert(!rhiDevice_);
-    rhiDevice_ = std::move(device);
+    assert(!renderContext_ && renderContext);
+    renderContext_ = renderContext;
 }
 
 void ShaderCompiler::SetRootDirectory(std::string_view rootDir)
@@ -100,17 +100,12 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &desc, bool debug, const M
     shader->bindingGroupLayouts_           = std::move(bindingGroupLayouts);
     shader->bindingGroupNames_             = std::move(bindingGroupNames);
 
-    RHI::BindingLayoutDesc bindingLayoutDesc;
+    BindingLayout::Desc bindingLayoutDesc;
     for(auto &g : shader->bindingGroupLayouts_)
     {
-        bindingLayoutDesc.groups.push_back(g->GetRHIBindingGroupLayout());
+        bindingLayoutDesc.groupLayouts.push_back(g);
     }
-
-    shader->bindingLayout_ = bindingLayoutPool_.GetOrCreate(bindingLayoutDesc, [&]
-    {
-        auto ret = rhiDevice_->CreateBindingLayout(bindingLayoutDesc);
-        return Shader::BindingLayout{ ret };
-    });
+    shader->bindingLayout_ = renderContext_->CreateBindingLayout(bindingLayoutDesc);
 
     return shader;
 }
@@ -159,24 +154,6 @@ std::string ShaderCompiler::GetMappedFilename(const std::string &filename)
         path = rootDir_ / path;
     }
     return absolute(path).lexically_normal().string();
-}
-
-RC<BindingGroupLayout> ShaderCompiler::GetBindingGroupLayout(const RHI::BindingGroupLayoutDesc &desc)
-{
-    return bindingGroupLayoutPool_.GetOrCreate(desc, [&]
-    {
-        auto layout = MakeRC<BindingGroupLayout>();
-        layout->device_ = rhiDevice_;
-        layout->rhiLayout_ = rhiDevice_->CreateBindingGroupLayout(desc);
-        for(auto &&[slot, aliasedBindings] : Enumerate(desc.bindings))
-        {
-            for(auto &binding : aliasedBindings)
-            {
-                layout->bindingNameToSlot_[binding.name] = static_cast<int>(slot);
-            }
-        }
-        return layout;
-    });
 }
 
 RHI::RawShaderPtr ShaderCompiler::CompileShader(
@@ -338,7 +315,7 @@ RHI::RawShaderPtr ShaderCompiler::CompileShader(
 
         if(auto it = outputNameToGroupIndex.find(group.name); it != outputNameToGroupIndex.end())
         {
-            if(rhiLayoutDesc != outBindingGroupLayouts[it->second]->rhiLayout_->GetDesc())
+            if(rhiLayoutDesc != outBindingGroupLayouts[it->second]->GetRHIObject()->GetDesc())
             {
                 throw Exception("binding group {} appears in multiple stages with different definitions");
             }
@@ -353,7 +330,7 @@ RHI::RawShaderPtr ShaderCompiler::CompileShader(
         }
         else
         {
-            auto groupLayout = GetBindingGroupLayout(rhiLayoutDesc);
+            auto groupLayout = renderContext_->CreateBindingGroupLayout(rhiLayoutDesc);
             const int groupIndex = static_cast<int>(outBindingGroupLayouts.size());
 
             outputNameToGroupIndex[group.name] = groupIndex;
@@ -397,7 +374,7 @@ RHI::RawShaderPtr ShaderCompiler::CompileShader(
     const std::vector<unsigned char> compileData = dxc.Compile(shaderInfo, target, debug, nullptr);
 
     outputRefl = MakeBox<SPIRVReflection>(compileData, entry);
-    return rhiDevice_->CreateShader(compileData.data(), compileData.size(), entry, stage);
+    return renderContext_->GetRawDevice()->CreateShader(compileData.data(), compileData.size(), entry, stage);
 }
 
 RTRC_END

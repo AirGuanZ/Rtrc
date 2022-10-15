@@ -245,7 +245,7 @@ SubMaterialPropertyLayout::SubMaterialPropertyLayout(const MaterialPropertyHostL
 
     if(bindingGroupLayout_)
     {
-        auto &desc = bindingGroupLayout_->GetRHIBindingGroupLayout()->GetDesc();
+        auto &desc = bindingGroupLayout_->GetRHIObject()->GetDesc();
         for(auto &&[bindingIndex, aliased] : Enumerate(desc.bindings))
         {
             if(aliased.size() > 1)
@@ -314,16 +314,15 @@ void SubMaterialPropertyLayout::FillConstantBufferContent(const void *valueBuffe
 }
 
 void SubMaterialPropertyLayout::FillBindingGroup(
-    BindingGroup                   &bindingGroup,
-    Span<RHI::RHIObjectPtr>         materialResources,
-    const PersistentConstantBuffer &cbuffer) const
+    BindingGroup          &bindingGroup,
+    Span<MaterialResource> materialResources,
+    RC<ConstantBuffer>     cbuffer) const
 {
     // Constant buffer
 
     if(constantBufferIndexInBindingGroup_ >= 0)
     {
-        bindingGroup.Set(
-            constantBufferIndexInBindingGroup_, cbuffer.GetBuffer(), cbuffer.GetOffset(), cbuffer.GetSize());
+        bindingGroup.Set(constantBufferIndexInBindingGroup_, cbuffer);
     }
 
     // Other resources
@@ -334,13 +333,13 @@ void SubMaterialPropertyLayout::FillBindingGroup(
         switch(ref.type)
         {
         case MaterialProperty::Type::Buffer:
-            bindingGroup.Set(ref.indexInBindingGroup, DynamicCast<RHI::BufferSRV>(resource));
+            bindingGroup.Set(ref.indexInBindingGroup, resource.As<BufferSRV>());
             break;
         case MaterialProperty::Type::Texture2D:
-            bindingGroup.Set(ref.indexInBindingGroup, DynamicCast<RHI::TextureSRV>(resource));
+            bindingGroup.Set(ref.indexInBindingGroup, resource.As<TextureSRV>());
             break;
         case MaterialProperty::Type::Sampler:
-            bindingGroup.Set(ref.indexInBindingGroup, DynamicCast<RHI::Sampler>(resource));
+            bindingGroup.Set(ref.indexInBindingGroup, resource.As<RC<Sampler>>());
             break;
         default:
             Unreachable();
@@ -350,20 +349,20 @@ void SubMaterialPropertyLayout::FillBindingGroup(
 
 RC<MaterialInstance> Material::CreateInstance() const
 {
-    return MakeRC<MaterialInstance>(shared_from_this(), resourceManager_);
+    return MakeRC<MaterialInstance>(shared_from_this(), renderContext_);
 }
 
 MaterialManager::MaterialManager()
 {
-    resourceManager_ = nullptr;
+    renderContext_ = nullptr;
     debug_ = RTRC_DEBUG;
 }
 
-void MaterialManager::SetResourceManager(ResourceManager *resourceManager)
+void MaterialManager::SetRenderContext(RenderContext *renderContext)
 {
-    assert(resourceManager);
-    resourceManager_ = resourceManager;
-    shaderCompiler_.SetDevice(resourceManager->GetDeviceWithFrameResourceProtection());
+    assert(renderContext);
+    renderContext_ = renderContext;
+    shaderCompiler_.SetRenderContext(renderContext);
 }
 
 void MaterialManager::SetRootDirectory(std::string_view directory)
@@ -424,11 +423,6 @@ RC<ShaderTemplate> MaterialManager::GetShaderTemplate(std::string_view name)
 {
     assert(shaderNameToFilename_.contains(name));
     return shaderPool_.GetOrCreate(name, [&] { return CreateShaderTemplate(name); });
-}
-
-RC<BindingGroupLayout> MaterialManager::GetBindingGroupLayout(const RHI::BindingGroupLayoutDesc &desc)
-{
-    return shaderCompiler_.GetBindingGroupLayout(desc);
 }
 
 void MaterialManager::GC()
@@ -593,7 +587,7 @@ RC<Material> MaterialManager::CreateMaterial(std::string_view name)
             material->tagToIndex_.insert({ tag, static_cast<int>(index) });
         }
     }
-    material->resourceManager_ = resourceManager_;
+    material->renderContext_ = renderContext_;
     material->name_ = name;
     material->subMaterials_ = std::move(subMaterials);
     material->propertyLayout_ = std::move(propertyLayout);

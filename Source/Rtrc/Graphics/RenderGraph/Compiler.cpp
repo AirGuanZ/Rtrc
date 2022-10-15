@@ -23,9 +23,8 @@ namespace
 
 } // namespace anonymous
 
-Compiler::Compiler(RHI::DevicePtr device, TransientResourceManager &transientResourceManager)
-    : device_(std::move(device))
-    , transientResourceManager_(transientResourceManager)
+Compiler::Compiler(RenderContext &renderContext)
+    : renderContext_(renderContext)
     , graph_(nullptr)
 {
     
@@ -42,7 +41,7 @@ void Compiler::Compile(const RenderGraph &graph, ExecutableGraph &result)
     GenerateSemaphores();
 
     result.resources.indexToBuffer.resize(graph_->buffers_.size());
-    result.resources.indexToTexture.resize(graph_->textures_.size());
+    result.resources.indexToTexture2D.resize(graph_->textures_.size());
     FillExternalResources(result.resources);
     AllocateInternalResources(result.resources);
 
@@ -252,7 +251,7 @@ void Compiler::FillExternalResources(ExecutableResources &output)
                 stages |= users[j].usage.stages;
                 accesses |= users[j].usage.accesses;
             }
-            output.indexToBuffer[index].finalState = { stages, accesses };
+            output.indexToBuffer[index].finalState = UnsynchronizedBufferAccess::Create(stages, accesses);
         }
     }
 
@@ -261,18 +260,14 @@ void Compiler::FillExternalResources(ExecutableResources &output)
         if(auto ext = TryCastResource<RenderGraph::ExternalTextureResource>(texture.get()))
         {
             const int index = ext->GetResourceIndex();
-            output.indexToTexture[index].texture = ext->texture;
+            output.indexToTexture2D[index].texture = ext->texture;
 
-            auto &finalStates = output.indexToTexture[index].finalState;
-            finalStates = TextureSubresourceMap<std::optional<StatefulTexture::State>>(ext->texture->GetRHITexture());
+            auto &finalStates = output.indexToTexture2D[index].finalState;
+            finalStates = TextureSubresourceMap<std::optional<UnsynchronizedTextureAccess>>(ext->texture->GetRHIObject());
             if(TryCastResource<RenderGraph::SwapchainTexture>(ext))
             {
-                finalStates(0, 0) = StatefulTexture::State
-                {
-                    .layout = RHI::TextureLayout::Present,
-                    .stages = RHI::PipelineStage::None,
-                    .accesses = RHI::ResourceAccess::None
-                };
+                finalStates(0, 0) = UnsynchronizedTextureAccess::Create(
+                    RHI::PipelineStage::None, RHI::ResourceAccess::None, RHI::TextureLayout::Present);
             }
             else
             {
@@ -288,7 +283,8 @@ void Compiler::FillExternalResources(ExecutableResources &output)
                         stages |= users[j].usage.stages;
                         accesses |= users[j].usage.accesses;
                     }
-                    finalStates(subrsc.mipLevel, subrsc.arrayLayer) = { layout, stages, accesses };
+                    finalStates(subrsc.mipLevel, subrsc.arrayLayer) =
+                        UnsynchronizedTextureAccess::Create(stages, accesses, layout);
                 }
             }
         }
@@ -297,26 +293,52 @@ void Compiler::FillExternalResources(ExecutableResources &output)
 
 void Compiler::AllocateInternalResources(ExecutableResources &output)
 {
-    // create bidir map resourceIndex <-> lifetimeIndex and fill final states
-
-    assert(graph_->buffers_.size() == graph_->textures_.size());
-    std::vector<int> resourceIndexToLifetimeIndex(graph_->buffers_.size(), -1);
-
-    std::vector<int> lifetimeIndexToResourceIndex;
-    std::vector<TransientResourceManager::ResourceDesc> lifetimeIndexToResourceDesc;
-    lifetimeIndexToResourceIndex.reserve(graph_->buffers_.size());
-    lifetimeIndexToResourceDesc.reserve(graph_->buffers_.size());
-
-    for(auto &buffer : graph_->buffers_)
+    for(auto &buf : graph_->buffers_)
     {
-        if(auto intRsc = TryCastResource<RenderGraph::InternalBufferResource>(buffer.get()))
+        auto intRsc = TryCastResource<RenderGraph::InternalBufferResource>(buf.get());
+        if(!intRsc)
         {
-            const int resourceIndex = intRsc->GetResourceIndex();
-            resourceIndexToLifetimeIndex[resourceIndex] = static_cast<int>(lifetimeIndexToResourceIndex.size());
-            lifetimeIndexToResourceIndex.push_back(resourceIndex);
-            lifetimeIndexToResourceDesc.push_back(intRsc->rhiDesc);
+            continue;
+        }
 
-            auto &users = bufferUsers_.at(intRsc);
+        const RHI::BufferDesc &desc = intRsc->rhiDesc;
+        const int resourceIndex = intRsc->GetResourceIndex();
+
+        auto &users = bufferUsers_.at(intRsc);
+        RHI::PipelineStageFlag stages = users.back().usage.stages;
+        RHI::ResourceAccessFlag accesses = users.back().usage.accesses;
+        for(int j = static_cast<int>(users.size()) - 1;
+            j >= 0 && DontNeedBarrier(users[j].usage, users.back().usage); --j)
+        {
+            stages |= users[j].usage.stages;
+            accesses |= users[j].usage.accesses;
+        }
+        output.indexToBuffer[resourceIndex].finalState = UnsynchronizedBufferAccess::Create(stages, accesses);
+        output.indexToBuffer[resourceIndex].buffer =
+            renderContext_.CreateBuffer(desc.size, desc.usage, desc.hostAccessType, true);
+    }
+
+    for(auto &texture : graph_->textures_)
+    {
+        auto intRsc = TryCastResource<RenderGraph::InternalTextureResource>(texture.get());
+        if(!intRsc)
+        {
+            continue;
+        }
+
+        const int resourceIndex = intRsc->GetResourceIndex();
+        auto intTex2D = TryCastResource<RenderGraph::InternalTexture2DResource>(intRsc);
+        assert(intTex2D);
+
+        auto &desc = intTex2D->rhiDesc;
+
+        auto &finalStates = output.indexToTexture2D[resourceIndex].finalState;
+        finalStates = TextureSubresourceMap<std::optional<UnsynchronizedTextureAccess>>(
+            intTex2D->GetMipLevels(), intTex2D->GetArraySize());
+        for(auto subrsc : EnumerateSubTextures(intRsc->GetMipLevels(), intRsc->GetArraySize()))
+        {
+            auto &users = subTexUsers_.at({ intRsc, subrsc });
+            const RHI::TextureLayout layout = users.back().usage.layout;
             RHI::PipelineStageFlag stages = users.back().usage.stages;
             RHI::ResourceAccessFlag accesses = users.back().usage.accesses;
             for(int j = static_cast<int>(users.size()) - 1;
@@ -325,62 +347,21 @@ void Compiler::AllocateInternalResources(ExecutableResources &output)
                 stages |= users[j].usage.stages;
                 accesses |= users[j].usage.accesses;
             }
-            output.indexToBuffer[resourceIndex].finalState = { stages, accesses };
+            finalStates(subrsc.mipLevel, subrsc.arrayLayer) =
+                UnsynchronizedTextureAccess::Create(stages, accesses, layout);
         }
+
+        output.indexToTexture2D[resourceIndex].texture = renderContext_.CreateTexture2D(
+            desc.width, desc.height, desc.arraySize, desc.mipLevels, desc.format,
+            desc.usage, desc.concurrentAccessMode, desc.sampleCount, true);
     }
-
-    for(auto &texture : graph_->textures_)
-    {
-        if(auto intRsc = TryCastResource<RenderGraph::InternalTextureResource>(texture.get()))
-        {
-            const int resourceIndex = intRsc->GetResourceIndex();
-            resourceIndexToLifetimeIndex[resourceIndex] = static_cast<int>(lifetimeIndexToResourceIndex.size());
-            lifetimeIndexToResourceIndex.push_back(resourceIndex);
-
-            auto intTex2D = TryCastResource<RenderGraph::InternalTexture2DResource>(intRsc);
-            assert(intTex2D);
-            lifetimeIndexToResourceDesc.push_back(intTex2D->rhiDesc);
-
-            auto &finalStates = output.indexToTexture[resourceIndex].finalState;
-            finalStates = TextureSubresourceMap<std::optional<StatefulTexture::State>>(
-                intTex2D->GetMipLevels(), intTex2D->GetArraySize());
-            for(auto subrsc : EnumerateSubTextures(intRsc->GetMipLevels(), intRsc->GetArraySize()))
-            {
-                auto &users = subTexUsers_.at({ intRsc, subrsc });
-                const RHI::TextureLayout layout = users.back().usage.layout;
-                RHI::PipelineStageFlag stages = users.back().usage.stages;
-                RHI::ResourceAccessFlag accesses = users.back().usage.accesses;
-                for(int j = static_cast<int>(users.size()) - 1;
-                    j >= 0 && DontNeedBarrier(users[j].usage, users.back().usage); --j)
-                {
-                    stages |= users[j].usage.stages;
-                    accesses |= users[j].usage.accesses;
-                }
-                finalStates(subrsc.mipLevel, subrsc.arrayLayer) = { layout, stages, accesses };
-            }
-        }
-    }
-
-    // fill lifetime mask
-
-    const int resourceCount = static_cast<int>(lifetimeIndexToResourceIndex.size());
-    const int passCount = static_cast<int>(sortedPasses_.size());
-
-    // TODO: current allocation strategy doesn't need lifetime info
-    ResourceLifetimeManager lifetimeManager(resourceCount, passCount);
-
-    // allocate resources
-
-    transientResourceManager_.Allocate(
-        lifetimeManager, lifetimeIndexToResourceDesc, lifetimeIndexToResourceIndex, output);
 }
 
 void Compiler::GenerateBarriers(const ExecutableResources &resources)
 {
     for(auto &[buffer, users] : bufferUsers_)
     {
-        StatefulBuffer::State lastState =
-            resources.indexToBuffer[buffer->GetResourceIndex()].buffer->GetUnsynchronizedState();
+        auto lastState = resources.indexToBuffer[buffer->GetResourceIndex()].buffer->GetUnsyncAccess();
 
         size_t userIndex = 0;
         while(userIndex < users.size())
@@ -392,7 +373,8 @@ void Compiler::GenerateBarriers(const ExecutableResources &resources)
             }
             RTRC_SCOPE_EXIT{ userIndex = nextUserIndex; };
 
-            StatefulBuffer::State currState;
+            UnsynchronizedBufferAccess currState = UnsynchronizedBufferAccess::Create(
+                RHI::PipelineStage::None, RHI::ResourceAccess::None);
             RTRC_SCOPE_EXIT{ lastState = currState; };
             for(size_t i = userIndex; i < nextUserIndex; ++i)
             {
@@ -421,7 +403,7 @@ void Compiler::GenerateBarriers(const ExecutableResources &resources)
 
             sortedCompilePasses_[barrierPass]->beforeBufferTransitions.push_back(RHI::BufferTransitionBarrier
             {
-                .buffer         = resources.indexToBuffer[buffer->GetResourceIndex()].buffer->GetRHIBuffer(),
+                .buffer         = resources.indexToBuffer[buffer->GetResourceIndex()].buffer->GetRHIObject(),
                 .beforeStages   = lastState.stages,
                 .beforeAccesses = lastState.accesses,
                 .afterStages    = currState.stages,
@@ -434,8 +416,8 @@ void Compiler::GenerateBarriers(const ExecutableResources &resources)
     {
         auto [tex, subrsc] = subTexKey;
         const bool isSwapchainTex = TryCastResource<RenderGraph::SwapchainTexture>(tex);
-        StatefulTexture::State lastState = resources.indexToTexture[tex->GetResourceIndex()].texture
-                                         ->GetUnsynchronizedState(subrsc.mipLevel, subrsc.arrayLayer);
+        auto lastState = resources.indexToTexture2D[tex->GetResourceIndex()].texture
+            ->GetUnsyncAccess(subrsc.mipLevel, subrsc.arrayLayer);
 
         size_t userIndex = 0;
         while(userIndex < users.size())
@@ -447,7 +429,7 @@ void Compiler::GenerateBarriers(const ExecutableResources &resources)
             }
             RTRC_SCOPE_EXIT{ userIndex = nextUserIndex; };
 
-            StatefulTexture::State currState;
+            UnsynchronizedTextureAccess currState;
             RTRC_SCOPE_EXIT{ lastState = currState; };
             currState.layout = users[userIndex].usage.layout;
             for(size_t i = userIndex; i < nextUserIndex; ++i)
@@ -489,7 +471,7 @@ void Compiler::GenerateBarriers(const ExecutableResources &resources)
                 assert(lastState.layout == RHI::TextureLayout::Undefined);
                 sortedCompilePasses_[barrierPass]->beforeTextureTransitions.push_back(RHI::TextureTransitionBarrier
                 {
-                    .texture      = resources.indexToTexture[tex->GetResourceIndex()].texture->GetRHITexture(),
+                    .texture      = resources.indexToTexture2D[tex->GetResourceIndex()].texture->GetRHIObject(),
                     .subresources = RHI::TextureSubresources
                     {
                         .mipLevel = subrsc.mipLevel,
@@ -509,7 +491,7 @@ void Compiler::GenerateBarriers(const ExecutableResources &resources)
             {
                 sortedCompilePasses_[barrierPass]->beforeTextureTransitions.push_back(RHI::TextureTransitionBarrier
                 {
-                    .texture      = resources.indexToTexture[tex->GetResourceIndex()].texture->GetRHITexture(),
+                    .texture      = resources.indexToTexture2D[tex->GetResourceIndex()].texture->GetRHIObject(),
                     .subresources = RHI::TextureSubresources
                     {
                         .mipLevel = subrsc.mipLevel,
@@ -531,7 +513,7 @@ void Compiler::GenerateBarriers(const ExecutableResources &resources)
         {
             passToSection_[users.back().passIndex]->swapchainPresentBarrier = RHI::TextureTransitionBarrier
             {
-                .texture        = resources.indexToTexture[tex->GetResourceIndex()].texture->GetRHITexture(),
+                .texture        = resources.indexToTexture2D[tex->GetResourceIndex()].texture->GetRHIObject(),
                 .beforeStages   = lastState.stages,
                 .beforeAccesses = IsReadOnly(lastState.accesses) ? RHI::ResourceAccess::None : lastState.accesses,
                 .beforeLayout   = lastState.layout,

@@ -1,8 +1,7 @@
 #pragma once
 
 #include <Rtrc/Graphics/Material/ShaderTemplate.h>
-#include <Rtrc/Graphics/Resource/ConstantBuffer.h>
-#include <Rtrc/Graphics/Resource/ResourceManager.h>
+#include <Rtrc/Graphics/Object/RenderContext.h>
 #include <Rtrc/Math/Vector3.h>
 
 /* Material
@@ -17,7 +16,7 @@
         SubMaterialInstance:
             SubMaterial
             ConstantBuffer
-            BindingGroup
+            TempBindingGroup
 */
 
 RTRC_BEGIN
@@ -113,6 +112,8 @@ public:
         size_t indexInBindingGroup;
     };
 
+    using MaterialResource = Variant<BufferSRV, TextureSRV, RC<Sampler>>;
+
     SubMaterialPropertyLayout(const MaterialPropertyHostLayout &materialPropertyLayout, const Shader &shader);
 
     int GetBindingGroupIndex() const;
@@ -122,9 +123,9 @@ public:
 
     const RC<BindingGroupLayout> &GetBindingGroupLayout() const;
     void FillBindingGroup(
-        BindingGroup                   &bindingGroup,
-        Span<RHI::RHIObjectPtr>         materialResources,
-        const PersistentConstantBuffer &cbuffer) const;
+        BindingGroup          &bindingGroup,
+        Span<MaterialResource> materialResources,
+        RC<ConstantBuffer>     cbuffer) const;
 
 private:
 
@@ -137,13 +138,12 @@ private:
     std::vector<ResourceReference> resourceReferences_;
 };
 
-class SubMaterial : public Uncopyable
+class SubMaterial : public Uncopyable, public WithUniqueObjectID
 {
 public:
 
-    SubMaterial();
+    SubMaterial() = default;
 
-    uint32_t GetSubMaterialInstanceID() const;
     const std::set<std::string> &GetTags() const;
 
     KeywordSet::ValueMask ExtractKeywordValueMask(const KeywordValueContext &keywordValues) const;
@@ -160,12 +160,13 @@ private:
 
     friend class MaterialManager;
 
-    uint32_t subMaterialID_;
     std::set<std::string> tags_;
     RC<ShaderTemplate> shaderTemplate_;
 
     const MaterialPropertyHostLayout *parentPropertyLayout_ = nullptr;
     std::vector<Box<SubMaterialPropertyLayout>> subMaterialPropertyLayouts_;
+
+    tbb::spin_rw_mutex propertyLayoutsMutex_;
 };
 
 class Material : public Uncopyable, public std::enable_shared_from_this<Material>
@@ -188,7 +189,7 @@ private:
 
     friend class MaterialManager;
 
-    ResourceManager *resourceManager_ = nullptr;
+    RenderContext *renderContext_ = nullptr;
 
     std::string name_;
     std::vector<RC<SubMaterial>> subMaterials_;
@@ -203,14 +204,12 @@ public:
 
     MaterialManager();
 
-    void SetResourceManager(ResourceManager *resourceManager);
+    void SetRenderContext(RenderContext *renderContext);
     void SetRootDirectory(std::string_view directory);
     void SetDebugMode(bool debug);
 
     RC<Material> GetMaterial(std::string_view name);
     RC<ShaderTemplate> GetShaderTemplate(std::string_view name);
-
-    RC<BindingGroupLayout> GetBindingGroupLayout(const RHI::BindingGroupLayoutDesc &desc);
 
     void GC();
 
@@ -231,8 +230,8 @@ private:
 
     RC<SubMaterial> ParsePass(ShaderTokenStream &tokens);
     MaterialProperty ParseProperty(MaterialProperty::Type propertyType, ShaderTokenStream &tokens);
-    
-    ResourceManager *resourceManager_;
+
+    RenderContext *renderContext_ = nullptr;
     ShaderCompiler shaderCompiler_;
 
     bool debug_ = RTRC_DEBUG;
@@ -367,17 +366,6 @@ inline const RC<BindingGroupLayout> &SubMaterialPropertyLayout::GetBindingGroupL
     return bindingGroupLayout_;
 }
 
-inline SubMaterial::SubMaterial()
-{
-    static std::atomic<uint32_t> nextInstanceID = 0;
-    subMaterialID_ = nextInstanceID++;
-}
-
-inline uint32_t SubMaterial::GetSubMaterialInstanceID() const
-{
-    return subMaterialID_;
-}
-
 inline const std::set<std::string> &SubMaterial::GetTags() const
 {
     return tags_;
@@ -400,6 +388,15 @@ inline RC<Shader> SubMaterial::GetShader(const KeywordValueContext &keywordValue
 
 inline const SubMaterialPropertyLayout *SubMaterial::GetPropertyLayout(KeywordSet::ValueMask mask)
 {
+    {
+        std::shared_lock readLock(propertyLayoutsMutex_);
+        if(subMaterialPropertyLayouts_[mask])
+        {
+            return subMaterialPropertyLayouts_[mask].get();
+        }
+    }
+
+    std::unique_lock writeLock(propertyLayoutsMutex_);
     if(!subMaterialPropertyLayouts_[mask])
     {
         auto newLayout = MakeBox<SubMaterialPropertyLayout>(*parentPropertyLayout_, *GetShader(mask));

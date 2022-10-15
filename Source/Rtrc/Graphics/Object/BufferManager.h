@@ -4,56 +4,38 @@
 
 RTRC_BEGIN
 
+class Buffer;
 class BufferManager;
-class CommandBufferManager;
+class CommandBuffer;
 
-class UnsynchronizedBufferAccess
+struct UnsynchronizedBufferAccess
 {
-public:
+    RHI::PipelineStageFlag  stages = RHI::PipelineStage::None;
+    RHI::ResourceAccessFlag accesses = RHI::ResourceAccess::None;
 
-    enum Type
+    static UnsynchronizedBufferAccess Create(RHI::PipelineStageFlag stages, RHI::ResourceAccessFlag accesses)
     {
-        None,
-        Regular
-    };
-
-    struct NoneData
-    {
-
-    };
-
-    struct RegularData
-    {
-        RHI::PipelineStageFlag  stages;
-        RHI::ResourceAccessFlag accesses;
-    };
-
-    static UnsynchronizedBufferAccess CreateNone();
-    static UnsynchronizedBufferAccess CreateRegular(
-        RHI::PipelineStageFlag  stages,
-        RHI::ResourceAccessFlag accesses);
-
-    Type GetType() const;
-    
-    void SetNone();
-    void SetRegular(
-        RHI::PipelineStageFlag  stages,
-        RHI::ResourceAccessFlag accesses);
-    
-    const NoneData    &GetNoneData() const;
-    const RegularData &GetRegularData() const;
-
-private:
-
-    Type type_ = None;
-    Variant<NoneData, RegularData> data_ = NoneData{};
+        return { stages, accesses };
+    }
 };
 
-class Buffer : public Uncopyable
+struct BufferSRV
+{
+    RC<Buffer> buffer;
+    RHI::BufferSRVPtr rhiSRV;
+};
+
+struct BufferUAV
+{
+    RC<Buffer> buffer;
+    RHI::BufferUAVPtr rhiUAV;
+};
+
+class Buffer : public Uncopyable, public std::enable_shared_from_this<Buffer>
 {
 public:
 
-    Buffer() = default;
+    static Buffer FromRHIObject(RHI::BufferPtr rhiBuffer);
     ~Buffer();
 
     Buffer(Buffer &&other) noexcept;
@@ -61,13 +43,16 @@ public:
 
     void Swap(Buffer &other) noexcept;
 
+    // The rhi buffer may be reused by other new buffer object after this one is destructed
+    void AllowReuse(bool allow);
+
     size_t GetSize() const;
 
     const RHI::BufferPtr &GetRHIObject() const;
     operator const RHI::BufferPtr &() const;
 
-    RHI::BufferSRVPtr GetSRV(const RHI::BufferSRVDesc &desc);
-    RHI::BufferUAVPtr GetUAV(const RHI::BufferUAVDesc &desc);
+    BufferSRV GetSRV(const RHI::BufferSRVDesc &desc);
+    BufferUAV GetUAV(const RHI::BufferUAVDesc &desc);
 
           UnsynchronizedBufferAccess &GetUnsyncAccess();
     const UnsynchronizedBufferAccess &GetUnsyncAccess() const;
@@ -79,8 +64,11 @@ private:
 
     friend class BufferManager;
 
+    Buffer() = default;
+
     BufferManager *manager_ = nullptr;
     size_t size_ = 0;
+    bool allowReuse_ = false;
     RHI::BufferPtr rhiBuffer_;
     UnsynchronizedBufferAccess unsyncAccess_;
 };
@@ -91,6 +79,8 @@ public:
 
     BufferManager(HostSynchronizer &hostSync, RHI::DevicePtr device);
 
+    // When allowReuse is true, the returned buffer may reuse a previous created rhi buffer
+    // and has initial unsync access state
     RC<Buffer> CreateBuffer(
         size_t                    size,
         RHI::BufferUsageFlag      usages,
@@ -107,6 +97,7 @@ private:
     {
         RHI::BufferPtr rhiBuffer;
         UnsynchronizedBufferAccess unsyncAccess;
+        bool allowReuse;
     };
 
     using BatchReleaser = BatchReleaseHelper<ReleaseRecord>;
@@ -117,7 +108,7 @@ private:
         BatchReleaser::DataListIterator releaseRecordIt;
     };
 
-    void ReleaseImpl(Buffer &buf);
+    void ReleaseImpl(ReleaseRecord buf);
 
     BatchReleaser batchReleaser_;
     RHI::DevicePtr device_;
@@ -128,53 +119,16 @@ private:
     std::vector<RHI::BufferPtr> garbageBuffers_;
     tbb::spin_mutex garbageMutex_;
 
-    std::list<Buffer> pendingReleaseBuffers_;
+    std::list<ReleaseRecord> pendingReleaseBuffers_;
     tbb::spin_mutex pendingReleaseBuffersMutex_;
 };
 
-inline UnsynchronizedBufferAccess UnsynchronizedBufferAccess::CreateNone()
+inline Buffer Buffer::FromRHIObject(RHI::BufferPtr rhiBuffer)
 {
-    UnsynchronizedBufferAccess ret;
-    ret.SetNone();
+    Buffer ret;
+    ret.rhiBuffer_ = std::move(rhiBuffer);
+    ret.size_ = ret.rhiBuffer_->GetDesc().size;
     return ret;
-}
-
-inline UnsynchronizedBufferAccess UnsynchronizedBufferAccess::CreateRegular(
-    RHI::PipelineStageFlag stages, RHI::ResourceAccessFlag accesses)
-{
-    UnsynchronizedBufferAccess ret;
-    ret.SetRegular(stages, accesses);
-    return ret;
-}
-
-inline UnsynchronizedBufferAccess::Type UnsynchronizedBufferAccess::GetType() const
-{
-    return type_;
-}
-
-inline void UnsynchronizedBufferAccess::SetNone()
-{
-    type_ = None;
-    data_ = NoneData{};
-}
-
-inline void UnsynchronizedBufferAccess::SetRegular(
-    RHI::PipelineStageFlag stages, RHI::ResourceAccessFlag accesses)
-{
-    type_ = Regular;
-    data_ = RegularData{ stages, accesses };
-}
-
-inline const UnsynchronizedBufferAccess::NoneData &UnsynchronizedBufferAccess::GetNoneData() const
-{
-    assert(type_ == None);
-    return data_.As<NoneData>();
-}
-
-inline const UnsynchronizedBufferAccess::RegularData &UnsynchronizedBufferAccess::GetRegularData() const
-{
-    assert(type_ == Regular);
-    return data_.As<RegularData>();
 }
 
 inline Buffer::~Buffer()
@@ -205,6 +159,11 @@ inline void Buffer::Swap(Buffer &other) noexcept
     std::swap(unsyncAccess_, other.unsyncAccess_);
 }
 
+inline void Buffer::AllowReuse(bool allow)
+{
+    allowReuse_ = allow;
+}
+
 inline size_t Buffer::GetSize() const
 {
     return size_;
@@ -220,14 +179,14 @@ inline Buffer::operator const ReferenceCountedPtr<RHI::Buffer>&() const
     return rhiBuffer_;
 }
 
-inline RHI::BufferSRVPtr Buffer::GetSRV(const RHI::BufferSRVDesc &desc)
+inline BufferSRV Buffer::GetSRV(const RHI::BufferSRVDesc &desc)
 {
-    return rhiBuffer_->CreateSRV(desc);
+    return { shared_from_this(), rhiBuffer_->CreateSRV(desc)};
 }
 
-inline RHI::BufferUAVPtr Buffer::GetUAV(const RHI::BufferUAVDesc &desc)
+inline BufferUAV Buffer::GetUAV(const RHI::BufferUAVDesc &desc)
 {
-    return rhiBuffer_->CreateUAV(desc);
+    return { shared_from_this(), rhiBuffer_->CreateUAV(desc) };
 }
 
 inline UnsynchronizedBufferAccess &Buffer::GetUnsyncAccess()

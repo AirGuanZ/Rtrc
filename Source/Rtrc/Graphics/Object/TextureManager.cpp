@@ -19,7 +19,7 @@ TextureManager::TextureManager(HostSynchronizer &hostSync, RHI::DevicePtr device
 {
     batchReleaser_.SetPreNewBatchCallback([this]
     {
-        std::list<Texture2D> pendingReleaseTextures;
+        std::list<ReleaseRecord> pendingReleaseTextures;
         {
             std::lock_guard lock(pendingReleaseTexturesMutex_);
             pendingReleaseTextures.swap(pendingReleaseTextures_);
@@ -93,7 +93,7 @@ RC<Texture2D> TextureManager::CreateTexture2D(
 
     // Reuse
 
-    allowReuse &= batchReleaser_.GetHostSynchronizer().IsInRenderThread();
+    allowReuse &= batchReleaser_.GetHostSynchronizer().IsInOwnerThread();
     if(allowReuse)
     {
         ReuseRecord reuseRecord = { -1, {} };
@@ -133,34 +133,28 @@ void TextureManager::GC()
 
 void TextureManager::_rtrcReleaseInternal(Texture2D &tex)
 {
-    if(batchReleaser_.GetHostSynchronizer().IsInRenderThread())
+    if(batchReleaser_.GetHostSynchronizer().IsInOwnerThread())
     {
-        ReleaseImpl(tex);
+        ReleaseImpl({ std::move(tex.rhiTexture_), std::move(tex.unsyncAccesses_), tex.allowReuse_ });
     }
     else
     {
         std::lock_guard lock(pendingReleaseTexturesMutex_);
-        pendingReleaseTextures_.push_back(std::move(tex));
+        pendingReleaseTextures_.push_back({ std::move(tex.rhiTexture_), std::move(tex.unsyncAccesses_), tex.allowReuse_ });
     }
 }
 
-void TextureManager::ReleaseImpl(Texture2D &tex)
+void TextureManager::ReleaseImpl(ReleaseRecord tex)
 {
-    assert(tex.manager_ == this);
-    assert(tex.rhiTexture_);
-
-    ReleaseRecord tempReleaseRecord;
-    tempReleaseRecord.rhiTexture = std::move(tex.rhiTexture_);
-    tempReleaseRecord.unsyncAccesses = std::move(tex.unsyncAccesses_);
-    tex.manager_ = nullptr;
-    tex.rhiTexture_ = {};
-    tex.unsyncAccesses_ = {};
-    auto recordIt = batchReleaser_.AddToCurrentBatch(std::move(tempReleaseRecord));
-
+    const bool allowReuse = tex.allowReuse;
+    auto recordIt = batchReleaser_.AddToCurrentBatch(std::move(tex));
     const ReleaseRecord &releaseRecord = *recordIt;
     const int batchIndex = batchReleaser_.GetCurrentBatchIndex();
-    std::lock_guard lock(reuseRecordsMutex_);
-    reuseRecords_.insert({ releaseRecord.rhiTexture->GetDesc(), { batchIndex, recordIt } });
+    if(allowReuse)
+    {
+        std::lock_guard lock(reuseRecordsMutex_);
+        reuseRecords_.insert({ releaseRecord.rhiTexture->GetDesc(), { batchIndex, recordIt } });
+    }
 }
 
 RTRC_END

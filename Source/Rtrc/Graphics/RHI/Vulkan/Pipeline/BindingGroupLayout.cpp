@@ -1,3 +1,5 @@
+#include <mutex>
+
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/BindingGroup.h>
 #include <Rtrc/Utils/ScopeGuard.h>
 
@@ -56,6 +58,7 @@ VkDescriptorSetLayout VulkanBindingGroupLayout::GetLayout() const
 
 void VulkanBindingGroupLayout::ReleaseSet(VkDescriptorSet set) const
 {
+    std::lock_guard lock(poolMutex_);
     freeSets_.push_back(set);
 }
 
@@ -121,6 +124,7 @@ bool VulkanBindingGroupLayout::IsSlotRWTexture3DArray(int index) const
 
 Ptr<BindingGroup> VulkanBindingGroupLayout::CreateBindingGroupImpl() const
 {
+    std::lock_guard lock(poolMutex_);
     if(freeSets_.empty())
     {
         AllocateNewDescriptorPool();

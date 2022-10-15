@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <map>
 
+#include <Rtrc/Graphics/Object/RenderContext.h>
 #include <Rtrc/Graphics/Shader/Shader.h>
 #include <Rtrc/Utils/SharedObjectPool.h>
 
@@ -24,7 +25,7 @@ public:
         std::string CSEntry;
     };
 
-    void SetDevice(RHI::DevicePtr device);
+    void SetRenderContext(RenderContext *renderContext);
     void SetRootDirectory(std::string_view rootDir);
 
     RC<Shader> Compile(
@@ -33,8 +34,6 @@ public:
     std::string Preprocess(std::string source, std::string filename, const Macros &macros);
 
     std::string GetMappedFilename(const std::string &filename);
-
-    RC<BindingGroupLayout> GetBindingGroupLayout(const RHI::BindingGroupLayoutDesc &desc);
 
 private:
 
@@ -51,11 +50,8 @@ private:
         std::vector<std::string>                 &outBindingGroupNames,
         Box<ShaderReflection>                    &outputRefl);
 
-    RHI::DevicePtr rhiDevice_;
+    RenderContext *renderContext_ = nullptr;
     std::filesystem::path rootDir_;
-
-    SharedObjectPool<RHI::BindingGroupLayoutDesc, BindingGroupLayout, true> bindingGroupLayoutPool_;
-    SharedObjectPool<RHI::BindingLayoutDesc, Shader::BindingLayout, true> bindingLayoutPool_;
 };
 
 RTRC_END

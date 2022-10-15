@@ -1,4 +1,5 @@
 #include <ranges>
+#include <shared_mutex>
 
 #include <Rtrc/Graphics/RHI/Vulkan/Context/Device.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferSRV.h>
@@ -122,6 +123,16 @@ VkBuffer VulkanBuffer::GetNativeBuffer() const
 
 VkBufferView VulkanBuffer::CreateBufferView(const ViewKey &key) const
 {
+    {
+        std::shared_lock lock(viewsMutex_);
+        if(auto it = views_.find(key); it != views_.end())
+        {
+            return it->second;
+        }
+    }
+
+    std::unique_lock lock(viewsMutex_);
+
     if(auto it = views_.find(key); it != views_.end())
     {
         return it->second;

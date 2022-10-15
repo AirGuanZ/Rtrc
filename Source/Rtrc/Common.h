@@ -108,4 +108,25 @@ constexpr size_t GetMemberOffset(M C::*p)
 template<typename T> requires std::is_scoped_enum_v<T>
 constexpr size_t EnumValueCount = static_cast<size_t>(T::Count);
 
+class WithUniqueObjectID
+{
+public:
+
+    using UniqueObjectID = uint64_t;
+
+    WithUniqueObjectID()
+    {
+        static std::atomic<UniqueObjectID> nextID = 1;
+        uniqueObjectID_ = nextID++;
+    }
+
+    WithUniqueObjectID(const WithUniqueObjectID &) : WithUniqueObjectID() { }
+
+    WithUniqueObjectID &operator=(const WithUniqueObjectID &) { return *this; }
+
+private:
+
+    UniqueObjectID uniqueObjectID_;
+};
+
 RTRC_END

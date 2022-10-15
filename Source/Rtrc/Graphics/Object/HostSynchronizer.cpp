@@ -44,7 +44,7 @@ HostSynchronizer::HostSynchronizer(RHI::DevicePtr device, RHI::QueuePtr queue)
 
 HostSynchronizer::~HostSynchronizer()
 {
-    WaitIdle();
+    assert(frameRecords_.empty());
 }
 
 const RHI::QueuePtr &HostSynchronizer::GetQueue() const
@@ -52,19 +52,19 @@ const RHI::QueuePtr &HostSynchronizer::GetQueue() const
     return queue_;
 }
 
-void HostSynchronizer::SetRenderThreadID(std::thread::id id)
+void HostSynchronizer::SetOwnerThreadID(std::thread::id id)
 {
     renderThreadID_ = id;
 }
 
-std::thread::id HostSynchronizer::GetRenderThreadID() const
+std::thread::id HostSynchronizer::GetOwnerThreadID() const
 {
     return renderThreadID_;
 }
 
-bool HostSynchronizer::IsInRenderThread() const
+bool HostSynchronizer::IsInOwnerThread() const
 {
-    return std::this_thread::get_id() == GetRenderThreadID();
+    return std::this_thread::get_id() == GetOwnerThreadID();
 }
 
 void HostSynchronizer::OnCurrentFrameComplete(std::function<void()> callback)
@@ -82,7 +82,17 @@ void HostSynchronizer::OnCurrentFrameComplete(std::function<void()> callback)
 void HostSynchronizer::WaitIdle()
 {
     queue_->WaitIdle();
+    nonLoopCallbacks_->ExecuteAndClear();
+    for(auto &f : frameRecords_)
+    {
+        f->callbacks.ExecuteAndClear();
+    }
     OnNewBatch();
+}
+
+void HostSynchronizer::End()
+{
+    queue_->WaitIdle();
     nonLoopCallbacks_->ExecuteAndClear();
     for(auto &f : frameRecords_)
     {
@@ -111,13 +121,19 @@ void HostSynchronizer::EndRenderLoop()
     frameRecords_.clear();
 }
 
-void HostSynchronizer::BeginFrame()
+void HostSynchronizer::WaitForOldFrame()
 {
     frameIndex_ = (frameIndex_ + 1) % static_cast<int>(frameRecords_.size());
     auto &frame = frameRecords_[frameIndex_];
     frame->fence->Wait();
     frame->callbacks.ExecuteAndClear();
     OnNewBatch();
+}
+
+void HostSynchronizer::BeginNewFrame()
+{
+    auto &frame = frameRecords_[frameIndex_];
+    frame->fence->Reset();
 }
 
 const RHI::FencePtr &HostSynchronizer::GetFrameFence()

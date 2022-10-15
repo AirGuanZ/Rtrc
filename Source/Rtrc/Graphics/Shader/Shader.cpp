@@ -14,9 +14,9 @@ const RHI::RawShaderPtr &Shader::GetRawShader(RHI::ShaderStage stage) const
     Unreachable();
 }
 
-const RHI::BindingLayoutPtr &Shader::GetRHIBindingLayout() const
+const RC<BindingLayout> &Shader::GetBindingLayout() const
 {
-    return bindingLayout_->rhiPtr;
+    return bindingLayout_;
 }
 
 Span<ShaderIOVar> Shader::GetInputVariables() const

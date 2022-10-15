@@ -12,7 +12,8 @@ class Shader : public Uncopyable
 public:
 
     const RHI::RawShaderPtr &GetRawShader(RHI::ShaderStage stage) const;
-    const RHI::BindingLayoutPtr &GetRHIBindingLayout() const;
+
+    const RC<BindingLayout> &GetBindingLayout() const;
 
     Span<ShaderIOVar> GetInputVariables() const;
     Span<ShaderConstantBuffer> GetConstantBuffers() const;
@@ -28,11 +29,6 @@ public:
 private:
 
     friend class ShaderCompiler;
-
-    struct BindingLayout
-    {
-        RHI::BindingLayoutPtr rhiPtr;
-    };
 
     RHI::RawShaderPtr VS_;
     RHI::RawShaderPtr FS_;

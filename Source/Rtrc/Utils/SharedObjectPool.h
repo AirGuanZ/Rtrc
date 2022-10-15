@@ -22,6 +22,7 @@ namespace SharedObjectPoolDetail
     class SharedObjectPoolMutex<true>
     {
     protected:
+
         std::shared_mutex mutex_;
     };
 

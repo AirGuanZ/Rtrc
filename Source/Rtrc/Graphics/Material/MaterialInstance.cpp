@@ -1,3 +1,5 @@
+#include "MaterialInstance.h"
+
 #include <Rtrc/Graphics/Material/MaterialInstance.h>
 
 RTRC_BEGIN
@@ -58,9 +60,9 @@ RTRC_IMPL_SET(const Vector2i &, Int2)
 RTRC_IMPL_SET(const Vector3i &, Int3)
 RTRC_IMPL_SET(const Vector4i &, Int4)
 
-RTRC_IMPL_SET(const RHI::TextureSRVPtr &, Texture2D)
-RTRC_IMPL_SET(const RHI::BufferSRVPtr &,  Buffer)
-RTRC_IMPL_SET(const RHI::SamplerPtr &,    Sampler)
+RTRC_IMPL_SET(const TextureSRV &, Texture2D)
+RTRC_IMPL_SET(const BufferSRV  &, Buffer)
+RTRC_IMPL_SET(RC<Sampler>,        Sampler)
 
 #undef RTRC_IMPL_SET
 
@@ -75,36 +77,35 @@ RC<Shader> SubMaterialInstance::GetShader(KeywordSet::ValueMask keywordMask)
 }
 
 void SubMaterialInstance::BindGraphicsProperties(
-    const KeywordValueContext &keywordValues, const RHI::CommandBufferPtr &commandBuffer)
+    const KeywordValueContext &keywordValues, const CommandBuffer &commandBuffer) const
 {
     KeywordSet::ValueMask mask = subMaterial_->ExtractKeywordValueMask(keywordValues);
     BindGraphicsProperties(mask, commandBuffer);
 }
 
 void SubMaterialInstance::BindGraphicsProperties(
-    KeywordSet::ValueMask mask, const RHI::CommandBufferPtr &commandBuffer)
+    KeywordSet::ValueMask mask, const CommandBuffer &commandBuffer) const
 {
-    BindPropertiesImpl<true>(mask, commandBuffer);
+    BindPropertiesImpl<true>(mask, commandBuffer.GetRHIObject());
 }
 
 void SubMaterialInstance::BindComputeProperties(
-    const KeywordValueContext &keywordValues, const RHI::CommandBufferPtr &commandBuffer)
+    const KeywordValueContext &keywordValues, const CommandBuffer &commandBuffer) const
 {
     KeywordSet::ValueMask mask = subMaterial_->ExtractKeywordValueMask(keywordValues);
     BindComputeProperties(mask, commandBuffer);
 }
 
 void SubMaterialInstance::BindComputeProperties(
-    KeywordSet::ValueMask mask, const RHI::CommandBufferPtr &commandBuffer)
+    KeywordSet::ValueMask mask, const CommandBuffer &commandBuffer) const
 {
-    BindPropertiesImpl<false>(mask, commandBuffer);
+    BindPropertiesImpl<false>(mask, commandBuffer.GetRHIObject());
 }
 
 template <bool Graphics>
-void SubMaterialInstance::BindPropertiesImpl(KeywordSet::ValueMask mask, const RHI::CommandBufferPtr &commandBuffer)
+void SubMaterialInstance::BindPropertiesImpl(
+    KeywordSet::ValueMask mask, const RHI::CommandBufferPtr &commandBuffer) const
 {
-    Record &record = keywordMaskToRecord_[mask];
-
     auto subLayout = subMaterial_->GetPropertyLayout(mask);
     const int bindingGroupIndex = subLayout->GetBindingGroupIndex();
     if(bindingGroupIndex < 0)
@@ -112,13 +113,35 @@ void SubMaterialInstance::BindPropertiesImpl(KeywordSet::ValueMask mask, const R
         return;
     }
 
+    const Record &record = keywordMaskToRecord_[mask];
+    auto bind = [&]
+    {
+        if constexpr(Graphics)
+        {
+            commandBuffer->BindGroupToGraphicsPipeline(bindingGroupIndex, record.bindingGroup->GetRHIObject());
+        }
+        else
+        {
+            commandBuffer->BindGroupToComputePipeline(bindingGroupIndex, record.bindingGroup->GetRHIObject());
+        }
+    };
+
+    {
+        std::shared_lock readLock(record.mutex);
+        if(record.bindingGroup)
+        {
+            bind();
+            return;
+        }
+    }
+
+    std::unique_lock writeLock(record.mutex);
     if(!record.bindingGroup)
     {
         const size_t cbSize = subLayout->GetConstantBufferSize();
         if(cbSize && !record.constantBuffer)
         {
-            record.constantBuffer = MakeBox<PersistentConstantBuffer>(
-                resourceManager_->AllocatePersistentConstantBuffer(cbSize));
+            record.constantBuffer = renderContext_->CreateConstantBuffer();
         }
 
         auto &properties = parentMaterialInstance_->GetPropertySheet();
@@ -132,20 +155,12 @@ void SubMaterialInstance::BindPropertiesImpl(KeywordSet::ValueMask mask, const R
 
         auto &bindingGroupLayout = subLayout->GetBindingGroupLayout();
         record.bindingGroup = bindingGroupLayout->CreateBindingGroup();
-        subLayout->FillBindingGroup(*record.bindingGroup, properties.GetResources(), *record.constantBuffer);
+        subLayout->FillBindingGroup(*record.bindingGroup, properties.GetResources(), record.constantBuffer);
     }
-
-    if constexpr(Graphics)
-    {
-        commandBuffer->BindGroupToGraphicsPipeline(bindingGroupIndex, record.bindingGroup->GetRHIBindingGroup());
-    }
-    else
-    {
-        commandBuffer->BindGroupToComputePipeline(bindingGroupIndex, record.bindingGroup->GetRHIBindingGroup());
-    }
+    bind();
 }
 
-MaterialInstance::MaterialInstance(RC<const Material> material, ResourceManager *resourceManager)
+MaterialInstance::MaterialInstance(RC<const Material> material, RenderContext *renderContext)
     : parentMaterial_(std::move(material)), properties_(parentMaterial_->GetPropertyLayout())
 {
     auto subMaterials = parentMaterial_->GetSubMaterials();
@@ -154,10 +169,11 @@ MaterialInstance::MaterialInstance(RC<const Material> material, ResourceManager 
     {
         auto &subMat = subMaterials[i];
         auto subMatInst = MakeBox<SubMaterialInstance>();
-        subMatInst->resourceManager_ = resourceManager;
+        subMatInst->renderContext_ = renderContext;
         subMatInst->parentMaterialInstance_ = this;
         subMatInst->subMaterial_ = subMat;
-        subMatInst->keywordMaskToRecord_.resize(1 << subMat->GetShaderTemplate()->GetKeywordSet().GetTotalBitCount());
+        subMatInst->recordCount_ = 1 << subMat->GetShaderTemplate()->GetKeywordSet().GetTotalBitCount();
+        subMatInst->keywordMaskToRecord_ = std::make_unique<SubMaterialInstance::Record[]>(subMatInst->recordCount_);
         subMaterialInstances_[i] = std::move(subMatInst);
     }
 }
@@ -177,8 +193,9 @@ void MaterialInstance::InvalidateBindingGroups()
 {
     for(auto &inst : subMaterialInstances_)
     {
-        for(auto &record : inst->keywordMaskToRecord_)
+        for(int i = 0; i < inst->recordCount_; ++i)
         {
+            auto &record = inst->keywordMaskToRecord_[i];
             record.bindingGroup = nullptr;
         }
     }
@@ -188,8 +205,9 @@ void MaterialInstance::InvalidateConstantBuffers()
 {
     for(auto &inst : subMaterialInstances_)
     {
-        for(auto &record : inst->keywordMaskToRecord_)
+        for(int i = 0; i < inst->recordCount_; ++i)
         {
+            auto &record = inst->keywordMaskToRecord_[i];
             record.bindingGroup = nullptr;
             record.isConstantBufferDirty = true;
         }

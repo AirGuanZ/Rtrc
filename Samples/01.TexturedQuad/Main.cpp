@@ -2,37 +2,13 @@
 
 #include <Rtrc/Rtrc.h>
 
-#include "Rtrc/Graphics/Material/Material.h"
-#include "Rtrc/Graphics/Material/MaterialInstance.h"
-
-#include "Rtrc/Graphics/Object/ConstantBuffer.h"
-
 using namespace Rtrc;
-
-cbuffer_begin(S)
-    cbuffer_var(float, x)
-cbuffer_end()
-
-cbuffer_begin(Test)
-    cbuffer_var(float, a)
-    cbuffer_var(Vector2f[3], b)
-    cbuffer_var(S, c)
-    cbuffer_var(float, d)
-    cbuffer_var(Vector2f, e)
-cbuffer_end()
 
 void Run()
 {
-    fmt::print("{:<30} {:<5} {:<13} {:<15}\n", "type", "name", "host offset", "device offset");
+    constexpr int WIDTH = 800, HEIGHT = 800;
 
-    FrameConstantBuffer::ForEachFlattenMember<Test>([&]<typename T>(const char *name, size_t hostOffset, size_t offset)
-    {
-        fmt::print("{:<30} {:<5} {:<13} {:<15}\n", typeid(T).name(), name, hostOffset, offset);
-    });
-
-    constexpr int WIDTH = 800, HEIGHT = 800, IMAGE_COUNT = 3;
-
-    // window & device
+    // render context
 
     auto window = WindowBuilder()
         .SetSize(WIDTH, HEIGHT)
@@ -47,41 +23,14 @@ void Run()
         .debugMode = RTRC_DEBUG
     });
 
-    auto rawDevice = instance->CreateDevice();
-    ResourceManager resourceManager(rawDevice, IMAGE_COUNT);
-    auto device = resourceManager.GetDeviceWithFrameResourceProtection();
-
-    auto graphicsQueue = device->GetQueue(RHI::QueueType::Graphics);
-
-    // swapchain
-
-    RHI::Ptr<RHI::Swapchain> swapchain;
-
-    auto createSwapchain = [&]
-    {
-        device->WaitIdle();
-        swapchain.Reset();
-        swapchain = device->CreateSwapchain(RHI::SwapchainDesc
-        {
-            .format = RHI::Format::B8G8R8A8_UNorm,
-            .imageCount = IMAGE_COUNT
-        }, window);
-    };
-
-    createSwapchain();
-
-    window.Attach([&](const WindowResizeEvent &e)
-    {
-        if(e.width > 0 && e.height > 0)
-        {
-            createSwapchain();
-        }
-    });
+    auto device = instance->CreateDevice();
+    RenderContext renderContext(device, &window);
+    auto graphicsQueue = renderContext.GetMainQueue();
 
     // pipeline
 
     MaterialManager materialManager;
-    materialManager.SetResourceManager(&resourceManager);
+    materialManager.SetRenderContext(&renderContext);
     materialManager.SetRootDirectory("Asset/01.TexturedQuad/");
 
     KeywordValueContext keywords;
@@ -93,16 +42,12 @@ void Run()
 
     const int bindingGroupIndex = shader->GetBindingGroupIndexByName("TestGroup");
     auto bindingGroupLayout = shader->GetBindingGroupLayoutByIndex(bindingGroupIndex);
-    auto bindingLayout = shader->GetRHIBindingLayout();
+    auto bindingLayout = shader->GetBindingLayout();
 
-    auto pipeline = RHI::GraphicsPipelineBuilder()
-        .SetVertexShader(shader->GetRawShader(RHI::ShaderStage::VertexShader))
-        .SetFragmentShader(shader->GetRawShader(RHI::ShaderStage::FragmentShader))
-        .AddColorAttachment(swapchain->GetRenderTargetDesc().format)
-        .SetBindingLayout(bindingLayout)
-        .SetViewports(1)
-        .SetScissors(1)
-        .CreatePipeline(device);
+    auto pipeline = renderContext.CreateGraphicsPipeline({
+        .shader = shader,
+        .colorAttachmentFormats = { renderContext.GetRenderTargetDesc().format }
+    });
 
     // uploader
 
@@ -121,22 +66,18 @@ void Run()
         Vector2f(+0.8f, -0.8f)
     };
 
-    auto vertexPositionBuffer = device->CreateBuffer(RHI::BufferDesc
-    {
-        .size           = sizeof(vertexPositionData),
-        .usage          = RHI::BufferUsage::ShaderBuffer,
-        .hostAccessType = RHI::BufferHostAccessType::None
-    });
+    auto vertexPositionBuffer = renderContext.CreateBuffer(
+        sizeof(vertexPositionData), RHI::BufferUsage::ShaderBuffer, RHI::BufferHostAccessType::None, false);
 
-    auto vertexPositionBufferSRV = vertexPositionBuffer->CreateSRV(RHI::BufferSRVDesc
+    auto vertexPositionBufferSRV = vertexPositionBuffer->GetSRV(RHI::BufferSRVDesc
     {
         .format = RHI::Format::R32G32_Float,
         .offset = 0,
-        .range  = sizeof(vertexPositionData)
+        .range = sizeof(vertexPositionData)
     });
 
     uploader.Upload(
-        vertexPositionBuffer, 0, sizeof(vertexPositionData), vertexPositionData.data(),
+        vertexPositionBuffer->GetRHIObject(), 0, sizeof(vertexPositionData), vertexPositionData.data(),
         graphicsQueue, RHI::PipelineStage::VertexShader, RHI::ResourceAccess::BufferRead);
 
     // vertex texcoord buffer
@@ -150,14 +91,10 @@ void Run()
         Vector2f(1.0f, 1.0f)
     };
 
-    auto vertexTexCoordBuffer = device->CreateBuffer(RHI::BufferDesc
-    {
-        .size           = sizeof(vertexTexCoordData),
-        .usage          = RHI::BufferUsage::ShaderBuffer,
-        .hostAccessType = RHI::BufferHostAccessType::None
-    });
+    auto vertexTexCoordBuffer = renderContext.CreateBuffer(
+        sizeof(vertexTexCoordData), RHI::BufferUsage::ShaderBuffer, RHI::BufferHostAccessType::None, false);
 
-    auto vertexTexCoordBufferSRV = vertexTexCoordBuffer->CreateSRV(RHI::BufferSRVDesc
+    auto vertexTexCoordBufferSRV = vertexTexCoordBuffer->GetSRV(RHI::BufferSRVDesc
     {
         .format = RHI::Format::R32G32_Float,
         .offset = 0,
@@ -165,32 +102,23 @@ void Run()
     });
 
     uploader.Upload(
-        vertexTexCoordBuffer, 0, sizeof(vertexTexCoordData), vertexTexCoordData.data(),
+        vertexTexCoordBuffer->GetRHIObject(), 0, sizeof(vertexTexCoordData), vertexTexCoordData.data(),
         graphicsQueue, RHI::PipelineStage::VertexShader, RHI::ResourceAccess::BufferRead);
 
     // main texture
 
     auto mainTexData = ImageDynamic::Load("Asset/01.TexturedQuad/MainTexture.png");
+    auto mainTex = renderContext.CreateTexture2D(
+        mainTexData.GetWidth(), mainTexData.GetHeight(), 1, 1,
+        RHI::Format::B8G8R8A8_UNorm, RHI::TextureUsage::ShaderResource | RHI::TextureUsage::TransferDst,
+        RHI::QueueConcurrentAccessMode::Concurrent, 1, false);
 
-    auto mainTex = device->CreateTexture(RHI::TextureDesc
-    {
-        .format               = RHI::Format::B8G8R8A8_UNorm,
-        .width                = mainTexData.GetWidth(),
-        .height               = mainTexData.GetHeight(),
-        .arraySize            = 1,
-        .mipLevels            = 1,
-        .sampleCount          = 1,
-        .usage                = RHI::TextureUsage::ShaderResource | RHI::TextureUsage::TransferDst,
-        .initialLayout        = RHI::TextureLayout::Undefined,
-        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
-    });
+    mainTex->GetRHIObject()->SetName("MainTexture");
 
-    mainTex->SetName("MainTexture");
-
-    auto mainTexSRV = mainTex->CreateSRV({ .isArray = true });
+    auto mainTexSRV = mainTex->GetSRV({ .isArray = true });
 
     uploadTextureAcquireBarriers.push_back(uploader.Upload(
-        mainTex, 0, 0, mainTexData,
+        mainTex->GetRHIObject(), 0, 0, mainTexData,
         graphicsQueue,
         RHI::PipelineStage::FragmentShader,
         RHI::ResourceAccess::TextureRead,
@@ -198,7 +126,7 @@ void Run()
 
     // main sampler
 
-    auto mainSampler = device->CreateSampler(RHI::SamplerDesc
+    auto mainSampler = renderContext.CreateSampler(RHI::SamplerDesc
     {
         .magFilter = RHI::FilterMode::Linear,
         .minFilter = RHI::FilterMode::Linear,
@@ -230,70 +158,60 @@ void Run()
     auto bindingGroup = bindingGroupLayout->CreateBindingGroup();
     bindingGroup->Set("VertexPositionBuffer", vertexPositionBufferSRV);
     bindingGroup->Set("VertexTexCoordBuffer", vertexTexCoordBufferSRV);
-    //bindingGroup->Set("MainTexture", mainTexSRV);
-    //bindingGroup->Set("MainSampler", mainSampler);
 
     // render graph
 
-    RG::Executer executer(&resourceManager);
+    RG::Executer executer(renderContext);
 
     // render loop
 
+    renderContext.BeginRenderLoop();
     while(!window.ShouldClose())
     {
-        Window::DoEvents();
+        if(!renderContext.BeginFrame())
+        {
+            continue;
+        }
 
         if(input.IsKeyDown(KeyCode::Escape))
         {
             window.SetCloseFlag(true);
         }
 
-        if(!window.HasFocus() || window.GetFramebufferSize().x <= 0 || window.GetFramebufferSize().y <= 0)
-        {
-            continue;
-        }
-
-        resourceManager.BeginFrame();
-
-        if(!swapchain->Acquire())
-        {
-            continue;
-        }
-
         RG::RenderGraph graph;
         graph.SetQueue(graphicsQueue);
         
-        auto renderTarget = graph.RegisterSwapchainTexture(swapchain);
+        auto renderTarget = graph.RegisterSwapchainTexture(renderContext.GetSwapchain());
 
         auto quadPass = graph.CreatePass("DrawQuad");
         quadPass->Use(renderTarget, RG::RENDER_TARGET);
         quadPass->SetCallback([&](RG::PassContext &context)
         {
-            auto rt = renderTarget->GetRHI();
-            auto commandBuffer = context.GetRHICommandBuffer();
-            commandBuffer->BeginRenderPass(RHI::RenderPassColorAttachment
+            auto rt = renderTarget->Get();
+            auto &commandBuffer = context.GetCommandBuffer();
+            commandBuffer.BeginRenderPass(ColorAttachment
             {
-                .renderTargetView = rt->CreateRTV(),
-                .loadOp           = RHI::AttachmentLoadOp::Clear,
-                .storeOp          = RHI::AttachmentStoreOp::Store,
-                .clearValue       = RHI::ColorClearValue{ 0, 1, 1, 1 }
+                .renderTargetView = rt->GetRTV().rhiRTV,
+                .loadOp           = AttachmentLoadOp::Clear,
+                .storeOp          = AttachmentStoreOp::Store,
+                .clearValue       = ColorClearValue{ 0, 1, 1, 1 }
             });
-            commandBuffer->BindPipeline(pipeline);
-            commandBuffer->BindGroupToGraphicsPipeline(bindingGroupIndex, bindingGroup->GetRHIBindingGroup());
+            commandBuffer.BindPipeline(pipeline);
+            commandBuffer.BindGraphicsGroup(bindingGroupIndex, bindingGroup);
             materialInstance->GetSubMaterialInstance(0)->BindGraphicsProperties(keywords, commandBuffer);
-            commandBuffer->SetViewports(RHI::Viewport::Create(rt));
-            commandBuffer->SetScissors(RHI::Scissor::Create(rt));
-            commandBuffer->Draw(6, 1, 0, 0);
-            commandBuffer->EndRenderPass();
+            commandBuffer.SetViewports(rt->GetViewport());
+            commandBuffer.SetScissors(rt->GetScissor());
+            commandBuffer.Draw(6, 1, 0, 0);
+            commandBuffer.EndRenderPass();
         });
-        quadPass->SetSignalFence(resourceManager.GetFrameFence());
+        quadPass->SetSignalFence(renderContext.GetFrameFence());
 
         executer.Execute(graph);
 
-        swapchain->Present();
+        renderContext.Present();
     }
-
-    device->WaitIdle();
+    renderContext.EndRenderLoop();
+    renderContext.WaitIdle();
 }
 
 int main()

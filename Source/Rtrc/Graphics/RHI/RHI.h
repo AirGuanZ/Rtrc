@@ -538,6 +538,9 @@ struct SamplerDesc
     CompareOp compareOp;
 
     std::array<float, 4> borderColor;
+
+    auto operator<=>(const SamplerDesc &) const = default;
+    bool operator==(const SamplerDesc &) const = default;
 };
 
 struct TextureTransitionBarrier
@@ -701,7 +704,7 @@ struct GraphicsPipelineDesc
     Ptr<BindingLayout> bindingLayout;
 
     Viewports viewports;
-    Scissors scissors;
+    Scissors  scissors;
 
     std::vector<VertexInputBuffer>    vertexBuffers;
     std::vector<VertexInputAttribute> vertexAttributs;

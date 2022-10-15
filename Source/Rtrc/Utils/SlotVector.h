@@ -55,7 +55,7 @@ SlotVector<T>::SlotVector(size_t initialCapacity)
         isUsed_.resize(initialCapacity, false);
         values_.resize(initialCapacity);
         freeSlots_.resize(initialCapacity);
-        for(int i = 0; i < initialCapacity; ++i)
+        for(size_t i = 0; i < initialCapacity; ++i)
         {
             freeSlots_[i] = i;
         }
@@ -130,7 +130,7 @@ SlotVector<T>::~SlotVector()
         {
             if(isUsed_[i])
             {
-                At(i).~T();
+                At(static_cast<int>(i)).~T();
             }
         }
     }

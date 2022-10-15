@@ -3,20 +3,8 @@
 
 RTRC_RG_BEGIN
 
-Executer::Executer(
-    RHI::DevicePtr            device,
-    CommandBufferAllocator   *commandBufferAllocator,
-    TransientResourceManager *transientResourceManager)
-    : device_(std::move(device))
-    , commandBufferAllocator_(std::move(commandBufferAllocator))
-    , transientResourceManager_(std::move(transientResourceManager))
-{
-    
-}
-
-Executer::Executer(ResourceManager *frameResourceManager)
-    : Executer(
-        frameResourceManager->GetDeviceWithFrameResourceProtection(), frameResourceManager, frameResourceManager->GetTransicentResourceManager())
+Executer::Executer(RenderContext &renderContext)
+    : renderContext_(renderContext)
 {
     
 }
@@ -24,7 +12,7 @@ Executer::Executer(ResourceManager *frameResourceManager)
 void Executer::Execute(const RenderGraph &graph)
 {
     ExecutableGraph compiledResult;
-    Compiler(device_, *transientResourceManager_).Compile(graph, compiledResult);
+    Compiler(renderContext_).Compile(graph, compiledResult);
     graph.executableResource_ = &compiledResult.resources;
     Execute(compiledResult);
     graph.executableResource_ = nullptr;
@@ -34,18 +22,18 @@ void Executer::Execute(const ExecutableGraph &graph)
 {
     for(auto &section : graph.sections)
     {
-        auto commandBuffer = commandBufferAllocator_->AllocateCommandBuffer(graph.queue->GetType());
-        commandBuffer->Begin();
+        auto commandBuffer = renderContext_.CreateCommandBuffer();
+        commandBuffer.Begin();
 
         for(auto &pass : section.passes)
         {
             if(!pass.beforeBufferBarriers.empty() || !pass.beforeTextureBarriers.empty())
             {
-                commandBuffer->ExecuteBarriers(pass.beforeTextureBarriers, pass.beforeBufferBarriers);
+                commandBuffer.GetRHIObject()->ExecuteBarriers(pass.beforeTextureBarriers, pass.beforeBufferBarriers);
             }
             if(pass.name)
             {
-                commandBuffer->BeginDebugEvent(RHI::DebugLabel{ .name = *pass.name });
+                commandBuffer.GetRHIObject()->BeginDebugEvent(RHI::DebugLabel{ .name = *pass.name });
             }
             if(pass.callback)
             {
@@ -54,16 +42,16 @@ void Executer::Execute(const ExecutableGraph &graph)
             }
             if(pass.name)
             {
-                commandBuffer->EndDebugEvent();
+                commandBuffer.GetRHIObject()->EndDebugEvent();
             }
         }
 
         if(!section.afterTextureBarriers.IsEmpty())
         {
-            commandBuffer->ExecuteBarriers(section.afterTextureBarriers);
+            commandBuffer.GetRHIObject()->ExecuteBarriers(section.afterTextureBarriers);
         }
 
-        commandBuffer->End();
+        commandBuffer.End();
 
         graph.queue->Submit(
             RHI::Queue::BackBufferSemaphoreDependency
@@ -72,7 +60,7 @@ void Executer::Execute(const ExecutableGraph &graph)
                 .stages = section.waitAcquireSemaphoreStages
             },
             {},
-            commandBuffer,
+            commandBuffer.GetRHIObject(),
             RHI::Queue::BackBufferSemaphoreDependency
             {
                 .semaphore = section.signalPresentSemaphore,
@@ -86,11 +74,11 @@ void Executer::Execute(const ExecutableGraph &graph)
     {
         if(record.buffer)
         {
-            record.buffer->SetUnsynchronizedState(record.finalState);
+            record.buffer->SetUnsyncAccess(record.finalState);
         }
     }
 
-    for(auto &record : graph.resources.indexToTexture)
+    for(auto &record : graph.resources.indexToTexture2D)
     {
         if(record.texture)
         {
@@ -99,7 +87,7 @@ void Executer::Execute(const ExecutableGraph &graph)
                 auto &optionalState = record.finalState(subrsc.mipLevel, subrsc.arrayLayer);
                 if(optionalState)
                 {
-                    record.texture->SetUnsynchronizedState(subrsc.mipLevel, subrsc.arrayLayer, optionalState.value());
+                    record.texture->SetUnsyncAccess(subrsc.mipLevel, subrsc.arrayLayer, *optionalState);
                 }
             }
         }

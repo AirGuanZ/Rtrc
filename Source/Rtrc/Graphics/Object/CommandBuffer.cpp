@@ -1,8 +1,8 @@
 #include <shared_mutex>
 
+#include <Rtrc/Graphics/Object/BufferManager.h>
+#include <Rtrc/Graphics/Material/MaterialInstance.h>
 #include <Rtrc/Graphics/Object/CommandBuffer.h>
-
-#include "BufferManager.h"
 
 RTRC_BEGIN
 
@@ -41,6 +41,12 @@ void CommandBuffer::Swap(CommandBuffer &other) noexcept
     std::swap(threadID_, other.threadID_);
 }
 
+const RHI::CommandBufferPtr &CommandBuffer::GetRHIObject() const
+{
+    CheckThreadID();
+    return rhiCommandBuffer_;
+}
+
 void CommandBuffer::Begin()
 {
     manager_->_rtrcAllocateInternal(*this);
@@ -58,6 +64,53 @@ void CommandBuffer::CopyBuffer(Buffer &dst, size_t dstOffset, const Buffer &src,
 {
     CheckThreadID();
     rhiCommandBuffer_->CopyBuffer(dst.GetRHIObject(), dstOffset, src.GetRHIObject(), srcOffset, size);
+}
+
+void CommandBuffer::BeginRenderPass(Span<ColorAttachment> colorAttachments)
+{
+    CheckThreadID();
+    rhiCommandBuffer_->BeginRenderPass(colorAttachments);
+}
+
+void CommandBuffer::EndRenderPass()
+{
+    CheckThreadID();
+    rhiCommandBuffer_->EndRenderPass();
+}
+
+void CommandBuffer::BindPipeline(const RC<GraphicsPipeline> &graphicsPipeline)
+{
+    CheckThreadID();
+    rhiCommandBuffer_->BindPipeline(graphicsPipeline->GetRHIObject());
+}
+
+void CommandBuffer::BindGraphicsGroup(int index, const RC<BindingGroup> &group)
+{
+    CheckThreadID();
+    rhiCommandBuffer_->BindGroupToGraphicsPipeline(index, group->GetRHIObject());
+}
+
+void CommandBuffer::BindGraphicsSubMaterial(const SubMaterialInstance *subMatInst, const KeywordValueContext &keywords)
+{
+    subMatInst->BindGraphicsProperties(keywords, *this);
+}
+
+void CommandBuffer::SetViewports(Span<Viewport> viewports)
+{
+    CheckThreadID();
+    rhiCommandBuffer_->SetViewports(viewports);
+}
+
+void CommandBuffer::SetScissors(Span<Scissor> scissors)
+{
+    CheckThreadID();
+    rhiCommandBuffer_->SetScissors(scissors);
+}
+
+void CommandBuffer::Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance)
+{
+    CheckThreadID();
+    rhiCommandBuffer_->Draw(vertexCount, instanceCount, firstVertex, firstInstance);
 }
 
 CommandBufferManager::CommandBufferManager(HostSynchronizer &hostSync, RHI::DevicePtr device)
@@ -158,7 +211,7 @@ void CommandBufferManager::_rtrcAllocateInternal(CommandBuffer &cmdBuf)
 void CommandBufferManager::_rtrcFreeInternal(CommandBuffer &cmdBuf)
 {
     assert(cmdBuf.manager_ == this);
-    assert(!cmdBuf.rhiCommandBuffer_);
+    assert(cmdBuf.rhiCommandBuffer_);
     --cmdBuf.pool_->activeUserCount;
     cmdBuf.rhiCommandBuffer_ = {};
     cmdBuf.pool_ = {};

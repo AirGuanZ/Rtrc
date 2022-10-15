@@ -7,7 +7,7 @@ RTRC_BEGIN
 
 void Buffer::Upload(const void *data, size_t offset, size_t size)
 {
-    if(unsyncAccess_.GetType() != UnsynchronizedBufferAccess::None)
+    if(unsyncAccess_.stages != RHI::PipelineStage::None || unsyncAccess_.accesses != RHI::ResourceAccess::None)
     {
         throw Exception("Buffer must be externally synchronized before calling Buffer::Upload");
     }
@@ -28,14 +28,14 @@ BufferManager::BufferManager(HostSynchronizer &hostSync, RHI::DevicePtr device)
 {
     batchReleaser_.SetPreNewBatchCallback([this]
     {
-        std::list<Buffer> pendingReleaseBuffers;
+        std::list<ReleaseRecord> pendingReleaseBuffers;
         {
             std::lock_guard lock(pendingReleaseBuffersMutex_);
             pendingReleaseBuffers.swap(pendingReleaseBuffers_);
         }
         for(auto &b : pendingReleaseBuffers)
         {
-            ReleaseImpl(b);
+            ReleaseImpl(std::move(b));
         }
     });
 
@@ -74,7 +74,7 @@ RC<Buffer> BufferManager::CreateBuffer(
         .hostAccessType = hostAccess
     };
 
-    allowReuse &= batchReleaser_.GetHostSynchronizer().IsInRenderThread();
+    allowReuse &= batchReleaser_.GetHostSynchronizer().IsInOwnerThread();
     if(allowReuse)
     {
         ReuseRecord reuseRecord = { -1, {} };
@@ -116,34 +116,28 @@ void BufferManager::GC()
 
 void BufferManager::_rtrcReleaseInternal(Buffer &buf)
 {
-    if(batchReleaser_.GetHostSynchronizer().IsInRenderThread())
+    if(batchReleaser_.GetHostSynchronizer().IsInOwnerThread())
     {
-        ReleaseImpl(buf);
+        ReleaseImpl(ReleaseRecord{ std::move(buf.rhiBuffer_), buf.unsyncAccess_, buf.allowReuse_ });
     }
     else
     {
         std::lock_guard lock(pendingReleaseBuffersMutex_);
-        pendingReleaseBuffers_.push_back(std::move(buf));
+        pendingReleaseBuffers_.push_back({ std::move(buf.rhiBuffer_), buf.unsyncAccess_, buf.allowReuse_ });
     }
 }
 
-void BufferManager::ReleaseImpl(Buffer &buf)
+void BufferManager::ReleaseImpl(ReleaseRecord buf)
 {
-    assert(buf.manager_ == this);
-    assert(buf.rhiBuffer_);
-
-    ReleaseRecord tempReleaseRecord;
-    tempReleaseRecord.rhiBuffer = std::move(buf.rhiBuffer_);
-    tempReleaseRecord.unsyncAccess = buf.unsyncAccess_;
-    buf.manager_ = nullptr;
-    buf.rhiBuffer_ = {};
-    buf.unsyncAccess_ = {};
-    auto recordIt = batchReleaser_.AddToCurrentBatch(std::move(tempReleaseRecord));
-
+    const bool allowReuse = buf.allowReuse;
+    auto recordIt = batchReleaser_.AddToCurrentBatch(std::move(buf));
     const ReleaseRecord &releaseRecord = *recordIt;
     const int batchIndex = batchReleaser_.GetCurrentBatchIndex();
-    std::lock_guard lock(reuseRecordsMutex_);
-    reuseRecords_.insert({ releaseRecord.rhiBuffer->GetDesc(), { batchIndex, recordIt } });
+    if(allowReuse)
+    {
+        std::lock_guard lock(reuseRecordsMutex_);
+        reuseRecords_.insert({ releaseRecord.rhiBuffer->GetDesc(), { batchIndex, recordIt } });
+    }
 }
 
 RTRC_END

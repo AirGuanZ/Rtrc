@@ -3,45 +3,45 @@
 
 RTRC_RG_BEGIN
 
-RHI::BufferPtr BufferResource::GetRHI() const
+RC<Buffer> BufferResource::Get() const
 {
     if(!graph_->executableResource_)
     {
         throw Exception("BufferResource::GetRHI can not be called during graph execution");
     }
-    return graph_->executableResource_->indexToBuffer[GetResourceIndex()].buffer->GetRHIBuffer();
+    return graph_->executableResource_->indexToBuffer[GetResourceIndex()].buffer;
 }
 
-RHI::TexturePtr TextureResource::GetRHI() const
+RC<Texture2D> TextureResource::Get() const
 {
     if(!graph_->executableResource_)
     {
         throw Exception("TextureResource::GetRHI can not be called during graph execution");
     }
-    return graph_->executableResource_->indexToTexture[GetResourceIndex()].texture->GetRHITexture();
+    return graph_->executableResource_->indexToTexture2D[GetResourceIndex()].texture;
 }
 
-const RHI::CommandBufferPtr &PassContext::GetRHICommandBuffer()
+CommandBuffer &PassContext::GetCommandBuffer()
 {
     return commandBuffer_;
 }
 
-RHI::BufferPtr PassContext::GetRHIBuffer(const BufferResource *resource)
+RC<Buffer> PassContext::GetBuffer(const BufferResource *resource)
 {
     auto &result = resources_.indexToBuffer[resource->GetResourceIndex()].buffer;
     assert(result);
-    return result->GetRHIBuffer();
+    return result;
 }
 
-RHI::TexturePtr PassContext::GetRHITexture(const TextureResource *resource)
+RC<Texture2D> PassContext::GetTexture2D(const TextureResource *resource)
 {
-    auto &result = resources_.indexToTexture[resource->GetResourceIndex()].texture;
+    auto &result = resources_.indexToTexture2D[resource->GetResourceIndex()].texture;
     assert(result);
-    return result->GetRHITexture();
+    return result;
 }
 
-PassContext::PassContext(const ExecutableResources &resources, RHI::CommandBufferPtr commandBuffer)
-    : resources_(resources), commandBuffer_(std::move(commandBuffer))
+PassContext::PassContext(const ExecutableResources &resources, CommandBuffer &commandBuffer)
+    : resources_(resources), commandBuffer_(commandBuffer)
 {
     
 }
@@ -90,7 +90,7 @@ Pass *Pass::Use(
         usageMap = TextureUsage(texture->GetMipLevels(), texture->GetArraySize());
     }
     assert(!usageMap(subresource.mipLevel, subresource.arrayLayer).has_value());
-    usageMap(subresource.mipLevel, subresource.arrayLayer) = SubTexUsage{ layout, stages, accesses };
+    usageMap(subresource.mipLevel, subresource.arrayLayer) = SubTexUsage::Create(stages, accesses, layout);
     return this;
 }
 
@@ -161,7 +161,7 @@ TextureResource *RenderGraph::CreateTexture2D(const RHI::TextureDesc &desc)
     return textures_.back().get();
 }
 
-BufferResource *RenderGraph::RegisterBuffer(RC<StatefulBuffer> buffer)
+BufferResource *RenderGraph::RegisterBuffer(RC<Buffer> buffer)
 {
     const int index = static_cast<int>(buffers_.size());
     auto resource = MakeBox<ExternalBufferResource>(this, index);
@@ -171,7 +171,7 @@ BufferResource *RenderGraph::RegisterBuffer(RC<StatefulBuffer> buffer)
     return buffers_.back().get();
 }
 
-TextureResource *RenderGraph::RegisterTexture(RC<StatefulTexture> texture)
+TextureResource *RenderGraph::RegisterTexture(RC<Texture2D> texture)
 {
     const int index = static_cast<int>(textures_.size());
     auto resource = MakeBox<ExternalTextureResource>(this, index);
@@ -186,11 +186,10 @@ TextureResource *RenderGraph::RegisterSwapchainTexture(
     RHI::BackBufferSemaphorePtr acquireSemaphore,
     RHI::BackBufferSemaphorePtr presentSemaphore)
 {
-    auto texture = MakeRC<StatefulTexture>(std::move(rhiTexture));
     assert(!swapchainTexture_);
     const int index = static_cast<int>(textures_.size());
     auto resource = MakeBox<SwapchainTexture>(this, index);
-    resource->texture = std::move(texture);
+    resource->texture = MakeRC<Texture2D>(Texture2D::FromRHIObject(std::move(rhiTexture)));
     resource->acquireSemaphore = std::move(acquireSemaphore);
     resource->presentSemaphore = std::move(presentSemaphore);
     swapchainTexture_ = resource.get();
@@ -215,12 +214,12 @@ Pass *RenderGraph::CreatePass(std::string name)
 
 uint32_t RenderGraph::ExternalTextureResource::GetMipLevels() const
 {
-    return texture->GetRHITexture()->GetMipLevels();
+    return texture->GetMipLevelCount();
 }
 
 uint32_t RenderGraph::ExternalTextureResource::GetArraySize() const
 {
-    return texture->GetRHITexture()->GetArraySize();
+    return texture->GetArraySize();
 }
 
 uint32_t RenderGraph::InternalTexture2DResource::GetMipLevels() const
