@@ -35,6 +35,8 @@ public:
     const RHI::TextureDesc &GetRenderTargetDesc() const;
 
     void ExecuteAndWait(CommandBuffer commandBuffer);
+    template<typename F>
+    void ExecuteAndWaitImmediate(F &&f);
 
     void BeginRenderLoop();
     void EndRenderLoop();
@@ -76,6 +78,7 @@ public:
     CommandBuffer CreateCommandBuffer();
 
     RC<GraphicsPipeline> CreateGraphicsPipeline(const GraphicsPipeline::Desc &desc);
+    RC<ComputePipeline> CreateComputePipeline(const RC<Shader> &shader);
 
     RC<Sampler> CreateSampler(const RHI::SamplerDesc &desc);
 
@@ -112,5 +115,15 @@ private:
     std::stop_source          stop_source_;
     std::stop_token           stop_token_;
 };
+
+template<typename F>
+void RenderContext::ExecuteAndWaitImmediate(F &&f)
+{
+    auto cmd = CreateCommandBuffer();
+    cmd.Begin();
+    std::invoke(std::forward<F>(f), cmd);
+    cmd.End();
+    ExecuteAndWait(std::move(cmd));
+}
 
 RTRC_END

@@ -65,6 +65,7 @@ public:
     void SetUnsyncAccess(const UnsynchronizedBufferAccess &access);
 
     void Upload(const void *data, size_t offset, size_t size);
+    void Download(void *data, size_t offset, size_t size);
 
 private:
 

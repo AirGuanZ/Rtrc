@@ -184,6 +184,11 @@ RC<GraphicsPipeline> RenderContext::CreateGraphicsPipeline(const GraphicsPipelin
     return pipelineManager_->CreateGraphicsPipeline(desc);
 }
 
+RC<ComputePipeline> RenderContext::CreateComputePipeline(const RC<Shader> &shader)
+{
+    return pipelineManager_->CreateComputePipeline(shader);
+}
+
 RC<Sampler> RenderContext::CreateSampler(const RHI::SamplerDesc &desc)
 {
     return samplerManager_->CreateSampler(desc);

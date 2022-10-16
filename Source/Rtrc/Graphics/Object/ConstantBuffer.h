@@ -126,11 +126,12 @@ private:
     std::unique_ptr<Slab[]> slabs_;
 };
 
-#define $cbuffer(NAME)                                                 \
+#define cbuffer(NAME)                                                  \
     struct NAME;                                                       \
     struct _rtrcCBufferBase##NAME                                      \
     {                                                                  \
         using _rtrcSelf = NAME;                                        \
+        struct _rtrcCBufferTypeFlag{};                                 \
         static constexpr std::string_view _rtrcSelfName = #NAME;       \
         static ::Rtrc::StructDetail::Sizer<1> _rtrcMemberCounter(...); \
         template<typename F>                                           \
@@ -141,7 +142,7 @@ private:
     };                                                                 \
     struct NAME : _rtrcCBufferBase##NAME
 
-#define $var(TYPE, NAME)                                \
+#define cbvar(TYPE, NAME)                               \
     RTRC_META_STRUCT_PRE_MEMBER(NAME)                   \
         f.template operator()(&_rtrcSelf::NAME, #NAME); \
     RTRC_META_STRUCT_POST_MEMBER(NAME)                  \

@@ -165,4 +165,21 @@ RC<GraphicsPipeline> PipelineManager::CreateGraphicsPipeline(const GraphicsPipel
     return ret;
 }
 
+RC<ComputePipeline> PipelineManager::CreateComputePipeline(const RC<Shader> &shader)
+{
+    RHI::ComputePipelineDesc rhiDesc;
+    rhiDesc.computeShader = shader->GetRawShader(RHI::ShaderStage::ComputeShader);
+    if(!rhiDesc.computeShader)
+    {
+        throw Exception("'shader' doesn't contain compute shader");
+    }
+    rhiDesc.bindingLayout = shader->GetBindingLayout()->GetRHIObject();
+
+    auto ret = MakeRC<ComputePipeline>();
+    ret->rhiObject_ = objectManager_.GetDevice()->CreateComputePipeline(rhiDesc);
+    ret->manager_ = &objectManager_;
+    ret->shader_ = shader;
+    return ret;
+}
+
 RTRC_END

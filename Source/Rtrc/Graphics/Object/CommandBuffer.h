@@ -84,13 +84,18 @@ public:
     void End();
 
     void CopyBuffer(Buffer &dst, size_t dstOffset, const Buffer &src, size_t srcOffset, size_t size);
+    void CopyColorTexture2DToBuffer(
+        Buffer &dst, size_t dstOffset, Texture2D &src, uint32_t arrayLayer, uint32_t mipLevel);
 
     void BeginRenderPass(Span<ColorAttachment> colorAttachments);
     void EndRenderPass();
 
     void BindPipeline(const RC<GraphicsPipeline> &graphicsPipeline);
+    void BindPipeline(const RC<ComputePipeline> &computePipeline);
 
     void BindGraphicsGroup(int index, const RC<BindingGroup> &group);
+    void BindComputeGroup(int index, const RC<BindingGroup> &group);
+
     void BindGraphicsSubMaterial(const SubMaterialInstance *subMatInst, const KeywordValueContext &keywords);
     void BindComputeSubMaterial(const SubMaterialInstance *subMatInst, const KeywordValueContext &keywords);
 
@@ -98,6 +103,7 @@ public:
     void SetScissors(Span<Scissor> scissors);
 
     void Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance);
+    void Dispatch(int groupCountX, int groupCountY, int groupCountZ);
 
     void ExecuteBarriers(const BarrierBatch &barriers);
 

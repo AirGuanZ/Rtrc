@@ -14,15 +14,12 @@
 
 #include <Rtrc/Graphics/RenderGraph/Executable.h>
 
-#include <Rtrc/Graphics/Resource/ConstantBuffer.h>
-#include <Rtrc/Graphics/Resource/ResourceUploader.h>
-#include <Rtrc/Graphics/Resource/StandaloneCommandBuffer.h>
-
 #include <Rtrc/Graphics/RHI/RHI.h>
 
 #include <Rtrc/Graphics/Shader/ShaderCompiler.h>
 
 #include <Rtrc/Utils/File.h>
+#include <Rtrc/Utils/Image.h>
 #include <Rtrc/Utils/Malloc.h>
 
 #include <Rtrc/Window/Input.h>

@@ -4,7 +4,7 @@
 #include <map>
 
 #include <Rtrc/Graphics/Object/BatchReleaseHelper.h>
-#include <Rtrc/Graphics/Resource/TextureSubresourceMap.h>
+#include <Rtrc/Graphics/Object/TextureSubresourceMap.h>
 
 RTRC_BEGIN
 

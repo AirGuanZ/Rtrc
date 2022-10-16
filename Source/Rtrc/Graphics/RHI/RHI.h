@@ -1216,7 +1216,7 @@ void InitializeVulkanBackend();
 struct VulkanInstanceDesc
 {
     std::vector<std::string> extensions;
-    bool debugMode = false;
+    bool debugMode = RTRC_DEBUG;
 };
 
 Ptr<Instance> CreateVulkanInstance(const VulkanInstanceDesc &desc);

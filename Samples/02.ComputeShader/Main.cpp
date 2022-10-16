@@ -4,173 +4,90 @@
 
 using namespace Rtrc;
 
-cbuffer_begin(X)
-    cbuffer_var(float, x)
-cbuffer_end()
-
-cbuffer_begin(ScaleSetting)
-    cbuffer_var(X[2], xx)
-    cbuffer_var(Vector4f, y)
-cbuffer_end()
+cbuffer(ScaleSetting)
+{
+    cbvar(float, scale)
+};
 
 void Run()
 {
-    auto instance = CreateVulkanInstance(RHI::VulkanInstanceDesc{
-        .debugMode = RTRC_DEBUG
-    });
+    auto instance = RHI::CreateVulkanInstance({});
+    RenderContext renderContext(instance->CreateDevice({ false, true, true, false }));
 
-    auto device = instance->CreateDevice();
+    MaterialManager materialManager;
+    materialManager.SetRenderContext(&renderContext);
+    materialManager.SetRootDirectory("Asset/02.ComputeShader/");
 
-    RenderContext renderContext(device);
+    KeywordValueContext keywords;
 
-    ShaderCompiler shaderCompiler;
-    shaderCompiler.SetRenderContext(&renderContext);
-    shaderCompiler.SetRootDirectory("Asset/02.ComputeShader/");
-    auto shader = shaderCompiler.Compile({ .filename = "Shader.hlsl", .CSEntry = "CSMain" });
+    auto material = materialManager.GetMaterial("ScaleImage");
+    auto subMaterial = material->GetSubMaterialByTag("Default");
+    auto shader = subMaterial->GetShader(keywords);
+    auto pipeline = renderContext.CreateComputePipeline(shader);
 
-    // create pipeline
+    auto matInst = material->CreateInstance();
+    auto subMatInst = matInst->GetSubMaterialInstance("Default");
 
-    auto bindingGroupLayout = shader->GetBindingGroupLayoutByName("ScaleGroup");
-
-    auto bindingLayout = shader->GetRHIBindingLayout();
-
-    auto pipeline = RHI::ComputePipelineBuilder()
-        .SetComputeShader(shader->GetRawShader(RHI::ShaderStage::ComputeShader))
-        .SetBindingLayout(bindingLayout)
-        .CreatePipeline(device);
-
-    // input texture
-
-    const auto inputImageData = ImageDynamic::Load("Asset/01.TexturedQuad/MainTexture.png");
-
-    auto inputTexture = renderContext.CreateTexture2D(
-        inputImageData.GetWidth(),
-        inputImageData.GetHeight(),
-        1, 1, RHI::Format::B8G8R8A8_UNorm,
-        RHI::TextureUsage::TransferDst | RHI::TextureUsage::ShaderResource,
-        RHI::QueueConcurrentAccessMode::Concurrent, 1, true);
-
+    auto inputTexture = renderContext.GetCopyContext().LoadTexture2D(
+        "Asset/01.TexturedQuad/MainTexture.png", RHI::Format::B8G8R8A8_UNorm, RHI::TextureUsage::ShaderResource, false);
     auto inputTextureSRV = inputTexture->GetSRV();
 
-    ResourceUploader uploader(device);
-
-    auto computeQueue = device->GetQueue(RHI::QueueType::Graphics);
-
-    uploader.Upload(
-        inputTexture->GetRHIObject(), 0, 0,
-        inputImageData,
-        computeQueue,
-        RHI::PipelineStage::ComputeShader,
-        RHI::ResourceAccess::TextureRead,
-        RHI::TextureLayout::ShaderTexture);
-
-    uploader.SubmitAndSync();
-
-    // output texture
-
     auto outputTexture = renderContext.CreateTexture2D(
-        inputImageData.GetWidth(),
-        inputImageData.GetHeight(),
+        inputTexture->GetWidth(),
+        inputTexture->GetHeight(),
         1, 1, RHI::Format::B8G8R8A8_UNorm,
         RHI::TextureUsage::TransferSrc | RHI::TextureUsage::UnorderAccess,
-        RHI::QueueConcurrentAccessMode::Concurrent,
+        RHI::QueueConcurrentAccessMode::Exclusive,
         1, true);
-
     auto outputTextureUAV = outputTexture->GetUAV();
 
-    // readback staging buffer
+    auto readbackBuffer = renderContext.CreateBuffer(
+        inputTexture->GetWidth() * inputTexture->GetHeight() * 4,
+        RHI::BufferUsage::TransferDst,
+        RHI::BufferHostAccessType::Random,
+        false);
 
-    auto readBackStagingBuffer = device->CreateBuffer(RHI::BufferDesc{
-        .size           = static_cast<size_t>(inputImageData.GetWidth() * inputImageData.GetHeight() * 4),
-        .usage          = RHI::BufferUsage::TransferDst,
-        .hostAccessType = RHI::BufferHostAccessType::Random
-    });
-
-    // create constant buffer
-
-    //ResourceManager resourceManager(device, 1);
-    auto constantBuffer = renderContext.CreateConstantBuffer();
+    const int bindingGroupIndex = shader->GetBindingGroupIndexByName("MainGroup");
+    auto bindingGroupLayout = shader->GetBindingGroupLayoutByIndex(bindingGroupIndex);
+    auto bindingGroup = bindingGroupLayout->CreateBindingGroup();
     {
-        ScaleSetting scaleSetting = {};
-        scaleSetting.y.x = 2.0f;
-        constantBuffer->SetData(scaleSetting);
+        bindingGroup->Set("InputTexture", inputTextureSRV);
+        bindingGroup->Set("OutputTexture", outputTextureUAV);
+
+        auto scaleSettingCBuffer = renderContext.CreateConstantBuffer();
+        ScaleSetting scaleSetting;
+        scaleSetting.scale = 2.0f;
+        scaleSettingCBuffer->SetData(scaleSetting);
+        bindingGroup->Set("ScaleSetting", scaleSettingCBuffer);
     }
 
-    // create binding group
+    renderContext.ExecuteAndWaitImmediate([&](CommandBuffer &cmd)
+    {
+        cmd.ExecuteBarriers(BarrierBatch()
+            (inputTexture, RHI::TextureLayout::ShaderTexture, RHI::PipelineStage::None, RHI::ResourceAccess::None)
+            (outputTexture, RHI::TextureLayout::ShaderRWTexture, RHI::PipelineStage::None, RHI::ResourceAccess::None));
 
-    auto bindingGroup = bindingGroupLayout->CreateBindingGroup();
-    bindingGroup->Set("ScaleSetting", constantBuffer);
-    bindingGroup->Set("InputTexture", inputTextureSRV);
-    bindingGroup->Set("OutputTexture", outputTextureUAV);
+        cmd.BindPipeline(pipeline);
+        cmd.BindComputeSubMaterial(subMatInst, keywords);
+        cmd.BindComputeGroup(bindingGroupIndex, bindingGroup);
 
-    // queue & command pool & buffer
+        constexpr Vector2i GROUP_SIZE = Vector2i(8, 8);
+        const Vector2i groupCount = {
+            (static_cast<int>(inputTexture->GetWidth()) + GROUP_SIZE.x - 1) / GROUP_SIZE.x,
+            (static_cast<int>(inputTexture->GetHeight()) + GROUP_SIZE.y - 1) / GROUP_SIZE.y
+        };
+        cmd.Dispatch(groupCount.x, groupCount.y, 1);
 
-    auto commandPool = device->CreateCommandPool(computeQueue);
-    auto commandBuffer = commandPool->NewCommandBuffer();
+        cmd.ExecuteBarriers(BarrierBatch()
+            (outputTexture, RHI::TextureLayout::CopySrc, RHI::PipelineStage::Copy, RHI::ResourceAccess::CopyRead));
 
-    // record
+        cmd.CopyColorTexture2DToBuffer(*readbackBuffer, 0, *outputTexture, 0, 0);
+    });
+    readbackBuffer->SetUnsyncAccess(UnsynchronizedBufferAccess::Create(
+        RHI::PipelineStage::None, RHI::ResourceAccess::None));
 
-    commandBuffer->Begin();
-
-    const RHI::TextureTransitionBarrier outputTextureInitialStateTransitionBarrier = {
-        .texture      = outputTexture,
-        .subresources = {
-            .mipLevel   = 0,
-            .arrayLayer = 0
-        },
-        .beforeStages   = RHI::PipelineStage::None,
-        .beforeAccesses = RHI::ResourceAccess::None,
-        .beforeLayout   = RHI::TextureLayout::Undefined,
-        .afterStages    = RHI::PipelineStage::ComputeShader,
-        .afterAccesses  = RHI::ResourceAccess::RWTextureWrite,
-        .afterLayout    = RHI::TextureLayout::ShaderRWTexture
-    };
-
-    commandBuffer->ExecuteBarriers(outputTextureInitialStateTransitionBarrier, pendingTextureAcquireBarriers);
-
-    commandBuffer->BindPipeline(pipeline);
-    commandBuffer->BindGroupToComputePipeline(0, bindingGroup->GetRHIBindingGroup());
-
-    constexpr Vector2i GROUP_SIZE = Vector2i(8, 8);
-    const Vector2i groupCount = {
-        (static_cast<int>(inputImageData.GetWidth()) + GROUP_SIZE.x - 1) / GROUP_SIZE.x,
-        (static_cast<int>(inputImageData.GetHeight()) + GROUP_SIZE.y - 1) / GROUP_SIZE.y
-    };
-    commandBuffer->Dispatch(groupCount.x, groupCount.y, 1);
-
-    commandBuffer->ExecuteBarriers(
-        RHI::TextureTransitionBarrier{
-            .texture      = outputTexture,
-            .subresources = {
-                .mipLevel   = 0,
-                .arrayLayer = 0
-            },
-            .beforeStages   = RHI::PipelineStage::ComputeShader,
-            .beforeAccesses = RHI::ResourceAccess::RWTextureWrite,
-            .beforeLayout   = RHI::TextureLayout::ShaderRWTexture,
-            .afterStages    = RHI::PipelineStage::Copy,
-            .afterAccesses  = RHI::ResourceAccess::CopyRead,
-            .afterLayout    = RHI::TextureLayout::CopySrc
-        });
-
-    commandBuffer->CopyColorTexture2DToBuffer(readBackStagingBuffer, 0, outputTexture, 0, 0);
-
-    commandBuffer->End();
-
-    // submit
-
-    computeQueue->Submit({}, {}, commandBuffer, {}, {}, {});
-
-    // read back
-
-    computeQueue->WaitIdle();
-
-    Image<Vector4b> outputImageData(inputImageData.GetWidth(), inputImageData.GetHeight());
-
-    auto mappedOutputBuffer = readBackStagingBuffer->Map(0, readBackStagingBuffer->GetDesc().size, true);
-    std::memcpy(outputImageData.GetData(), mappedOutputBuffer, readBackStagingBuffer->GetDesc().size);
-    readBackStagingBuffer->Unmap(0, readBackStagingBuffer->GetDesc().size);
-
+    Image<Vector4b> outputImageData(inputTexture->GetWidth(), inputTexture->GetHeight());
+    readbackBuffer->Download(outputImageData.GetData(), 0, readbackBuffer->GetSize());
     for(uint32_t y = 0; y < outputImageData.GetHeight(); ++y)
     {
         for(uint32_t x = 0; x < outputImageData.GetWidth(); ++x)
@@ -179,8 +96,6 @@ void Run()
             p = Vector4b(p.z, p.y, p.x, p.w);
         }
     }
-
-    // save output image
 
     outputImageData.Save("./Asset/02.ComputeShader/Output.png");
 }

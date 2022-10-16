@@ -172,5 +172,5 @@ ENDIF()
 
 SET(RTRC_SAMPLE_WORKING_DIR "${CMAKE_SOURCE_DIR}/")
 ADD_SUBDIRECTORY(Samples/01.TexturedQuad)
-#ADD_SUBDIRECTORY(Samples/02.ComputeShader)
+ADD_SUBDIRECTORY(Samples/02.ComputeShader)
 #ADD_SUBDIRECTORY(Samples/03.DeferredShading)

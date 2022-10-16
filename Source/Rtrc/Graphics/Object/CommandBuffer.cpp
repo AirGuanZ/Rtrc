@@ -125,6 +125,14 @@ void CommandBuffer::CopyBuffer(Buffer &dst, size_t dstOffset, const Buffer &src,
     rhiCommandBuffer_->CopyBuffer(dst.GetRHIObject(), dstOffset, src.GetRHIObject(), srcOffset, size);
 }
 
+void CommandBuffer::CopyColorTexture2DToBuffer(
+    Buffer &dst, size_t dstOffset, Texture2D &src, uint32_t arrayLayer, uint32_t mipLevel)
+{
+    CheckThreadID();
+    rhiCommandBuffer_->CopyColorTexture2DToBuffer(
+        dst.GetRHIObject(), dstOffset, src.GetRHIObject(), mipLevel, arrayLayer);
+}
+
 void CommandBuffer::BeginRenderPass(Span<ColorAttachment> colorAttachments)
 {
     CheckThreadID();
@@ -143,10 +151,22 @@ void CommandBuffer::BindPipeline(const RC<GraphicsPipeline> &graphicsPipeline)
     rhiCommandBuffer_->BindPipeline(graphicsPipeline->GetRHIObject());
 }
 
+void CommandBuffer::BindPipeline(const RC<ComputePipeline> &computePipeline)
+{
+    CheckThreadID();
+    rhiCommandBuffer_->BindPipeline(computePipeline->GetRHIObject());
+}
+
 void CommandBuffer::BindGraphicsGroup(int index, const RC<BindingGroup> &group)
 {
     CheckThreadID();
     rhiCommandBuffer_->BindGroupToGraphicsPipeline(index, group->GetRHIObject());
+}
+
+void CommandBuffer::BindComputeGroup(int index, const RC<BindingGroup> &group)
+{
+    CheckThreadID();
+    rhiCommandBuffer_->BindGroupToComputePipeline(index, group->GetRHIObject());
 }
 
 void CommandBuffer::BindGraphicsSubMaterial(const SubMaterialInstance *subMatInst, const KeywordValueContext &keywords)
@@ -175,6 +195,12 @@ void CommandBuffer::Draw(int vertexCount, int instanceCount, int firstVertex, in
 {
     CheckThreadID();
     rhiCommandBuffer_->Draw(vertexCount, instanceCount, firstVertex, firstInstance);
+}
+
+void CommandBuffer::Dispatch(int groupCountX, int groupCountY, int groupCountZ)
+{
+    CheckThreadID();
+    rhiCommandBuffer_->Dispatch(groupCountX, groupCountY, groupCountZ);
 }
 
 void CommandBuffer::ExecuteBarriers(const BarrierBatch &barriers)

@@ -23,6 +23,24 @@ void Buffer::Upload(const void *data, size_t offset, size_t size)
     rhiBuffer_->Unmap(offset, size, true);
 }
 
+void Buffer::Download(void *data, size_t offset, size_t size)
+{
+    if(!unsyncAccess_.IsEmpty())
+    {
+        throw Exception("Buffer must be externally synchronized before calling Buffer::Download");
+    }
+
+    const auto hostAccess = rhiBuffer_->GetDesc().hostAccessType;
+    if(hostAccess != RHI::BufferHostAccessType::Random)
+    {
+        throw Exception("Buffer::Download: BufferHostAccessType must be 'Random'");
+    }
+
+    auto p = rhiBuffer_->Map(offset, size, true);
+    std::memcpy(data, p, size);
+    rhiBuffer_->Unmap(offset, size);
+}
+
 BufferManager::BufferManager(HostSynchronizer &hostSync, RHI::DevicePtr device)
     : batchReleaser_(hostSync), device_(std::move(device))
 {

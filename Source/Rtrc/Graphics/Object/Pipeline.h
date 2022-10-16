@@ -83,6 +83,13 @@ private:
     Desc desc_;
 };
 
+class ComputePipeline : public GeneralGPUObject<RHI::ComputePipelinePtr>
+{
+    friend class PipelineManager;
+
+    RC<Shader> shader_;
+};
+
 class PipelineManager
 {
 public:
@@ -90,6 +97,8 @@ public:
     explicit PipelineManager(GeneralGPUObjectManager &objectManager);
 
     RC<GraphicsPipeline> CreateGraphicsPipeline(const GraphicsPipeline::Desc &desc);
+
+    RC<ComputePipeline> CreateComputePipeline(const RC<Shader> &shader);
 
 private:
 
