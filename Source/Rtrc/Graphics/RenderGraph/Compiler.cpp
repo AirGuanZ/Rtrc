@@ -52,7 +52,7 @@ void Compiler::Compile(const RenderGraph &graph, ExecutableGraph &result)
     }
     GenerateBarriers(result.resources);
 
-    result.queue = graph.queue_;
+    result.queue = graph.queue_.GetRHIObject();
     FillSections(result);
 }
 

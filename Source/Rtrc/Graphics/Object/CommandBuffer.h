@@ -9,6 +9,8 @@
 RTRC_BEGIN
 
 class Buffer;
+class Texture2D;
+class CommandBuffer;
 class CommandBufferManager;
 class KeywordValueContext;
 class SubMaterialInstance;
@@ -22,14 +24,45 @@ using Scissor = RHI::Scissor;
 
 using ColorAttachment = RHI::RenderPassColorAttachment;
 
-/*
-    Usage:
+class BarrierBatch
+{
+public:
 
-        auto cmdBuf = mgr.Create();
-        cmdBuf.Begin(); // bind with current thread
-        // ...
-        cmdBuf.End();
-*/
+    BarrierBatch() = default;
+
+    template<typename A, typename B, typename...Args>
+    BarrierBatch(const A &a, const B &b, const Args...args)
+    {
+        operator()(a, b, args...);
+    }
+
+    BarrierBatch &operator()(
+        const RC<Buffer>       &buffer,
+        RHI::PipelineStageFlag  stages,
+        RHI::ResourceAccessFlag accesses);
+
+    BarrierBatch &operator()(
+        const RC<Texture2D>    &texture,
+        RHI::TextureLayout      layout,
+        RHI::PipelineStageFlag  stages,
+        RHI::ResourceAccessFlag accesses);
+
+    BarrierBatch &operator()(
+        const RC<Texture2D>    &texture,
+        uint32_t                arrayLayer,
+        uint32_t                mipLevel,
+        RHI::TextureLayout      layout,
+        RHI::PipelineStageFlag  stages,
+        RHI::ResourceAccessFlag accesses);
+
+private:
+
+    friend class CommandBuffer;
+
+    std::vector<RHI::BufferTransitionBarrier> BT_;
+    std::vector<RHI::TextureTransitionBarrier> TT_;
+};
+
 class CommandBuffer : public Uncopyable
 {
 public:
@@ -65,6 +98,8 @@ public:
     void SetScissors(Span<Scissor> scissors);
 
     void Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance);
+
+    void ExecuteBarriers(const BarrierBatch &barriers);
 
 private:
 

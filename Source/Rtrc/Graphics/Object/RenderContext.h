@@ -6,9 +6,11 @@
 #include <Rtrc/Graphics/Object/Buffer.h>
 #include <Rtrc/Graphics/Object/ConstantBuffer.h>
 #include <Rtrc/Graphics/Object/CopyContext.h>
+#include <Rtrc/Graphics/Object/Queue.h>
 #include <Rtrc/Graphics/Object/Pipeline.h>
 #include <Rtrc/Graphics/Object/Sampler.h>
 #include <Rtrc/Graphics/Object/Texture.h>
+#include <Rtrc/Graphics/RenderGraph/Graph.h>
 
 RTRC_BEGIN
 
@@ -28,16 +30,20 @@ public:
 
     void SetGCInterval(std::chrono::milliseconds ms);
 
-    const RHI::QueuePtr &GetMainQueue() const;
+    Queue &GetMainQueue();
     const RHI::SwapchainPtr &GetSwapchain() const;
     const RHI::TextureDesc &GetRenderTargetDesc() const;
-    
+
+    void ExecuteAndWait(CommandBuffer commandBuffer);
+
     void BeginRenderLoop();
     void EndRenderLoop();
     void Present();
 
     bool BeginFrame();
     void WaitIdle();
+
+    Box<RG::RenderGraph> CreateRenderGraph();
 
     CopyContext &GetCopyContext();
 
@@ -82,6 +88,7 @@ private:
     void GCThreadFunc();
 
     RHI::DevicePtr device_;
+    Queue mainQueue_;
 
     Window           *window_              = nullptr;
     RHI::Format       swapchainFormat_     = RHI::Format::Unknown;

@@ -34,6 +34,11 @@ struct UnsynchronizedTextureAccess
     {
         return { stages, accesses, layout };
     }
+
+    bool IsEmpty() const
+    {
+        return stages == RHI::PipelineStage::None && accesses == RHI::ResourceAccess::None;
+    }
 };
 
 struct TextureSRV
@@ -94,6 +99,7 @@ public:
     RHI::Viewport GetViewport(float minDepth = 0, float maxDepth = 1) const;
     RHI::Scissor GetScissor() const;
 
+    const RHI::TextureDesc &GetRHIObjectDesc() const;
     const RHI::TexturePtr &GetRHIObject() const;
     operator const RHI::TexturePtr&() const;
 
@@ -273,6 +279,11 @@ inline RHI::Scissor Texture2D::GetScissor() const
         .lowerLeftCorner = { 0, 0 },
         .size = { static_cast<int>(width_), static_cast<int>(height_) }
     };
+}
+
+inline const RHI::TextureDesc &Texture2D::GetRHIObjectDesc() const
+{
+    return rhiTexture_->GetDesc();
 }
 
 inline const RHI::TexturePtr &Texture2D::GetRHIObject() const

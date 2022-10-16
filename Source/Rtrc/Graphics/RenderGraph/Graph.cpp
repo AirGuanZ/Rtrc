@@ -130,13 +130,13 @@ Pass::Pass(int index, std::string name)
     
 }
 
-RenderGraph::RenderGraph(RHI::QueuePtr queue)
+RenderGraph::RenderGraph(Queue queue)
     : queue_(std::move(queue)), swapchainTexture_(nullptr), executableResource_(nullptr)
 {
     
 }
 
-void RenderGraph::SetQueue(RHI::QueuePtr queue)
+void RenderGraph::SetQueue(Queue queue)
 {
     queue_ = std::move(queue);
 }

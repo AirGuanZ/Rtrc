@@ -1,10 +1,67 @@
 #include <shared_mutex>
 
-#include <Rtrc/Graphics/Object/Buffer.h>
 #include <Rtrc/Graphics/Material/MaterialInstance.h>
+#include <Rtrc/Graphics/Object/Buffer.h>
+#include <Rtrc/Graphics/Object/Texture.h>
 #include <Rtrc/Graphics/Object/CommandBuffer.h>
 
 RTRC_BEGIN
+
+BarrierBatch &BarrierBatch::operator()(
+    const RC<Buffer>       &buffer,
+    RHI::PipelineStageFlag  stages,
+    RHI::ResourceAccessFlag accesses)
+{
+    BT_.push_back(RHI::BufferTransitionBarrier
+    {
+        .buffer         = buffer->GetRHIObject().Get(),
+        .beforeStages   = buffer->GetUnsyncAccess().stages,
+        .beforeAccesses = buffer->GetUnsyncAccess().accesses,
+        .afterStages    = stages,
+        .afterAccesses  = accesses
+    });
+    buffer->SetUnsyncAccess({ stages, accesses });
+    return *this;
+}
+
+BarrierBatch &BarrierBatch::operator()(
+    const RC<Texture2D>    &texture,
+    RHI::TextureLayout      layout,
+    RHI::PipelineStageFlag  stages,
+    RHI::ResourceAccessFlag accesses)
+{
+    for(uint32_t m = 0; m < texture->GetMipLevelCount(); ++m)
+    {
+        for(uint32_t a = 0; a < texture->GetArraySize(); ++a)
+        {
+            operator()(texture, a, m, layout, stages, accesses);
+        }
+    }
+    return *this;
+}
+
+BarrierBatch &BarrierBatch::operator()(
+    const RC<Texture2D>    &texture,
+    uint32_t                arrayLayer,
+    uint32_t                mipLevel,
+    RHI::TextureLayout      layout,
+    RHI::PipelineStageFlag  stages,
+    RHI::ResourceAccessFlag accesses)
+{
+    TT_.push_back(RHI::TextureTransitionBarrier
+    {
+        .texture        = texture->GetRHIObject().Get(),
+        .subresources   = RHI::TextureSubresources{ mipLevel, 1, arrayLayer, 1 },
+        .beforeStages   = texture->GetUnsyncAccess(arrayLayer, mipLevel).stages,
+        .beforeAccesses = texture->GetUnsyncAccess(arrayLayer, mipLevel).accesses,
+        .beforeLayout   = texture->GetUnsyncAccess(arrayLayer, mipLevel).layout,
+        .afterStages    = stages,
+        .afterAccesses  = accesses,
+        .afterLayout    = layout
+    });
+    texture->SetUnsyncAccess(arrayLayer, mipLevel, { stages, accesses, layout });
+    return *this;
+}
 
 CommandBuffer::CommandBuffer()
     : manager_(nullptr), queueType_(RHI::QueueType::Graphics)
@@ -120,6 +177,15 @@ void CommandBuffer::Draw(int vertexCount, int instanceCount, int firstVertex, in
     rhiCommandBuffer_->Draw(vertexCount, instanceCount, firstVertex, firstInstance);
 }
 
+void CommandBuffer::ExecuteBarriers(const BarrierBatch &barriers)
+{
+    CheckThreadID();
+    if(!barriers.BT_.empty() || !barriers.TT_.empty())
+    {
+        rhiCommandBuffer_->ExecuteBarriers(barriers.BT_, barriers.TT_);
+    }
+}
+
 CommandBufferManager::CommandBufferManager(HostSynchronizer &hostSync, RHI::DevicePtr device)
     : device_(std::move(device)), batchRelease_(hostSync)
 {
@@ -213,6 +279,7 @@ void CommandBufferManager::_rtrcAllocateInternal(CommandBuffer &cmdBuf)
     cmdBuf.threadID_ = thisThreadID;
 #endif
     ++tls->pools.front().historyUserCount;
+    ++tls->pools.front().activeUserCount;
 }
 
 void CommandBufferManager::_rtrcFreeInternal(CommandBuffer &cmdBuf)

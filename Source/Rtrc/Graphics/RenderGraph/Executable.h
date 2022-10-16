@@ -61,6 +61,10 @@ public:
 
     void Execute(const RenderGraph &graph);
 
+    void Execute(const Box<RenderGraph> &graph) { Execute(*graph); }
+
+    void Execute(const Box<const RenderGraph> &graph) { Execute(*graph); }
+
 private:
 
     void Execute(const ExecutableGraph &graph);

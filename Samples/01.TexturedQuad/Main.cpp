@@ -22,7 +22,6 @@ void Run()
     auto device = instance->CreateDevice();
     RenderContext renderContext(device, &window);
     auto &copyContext = renderContext.GetCopyContext();
-    auto graphicsQueue = renderContext.GetMainQueue();
 
     // pipeline
 
@@ -45,11 +44,6 @@ void Run()
         .shader = shader,
         .colorAttachmentFormats = { renderContext.GetRenderTargetDesc().format }
     });
-
-    // uploader
-
-    ResourceUploader uploader(device);
-    std::vector<RHI::TextureAcquireBarrier> uploadTextureAcquireBarriers;
 
     // vertex position buffer
 
@@ -102,22 +96,21 @@ void Run()
 
     // main texture
 
-    auto mainTexData = ImageDynamic::Load("Asset/01.TexturedQuad/MainTexture.png");
-    auto mainTex = renderContext.CreateTexture2D(
-        mainTexData.GetWidth(), mainTexData.GetHeight(), 1, 1,
-        RHI::Format::B8G8R8A8_UNorm, RHI::TextureUsage::ShaderResource | RHI::TextureUsage::TransferDst,
-        RHI::QueueConcurrentAccessMode::Concurrent, 1, false);
+    auto mainTex = copyContext.LoadTexture2D(
+        "Asset/01.TexturedQuad/MainTexture.png", RHI::Format::B8G8R8A8_UNorm, RHI::TextureUsage::ShaderResource, true);
 
     mainTex->GetRHIObject()->SetName("MainTexture");
 
     auto mainTexSRV = mainTex->GetSRV({ .isArray = true });
 
-    uploadTextureAcquireBarriers.push_back(uploader.Upload(
-        mainTex->GetRHIObject(), 0, 0, mainTexData,
-        graphicsQueue,
-        RHI::PipelineStage::FragmentShader,
-        RHI::ResourceAccess::TextureRead,
-        RHI::TextureLayout::ShaderTexture).GetAcquireBarrier());
+    {
+        auto commandBuffer = renderContext.CreateCommandBuffer();
+        commandBuffer.Begin();
+        commandBuffer.ExecuteBarriers(BarrierBatch(
+            mainTex, RHI::TextureLayout::ShaderTexture, RHI::PipelineStage::None, RHI::ResourceAccess::None));
+        commandBuffer.End();
+        renderContext.ExecuteAndWait(std::move(commandBuffer));
+    }
 
     // main sampler
 
@@ -131,22 +124,13 @@ void Run()
         .addressModeW = RHI::AddressMode::Clamp
     });
 
-    // upload
-
-    {
-        uploader.SubmitAndSync();
-        auto uploadCommandBuffer = StandaloneCommandBuffer::Create(device, graphicsQueue);
-        uploadCommandBuffer->Begin();
-        uploadCommandBuffer->ExecuteBarriers(uploadTextureAcquireBarriers);
-        uploadTextureAcquireBarriers.clear();
-        uploadCommandBuffer->End();
-        uploadCommandBuffer.SubmitAndWait();
-    }
+    // material
 
     auto materialInstance = material->CreateInstance();
     materialInstance->Set("MainTexture", mainTexSRV);
     materialInstance->Set("MainSampler", mainSampler);
     materialInstance->Set("scale", 1.5f);
+    materialInstance->Set("mipLevel", 0.0f);
 
     auto subMaterialInstance = materialInstance->GetSubMaterialInstance(0);
 
@@ -175,12 +159,11 @@ void Run()
             window.SetCloseFlag(true);
         }
 
-        RG::RenderGraph graph;
-        graph.SetQueue(graphicsQueue);
+        auto graph = renderContext.CreateRenderGraph();
         
-        auto renderTarget = graph.RegisterSwapchainTexture(renderContext.GetSwapchain());
+        auto renderTarget = graph->RegisterSwapchainTexture(renderContext.GetSwapchain());
 
-        auto quadPass = graph.CreatePass("DrawQuad");
+        auto quadPass = graph->CreatePass("DrawQuad");
         quadPass->Use(renderTarget, RG::RENDER_TARGET);
         quadPass->SetCallback([&](RG::PassContext &context)
         {

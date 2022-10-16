@@ -2,11 +2,14 @@
 
 #include <map>
 
-#include <Rtrc/Graphics/Object/RenderContext.h>
+#include <Rtrc/Graphics/Object/Buffer.h>
+#include <Rtrc/Graphics/Object/Queue.h>
+#include <Rtrc/Graphics/Object/Texture.h>
 
 RTRC_BEGIN
 
 class CommandBuffer;
+class RenderContext;
 
 RTRC_END
 
@@ -181,9 +184,9 @@ class RenderGraph : public Uncopyable
 {
 public:
 
-    explicit RenderGraph(RHI::QueuePtr queue = nullptr);
+    explicit RenderGraph(Queue queue = Queue(nullptr));
 
-    void SetQueue(RHI::QueuePtr queue);
+    void SetQueue(Queue queue);
 
     BufferResource  *CreateBuffer(const RHI::BufferDesc &desc);
     TextureResource *CreateTexture2D(const RHI::TextureDesc &desc);
@@ -266,7 +269,7 @@ private:
         RHI::BackBufferSemaphorePtr presentSemaphore;
     };
 
-    RHI::QueuePtr queue_;
+    Queue queue_;
 
     std::vector<Box<BufferResource>>  buffers_;
     std::vector<Box<TextureResource>> textures_;

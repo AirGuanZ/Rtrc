@@ -250,7 +250,7 @@ void VulkanCommandBuffer::CopyBufferToColorTexture2D(
             .layerCount     = 1
         },
         .imageOffset = { 0, 0, 0 },
-        .imageExtent = { texDesc.width, texDesc.height, 1 }
+        .imageExtent = { texDesc.width >> mipLevel, texDesc.height >> mipLevel, 1 }
     };
     auto vkSrc = static_cast<VulkanBuffer *>(src)->GetNativeBuffer();
     auto vkDst = GetVulkanImage(dst);

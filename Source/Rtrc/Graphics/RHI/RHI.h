@@ -519,25 +519,25 @@ using BufferUAVDesc = BufferSRVDesc;
 
 struct SamplerDesc
 {
-    FilterMode magFilter;
-    FilterMode minFilter;
-    FilterMode mipFilter;
+    FilterMode magFilter = FilterMode::Point;
+    FilterMode minFilter = FilterMode::Point;
+    FilterMode mipFilter = FilterMode::Point;
 
-    AddressMode addressModeU;
-    AddressMode addressModeV;
-    AddressMode addressModeW;
+    AddressMode addressModeU = AddressMode::Clamp;
+    AddressMode addressModeV = AddressMode::Clamp;
+    AddressMode addressModeW = AddressMode::Clamp;
 
-    float mipLODBias;
-    float minLOD;
-    float maxLOD;
+    float mipLODBias = 0.0f;
+    float minLOD     = 0.0f;
+    float maxLOD     = (std::numeric_limits<float>::max)();
 
-    bool enableAnisotropy;
-    int  maxAnisotropy;
+    bool enableAnisotropy = false;
+    int  maxAnisotropy    = 0;
 
-    bool      enableComparision;
-    CompareOp compareOp;
+    bool      enableComparision = false;
+    CompareOp compareOp         = CompareOp::Less;
 
-    std::array<float, 4> borderColor;
+    std::array<float, 4> borderColor = { 0, 0, 0, 0 };
 
     auto operator<=>(const SamplerDesc &) const = default;
     bool operator==(const SamplerDesc &) const = default;

@@ -558,7 +558,7 @@ RC<Material> MaterialManager::CreateMaterial(std::string_view name)
     {
         const char *valueTypeName = prop.GetTypeName();
         propMacros.insert(
-    {
+        {
             fmt::format("__PER_MATERIAL_VALUE_PROPERTY_{}", prop.name),
             fmt::format("{} {}", valueTypeName, prop.name)
         });

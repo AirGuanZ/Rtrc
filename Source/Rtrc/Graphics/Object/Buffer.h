@@ -17,6 +17,11 @@ struct UnsynchronizedBufferAccess
     {
         return { stages, accesses };
     }
+
+    bool IsEmpty() const
+    {
+        return stages == RHI::PipelineStage::None && accesses == RHI::ResourceAccess::None;
+    }
 };
 
 struct BufferSRV
@@ -48,6 +53,7 @@ public:
 
     size_t GetSize() const;
 
+    const RHI::BufferDesc &GetRHIObjectDesc() const;
     const RHI::BufferPtr &GetRHIObject() const;
     operator const RHI::BufferPtr &() const;
 
@@ -168,6 +174,11 @@ inline void Buffer::AllowReuse(bool allow)
 inline size_t Buffer::GetSize() const
 {
     return size_;
+}
+
+inline const RHI::BufferDesc &Buffer::GetRHIObjectDesc() const
+{
+    return rhiBuffer_->GetDesc();
 }
 
 inline const RHI::BufferPtr &Buffer::GetRHIObject() const

@@ -7,6 +7,7 @@ RenderContext::RenderContext(RHI::DevicePtr device, bool isComputeOnly)
       hostSync_(device, device->GetQueue(isComputeOnly ? RHI::QueueType::Compute : RHI::QueueType::Graphics))
 {
     generalGPUObjectManager_ = MakeBox<GeneralGPUObjectManager>(hostSync_, device);
+    mainQueue_ = Queue(hostSync_.GetQueue());
 
     bindingLayoutManager_ = MakeBox<BindingLayoutManager>(hostSync_, device);
     bufferManager_ = MakeBox<BufferManager>(hostSync_, device);
@@ -15,7 +16,7 @@ RenderContext::RenderContext(RHI::DevicePtr device, bool isComputeOnly)
     pipelineManager_ = MakeBox<PipelineManager>(*generalGPUObjectManager_);
     samplerManager_ = MakeBox<SamplerManager>(hostSync_, device);
     textureManager_ = MakeBox<TextureManager>(hostSync_, device);
-    copyContext_ = MakeBox<CopyContext>(device, bufferManager_.get());
+    copyContext_ = MakeBox<CopyContext>(device, bufferManager_.get(), textureManager_.get());
 
     stop_token_ = stop_source_.get_token();
     GCThread_ = std::jthread(&RenderContext::GCThreadFunc, this);
@@ -63,9 +64,9 @@ void RenderContext::SetGCInterval(std::chrono::milliseconds ms)
     GCInterval_ = ms;
 }
 
-const RHI::QueuePtr &RenderContext::GetMainQueue() const
+Queue &RenderContext::GetMainQueue()
 {
-    return hostSync_.GetQueue();
+    return mainQueue_;
 }
 
 const RHI::SwapchainPtr &RenderContext::GetSwapchain() const
@@ -76,6 +77,15 @@ const RHI::SwapchainPtr &RenderContext::GetSwapchain() const
 const RHI::TextureDesc &RenderContext::GetRenderTargetDesc() const
 {
     return swapchain_->GetRenderTargetDesc();
+}
+
+void RenderContext::ExecuteAndWait(CommandBuffer commandBuffer)
+{
+    {
+        auto c = std::move(commandBuffer);
+        mainQueue_.Submit(c);
+    }
+    WaitIdle();
 }
 
 void RenderContext::BeginRenderLoop()
@@ -116,6 +126,13 @@ bool RenderContext::BeginFrame()
 void RenderContext::WaitIdle()
 {
     hostSync_.WaitIdle();
+}
+
+Box<RG::RenderGraph> RenderContext::CreateRenderGraph()
+{
+    auto rg = MakeBox<RG::RenderGraph>();
+    rg->SetQueue(mainQueue_);
+    return rg;
 }
 
 CopyContext &RenderContext::GetCopyContext()
