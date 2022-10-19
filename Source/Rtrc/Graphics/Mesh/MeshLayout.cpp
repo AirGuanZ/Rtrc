@@ -1,9 +1,11 @@
 #include <algorithm>
 #include <mutex>
+#include <shared_mutex>
+
+#include <tbb/spin_rw_mutex.h>
 
 #include <Rtrc/Graphics/Mesh/MeshLayout.h>
 #include <Rtrc/Utils/Enumerate.h>
-#include <Rtrc/Utils/SharedObjectPool.h>
 #include <Rtrc/Utils/Unreachable.h>
 
 RTRC_BEGIN
@@ -13,8 +15,11 @@ using namespace MeshLayoutDSL;
 namespace
 {
 
-    SharedObjectPool<Buffer, VertexBufferLayout, true> vertexBufferLayoutPool;
-    SharedObjectPool<LayoutDesc, MeshLayout, true> meshLayoutPool;
+    std::map<Buffer, Box<VertexBufferLayout>> vertexBufferLayoutCache;
+    tbb::spin_rw_mutex vertexBufferLayoutCacheMutex;
+
+    std::map<LayoutDesc, Box<MeshLayout>> meshLayoutCache;
+    tbb::spin_rw_mutex meshLayoutCacheMutex;
 
     int VertexAttributeTypeToByteSize(RHI::VertexAttributeType type)
     {
@@ -51,27 +56,38 @@ namespace
 
 } // namespace anonymous
 
-RC<VertexBufferLayout> VertexBufferLayout::Create(const Buffer &desc)
+const VertexBufferLayout *VertexBufferLayout::Create(const Buffer &desc)
 {
-    return vertexBufferLayoutPool.GetOrCreate(desc, [&]
     {
-        auto newLayout = MakeRC<VertexBufferLayout>();
-        int stride = 0;
-        for (size_t i = 0; i < desc.attributes.size(); ++i)
+        std::shared_lock readLock(vertexBufferLayoutCacheMutex);
+        if(auto it = vertexBufferLayoutCache.find(desc); it != vertexBufferLayoutCache.end())
         {
-            newLayout->attribs_.push_back(VertexAttribute
-                {
-                    .semantic = desc.attributes[i].semantic,
-                    .type = desc.attributes[i].type,
-                    .byteOffsetInBuffer = stride
-                });
-            stride += VertexAttributeTypeToByteSize(desc.attributes[i].type);
-            newLayout->semanticToAttribIndex_[desc.attributes[i].semantic] = static_cast<int>(i);
+            return it->second.get();
         }
-        newLayout->perInstance_ = desc.perInstance;
-        newLayout->stride_ = stride;
-        return newLayout;
-    });
+    }
+
+    std::unique_lock writeLock(vertexBufferLayoutCacheMutex);
+    if(auto it = vertexBufferLayoutCache.find(desc); it != vertexBufferLayoutCache.end())
+    {
+        return it->second.get();
+    }
+
+    auto newLayout = MakeBox<VertexBufferLayout>();
+    int stride = 0;
+    for(size_t i = 0; i < desc.attributes.size(); ++i)
+    {
+        newLayout->attribs_.push_back(VertexAttribute
+            {
+                .semantic = desc.attributes[i].semantic,
+                .type = desc.attributes[i].type,
+                .byteOffsetInBuffer = stride
+            });
+        stride += VertexAttributeTypeToByteSize(desc.attributes[i].type);
+        newLayout->semanticToAttribIndex_[desc.attributes[i].semantic] = static_cast<int>(i);
+    }
+    newLayout->perInstance_ = desc.perInstance;
+    newLayout->stride_ = stride;
+    return vertexBufferLayoutCache.insert({ desc, std::move(newLayout)}).first->second.get();
 }
 
 bool VertexBufferLayout::IsPerInstance() const
@@ -101,39 +117,49 @@ int VertexBufferLayout::GetAttributeIndexBySemantic(std::string_view semantic) c
     return it != semanticToAttribIndex_.end() ? it->second : -1;
 }
 
-RC<MeshLayout> MeshLayout::Create(const LayoutDesc &_desc)
+const MeshLayout *MeshLayout::Create(const LayoutDesc &_desc)
 {
     auto desc = _desc;
     Regularize(desc);
 
-    return meshLayoutPool.GetOrCreate(desc, [&]
     {
-        std::vector<RC<VertexBufferLayout>> buffers;
-        buffers.reserve(desc.buffers.size());
-        for (auto& b : desc.buffers)
+        std::shared_lock readLock(meshLayoutCacheMutex);
+        if(auto it = meshLayoutCache.find(desc); it != meshLayoutCache.end())
         {
-            buffers.push_back(VertexBufferLayout::Create(b));
+            return it->second.get();
         }
-        auto newLayout = MakeRC<MeshLayout>();
-        newLayout->vertexBuffers_ = std::move(buffers);
-        for (auto&& [index, buffer] : Enumerate(newLayout->vertexBuffers_))
+    }
+
+    std::unique_lock writeLock(meshLayoutCacheMutex);
+    if(auto it = meshLayoutCache.find(desc); it != meshLayoutCache.end())
+    {
+        return it->second.get();
+    }
+    std::vector<const VertexBufferLayout *> buffers;
+    buffers.reserve(desc.buffers.size());
+    for(auto &b : desc.buffers)
+    {
+        buffers.push_back(VertexBufferLayout::Create(b));
+    }
+    auto newLayout = MakeBox<MeshLayout>();
+    newLayout->vertexBuffers_ = std::move(buffers);
+    for(auto &&[index, buffer] : Enumerate(newLayout->vertexBuffers_))
+    {
+        for(auto &attrib : buffer->GetAttributes())
         {
-            for (auto& attrib : buffer->GetAttributes())
-            {
-                assert(!newLayout->semanticToBufferIndex_.contains(attrib.semantic));
-                newLayout->semanticToBufferIndex_.insert({ attrib.semantic, static_cast<int>(index) });
-            }
+            assert(!newLayout->semanticToBufferIndex_.contains(attrib.semantic));
+            newLayout->semanticToBufferIndex_.insert({ attrib.semantic, static_cast<int>(index) });
         }
-        return newLayout;
-    });
+    }
+    return meshLayoutCache.insert({ desc, std::move(newLayout) }).first->second.get();
 }
 
-Span<RC<VertexBufferLayout>> MeshLayout::GetVertexBufferLayouts() const
+Span<const VertexBufferLayout *> MeshLayout::GetVertexBufferLayouts() const
 {
     return vertexBuffers_;
 }
 
-RC<VertexBufferLayout> MeshLayout::GetVertexBufferLayoutBySemantic(std::string_view semantic) const
+const VertexBufferLayout *MeshLayout::GetVertexBufferLayoutBySemantic(std::string_view semantic) const
 {
     const int index = GetVertexBufferIndexBySemantic(semantic);
     return index >= 0 ? vertexBuffers_[index] : nullptr;

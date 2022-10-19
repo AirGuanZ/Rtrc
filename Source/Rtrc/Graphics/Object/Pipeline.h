@@ -40,7 +40,7 @@ public:
         Viewports viewports = 1;
         Scissors  scissors  = 1;
 
-        RC<MeshLayout> meshLayout;
+        const MeshLayout *meshLayout = nullptr;
 
         PrimitiveTopology primitiveTopology = PrimitiveTopology::TriangleList;
         FillMode          fillMode          = FillMode::Fill;

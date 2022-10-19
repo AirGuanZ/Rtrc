@@ -1,16 +1,28 @@
 #pragma once
 
 #include <Rtrc/Graphics/Mesh/Mesh.h>
+#include <Rtrc/Graphics/Object/Buffer.h>
+#include <Rtrc/Graphics/Object/CopyContext.h>
 
 RTRC_BEGIN
-
-class ResourceManager;
 
 class MeshManager : public Uncopyable
 {
 public:
 
+    struct Options
+    {
+        bool generateTangentIfNotPresent = false;
+        bool noIndexBuffer = false;
+    };
 
+    explicit MeshManager(CopyContext *copyContext);
+
+    RC<Mesh> LoadFromObjFile(const std::string &filename, const Options &options = {});
+
+private:
+    
+    CopyContext *copyContext_;
 };
 
 RTRC_END

@@ -35,11 +35,7 @@ void Run()
     auto material = materialManager.GetMaterial("Quad");
     auto subMaterial = material->GetSubMaterialByTag("Default");
     auto shader = subMaterial->GetShader(keywords);
-
-    const int bindingGroupIndex = shader->GetBindingGroupIndexByName("TestGroup");
-    auto bindingGroupLayout = shader->GetBindingGroupLayoutByIndex(bindingGroupIndex);
-    auto bindingLayout = shader->GetBindingLayout();
-
+    
     auto pipeline = renderContext.CreateGraphicsPipeline({
         .shader = shader,
         .colorAttachmentFormats = { renderContext.GetRenderTargetDesc().format }
@@ -98,19 +94,14 @@ void Run()
 
     auto mainTex = copyContext.LoadTexture2D(
         "Asset/01.TexturedQuad/MainTexture.png", RHI::Format::B8G8R8A8_UNorm, RHI::TextureUsage::ShaderResource, true);
-
-    mainTex->GetRHIObject()->SetName("MainTexture");
-
+    mainTex->SetName("MainTexture");
     auto mainTexSRV = mainTex->GetSRV({ .isArray = true });
 
+    renderContext.ExecuteAndWaitImmediate([&](CommandBuffer &cmd)
     {
-        auto commandBuffer = renderContext.CreateCommandBuffer();
-        commandBuffer.Begin();
-        commandBuffer.ExecuteBarriers(BarrierBatch(
+        cmd.ExecuteBarriers(BarrierBatch(
             mainTex, RHI::TextureLayout::ShaderTexture, RHI::PipelineStage::None, RHI::ResourceAccess::None));
-        commandBuffer.End();
-        renderContext.ExecuteAndWait(std::move(commandBuffer));
-    }
+    });
 
     // main sampler
 
@@ -136,9 +127,11 @@ void Run()
 
     // binding group
 
-    auto bindingGroup = bindingGroupLayout->CreateBindingGroup();
-    bindingGroup->Set("VertexPositionBuffer", vertexPositionBufferSRV);
-    bindingGroup->Set("VertexTexCoordBuffer", vertexTexCoordBufferSRV);
+    const int vertexGroupIndex = shader->GetBindingGroupIndexByName("VertexGroup");
+    auto vertexGroupLayout = shader->GetBindingGroupLayoutByIndex(vertexGroupIndex);
+    auto vertexGroup = vertexGroupLayout->CreateBindingGroup();
+    vertexGroup->Set("VertexPositionBuffer", vertexPositionBufferSRV);
+    vertexGroup->Set("VertexTexCoordBuffer", vertexTexCoordBufferSRV);
 
     // render graph
 
@@ -171,13 +164,13 @@ void Run()
             auto &commandBuffer = context.GetCommandBuffer();
             commandBuffer.BeginRenderPass(ColorAttachment
             {
-                .renderTargetView = rt->GetRTV().rhiRTV,
+                .renderTargetView = rt->GetRTV(),
                 .loadOp           = AttachmentLoadOp::Clear,
                 .storeOp          = AttachmentStoreOp::Store,
                 .clearValue       = ColorClearValue{ 0, 1, 1, 1 }
             });
             commandBuffer.BindPipeline(pipeline);
-            commandBuffer.BindGraphicsGroup(bindingGroupIndex, bindingGroup);
+            commandBuffer.BindGraphicsGroup(vertexGroupIndex, vertexGroup);
             commandBuffer.BindGraphicsSubMaterial(subMaterialInstance, keywords);
             commandBuffer.SetViewports(rt->GetViewport());
             commandBuffer.SetScissors(rt->GetScissor());

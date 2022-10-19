@@ -101,7 +101,7 @@ public:
         int byteOffsetInBuffer;
     };
 
-    static RC<VertexBufferLayout> Create(const MeshLayoutDSL::Buffer &desc);
+    static const VertexBufferLayout *Create(const MeshLayoutDSL::Buffer &desc);
 
     bool IsPerInstance() const;
     int GetElementStride() const;
@@ -125,27 +125,29 @@ class MeshLayout : public Uncopyable
 {
 public:
 
-    static RC<MeshLayout> Create(const MeshLayoutDSL::LayoutDesc &desc);
+    static const MeshLayout *Create(const MeshLayoutDSL::LayoutDesc &desc);
 
-    Span<RC<VertexBufferLayout>> GetVertexBufferLayouts() const;
+    Span<const VertexBufferLayout*> GetVertexBufferLayouts() const;
 
     // return nullptr when semantic is not found
-    RC<VertexBufferLayout> GetVertexBufferLayoutBySemantic(std::string_view semantic) const;
+    const VertexBufferLayout *GetVertexBufferLayoutBySemantic(std::string_view semantic) const;
 
     // return -1 when semantic is not found
     int GetVertexBufferIndexBySemantic(std::string_view semantic) const;
 
 private:
 
-    std::vector<RC<VertexBufferLayout>> vertexBuffers_;
+    std::vector<const VertexBufferLayout *> vertexBuffers_;
     std::map<std::string, int, std::less<>> semanticToBufferIndex_;
 };
 
-#define RTRC_MESH_LAYOUT(...)                  \
-    (::Rtrc::MeshLayout::Create([&]            \
-    {                                          \
-        using namespace ::Rtrc::MeshLayoutDSL; \
-        return LayoutDesc(__VA_ARGS__);        \
+#define RTRC_MESH_LAYOUT(...)                   \
+    (::Rtrc::MeshLayout::Create([&]             \
+    {                                           \
+        using namespace ::Rtrc::MeshLayoutDSL;  \
+        using ::Rtrc::MeshLayoutDSL::Buffer;    \
+        using ::Rtrc::MeshLayoutDSL::Attribute; \
+        return LayoutDesc(__VA_ARGS__);         \
     }()))
 
 RTRC_END

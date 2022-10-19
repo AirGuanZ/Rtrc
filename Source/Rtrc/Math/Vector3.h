@@ -31,9 +31,34 @@ using Vector3b = Vector3<uint8_t>;
 
 template<typename T>
 auto operator<=>(const Vector3<T> &a, const Vector3<T> &b);
-
 template<typename T>
 bool operator==(const Vector3<T> &a, const Vector3<T> &b);
+
+template<typename T>
+auto operator+(const Vector3<T> &a, const Vector3<T> &b);
+template<typename T>
+auto operator-(const Vector3<T> &a, const Vector3<T> &b);
+template<typename T>
+auto operator*(const Vector3<T> &a, const Vector3<T> &b);
+template<typename T>
+auto operator/(const Vector3<T> &a, const Vector3<T> &b);
+
+template<typename T>
+auto operator*(const Vector3<T> &a, T b);
+template<typename T>
+auto operator*(T a, const Vector3<T> &b);
+
+template<typename T>
+T Dot(const Vector3<T> &a, const Vector3<T> &b);
+template<typename T>
+Vector3<T> Cross(const Vector3<T> &a, const Vector3<T> &b);
+
+template<typename T>
+T LengthSquare(const Vector3<T> &v);
+template<typename T>
+T Length(const Vector3<T> &v);
+template<typename T>
+Vector3<T> Normalize(const Vector3<T> &v);
 
 template<typename T>
 Vector3<T>::Vector3(T value)
@@ -77,6 +102,75 @@ template<typename T>
 bool operator==(const Vector3<T> &a, const Vector3<T> &b)
 {
     return a.ToTuple() == b.ToTuple();
+}
+
+template<typename T>
+auto operator+(const Vector3<T> &a, const Vector3<T> &b)
+{
+    return Vector3<T>(a.x + b.x, a.y + b.y, a.z + b.z);
+}
+
+template<typename T>
+auto operator-(const Vector3<T> &a, const Vector3<T> &b)
+{
+    return Vector3<T>(a.x - b.x, a.y - b.y, a.z - b.z);
+}
+
+template<typename T>
+auto operator*(const Vector3<T> &a, const Vector3<T> &b)
+{
+    return Vector3<T>(a.x * b.x, a.y * b.y, a.z * b.z);
+}
+
+template<typename T>
+auto operator/(const Vector3<T> &a, const Vector3<T> &b)
+{
+    return Vector3<T>(a.x / b.x, a.y / b.y, a.z / b.z);
+}
+
+template<typename T>
+auto operator*(const Vector3<T> &a, T b)
+{
+    return Vector3<T>(a.x * b, a.y * b, a.z * b);
+}
+
+template<typename T>
+auto operator*(T a, const Vector3<T> &b)
+{
+    return b * a;
+}
+
+template<typename T>
+T Dot(const Vector3<T> &a, const Vector3<T> &b)
+{
+    return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+template<typename T>
+Vector3<T> Cross(const Vector3<T> &a, const Vector3<T> &b)
+{
+    return Vector3<T>(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+}
+
+template<typename T>
+T LengthSquare(const Vector3<T> &v)
+{
+    return Dot(v, v);
+}
+
+template<typename T>
+T Length(const Vector3<T> &v)
+{
+    static_assert(std::is_floating_point_v<T>);
+    return std::sqrt(LengthSquare(v));
+}
+
+template<typename T>
+Vector3<T> Normalize(const Vector3<T> &v)
+{
+    static_assert(std::is_floating_point_v<T>);
+    const T invLen = 1 / Length(v);
+    return Vector3<T>(invLen * v.x, invLen * v.y, invLen * v.z);
 }
 
 RTRC_END

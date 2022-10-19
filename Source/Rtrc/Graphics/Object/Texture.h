@@ -72,6 +72,11 @@ struct TextureRTV
     {
         return rhiRTV;
     }
+
+    operator RHI::TextureRTV *() const
+    {
+        return rhiRTV;
+    }
 };
 
 class Texture2D : public Uncopyable, public std::enable_shared_from_this<Texture2D>
@@ -85,6 +90,8 @@ public:
     Texture2D &operator=(Texture2D &&other) noexcept;
 
     void Swap(Texture2D &other) noexcept;
+
+    void SetName(std::string name);
 
     // The rhi texture may be reused by other new texture object after this one is destructed
     void AllowReuse(bool allow);
@@ -230,6 +237,11 @@ inline void Texture2D::Swap(Texture2D &other) noexcept
     std::swap(allowReuse_, other.allowReuse_);
     rhiTexture_.Swap(other.rhiTexture_);
     unsyncAccesses_.Swap(other.unsyncAccesses_);
+}
+
+inline void Texture2D::SetName(std::string name)
+{
+    rhiTexture_->SetName(std::move(name));
 }
 
 inline void Texture2D::AllowReuse(bool allow)

@@ -20,7 +20,7 @@ Shader "Quad"
 
     #keyword DADADA
 
-    group TestGroup
+    group VertexGroup
     {
         Buffer<float2> VertexPositionBuffer;
         Buffer<float2> VertexTexCoordBuffer;

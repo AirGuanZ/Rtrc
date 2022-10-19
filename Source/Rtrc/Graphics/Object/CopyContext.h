@@ -10,7 +10,10 @@ class CopyContext : public Uncopyable
 {
 public:
 
-    CopyContext(RHI::DevicePtr device, BufferManager *bufferManager, TextureManager *textureManager);
+    CopyContext(
+        RHI::DevicePtr  device,
+        BufferManager  *bufferManager,
+        TextureManager *textureManager);
 
     void UploadBuffer(
         const RC<Buffer> &buffer,
@@ -46,7 +49,7 @@ public:
         RHI::Format           format,
         RHI::TextureUsageFlag usages,
         Span<const void *>    imageData);
-    
+
     RC<Texture2D> CreateTexture2D(
         uint32_t              width,
         uint32_t              height,

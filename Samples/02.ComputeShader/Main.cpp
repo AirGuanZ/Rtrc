@@ -80,7 +80,6 @@ void Run()
 
         cmd.ExecuteBarriers(BarrierBatch()
             (outputTexture, RHI::TextureLayout::CopySrc, RHI::PipelineStage::Copy, RHI::ResourceAccess::CopyRead));
-
         cmd.CopyColorTexture2DToBuffer(*readbackBuffer, 0, *outputTexture, 0, 0);
     });
     readbackBuffer->SetUnsyncAccess(UnsynchronizedBufferAccess::Create(

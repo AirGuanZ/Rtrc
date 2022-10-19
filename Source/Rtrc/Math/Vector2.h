@@ -34,9 +34,22 @@ using Vector2b = Vector2<uint8_t>;
 
 template<typename T>
 auto operator<=>(const Vector2<T> &a, const Vector2<T> &b);
-
 template<typename T>
 bool operator==(const Vector2<T> &a, const Vector2<T> &b);
+
+template<typename T>
+auto operator+(const Vector2<T> &a, const Vector2<T> &b);
+template<typename T>
+auto operator-(const Vector2<T> &a, const Vector2<T> &b);
+template<typename T>
+auto operator*(const Vector2<T> &a, const Vector2<T> &b);
+template<typename T>
+auto operator/(const Vector2<T> &a, const Vector2<T> &b);
+
+template<typename T>
+auto operator*(const Vector2<T> &a, T b);
+template<typename T>
+auto operator*(T a, const Vector2<T> &b);
 
 template<typename T>
 constexpr Vector2<T>::Vector2(T value)
@@ -87,6 +100,42 @@ template<typename T>
 bool operator==(const Vector2<T> &a, const Vector2<T> &b)
 {
     return a.ToTuple() == b.ToTuple();
+}
+
+template<typename T>
+auto operator+(const Vector2<T> &a, const Vector2<T> &b)
+{
+    return Vector2<T>(a.x + b.x, a.y + b.y);
+}
+
+template<typename T>
+auto operator-(const Vector2<T> &a, const Vector2<T> &b)
+{
+    return Vector2<T>(a.x - b.x, a.y - b.y);
+}
+
+template<typename T>
+auto operator*(const Vector2<T> &a, const Vector2<T> &b)
+{
+    return Vector2<T>(a.x * b.x, a.y * b.y);
+}
+
+template<typename T>
+auto operator/(const Vector2<T> &a, const Vector2<T> &b)
+{
+    return Vector2<T>(a.x / b.x, a.y / b.y);
+}
+
+template<typename T>
+auto operator*(const Vector2<T> &a, T b)
+{
+    return Vector2<T>(a.x * b, a.y * b);
+}
+
+template<typename T>
+auto operator*(T a, const Vector2<T> &b)
+{
+    return b * a;
 }
 
 RTRC_END

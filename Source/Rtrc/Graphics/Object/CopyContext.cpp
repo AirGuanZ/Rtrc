@@ -4,14 +4,23 @@
 
 RTRC_BEGIN
 
-CopyContext::CopyContext(RHI::DevicePtr device, BufferManager *bufferManager, TextureManager *textureManager)
-    : device_(device), copyQueue_(device->GetQueue(RHI::QueueType::Transfer)),
-      bufferManager_(bufferManager), textureManager_(textureManager)
+CopyContext::CopyContext(
+    RHI::DevicePtr  device,
+    BufferManager  *bufferManager,
+    TextureManager *textureManager)
+    : device_(device),
+      copyQueue_(device->GetQueue(RHI::QueueType::Transfer)),
+      bufferManager_(bufferManager),
+      textureManager_(textureManager)
 {
     
 }
 
-void CopyContext::UploadBuffer(const RC<Buffer> &buffer, const void *initData, size_t offset, size_t size)
+void CopyContext::UploadBuffer(
+    const RC<Buffer> &buffer,
+    const void       *initData,
+    size_t            offset,
+    size_t            size)
 {
     auto &bufferDesc = buffer->GetRHIObjectDesc();
 

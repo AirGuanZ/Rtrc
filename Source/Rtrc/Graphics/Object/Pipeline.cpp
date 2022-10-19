@@ -85,7 +85,7 @@ RC<GraphicsPipeline> PipelineManager::CreateGraphicsPipeline(const GraphicsPipel
                 throw Exception(fmt::format(
                     "Input variable with semantic '{}' is not provided by given mesh layout", var.semantic));
             }
-            auto &vertexBufferLayout = desc.meshLayout->GetVertexBufferLayouts()[indexInMeshLayout];
+            auto vertexBufferLayout = desc.meshLayout->GetVertexBufferLayouts()[indexInMeshLayout];
 
             int RHIVertexBufferIndex;
             if(auto it = indexCache.find(indexInMeshLayout); it == indexCache.end())

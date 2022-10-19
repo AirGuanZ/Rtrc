@@ -9,120 +9,71 @@ class Application : public Uncopyable
     Window window_;
     Input *input_ = nullptr;
 
-    RHI::InstancePtr  instance_;
-    RHI::DevicePtr    device_;
-    RHI::QueuePtr     graphicsQueue_;
-    RHI::SwapchainPtr swapchain_;
+    RHI::InstancePtr   instance_;
+    Box<RenderContext> renderContext_;
 
-    RC<ResourceManager> resourceManager_;
     Box<RG::Executer> executer_;
 
-    void InitializeVulkan()
+    void Initialize()
     {
         window_ = WindowBuilder()
-            .SetSize(800, 600)
-            .SetTitle("Rtrc Sample: DeferredShading")
+            .SetSize(800, 800)
+            .SetTitle("Rtrc Sample: Deferred Shading")
             .Create();
-        input_ = &window_.GetInput();
-
         instance_ = CreateVulkanInstance(RHI::VulkanInstanceDesc
-            {
-                .extensions = Window::GetRequiredVulkanInstanceExtensions(),
-                .debugMode = RTRC_DEBUG
-            });
-        device_ = instance_->CreateDevice();
-        graphicsQueue_ = device_->GetQueue(RHI::QueueType::Graphics);
-
-        RecreateSwapchain();
-        window_.Attach([&](const WindowResizeEvent &e)
         {
-            if(e.width > 0 && e.height > 0)
-            {
-                RecreateSwapchain();
-            }
+            .extensions = Window::GetRequiredVulkanInstanceExtensions(),
+            .debugMode = RTRC_DEBUG
         });
+        renderContext_ = MakeBox<RenderContext>(instance_->CreateDevice(), &window_);
+        executer_ = MakeBox<RG::Executer>(*renderContext_);
     }
 
-    void RecreateSwapchain()
+    void Frame()
     {
-        device_->WaitIdle();
-        swapchain_.Reset();
-        swapchain_ = device_->CreateSwapchain(RHI::SwapchainDesc
+        if(window_.GetInput().IsKeyDown(KeyCode::Escape))
         {
-            .format = RHI::Format::B8G8R8A8_UNorm,
-            .imageCount = 3
-        }, window_);
+            window_.SetCloseFlag(true);
+        }
+
+        auto rg = renderContext_->CreateRenderGraph();
+        auto renderTarget = rg->RegisterSwapchainTexture(renderContext_->GetSwapchain());
+        auto clearPass = rg->CreatePass("Clear Render Target");
+        clearPass->Use(renderTarget, RG::RENDER_TARGET_WRITE)
+                 ->SetCallback([&](RG::PassContext &context)
+                 {
+                     auto rt = renderTarget->Get();
+                     auto &cmd = context.GetCommandBuffer();
+                     cmd.BeginRenderPass(ColorAttachment
+                     {
+                         .renderTargetView = renderTarget->Get()->GetRTV().rhiRTV,
+                         .loadOp = AttachmentLoadOp::Clear,
+                         .storeOp = AttachmentStoreOp::Store,
+                         .clearValue = ColorClearValue{ 0, 1, 1, 0 }
+                     });
+                     cmd.EndRenderPass();
+                 })
+                 ->SetSignalFence(renderContext_->GetFrameFence());
+        executer_->Execute(rg);
     }
 
 public:
 
-    Application()
+    void Run()
     {
-        InitializeVulkan();
-
-        resourceManager_ = MakeRC<ResourceManager>(device_, swapchain_->GetRenderTargetCount());
-        executer_ = MakeBox<RG::Executer>(resourceManager_.get());
-    }
-
-    ~Application()
-    {
-        if(device_)
+        Initialize();
+        renderContext_->BeginRenderLoop();
+        while(!window_.ShouldClose())
         {
-            device_->WaitIdle();
-        }
-    }
-
-    bool Frame()
-    {
-        // process window events
-
-        Window::DoEvents();
-        if(input_->IsKeyDown(KeyCode::Escape))
-        {
-            window_.SetCloseFlag(true);
-        }
-        if(!window_.HasFocus() || window_.GetFramebufferSize().x <= 0 || window_.GetFramebufferSize().y <= 0)
-        {
-            return true;
-        }
-
-        // begin frame
-
-        resourceManager_->BeginFrame();
-        if(!swapchain_->Acquire())
-        {
-            return true;
-        }
-
-        // render graph
-
-        RG::RenderGraph graph;
-        graph.SetQueue(graphicsQueue_);
-
-        auto renderTarget = graph.RegisterSwapchainTexture(swapchain_);
-
-        auto clearPass = graph.CreatePass("Clear Render Target");
-        clearPass
-            ->Use(renderTarget, RG::RENDER_TARGET_WRITE)
-            ->SetCallback([&](RG::PassContext &context)
+            if(!renderContext_->BeginFrame())
             {
-                auto rt = renderTarget->GetRHI();
-                auto commandBuffer = context.GetRHICommandBuffer();
-                commandBuffer->BeginRenderPass(RHI::RenderPassColorAttachment
-                {
-                    .renderTargetView = rt->CreateRTV(),
-                    .loadOp           = RHI::AttachmentLoadOp::Clear,
-                    .storeOp          = RHI::AttachmentStoreOp::Store,
-                    .clearValue       = RHI::ColorClearValue{ 0, 1, 1, 0 }
-                });
-                commandBuffer->EndRenderPass();
-            })
-            ->SetSignalFence(resourceManager_->GetFrameFence());
-
-        executer_->Execute(graph);
-        swapchain_->Present();
-
-        return !window_.ShouldClose();
+                continue;
+            }
+            Frame();
+            renderContext_->Present();
+        }
+        renderContext_->EndRenderLoop();
+        renderContext_->WaitIdle();
     }
 };
 
@@ -131,11 +82,7 @@ int main()
     EnableMemoryLeakReporter();
     try
     {
-        Application app;
-        while(app.Frame())
-        {
-            
-        }
+        Application().Run();
     }
     catch(const std::exception &e)
     {
