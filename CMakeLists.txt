@@ -28,7 +28,7 @@ SET_TARGET_PROPERTIES(stb PROPERTIES FOLDER "External")
 #============= tinyexr =============
 
 ADD_SUBDIRECTORY(External/tinyexr)
-SET_TARGET_PROPERTIES(tinyexr PROPERTIES FOLDER "External")
+SET_TARGET_PROPERTIES(tinyexr miniz PROPERTIES FOLDER "External")
 
 #============= tinyobjloader =============
 
@@ -37,7 +37,7 @@ SET_TARGET_PROPERTIES(tinyobjloader PROPERTIES FOLDER "External")
 
 #============= mimalloc =============
 
-ADD_SUBDIRECTORY(External/mimalloc-2.0.6)
+ADD_SUBDIRECTORY(External/mimalloc)
 SET_TARGET_PROPERTIES(mimalloc-static PROPERTIES FOLDER "External")
 
 #============= mimalloc =============

@@ -202,6 +202,24 @@ void VulkanCommandBuffer::SetScissorsWithCount(Span<Scissor> scissors)
     vkCmdSetScissorWithCount(commandBuffer_, scissors.GetSize(), vkScissors.data());
 }
 
+void VulkanCommandBuffer::SetVertexBuffer(int slot, Span<BufferPtr> buffers, Span<size_t> byteOffsets)
+{
+    std::vector<VkBuffer> vkBuffers(buffers.size());
+    for(size_t i = 0; i < buffers.size(); ++i)
+    {
+        vkBuffers[i] = static_cast<const VulkanBuffer *>(buffers[i].Get())->GetNativeBuffer();
+    }
+    vkCmdBindVertexBuffers(
+        commandBuffer_, static_cast<uint32_t>(slot), buffers.GetSize(), vkBuffers.data(), byteOffsets.GetData());
+}
+
+void VulkanCommandBuffer::SetIndexBuffer(const BufferPtr &buffer, size_t byteOffset, IndexBufferFormat format)
+{
+    VkBuffer vkBuffer = static_cast<const VulkanBuffer *>(buffer.Get())->GetNativeBuffer();
+    const VkIndexType indexType = format == IndexBufferFormat::UInt16 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32;
+    vkCmdBindIndexBuffer(commandBuffer_, vkBuffer, byteOffset, indexType);
+}
+
 void VulkanCommandBuffer::Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance)
 {
     vkCmdDraw(

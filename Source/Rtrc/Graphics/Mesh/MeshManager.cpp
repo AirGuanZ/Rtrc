@@ -31,7 +31,7 @@ MeshManager::MeshManager(CopyContext *copyContext)
     
 }
 
-RC<Mesh> MeshManager::LoadFromObjFile(const std::string &filename, const Options &options)
+Mesh MeshManager::LoadFromObjFile(const std::string &filename, const Options &options)
 {
     MeshData meshData = MeshData::LoadFromObjFile(filename);
 
@@ -178,7 +178,7 @@ RC<Mesh> MeshManager::LoadFromObjFile(const std::string &filename, const Options
         meshBuilder.SetIndexBuffer(std::move(indexBuffer), RHI::IndexBufferFormat::UInt16);
     }
 
-    return MakeRC<Mesh>(meshBuilder.CreateMesh());
+    return meshBuilder.CreateMesh();
 }
 
 RTRC_END

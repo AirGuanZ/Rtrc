@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Rtrc/Graphics/Mesh/Mesh.h>
-#include <Rtrc/Graphics/Object/Buffer.h>
 #include <Rtrc/Graphics/Object/CopyContext.h>
 
 RTRC_BEGIN
@@ -18,7 +17,7 @@ public:
 
     explicit MeshManager(CopyContext *copyContext);
 
-    RC<Mesh> LoadFromObjFile(const std::string &filename, const Options &options = {});
+    Mesh LoadFromObjFile(const std::string &filename, const Options &options = {});
 
 private:
     

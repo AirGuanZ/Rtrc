@@ -3,7 +3,7 @@
 #include <map>
 #include <shared_mutex>
 
-#include <Rtrc/Common.h>
+#include <Rtrc/Utils/Hash.h>
 
 RTRC_BEGIN
 
@@ -26,10 +26,28 @@ namespace SharedObjectPoolDetail
         std::shared_mutex mutex_;
     };
 
+    template<bool UseHashMap, typename Key, typename Value>
+    class SharedObjectMap
+    {
+    protected:
+
+        std::map<Key, std::weak_ptr<Value>, std::less<>> keyToValue_;
+    };
+
+    template<typename Key, typename Value>
+    class SharedObjectMap<true, Key, Value>
+    {
+    protected:
+
+        std::unordered_map<Key, std::weak_ptr<Value>, HashOperator<Key>> keyToValue_;
+    };
+
 } // namespace SharedObjectPoolDetail
 
-template<typename Key, typename Value, bool ThreadSafe>
-class SharedObjectPool : public SharedObjectPoolDetail::SharedObjectPoolMutex<ThreadSafe>
+template<typename Key, typename Value, bool ThreadSafe, bool UseHashMap = false>
+class SharedObjectPool :
+    public SharedObjectPoolDetail::SharedObjectPoolMutex<ThreadSafe>,
+    public SharedObjectPoolDetail::SharedObjectMap<UseHashMap, Key, Value>
 {
 public:
 
@@ -40,13 +58,13 @@ public:
         if constexpr(ThreadSafe)
         {
             std::shared_lock lock(this->mutex_);
-            auto it = keyToValue_.find(key);
-            return it != keyToValue_.end() ? it->second.lock() : nullptr;
+            auto it = this->keyToValue_.find(key);
+            return it != this->keyToValue_.end() ? it->second.lock() : nullptr;
         }
         else
         {
-            auto it = keyToValue_.find(key);
-            return it != keyToValue_.end() ? it->second.lock() : nullptr;
+            auto it = this->keyToValue_.find(key);
+            return it != this->keyToValue_.end() ? it->second.lock() : nullptr;
         }
     }
 
@@ -57,7 +75,7 @@ public:
         {
             {
                 std::shared_lock lock(this->mutex_);
-                if(auto it = keyToValue_.find(key); it != keyToValue_.end())
+                if(auto it = this->keyToValue_.find(key); it != this->keyToValue_.end())
                 {
                     if(auto rc = it->second.lock())
                     {
@@ -69,13 +87,13 @@ public:
             auto newObject = OptionalRCWrapper(std::forward<CreateFunc>(createFunc));
             if(newObject)
             {
-                keyToValue_.insert(std::make_pair(key, newObject));
+                this->keyToValue_.insert(std::make_pair(key, newObject));
             }
             return newObject;
         }
         else
         {
-            if(auto it = keyToValue_.find(key); it != keyToValue_.end())
+            if(auto it = this->keyToValue_.find(key); it != this->keyToValue_.end())
             {
                 if(auto rc = it->second.lock())
                 {
@@ -85,7 +103,7 @@ public:
             auto newObject = OptionalRCWrapper(std::forward<CreateFunc>(createFunc));
             if(newObject)
             {
-                keyToValue_.insert(std::make_pair(key, newObject));
+                this->keyToValue_.insert(std::make_pair(key, newObject));
             }
             return newObject;
         }
@@ -96,11 +114,11 @@ public:
         if constexpr(ThreadSafe)
         {
             std::unique_lock lock(this->mutex_);
-            for(auto it = keyToValue_.begin(); it != keyToValue_.end();)
+            for(auto it = this->keyToValue_.begin(); it != this->keyToValue_.end();)
             {
                 if(it->second.expired())
                 {
-                    it = keyToValue_.erase(it);
+                    it = this->keyToValue_.erase(it);
                 }
                 else
                 {
@@ -110,11 +128,11 @@ public:
         }
         else
         {
-            for(auto it = keyToValue_.begin(); it != keyToValue_.end();)
+            for(auto it = this->keyToValue_.begin(); it != this->keyToValue_.end();)
             {
                 if(it->second.expired())
                 {
-                    it = keyToValue_.erase(it);
+                    it = this->keyToValue_.erase(it);
                 }
                 else
                 {
@@ -142,7 +160,7 @@ private:
         }
     }
 
-    KeyToValue keyToValue_;
+    //KeyToValue keyToValue_;
 };
 
 RTRC_END

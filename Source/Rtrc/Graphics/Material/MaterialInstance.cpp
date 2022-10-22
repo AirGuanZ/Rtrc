@@ -1,5 +1,3 @@
-#include "MaterialInstance.h"
-
 #include <Rtrc/Graphics/Material/MaterialInstance.h>
 
 RTRC_BEGIN

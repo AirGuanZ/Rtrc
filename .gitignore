@@ -1,2 +1,5 @@
-﻿Build/
-External/oneapi-tbb-2021.6.0
+﻿build/
+Build/
+BuildCMake/
+.xmake/
+vsxmake2022/

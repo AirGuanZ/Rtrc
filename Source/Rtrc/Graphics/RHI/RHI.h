@@ -596,6 +596,10 @@ struct Viewport
     float minDepth;
     float maxDepth;
 
+    auto operator<=>(const Viewport &) const = default;
+
+    size_t Hash() const { return ::Rtrc::Hash(lowerLeftCorner, size, minDepth, maxDepth); }
+
     static Viewport Create(const TextureDesc &desc, float minDepth = 0, float maxDepth = 1)
     {
         return Viewport{
@@ -613,6 +617,10 @@ struct Scissor
 {
     Vector2i lowerLeftCorner;
     Vector2i size;
+
+    auto operator<=>(const Scissor &) const = default;
+
+    size_t Hash() const { return ::Rtrc::Hash(lowerLeftCorner, size); }
 
     static Scissor Create(const TextureDesc &desc)
     {
@@ -645,12 +653,14 @@ struct RenderPassColorAttachment
 
 struct DynamicViewportCount
 {
-
+    auto operator<=>(const DynamicViewportCount &) const = default;
+    size_t Hash() const { return 1; }
 };
 
 struct DynamicScissorCount
 {
-
+    auto operator<=>(const DynamicScissorCount &) const = default;
+    size_t Hash() const { return 2; }
 };
 
 // fixed viewports; dynamic viewports with fixed count; dynamic count
@@ -696,6 +706,13 @@ struct GraphicsPipelineDesc
         CompareOp compareOp   = CompareOp::Always;
         uint32_t  compareMask = 0xff;
         uint32_t  writeMask   = 0xff;
+
+        auto operator<=>(const StencilOps &) const = default;
+
+        size_t Hash() const
+        {
+            return ::Rtrc::Hash(depthFailOp, failOp, passOp, compareOp, compareMask, writeMask);
+        }
     };
 
     Ptr<RawShader> vertexShader;
@@ -737,8 +754,8 @@ struct GraphicsPipelineDesc
     BlendOp     blendingColorOp        = BlendOp::Add;
     BlendOp     blendingAlphaOp        = BlendOp::Add;
 
-    std::vector<Format> colorAttachments;
-    Format              depthStencilFormat = Format::Unknown;
+    StaticVector<Format, 8> colorAttachments;
+    Format                  depthStencilFormat = Format::Unknown;
 };
 
 struct ComputePipelineDesc
@@ -954,6 +971,9 @@ public:
 
     virtual void SetViewportsWithCount(Span<Viewport> viewports) = 0;
     virtual void SetScissorsWithCount (Span<Scissor> scissors) = 0;
+
+    virtual void SetVertexBuffer(int slot, Span<BufferPtr> buffers, Span<size_t> byteOffsets) = 0;
+    virtual void SetIndexBuffer(const BufferPtr &buffer, size_t byteOffset, IndexBufferFormat format) = 0;
 
     virtual void Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance) = 0;
 

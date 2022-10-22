@@ -1,7 +1,9 @@
 #include <array>
 
-#include <stb/stb_image.h>
-#include <stb/stb_image_write.h>
+#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image.h>
+#include <stb_image_write.h>
 #include <tinyexr.h>
 
 #include <Rtrc/Utils/Image.h>

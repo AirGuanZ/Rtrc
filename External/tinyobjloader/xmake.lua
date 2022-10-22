@@ -1,0 +1,6 @@
+target("tinyobjloader")
+    set_kind("static")
+    set_group("3rdParty")
+    add_includedirs("./", {public = true})
+    add_headerfiles("*.h")
+    add_files("*.cc")

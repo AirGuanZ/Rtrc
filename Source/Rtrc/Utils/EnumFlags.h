@@ -1,5 +1,7 @@
 #pragma once
 
+#include <type_traits>
+
 #include <Rtrc/Common.h>
 
 RTRC_BEGIN

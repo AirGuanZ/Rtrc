@@ -105,28 +105,34 @@ constexpr size_t GetMemberOffset(M C::*p)
     return reinterpret_cast<size_t>(&(static_cast<C*>(nullptr)->*p));
 }
 
-template<typename T> requires std::is_scoped_enum_v<T>
-constexpr size_t EnumValueCount = static_cast<size_t>(T::Count);
-
 class WithUniqueObjectID
 {
 public:
 
-    using UniqueObjectID = uint64_t;
+    struct UniqueID
+    {
+        uint64_t data = 0;
+
+        auto operator<=>(const UniqueID &) const = default;
+
+        size_t Hash() const noexcept { return std::hash<uint64_t>{}(data); }
+    };
 
     WithUniqueObjectID()
     {
-        static std::atomic<UniqueObjectID> nextID = 1;
-        uniqueObjectID_ = nextID++;
+        static std::atomic<uint64_t> nextID = 1;
+        uniqueID_.data = nextID++;
     }
 
     WithUniqueObjectID(const WithUniqueObjectID &) : WithUniqueObjectID() { }
 
     WithUniqueObjectID &operator=(const WithUniqueObjectID &) { return *this; }
 
+    const UniqueID &GetUniqueID() const { return uniqueID_; }
+
 private:
 
-    UniqueObjectID uniqueObjectID_;
+    UniqueID uniqueID_;
 };
 
 RTRC_END

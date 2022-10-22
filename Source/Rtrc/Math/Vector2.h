@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/Common.h>
+#include <Rtrc/Utils/Hash.h>
 
 RTRC_BEGIN
 
@@ -23,6 +23,8 @@ public:
 
     template<typename U>
     constexpr Vector2<U> To() const;
+
+    size_t Hash() const;
 
     T x, y;
 };
@@ -88,6 +90,12 @@ template <typename U>
 constexpr Vector2<U> Vector2<T>::To() const
 {
     return Vector2<U>(static_cast<U>(x), static_cast<U>(y));
+}
+
+template<typename T>
+size_t Vector2<T>::Hash() const
+{
+    return ::Rtrc::Hash(x, y);
 }
 
 template<typename T>

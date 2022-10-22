@@ -5,9 +5,10 @@
 #include <Rtrc/Graphics/Object/Texture.h>
 #include <Rtrc/Graphics/Object/CommandBuffer.h>
 
-RTRC_BEGIN
+#include "Rtrc/Graphics/Mesh/Mesh.h"
 
-BarrierBatch &BarrierBatch::operator()(
+RTRC_BEGIN
+    BarrierBatch &BarrierBatch::operator()(
     const RC<Buffer>       &buffer,
     RHI::PipelineStageFlag  stages,
     RHI::ResourceAccessFlag accesses)
@@ -189,6 +190,31 @@ void CommandBuffer::SetScissors(Span<Scissor> scissors)
 {
     CheckThreadID();
     rhiCommandBuffer_->SetScissors(scissors);
+}
+
+void CommandBuffer::SetVertexBuffers(int slot, Span<RC<Buffer>> buffers, Span<size_t> byteOffsets)
+{
+    CheckThreadID();
+    static constexpr std::array<size_t, 128> EMPTY_BYTE_OFFSETS = {};
+    std::vector<RHI::BufferPtr> rhiBuffers(buffers.size());
+    for(size_t i = 0; i < buffers.size(); ++i)
+    {
+        rhiBuffers[i] = buffers[i]->GetRHIObject();
+    }
+    rhiCommandBuffer_->SetVertexBuffer(
+        slot, rhiBuffers, byteOffsets.IsEmpty() ? Span(EMPTY_BYTE_OFFSETS.data(), buffers.GetSize()) : byteOffsets);
+}
+
+void CommandBuffer::SetIndexBuffer(const RC<Buffer> &buffer, RHI::IndexBufferFormat format, size_t byteOffset)
+{
+    CheckThreadID();
+    rhiCommandBuffer_->SetIndexBuffer(buffer->GetRHIObject(), byteOffset, format);
+}
+
+void CommandBuffer::SetMesh(const Mesh &mesh)
+{
+    CheckThreadID();
+    mesh.Bind(*this);
 }
 
 void CommandBuffer::Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance)

@@ -14,7 +14,7 @@ public:
 
     using ElementType = T;
 
-    Span() : Span(nullptr, 0u) { }
+    Span() = default;
 
     Span(const T &value) : Span(&value, 1) { }
 
@@ -41,10 +41,24 @@ public:
     auto begin() const { return data_; }
     auto end() const { return data_ + size_; }
 
+    size_t Hash() const
+    {
+        if(IsEmpty())
+        {
+            return 0;
+        }
+        size_t ret = ::Rtrc::Hash(data_[0]);
+        for(uint32_t i = 1; i < size_; ++i)
+        {
+            ret = ::Rtrc::HashCombine(ret, ::Rtrc::Hash(data_[i]));
+        }
+        return ret;
+    }
+
 private:
 
-    const T *data_;
-    uint32_t size_;
+    const T *data_ = nullptr;
+    uint32_t size_ = 0;
 };
 
 RTRC_END

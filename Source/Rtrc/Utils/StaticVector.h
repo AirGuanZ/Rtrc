@@ -2,6 +2,7 @@
 
 #include <cassert>
 
+#include <Rtrc/Utils/Hash.h>
 #include <Rtrc/Utils/ScopeGuard.h>
 
 RTRC_BEGIN
@@ -9,6 +10,12 @@ RTRC_BEGIN
 template<typename T, size_t N>
 class StaticVector
 {
+
+    T *Addr(size_t i)
+    {
+        return reinterpret_cast<T *>(&data_) + i;
+    }
+
 public:
 
     static constexpr size_t Capacity = N;
@@ -19,14 +26,26 @@ public:
         
     }
 
+    StaticVector(std::initializer_list<T> initData)
+    {
+        assert(initData.size() <= Capacity);
+        size_ = 0;
+        RTRC_SCOPE_FAIL{ Destruct(); };
+        while(size_ < initData.size())
+        {
+            new(Addr(size_)) T(std::data(initData)[size_]);
+            ++size_;
+        }
+    }
+
     explicit StaticVector(size_t initialCount, const T &value = {})
     {
-        assert(initialCount < Capacity);
+        assert(initialCount <= Capacity);
         size_ = 0;
         RTRC_SCOPE_FAIL{ Destruct(); };
         while(size_ < initialCount)
         {
-            new(&At(size_)) T(value);
+            new(Addr(size_)) T(value);
             ++size_;
         }
     }
@@ -191,6 +210,11 @@ public:
 
     auto begin() const { return reinterpret_cast<const T *>(&data_); }
     auto end() const { return begin() + size_; }
+
+    size_t Hash() const
+    {
+        return ::Rtrc::HashRange(this->begin(), this->end());
+    }
 
 private:
 

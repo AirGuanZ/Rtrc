@@ -76,7 +76,7 @@ void Run()
         Vector2f(1.0f, 0.0f),
         Vector2f(1.0f, 1.0f)
     };
-    
+
     auto vertexTexCoordBuffer = copyContext.CreateBuffer(
         sizeof(vertexTexCoordData),
         RHI::BufferUsage::ShaderBuffer,

@@ -1,6 +1,8 @@
 #pragma once
 
 #include <Rtrc/Graphics/Object/GeneralGPUObject.h>
+#include <Rtrc/Graphics/Shader/Shader.h>
+#include <Rtrc/Utils/SharedObjectPool.h>
 
 RTRC_BEGIN
 
@@ -32,6 +34,51 @@ public:
     using BlendOp     = RHI::BlendOp;
 
     using Format = RHI::Format;
+
+    struct DescKey
+    {
+        Shader::UniqueID shader;
+        
+        Viewports viewports = 1;
+        Scissors  scissors  = 1;
+
+        const MeshLayout *meshLayout = nullptr;
+
+        PrimitiveTopology primitiveTopology = PrimitiveTopology::TriangleList;
+        FillMode          fillMode          = FillMode::Fill;
+        CullMode          cullMode          = CullMode::DontCull;
+        FrontFaceMode     frontFaceMode     = FrontFaceMode::Clockwise;
+
+        bool  enableDepthBias      = false;
+        float depthBiasConstFactor = 0.0f;
+        float depthBiasSlopeFactor = 0.0f;
+        float depthBiasClampValue  = 0.0f;
+
+        int multisampleCount = 1;
+
+        bool      enableDepthTest  = false;
+        bool      enableDepthWrite = false;
+        CompareOp depthCompareOp   = CompareOp::Always;
+
+        bool       enableStencilTest = false;
+        StencilOps frontStencil;
+        StencilOps backStencil;
+
+        bool        enableBlending = false;
+        BlendFactor blendingSrcColorFactor = BlendFactor::One;
+        BlendFactor blendingDstColorFactor = BlendFactor::Zero;
+        BlendOp     blendingColorOp        = BlendOp::Add;
+        BlendFactor blendingSrcAlphaFactor = BlendFactor::One;
+        BlendFactor blendingDstAlphaFactor = BlendFactor::Zero;
+        BlendOp     blendingAlphaOp        = BlendOp::Add;
+
+        StaticVector<Format, 8> colorAttachmentFormats;
+        Format                  depthStencilFormat = RHI::Format::Unknown;
+
+        size_t Hash() const;
+
+        bool operator==(const DescKey &other) const noexcept = default;
+    };
 
     struct Desc
     {
@@ -70,10 +117,12 @@ public:
         BlendFactor blendingDstAlphaFactor = BlendFactor::Zero;
         BlendOp     blendingAlphaOp        = BlendOp::Add;
 
-        std::vector<Format> colorAttachmentFormats;
-        Format              depthStencilFormat = RHI::Format::Unknown;
+        StaticVector<Format, 8> colorAttachmentFormats;
+        Format                  depthStencilFormat = RHI::Format::Unknown;
 
         void Validate() const;
+
+        DescKey AsKey() const;
     };
 
 private:
@@ -86,8 +135,6 @@ private:
 class ComputePipeline : public GeneralGPUObject<RHI::ComputePipelinePtr>
 {
     friend class PipelineManager;
-
-    RC<Shader> shader_;
 };
 
 class PipelineManager
@@ -100,9 +147,27 @@ public:
 
     RC<ComputePipeline> CreateComputePipeline(const RC<Shader> &shader);
 
+    void GC();
+
 private:
 
     GeneralGPUObjectManager &objectManager_;
+    SharedObjectPool<GraphicsPipeline::DescKey, GraphicsPipeline, true, true> graphicsPipelinePool_;
+    SharedObjectPool<Shader::UniqueID, ComputePipeline, true, true> computePipelinePool_;
 };
 
 RTRC_END
+
+namespace std
+{
+
+    template<>
+    struct hash<Rtrc::GraphicsPipeline::DescKey>
+    {
+        size_t operator()(const Rtrc::GraphicsPipeline::DescKey &key) const noexcept
+        {
+            return key.Hash();
+        }
+    };
+
+} // namespace std

@@ -1,0 +1,5 @@
+target("dxc")
+    set_kind("static")
+    set_group("3rdParty")
+    add_includedirs("include", {public = true})
+    add_links(path.join(os.scriptdir(), "lib/dxcompiler"), {public = true})

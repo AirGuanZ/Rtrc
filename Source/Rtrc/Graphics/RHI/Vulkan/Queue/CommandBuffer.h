@@ -34,6 +34,9 @@ public:
     void SetViewportsWithCount(Span<Viewport> viewports) override;
     void SetScissorsWithCount(Span<Scissor> scissors) override;
 
+    void SetVertexBuffer(int slot, Span<BufferPtr> buffers, Span<size_t> byteOffsets) override;
+    void SetIndexBuffer(const BufferPtr &buffer, size_t byteOffset, IndexBufferFormat format) override;
+
     void Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance) override;
 
     void Dispatch(int groupCountX, int groupCountY, int groupCountZ) override;

@@ -223,7 +223,7 @@ GraphicsPipelineBuilder &GraphicsPipelineBuilder::SetBlending(
 
 GraphicsPipelineBuilder &GraphicsPipelineBuilder::AddColorAttachment(Format format)
 {
-    colorAttachments.push_back(format);
+    colorAttachments.PushBack(format);
     return *this;
 }
 

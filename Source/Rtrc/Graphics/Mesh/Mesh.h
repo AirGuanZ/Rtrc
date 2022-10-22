@@ -5,6 +5,8 @@
 
 RTRC_BEGIN
 
+class CommandBuffer;
+
 class Mesh : public Uncopyable
 {
 public:
@@ -21,6 +23,8 @@ public:
 
     const RC<Buffer> &GetIndexBuffer() const;
     RHI::IndexBufferFormat GetIndexBufferFormat() const;
+
+    void Bind(CommandBuffer &commandBuffer) const;
 
 private:
 

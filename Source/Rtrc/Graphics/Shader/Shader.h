@@ -7,7 +7,10 @@
 
 RTRC_BEGIN
 
-class Shader : public Uncopyable
+class BindingLayout;
+class BindingGroupLayout;
+
+class Shader : public Uncopyable, public WithUniqueObjectID
 {
 public:
 

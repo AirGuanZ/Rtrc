@@ -2,7 +2,7 @@
 
 #include <variant>
 
-#include <Rtrc/Common.h>
+#include <Rtrc/Utils/Hash.h>
 
 RTRC_BEGIN
 
@@ -67,6 +67,8 @@ public:
     auto operator<=>(const Variant &rhs) const;
 
     bool operator==(const Variant &) const;
+
+    size_t Hash() const;
 };
 
 namespace VariantImpl
@@ -130,6 +132,12 @@ template<typename ... Types>
 bool Variant<Types...>::operator==(const Variant &rhs) const
 {
     return VariantImpl::ToStdVariant(*this) == VariantImpl::ToStdVariant(rhs);
+}
+
+template<typename ... Types>
+size_t Variant<Types...>::Hash() const
+{
+    return this->Match([](auto &v) { return ::Rtrc::Hash(v); });
 }
 
 RTRC_END

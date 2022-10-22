@@ -9,11 +9,12 @@
 RTRC_BEGIN
 
 class Buffer;
-class Texture2D;
 class CommandBuffer;
 class CommandBufferManager;
 class KeywordValueContext;
+class Mesh;
 class SubMaterialInstance;
+class Texture2D;
 
 using AttachmentLoadOp = RHI::AttachmentLoadOp;
 using AttachmentStoreOp = RHI::AttachmentStoreOp;
@@ -101,6 +102,10 @@ public:
 
     void SetViewports(Span<Viewport> viewports);
     void SetScissors(Span<Scissor> scissors);
+
+    void SetVertexBuffers(int slot, Span<RC<Buffer>> buffers, Span<size_t> byteOffsets = {});
+    void SetIndexBuffer(const RC<Buffer> &buffer, RHI::IndexBufferFormat format, size_t byteOffset = 0);
+    void SetMesh(const Mesh &mesh);
 
     void Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance);
     void Dispatch(int groupCountX, int groupCountY, int groupCountZ);
