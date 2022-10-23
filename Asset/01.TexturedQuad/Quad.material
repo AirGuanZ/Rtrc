@@ -20,12 +20,6 @@ Shader "Quad"
 
     #keyword DADADA
 
-    group VertexGroup
-    {
-        Buffer<float2> VertexPositionBuffer;
-        Buffer<float2> VertexTexCoordBuffer;
-    };
-
     group Material
     {
         Texture2DArray<float4> MainTexture;
@@ -37,7 +31,8 @@ Shader "Quad"
 
     struct VSInput
     {
-        uint vertexID : SV_VertexID;
+        float3 position : POSITION;
+        float2 texCoord : TEXCOORD;
     };
 
     struct VSOutput
@@ -49,8 +44,8 @@ Shader "Quad"
     VSOutput VSMain(VSInput input)
     {
         VSOutput output;
-        output.position = float4(VertexPositionBuffer[input.vertexID], 0.0, 1.0f);
-        output.texCoord = VertexTexCoordBuffer[input.vertexID];
+        output.position = float4(input.position, 1);
+        output.texCoord = input.texCoord;
         return output;
     }
 

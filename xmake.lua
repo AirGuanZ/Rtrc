@@ -39,6 +39,7 @@ add_requires("volk 1.3.204", {configs = {header_only = true}})
 
 includes("External/tinyobjloader")
 includes("External/dxc")
+includes("External/sigslot")
 
 -- Targets
 
@@ -65,7 +66,7 @@ target("Rtrc")
     add_includedirs("External/avir", {public = false})
     add_packages("glfw", "stb", "tinyexr")
     add_packages("fmt", "mimalloc", {public = true})
-    add_deps("dxc", "tinyobjloader", "tbb")
+    add_deps("dxc", "tinyobjloader", "tbb", "sigslot")
 target_end()
 
 function add_sample(name)

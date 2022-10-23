@@ -114,17 +114,17 @@ public:
 
     const MaterialPropertySheet &GetPropertySheet() const { return properties_; }
 
-    void Set(std::string_view name, float value)           { SetPropertyImpl<true>(name, value); }
+    void SetFloat(std::string_view name, float value)      { SetPropertyImpl<true>(name, value); }
     void Set(std::string_view name, const Vector2f &value) { SetPropertyImpl<true>(name, value); }
     void Set(std::string_view name, const Vector3f &value) { SetPropertyImpl<true>(name, value); }
     void Set(std::string_view name, const Vector4f &value) { SetPropertyImpl<true>(name, value); }
 
-    void Set(std::string_view name, uint32_t value)        { SetPropertyImpl<true>(name, value); }
+    void SetUInt(std::string_view name, uint32_t value)    { SetPropertyImpl<true>(name, value); }
     void Set(std::string_view name, const Vector2u &value) { SetPropertyImpl<true>(name, value); }
     void Set(std::string_view name, const Vector3u &value) { SetPropertyImpl<true>(name, value); }
     void Set(std::string_view name, const Vector4u &value) { SetPropertyImpl<true>(name, value); }
 
-    void Set(std::string_view name, int32_t value)         { SetPropertyImpl<true>(name, value); }
+    void SetInt(std::string_view name, int32_t value)      { SetPropertyImpl<true>(name, value); }
     void Set(std::string_view name, const Vector2i &value) { SetPropertyImpl<true>(name, value); }
     void Set(std::string_view name, const Vector3i &value) { SetPropertyImpl<true>(name, value); }
     void Set(std::string_view name, const Vector4i &value) { SetPropertyImpl<true>(name, value); }

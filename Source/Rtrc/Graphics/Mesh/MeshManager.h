@@ -15,13 +15,13 @@ public:
         bool noIndexBuffer = false;
     };
 
-    explicit MeshManager(CopyContext *copyContext);
+    explicit MeshManager(CopyContext &copyContext);
 
     Mesh LoadFromObjFile(const std::string &filename, const Options &options = {});
 
 private:
     
-    CopyContext *copyContext_;
+    CopyContext &copyContext_;
 };
 
 RTRC_END

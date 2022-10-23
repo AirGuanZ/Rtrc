@@ -1,9 +1,8 @@
-#include <map>
-
 #include <spirv_reflect.h>
 
 #include <Rtrc/Graphics/Shader/ShaderReflection.h>
 #include <Rtrc/Utils/ScopeGuard.h>
+#include <Rtrc/Utils/String.h>
 
 RTRC_BEGIN
 
@@ -52,6 +51,15 @@ namespace
         }
     }
 
+    std::string ParseInputVarName(const std::string &inputName)
+    {
+        if(StartsWith(inputName, "in.var."))
+        {
+            return inputName.substr(7);
+        }
+        return inputName;
+    }
+
     void ReflectInputVariables(
         const SpvReflectShaderModule &shaderModule, const char *entryPoint, std::vector<ShaderIOVar> &result)
     {
@@ -71,7 +79,7 @@ namespace
         {
             auto &in = *inputVars[i];
             auto &out = result.emplace_back();
-            out.semantic = in.semantic ? in.semantic : std::string{};
+            out.semantic = ParseInputVarName(in.name ? in.name : "");
             out.location = static_cast<int>(in.location);
             out.isBuiltin = (in.decoration_flags & SPV_REFLECT_DECORATION_BUILT_IN) != 0;
             switch(in.format)
@@ -90,19 +98,6 @@ namespace
             case SPV_REFLECT_FORMAT_R32G32B32A32_SFLOAT: out.type = RHI::VertexAttributeType::Float4; break;
             default: throw Exception("Unsupported input variable format");
             }
-        }
-    }
-
-    const SpvReflectTypeDescription *GetArraySize(
-        const SpvReflectTypeDescription *typeDesc, StaticVector<int, 16> &arraySizes)
-    {
-        if(typeDesc->op == SpvOpTypeArray)
-        {
-            for(uint32_t i = 0; i < typeDesc->traits.array.dims_count; ++i)
-            {
-                arraySizes.PushBack(static_cast<int>(typeDesc->traits.array.dims[i]));
-            }
-
         }
     }
 

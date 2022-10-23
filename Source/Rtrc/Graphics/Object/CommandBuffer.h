@@ -108,6 +108,7 @@ public:
     void SetMesh(const Mesh &mesh);
 
     void Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance);
+    void DrawIndexed(int indexCount, int instanceCount, int firstIndex, int firstVertex, int firstInstance);
     void Dispatch(int groupCountX, int groupCountY, int groupCountZ);
 
     void ExecuteBarriers(const BarrierBatch &barriers);

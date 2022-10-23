@@ -976,6 +976,7 @@ public:
     virtual void SetIndexBuffer(const BufferPtr &buffer, size_t byteOffset, IndexBufferFormat format) = 0;
 
     virtual void Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance) = 0;
+    virtual void DrawIndexed(int indexCount, int instanceCount, int firstIndex, int firstVertex, int firstInstance) = 0;
 
     virtual void Dispatch(int groupCountX, int groupCountY, int groupCountZ) = 0;
 

@@ -211,6 +211,9 @@ RC<GraphicsPipeline> PipelineManager::CreateGraphicsPipeline(const GraphicsPipel
             }
         }
 
+        rhiDesc.vertexBuffers = std::move(vertexBuffers);
+        rhiDesc.vertexAttributs = std::move(vertexAttributes);
+
         rhiDesc.primitiveTopology = desc.primitiveTopology;
         rhiDesc.fillMode          = desc.fillMode;
         rhiDesc.cullMode          = desc.cullMode;

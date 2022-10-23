@@ -3,6 +3,7 @@
 #include <Rtrc/Graphics/Material/ShaderTemplate.h>
 #include <Rtrc/Graphics/Object/RenderContext.h>
 #include <Rtrc/Math/Vector3.h>
+#include <Rtrc/Utils/SignalSlot.h>
 
 /* Material
     Material:
@@ -143,6 +144,7 @@ class SubMaterial : public Uncopyable, public WithUniqueObjectID
 public:
 
     SubMaterial() = default;
+    ~SubMaterial();
 
     const std::set<std::string> &GetTags() const;
 
@@ -156,6 +158,9 @@ public:
 
     auto &GetShaderTemplate() const;
 
+    template<typename...Args>
+    Connection OnDestroy(Args&&...args) { return onDestroyCallbacks_.Connect(std::forward<Args>(args)...); }
+
 private:
 
     friend class MaterialManager;
@@ -167,6 +172,8 @@ private:
     std::vector<Box<SubMaterialPropertyLayout>> subMaterialPropertyLayouts_;
 
     tbb::spin_rw_mutex propertyLayoutsMutex_;
+
+    Signal<> onDestroyCallbacks_;
 };
 
 class Material : public Uncopyable, public std::enable_shared_from_this<Material>
@@ -364,6 +371,11 @@ inline size_t SubMaterialPropertyLayout::GetConstantBufferSize() const
 inline const RC<BindingGroupLayout> &SubMaterialPropertyLayout::GetBindingGroupLayout() const
 {
     return bindingGroupLayout_;
+}
+
+inline SubMaterial::~SubMaterial()
+{
+    onDestroyCallbacks_.Emit();
 }
 
 inline const std::set<std::string> &SubMaterial::GetTags() const

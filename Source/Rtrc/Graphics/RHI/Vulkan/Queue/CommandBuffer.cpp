@@ -230,6 +230,18 @@ void VulkanCommandBuffer::Draw(int vertexCount, int instanceCount, int firstVert
         static_cast<uint32_t>(firstInstance));
 }
 
+void VulkanCommandBuffer::DrawIndexed(
+    int indexCount, int instanceCount, int firstIndex, int firstVertex, int firstInstance)
+{
+    vkCmdDrawIndexed(
+        commandBuffer_,
+        static_cast<uint32_t>(indexCount),
+        static_cast<uint32_t>(instanceCount),
+        static_cast<uint32_t>(firstIndex),
+        static_cast<uint32_t>(firstVertex),
+        static_cast<uint32_t>(firstInstance));
+}
+
 void VulkanCommandBuffer::Dispatch(int groupCountX, int groupCountY, int groupCountZ)
 {
     vkCmdDispatch(

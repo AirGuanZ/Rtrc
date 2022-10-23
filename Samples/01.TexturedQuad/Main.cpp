@@ -6,7 +6,7 @@ using namespace Rtrc;
 
 void Run()
 {
-    // render context
+    // Render context
 
     auto window = WindowBuilder()
         .SetSize(800, 800)
@@ -15,15 +15,19 @@ void Run()
 
     auto instance = CreateVulkanInstance(RHI::VulkanInstanceDesc
     {
-        .extensions = Window::GetRequiredVulkanInstanceExtensions(),
-        .debugMode = RTRC_DEBUG
+        .extensions = Window::GetRequiredVulkanInstanceExtensions()
     });
 
     auto device = instance->CreateDevice();
     RenderContext renderContext(device, &window);
     auto &copyContext = renderContext.GetCopyContext();
 
-    // pipeline
+    // Mesh
+
+    MeshManager meshManager(renderContext.GetCopyContext());
+    auto mesh = meshManager.LoadFromObjFile("Asset/01.TexturedQuad/Quad.obj");
+
+    // Pipeline
 
     MaterialManager materialManager;
     materialManager.SetRenderContext(&renderContext);
@@ -35,62 +39,14 @@ void Run()
     auto material = materialManager.GetMaterial("Quad");
     auto subMaterial = material->GetSubMaterialByTag("Default");
     auto shader = subMaterial->GetShader(keywords);
-    
+
     auto pipeline = renderContext.CreateGraphicsPipeline({
         .shader = shader,
+        .meshLayout = mesh.GetLayout(),
         .colorAttachmentFormats = { renderContext.GetRenderTargetDesc().format }
     });
 
-    // vertex position buffer
-
-    const std::array vertexPositionData =
-    {
-        Vector2f(-0.8f, -0.8f),
-        Vector2f(-0.8f, +0.8f),
-        Vector2f(+0.8f, +0.8f),
-        Vector2f(-0.8f, -0.8f),
-        Vector2f(+0.8f, +0.8f),
-        Vector2f(+0.8f, -0.8f)
-    };
-
-    auto vertexPositionBuffer = copyContext.CreateBuffer(
-        sizeof(vertexPositionData),
-        RHI::BufferUsage::ShaderBuffer,
-        RHI::BufferHostAccessType::None,
-        vertexPositionData.data());
-
-    auto vertexPositionBufferSRV = vertexPositionBuffer->GetSRV(RHI::BufferSRVDesc
-    {
-        .format = RHI::Format::R32G32_Float,
-        .offset = 0,
-        .range = sizeof(vertexPositionData)
-    });
-
-    // vertex texcoord buffer
-
-    const std::array vertexTexCoordData = {
-        Vector2f(0.0f, 1.0f),
-        Vector2f(0.0f, 0.0f),
-        Vector2f(1.0f, 0.0f),
-        Vector2f(0.0f, 1.0f),
-        Vector2f(1.0f, 0.0f),
-        Vector2f(1.0f, 1.0f)
-    };
-
-    auto vertexTexCoordBuffer = copyContext.CreateBuffer(
-        sizeof(vertexTexCoordData),
-        RHI::BufferUsage::ShaderBuffer,
-        RHI::BufferHostAccessType::None,
-        vertexTexCoordData.data());
-
-    auto vertexTexCoordBufferSRV = vertexTexCoordBuffer->GetSRV(RHI::BufferSRVDesc
-    {
-        .format = RHI::Format::R32G32_Float,
-        .offset = 0,
-        .range  = sizeof(vertexTexCoordData)
-    });
-
-    // main texture
+    // Main texture
 
     auto mainTex = copyContext.LoadTexture2D(
         "Asset/01.TexturedQuad/MainTexture.png", RHI::Format::B8G8R8A8_UNorm, RHI::TextureUsage::ShaderResource, true);
@@ -103,7 +59,7 @@ void Run()
             mainTex, RHI::TextureLayout::ShaderTexture, RHI::PipelineStage::None, RHI::ResourceAccess::None));
     });
 
-    // main sampler
+    // Main sampler
 
     auto mainSampler = renderContext.CreateSampler(RHI::SamplerDesc
     {
@@ -115,29 +71,19 @@ void Run()
         .addressModeW = RHI::AddressMode::Clamp
     });
 
-    // material
+    // Material
 
     auto materialInstance = material->CreateInstance();
     materialInstance->Set("MainTexture", mainTexSRV);
     materialInstance->Set("MainSampler", mainSampler);
-    materialInstance->Set("scale", 1.5f);
-    materialInstance->Set("mipLevel", 0.0f);
+    materialInstance->SetFloat("scale", 1);
+    materialInstance->SetFloat("mipLevel", 0);
 
     auto subMaterialInstance = materialInstance->GetSubMaterialInstance(0);
 
-    // binding group
-
-    const int vertexGroupIndex = shader->GetBindingGroupIndexByName("VertexGroup");
-    auto vertexGroupLayout = shader->GetBindingGroupLayoutByIndex(vertexGroupIndex);
-    auto vertexGroup = vertexGroupLayout->CreateBindingGroup();
-    vertexGroup->Set("VertexPositionBuffer", vertexPositionBufferSRV);
-    vertexGroup->Set("VertexTexCoordBuffer", vertexTexCoordBufferSRV);
-
-    // render graph
+    // Render loop
 
     RG::Executer executer(renderContext);
-
-    // render loop
 
     renderContext.BeginRenderLoop();
     while(!window.ShouldClose())
@@ -170,11 +116,11 @@ void Run()
                 .clearValue       = ColorClearValue{ 0, 1, 1, 1 }
             });
             commandBuffer.BindPipeline(pipeline);
-            commandBuffer.BindGraphicsGroup(vertexGroupIndex, vertexGroup);
+            commandBuffer.SetMesh(mesh);
             commandBuffer.BindGraphicsSubMaterial(subMaterialInstance, keywords);
             commandBuffer.SetViewports(rt->GetViewport());
             commandBuffer.SetScissors(rt->GetScissor());
-            commandBuffer.Draw(6, 1, 0, 0);
+            commandBuffer.DrawIndexed(6, 1, 0, 0, 0);
             commandBuffer.EndRenderPass();
         });
         quadPass->SetSignalFence(renderContext.GetFrameFence());

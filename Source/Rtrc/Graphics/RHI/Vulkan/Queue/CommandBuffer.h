@@ -38,6 +38,7 @@ public:
     void SetIndexBuffer(const BufferPtr &buffer, size_t byteOffset, IndexBufferFormat format) override;
 
     void Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance) override;
+    void DrawIndexed(int indexCount, int instanceCount, int firstIndex, int firstVertex, int firstInstance) override;
 
     void Dispatch(int groupCountX, int groupCountY, int groupCountZ) override;
 

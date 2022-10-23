@@ -25,7 +25,7 @@ namespace
 
 } // namespace anonymous
 
-MeshManager::MeshManager(CopyContext *copyContext)
+MeshManager::MeshManager(CopyContext &copyContext)
     : copyContext_(copyContext)
 {
     
@@ -101,7 +101,7 @@ Mesh MeshManager::LoadFromObjFile(const std::string &filename, const Options &op
             FillVertexData(vertexData[i], i);
         }
 
-        auto vertexBuffer = copyContext_->CreateBuffer(
+        auto vertexBuffer = copyContext_.CreateBuffer(
             sizeof(Vertex) * vertexData.size(),
             RHI::BufferUsage::VertexBuffer,
             RHI::BufferHostAccessType::None,
@@ -130,7 +130,7 @@ Mesh MeshManager::LoadFromObjFile(const std::string &filename, const Options &op
             FillVertexData(vertexData[i], i);
         }
 
-        auto vertexBuffer = copyContext_->CreateBuffer(
+        auto vertexBuffer = copyContext_.CreateBuffer(
             sizeof(Vertex) * vertexData.size(),
             RHI::BufferUsage::VertexBuffer,
             RHI::BufferHostAccessType::None,
@@ -160,7 +160,7 @@ Mesh MeshManager::LoadFromObjFile(const std::string &filename, const Options &op
             {
                 uint16IndexData[i] = static_cast<uint16_t>(meshData.indexData[i]);
             }
-            indexBuffer = copyContext_->CreateBuffer(
+            indexBuffer = copyContext_.CreateBuffer(
                 sizeof(uint16_t) * uint16IndexData.size(),
                 RHI::BufferUsage::IndexBuffer,
                 RHI::BufferHostAccessType::None,
@@ -168,7 +168,7 @@ Mesh MeshManager::LoadFromObjFile(const std::string &filename, const Options &op
         }
         else
         {
-            indexBuffer = copyContext_->CreateBuffer(
+            indexBuffer = copyContext_.CreateBuffer(
                 sizeof(uint32_t) * meshData.indexData.size(),
                 RHI::BufferUsage::IndexBuffer,
                 RHI::BufferHostAccessType::None,

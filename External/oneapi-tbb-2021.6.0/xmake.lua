@@ -14,9 +14,9 @@ target("tbb")
         add_links("tbbmalloc", {public = true})
         add_links("tbbmalloc_proxy", {public = true})
     end
-    after_build(function(target)
+    on_build(function(target)
         if is_plat("windows") then
             os.cp(path.join(os.scriptdir(), "redist/intel64/vc14/*.dll"), target:targetdir())
-            print("Copy onetbb dlls to "..target:targetdir())
+            print("Copy tbb dlls to "..target:targetdir())
         end
     end)

@@ -223,6 +223,12 @@ void CommandBuffer::Draw(int vertexCount, int instanceCount, int firstVertex, in
     rhiCommandBuffer_->Draw(vertexCount, instanceCount, firstVertex, firstInstance);
 }
 
+void CommandBuffer::DrawIndexed(int indexCount, int instanceCount, int firstIndex, int firstVertex, int firstInstance)
+{
+    CheckThreadID();
+    rhiCommandBuffer_->DrawIndexed(indexCount, instanceCount, firstIndex, firstVertex, firstInstance);
+}
+
 void CommandBuffer::Dispatch(int groupCountX, int groupCountY, int groupCountZ)
 {
     CheckThreadID();
