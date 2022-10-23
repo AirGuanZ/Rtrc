@@ -52,7 +52,7 @@ void Run()
         Vector2f(+0.8f, +0.8f),
         Vector2f(+0.8f, -0.8f)
     };
-    
+
     auto vertexPositionBuffer = copyContext.CreateBuffer(
         sizeof(vertexPositionData),
         RHI::BufferUsage::ShaderBuffer,

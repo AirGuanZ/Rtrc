@@ -1,5 +1,6 @@
 target("tbb")
-    set_kind("static")
+    set_kind("static") -- use phony once 'https://github.com/xmake-io/xmake/issues/2963' is resolved
+    set_group("ThirdParty")
     add_includedirs("include", {public = true})
     add_linkdirs("lib/intel64/vc14", {public = true})
     if is_mode("debug") then
@@ -14,6 +15,8 @@ target("tbb")
         add_links("tbbmalloc_proxy", {public = true})
     end
     after_build(function(target)
-        os.cp(path.join(os.scriptdir(), "redist/intel64/vc14/*.dll"), target:targetdir())
-        print(target:targetdir())
+        if is_plat("windows") then
+            os.cp(path.join(os.scriptdir(), "redist/intel64/vc14/*.dll"), target:targetdir())
+            print("Copy onetbb dlls to "..target:targetdir())
+        end
     end)

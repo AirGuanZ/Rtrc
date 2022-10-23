@@ -4,14 +4,19 @@ set_arch("x64")
 set_languages("c++23")
 add_rules("mode.debug", "mode.release")
 
--- Global definitions
+option("vulkan_backend")
+    set_default(true)
+option("directx12_backend")
+    set_default(false)
+option_end()
+
+-- Global settings
+
+set_runtimes(is_mode("debug") and "MTd" or "MT")
+set_targetdir("Build/bin/"..(is_mode("debug") and "debug" or "release"))
 
 if is_mode("debug") then
     add_defines("DEBUG", "_DEBUG")
-    set_runtimes("MTd")
-    set_symbols("debug")
-else
-    set_runtimes("MT")
 end
 
 if is_plat("windows") then
@@ -21,7 +26,7 @@ end
 -- Dependencies
 
 includes("External/glfw")
-add_requires("glfw", {configs = { glfw_include = "vulkan" }})
+add_requires("glfw", {configs = {glfw_include = "vulkan"}})
 
 includes("External/mimalloc")
 add_requires("mimalloc")
@@ -39,38 +44,42 @@ includes("External/dxc")
 
 target("Rtrc")
     set_kind("static")
-    -- Enable vulkan rhi
-    add_defines("RTRC_RHI_VULKAN", {public = true})
-    add_defines("VMA_STATIC_VULKAN_FUNCTIONS=0", "VMA_DYNAMIC_VULKAN_FUNCTIONS=1", {public = false})
     -- Source files
     add_includedirs("Source", {public = true})
-    add_headerfiles("Source/**.h")
-    add_files("Source/**.cpp")
-    remove_headerfiles("Source/Rtrc/Graphics/RHI/DirectX12/**.h")
-    remove_files("Source/Rtrc/Graphics/RHI/DirectX12/**.cpp")
+    add_headerfiles("Source/**.h|Rtrc/Graphics/RHI/**.h", "Source/Rtrc/Graphics/RHI/*.h")
+    add_headerfiles()
+    add_files("Source/**.cpp|Rtrc/Graphics/RHI/**.cpp")
+    add_files("Source/Rtrc/Graphics/RHI/*.cpp")
+    -- Vulkan RHI
+    add_options("vulkan_backend")
+    if has_config("vulkan_backend") then
+        add_headerfiles("Source/Rtrc/Graphics/RHI/Vulkan/**.h")
+        add_files("Source/Rtrc/Graphics/RHI/Vulkan/**.cpp")
+        add_defines("RTRC_RHI_VULKAN", {public = true})
+        add_defines("VMA_STATIC_VULKAN_FUNCTIONS=0", "VMA_DYNAMIC_VULKAN_FUNCTIONS=1", {public = false})
+        add_packages("spirv-reflect", "volk", "vk-bootstrap", "vulkan-memory-allocator")
+    end
+    -- Source group
+    add_filegroups("Rtrc", {rootdir="Source/Rtrc"})
     -- Dependencies
     add_includedirs("External/avir", {public = false})
-    add_packages("glfw", "stb", "tinyexr", "spirv-reflect", "volk", "vk-bootstrap", "vulkan-memory-allocator")
+    add_packages("glfw", "stb", "tinyexr")
     add_packages("fmt", "mimalloc", {public = true})
     add_deps("dxc", "tinyobjloader", "tbb")
+target_end()
 
-target("01.TexturedQuad")
-    set_kind("binary")
-    set_group("Samples")
-    set_rundir(".")
-    add_files("Samples/01.TexturedQuad/*.cpp")
-    add_deps("Rtrc")
-    
-target("02.ComputeShader")
-    set_kind("binary")
-    set_group("Samples")
-    set_rundir(".")
-    add_files("Samples/02.ComputeShader/*.cpp")
-    add_deps("Rtrc")
-    
-target("03.DeferredShading")
-    set_kind("binary")
-    set_group("Samples")
-    set_rundir(".")
-    add_files("Samples/03.DeferredShading/*.cpp")
-    add_deps("Rtrc")
+function add_sample(name)
+    target(name)
+        set_kind("binary")
+        set_rundir(".")
+        local source_dir = "Samples/"..name;
+        add_headerfiles(source_dir.."/**.h")
+        add_files(source_dir.."/**.cpp")
+        add_filegroups("Source", {rootdir=source_dir})
+        add_deps("Rtrc")
+    target_end()
+end
+
+add_sample("01.TexturedQuad")
+add_sample("02.ComputeShader")
+add_sample("03.DeferredShading")
