@@ -1,8 +1,9 @@
+#include <Rtrc/Graphics/RHI/Vulkan/Context/Device.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Sampler.h>
 
 RTRC_RHI_VK_BEGIN
 
-VulkanSampler::VulkanSampler(const SamplerDesc &desc, VkDevice device, VkSampler sampler)
+VulkanSampler::VulkanSampler(const SamplerDesc &desc, VulkanDevice *device, VkSampler sampler)
     : desc_(desc), device_(device), sampler_(sampler)
 {
     
@@ -11,7 +12,7 @@ VulkanSampler::VulkanSampler(const SamplerDesc &desc, VkDevice device, VkSampler
 VulkanSampler::~VulkanSampler()
 {
     assert(device_ && sampler_);
-    vkDestroySampler(device_, sampler_, VK_ALLOC);
+    vkDestroySampler(device_->GetNativeDevice(), sampler_, VK_ALLOC);
 }
 
 const SamplerDesc &VulkanSampler::GetDesc() const

@@ -23,7 +23,7 @@ if is_plat("windows") then
     add_defines("WIN32")
 end
 
--- Dependencies
+-- External dependencies
 
 includes("External/glfw")
 add_requires("glfw", {configs = {glfw_include = "vulkan"}})
@@ -35,6 +35,7 @@ includes("External/oneapi-tbb-2021.6.0")
 
 add_requires("fmt 9.1.0", "stb 2021.09.10", "tinyexr v1.0.1")
 add_requires("vk-bootstrap v0.5", "spirv-reflect 1.2.189+1", "vulkan-memory-allocator v3.0.0")
+add_requires("catch2 3.1.0")
 add_requires("volk 1.3.204", {configs = {header_only = true}})
 
 includes("External/tinyobjloader")
@@ -51,6 +52,8 @@ target("Rtrc")
     add_headerfiles()
     add_files("Source/**.cpp|Rtrc/Graphics/RHI/**.cpp")
     add_files("Source/Rtrc/Graphics/RHI/*.cpp")
+    -- Source group
+    add_filegroups("Rtrc", {rootdir="Source/Rtrc"})
     -- Vulkan RHI
     add_options("vulkan_backend")
     if has_config("vulkan_backend") then
@@ -60,13 +63,19 @@ target("Rtrc")
         add_defines("VMA_STATIC_VULKAN_FUNCTIONS=0", "VMA_DYNAMIC_VULKAN_FUNCTIONS=1", {public = false})
         add_packages("spirv-reflect", "volk", "vk-bootstrap", "vulkan-memory-allocator")
     end
-    -- Source group
-    add_filegroups("Rtrc", {rootdir="Source/Rtrc"})
     -- Dependencies
     add_includedirs("External/avir", {public = false})
     add_packages("glfw", "stb", "tinyexr")
     add_packages("fmt", "mimalloc", {public = true})
     add_deps("dxc", "tinyobjloader", "tbb", "sigslot")
+target_end()
+
+target("Test")
+    set_kind("binary")
+    set_rundir(".")
+    add_files("Test/**.cpp")
+    add_packages("catch2")
+    add_deps("Rtrc")
 target_end()
 
 function add_sample(name)

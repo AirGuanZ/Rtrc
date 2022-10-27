@@ -1,14 +1,10 @@
 #pragma once
 
 #include <any>
-#include <map>
 
 #include <Rtrc/Graphics/RHI/RHI.h>
 
 RTRC_BEGIN
-
-class TempBindingGroupLayout;
-class ShaderCompiler;
 
 class ParsedBindingGroupLayout : public Uncopyable
 {
@@ -33,53 +29,24 @@ private:
     std::vector<ParsedBindingDescription> allDescs_;
 };
 
-class TempBindingGroup : public Uncopyable
+inline void ParsedBindingGroupLayout::AppendSlot(Span<ParsedBindingDescription> aliasedDescs)
 {
-public:
+    const uint32_t offset = static_cast<uint32_t>(allDescs_.size());
+    allDescs_.reserve(allDescs_.size() + aliasedDescs.size());
+    std::copy(aliasedDescs.begin(), aliasedDescs.end(), std::back_inserter(allDescs_));
+    slotRecords_.push_back({ offset, aliasedDescs.GetSize() });
+}
 
-    TempBindingGroup(RC<const TempBindingGroupLayout> parentLayout, RHI::BindingGroupPtr rhiGroup);
-
-    const RC<const TempBindingGroupLayout> &GetBindingGroupLayout();
-
-    void Set(int slot, const RHI::BufferPtr &cbuffer, size_t offset, size_t bytes);
-    void Set(int slot, const RHI::SamplerPtr &sampler);
-    void Set(int slot, const RHI::BufferSRVPtr &srv);
-    void Set(int slot, const RHI::BufferUAVPtr &uav);
-    void Set(int slot, const RHI::TextureSRVPtr &srv);
-    void Set(int slot, const RHI::TextureUAVPtr &uav);
-
-    void Set(std::string_view name, const RHI::BufferPtr &cbuffer, size_t offset, size_t bytes);
-    void Set(std::string_view name, const RHI::SamplerPtr &sampler);
-    void Set(std::string_view name, const RHI::BufferSRVPtr &srv);
-    void Set(std::string_view name, const RHI::BufferUAVPtr &uav);
-    void Set(std::string_view name, const RHI::TextureSRVPtr &srv);
-    void Set(std::string_view name, const RHI::TextureUAVPtr &uav);
-
-    RHI::BindingGroupPtr GetRHIBindingGroup();
-
-private:
-
-    RC<const TempBindingGroupLayout> parentLayout_;
-    RHI::BindingGroupPtr rhiGroup_;
-    std::vector<RHI::Ptr<RHI::RHIObject>> boundObjects_;
-};
-
-class TempBindingGroupLayout : public Uncopyable, public std::enable_shared_from_this<TempBindingGroupLayout>
+inline int ParsedBindingGroupLayout::GetBindingSlotCount() const
 {
-public:
+    return static_cast<int>(slotRecords_.size());
+}
 
-    int GetBindingSlotByName(std::string_view bindingName) const;
-    RHI::BindingGroupLayoutPtr GetRHIBindingGroupLayout();
-
-    RC<TempBindingGroup> CreateBindingGroup() const;
-
-private:
-
-    friend class ShaderCompiler;
-
-    std::map<std::string, int, std::less<>> bindingNameToSlot_;
-    RHI::DevicePtr device_;
-    RHI::BindingGroupLayoutPtr rhiLayout_;
-};
+inline Span<ParsedBindingGroupLayout::ParsedBindingDescription>
+    ParsedBindingGroupLayout::GetBindingDescriptionsBySlot(int slot) const
+{
+    const Record &record = slotRecords_[slot];
+    return Span(&allDescs_[record.offset], record.count);
+}
 
 RTRC_END

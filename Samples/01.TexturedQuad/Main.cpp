@@ -49,9 +49,11 @@ void Run()
     // Main texture
 
     auto mainTex = copyContext.LoadTexture2D(
-        "Asset/01.TexturedQuad/MainTexture.png", RHI::Format::B8G8R8A8_UNorm, RHI::TextureUsage::ShaderResource, true);
+        "Asset/01.TexturedQuad/MainTexture.png",
+        RHI::Format::B8G8R8A8_UNorm,
+        RHI::TextureUsage::ShaderResource,
+        true);
     mainTex->SetName("MainTexture");
-    auto mainTexSRV = mainTex->GetSRV({ .isArray = true });
 
     renderContext.ExecuteAndWaitImmediate([&](CommandBuffer &cmd)
     {
@@ -70,16 +72,16 @@ void Run()
         .addressModeV = RHI::AddressMode::Clamp,
         .addressModeW = RHI::AddressMode::Clamp
     });
+    mainSampler->SetName("MainSampler");
 
     // Material
 
     auto materialInstance = material->CreateInstance();
-    materialInstance->Set("MainTexture", mainTexSRV);
+    auto subMaterialInstance = materialInstance->GetSubMaterialInstance(0);
+    materialInstance->Set("MainTexture", mainTex);
     materialInstance->Set("MainSampler", mainSampler);
     materialInstance->SetFloat("scale", 1);
     materialInstance->SetFloat("mipLevel", 0);
-
-    auto subMaterialInstance = materialInstance->GetSubMaterialInstance(0);
 
     // Render loop
 
@@ -110,10 +112,10 @@ void Run()
             auto &commandBuffer = context.GetCommandBuffer();
             commandBuffer.BeginRenderPass(ColorAttachment
             {
-                .renderTargetView = rt->GetRTV(),
-                .loadOp           = AttachmentLoadOp::Clear,
-                .storeOp          = AttachmentStoreOp::Store,
-                .clearValue       = ColorClearValue{ 0, 1, 1, 1 }
+                .renderTarget = rt,
+                .loadOp       = AttachmentLoadOp::Clear,
+                .storeOp      = AttachmentStoreOp::Store,
+                .clearValue   = ColorClearValue{ 0, 1, 1, 1 }
             });
             commandBuffer.BindPipeline(pipeline);
             commandBuffer.SetMesh(mesh);

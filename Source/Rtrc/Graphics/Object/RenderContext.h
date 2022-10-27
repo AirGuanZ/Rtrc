@@ -61,7 +61,7 @@ public:
         RHI::BufferHostAccessType hostAccess,
         bool                      allowReuse);
 
-    RC<Texture2D> CreateTexture2D(
+    RC<Texture> CreateTexture2D(
         uint32_t                       width,
         uint32_t                       height,
         uint32_t                       arraySize,

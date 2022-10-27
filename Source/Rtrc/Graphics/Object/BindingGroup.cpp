@@ -57,6 +57,33 @@ void BindingGroup::Set(int slot, const TextureUAV &uav)
     boundObjects_[slot] = uav;
 }
 
+void BindingGroup::Set(int slot, const RC<Texture> &tex)
+{
+    const RHI::BindingType type =  layout_->GetRHIObject()->GetDesc().bindings[slot].front().type;
+    switch(type)
+    {
+    case RHI::BindingType::Texture2D:
+    case RHI::BindingType::Texture3D:
+        Set(slot, tex->GetSRV());
+        break;
+    case RHI::BindingType::Texture2DArray:
+    case RHI::BindingType::Texture3DArray:
+        Set(slot, tex->GetSRV({ .isArray = true }));
+        break;
+    case RHI::BindingType::RWTexture2D:
+    case RHI::BindingType::RWTexture3D:
+        Set(slot, tex->GetUAV());
+        break;
+    case RHI::BindingType::RWTexture2DArray:
+    case RHI::BindingType::RWTexture3DArray:
+        Set(slot, tex->GetUAV({ .isArray = true }));
+        break;
+    default:
+        throw Exception(fmt::format(
+            "BindingGroup::Set: cannot bind texture to slot {} (type = {})", slot, GetBindingTypeName(type)));
+    }
+}
+
 void BindingGroup::Set(std::string_view name, RC<ConstantBuffer> cbuffer)
 {
     const int slot = layout_->GetBindingSlotByName(name);
@@ -93,6 +120,12 @@ void BindingGroup::Set(std::string_view name, const TextureUAV &uav)
     Set(slot, uav);
 }
 
+void BindingGroup::Set(std::string_view name, const RC<Texture> &tex)
+{
+    const int slot = layout_->GetBindingSlotByName(name);
+    Set(slot, tex);
+}
+
 const RHI::BindingGroupPtr &BindingGroup::GetRHIObject()
 {
     return rhiGroup_;
@@ -117,7 +150,7 @@ int BindingGroupLayout::GetBindingSlotByName(std::string_view name) const
     return it->second;
 }
 
-const RHI::BindingGroupLayoutPtr &BindingGroupLayout::GetRHIObject()
+const RHI::BindingGroupLayoutPtr &BindingGroupLayout::GetRHIObject() const
 {
     return record_->rhiLayout;
 }

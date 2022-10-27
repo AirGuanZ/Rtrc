@@ -1,5 +1,5 @@
 target("tbb")
-    set_kind("static") -- use phony once 'https://github.com/xmake-io/xmake/issues/2963' is resolved
+    set_kind("phony")
     set_group("ThirdParty")
     add_includedirs("include", {public = true})
     add_linkdirs("lib/intel64/vc14", {public = true})

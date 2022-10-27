@@ -8,7 +8,9 @@ class VulkanSampler : public Sampler
 {
 public:
 
-    VulkanSampler(const SamplerDesc &desc, VkDevice device, VkSampler sampler);
+    VK_SET_OBJECT_NAME(device_, sampler_, VK_OBJECT_TYPE_SAMPLER)
+
+    VulkanSampler(const SamplerDesc &desc, VulkanDevice *device, VkSampler sampler);
 
     ~VulkanSampler() override;
 
@@ -19,7 +21,7 @@ public:
 private:
 
     SamplerDesc desc_;
-    VkDevice device_;
+    VulkanDevice *device_;
     VkSampler sampler_;
 };
 

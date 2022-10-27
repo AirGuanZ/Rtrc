@@ -10,7 +10,7 @@ RTRC_BEGIN
 
 class CommandBuffer;
 class ImageDynamic;
-class Texture2D;
+class Texture;
 class TextureManager;
 
 struct UnsynchronizedTextureAccess
@@ -43,8 +43,12 @@ struct UnsynchronizedTextureAccess
 
 struct TextureSRV
 {
-    RC<Texture2D> texture;
+    RC<Texture> tex;
     RHI::TextureSRVPtr rhiSRV;
+
+    TextureSRV() = default;
+
+    TextureSRV(const RC<Texture> &tex);
 
     operator const RHI::TextureSRVPtr() const
     {
@@ -54,8 +58,12 @@ struct TextureSRV
 
 struct TextureUAV
 {
-    RC<Texture2D> texture;
+    RC<Texture> tex;
     RHI::TextureUAVPtr rhiUAV;
+
+    TextureUAV() = default;
+
+    TextureUAV(const RC<Texture> &tex);
 
     operator const RHI::TextureUAVPtr() const
     {
@@ -65,8 +73,12 @@ struct TextureUAV
 
 struct TextureRTV
 {
-    RC<Texture2D> texture;
+    RC<Texture> tex;
     RHI::TextureRTVPtr rhiRTV;
+
+    TextureRTV() = default;
+
+    TextureRTV(const RC<Texture> &tex);
 
     operator const RHI::TextureRTVPtr() const
     {
@@ -79,26 +91,27 @@ struct TextureRTV
     }
 };
 
-class Texture2D : public Uncopyable, public std::enable_shared_from_this<Texture2D>
+class Texture : public Uncopyable, public std::enable_shared_from_this<Texture>
 {
 public:
 
-    static Texture2D FromRHIObject(RHI::TexturePtr rhiTexture);
-    ~Texture2D();
+    static Texture FromRHIObject(RHI::TexturePtr rhiTexture);
+    ~Texture();
 
-    Texture2D(Texture2D &&other) noexcept;
-    Texture2D &operator=(Texture2D &&other) noexcept;
+    Texture(Texture &&other) noexcept;
+    Texture &operator=(Texture &&other) noexcept;
 
-    void Swap(Texture2D &other) noexcept;
+    void Swap(Texture &other) noexcept;
 
     void SetName(std::string name);
 
     // The rhi texture may be reused by other new texture object after this one is destructed
     void AllowReuse(bool allow);
 
+    RHI::TextureDimension GetDimension() const;
     uint32_t GetWidth() const;
     uint32_t GetHeight() const;
-    Vector2u GetSize() const;
+    uint32_t GetDepth() const;
 
     uint32_t GetArraySize() const;
     uint32_t GetMipLevelCount() const;
@@ -114,6 +127,10 @@ public:
     TextureUAV GetUAV(const RHI::TextureUAVDesc &desc = {});
     TextureRTV GetRTV(const RHI::TextureRTVDesc &desc = {});
 
+    operator TextureSRV() { return GetSRV(); }
+    operator TextureUAV() { return GetUAV(); }
+    operator TextureRTV() { return GetRTV(); }
+
           UnsynchronizedTextureAccess &GetUnsyncAccess(uint32_t arrayLayer, uint32_t mipLevel);
     const UnsynchronizedTextureAccess &GetUnsyncAccess(uint32_t arrayLayer, uint32_t mipLevel) const;
 
@@ -124,16 +141,19 @@ private:
 
     friend class TextureManager;
 
-    Texture2D() = default;
+    Texture() = default;
 
-    Texture2D(TextureManager *manager, RHI::TexturePtr rhiTexture);
+    Texture(TextureManager *manager, RHI::TexturePtr rhiTexture);
 
     TextureManager *manager_ = nullptr;
 
-    uint32_t width_           = 0;
-    uint32_t height_          = 0;
-    uint32_t arrayLayerCount_ = 0;
-    uint32_t mipLevelCount_   = 0;
+    RHI::TextureDimension dim_ = RHI::TextureDimension::Tex2D;
+
+    uint32_t width_         = 1;
+    uint32_t height_        = 1;
+    uint32_t depth_         = 1;
+    uint32_t arraySize_     = 1;
+    uint32_t mipLevelCount_ = 1;
 
     RHI::TexturePtr rhiTexture_;
     bool allowReuse_ = false;
@@ -148,7 +168,7 @@ public:
 
     // When allowReuse is true, the returned texture may reuse a previous created rhi texture
     // and has initial unsync access state
-    RC<Texture2D> CreateTexture2D(
+    RC<Texture> CreateTexture2D(
         uint32_t                       width,
         uint32_t                       height,
         uint32_t                       arraySize,
@@ -161,7 +181,7 @@ public:
 
     void GC();
 
-    void _rtrcReleaseInternal(Texture2D &tex);
+    void _rtrcReleaseInternal(Texture &tex);
 
 private:
 
@@ -195,19 +215,34 @@ private:
     tbb::spin_mutex pendingReleaseTexturesMutex_;
 };
 
-inline Texture2D Texture2D::FromRHIObject(RHI::TexturePtr rhiTexture)
+inline TextureSRV::TextureSRV(const RC<Texture> &tex)
+{
+    *this = tex->GetSRV();
+}
+
+inline TextureUAV::TextureUAV(const RC<Texture> &tex)
+{
+    *this = tex->GetUAV();
+}
+
+inline TextureRTV::TextureRTV(const RC<Texture> &tex)
+{
+    *this = tex->GetRTV();
+}
+
+inline Texture Texture::FromRHIObject(RHI::TexturePtr rhiTexture)
 {
     auto &desc = rhiTexture->GetDesc();
-    Texture2D ret;
+    Texture ret;
     ret.rhiTexture_ = std::move(rhiTexture);
     ret.width_ = desc.width;
     ret.height_ = desc.height;
-    ret.arrayLayerCount_ = desc.arraySize;
+    ret.arraySize_ = desc.arraySize;
     ret.mipLevelCount_ = desc.mipLevels;
     return ret;
 }
 
-inline Texture2D::~Texture2D()
+inline Texture::~Texture()
 {
     if(manager_)
     {
@@ -215,66 +250,74 @@ inline Texture2D::~Texture2D()
     }
 }
 
-inline Texture2D::Texture2D(Texture2D &&other) noexcept
-    : Texture2D()
+inline Texture::Texture(Texture &&other) noexcept
+    : Texture()
 {
     Swap(other);
 }
 
-inline Texture2D &Texture2D::operator=(Texture2D &&other) noexcept
+inline Texture &Texture::operator=(Texture &&other) noexcept
 {
     Swap(other);
     return *this;
 }
 
-inline void Texture2D::Swap(Texture2D &other) noexcept
+inline void Texture::Swap(Texture &other) noexcept
 {
     std::swap(manager_, other.manager_);
+    std::swap(dim_, other.dim_);
     std::swap(width_, other.width_);
     std::swap(height_, other.height_);
-    std::swap(arrayLayerCount_, other.arrayLayerCount_);
+    std::swap(depth_, other.depth_);
+    std::swap(arraySize_, other.arraySize_);
     std::swap(mipLevelCount_, other.mipLevelCount_);
     std::swap(allowReuse_, other.allowReuse_);
     rhiTexture_.Swap(other.rhiTexture_);
     unsyncAccesses_.Swap(other.unsyncAccesses_);
 }
 
-inline void Texture2D::SetName(std::string name)
+inline void Texture::SetName(std::string name)
 {
     rhiTexture_->SetName(std::move(name));
 }
 
-inline void Texture2D::AllowReuse(bool allow)
+inline void Texture::AllowReuse(bool allow)
 {
     allowReuse_ = allow;
 }
 
-inline uint32_t Texture2D::GetWidth() const
+inline RHI::TextureDimension Texture::GetDimension() const
+{
+    return dim_;
+}
+
+inline uint32_t Texture::GetWidth() const
 {
     return width_;
 }
 
-inline uint32_t Texture2D::GetHeight() const
+inline uint32_t Texture::GetHeight() const
 {
     return height_;
 }
 
-inline Vector2u Texture2D::GetSize() const
+inline uint32_t Texture::GetDepth() const
 {
-    return { width_, height_ };
+    assert(dim_ == RHI::TextureDimension::Tex3D);
+    return depth_;
 }
 
-inline uint32_t Texture2D::GetArraySize() const
+inline uint32_t Texture::GetArraySize() const
 {
-    return arrayLayerCount_;
+    return arraySize_;
 }
 
-inline uint32_t Texture2D::GetMipLevelCount() const
+inline uint32_t Texture::GetMipLevelCount() const
 {
     return mipLevelCount_;
 }
 
-inline RHI::Viewport Texture2D::GetViewport(float minDepth, float maxDepth) const
+inline RHI::Viewport Texture::GetViewport(float minDepth, float maxDepth) const
 {
     return RHI::Viewport{
         .lowerLeftCorner = { 0, 0 },
@@ -284,7 +327,7 @@ inline RHI::Viewport Texture2D::GetViewport(float minDepth, float maxDepth) cons
     };
 }
 
-inline RHI::Scissor Texture2D::GetScissor() const
+inline RHI::Scissor Texture::GetScissor() const
 {
     return RHI::Scissor
     {
@@ -293,47 +336,56 @@ inline RHI::Scissor Texture2D::GetScissor() const
     };
 }
 
-inline const RHI::TextureDesc &Texture2D::GetRHIObjectDesc() const
+inline const RHI::TextureDesc &Texture::GetRHIObjectDesc() const
 {
     return rhiTexture_->GetDesc();
 }
 
-inline const RHI::TexturePtr &Texture2D::GetRHIObject() const
+inline const RHI::TexturePtr &Texture::GetRHIObject() const
 {
     return rhiTexture_;
 }
 
-inline Texture2D::operator const ReferenceCountedPtr<RHI::Texture>&() const
+inline Texture::operator const ReferenceCountedPtr<RHI::Texture>&() const
 {
     return rhiTexture_;
 }
 
-inline TextureSRV Texture2D::GetSRV(const RHI::TextureSRVDesc &desc)
+inline TextureSRV Texture::GetSRV(const RHI::TextureSRVDesc &desc)
 {
-    return { shared_from_this(), rhiTexture_->CreateSRV(desc) };
+    TextureSRV ret;
+    ret.tex = shared_from_this();
+    ret.rhiSRV = rhiTexture_->CreateSRV(desc);
+    return ret;
 }
 
-inline TextureUAV Texture2D::GetUAV(const RHI::TextureUAVDesc &desc)
+inline TextureUAV Texture::GetUAV(const RHI::TextureUAVDesc &desc)
 {
-    return { shared_from_this(), rhiTexture_->CreateUAV(desc) };
+    TextureUAV ret;
+    ret.tex = shared_from_this();
+    ret.rhiUAV = rhiTexture_->CreateUAV(desc);
+    return ret;
 }
 
-inline TextureRTV Texture2D::GetRTV(const RHI::TextureRTVDesc &desc)
+inline TextureRTV Texture::GetRTV(const RHI::TextureRTVDesc &desc)
 {
-    return { shared_from_this(), rhiTexture_->CreateRTV(desc) };
+    TextureRTV ret;
+    ret.tex = shared_from_this();
+    ret.rhiRTV = rhiTexture_->CreateRTV(desc);
+    return ret;
 }
 
-inline UnsynchronizedTextureAccess &Texture2D::GetUnsyncAccess(uint32_t arrayLayer, uint32_t mipLevel)
+inline UnsynchronizedTextureAccess &Texture::GetUnsyncAccess(uint32_t arrayLayer, uint32_t mipLevel)
 {
     if(unsyncAccesses_.IsEmpty())
     {
         unsyncAccesses_ = TextureSubresourceMap(
-            mipLevelCount_, arrayLayerCount_, UnsynchronizedTextureAccess::CreateUndefined());
+            mipLevelCount_, arraySize_, UnsynchronizedTextureAccess::CreateUndefined());
     }
     return unsyncAccesses_(mipLevel, arrayLayer);
 }
 
-inline const UnsynchronizedTextureAccess &Texture2D::GetUnsyncAccess(uint32_t arrayLayer, uint32_t mipLevel) const
+inline const UnsynchronizedTextureAccess &Texture::GetUnsyncAccess(uint32_t arrayLayer, uint32_t mipLevel) const
 {
     if(unsyncAccesses_.IsEmpty())
     {
@@ -343,22 +395,22 @@ inline const UnsynchronizedTextureAccess &Texture2D::GetUnsyncAccess(uint32_t ar
     return unsyncAccesses_(mipLevel, arrayLayer);
 }
 
-inline void Texture2D::SetUnsyncAccess(
+inline void Texture::SetUnsyncAccess(
     uint32_t arrayLayer, uint32_t mipLevel, const UnsynchronizedTextureAccess &access)
 {
     if(unsyncAccesses_.IsEmpty())
     {
         unsyncAccesses_ = TextureSubresourceMap(
-            mipLevelCount_, arrayLayerCount_, UnsynchronizedTextureAccess::CreateUndefined());
+            mipLevelCount_, arraySize_, UnsynchronizedTextureAccess::CreateUndefined());
     }
     unsyncAccesses_(mipLevel, arrayLayer) = access;
 }
 
-inline void Texture2D::SetUnsyncAccess(const UnsynchronizedTextureAccess &access)
+inline void Texture::SetUnsyncAccess(const UnsynchronizedTextureAccess &access)
 {
     if(unsyncAccesses_.IsEmpty())
     {
-        unsyncAccesses_ = TextureSubresourceMap(mipLevelCount_, arrayLayerCount_, access);
+        unsyncAccesses_ = TextureSubresourceMap(mipLevelCount_, arraySize_, access);
     }
     else
     {

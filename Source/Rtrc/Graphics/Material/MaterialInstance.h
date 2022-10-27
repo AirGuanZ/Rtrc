@@ -30,6 +30,7 @@ public:
     void Set(std::string_view name, const Vector3i &value);
     void Set(std::string_view name, const Vector4i &value);
 
+    void Set(std::string_view name, const RC<Texture> &tex);
     void Set(std::string_view name, const TextureSRV &srv);
     void Set(std::string_view name, const BufferSRV &srv);
     void Set(std::string_view name, RC<Sampler> sampler);

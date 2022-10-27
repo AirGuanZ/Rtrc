@@ -78,7 +78,7 @@ void Executer::Execute(const ExecutableGraph &graph)
         }
     }
 
-    for(auto &record : graph.resources.indexToTexture2D)
+    for(auto &record : graph.resources.indexToTexture)
     {
         if(record.texture)
         {

@@ -95,10 +95,16 @@ public:
 
     using Resource::Resource;
 
-    virtual uint32_t GetMipLevels() const = 0;
-    virtual uint32_t GetArraySize() const = 0;
+    virtual const RHI::TextureDesc &GetDesc() const = 0;
 
-    RC<Texture2D> Get() const;
+    RHI::TextureDimension GetDimension() const { return GetDesc().dim; }
+    uint32_t              GetWidth()     const { return GetDesc().width; }
+    uint32_t              GetHeight()    const { return GetDesc().height; }
+    uint32_t              GetDepth()     const { return GetDesc().depth; }
+    uint32_t              GetMipLevels() const { return GetDesc().mipLevels; }
+    uint32_t              GetArraySize() const { return GetDesc().arraySize; }
+
+    RC<Texture> Get() const;
 };
 
 class PassContext : public Uncopyable
@@ -108,7 +114,7 @@ public:
     CommandBuffer &GetCommandBuffer();
 
     RC<Buffer> GetBuffer(const BufferResource *resource);
-    RC<Texture2D> GetTexture2D(const TextureResource *resource);
+    RC<Texture> GetTexture2D(const TextureResource *resource);
 
 private:
 
@@ -192,7 +198,7 @@ public:
     TextureResource *CreateTexture2D(const RHI::TextureDesc &desc);
 
     BufferResource  *RegisterBuffer(RC<Buffer> buffer);
-    TextureResource *RegisterTexture(RC<Texture2D> texture);
+    TextureResource *RegisterTexture(RC<Texture> texture);
 
     TextureResource *RegisterSwapchainTexture(
         RHI::TexturePtr             rhiTexture,
@@ -225,10 +231,9 @@ private:
 
         using TextureResource::TextureResource;
 
-        uint32_t GetMipLevels() const override;
-        uint32_t GetArraySize() const override;
+        const RHI::TextureDesc &GetDesc() const override;
 
-        RC<Texture2D> texture;
+        RC<Texture> texture;
     };
 
     class InternalBufferResource : public BufferResource
@@ -245,16 +250,8 @@ private:
     public:
 
         using TextureResource::TextureResource;
-    };
 
-    class InternalTexture2DResource : public InternalTextureResource
-    {
-    public:
-
-        using InternalTextureResource::InternalTextureResource;
-
-        uint32_t GetMipLevels() const override;
-        uint32_t GetArraySize() const override;
+        const RHI::TextureDesc &GetDesc() const override;
 
         RHI::TextureDesc rhiDesc;
     };

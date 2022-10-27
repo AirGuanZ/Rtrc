@@ -46,7 +46,7 @@ class Application : public Uncopyable
                      auto &cmd = context.GetCommandBuffer();
                      cmd.BeginRenderPass(ColorAttachment
                      {
-                         .renderTargetView = renderTarget->Get()->GetRTV().rhiRTV,
+                         .renderTarget = renderTarget->Get(),
                          .loadOp = AttachmentLoadOp::Clear,
                          .storeOp = AttachmentStoreOp::Store,
                          .clearValue = ColorClearValue{ 0, 1, 1, 0 }

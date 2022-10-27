@@ -5,6 +5,7 @@
 
 #include <Rtrc/Graphics/Object/BindingGroup.h>
 #include <Rtrc/Graphics/Object/Pipeline.h>
+#include <Rtrc/Graphics/Object/Texture.h>
 
 RTRC_BEGIN
 
@@ -14,7 +15,7 @@ class CommandBufferManager;
 class KeywordValueContext;
 class Mesh;
 class SubMaterialInstance;
-class Texture2D;
+class Texture;
 
 using AttachmentLoadOp = RHI::AttachmentLoadOp;
 using AttachmentStoreOp = RHI::AttachmentStoreOp;
@@ -23,7 +24,13 @@ using ColorClearValue = RHI::ColorClearValue;
 using Viewport = RHI::Viewport;
 using Scissor = RHI::Scissor;
 
-using ColorAttachment = RHI::RenderPassColorAttachment;
+struct ColorAttachment
+{
+    TextureRTV        renderTarget;
+    AttachmentLoadOp  loadOp;
+    AttachmentStoreOp storeOp;
+    ColorClearValue   clearValue;
+};
 
 class BarrierBatch
 {
@@ -43,13 +50,13 @@ public:
         RHI::ResourceAccessFlag accesses);
 
     BarrierBatch &operator()(
-        const RC<Texture2D>    &texture,
+        const RC<Texture>    &texture,
         RHI::TextureLayout      layout,
         RHI::PipelineStageFlag  stages,
         RHI::ResourceAccessFlag accesses);
 
     BarrierBatch &operator()(
-        const RC<Texture2D>    &texture,
+        const RC<Texture>    &texture,
         uint32_t                arrayLayer,
         uint32_t                mipLevel,
         RHI::TextureLayout      layout,
@@ -86,7 +93,7 @@ public:
 
     void CopyBuffer(Buffer &dst, size_t dstOffset, const Buffer &src, size_t srcOffset, size_t size);
     void CopyColorTexture2DToBuffer(
-        Buffer &dst, size_t dstOffset, Texture2D &src, uint32_t arrayLayer, uint32_t mipLevel);
+        Buffer &dst, size_t dstOffset, Texture &src, uint32_t arrayLayer, uint32_t mipLevel);
 
     void BeginRenderPass(Span<ColorAttachment> colorAttachments);
     void EndRenderPass();

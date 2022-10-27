@@ -40,7 +40,7 @@ MaterialPropertySheet::MaterialPropertySheet(RC<MaterialPropertyHostLayout> layo
 #define RTRC_IMPL_SET(VALUE_TYPE, TYPE)                                      \
     void MaterialPropertySheet::Set(std::string_view name, VALUE_TYPE value) \
     {                                                                        \
-        SetImpl<MaterialProperty::Type::TYPE>(name, value);                  \
+        this->SetImpl<MaterialProperty::Type::TYPE>(name, value);            \
     }
 
 RTRC_IMPL_SET(float,            Float)
@@ -58,9 +58,10 @@ RTRC_IMPL_SET(const Vector2i &, Int2)
 RTRC_IMPL_SET(const Vector3i &, Int3)
 RTRC_IMPL_SET(const Vector4i &, Int4)
 
-RTRC_IMPL_SET(const TextureSRV &, Texture2D)
-RTRC_IMPL_SET(const BufferSRV  &, Buffer)
-RTRC_IMPL_SET(RC<Sampler>,        Sampler)
+RTRC_IMPL_SET(const RC<Texture> &, Texture2D)
+RTRC_IMPL_SET(const TextureSRV &,  Texture2D)
+RTRC_IMPL_SET(const BufferSRV  &,  Buffer)
+RTRC_IMPL_SET(RC<Sampler>,         Sampler)
 
 #undef RTRC_IMPL_SET
 

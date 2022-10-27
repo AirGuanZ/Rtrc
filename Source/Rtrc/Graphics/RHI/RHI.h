@@ -67,9 +67,7 @@ enum class QueueType : uint8_t
 {
     Graphics,
     Compute,
-    Transfer,
-
-    Count
+    Transfer
 };
 
 enum class Format : uint32_t
@@ -78,6 +76,7 @@ enum class Format : uint32_t
     B8G8R8A8_UNorm,
     R32G32_Float,
     R32G32B32A32_Float,
+    R10G10B10A2_UNorm,
 };
 
 enum class VertexAttributeType : uint32_t
@@ -233,7 +232,7 @@ inline const char *GetBindingTypeName(BindingType type)
         "ConstantBuffer",
         "Sampler",
     };
-    assert(static_cast<int>(type) < GetArraySize(NAMES));
+    assert(static_cast<int>(type) < GetArraySize<int>(NAMES));
     return NAMES[static_cast<int>(type)];
 }
 
@@ -438,9 +437,9 @@ struct TextureSubresource
 
 struct TextureSubresources
 {
-    uint32_t mipLevel;
+    uint32_t mipLevel   = 0;
     uint32_t levelCount = 1;
-    uint32_t arrayLayer;
+    uint32_t arrayLayer = 0;
     uint32_t layerCount = 1;
 };
 

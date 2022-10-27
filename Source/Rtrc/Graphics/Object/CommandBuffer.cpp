@@ -26,7 +26,7 @@ RTRC_BEGIN
 }
 
 BarrierBatch &BarrierBatch::operator()(
-    const RC<Texture2D>    &texture,
+    const RC<Texture>    &texture,
     RHI::TextureLayout      layout,
     RHI::PipelineStageFlag  stages,
     RHI::ResourceAccessFlag accesses)
@@ -42,7 +42,7 @@ BarrierBatch &BarrierBatch::operator()(
 }
 
 BarrierBatch &BarrierBatch::operator()(
-    const RC<Texture2D>    &texture,
+    const RC<Texture>    &texture,
     uint32_t                arrayLayer,
     uint32_t                mipLevel,
     RHI::TextureLayout      layout,
@@ -127,7 +127,7 @@ void CommandBuffer::CopyBuffer(Buffer &dst, size_t dstOffset, const Buffer &src,
 }
 
 void CommandBuffer::CopyColorTexture2DToBuffer(
-    Buffer &dst, size_t dstOffset, Texture2D &src, uint32_t arrayLayer, uint32_t mipLevel)
+    Buffer &dst, size_t dstOffset, Texture &src, uint32_t arrayLayer, uint32_t mipLevel)
 {
     CheckThreadID();
     rhiCommandBuffer_->CopyColorTexture2DToBuffer(
@@ -137,7 +137,18 @@ void CommandBuffer::CopyColorTexture2DToBuffer(
 void CommandBuffer::BeginRenderPass(Span<ColorAttachment> colorAttachments)
 {
     CheckThreadID();
-    rhiCommandBuffer_->BeginRenderPass(colorAttachments);
+    std::vector<RHI::RenderPassColorAttachment> rhiAttachments(colorAttachments.size());
+    for(size_t i = 0; i < colorAttachments.size(); ++i)
+    {
+        rhiAttachments[i] = RHI::RenderPassColorAttachment
+        {
+            .renderTargetView = colorAttachments[i].renderTarget.rhiRTV.Get(),
+            .loadOp = colorAttachments[i].loadOp,
+            .storeOp = colorAttachments[i].storeOp,
+            .clearValue = colorAttachments[i].clearValue
+        };
+    }
+    rhiCommandBuffer_->BeginRenderPass(rhiAttachments);
 }
 
 void CommandBuffer::EndRenderPass()

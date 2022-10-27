@@ -44,6 +44,9 @@ template<typename T>
 auto operator/(const Vector3<T> &a, const Vector3<T> &b);
 
 template<typename T>
+auto operator-(const Vector3<T> &v);
+
+template<typename T>
 auto operator*(const Vector3<T> &a, T b);
 template<typename T>
 auto operator*(T a, const Vector3<T> &b);
@@ -126,6 +129,12 @@ template<typename T>
 auto operator/(const Vector3<T> &a, const Vector3<T> &b)
 {
     return Vector3<T>(a.x / b.x, a.y / b.y, a.z / b.z);
+}
+
+template<typename T>
+auto operator-(const Vector3<T> &v)
+{
+    return Vector3<T>(-v.x, -v.y, -v.z);
 }
 
 template<typename T>

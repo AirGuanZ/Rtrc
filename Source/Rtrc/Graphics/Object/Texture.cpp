@@ -4,13 +4,13 @@
 
 RTRC_BEGIN
 
-Texture2D::Texture2D(TextureManager *manager, RHI::TexturePtr rhiTexture)
+Texture::Texture(TextureManager *manager, RHI::TexturePtr rhiTexture)
     : manager_(manager), rhiTexture_(std::move(rhiTexture))
 {
     auto &desc = rhiTexture_->GetDesc();
     width_ = desc.width;
     height_ = desc.height;
-    arrayLayerCount_ = desc.arraySize;
+    arraySize_ = desc.arraySize;
     mipLevelCount_ = desc.mipLevels;
 }
 
@@ -55,7 +55,7 @@ TextureManager::TextureManager(HostSynchronizer &hostSync, RHI::DevicePtr device
     });
 }
 
-RC<Texture2D> TextureManager::CreateTexture2D(
+RC<Texture> TextureManager::CreateTexture2D(
     uint32_t                       width,
     uint32_t                       height,
     uint32_t                       arraySize,
@@ -107,19 +107,19 @@ RC<Texture2D> TextureManager::CreateTexture2D(
         }
         ReleaseRecord &releaseRecord = *reuseRecord.releaseRecordIt;
 
-        Texture2D tex(this, std::move(releaseRecord.rhiTexture));
+        Texture tex(this, std::move(releaseRecord.rhiTexture));
         tex.unsyncAccesses_ = std::move(releaseRecord.unsyncAccesses);
         assert(!tex.unsyncAccesses_.IsEmpty());
         releaseRecord.rhiTexture = {};
         releaseRecord.unsyncAccesses = {};
-        return MakeRC<Texture2D>(std::move(tex));
+        return MakeRC<Texture>(std::move(tex));
     }
 
     // Create
 
     auto rhiTexture = device_->CreateTexture(desc);
-    Texture2D tex(this, std::move(rhiTexture));
-    return MakeRC<Texture2D>(std::move(tex));
+    Texture tex(this, std::move(rhiTexture));
+    return MakeRC<Texture>(std::move(tex));
 }
 
 void TextureManager::GC()
@@ -131,7 +131,7 @@ void TextureManager::GC()
     }
 }
 
-void TextureManager::_rtrcReleaseInternal(Texture2D &tex)
+void TextureManager::_rtrcReleaseInternal(Texture &tex)
 {
     if(batchReleaser_.GetHostSynchronizer().IsInOwnerThread())
     {

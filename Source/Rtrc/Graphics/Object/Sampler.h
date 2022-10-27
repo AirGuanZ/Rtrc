@@ -20,6 +20,8 @@ public:
 
     void Swap(Sampler &other) noexcept;
 
+    void SetName(std::string name);
+
     const RHI::SamplerPtr &GetRHIObject() const;
     operator const RHI::SamplerPtr &() const;
 
@@ -72,6 +74,11 @@ inline Sampler &Sampler::operator=(Sampler &&other) noexcept
 {
     Swap(other);
     return *this;
+}
+
+inline void Sampler::SetName(std::string name)
+{
+    rhiSampler_->SetName(std::move(name));
 }
 
 inline const RHI::SamplerPtr &Sampler::GetRHIObject() const

@@ -12,13 +12,13 @@ RC<Buffer> BufferResource::Get() const
     return graph_->executableResource_->indexToBuffer[GetResourceIndex()].buffer;
 }
 
-RC<Texture2D> TextureResource::Get() const
+RC<Texture> TextureResource::Get() const
 {
     if(!graph_->executableResource_)
     {
         throw Exception("TextureResource::GetRHI can not be called during graph execution");
     }
-    return graph_->executableResource_->indexToTexture2D[GetResourceIndex()].texture;
+    return graph_->executableResource_->indexToTexture[GetResourceIndex()].texture;
 }
 
 CommandBuffer &PassContext::GetCommandBuffer()
@@ -33,9 +33,9 @@ RC<Buffer> PassContext::GetBuffer(const BufferResource *resource)
     return result;
 }
 
-RC<Texture2D> PassContext::GetTexture2D(const TextureResource *resource)
+RC<Texture> PassContext::GetTexture2D(const TextureResource *resource)
 {
-    auto &result = resources_.indexToTexture2D[resource->GetResourceIndex()].texture;
+    auto &result = resources_.indexToTexture[resource->GetResourceIndex()].texture;
     assert(result);
     return result;
 }
@@ -154,7 +154,7 @@ BufferResource *RenderGraph::CreateBuffer(const RHI::BufferDesc &desc)
 TextureResource *RenderGraph::CreateTexture2D(const RHI::TextureDesc &desc)
 {
     const int index = static_cast<int>(textures_.size());
-    auto resource = MakeBox<InternalTexture2DResource>(this, index);
+    auto resource = MakeBox<InternalTextureResource>(this, index);
     resource->rhiDesc = desc;
     textures_.push_back(std::move(resource));
     buffers_.push_back(nullptr);
@@ -171,7 +171,7 @@ BufferResource *RenderGraph::RegisterBuffer(RC<Buffer> buffer)
     return buffers_.back().get();
 }
 
-TextureResource *RenderGraph::RegisterTexture(RC<Texture2D> texture)
+TextureResource *RenderGraph::RegisterTexture(RC<Texture> texture)
 {
     const int index = static_cast<int>(textures_.size());
     auto resource = MakeBox<ExternalTextureResource>(this, index);
@@ -189,7 +189,7 @@ TextureResource *RenderGraph::RegisterSwapchainTexture(
     assert(!swapchainTexture_);
     const int index = static_cast<int>(textures_.size());
     auto resource = MakeBox<SwapchainTexture>(this, index);
-    resource->texture = MakeRC<Texture2D>(Texture2D::FromRHIObject(std::move(rhiTexture)));
+    resource->texture = MakeRC<Texture>(Texture::FromRHIObject(std::move(rhiTexture)));
     resource->acquireSemaphore = std::move(acquireSemaphore);
     resource->presentSemaphore = std::move(presentSemaphore);
     swapchainTexture_ = resource.get();
@@ -212,24 +212,14 @@ Pass *RenderGraph::CreatePass(std::string name)
     return passes_.back().get();
 }
 
-uint32_t RenderGraph::ExternalTextureResource::GetMipLevels() const
+const RHI::TextureDesc &RenderGraph::ExternalTextureResource::GetDesc() const
 {
-    return texture->GetMipLevelCount();
+    return texture->GetRHIObjectDesc();
 }
 
-uint32_t RenderGraph::ExternalTextureResource::GetArraySize() const
+const RHI::TextureDesc &RenderGraph::InternalTextureResource::GetDesc() const
 {
-    return texture->GetArraySize();
-}
-
-uint32_t RenderGraph::InternalTexture2DResource::GetMipLevels() const
-{
-    return rhiDesc.mipLevels;
-}
-
-uint32_t RenderGraph::InternalTexture2DResource::GetArraySize() const
-{
-    return rhiDesc.arraySize;
+    return rhiDesc;
 }
 
 RTRC_RG_END

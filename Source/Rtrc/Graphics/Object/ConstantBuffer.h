@@ -126,7 +126,7 @@ private:
     std::unique_ptr<Slab[]> slabs_;
 };
 
-#define cbuffer(NAME)                                                  \
+#define $cbuffer(NAME)                                                 \
     struct NAME;                                                       \
     struct _rtrcCBufferBase##NAME                                      \
     {                                                                  \
@@ -142,12 +142,12 @@ private:
     };                                                                 \
     struct NAME : _rtrcCBufferBase##NAME
 
-#define cbvar(TYPE, NAME)                               \
+#define $cvar(TYPE, NAME)                               \
     RTRC_META_STRUCT_PRE_MEMBER(NAME)                   \
         f.template operator()(&_rtrcSelf::NAME, #NAME); \
     RTRC_META_STRUCT_POST_MEMBER(NAME)                  \
     using _rtrcMemberType##NAME = TYPE;                 \
-    _rtrcMemberType##NAME NAME;
+    _rtrcMemberType##NAME NAME
 
 namespace ConstantBufferDetail
 {

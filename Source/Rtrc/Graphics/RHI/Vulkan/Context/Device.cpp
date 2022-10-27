@@ -803,7 +803,7 @@ Ptr<Sampler> VulkanDevice::CreateSampler(const SamplerDesc &desc)
         "failed to create vulkan sampler");
     RTRC_SCOPE_FAIL{ vkDestroySampler(device_, sampler, VK_ALLOC); };
 
-    return MakePtr<VulkanSampler>(desc, device_, sampler);
+    return MakePtr<VulkanSampler>(desc, this, sampler);
 }
 
 Ptr<MemoryPropertyRequirements> VulkanDevice::GetMemoryRequirements(

@@ -113,7 +113,7 @@ public:
         size_t indexInBindingGroup;
     };
 
-    using MaterialResource = Variant<BufferSRV, TextureSRV, RC<Sampler>>;
+    using MaterialResource = Variant<BufferSRV, TextureSRV, RC<Texture>, RC<Sampler>>;
 
     SubMaterialPropertyLayout(const MaterialPropertyHostLayout &materialPropertyLayout, const Shader &shader);
 

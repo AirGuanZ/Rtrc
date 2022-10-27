@@ -336,7 +336,14 @@ void SubMaterialPropertyLayout::FillBindingGroup(
             bindingGroup.Set(ref.indexInBindingGroup, resource.As<BufferSRV>());
             break;
         case MaterialProperty::Type::Texture2D:
-            bindingGroup.Set(ref.indexInBindingGroup, resource.As<TextureSRV>());
+            if(auto srv = resource.AsIf<TextureSRV>())
+            {
+                bindingGroup.Set(ref.indexInBindingGroup, *srv);
+            }
+            else
+            {
+                bindingGroup.Set(ref.indexInBindingGroup, resource.As<RC<Texture>>());
+            }
             break;
         case MaterialProperty::Type::Sampler:
             bindingGroup.Set(ref.indexInBindingGroup, resource.As<RC<Sampler>>());

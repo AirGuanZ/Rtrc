@@ -64,7 +64,7 @@ void CopyContext::UploadBuffer(
 }
 
 void CopyContext::UploadTexture2D(
-    const RC<Texture2D> &texture,
+    const RC<Texture> &texture,
     uint32_t             arrayLayer,
     uint32_t             mipLevel,
     const void          *data)
@@ -122,7 +122,7 @@ void CopyContext::UploadTexture2D(
 }
 
 void CopyContext::UploadTexture2D(
-    const RC<Texture2D> &texture,
+    const RC<Texture> &texture,
     uint32_t            arrayLayer,
     uint32_t            mipLevel,
     const ImageDynamic &image)
@@ -166,7 +166,7 @@ RC<Buffer> CopyContext::CreateBuffer(
     return ret;
 }
 
-RC<Texture2D> CopyContext::CreateTexture2D(
+RC<Texture> CopyContext::CreateTexture2D(
     uint32_t              width,
     uint32_t              height,
     uint32_t              arraySize,
@@ -189,7 +189,7 @@ RC<Texture2D> CopyContext::CreateTexture2D(
     return ret;
 }
 
-RC<Texture2D> CopyContext::CreateTexture2D(
+RC<Texture> CopyContext::CreateTexture2D(
     uint32_t              width,
     uint32_t              height,
     uint32_t              arraySize,
@@ -212,7 +212,7 @@ RC<Texture2D> CopyContext::CreateTexture2D(
     return ret;
 }
 
-RC<Texture2D> CopyContext::LoadTexture2D(
+RC<Texture> CopyContext::LoadTexture2D(
     const std::string &filename, RHI::Format format, RHI::TextureUsageFlag usages, bool generateMipLevels)
 {
     std::vector<ImageDynamic> images;

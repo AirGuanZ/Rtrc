@@ -42,6 +42,12 @@ RenderContext::RenderContext(
 
 RenderContext::~RenderContext()
 {
+    // Present queue must be synchronized
+    if(mainQueue_.GetRHIObject()->GetType() == RHI::QueueType::Graphics && window_)
+    {
+        device_->WaitIdle();
+    }
+
     hostSync_.End();
 
     stop_source_.request_stop();
@@ -161,7 +167,7 @@ RC<Buffer> RenderContext::CreateBuffer(
     return bufferManager_->CreateBuffer(size, usages, hostAccess, allowReuse);
 }
 
-RC<Texture2D> RenderContext::CreateTexture2D(
+RC<Texture> RenderContext::CreateTexture2D(
     uint32_t width, uint32_t height, uint32_t arraySize, uint32_t mipLevelCount, RHI::Format format,
     RHI::TextureUsageFlag usages, RHI::QueueConcurrentAccessMode concurrentMode, uint32_t sampleCount, bool allowReuse)
 {

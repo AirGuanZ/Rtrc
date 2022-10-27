@@ -17,6 +17,7 @@ struct BufferUAV;
 struct TextureSRV;
 struct TextureUAV;
 class Sampler;
+class Texture;
 
 class BindingGroup : public Uncopyable
 {
@@ -33,6 +34,7 @@ public:
     void Set(int slot, const BufferUAV   &uav);
     void Set(int slot, const TextureSRV  &srv);
     void Set(int slot, const TextureUAV  &uav);
+    void Set(int slot, const RC<Texture> &tex);
 
     void Set(std::string_view name, RC<ConstantBuffer> cbuffer);
     void Set(std::string_view name, RC<Sampler>        sampler);
@@ -40,6 +42,7 @@ public:
     void Set(std::string_view name, const BufferUAV   &uav);
     void Set(std::string_view name, const TextureSRV  &srv);
     void Set(std::string_view name, const TextureUAV  &uav);
+    void Set(std::string_view name, const RC<Texture> &tex);
 
     const RHI::BindingGroupPtr &GetRHIObject();
 
@@ -65,7 +68,7 @@ public:
 
     int GetBindingSlotByName(std::string_view name) const;
 
-    const RHI::BindingGroupLayoutPtr &GetRHIObject();
+    const RHI::BindingGroupLayoutPtr &GetRHIObject() const;
 
     RC<BindingGroup> CreateBindingGroup() const;
 

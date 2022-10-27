@@ -4,9 +4,9 @@
 
 using namespace Rtrc;
 
-cbuffer(ScaleSetting)
+$cbuffer(ScaleSetting)
 {
-    cbvar(float, scale)
+    $cvar(float, scale) = 0;
 };
 
 void Run()

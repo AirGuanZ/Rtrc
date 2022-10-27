@@ -16,12 +16,12 @@ struct ExecutableResources
 
     struct Texture2DRecord
     {
-        RC<Texture2D> texture;
+        RC<Texture> texture;
         TextureSubresourceMap<std::optional<UnsynchronizedTextureAccess>> finalState;
     };
 
     std::vector<BufferRecord> indexToBuffer;
-    std::vector<Texture2DRecord> indexToTexture2D;
+    std::vector<Texture2DRecord> indexToTexture;
 };
 
 struct ExecutablePass
