@@ -639,32 +639,15 @@ Ptr<ComputePipeline> VulkanDevice::CreateComputePipeline(const ComputePipelineDe
 Ptr<BindingGroupLayout> VulkanDevice::CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc)
 {
     std::vector<VkDescriptorSetLayoutBinding> descSetBindings;
-    for(auto &aliasedBinding : desc.bindings)
+    for(auto &binding : desc.bindings)
     {
-        {
-            auto &binding = aliasedBinding.front();
-            auto vkType = TranslateBindingType(binding.type);
-            descSetBindings.push_back(VkDescriptorSetLayoutBinding{
-                .binding         = static_cast<uint32_t>(descSetBindings.size()),
-                .descriptorType  = vkType,
-                .descriptorCount = binding.arraySize.value_or(1),
-                .stageFlags      = TranslateShaderStageFlag(binding.shaderStages)
-            });
-        }
-        for(size_t i = 1; i < aliasedBinding.size(); ++i)
-        {
-            auto &binding = aliasedBinding[i];
-            if(TranslateBindingType(binding.type) != descSetBindings.back().descriptorType)
-            {
-                throw Exception("aliasing between different descriptor types is not allowed");
-            }
-            const uint32_t arraySize = binding.arraySize.value_or(1);
-            if(arraySize != descSetBindings.back().descriptorCount)
-            {
-                throw Exception("aliasing between descriptor arrays with different sizes is not allowed");
-            }
-            descSetBindings.back().stageFlags |= TranslateShaderStageFlag(binding.shaderStages);
-        }
+        auto vkType = TranslateBindingType(binding.type);
+        descSetBindings.push_back(VkDescriptorSetLayoutBinding{
+            .binding         = static_cast<uint32_t>(descSetBindings.size()),
+            .descriptorType  = vkType,
+            .descriptorCount = binding.arraySize.value_or(1),
+            .stageFlags      = TranslateShaderStageFlag(binding.shaderStages)
+        });
     }
 
     const VkDescriptorSetLayoutCreateInfo createInfo = {

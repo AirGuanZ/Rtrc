@@ -521,7 +521,6 @@ RHI::RawShaderPtr ShaderCompiler::CompileStage(
     for(auto &group : parsedBindingGroups)
     {
         RHI::BindingGroupLayoutDesc rhiLayoutDesc;
-        rhiLayoutDesc.name = group.name;
 
         for(auto &binding : group.bindings)
         {
@@ -530,7 +529,7 @@ RHI::RawShaderPtr ShaderCompiler::CompileStage(
             rhiBindingDesc.type = binding.type;
             rhiBindingDesc.shaderStages = binding.stages;
             rhiBindingDesc.arraySize = binding.arraySize;
-            rhiLayoutDesc.bindings.push_back({ rhiBindingDesc });
+            rhiLayoutDesc.bindings.push_back(rhiBindingDesc);
         }
 
         if(!group.valuePropertyDefinitions.empty())

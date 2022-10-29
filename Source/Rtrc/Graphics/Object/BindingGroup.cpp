@@ -59,7 +59,7 @@ void BindingGroup::Set(int slot, const TextureUAV &uav)
 
 void BindingGroup::Set(int slot, const RC<Texture> &tex)
 {
-    const RHI::BindingType type =  layout_->GetRHIObject()->GetDesc().bindings[slot].front().type;
+    const RHI::BindingType type =  layout_->GetRHIObject()->GetDesc().bindings[slot].type;
     switch(type)
     {
     case RHI::BindingType::Texture2D:
@@ -145,7 +145,7 @@ int BindingGroupLayout::GetBindingSlotByName(std::string_view name) const
     if(it == record_->nameToSlot.end())
     {
         throw Exception(fmt::format(
-            "Binding slot {} is not found in binding group layout {}", name, record_->rhiLayout->GetDesc().name));
+            "Binding slot {} is not found in given binding group layout", name));
     }
     return it->second;
 }
@@ -275,10 +275,8 @@ RC<BindingGroupLayout> BindingLayoutManager::CreateBindingGroupLayout(const RHI:
     record->rhiLayout = device_->CreateBindingGroupLayout(desc);
     for(size_t slot = 0; slot < desc.bindings.size(); ++slot)
     {
-        for(auto &b : desc.bindings[slot])
-        {
-            record->nameToSlot[b.name] = static_cast<int>(slot);
-        }
+        auto &b = desc.bindings[slot];
+        record->nameToSlot[b.name] = static_cast<int>(slot);
     }
     groupLayoutCache_.insert({ desc, record });
 

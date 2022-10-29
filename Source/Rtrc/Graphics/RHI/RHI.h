@@ -407,12 +407,9 @@ struct BindingDesc
     bool operator==(const BindingDesc &) const = default;
 };
 
-using AliasedBindingsDesc = std::vector<BindingDesc>;
-
 struct BindingGroupLayoutDesc
 {
-    std::string name;
-    std::vector<AliasedBindingsDesc> bindings;
+    std::vector<BindingDesc> bindings;
 
     auto operator<=>(const BindingGroupLayoutDesc &other) const = default;
     bool operator==(const BindingGroupLayoutDesc &) const = default;

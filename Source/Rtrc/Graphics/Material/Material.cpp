@@ -246,14 +246,8 @@ SubMaterialPropertyLayout::SubMaterialPropertyLayout(const MaterialPropertyHostL
     if(bindingGroupLayout_)
     {
         auto &desc = bindingGroupLayout_->GetRHIObject()->GetDesc();
-        for(auto &&[bindingIndex, aliased] : Enumerate(desc.bindings))
+        for(auto &&[bindingIndex, binding] : Enumerate(desc.bindings))
         {
-            if(aliased.size() > 1)
-            {
-                throw Exception("Binding aliasing are not supported in 'Material' binding group");
-            }
-            const RHI::BindingDesc &binding = aliased[0];
-
             if(binding.type == RHI::BindingType::ConstantBuffer)
             {
                 if(binding.name != "Material")

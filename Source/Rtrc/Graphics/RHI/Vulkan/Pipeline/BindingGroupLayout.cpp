@@ -64,62 +64,62 @@ void VulkanBindingGroupLayout::ReleaseSet(VkDescriptorSet set) const
 
 bool VulkanBindingGroupLayout::IsSlotTexelBuffer(int index) const
 {
-    return desc_.bindings[index].front().type == BindingType::Buffer;
+    return desc_.bindings[index].type == BindingType::Buffer;
 }
 
 bool VulkanBindingGroupLayout::IsSlotStorageTexelBuffer(int index) const
 {
-    return desc_.bindings[index].front().type == BindingType::RWBuffer;
+    return desc_.bindings[index].type == BindingType::RWBuffer;
 }
 
 bool VulkanBindingGroupLayout::IsSlotStructuredBuffer(int index) const
 {
-    return desc_.bindings[index].front().type == BindingType::StructuredBuffer;
+    return desc_.bindings[index].type == BindingType::StructuredBuffer;
 }
 
 bool VulkanBindingGroupLayout::IsSlotRWStructuredBuffer(int index) const
 {
-    return desc_.bindings[index].front().type == BindingType::RWStructuredBuffer;
+    return desc_.bindings[index].type == BindingType::RWStructuredBuffer;
 }
 
 bool VulkanBindingGroupLayout::IsSlotTexture2D(int index) const
 {
-    return desc_.bindings[index].front().type == BindingType::Texture2D;
+    return desc_.bindings[index].type == BindingType::Texture2D;
 }
 
 bool VulkanBindingGroupLayout::IsSlotRWTexture2D(int index) const
 {
-    return desc_.bindings[index].front().type == BindingType::RWTexture2D;
+    return desc_.bindings[index].type == BindingType::RWTexture2D;
 }
 
 bool VulkanBindingGroupLayout::IsSlotTexture3D(int index) const
 {
-    return desc_.bindings[index].front().type == BindingType::Texture3D;
+    return desc_.bindings[index].type == BindingType::Texture3D;
 }
 
 bool VulkanBindingGroupLayout::IsSlotRWTexture3D(int index) const
 {
-    return desc_.bindings[index].front().type == BindingType::RWTexture3D;
+    return desc_.bindings[index].type == BindingType::RWTexture3D;
 }
 
 bool VulkanBindingGroupLayout::IsSlotTexture2DArray(int index) const
 {
-    return desc_.bindings[index].front().type == BindingType::Texture2DArray;
+    return desc_.bindings[index].type == BindingType::Texture2DArray;
 }
 
 bool VulkanBindingGroupLayout::IsSlotRWTexture2DArray(int index) const
 {
-    return desc_.bindings[index].front().type == BindingType::RWTexture2DArray;
+    return desc_.bindings[index].type == BindingType::RWTexture2DArray;
 }
 
 bool VulkanBindingGroupLayout::IsSlotTexture3DArray(int index) const
 {
-    return desc_.bindings[index].front().type == BindingType::Texture3DArray;
+    return desc_.bindings[index].type == BindingType::Texture3DArray;
 }
 
 bool VulkanBindingGroupLayout::IsSlotRWTexture3DArray(int index) const
 {
-    return desc_.bindings[index].front().type == BindingType::RWTexture3DArray;
+    return desc_.bindings[index].type == BindingType::RWTexture3DArray;
 }
 
 Ptr<BindingGroup> VulkanBindingGroupLayout::CreateBindingGroupImpl() const
