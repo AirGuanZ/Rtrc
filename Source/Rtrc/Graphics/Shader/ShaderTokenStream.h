@@ -64,6 +64,22 @@ public:
         return currentToken_;
     }
 
+    void ConsumeOrThrow(std::string_view token, std::string_view msg = "")
+    {
+        if(GetCurrentToken() == token)
+        {
+            Next();
+        }
+        else if(!msg.size())
+        {
+            Throw(fmt::format("'{}' expected", token));
+        }
+        else
+        {
+            Throw(msg);
+        }
+    }
+
     void ReplaceCurrentSingleCharToken(char c)
     {
         assert(nextPos_ > 0);
@@ -109,27 +125,21 @@ public:
         const char ch = source_[nextPos_];
 
         if(ch == '{' || ch == '}' || ch == ',' || ch == ';' || ch == ':' ||
-            ch == '[' || ch == ']' || ch == '<' || ch == '>' || ch == '|')
+            ch == '[' || ch == ']' || ch == '<' || ch == '>' || ch == '|' ||
+            ch == '(' || ch == ')')
         {
             currentToken_ = source_.substr(nextPos_, 1);
             ++nextPos_;
             return;
         }
 
-        // integer
+        // number
 
         if(std::isdigit(ch))
         {
             const size_t endPos = FindEndOfNumber(nextPos_);
             currentToken_ = source_.substr(nextPos_, endPos - nextPos_);
             nextPos_ = endPos;
-            //size_t endPos = nextPos_ + 1;
-            //while(endPos < source_.size() && std::isdigit(source_[endPos]))
-            //{
-            //    ++endPos;
-            //}
-            //currentToken_ = source_.substr(nextPos_, endPos - nextPos_);
-            //nextPos_ = endPos;
             return;
         }
 

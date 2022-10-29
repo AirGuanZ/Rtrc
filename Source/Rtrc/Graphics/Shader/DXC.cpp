@@ -115,14 +115,7 @@ std::vector<unsigned char> DXC::Compile(
     std::vector<std::wstring> macros;
     for(auto &m : shaderInfo.macros)
     {
-        if(!m.second.empty())
-        {
-            macros.push_back(ToWString("-D" + m.first + "=" + m.second));
-        }
-        else
-        {
-            macros.push_back(ToWString("-D" + m.first));
-        }
+        macros.push_back(ToWString("-D" + m.first + "=" + m.second));
     }
     for(auto &m : macros)
     {

@@ -20,14 +20,12 @@ Shader "Quad"
 
     #keyword DADADA
 
-    group Material
-    {
-        Texture2DArray<float4> MainTexture;
-        SamplerState           MainSampler;
-
-        MATERIAL_VALUE_PROPERTY(scale);
-        MATERIAL_VALUE_PROPERTY(mipLevel);
-    };
+    rtrc_group(Material)
+        rtrc_define(Texture2DArray<float4>, MainTexture)
+        rtrc_define(SamplerState, MainSampler)
+        rtrc_uniform(float, scale)
+        rtrc_uniform(float, mipLevel)
+    rtrc_end
 
     struct VSInput
     {

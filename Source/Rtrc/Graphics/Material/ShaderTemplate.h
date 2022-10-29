@@ -35,7 +35,7 @@ public:
             {
                 macros["ENABLE_SHADER_DEBUG"] = "1";
             }
-            compiledShaders_[keywordValueMask] = shaderCompiler_->Compile(source_, debug_, macros);
+            compiledShaders_[keywordValueMask] = shaderCompiler_->Compile(source_, macros, debug_);
         }
         return compiledShaders_[keywordValueMask];
     }

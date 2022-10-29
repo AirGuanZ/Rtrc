@@ -9,6 +9,8 @@ RTRC_BEGIN
 
 class BindingLayout;
 class BindingGroupLayout;
+class ShaderCompiler;
+class ShaderCompiler;
 
 class Shader : public Uncopyable, public WithUniqueObjectID
 {
@@ -31,6 +33,7 @@ public:
 
 private:
 
+    friend class ShaderCompiler;
     friend class ShaderCompiler;
 
     RHI::RawShaderPtr VS_;

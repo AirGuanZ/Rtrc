@@ -1,11 +1,9 @@
 #pragma once
 
 #include <filesystem>
-#include <map>
 
 #include <Rtrc/Graphics/Object/RenderContext.h>
 #include <Rtrc/Graphics/Shader/Shader.h>
-#include <Rtrc/Utils/SharedObjectPool.h>
 
 RTRC_BEGIN
 
@@ -29,26 +27,25 @@ public:
     void SetRootDirectory(std::string_view rootDir);
 
     RC<Shader> Compile(
-        const ShaderSource &desc, bool debug = RTRC_DEBUG, const Macros &macros = {}, bool skipPreprocess = false);
-
-    std::string Preprocess(std::string source, std::string filename, const Macros &macros);
-
-    std::string GetMappedFilename(const std::string &filename);
+        const ShaderSource &desc,
+        const Macros       &macros = {},
+        bool                debug = RTRC_DEBUG);
 
 private:
 
-    RHI::RawShaderPtr CompileShader(
-        const std::string                        &source,
-        const std::string                        &filename,
-        const std::string                        &entry,
-        bool                                      debug,
-        const std::map<std::string, std::string> &macros,
-        RHI::ShaderStage                          stage,
-        bool                                      skipPreprocess,
-        std::map<std::string, int, std::less<>>  &outputNameToGroupIndex,
-        std::vector<RC<BindingGroupLayout>>      &outBindingGroupLayouts,
-        std::vector<std::string>                 &outBindingGroupNames,
-        Box<ShaderReflection>                    &outputRefl);
+    std::string MapFilename(std::string_view filename);
+
+    RHI::RawShaderPtr CompileStage(
+        RHI::ShaderStage                         stage,
+        const std::string                       &source,
+        const std::string                       &filename,
+        const std::string                       &entry,
+        bool                                     debug,
+        const Macros                            &macros,
+        std::map<std::string, int, std::less<>> &nameToGroupIndex,
+        std::vector<RC<BindingGroupLayout>>     &groupLayouts,
+        std::vector<std::string>                &groupNames,
+        Box<ShaderReflection>                   &refl);
 
     RenderContext *renderContext_ = nullptr;
     std::filesystem::path rootDir_;
