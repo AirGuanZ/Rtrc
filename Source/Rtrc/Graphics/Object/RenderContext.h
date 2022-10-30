@@ -3,6 +3,7 @@
 #include <thread>
 
 #include <Rtrc/Graphics/Object/BindingGroup.h>
+#include <Rtrc/Graphics/Object/BindingGroupDSL.h>
 #include <Rtrc/Graphics/Object/Buffer.h>
 #include <Rtrc/Graphics/Object/ConstantBuffer.h>
 #include <Rtrc/Graphics/Object/CopyContext.h>
@@ -50,6 +51,21 @@ public:
     CopyContext &GetCopyContext();
 
     const RHI::FencePtr &GetFrameFence();
+
+    template<BindingGroupDSL::RtrcGroupStruct T>
+    RC<BindingGroupLayout> CreateBindingGroupLayout();
+
+    template<BindingGroupDSL::RtrcGroupStruct T>
+    RC<BindingGroup> CreateBindingGroup();
+
+    template<BindingGroupDSL::RtrcGroupStruct T>
+    RC<BindingGroup> CreateBindingGroup(const RC<BindingGroupLayout> &layoutHint);
+
+    template<BindingGroupDSL::RtrcGroupStruct T>
+    RC<BindingGroup> CreateBindingGroup(const T &value);
+    
+    template<BindingGroupDSL::RtrcGroupStruct T>
+    RC<BindingGroup> CreateBindingGroup(const T &value, const RC<BindingGroupLayout> &layoutHint);
 
     RC<BindingGroupLayout> CreateBindingGroupLayout(const RHI::BindingGroupLayoutDesc &desc);
 
@@ -124,6 +140,42 @@ void RenderContext::ExecuteAndWaitImmediate(F &&f)
     std::invoke(std::forward<F>(f), cmd);
     cmd.End();
     ExecuteAndWait(std::move(cmd));
+}
+
+template<BindingGroupDSL::RtrcGroupStruct T>
+RC<BindingGroupLayout> RenderContext::CreateBindingGroupLayout()
+{
+    // TODO: fast cache for these group layouts
+    return this->CreateBindingGroupLayout(GetRHIBindingGroupLayoutDesc<T>());
+}
+
+template<BindingGroupDSL::RtrcGroupStruct T>
+RC<BindingGroup> RenderContext::CreateBindingGroup()
+{
+    return this->CreateBindingGroupLayout<T>()->CreateBindingGroup();
+}
+
+template<BindingGroupDSL::RtrcGroupStruct T>
+RC<BindingGroup> RenderContext::CreateBindingGroup(const RC<BindingGroupLayout> &layoutHint)
+{
+    assert(layoutHint == CreateBindingGroupLayout<T>());
+    return layoutHint->CreateBindingGroup();
+}
+
+template<BindingGroupDSL::RtrcGroupStruct T>
+RC<BindingGroup> RenderContext::CreateBindingGroup(const T &value)
+{
+    auto group = this->CreateBindingGroup<T>();
+    Rtrc::ApplyBindingGroup(constantBufferManager_.get(), group, value);
+    return group;
+}
+
+template<BindingGroupDSL::RtrcGroupStruct T>
+RC<BindingGroup> RenderContext::CreateBindingGroup(const T &value, const RC<BindingGroupLayout> &layoutHint)
+{
+    auto group = this->CreateBindingGroup<T>(layoutHint);
+    Rtrc::ApplyBindingGroup(constantBufferManager_.get(), group, value);
+    return group;
 }
 
 RTRC_END

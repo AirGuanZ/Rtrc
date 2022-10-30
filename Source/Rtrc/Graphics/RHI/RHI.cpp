@@ -13,8 +13,11 @@ const char *GetFormatName(Format format)
     ADD_CASE(R32G32_Float)
     ADD_CASE(R32G32B32A32_Float)
     ADD_CASE(R10G10B10A2_UNorm)
+    ADD_CASE(D24S8)
+    ADD_CASE(D32S8)
+    ADD_CASE(D32)
     }
-    throw Exception("unknown format: " + std::to_string(static_cast<int>(format)));
+    throw Exception("Unknown format: " + std::to_string(static_cast<int>(format)));
 #undef ADD_CASE
 }
 
@@ -27,8 +30,12 @@ size_t GetTexelSize(Format format)
     case Format::R32G32_Float:       return 8;
     case Format::R32G32B32A32_Float: return 16;
     case Format::R10G10B10A2_UNorm:  return 4;
+    case Format::D24S8:
+    case Format::D32S8:
+    case Format::D32:
+        throw Exception(fmt::format("Texel size of {} is unknown", GetFormatName(format)));
     }
-    throw Exception("unknown format: " + std::to_string(static_cast<int>(format)));
+    throw Exception("Unknown format: " + std::to_string(static_cast<int>(format)));
 }
 
 bool IsReadOnly(ResourceAccessFlag access)

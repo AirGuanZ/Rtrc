@@ -210,9 +210,6 @@ namespace
         std::vector<ParsedBindingGroup> groups;
         std::set<std::string> parsedGroupNames;
         std::map<std::string, ParsedBinding> ungroupedBindings;
-
-        // unparsed bindingName -> (index in 'groups', index in group)
-        std::map<std::string, std::pair<int, int>> bindingNameToGroupLocation;
         std::set<std::string> parsedBindingNames;
 
         const std::string GROUP_BEGIN_KEYWORD  = "rtrc_group";

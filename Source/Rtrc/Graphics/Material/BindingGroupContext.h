@@ -5,6 +5,7 @@
 
 RTRC_BEGIN
 
+class CommandBuffer;
 class Shader;
 
 class BindingGroupContext
@@ -18,6 +19,9 @@ public:
     void ClearBindingRecords();
     void BindForGraphicsPipeline(const RHI::CommandBufferPtr &commandBuffer, const RC<Shader> &shader);
     void BindForComputePipeline(const RHI::CommandBufferPtr &commandBuffer, const RC<Shader> &shader);
+
+    void BindForGraphicsPipeline(const CommandBuffer &commandBuffer, const RC<Shader> &shader);
+    void BindForComputePipeline(const CommandBuffer &commandBuffer, const RC<Shader> &shader);
 
 private:
 

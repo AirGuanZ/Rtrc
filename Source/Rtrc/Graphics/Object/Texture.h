@@ -50,10 +50,7 @@ struct TextureSRV
 
     TextureSRV(const RC<Texture> &tex);
 
-    operator const RHI::TextureSRVPtr() const
-    {
-        return rhiSRV;
-    }
+    operator const RHI::TextureSRVPtr() const { return rhiSRV; }
 };
 
 struct TextureUAV
@@ -65,10 +62,7 @@ struct TextureUAV
 
     TextureUAV(const RC<Texture> &tex);
 
-    operator const RHI::TextureUAVPtr() const
-    {
-        return rhiUAV;
-    }
+    operator const RHI::TextureUAVPtr() const { return rhiUAV; }
 };
 
 struct TextureRTV
@@ -80,15 +74,23 @@ struct TextureRTV
 
     TextureRTV(const RC<Texture> &tex);
 
-    operator const RHI::TextureRTVPtr() const
-    {
-        return rhiRTV;
-    }
+    operator const RHI::TextureRTVPtr() const { return rhiRTV; }
 
-    operator RHI::TextureRTV *() const
-    {
-        return rhiRTV;
-    }
+    operator RHI::TextureRTV *() const { return rhiRTV; }
+};
+
+struct TextureDSV
+{
+    RC<Texture> tex;
+    RHI::TextureDSVPtr rhiDSV;
+
+    TextureDSV() = default;
+
+    TextureDSV(const RC<Texture> &tex);
+
+    operator const RHI::TextureDSVPtr() const { return rhiDSV; }
+
+    operator RHI::TextureDSV *() const { return rhiDSV; }
 };
 
 class Texture : public Uncopyable, public std::enable_shared_from_this<Texture>
@@ -126,6 +128,7 @@ public:
     TextureSRV GetSRV(const RHI::TextureSRVDesc &desc = {});
     TextureUAV GetUAV(const RHI::TextureUAVDesc &desc = {});
     TextureRTV GetRTV(const RHI::TextureRTVDesc &desc = {});
+    TextureDSV GetDSV(const RHI::TextureDSVDesc &desc = {});
 
     operator TextureSRV() { return GetSRV(); }
     operator TextureUAV() { return GetUAV(); }
@@ -228,6 +231,11 @@ inline TextureUAV::TextureUAV(const RC<Texture> &tex)
 inline TextureRTV::TextureRTV(const RC<Texture> &tex)
 {
     *this = tex->GetRTV();
+}
+
+inline TextureDSV::TextureDSV(const RC<Texture> &tex)
+{
+    *this = tex->GetDSV();
 }
 
 inline Texture Texture::FromRHIObject(RHI::TexturePtr rhiTexture)
@@ -372,6 +380,14 @@ inline TextureRTV Texture::GetRTV(const RHI::TextureRTVDesc &desc)
     TextureRTV ret;
     ret.tex = shared_from_this();
     ret.rhiRTV = rhiTexture_->CreateRTV(desc);
+    return ret;
+}
+
+inline TextureDSV Texture::GetDSV(const RHI::TextureDSVDesc &desc)
+{
+    TextureDSV ret;
+    ret.tex = shared_from_this();
+    ret.rhiDSV = rhiTexture_->CreateDSV(desc);
     return ret;
 }
 

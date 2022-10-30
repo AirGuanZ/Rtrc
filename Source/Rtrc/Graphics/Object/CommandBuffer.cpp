@@ -136,6 +136,17 @@ void CommandBuffer::CopyColorTexture2DToBuffer(
 
 void CommandBuffer::BeginRenderPass(Span<ColorAttachment> colorAttachments)
 {
+    BeginRenderPass(colorAttachments, {});
+}
+
+void CommandBuffer::BeginRenderPass(const DepthStencilAttachment &depthStencilAttachment)
+{
+    BeginRenderPass({}, depthStencilAttachment);
+}
+
+void CommandBuffer::BeginRenderPass(
+    Span<ColorAttachment> colorAttachments, const DepthStencilAttachment &depthStencilAttachment)
+{
     CheckThreadID();
     std::vector<RHI::RenderPassColorAttachment> rhiAttachments(colorAttachments.size());
     for(size_t i = 0; i < colorAttachments.size(); ++i)
@@ -148,7 +159,15 @@ void CommandBuffer::BeginRenderPass(Span<ColorAttachment> colorAttachments)
             .clearValue = colorAttachments[i].clearValue
         };
     }
-    rhiCommandBuffer_->BeginRenderPass(rhiAttachments);
+    RHI::RenderPassDepthStencilAttachment rhiDSAttachment;
+    if(depthStencilAttachment.depthStencil.rhiDSV)
+    {
+        rhiDSAttachment.depthStencilView = depthStencilAttachment.depthStencil.rhiDSV;
+        rhiDSAttachment.loadOp = depthStencilAttachment.loadOp;
+        rhiDSAttachment.storeOp = depthStencilAttachment.storeOp;
+        rhiDSAttachment.clearValue = depthStencilAttachment.clearValue;
+    }
+    rhiCommandBuffer_->BeginRenderPass(rhiAttachments, rhiDSAttachment);
 }
 
 void CommandBuffer::EndRenderPass()

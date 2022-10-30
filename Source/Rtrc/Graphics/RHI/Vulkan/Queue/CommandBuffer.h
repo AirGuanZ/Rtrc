@@ -17,7 +17,9 @@ public:
     void Begin() override;
     void End() override;
 
-    void BeginRenderPass(Span<RenderPassColorAttachment> colorAttachments) override;
+    void BeginRenderPass(
+        Span<RenderPassColorAttachment>         colorAttachments,
+        const RenderPassDepthStencilAttachment &depthStencilAttachment) override;
     void EndRenderPass() override;
 
     void BindPipeline(const Ptr<GraphicsPipeline> &pipeline) override;

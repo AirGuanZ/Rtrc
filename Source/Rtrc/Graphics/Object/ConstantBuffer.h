@@ -4,6 +4,7 @@
 
 #include <Rtrc/Graphics/Object/BatchReleaseHelper.h>
 #include <Rtrc/Graphics/RHI/RHI.h>
+#include <Rtrc/Math/Matrix4x4.h>
 #include <Rtrc/Math/Vector2.h>
 #include <Rtrc/Math/Vector3.h>
 #include <Rtrc/Math/Vector4.h>
@@ -20,7 +21,7 @@ namespace ConstantBufferDetail
 {
 
     template<typename T>
-    concept ConstantBufferStruct = requires { typename T::_rtrcCBufferTypeFlag; };
+    concept RtrcStruct = requires { typename T::_rtrcStructTypeFlag; };
 
 } // namespace ConstantBufferDetail
 
@@ -45,7 +46,7 @@ public:
 
     void Swap(ConstantBuffer &other) noexcept;
 
-    template<ConstantBufferDetail::ConstantBufferStruct T>
+    template<ConstantBufferDetail::RtrcStruct T>
     void SetData(const T &data);
     void SetData(const void *data, size_t size);
 
@@ -126,12 +127,12 @@ private:
     std::unique_ptr<Slab[]> slabs_;
 };
 
-#define $cbuffer(NAME)                                                 \
+#define rtrc_struct(NAME)                                              \
     struct NAME;                                                       \
     struct _rtrcCBufferBase##NAME                                      \
     {                                                                  \
         using _rtrcSelf = NAME;                                        \
-        struct _rtrcCBufferTypeFlag{};                                 \
+        struct _rtrcStructTypeFlag{};                                  \
         static constexpr std::string_view _rtrcSelfName = #NAME;       \
         static ::Rtrc::StructDetail::Sizer<1> _rtrcMemberCounter(...); \
         template<typename F>                                           \
@@ -142,7 +143,7 @@ private:
     };                                                                 \
     struct NAME : _rtrcCBufferBase##NAME
 
-#define $cvar(TYPE, NAME)                               \
+#define rtrc_var(TYPE, NAME)                            \
     RTRC_META_STRUCT_PRE_MEMBER(NAME)                   \
         f.template operator()(&_rtrcSelf::NAME, #NAME); \
     RTRC_META_STRUCT_POST_MEMBER(NAME)                  \
@@ -177,14 +178,14 @@ namespace ConstantBufferDetail
             constexpr size_t elemSize = GetConstantBufferDWordCount<Elem>();
             return Size * UpAlignTo4(elemSize);
         }
-        else if constexpr(ConstantBufferStruct<T>)
+        else if constexpr(RtrcStruct<T>)
         {
             size_t result = 0;
             T::ForEachMember([&result]<typename M>(const M T::*, const char *) constexpr
             {
                 constexpr size_t memSize = GetConstantBufferDWordCount<M>();
                 bool needNewLine;
-                if constexpr(std::is_array_v<M> || ConstantBufferStruct<M>)
+                if constexpr(std::is_array_v<M> || RtrcStruct<M>)
                 {
                     needNewLine = true;
                 }
@@ -205,7 +206,8 @@ namespace ConstantBufferDetail
             using ValidTypeList = TypeList<
                 float, Vector2f, Vector3f, Vector4f,
                 int32_t, Vector2i, Vector3i, Vector4i,
-                uint32_t, Vector2u, Vector3u, Vector4u>;
+                uint32_t, Vector2u, Vector3u, Vector4u,
+                Matrix4x4f>;
             static_assert(ValidTypeList::Contains<T>, "Invalid value type in constant buffer struct");
             return sizeof(T) / 4;
         }
@@ -229,7 +231,7 @@ namespace ConstantBufferDetail
                 deviceOffset += elemSize;
             }
         }
-        else if constexpr(ConstantBufferStruct<T>)
+        else if constexpr(RtrcStruct<T>)
         {
             // assert(deviceOffset % 4 == 0)
             T::ForEachMember([&deviceOffset, &hostOffset, &f]<typename M>(
@@ -237,7 +239,7 @@ namespace ConstantBufferDetail
             {
                 const size_t memberSize = GetConstantBufferDWordCount<M>();
                 bool needNewLine;
-                if constexpr(std::is_array_v<M> || ConstantBufferStruct<M>)
+                if constexpr(std::is_array_v<M> || RtrcStruct<M>)
                 {
                     needNewLine = true;
                 }
@@ -261,13 +263,14 @@ namespace ConstantBufferDetail
             using ValidTypeList = TypeList<
                 float, Vector2f, Vector3f, Vector4f,
                 int32_t, Vector2i, Vector3i, Vector4i,
-                uint32_t, Vector2u, Vector3u, Vector4u>;
+                uint32_t, Vector2u, Vector3u, Vector4u,
+                Matrix4x4f>;
             static_assert(ValidTypeList::Contains<T>, "Invalid value type in constant buffer struct");
             f.template operator() < T > (name, hostOffset * 4, deviceOffset * 4);
         }
     }
 
-    template<ConstantBufferStruct T, typename F>
+    template<RtrcStruct T, typename F>
     void ForEachFlattenMember(const F &f)
     {
         ForEachFlattenMember<T>("struct", f, 0, 0);
@@ -275,7 +278,7 @@ namespace ConstantBufferDetail
 
 } // namespace ConstantBufferDetail
 
-template<ConstantBufferDetail::ConstantBufferStruct T>
+template<ConstantBufferDetail::RtrcStruct T>
 void ConstantBuffer::SetData(const T &data)
 {
     constexpr size_t deviceSize = ConstantBufferDetail::GetConstantBufferDWordCount<T>() * 4;

@@ -50,11 +50,39 @@ inline constexpr UseInfo RENDER_TARGET_WRITE =
     .accesses = RHI::ResourceAccess::RenderTargetWrite
 };
 
+inline constexpr UseInfo DEPTH_STENCIL =
+{
+    .layout   = RHI::TextureLayout::DepthStencil,
+    .stages   = RHI::PipelineStage::DepthStencil,
+    .accesses = RHI::ResourceAccess::DepthStencilRead | RHI::ResourceAccess::DepthStencilWrite
+};
+
+inline constexpr UseInfo DEPTH_STENCIL_WRITE =
+{
+    .layout   = RHI::TextureLayout::DepthStencil,
+    .stages   = RHI::PipelineStage::DepthStencil,
+    .accesses = RHI::ResourceAccess::DepthStencilWrite
+};
+
+inline constexpr UseInfo DEPTH_STENCIL_READ =
+{
+    .layout   = RHI::TextureLayout::DepthStencil,
+    .stages   = RHI::PipelineStage::DepthStencil,
+    .accesses = RHI::ResourceAccess::DepthStencilRead
+};
+
 inline constexpr UseInfo CLEAR_DST =
 {
     .layout   = RHI::TextureLayout::ClearDst,
     .stages   = RHI::PipelineStage::Clear,
     .accesses = RHI::ResourceAccess::ClearWrite
+};
+
+inline constexpr UseInfo PIXEL_SHADER_TEXTURE_READ =
+{
+    .layout = RHI::TextureLayout::ShaderTexture,
+    .stages = RHI::PipelineStage::FragmentShader,
+    .accesses = RHI::ResourceAccess::TextureRead
 };
 
 class Resource : public Uncopyable

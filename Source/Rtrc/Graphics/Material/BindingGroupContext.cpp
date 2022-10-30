@@ -3,9 +3,10 @@
 #include <Rtrc/Graphics/Material/BindingGroupContext.h>
 #include <Rtrc/Graphics/Shader/Shader.h>
 
-RTRC_BEGIN
+#include "Rtrc/Graphics/Object/CommandBuffer.h"
 
-void BindingGroupContext::Clear()
+RTRC_BEGIN
+    void BindingGroupContext::Clear()
 {
     lastCommandBuffer_ = nullptr;
     nameToRecord_.clear();
@@ -80,6 +81,16 @@ void BindingGroupContext::BindForComputePipeline(const RHI::CommandBufferPtr &co
 
         commandBuffer->BindGroupToComputePipeline(i, record.group->GetRHIObject());
     }
+}
+
+void BindingGroupContext::BindForGraphicsPipeline(const CommandBuffer &commandBuffer, const RC<Shader> &shader)
+{
+    BindForGraphicsPipeline(commandBuffer.GetRHIObject(), shader);
+}
+
+void BindingGroupContext::BindForComputePipeline(const CommandBuffer &commandBuffer, const RC<Shader> &shader)
+{
+    BindForComputePipeline(commandBuffer.GetRHIObject(), shader);
 }
 
 RTRC_END

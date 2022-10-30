@@ -4,9 +4,15 @@
 
 using namespace Rtrc;
 
-$cbuffer(ScaleSetting)
+rtrc_group(MainGroup)
 {
-    $cvar(float, scale) = 0;
+    rtrc_struct(ScaleSetting)
+    {
+        rtrc_var(float, scale) = 0;
+    };
+    rtrc_define(Texture2D<float4>,            InputTexture);
+    rtrc_define(RWTexture2D<float4>,          OutputTexture);
+    rtrc_define(ConstantBuffer<ScaleSetting>, ScaleSetting);
 };
 
 void Run()
@@ -48,18 +54,12 @@ void Run()
         false);
 
     const int bindingGroupIndex = shader->GetBindingGroupIndexByName("MainGroup");
-    auto bindingGroupLayout = shader->GetBindingGroupLayoutByIndex(bindingGroupIndex);
-    auto bindingGroup = bindingGroupLayout->CreateBindingGroup();
-    {
-        bindingGroup->Set("InputTexture", inputTextureSRV);
-        bindingGroup->Set("OutputTexture", outputTextureUAV);
 
-        auto scaleSettingCBuffer = renderContext.CreateConstantBuffer();
-        ScaleSetting scaleSetting;
-        scaleSetting.scale = 2.0f;
-        scaleSettingCBuffer->SetData(scaleSetting);
-        bindingGroup->Set("ScaleSetting", scaleSettingCBuffer);
-    }
+    MainGroup bindingGroupValue;
+    bindingGroupValue.InputTexture = inputTexture;
+    bindingGroupValue.OutputTexture = outputTexture;
+    bindingGroupValue.ScaleSetting.scale = 2.0f;
+    auto bindingGroup = renderContext.CreateBindingGroup(bindingGroupValue);
 
     renderContext.ExecuteAndWaitImmediate([&](CommandBuffer &cmd)
     {

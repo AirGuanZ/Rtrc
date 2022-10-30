@@ -6,7 +6,7 @@
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/CommandBuffer.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Buffer.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Texture.h>
-#include <Rtrc/Graphics/RHI/Vulkan/Resource/TextureRTV.h>
+#include <Rtrc/Graphics/RHI/Vulkan/Resource/TextureView.h>
 #include <Rtrc/Utils/Enumerate.h>
 
 RTRC_RHI_VK_BEGIN
@@ -51,7 +51,8 @@ void VulkanCommandBuffer::End()
         "failed to end vulkan command buffer");
 }
 
-void VulkanCommandBuffer::BeginRenderPass(Span<RenderPassColorAttachment> colorAttachments)
+void VulkanCommandBuffer::BeginRenderPass(
+    Span<RenderPassColorAttachment> colorAttachments, const RenderPassDepthStencilAttachment &depthStencilAttachment)
 {
     assert(!colorAttachments.IsEmpty());
     std::vector<VkRenderingAttachmentInfo> vkColorAttachments(colorAttachments.GetSize());
@@ -68,6 +69,41 @@ void VulkanCommandBuffer::BeginRenderPass(Span<RenderPassColorAttachment> colorA
         };
     }
 
+    VkRenderingAttachmentInfo dsAttachments[2], *depthAttachment = nullptr, *stencilAttachment = nullptr;
+    if(depthStencilAttachment.depthStencilView)
+    {
+        VulkanTextureDSV *dsv = static_cast<VulkanTextureDSV *>(depthStencilAttachment.depthStencilView);
+        if(HasDepthAspect(dsv->GetDesc().format))
+        {
+            dsAttachments[0] = VkRenderingAttachmentInfo
+            {
+                .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+                .imageView   = dsv->GetNativeImageView(),
+                .imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                .resolveMode = VK_RESOLVE_MODE_NONE,
+                .loadOp      = TranslateLoadOp(depthStencilAttachment.loadOp),
+                .storeOp     = TranslateStoreOp(depthStencilAttachment.storeOp),
+                .clearValue  = TranslateClearValue(depthStencilAttachment.clearValue)
+            };
+            depthAttachment = &dsAttachments[0];
+        }
+        if(HasStencilAspect(dsv->GetDesc().format))
+        {
+            dsAttachments[1] = VkRenderingAttachmentInfo
+            {
+                .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+                .imageView   = dsv->GetNativeImageView(),
+                .imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                .resolveMode = VK_RESOLVE_MODE_NONE,
+                .loadOp      = TranslateLoadOp(depthStencilAttachment.loadOp),
+                .storeOp     = TranslateStoreOp(depthStencilAttachment.storeOp),
+                .clearValue  = TranslateClearValue(depthStencilAttachment.clearValue)
+            };
+            stencilAttachment = &dsAttachments[1];
+        }
+        assert(depthAttachment || stencilAttachment);
+    }
+
     const auto &attachment0Desc = static_cast<VulkanTextureRTV *>(
         colorAttachments[0].renderTargetView)->GetTexture()->GetDesc();
     const VkRect2D renderArea = {
@@ -79,7 +115,9 @@ void VulkanCommandBuffer::BeginRenderPass(Span<RenderPassColorAttachment> colorA
         .renderArea           = renderArea,
         .layerCount           = 1,
         .colorAttachmentCount = colorAttachments.GetSize(),
-        .pColorAttachments    = vkColorAttachments.data()
+        .pColorAttachments    = vkColorAttachments.data(),
+        .pDepthAttachment     = depthAttachment,
+        .pStencilAttachment   = stencilAttachment
     };
 
     vkCmdBeginRendering(commandBuffer_, &renderingInfo);

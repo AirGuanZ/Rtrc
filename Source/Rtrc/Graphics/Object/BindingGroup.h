@@ -11,6 +11,7 @@ RTRC_BEGIN
 class BindingGroupLayout;
 class BindingLayoutManager;
 class ConstantBuffer;
+class ConstantBufferManager;
 
 struct BufferSRV;
 struct BufferUAV;
@@ -43,6 +44,9 @@ public:
     void Set(std::string_view name, const TextureSRV  &srv);
     void Set(std::string_view name, const TextureUAV  &uav);
     void Set(std::string_view name, const RC<Texture> &tex);
+
+    template<typename T>
+    void Set(const T &value); // Implemented in BindingGroupDSL.h
 
     const RHI::BindingGroupPtr &GetRHIObject();
 
@@ -124,6 +128,9 @@ public:
 
     BindingLayoutManager(HostSynchronizer &hostSync, RHI::DevicePtr device);
 
+    // Optional. Used by CreateBindingGroup with constant buffer value
+    void SetConstantBufferManager(ConstantBufferManager *mgr);
+
     RC<BindingGroupLayout> CreateBindingGroupLayout(const RHI::BindingGroupLayoutDesc &desc);
 
     RC<BindingGroup> CreateBindingGroup(RC<const BindingGroupLayout> layout);
@@ -133,6 +140,7 @@ public:
     void _rtrcReleaseInternal(BindingGroup &group);
     void _rtrcReleaseInternal(BindingGroupLayout &groupLayout);
     void _rtrcReleaseInternal(BindingLayout &layout);
+    ConstantBufferManager *_rtrcGetConstantBufferManager();
 
 private:
 
@@ -158,6 +166,8 @@ private:
 
     RHI::DevicePtr device_;
 
+    ConstantBufferManager *cbMgr_ = nullptr;
+
     std::map<RHI::BindingGroupLayoutDesc, std::weak_ptr<BindingGroupLayoutRecord>> groupLayoutCache_;
     tbb::spin_rw_mutex groupLayoutCacheMutex_;
     std::vector<ReleaseBindingGroupLayoutData> pendingGroupLayoutReleaseData_;
@@ -174,5 +184,15 @@ private:
     tbb::spin_mutex pendingGroupReleaseDataMutex_;
     BatchReleaseHelper<ReleaseBindingGroupData> groupReleaser_;
 };
+
+inline void BindingLayoutManager::SetConstantBufferManager(ConstantBufferManager *mgr)
+{
+    cbMgr_ = mgr;
+}
+
+inline ConstantBufferManager *BindingLayoutManager::_rtrcGetConstantBufferManager()
+{
+    return cbMgr_;
+}
 
 RTRC_END

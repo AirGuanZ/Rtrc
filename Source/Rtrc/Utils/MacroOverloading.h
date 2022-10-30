@@ -20,19 +20,3 @@
         RTRC_MACRO_OVERLOADING_OVERLOAD_MACRO(                                   \
             NAME, RTRC_MACRO_OVERLOADING_COUNT_ARGS(__VA_ARGS__)),               \
         (__VA_ARGS__))
-
-#define RTRC_DECL_TEMPLATE_TYPENAMES1(INTERNAL)          template<>
-#define RTRC_DECL_TEMPLATE_TYPENAMES2(INTERNAL, X)       template<typename X>
-#define RTRC_DECL_TEMPLATE_TYPENAMES3(INTERNAL, X, Y)    template<typename X, typename Y>
-#define RTRC_DECL_TEMPLATE_TYPENAMES4(INTERNAL, X, Y, Z) template<typename X, typename Y, typename Z>
-
-#define RTRC_DECL_TEMPLATE_ARGUMENTS1(CLASS)          CLASS
-#define RTRC_DECL_TEMPLATE_ARGUMENTS2(CLASS, X)       CLASS<X>
-#define RTRC_DECL_TEMPLATE_ARGUMENTS3(CLASS, X, Y)    CLASS<X, Y>
-#define RTRC_DECL_TEMPLATE_ARGUMENTS4(CLASS, X, Y, Z) CLASS<X, Y, Z>
-
-#define RTRC_DECL_TEMPLATE_TYPENAMES(...)                                        \
-    RTRC_MACRO_OVERLOADING(RTRC_DECL_TEMPLATE_TYPENAMES, __VA_ARGS__)
-
-#define RTRC_DECL_TEMPLATE_ARGUMENTS(...)                                        \
-    RTRC_MACRO_OVERLOADING(RTRC_DECL_TEMPLATE_ARGUMENTS, __VA_ARGS__)

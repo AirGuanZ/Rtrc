@@ -20,6 +20,7 @@ class Texture;
 using AttachmentLoadOp = RHI::AttachmentLoadOp;
 using AttachmentStoreOp = RHI::AttachmentStoreOp;
 using ColorClearValue = RHI::ColorClearValue;
+using DepthStencilClearValue = RHI::DepthStencilClearValue;
 
 using Viewport = RHI::Viewport;
 using Scissor = RHI::Scissor;
@@ -30,6 +31,14 @@ struct ColorAttachment
     AttachmentLoadOp  loadOp;
     AttachmentStoreOp storeOp;
     ColorClearValue   clearValue;
+};
+
+struct DepthStencilAttachment
+{
+    TextureDSV             depthStencil;
+    AttachmentLoadOp       loadOp;
+    AttachmentStoreOp      storeOp;
+    DepthStencilClearValue clearValue;
 };
 
 class BarrierBatch
@@ -96,6 +105,8 @@ public:
         Buffer &dst, size_t dstOffset, Texture &src, uint32_t arrayLayer, uint32_t mipLevel);
 
     void BeginRenderPass(Span<ColorAttachment> colorAttachments);
+    void BeginRenderPass(const DepthStencilAttachment &depthStencilAttachment);
+    void BeginRenderPass(Span<ColorAttachment> colorAttachments, const DepthStencilAttachment &depthStencilAttachment);
     void EndRenderPass();
 
     void BindPipeline(const RC<GraphicsPipeline> &graphicsPipeline);

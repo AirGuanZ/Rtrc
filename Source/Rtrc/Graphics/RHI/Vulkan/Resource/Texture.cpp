@@ -3,9 +3,7 @@
 
 #include <Rtrc/Graphics/RHI/Vulkan/Context/Device.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Texture.h>
-#include <Rtrc/Graphics/RHI/Vulkan/Resource/TextureRTV.h>
-#include <Rtrc/Graphics/RHI/Vulkan/Resource/TextureSRV.h>
-#include <Rtrc/Graphics/RHI/Vulkan/Resource/TextureUAV.h>
+#include <Rtrc/Graphics/RHI/Vulkan/Resource/TextureView.h>
 #include <Rtrc/Utils/ScopeGuard.h>
 #include <Rtrc/Utils/Unreachable.h>
 
@@ -58,9 +56,11 @@ Ptr<TextureRTV> VulkanTexture::CreateRTV(const TextureRTVDesc &desc) const
 
 Ptr<TextureSRV> VulkanTexture::CreateSRV(const TextureSRVDesc &desc) const
 {
+    const VkImageAspectFlags aspect =
+        HasDepthAspect(desc_.format) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
     auto imageView = CreateImageView(ViewKey{
         .isArray        = desc.isArray,
-        .aspect         = VK_IMAGE_ASPECT_COLOR_BIT,
+        .aspect         = aspect,
         .format         = TranslateTexelFormat(desc.format == Format::Unknown ? desc_.format : desc.format),
         .baseMipLevel   = desc.baseMipLevel,
         .levelCount     = desc.levelCount > 0 ? desc.levelCount : desc_.mipLevels,
@@ -82,6 +82,23 @@ Ptr<TextureUAV> VulkanTexture::CreateUAV(const TextureUAVDesc &desc) const
         .layerCount     = desc.layerCount > 0 ? desc.layerCount : desc_.arraySize
     });
     return MakePtr<VulkanTextureUAV>(desc, imageView);
+}
+
+Ptr<TextureDSV> VulkanTexture::CreateDSV(const TextureDSVDesc &desc) const
+{
+    const VkImageAspectFlags aspect =
+        (HasDepthAspect(desc_.format) ? VK_IMAGE_ASPECT_DEPTH_BIT : 0) |
+        (HasStencilAspect(desc_.format) ? VK_IMAGE_ASPECT_STENCIL_BIT : 0);
+    auto imageView = CreateImageView(ViewKey
+    {
+        .aspect         = aspect,
+        .format         = TranslateTexelFormat(desc.format == Format::Unknown ? desc_.format : desc.format),
+        .baseMipLevel   = desc.mipLevel,
+        .levelCount     = 1,
+        .baseArrayLayer = desc.arrayLayer,
+        .layerCount     = 1
+    });
+    return MakePtr<VulkanTextureDSV>(this, desc, imageView);
 }
 
 VkImage VulkanTexture::GetNativeImage() const

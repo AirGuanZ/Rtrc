@@ -2,6 +2,13 @@
 
 #include <Rtrc/Rtrc.h>
 
+rtrc_group(TestGroup)
+{
+    rtrc_define(Texture2D<float2>, MainTexture);
+    rtrc_define(SamplerState[4], MainSampler);
+    rtrc_define(ConstantBuffer<float3>, MainConstantBuffer);
+};
+
 using namespace Rtrc;
 
 void Run()

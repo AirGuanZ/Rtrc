@@ -2,8 +2,7 @@
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferSRV.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferUAV.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Sampler.h>
-#include <Rtrc/Graphics/RHI/Vulkan/Resource/TextureSRV.h>
-#include <Rtrc/Graphics/RHI/Vulkan/Resource/TextureUAV.h>
+#include <Rtrc/Graphics/RHI/Vulkan/Resource/TextureView.h>
 
 RTRC_RHI_VK_BEGIN
 

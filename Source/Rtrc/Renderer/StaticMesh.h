@@ -18,6 +18,9 @@ public:
     void SetMesh(RC<Mesh> mesh);
     void SetMaterial(RC<MaterialInstance> matInst);
 
+    const RC<Mesh> &GetMesh() const;
+    const RC<MaterialInstance> &GetMaterial() const;
+
 private:
 
     RC<Mesh> mesh_;

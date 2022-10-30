@@ -6,14 +6,14 @@
 
 RTRC_BEGIN
 
-$cbuffer(CameraConstantBuffer)
+rtrc_struct(CameraConstantBuffer)
 {
-    $cvar(Matrix4x4f, worldToCameraMatrix);
-    $cvar(Matrix4x4f, cameraToWorldMatrix);
-    $cvar(Matrix4x4f, cameraToClipMatrix);
-    $cvar(Matrix4x4f, clipToCameraMatrix);
-    $cvar(Matrix4x4f, worldToClipMatrix);
-    $cvar(Matrix4x4f, clipToWorldMatrix);
+    rtrc_var(Matrix4x4f, worldToCameraMatrix);
+    rtrc_var(Matrix4x4f, cameraToWorldMatrix);
+    rtrc_var(Matrix4x4f, cameraToClipMatrix);
+    rtrc_var(Matrix4x4f, clipToCameraMatrix);
+    rtrc_var(Matrix4x4f, worldToClipMatrix);
+    rtrc_var(Matrix4x4f, clipToWorldMatrix);
 };
 
 struct PerspectiveProjectionParameters

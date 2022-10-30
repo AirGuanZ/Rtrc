@@ -49,6 +49,7 @@ RTRC_RHI_FORWARD_DECL(Texture)
 RTRC_RHI_FORWARD_DECL(TextureRTV)
 RTRC_RHI_FORWARD_DECL(TextureSRV)
 RTRC_RHI_FORWARD_DECL(TextureUAV)
+RTRC_RHI_FORWARD_DECL(TextureDSV)
 RTRC_RHI_FORWARD_DECL(Buffer)
 RTRC_RHI_FORWARD_DECL(BufferSRV)
 RTRC_RHI_FORWARD_DECL(BufferUAV)
@@ -73,10 +74,15 @@ enum class QueueType : uint8_t
 enum class Format : uint32_t
 {
     Unknown,
+
     B8G8R8A8_UNorm,
     R32G32_Float,
     R32G32B32A32_Float,
     R10G10B10A2_UNorm,
+
+    D24S8,
+    D32S8,
+    D32
 };
 
 enum class VertexAttributeType : uint32_t
@@ -98,6 +104,16 @@ enum class VertexAttributeType : uint32_t
 const char *GetFormatName(Format format);
 
 size_t GetTexelSize(Format format);
+
+inline bool HasDepthAspect(Format format)
+{
+    return format == Format::D24S8 || format == Format::D32 || format == Format::D32S8;
+}
+
+inline bool HasStencilAspect(Format format)
+{
+    return format == Format::D24S8 || format == Format::D32S8;
+}
 
 enum class IndexBufferFormat
 {
@@ -494,6 +510,13 @@ struct TextureUAVDesc
     uint32_t             layerCount     = 0; // 0 means all layers. only used when isArray == true
 };
 
+struct TextureDSVDesc
+{
+    Format format       = Format::Unknown;
+    uint32_t mipLevel   = 0;
+    uint32_t arrayLayer = 0;
+};
+
 struct BufferDesc
 {
     size_t               size;
@@ -628,23 +651,31 @@ struct Scissor
 
 struct ColorClearValue
 {
-    float r, g, b, a;
+    float r = 0, g = 0, b = 0, a = 0;
 };
 
 struct DepthStencilClearValue
 {
-    float    depth;
-    uint32_t stencil;
+    float    depth   = 1;
+    uint32_t stencil = 0;
 };
 
 using ClearValue = Variant<ColorClearValue, DepthStencilClearValue>;
 
 struct RenderPassColorAttachment
 {
-    TextureRTV       *renderTargetView;
-    AttachmentLoadOp  loadOp;
-    AttachmentStoreOp storeOp;
-    ClearValue        clearValue;
+    TextureRTV       *renderTargetView = nullptr;
+    AttachmentLoadOp  loadOp           = AttachmentLoadOp::Load;
+    AttachmentStoreOp storeOp          = AttachmentStoreOp::Store;
+    ColorClearValue   clearValue;
+};
+
+struct RenderPassDepthStencilAttachment
+{
+    TextureDSV            *depthStencilView = nullptr;
+    AttachmentLoadOp       loadOp           = AttachmentLoadOp::Load;
+    AttachmentStoreOp      storeOp          = AttachmentStoreOp::Store;
+    DepthStencilClearValue clearValue;
 };
 
 struct DynamicViewportCount
@@ -950,7 +981,9 @@ public:
     template<typename...Ts>
     void ExecuteBarriers(const Ts&...ts);
 
-    virtual void BeginRenderPass(Span<RenderPassColorAttachment> colorAttachments) = 0;
+    virtual void BeginRenderPass(
+        Span<RenderPassColorAttachment>         colorAttachments,
+        const RenderPassDepthStencilAttachment &depthStencilAttachment) = 0;
     virtual void EndRenderPass() = 0;
 
     virtual void BindPipeline(const Ptr<GraphicsPipeline> &pipeline) = 0;
@@ -1142,6 +1175,7 @@ public:
     virtual Ptr<TextureRTV> CreateRTV(const TextureRTVDesc &desc = {}) const = 0;
     virtual Ptr<TextureSRV> CreateSRV(const TextureSRVDesc &desc = {}) const = 0;
     virtual Ptr<TextureUAV> CreateUAV(const TextureUAVDesc &desc = {}) const = 0;
+    virtual Ptr<TextureDSV> CreateDSV(const TextureDSVDesc &desc = {}) const = 0;
 };
 
 class TextureRTV : public RHIObject
@@ -1163,6 +1197,13 @@ class TextureUAV : public RHIObject
 public:
 
     virtual const TextureUAVDesc &GetDesc() const = 0;
+};
+
+class TextureDSV : public RHIObject
+{
+public:
+
+    virtual const TextureDSVDesc &GetDesc() const = 0;
 };
 
 class Buffer : public Resource

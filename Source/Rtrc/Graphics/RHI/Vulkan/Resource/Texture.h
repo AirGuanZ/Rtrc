@@ -28,6 +28,7 @@ public:
     Ptr<TextureRTV> CreateRTV(const TextureRTVDesc &desc) const override;
     Ptr<TextureSRV> CreateSRV(const TextureSRVDesc &desc) const override;
     Ptr<TextureUAV> CreateUAV(const TextureUAVDesc &desc) const override;
+    Ptr<TextureDSV> CreateDSV(const TextureDSVDesc &desc) const override;
 
     VkImage GetNativeImage() const;
 
