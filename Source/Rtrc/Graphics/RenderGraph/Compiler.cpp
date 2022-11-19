@@ -23,8 +23,8 @@ namespace
 
 } // namespace anonymous
 
-Compiler::Compiler(RenderContext &renderContext)
-    : renderContext_(renderContext)
+Compiler::Compiler(Device &device)
+    : device_(device)
     , graph_(nullptr)
 {
     
@@ -251,7 +251,7 @@ void Compiler::FillExternalResources(ExecutableResources &output)
                 stages |= users[j].usage.stages;
                 accesses |= users[j].usage.accesses;
             }
-            output.indexToBuffer[index].finalState = UnsynchronizedBufferAccess::Create(stages, accesses);
+            output.indexToBuffer[index].finalState = BufferState(stages, accesses);
         }
     }
 
@@ -263,11 +263,11 @@ void Compiler::FillExternalResources(ExecutableResources &output)
             output.indexToTexture[index].texture = ext->texture;
 
             auto &finalStates = output.indexToTexture[index].finalState;
-            finalStates = TextureSubresourceMap<std::optional<UnsynchronizedTextureAccess>>(ext->texture->GetRHIObject());
+            finalStates = TextureSubrscMap<std::optional<TextureSubrscState>>(ext->texture->GetDesc());
             if(TryCastResource<RenderGraph::SwapchainTexture>(ext))
             {
-                finalStates(0, 0) = UnsynchronizedTextureAccess::Create(
-                    RHI::PipelineStage::None, RHI::ResourceAccess::None, RHI::TextureLayout::Present);
+                finalStates(0, 0) = TextureSubrscState(
+                    RHI::TextureLayout::Present, RHI::PipelineStage::None, RHI::ResourceAccess::None);
             }
             else
             {
@@ -284,7 +284,7 @@ void Compiler::FillExternalResources(ExecutableResources &output)
                         accesses |= users[j].usage.accesses;
                     }
                     finalStates(subrsc.mipLevel, subrsc.arrayLayer) =
-                        UnsynchronizedTextureAccess::Create(stages, accesses, layout);
+                        TextureSubrscState(layout, stages, accesses);
                 }
             }
         }
@@ -313,9 +313,22 @@ void Compiler::AllocateInternalResources(ExecutableResources &output)
             stages |= users[j].usage.stages;
             accesses |= users[j].usage.accesses;
         }
-        output.indexToBuffer[resourceIndex].finalState = UnsynchronizedBufferAccess::Create(stages, accesses);
-        output.indexToBuffer[resourceIndex].buffer =
-            renderContext_.CreateBuffer(desc.size, desc.usage, desc.hostAccessType, true);
+        output.indexToBuffer[resourceIndex].finalState = BufferState(stages, accesses);
+
+        if(desc.hostAccessType == RHI::BufferHostAccessType::None)
+        {
+            output.indexToBuffer[resourceIndex].buffer = device_.CreatePooledBuffer(RHI::BufferDesc
+                {
+                    .size = desc.size,
+                    .usage = desc.usage,
+                    .hostAccessType = desc.hostAccessType
+                });
+        }
+        else
+        {
+            auto buffer = device_.CreateBuffer(desc);
+            output.indexToBuffer[resourceIndex].buffer = MakeRC<WrappedStatefulBuffer>(std::move(buffer), BufferState{});
+        }
     }
 
     for(auto &texture : graph_->textures_)
@@ -333,7 +346,7 @@ void Compiler::AllocateInternalResources(ExecutableResources &output)
         auto &desc = intTex->rhiDesc;
 
         auto &finalStates = output.indexToTexture[resourceIndex].finalState;
-        finalStates = TextureSubresourceMap<std::optional<UnsynchronizedTextureAccess>>(
+        finalStates = TextureSubrscMap<std::optional<TextureSubrscState>>(
             intTex->GetMipLevels(), intTex->GetArraySize());
         for(auto subrsc : EnumerateSubTextures(intRsc->GetMipLevels(), intRsc->GetArraySize()))
         {
@@ -347,13 +360,10 @@ void Compiler::AllocateInternalResources(ExecutableResources &output)
                 stages |= users[j].usage.stages;
                 accesses |= users[j].usage.accesses;
             }
-            finalStates(subrsc.mipLevel, subrsc.arrayLayer) =
-                UnsynchronizedTextureAccess::Create(stages, accesses, layout);
+            finalStates(subrsc.mipLevel, subrsc.arrayLayer) = TextureSubrscState(layout, stages, accesses);
         }
 
-        output.indexToTexture[resourceIndex].texture = renderContext_.CreateTexture2D(
-            desc.width, desc.height, desc.arraySize, desc.mipLevels, desc.format,
-            desc.usage, desc.concurrentAccessMode, desc.sampleCount, true);
+        output.indexToTexture[resourceIndex].texture = device_.CreatePooledTexture(desc);
     }
 }
 
@@ -361,7 +371,7 @@ void Compiler::GenerateBarriers(const ExecutableResources &resources)
 {
     for(auto &[buffer, users] : bufferUsers_)
     {
-        auto lastState = resources.indexToBuffer[buffer->GetResourceIndex()].buffer->GetUnsyncAccess();
+        auto lastState = resources.indexToBuffer[buffer->GetResourceIndex()].buffer->GetState();
 
         size_t userIndex = 0;
         while(userIndex < users.size())
@@ -373,8 +383,7 @@ void Compiler::GenerateBarriers(const ExecutableResources &resources)
             }
             RTRC_SCOPE_EXIT{ userIndex = nextUserIndex; };
 
-            UnsynchronizedBufferAccess currState = UnsynchronizedBufferAccess::Create(
-                RHI::PipelineStage::None, RHI::ResourceAccess::None);
+            BufferState currState = BufferState(RHI::PipelineStage::None, RHI::ResourceAccess::None);
             RTRC_SCOPE_EXIT{ lastState = currState; };
             for(size_t i = userIndex; i < nextUserIndex; ++i)
             {
@@ -417,7 +426,7 @@ void Compiler::GenerateBarriers(const ExecutableResources &resources)
         auto [tex, subrsc] = subTexKey;
         const bool isSwapchainTex = TryCastResource<RenderGraph::SwapchainTexture>(tex);
         auto lastState = resources.indexToTexture[tex->GetResourceIndex()].texture
-            ->GetUnsyncAccess(subrsc.mipLevel, subrsc.arrayLayer);
+                                    ->GetState(subrsc.mipLevel, subrsc.arrayLayer);
 
         size_t userIndex = 0;
         while(userIndex < users.size())
@@ -429,7 +438,7 @@ void Compiler::GenerateBarriers(const ExecutableResources &resources)
             }
             RTRC_SCOPE_EXIT{ userIndex = nextUserIndex; };
 
-            UnsynchronizedTextureAccess currState;
+            TextureSubrscState currState;
             RTRC_SCOPE_EXIT{ lastState = currState; };
             currState.layout = users[userIndex].usage.layout;
             for(size_t i = userIndex; i < nextUserIndex; ++i)

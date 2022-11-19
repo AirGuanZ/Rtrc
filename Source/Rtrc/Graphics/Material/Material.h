@@ -1,9 +1,10 @@
 #pragma once
 
 #include <Rtrc/Graphics/Material/ShaderTemplate.h>
-#include <Rtrc/Graphics/Object/RenderContext.h>
+#include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/Math/Vector3.h>
-#include <Rtrc/Utils/SignalSlot.h>
+#include <Rtrc/Utility/SharedObjectPool.h>
+#include <Rtrc/Utility/SignalSlot.h>
 
 /* Material
     Material:
@@ -126,7 +127,7 @@ public:
     void FillBindingGroup(
         BindingGroup          &bindingGroup,
         Span<MaterialResource> materialResources,
-        RC<ConstantBuffer>     cbuffer) const;
+        RC<DynamicBuffer>     cbuffer) const;
 
 private:
 
@@ -152,6 +153,7 @@ public:
 
     RC<Shader> GetShader(KeywordSet::ValueMask mask);
     RC<Shader> GetShader(const KeywordValueContext &keywordValues);
+    RC<Shader> GetShader();
 
     const SubMaterialPropertyLayout *GetPropertyLayout(KeywordSet::ValueMask mask);
     const SubMaterialPropertyLayout *GetPropertyLayout(const KeywordValueContext &keywordValues);
@@ -196,7 +198,7 @@ private:
 
     friend class MaterialManager;
 
-    RenderContext *renderContext_ = nullptr;
+    Device *device_ = nullptr;
 
     std::string name_;
     std::vector<RC<SubMaterial>> subMaterials_;
@@ -211,12 +213,13 @@ public:
 
     MaterialManager();
 
-    void SetRenderContext(RenderContext *renderContext);
+    void SetDevice(Device *device);
     void SetRootDirectory(std::string_view directory);
     void SetDebugMode(bool debug);
 
     RC<Material> GetMaterial(std::string_view name);
     RC<ShaderTemplate> GetShaderTemplate(std::string_view name);
+    RC<Shader> GetShader(std::string_view name); // Available when no keyword is defined in the shader template
 
     void GC();
 
@@ -238,7 +241,7 @@ private:
     RC<SubMaterial> ParsePass(ShaderTokenStream &tokens);
     MaterialProperty ParseProperty(MaterialProperty::Type propertyType, ShaderTokenStream &tokens);
 
-    RenderContext *renderContext_ = nullptr;
+    Device *device_ = nullptr;
     ShaderCompiler shaderCompiler_;
 
     bool debug_ = RTRC_DEBUG;
@@ -396,6 +399,11 @@ inline RC<Shader> SubMaterial::GetShader(KeywordSet::ValueMask mask)
 inline RC<Shader> SubMaterial::GetShader(const KeywordValueContext &keywordValues)
 {
     return GetShader(shaderTemplate_->GetKeywordValueMask(keywordValues));
+}
+
+inline RC<Shader> SubMaterial::GetShader()
+{
+    return shaderTemplate_->GetShader(0);
 }
 
 inline const SubMaterialPropertyLayout *SubMaterial::GetPropertyLayout(KeywordSet::ValueMask mask)

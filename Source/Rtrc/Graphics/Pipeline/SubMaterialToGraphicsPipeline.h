@@ -4,7 +4,7 @@
 
 #include <Rtrc/Graphics/Material/Material.h>
 #include <Rtrc/Graphics/Pipeline/PipelineStateCommands.h>
-#include <Rtrc/Utils/SignalSlot.h>
+#include <Rtrc/Utility/SignalSlot.h>
 
 RTRC_BEGIN
 
@@ -44,13 +44,13 @@ private:
     void RemovePipelineRecord(const PipelineKey &key);
 
     // An item is removed when the submaterial is destroyed
-    std::unordered_map<PipelineKey, PipelineRecord> pipelineCache_;
+    std::unordered_map<PipelineKey, PipelineRecord, HashOperator<PipelineKey>> pipelineCache_;
     tbb::spin_rw_mutex pipelineCacheMutex_;
 };
 
 inline SubMaterialToGraphicsPipeline::~SubMaterialToGraphicsPipeline()
 {
-    std::unordered_map<PipelineKey, PipelineRecord> cache;
+    std::unordered_map<PipelineKey, PipelineRecord, HashOperator<PipelineKey>> cache;
     {
         std::unique_lock lock(pipelineCacheMutex_);
         cache.swap(pipelineCache_);

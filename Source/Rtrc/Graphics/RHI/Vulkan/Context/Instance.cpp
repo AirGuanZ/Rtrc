@@ -6,7 +6,7 @@
 #include <Rtrc/Graphics/RHI/Vulkan/Context/Device.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Context/Instance.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Context/PhysicalDevice.h>
-#include <Rtrc/Utils/ScopeGuard.h>
+#include <Rtrc/Utility/ScopeGuard.h>
 
 RTRC_RHI_BEGIN
 

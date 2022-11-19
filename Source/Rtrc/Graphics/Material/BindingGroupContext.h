@@ -1,7 +1,6 @@
 #pragma once
 
-#include <Rtrc/Graphics/Object/BindingGroup.h>
-#include <Rtrc/Graphics/Shader/ShaderBindingGroup.h>
+#include <Rtrc/Graphics/Device/BindingGroup.h>
 
 RTRC_BEGIN
 

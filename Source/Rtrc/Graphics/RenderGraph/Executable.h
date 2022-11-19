@@ -1,7 +1,6 @@
 #pragma once
 
-#include <Rtrc/Graphics/Object/RenderContext.h>
-#include <Rtrc/Graphics/Object/TextureSubresourceMap.h>
+#include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/Graphics/RenderGraph/Graph.h>
 
 RTRC_RG_BEGIN
@@ -10,14 +9,14 @@ struct ExecutableResources
 {
     struct BufferRecord
     {
-        RC<Buffer> buffer;
-        UnsynchronizedBufferAccess finalState;
+        RC<StatefulBuffer> buffer;
+        BufferState finalState;
     };
 
     struct Texture2DRecord
     {
-        RC<Texture> texture;
-        TextureSubresourceMap<std::optional<UnsynchronizedTextureAccess>> finalState;
+        RC<StatefulTexture> texture;
+        TextureSubrscMap<std::optional<TextureSubrscState>> finalState;
     };
 
     std::vector<BufferRecord> indexToBuffer;
@@ -58,7 +57,7 @@ class Executer
 {
 public:
 
-    Executer(RenderContext &renderContext);
+    Executer(Device *device);
 
     void Execute(const RenderGraph &graph);
 
@@ -70,7 +69,7 @@ private:
 
     void Execute(const ExecutableGraph &graph);
 
-    RenderContext &renderContext_;
+    Device *device_;
 };
 
 RTRC_RG_END

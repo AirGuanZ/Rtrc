@@ -8,7 +8,7 @@ class Compiler : public Uncopyable
 {
 public:
 
-    Compiler(RenderContext &renderContext);
+    Compiler(Device &device);
 
     void Compile(const RenderGraph &graph, ExecutableGraph &result);
 
@@ -70,7 +70,7 @@ private:
 
     void FillSections(ExecutableGraph &output);
 
-    RenderContext &renderContext_;
+    Device &device_;
     const RenderGraph *graph_;
 
     std::vector<const Pass*>      sortedPasses_;

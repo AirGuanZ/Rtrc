@@ -3,7 +3,7 @@
 #include <optional>
 
 #include <Rtrc/Graphics/RHI/Vulkan/Common.h>
-#include <Rtrc/Utils/Arena.h>
+#include <Rtrc/Utility/Arena.h>
 
 RTRC_RHI_VK_BEGIN
 

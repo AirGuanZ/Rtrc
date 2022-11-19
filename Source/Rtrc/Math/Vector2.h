@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/Utils/Hash.h>
+#include <Rtrc/Utility/Hash.h>
 
 RTRC_BEGIN
 

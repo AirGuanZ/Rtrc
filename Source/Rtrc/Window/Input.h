@@ -1,8 +1,8 @@
 #pragma once
 
 #include <bitset>
-#include <Rtrc/Utils/Event.h>
-#include <Rtrc/Utils/Uncopyable.h>
+#include <Rtrc/Utility/Event.h>
+#include <Rtrc/Utility/Uncopyable.h>
 #include <Rtrc/Window/KeyCode.h>
 
 RTRC_BEGIN

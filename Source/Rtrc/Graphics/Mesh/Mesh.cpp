@@ -1,14 +1,14 @@
 #include <Rtrc/Graphics/Mesh/Mesh.h>
-#include <Rtrc/Graphics/Object/CommandBuffer.h>
+#include <Rtrc/Graphics/Device/CommandBuffer.h>
 
 RTRC_BEGIN
 
 void Mesh::Bind(CommandBuffer &commandBuffer) const
 {
-    commandBuffer.SetVertexBuffers(0, vertexBuffers_);
+    commandBuffer.SetVertexBuffers(0, vertexBuffers_, vertexBufferByteOffsets_);
     if(indexBuffer_)
     {
-        commandBuffer.SetIndexBuffer(indexBuffer_, indexBufferFormat_);
+        commandBuffer.SetIndexBuffer(indexBuffer_, indexBufferFormat_, indexBufferByteOffset_);
     }
 }
 

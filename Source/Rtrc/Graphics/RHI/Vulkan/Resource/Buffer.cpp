@@ -4,7 +4,7 @@
 #include <Rtrc/Graphics/RHI/Vulkan/Context/Device.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferSRV.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferUAV.h>
-#include <Rtrc/Utils/ScopeGuard.h>
+#include <Rtrc/Utility/ScopeGuard.h>
 
 RTRC_RHI_VK_BEGIN
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Rtrc/Graphics/Mesh/Mesh.h>
-#include <Rtrc/Graphics/Object/CopyContext.h>
+#include <Rtrc/Graphics/Device/CopyContext.h>
 
 RTRC_BEGIN
 

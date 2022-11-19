@@ -8,9 +8,8 @@ class Application : public Uncopyable
 {
     Window window_;
     Input *input_ = nullptr;
-
-    RHI::InstancePtr   instance_;
-    Box<RenderContext> renderContext_;
+    
+    Box<Device> device_;
 
     Box<RG::Executer> executer_;
 
@@ -20,13 +19,8 @@ class Application : public Uncopyable
             .SetSize(800, 800)
             .SetTitle("Rtrc Sample: Deferred Shading")
             .Create();
-        instance_ = CreateVulkanInstance(RHI::VulkanInstanceDesc
-        {
-            .extensions = Window::GetRequiredVulkanInstanceExtensions(),
-            .debugMode = RTRC_DEBUG
-        });
-        renderContext_ = MakeBox<RenderContext>(instance_->CreateDevice(), &window_);
-        executer_ = MakeBox<RG::Executer>(*renderContext_);
+        device_ = Device::CreateGraphicsDevice(window_);
+        executer_ = MakeBox<RG::Executer>(device_.get());
     }
 
     void Frame()
@@ -36,8 +30,8 @@ class Application : public Uncopyable
             window_.SetCloseFlag(true);
         }
 
-        auto rg = renderContext_->CreateRenderGraph();
-        auto renderTarget = rg->RegisterSwapchainTexture(renderContext_->GetSwapchain());
+        auto rg = device_->CreateRenderGraph();
+        auto renderTarget = rg->RegisterSwapchainTexture(device_->GetSwapchain());
         auto clearPass = rg->CreatePass("Clear Render Target");
         clearPass->Use(renderTarget, RG::RENDER_TARGET_WRITE)
                  ->SetCallback([&](RG::PassContext &context)
@@ -46,14 +40,14 @@ class Application : public Uncopyable
                      auto &cmd = context.GetCommandBuffer();
                      cmd.BeginRenderPass(ColorAttachment
                      {
-                         .renderTarget = renderTarget->Get(),
+                         .renderTargetView = rt->CreateRTV().GetRHIObject(),
                          .loadOp = AttachmentLoadOp::Clear,
                          .storeOp = AttachmentStoreOp::Store,
                          .clearValue = ColorClearValue{ 0, 1, 1, 0 }
                      });
                      cmd.EndRenderPass();
                  })
-                 ->SetSignalFence(renderContext_->GetFrameFence());
+                 ->SetSignalFence(device_->GetFrameFence());
         executer_->Execute(rg);
     }
 
@@ -62,18 +56,17 @@ public:
     void Run()
     {
         Initialize();
-        renderContext_->BeginRenderLoop();
+        device_->BeginRenderLoop();
         while(!window_.ShouldClose())
         {
-            if(!renderContext_->BeginFrame())
+            if(!device_->BeginFrame())
             {
                 continue;
             }
             Frame();
-            renderContext_->Present();
+            device_->Present();
         }
-        renderContext_->EndRenderLoop();
-        renderContext_->WaitIdle();
+        device_->EndRenderLoop();
     }
 };
 

@@ -3,8 +3,8 @@
 #include <cassert>
 #include <vector>
 
-#include <Rtrc/Utils/StringPool.h>
-#include <Rtrc/Utils/TemplateStringParameter.h>
+#include <Rtrc/Utility/StringPool.h>
+#include <Rtrc/Utility/TemplateStringParameter.h>
 
 RTRC_BEGIN
 

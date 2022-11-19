@@ -17,9 +17,9 @@
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/MemoryBlock.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Sampler.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Texture.h>
-#include <Rtrc/Utils/Enumerate.h>
-#include <Rtrc/Utils/StaticVector.h>
-#include <Rtrc/Utils/Unreachable.h>
+#include <Rtrc/Utility/Enumerate.h>
+#include <Rtrc/Utility/StaticVector.h>
+#include <Rtrc/Utility/Unreachable.h>
 
 RTRC_RHI_VK_BEGIN
 

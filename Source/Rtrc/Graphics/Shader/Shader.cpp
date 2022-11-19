@@ -1,5 +1,5 @@
 #include <Rtrc/Graphics/Shader/ShaderCompiler.h>
-#include <Rtrc/Utils/Unreachable.h>
+#include <Rtrc/Utility/Unreachable.h>
 
 RTRC_BEGIN
 
@@ -42,6 +42,10 @@ const std::string &Shader::GetBindingGroupNameByIndex(int index) const
 const RC<BindingGroupLayout> &Shader::GetBindingGroupLayoutByName(std::string_view name) const
 {
     const int index = GetBindingGroupIndexByName(name);
+    if(index < 0)
+    {
+        throw Exception(fmt::format("unknown binding group layout '{}' in shader", name));
+    }
     return GetBindingGroupLayoutByIndex(index);
 }
 
@@ -58,16 +62,6 @@ const RC<BindingGroupLayout> &Shader::GetBindingGroupLayoutByIndex(int index) co
 }
 
 int Shader::GetBindingGroupIndexByName(std::string_view name) const
-{
-    const auto it = nameToBindingGroupLayoutIndex_.find(name);
-    if(it == nameToBindingGroupLayoutIndex_.end())
-    {
-        throw Exception(fmt::format("unknown binding group layout '{}' in shader", name));
-    }
-    return it->second;
-}
-
-int Shader::TryGetBindingGroupIndexByName(std::string_view name) const
 {
     const auto it = nameToBindingGroupLayoutIndex_.find(name);
     return it != nameToBindingGroupLayoutIndex_.end() ? it->second : -1;

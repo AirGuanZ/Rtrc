@@ -3,8 +3,8 @@
 #include <Rtrc/Graphics/Shader/DXC.h>
 #include <Rtrc/Graphics/Shader/ShaderCompiler.h>
 #include <Rtrc/Graphics/Shader/ShaderTokenStream.h>
-#include <Rtrc/Utils/Enumerate.h>
-#include <Rtrc/Utils/File.h>
+#include <Rtrc/Utility/Enumerate.h>
+#include <Rtrc/Utility/File.h>
 
 RTRC_BEGIN
 
@@ -356,9 +356,9 @@ namespace
 
 } // namespace anonymous
 
-void ShaderCompiler::SetRenderContext(RenderContext *renderContext)
+void ShaderCompiler::SetDevice(Device *device)
 {
-    renderContext_ = renderContext;
+    device_ = device;
 }
 
 void ShaderCompiler::SetRootDirectory(std::string_view rootDir)
@@ -451,7 +451,7 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &desc, const Macros &macro
     {
         bindingLayoutDesc.groupLayouts.push_back(group);
     }
-    shader->bindingLayout_ = renderContext_->CreateBindingLayout(bindingLayoutDesc);
+    shader->bindingLayout_ = device_->CreateBindingLayout(bindingLayoutDesc);
 
     return shader;
 }
@@ -553,7 +553,7 @@ RHI::RawShaderPtr ShaderCompiler::CompileStage(
         }
         else
         {
-            auto groupLayout = renderContext_->CreateBindingGroupLayout(rhiLayoutDesc);
+            auto groupLayout = device_->CreateBindingGroupLayout(rhiLayoutDesc);
             const int groupIndex = static_cast<int>(groupLayouts.size());
 
             nameToGroupIndex.insert({ group.name, groupIndex });
@@ -607,7 +607,7 @@ RHI::RawShaderPtr ShaderCompiler::CompileStage(
     shaderInfo.macros = actualMacros;
     const std::vector<unsigned char> compileData = dxc.Compile(shaderInfo, dxcTarget, debug, nullptr);
     refl = MakeBox<SPIRVReflection>(compileData, entry);
-    return renderContext_->GetRawDevice()->CreateShader(compileData.data(), compileData.size(), entry, stage);
+    return device_->GetRawDevice()->CreateShader(compileData.data(), compileData.size(), entry, stage);
 }
 
 RTRC_END

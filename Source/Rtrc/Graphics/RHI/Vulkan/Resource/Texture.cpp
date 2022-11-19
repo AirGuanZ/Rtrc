@@ -4,8 +4,8 @@
 #include <Rtrc/Graphics/RHI/Vulkan/Context/Device.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Texture.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/TextureView.h>
-#include <Rtrc/Utils/ScopeGuard.h>
-#include <Rtrc/Utils/Unreachable.h>
+#include <Rtrc/Utility/ScopeGuard.h>
+#include <Rtrc/Utility/Unreachable.h>
 
 RTRC_RHI_VK_BEGIN
 

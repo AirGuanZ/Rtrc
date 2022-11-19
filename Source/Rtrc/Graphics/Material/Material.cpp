@@ -6,10 +6,10 @@
 #include <Rtrc/Graphics/Shader/ShaderBindingParser.h>
 #include <Rtrc/Graphics/Shader/ShaderReflection.h>
 #include <Rtrc/Graphics/Shader/ShaderTokenStream.h>
-#include <Rtrc/Utils/Enumerate.h>
-#include <Rtrc/Utils/File.h>
-#include <Rtrc/Utils/String.h>
-#include <Rtrc/Utils/Unreachable.h>
+#include <Rtrc/Utility/Enumerate.h>
+#include <Rtrc/Utility/File.h>
+#include <Rtrc/Utility/String.h>
+#include <Rtrc/Utility/Unreachable.h>
 
 RTRC_BEGIN
 
@@ -158,7 +158,7 @@ SubMaterialPropertyLayout::SubMaterialPropertyLayout(const MaterialPropertyHostL
         }
     }
 
-    bindingGroupIndex_ = shader.TryGetBindingGroupIndexByName("Material");
+    bindingGroupIndex_ = shader.GetBindingGroupIndexByName("Material");
     if(bindingGroupIndex_ >= 0)
     {
         bindingGroupLayout_ = shader.GetBindingGroupLayoutByIndex(bindingGroupIndex_);
@@ -310,7 +310,7 @@ void SubMaterialPropertyLayout::FillConstantBufferContent(const void *valueBuffe
 void SubMaterialPropertyLayout::FillBindingGroup(
     BindingGroup          &bindingGroup,
     Span<MaterialResource> materialResources,
-    RC<ConstantBuffer>     cbuffer) const
+    RC<DynamicBuffer>     cbuffer) const
 {
     // Constant buffer
 
@@ -350,20 +350,20 @@ void SubMaterialPropertyLayout::FillBindingGroup(
 
 RC<MaterialInstance> Material::CreateInstance() const
 {
-    return MakeRC<MaterialInstance>(shared_from_this(), renderContext_);
+    return MakeRC<MaterialInstance>(shared_from_this(), device_);
 }
 
 MaterialManager::MaterialManager()
 {
-    renderContext_ = nullptr;
+    device_ = nullptr;
     debug_ = RTRC_DEBUG;
 }
 
-void MaterialManager::SetRenderContext(RenderContext *renderContext)
+void MaterialManager::SetDevice(Device *device)
 {
-    assert(renderContext);
-    renderContext_ = renderContext;
-    shaderCompiler_.SetRenderContext(renderContext);
+    assert(device);
+    device_ = device;
+    shaderCompiler_.SetDevice(device);
 }
 
 void MaterialManager::SetRootDirectory(std::string_view directory)
@@ -424,6 +424,13 @@ RC<ShaderTemplate> MaterialManager::GetShaderTemplate(std::string_view name)
 {
     assert(shaderNameToFilename_.contains(name));
     return shaderPool_.GetOrCreate(name, [&] { return CreateShaderTemplate(name); });
+}
+
+RC<Shader> MaterialManager::GetShader(std::string_view name)
+{
+    auto shaderTemplate = GetShaderTemplate(name);
+    assert(shaderTemplate->GetKeywordSet().GetTotalBitCount() == 0);
+    return shaderTemplate->GetShader(0);
 }
 
 void MaterialManager::GC()
@@ -588,7 +595,7 @@ RC<Material> MaterialManager::CreateMaterial(std::string_view name)
             material->tagToIndex_.insert({ tag, static_cast<int>(index) });
         }
     }
-    material->renderContext_ = renderContext_;
+    material->device_ = device_;
     material->name_ = name;
     material->subMaterials_ = std::move(subMaterials);
     material->propertyLayout_ = std::move(propertyLayout);

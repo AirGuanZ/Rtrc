@@ -12,6 +12,12 @@ option_end()
 
 -- Global settings
 
+option("is_msvc")
+add_csnippets("is_msvc", "return (_MSC_VER)?0:-1;", {
+	tryrun = true
+})
+option_end()
+
 set_runtimes(is_mode("debug") and "MTd" or "MT")
 set_targetdir("Build/bin/"..(is_mode("debug") and "debug" or "release"))
 
@@ -21,6 +27,10 @@ end
 
 if is_plat("windows") then
     add_defines("WIN32")
+end
+
+if has_config("is_msvc") then
+    add_cxflags("/Zc:preprocessor")
 end
 
 -- External dependencies

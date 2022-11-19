@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/Graphics/Object/Pipeline.h>
+#include <Rtrc/Graphics/Device/Pipeline.h>
 
 RTRC_BEGIN
 

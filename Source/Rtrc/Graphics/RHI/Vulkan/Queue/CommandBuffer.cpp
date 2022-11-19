@@ -7,7 +7,7 @@
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Buffer.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Texture.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/TextureView.h>
-#include <Rtrc/Utils/Enumerate.h>
+#include <Rtrc/Utility/Enumerate.h>
 
 RTRC_RHI_VK_BEGIN
 

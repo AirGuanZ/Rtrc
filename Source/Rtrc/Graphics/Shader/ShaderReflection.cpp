@@ -1,8 +1,8 @@
 #include <spirv_reflect.h>
 
 #include <Rtrc/Graphics/Shader/ShaderReflection.h>
-#include <Rtrc/Utils/ScopeGuard.h>
-#include <Rtrc/Utils/String.h>
+#include <Rtrc/Utility/ScopeGuard.h>
+#include <Rtrc/Utility/String.h>
 
 RTRC_BEGIN
 

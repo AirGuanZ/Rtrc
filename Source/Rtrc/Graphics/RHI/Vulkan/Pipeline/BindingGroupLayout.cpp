@@ -1,7 +1,7 @@
 #include <mutex>
 
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/BindingGroup.h>
-#include <Rtrc/Utils/ScopeGuard.h>
+#include <Rtrc/Utility/ScopeGuard.h>
 
 RTRC_RHI_VK_BEGIN
 

@@ -20,24 +20,17 @@ void Run()
         .SetTitle("Rtrc Sample: TexturedQuad")
         .Create();
 
-    auto instance = CreateVulkanInstance(RHI::VulkanInstanceDesc
-    {
-        .extensions = Window::GetRequiredVulkanInstanceExtensions()
-    });
-
-    auto device = instance->CreateDevice();
-    RenderContext renderContext(device, &window);
-    auto &copyContext = renderContext.GetCopyContext();
+    auto device = Device::CreateGraphicsDevice(window);
 
     // Mesh
 
-    MeshManager meshManager(renderContext.GetCopyContext());
+    MeshManager meshManager(device->GetCopyContext());
     auto mesh = meshManager.LoadFromObjFile("Asset/01.TexturedQuad/Quad.obj");
 
     // Pipeline
 
     MaterialManager materialManager;
-    materialManager.SetRenderContext(&renderContext);
+    materialManager.SetDevice(device.get());
     materialManager.SetRootDirectory("Asset/01.TexturedQuad/");
 
     KeywordValueContext keywords;
@@ -47,22 +40,22 @@ void Run()
     auto subMaterial = material->GetSubMaterialByTag("Default");
     auto shader = subMaterial->GetShader(keywords);
 
-    auto pipeline = renderContext.CreateGraphicsPipeline({
+    auto pipeline = device->CreateGraphicsPipeline({
         .shader = shader,
         .meshLayout = mesh.GetLayout(),
-        .colorAttachmentFormats = { renderContext.GetRenderTargetDesc().format }
+        .colorAttachmentFormats = { device->GetSwapchainImageDesc().format }
     });
 
     // Main texture
 
-    auto mainTex = copyContext.LoadTexture2D(
+    auto mainTex = device->GetCopyContext().LoadTexture2D(
         "Asset/01.TexturedQuad/MainTexture.png",
         RHI::Format::B8G8R8A8_UNorm,
         RHI::TextureUsage::ShaderResource,
         true);
-    mainTex->SetName("MainTexture");
+    //mainTex->SetName("MainTexture");
 
-    renderContext.ExecuteAndWaitImmediate([&](CommandBuffer &cmd)
+    device->ExecuteAndWait([&](CommandBuffer &cmd)
     {
         cmd.ExecuteBarriers(BarrierBatch(
             mainTex, RHI::TextureLayout::ShaderTexture, RHI::PipelineStage::None, RHI::ResourceAccess::None));
@@ -70,7 +63,7 @@ void Run()
 
     // Main sampler
 
-    auto mainSampler = renderContext.CreateSampler(RHI::SamplerDesc
+    auto mainSampler = device->CreateSampler(RHI::SamplerDesc
     {
         .magFilter = RHI::FilterMode::Linear,
         .minFilter = RHI::FilterMode::Linear,
@@ -79,7 +72,7 @@ void Run()
         .addressModeV = RHI::AddressMode::Clamp,
         .addressModeW = RHI::AddressMode::Clamp
     });
-    mainSampler->SetName("MainSampler");
+    //mainSampler->SetName("MainSampler");
 
     // Material
 
@@ -92,12 +85,12 @@ void Run()
 
     // Render loop
 
-    RG::Executer executer(renderContext);
+    RG::Executer executer(device.get());
 
-    renderContext.BeginRenderLoop();
+    device->BeginRenderLoop();
     while(!window.ShouldClose())
     {
-        if(!renderContext.BeginFrame())
+        if(!device->BeginFrame())
         {
             continue;
         }
@@ -107,9 +100,9 @@ void Run()
             window.SetCloseFlag(true);
         }
 
-        auto graph = renderContext.CreateRenderGraph();
+        auto graph = device->CreateRenderGraph();
         
-        auto renderTarget = graph->RegisterSwapchainTexture(renderContext.GetSwapchain());
+        auto renderTarget = graph->RegisterSwapchainTexture(device->GetSwapchain());
 
         auto quadPass = graph->CreatePass("DrawQuad");
         quadPass->Use(renderTarget, RG::RENDER_TARGET);
@@ -119,27 +112,27 @@ void Run()
             auto &commandBuffer = context.GetCommandBuffer();
             commandBuffer.BeginRenderPass(ColorAttachment
             {
-                .renderTarget = rt,
+                .renderTargetView = rt->CreateRTV().GetRHIObject(),
                 .loadOp       = AttachmentLoadOp::Clear,
                 .storeOp      = AttachmentStoreOp::Store,
                 .clearValue   = ColorClearValue{ 0, 1, 1, 1 }
             });
             commandBuffer.BindPipeline(pipeline);
-            commandBuffer.SetMesh(mesh);
-            commandBuffer.BindGraphicsSubMaterial(subMaterialInstance, keywords);
+            commandBuffer.BindMesh(mesh);
+            subMaterialInstance->BindGraphicsProperties(keywords, commandBuffer);
+            //commandBuffer.BindGraphicsSubMaterial(subMaterialInstance, keywords);
             commandBuffer.SetViewports(rt->GetViewport());
             commandBuffer.SetScissors(rt->GetScissor());
             commandBuffer.DrawIndexed(6, 1, 0, 0, 0);
             commandBuffer.EndRenderPass();
         });
-        quadPass->SetSignalFence(renderContext.GetFrameFence());
+        quadPass->SetSignalFence(device->GetFrameFence());
 
         executer.Execute(graph);
 
-        renderContext.Present();
+        device->Present();
     }
-    renderContext.EndRenderLoop();
-    renderContext.WaitIdle();
+    device->EndRenderLoop();
 }
 
 int main()

@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include <Rtrc/Utils/Uncopyable.h>
+#include <Rtrc/Utility/Uncopyable.h>
 
 RTRC_BEGIN
 

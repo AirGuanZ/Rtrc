@@ -23,7 +23,7 @@
 #define RTRC_DEBUG 0
 #endif
 
-#define RTRC_MAYBE_UNUSED(X) ((void)X)
+#define RTRC_MAYBE_UNUSED(X) ((void)(X))
 
 RTRC_BEGIN
 
@@ -35,19 +35,13 @@ public:
 };
 
 template<typename T>
-using Unique = std::unique_ptr<T>;
+using Box = std::unique_ptr<T>;
 
 template<typename T>
-using Shared = std::shared_ptr<T>;
-
-template<typename T>
-using RC = Shared<T>;
-
-template<typename T>
-using Box = Unique<T>;
+using RC = std::shared_ptr<T>;
 
 template<typename D, typename T>
-Unique<D> DynamicCast(Unique<T> ptr)
+Box<D> DynamicCast(Box<T> ptr)
 {
     if(auto ret = dynamic_cast<D*>(ptr.get()))
     {
@@ -58,39 +52,34 @@ Unique<D> DynamicCast(Unique<T> ptr)
 }
 
 template<typename D, typename T>
-Shared<D> DynamicCast(Shared<T> ptr)
+RC<D> DynamicCast(RC<T> ptr)
 {
     return std::dynamic_pointer_cast<D>(std::move(ptr));
 }
 
-template<typename T, typename...Args>
-Unique<T> MakeUnique(Args&&...args)
+template<typename T>
+RC<T> BoxToRC(Box<T> unique)
 {
-    return std::make_unique<T>(std::forward<Args>(args)...);
-}
-
-template<typename T, typename...Args>
-Shared<T> MakeShared(Args&&...args)
-{
-    return std::make_shared<T>(std::forward<Args>(args)...);
+    return RC<T>(unique.release());
 }
 
 template<typename T>
-Shared<T> ToShared(Unique<T> unique)
+auto ToRC(T &&value)
 {
-    return Shared<T>(unique.release());
+    using TT = std::remove_cvref_t<T>;
+    return std::make_shared<TT>(std::forward<T>(value));
 }
 
 template<typename T, typename...Args>
 RC<T> MakeRC(Args&&...args)
 {
-    return MakeShared<T>(std::forward<Args>(args)...);
+    return std::make_shared<T>(std::forward<Args>(args)...);
 }
 
 template<typename T, typename...Args>
 Box<T> MakeBox(Args&&...args)
 {
-    return MakeUnique<T>(std::forward<Args>(args)...);
+    return std::make_unique<T>(std::forward<Args>(args)...);
 }
 
 template<typename R = size_t, typename T, size_t N>
@@ -103,6 +92,21 @@ template<typename C, typename M>
 constexpr size_t GetMemberOffset(M C::*p)
 {
     return reinterpret_cast<size_t>(&(static_cast<C*>(nullptr)->*p));
+}
+
+template<typename T>
+constexpr T UpAlignTo(T v, T align)
+{
+    return (v + (align - 1)) / align * align;
+}
+
+template<typename T> requires std::is_scoped_enum_v<T>
+constexpr auto EnumCount = std::underlying_type_t<T>(T::Count);
+
+template<typename T> requires std::is_enum_v<T>
+constexpr auto EnumToInt(T e)
+{
+    return static_cast<std::underlying_type_t<T>>(e);
 }
 
 class WithUniqueObjectID

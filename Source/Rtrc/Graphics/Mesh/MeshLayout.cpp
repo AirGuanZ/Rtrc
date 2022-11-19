@@ -5,8 +5,8 @@
 #include <tbb/spin_rw_mutex.h>
 
 #include <Rtrc/Graphics/Mesh/MeshLayout.h>
-#include <Rtrc/Utils/Enumerate.h>
-#include <Rtrc/Utils/Unreachable.h>
+#include <Rtrc/Utility/Enumerate.h>
+#include <Rtrc/Utility/Unreachable.h>
 
 RTRC_BEGIN
 

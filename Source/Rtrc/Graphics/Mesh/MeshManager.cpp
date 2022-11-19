@@ -1,6 +1,6 @@
 #include <Rtrc/Graphics/Mesh/MeshManager.h>
 #include <Rtrc/Math/Frame.h>
-#include <Rtrc/Utils/MeshData.h>
+#include <Rtrc/Utility/MeshData.h>
 
 RTRC_BEGIN
 
@@ -100,13 +100,16 @@ Mesh MeshManager::LoadFromObjFile(const std::string &filename, const Options &op
         {
             FillVertexData(vertexData[i], i);
         }
+        meshBuilder.SetVertexCount(static_cast<uint32_t>(vertexData.size()));
 
         auto vertexBuffer = copyContext_.CreateBuffer(
-            sizeof(Vertex) * vertexData.size(),
-            RHI::BufferUsage::VertexBuffer,
-            RHI::BufferHostAccessType::None,
+            RHI::BufferDesc{
+                sizeof(Vertex) * vertexData.size(),
+                RHI::BufferUsage::VertexBuffer,
+                RHI::BufferHostAccessType::None
+            },
             vertexData.data());
-        meshBuilder.SetVertexBuffer(0, std::move(vertexBuffer));
+        meshBuilder.SetVertexBuffer(0, vertexBuffer);
     }
     else
     {
@@ -129,18 +132,20 @@ Mesh MeshManager::LoadFromObjFile(const std::string &filename, const Options &op
         {
             FillVertexData(vertexData[i], i);
         }
-
+        meshBuilder.SetVertexCount(static_cast<uint32_t>(vertexData.size()));
+        
         auto vertexBuffer = copyContext_.CreateBuffer(
-            sizeof(Vertex) * vertexData.size(),
-            RHI::BufferUsage::VertexBuffer,
-            RHI::BufferHostAccessType::None,
+            RHI::BufferDesc{
+                sizeof(Vertex) * vertexData.size(),
+                RHI::BufferUsage::VertexBuffer,
+                RHI::BufferHostAccessType::None
+            },
             vertexData.data());
-        meshBuilder.SetVertexBuffer(0, std::move(vertexBuffer));
+        meshBuilder.SetVertexBuffer(0, vertexBuffer);
     }
 
     if(!meshData.indexData.empty())
     {
-
         bool useUInt16 = true;
         for(uint32_t index : meshData.indexData)
         {
@@ -161,21 +166,26 @@ Mesh MeshManager::LoadFromObjFile(const std::string &filename, const Options &op
                 uint16IndexData[i] = static_cast<uint16_t>(meshData.indexData[i]);
             }
             indexBuffer = copyContext_.CreateBuffer(
-                sizeof(uint16_t) * uint16IndexData.size(),
-                RHI::BufferUsage::IndexBuffer,
-                RHI::BufferHostAccessType::None,
+                RHI::BufferDesc{
+                    sizeof(uint16_t) * uint16IndexData.size(),
+                    RHI::BufferUsage::IndexBuffer,
+                    RHI::BufferHostAccessType::None
+                },
                 uint16IndexData.data());
         }
         else
         {
             indexBuffer = copyContext_.CreateBuffer(
-                sizeof(uint32_t) * meshData.indexData.size(),
-                RHI::BufferUsage::IndexBuffer,
-                RHI::BufferHostAccessType::None,
+                RHI::BufferDesc{
+                    sizeof(uint32_t) * meshData.indexData.size(),
+                    RHI::BufferUsage::IndexBuffer,
+                    RHI::BufferHostAccessType::None
+                },
                 meshData.indexData.data());
         }
 
         meshBuilder.SetIndexBuffer(std::move(indexBuffer), RHI::IndexBufferFormat::UInt16);
+        meshBuilder.SetIndexCount(static_cast<uint32_t>(meshData.indexData.size()));
     }
 
     return meshBuilder.CreateMesh();

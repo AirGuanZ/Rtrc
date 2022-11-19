@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/Graphics/Object/ConstantBuffer.h>
+#include <Rtrc/Graphics/Device/Buffer/DynamicBuffer.h>
 #include <Rtrc/Math/Angle.h>
 #include <Rtrc/Math/Matrix4x4.h>
 
@@ -29,6 +29,9 @@ class RenderCamera
 public:
     
     const CameraConstantBuffer &GetConstantBufferData() const;
+
+    const Matrix4x4f &GetWorldToCamera() const;
+    const Matrix4x4f &GetWorldToClip() const;
 
 private:
 

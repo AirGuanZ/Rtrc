@@ -90,7 +90,7 @@ Pass *Pass::Use(
         usageMap = TextureUsage(texture->GetMipLevels(), texture->GetArraySize());
     }
     assert(!usageMap(subresource.mipLevel, subresource.arrayLayer).has_value());
-    usageMap(subresource.mipLevel, subresource.arrayLayer) = SubTexUsage::Create(stages, accesses, layout);
+    usageMap(subresource.mipLevel, subresource.arrayLayer) = SubTexUsage(layout, stages, accesses);
     return this;
 }
 
@@ -161,7 +161,7 @@ TextureResource *RenderGraph::CreateTexture2D(const RHI::TextureDesc &desc)
     return textures_.back().get();
 }
 
-BufferResource *RenderGraph::RegisterBuffer(RC<Buffer> buffer)
+BufferResource *RenderGraph::RegisterBuffer(RC<StatefulBuffer> buffer)
 {
     const int index = static_cast<int>(buffers_.size());
     auto resource = MakeBox<ExternalBufferResource>(this, index);
@@ -171,7 +171,7 @@ BufferResource *RenderGraph::RegisterBuffer(RC<Buffer> buffer)
     return buffers_.back().get();
 }
 
-TextureResource *RenderGraph::RegisterTexture(RC<Texture> texture)
+TextureResource *RenderGraph::RegisterTexture(RC<StatefulTexture> texture)
 {
     const int index = static_cast<int>(textures_.size());
     auto resource = MakeBox<ExternalTextureResource>(this, index);
@@ -189,7 +189,8 @@ TextureResource *RenderGraph::RegisterSwapchainTexture(
     assert(!swapchainTexture_);
     const int index = static_cast<int>(textures_.size());
     auto resource = MakeBox<SwapchainTexture>(this, index);
-    resource->texture = MakeRC<Texture>(Texture::FromRHIObject(std::move(rhiTexture)));
+    resource->texture = MakeRC<WrappedStatefulTexture>(
+        Texture::FromRHIObject(std::move(rhiTexture)), TextureSubrscState{});
     resource->acquireSemaphore = std::move(acquireSemaphore);
     resource->presentSemaphore = std::move(presentSemaphore);
     swapchainTexture_ = resource.get();
@@ -214,7 +215,7 @@ Pass *RenderGraph::CreatePass(std::string name)
 
 const RHI::TextureDesc &RenderGraph::ExternalTextureResource::GetDesc() const
 {
-    return texture->GetRHIObjectDesc();
+    return texture->GetDesc();
 }
 
 const RHI::TextureDesc &RenderGraph::InternalTextureResource::GetDesc() const

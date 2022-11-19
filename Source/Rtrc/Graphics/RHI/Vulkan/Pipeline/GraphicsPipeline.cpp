@@ -3,8 +3,8 @@
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/BindingLayout.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/GraphicsPipeline.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/Shader.h>
-#include <Rtrc/Utils/Enumerate.h>
-#include <Rtrc/Utils/ScopeGuard.h>
+#include <Rtrc/Utility/Enumerate.h>
+#include <Rtrc/Utility/ScopeGuard.h>
 
 RTRC_RHI_VK_BEGIN
 

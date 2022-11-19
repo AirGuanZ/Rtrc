@@ -2,7 +2,7 @@
 
 #include <filesystem>
 
-#include <Rtrc/Graphics/Object/RenderContext.h>
+#include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/Graphics/Shader/Shader.h>
 
 RTRC_BEGIN
@@ -23,7 +23,7 @@ public:
         std::string CSEntry;
     };
 
-    void SetRenderContext(RenderContext *renderContext);
+    void SetDevice(Device *device);
     void SetRootDirectory(std::string_view rootDir);
 
     RC<Shader> Compile(
@@ -47,7 +47,7 @@ private:
         std::vector<std::string>                &groupNames,
         Box<ShaderReflection>                   &refl);
 
-    RenderContext *renderContext_ = nullptr;
+    Device *device_ = nullptr;
     std::filesystem::path rootDir_;
 };
 

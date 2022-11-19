@@ -4,8 +4,8 @@
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/Fence.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/Queue.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/Semaphore.h>
-#include <Rtrc/Utils/Enumerate.h>
-#include <Rtrc/Utils/ScopeGuard.h>
+#include <Rtrc/Utility/Enumerate.h>
+#include <Rtrc/Utility/ScopeGuard.h>
 
 RTRC_RHI_VK_BEGIN
 

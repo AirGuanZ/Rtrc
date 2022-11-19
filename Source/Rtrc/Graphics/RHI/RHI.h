@@ -5,11 +5,11 @@
 #include <vector>
 
 #include <Rtrc/Math/Vector4.h>
-#include <Rtrc/Utils/EnumFlags.h>
-#include <Rtrc/Utils/ReferenceCounted.h>
-#include <Rtrc/Utils/Span.h>
-#include <Rtrc/Utils/Uncopyable.h>
-#include <Rtrc/Utils/Variant.h>
+#include <Rtrc/Utility/EnumFlags.h>
+#include <Rtrc/Utility/ReferenceCounted.h>
+#include <Rtrc/Utility/Span.h>
+#include <Rtrc/Utility/Uncopyable.h>
+#include <Rtrc/Utility/Variant.h>
 #include <Rtrc/Window/Window.h>
 
 RTRC_RHI_BEGIN
@@ -473,7 +473,7 @@ struct TextureDesc
     TextureLayout             initialLayout;
     QueueConcurrentAccessMode concurrentAccessMode;
 
-    auto operator<=>(const TextureDesc &rhs) const
+    std::strong_ordering operator<=>(const TextureDesc &rhs) const
     {
         return std::make_tuple(
                     dim, format, width, height, arraySize, mipLevels,
@@ -481,6 +481,17 @@ struct TextureDesc
            <=> std::make_tuple(
                     rhs.dim, rhs.format, rhs.width, rhs.height, rhs.arraySize, rhs.mipLevels,
                     rhs.sampleCount, rhs.usage, rhs.initialLayout, rhs.concurrentAccessMode);
+    }
+
+    bool operator==(const TextureDesc &rhs) const
+    {
+        return (*this <=> rhs) == std::strong_ordering::equal;
+    }
+
+    size_t Hash() const
+    {
+        return Rtrc::Hash(
+            dim, format, width, height, depth, mipLevels, sampleCount, usage, initialLayout, concurrentAccessMode);
     }
 };
 
@@ -512,7 +523,7 @@ struct TextureUAVDesc
 
 struct TextureDSVDesc
 {
-    Format format       = Format::Unknown;
+    Format   format     = Format::Unknown;
     uint32_t mipLevel   = 0;
     uint32_t arrayLayer = 0;
 };
@@ -524,6 +535,7 @@ struct BufferDesc
     BufferHostAccessType hostAccessType;
 
     auto operator<=>(const BufferDesc &) const = default;
+    auto Hash() const { return Rtrc::Hash(size, usage, hostAccessType); }
 };
 
 struct BufferSRVDesc

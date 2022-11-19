@@ -4,7 +4,7 @@
 #include <string>
 
 #include <Rtrc/Math/Vector2.h>
-#include <Rtrc/Utils/ReferenceCounted.h>
+#include <Rtrc/Utility/ReferenceCounted.h>
 #include <Rtrc/Window/Input.h>
 
 RTRC_RHI_BEGIN

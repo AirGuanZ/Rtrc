@@ -75,6 +75,11 @@ RC<Shader> SubMaterialInstance::GetShader(KeywordSet::ValueMask keywordMask)
     return subMaterial_->GetShader(keywordMask);
 }
 
+const RC<SubMaterial> &SubMaterialInstance::GetSubMaterial() const
+{
+    return subMaterial_;
+}
+
 void SubMaterialInstance::BindGraphicsProperties(
     const KeywordValueContext &keywordValues, const CommandBuffer &commandBuffer) const
 {
@@ -140,7 +145,7 @@ void SubMaterialInstance::BindPropertiesImpl(
         const size_t cbSize = subLayout->GetConstantBufferSize();
         if(cbSize && !record.constantBuffer)
         {
-            record.constantBuffer = renderContext_->CreateConstantBuffer();
+            record.constantBuffer = device_->CreateDynamicBuffer();
         }
 
         auto &properties = parentMaterialInstance_->GetPropertySheet();
@@ -148,7 +153,7 @@ void SubMaterialInstance::BindPropertiesImpl(
         {
             std::vector<unsigned char> data(cbSize);
             subLayout->FillConstantBufferContent(properties.GetValueBuffer(), data.data());
-            record.constantBuffer->SetData(data.data(), cbSize);
+            record.constantBuffer->SetData(data.data(), cbSize, true);
             record.isConstantBufferDirty = false;
         }
 
@@ -159,7 +164,7 @@ void SubMaterialInstance::BindPropertiesImpl(
     bind();
 }
 
-MaterialInstance::MaterialInstance(RC<const Material> material, RenderContext *renderContext)
+MaterialInstance::MaterialInstance(RC<const Material> material, Device *device)
     : parentMaterial_(std::move(material)), properties_(parentMaterial_->GetPropertyLayout())
 {
     auto subMaterials = parentMaterial_->GetSubMaterials();
@@ -168,7 +173,7 @@ MaterialInstance::MaterialInstance(RC<const Material> material, RenderContext *r
     {
         auto &subMat = subMaterials[i];
         auto subMatInst = MakeBox<SubMaterialInstance>();
-        subMatInst->renderContext_ = renderContext;
+        subMatInst->device_ = device;
         subMatInst->parentMaterialInstance_ = this;
         subMatInst->subMaterial_ = subMat;
         subMatInst->recordCount_ = 1 << subMat->GetShaderTemplate()->GetKeywordSet().GetTotalBitCount();

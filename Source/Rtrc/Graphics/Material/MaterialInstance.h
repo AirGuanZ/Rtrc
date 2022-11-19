@@ -65,6 +65,8 @@ public:
     RC<Shader> GetShader(const KeywordValueContext &keywordValues);
     RC<Shader> GetShader(KeywordSet::ValueMask keywordMask);
 
+    const RC<SubMaterial> &GetSubMaterial() const;
+
     void BindGraphicsProperties(const KeywordValueContext &keywordValues, const CommandBuffer &commandBuffer) const;
     void BindGraphicsProperties(KeywordSet::ValueMask mask, const CommandBuffer &commandBuffer) const;
 
@@ -78,7 +80,7 @@ private:
     struct Record
     {
         mutable RC<BindingGroup> bindingGroup;
-        mutable RC<ConstantBuffer> constantBuffer;
+        mutable RC<DynamicBuffer> constantBuffer;
         mutable bool isConstantBufferDirty = true;
         mutable tbb::spin_rw_mutex mutex;
     };
@@ -87,7 +89,7 @@ private:
     template<bool Graphics>
     void BindPropertiesImpl(KeywordSet::ValueMask mask, const RHI::CommandBufferPtr &commandBuffer) const;
 
-    RenderContext *renderContext_ = nullptr;
+    Device *device_ = nullptr;
     const MaterialInstance *parentMaterialInstance_ = nullptr;
     RC<SubMaterial> subMaterial_;
 
@@ -99,7 +101,7 @@ class MaterialInstance
 {
 public:
 
-    MaterialInstance(RC<const Material> material, RenderContext *renderContext);
+    MaterialInstance(RC<const Material> material, Device *device);
 
     template<typename T>
     void Set(std::string_view name, const T &value)

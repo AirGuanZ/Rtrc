@@ -17,11 +17,10 @@ rtrc_group(MainGroup)
 
 void Run()
 {
-    auto instance = RHI::CreateVulkanInstance({});
-    RenderContext renderContext(instance->CreateDevice({ false, true, true, false }));
-
+    auto device = Device::CreateComputeDevice();
+    
     MaterialManager materialManager;
-    materialManager.SetRenderContext(&renderContext);
+    materialManager.SetDevice(device.get());
     materialManager.SetRootDirectory("Asset/02.ComputeShader/");
 
     KeywordValueContext keywords;
@@ -29,29 +28,36 @@ void Run()
     auto material = materialManager.GetMaterial("ScaleImage");
     auto subMaterial = material->GetSubMaterialByTag("Default");
     auto shader = subMaterial->GetShader(keywords);
-    auto pipeline = renderContext.CreateComputePipeline(shader);
+    auto pipeline = device->CreateComputePipeline(shader);
 
     auto matInst = material->CreateInstance();
     auto subMatInst = matInst->GetSubMaterialInstance("Default");
 
-    auto inputTexture = renderContext.GetCopyContext().LoadTexture2D(
+    auto inputTexture = device->GetCopyContext().LoadTexture2D(
         "Asset/01.TexturedQuad/MainTexture.png", RHI::Format::B8G8R8A8_UNorm, RHI::TextureUsage::ShaderResource, false);
-    auto inputTextureSRV = inputTexture->GetSRV();
+    auto inputTextureSRV = inputTexture->CreateSRV();
 
-    auto outputTexture = renderContext.CreateTexture2D(
-        inputTexture->GetWidth(),
-        inputTexture->GetHeight(),
-        1, 1, RHI::Format::B8G8R8A8_UNorm,
-        RHI::TextureUsage::TransferSrc | RHI::TextureUsage::UnorderAccess,
-        RHI::QueueConcurrentAccessMode::Exclusive,
-        1, true);
-    auto outputTextureUAV = outputTexture->GetUAV();
+    auto outputTexture = StatefulTexture::FromTexture(device->CreateTexture(RHI::TextureDesc
+        {
+            .dim = RHI::TextureDimension::Tex2D,
+            .format = RHI::Format::B8G8R8A8_UNorm,
+            .width = inputTexture->GetDesc().width,
+            .height = inputTexture->GetDesc().height,
+            .arraySize = 1,
+            .mipLevels = 1,
+            .sampleCount = 1,
+            .usage = RHI::TextureUsage::TransferSrc | RHI::TextureUsage::UnorderAccess,
+            .initialLayout = RHI::TextureLayout::Undefined,
+            .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
+        }));
+    auto outputTextureUAV = outputTexture->CreateUAV();
 
-    auto readbackBuffer = renderContext.CreateBuffer(
-        inputTexture->GetWidth() * inputTexture->GetHeight() * 4,
-        RHI::BufferUsage::TransferDst,
-        RHI::BufferHostAccessType::Random,
-        false);
+    auto readbackBuffer = device->CreateBuffer(RHI::BufferDesc
+        {
+            .size = inputTexture->GetDesc().width * inputTexture->GetDesc().height * 4,
+            .usage = RHI::BufferUsage::TransferDst,
+            .hostAccessType = RHI::BufferHostAccessType::Random
+        });
 
     const int bindingGroupIndex = shader->GetBindingGroupIndexByName("MainGroup");
 
@@ -59,22 +65,22 @@ void Run()
     bindingGroupValue.InputTexture = inputTexture;
     bindingGroupValue.OutputTexture = outputTexture;
     bindingGroupValue.ScaleSetting.scale = 2.0f;
-    auto bindingGroup = renderContext.CreateBindingGroup(bindingGroupValue);
+    auto bindingGroup = device->CreateBindingGroup(bindingGroupValue);
 
-    renderContext.ExecuteAndWaitImmediate([&](CommandBuffer &cmd)
+    device->ExecuteAndWait([&](CommandBuffer &cmd)
     {
         cmd.ExecuteBarriers(BarrierBatch()
             (inputTexture, RHI::TextureLayout::ShaderTexture, RHI::PipelineStage::None, RHI::ResourceAccess::None)
             (outputTexture, RHI::TextureLayout::ShaderRWTexture, RHI::PipelineStage::None, RHI::ResourceAccess::None));
 
         cmd.BindPipeline(pipeline);
-        cmd.BindComputeSubMaterial(subMatInst, keywords);
+        subMatInst->BindGraphicsProperties(keywords, cmd);
         cmd.BindComputeGroup(bindingGroupIndex, bindingGroup);
 
         constexpr Vector2i GROUP_SIZE = Vector2i(8, 8);
         const Vector2i groupCount = {
-            (static_cast<int>(inputTexture->GetWidth()) + GROUP_SIZE.x - 1) / GROUP_SIZE.x,
-            (static_cast<int>(inputTexture->GetHeight()) + GROUP_SIZE.y - 1) / GROUP_SIZE.y
+            (static_cast<int>(inputTexture->GetDesc().width) + GROUP_SIZE.x - 1) / GROUP_SIZE.x,
+            (static_cast<int>(inputTexture->GetDesc().height) + GROUP_SIZE.y - 1) / GROUP_SIZE.y
         };
         cmd.Dispatch(groupCount.x, groupCount.y, 1);
 
@@ -82,10 +88,8 @@ void Run()
             (outputTexture, RHI::TextureLayout::CopySrc, RHI::PipelineStage::Copy, RHI::ResourceAccess::CopyRead));
         cmd.CopyColorTexture2DToBuffer(*readbackBuffer, 0, *outputTexture, 0, 0);
     });
-    readbackBuffer->SetUnsyncAccess(UnsynchronizedBufferAccess::Create(
-        RHI::PipelineStage::None, RHI::ResourceAccess::None));
-
-    Image<Vector4b> outputImageData(inputTexture->GetWidth(), inputTexture->GetHeight());
+    
+    Image<Vector4b> outputImageData(inputTexture->GetDesc().width, inputTexture->GetDesc().height);
     readbackBuffer->Download(outputImageData.GetData(), 0, readbackBuffer->GetSize());
     for(uint32_t y = 0; y < outputImageData.GetHeight(); ++y)
     {

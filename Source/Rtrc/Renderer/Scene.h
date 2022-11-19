@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/Renderer/StaticMesh.h>
+#include <Rtrc/Renderer/Scene/StaticMesh.h>
 
 RTRC_BEGIN
 
@@ -11,7 +11,7 @@ public:
     void AddMesh(RC<StaticMesh> mesh);
     void RemoveMesh(const RC<StaticMesh> &mesh);
 
-    Span<RC<StaticMesh>> GetAllMeshes() const;
+    Span<RC<StaticMesh>> GetAllStaticMeshes() const;
 
 private:
 

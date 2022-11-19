@@ -12,7 +12,7 @@
 #include <wrl/client.h>
 
 #include <Rtrc/Graphics/Shader/DXC.h>
-#include <Rtrc/Utils/ScopeGuard.h>
+#include <Rtrc/Utility/ScopeGuard.h>
 
 RTRC_BEGIN
 

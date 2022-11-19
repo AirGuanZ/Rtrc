@@ -2,14 +2,13 @@
 
 #include <map>
 
-#include <Rtrc/Graphics/Object/Buffer.h>
-#include <Rtrc/Graphics/Object/Queue.h>
-#include <Rtrc/Graphics/Object/Texture.h>
+#include <Rtrc/Graphics/Device/Buffer.h>
+#include <Rtrc/Graphics/Device/Queue.h>
+#include <Rtrc/Graphics/Device/Texture.h>
 
 RTRC_BEGIN
 
-class CommandBuffer;
-class RenderContext;
+class Device;
 
 RTRC_END
 
@@ -126,6 +125,7 @@ public:
     virtual const RHI::TextureDesc &GetDesc() const = 0;
 
     RHI::TextureDimension GetDimension() const { return GetDesc().dim; }
+    RHI::Format           GetFormat()    const { return GetDesc().format; }
     uint32_t              GetWidth()     const { return GetDesc().width; }
     uint32_t              GetHeight()    const { return GetDesc().height; }
     uint32_t              GetDepth()     const { return GetDesc().depth; }
@@ -192,10 +192,10 @@ public:
 
 private:
 
-    using SubTexUsage = UnsynchronizedTextureAccess;
-    using BufferUsage = UnsynchronizedBufferAccess;
+    using SubTexUsage = TextureSubrscState;
+    using BufferUsage = BufferState;
 
-    using TextureUsage = TextureSubresourceMap<std::optional<SubTexUsage>>;
+    using TextureUsage = TextureSubrscMap<std::optional<SubTexUsage>>;
 
     friend class RenderGraph;
     friend class Compiler;
@@ -225,8 +225,8 @@ public:
     BufferResource  *CreateBuffer(const RHI::BufferDesc &desc);
     TextureResource *CreateTexture2D(const RHI::TextureDesc &desc);
 
-    BufferResource  *RegisterBuffer(RC<Buffer> buffer);
-    TextureResource *RegisterTexture(RC<Texture> texture);
+    BufferResource  *RegisterBuffer(RC<StatefulBuffer> buffer);
+    TextureResource *RegisterTexture(RC<StatefulTexture> texture);
 
     TextureResource *RegisterSwapchainTexture(
         RHI::TexturePtr             rhiTexture,
@@ -250,7 +250,7 @@ private:
 
         using BufferResource::BufferResource;
 
-        RC<Buffer> buffer;
+        RC<StatefulBuffer> buffer;
     };
 
     class ExternalTextureResource : public TextureResource
@@ -261,7 +261,7 @@ private:
 
         const RHI::TextureDesc &GetDesc() const override;
 
-        RC<Texture> texture;
+        RC<StatefulTexture> texture;
     };
 
     class InternalBufferResource : public BufferResource

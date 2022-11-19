@@ -2,7 +2,7 @@
 
 #define VMA_IMPLEMENTATION
 #include <Rtrc/Graphics/RHI/Vulkan/Context/Device.h>
-#include <Rtrc/Utils/Unreachable.h>
+#include <Rtrc/Utility/Unreachable.h>
 
 RTRC_RHI_VK_BEGIN
 

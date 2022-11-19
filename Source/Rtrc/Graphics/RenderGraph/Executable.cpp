@@ -3,8 +3,8 @@
 
 RTRC_RG_BEGIN
 
-Executer::Executer(RenderContext &renderContext)
-    : renderContext_(renderContext)
+Executer::Executer(Device *device)
+    : device_(device)
 {
     
 }
@@ -12,7 +12,7 @@ Executer::Executer(RenderContext &renderContext)
 void Executer::Execute(const RenderGraph &graph)
 {
     ExecutableGraph compiledResult;
-    Compiler(renderContext_).Compile(graph, compiledResult);
+    Compiler(*device_).Compile(graph, compiledResult);
     graph.executableResource_ = &compiledResult.resources;
     Execute(compiledResult);
     graph.executableResource_ = nullptr;
@@ -22,7 +22,7 @@ void Executer::Execute(const ExecutableGraph &graph)
 {
     for(auto &section : graph.sections)
     {
-        auto commandBuffer = renderContext_.CreateCommandBuffer();
+        auto commandBuffer = device_->CreateCommandBuffer();
         commandBuffer.Begin();
 
         for(auto &pass : section.passes)
@@ -74,7 +74,7 @@ void Executer::Execute(const ExecutableGraph &graph)
     {
         if(record.buffer)
         {
-            record.buffer->SetUnsyncAccess(record.finalState);
+            record.buffer->SetState(record.finalState);
         }
     }
 
@@ -87,7 +87,7 @@ void Executer::Execute(const ExecutableGraph &graph)
                 auto &optionalState = record.finalState(subrsc.mipLevel, subrsc.arrayLayer);
                 if(optionalState)
                 {
-                    record.texture->SetUnsyncAccess(subrsc.mipLevel, subrsc.arrayLayer, *optionalState);
+                    record.texture->SetState(subrsc.mipLevel, subrsc.arrayLayer, *optionalState);
                 }
             }
         }

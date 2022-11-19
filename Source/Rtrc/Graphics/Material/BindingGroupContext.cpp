@@ -1,12 +1,12 @@
 #include <ranges>
 
+#include <Rtrc/Graphics/Device/CommandBuffer.h>
 #include <Rtrc/Graphics/Material/BindingGroupContext.h>
 #include <Rtrc/Graphics/Shader/Shader.h>
 
-#include "Rtrc/Graphics/Object/CommandBuffer.h"
-
 RTRC_BEGIN
-    void BindingGroupContext::Clear()
+
+void BindingGroupContext::Clear()
 {
     lastCommandBuffer_ = nullptr;
     nameToRecord_.clear();
