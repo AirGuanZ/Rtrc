@@ -8,12 +8,14 @@ RTRC_BEGIN
 
 rtrc_struct(CameraConstantBuffer)
 {
-    rtrc_var(Matrix4x4f, worldToCameraMatrix);
-    rtrc_var(Matrix4x4f, cameraToWorldMatrix);
-    rtrc_var(Matrix4x4f, cameraToClipMatrix);
-    rtrc_var(Matrix4x4f, clipToCameraMatrix);
-    rtrc_var(Matrix4x4f, worldToClipMatrix);
-    rtrc_var(Matrix4x4f, clipToWorldMatrix);
+    rtrc_var(Matrix4x4f,  worldToCameraMatrix);
+    rtrc_var(Matrix4x4f,  cameraToWorldMatrix);
+    rtrc_var(Matrix4x4f,  cameraToClipMatrix);
+    rtrc_var(Matrix4x4f,  clipToCameraMatrix);
+    rtrc_var(Matrix4x4f,  worldToClipMatrix);
+    rtrc_var(Matrix4x4f,  clipToWorldMatrix);
+    rtrc_var(Vector3f[4], cameraRays);
+    rtrc_var(Vector3f[4], worldRays);
 };
 
 struct PerspectiveProjectionParameters
@@ -73,13 +75,13 @@ private:
     void ClearDrity();
     void AssertNotDirty() const;
 
-    // Basic members
+    // Basic data
 
     Vector3f position_;
     Vector3f rotation_;
     PerspectiveProjectionParameters projParams_;
 
-    // Computed members
+    // Derived data
 
     Vector3f forward_;
     Vector3f left_;

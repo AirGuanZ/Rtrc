@@ -28,6 +28,7 @@ void Camera::CalculateDerivedData()
 
 void Camera::SetUpRenderCamera(RenderCamera &renderCamera) const
 {
+    AssertNotDirty();
     CameraConstantBuffer &data = renderCamera.data_;
     data.worldToCameraMatrix = worldToCameraMatrix_;
     data.cameraToWorldMatrix = cameraToWorldMatrix_;
@@ -35,6 +36,31 @@ void Camera::SetUpRenderCamera(RenderCamera &renderCamera) const
     data.clipToCameraMatrix = clipToCameraMatrix_;
     data.worldToClipMatrix = worldToClipMatrix_;
     data.clipToWorldMatrix = clipToWorldMatrix_;
+
+    // TODO: optimize
+    const Vector4f cameraSpaceRays[4] =
+    {
+        data.clipToCameraMatrix * Vector4f(-1.0f, +1.0f, 1.0f, 1.0f),
+        data.clipToCameraMatrix * Vector4f(+1.0f, +1.0f, 1.0f, 1.0f),
+        data.clipToCameraMatrix * Vector4f(-1.0f, -1.0f, 1.0f, 1.0f),
+        data.clipToCameraMatrix * Vector4f(+1.0f, -1.0f, 1.0f, 1.0f)
+    };
+    data.cameraRays[0] = Normalize(cameraSpaceRays[0].xyz() / cameraSpaceRays[0].w);
+    data.cameraRays[1] = Normalize(cameraSpaceRays[1].xyz() / cameraSpaceRays[0].w);
+    data.cameraRays[2] = Normalize(cameraSpaceRays[2].xyz() / cameraSpaceRays[0].w);
+    data.cameraRays[3] = Normalize(cameraSpaceRays[3].xyz() / cameraSpaceRays[0].w);
+
+    const Vector4f worldSpaceRays[4] =
+    {
+        data.clipToWorldMatrix * Vector4f(-1.0f, +1.0f, 1.0f, 1.0f),
+        data.clipToWorldMatrix * Vector4f(+1.0f, +1.0f, 1.0f, 1.0f),
+        data.clipToWorldMatrix * Vector4f(-1.0f, -1.0f, 1.0f, 1.0f),
+        data.clipToWorldMatrix * Vector4f(+1.0f, -1.0f, 1.0f, 1.0f)
+    };
+    data.worldRays[0] = Normalize(cameraSpaceRays[0].xyz() / cameraSpaceRays[0].w - position_);
+    data.worldRays[1] = Normalize(cameraSpaceRays[1].xyz() / cameraSpaceRays[0].w - position_);
+    data.worldRays[2] = Normalize(cameraSpaceRays[2].xyz() / cameraSpaceRays[0].w - position_);
+    data.worldRays[3] = Normalize(cameraSpaceRays[3].xyz() / cameraSpaceRays[0].w - position_);
 }
 
 RTRC_END

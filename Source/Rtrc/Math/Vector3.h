@@ -50,6 +50,8 @@ template<typename T>
 auto operator*(const Vector3<T> &a, T b);
 template<typename T>
 auto operator*(T a, const Vector3<T> &b);
+template<typename T>
+auto operator/(const Vector3<T> &a, T b);
 
 template<typename T>
 T Dot(const Vector3<T> &a, const Vector3<T> &b);
@@ -147,6 +149,12 @@ template<typename T>
 auto operator*(T a, const Vector3<T> &b)
 {
     return b * a;
+}
+
+template<typename T>
+auto operator/(const Vector3<T> &a, T b)
+{
+    return a * (T(1) / b);
 }
 
 template<typename T>

@@ -6,7 +6,26 @@
 
 RTRC_BEGIN
 
-RC<Mesh> GetFullscreenTriangleMesh(DynamicBufferManager &bufferManager);
-RC<Mesh> GetFullscreenTriangleMesh(DynamicBufferManager &bufferManager, const RenderCamera &camera);
+/*
+  Fullscreen triangle
+      uv(0, 0)
+       *---------*
+       |    |   /
+       |    | /
+       |----/ uv(1, 1)
+       |  /
+       |/
+       *
+    struct Vertex
+    {
+        float2 position  : POSITION;
+        float2 uv        : UV;
+        float3 worldRay  : WORLD_RAY;
+        float3 cameraRay : CAMERA_RAY;
+    };
+*/
+
+RC<Mesh> GetFullscreenTriangle(DynamicBufferManager &bufferManager);
+RC<Mesh> GetFullscreenTriangle(DynamicBufferManager &bufferManager, const RenderCamera &camera);
 
 RTRC_END
