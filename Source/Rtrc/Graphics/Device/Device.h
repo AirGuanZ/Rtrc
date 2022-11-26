@@ -35,6 +35,7 @@ public:
     ~Device();
 
     Queue &GetQueue();
+    DeviceSynchronizer &GetSynchronizer();
 
     const RHI::SwapchainPtr &GetSwapchain() const;
     const RHI::TextureDesc &GetSwapchainImageDesc() const;
@@ -93,6 +94,8 @@ public:
     BindingGroupManager &GetBindingGroupManager();
     const RHI::DevicePtr &GetRawDevice() const;
 
+    operator DynamicBufferManager &();
+
 private:
 
     Device() = default;
@@ -127,6 +130,11 @@ private:
 inline Queue &Device::GetQueue()
 {
     return mainQueue_;
+}
+
+inline DeviceSynchronizer &Device::GetSynchronizer()
+{
+    return *sync_;
 }
 
 inline const RHI::SwapchainPtr &Device::GetSwapchain() const
@@ -332,6 +340,11 @@ inline BindingGroupManager &Device::GetBindingGroupManager()
 inline const RHI::DevicePtr &Device::GetRawDevice() const
 {
     return device_;
+}
+
+inline Device::operator DynamicBufferManager&()
+{
+    return *dynamicBufferManager_;
 }
 
 RTRC_END

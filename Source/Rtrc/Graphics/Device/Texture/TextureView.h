@@ -22,6 +22,8 @@ public:
 
     const T &GetRHIObject() const;
 
+    operator typename T::ElementType *() const;
+
 private:
 
     static_assert(
@@ -116,6 +118,12 @@ template<typename T>
 const T &TTextureView<T>::GetRHIObject() const
 {
     return view_;
+}
+
+template<typename T>
+TTextureView<T>::operator typename T::ElementType *() const
+{
+    return view_.Get();
 }
 
 inline TextureSRV Texture::CreateSRV()

@@ -41,14 +41,20 @@ template<typename T>
 bool operator==(const Vector4<T> &a, const Vector4<T> &b);
 
 template<typename T>
-T Dot(const Vector4<T> &a, const Vector4<T> &b);
-
-template<typename T>
 Vector4<T> operator+(const Vector4<T> &a, const Vector4<T> &b);
 template<typename T>
 Vector4<T> operator-(const Vector4<T> &a, const Vector4<T> &b);
 template<typename T>
 Vector4<T> operator*(const Vector4<T> &a, const Vector4<T> &b);
+
+template<typename T>
+T Dot(const Vector4<T> &a, const Vector4<T> &b);
+template<typename T>
+T LengthSquare(const Vector4<T> &v);
+template<typename T>
+T Length(const Vector4<T> &v);
+template<typename T>
+Vector4<T> Normalize(const Vector4<T> &v);
 
 template <typename T>
 Vector4<T>::Vector4()
@@ -114,12 +120,6 @@ bool operator==(const Vector4<T> &a, const Vector4<T> &b)
     return a.ToTuple() == b.ToTuple();
 }
 
-template<typename T>
-T Dot(const Vector4<T> &a, const Vector4<T> &b)
-{
-    return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
-}
-
 #define RTRC_CREATE_FOR_EACH_ELEM(F) { F(x), F(y), F(z), F(w) }
 
 template<typename T>
@@ -147,5 +147,32 @@ Vector4<T> operator*(const Vector4<T> &a, const Vector4<T> &b)
 }
 
 #undef RTRC_CREATE_FOR_EACH_ELEM
+
+template<typename T>
+T Dot(const Vector4<T> &a, const Vector4<T> &b)
+{
+    return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
+}
+
+template<typename T>
+T LengthSquare(const Vector4<T> &v)
+{
+    return Dot(v, v);
+}
+
+template<typename T>
+T Length(const Vector4<T> &v)
+{
+    static_assert(std::is_floating_point_v<T>);
+    return std::sqrt(LengthSquare(v));
+}
+
+template<typename T>
+Vector4<T> Normalize(const Vector4<T> &v)
+{
+    static_assert(std::is_floating_point_v<T>);
+    const T invLen = 1 / Length(v);
+    return Vector4<T>(invLen * v.x, invLen * v.y, invLen * v.z, invLen * v.w);
+}
 
 RTRC_END

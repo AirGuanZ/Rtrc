@@ -2,6 +2,63 @@
 
 RTRC_BEGIN
 
+namespace
+{
+
+    template<typename T>
+    class WrappedSubBuffer : public SubBuffer
+    {
+    public:
+
+        WrappedSubBuffer(RC<T> buffer, size_t offset, size_t size)
+        {
+            buffer_ = std::move(buffer);
+            fullOffset_ = offset + buffer_->GetSubBufferOffset();
+            fullSize_ = size;
+        }
+
+        RC<Buffer> GetFullBuffer() override
+        {
+            if constexpr(std::is_base_of_v<Buffer, T>)
+            {
+                return buffer_;
+            }
+            else
+            {
+                static_assert(std::is_base_of_v<SubBuffer, T>);
+                return buffer_->GetFullBuffer();
+            }
+        }
+
+        size_t GetSubBufferOffset() const override
+        {
+            return fullOffset_;
+        }
+
+        size_t GetSubBufferSize() const override
+        {
+            return fullSize_;
+        }
+
+    private:
+
+        RC<T> buffer_;
+        size_t fullOffset_;
+        size_t fullSize_;
+    };
+
+} // namespace anonymous
+
+RC<SubBuffer> SubBuffer::GetSubRange(RC<Buffer> buffer, size_t offset, size_t size)
+{
+    return MakeRC<WrappedSubBuffer<Buffer>>(std::move(buffer), offset, size);
+}
+
+RC<SubBuffer> SubBuffer::GetSubRange(RC<SubBuffer> buffer, size_t offset, size_t size)
+{
+    return MakeRC<WrappedSubBuffer<SubBuffer>>(std::move(buffer), offset, size);
+}
+
 BufferManager::BufferManager(RHI::DevicePtr device, DeviceSynchronizer &sync)
     : device_(std::move(device)), sync_(sync)
 {

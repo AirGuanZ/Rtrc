@@ -2,6 +2,7 @@
 
 #include <cassert>
 
+#include <Rtrc/Math/Matrix3x3.h>
 #include <Rtrc/Math/Vector3.h>
 #include <Rtrc/Math/Vector4.h>
 
@@ -48,17 +49,16 @@ public:
 
     Matrix4x4f();
 
+    explicit Matrix4x4f(const Matrix3x3f &m3x3);
+
     Matrix4x4f(
         float m11, float m12, float m13, float m14,
         float m21, float m22, float m23, float m24,
         float m31, float m32, float m33, float m34,
         float m41, float m42, float m43, float m44);
     
-    float At(int row, int col) const; // row and col start from 1
+    float  At(int row, int col) const; // row and col start from 1
     float &At(int row, int col);      // row and col start from 1
-    
-    //float operator[](int y, int x) const; // y = row - 1, x = col - 1
-    //float &operator[](int y, int x);      // y = row - 1, x = col - 1
 
     const Vector4f &GetRow(int rowMinusOne) const;
     Vector4f        GetCol(int colMinusOne) const;
@@ -269,6 +269,15 @@ inline Matrix4x4f::Matrix4x4f()
     *this = Zero();
 }
 
+inline Matrix4x4f::Matrix4x4f(const Matrix3x3f &m3x3)
+    : Matrix4x4f(m3x3[0][0], m3x3[0][1], m3x3[0][2], 0,
+                 m3x3[1][0], m3x3[1][1], m3x3[1][2], 0,
+                 m3x3[2][0], m3x3[2][1], m3x3[2][2], 0,
+                 0,          0,          0,          1)
+{
+
+}
+
 inline Matrix4x4f::Matrix4x4f(
     float m11, float m12, float m13, float m14,
     float m21, float m22, float m23, float m24,
@@ -294,20 +303,6 @@ inline float &Matrix4x4f::At(int row, int col)
     assert(1 <= col && col <= 4);
     return rows[row - 1][col - 1];
 }
-
-//inline float Matrix4x4f::operator[](int y, int x) const
-//{
-//    assert(0 <= y && y < 4);
-//    assert(0 <= x && x < 4);
-//    return rows[y][x];
-//}
-//
-//inline float &Matrix4x4f::operator[](int y, int x)
-//{
-//    assert(0 <= y && y < 4);
-//    assert(0 <= x && x < 4);
-//    return rows[y][x];
-//}
 
 inline const Vector4f &Matrix4x4f::operator[](int rowMinusOne) const
 {

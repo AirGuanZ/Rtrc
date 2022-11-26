@@ -6,6 +6,7 @@ BuiltinResourceManager::BuiltinResourceManager(Device &device)
     : device_(device)
 {
     LoadBuiltinMaterials();
+    LoadBuiltinTextures();
 }
 
 const RC<Material> &BuiltinResourceManager::GetBuiltinMaterial(BuiltinMaterial material) const
@@ -25,6 +26,11 @@ void BuiltinResourceManager::LoadBuiltinMaterials()
     LOAD_BUILTIN_MATERIAL(DeferredLighting);
 
 #undef LOAD_BUILTIN_MATERIAL
+}
+
+void BuiltinResourceManager::LoadBuiltinTextures()
+{
+    // TODO
 }
 
 RTRC_END

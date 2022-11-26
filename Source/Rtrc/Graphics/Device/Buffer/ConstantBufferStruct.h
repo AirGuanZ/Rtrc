@@ -125,7 +125,7 @@ namespace ConstantBufferDetail
                 uint32_t, Vector2u, Vector3u, Vector4u,
                 Matrix4x4f>;
             static_assert(ValidTypeList::Contains<T>, "Invalid value type in constant buffer struct");
-            f.template operator() < T > (name, hostOffset * 4, deviceOffset * 4);
+            f.template operator()<T>(name, hostOffset * 4, deviceOffset * 4);
         }
     }
 
@@ -135,6 +135,9 @@ namespace ConstantBufferDetail
         ForEachFlattenMember<T>("struct", f, 0, 0);
     }
 
-}
+} // namespace ConstantBufferDetail
+
+template<RtrcStruct T>
+constexpr size_t ConstantBufferSize = ConstantBufferDetail::GetConstantBufferDWordCount<T>() * 4;
 
 RTRC_END

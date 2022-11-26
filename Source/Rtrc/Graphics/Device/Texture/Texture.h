@@ -52,6 +52,13 @@ public:
     const RHI::TexturePtr &GetRHIObject() const;
     const RHI::TextureDesc &GetDesc() const;
 
+    RHI::TextureDimension GetDimension() const;
+    uint32_t GetWidth() const;
+    uint32_t GetHeight() const;
+    uint32_t GetDepth() const;
+    uint32_t GetArraySize() const;
+    uint32_t GetMipmapLevelCount() const;
+
     TextureSRV CreateSRV(); // non-array view for single-layer texture, array view for multi-layer texture
     TextureSRV CreateSRV(uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer);                      // non-array view
     TextureSRV CreateSRV(uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, uint32_t layerCount); // array view
@@ -116,6 +123,36 @@ inline const RHI::TexturePtr &Texture::GetRHIObject() const
 inline const RHI::TextureDesc &Texture::GetDesc() const
 {
     return desc_;
+}
+
+inline RHI::TextureDimension Texture::GetDimension() const
+{
+    return desc_.dim;
+}
+
+inline uint32_t Texture::GetWidth() const
+{
+    return desc_.width;
+}
+
+inline uint32_t Texture::GetHeight() const
+{
+    return desc_.height;
+}
+
+inline uint32_t Texture::GetDepth() const
+{
+    return desc_.depth;
+}
+
+inline uint32_t Texture::GetArraySize() const
+{
+    return desc_.arraySize;
+}
+
+inline uint32_t Texture::GetMipmapLevelCount() const
+{
+    return desc_.mipLevels;
 }
 
 inline RHI::Viewport Texture::GetViewport(float minDepth, float maxDepth) const

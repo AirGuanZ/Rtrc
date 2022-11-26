@@ -38,6 +38,8 @@ class ReferenceCountedPtr
 {
 public:
 
+    using ElementType = T;
+
     ReferenceCountedPtr()
         : ptr_(nullptr)
     {

@@ -23,9 +23,21 @@ RTRC_BEGIN
         float3 worldRay  : WORLD_RAY;
         float3 cameraRay : CAMERA_RAY;
     };
+
+  Fullscreen quad
+      uv(0, 0)
+      *-------*
+      |     / |
+      |   /   |
+      | /     |
+      *-------*
+             uv(1, 1)
 */
 
-RC<Mesh> GetFullscreenTriangle(DynamicBufferManager &bufferManager);
-RC<Mesh> GetFullscreenTriangle(DynamicBufferManager &bufferManager, const RenderCamera &camera);
+Mesh GetFullscreenTriangle(DynamicBufferManager &bufferManager);
+Mesh GetFullscreenTriangle(DynamicBufferManager &bufferManager, const Camera &camera);
+
+Mesh GetFullscreenQuad(DynamicBufferManager &bufferManager);
+Mesh GetFullscreenQuad(DynamicBufferManager &bufferManager, const Camera &camera);
 
 RTRC_END

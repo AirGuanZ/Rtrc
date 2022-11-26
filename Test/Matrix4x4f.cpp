@@ -4,7 +4,7 @@
 
 using namespace Rtrc;
 
-TEST_CASE("Inverse")
+TEST_CASE("Inverse Matrix4x4f")
 {
     Matrix4x4f a = Matrix4x4f::Translate(-1, -2, -3);
     Matrix4x4f b = Inverse(a);

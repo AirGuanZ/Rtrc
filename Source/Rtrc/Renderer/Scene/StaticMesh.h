@@ -18,7 +18,7 @@ class StaticMesh : public SceneObject
 {
 public:
 
-    StaticMesh();
+    StaticMesh() = default;
     StaticMesh(StaticMesh &&other) noexcept;
     StaticMesh &operator=(StaticMesh &&other) noexcept;
 
@@ -35,5 +35,36 @@ private:
     RC<Mesh> mesh_;
     RC<MaterialInstance> matInst_;
 };
+
+inline StaticMesh::StaticMesh(StaticMesh &&other) noexcept
+{
+    Swap(other);
+}
+
+inline StaticMesh &StaticMesh::operator=(StaticMesh &&other) noexcept
+{
+    Swap(other);
+    return *this;
+}
+
+inline void StaticMesh::SetMesh(RC<Mesh> mesh)
+{
+    mesh_ = std::move(mesh);
+}
+
+inline void StaticMesh::SetMaterial(RC<MaterialInstance> matInst)
+{
+    matInst_ = std::move(matInst);
+}
+
+inline const RC<Mesh> &StaticMesh::GetMesh() const
+{
+    return mesh_;
+}
+
+inline const RC<MaterialInstance> &StaticMesh::GetMaterial() const
+{
+    return matInst_;
+}
 
 RTRC_END

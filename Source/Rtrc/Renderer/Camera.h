@@ -26,22 +26,6 @@ struct PerspectiveProjectionParameters
     float farPlane  = 100.0f;
 };
 
-class RenderCamera
-{
-public:
-    
-    const CameraConstantBuffer &GetConstantBufferData() const;
-
-    const Matrix4x4f &GetWorldToCamera() const;
-    const Matrix4x4f &GetWorldToClip() const;
-
-private:
-
-    friend class Camera;
-
-    CameraConstantBuffer data_;
-};
-
 class Camera
 {
 public:
@@ -67,7 +51,13 @@ public:
     void SetProjection(float fovYRad, float wOverH, float nearPlane, float farPlane);
     void CalculateDerivedData();
 
-    void SetUpRenderCamera(RenderCamera &renderCamera) const;
+    const CameraConstantBuffer &GetConstantBufferData() const;
+    const Matrix4x4f &GetWorldToCameraMatrix() const;
+    const Matrix4x4f &GetCameraToWorldMatrix() const;
+    const Matrix4x4f &GetCameraToClipMatrix() const;
+    const Matrix4x4f &GetClipToCameraMatrix() const;
+    const Matrix4x4f &GetWorldToClipMatrix() const;
+    const Matrix4x4f &GetClipToWorldMatrix() const;
 
 private:
 
@@ -87,22 +77,12 @@ private:
     Vector3f left_;
     Vector3f up_;
 
-    Matrix4x4f cameraToWorldMatrix_;
-    Matrix4x4f worldToCameraMatrix_;
-    Matrix4x4f cameraToClipMatrix_;
-    Matrix4x4f clipToCameraMatrix_;
-    Matrix4x4f worldToClipMatrix_;
-    Matrix4x4f clipToWorldMatrix_;
+    CameraConstantBuffer constantBufferData_;
 
 #if RTRC_DEBUG
     bool isDerivedDataDirty_ = true;
 #endif
 };
-
-inline const CameraConstantBuffer &RenderCamera::GetConstantBufferData() const
-{
-    return data_;
-}
 
 inline Camera::Camera()
 {
@@ -158,6 +138,41 @@ inline void Camera::SetProjection(float fovYRad, float wOverH, float nearPlane, 
 {
     SetDirty();
     projParams_ = { fovYRad, wOverH, nearPlane, farPlane };
+}
+
+inline const CameraConstantBuffer &Camera::GetConstantBufferData() const
+{
+    return constantBufferData_;
+}
+
+inline const Matrix4x4f &Camera::GetWorldToCameraMatrix() const
+{
+    return constantBufferData_.worldToCameraMatrix;
+}
+
+inline const Matrix4x4f &Camera::GetCameraToWorldMatrix() const
+{
+    return constantBufferData_.cameraToWorldMatrix;
+}
+
+inline const Matrix4x4f &Camera::GetCameraToClipMatrix() const
+{
+    return constantBufferData_.cameraToClipMatrix;
+}
+
+inline const Matrix4x4f &Camera::GetClipToCameraMatrix() const
+{
+    return constantBufferData_.clipToCameraMatrix;
+}
+
+inline const Matrix4x4f &Camera::GetWorldToClipMatrix() const
+{
+    return constantBufferData_.worldToClipMatrix;
+}
+
+inline const Matrix4x4f &Camera::GetClipToWorldMatrix() const
+{
+    return constantBufferData_.clipToWorldMatrix;
 }
 
 inline void Camera::SetDirty()

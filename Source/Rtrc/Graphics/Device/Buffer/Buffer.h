@@ -31,7 +31,6 @@ namespace BufferImpl
 
 } // namespace BufferImpl
 
-
 class BufferManagerInterface
 {
 public:
@@ -53,6 +52,9 @@ public:
     virtual RC<Buffer> GetFullBuffer() = 0;
     virtual size_t GetSubBufferOffset() const = 0;
     virtual size_t GetSubBufferSize() const = 0;
+
+    static RC<SubBuffer> GetSubRange(RC<SubBuffer> buffer, size_t offset, size_t size);
+    static RC<SubBuffer> GetSubRange(RC<Buffer> buffer, size_t offset, size_t size);
 };
 
 class Buffer : protected BufferImpl::BufferData, public SubBuffer, public std::enable_shared_from_this<Buffer>
@@ -63,6 +65,7 @@ public:
 
     const RHI::BufferPtr &GetRHIObject() const;
     size_t GetSize() const;
+    const RHI::BufferDesc &GetDesc() const;
 
     RC<Buffer> GetFullBuffer() override;
     size_t GetSubBufferOffset() const override;
@@ -124,6 +127,11 @@ inline const RHI::BufferPtr &Buffer::GetRHIObject() const
 inline size_t Buffer::GetSize() const
 {
     return size_;
+}
+
+inline const RHI::BufferDesc &Buffer::GetDesc() const
+{
+    return rhiBuffer_->GetDesc();
 }
 
 inline RC<Buffer> Buffer::GetFullBuffer()

@@ -175,6 +175,19 @@ void CommandBuffer::End()
     rhiCommandBuffer_->End();
 }
 
+void CommandBuffer::BeginDebugEvent(std::string name, const std::optional<Vector4f> &color)
+{
+    CheckThreadID();
+    RHI::DebugLabel debugLabel{ std::move(name), color };
+    rhiCommandBuffer_->BeginDebugEvent(debugLabel);
+}
+
+void CommandBuffer::EndDebugEvent()
+{
+    CheckThreadID();
+    rhiCommandBuffer_->EndDebugEvent();
+}
+
 void CommandBuffer::CopyBuffer(Buffer &dst, size_t dstOffset, const Buffer &src, size_t srcOffset, size_t size)
 {
     CheckThreadID();

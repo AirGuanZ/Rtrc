@@ -57,7 +57,6 @@ template<typename T>
 T Dot(const Vector3<T> &a, const Vector3<T> &b);
 template<typename T>
 Vector3<T> Cross(const Vector3<T> &a, const Vector3<T> &b);
-
 template<typename T>
 T LengthSquare(const Vector3<T> &v);
 template<typename T>

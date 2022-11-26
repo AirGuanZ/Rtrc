@@ -13,29 +13,16 @@ void Camera::CalculateDerivedData()
     up_      = (rotateToWorld * Vector4f(0, 1, 0, 0)).xyz();
     left_    = (rotateToWorld * Vector4f(1, 0, 0, 0)).xyz();
 
-    cameraToWorldMatrix_ = Matrix4x4f::Translate(position_) * rotateToWorld;
-    worldToCameraMatrix_ = Transpose(rotateToWorld) * Matrix4x4f::Translate(-position_);
+    auto &data = constantBufferData_;
+    data.cameraToWorldMatrix = Matrix4x4f::Translate(position_) * rotateToWorld;
+    data.worldToCameraMatrix = Transpose(rotateToWorld) * Matrix4x4f::Translate(-position_);
 
-    cameraToClipMatrix_ = Matrix4x4f::Perspective(
+    data.cameraToClipMatrix = Matrix4x4f::Perspective(
         projParams_.fovYRad, projParams_.wOverH, projParams_.nearPlane, projParams_.farPlane);
-    clipToCameraMatrix_ = Inverse(cameraToClipMatrix_); // TODO: optimize
+    data.clipToCameraMatrix = Inverse(data.cameraToClipMatrix); // TODO: optimize
 
-    worldToClipMatrix_ = cameraToClipMatrix_ * worldToCameraMatrix_;
-    clipToWorldMatrix_ = cameraToWorldMatrix_ * clipToCameraMatrix_;
-
-    ClearDrity();
-}
-
-void Camera::SetUpRenderCamera(RenderCamera &renderCamera) const
-{
-    AssertNotDirty();
-    CameraConstantBuffer &data = renderCamera.data_;
-    data.worldToCameraMatrix = worldToCameraMatrix_;
-    data.cameraToWorldMatrix = cameraToWorldMatrix_;
-    data.cameraToClipMatrix = cameraToClipMatrix_;
-    data.clipToCameraMatrix = clipToCameraMatrix_;
-    data.worldToClipMatrix = worldToClipMatrix_;
-    data.clipToWorldMatrix = clipToWorldMatrix_;
+    data.worldToClipMatrix = data.cameraToClipMatrix * data.worldToCameraMatrix;
+    data.clipToWorldMatrix = data.cameraToWorldMatrix * data.clipToCameraMatrix;
 
     // TODO: optimize
     const Vector4f cameraSpaceRays[4] =
@@ -57,10 +44,12 @@ void Camera::SetUpRenderCamera(RenderCamera &renderCamera) const
         data.clipToWorldMatrix * Vector4f(-1.0f, -1.0f, 1.0f, 1.0f),
         data.clipToWorldMatrix * Vector4f(+1.0f, -1.0f, 1.0f, 1.0f)
     };
-    data.worldRays[0] = Normalize(cameraSpaceRays[0].xyz() / cameraSpaceRays[0].w - position_);
-    data.worldRays[1] = Normalize(cameraSpaceRays[1].xyz() / cameraSpaceRays[0].w - position_);
-    data.worldRays[2] = Normalize(cameraSpaceRays[2].xyz() / cameraSpaceRays[0].w - position_);
-    data.worldRays[3] = Normalize(cameraSpaceRays[3].xyz() / cameraSpaceRays[0].w - position_);
+    data.worldRays[0] = Normalize(worldSpaceRays[0].xyz() / worldSpaceRays[0].w - position_);
+    data.worldRays[1] = Normalize(worldSpaceRays[1].xyz() / worldSpaceRays[0].w - position_);
+    data.worldRays[2] = Normalize(worldSpaceRays[2].xyz() / worldSpaceRays[0].w - position_);
+    data.worldRays[3] = Normalize(worldSpaceRays[3].xyz() / worldSpaceRays[0].w - position_);
+
+    ClearDrity();
 }
 
 RTRC_END

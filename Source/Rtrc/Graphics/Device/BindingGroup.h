@@ -25,6 +25,7 @@ public:
 
     const RC<const BindingGroupLayout> &GetLayout() const;
 
+    void Set(int slot, RC<Buffer>    cbuffer, size_t offset, size_t size);
     void Set(int slot, RC<SubBuffer> cbuffer);
     void Set(int slot, RC<Sampler>   sampler);
 
@@ -132,6 +133,12 @@ inline BindingGroup::~BindingGroup()
     {
         manager_->_internalRelease(*this);
     }
+}
+
+inline void BindingGroup::Set(int slot, RC<Buffer> cbuffer, size_t offset, size_t size)
+{
+    rhiGroup_->ModifyMember(slot, cbuffer->GetRHIObject(), offset, size);
+    boundObjects_[slot] = std::move(cbuffer);
 }
 
 inline void BindingGroup::Set(int slot, RC<SubBuffer> cbuffer)

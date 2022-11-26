@@ -112,7 +112,7 @@ void Run()
             auto &commandBuffer = context.GetCommandBuffer();
             commandBuffer.BeginRenderPass(ColorAttachment
             {
-                .renderTargetView = rt->CreateRTV().GetRHIObject(),
+                .renderTargetView = rt->CreateRTV(),
                 .loadOp       = AttachmentLoadOp::Clear,
                 .storeOp      = AttachmentStoreOp::Store,
                 .clearValue   = ColorClearValue{ 0, 1, 1, 1 }
@@ -120,7 +120,6 @@ void Run()
             commandBuffer.BindPipeline(pipeline);
             commandBuffer.BindMesh(mesh);
             subMaterialInstance->BindGraphicsProperties(keywords, commandBuffer);
-            //commandBuffer.BindGraphicsSubMaterial(subMaterialInstance, keywords);
             commandBuffer.SetViewports(rt->GetViewport());
             commandBuffer.SetScissors(rt->GetScissor());
             commandBuffer.DrawIndexed(6, 1, 0, 0, 0);
