@@ -10,7 +10,6 @@ RTRC_BEGIN
 class BindingLayout;
 class BindingGroupLayout;
 class ShaderCompiler;
-class ShaderCompiler;
 
 class Shader : public Uncopyable, public WithUniqueObjectID
 {
@@ -30,9 +29,11 @@ public:
     const RC<BindingGroupLayout> &GetBindingGroupLayoutByIndex(int index) const;
     int GetBindingGroupIndexByName(std::string_view name) const; // return -1 when not found
 
-private:
+    const RC<BindingGroup> &GetBindingGroupForInlineSamplers() const;
+    int GetBindingGroupIndexForInlineSamplers() const;
 
-    friend class ShaderCompiler;
+private:
+    
     friend class ShaderCompiler;
 
     RHI::RawShaderPtr VS_;
@@ -46,6 +47,9 @@ private:
     std::vector<RC<BindingGroupLayout>>     bindingGroupLayouts_;
     std::vector<std::string>                bindingGroupNames_;
     RC<BindingLayout>                       bindingLayout_;
+
+    // Should be the last group, if present
+    RC<BindingGroup> bindingGroupForInlineSamplers_;
 };
 
 RTRC_END

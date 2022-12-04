@@ -6,6 +6,7 @@
 
 RTRC_BEGIN
 
+// See Asset/Builtin/Material/Common/Scene.hlsl
 rtrc_struct(CameraConstantBuffer)
 {
     rtrc_var(Matrix4x4f,  worldToCameraMatrix);

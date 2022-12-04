@@ -660,9 +660,9 @@ RC<ShaderTemplate> MaterialManager::CreateShaderTemplate(std::string_view name)
     shaderTemplate->keywordSet_      = std::move(keywordSet);
     shaderTemplate->source_.source   = source;
     shaderTemplate->source_.filename = filenames_[fileRef.filenameIndex];
-    shaderTemplate->source_.VSEntry  = std::move(VSEntry);
-    shaderTemplate->source_.FSEntry  = std::move(FSEntry);
-    shaderTemplate->source_.CSEntry  = std::move(CSEntry);
+    shaderTemplate->source_.vsEntry  = std::move(VSEntry);
+    shaderTemplate->source_.fsEntry  = std::move(FSEntry);
+    shaderTemplate->source_.csEntry  = std::move(CSEntry);
     shaderTemplate->shaderCompiler_  = &shaderCompiler_;
     shaderTemplate->compiledShaders_.resize(1 << totalKeywordBitCount);
 

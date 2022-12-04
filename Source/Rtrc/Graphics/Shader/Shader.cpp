@@ -67,4 +67,14 @@ int Shader::GetBindingGroupIndexByName(std::string_view name) const
     return it != nameToBindingGroupLayoutIndex_.end() ? it->second : -1;
 }
 
+const RC<BindingGroup> &Shader::GetBindingGroupForInlineSamplers() const
+{
+    return bindingGroupForInlineSamplers_;
+}
+
+int Shader::GetBindingGroupIndexForInlineSamplers() const
+{
+    return bindingGroupForInlineSamplers_ ? (static_cast<int>(bindingGroupLayouts_.size()) - 1) : -1;
+}
+
 RTRC_END

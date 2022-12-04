@@ -58,6 +58,26 @@ class BindingGroupLayout :
 {
 public:
 
+    struct BindingDesc
+    {
+        std::string              name;
+        RHI::BindingType         type;
+        RHI::ShaderStageFlag     stages;
+        std::optional<uint32_t>  arraySize;
+        std::vector<RC<Sampler>> immutableSamplers;
+
+        auto operator<=>(const BindingDesc &) const = default;
+        bool operator==(const BindingDesc &) const = default;
+    };
+
+    struct Desc
+    {
+        std::vector<BindingDesc> bindings;
+
+        auto operator<=>(const Desc &) const = default;
+        bool operator==(const Desc &) const = default;
+    };
+
     ~BindingGroupLayout();
 
     int GetBindingSlotByName(std::string_view name) const;
@@ -107,7 +127,7 @@ public:
         DeviceSynchronizer             &sync,
         ConstantBufferManagerInterface *defaultConstantBufferManager);
 
-    RC<BindingGroupLayout> CreateBindingGroupLayout(const RHI::BindingGroupLayoutDesc &desc);
+    RC<BindingGroupLayout> CreateBindingGroupLayout(const BindingGroupLayout::Desc &desc);
     RC<BindingGroup>       CreateBindingGroup(RC<const BindingGroupLayout> groupLayout);
     RC<BindingLayout>      CreateBindingLayout(const BindingLayout::Desc &desc);
 
@@ -123,7 +143,7 @@ private:
 
     ConstantBufferManagerInterface *defaultConstantBufferManager_;
 
-    ObjectCache<RHI::BindingGroupLayoutDesc, BindingGroupLayout, true, false> groupLayoutCache_;
+    ObjectCache<BindingGroupLayout::Desc, BindingGroupLayout, true, false> groupLayoutCache_;
     ObjectCache<BindingLayout::Desc, BindingLayout, true, false> layoutCache_;
 };
 

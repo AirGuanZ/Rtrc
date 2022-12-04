@@ -12,14 +12,14 @@ PerObjectConstantBufferBatch::PerObjectConstantBufferBatch(
     bindingName_ = std::move(bindingName);
     shaderStages_ = bindingShaderStages;
 
-    bindingGroupLayout_ = device.CreateBindingGroupLayout(RHI::BindingGroupLayoutDesc
+    bindingGroupLayout_ = device.CreateBindingGroupLayout(BindingGroupLayout::Desc
     {
         .bindings = {
-            RHI::BindingDesc
+            BindingGroupLayout::BindingDesc
             {
                 .name = bindingName_,
                 .type = RHI::BindingType::ConstantBuffer,
-                .shaderStages = shaderStages_
+                .stages = shaderStages_
             }
         }
     });

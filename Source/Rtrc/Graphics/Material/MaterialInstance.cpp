@@ -110,6 +110,21 @@ template <bool Graphics>
 void SubMaterialInstance::BindPropertiesImpl(
     KeywordSet::ValueMask mask, const RHI::CommandBufferPtr &commandBuffer) const
 {
+    auto shader = subMaterial_->GetShader(mask);
+    if(auto index = shader->GetBindingGroupIndexForInlineSamplers(); index >= 0)
+    {
+        if constexpr(Graphics)
+        {
+            commandBuffer->BindGroupToGraphicsPipeline(
+                index, shader->GetBindingGroupForInlineSamplers()->GetRHIObject());
+        }
+        else
+        {
+            commandBuffer->BindGroupToComputePipeline(
+                index, shader->GetBindingGroupForInlineSamplers()->GetRHIObject());
+        }
+    }
+
     auto subLayout = subMaterial_->GetPropertyLayout(mask);
     const int bindingGroupIndex = subLayout->GetBindingGroupIndex();
     if(bindingGroupIndex < 0)

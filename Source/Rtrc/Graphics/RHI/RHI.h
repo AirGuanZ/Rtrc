@@ -415,10 +415,11 @@ struct SwapchainDesc
 
 struct BindingDesc
 {
-    std::string             name;
-    BindingType             type;
-    ShaderStageFlag         shaderStages = ShaderStageFlags::All;
-    std::optional<uint32_t> arraySize;
+    std::string              name;
+    BindingType              type;
+    ShaderStageFlag          shaderStages = ShaderStageFlags::All;
+    std::optional<uint32_t>  arraySize;
+    std::vector<SamplerPtr>  immutableSamplers;
 
     auto operator<=>(const BindingDesc &other) const = default;
     bool operator==(const BindingDesc &) const = default;
@@ -438,6 +439,32 @@ struct BindingLayoutDesc
 
     auto operator<=>(const BindingLayoutDesc &) const = default;
     bool operator==(const BindingLayoutDesc &) const = default;
+};
+
+struct SamplerDesc
+{
+    FilterMode magFilter = FilterMode::Point;
+    FilterMode minFilter = FilterMode::Point;
+    FilterMode mipFilter = FilterMode::Point;
+
+    AddressMode addressModeU = AddressMode::Clamp;
+    AddressMode addressModeV = AddressMode::Clamp;
+    AddressMode addressModeW = AddressMode::Clamp;
+
+    float mipLODBias = 0.0f;
+    float minLOD     = 0.0f;
+    float maxLOD     = (std::numeric_limits<float>::max)();
+
+    bool enableAnisotropy = false;
+    int  maxAnisotropy    = 0;
+
+    bool      enableComparision = false;
+    CompareOp compareOp         = CompareOp::Less;
+
+    std::array<float, 4> borderColor = { 0, 0, 0, 0 };
+
+    auto operator<=>(const SamplerDesc &) const = default;
+    bool operator==(const SamplerDesc &) const = default;
 };
 
 struct TextureSubresource
@@ -548,32 +575,6 @@ struct BufferSRVDesc
 };
 
 using BufferUAVDesc = BufferSRVDesc;
-
-struct SamplerDesc
-{
-    FilterMode magFilter = FilterMode::Point;
-    FilterMode minFilter = FilterMode::Point;
-    FilterMode mipFilter = FilterMode::Point;
-
-    AddressMode addressModeU = AddressMode::Clamp;
-    AddressMode addressModeV = AddressMode::Clamp;
-    AddressMode addressModeW = AddressMode::Clamp;
-
-    float mipLODBias = 0.0f;
-    float minLOD     = 0.0f;
-    float maxLOD     = (std::numeric_limits<float>::max)();
-
-    bool enableAnisotropy = false;
-    int  maxAnisotropy    = 0;
-
-    bool      enableComparision = false;
-    CompareOp compareOp         = CompareOp::Less;
-
-    std::array<float, 4> borderColor = { 0, 0, 0, 0 };
-
-    auto operator<=>(const SamplerDesc &) const = default;
-    bool operator==(const SamplerDesc &) const = default;
-};
 
 struct TextureTransitionBarrier
 {

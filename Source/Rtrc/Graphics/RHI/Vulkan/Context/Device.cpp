@@ -638,16 +638,46 @@ Ptr<ComputePipeline> VulkanDevice::CreateComputePipeline(const ComputePipelineDe
 
 Ptr<BindingGroupLayout> VulkanDevice::CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc)
 {
+    std::vector<VkSampler> samplers;
+    for(auto &binding : desc.bindings)
+    {
+        if(!binding.immutableSamplers.empty())
+        {
+            if(binding.type != BindingType::Sampler)
+            {
+                throw Exception("Immutable samplers are specified in non-sampler binding");
+            }
+            if(!binding.arraySize)
+            {
+                if(binding.immutableSamplers.size() != 1)
+                {
+                    throw Exception("Binding.immutableSamplers.size doesn't match binding.arraySize");
+                }
+            }
+            else if(binding.immutableSamplers.size() != *binding.arraySize)
+            {
+                throw Exception("Binding.immutableSamplers.size doesn't match binding.arraySize");
+            }
+        }
+        for(auto &s : binding.immutableSamplers)
+        {
+            samplers.push_back(static_cast<VulkanSampler*>(s.Get())->GetNativeSampler());
+        }
+    }
+
     std::vector<VkDescriptorSetLayoutBinding> descSetBindings;
+    size_t samplerOffset = 0;
     for(auto &binding : desc.bindings)
     {
         auto vkType = TranslateBindingType(binding.type);
         descSetBindings.push_back(VkDescriptorSetLayoutBinding{
-            .binding         = static_cast<uint32_t>(descSetBindings.size()),
-            .descriptorType  = vkType,
-            .descriptorCount = binding.arraySize.value_or(1),
-            .stageFlags      = TranslateShaderStageFlag(binding.shaderStages)
+            .binding            = static_cast<uint32_t>(descSetBindings.size()),
+            .descriptorType     = vkType,
+            .descriptorCount    = binding.arraySize.value_or(1),
+            .stageFlags         = TranslateShaderStageFlag(binding.shaderStages),
+            .pImmutableSamplers = binding.immutableSamplers.empty() ? nullptr : &samplers[samplerOffset]
         });
+        samplerOffset += binding.immutableSamplers.size();
     }
 
     const VkDescriptorSetLayoutCreateInfo createInfo = {

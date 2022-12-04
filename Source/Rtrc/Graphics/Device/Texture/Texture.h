@@ -49,6 +49,8 @@ public:
 
     virtual ~Texture();
 
+    void SetName(std::string name);
+
     const RHI::TexturePtr &GetRHIObject() const;
     const RHI::TextureDesc &GetDesc() const;
 
@@ -113,6 +115,11 @@ inline Texture::~Texture()
     {
         manager_->_internalRelease(*this);
     }
+}
+
+inline void Texture::SetName(std::string name)
+{
+    rhiTexture_->SetName(std::move(name));
 }
 
 inline const RHI::TexturePtr &Texture::GetRHIObject() const

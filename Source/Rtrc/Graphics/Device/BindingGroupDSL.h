@@ -238,19 +238,19 @@ namespace BindingGroupDSL
     concept RtrcGroupStruct = requires { typename T::_rtrcGroupTypeFlag; };
 
     template<RtrcGroupStruct T>
-    const RHI::BindingGroupLayoutDesc &ToBindingGroupLayout()
+    const BindingGroupLayout::Desc &ToBindingGroupLayout()
     {
-        static RHI::BindingGroupLayoutDesc ret = []
+        static BindingGroupLayout::Desc ret = []
         {
-            RHI::BindingGroupLayoutDesc desc;
+            BindingGroupLayout::Desc desc;
             T::ForEachMember([&desc]<typename M>(M T::* ptr, const char *name, RHI::ShaderStageFlag stages)
             {
                 using MemberElement = typename MemberProxyTrait<M>::MemberProxyElement;
                 constexpr size_t arraySize = MemberProxyTrait<M>::ArraySize;
-                RHI::BindingDesc binding;
+                BindingGroupLayout::BindingDesc binding;
                 binding.name = name;
                 binding.type = MemberElement::BindingType;
-                binding.shaderStages = stages;
+                binding.stages = stages;
                 binding.arraySize = arraySize ? std::make_optional(static_cast<uint32_t>(arraySize)) : std::nullopt;
                 desc.bindings.push_back(binding);
             });
@@ -299,7 +299,7 @@ namespace BindingGroupDSL
     _rtrcMemberType##NAME NAME
 
 template<BindingGroupDSL::RtrcGroupStruct T>
-const RHI::BindingGroupLayoutDesc &GetRHIBindingGroupLayoutDesc()
+const BindingGroupLayout::Desc &GetBindingGroupLayoutDesc()
 {
     return BindingGroupDSL::ToBindingGroupLayout<T>();
 }

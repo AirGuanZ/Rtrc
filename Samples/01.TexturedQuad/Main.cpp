@@ -53,7 +53,7 @@ void Run()
         RHI::Format::B8G8R8A8_UNorm,
         RHI::TextureUsage::ShaderResource,
         true);
-    //mainTex->SetName("MainTexture");
+    mainTex->SetName("MainTexture");
 
     device->ExecuteAndWait([&](CommandBuffer &cmd)
     {
@@ -72,7 +72,7 @@ void Run()
         .addressModeV = RHI::AddressMode::Clamp,
         .addressModeW = RHI::AddressMode::Clamp
     });
-    //mainSampler->SetName("MainSampler");
+    mainSampler->SetName("MainSampler");
 
     // Material
 

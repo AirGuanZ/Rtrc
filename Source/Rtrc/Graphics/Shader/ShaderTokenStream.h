@@ -41,7 +41,7 @@ public:
         return !std::isalnum(c) && c != '_';
     }
 
-    ShaderTokenStream(std::string &source, size_t startPos, ErrorMode errMode = ErrorMode::PreprocessedShader)
+    ShaderTokenStream(const std::string &source, size_t startPos, ErrorMode errMode = ErrorMode::PreprocessedShader)
         : nextPos_(startPos), errMode_(errMode), source_(source)
     {
         Next();
@@ -80,27 +80,9 @@ public:
         }
     }
 
-    void ReplaceCurrentSingleCharToken(char c)
-    {
-        assert(nextPos_ > 0);
-        assert(currentToken_.size() == 1);
-        currentToken_ = c;
-        source_[nextPos_ - 1] = c;
-    }
-
     size_t GetCurrentPosition() const
     {
         return nextPos_;
-    }
-
-    void RemoveCurrentToken()
-    {
-        assert(!currentToken_.empty());
-        for(size_t i = nextPos_ - currentToken_.size(); i < nextPos_; ++i)
-        {
-            assert(!std::isspace(source_[i]));
-            source_[i] = ' ';
-        }
     }
 
     void Next()
@@ -126,7 +108,7 @@ public:
 
         if(ch == '{' || ch == '}' || ch == ',' || ch == ';' || ch == ':' ||
             ch == '[' || ch == ']' || ch == '<' || ch == '>' || ch == '|' ||
-            ch == '(' || ch == ')')
+            ch == '(' || ch == ')' || ch == '=')
         {
             currentToken_ = source_.substr(nextPos_, 1);
             ++nextPos_;
@@ -173,12 +155,6 @@ public:
         }
         currentToken_ = source_.substr(nextPos_, endPos - nextPos_);
         nextPos_ = endPos;
-    }
-
-    void RemoveAndNext()
-    {
-        RemoveCurrentToken();
-        Next();
     }
 
     [[noreturn]] void Throw(std::string_view msg) const
@@ -285,7 +261,7 @@ private:
     size_t nextPos_;
     ErrorMode errMode_;
     std::string currentToken_;
-    std::string &source_;
+    const std::string &source_;
 };
 
 RTRC_END

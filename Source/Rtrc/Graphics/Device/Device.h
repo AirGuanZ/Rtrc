@@ -59,7 +59,7 @@ public:
 
     template<BindingGroupDSL::RtrcGroupStruct T>
     RC<BindingGroupLayout> CreateBindingGroupLayout();
-    RC<BindingGroupLayout> CreateBindingGroupLayout(const RHI::BindingGroupLayoutDesc &desc);
+    RC<BindingGroupLayout> CreateBindingGroupLayout(const BindingGroupLayout::Desc &desc);
 
     template<BindingGroupDSL::RtrcGroupStruct T>
     RC<BindingGroup> CreateBindingGroup();
@@ -227,10 +227,10 @@ template<BindingGroupDSL::RtrcGroupStruct T>
 RC<BindingGroupLayout> Device::CreateBindingGroupLayout()
 {
     // TODO: fast cache for these group layouts
-    return this->CreateBindingGroupLayout(GetRHIBindingGroupLayoutDesc<T>());
+    return this->CreateBindingGroupLayout(GetBindingGroupLayoutDesc<T>());
 }
 
-inline RC<BindingGroupLayout> Device::CreateBindingGroupLayout(const RHI::BindingGroupLayoutDesc &desc)
+inline RC<BindingGroupLayout> Device::CreateBindingGroupLayout(const BindingGroupLayout::Desc &desc)
 {
     return bindingLayoutManager_->CreateBindingGroupLayout(desc);
 }

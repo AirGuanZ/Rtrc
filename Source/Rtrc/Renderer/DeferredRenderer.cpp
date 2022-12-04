@@ -14,6 +14,22 @@ namespace
         rtrc_define(ConstantBuffer<CameraConstantBuffer>, Camera);
     };
 
+    rtrc_struct(PerPassConstantBuffer_DeferredLighting)
+    {
+        rtrc_var(Vector4f,                       GBufferSize);
+        rtrc_var(CameraConstantBuffer,           camera);
+        rtrc_var(DirectionalLightConstantBuffer, directionalLight);
+    };
+
+    rtrc_group(PerPassGroup_DeferredLighting)
+    {
+        rtrc_define(ConstantBuffer<PerPassConstantBuffer_DeferredLighting>, CBuffer_DeferredLighting);
+        rtrc_define(Texture2D<float4>, GBufferA);
+        rtrc_define(Texture2D<float4>, GBufferB);
+        rtrc_define(Texture2D<float4>, GBufferC);
+        rtrc_define(Texture2D<float>,  GBufferDepth);
+    };
+
 } // namespace anonymous
 
 DeferredRenderer::DeferredRenderer(Device &device, MaterialManager &materialManager)

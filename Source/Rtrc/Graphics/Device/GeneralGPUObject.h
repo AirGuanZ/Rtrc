@@ -15,6 +15,8 @@ public:
 
     const RHIObjectPtr &GetRHIObject() const;
 
+    void SetName(std::string name);
+
 protected:
 
     friend class GeneralGPUObjectManager;
@@ -58,6 +60,12 @@ template<typename RHIObjectPtr>
 const RHIObjectPtr &GeneralGPUObject<RHIObjectPtr>::GetRHIObject() const
 {
     return rhiObject_;
+}
+
+template<typename RHIObjectPtr>
+void GeneralGPUObject<RHIObjectPtr>::SetName(std::string name)
+{
+    rhiObject_->SetName(std::move(name));
 }
 
 inline GeneralGPUObjectManager::GeneralGPUObjectManager(DeviceSynchronizer &sync)

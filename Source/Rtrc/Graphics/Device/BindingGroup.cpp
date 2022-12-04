@@ -9,13 +9,28 @@ BindingGroupManager::BindingGroupManager(
 
 }
 
-RC<BindingGroupLayout> BindingGroupManager::CreateBindingGroupLayout(const RHI::BindingGroupLayoutDesc &desc)
+RC<BindingGroupLayout> BindingGroupManager::CreateBindingGroupLayout(const BindingGroupLayout::Desc &desc)
 {
     return groupLayoutCache_.GetOrCreate(desc, [&]
         {
+            RHI::BindingGroupLayoutDesc rhiDesc;
+            for(auto &binding : desc.bindings)
+            {
+                RHI::BindingDesc rhiBinding;
+                rhiBinding.name = binding.name;
+                rhiBinding.type = binding.type;
+                rhiBinding.shaderStages = binding.stages;
+                rhiBinding.arraySize = binding.arraySize;
+                for(auto &s : binding.immutableSamplers)
+                {
+                    rhiBinding.immutableSamplers.push_back(s->GetRHIObject());
+                }
+                rhiDesc.bindings.push_back(rhiBinding);
+            }
+
             auto ret = MakeRC<BindingGroupLayout>();
             ret->manager_ = this;
-            ret->rhiLayout_ = device_->CreateBindingGroupLayout(desc);
+            ret->rhiLayout_ = device_->CreateBindingGroupLayout(rhiDesc);
             for(size_t slot = 0; slot < desc.bindings.size(); ++slot)
             {
                 auto &b = desc.bindings[slot];

@@ -91,6 +91,8 @@ public:
 
     SPIRVReflection(Span<unsigned char> code, std::string entryPoint);
 
+    bool IsBindingUsed(std::string_view name) const;
+
     std::vector<ShaderIOVar> GetInputVariables() const override;
     std::vector<ShaderConstantBuffer> GetConstantBuffers() const override;
 
@@ -102,6 +104,7 @@ private:
     };
 
     std::string entry_;
+    std::set<std::string, std::less<>> usedBindings_;
     std::unique_ptr<SpvReflectShaderModule, DeleteShaderModule> shaderModule_;
 };
 

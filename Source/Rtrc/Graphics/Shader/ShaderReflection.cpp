@@ -189,6 +189,20 @@ SPIRVReflection::SPIRVReflection(Span<unsigned char> code, std::string entryPoin
         spvReflectCreateShaderModule(code.size(), code.GetData(), shadermodule),
         "Failed to reflect spv shader");
     shaderModule_.reset(shadermodule);
+
+    for(uint32_t i = 0; i < shaderModule_->descriptor_binding_count; ++i)
+    {
+        const SpvReflectDescriptorBinding &binding = shaderModule_->descriptor_bindings[i];
+        if(binding.accessed)
+        {
+            usedBindings_.insert(binding.name);
+        }
+    }
+}
+
+bool SPIRVReflection::IsBindingUsed(std::string_view name) const
+{
+    return usedBindings_.contains(name);
 }
 
 std::vector<ShaderIOVar> SPIRVReflection::GetInputVariables() const

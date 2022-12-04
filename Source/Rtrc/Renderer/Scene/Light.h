@@ -5,6 +5,14 @@
 
 RTRC_BEGIN
 
+// See Asset/Builtin/Material/Common/Scene.hlsl
+rtrc_struct(DirectionalLightConstantBuffer)
+{
+    rtrc_var(Vector3f, direction) = Vector3f(0, -1, 0);
+    rtrc_var(Vector3f, color)     = Vector3f(1, 1, 1);
+    rtrc_var(float,    intensity) = 1;
+};
+
 class Light : public SceneObject
 {
 public:

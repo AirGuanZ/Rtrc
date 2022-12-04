@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include <Rtrc/Graphics/RHI/RHI.h>
+#include <Rtrc/Common.h>
 
 RTRC_BEGIN
 
