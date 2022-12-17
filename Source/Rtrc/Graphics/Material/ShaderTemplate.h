@@ -2,11 +2,12 @@
 
 #include <Rtrc/Graphics/Material/Keyword.h>
 #include <Rtrc/Graphics/Shader/ShaderCompiler.h>
+#include <Rtrc/Utility/ObjectCache.h>
 
 RTRC_BEGIN
 
 // Keywords -> Shader
-class ShaderTemplate : public Uncopyable
+class ShaderTemplate : public InObjectCache
 {
 public:
 
@@ -26,7 +27,11 @@ public:
         assert(compiledShaders_.size() > keywordValueMask);
         if(!compiledShaders_[keywordValueMask])
         {
-            ShaderCompiler::Macros macros = sharedEnvir_->macros;
+            ShaderCompiler::Macros macros;
+            if(sharedEnvir_)
+            {
+                macros = sharedEnvir_->macros;
+            }
             keywordSet_.ForEachKeywordAndValue(keywordValueMask, [&](const Keyword &keyword, uint8_t value)
             {
                 macros[keyword.GetString()] = std::to_string(value);

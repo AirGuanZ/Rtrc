@@ -5,7 +5,7 @@
 
 RTRC_BEGIN
 
-class MeshManager : public Uncopyable
+class MeshLoader : public Uncopyable
 {
 public:
 
@@ -15,13 +15,18 @@ public:
         bool noIndexBuffer = false;
     };
 
-    explicit MeshManager(CopyContext &copyContext);
+    void SetCopyContext(CopyContext *copyContext);
+
+    void SetRootDirectory(std::string_view rootDir);
 
     Mesh LoadFromObjFile(const std::string &filename, const Options &options = {});
 
 private:
-    
-    CopyContext &copyContext_;
+
+    std::string MapFilename(std::string_view filename) const;
+
+    std::filesystem::path rootDir_;
+    CopyContext *copyContext_ = nullptr;
 };
 
 RTRC_END

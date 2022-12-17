@@ -1,37 +1,39 @@
 #include <ranges>
 
 #include <Rtrc/Graphics/Device/CommandBuffer.h>
-#include <Rtrc/Graphics/Material/BindingGroupContext.h>
+#include <Rtrc/Graphics/Material/ShaderBindingContext.h>
 #include <Rtrc/Graphics/Shader/Shader.h>
 
 RTRC_BEGIN
 
-void BindingGroupContext::Clear()
+void ShaderBindingContext::Clear()
 {
-    lastCommandBuffer_ = nullptr;
     nameToRecord_.clear();
 }
 
-void BindingGroupContext::Set(std::string name, RC<BindingGroup> bindingGroup)
+void ShaderBindingContext::Set(std::string name, RC<BindingGroup> bindingGroup)
 {
     nameToRecord_[std::move(name)] = { std::move(bindingGroup) };
 }
 
-const RC<BindingGroup> &BindingGroupContext::Get(std::string_view name) const
+const RC<BindingGroup> &ShaderBindingContext::Get(std::string_view name) const
 {
     static const RC<BindingGroup> NIL;
     auto it = nameToRecord_.find(name);
     return it != nameToRecord_.end() ? it->second.group : NIL;
 }
 
-void BindingGroupContext::ClearBindingRecords()
+void ShaderBindingContext::ApplyGroupsToGraphicsPipeline(const CommandBuffer &commandBuffer, const RC<Shader> &shader)
 {
-    lastCommandBuffer_ = nullptr;
-    lastGraphicsShader_ = nullptr;
-    lastComputeShader_ = nullptr;
+    ApplyGroupsToGraphicsPipeline(commandBuffer.GetRHIObject(), shader);
 }
 
-void BindingGroupContext::BindForGraphicsPipeline(const RHI::CommandBufferPtr &commandBuffer, const RC<Shader> &shader)
+void ShaderBindingContext::ApplyGroupsToComputePipieline(const CommandBuffer &commandBuffer, const RC<Shader> &shader)
+{
+    ApplyGroupsToComputePipieline(commandBuffer.GetRHIObject(), shader);
+}
+
+void ShaderBindingContext::ApplyGroupsToGraphicsPipeline(const RHI::CommandBufferPtr &commandBuffer, const RC<Shader> &shader)
 {
     // TODO: local cache for already bound groups
 
@@ -57,7 +59,7 @@ void BindingGroupContext::BindForGraphicsPipeline(const RHI::CommandBufferPtr &c
     }
 }
 
-void BindingGroupContext::BindForComputePipeline(const RHI::CommandBufferPtr &commandBuffer, const RC<Shader> &shader)
+void ShaderBindingContext::ApplyGroupsToComputePipieline(const RHI::CommandBufferPtr &commandBuffer, const RC<Shader> &shader)
 {
     // TODO: local cache for already bound groups
 
@@ -81,16 +83,6 @@ void BindingGroupContext::BindForComputePipeline(const RHI::CommandBufferPtr &co
 
         commandBuffer->BindGroupToComputePipeline(i, record.group->GetRHIObject());
     }
-}
-
-void BindingGroupContext::BindForGraphicsPipeline(const CommandBuffer &commandBuffer, const RC<Shader> &shader)
-{
-    BindForGraphicsPipeline(commandBuffer.GetRHIObject(), shader);
-}
-
-void BindingGroupContext::BindForComputePipeline(const CommandBuffer &commandBuffer, const RC<Shader> &shader)
-{
-    BindForComputePipeline(commandBuffer.GetRHIObject(), shader);
 }
 
 RTRC_END

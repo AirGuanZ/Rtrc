@@ -4,27 +4,44 @@ Shader "Builtin/DeferredLighting"
 #vert VSMain
 #frag FSMain
 
-#include "Builtin/Material/Common/Scene.hlsl"
+#include "Common/GBuffer.hlsl"
+#include "Common/Scene.hlsl"
 
-struct PerPassConstantBuffer_DeferredLighting
-{
-    float4                         GBufferSize;
-    CameraConstantBuffer           camera;
-    DirectionalLightConstantBuffer directionalLight;
-};
-
-rtrc_group(PerPassGroup_DeferredLighting)
-    rtrc_define(ConstantBuffer<PerPassConstantBuffer_DeferredLighting>, CBuffer_DeferredLighting)
-    rtrc_define(Texture2D<float4>, GBufferA)
-    rtrc_define(Texture2D<float4>, GBufferB)
-    rtrc_define(Texture2D<float4>, GBufferC)
-    rtrc_define(Texture2D<float>,  GBufferDepth)
+rtrc_group(Pass)
+    BUILTIN_INTERNAL_GBUFFERS
+    rtrc_uniform(float4, gbufferSize)
+    rtrc_uniform(CameraConstantBuffer, camera)
+    rtrc_uniform(DirectionalLightConstantBuffer, directionalLight)
 rtrc_end
 
-struct VSInput
+struct VsInput
 {
     float2 position : POSITION;
     float2 uv       : UV;
 };
+
+struct VsToFs
+{
+    float4 position : SV_POSITION;
+    float2 uv       : UV;
+};
+
+VsToFs VSMain(VsInput input)
+{
+    VsToFs output;
+    output.position = float4(input.position, 1, 1);
+    output.uv = input.uv;
+    return output;
+}
+
+float4 FSMain(VsToFs input) : SV_TARGET
+{
+    Builtin::GBufferPixelValue gbuffer = Builtin::LoadGBufferPixel(input.uv);
+    if(gbuffer.depth >= 1)
+        return float4(0, 0, 0, 0);
+    float cosFactor = max(0, dot(gbuffer.normal, -Pass.directionalLight.direction));
+    float3 color = 0.01 + cosFactor * Pass.directionalLight.color * Pass.directionalLight.intensity;
+    return float4(pow(color, 1 / 2.2), 1);
+}
 
 } // Shader "Builtin/DeferredLighting"

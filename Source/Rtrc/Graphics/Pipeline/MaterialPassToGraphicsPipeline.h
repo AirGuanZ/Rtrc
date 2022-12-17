@@ -8,24 +8,24 @@
 
 RTRC_BEGIN
 
-class SubMaterialToGraphicsPipeline : public Uncopyable
+class MaterialPassToGraphicsPipeline : public Uncopyable
 {
 public:
 
-    ~SubMaterialToGraphicsPipeline();
+    ~MaterialPassToGraphicsPipeline();
 
     template<typename CreateFunc>
     RC<GraphicsPipeline> GetOrCreate(
-        const RC<SubMaterial> &subMat,
-        const RC<Shader>      &shader,
-        const MeshLayout      *meshLayout,
-        CreateFunc           &&createFunc);
+        const RC<MaterialPass> &pass,
+        const RC<Shader>       &shader,
+        const MeshLayout       *meshLayout,
+        CreateFunc            &&createFunc);
 
 private:
 
     struct PipelineKey
     {
-        SubMaterial::UniqueID materialID;
+        MaterialPass::UniqueID materialID;
         Shader::UniqueID shaderID;
         const MeshLayout *meshLayout;
 
@@ -37,18 +37,18 @@ private:
     {
         RC<GraphicsPipeline> pipeline;
         tbb::spin_mutex pipelineCreateMutex;
-        Connection onSubMaterialDestroyed;
+        Connection onPassDestroyed;
     };
 
     PipelineRecord &GetPipelineRecord(const PipelineKey &key);
     void RemovePipelineRecord(const PipelineKey &key);
 
-    // An item is removed when the submaterial is destroyed
+    // An item is removed when the pass is destroyed
     std::unordered_map<PipelineKey, PipelineRecord, HashOperator<PipelineKey>> pipelineCache_;
     tbb::spin_rw_mutex pipelineCacheMutex_;
 };
 
-inline SubMaterialToGraphicsPipeline::~SubMaterialToGraphicsPipeline()
+inline MaterialPassToGraphicsPipeline::~MaterialPassToGraphicsPipeline()
 {
     std::unordered_map<PipelineKey, PipelineRecord, HashOperator<PipelineKey>> cache;
     {
@@ -58,16 +58,16 @@ inline SubMaterialToGraphicsPipeline::~SubMaterialToGraphicsPipeline()
 
     for(auto &record : std::ranges::views::values(cache))
     {
-        record.onSubMaterialDestroyed.Disconnect();
+        record.onPassDestroyed.Disconnect();
     }
 }
 
 template<typename CreateFunc>
-RC<GraphicsPipeline> SubMaterialToGraphicsPipeline::GetOrCreate(
-    const RC<SubMaterial> &subMat, const RC<Shader> &shader, const MeshLayout *meshLayout, CreateFunc &&createFunc)
+RC<GraphicsPipeline> MaterialPassToGraphicsPipeline::GetOrCreate(
+    const RC<MaterialPass> &pass, const RC<Shader> &shader, const MeshLayout *meshLayout, CreateFunc &&createFunc)
 {
     PipelineKey key;
-    key.materialID = subMat->GetUniqueID();
+    key.materialID = pass->GetUniqueID();
     key.shaderID = shader->GetUniqueID();
     key.meshLayout = meshLayout;
 
@@ -81,15 +81,15 @@ RC<GraphicsPipeline> SubMaterialToGraphicsPipeline::GetOrCreate(
 
     auto pipeline = std::invoke(std::forward<CreateFunc>(createFunc));
     record.pipeline = pipeline;
-    record.onSubMaterialDestroyed = subMat->OnDestroy([this, key]
+    record.onPassDestroyed = pass->OnDestroy([this, key]
     {
         RemovePipelineRecord(key);
     });
     return pipeline;
 }
 
-inline SubMaterialToGraphicsPipeline::PipelineRecord &
-    SubMaterialToGraphicsPipeline::GetPipelineRecord(const PipelineKey &key)
+inline MaterialPassToGraphicsPipeline::PipelineRecord &
+    MaterialPassToGraphicsPipeline::GetPipelineRecord(const PipelineKey &key)
 {
     {
         std::shared_lock readLock(pipelineCacheMutex_);
@@ -102,12 +102,12 @@ inline SubMaterialToGraphicsPipeline::PipelineRecord &
     return pipelineCache_[key];
 }
 
-inline void SubMaterialToGraphicsPipeline::RemovePipelineRecord(const PipelineKey &key)
+inline void MaterialPassToGraphicsPipeline::RemovePipelineRecord(const PipelineKey &key)
 {
     std::unique_lock lock(pipelineCacheMutex_);
     if(auto it = pipelineCache_.find(key); it != pipelineCache_.end())
     {
-        it->second.onSubMaterialDestroyed.Disconnect();
+        it->second.onPassDestroyed.Disconnect();
         pipelineCache_.erase(it);
     }
 }

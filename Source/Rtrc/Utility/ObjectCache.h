@@ -120,8 +120,8 @@ class ObjectCache :
 
 public:
 
-    template<typename CreateFunc>
-    RC<Value> GetOrCreate(const Key &key, CreateFunc &&createFunc)
+    template<typename TKey, typename CreateFunc>
+    RC<Value> GetOrCreate(const TKey &key, CreateFunc &&createFunc)
     {
         if constexpr(ThreadSafe)
         {
@@ -154,7 +154,7 @@ public:
                 return ret;
             }
             auto ret = CreateAsRC(std::forward<CreateFunc>(createFunc));
-            auto it = map_.insert({ key, Record{} }).first;
+            auto it = map_.insert({ Key(key), Record{} }).first;
             it->second.selfIterator = it;
             InObjectCache &base = *ret;
             base.cache_ = this;
@@ -172,7 +172,7 @@ public:
                 return ret;
             }
             auto ret = CreateAsRC(std::forward<CreateFunc>(createFunc));
-            auto it = map_.insert({ key, Record{} }).first;
+            auto it = map_.insert({ Key(key), Record{} }).first;
             it->second.selfIterator = it;
             InObjectCache &base = *ret;
             base.cache_ = this;

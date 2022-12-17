@@ -133,6 +133,12 @@ void ShaderCompiler::SetDevice(Device *device)
 void ShaderCompiler::SetRootDirectory(std::string_view rootDir)
 {
     rootDir_ = std::filesystem::absolute(rootDir).lexically_normal();
+    includeDirs_.insert(rootDir_.string());
+}
+
+void ShaderCompiler::AddIncludeDirectory(std::string_view dir)
+{
+    includeDirs_.insert(std::filesystem::absolute(dir).lexically_normal().string());
 }
 
 RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &macros, bool debug) const
@@ -150,7 +156,11 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
         pSource = &source.source;
     }
 
-    std::vector<std::string> includeDirs = { rootDir_.string() };
+    std::vector<std::string> includeDirs;
+    for(auto &d : includeDirs_)
+    {
+        includeDirs.push_back(d);
+    }
     if(!source.filename.empty())
     {
         includeDirs.push_back(
@@ -281,6 +291,7 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     finalMacros["rtrc_end"] = "";
     finalMacros["rtrc_uniform(A, B)"] = "";
     finalMacros["rtrc_sampler(NAME, ...)"] = "";
+    finalMacros["rtrc_ref(NAME, ...)"] = "";
 
     for(auto &group : bindings.groups)
     {
@@ -390,11 +401,12 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     // Shader
 
     auto shader = MakeRC<Shader>();
+    shader->info_ = MakeRC<ShaderInfo>();
     if(!vsData.empty())
     {
         shader->VS_ = device_->GetRawDevice()->CreateShader(
             vsData.data(), vsData.size(), source.vsEntry, RHI::ShaderStage::VertexShader);
-        shader->VSInput_ = vsRefl->GetInputVariables();
+        shader->info_->VSInput_ = vsRefl->GetInputVariables();
     }
     if(!fsData.empty())
     {
@@ -441,23 +453,27 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     {
         MergeCBuffers(*csRefl);
     }
-    std::ranges::copy(std::ranges::views::values(slotToCBuffer), std::back_inserter(shader->constantBuffers_));
+    std::ranges::copy(std::ranges::views::values(slotToCBuffer), std::back_inserter(shader->info_->constantBuffers_));
 
-    shader->nameToBindingGroupLayoutIndex_ = std::move(bindings.nameToGroupIndex);
-    shader->bindingGroupLayouts_ = std::move(groupLayouts);
-    shader->bindingGroupNames_ = std::move(bindings.groupNames);
+    shader->info_->nameToBindingGroupLayoutIndex_ = std::move(bindings.nameToGroupIndex);
+    shader->info_->bindingGroupLayouts_ = std::move(groupLayouts);
+    shader->info_->bindingGroupNames_ = std::move(bindings.groupNames);
     
     BindingLayout::Desc bindingLayoutDesc;
-    for(auto &group : shader->bindingGroupLayouts_)
+    for(auto &group : shader->info_->bindingGroupLayouts_)
     {
         bindingLayoutDesc.groupLayouts.push_back(group);
     }
-    shader->bindingLayout_ = device_->CreateBindingLayout(bindingLayoutDesc);
+    shader->info_->bindingLayout_ = device_->CreateBindingLayout(bindingLayoutDesc);
 
     if(inlineSamplerGroupIndex >= 0)
     {
-        shader->bindingGroupForInlineSamplers_ = shader->bindingGroupLayouts_.back()->CreateBindingGroup();
+        shader->info_->bindingGroupForInlineSamplers_ = shader->info_->bindingGroupLayouts_.back()->CreateBindingGroup();
     }
+
+    shader->info_->builtinBindingGroupIndices_[EnumToInt(Shader::BuiltinBindingGroup::Pass)]     = shader->GetBindingGroupIndexByName("Pass");
+    shader->info_->builtinBindingGroupIndices_[EnumToInt(Shader::BuiltinBindingGroup::Material)] = shader->GetBindingGroupIndexByName("Material");
+    shader->info_->builtinBindingGroupIndices_[EnumToInt(Shader::BuiltinBindingGroup::Object)]   = shader->GetBindingGroupIndexByName("Object");
 
     return shader;
 }
@@ -725,41 +741,50 @@ ShaderCompiler::Bindings ShaderCompiler::CollectBindingsInStage(const std::strin
                 }
                 else
                 {
-                    if(!ShaderTokenStream::IsIdentifier(tokens.GetCurrentToken()))
-                    {
-                        tokens.Throw(fmt::format("Invalid binding name: {}", tokens.GetCurrentToken()));
-                    }
-
-                    auto it = ungroupedBindings.find(tokens.GetCurrentToken());
-                    if(it == ungroupedBindings.end())
-                    {
-                        tokens.Throw(fmt::format("{} was not defined as a resource binding", tokens.GetCurrentToken()));
-                    }
-
-                    currentGroup.bindings.push_back(it->second);
-                    ungroupedBindings.erase(it);
-                    tokens.Next();
-
-                    if(tokens.GetCurrentToken() == ",")
-                    {
-                        tokens.Next();
-                        currentGroup.bindings.back().stages = ParseStages(tokens);
-                    }
-                    else
-                    {
-                        currentGroup.bindings.back().stages = RHI::ShaderStageFlags::All;
-                    }
+                    tokens.Throw(fmt::format("Unknown resource type: {}", tokens.GetCurrentToken()));
                 }
+                tokens.ConsumeOrThrow(")");
+            }
+            else if(tokens.GetCurrentToken() == "rtrc_ref")
+            {
+                tokens.Next();
+                tokens.ConsumeOrThrow("(");
+
+                if(!ShaderTokenStream::IsIdentifier(tokens.GetCurrentToken()))
+                {
+                    tokens.Throw(fmt::format("Invalid binding name: {}", tokens.GetCurrentToken()));
+                }
+
+                auto it = ungroupedBindings.find(tokens.GetCurrentToken());
+                if(it == ungroupedBindings.end())
+                {
+                    tokens.Throw(fmt::format("{} was not defined as a resource binding", tokens.GetCurrentToken()));
+                }
+
+                currentGroup.bindings.push_back(it->second);
+                ungroupedBindings.erase(it);
+                tokens.Next();
+
+                if(tokens.GetCurrentToken() == ",")
+                {
+                    tokens.Next();
+                    currentGroup.bindings.back().stages = ParseStages(tokens);
+                }
+                else
+                {
+                    currentGroup.bindings.back().stages = RHI::ShaderStageFlags::All;
+                }
+
                 tokens.ConsumeOrThrow(")");
             }
             else if(tokens.GetCurrentToken() == "rtrc_uniform")
             {
                 tokens.Next();
                 tokens.ConsumeOrThrow("(");
-                if(!VALUE_PROPERTIES.contains(tokens.GetCurrentToken()))
-                {
-                    tokens.Throw(fmt::format("Unknown value property type: {}", tokens.GetCurrentToken()));
-                }
+                //if(!VALUE_PROPERTIES.contains(tokens.GetCurrentToken()))
+                //{
+                //    tokens.Throw(fmt::format("Unknown value property type: {}", tokens.GetCurrentToken()));
+                //}
                 currentGroup.valuePropertyDefinitions += tokens.GetCurrentToken();
                 tokens.Next();
                 tokens.ConsumeOrThrow(",");

@@ -512,13 +512,19 @@ bool HasColorAspect(Format format)
 
 bool HasDepthStencilAspect(Format format)
 {
-    // no format contains depth/stencil aspects currently
-    return false;
+    return HasDepthAspect(format) || HasStencilAspect(format);
 }
 
 VkImageAspectFlags GetAllAspects(Format format)
 {
-    return VK_IMAGE_ASPECT_COLOR_BIT;
+    if(HasColorAspect(format))
+        return VK_IMAGE_ASPECT_COLOR_BIT;
+    VkImageAspectFlags ret = 0;
+    if(HasDepthAspect(format))
+        ret = VK_IMAGE_ASPECT_DEPTH_BIT;
+    if(HasStencilAspect(format))
+        ret = VK_IMAGE_ASPECT_STENCIL_BIT;
+    return ret;
 }
 
 void SetObjectName(VulkanDevice* device, VkObjectType type, VkCommonHandle object, const char* name)

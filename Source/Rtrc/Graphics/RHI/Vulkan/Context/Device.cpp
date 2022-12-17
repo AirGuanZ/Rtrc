@@ -426,8 +426,10 @@ Ptr<GraphicsPipeline> VulkanDevice::CreateGraphicsPipeline(const GraphicsPipelin
         .viewMask = 0,
         .colorAttachmentCount = static_cast<uint32_t>(colorAttachments.size()),
         .pColorAttachmentFormats = colorAttachments.data(),
-        .depthAttachmentFormat = TranslateTexelFormat(desc.depthStencilFormat),
-        .stencilAttachmentFormat = TranslateTexelFormat(desc.depthStencilFormat)
+        .depthAttachmentFormat = HasDepthAspect(desc.depthStencilFormat) ?
+            TranslateTexelFormat(desc.depthStencilFormat) : VK_FORMAT_UNDEFINED,
+        .stencilAttachmentFormat = HasStencilAspect(desc.depthStencilFormat) ?
+            TranslateTexelFormat(desc.depthStencilFormat) : VK_FORMAT_UNDEFINED
     };
 
     const VkPipelineShaderStageCreateInfo stages[] = {

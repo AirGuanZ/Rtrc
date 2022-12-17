@@ -108,7 +108,7 @@ public:
 
         if(ch == '{' || ch == '}' || ch == ',' || ch == ';' || ch == ':' ||
             ch == '[' || ch == ']' || ch == '<' || ch == '>' || ch == '|' ||
-            ch == '(' || ch == ')' || ch == '=')
+            ch == '(' || ch == ')' || ch == '=' || ch == '#')
         {
             currentToken_ = source_.substr(nextPos_, 1);
             ++nextPos_;

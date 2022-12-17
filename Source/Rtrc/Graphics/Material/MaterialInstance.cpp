@@ -65,52 +65,52 @@ RTRC_IMPL_SET(RC<Sampler>,         Sampler)
 
 #undef RTRC_IMPL_SET
 
-RC<Shader> SubMaterialInstance::GetShader(const KeywordValueContext &keywordValues)
+RC<Shader> MaterialPassInstance::GetShader(const KeywordValueContext &keywordValues)
 {
-    return subMaterial_->GetShader(keywordValues);
+    return pass_->GetShader(keywordValues);
 }
 
-RC<Shader> SubMaterialInstance::GetShader(KeywordSet::ValueMask keywordMask)
+RC<Shader> MaterialPassInstance::GetShader(KeywordSet::ValueMask keywordMask)
 {
-    return subMaterial_->GetShader(keywordMask);
+    return pass_->GetShader(keywordMask);
 }
 
-const RC<SubMaterial> &SubMaterialInstance::GetSubMaterial() const
+const RC<MaterialPass> &MaterialPassInstance::GetPass() const
 {
-    return subMaterial_;
+    return pass_;
 }
 
-void SubMaterialInstance::BindGraphicsProperties(
+void MaterialPassInstance::BindGraphicsProperties(
     const KeywordValueContext &keywordValues, const CommandBuffer &commandBuffer) const
 {
-    KeywordSet::ValueMask mask = subMaterial_->ExtractKeywordValueMask(keywordValues);
+    KeywordSet::ValueMask mask = pass_->ExtractKeywordValueMask(keywordValues);
     BindGraphicsProperties(mask, commandBuffer);
 }
 
-void SubMaterialInstance::BindGraphicsProperties(
+void MaterialPassInstance::BindGraphicsProperties(
     KeywordSet::ValueMask mask, const CommandBuffer &commandBuffer) const
 {
     BindPropertiesImpl<true>(mask, commandBuffer.GetRHIObject());
 }
 
-void SubMaterialInstance::BindComputeProperties(
+void MaterialPassInstance::BindComputeProperties(
     const KeywordValueContext &keywordValues, const CommandBuffer &commandBuffer) const
 {
-    KeywordSet::ValueMask mask = subMaterial_->ExtractKeywordValueMask(keywordValues);
+    KeywordSet::ValueMask mask = pass_->ExtractKeywordValueMask(keywordValues);
     BindComputeProperties(mask, commandBuffer);
 }
 
-void SubMaterialInstance::BindComputeProperties(
+void MaterialPassInstance::BindComputeProperties(
     KeywordSet::ValueMask mask, const CommandBuffer &commandBuffer) const
 {
     BindPropertiesImpl<false>(mask, commandBuffer.GetRHIObject());
 }
 
 template <bool Graphics>
-void SubMaterialInstance::BindPropertiesImpl(
+void MaterialPassInstance::BindPropertiesImpl(
     KeywordSet::ValueMask mask, const RHI::CommandBufferPtr &commandBuffer) const
 {
-    auto shader = subMaterial_->GetShader(mask);
+    auto shader = pass_->GetShader(mask);
     if(auto index = shader->GetBindingGroupIndexForInlineSamplers(); index >= 0)
     {
         if constexpr(Graphics)
@@ -125,7 +125,7 @@ void SubMaterialInstance::BindPropertiesImpl(
         }
     }
 
-    auto subLayout = subMaterial_->GetPropertyLayout(mask);
+    auto subLayout = pass_->GetPropertyLayout(mask);
     const int bindingGroupIndex = subLayout->GetBindingGroupIndex();
     if(bindingGroupIndex < 0)
     {
@@ -182,35 +182,35 @@ void SubMaterialInstance::BindPropertiesImpl(
 MaterialInstance::MaterialInstance(RC<const Material> material, Device *device)
     : parentMaterial_(std::move(material)), properties_(parentMaterial_->GetPropertyLayout())
 {
-    auto subMaterials = parentMaterial_->GetSubMaterials();
-    subMaterialInstances_.resize(subMaterials.size());
-    for(size_t i = 0; i < subMaterials.size(); ++i)
+    auto passes = parentMaterial_->GetPasses();
+    materialPassInstances_.resize(passes.size());
+    for(size_t i = 0; i < passes.size(); ++i)
     {
-        auto &subMat = subMaterials[i];
-        auto subMatInst = MakeBox<SubMaterialInstance>();
-        subMatInst->device_ = device;
-        subMatInst->parentMaterialInstance_ = this;
-        subMatInst->subMaterial_ = subMat;
-        subMatInst->recordCount_ = 1 << subMat->GetShaderTemplate()->GetKeywordSet().GetTotalBitCount();
-        subMatInst->keywordMaskToRecord_ = std::make_unique<SubMaterialInstance::Record[]>(subMatInst->recordCount_);
-        subMaterialInstances_[i] = std::move(subMatInst);
+        auto &pass = passes[i];
+        auto matPassInst = MakeBox<MaterialPassInstance>();
+        matPassInst->device_ = device;
+        matPassInst->parentMaterialInstance_ = this;
+        matPassInst->pass_ = pass;
+        matPassInst->recordCount_ = 1 << pass->GetShaderTemplate()->GetKeywordSet().GetTotalBitCount();
+        matPassInst->keywordMaskToRecord_ = std::make_unique<MaterialPassInstance::Record[]>(matPassInst->recordCount_);
+        materialPassInstances_[i] = std::move(matPassInst);
     }
 }
 
-SubMaterialInstance *MaterialInstance::GetSubMaterialInstance(std::string_view tag)
+MaterialPassInstance *MaterialInstance::GetPassInstance(std::string_view tag)
 {
-    const int index = parentMaterial_->GetSubMaterialIndexByTag(tag);
-    return index >= 0 ? subMaterialInstances_[index].get() : nullptr;
+    const int index = parentMaterial_->GetPassIndexByTag(tag);
+    return index >= 0 ? materialPassInstances_[index].get() : nullptr;
 }
 
-SubMaterialInstance *MaterialInstance::GetSubMaterialInstance(size_t index)
+MaterialPassInstance *MaterialInstance::GetPassInstance(size_t index)
 {
-    return subMaterialInstances_[index].get();
+    return materialPassInstances_[index].get();
 }
 
 void MaterialInstance::InvalidateBindingGroups()
 {
-    for(auto &inst : subMaterialInstances_)
+    for(auto &inst : materialPassInstances_)
     {
         for(int i = 0; i < inst->recordCount_; ++i)
         {
@@ -222,7 +222,7 @@ void MaterialInstance::InvalidateBindingGroups()
 
 void MaterialInstance::InvalidateConstantBuffers()
 {
-    for(auto &inst : subMaterialInstances_)
+    for(auto &inst : materialPassInstances_)
     {
         for(int i = 0; i < inst->recordCount_; ++i)
         {

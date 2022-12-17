@@ -21,20 +21,20 @@ void Run()
     
     MaterialManager materialManager;
     materialManager.SetDevice(device.get());
-    materialManager.SetRootDirectory("Asset/02.ComputeShader/");
+    materialManager.SetRootDirectory("Asset/Sample/02.ComputeShader/");
 
     KeywordValueContext keywords;
 
     auto material = materialManager.GetMaterial("ScaleImage");
-    auto subMaterial = material->GetSubMaterialByTag("Default");
-    auto shader = subMaterial->GetShader(keywords);
+    auto matPass = material->GetPassByTag("Default");
+    auto shader = matPass->GetShader(keywords);
     auto pipeline = device->CreateComputePipeline(shader);
 
     auto matInst = material->CreateInstance();
-    auto subMatInst = matInst->GetSubMaterialInstance("Default");
+    auto matPassInst = matInst->GetPassInstance("Default");
 
     auto inputTexture = device->GetCopyContext().LoadTexture2D(
-        "Asset/01.TexturedQuad/MainTexture.png", RHI::Format::B8G8R8A8_UNorm, RHI::TextureUsage::ShaderResource, false);
+        "Asset/Sample/01.TexturedQuad/MainTexture.png", RHI::Format::B8G8R8A8_UNorm, RHI::TextureUsage::ShaderResource, false);
     auto inputTextureSRV = inputTexture->CreateSRV();
 
     auto outputTexture = StatefulTexture::FromTexture(device->CreateTexture(RHI::TextureDesc
@@ -74,7 +74,7 @@ void Run()
             (outputTexture, RHI::TextureLayout::ShaderRWTexture, RHI::PipelineStage::None, RHI::ResourceAccess::None));
 
         cmd.BindPipeline(pipeline);
-        subMatInst->BindGraphicsProperties(keywords, cmd);
+        matPassInst->BindGraphicsProperties(keywords, cmd);
         cmd.BindComputeGroup(bindingGroupIndex, bindingGroup);
 
         constexpr Vector2i GROUP_SIZE = Vector2i(8, 8);

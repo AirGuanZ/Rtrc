@@ -9,12 +9,12 @@ RTRC_BEGIN
 template<int N>
 struct TemplateStringParameter
 {
-    constexpr TemplateStringParameter(char const (&s)[N])
+    constexpr TemplateStringParameter(const char (&s)[N])
     {
         std::copy_n(s, N, this->data);
     }
 
-    constexpr auto operator<=>(TemplateStringParameter const &) const = default;
+    constexpr auto operator<=>(const TemplateStringParameter &) const = default;
 
     constexpr std::string_view GetString() const
     {
@@ -24,6 +24,6 @@ struct TemplateStringParameter
     char data[N];
 };
 
-template<int N> TemplateStringParameter(char const(&)[N])->TemplateStringParameter<N>;
+template<int N> TemplateStringParameter(const char(&)[N]) -> TemplateStringParameter<N>;
 
 RTRC_END

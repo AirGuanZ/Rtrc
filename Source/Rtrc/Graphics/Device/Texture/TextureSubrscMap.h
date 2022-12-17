@@ -33,6 +33,12 @@ public:
         data_.resize(mipLevelCount * arrayLayerCount, value);
     }
 
+    TextureSubrscMap(const TextureSubrscMap &) = default;
+    TextureSubrscMap &operator=(const TextureSubrscMap &) = default;
+
+    TextureSubrscMap(TextureSubrscMap &&other) noexcept : TextureSubrscMap() { this->Swap(other); }
+    TextureSubrscMap &operator=(TextureSubrscMap &&other) noexcept { this->Swap(other); return *this; }
+
     void Swap(TextureSubrscMap &other) noexcept
     {
         std::swap(mipLevelCount_, other.mipLevelCount_);
@@ -80,7 +86,7 @@ private:
 
     uint32_t GetIndex(uint32_t mipLevel, uint32_t arrayLayer) const
     {
-        assert(arrayLayer < arrayLayerCount_ &&mipLevel < mipLevelCount_);
+        assert(arrayLayer < arrayLayerCount_ && mipLevel < mipLevelCount_);
         return arrayLayer * mipLevelCount_ + mipLevel;
     }
 

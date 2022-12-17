@@ -112,6 +112,30 @@ Device::~Device()
     sync_.reset();
 }
 
+RC<Texture> Device::CreateColorTexture2D(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+{
+    auto tex = textureManager_->Create(RHI::TextureDesc
+    {
+        .dim                  = RHI::TextureDimension::Tex2D,
+        .format               = RHI::Format::B8G8R8A8_UNorm,
+        .width                = 1,
+        .height               = 1,
+        .arraySize            = 1,
+        .mipLevels            = 1,
+        .sampleCount          = 1,
+        .usage                = RHI::TextureUsage::TransferDst | RHI::TextureUsage::ShaderResource,
+        .initialLayout        = RHI::TextureLayout::Undefined,
+        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Concurrent
+    });
+    const Vector4b color(b, g, r, a);
+    copyContext_->UploadTexture2D(tex, 0, 0, &color);
+    ExecuteBarrier(
+        tex,
+        RHI::TextureLayout::CopyDst, RHI::PipelineStage::None, RHI::ResourceAccess::None,
+        RHI::TextureLayout::ShaderTexture, RHI::PipelineStage::None, RHI::ResourceAccess::None);
+    return tex;
+}
+
 void Device::InitializeInternal(RHI::DevicePtr device, bool isComputeOnly)
 {
     device_ = std::move(device);

@@ -21,6 +21,8 @@ public:
 
     static RC<StatefulTexture> FromTexture(RC<Texture> tex);
 
+    ~StatefulTexture() override;
+
     void SetState(const TextureSubrscState &state);
     void SetState(uint32_t mipLevel, uint32_t arrayLayer, const TextureSubrscState &state);
     const TextureSubrscState &GetState(uint32_t mipLevel, uint32_t arrayLayer) const;
@@ -51,6 +53,15 @@ inline TextureSubrscState::TextureSubrscState(
 inline RC<StatefulTexture> StatefulTexture::FromTexture(RC<Texture> tex)
 {
     return MakeRC<WrappedStatefulTexture>(std::move(tex), TextureSubrscState{});
+}
+
+inline StatefulTexture::~StatefulTexture()
+{
+    if(manager_)
+    {
+        manager_->_internalRelease(*this);
+        manager_ = nullptr;
+    }
 }
 
 inline void StatefulTexture::SetState(const TextureSubrscState &state)

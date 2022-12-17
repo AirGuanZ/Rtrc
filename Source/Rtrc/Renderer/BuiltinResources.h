@@ -5,7 +5,7 @@
 
 RTRC_BEGIN
 
-enum class BuiltinMaterial
+enum class BuiltinShader
 {
     DeferredLighting,
     Count
@@ -13,9 +13,14 @@ enum class BuiltinMaterial
 
 enum class BuiltinTexture
 {
-    RGBA_0_2D,
-    RGB_0_A_255_2D,
-    RGBA_255_2D,
+    Black2D, // R8G8B8A8_UNorm, RGB = 0, A = 1
+    White2D, // R8G8B8A8_UNorm, RGB = 1, A = 1
+    Count
+};
+
+enum class BuiltinMesh
+{
+    Cube,
     Count
 };
 
@@ -25,7 +30,11 @@ public:
 
     explicit BuiltinResourceManager(Device &device);
 
-    const RC<Material> &GetBuiltinMaterial(BuiltinMaterial material) const;
+    const RC<Shader> &GetBuiltinShader(BuiltinShader shader) const;
+
+    const RC<Mesh> &GetBuiltinMesh(BuiltinMesh mesh) const;
+
+    const RC<Texture> &GetBuiltinTexture(BuiltinTexture texture) const;
 
 private:
 
@@ -33,11 +42,14 @@ private:
 
     void LoadBuiltinTextures();
 
+    void LoadBuiltinMeshes();
+
     Device &device_;
 
     MaterialManager materialManager_;
-    std::array<RC<Material>, EnumCount<BuiltinMaterial>> materials_;
+    std::array<RC<Shader>,  EnumCount<BuiltinShader>>  shaders_;
     std::array<RC<Texture>, EnumCount<BuiltinTexture>> textures_;
+    std::array<RC<Mesh>,    EnumCount<BuiltinMesh>>    meshes_;
 };
 
 RTRC_END

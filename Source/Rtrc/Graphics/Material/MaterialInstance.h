@@ -11,7 +11,7 @@ class MaterialPropertySheet
 {
 public:
 
-    using MaterialResource = SubMaterialPropertyLayout::MaterialResource;
+    using MaterialResource = MaterialPassPropertyLayout::MaterialResource;
 
     explicit MaterialPropertySheet(RC<MaterialPropertyHostLayout> layout);
 
@@ -58,14 +58,14 @@ private:
         TS(0)
             ParentMaterialInstance::Set
 */
-class SubMaterialInstance
+class MaterialPassInstance
 {
 public:
 
     RC<Shader> GetShader(const KeywordValueContext &keywordValues);
     RC<Shader> GetShader(KeywordSet::ValueMask keywordMask);
 
-    const RC<SubMaterial> &GetSubMaterial() const;
+    const RC<MaterialPass> &GetPass() const;
 
     void BindGraphicsProperties(const KeywordValueContext &keywordValues, const CommandBuffer &commandBuffer) const;
     void BindGraphicsProperties(KeywordSet::ValueMask mask, const CommandBuffer &commandBuffer) const;
@@ -91,7 +91,7 @@ private:
 
     Device *device_ = nullptr;
     const MaterialInstance *parentMaterialInstance_ = nullptr;
-    RC<SubMaterial> subMaterial_;
+    RC<MaterialPass> pass_;
 
     std::unique_ptr<Record[]> keywordMaskToRecord_;
     int recordCount_;
@@ -112,8 +112,8 @@ public:
     const RC<const Material> &GetMaterial() const { return parentMaterial_; }
 
     // return nullptr when not found
-    SubMaterialInstance *GetSubMaterialInstance(std::string_view tag);
-    SubMaterialInstance *GetSubMaterialInstance(size_t index);
+    MaterialPassInstance *GetPassInstance(std::string_view tag);
+    MaterialPassInstance *GetPassInstance(size_t index);
 
     const MaterialPropertySheet &GetPropertySheet() const { return properties_; }
 
@@ -157,7 +157,7 @@ private:
 
     RC<const Material> parentMaterial_;
     MaterialPropertySheet properties_;
-    std::vector<Box<SubMaterialInstance>> subMaterialInstances_;
+    std::vector<Box<MaterialPassInstance>> materialPassInstances_;
 };
 
 RTRC_END

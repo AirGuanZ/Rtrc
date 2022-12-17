@@ -25,6 +25,7 @@ public:
 
     void SetDevice(Device *device);
     void SetRootDirectory(std::string_view rootDir);
+    void AddIncludeDirectory(std::string_view dir);
 
     RC<Shader> Compile(
         const ShaderSource &desc,
@@ -76,6 +77,7 @@ private:
 
     Device *device_ = nullptr;
     std::filesystem::path rootDir_;
+    std::set<std::string> includeDirs_;
 };
 
 RTRC_END

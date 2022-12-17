@@ -143,7 +143,7 @@ MaterialPropertyHostLayout::MaterialPropertyHostLayout(std::vector<MaterialPrope
     }
 }
 
-SubMaterialPropertyLayout::SubMaterialPropertyLayout(const MaterialPropertyHostLayout &materialPropertyLayout, const Shader &shader)
+MaterialPassPropertyLayout::MaterialPassPropertyLayout(const MaterialPropertyHostLayout &materialPropertyLayout, const Shader &shader)
     : constantBufferSize_(0), constantBufferIndexInBindingGroup_(-1), bindingGroupIndex_(-1)
 {
     // Constant buffer
@@ -297,7 +297,7 @@ SubMaterialPropertyLayout::SubMaterialPropertyLayout(const MaterialPropertyHostL
     }
 }
 
-void SubMaterialPropertyLayout::FillConstantBufferContent(const void *valueBuffer, void *outputData) const
+void MaterialPassPropertyLayout::FillConstantBufferContent(const void *valueBuffer, void *outputData) const
 {
     auto input = static_cast<const unsigned char *>(valueBuffer);
     auto output = static_cast<unsigned char *>(outputData);
@@ -307,7 +307,7 @@ void SubMaterialPropertyLayout::FillConstantBufferContent(const void *valueBuffe
     }
 }
 
-void SubMaterialPropertyLayout::FillBindingGroup(
+void MaterialPassPropertyLayout::FillBindingGroup(
     BindingGroup          &bindingGroup,
     Span<MaterialResource> materialResources,
     RC<DynamicBuffer>     cbuffer) const
@@ -366,6 +366,11 @@ void MaterialManager::SetDevice(Device *device)
     shaderCompiler_.SetDevice(device);
 }
 
+void MaterialManager::AddIncludeDirectory(std::string_view directory)
+{
+    shaderCompiler_.AddIncludeDirectory(directory);
+}
+
 void MaterialManager::SetRootDirectory(std::string_view directory)
 {
     shaderCompiler_.SetRootDirectory(directory);
@@ -414,29 +419,28 @@ void MaterialManager::SetDebugMode(bool debug)
     debug_ = debug;
 }
 
-RC<Material> MaterialManager::GetMaterial(std::string_view name)
+RC<Material> MaterialManager::GetMaterial(const std::string &name)
 {
-    assert(materialNameToFilename_.contains(name));
+    //assert(materialNameToFilename_.contains(name));
     return materialPool_.GetOrCreate(name, [&] { return CreateMaterial(name); });
 }
 
-RC<ShaderTemplate> MaterialManager::GetShaderTemplate(std::string_view name)
+RC<ShaderTemplate> MaterialManager::GetShaderTemplate(const std::string &name)
 {
-    assert(shaderNameToFilename_.contains(name));
+    //assert(shaderNameToFilename_.contains(name));
     return shaderPool_.GetOrCreate(name, [&] { return CreateShaderTemplate(name); });
 }
 
-RC<Shader> MaterialManager::GetShader(std::string_view name)
+RC<Shader> MaterialManager::GetShader(const std::string &name)
 {
     auto shaderTemplate = GetShaderTemplate(name);
     assert(shaderTemplate->GetKeywordSet().GetTotalBitCount() == 0);
     return shaderTemplate->GetShader(0);
 }
 
-void MaterialManager::GC()
+RC<MaterialInstance> MaterialManager::CreateMaterialInstance(const std::string &name)
 {
-    materialPool_.GC();
-    shaderPool_.GC();
+    return GetMaterial(name)->CreateInstance();
 }
 
 void MaterialManager::ProcessShaderFile(int filenameIndex, const std::string &filename)
@@ -500,7 +504,7 @@ RC<Material> MaterialManager::CreateMaterial(std::string_view name)
     ShaderTokenStream tokens(source, fileRef.beginPos, ShaderTokenStream::ErrorMode::Material);
 
     std::vector<MaterialProperty> properties;
-    std::vector<RC<SubMaterial>> subMaterials;
+    std::vector<RC<MaterialPass>> passes;
 
     using enum MaterialProperty::Type;
     static const std::map<std::string, MaterialProperty::Type, std::less<>> NAME_TO_PROPERTY_TYPE =
@@ -524,7 +528,7 @@ RC<Material> MaterialManager::CreateMaterial(std::string_view name)
 
     while(true)
     {
-        if(tokens.GetCurrentToken() == "Pass" || tokens.GetCurrentToken() == "SubMaterial")
+        if(tokens.GetCurrentToken() == "Pass")
         {
             tokens.Next();
             if(tokens.GetCurrentToken() != "{")
@@ -532,7 +536,7 @@ RC<Material> MaterialManager::CreateMaterial(std::string_view name)
                 tokens.Throw("'{' expected");
             }
             tokens.Next();
-            subMaterials.push_back(ParsePass(tokens));
+            passes.push_back(ParsePass(tokens));
             if(tokens.GetCurrentToken() != "}")
             {
                 tokens.Throw("'}' expected");
@@ -575,18 +579,18 @@ RC<Material> MaterialManager::CreateMaterial(std::string_view name)
 
     auto sharedCompileEnvir = MakeRC<ShaderTemplate::SharedCompileEnvironment>();
     sharedCompileEnvir->macros = std::move(propMacros);
-    for(auto &subMat : subMaterials)
+    for(auto &pass : passes)
     {
-        subMat->parentPropertyLayout_ = propertyLayout.get();
-        subMat->shaderTemplate_->sharedEnvir_ = sharedCompileEnvir;
+        pass->parentPropertyLayout_ = propertyLayout.get();
+        pass->shaderTemplate_->sharedEnvir_ = sharedCompileEnvir;
     }
 
     // Material tag
 
     auto material = MakeRC<Material>();
-    for(auto &&[index, subMaterial] : Enumerate(subMaterials))
+    for(auto &&[index, pass] : Enumerate(passes))
     {
-        for(auto &tag : subMaterial->GetTags())
+        for(auto &tag : pass->GetTags())
         {
             if(material->tagToIndex_.contains(tag))
             {
@@ -597,7 +601,7 @@ RC<Material> MaterialManager::CreateMaterial(std::string_view name)
     }
     material->device_ = device_;
     material->name_ = name;
-    material->subMaterials_ = std::move(subMaterials);
+    material->passes_ = std::move(passes);
     material->propertyLayout_ = std::move(propertyLayout);
 
     return material;
@@ -669,9 +673,9 @@ RC<ShaderTemplate> MaterialManager::CreateShaderTemplate(std::string_view name)
     return shaderTemplate;
 }
 
-RC<SubMaterial> MaterialManager::ParsePass(ShaderTokenStream &tokens)
+RC<MaterialPass> MaterialManager::ParsePass(ShaderTokenStream &tokens)
 {
-    // Parse submaterial source
+    // Parse pass source
 
     std::set<std::string> passTags;
     RC<ShaderTemplate> shaderTemplate;
@@ -785,13 +789,12 @@ RC<SubMaterial> MaterialManager::ParsePass(ShaderTokenStream &tokens)
         tokens.Throw("Shader not found in material pass");
     }
 
-    auto subMaterial = MakeRC<SubMaterial>();
-    subMaterial->tags_ = std::move(passTags);
-    subMaterial->shaderTemplate_ = std::move(shaderTemplate);
-    subMaterial->subMaterialPropertyLayouts_.resize(
-        1 << subMaterial->shaderTemplate_->GetKeywordSet().GetTotalBitCount());
-
-    return subMaterial;
+    auto pass = MakeRC<MaterialPass>();
+    pass->tags_ = std::move(passTags);
+    pass->shaderTemplate_ = std::move(shaderTemplate);
+    pass->materialPassPropertyLayouts_.resize(
+        1 << pass->shaderTemplate_->GetKeywordSet().GetTotalBitCount());
+    return pass;
 }
 
 MaterialProperty MaterialManager::ParseProperty(MaterialProperty::Type propertyType, ShaderTokenStream &tokens)

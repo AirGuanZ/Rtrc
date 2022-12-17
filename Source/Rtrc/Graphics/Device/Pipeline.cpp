@@ -225,9 +225,13 @@ RC<GraphicsPipeline> PipelineManager::CreateGraphicsPipeline(const GraphicsPipel
 
         rhiDesc.multisampleCount = desc.multisampleCount;
 
-        rhiDesc.enableDepthTest = desc.enableDepthTest;
-        rhiDesc.frontStencilOp  = desc.frontStencil;
-        rhiDesc.backStencilOp   = desc.backStencil;
+        rhiDesc.enableDepthTest  = desc.enableDepthTest;
+        rhiDesc.enableDepthWrite = desc.enableDepthWrite;
+        rhiDesc.depthCompareOp   = desc.depthCompareOp;
+
+        rhiDesc.enableStencilTest = desc.enableStencilTest;
+        rhiDesc.frontStencilOp    = desc.frontStencil;
+        rhiDesc.backStencilOp     = desc.backStencil;
 
         rhiDesc.enableBlending         = desc.enableBlending;
         rhiDesc.blendingSrcColorFactor = desc.blendingSrcColorFactor;
@@ -245,6 +249,7 @@ RC<GraphicsPipeline> PipelineManager::CreateGraphicsPipeline(const GraphicsPipel
         ret->manager_ = this;
         ret->desc_ = desc;
         ret->desc_.shader = {}; // Don't store shader object
+        ret->shaderInfo_ = desc.shader->GetInfo();
         return ret;
     });
 }

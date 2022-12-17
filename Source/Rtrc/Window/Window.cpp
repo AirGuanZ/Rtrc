@@ -439,6 +439,8 @@ Window WindowBuilder::Create() const
     impl->glfwWindow = glfwWindow;
     glfwSetWindowUserPointer(glfwWindow, impl.get());
 
+    glfwFocusWindow(impl->glfwWindow);
+
     // set event callbacks
 
     glfwSetWindowCloseCallback(glfwWindow, GLFWWindowCloseCallback);

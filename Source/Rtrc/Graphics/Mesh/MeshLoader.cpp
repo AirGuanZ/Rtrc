@@ -1,4 +1,4 @@
-#include <Rtrc/Graphics/Mesh/MeshManager.h>
+#include <Rtrc/Graphics/Mesh/MeshLoader.h>
 #include <Rtrc/Math/Frame.h>
 #include <Rtrc/Utility/MeshData.h>
 
@@ -25,15 +25,19 @@ namespace
 
 } // namespace anonymous
 
-MeshManager::MeshManager(CopyContext &copyContext)
-    : copyContext_(copyContext)
+void MeshLoader::SetCopyContext(CopyContext *copyContext)
 {
-    
+    copyContext_ = copyContext;
 }
 
-Mesh MeshManager::LoadFromObjFile(const std::string &filename, const Options &options)
+void MeshLoader::SetRootDirectory(std::string_view rootDir)
 {
-    MeshData meshData = MeshData::LoadFromObjFile(filename);
+    rootDir_ = std::filesystem::absolute(rootDir).lexically_normal();
+}
+
+Mesh MeshLoader::LoadFromObjFile(const std::string &filename, const Options &options)
+{
+    MeshData meshData = MeshData::LoadFromObjFile(MapFilename(filename));
 
     // Remove index data when tangent vectors are required. Theoretically we only need to do this when
     // tangents of different faces don't match at the same vertex.
@@ -102,7 +106,7 @@ Mesh MeshManager::LoadFromObjFile(const std::string &filename, const Options &op
         }
         meshBuilder.SetVertexCount(static_cast<uint32_t>(vertexData.size()));
 
-        auto vertexBuffer = copyContext_.CreateBuffer(
+        auto vertexBuffer = copyContext_->CreateBuffer(
             RHI::BufferDesc{
                 sizeof(Vertex) * vertexData.size(),
                 RHI::BufferUsage::VertexBuffer,
@@ -134,7 +138,7 @@ Mesh MeshManager::LoadFromObjFile(const std::string &filename, const Options &op
         }
         meshBuilder.SetVertexCount(static_cast<uint32_t>(vertexData.size()));
         
-        auto vertexBuffer = copyContext_.CreateBuffer(
+        auto vertexBuffer = copyContext_->CreateBuffer(
             RHI::BufferDesc{
                 sizeof(Vertex) * vertexData.size(),
                 RHI::BufferUsage::VertexBuffer,
@@ -165,7 +169,7 @@ Mesh MeshManager::LoadFromObjFile(const std::string &filename, const Options &op
             {
                 uint16IndexData[i] = static_cast<uint16_t>(meshData.indexData[i]);
             }
-            indexBuffer = copyContext_.CreateBuffer(
+            indexBuffer = copyContext_->CreateBuffer(
                 RHI::BufferDesc{
                     sizeof(uint16_t) * uint16IndexData.size(),
                     RHI::BufferUsage::IndexBuffer,
@@ -175,7 +179,7 @@ Mesh MeshManager::LoadFromObjFile(const std::string &filename, const Options &op
         }
         else
         {
-            indexBuffer = copyContext_.CreateBuffer(
+            indexBuffer = copyContext_->CreateBuffer(
                 RHI::BufferDesc{
                     sizeof(uint32_t) * meshData.indexData.size(),
                     RHI::BufferUsage::IndexBuffer,
@@ -189,6 +193,17 @@ Mesh MeshManager::LoadFromObjFile(const std::string &filename, const Options &op
     }
 
     return meshBuilder.CreateMesh();
+}
+
+std::string MeshLoader::MapFilename(std::string_view filename) const
+{
+    std::filesystem::path path = filename;
+    path = path.lexically_normal();
+    if(path.is_relative())
+    {
+        path = rootDir_ / path;
+    }
+    return absolute(path).lexically_normal().string();
 }
 
 RTRC_END

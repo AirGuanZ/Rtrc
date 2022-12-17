@@ -155,6 +155,11 @@ inline BindingGroup::~BindingGroup()
     }
 }
 
+inline const RC<const BindingGroupLayout> &BindingGroup::GetLayout() const
+{
+    return layout_;
+}
+
 inline void BindingGroup::Set(int slot, RC<Buffer> cbuffer, size_t offset, size_t size)
 {
     rhiGroup_->ModifyMember(slot, cbuffer->GetRHIObject(), offset, size);

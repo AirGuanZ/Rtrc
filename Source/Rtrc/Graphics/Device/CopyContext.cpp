@@ -154,7 +154,7 @@ RC<Buffer> CopyContext::CreateBuffer(
     return ret;
 }
 
-RC<StatefulTexture> CopyContext::CreateTexture2D(
+RC<Texture> CopyContext::CreateTexture2D(
     const RHI::TextureDesc &_desc,
     Span<const void *>      imageData)
 {
@@ -162,7 +162,7 @@ RC<StatefulTexture> CopyContext::CreateTexture2D(
     desc.concurrentAccessMode = RHI::QueueConcurrentAccessMode::Concurrent;
     desc.usage |= RHI::TextureUsage::TransferDst;
     assert(imageData.size() == desc.mipLevels * desc.arraySize);
-    auto ret = StatefulTexture::FromTexture(textureManager_->Create(desc));
+    auto ret = textureManager_->Create(desc);
     for(uint32_t a = 0, i = 0; a < desc.arraySize; ++a)
     {
         for(uint32_t m = 0; m < desc.mipLevels; ++m)
@@ -170,11 +170,10 @@ RC<StatefulTexture> CopyContext::CreateTexture2D(
             UploadTexture2D(ret, a, m, imageData[i++]);
         }
     }
-    ret->SetState({ RHI::TextureLayout::CopyDst, RHI::PipelineStage::None, RHI::ResourceAccess::None });
     return ret;
 }
 
-RC<StatefulTexture> CopyContext::CreateTexture2D(
+RC<Texture> CopyContext::CreateTexture2D(
     const RHI::TextureDesc &_desc,
     Span<ImageDynamic>      images)
 {
@@ -194,7 +193,7 @@ RC<StatefulTexture> CopyContext::CreateTexture2D(
     return ret;
 }
 
-RC<StatefulTexture> CopyContext::LoadTexture2D(
+RC<Texture> CopyContext::LoadTexture2D(
     const std::string &filename, RHI::Format format, RHI::TextureUsageFlag usages, bool generateMipLevels)
 {
     std::vector<ImageDynamic> images;

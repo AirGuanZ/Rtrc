@@ -48,6 +48,12 @@ private:
     Variant<DirectionalData> data_;
 };
 
+inline Light::Light()
+    : color_(1, 1, 1), intensity_(1), data_{ DirectionalData{ } }
+{
+    
+}
+
 inline Light::Type Light::GetType() const
 {
     return data_.Match(

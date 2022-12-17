@@ -123,11 +123,14 @@ public:
         DescKey AsKey() const;
     };
 
+    const RC<const ShaderInfo> &GetShaderInfo() const;
+
 private:
 
     friend class PipelineManager;
 
     Desc desc_;
+    RC<const ShaderInfo> shaderInfo_;
 };
 
 class ComputePipeline : public GeneralGPUObject<RHI::ComputePipelinePtr>, public InObjectCache
@@ -151,5 +154,10 @@ private:
     ObjectCache<GraphicsPipeline::DescKey, GraphicsPipeline, true, true> graphicsPipelineCache_;
     ObjectCache<Shader::UniqueID, ComputePipeline, true, true> computePipelineCache_;
 };
+
+inline const RC<const ShaderInfo> &GraphicsPipeline::GetShaderInfo() const
+{
+    return shaderInfo_;
+}
 
 RTRC_END

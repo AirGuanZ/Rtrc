@@ -11,11 +11,19 @@ class BindingLayout;
 class BindingGroupLayout;
 class ShaderCompiler;
 
-class Shader : public Uncopyable, public WithUniqueObjectID
+class ShaderInfo : public Uncopyable
 {
 public:
 
-    const RHI::RawShaderPtr &GetRawShader(RHI::ShaderStage stage) const;
+    enum class BuiltinBindingGroup
+    {
+        Pass,
+        Material,
+        Object,
+        Count
+    };
+
+    virtual ~ShaderInfo() = default;
 
     const RC<BindingLayout> &GetBindingLayout() const;
 
@@ -24,21 +32,16 @@ public:
 
     int GetBindingGroupCount() const;
     const std::string &GetBindingGroupNameByIndex(int index) const;
-    const RC<BindingGroupLayout> &GetBindingGroupLayoutByName(std::string_view name) const;
-    const RC<BindingGroupLayout> &TryGetBindingGroupLayoutByName(std::string_view name) const;
+    const RC<BindingGroupLayout> &GetBindingGroupLayoutByName(std::string_view name) const; // return -1 when not found
     const RC<BindingGroupLayout> &GetBindingGroupLayoutByIndex(int index) const;
     int GetBindingGroupIndexByName(std::string_view name) const; // return -1 when not found
-
     const RC<BindingGroup> &GetBindingGroupForInlineSamplers() const;
     int GetBindingGroupIndexForInlineSamplers() const;
+    int GetBuiltinBindingGroupIndex(BuiltinBindingGroup bindingGroup) const;
 
 private:
-    
-    friend class ShaderCompiler;
 
-    RHI::RawShaderPtr VS_;
-    RHI::RawShaderPtr FS_;
-    RHI::RawShaderPtr CS_;
+    friend class ShaderCompiler;
 
     std::vector<ShaderIOVar>          VSInput_;
     std::vector<ShaderConstantBuffer> constantBuffers_;
@@ -50,6 +53,107 @@ private:
 
     // Should be the last group, if present
     RC<BindingGroup> bindingGroupForInlineSamplers_;
+
+    int builtinBindingGroupIndices_[EnumCount<BuiltinBindingGroup>];
 };
+
+class Shader : public Uncopyable, public WithUniqueObjectID
+{
+public:
+
+    using BuiltinBindingGroup = ShaderInfo::BuiltinBindingGroup;
+
+    const RHI::RawShaderPtr &GetRawShader(RHI::ShaderStage stage) const;
+
+    const RC<BindingLayout> &GetBindingLayout() const;
+
+    Span<ShaderIOVar> GetInputVariables() const;
+    Span<ShaderConstantBuffer> GetConstantBuffers() const;
+
+    int GetBindingGroupCount() const;
+    const std::string &GetBindingGroupNameByIndex(int index) const;
+    const RC<BindingGroupLayout> &GetBindingGroupLayoutByName(std::string_view name) const;
+    const RC<BindingGroupLayout> &GetBindingGroupLayoutByIndex(int index) const;
+    int GetBindingGroupIndexByName(std::string_view name) const; // return -1 when not found
+    const RC<BindingGroup> &GetBindingGroupForInlineSamplers() const;
+    int GetBindingGroupIndexForInlineSamplers() const;
+    int GetBuiltinBindingGroupIndex(ShaderInfo::BuiltinBindingGroup bindingGroup) const;
+
+    const RC<ShaderInfo> &GetInfo() const;
+
+private:
+    
+    friend class ShaderCompiler;
+
+    RHI::RawShaderPtr VS_;
+    RHI::RawShaderPtr FS_;
+    RHI::RawShaderPtr CS_;
+    RC<ShaderInfo> info_;
+};
+
+inline int ShaderInfo::GetBuiltinBindingGroupIndex(BuiltinBindingGroup bindingGroup) const
+{
+    return builtinBindingGroupIndices_[EnumToInt(bindingGroup)];
+}
+
+inline const RC<BindingLayout> &Shader::GetBindingLayout() const
+{
+    return info_->GetBindingLayout();
+}
+
+inline Span<ShaderIOVar> Shader::GetInputVariables() const
+{
+    return info_->GetInputVariables();
+}
+
+inline Span<ShaderConstantBuffer> Shader::GetConstantBuffers() const
+{
+    return info_->GetConstantBuffers();
+}
+
+inline int Shader::GetBindingGroupCount() const
+{
+    return info_->GetBindingGroupCount();
+}
+
+inline const std::string &Shader::GetBindingGroupNameByIndex(int index) const
+{
+    return info_->GetBindingGroupNameByIndex(index);
+}
+
+inline const RC<BindingGroupLayout> &Shader::GetBindingGroupLayoutByName(std::string_view name) const
+{
+    return info_->GetBindingGroupLayoutByName(name);
+}
+
+inline const RC<BindingGroupLayout> &Shader::GetBindingGroupLayoutByIndex(int index) const
+{
+    return info_->GetBindingGroupLayoutByIndex(index);
+}
+
+inline int Shader::GetBindingGroupIndexByName(std::string_view name) const
+{
+    return info_->GetBindingGroupIndexByName(name);
+}
+
+inline const RC<BindingGroup> &Shader::GetBindingGroupForInlineSamplers() const
+{
+    return info_->GetBindingGroupForInlineSamplers();
+}
+
+inline int Shader::GetBindingGroupIndexForInlineSamplers() const
+{
+    return info_->GetBindingGroupIndexForInlineSamplers();
+}
+
+inline int Shader::GetBuiltinBindingGroupIndex(ShaderInfo::BuiltinBindingGroup bindingGroup) const
+{
+    return info_->GetBuiltinBindingGroupIndex(bindingGroup);
+}
+
+inline const RC<ShaderInfo> &Shader::GetInfo() const
+{
+    return info_;
+}
 
 RTRC_END

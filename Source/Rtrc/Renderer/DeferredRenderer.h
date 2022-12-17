@@ -1,9 +1,10 @@
 #pragma once
 
-#include <Rtrc/Graphics/Pipeline/SubMaterialToGraphicsPipeline.h>
+#include <Rtrc/Graphics/Pipeline/MaterialPassToGraphicsPipeline.h>
 #include <Rtrc/Graphics/RenderGraph/Graph.h>
-#include <Rtrc/Renderer/Camera.h>
-#include <Rtrc/Renderer/Scene.h>
+#include <Rtrc/Renderer/BuiltinResources.h>
+#include <Rtrc/Renderer/Camera/Camera.h>
+#include <Rtrc/Renderer/Scene/Scene.h>
 #include <Rtrc/Renderer/Utility/PerObjectConstantBufferUtility.h>
 
 RTRC_BEGIN
@@ -12,9 +13,16 @@ class DeferredRenderer : public Uncopyable
 {
 public:
 
-    DeferredRenderer(Device &device, MaterialManager &materialManager);
+    struct RenderGraphInterface
+    {
+        RG::Pass *inPass;
+        RG::Pass *outPass;
+        RG::TextureResource *image;
+    };
 
-    void AddToRenderGraph(
+    DeferredRenderer(Device &device, BuiltinResourceManager &builtinResources);
+
+    RenderGraphInterface AddToRenderGraph(
         RG::RenderGraph     *renderGraph,
         RG::TextureResource *renderTarget,
         const Scene         &scene,
@@ -24,19 +32,19 @@ private:
 
     struct RenderGBuffersPassData
     {
-        RG::TextureResource *normal         = nullptr;
-        RG::TextureResource *albedoMetallic = nullptr;
-        RG::TextureResource *roughness      = nullptr;
-        RG::TextureResource *depth          = nullptr;
+        RG::TextureResource *gbufferA     = nullptr;
+        RG::TextureResource *gbufferB     = nullptr;
+        RG::TextureResource *gbufferC     = nullptr;
+        RG::TextureResource *gbufferDepth = nullptr;
     };
 
     struct DeferredLightingPassData
     {
-        RG::TextureResource *normal         = nullptr;
-        RG::TextureResource *albedoMetallic = nullptr;
-        RG::TextureResource *roughness      = nullptr;
-        RG::TextureResource *depth          = nullptr;
-        RG::TextureResource *image          = nullptr;
+        RG::TextureResource *gbufferA     = nullptr;
+        RG::TextureResource *gbufferB     = nullptr;
+        RG::TextureResource *gbufferC     = nullptr;
+        RG::TextureResource *gbufferDepth = nullptr;
+        RG::TextureResource *image        = nullptr;
     };
 
     void DoRenderGBuffersPass(RG::PassContext &passContext, const RenderGBuffersPassData &passData);
@@ -46,17 +54,15 @@ private:
     // Persistent
 
     Device &device_;
-    MaterialManager &materialManager_;
+    BuiltinResourceManager &builtinResources_;
 
-    SubMaterialToGraphicsPipeline renderGBuffersPipelines_;
+    MaterialPassToGraphicsPipeline renderGBuffersPipelines_;
+    
     RC<GraphicsPipeline> deferredLightingPipeline_;
 
     PerObjectConstantBufferBatch staticMeshConstantBufferBatch_;
 
     // Per-frame
-
-    RG::RenderGraph     *renderGraph_  = nullptr;
-    RG::TextureResource *renderTarget_ = nullptr;
 
     const Scene  *scene_  = nullptr;
     const Camera *camera_ = nullptr;

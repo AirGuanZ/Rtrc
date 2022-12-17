@@ -3,20 +3,21 @@
 #include <Rtrc/Graphics/Material/ShaderTemplate.h>
 #include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/Math/Vector3.h>
+#include <Rtrc/Utility/ObjectCache.h>
 #include <Rtrc/Utility/SharedObjectPool.h>
 #include <Rtrc/Utility/SignalSlot.h>
 
 /* Material
     Material:
         PropertyLayout
-        SubMaterial:
+        MaterialPass:
             ShaderTemplate
             PropertyReferenceLayout
     MaterialInstance:
         Material
         PropertySheet
-        SubMaterialInstance:
-            SubMaterial
+        MaterialPassInstance:
+            MaterialPass
             ConstantBuffer
             TempBindingGroup
 */
@@ -27,7 +28,7 @@ class MaterialInstance;
 class ShaderTokenStream;
 
 // Property declared at material scope
-// SubMaterial can reference these properties using 'IMPORT_RESOURCE(Name)' in 'PerMaterial' group
+// MaterialPass can reference these properties using 'IMPORT_RESOURCE(Name)' in 'Material' group
 //                                               or 'IMPORT_PROPERTY(Name)' in constant buffer
 struct MaterialProperty
 {
@@ -95,8 +96,8 @@ private:
     std::vector<size_t> valueIndexToOffset_;
 };
 
-// Describe how to create constantBuffer/bindingGroup for a submaterial instance
-class SubMaterialPropertyLayout
+// Describe how to create constantBuffer/bindingGroup for a material pass instance
+class MaterialPassPropertyLayout
 {
 public:
 
@@ -116,7 +117,7 @@ public:
 
     using MaterialResource = Variant<BufferSRV, TextureSRV, RC<Texture>, RC<Sampler>>;
 
-    SubMaterialPropertyLayout(const MaterialPropertyHostLayout &materialPropertyLayout, const Shader &shader);
+    MaterialPassPropertyLayout(const MaterialPropertyHostLayout &materialPropertyLayout, const Shader &shader);
 
     int GetBindingGroupIndex() const;
 
@@ -140,12 +141,12 @@ private:
     std::vector<ResourceReference> resourceReferences_;
 };
 
-class SubMaterial : public Uncopyable, public WithUniqueObjectID
+class MaterialPass : public Uncopyable, public WithUniqueObjectID
 {
 public:
 
-    SubMaterial() = default;
-    ~SubMaterial();
+    MaterialPass() = default;
+    ~MaterialPass();
 
     const std::set<std::string> &GetTags() const;
 
@@ -155,8 +156,8 @@ public:
     RC<Shader> GetShader(const KeywordValueContext &keywordValues);
     RC<Shader> GetShader();
 
-    const SubMaterialPropertyLayout *GetPropertyLayout(KeywordSet::ValueMask mask);
-    const SubMaterialPropertyLayout *GetPropertyLayout(const KeywordValueContext &keywordValues);
+    const MaterialPassPropertyLayout *GetPropertyLayout(KeywordSet::ValueMask mask);
+    const MaterialPassPropertyLayout *GetPropertyLayout(const KeywordValueContext &keywordValues);
 
     auto &GetShaderTemplate() const;
 
@@ -171,14 +172,14 @@ private:
     RC<ShaderTemplate> shaderTemplate_;
 
     const MaterialPropertyHostLayout *parentPropertyLayout_ = nullptr;
-    std::vector<Box<SubMaterialPropertyLayout>> subMaterialPropertyLayouts_;
+    std::vector<Box<MaterialPassPropertyLayout>> materialPassPropertyLayouts_;
 
     tbb::spin_rw_mutex propertyLayoutsMutex_;
 
     Signal<> onDestroyCallbacks_;
 };
 
-class Material : public Uncopyable, public std::enable_shared_from_this<Material>
+class Material : public std::enable_shared_from_this<Material>, public InObjectCache
 {
 public:
 
@@ -187,10 +188,10 @@ public:
     auto &GetPropertyLayout() const;
 
     // return -1 when not found
-    int GetSubMaterialIndexByTag(std::string_view tag) const;
-    RC<SubMaterial> GetSubMaterialByIndex(int index);
-    RC<SubMaterial> GetSubMaterialByTag(std::string_view tag);
-    Span<RC<SubMaterial>> GetSubMaterials() const;
+    int GetPassIndexByTag(std::string_view tag) const;
+    RC<MaterialPass> GetPassByIndex(int index);
+    RC<MaterialPass> GetPassByTag(std::string_view tag);
+    Span<RC<MaterialPass>> GetPasses() const;
 
     RC<MaterialInstance> CreateInstance() const;
 
@@ -201,7 +202,7 @@ private:
     Device *device_ = nullptr;
 
     std::string name_;
-    std::vector<RC<SubMaterial>> subMaterials_;
+    std::vector<RC<MaterialPass>> passes_;
     std::map<std::string, int, std::less<>> tagToIndex_;
 
     RC<MaterialPropertyHostLayout> propertyLayout_;
@@ -214,14 +215,15 @@ public:
     MaterialManager();
 
     void SetDevice(Device *device);
+    void AddIncludeDirectory(std::string_view directory);
     void SetRootDirectory(std::string_view directory);
     void SetDebugMode(bool debug);
 
-    RC<Material> GetMaterial(std::string_view name);
-    RC<ShaderTemplate> GetShaderTemplate(std::string_view name);
-    RC<Shader> GetShader(std::string_view name); // Available when no keyword is defined in the shader template
+    RC<Material> GetMaterial(const std::string &name);
+    RC<ShaderTemplate> GetShaderTemplate(const std::string &name);
+    RC<Shader> GetShader(const std::string &name); // Available when no keyword is defined in the shader template
 
-    void GC();
+    RC<MaterialInstance> CreateMaterialInstance(const std::string &name);
 
 private:
 
@@ -238,7 +240,7 @@ private:
     RC<Material> CreateMaterial(std::string_view name);
     RC<ShaderTemplate> CreateShaderTemplate(std::string_view name);
 
-    RC<SubMaterial> ParsePass(ShaderTokenStream &tokens);
+    RC<MaterialPass> ParsePass(ShaderTokenStream &tokens);
     MaterialProperty ParseProperty(MaterialProperty::Type propertyType, ShaderTokenStream &tokens);
 
     Device *device_ = nullptr;
@@ -246,8 +248,8 @@ private:
 
     bool debug_ = RTRC_DEBUG;
 
-    SharedObjectPool<std::string, Material, true> materialPool_;
-    SharedObjectPool<std::string, ShaderTemplate, true> shaderPool_;
+    ObjectCache<std::string, Material, true, true>       materialPool_;
+    ObjectCache<std::string, ShaderTemplate, true, true> shaderPool_;
 
     std::vector<std::string> filenames_;
     std::map<std::string, FileReference, std::less<>> materialNameToFilename_;
@@ -361,76 +363,76 @@ inline const MaterialProperty &MaterialPropertyHostLayout::GetPropertyByName(std
     return GetProperties()[index];
 }
 
-inline int SubMaterialPropertyLayout::GetBindingGroupIndex() const
+inline int MaterialPassPropertyLayout::GetBindingGroupIndex() const
 {
     return bindingGroupIndex_;
 }
 
-inline size_t SubMaterialPropertyLayout::GetConstantBufferSize() const
+inline size_t MaterialPassPropertyLayout::GetConstantBufferSize() const
 {
     return constantBufferSize_;
 }
 
-inline const RC<BindingGroupLayout> &SubMaterialPropertyLayout::GetBindingGroupLayout() const
+inline const RC<BindingGroupLayout> &MaterialPassPropertyLayout::GetBindingGroupLayout() const
 {
     return bindingGroupLayout_;
 }
 
-inline SubMaterial::~SubMaterial()
+inline MaterialPass::~MaterialPass()
 {
     onDestroyCallbacks_.Emit();
 }
 
-inline const std::set<std::string> &SubMaterial::GetTags() const
+inline const std::set<std::string> &MaterialPass::GetTags() const
 {
     return tags_;
 }
 
-inline KeywordSet::ValueMask SubMaterial::ExtractKeywordValueMask(const KeywordValueContext &keywordValues) const
+inline KeywordSet::ValueMask MaterialPass::ExtractKeywordValueMask(const KeywordValueContext &keywordValues) const
 {
     return shaderTemplate_->GetKeywordValueMask(keywordValues);
 }
 
-inline RC<Shader> SubMaterial::GetShader(KeywordSet::ValueMask mask)
+inline RC<Shader> MaterialPass::GetShader(KeywordSet::ValueMask mask)
 {
     return shaderTemplate_->GetShader(mask);
 }
 
-inline RC<Shader> SubMaterial::GetShader(const KeywordValueContext &keywordValues)
+inline RC<Shader> MaterialPass::GetShader(const KeywordValueContext &keywordValues)
 {
     return GetShader(shaderTemplate_->GetKeywordValueMask(keywordValues));
 }
 
-inline RC<Shader> SubMaterial::GetShader()
+inline RC<Shader> MaterialPass::GetShader()
 {
     return shaderTemplate_->GetShader(0);
 }
 
-inline const SubMaterialPropertyLayout *SubMaterial::GetPropertyLayout(KeywordSet::ValueMask mask)
+inline const MaterialPassPropertyLayout *MaterialPass::GetPropertyLayout(KeywordSet::ValueMask mask)
 {
     {
         std::shared_lock readLock(propertyLayoutsMutex_);
-        if(subMaterialPropertyLayouts_[mask])
+        if(materialPassPropertyLayouts_[mask])
         {
-            return subMaterialPropertyLayouts_[mask].get();
+            return materialPassPropertyLayouts_[mask].get();
         }
     }
 
     std::unique_lock writeLock(propertyLayoutsMutex_);
-    if(!subMaterialPropertyLayouts_[mask])
+    if(!materialPassPropertyLayouts_[mask])
     {
-        auto newLayout = MakeBox<SubMaterialPropertyLayout>(*parentPropertyLayout_, *GetShader(mask));
-        subMaterialPropertyLayouts_[mask] = std::move(newLayout);
+        auto newLayout = MakeBox<MaterialPassPropertyLayout>(*parentPropertyLayout_, *GetShader(mask));
+        materialPassPropertyLayouts_[mask] = std::move(newLayout);
     }
-    return subMaterialPropertyLayouts_[mask].get();
+    return materialPassPropertyLayouts_[mask].get();
 }
 
-inline const SubMaterialPropertyLayout *SubMaterial::GetPropertyLayout(const KeywordValueContext &keywordValues)
+inline const MaterialPassPropertyLayout *MaterialPass::GetPropertyLayout(const KeywordValueContext &keywordValues)
 {
     return GetPropertyLayout(shaderTemplate_->GetKeywordValueMask(keywordValues));
 }
 
-inline auto &SubMaterial::GetShaderTemplate() const
+inline auto &MaterialPass::GetShaderTemplate() const
 {
     return shaderTemplate_;
 }
@@ -445,23 +447,23 @@ inline Span<MaterialProperty> Material::GetProperties() const
     return propertyLayout_->GetProperties();
 }
 
-inline RC<SubMaterial> Material::GetSubMaterialByIndex(int index)
+inline RC<MaterialPass> Material::GetPassByIndex(int index)
 {
-    return subMaterials_[index];
+    return passes_[index];
 }
 
-inline RC<SubMaterial> Material::GetSubMaterialByTag(std::string_view tag)
+inline RC<MaterialPass> Material::GetPassByTag(std::string_view tag)
 {
-    const int index = GetSubMaterialIndexByTag(tag);
+    const int index = GetPassIndexByTag(tag);
     if(index < 0)
     {
         throw Exception(fmt::format("Tag {} not found in material {}", tag, name_));
     }
-    return GetSubMaterialByIndex(index);
+    return GetPassByIndex(index);
 }
 
 // return -1 when not found
-inline int Material::GetSubMaterialIndexByTag(std::string_view tag) const
+inline int Material::GetPassIndexByTag(std::string_view tag) const
 {
     auto it = tagToIndex_.find(tag);
     return it != tagToIndex_.end() ? it->second : -1;
@@ -472,9 +474,9 @@ inline auto &Material::GetPropertyLayout() const
     return propertyLayout_;
 }
 
-inline Span<RC<SubMaterial>> Material::GetSubMaterials() const
+inline Span<RC<MaterialPass>> Material::GetPasses() const
 {
-    return subMaterials_;
+    return passes_;
 }
 
 RTRC_END

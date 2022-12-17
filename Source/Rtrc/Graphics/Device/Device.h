@@ -43,6 +43,47 @@ public:
     void ExecuteAndWait(CommandBuffer commandBuffer);
     template<typename F> requires !std::is_same_v<std::remove_cvref_t<F>, CommandBuffer>
     void ExecuteAndWait(F &&f);
+    
+    void ExecuteBarrier(
+        const RC<StatefulBuffer> &buffer,
+        RHI::PipelineStageFlag    stages,
+        RHI::ResourceAccessFlag   accesses);
+    void ExecuteBarrier(
+        const RC<StatefulTexture> &texture,
+        RHI::TextureLayout         layout,
+        RHI::PipelineStageFlag     stages,
+        RHI::ResourceAccessFlag    accesses);
+    void ExecuteBarrier(
+        const RC<StatefulTexture> &texture,
+        uint32_t                   arrayLayer,
+        uint32_t                   mipLevel,
+        RHI::TextureLayout         layout,
+        RHI::PipelineStageFlag     stages,
+        RHI::ResourceAccessFlag    accesses);
+    void ExecuteBarrier(
+        const RC<Buffer>       &buffer,
+        RHI::PipelineStageFlag  prevStages,
+        RHI::ResourceAccessFlag prevAccesses,
+        RHI::PipelineStageFlag  succStages,
+        RHI::ResourceAccessFlag succAccesses);
+    void ExecuteBarrier(
+        const RC<Texture>      &texture,
+        RHI::TextureLayout      prevLayout,
+        RHI::PipelineStageFlag  prevStages,
+        RHI::ResourceAccessFlag prevAccesses,
+        RHI::TextureLayout      succLayout,
+        RHI::PipelineStageFlag  succStages,
+        RHI::ResourceAccessFlag succAccesses);
+    void ExecuteBarrier(
+        const RC<Texture>      &texture,
+        uint32_t                arrayLayer,
+        uint32_t                mipLevel,
+        RHI::TextureLayout      prevLayout,
+        RHI::PipelineStageFlag  prevStages,
+        RHI::ResourceAccessFlag prevAccesses,
+        RHI::TextureLayout      succLayout,
+        RHI::PipelineStageFlag  succStages,
+        RHI::ResourceAccessFlag succAccesses);
 
     CopyContext &GetCopyContext();
 
@@ -77,6 +118,7 @@ public:
 
     RC<Texture> CreateTexture(const RHI::TextureDesc &desc);
     RC<StatefulTexture> CreatePooledTexture(const RHI::TextureDesc &desc);
+    RC<Texture> CreateColorTexture2D(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 
     RC<DynamicBuffer> CreateDynamicBuffer();
     RC<SubBuffer> CreateConstantBuffer(const void *data, size_t bytes);
@@ -103,6 +145,9 @@ private:
     void InitializeInternal(RHI::DevicePtr device, bool isComputeOnly);
 
     void RecreateSwapchain();
+
+    template<typename...Args>
+    void ExecuteBarrierImpl(Args&&...args);
 
     RHI::InstancePtr instance_;
     RHI::DevicePtr device_;
@@ -164,6 +209,73 @@ void Device::ExecuteAndWait(F &&f)
     std::invoke(std::forward<F>(f), c);
     c.End();
     ExecuteAndWait(std::move(c));
+}
+
+inline void Device::ExecuteBarrier(
+    const RC<StatefulBuffer> &buffer,
+    RHI::PipelineStageFlag    stages,
+    RHI::ResourceAccessFlag   accesses)
+{
+    ExecuteBarrierImpl(buffer, stages, accesses);
+}
+
+inline void Device::ExecuteBarrier(
+    const RC<StatefulTexture> &texture,
+    RHI::TextureLayout         layout,
+    RHI::PipelineStageFlag     stages,
+    RHI::ResourceAccessFlag    accesses)
+{
+    ExecuteBarrierImpl(texture, layout, stages, accesses);
+}
+
+inline void Device::ExecuteBarrier(
+    const RC<StatefulTexture> &texture,
+    uint32_t                   arrayLayer,
+    uint32_t                   mipLevel,
+    RHI::TextureLayout         layout,
+    RHI::PipelineStageFlag     stages,
+    RHI::ResourceAccessFlag    accesses)
+{
+    ExecuteBarrierImpl(texture, arrayLayer, mipLevel, layout, stages, accesses);
+}
+
+inline void Device::ExecuteBarrier(
+    const RC<Buffer>       &buffer,
+    RHI::PipelineStageFlag  prevStages,
+    RHI::ResourceAccessFlag prevAccesses,
+    RHI::PipelineStageFlag  succStages,
+    RHI::ResourceAccessFlag succAccesses)
+{
+    ExecuteBarrierImpl(buffer, prevStages, prevAccesses, succStages, succAccesses);
+}
+
+inline void Device::ExecuteBarrier(
+    const RC<Texture>      &texture,
+    RHI::TextureLayout      prevLayout,
+    RHI::PipelineStageFlag  prevStages,
+    RHI::ResourceAccessFlag prevAccesses,
+    RHI::TextureLayout      succLayout,
+    RHI::PipelineStageFlag  succStages,
+    RHI::ResourceAccessFlag succAccesses)
+{
+    ExecuteBarrierImpl(
+        texture, prevLayout, prevStages, prevAccesses, succLayout, succStages, succAccesses);
+}
+
+inline void Device::ExecuteBarrier(
+    const RC<Texture>      &texture,
+    uint32_t                arrayLayer,
+    uint32_t                mipLevel,
+    RHI::TextureLayout      prevLayout,
+    RHI::PipelineStageFlag  prevStages,
+    RHI::ResourceAccessFlag prevAccesses,
+    RHI::TextureLayout      succLayout,
+    RHI::PipelineStageFlag  succStages,
+    RHI::ResourceAccessFlag succAccesses)
+{
+    ExecuteBarrierImpl(
+        texture, arrayLayer, mipLevel,
+        prevLayout, prevStages, prevAccesses, succLayout, succStages, succAccesses);
 }
 
 inline CopyContext &Device::GetCopyContext()
@@ -345,6 +457,15 @@ inline const RHI::DevicePtr &Device::GetRawDevice() const
 inline Device::operator DynamicBufferManager&()
 {
     return *dynamicBufferManager_;
+}
+
+template<typename... Args>
+void Device::ExecuteBarrierImpl(Args &&... args)
+{
+    this->ExecuteAndWait([&](CommandBuffer &cmd)
+    {
+        cmd.ExecuteBarriers(BarrierBatch{}(std::forward<Args>(args)...));
+    });
 }
 
 RTRC_END

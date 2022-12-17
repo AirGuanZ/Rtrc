@@ -93,6 +93,8 @@ inline Mesh &Mesh::operator=(Mesh &&other) noexcept
 
 inline void Mesh::Swap(Mesh &other) noexcept
 {
+    std::swap(vertexCount_, other.vertexCount_);
+    std::swap(indexCount_, other.indexCount_);
     std::swap(layout_, other.layout_);
     std::swap(vertexBuffers_, other.vertexBuffers_);
     std::swap(vertexBufferByteOffsets_, other.vertexBufferByteOffsets_);

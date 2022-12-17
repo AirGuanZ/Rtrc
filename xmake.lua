@@ -19,7 +19,7 @@ add_csnippets("is_msvc", "return (_MSC_VER)?0:-1;", {
 option_end()
 
 set_runtimes(is_mode("debug") and "MTd" or "MT")
-set_targetdir("Build/bin/"..(is_mode("debug") and "debug" or "release"))
+set_targetdir("Build/Bin/"..(is_mode("debug") and "debug" or "release"))
 
 if is_mode("debug") then
     add_defines("DEBUG", "_DEBUG")

@@ -11,8 +11,7 @@
 #include <Rtrc/Utility/MacroOverloading.h>
 
 RTRC_BEGIN
-
-class DynamicBuffer;
+    class DynamicBuffer;
 class Sampler;
 
 namespace BindingGroupDSL
@@ -243,7 +242,7 @@ namespace BindingGroupDSL
         static BindingGroupLayout::Desc ret = []
         {
             BindingGroupLayout::Desc desc;
-            T::ForEachMember([&desc]<typename M>(M T::* ptr, const char *name, RHI::ShaderStageFlag stages)
+            T::ForEachFlattenMember([&desc]<typename M>(M T:: * ptr, const char *name, RHI::ShaderStageFlag stages)
             {
                 using MemberElement = typename MemberProxyTrait<M>::MemberProxyElement;
                 constexpr size_t arraySize = MemberProxyTrait<M>::ArraySize;
@@ -261,31 +260,50 @@ namespace BindingGroupDSL
 
 } // namespace BindingGroupDSL
 
-#define rtrc_group(NAME)                                               \
-    struct NAME;                                                       \
-    struct _rtrcGroupBase##NAME                                        \
-    {                                                                  \
-        using _rtrcSelf = NAME;                                        \
-        struct _rtrcGroupTypeFlag{};                                   \
-        static ::Rtrc::StructDetail::Sizer<1> _rtrcMemberCounter(...); \
-        template<typename F>                                           \
-        static constexpr void ForEachMember(const F &f)                \
-        {                                                              \
-            ::Rtrc::StructDetail::ForEachMember<_rtrcSelf>(f);         \
-        }                                                              \
-        static constexpr std::string GroupName = #NAME;                \
-        using float2 = ::Rtrc::Vector2f;                               \
-        using float3 = ::Rtrc::Vector3f;                               \
-        using float4 = ::Rtrc::Vector4f;                               \
-        using int2   = ::Rtrc::Vector2i;                               \
-        using int3   = ::Rtrc::Vector3i;                               \
-        using int4   = ::Rtrc::Vector4i;                               \
-        using uint   = uint32_t;                                       \
-        using uint2  = ::Rtrc::Vector2u;                               \
-        using uint3  = ::Rtrc::Vector3u;                               \
-        using uint4  = ::Rtrc::Vector4u;                               \
-    };                                                                 \
+#define rtrc_group1(NAME) rtrc_group2(NAME, NAME)
+#define rtrc_group2(NAME, NAME_STR)                                                                  \
+    struct NAME;                                                                                     \
+    struct _rtrcGroupBase##NAME                                                                      \
+    {                                                                                                \
+        using _rtrcSelf = NAME;                                                                      \
+        struct _rtrcGroupTypeFlag{};                                                                 \
+        static ::Rtrc::StructDetail::Sizer<1> _rtrcMemberCounter(...);                               \
+        template<typename F>                                                                         \
+        static constexpr void ForEachMember(const F &f)                                              \
+        {                                                                                            \
+            ::Rtrc::StructDetail::ForEachMember<_rtrcSelf>(f);                                       \
+        }                                                                                            \
+        template<typename F>                                                                         \
+        static constexpr void ForEachFlattenMember(                                                  \
+            const F &f, ::Rtrc::RHI::ShaderStageFlag stageMask = ::Rtrc::RHI::ShaderStageFlags::All) \
+        {                                                                                            \
+            ::Rtrc::StructDetail::ForEachMember<_rtrcSelf>([&]<typename M>                           \
+            (M _rtrcSelf::* ptr, const char *name, ::Rtrc::RHI::ShaderStageFlag stages)              \
+            {                                                                                        \
+                if constexpr(::Rtrc::BindingGroupDSL::RtrcGroupStruct<M>)                            \
+                {                                                                                    \
+                    M::ForEachFlattenMember(f, stageMask & stages);                                  \
+                }                                                                                    \
+                else                                                                                 \
+                {                                                                                    \
+                    f(ptr, name, stageMask & stages);                                                \
+                }                                                                                    \
+            });                                                                                      \
+        }                                                                                            \
+        static constexpr std::string GroupName = #NAME_STR;                                          \
+        using float2 = ::Rtrc::Vector2f;                                                             \
+        using float3 = ::Rtrc::Vector3f;                                                             \
+        using float4 = ::Rtrc::Vector4f;                                                             \
+        using int2   = ::Rtrc::Vector2i;                                                             \
+        using int3   = ::Rtrc::Vector3i;                                                             \
+        using int4   = ::Rtrc::Vector4i;                                                             \
+        using uint   = uint32_t;                                                                     \
+        using uint2  = ::Rtrc::Vector2u;                                                             \
+        using uint3  = ::Rtrc::Vector3u;                                                             \
+        using uint4  = ::Rtrc::Vector4u;                                                             \
+    };                                                                                               \
     struct NAME : _rtrcGroupBase##NAME
+#define rtrc_group(...) RTRC_MACRO_OVERLOADING(rtrc_group, __VA_ARGS__)
 
 #define rtrc_define2(TYPE, NAME) RTRC_DEFINE_IMPL(TYPE, NAME, ::Rtrc::RHI::ShaderStageFlags::All)
 #define rtrc_define3(TYPE, NAME, STAGES) RTRC_DEFINE_IMPL(TYPE, NAME, STAGES)
@@ -298,6 +316,16 @@ namespace BindingGroupDSL
     using _rtrcMemberType##NAME = ::Rtrc::BindingGroupDSL::MemberProxy_##TYPE; \
     _rtrcMemberType##NAME NAME
 
+#define rtrc_inline2(TYPE, NAME) RTRC_INLINE_IMPL(TYPE, NAME, ::Rtrc::RHI::ShaderStageFlags::All)
+#define rtrc_inline3(TYPE, NAME, STAGES) RTRC_INLINE_IMPL(TYPE, NAME, STAGES)
+#define rtrc_inline(...) RTRC_MACRO_OVERLOADING(rtrc_inline, __VA_ARGS__)
+
+#define RTRC_INLINE_IMPL(TYPE, NAME, STAGES)                    \
+    RTRC_META_STRUCT_PRE_MEMBER(NAME)                           \
+        f.template operator()(&_rtrcSelf::NAME, #NAME, STAGES); \
+    RTRC_META_STRUCT_POST_MEMBER(NAME)                          \
+    TYPE NAME
+
 template<BindingGroupDSL::RtrcGroupStruct T>
 const BindingGroupLayout::Desc &GetBindingGroupLayoutDesc()
 {
@@ -308,7 +336,7 @@ template<BindingGroupDSL::RtrcGroupStruct T>
 void ApplyBindingGroup(BindingGroup &group, const T &value)
 {
     int index = 0;
-    T::ForEachMember([&]<typename M>(M T::* ptr, const char *name, RHI::ShaderStageFlag stages)
+    T::ForEachFlattenMember([&]<typename M>(M T::* ptr, const char *name, RHI::ShaderStageFlag stages)
     {
         using MemberElement = typename BindingGroupDSL::MemberProxyTrait<M>::MemberProxyElement;
         constexpr size_t arraySize = BindingGroupDSL::MemberProxyTrait<M>::ArraySize;
@@ -321,7 +349,7 @@ template<BindingGroupDSL::RtrcGroupStruct T>
 void ApplyBindingGroup(ConstantBufferManagerInterface *cbMgr, BindingGroup &group, const T &value)
 {
     int index = 0;
-    T::ForEachMember([&]<typename M>(M T::* ptr, const char *name, RHI::ShaderStageFlag stages)
+    T::ForEachFlattenMember([&]<typename M>(M T::* ptr, const char *name, RHI::ShaderStageFlag stages)
     {
         using MemberElement = typename BindingGroupDSL::MemberProxyTrait<M>::MemberProxyElement;
         constexpr size_t arraySize = BindingGroupDSL::MemberProxyTrait<M>::ArraySize;

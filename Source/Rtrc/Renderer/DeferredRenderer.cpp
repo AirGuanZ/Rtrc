@@ -1,4 +1,4 @@
-#include <Rtrc/Graphics/Material/BindingGroupContext.h>
+#include <Rtrc/Graphics/Material/ShaderBindingContext.h>
 #include <Rtrc/Renderer/DeferredRenderer.h>
 #include <Rtrc/Renderer/Utility/FullscreenPrimitive.h>
 #include <Rtrc/Renderer/Utility/ScopedGPUDebugEvent.h>
@@ -9,48 +9,44 @@ RTRC_BEGIN
 namespace
 {
 
-    rtrc_group(PerPassGroup_RenderGBuffers)
+    rtrc_group(PerPassGroup_RenderGBuffers, Pass)
     {
         rtrc_define(ConstantBuffer<CameraConstantBuffer>, Camera);
     };
 
-    rtrc_struct(PerPassConstantBuffer_DeferredLighting)
+    rtrc_struct(DeferredLighting_CBuffer)
     {
-        rtrc_var(Vector4f,                       GBufferSize);
+        rtrc_var(Vector4f,                       gbufferSize);
         rtrc_var(CameraConstantBuffer,           camera);
         rtrc_var(DirectionalLightConstantBuffer, directionalLight);
     };
 
-    rtrc_group(PerPassGroup_DeferredLighting)
+    rtrc_group(DeferredLighting_PerPassGroup, Pass)
     {
-        rtrc_define(ConstantBuffer<PerPassConstantBuffer_DeferredLighting>, CBuffer_DeferredLighting);
-        rtrc_define(Texture2D<float4>, GBufferA);
-        rtrc_define(Texture2D<float4>, GBufferB);
-        rtrc_define(Texture2D<float4>, GBufferC);
-        rtrc_define(Texture2D<float>,  GBufferDepth);
+        rtrc_define(Texture2D<float4>, gbufferA);
+        rtrc_define(Texture2D<float4>, gbufferB);
+        rtrc_define(Texture2D<float4>, gbufferC);
+        rtrc_define(Texture2D<float>,  gbufferDepth);
+        rtrc_define(ConstantBuffer<DeferredLighting_CBuffer>, cbuffer);
     };
 
 } // namespace anonymous
 
-DeferredRenderer::DeferredRenderer(Device &device, MaterialManager &materialManager)
+DeferredRenderer::DeferredRenderer(Device &device, BuiltinResourceManager &builtinResources)
     : device_(device)
-    , materialManager_(materialManager)
+    , builtinResources_(builtinResources)
     , staticMeshConstantBufferBatch_(
-          ConstantBufferSize<StaticMeshCBuffer>, "PerObject", RHI::ShaderStageFlags::All, device)
+          ConstantBufferSize<StaticMeshCBuffer>, "Object", RHI::ShaderStageFlags::All, device)
 {
 
 }
 
-void DeferredRenderer::AddToRenderGraph(
+DeferredRenderer::RenderGraphInterface DeferredRenderer::AddToRenderGraph(
     RG::RenderGraph     *renderGraph,
     RG::TextureResource *renderTarget,
     const Scene         &scene,
     const Camera        &camera)
 {
-    assert(!renderGraph_ && renderGraph);
-    assert(!renderTarget_ && renderTarget);
-    renderGraph_ = renderGraph;
-    renderTarget_ = renderTarget;
     scene_ = &scene;
     camera_ = &camera;
 
@@ -60,7 +56,11 @@ void DeferredRenderer::AddToRenderGraph(
     fullscreenQuadWithRays_ = GetFullscreenQuad(device_, camera);
     fullscreenTriangleWithRays_ = GetFullscreenTriangle(device_, camera);
 
-    auto normal = renderGraph_->CreateTexture2D(RHI::TextureDesc
+    // gbufferA: normal
+    // gbufferB: albedo, metallic
+    // gbufferC: roughness
+
+    const auto gbufferA = renderGraph->CreateTexture2D(RHI::TextureDesc
     {
         .dim                  = RHI::TextureDimension::Tex2D,
         .format               = RHI::Format::R10G10B10A2_UNorm,
@@ -73,7 +73,7 @@ void DeferredRenderer::AddToRenderGraph(
         .initialLayout        = RHI::TextureLayout::Undefined,
         .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
     });
-    auto albedoMetallic = renderGraph_->CreateTexture2D(RHI::TextureDesc
+    const auto gbufferB = renderGraph->CreateTexture2D(RHI::TextureDesc
     {
         .dim                  = RHI::TextureDimension::Tex2D,
         .format               = RHI::Format::B8G8R8A8_UNorm,
@@ -86,7 +86,7 @@ void DeferredRenderer::AddToRenderGraph(
         .initialLayout        = RHI::TextureLayout::Undefined,
         .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
     });
-    auto roughness = renderGraph_->CreateTexture2D(RHI::TextureDesc
+    const auto gbufferC = renderGraph->CreateTexture2D(RHI::TextureDesc
     {
         .dim                  = RHI::TextureDimension::Tex2D,
         .format               = RHI::Format::B8G8R8A8_UNorm,
@@ -99,7 +99,7 @@ void DeferredRenderer::AddToRenderGraph(
         .initialLayout        = RHI::TextureLayout::Undefined,
         .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
     });
-    auto depth = renderGraph_->CreateTexture2D(RHI::TextureDesc
+    const auto gbufferDepth = renderGraph->CreateTexture2D(RHI::TextureDesc
     {
         .dim                  = RHI::TextureDimension::Tex2D,
         .format               = RHI::Format::D32,
@@ -112,32 +112,33 @@ void DeferredRenderer::AddToRenderGraph(
         .initialLayout        = RHI::TextureLayout::Undefined,
         .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
     });
-    auto image = renderGraph_->CreateTexture2D(RHI::TextureDesc
-    {
-        .dim                  = RHI::TextureDimension::Tex2D,
-        .format               = RHI::Format::R11G11B10_UFloat,
-        .width                = rtWidth,
-        .height               = rtHeight,
-        .arraySize            = 1,
-        .mipLevels            = 1,
-        .sampleCount          = 1,
-        .usage                = RHI::TextureUsage::RenderTarget | RHI::TextureUsage::ShaderResource,
-        .initialLayout        = RHI::TextureLayout::Undefined,
-        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
-    });
+    //const auto image = renderGraph_->CreateTexture2D(RHI::TextureDesc
+    //{
+    //    .dim                  = RHI::TextureDimension::Tex2D,
+    //    .format               = RHI::Format::R11G11B10_UFloat,
+    //    .width                = rtWidth,
+    //    .height               = rtHeight,
+    //    .arraySize            = 1,
+    //    .mipLevels            = 1,
+    //    .sampleCount          = 1,
+    //    .usage                = RHI::TextureUsage::RenderTarget | RHI::TextureUsage::ShaderResource,
+    //    .initialLayout        = RHI::TextureLayout::Undefined,
+    //    .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
+    //});
+    const auto image = renderTarget;
 
-    RG::Pass *gbufferPass = renderGraph_->CreatePass("Render GBuffers");
+    RG::Pass *gbufferPass = renderGraph->CreatePass("Render GBuffers");
     {
-        gbufferPass->Use(normal, RG::RENDER_TARGET_WRITE);
-        gbufferPass->Use(albedoMetallic, RG::RENDER_TARGET_WRITE);
-        gbufferPass->Use(roughness, RG::RENDER_TARGET_WRITE);
-        gbufferPass->Use(depth, RG::DEPTH_STENCIL);
+        gbufferPass->Use(gbufferA, RG::RENDER_TARGET_WRITE);
+        gbufferPass->Use(gbufferB, RG::RENDER_TARGET_WRITE);
+        gbufferPass->Use(gbufferC, RG::RENDER_TARGET_WRITE);
+        gbufferPass->Use(gbufferDepth, RG::DEPTH_STENCIL);
 
         RenderGBuffersPassData passData;
-        passData.normal         = normal;
-        passData.albedoMetallic = albedoMetallic;
-        passData.roughness      = roughness;
-        passData.depth          = depth;
+        passData.gbufferA     = gbufferA;
+        passData.gbufferB     = gbufferB;
+        passData.gbufferC     = gbufferC;
+        passData.gbufferDepth = gbufferDepth;
 
         gbufferPass->SetCallback([this, passData](RG::PassContext &passContext)
         {
@@ -145,20 +146,20 @@ void DeferredRenderer::AddToRenderGraph(
         });
     }
 
-    RG::Pass *lightingPass = renderGraph_->CreatePass("Deferred Lighting");
+    RG::Pass *lightingPass = renderGraph->CreatePass("Deferred Lighting");
     {
-        lightingPass->Use(normal, RG::PIXEL_SHADER_TEXTURE_READ);
-        lightingPass->Use(albedoMetallic, RG::PIXEL_SHADER_TEXTURE_READ);
-        lightingPass->Use(roughness, RG::PIXEL_SHADER_TEXTURE_READ);
-        lightingPass->Use(depth, RG::PIXEL_SHADER_TEXTURE_READ);
+        lightingPass->Use(gbufferA, RG::PIXEL_SHADER_TEXTURE_READ);
+        lightingPass->Use(gbufferB, RG::PIXEL_SHADER_TEXTURE_READ);
+        lightingPass->Use(gbufferC, RG::PIXEL_SHADER_TEXTURE_READ);
+        lightingPass->Use(gbufferDepth, RG::PIXEL_SHADER_TEXTURE_READ);
         lightingPass->Use(image, RG::RENDER_TARGET_WRITE);
 
         DeferredLightingPassData passData;
-        passData.normal         = normal;
-        passData.albedoMetallic = albedoMetallic;
-        passData.roughness      = roughness;
-        passData.depth          = depth;
-        passData.image          = image;
+        passData.gbufferA     = gbufferA;
+        passData.gbufferB     = gbufferB;
+        passData.gbufferC     = gbufferC;
+        passData.gbufferDepth = gbufferDepth;
+        passData.image        = image;
 
         lightingPass->SetCallback([this, passData](RG::PassContext &passContext)
         {
@@ -167,17 +168,28 @@ void DeferredRenderer::AddToRenderGraph(
     }
 
     Connect(gbufferPass, lightingPass);
+
+    RenderGraphInterface ret;
+    ret.inPass = gbufferPass;
+    ret.outPass = lightingPass;
+    ret.image = image;
+    return ret;
 }
 
 void DeferredRenderer::DoRenderGBuffersPass(RG::PassContext &passContext, const RenderGBuffersPassData &passData)
 {
     CommandBuffer &cmd = passContext.GetCommandBuffer();
-    RTRC_SCOPED_GPU_EVENT(cmd, "Render GBuffers", {});
+    //RTRC_SCOPED_GPU_EVENT(cmd, "Render GBuffers", {});
 
-    auto rtNormal = passData.normal->Get();
-    auto rtAlbedoMetallic = passData.albedoMetallic->Get();
-    auto rtRoughness = passData.roughness->Get();
-    auto rtDepth = passData.depth->Get();
+    auto gbufferA = passData.gbufferA->Get();
+    auto gbufferB = passData.gbufferB->Get();
+    auto gbufferC = passData.gbufferC->Get();
+    auto gbufferDepth = passData.gbufferDepth->Get();
+
+    gbufferA->SetName("GBufferA");
+    gbufferB->SetName("GBufferB");
+    gbufferC->SetName("GBufferC");
+    gbufferDepth->SetName("GBufferDepth");
 
     // Render pass
 
@@ -185,21 +197,21 @@ void DeferredRenderer::DoRenderGBuffersPass(RG::PassContext &passContext, const 
     {
         ColorAttachment
         {
-            .renderTargetView = rtNormal->CreateRTV(),
+            .renderTargetView = gbufferA->CreateRTV(),
             .loadOp = AttachmentLoadOp::Clear,
             .storeOp = AttachmentStoreOp::Store,
             .clearValue = { 0, 0, 0, 0 }
         },
         ColorAttachment
         {
-            .renderTargetView = rtAlbedoMetallic->CreateRTV(),
+            .renderTargetView = gbufferB->CreateRTV(),
             .loadOp = AttachmentLoadOp::Clear,
             .storeOp = AttachmentStoreOp::Store,
             .clearValue = { 0, 0, 0, 0 }
         },
         ColorAttachment
         {
-            .renderTargetView = rtRoughness->CreateRTV(),
+            .renderTargetView = gbufferC->CreateRTV(),
             .loadOp = AttachmentLoadOp::Clear,
             .storeOp = AttachmentStoreOp::Store,
             .clearValue = { 0, 0, 0, 0 }
@@ -207,7 +219,7 @@ void DeferredRenderer::DoRenderGBuffersPass(RG::PassContext &passContext, const 
     },
     DepthStencilAttachment
     {
-        .depthStencilView = rtDepth->CreateDSV(),
+        .depthStencilView = gbufferDepth->CreateDSV(),
         .loadOp = AttachmentLoadOp::Clear,
         .storeOp = AttachmentStoreOp::Store,
         .clearValue = DepthStencilClearValue{ 1, 0 }
@@ -225,8 +237,8 @@ void DeferredRenderer::DoRenderGBuffersPass(RG::PassContext &passContext, const 
         perPassGroup = device_.CreateBindingGroup(perPassGroupData);
     }
 
-    BindingGroupContext bindingGroupContext;
-    bindingGroupContext.Set(PerPassGroup_RenderGBuffers::GroupName, perPassGroup);
+    //ShaderBindingContext bindingGroupContext;
+    //bindingGroupContext.Set(PerPassGroup_RenderGBuffers::GroupName, perPassGroup);
 
     // Upload constant buffers for static meshes
 
@@ -250,14 +262,14 @@ void DeferredRenderer::DoRenderGBuffersPass(RG::PassContext &passContext, const 
         auto &mesh = staticMesh->GetMesh();
         auto &matInst = staticMesh->GetMaterial();
 
-        auto submatInst = matInst->GetSubMaterialInstance("GBuffers");
-        if(!submatInst)
+        auto matPassInst = matInst->GetPassInstance("GBuffer");
+        if(!matPassInst)
             continue;
 
-        auto submat = submatInst->GetSubMaterial();
-        auto shader = submatInst->GetShader(keywords);
+        auto pass = matPassInst->GetPass();
+        auto shader = matPassInst->GetShader(keywords);
         auto pipeline = renderGBuffersPipelines_.GetOrCreate(
-            submat, shader, mesh->GetLayout(), [&]
+            pass, shader, mesh->GetLayout(), [&]
             {
                 return device_.CreateGraphicsPipeline(
                 {
@@ -271,21 +283,26 @@ void DeferredRenderer::DoRenderGBuffersPass(RG::PassContext &passContext, const 
                     .depthCompareOp         = RHI::CompareOp::Less,
                     .colorAttachmentFormats =
                     {
-                        passData.normal->GetFormat(),
-                        passData.albedoMetallic->GetFormat(),
-                        passData.roughness->GetFormat()
+                        passData.gbufferA->GetFormat(),
+                        passData.gbufferB->GetFormat(),
+                        passData.gbufferC->GetFormat()
                     },
-                    .depthStencilFormat     = passData.depth->GetFormat(),
+                    .depthStencilFormat     = passData.gbufferDepth->GetFormat(),
                 });
             });
-
-        bindingGroupContext.Set("PerObject", staticMeshBindingGroups[staticMeshIndex]);
-
+        
         cmd.BindPipeline(pipeline);
-        bindingGroupContext.BindForGraphicsPipeline(cmd, shader);
-        submatInst->BindGraphicsProperties(keywords, cmd);
-        cmd.SetViewports(rtNormal->GetViewport());
-        cmd.SetScissors(rtNormal->GetScissor());
+        matPassInst->BindGraphicsProperties(keywords, cmd);
+        if(int index = shader->GetBuiltinBindingGroupIndex(ShaderInfo::BuiltinBindingGroup::Pass); index >= 0)
+        {
+            cmd.BindGraphicsGroup(index, perPassGroup);
+        }
+        if(int index = shader->GetBuiltinBindingGroupIndex(ShaderInfo::BuiltinBindingGroup::Object); index >= 0)
+        {
+            cmd.BindGraphicsGroup(index, staticMeshBindingGroups[staticMeshIndex]);
+        }
+        cmd.SetViewports(gbufferA->GetViewport());
+        cmd.SetScissors(gbufferA->GetScissor());
         cmd.BindMesh(*mesh);
 
         if(mesh->HasIndexBuffer())
@@ -302,20 +319,72 @@ void DeferredRenderer::DoRenderGBuffersPass(RG::PassContext &passContext, const 
 void DeferredRenderer::DoDeferredLightingPass(RG::PassContext &passContext, const DeferredLightingPassData &passData)
 {
     CommandBuffer &cmd = passContext.GetCommandBuffer();
-    RTRC_SCOPED_GPU_EVENT(cmd, "Deferred Lighting", {});
+    //RTRC_SCOPED_GPU_EVENT(cmd, "Deferred Lighting");
+
+    device_.GetQueue().GetRHIObject()->WaitIdle();
 
     if(!deferredLightingPipeline_)
     {
-        auto shader = materialManager_.GetShader("Builtin/DeferredLighting");
+        RC<Shader> shader = builtinResources_.GetBuiltinShader(BuiltinShader::DeferredLighting);
         deferredLightingPipeline_ = device_.CreateGraphicsPipeline(GraphicsPipeline::Desc
         {
-            .shader                 = shader,
-            .meshLayout             = fullscreenTriangleWithRays_.GetLayout(),
+            .shader = std::move(shader),
+            .meshLayout = fullscreenTriangleWithRays_.GetLayout(),
             .colorAttachmentFormats = { passData.image->GetFormat() }
         });
     }
 
-    // TODO
+    auto gbufferA = passData.gbufferA->Get();
+    auto gbufferB = passData.gbufferB->Get();
+    auto gbufferC = passData.gbufferC->Get();
+    auto gbufferDepth = passData.gbufferDepth->Get();
+    auto image = passData.image->Get();
+
+    cmd.BeginRenderPass(ColorAttachment
+    {
+        .renderTargetView = image->CreateRTV(),
+        .loadOp = AttachmentLoadOp::DontCare,
+        .storeOp = AttachmentStoreOp::Store,
+    });
+    RTRC_SCOPE_EXIT{ cmd.EndRenderPass(); };
+
+    DeferredLighting_PerPassGroup perPassGroupData;
+    perPassGroupData.gbufferA = gbufferA;
+    perPassGroupData.gbufferB = gbufferB;
+    perPassGroupData.gbufferC = gbufferC;
+    perPassGroupData.gbufferDepth = gbufferDepth;
+    perPassGroupData.cbuffer.camera = camera_->GetConstantBufferData();
+    perPassGroupData.cbuffer.gbufferSize =
+        Vector4f(image->GetWidth(), image->GetHeight(), 1.0f / image->GetWidth(), 1.0f / image->GetHeight());
+    if(auto &dl = scene_->GetDirectionalLight())
+    {
+        const Light::DirectionalData &data = dl->GetDirectionalData();
+        perPassGroupData.cbuffer.directionalLight.color = dl->GetColor();
+        perPassGroupData.cbuffer.directionalLight.intensity = dl->GetIntensity();
+        perPassGroupData.cbuffer.directionalLight.direction = data.direction;
+    }
+    else
+    {
+        perPassGroupData.cbuffer.directionalLight.intensity = 0;
+    }
+    
+    cmd.BindPipeline(deferredLightingPipeline_);
+
+    RC<BindingGroup> perPassGroup = device_.CreateBindingGroup(perPassGroupData);
+    const int groupIndex =
+        deferredLightingPipeline_->GetShaderInfo()->GetBuiltinBindingGroupIndex(Shader::BuiltinBindingGroup::Pass);
+    cmd.BindGraphicsGroup(groupIndex, std::move(perPassGroup));
+
+    if(auto &inlineSamplerGroup = deferredLightingPipeline_->GetShaderInfo()->GetBindingGroupForInlineSamplers())
+    {
+        cmd.BindGraphicsGroup(
+            deferredLightingPipeline_->GetShaderInfo()->GetBindingGroupIndexForInlineSamplers(), inlineSamplerGroup);
+    }
+
+    cmd.SetViewports(gbufferA->GetViewport());
+    cmd.SetScissors(gbufferA->GetScissor());
+    cmd.BindMesh(fullscreenTriangleWithRays_);
+    cmd.Draw(fullscreenTriangleWithRays_.GetVertexCount(), 1, 0, 0);
 }
 
 RTRC_END

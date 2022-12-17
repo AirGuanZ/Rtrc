@@ -173,7 +173,8 @@ std::vector<unsigned char> DXC::Compile(
         }
         if(errors && errors->GetStringLength() > 0)
         {
-            throw Exception(errors->GetStringPointer());
+            std::string msg = errors->GetStringPointer();
+            throw Exception(std::move(msg));
         }
         throw Exception("dxc: an unknown error occurred");
     }

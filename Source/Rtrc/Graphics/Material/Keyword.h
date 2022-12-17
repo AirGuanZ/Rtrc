@@ -163,6 +163,10 @@ const Keyword &GetKeyword()
     return ret;
 }
 
-#define RTRC_KEYWORD(X) (::Rtrc::GetKeyword<#X>())
+#if defined(__INTELLISENSE__) || defined(__RSCPP_VERSION )
+#define RTRC_KEYWORD(X) ([]() -> const ::Rtrc::Keyword& { static ::Rtrc::Keyword ret(#X); return ret; }())
+#else
+#define RTRC_KEYWORD(X) (::Rtrc::GetKeyword<::Rtrc::TemplateStringParameter(#X)>())
+#endif
 
 RTRC_END

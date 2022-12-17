@@ -4,8 +4,8 @@
 
 rtrc_group(TestGroup)
 {
-    rtrc_define(Texture2D<float2>, MainTexture);
-    rtrc_define(SamplerState[4], MainSampler);
+    rtrc_define(Texture2D<float2>,      MainTexture);
+    rtrc_define(SamplerState[4],        MainSampler);
     rtrc_define(ConstantBuffer<float3>, MainConstantBuffer);
 };
 
@@ -24,21 +24,23 @@ void Run()
 
     // Mesh
 
-    MeshManager meshManager(device->GetCopyContext());
-    auto mesh = meshManager.LoadFromObjFile("Asset/01.TexturedQuad/Quad.obj");
+    MeshLoader meshManager;
+    meshManager.SetCopyContext(&device->GetCopyContext());
+    meshManager.SetRootDirectory("Asset/Sample/01.TexturedQuad");
+    auto mesh = meshManager.LoadFromObjFile("Quad.obj");
 
     // Pipeline
 
     MaterialManager materialManager;
     materialManager.SetDevice(device.get());
-    materialManager.SetRootDirectory("Asset/01.TexturedQuad/");
+    materialManager.SetRootDirectory("Asset/Sample/01.TexturedQuad/");
 
     KeywordValueContext keywords;
     keywords.Set(RTRC_KEYWORD(DADADA), 1);
 
     auto material = materialManager.GetMaterial("Quad");
-    auto subMaterial = material->GetSubMaterialByTag("Default");
-    auto shader = subMaterial->GetShader(keywords);
+    auto matPass = material->GetPassByTag("Default");
+    auto shader = matPass->GetShader(keywords);
 
     auto pipeline = device->CreateGraphicsPipeline({
         .shader = shader,
@@ -49,7 +51,7 @@ void Run()
     // Main texture
 
     auto mainTex = device->GetCopyContext().LoadTexture2D(
-        "Asset/01.TexturedQuad/MainTexture.png",
+        "Asset/Sample/01.TexturedQuad/MainTexture.png",
         RHI::Format::B8G8R8A8_UNorm,
         RHI::TextureUsage::ShaderResource,
         true);
@@ -77,7 +79,7 @@ void Run()
     // Material
 
     auto materialInstance = material->CreateInstance();
-    auto subMaterialInstance = materialInstance->GetSubMaterialInstance(0);
+    auto matPassInst = materialInstance->GetPassInstance(0);
     materialInstance->Set("MainTexture", mainTex);
     materialInstance->Set("MainSampler", mainSampler);
     materialInstance->SetFloat("scale", 1);
@@ -119,7 +121,7 @@ void Run()
             });
             commandBuffer.BindPipeline(pipeline);
             commandBuffer.BindMesh(mesh);
-            subMaterialInstance->BindGraphicsProperties(keywords, commandBuffer);
+            matPassInst->BindGraphicsProperties(keywords, commandBuffer);
             commandBuffer.SetViewports(rt->GetViewport());
             commandBuffer.SetScissors(rt->GetScissor());
             commandBuffer.DrawIndexed(6, 1, 0, 0, 0);

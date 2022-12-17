@@ -68,6 +68,7 @@ Mesh GetFullscreenTriangle(DynamicBufferManager &bufferManager)
     MeshBuilder builder;
     builder.SetLayout(Vertex::GetLayout());
     builder.SetVertexBuffer(0, vertexBuffer);
+    builder.SetVertexCount(3);
     return builder.CreateMesh();
 }
 
@@ -100,6 +101,7 @@ Mesh GetFullscreenTriangle(DynamicBufferManager &bufferManager, const Camera &ca
     MeshBuilder builder;
     builder.SetLayout(VertexWithRay::GetLayout());
     builder.SetVertexBuffer(0, vertexBuffer);
+    builder.SetVertexCount(3);
     return builder.CreateMesh();
 }
 
@@ -114,6 +116,7 @@ Mesh GetFullscreenQuad(DynamicBufferManager &bufferManager)
     MeshBuilder builder;
     builder.SetLayout(Vertex::GetLayout());
     builder.SetVertexBuffer(0, vertexBuffer);
+    builder.SetVertexCount(6);
     return builder.CreateMesh();
 }
 
@@ -142,6 +145,7 @@ Mesh GetFullscreenQuad(DynamicBufferManager &bufferManager, const Camera &camera
     MeshBuilder builder;
     builder.SetLayout(VertexWithRay::GetLayout());
     builder.SetVertexBuffer(0, vertexBuffer);
+    builder.SetVertexCount(6);
     return builder.CreateMesh();
 }
 

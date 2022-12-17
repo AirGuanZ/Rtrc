@@ -24,9 +24,9 @@ public:
 
     void UploadTexture2D(
         const RC<Texture> &texture,
-        uint32_t             arrayLayer,
-        uint32_t             mipLevel,
-        const void          *data);
+        uint32_t           arrayLayer,
+        uint32_t           mipLevel,
+        const void        *data);
 
     void UploadTexture2D(
         const RC<Texture> &texture,
@@ -40,15 +40,15 @@ public:
         size_t                 initDataOffset = 0,
         size_t                 initDataSize = 0);
 
-    RC<StatefulTexture> CreateTexture2D(
+    RC<Texture> CreateTexture2D(
         const RHI::TextureDesc &desc,
         Span<const void *>      imageData);
 
-    RC<StatefulTexture> CreateTexture2D(
+    RC<Texture> CreateTexture2D(
         const RHI::TextureDesc &desc,
         Span<ImageDynamic>      images);
 
-    RC<StatefulTexture> LoadTexture2D(
+    RC<Texture> LoadTexture2D(
         const std::string    &filename,
         RHI::Format           format,
         RHI::TextureUsageFlag usages,
