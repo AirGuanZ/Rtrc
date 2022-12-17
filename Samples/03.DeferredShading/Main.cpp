@@ -16,10 +16,10 @@ class Application : public Uncopyable
     Box<MeshLoader>      meshes_;
 
     Box<BuiltinResourceManager> builtinResources_;
-    Box<DeferredRenderer>       renderer_;
 
     Box<Scene> scene_;
     Box<Camera> camera_;
+    FreeCameraController cameraController_;
 
     void Initialize()
     {
@@ -27,6 +27,7 @@ class Application : public Uncopyable
             .SetSize(800, 800)
             .SetTitle("Rtrc Sample: Deferred Shading")
             .Create();
+        input_ = &window_.GetInput();
         device_ = Device::CreateGraphicsDevice(window_);
         executer_ = MakeBox<RG::Executer>(device_.get());
 
@@ -39,10 +40,13 @@ class Application : public Uncopyable
         meshes_->SetRootDirectory("Asset");
 
         builtinResources_ = MakeBox<BuiltinResourceManager>(*device_);
-        renderer_ = MakeBox<DeferredRenderer>(*device_, *builtinResources_);
 
         scene_ = MakeBox<Scene>();
         camera_ = MakeBox<Camera>();
+        camera_->SetPosition(Vector3f(-2, 2, -5));
+        camera_->SetRotation(Vector3f(0.35, 0.4, 0));
+        camera_->CalculateDerivedData();
+        cameraController_.SetCamera(*camera_);
 
         {
             auto cubeMesh = builtinResources_->GetBuiltinMesh(BuiltinMesh::Cube);
@@ -65,6 +69,7 @@ class Application : public Uncopyable
             scene_->AddLight(light);
         }
 
+        input_->LockCursor(true);
         window_.SetFocus();
     }
 
@@ -77,19 +82,27 @@ class Application : public Uncopyable
 
         const float wOverH = static_cast<float>(window_.GetFramebufferSize().x) / window_.GetFramebufferSize().y;
         camera_->SetProjection(Deg2Rad(60), wOverH, 0.1f, 100.0f);
-        camera_->SetPosition(Vector3f(-2, 2, -5));
-        camera_->SetRotation(Vector3f(0.35, 0.4, 0));
-        camera_->CalculateDerivedData();
+        cameraController_.UpdateCamera(*input_);
+
+        auto renderer = MakeBox<DeferredRenderer>(*device_, *builtinResources_);
 
         auto rg = device_->CreateRenderGraph();
         auto renderTarget = rg->RegisterSwapchainTexture(device_->GetSwapchain());
-        auto deferredRendererRGData = renderer_->AddToRenderGraph(rg.get(), renderTarget, *scene_, *camera_);
+        auto deferredRendererRGData = renderer->AddToRenderGraph(rg.get(), renderTarget, *scene_, *camera_);
         deferredRendererRGData.outPass->SetSignalFence(device_->GetFrameFence());
 
         executer_->Execute(rg);
     }
 
 public:
+
+    ~Application()
+    {
+        if(input_)
+        {
+            input_->LockCursor(false);
+        }
+    }
 
     void Run()
     {

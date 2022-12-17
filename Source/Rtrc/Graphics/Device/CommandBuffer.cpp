@@ -378,6 +378,7 @@ void CommandBufferManager::_internalEndFrame()
             assert(poolData.activePool->activeUserCount == 0 && "Cross frame command buffer is not allowed");
             sync_.OnFrameComplete([p = std::move(poolData.activePool->rhiPool), &fps = freePools_]() mutable
             {
+                p->Reset();
                 fps.push(std::move(p));
             });
             delete poolData.activePool;
@@ -427,6 +428,7 @@ void CommandBufferManager::_internalRelease(CommandBuffer &commandBuffer)
         {
             sync_.OnFrameComplete([p = std::move(commandBuffer.pool_->rhiPool), &fps = freePools_]() mutable
             {
+                p->Reset();
                 fps.push(std::move(p));
             });
             delete commandBuffer.pool_;

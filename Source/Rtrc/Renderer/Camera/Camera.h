@@ -62,10 +62,6 @@ public:
 
 private:
 
-    void SetDirty();
-    void ClearDrity();
-    void AssertNotDirty() const;
-
     // Basic data
 
     Vector3f position_;
@@ -107,37 +103,31 @@ inline const PerspectiveProjectionParameters &Camera::GetProjection() const
 
 inline const Vector3f &Camera::GetLeft() const
 {
-    AssertNotDirty();
     return left_;
 }
 
 inline const Vector3f &Camera::GetForward() const
 {
-    AssertNotDirty();
     return forward_;
 }
 
 inline const Vector3f &Camera::GetUp() const
 {
-    AssertNotDirty();
     return up_;
 }
 
 inline void Camera::SetRotation(const Vector3f &rotation)
 {
-    SetDirty();
     rotation_ = rotation;
 }
 
 inline void Camera::SetPosition(const Vector3f &position)
 {
-    SetDirty();
     position_ = position;
 }
 
 inline void Camera::SetProjection(float fovYRad, float wOverH, float nearPlane, float farPlane)
 {
-    SetDirty();
     projParams_ = { fovYRad, wOverH, nearPlane, farPlane };
 }
 
@@ -174,27 +164,6 @@ inline const Matrix4x4f &Camera::GetWorldToClipMatrix() const
 inline const Matrix4x4f &Camera::GetClipToWorldMatrix() const
 {
     return constantBufferData_.clipToWorldMatrix;
-}
-
-inline void Camera::SetDirty()
-{
-#if RTRC_DEBUG
-    isDerivedDataDirty_ = true;
-#endif
-}
-
-inline void Camera::ClearDrity()
-{
-#if RTRC_DEBUG
-    isDerivedDataDirty_ = false;
-#endif
-}
-
-inline void Camera::AssertNotDirty() const
-{
-#if RTRC_DEBUG
-    assert(!isDerivedDataDirty_);
-#endif
 }
 
 RTRC_END

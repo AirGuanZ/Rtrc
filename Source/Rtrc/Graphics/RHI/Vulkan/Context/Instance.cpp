@@ -87,7 +87,7 @@ Ptr<Device> VulkanInstance::CreateDevice(const DeviceDesc &desc)
         }
         queueCreateInfos.push_back(VkDeviceQueueCreateInfo{
             .sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-            .queueFamilyIndex = physicalDevice.GetGraphicsQueueFamily().value(),
+            .queueFamilyIndex = *physicalDevice.GetGraphicsQueueFamily(),
             .queueCount       = 2,
             .pQueuePriorities = priorities
         });
@@ -103,7 +103,7 @@ Ptr<Device> VulkanInstance::CreateDevice(const DeviceDesc &desc)
         bool needNewQueueFamily = true;
         for(auto &info : queueCreateInfos)
         {
-            if(info.queueFamilyIndex == physicalDevice.GetComputeQueueFamily().value())
+            if(info.queueFamilyIndex == *physicalDevice.GetComputeQueueFamily())
             {
                 ++info.queueCount;
                 needNewQueueFamily = false;
@@ -113,7 +113,7 @@ Ptr<Device> VulkanInstance::CreateDevice(const DeviceDesc &desc)
         {
             queueCreateInfos.push_back(VkDeviceQueueCreateInfo{
                 .sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-                .queueFamilyIndex = physicalDevice.GetComputeQueueFamily().value(),
+                .queueFamilyIndex = *physicalDevice.GetComputeQueueFamily(),
                 .queueCount       = 1,
                 .pQueuePriorities = priorities
             });
@@ -130,7 +130,7 @@ Ptr<Device> VulkanInstance::CreateDevice(const DeviceDesc &desc)
         bool needNewQueueFamily = true;
         for(auto &info : queueCreateInfos)
         {
-            if(info.queueFamilyIndex == physicalDevice.GetTransferQueueFamily().value())
+            if(info.queueFamilyIndex == *physicalDevice.GetTransferQueueFamily())
             {
                 ++info.queueCount;
                 needNewQueueFamily = false;
@@ -140,7 +140,7 @@ Ptr<Device> VulkanInstance::CreateDevice(const DeviceDesc &desc)
         {
             queueCreateInfos.push_back(VkDeviceQueueCreateInfo{
                 .sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-                .queueFamilyIndex = physicalDevice.GetTransferQueueFamily().value(),
+                .queueFamilyIndex = *physicalDevice.GetTransferQueueFamily(),
                 .queueCount       = 1,
                 .pQueuePriorities = priorities
             });

@@ -257,10 +257,10 @@ inline Matrix4x4f Matrix4x4f::Perspective(float fovYRad, float wOverH, float nea
     const float y_rad = 0.5f * fovYRad;
     const float cot = std::cos(y_rad) / std::sin(y_rad);
     return {
-        cot / wOverH, 0,   0,                 0,
-        0,            cot, 0,                 0,
-        0,            0,   farPlane * invDis, -farPlane * nearPlane * invDis,
-        0,            0,   1,                 0
+        -cot / wOverH, 0,   0,                 0,
+        0,             cot, 0,                 0,
+        0,             0,   farPlane * invDis, -farPlane * nearPlane * invDis,
+        0,             0,   1,                 0
     };
 }
 

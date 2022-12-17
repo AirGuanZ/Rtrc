@@ -278,6 +278,7 @@ void DeferredRenderer::DoRenderGBuffersPass(RG::PassContext &passContext, const 
                     .primitiveTopology      = RHI::PrimitiveTopology::TriangleList,
                     .fillMode               = RHI::FillMode::Fill,
                     .cullMode               = RHI::CullMode::CullBack,
+                    .frontFaceMode          = RHI::FrontFaceMode::CounterClockwise,
                     .enableDepthTest        = true,
                     .enableDepthWrite       = true,
                     .depthCompareOp         = RHI::CompareOp::Less,

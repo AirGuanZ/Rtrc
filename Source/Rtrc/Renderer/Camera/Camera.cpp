@@ -48,8 +48,6 @@ void Camera::CalculateDerivedData()
     data.worldRays[1] = Normalize(worldSpaceRays[1].xyz() / worldSpaceRays[0].w - position_);
     data.worldRays[2] = Normalize(worldSpaceRays[2].xyz() / worldSpaceRays[0].w - position_);
     data.worldRays[3] = Normalize(worldSpaceRays[3].xyz() / worldSpaceRays[0].w - position_);
-
-    ClearDrity();
 }
 
 RTRC_END
