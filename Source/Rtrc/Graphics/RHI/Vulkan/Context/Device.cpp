@@ -23,7 +23,7 @@
 
 RTRC_RHI_VK_BEGIN
 
-namespace
+namespace VkDeviceDetail
 {
 
     bool CheckFormatSupport(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkFormat expectedFormat)
@@ -169,7 +169,7 @@ namespace
         return ret;
     }
 
-} // namespace anonymous
+} // namespace VkDeviceDetail
 
 VulkanDevice::VulkanDevice(
     VkInstance             instance,
@@ -274,7 +274,7 @@ Ptr<Swapchain> VulkanDevice::CreateSwapchain(const SwapchainDesc &desc, Window &
     // check format
 
     const auto requiredFormat = TranslateTexelFormat(desc.format);
-    if(!CheckFormatSupport(physicalDevice_.GetNativeHandle(), surface->GetSurface(), requiredFormat))
+    if(!VkDeviceDetail::CheckFormatSupport(physicalDevice_.GetNativeHandle(), surface->GetSurface(), requiredFormat))
     {
         throw Exception(fmt::format("surface format {} is not supported", GetFormatName(desc.format)));
     }
@@ -726,7 +726,7 @@ Ptr<BindingLayout> VulkanDevice::CreateBindingLayout(const BindingLayoutDesc &de
 
 Ptr<Texture> VulkanDevice::CreateTexture(const TextureDesc &desc)
 {
-    const auto imageCreateInfo = TranslateImageCreateInfo(desc, queueFamilies_);
+    const auto imageCreateInfo = VkDeviceDetail::TranslateImageCreateInfo(desc, queueFamilies_);
     const VmaAllocationCreateInfo allocCreateInfo = { .usage = VMA_MEMORY_USAGE_AUTO };
 
     VkImage image; VmaAllocation alloc;
@@ -745,7 +745,7 @@ Ptr<Texture> VulkanDevice::CreateTexture(const TextureDesc &desc)
 
 Ptr<Buffer> VulkanDevice::CreateBuffer(const BufferDesc &desc)
 {
-    const BufferCreateInfoWrapper createInfo = TranslateBufferCreateInfo(desc, queueFamilies_);
+    const auto createInfo = VkDeviceDetail::TranslateBufferCreateInfo(desc, queueFamilies_);
     const VmaAllocationCreateInfo allocCreateInfo = {
         .flags = TranslateBufferHostAccessType(desc.hostAccessType),
         .usage = VMA_MEMORY_USAGE_AUTO
@@ -824,7 +824,7 @@ Ptr<Sampler> VulkanDevice::CreateSampler(const SamplerDesc &desc)
 Ptr<MemoryPropertyRequirements> VulkanDevice::GetMemoryRequirements(
     const TextureDesc &desc, size_t *size, size_t *alignment) const
 {
-    const auto imageCreateInfo = TranslateImageCreateInfo(desc, queueFamilies_);
+    const auto imageCreateInfo = VkDeviceDetail::TranslateImageCreateInfo(desc, queueFamilies_);
     const VkDeviceImageMemoryRequirements queryInfo = {
         .sType = VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS,
         .pCreateInfo = &imageCreateInfo.createInfo,
@@ -847,7 +847,7 @@ Ptr<MemoryPropertyRequirements> VulkanDevice::GetMemoryRequirements(
 Ptr<MemoryPropertyRequirements> VulkanDevice::GetMemoryRequirements(
     const BufferDesc &desc, size_t *size, size_t *alignment) const
 {
-    const BufferCreateInfoWrapper bufferCreateInfo = TranslateBufferCreateInfo(desc, queueFamilies_);
+    const auto bufferCreateInfo = VkDeviceDetail::TranslateBufferCreateInfo(desc, queueFamilies_);
     const VkDeviceBufferMemoryRequirements queryInfo = {
         .sType = VK_STRUCTURE_TYPE_DEVICE_BUFFER_MEMORY_REQUIREMENTS,
         .pCreateInfo = &bufferCreateInfo.createInfo
@@ -890,7 +890,7 @@ Ptr<MemoryBlock> VulkanDevice::CreateMemoryBlock(const MemoryBlockDesc &desc)
 Ptr<Texture> VulkanDevice::CreatePlacedTexture(
     const TextureDesc &desc, const Ptr<MemoryBlock> &memoryBlock, size_t offsetInMemoryBlock)
 {
-    const auto imageCreateInfo = TranslateImageCreateInfo(desc, queueFamilies_);
+    const auto imageCreateInfo = VkDeviceDetail::TranslateImageCreateInfo(desc, queueFamilies_);
     VkImage image;
     VK_FAIL_MSG(
         vkCreateImage(device_, &imageCreateInfo.createInfo, VK_ALLOC, &image),
@@ -909,7 +909,7 @@ Ptr<Texture> VulkanDevice::CreatePlacedTexture(
 Ptr<Buffer> VulkanDevice::CreatePlacedBuffer(
     const BufferDesc &desc, const Ptr<MemoryBlock> &memoryBlock, size_t offsetInMemoryBlock)
 {
-    const BufferCreateInfoWrapper bufferCreateInfo = TranslateBufferCreateInfo(desc, queueFamilies_);
+    const auto bufferCreateInfo = VkDeviceDetail::TranslateBufferCreateInfo(desc, queueFamilies_);
     VkBuffer buffer;
     VK_FAIL_MSG(
         vkCreateBuffer(device_, &bufferCreateInfo.createInfo, VK_ALLOC, &buffer),

@@ -4,7 +4,7 @@
 
 RTRC_RHI_VK_BEGIN
 
-namespace
+namespace VkPhysicalDeviceDetail
 {
 
     bool IsSuitable(VkPhysicalDevice device, const DeviceDesc &desc)
@@ -102,7 +102,7 @@ namespace
         return result;
     }
 
-} // namespace anonymous
+} // namespace VkPhysicalDeviceDetail
 
 VulkanPhysicalDevice VulkanPhysicalDevice::Select(VkInstance instance, const DeviceDesc &desc)
 {
@@ -124,10 +124,10 @@ VulkanPhysicalDevice VulkanPhysicalDevice::Select(VkInstance instance, const Dev
     uint32_t bestScore = 0;
     for(uint32_t i = 0; i < deviceCount; ++i)
     {
-        if(!IsSuitable(devices[i], desc))
+        if(!VkPhysicalDeviceDetail::IsSuitable(devices[i], desc))
             continue;
 
-        const uint32_t newScore = RatePhysicalDevice(devices[i]);
+        const uint32_t newScore = VkPhysicalDeviceDetail::RatePhysicalDevice(devices[i]);
         if(newScore > bestScore)
         {
             bestDeviceIndex = i;

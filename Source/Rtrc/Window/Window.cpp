@@ -20,11 +20,10 @@ struct Window::Impl
     GLFWwindow *glfwWindow = nullptr;
     std::unique_ptr<Input> input;
     Sender<WindowCloseEvent, WindowResizeEvent, WindowFocusEvent> sender;
-
     bool hasFocus = true;
 };
 
-namespace
+namespace WindowDetail
 {
     
     struct GLFWKeyCodeTable
@@ -272,11 +271,11 @@ namespace
         }
     }
 
-} // namespace anonymous
+} // namespace WindowDetail
 
 void Window::DoEvents()
 {
-    for(auto input : windowInputs)
+    for(auto input : WindowDetail::windowInputs)
     {
         input->_InternalUpdate();
     }
@@ -286,8 +285,8 @@ void Window::DoEvents()
 std::vector<std::string> Window::GetRequiredVulkanInstanceExtensions()
 {
 #ifdef RTRC_RHI_VULKAN
-    InitGLFW();
-    InitGLFWVulkan();
+    WindowDetail::InitGLFW();
+    WindowDetail::InitGLFWVulkan();
 
     uint32_t count;
     const char **exts = glfwGetRequiredInstanceExtensions(&count);
@@ -332,7 +331,7 @@ Window::~Window()
     }
     assert(impl_->glfwWindow);
     glfwDestroyWindow(impl_->glfwWindow);
-    windowInputs.erase(impl_->input.get());
+    WindowDetail::windowInputs.erase(impl_->input.get());
     impl_.reset();
 }
 
@@ -379,8 +378,8 @@ void Window::SetFocus()
 ReferenceCountedPtr<RHI::Surface> Window::CreateVulkanSurface(void *vkInstance)
 {
 #ifdef RTRC_RHI_VULKAN
-    InitGLFW();
-    InitGLFWVulkan();
+    WindowDetail::InitGLFW();
+    WindowDetail::InitGLFWVulkan();
 
     VkSurfaceKHR surface;
     auto instance = static_cast<VkInstance>(vkInstance);
@@ -425,6 +424,8 @@ WindowBuilder &WindowBuilder::SetTitle(std::string title)
 
 Window WindowBuilder::Create() const
 {
+    using namespace WindowDetail;
+
     InitGLFW();
 
     // create window

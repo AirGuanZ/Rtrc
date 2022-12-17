@@ -2,7 +2,7 @@
 
 RTRC_BEGIN
 
-namespace
+namespace BufferDetail
 {
 
     template<typename T>
@@ -47,16 +47,16 @@ namespace
         size_t fullSize_;
     };
 
-} // namespace anonymous
+} // namespace BufferDetail
 
 RC<SubBuffer> SubBuffer::GetSubRange(RC<Buffer> buffer, size_t offset, size_t size)
 {
-    return MakeRC<WrappedSubBuffer<Buffer>>(std::move(buffer), offset, size);
+    return MakeRC<BufferDetail::WrappedSubBuffer<Buffer>>(std::move(buffer), offset, size);
 }
 
 RC<SubBuffer> SubBuffer::GetSubRange(RC<SubBuffer> buffer, size_t offset, size_t size)
 {
-    return MakeRC<WrappedSubBuffer<SubBuffer>>(std::move(buffer), offset, size);
+    return MakeRC<BufferDetail::WrappedSubBuffer<SubBuffer>>(std::move(buffer), offset, size);
 }
 
 BufferManager::BufferManager(RHI::DevicePtr device, DeviceSynchronizer &sync)

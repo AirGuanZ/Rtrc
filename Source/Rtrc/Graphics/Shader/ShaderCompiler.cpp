@@ -9,7 +9,7 @@
 
 RTRC_BEGIN
 
-namespace
+namespace ShaderCompilerDetail
 {
 
     const char *BindingTypeToTypeName(RHI::BindingType type)
@@ -123,7 +123,7 @@ namespace
         return stages;
     }
 
-} // namespace anonymous
+} // namespace ShaderCompilerDetail
 
 void ShaderCompiler::SetDevice(Device *device)
 {
@@ -302,7 +302,7 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
             std::string right = fmt::format(
                 "[[vk::binding({}, {})]] {}{} {}{};",
                 slot, set,
-                BindingTypeToTypeName(binding.type),
+                ShaderCompilerDetail::BindingTypeToTypeName(binding.type),
                 binding.templateParam.empty() ? std::string{} : fmt::format("<{}>", binding.templateParam),
                 binding.name,
                 binding.arraySize ? fmt::format("[{}]", *binding.arraySize) : "");
@@ -344,7 +344,7 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
         std::string right = fmt::format(
             "[[vk::binding({}, {})]] {}{} {}{};",
             slot, setForUngroupedBindings,
-            BindingTypeToTypeName(binding.type),
+            ShaderCompilerDetail::BindingTypeToTypeName(binding.type),
             binding.templateParam.empty() ? std::string{} : fmt::format("<{}>", binding.templateParam),
             binding.name,
             binding.arraySize ? fmt::format("[{}]", *binding.arraySize) : "");
@@ -492,6 +492,8 @@ std::string ShaderCompiler::MapFilename(std::string_view filename) const
 template<bool AllowStageSpecifier>
 ShaderCompiler::ParsedBinding ShaderCompiler::ParseBinding(ShaderTokenStream &tokens) const
 {
+    using namespace ShaderCompilerDetail;
+
     ParsedBinding ret;
 
     auto it = RESOURCE_PROPERTIES.find(tokens.GetCurrentToken());
@@ -633,6 +635,8 @@ void ShaderCompiler::ParseInlineSampler(ShaderTokenStream &tokens, std::string &
 
 ShaderCompiler::Bindings ShaderCompiler::CollectBindingsInStage(const std::string &source) const
 {
+    using namespace ShaderCompilerDetail;
+
     constexpr std::string_view RESOURCE = "rtrc_define";
     constexpr std::string_view GROUP    = "rtrc_group";
     constexpr std::string_view SAMPLER  = "rtrc_sampler";
@@ -653,7 +657,7 @@ ShaderCompiler::Bindings ShaderCompiler::CollectBindingsInStage(const std::strin
         const size_t resourcePos = FindKeyword(source, RESOURCE, keywordBeginPos);
         const size_t groupPos = FindKeyword(source, GROUP, keywordBeginPos);
         const size_t samplerPos = FindKeyword(source, SAMPLER, keywordBeginPos);
-        const size_t minPos = std::min({ resourcePos, groupPos, samplerPos });
+        const size_t minPos = (std::min)({ resourcePos, groupPos, samplerPos });
         if(minPos == std::string::npos)
         {
             break;

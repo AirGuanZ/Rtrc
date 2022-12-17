@@ -1,12 +1,16 @@
 #include <mimalloc.h>
 
 #define VMA_IMPLEMENTATION
+#include <volk.h>
+#include <vk_mem_alloc.h>
+#undef VMA_IMPLEMENTATION
+
 #include <Rtrc/Graphics/RHI/Vulkan/Context/Device.h>
 #include <Rtrc/Utility/Unreachable.h>
 
 RTRC_RHI_VK_BEGIN
 
-namespace
+namespace VkCommonDetail
 {
 
     void *VKAPI_PTR VkAlloc(void *pUserData, size_t size, size_t alignment, VkSystemAllocationScope scope)
@@ -24,12 +28,12 @@ namespace
         mi_free(ptr);
     }
     
-} // namespace anonymous
+} // namespace VkCommonDetail
 
 VkAllocationCallbacks RtrcGlobalVulkanAllocationCallbacks = {
-    .pfnAllocation         = VkAlloc,
-    .pfnReallocation       = VkRealloc,
-    .pfnFree               = VkFree,
+    .pfnAllocation         = VkCommonDetail::VkAlloc,
+    .pfnReallocation       = VkCommonDetail::VkRealloc,
+    .pfnFree               = VkCommonDetail::VkFree,
     .pfnInternalAllocation = nullptr,
     .pfnInternalFree       = nullptr
 };

@@ -16,7 +16,7 @@
 
 RTRC_BEGIN
 
-namespace
+namespace DXCDetail
 {
 
     using Microsoft::WRL::ComPtr;
@@ -28,7 +28,7 @@ namespace
         return gConvertor.from_bytes(s);
     }
 
-} // namespace anonymous
+} // namespace DXCDetail
 
 using Microsoft::WRL::ComPtr;
 
@@ -83,14 +83,14 @@ std::vector<unsigned char> DXC::Compile(
     std::wstring filename;
     if(!shaderInfo.sourceFilename.empty())
     {
-        filename = ToWString(shaderInfo.sourceFilename);
+        filename = DXCDetail::ToWString(shaderInfo.sourceFilename);
         arguments.push_back(filename.c_str());
     }
 
     std::vector<std::wstring> includeDirs;
     for(auto &inc : shaderInfo.includeDirs)
     {
-        includeDirs.push_back(ToWString(inc));
+        includeDirs.push_back(DXCDetail::ToWString(inc));
     }
     for(auto &inc : includeDirs)
     {
@@ -98,7 +98,7 @@ std::vector<unsigned char> DXC::Compile(
         arguments.push_back(inc.c_str());
     }
 
-    const auto entryPoint = ToWString(shaderInfo.entryPoint);
+    const auto entryPoint = DXCDetail::ToWString(shaderInfo.entryPoint);
     arguments.push_back(L"-E");
     arguments.push_back(entryPoint.c_str());
 
@@ -115,7 +115,7 @@ std::vector<unsigned char> DXC::Compile(
     std::vector<std::wstring> macros;
     for(auto &m : shaderInfo.macros)
     {
-        macros.push_back(ToWString("-D" + m.first + "=" + m.second));
+        macros.push_back(DXCDetail::ToWString("-D" + m.first + "=" + m.second));
     }
     for(auto &m : macros)
     {

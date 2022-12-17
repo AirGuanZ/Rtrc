@@ -6,7 +6,7 @@
 
 RTRC_BEGIN
 
-namespace
+namespace ShaderReflDetail
 {
 
     std::string_view GetSPIRVReflectResultName(SpvReflectResult result)
@@ -178,14 +178,14 @@ namespace
         }
     }
 
-} // namespace anonymous
+} // namespace ShaderReflDetail
 
 SPIRVReflection::SPIRVReflection(Span<unsigned char> code, std::string entryPoint)
     : entry_(std::move(entryPoint))
 {
     auto shadermodule = new SpvReflectShaderModule{};
     RTRC_SCOPE_FAIL{ delete shadermodule; };
-    Check(
+    ShaderReflDetail::Check(
         spvReflectCreateShaderModule(code.size(), code.GetData(), shadermodule),
         "Failed to reflect spv shader");
     shaderModule_.reset(shadermodule);
@@ -208,14 +208,14 @@ bool SPIRVReflection::IsBindingUsed(std::string_view name) const
 std::vector<ShaderIOVar> SPIRVReflection::GetInputVariables() const
 {
     std::vector<ShaderIOVar> result;
-    ReflectInputVariables(*shaderModule_, entry_.c_str(), result);
+    ShaderReflDetail::ReflectInputVariables(*shaderModule_, entry_.c_str(), result);
     return result;
 }
 
 std::vector<ShaderConstantBuffer> SPIRVReflection::GetConstantBuffers() const
 {
     std::vector<ShaderConstantBuffer> result;
-    ReflectConstantBuffers(*shaderModule_, result);
+    ShaderReflDetail::ReflectConstantBuffers(*shaderModule_, result);
     return result;
 }
 

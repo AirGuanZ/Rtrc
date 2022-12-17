@@ -2,6 +2,7 @@
 
 #define VOLK_IMPLEMENTATION
 #include <volk.h>
+#undef VOLK_IMPLEMENTATION
 
 #include <Rtrc/Graphics/RHI/Vulkan/Context/Device.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Context/Instance.h>

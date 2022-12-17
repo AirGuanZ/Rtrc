@@ -4,7 +4,7 @@
 
 RTRC_BEGIN
 
-namespace
+namespace GenerateMipmapDetail
 {
 
     template<typename Texel, typename Component, int Channels>
@@ -22,7 +22,7 @@ namespace
         return ret;
     }
 
-} // namespace anonymous
+} // namespace GenerateMipmapDetail
 
 template<typename T>
 Image<T> GenerateNextImageMipmapLevel(const Image<T> &image)
@@ -33,7 +33,7 @@ Image<T> GenerateNextImageMipmapLevel(const Image<T> &image)
     }
     using Component = typename ImageDetail::Trait<T>::Component;
     constexpr int Channels = ImageDetail::Trait<T>::ComponentCount;
-    return GenerateImpl<T, Component, Channels>(image);
+    return GenerateMipmapDetail::GenerateImpl<T, Component, Channels>(image);
 }
 
 ImageDynamic GenerateNextImageMipmapLevel(const ImageDynamic &image)

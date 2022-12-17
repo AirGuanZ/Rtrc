@@ -11,7 +11,7 @@
 
 RTRC_RHI_VK_BEGIN
 
-namespace
+namespace CommandBufferDetail
 {
 
     VkImage GetVulkanImage(Texture *tex)
@@ -19,7 +19,7 @@ namespace
         return static_cast<VulkanTexture*>(tex)->GetNativeImage();
     }
 
-} // namespace anonymous
+} // namespace CommandBufferDetail
 
 VulkanCommandBuffer::VulkanCommandBuffer(VulkanDevice *device, VkCommandPool pool, VkCommandBuffer commandBuffer)
     : device_(device), pool_(pool), commandBuffer_(commandBuffer)
@@ -321,7 +321,7 @@ void VulkanCommandBuffer::CopyBufferToColorTexture2D(
         .imageExtent = { texDesc.width >> mipLevel, texDesc.height >> mipLevel, 1 }
     };
     auto vkSrc = static_cast<VulkanBuffer *>(src)->GetNativeBuffer();
-    auto vkDst = GetVulkanImage(dst);
+    auto vkDst = CommandBufferDetail::GetVulkanImage(dst);
     vkCmdCopyBufferToImage(commandBuffer_, vkSrc, vkDst, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
 }
 
@@ -342,7 +342,7 @@ void VulkanCommandBuffer::CopyColorTexture2DToBuffer(
         .imageOffset = { 0, 0, 0 },
         .imageExtent = { texDesc.width, texDesc.height, 1 }
     };
-    auto vkSrc = GetVulkanImage(src);
+    auto vkSrc = CommandBufferDetail::GetVulkanImage(src);
     auto vkDst = static_cast<VulkanBuffer *>(dst)->GetNativeBuffer();
     vkCmdCopyImageToBuffer(commandBuffer_, vkSrc, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, vkDst, 1, &copy);
 }
@@ -451,7 +451,7 @@ void VulkanCommandBuffer::ExecuteBarriersInternal(
             .newLayout           = dstLayout,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .image               = GetVulkanImage(transition.texture),
+            .image               = CommandBufferDetail::GetVulkanImage(transition.texture),
             .subresourceRange    = TranslateImageSubresources(transition.texture->GetFormat(), transition.subresources)
         });
     }
@@ -494,7 +494,7 @@ void VulkanCommandBuffer::ExecuteBarriersInternal(
                 .newLayout           = dstLayout,
                 .srcQueueFamilyIndex = beforeQueueFamilyIndex,
                 .dstQueueFamilyIndex = afterQueueFamilyIndex,
-                .image               = GetVulkanImage(release.texture),
+                .image               = CommandBufferDetail::GetVulkanImage(release.texture),
                 .subresourceRange    = TranslateImageSubresources(release.texture->GetFormat(), release.subresources)
             });
         }
@@ -533,7 +533,7 @@ void VulkanCommandBuffer::ExecuteBarriersInternal(
                 .newLayout           = dstLayout,
                 .srcQueueFamilyIndex = beforeQueueFamilyIndex,
                 .dstQueueFamilyIndex = afterQueueFamilyIndex,
-                .image               = GetVulkanImage(acquire.texture),
+                .image               = CommandBufferDetail::GetVulkanImage(acquire.texture),
                 .subresourceRange    = TranslateImageSubresources(acquire.texture->GetFormat(), acquire.subresources)
             });
         }

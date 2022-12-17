@@ -10,15 +10,12 @@
 
 RTRC_BEGIN
 
-using namespace MeshLayoutDSL;
-
-namespace
+namespace MeshLayoutDetail
 {
-
-    std::map<Buffer, Box<VertexBufferLayout>> vertexBufferLayoutCache;
+    std::map<MeshLayoutDSL::Buffer, Box<VertexBufferLayout>> vertexBufferLayoutCache;
     tbb::spin_rw_mutex vertexBufferLayoutCacheMutex;
 
-    std::map<LayoutDesc, Box<MeshLayout>> meshLayoutCache;
+    std::map<MeshLayoutDSL::LayoutDesc, Box<MeshLayout>> meshLayoutCache;
     tbb::spin_rw_mutex meshLayoutCacheMutex;
 
     int VertexAttributeTypeToByteSize(RHI::VertexAttributeType type)
@@ -46,18 +43,20 @@ namespace
         Unreachable();
     }
 
-    void Regularize(LayoutDesc &desc)
+    void Regularize(MeshLayoutDSL::LayoutDesc &desc)
     {
-        std::ranges::sort(desc.buffers, [](const Buffer &a, const Buffer &b)
+        std::ranges::sort(desc.buffers, [](const MeshLayoutDSL::Buffer &a, const MeshLayoutDSL::Buffer &b)
         {
             return a.attributes.front().semantic < b.attributes.front().semantic;
         });
     }
 
-} // namespace anonymous
+} // namespace MeshLayoutDetail
 
-const VertexBufferLayout *VertexBufferLayout::Create(const Buffer &desc)
+const VertexBufferLayout *VertexBufferLayout::Create(const MeshLayoutDSL::Buffer &desc)
 {
+    using namespace MeshLayoutDetail;
+
     {
         std::shared_lock readLock(vertexBufferLayoutCacheMutex);
         if(auto it = vertexBufferLayoutCache.find(desc); it != vertexBufferLayoutCache.end())
@@ -117,8 +116,10 @@ int VertexBufferLayout::GetAttributeIndexBySemantic(std::string_view semantic) c
     return it != semanticToAttribIndex_.end() ? it->second : -1;
 }
 
-const MeshLayout *MeshLayout::Create(const LayoutDesc &_desc)
+const MeshLayout *MeshLayout::Create(const MeshLayoutDSL::LayoutDesc &_desc)
 {
+    using namespace MeshLayoutDetail;
+
     auto desc = _desc;
     Regularize(desc);
 

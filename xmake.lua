@@ -1,9 +1,5 @@
 set_project("Rtrc")
 
-set_arch("x64")
-set_languages("c++23")
-add_rules("mode.debug", "mode.release")
-
 option("vulkan_backend")
     set_default(true)
 option("directx12_backend")
@@ -12,10 +8,13 @@ option_end()
 
 -- Global settings
 
+set_arch("x64")
+set_languages("c++23")
+add_rules("mode.debug", "mode.release")
+add_rules("c++.unity_build", {batchsize = 4})
+
 option("is_msvc")
-add_csnippets("is_msvc", "return (_MSC_VER)?0:-1;", {
-	tryrun = true
-})
+add_csnippets("is_msvc", "return (_MSC_VER)?0:-1;", { tryrun = true })
 option_end()
 
 set_runtimes(is_mode("debug") and "MTd" or "MT")
@@ -60,15 +59,14 @@ target("Rtrc")
     add_includedirs("Source", {public = true})
     add_headerfiles("Source/**.h|Rtrc/Graphics/RHI/**.h", "Source/Rtrc/Graphics/RHI/*.h")
     add_headerfiles()
-    add_files("Source/**.cpp|Rtrc/Graphics/RHI/**.cpp")
-    add_files("Source/Rtrc/Graphics/RHI/*.cpp")
+    add_files("Source/**.cpp|Rtrc/Graphics/RHI/**.cpp", "Source/Rtrc/Graphics/RHI/*.cpp")
     -- Source group
     add_filegroups("Rtrc", {rootdir="Source/Rtrc"})
     -- Vulkan RHI
     add_options("vulkan_backend")
     if has_config("vulkan_backend") then
         add_headerfiles("Source/Rtrc/Graphics/RHI/Vulkan/**.h")
-        add_files("Source/Rtrc/Graphics/RHI/Vulkan/**.cpp")
+        add_files("Source/Rtrc/Graphics/RHI/Vulkan/**.cpp", {unity_group = "VulkanRHI"})
         add_defines("RTRC_RHI_VULKAN", {public = true})
         add_defines("VMA_STATIC_VULKAN_FUNCTIONS=0", "VMA_DYNAMIC_VULKAN_FUNCTIONS=1", {public = false})
         add_packages("spirv-reflect", "volk", "vk-bootstrap", "vulkan-memory-allocator")

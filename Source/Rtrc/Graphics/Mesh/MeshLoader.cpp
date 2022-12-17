@@ -4,7 +4,7 @@
 
 RTRC_BEGIN
 
-namespace
+namespace MeshLoaderDetail
 {
 
     Vector3f ComputeTangent(
@@ -23,7 +23,7 @@ namespace
         return Normalize(m11 * invDet * B_A - m01 * invDet * C_A);
     }
 
-} // namespace anonymous
+} // namespace MeshLoaderDetail
 
 void MeshLoader::SetCopyContext(CopyContext *copyContext)
 {
@@ -64,7 +64,7 @@ Mesh MeshLoader::LoadFromObjFile(const std::string &filename, const Options &opt
             const Vector2f tb = meshData.texCoordData[j + 1];
             const Vector2f tc = meshData.texCoordData[j + 2];
             const Vector3f nor = Normalize(na + nb + nc);
-            const Vector3f tangent = ComputeTangent(b - a, c - a, tb - ta, tc - ta, nor);
+            const Vector3f tangent = MeshLoaderDetail::ComputeTangent(b - a, c - a, tb - ta, tc - ta, nor);
             tangentData[j + 0] = tangent;
             tangentData[j + 1] = tangent;
             tangentData[j + 2] = tangent;

@@ -6,7 +6,7 @@
 
 RTRC_RG_BEGIN
 
-namespace
+namespace CompilerDetail
 {
 
     void RemoveUnnecessaryAccessMask(RHI::ResourceAccessFlag &beforeAccess, RHI::ResourceAccessFlag &afterAccess)
@@ -21,7 +21,7 @@ namespace
         }
     }
 
-} // namespace anonymous
+} // namespace CompilerDetail
 
 Compiler::Compiler(Device &device)
     : device_(device)
@@ -581,13 +581,13 @@ void Compiler::FillSections(ExecutableGraph &output)
             pass.beforeBufferBarriers = std::move(compilePass->beforeBufferTransitions);
             for(auto &b : pass.beforeBufferBarriers)
             {
-                RemoveUnnecessaryAccessMask(b.beforeAccesses, b.afterAccesses);
+                CompilerDetail::RemoveUnnecessaryAccessMask(b.beforeAccesses, b.afterAccesses);
             }
 
             pass.beforeTextureBarriers = std::move(compilePass->beforeTextureTransitions);
             for(auto &b : pass.beforeTextureBarriers)
             {
-                RemoveUnnecessaryAccessMask(b.beforeAccesses, b.afterAccesses);
+                CompilerDetail::RemoveUnnecessaryAccessMask(b.beforeAccesses, b.afterAccesses);
             }
 
             if(rawPass->name_.empty())

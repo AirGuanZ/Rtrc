@@ -13,7 +13,7 @@
 
 RTRC_BEGIN
 
-namespace
+namespace MaterialDetail
 {
 
     // Parse "keyword { ... }"
@@ -119,7 +119,7 @@ namespace
         }
     }
 
-} // namespace anonymous
+} // namespace MaterialDetail
 
 MaterialPropertyHostLayout::MaterialPropertyHostLayout(std::vector<MaterialProperty> properties)
     : sortedProperties_(std::move(properties))
@@ -452,7 +452,7 @@ void MaterialManager::ProcessShaderFile(int filenameIndex, const std::string &fi
     while (true)
     {
         std::string name; size_t shaderBeg, shaderEnd;
-        if (!FindSection("Shader", source, begPos, name, shaderBeg, shaderEnd))
+        if (!MaterialDetail::FindSection("Shader", source, begPos, name, shaderBeg, shaderEnd))
         {
             break;
         }
@@ -475,7 +475,7 @@ void MaterialManager::ProcessMaterialFile(int filenameIndex, const std::string &
     while(true)
     {
         std::string name; size_t matBeg, matEnd;
-        if(!FindSection("Material", source, begPos, name, matBeg, matEnd))
+        if(!MaterialDetail::FindSection("Material", source, begPos, name, matBeg, matEnd))
         {
             break;
         }

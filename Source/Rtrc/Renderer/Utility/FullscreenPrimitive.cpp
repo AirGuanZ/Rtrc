@@ -2,7 +2,7 @@
 
 RTRC_BEGIN
 
-namespace
+namespace FullscreenPrimitiveDetail
 {
 
     struct Vertex
@@ -55,10 +55,12 @@ namespace
         vertexData[5].position = Vector2f(+1, -1); vertexData[5].uv = Vector2f(1, 1);
     }
 
-} // namespace anonymous
+} // namespace FullscreenPrimitiveDetail
 
 Mesh GetFullscreenTriangle(DynamicBufferManager &bufferManager)
 {
+    using namespace FullscreenPrimitiveDetail;
+
     std::array<Vertex, 3> vertexData;
     FillTrianglePositionAndUV(vertexData);
 
@@ -74,6 +76,8 @@ Mesh GetFullscreenTriangle(DynamicBufferManager &bufferManager)
 
 Mesh GetFullscreenTriangle(DynamicBufferManager &bufferManager, const Camera &camera)
 {
+    using namespace FullscreenPrimitiveDetail;
+
     std::array<VertexWithRay, 3> vertexData;
     FillTrianglePositionAndUV(vertexData);
 
@@ -107,6 +111,8 @@ Mesh GetFullscreenTriangle(DynamicBufferManager &bufferManager, const Camera &ca
 
 Mesh GetFullscreenQuad(DynamicBufferManager &bufferManager)
 {
+    using namespace FullscreenPrimitiveDetail;
+
     std::array<Vertex, 6> vertexData;
     FillQuadPositionAndUV(vertexData);
 
@@ -122,6 +128,8 @@ Mesh GetFullscreenQuad(DynamicBufferManager &bufferManager)
 
 Mesh GetFullscreenQuad(DynamicBufferManager &bufferManager, const Camera &camera)
 {
+    using namespace FullscreenPrimitiveDetail;
+
     std::array<VertexWithRay, 6> vertexData;
     FillQuadPositionAndUV(vertexData);
 

@@ -6,7 +6,7 @@
 
 RTRC_BEGIN
 
-namespace
+namespace DeferredRendererDetail
 {
 
     rtrc_group(PerPassGroup_RenderGBuffers, Pass)
@@ -30,7 +30,7 @@ namespace
         rtrc_define(ConstantBuffer<DeferredLighting_CBuffer>, cbuffer);
     };
 
-} // namespace anonymous
+} // namespace DeferredRendererDetail
 
 DeferredRenderer::DeferredRenderer(Device &device, BuiltinResourceManager &builtinResources)
     : device_(device)
@@ -232,7 +232,7 @@ void DeferredRenderer::DoRenderGBuffersPass(RG::PassContext &passContext, const 
 
     RC<BindingGroup> perPassGroup;
     {
-        PerPassGroup_RenderGBuffers perPassGroupData;
+        DeferredRendererDetail::PerPassGroup_RenderGBuffers perPassGroupData;
         perPassGroupData.Camera = camera_->GetConstantBufferData();
         perPassGroup = device_.CreateBindingGroup(perPassGroupData);
     }
@@ -348,7 +348,7 @@ void DeferredRenderer::DoDeferredLightingPass(RG::PassContext &passContext, cons
     });
     RTRC_SCOPE_EXIT{ cmd.EndRenderPass(); };
 
-    DeferredLighting_PerPassGroup perPassGroupData;
+    DeferredRendererDetail::DeferredLighting_PerPassGroup perPassGroupData;
     perPassGroupData.gbufferA = gbufferA;
     perPassGroupData.gbufferB = gbufferB;
     perPassGroupData.gbufferC = gbufferC;
