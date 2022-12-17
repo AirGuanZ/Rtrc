@@ -70,7 +70,7 @@ void Run()
     device->ExecuteAndWait([&](CommandBuffer &cmd)
     {
         cmd.ExecuteBarriers(BarrierBatch()
-            (inputTexture, RHI::TextureLayout::ShaderTexture, RHI::PipelineStage::None, RHI::ResourceAccess::None)
+            (inputTexture, RHI::TextureLayout::CopyDst, RHI::TextureLayout::ShaderTexture)
             (outputTexture, RHI::TextureLayout::ShaderRWTexture, RHI::PipelineStage::None, RHI::ResourceAccess::None));
 
         cmd.BindPipeline(pipeline);
@@ -100,7 +100,7 @@ void Run()
         }
     }
 
-    outputImageData.Save("./Asset/02.ComputeShader/Output.png");
+    outputImageData.Save("./Asset/Sample/02.ComputeShader/Output.png");
 }
 
 int main()

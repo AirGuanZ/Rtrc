@@ -64,6 +64,8 @@ class Application : public Uncopyable
             light->SetIntensity(1);
             scene_->AddLight(light);
         }
+
+        window_.SetFocus();
     }
 
     void Frame()

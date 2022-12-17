@@ -86,6 +86,16 @@ public:
         RHI::PipelineStageFlag  succStages,
         RHI::ResourceAccessFlag succAccesses);
 
+    BarrierBatch &operator()(
+        const RC<Texture> &texture,
+        RHI::TextureLayout prevLayout,
+        RHI::TextureLayout succLayout);
+
+    BarrierBatch &operator()(
+        const RC<StatefulTexture> &texture,
+        RHI::TextureLayout         prevLayout,
+        RHI::TextureLayout         succLayout);
+
 private:
 
     friend class CommandBuffer;

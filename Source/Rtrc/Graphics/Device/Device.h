@@ -84,6 +84,14 @@ public:
         RHI::TextureLayout      succLayout,
         RHI::PipelineStageFlag  succStages,
         RHI::ResourceAccessFlag succAccesses);
+    void ExecuteBarrier(
+        const RC<Texture> &texture,
+        RHI::TextureLayout prevLayout,
+        RHI::TextureLayout succLayout);
+    void ExecuteBarrier(
+        const RC<StatefulTexture> &texture,
+        RHI::TextureLayout         prevLayout,
+        RHI::TextureLayout         succLayout);
 
     CopyContext &GetCopyContext();
 
@@ -276,6 +284,22 @@ inline void Device::ExecuteBarrier(
     ExecuteBarrierImpl(
         texture, arrayLayer, mipLevel,
         prevLayout, prevStages, prevAccesses, succLayout, succStages, succAccesses);
+}
+
+inline void Device::ExecuteBarrier(
+    const RC<Texture> &texture,
+    RHI::TextureLayout prevLayout,
+    RHI::TextureLayout succLayout)
+{
+    ExecuteBarrierImpl(texture, prevLayout, succLayout);
+}
+
+inline void Device::ExecuteBarrier(
+    const RC<StatefulTexture> &texture,
+    RHI::TextureLayout         prevLayout,
+    RHI::TextureLayout         succLayout)
+{
+    ExecuteBarrierImpl(texture, prevLayout, succLayout);
 }
 
 inline CopyContext &Device::GetCopyContext()

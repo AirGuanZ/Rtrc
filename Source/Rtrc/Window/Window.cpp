@@ -371,6 +371,11 @@ bool Window::HasFocus() const
     return impl_->hasFocus;
 }
 
+void Window::SetFocus()
+{
+    glfwFocusWindow(impl_->glfwWindow);
+}
+
 ReferenceCountedPtr<RHI::Surface> Window::CreateVulkanSurface(void *vkInstance)
 {
 #ifdef RTRC_RHI_VULKAN
@@ -438,8 +443,6 @@ Window WindowBuilder::Create() const
     auto impl = std::make_unique<Window::Impl>();
     impl->glfwWindow = glfwWindow;
     glfwSetWindowUserPointer(glfwWindow, impl.get());
-
-    glfwFocusWindow(impl->glfwWindow);
 
     // set event callbacks
 

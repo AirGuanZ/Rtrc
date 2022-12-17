@@ -55,13 +55,8 @@ void Run()
         RHI::Format::B8G8R8A8_UNorm,
         RHI::TextureUsage::ShaderResource,
         true);
+    device->ExecuteBarrier(mainTex, RHI::TextureLayout::CopyDst, RHI::TextureLayout::ShaderTexture);
     mainTex->SetName("MainTexture");
-
-    device->ExecuteAndWait([&](CommandBuffer &cmd)
-    {
-        cmd.ExecuteBarriers(BarrierBatch(
-            mainTex, RHI::TextureLayout::ShaderTexture, RHI::PipelineStage::None, RHI::ResourceAccess::None));
-    });
 
     // Main sampler
 
@@ -84,6 +79,8 @@ void Run()
     materialInstance->Set("MainSampler", mainSampler);
     materialInstance->SetFloat("scale", 1);
     materialInstance->SetFloat("mipLevel", 0);
+
+    window.SetFocus();
 
     // Render loop
 

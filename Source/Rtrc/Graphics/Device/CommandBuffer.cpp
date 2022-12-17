@@ -117,6 +117,25 @@ BarrierBatch &BarrierBatch::operator()(
     return *this;
 }
 
+BarrierBatch &BarrierBatch::operator()(
+    const RC<Texture> &texture,
+    RHI::TextureLayout prevLayout,
+    RHI::TextureLayout succLayout)
+{
+    return operator()(
+        texture,
+        prevLayout, RHI::PipelineStage::None, RHI::ResourceAccess::None,
+        succLayout, RHI::PipelineStage::None, RHI::ResourceAccess::None);
+}
+
+BarrierBatch &BarrierBatch::operator()(
+    const RC<StatefulTexture> &texture,
+    RHI::TextureLayout         prevLayout,
+    RHI::TextureLayout         succLayout)
+{
+    throw Exception("Invalid barrier operation on stateful texture");
+}
+
 CommandBuffer::CommandBuffer()
     : manager_(nullptr), queueType_(RHI::QueueType::Graphics), pool_(nullptr)
 {
@@ -178,7 +197,7 @@ void CommandBuffer::End()
 void CommandBuffer::BeginDebugEvent(std::string name, const std::optional<Vector4f> &color)
 {
     CheckThreadID();
-    RHI::DebugLabel debugLabel{ std::move(name), color };
+    const RHI::DebugLabel debugLabel{ std::move(name), color };
     rhiCommandBuffer_->BeginDebugEvent(debugLabel);
 }
 

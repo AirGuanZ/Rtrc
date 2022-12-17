@@ -49,6 +49,8 @@ public:
 
     bool HasFocus() const;
 
+    void SetFocus();
+
     ReferenceCountedPtr<RHI::Surface> CreateVulkanSurface(void *vkInstance);
 
     RTRC_DECLARE_EVENT_SENDER(WindowCloseEvent)
