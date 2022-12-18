@@ -1,5 +1,5 @@
 #include <Rtrc/Graphics/Material/ShaderBindingContext.h>
-#include <Rtrc/Renderer/DeferredRenderer.h>
+#include <Rtrc/Renderer/Renderer.h>
 #include <Rtrc/Renderer/Utility/FullscreenPrimitive.h>
 #include <Rtrc/Renderer/Utility/ScopedGPUDebugEvent.h>
 #include <Rtrc/Utility/Enumerate.h>
@@ -9,7 +9,7 @@ RTRC_BEGIN
 namespace DeferredRendererDetail
 {
 
-    rtrc_group(PerPassGroup_RenderGBuffers, Pass)
+    rtrc_group(GBuffer_Pass, Pass)
     {
         rtrc_define(ConstantBuffer<CameraConstantBuffer>, Camera);
     };
@@ -21,18 +21,19 @@ namespace DeferredRendererDetail
         rtrc_var(DirectionalLightConstantBuffer, directionalLight);
     };
 
-    rtrc_group(DeferredLighting_PerPassGroup, Pass)
+    rtrc_group(DeferredLighting_Pass, Pass)
     {
-        rtrc_define(Texture2D<float4>, gbufferA);
-        rtrc_define(Texture2D<float4>, gbufferB);
-        rtrc_define(Texture2D<float4>, gbufferC);
-        rtrc_define(Texture2D<float>,  gbufferDepth);
+        rtrc_define(Texture2D<float4>, gbufferA,     FS);
+        rtrc_define(Texture2D<float4>, gbufferB,     FS);
+        rtrc_define(Texture2D<float4>, gbufferC,     FS);
+        rtrc_define(Texture2D<float>,  gbufferDepth, FS);
+
         rtrc_define(ConstantBuffer<DeferredLighting_CBuffer>, cbuffer);
     };
 
 } // namespace DeferredRendererDetail
 
-DeferredRenderer::DeferredRenderer(Device &device, BuiltinResourceManager &builtinResources)
+Renderer::Renderer(Device &device, BuiltinResourceManager &builtinResources)
     : device_(device)
     , builtinResources_(builtinResources)
     , staticMeshConstantBufferBatch_(
@@ -41,12 +42,14 @@ DeferredRenderer::DeferredRenderer(Device &device, BuiltinResourceManager &built
 
 }
 
-DeferredRenderer::RenderGraphInterface DeferredRenderer::AddToRenderGraph(
+Renderer::RenderGraphInterface Renderer::AddToRenderGraph(
     RG::RenderGraph     *renderGraph,
     RG::TextureResource *renderTarget,
     const Scene         &scene,
     const Camera        &camera)
 {
+    staticMeshConstantBufferBatch_.NewBatch();
+
     scene_ = &scene;
     camera_ = &camera;
 
@@ -112,19 +115,7 @@ DeferredRenderer::RenderGraphInterface DeferredRenderer::AddToRenderGraph(
         .initialLayout        = RHI::TextureLayout::Undefined,
         .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
     });
-    //const auto image = renderGraph_->CreateTexture2D(RHI::TextureDesc
-    //{
-    //    .dim                  = RHI::TextureDimension::Tex2D,
-    //    .format               = RHI::Format::R11G11B10_UFloat,
-    //    .width                = rtWidth,
-    //    .height               = rtHeight,
-    //    .arraySize            = 1,
-    //    .mipLevels            = 1,
-    //    .sampleCount          = 1,
-    //    .usage                = RHI::TextureUsage::RenderTarget | RHI::TextureUsage::ShaderResource,
-    //    .initialLayout        = RHI::TextureLayout::Undefined,
-    //    .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
-    //});
+
     const auto image = renderTarget;
 
     RG::Pass *gbufferPass = renderGraph->CreatePass("Render GBuffers");
@@ -176,10 +167,9 @@ DeferredRenderer::RenderGraphInterface DeferredRenderer::AddToRenderGraph(
     return ret;
 }
 
-void DeferredRenderer::DoRenderGBuffersPass(RG::PassContext &passContext, const RenderGBuffersPassData &passData)
+void Renderer::DoRenderGBuffersPass(RG::PassContext &passContext, const RenderGBuffersPassData &passData)
 {
     CommandBuffer &cmd = passContext.GetCommandBuffer();
-    //RTRC_SCOPED_GPU_EVENT(cmd, "Render GBuffers", {});
 
     auto gbufferA = passData.gbufferA->Get();
     auto gbufferB = passData.gbufferB->Get();
@@ -232,13 +222,10 @@ void DeferredRenderer::DoRenderGBuffersPass(RG::PassContext &passContext, const 
 
     RC<BindingGroup> perPassGroup;
     {
-        DeferredRendererDetail::PerPassGroup_RenderGBuffers perPassGroupData;
+        DeferredRendererDetail::GBuffer_Pass perPassGroupData;
         perPassGroupData.Camera = camera_->GetConstantBufferData();
         perPassGroup = device_.CreateBindingGroup(perPassGroupData);
     }
-
-    //ShaderBindingContext bindingGroupContext;
-    //bindingGroupContext.Set(PerPassGroup_RenderGBuffers::GroupName, perPassGroup);
 
     // Upload constant buffers for static meshes
 
@@ -293,7 +280,7 @@ void DeferredRenderer::DoRenderGBuffersPass(RG::PassContext &passContext, const 
             });
         
         cmd.BindPipeline(pipeline);
-        matPassInst->BindGraphicsProperties(keywords, cmd);
+        BindMaterialProperties(*matPassInst, keywords, cmd, true);
         if(int index = shader->GetBuiltinBindingGroupIndex(ShaderInfo::BuiltinBindingGroup::Pass); index >= 0)
         {
             cmd.BindGraphicsGroup(index, perPassGroup);
@@ -317,10 +304,9 @@ void DeferredRenderer::DoRenderGBuffersPass(RG::PassContext &passContext, const 
     }
 }
 
-void DeferredRenderer::DoDeferredLightingPass(RG::PassContext &passContext, const DeferredLightingPassData &passData)
+void Renderer::DoDeferredLightingPass(RG::PassContext &passContext, const DeferredLightingPassData &passData)
 {
     CommandBuffer &cmd = passContext.GetCommandBuffer();
-    //RTRC_SCOPED_GPU_EVENT(cmd, "Deferred Lighting");
 
     device_.GetQueue().GetRHIObject()->WaitIdle();
 
@@ -349,7 +335,7 @@ void DeferredRenderer::DoDeferredLightingPass(RG::PassContext &passContext, cons
     });
     RTRC_SCOPE_EXIT{ cmd.EndRenderPass(); };
 
-    DeferredRendererDetail::DeferredLighting_PerPassGroup perPassGroupData;
+    DeferredRendererDetail::DeferredLighting_Pass perPassGroupData;
     perPassGroupData.gbufferA = gbufferA;
     perPassGroupData.gbufferB = gbufferB;
     perPassGroupData.gbufferC = gbufferC;

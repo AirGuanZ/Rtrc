@@ -11,7 +11,7 @@ option_end()
 set_arch("x64")
 set_languages("c++23")
 add_rules("mode.debug", "mode.release")
---add_rules("c++.unity_build", { batchsize = 4 })
+add_rules("c++.unity_build", { batchsize = 4 })
 
 option("is_msvc")
 add_csnippets("is_msvc", "return (_MSC_VER)?0:-1;", { tryrun = true })

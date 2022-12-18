@@ -17,7 +17,6 @@ class Device : public Uncopyable
 public:
 
     static Box<Device> CreateComputeDevice(RHI::DevicePtr rhiDevice);
-
     static Box<Device> CreateComputeDevice(bool debugMode = RTRC_DEBUG);
 
     static Box<Device> CreateGraphicsDevice(
@@ -25,7 +24,6 @@ public:
         Window        &window,
         RHI::Format    swapchainFormat = RHI::Format::B8G8R8A8_UNorm,
         int            swapchainImageCount = 3);
-
     static Box<Device> CreateGraphicsDevice(
         Window     &window,
         RHI::Format swapchainFormat     = RHI::Format::B8G8R8A8_UNorm,
@@ -121,27 +119,27 @@ public:
 
     RC<BindingLayout> CreateBindingLayout(const BindingLayout::Desc &desc);
 
-    RC<Buffer> CreateBuffer(const RHI::BufferDesc &desc);
+    RC<Buffer>         CreateBuffer(const RHI::BufferDesc &desc);
     RC<StatefulBuffer> CreatePooledBuffer(const RHI::BufferDesc &desc);
 
-    RC<Texture> CreateTexture(const RHI::TextureDesc &desc);
+    RC<Texture>         CreateTexture(const RHI::TextureDesc &desc);
     RC<StatefulTexture> CreatePooledTexture(const RHI::TextureDesc &desc);
-    RC<Texture> CreateColorTexture2D(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+    RC<Texture>         CreateColorTexture2D(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 
     RC<DynamicBuffer> CreateDynamicBuffer();
-    RC<SubBuffer> CreateConstantBuffer(const void *data, size_t bytes);
+    RC<SubBuffer>     CreateConstantBuffer(const void *data, size_t bytes);
     template<RtrcStruct T>
-    RC<SubBuffer> CreateConstantBuffer(const T &data);
+    RC<SubBuffer>     CreateConstantBuffer(const T &data);
 
     CommandBuffer CreateCommandBuffer();
 
     RC<GraphicsPipeline> CreateGraphicsPipeline(const GraphicsPipeline::Desc &desc);
-    RC<ComputePipeline> CreateComputePipeline(const RC<Shader> &shader);
+    RC<ComputePipeline>  CreateComputePipeline(const RC<Shader> &shader);
 
     RC<Sampler> CreateSampler(const RHI::SamplerDesc &desc);
 
-    BufferManager &GetBufferManager();
-    BindingGroupManager &GetBindingGroupManager();
+    BufferManager        &GetBufferManager();
+    BindingGroupManager  &GetBindingGroupManager();
     const RHI::DevicePtr &GetRawDevice() const;
 
     operator DynamicBufferManager &();

@@ -11,7 +11,8 @@
 #include <Rtrc/Utility/MacroOverloading.h>
 
 RTRC_BEGIN
-    class DynamicBuffer;
+
+class DynamicBuffer;
 class Sampler;
 
 namespace BindingGroupDSL
@@ -303,10 +304,20 @@ namespace BindingGroupDSL
         using uint4  = ::Rtrc::Vector4u;                                                             \
     };                                                                                               \
     struct NAME : _rtrcGroupBase##NAME
+
 #define rtrc_group(...) RTRC_MACRO_OVERLOADING(rtrc_group, __VA_ARGS__)
 
+#define RTRC_INLINE_STAGE_DECLERATION(STAGES)     \
+    ([]{                                          \
+        using ::Rtrc::RHI::ShaderStageFlags::VS;  \
+        using ::Rtrc::RHI::ShaderStageFlags::FS;  \
+        using ::Rtrc::RHI::ShaderStageFlags::CS;  \
+        using ::Rtrc::RHI::ShaderStageFlags::All; \
+        return (STAGES);                          \
+    }())
+
 #define rtrc_define2(TYPE, NAME) RTRC_DEFINE_IMPL(TYPE, NAME, ::Rtrc::RHI::ShaderStageFlags::All)
-#define rtrc_define3(TYPE, NAME, STAGES) RTRC_DEFINE_IMPL(TYPE, NAME, STAGES)
+#define rtrc_define3(TYPE, NAME, STAGES) RTRC_DEFINE_IMPL(TYPE, NAME, RTRC_INLINE_STAGE_DECLERATION(STAGES))
 #define rtrc_define(...) RTRC_MACRO_OVERLOADING(rtrc_define, __VA_ARGS__)
 
 #define RTRC_DEFINE_IMPL(TYPE, NAME, STAGES)                                   \
@@ -317,7 +328,7 @@ namespace BindingGroupDSL
     _rtrcMemberType##NAME NAME
 
 #define rtrc_inline2(TYPE, NAME) RTRC_INLINE_IMPL(TYPE, NAME, ::Rtrc::RHI::ShaderStageFlags::All)
-#define rtrc_inline3(TYPE, NAME, STAGES) RTRC_INLINE_IMPL(TYPE, NAME, STAGES)
+#define rtrc_inline3(TYPE, NAME, STAGES) RTRC_INLINE_IMPL(TYPE, NAME, RTRC_INLINE_STAGE_DECLERATION(STAGES))
 #define rtrc_inline(...) RTRC_MACRO_OVERLOADING(rtrc_inline, __VA_ARGS__)
 
 #define RTRC_INLINE_IMPL(TYPE, NAME, STAGES)                    \

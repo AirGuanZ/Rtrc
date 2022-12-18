@@ -8,11 +8,17 @@ namespace Builtin
     rtrc_define(Texture2D<float>,  _internalGBufferDepth)
     rtrc_sampler(_internalGBufferSampler, filter = point, address = clamp)
 
-#define BUILTIN_INTERNAL_GBUFFERS   \
-    rtrc_ref(_internalGBufferA)     \
-    rtrc_ref(_internalGBufferB)     \
-    rtrc_ref(_internalGBufferC)     \
+#define BUILTIN_INTERNAL_GBUFFERS \
+    rtrc_ref(_internalGBufferA)   \
+    rtrc_ref(_internalGBufferB)   \
+    rtrc_ref(_internalGBufferC)   \
     rtrc_ref(_internalGBufferDepth)
+    
+#define BUILTIN_INTERNAL_GBUFFERS_FS    \
+    rtrc_ref(_internalGBufferA,     FS) \
+    rtrc_ref(_internalGBufferB,     FS) \
+    rtrc_ref(_internalGBufferC,     FS) \
+    rtrc_ref(_internalGBufferDepth, FS)
 
     struct GBufferPixel
     {

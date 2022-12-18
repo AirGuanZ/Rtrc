@@ -42,54 +42,8 @@ void BuiltinResourceManager::LoadBuiltinMaterials()
 
 void BuiltinResourceManager::LoadBuiltinTextures()
 {
-    {
-        auto tex = device_.CreateTexture(RHI::TextureDesc
-        {
-            .dim                  = RHI::TextureDimension::Tex2D,
-            .format               = RHI::Format::B8G8R8A8_UNorm,
-            .width                = 1,
-            .height               = 1,
-            .arraySize            = 1,
-            .mipLevels            = 1,
-            .sampleCount          = 1,
-            .usage                = RHI::TextureUsage::ShaderResource | RHI::TextureUsage::TransferDst,
-            .initialLayout        = RHI::TextureLayout::Undefined,
-            .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Concurrent
-        });
-        const Vector4b &data = Vector4b(0, 0, 0, 255);
-        device_.GetCopyContext().UploadTexture2D(tex, 0, 0, &data);
-        textures_[EnumToInt(BuiltinTexture::Black2D)] = std::move(tex);
-    }
-
-    {
-        auto tex = device_.CreateTexture(RHI::TextureDesc
-        {
-            .dim                  = RHI::TextureDimension::Tex2D,
-            .format               = RHI::Format::B8G8R8A8_UNorm,
-            .width                = 1,
-            .height               = 1,
-            .arraySize            = 1,
-            .mipLevels            = 1,
-            .sampleCount          = 1,
-            .usage                = RHI::TextureUsage::ShaderResource | RHI::TextureUsage::TransferDst,
-            .initialLayout        = RHI::TextureLayout::Undefined,
-            .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Concurrent
-        });
-        const Vector4b &data = Vector4b(255, 255, 255, 255);
-        device_.GetCopyContext().UploadTexture2D(tex, 0, 0, &data);
-        textures_[EnumToInt(BuiltinTexture::White2D)] = std::move(tex);
-    }
-
-    device_.ExecuteAndWait([&](CommandBuffer &cmd)
-    {
-        cmd.ExecuteBarriers(BarrierBatch()
-            (textures_[EnumToInt(BuiltinTexture::Black2D)],
-             RHI::TextureLayout::CopyDst, RHI::PipelineStage::None, RHI::ResourceAccess::None,
-             RHI::TextureLayout::ShaderTexture, RHI::PipelineStage::None, RHI::ResourceAccess::None)
-            (textures_[EnumToInt(BuiltinTexture::White2D)],
-             RHI::TextureLayout::CopyDst, RHI::PipelineStage::None, RHI::ResourceAccess::None,
-             RHI::TextureLayout::ShaderTexture, RHI::PipelineStage::None, RHI::ResourceAccess::None));
-    });
+    textures_[EnumToInt(BuiltinTexture::Black2D)] = device_.CreateColorTexture2D(0, 0, 0, 255);
+    textures_[EnumToInt(BuiltinTexture::White2D)] = device_.CreateColorTexture2D(255, 255, 255, 255);
 }
 
 void BuiltinResourceManager::LoadBuiltinMeshes()

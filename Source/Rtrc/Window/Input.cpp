@@ -82,7 +82,7 @@ RTRC_DEFINE_EVENT_SENDER(Input, sender_, KeyDownEvent)
 RTRC_DEFINE_EVENT_SENDER(Input, sender_, KeyUpEvent)
 RTRC_DEFINE_EVENT_SENDER(Input, sender_, CharInputEvent)
 
-void Input::_InternalUpdate()
+void Input::_internalUpdate()
 {
     auto [newX, newY] = QueryCursorPosition();
     relativeX_ = newX - absoluteX_;
@@ -103,24 +103,24 @@ void Input::_InternalUpdate()
     lastKeys_ = currKeys_;
 }
 
-void Input::_InternalTriggerWheelScroll(int offset)
+void Input::_internalTriggerWheelScroll(int offset)
 {
     sender_.Send(WheelScrollEvent{ offset });
 }
 
-void Input::_InternalTriggerKeyDown(KeyCode key)
+void Input::_internalTriggerKeyDown(KeyCode key)
 {
     currKeys_[static_cast<int>(key)] = true;
     sender_.Send(KeyDownEvent{ key });
 }
 
-void Input::_InternalTriggerKeyUp(KeyCode key)
+void Input::_internalTriggerKeyUp(KeyCode key)
 {
     currKeys_[static_cast<int>(key)] = false;
     sender_.Send(KeyUpEvent{ key });
 }
 
-void Input::_InternalTriggerCharInput(uint32_t ch)
+void Input::_internalTriggerCharInput(uint32_t ch)
 {
     sender_.Send(CharInputEvent{ ch });
 }

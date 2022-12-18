@@ -16,16 +16,20 @@ class Application : public Uncopyable
     Box<MeshLoader>      meshes_;
 
     Box<BuiltinResourceManager> builtinResources_;
+    Box<Renderer> renderer_;
 
     Box<Scene> scene_;
     Box<Camera> camera_;
     FreeCameraController cameraController_;
+
+    Timer timer_;
 
     void Initialize()
     {
         window_ = WindowBuilder()
             .SetSize(800, 800)
             .SetTitle("Rtrc Sample: Deferred Shading")
+            .SetMaximized(true)
             .Create();
         input_ = &window_.GetInput();
         device_ = Device::CreateGraphicsDevice(window_);
@@ -40,6 +44,7 @@ class Application : public Uncopyable
         meshes_->SetRootDirectory("Asset");
 
         builtinResources_ = MakeBox<BuiltinResourceManager>(*device_);
+        renderer_ = MakeBox<Renderer>(*device_, *builtinResources_);
 
         scene_ = MakeBox<Scene>();
         camera_ = MakeBox<Camera>();
@@ -71,24 +76,35 @@ class Application : public Uncopyable
 
         input_->LockCursor(true);
         window_.SetFocus();
+        timer_.Restart();
     }
 
     void Frame()
     {
+        timer_.BeginFrame();
+
         if(window_.GetInput().IsKeyDown(KeyCode::Escape))
         {
             window_.SetCloseFlag(true);
         }
 
+        if(input_->IsKeyDown(KeyCode::LeftCtrl))
+        {
+            input_->LockCursor(!input_->IsCursorLocked());
+        }
+
         const float wOverH = static_cast<float>(window_.GetFramebufferSize().x) / window_.GetFramebufferSize().y;
         camera_->SetProjection(Deg2Rad(60), wOverH, 0.1f, 100.0f);
-        cameraController_.UpdateCamera(*input_);
-
-        auto renderer = MakeBox<DeferredRenderer>(*device_, *builtinResources_);
+        if(input_->IsCursorLocked())
+        {
+            cameraController_.UpdateCamera(*input_, timer_);
+        }
+        camera_->CalculateDerivedData();
 
         auto rg = device_->CreateRenderGraph();
         auto renderTarget = rg->RegisterSwapchainTexture(device_->GetSwapchain());
-        auto deferredRendererRGData = renderer->AddToRenderGraph(rg.get(), renderTarget, *scene_, *camera_);
+
+        auto deferredRendererRGData = renderer_->AddToRenderGraph(rg.get(), renderTarget, *scene_, *camera_);
         deferredRendererRGData.outPass->SetSignalFence(device_->GetFrameFence());
 
         executer_->Execute(rg);

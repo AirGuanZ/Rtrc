@@ -6,7 +6,7 @@
 #include <Rtrc/Graphics/RenderGraph/Executable.h>
 #include <Rtrc/Renderer/BuiltinResources.h>
 #include <Rtrc/Renderer/Camera/CameraController.h>
-#include <Rtrc/Renderer/DeferredRenderer.h>
+#include <Rtrc/Renderer/Renderer.h>
 #include <Rtrc/Utility/File.h>
 #include <Rtrc/Utility/Image.h>
 #include <Rtrc/Utility/Malloc.h>

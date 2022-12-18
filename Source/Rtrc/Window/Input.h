@@ -40,11 +40,11 @@ public:
     RTRC_DECLARE_EVENT_SENDER(KeyUpEvent)
     RTRC_DECLARE_EVENT_SENDER(CharInputEvent)
 
-    void _InternalUpdate();
-    void _InternalTriggerWheelScroll(int offset);
-    void _InternalTriggerKeyDown  (KeyCode key);
-    void _InternalTriggerKeyUp    (KeyCode key);
-    void _InternalTriggerCharInput(uint32_t ch);
+    void _internalUpdate();
+    void _internalTriggerWheelScroll(int offset);
+    void _internalTriggerKeyDown(KeyCode key);
+    void _internalTriggerKeyUp(KeyCode key);
+    void _internalTriggerCharInput(uint32_t ch);
 
 private:
 

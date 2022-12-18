@@ -8,7 +8,7 @@ Shader "Builtin/DeferredLighting"
 #include "Common/Scene.hlsl"
 
 rtrc_group(Pass)
-    BUILTIN_INTERNAL_GBUFFERS
+    BUILTIN_INTERNAL_GBUFFERS_FS
     rtrc_uniform(float4, gbufferSize)
     rtrc_uniform(CameraConstantBuffer, camera)
     rtrc_uniform(DirectionalLightConstantBuffer, directionalLight)

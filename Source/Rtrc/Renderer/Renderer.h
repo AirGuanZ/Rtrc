@@ -9,7 +9,7 @@
 
 RTRC_BEGIN
 
-class DeferredRenderer : public Uncopyable
+class Renderer : public Uncopyable
 {
 public:
 
@@ -20,7 +20,7 @@ public:
         RG::TextureResource *image;
     };
 
-    DeferredRenderer(Device &device, BuiltinResourceManager &builtinResources);
+    Renderer(Device &device, BuiltinResourceManager &builtinResources);
 
     RenderGraphInterface AddToRenderGraph(
         RG::RenderGraph     *renderGraph,

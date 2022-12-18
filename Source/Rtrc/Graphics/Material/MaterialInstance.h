@@ -97,6 +97,12 @@ private:
     int recordCount_;
 };
 
+void BindMaterialProperties(
+    const MaterialPassInstance &instance,
+    const KeywordValueContext  &keywords,
+    const CommandBuffer        &commandBuffer,
+    bool                        graphics);
+
 class MaterialInstance
 {
 public:

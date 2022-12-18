@@ -20,6 +20,8 @@ public:
         RHI::ShaderStageFlag bindingShaderStages,
         Device              &device);
 
+    void NewBatch();
+
     Record NewRecord(const void *cbufferData);
 
     template<RtrcStruct T>
@@ -42,8 +44,6 @@ private:
     {
         std::vector<Box<Batch>> freeBatches;
     };
-
-    void NewBatch();
 
     Device &device_;
 

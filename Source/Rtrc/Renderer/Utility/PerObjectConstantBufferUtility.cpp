@@ -42,6 +42,42 @@ PerObjectConstantBufferBatch::PerObjectConstantBufferBatch(
     unflushedOffset_ = 0;
 }
 
+void PerObjectConstantBufferBatch::NewBatch()
+{
+    Box<Batch> newBatch;
+    if(!sharedData_->freeBatches.empty())
+    {
+        newBatch = std::move(sharedData_->freeBatches.back());
+        sharedData_->freeBatches.pop_back();
+    }
+    else
+    {
+        newBatch = MakeBox<Batch>();
+        newBatch->buffer = device_.CreateBuffer(RHI::BufferDesc
+            {
+                .size = chunkSize_,
+                .usage = RHI::BufferUsage::ShaderConstantBuffer,
+                .hostAccessType = RHI::BufferHostAccessType::SequentialWrite
+            });
+        newBatch->mappedBuffer = static_cast<unsigned char *>(newBatch->buffer->GetRHIObject()->Map(0, chunkSize_));
+        newBatch->bindingGroups.resize(batchSize_);
+    }
+
+    Batch *rawNewBatch = newBatch.get();
+    device_.GetSynchronizer().OnFrameComplete([sd = this->sharedData_, b = std::move(newBatch)]() mutable
+    {
+        sd->freeBatches.emplace_back(std::move(b));
+    });
+
+    Flush();
+    assert(unflushedOffset_ == nextOffset_);
+
+    activeBatch_ = rawNewBatch;
+    nextOffset_ = 0;
+    nextIndex_ = 0;
+    unflushedOffset_ = 0;
+}
+
 PerObjectConstantBufferBatch::Record PerObjectConstantBufferBatch::NewRecord(const void *cbufferData)
 {
     if(!activeBatch_ || nextOffset_ >= chunkSize_)
@@ -84,41 +120,6 @@ PerObjectConstantBufferBatch::Batch::~Batch()
         assert(buffer);
         buffer->GetRHIObject()->Unmap(0, buffer->GetSize(), false);
     }
-}
-
-void PerObjectConstantBufferBatch::NewBatch()
-{
-    Box<Batch> newBatch;
-    if(!sharedData_->freeBatches.empty())
-    {
-        newBatch = std::move(sharedData_->freeBatches.back());
-        sharedData_->freeBatches.pop_back();
-    }
-    else
-    {
-        newBatch = MakeBox<Batch>();
-        newBatch->buffer = device_.CreateBuffer(RHI::BufferDesc
-        {
-            .size = chunkSize_,
-            .usage = RHI::BufferUsage::ShaderConstantBuffer,
-            .hostAccessType = RHI::BufferHostAccessType::SequentialWrite
-        });
-        newBatch->mappedBuffer = static_cast<unsigned char *>(newBatch->buffer->GetRHIObject()->Map(0, chunkSize_));
-        newBatch->bindingGroups.resize(batchSize_);
-    }
-
-    Batch *rawNewBatch = newBatch.get();
-    device_.GetSynchronizer().OnFrameComplete([sd = this->sharedData_, b = std::move(newBatch)]() mutable
-    {
-        sd->freeBatches.emplace_back(std::move(b));
-    });
-
-    Flush();
-    assert(unflushedOffset_ == 0);
-
-    activeBatch_ = rawNewBatch;
-    nextOffset_ = 0;
-    nextIndex_ = 0;
 }
 
 RTRC_END

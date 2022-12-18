@@ -17,7 +17,7 @@ void FreeCameraController::SetRotateSpeed(float speed)
     rotateSpeed_ = speed;
 }
 
-void FreeCameraController::UpdateCamera(const Input &input) const
+void FreeCameraController::UpdateCamera(const Input &input, const Timer &timer) const
 {
     if(!camera_)
     {
@@ -47,7 +47,7 @@ void FreeCameraController::UpdateCamera(const Input &input) const
         moveDirection = Normalize(moveDirection);
     }
 
-    camera_->SetPosition(camera_->GetPosition() + moveSpeed_ * moveDirection);
+    camera_->SetPosition(camera_->GetPosition() + moveSpeed_ * moveDirection * timer.GetDeltaSecondsF());
 
     // Rotate
 
@@ -67,7 +67,6 @@ void FreeCameraController::UpdateCamera(const Input &input) const
     }
 
     camera_->SetRotation(Vector3f(radX, radY, radZ));
-    camera_->CalculateDerivedData();
 }
 
 RTRC_END

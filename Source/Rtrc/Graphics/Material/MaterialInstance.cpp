@@ -179,6 +179,22 @@ void MaterialPassInstance::BindPropertiesImpl(
     bind();
 }
 
+void BindMaterialProperties(
+    const MaterialPassInstance &instance,
+    const KeywordValueContext  &keywords,
+    const CommandBuffer        &commandBuffer,
+    bool                        graphics)
+{
+    if(graphics)
+    {
+        instance.BindGraphicsProperties(keywords, commandBuffer);
+    }
+    else
+    {
+        instance.BindComputeProperties(keywords, commandBuffer);
+    }
+}
+
 MaterialInstance::MaterialInstance(RC<const Material> material, Device *device)
     : parentMaterial_(std::move(material)), properties_(parentMaterial_->GetPropertyLayout())
 {

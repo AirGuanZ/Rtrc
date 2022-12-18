@@ -178,7 +178,7 @@ namespace WindowDetail
         auto impl = static_cast<Window::Impl *>(glfwGetWindowUserPointer(window));
         if(impl)
         {
-            impl->input->_InternalTriggerWheelScroll(static_cast<int>(yoffset));
+            impl->input->_internalTriggerWheelScroll(static_cast<int>(yoffset));
         }
     }
 
@@ -210,11 +210,11 @@ namespace WindowDetail
 
         if(action == GLFW_PRESS)
         {
-            impl->input->_InternalTriggerKeyDown(keycode);
+            impl->input->_internalTriggerKeyDown(keycode);
         }
         else if(action == GLFW_RELEASE)
         {
-            impl->input->_InternalTriggerKeyUp(keycode);
+            impl->input->_internalTriggerKeyUp(keycode);
         }
     }
 
@@ -240,11 +240,11 @@ namespace WindowDetail
 
         if(action == GLFW_PRESS)
         {
-            impl->input->_InternalTriggerKeyDown(keycode);
+            impl->input->_internalTriggerKeyDown(keycode);
         }
         else if(action == GLFW_RELEASE)
         {
-            impl->input->_InternalTriggerKeyUp(keycode);
+            impl->input->_internalTriggerKeyUp(keycode);
         }
     }
 
@@ -253,7 +253,7 @@ namespace WindowDetail
         auto impl = static_cast<Window::Impl *>(glfwGetWindowUserPointer(window));
         if(impl)
         {
-            impl->input->_InternalTriggerCharInput(ch);
+            impl->input->_internalTriggerCharInput(ch);
         }
     }
 
@@ -277,7 +277,7 @@ void Window::DoEvents()
 {
     for(auto input : WindowDetail::windowInputs)
     {
-        input->_InternalUpdate();
+        input->_internalUpdate();
     }
     glfwPollEvents();
 }
