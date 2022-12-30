@@ -11,14 +11,7 @@ namespace DeferredRendererDetail
 
     rtrc_group(GBuffer_Pass, Pass)
     {
-        rtrc_define(ConstantBuffer<CameraConstantBuffer>, Camera);
-    };
-
-    rtrc_struct(DeferredLighting_CBuffer)
-    {
-        rtrc_var(Vector4f,                       gbufferSize);
-        rtrc_var(CameraConstantBuffer,           camera);
-        rtrc_var(DirectionalLightConstantBuffer, directionalLight);
+        rtrc_uniform(CameraConstantBuffer, Camera);
     };
 
     rtrc_group(DeferredLighting_Pass, Pass)
@@ -28,7 +21,9 @@ namespace DeferredRendererDetail
         rtrc_define(Texture2D<float4>, gbufferC,     FS);
         rtrc_define(Texture2D<float>,  gbufferDepth, FS);
 
-        rtrc_define(ConstantBuffer<DeferredLighting_CBuffer>, cbuffer);
+        rtrc_uniform(Vector4f,                       gbufferSize);
+        rtrc_uniform(CameraConstantBuffer,           camera);
+        rtrc_uniform(DirectionalLightConstantBuffer, directionalLight);
     };
 
 } // namespace DeferredRendererDetail
@@ -163,7 +158,6 @@ Renderer::RenderGraphInterface Renderer::AddToRenderGraph(
     RenderGraphInterface ret;
     ret.inPass = gbufferPass;
     ret.outPass = lightingPass;
-    ret.image = image;
     return ret;
 }
 
@@ -312,7 +306,8 @@ void Renderer::DoDeferredLightingPass(RG::PassContext &passContext, const Deferr
 
     if(!deferredLightingPipeline_)
     {
-        RC<Shader> shader = builtinResources_.GetBuiltinShader(BuiltinShader::DeferredLighting);
+        RC<Shader> shader = builtinResources_.GetBuiltinMaterial(BuiltinMaterial::DeferredLighting)
+                                            ->GetPassByIndex(0)->GetShader();
         deferredLightingPipeline_ = device_.CreateGraphicsPipeline(GraphicsPipeline::Desc
         {
             .shader = std::move(shader),
@@ -340,19 +335,19 @@ void Renderer::DoDeferredLightingPass(RG::PassContext &passContext, const Deferr
     perPassGroupData.gbufferB = gbufferB;
     perPassGroupData.gbufferC = gbufferC;
     perPassGroupData.gbufferDepth = gbufferDepth;
-    perPassGroupData.cbuffer.camera = camera_->GetConstantBufferData();
-    perPassGroupData.cbuffer.gbufferSize =
+    perPassGroupData.camera = camera_->GetConstantBufferData();
+    perPassGroupData.gbufferSize =
         Vector4f(image->GetWidth(), image->GetHeight(), 1.0f / image->GetWidth(), 1.0f / image->GetHeight());
     if(auto &dl = scene_->GetDirectionalLight())
     {
         const Light::DirectionalData &data = dl->GetDirectionalData();
-        perPassGroupData.cbuffer.directionalLight.color = dl->GetColor();
-        perPassGroupData.cbuffer.directionalLight.intensity = dl->GetIntensity();
-        perPassGroupData.cbuffer.directionalLight.direction = data.direction;
+        perPassGroupData.directionalLight.color = dl->GetColor();
+        perPassGroupData.directionalLight.intensity = dl->GetIntensity();
+        perPassGroupData.directionalLight.direction = data.direction;
     }
     else
     {
-        perPassGroupData.cbuffer.directionalLight.intensity = 0;
+        perPassGroupData.directionalLight.intensity = 0;
     }
     
     cmd.BindPipeline(deferredLightingPipeline_);

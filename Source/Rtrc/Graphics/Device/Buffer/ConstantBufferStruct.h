@@ -73,11 +73,11 @@ namespace ConstantBufferDetail
     }
 
     template<typename T, typename F>
-    constexpr void ForEachFlattenMember(const char *name, const F &f, size_t hostOffset, size_t deviceOffset)
+    constexpr void ForEachFlattenMember(const char *name, const F &f, size_t hostDWordOffset, size_t deviceDWordOffset)
     {
         if constexpr(std::is_array_v<T>)
         {
-            // assert(deviceOffset % 4 == 0);
+            // assert(deviceDWordOffset % 4 == 0);
             using Element = typename ArrayTrait<T>::Element;
             static_assert(sizeof(Element) % 4 == 0);
             static_assert(alignof(Element) <= 4);
@@ -85,15 +85,15 @@ namespace ConstantBufferDetail
             const size_t elemCount = ArrayTrait<T>::Size;
             for(size_t i = 0; i < elemCount; ++i)
             {
-                ForEachFlattenMember<Element, F>(name, f, hostOffset, deviceOffset);
-                hostOffset += sizeof(Element) / 4;
-                deviceOffset += elemSize;
+                ForEachFlattenMember<Element, F>(name, f, hostDWordOffset, deviceDWordOffset);
+                hostDWordOffset += sizeof(Element) / 4;
+                deviceDWordOffset += elemSize;
             }
         }
         else if constexpr(RtrcStruct<T>)
         {
-            // assert(deviceOffset % 4 == 0)
-            T::ForEachMember([&deviceOffset, &hostOffset, &f]<typename M>(
+            // assert(deviceDWordOffset % 4 == 0)
+            T::ForEachMember([&deviceDWordOffset, &hostDWordOffset, &f]<typename M>(
                 const M T::*, const char *memberName) constexpr
             {
                 const size_t memberSize = GetConstantBufferDWordCount<M>();
@@ -104,17 +104,17 @@ namespace ConstantBufferDetail
                 }
                 else
                 {
-                    needNewLine = (deviceOffset % 4) + memberSize > 4;
+                    needNewLine = (deviceDWordOffset % 4) + memberSize > 4;
                 }
                 if(needNewLine)
                 {
-                    deviceOffset = UpAlignTo4(deviceOffset);
+                    deviceDWordOffset = UpAlignTo4(deviceDWordOffset);
                 }
-                ForEachFlattenMember<M, F>(memberName, f, hostOffset, deviceOffset);
+                ForEachFlattenMember<M, F>(memberName, f, hostDWordOffset, deviceDWordOffset);
                 static_assert(sizeof(M) % 4 == 0);
                 static_assert(alignof(M) <= 4);
-                hostOffset += sizeof(M) / 4;
-                deviceOffset += memberSize;
+                hostDWordOffset += sizeof(M) / 4;
+                deviceDWordOffset += memberSize;
             });
         }
         else
@@ -125,7 +125,7 @@ namespace ConstantBufferDetail
                 uint32_t, Vector2u, Vector3u, Vector4u,
                 Matrix4x4f>;
             static_assert(ValidTypeList::Contains<T>, "Invalid value type in constant buffer struct");
-            f.template operator()<T>(name, hostOffset * 4, deviceOffset * 4);
+            f.template operator()<T>(name, hostDWordOffset * 4, deviceDWordOffset * 4);
         }
     }
 

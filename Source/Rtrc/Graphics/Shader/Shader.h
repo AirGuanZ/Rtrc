@@ -9,6 +9,7 @@ RTRC_BEGIN
 
 class BindingLayout;
 class BindingGroupLayout;
+class ComputePipeline;
 class ShaderCompiler;
 
 class ShaderInfo : public Uncopyable
@@ -33,15 +34,18 @@ public:
     int GetBindingGroupCount() const;
 
     const std::string &GetBindingGroupNameByIndex(int index) const;
-    int GetBindingGroupIndexByName(std::string_view name) const; // return -1 when not found
+    int GetBindingGroupIndexByName(std::string_view name) const; // return -1 if not found
 
-    const RC<BindingGroupLayout> &GetBindingGroupLayoutByName(std::string_view name) const; // return -1 when not found
+    const RC<BindingGroupLayout> &GetBindingGroupLayoutByName(std::string_view name) const; // returns -1 if not found
     const RC<BindingGroupLayout> &GetBindingGroupLayoutByIndex(int index) const;
     
     const RC<BindingGroup> &GetBindingGroupForInlineSamplers() const;
     int GetBindingGroupIndexForInlineSamplers() const;
 
     int GetBuiltinBindingGroupIndex(BuiltinBindingGroup bindingGroup) const;
+
+    const Vector3i &GetThreadGroupSize() const; // Compute shader only
+    Vector3i ComputeThreadGroupCount(const Vector3i &threadCount) const;
 
 private:
 
@@ -59,6 +63,8 @@ private:
     RC<BindingGroup> bindingGroupForInlineSamplers_;
 
     int builtinBindingGroupIndices_[EnumCount<BuiltinBindingGroup>];
+
+    Vector3i computeShaderThreadGroupSize_;
 };
 
 class Shader : public Uncopyable, public WithUniqueObjectID
@@ -76,7 +82,7 @@ public:
     int GetBindingGroupCount() const;
 
     const std::string &GetBindingGroupNameByIndex(int index) const;
-    int GetBindingGroupIndexByName(std::string_view name) const; // return -1 when not found
+    int GetBindingGroupIndexByName(std::string_view name) const; // returns -1 if not found
 
     const RC<BindingGroupLayout> &GetBindingGroupLayoutByName(std::string_view name) const;
     const RC<BindingGroupLayout> &GetBindingGroupLayoutByIndex(int index) const;
@@ -90,6 +96,9 @@ public:
     int GetPerObjectBindingGroup() const;
 
     const RC<ShaderInfo> &GetInfo() const;
+    const RC<ComputePipeline> &GetComputePipeline() const;
+    const Vector3i &GetThreadGroupSize() const; // Compute shader only
+    Vector3i ComputeThreadGroupCount(const Vector3i &threadCount) const;
 
 private:
     
@@ -99,11 +108,26 @@ private:
     RHI::RawShaderPtr FS_;
     RHI::RawShaderPtr CS_;
     RC<ShaderInfo> info_;
+    RC<ComputePipeline> computePipeline_;
 };
 
 inline int ShaderInfo::GetBuiltinBindingGroupIndex(BuiltinBindingGroup bindingGroup) const
 {
     return builtinBindingGroupIndices_[EnumToInt(bindingGroup)];
+}
+
+inline const Vector3i &ShaderInfo::GetThreadGroupSize() const
+{
+    return computeShaderThreadGroupSize_;
+}
+
+inline Vector3i ShaderInfo::ComputeThreadGroupCount(const Vector3i &threadCount) const
+{
+    return {
+        (threadCount.x + computeShaderThreadGroupSize_.x - 1) / computeShaderThreadGroupSize_.x,
+        (threadCount.y + computeShaderThreadGroupSize_.y - 1) / computeShaderThreadGroupSize_.y,
+        (threadCount.z + computeShaderThreadGroupSize_.z - 1) / computeShaderThreadGroupSize_.z
+    };
 }
 
 inline const RC<BindingLayout> &Shader::GetBindingLayout() const
@@ -179,6 +203,21 @@ inline int Shader::GetPerObjectBindingGroup() const
 inline const RC<ShaderInfo> &Shader::GetInfo() const
 {
     return info_;
+}
+
+inline const RC<ComputePipeline> &Shader::GetComputePipeline() const
+{
+    return computePipeline_;
+}
+
+inline const Vector3i &Shader::GetThreadGroupSize() const
+{
+    return info_->GetThreadGroupSize();
+}
+
+inline Vector3i Shader::ComputeThreadGroupCount(const Vector3i &threadCount) const
+{
+    return info_->ComputeThreadGroupCount(threadCount);
 }
 
 RTRC_END

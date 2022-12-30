@@ -58,7 +58,7 @@ double Timer::GetAccumulatedSeconds() const
     auto delta = Clock::now() - startPoint_;
     delta -= paused_ ? (Clock::now() - pauseStartPoint_) : pausedTime_;
     const auto us = std::chrono::duration_cast<std::chrono::microseconds>(delta).count();
-    return std::max(0.0, 1e-6 * static_cast<double>(us));
+    return (std::max)(0.0, 1e-6 * static_cast<double>(us));
 }
 
 float Timer::GetDeltaSecondsF() const

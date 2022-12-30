@@ -152,8 +152,57 @@ public:
     void Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance);
     void DrawIndexed(int indexCount, int instanceCount, int firstIndex, int firstVertex, int firstInstance);
     void Dispatch(int groupCountX, int groupCountY, int groupCountZ);
+    void Dispatch(const Vector3i &groupCount);
 
     void ExecuteBarriers(const BarrierBatch &barriers);
+    void ExecuteBarrier(
+        const RC<StatefulBuffer> &buffer,
+        RHI::PipelineStageFlag    stages,
+        RHI::ResourceAccessFlag   accesses);
+    void ExecuteBarrier(
+        const RC<StatefulTexture> &texture,
+        RHI::TextureLayout         layout,
+        RHI::PipelineStageFlag     stages,
+        RHI::ResourceAccessFlag    accesses);
+    void ExecuteBarrier(
+        const RC<StatefulTexture> &texture,
+        uint32_t                   arrayLayer,
+        uint32_t                   mipLevel,
+        RHI::TextureLayout         layout,
+        RHI::PipelineStageFlag     stages,
+        RHI::ResourceAccessFlag    accesses);
+    void ExecuteBarrier(
+        const RC<Buffer>       &buffer,
+        RHI::PipelineStageFlag  prevStages,
+        RHI::ResourceAccessFlag prevAccesses,
+        RHI::PipelineStageFlag  succStages,
+        RHI::ResourceAccessFlag succAccesses);
+    void ExecuteBarrier(
+        const RC<Texture>      &texture,
+        RHI::TextureLayout      prevLayout,
+        RHI::PipelineStageFlag  prevStages,
+        RHI::ResourceAccessFlag prevAccesses,
+        RHI::TextureLayout      succLayout,
+        RHI::PipelineStageFlag  succStages,
+        RHI::ResourceAccessFlag succAccesses);
+    void ExecuteBarrier(
+        const RC<Texture>      &texture,
+        uint32_t                arrayLayer,
+        uint32_t                mipLevel,
+        RHI::TextureLayout      prevLayout,
+        RHI::PipelineStageFlag  prevStages,
+        RHI::ResourceAccessFlag prevAccesses,
+        RHI::TextureLayout      succLayout,
+        RHI::PipelineStageFlag  succStages,
+        RHI::ResourceAccessFlag succAccesses);
+    void ExecuteBarrier(
+        const RC<Texture> &texture,
+        RHI::TextureLayout prevLayout,
+        RHI::TextureLayout succLayout);
+    void ExecuteBarrier(
+        const RC<StatefulTexture> &texture,
+        RHI::TextureLayout         prevLayout,
+        RHI::TextureLayout         succLayout);
 
 private:
 
@@ -212,5 +261,88 @@ private:
 
     tbb::concurrent_queue<RHI::CommandPoolPtr> freePools_;
 };
+
+inline void CommandBuffer::ExecuteBarrier(
+    const RC<StatefulBuffer> &buffer,
+    RHI::PipelineStageFlag    stages,
+    RHI::ResourceAccessFlag   accesses)
+{
+    this->ExecuteBarriers(BarrierBatch{}(buffer, stages, accesses));
+}
+
+inline void CommandBuffer::ExecuteBarrier(
+    const RC<StatefulTexture> &texture,
+    RHI::TextureLayout         layout,
+    RHI::PipelineStageFlag     stages,
+    RHI::ResourceAccessFlag    accesses)
+{
+    this->ExecuteBarriers(BarrierBatch{}(texture, layout, stages, accesses));
+}
+
+inline void CommandBuffer::ExecuteBarrier(
+    const RC<StatefulTexture> &texture,
+    uint32_t                   arrayLayer,
+    uint32_t                   mipLevel,
+    RHI::TextureLayout         layout,
+    RHI::PipelineStageFlag     stages,
+    RHI::ResourceAccessFlag    accesses)
+{
+    this->ExecuteBarriers(BarrierBatch{}(texture, arrayLayer, mipLevel, layout, stages, accesses));
+}
+
+inline void CommandBuffer::ExecuteBarrier(
+    const RC<Buffer>       &buffer,
+    RHI::PipelineStageFlag  prevStages,
+    RHI::ResourceAccessFlag prevAccesses,
+    RHI::PipelineStageFlag  succStages,
+    RHI::ResourceAccessFlag succAccesses)
+{
+    this->ExecuteBarriers(BarrierBatch{}(buffer, prevStages, prevAccesses, succStages, succAccesses));
+}
+
+inline void CommandBuffer::ExecuteBarrier(
+    const RC<Texture>      &texture,
+    RHI::TextureLayout      prevLayout,
+    RHI::PipelineStageFlag  prevStages,
+    RHI::ResourceAccessFlag prevAccesses,
+    RHI::TextureLayout      succLayout,
+    RHI::PipelineStageFlag  succStages,
+    RHI::ResourceAccessFlag succAccesses)
+{
+    this->ExecuteBarriers(BarrierBatch{}(
+        texture, prevLayout, prevStages, prevAccesses, succLayout, succStages, succAccesses));
+}
+
+inline void CommandBuffer::ExecuteBarrier(
+    const RC<Texture>      &texture,
+    uint32_t                arrayLayer,
+    uint32_t                mipLevel,
+    RHI::TextureLayout      prevLayout,
+    RHI::PipelineStageFlag  prevStages,
+    RHI::ResourceAccessFlag prevAccesses,
+    RHI::TextureLayout      succLayout,
+    RHI::PipelineStageFlag  succStages,
+    RHI::ResourceAccessFlag succAccesses)
+{
+    this->ExecuteBarriers(BarrierBatch{}(
+        texture, arrayLayer, mipLevel,
+        prevLayout, prevStages, prevAccesses, succLayout, succStages, succAccesses));
+}
+
+inline void CommandBuffer::ExecuteBarrier(
+    const RC<Texture> &texture,
+    RHI::TextureLayout prevLayout,
+    RHI::TextureLayout succLayout)
+{
+    this->ExecuteBarriers(BarrierBatch{}(texture, prevLayout, succLayout));
+}
+
+inline void CommandBuffer::ExecuteBarrier(
+    const RC<StatefulTexture> &texture,
+    RHI::TextureLayout         prevLayout,
+    RHI::TextureLayout         succLayout)
+{
+    this->ExecuteBarriers(BarrierBatch{}(texture, prevLayout, succLayout));
+}
 
 RTRC_END

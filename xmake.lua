@@ -73,6 +73,7 @@ target("Rtrc")
     end
     -- Dependencies
     add_includedirs("External/avir", { public = false })
+    add_includedirs("External/cy", { public = false })
     add_packages("glfw", "stb", "tinyexr")
     add_packages("fmt", "mimalloc", { public = true })
     add_deps("dxc", "tinyobjloader", "tbb", "sigslot")

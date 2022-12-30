@@ -323,6 +323,11 @@ void CommandBuffer::Dispatch(int groupCountX, int groupCountY, int groupCountZ)
     rhiCommandBuffer_->Dispatch(groupCountX, groupCountY, groupCountZ);
 }
 
+void CommandBuffer::Dispatch(const Vector3i &groupCount)
+{
+    this->Dispatch(groupCount.x, groupCount.y, groupCount.z);
+}
+
 void CommandBuffer::ExecuteBarriers(const BarrierBatch &barriers)
 {
     CheckThreadID();

@@ -28,7 +28,7 @@ void Run()
     auto material = materialManager.GetMaterial("ScaleImage");
     auto matPass = material->GetPassByTag("Default");
     auto shader = matPass->GetShader(keywords);
-    auto pipeline = device->CreateComputePipeline(shader);
+    auto pipeline = shader->GetComputePipeline();
 
     auto matInst = material->CreateInstance();
     auto matPassInst = matInst->GetPassInstance("Default");
@@ -84,8 +84,7 @@ void Run()
         };
         cmd.Dispatch(groupCount.x, groupCount.y, 1);
 
-        cmd.ExecuteBarriers(BarrierBatch()
-            (outputTexture, RHI::TextureLayout::CopySrc, RHI::PipelineStage::Copy, RHI::ResourceAccess::CopyRead));
+        cmd.ExecuteBarrier(outputTexture, RHI::TextureLayout::CopySrc, RHI::PipelineStage::Copy, RHI::ResourceAccess::CopyRead);
         cmd.CopyColorTexture2DToBuffer(*readbackBuffer, 0, *outputTexture, 0, 0);
     });
     

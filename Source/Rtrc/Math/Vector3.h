@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/Common.h>
+#include <Rtrc/Math/Vector2.h>
 
 RTRC_BEGIN
 
@@ -11,9 +11,13 @@ public:
 
     using Component = T;
 
-    explicit Vector3(T value = T());
+    Vector3();
+
+    explicit Vector3(T value);
 
     Vector3(T x, T y, T z);
+
+    Vector3(const Vector2<T> &xy, T z);
 
     T operator[](size_t i) const;
 
@@ -65,6 +69,13 @@ template<typename T>
 Vector3<T> Normalize(const Vector3<T> &v);
 
 template<typename T>
+Vector3<T>::Vector3()
+    : Vector3(T{})
+{
+    
+}
+
+template<typename T>
 Vector3<T>::Vector3(T value)
     : Vector3(value, value, value)
 {
@@ -74,6 +85,13 @@ Vector3<T>::Vector3(T value)
 template<typename T>
 Vector3<T>::Vector3(T x, T y, T z)
     : x(x), y(y), z(z)
+{
+    
+}
+
+template<typename T>
+Vector3<T>::Vector3(const Vector2<T> &xy, T z)
+    : Vector3(xy.x, xy.y, z)
 {
     
 }

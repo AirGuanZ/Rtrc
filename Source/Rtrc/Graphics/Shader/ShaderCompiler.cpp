@@ -475,6 +475,12 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     shader->info_->builtinBindingGroupIndices_[EnumToInt(Shader::BuiltinBindingGroup::Material)] = shader->GetBindingGroupIndexByName("Material");
     shader->info_->builtinBindingGroupIndices_[EnumToInt(Shader::BuiltinBindingGroup::Object)]   = shader->GetBindingGroupIndexByName("Object");
 
+    if(shader->CS_)
+    {
+        shader->info_->computeShaderThreadGroupSize_ = csRefl->GetComputeShaderThreadGroupSize();
+        shader->computePipeline_ = device_->CreateComputePipeline(shader);
+    }
+
     return shader;
 }
 

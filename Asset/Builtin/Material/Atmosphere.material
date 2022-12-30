@@ -1,0 +1,86 @@
+Material "Builtin/Atmosphere"
+{
+    Pass
+    {
+        Tag "GenerateTransmittanceLUT"
+        ShaderRef "Builtin/Atmosphere/GenerateTransmittanceLUT"
+    }
+
+    Pass
+    {
+        Tag "GenerateMultiScatterLUT"
+        ShaderRef "Builtin/Atmosphere/GenerateMultiScatterLUT"
+    }
+}
+
+Shader "Builtin/Atmosphere/GenerateTransmittanceLUT"
+{
+
+    #compute CSMain
+
+    #include "Atmosphere.cginc"
+
+    #define SAMPLE_COUNT 1000
+
+    rtrc_group(Pass)
+        rtrc_define(RWTexture2D<float4>,     RWTransmittance)
+        rtrc_uniform(int2,                   outputResolution)
+        rtrc_uniform(Atmosphere::Properties, atmosphere)
+    rtrc_end
+
+    [numthreads(16, 16, 1)]
+    void CSMain(int2 tid : SV_DispatchThreadID)
+    {
+        if(any(tid >= Pass.outputResolution))
+            return;
+
+        float t01 = (tid + 0.5) / Pass.outputResolution;
+        float theta = asin(lerp(-1.0, 1.0, t01.y);
+        float h = lerp(0.0, Pass.atmosphere.atmosphereRadius - Pass.atmosphere.planetRadius, t01.x);
+
+        float2 o = float2(0, Pass.atmosphere.planetRadius);
+        float2 d = float2(cos(theta), sin(theta));
+
+        float t = 0;
+        if(!Atmosphere::IntersectRayCircle(o, d, atmosphere.planetRadius, t))
+            Atmosphere::IntersectRayCircle(o, d, atmosphere.atmosphereRadius, t);
+        float2 end = o + t * d;
+
+        float3 sum = 0;
+        for(int i = 0; i < SAMPLE_COUNT; ++i)
+        {
+            float2 pi = lerp(o, end, (i + 0.5) / SAMPLE_COUNT);
+            float hi = length(pi) - atmosphere.planetRadius;
+            float3 sigma = atmosphere.GetSigmaT(hi);
+            sum += sigma;
+        }
+
+        float3 result = exp(-sum * (t / SAMPLE_COUNT));
+        RWTransmittance[tid] = float4(result, 1);
+    }
+
+} // Shader "Builtin/Atmosphere/GenerateTransmittanceLUT"
+
+Shader "Builtin/Atmosphere/GenerateMultiScatterLUT"
+{
+
+    #compute CSMain
+
+    #include "Atmosphere.cginc"
+
+    rtrc_group(Pass)
+        rtrc_define(RWTexture2D<float4>,     RWMultiScatter)
+        rtrc_uniform(int2,                   outputResolution)
+        rtrc_uniform(int,                    dirSampleCount)
+        rtrc_uniform(int,                    rayMarchStepCount)
+        rtrc_uniform(Atmosphere::Properties, atmosphere)
+    rtrc_end
+
+    [numthreads(16, 16, 1)]
+    void CSMain(int2 tid : SV_DispatchThreadID)
+    {
+        if(any(tid >= Pass.outputResolution))
+            return;
+    }
+
+} // Shader "Builtin/Atmosphere/GenerateMultiScatterLUT"

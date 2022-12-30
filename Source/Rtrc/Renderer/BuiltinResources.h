@@ -5,12 +5,6 @@
 
 RTRC_BEGIN
 
-enum class BuiltinShader
-{
-    DeferredLighting,
-    Count
-};
-
 enum class BuiltinTexture
 {
     Black2D, // R8G8B8A8_UNorm, RGB = 0, A = 1
@@ -24,32 +18,37 @@ enum class BuiltinMesh
     Count
 };
 
+enum class BuiltinMaterial
+{
+    DeferredLighting,
+    Atmosphere,
+    Count
+};
+
 class BuiltinResourceManager : public Uncopyable
 {
 public:
 
     explicit BuiltinResourceManager(Device &device);
 
-    const RC<Shader> &GetBuiltinShader(BuiltinShader shader) const;
-
-    const RC<Mesh> &GetBuiltinMesh(BuiltinMesh mesh) const;
-
-    const RC<Texture> &GetBuiltinTexture(BuiltinTexture texture) const;
+    Device &GetDevice() const;
+    
+    const RC<Mesh>     &GetBuiltinMesh    (BuiltinMesh     mesh)     const;
+    const RC<Texture>  &GetBuiltinTexture (BuiltinTexture  texture)  const;
+    const RC<Material> &GetBuiltinMaterial(BuiltinMaterial material) const;
 
 private:
 
-    void LoadBuiltinMaterials();
-
     void LoadBuiltinTextures();
-
     void LoadBuiltinMeshes();
+    void LoadBuiltinMaterials();
 
     Device &device_;
 
     MaterialManager materialManager_;
-    std::array<RC<Shader>,  EnumCount<BuiltinShader>>  shaders_;
-    std::array<RC<Texture>, EnumCount<BuiltinTexture>> textures_;
-    std::array<RC<Mesh>,    EnumCount<BuiltinMesh>>    meshes_;
+    std::array<RC<Texture>,  EnumCount<BuiltinTexture>>  textures_;
+    std::array<RC<Mesh>,     EnumCount<BuiltinMesh>>     meshes_;
+    std::array<RC<Material>, EnumCount<BuiltinMaterial>> materials_;
 };
 
 RTRC_END

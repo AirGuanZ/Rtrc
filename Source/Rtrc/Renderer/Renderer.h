@@ -15,9 +15,8 @@ public:
 
     struct RenderGraphInterface
     {
-        RG::Pass *inPass;
-        RG::Pass *outPass;
-        RG::TextureResource *image;
+        RG::Pass *inPass = nullptr;
+        RG::Pass *outPass = nullptr;
     };
 
     Renderer(Device &device, BuiltinResourceManager &builtinResources);

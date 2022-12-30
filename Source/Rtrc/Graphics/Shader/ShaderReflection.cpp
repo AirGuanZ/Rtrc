@@ -219,6 +219,16 @@ std::vector<ShaderConstantBuffer> SPIRVReflection::GetConstantBuffers() const
     return result;
 }
 
+Vector3i SPIRVReflection::GetComputeShaderThreadGroupSize() const
+{
+    const auto &localSize = shaderModule_->entry_points[shaderModule_->entry_point_id].local_size;
+    Vector3i ret;
+    ret.x = static_cast<int>(localSize.x);
+    ret.y = static_cast<int>(localSize.y);
+    ret.z = static_cast<int>(localSize.z);
+    return ret;
+}
+
 void SPIRVReflection::DeleteShaderModule::operator()(SpvReflectShaderModule *ptr) const
 {
     if(ptr)
