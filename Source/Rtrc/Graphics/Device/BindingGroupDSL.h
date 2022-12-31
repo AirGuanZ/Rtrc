@@ -406,7 +406,7 @@ namespace BindingGroupDSL
         f.template operator()<true>(&_rtrcSelf::NAME, #NAME, ::Rtrc::RHI::ShaderStageFlags::All); \
     RTRC_META_STRUCT_POST_MEMBER(NAME)                                                            \
     using _rtrcMemberType##NAME = TYPE;                                                           \
-    _rtrcMemberType##NAME NAME;
+    _rtrcMemberType##NAME NAME
 
 #define RTRC_DEFINE_IMPL(TYPE, NAME, STAGES)                                   \
     RTRC_META_STRUCT_PRE_MEMBER(NAME)                                          \

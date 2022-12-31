@@ -84,6 +84,20 @@ inline constexpr UseInfo PIXEL_SHADER_TEXTURE_READ =
     .accesses = RHI::ResourceAccess::TextureRead
 };
 
+inline constexpr UseInfo COMPUTE_UNORDERED_ACCESS =
+{
+    .layout = RHI::TextureLayout::ShaderRWTexture,
+    .stages = RHI::PipelineStage::ComputeShader,
+    .accesses = RHI::ResourceAccess::RWTextureRead | RHI::ResourceAccess::RWTextureWrite
+};
+
+inline constexpr UseInfo COMPUTE_UNORDERED_ACCESS_WRITE =
+{
+    .layout = RHI::TextureLayout::ShaderRWTexture,
+    .stages = RHI::PipelineStage::ComputeShader,
+    .accesses = RHI::ResourceAccess::RWTextureWrite
+};
+
 class Resource : public Uncopyable
 {
     int index_;
