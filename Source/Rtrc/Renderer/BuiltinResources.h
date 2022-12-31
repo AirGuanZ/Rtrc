@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Rtrc/Graphics/Material/Material.h>
+#include <Rtrc/Graphics/Mesh/Mesh.h>
 #include <Rtrc/Graphics/Device/Device.h>
 
 RTRC_BEGIN
@@ -37,6 +38,9 @@ public:
     const RC<Texture>  &GetBuiltinTexture (BuiltinTexture  texture)  const;
     const RC<Material> &GetBuiltinMaterial(BuiltinMaterial material) const;
 
+    const Mesh &GetFullscreenTriangleMesh() const;
+    const Mesh &GetFullscreenQuadMesh()     const;
+
 private:
 
     void LoadBuiltinTextures();
@@ -44,11 +48,14 @@ private:
     void LoadBuiltinMaterials();
 
     Device &device_;
-
     MaterialManager materialManager_;
+
     std::array<RC<Texture>,  EnumCount<BuiltinTexture>>  textures_;
     std::array<RC<Mesh>,     EnumCount<BuiltinMesh>>     meshes_;
     std::array<RC<Material>, EnumCount<BuiltinMaterial>> materials_;
+
+    Mesh fullscreenTriangle_;
+    Mesh fullscreenQuad_;
 };
 
 RTRC_END

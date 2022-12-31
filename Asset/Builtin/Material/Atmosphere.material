@@ -69,18 +69,118 @@ Shader "Builtin/Atmosphere/GenerateMultiScatterLUT"
     #include "Atmosphere.cginc"
 
     rtrc_group(Pass)
-        rtrc_define(RWTexture2D<float4>,     RWMultiScatter)
-        rtrc_uniform(int2,                   outputResolution)
-        rtrc_uniform(int,                    dirSampleCount)
-        rtrc_uniform(int,                    rayMarchStepCount)
-        rtrc_uniform(Atmosphere::Properties, atmosphere)
+        rtrc_define(RWTexture2D<float4>,      RWMultiScatter)
+        rtrc_define(StructuredBuffer<float2>, RawDirSamples)
+        rtrc_define(Texture2D<float3>,        TransmittanceLut)
+        rtrc_uniform(int2,                    outputResolution)
+        rtrc_uniform(int,                     dirSampleCount)
+        rtrc_uniform(int,                     rayMarchStepCount)
+        rtrc_uniform(Atmosphere::Properties,  atmosphere)
     rtrc_end
+
+    rtrc_sampler(TransmittanceLutSampler, filter = linear, address = clamp)
+
+    #define PI 3.14159265
+
+    float3 UniformOnSphere(float2 u)
+    {
+        float z = 1 - 2 * u.x;
+        float r = sqrt(max(0, 1 - z * z));
+        float phi = 2 * PI * u.y;
+        return float3(r * cos(phi), r * sin(phi), z);
+    }
+
+    void Integrate(float3 worldOri, float3 worldDir, float sunTheta, float3 toSunDir, out float3 innerL2, out float3 innerF)
+    {
+        Atmosphere::TransmittanceLut transmittanceLut;
+        transmittanceLut.Initialize(TransmittanceLut, TransmittanceLutSampler, Pass.atmosphere);
+
+        float u = dot(worldDir, toSunDir);
+
+        float endT = 0;
+        bool groundInct = findClosestIntersectionWithSphere(worldOri, worldDir, Pass.atmosphere.planetRadius, endT);
+        if(!groundInct)
+            findClosestIntersectionWithSphere(worldOri, worldDir, Pass.atmosphere.atmosphereRadius, endT);
+
+        float dt = endT / Pass.rayMarchStepCount;
+        float halfDt = 0.5 * dt;
+        float t = 0;
+
+        float3 sumSigmaT = float3(0, 0, 0);
+        float3 sumL2 = float3(0, 0, 0), sumF = float3(0, 0, 0);
+        for(int i = 0; i < Pass.rayMarchStepCount; ++i)
+        {
+            float midT = t + halfDt;
+            t += dt;
+
+            float3 worldPos = worldOri + midT * worldDir;
+            float h = length(worldPos) - Pass.atmosphere.planetRadius;
+
+            float3 sigmaS, sigmaT;
+            getSigmaST(h, sigmaS, sigmaT);
+
+            float3 deltaSumSigmaT = dt * sigmaT;
+            float3 transmittance = exp(-sumSigmaT - 0.5 * deltaSumSigmaT);
+
+            if(!hasIntersectionWithSphere(worldPos, toSunDir, Pass.atmosphere.planetRadius))
+            {
+                float3 rho = evalPhaseFunction(h, u);
+                float3 sunTransmittance = transmittanceLut.Sample(h, sunTheta);
+                sumL2 += dt * transmittance * sunTransmittance * sigmaS * rho;
+            }
+
+            sumF      += dt * transmittance * sigmaS;
+            sumSigmaT += deltaSumSigmaT;
+        }
+
+        if(groundInct)
+        {
+            float3 transmittance = exp(-sumSigmaT);
+            float3 sunTransmittance = transmittanceLut.Sample(0, sunTheta);
+            sumL2 += transmittance * sunTransmittance * max(0, toSunDir.y) * (Pass.atmosphere.terrainAlbedo / PI);
+        }
+
+        innerL2 = sumL2;
+        innerF  = sumF;
+    }
+
+    float3 ComputeM(float h, float sunTheta)
+    {    
+        float3 worldOri = { 0, h + Pass.atmosphere.planetRadius, 0 };
+        float3 toSunDir = { cos(sunTheta), sin(sunTheta), 0 };
+
+        float3 sumL2 = float3(0, 0, 0), sumF = float3(0, 0, 0);
+        for(int i = 0; i < Pass.dirSampleCount; ++i)
+        {
+            float2 rawSample = RawDirSamples[i];
+            float3 worldDir = UniformOnSphere(rawSample);
+
+            float3 innerL2, innerF;
+            Integrate(worldOri, worldDir, sunTheta, toSunDir, innerL2, innerF);
+
+            // phase function is canceled by pdf
+
+            sumL2 += innerL2;
+            sumF  += innerF;
+        }
+
+        float3 l2 = sumL2 / Pass.dirSampleCount;
+        float3 f  = sumF  / Pass.dirSampleCount;
+        return l2 / (1 - f);
+    }
 
     [numthreads(16, 16, 1)]
     void CSMain(int2 tid : SV_DispatchThreadID)
     {
         if(any(tid >= Pass.outputResolution))
             return;
+        
+        float sinSunTheta = lerp(-1.0, 1.0, (tid.y + 0.5) / Pass.outputResolution.y);
+        float sunTheta = asin(sinSunTheta);
+        float h = lerp(0.0, Pass.atmosphere.planetRadius, (tid.x + 0.5) / Pass.outputResolution.x);
+
+        float3 M = ComputeM(h, sunTheta);
+        RWMultiScatter[tid] = float4(M, 1);
     }
 
 } // Shader "Builtin/Atmosphere/GenerateMultiScatterLUT"

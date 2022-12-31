@@ -163,8 +163,8 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     }
     if(!source.filename.empty())
     {
-        includeDirs.push_back(
-            absolute(std::filesystem::path(source.filename)).parent_path().lexically_normal().string());
+        std::string dir = absolute(std::filesystem::path(source.filename)).parent_path().lexically_normal().string();
+        includeDirs.push_back(std::move(dir));
     }
 
     DXC dxc;
@@ -189,8 +189,9 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     const bool hasVS = !source.vsEntry.empty();
     const bool hasFS = !source.fsEntry.empty();
     const bool hasCS = !source.csEntry.empty();
-    if(!( hasVS &&  hasFS && !hasCS) &&
-       !(!hasVS && !hasFS &&  hasCS))
+    const bool isGraphicsShader = hasVS && hasFS && !hasCS;
+    const bool isComputeShader = !hasVS && !hasFS && hasCS;
+    if(!isGraphicsShader && !isComputeShader)
     {
         throw Exception("Invalid shader type. Must be (VS & FS) or (CS)");
     }
@@ -374,12 +375,12 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     {
         shaderInfo.entryPoint = source.csEntry;
         csData = dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_CS_6_0, debug, nullptr);
-        fsRefl = MakeBox<SPIRVReflection>(csData, source.csEntry);
+        csRefl = MakeBox<SPIRVReflection>(csData, source.csEntry);
     }
 
     // Check usage of ungrouped bindings
 
-    auto EnsureNoUsage = [&](const Box<SPIRVReflection> &refl, std::string_view stageName)
+    auto EnsureAllUsedResourcesAreGrouped = [&](const Box<SPIRVReflection> &refl, std::string_view stageName)
     {
         if(refl)
         {
@@ -393,10 +394,9 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
             }
         }
     };
-
-    EnsureNoUsage(vsRefl, "vertex shader");
-    EnsureNoUsage(fsRefl, "fragment shader");
-    EnsureNoUsage(csRefl, "compute shader");
+    EnsureAllUsedResourcesAreGrouped(vsRefl, "vertex shader");
+    EnsureAllUsedResourcesAreGrouped(fsRefl, "fragment shader");
+    EnsureAllUsedResourcesAreGrouped(csRefl, "compute shader");
 
     // Shader
 

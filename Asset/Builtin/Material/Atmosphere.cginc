@@ -48,4 +48,25 @@ namespace Atmosphere
         return (C <= 0) | (B <= 0);
     }
 
+    struct TransmittanceLut
+    {
+        Texture2D<float3> lut_;
+        SamplerState samplerState_;
+        Properties atmosphere_;
+
+        void Initialize(Texture2D<float3> lut, SamplerState samplerState s, Properties atmosphere)
+        {
+            lut_ = lut;
+            samplerState_ = s;
+            atmosphere_ = atmosphere;
+        }
+
+        void Sample(float h, float theta)
+        {
+            float u = h / (atmosphere_.atmosphereRadius - atmosphere_.planetRadius);
+            float v = 0.5 + 0.5 * sin(theta);
+            return lut_.SampleLevel(samplerState_, float2(u, v), 0);
+        }
+    };
+
 } // namespace Atmosphere

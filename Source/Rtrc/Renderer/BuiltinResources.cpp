@@ -1,5 +1,6 @@
 #include <Rtrc/Graphics/Mesh/MeshLoader.h>
 #include <Rtrc/Renderer/BuiltinResources.h>
+#include <Rtrc/Renderer/Utility/FullscreenPrimitive.h>
 
 RTRC_BEGIN
 
@@ -13,6 +14,9 @@ BuiltinResourceManager::BuiltinResourceManager(Device &device)
     LoadBuiltinTextures();
     LoadBuiltinMeshes();
     LoadBuiltinMaterials();
+
+    fullscreenTriangle_ = GetFullscreenTriangle(device_);
+    fullscreenQuad_ = GetFullscreenQuad(device_);
 }
 
 Device &BuiltinResourceManager::GetDevice() const
@@ -33,6 +37,16 @@ const RC<Texture> &BuiltinResourceManager::GetBuiltinTexture(BuiltinTexture text
 const RC<Material> &BuiltinResourceManager::GetBuiltinMaterial(BuiltinMaterial material) const
 {
     return materials_[EnumToInt(material)];
+}
+
+const Mesh &BuiltinResourceManager::GetFullscreenTriangleMesh() const
+{
+    return fullscreenTriangle_;
+}
+
+const Mesh &BuiltinResourceManager::GetFullscreenQuadMesh() const
+{
+    return fullscreenQuad_;
 }
 
 void BuiltinResourceManager::LoadBuiltinTextures()
