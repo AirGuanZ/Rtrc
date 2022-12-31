@@ -106,9 +106,16 @@ public:
 
         const char ch = source_[nextPos_];
 
+        if(ch == ':' && source_[nextPos_ + 1] == ':') // ::
+        {
+            currentToken_ = "::";
+            nextPos_ += 2;
+            return;
+        }
+
         if(ch == '{' || ch == '}' || ch == ',' || ch == ';' || ch == ':' ||
-            ch == '[' || ch == ']' || ch == '<' || ch == '>' || ch == '|' ||
-            ch == '(' || ch == ')' || ch == '=' || ch == '#')
+           ch == '[' || ch == ']' || ch == '<' || ch == '>' || ch == '|' ||
+           ch == '(' || ch == ')' || ch == '=' || ch == '#')
         {
             currentToken_ = source_.substr(nextPos_, 1);
             ++nextPos_;

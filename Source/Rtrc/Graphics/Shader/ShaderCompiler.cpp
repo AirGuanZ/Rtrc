@@ -797,6 +797,12 @@ ShaderCompiler::Bindings ShaderCompiler::CollectBindingsInStage(const std::strin
                 //}
                 currentGroup.valuePropertyDefinitions += tokens.GetCurrentToken();
                 tokens.Next();
+                while(tokens.GetCurrentToken() == "::")
+                {
+                    tokens.Next();
+                    currentGroup.valuePropertyDefinitions += "::" + tokens.GetCurrentToken();
+                    tokens.Next();
+                }
                 tokens.ConsumeOrThrow(",");
                 if(!ShaderTokenStream::IsIdentifier(tokens.GetCurrentToken()))
                 {

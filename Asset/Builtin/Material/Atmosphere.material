@@ -26,7 +26,7 @@ Shader "Builtin/Atmosphere/GenerateTransmittanceLut"
 
     #include "Atmosphere.cginc"
 
-    #define SAMPLE_COUNT 1000
+    #define SAMPLE_COUNT 256
 
     rtrc_group(Pass)
         rtrc_define(RWTexture2D<float4>,     TransmittanceTextureRW)
@@ -40,24 +40,24 @@ Shader "Builtin/Atmosphere/GenerateTransmittanceLut"
         if(any(tid >= Pass.outputResolution))
             return;
 
-        float t01 = (tid + 0.5) / Pass.outputResolution;
+        float2 t01 = (tid + 0.5) / Pass.outputResolution;
         float theta = asin(lerp(-1.0, 1.0, t01.y));
         float h = lerp(0.0, Pass.atmosphere.atmosphereRadius - Pass.atmosphere.planetRadius, t01.x);
 
-        float2 o = float2(0, Pass.atmosphere.planetRadius);
+        float2 o = float2(0, h + Pass.atmosphere.planetRadius);
         float2 d = float2(cos(theta), sin(theta));
 
         float t = 0;
-        if(!Atmosphere::IntersectRayCircle(o, d, atmosphere.planetRadius, t))
-            Atmosphere::IntersectRayCircle(o, d, atmosphere.atmosphereRadius, t);
+        if(!Atmosphere::IntersectRayCircle(o, d, Pass.atmosphere.planetRadius, t))
+            Atmosphere::IntersectRayCircle(o, d, Pass.atmosphere.atmosphereRadius, t);
         float2 end = o + t * d;
 
         float3 sum = 0;
         for(int i = 0; i < SAMPLE_COUNT; ++i)
         {
             float2 pi = lerp(o, end, (i + 0.5) / SAMPLE_COUNT);
-            float hi = length(pi) - atmosphere.planetRadius;
-            float3 sigma = atmosphere.GetSigmaT(hi);
+            float hi = length(pi) - Pass.atmosphere.planetRadius;
+            float3 sigma = Atmosphere::GetSigmaT(Pass.atmosphere, hi);
             sum += sigma;
         }
 
@@ -77,7 +77,7 @@ Shader "Builtin/Atmosphere/GenerateMultiScatterLut"
     rtrc_group(Pass)
         rtrc_define(RWTexture2D<float4>,      MultiScatterTextureRW)
         rtrc_define(StructuredBuffer<float2>, RawDirSamples)
-        rtrc_define(Texture2D<float3>,        TransmittanceLut)
+        rtrc_define(Texture2D<float3>,        TransmittanceLutTexture)
         rtrc_uniform(int2,                    outputResolution)
         rtrc_uniform(int,                     dirSampleCount)
         rtrc_uniform(int,                     rayMarchStepCount)
@@ -86,7 +86,7 @@ Shader "Builtin/Atmosphere/GenerateMultiScatterLut"
 
     rtrc_sampler(TransmittanceLutSampler, filter = linear, address = clamp)
 
-    #define PI 3.14159265
+    static float PI = 3.14159265;
 
     float3 UniformOnSphere(float2 u)
     {
@@ -98,16 +98,13 @@ Shader "Builtin/Atmosphere/GenerateMultiScatterLut"
 
     void Integrate(float3 worldOri, float3 worldDir, float sunTheta, float3 toSunDir, out float3 innerL2, out float3 innerF)
     {
-        Atmosphere::TransmittanceLut transmittanceLut;
-        transmittanceLut.Initialize(TransmittanceLut, TransmittanceLutSampler, Pass.atmosphere);
-
         float u = dot(worldDir, toSunDir);
 
         float endT = 0;
-        bool groundInct = IntersectRaySphere(worldOri, worldDir, Pass.atmosphere.planetRadius, endT);
+        bool groundInct = Atmosphere::IntersectRaySphere(worldOri, worldDir, Pass.atmosphere.planetRadius, endT);
         if(!groundInct)
         {
-            if(!IntersectRaySphere(worldOri, worldDir, Pass.atmosphere.atmosphereRadius, endT))
+            if(!Atmosphere::IntersectRaySphere(worldOri, worldDir, Pass.atmosphere.atmosphereRadius, endT))
             {
                 innerL2 = 0;
                 innerF = 0;
@@ -129,16 +126,17 @@ Shader "Builtin/Atmosphere/GenerateMultiScatterLut"
             float3 worldPos = worldOri + midT * worldDir;
             float h = length(worldPos) - Pass.atmosphere.planetRadius;
 
-            float3 sigmaS, sigmaT;
-            Pass.atmosphere.GetSigmaST(h, sigmaS, sigmaT);
+            float3 sigmaS = 0, sigmaT = 0;
+            GetSigmaST(Pass.atmosphere, h, sigmaS, sigmaT);
 
             float3 deltaSumSigmaT = dt * sigmaT;
             float3 transmittance = exp(-sumSigmaT - 0.5 * deltaSumSigmaT);
 
-            if(!IntersectRaySphere(worldPos, toSunDir, Pass.atmosphere.planetRadius))
+            if(!Atmosphere::TestRaySphere(worldPos, toSunDir, Pass.atmosphere.planetRadius))
             {
-                float3 rho = Pass.atmosphere.EvaluatePhaseFunction(h, u);
-                float3 sunTransmittance = transmittanceLut.Sample(h, sunTheta);
+                float3 rho = EvaluatePhaseFunction(Pass.atmosphere, h, u);
+                float3 sunTransmittance = Atmosphere::SampleTransmittanceLut(
+                    TransmittanceLutTexture, TransmittanceLutSampler, Pass.atmosphere, h, sunTheta);
                 sumL2 += dt * transmittance * sunTransmittance * sigmaS * rho;
             }
 
@@ -149,8 +147,9 @@ Shader "Builtin/Atmosphere/GenerateMultiScatterLut"
         if(groundInct)
         {
             float3 transmittance = exp(-sumSigmaT);
-            float3 sunTransmittance = transmittanceLut.Sample(0, sunTheta);
-            sumL2 += transmittance * sunTransmittance * max(0, toSunDir.y) * (Pass.atmosphere.terrainAlbedo / PI);
+            float3 sunTransmittance = Atmosphere::SampleTransmittanceLut(
+                    TransmittanceLutTexture, TransmittanceLutSampler, Pass.atmosphere, 0, sunTheta);
+            sumL2 += transmittance * sunTransmittance * max(0.0, toSunDir.y) * (Pass.atmosphere.terrainAlbedo / PI);
         }
 
         innerL2 = sumL2;
@@ -219,32 +218,32 @@ Shader "Builtin/Atmosphere/GenerateSkyLut"
 
     rtrc_sampler(LutSampler, filter = linear, address = clamp)
 
+    static float PI = 3.14159265;
+
     void RayMarchStep(
         float phaseU, float3 ori, float3 dir, float thisT, float nextT,
         inout float3 sumSigmaT, inout float3 inScatter)
     {
-        Atmosphere::TransmittanceLut transmittanceLut;
-        transmittanceLut.Initialize(TransmittanceLut, LutSampler, Pass.atmosphere);
-
         float3 posR = float3(0, ori.y + Pass.atmosphere.planetRadius, 0) + dir * 0.5 * (thisT + nextT);
         float h = length(posR) - Pass.atmosphere.planetRadius;
 
         float3 sigmaS, sigmaT;
-        Pass.atmosphere.GetSigmaST(h, sigmaS, sigmaT);
+        Atmosphere::GetSigmaST(Pass.atmosphere, h, sigmaS, sigmaT);
 
         float3 deltaSumSigmaT = (nextT - thisT) * sigmaT;
         float3 eyeTrans = exp(-sumSigmaT - 0.5 * deltaSumSigmaT);
         float sunTheta = PI / 2 - acos(dot(-Pass.sunDirection, normalize(posR)));
 
-        if(!IntersectRaySphere(posR, -Pass.sunDirection, Pass.atmosphere.planetRadius))
+        if(!Atmosphere::TestRaySphere(posR, -Pass.sunDirection, Pass.atmosphere.planetRadius))
         {
-            float3 rho = Pass.atmosphere.EvaluatePhaseFunction(h, phaseU);
-            float3 sunTrans = transmittanceLut.Sample(h, sunTheta);
+            float3 rho = Atmosphere::EvaluatePhaseFunction(Pass.atmosphere, h, phaseU);
+            float3 sunTrans = Atmosphere::SampleTransmittanceLut(
+                    TransmittanceLutTexture, LutSampler, Pass.atmosphere, h, sunTheta);
             inScatter += (nextT - thisT) * eyeTrans * sigmaS * rho * sunTrans;
         }
 
         {
-            float tx = h / (AtmosphereRadius - PlanetRadius);
+            float tx = h / (Pass.atmosphere.atmosphereRadius - Pass.atmosphere.planetRadius);
             float ty = 0.5 + 0.5 * sin(sunTheta);
             float3 ms = MultiScatterLutTexture.SampleLevel(LutSampler, float2(tx, ty), 0);
             inScatter += (nextT - thisT) * eyeTrans * sigmaS * ms * Pass.sunIntensity;
@@ -272,24 +271,24 @@ Shader "Builtin/Atmosphere/GenerateSkyLut"
         float begT = 0, endT = 0;
         if(planetOri.y < Pass.atmosphere.planetRadius)
         {
-            IntersectRayCircle(planetOri, planetDir, Pass.atmosphere.planetRadius, begT);
-            IntersectRayCircle(planetOri, planetDir, Pass.atmosphere.atmosphereRadius, endT);
+            Atmosphere::IntersectRayCircle(planetOri, planetDir, Pass.atmosphere.planetRadius, begT);
+            Atmosphere::IntersectRayCircle(planetOri, planetDir, Pass.atmosphere.atmosphereRadius, endT);
         }
         else if(planetOri.y > Pass.atmosphere.atmosphereRadius)
         {
-            if(!IntersectRayCircle2(planetOri, planetDir, Pass.atmosphere.atmosphereRadius, begT, endT))
+            if(!Atmosphere::IntersectRayCircle2(planetOri, planetDir, Pass.atmosphere.atmosphereRadius, begT, endT))
             {
                 SkyLutTextureRW[tid] = float4(0, 0, 0, 1);
                 return;
             }
             float innerEndT = 0;
-            if(IntersectRayCircle(planetOri, planetDir, Pass.atmosphere.planetRadius, innerEndT))
+            if(Atmosphere::IntersectRayCircle(planetOri, planetDir, Pass.atmosphere.planetRadius, innerEndT))
                 endT = innerEndT;
         }
         else
         {
-            if(!IntersectRayCircle(planetOri, planetDir, Pass.atmosphere.planetRadius, endT))
-                IntersectRayCircle(planetOri, planetDir, Pass.atmosphere.atmosphereRadius, endT);
+            if(!Atmosphere::IntersectRayCircle(planetOri, planetDir, Pass.atmosphere.planetRadius, endT))
+                Atmosphere::IntersectRayCircle(planetOri, planetDir, Pass.atmosphere.atmosphereRadius, endT);
         }
 
         float phaseU = dot(Pass.sunDirection, -dir);

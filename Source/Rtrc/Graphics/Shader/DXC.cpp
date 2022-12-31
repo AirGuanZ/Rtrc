@@ -14,6 +14,10 @@
 #include <Rtrc/Graphics/Shader/DXC.h>
 #include <Rtrc/Utility/ScopeGuard.h>
 
+#if RTRC_DEBUG
+#include <iostream>
+#endif
+
 RTRC_BEGIN
 
 namespace DXCDetail
@@ -174,6 +178,9 @@ std::vector<unsigned char> DXC::Compile(
         if(errors && errors->GetStringLength() > 0)
         {
             std::string msg = errors->GetStringPointer();
+#if RTRC_DEBUG
+            std::cerr << msg << std::endl;
+#endif
             throw Exception(std::move(msg));
         }
         throw Exception("dxc: an unknown error occurred");

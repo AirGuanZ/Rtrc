@@ -85,20 +85,21 @@ namespace StructDetail
 template<typename T>
 concept RtrcStruct = requires { typename T::_rtrcStructTypeFlag; };
 
-#define rtrc_struct(NAME)                                              \
-    struct NAME;                                                       \
-    struct _rtrcCBufferBase##NAME                                      \
-    {                                                                  \
-        using _rtrcSelf = NAME;                                        \
-        struct _rtrcStructTypeFlag{};                                  \
-        static constexpr std::string_view _rtrcSelfName = #NAME;       \
-        static ::Rtrc::StructDetail::Sizer<1> _rtrcMemberCounter(...); \
-        template<typename F>                                           \
-        static constexpr void ForEachMember(const F &f)                \
-        {                                                              \
-            ::Rtrc::StructDetail::ForEachMember<_rtrcSelf>(f);         \
-        }                                                              \
-    };                                                                 \
+#define rtrc_struct(NAME)                                                 \
+    struct NAME;                                                          \
+    struct _rtrcCBufferBase##NAME                                         \
+    {                                                                     \
+        using _rtrcSelf = NAME;                                           \
+        struct _rtrcStructTypeFlag{};                                     \
+        static constexpr std::string_view _rtrcSelfName = #NAME;          \
+        static ::Rtrc::StructDetail::Sizer<1> _rtrcMemberCounter(...);    \
+        template<typename F>                                              \
+        static constexpr void ForEachMember(const F &f)                   \
+        {                                                                 \
+            ::Rtrc::StructDetail::ForEachMember<_rtrcSelf>(f);            \
+        }                                                                 \
+        auto operator<=>(const _rtrcCBufferBase##NAME &) const = default; \
+    };                                                                    \
     struct NAME : _rtrcCBufferBase##NAME
 
 #define rtrc_var(TYPE, NAME)                            \

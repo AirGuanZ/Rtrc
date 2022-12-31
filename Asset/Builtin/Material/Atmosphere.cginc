@@ -3,6 +3,8 @@
 namespace Atmosphere
 {
 
+    static float PI = 3.14159265;
+
     struct Properties
     {
         float3 scatterRayleigh;
@@ -19,69 +21,58 @@ namespace Atmosphere
         float  planetRadius;
         float  atmosphereRadius;
 
-        float3 GetSigmaS(float h)
-        {
-            float3 rayleigh = scatterRayleigh * exp(-h / hDensityRayleigh);
-            float mie = scatterMie * exp(-h / hDensityMie);
-            return rayleigh + mie;
-        }
-
-        float3 GetSigmaT(float h)
-        {
-            float3 rayleigh = scatterRayleigh * exp(-h / hDensityRayleigh);
-            float mie = (scatterMie + absorbMie) * exp(-h / hDensityMie);
-            float3 ozone = absorbOzone * max(0.0f, 1 - 0.5 * abs(h - ozoneCenterHeight) / ozoneThickness);
-            return rayleigh + mie + ozone;
-        }
-
-        void GetSigmaST(float h, out float3 sigmaS, out float3 sigmaT)
-        {    
-            float3 rayleigh = scatterRayleigh * exp(-h / hDensityRayleigh);
-            float mieDensity = exp(-h / hDensityMie);
-            float mieS = scatterMie * mieDensity;
-            float mieT = (scatterMie + absorbMie) * mieDensity;
-            float3 ozone = absorbOzone * max(0.0f, 1 - 0.5 * abs(h - ozoneCenterHeight) / ozoneThickness);
-            sigmaS = rayleigh + mieS;
-            sigmaT = rayleigh + mieT + ozone;
-        }
-
-        float3 EvaluatePhaseFunction(float h, float u)
-        {
-            float3 sRayleigh = scatterRayleigh * exp(-h / hDensityRayleigh);
-            float sMie = scatterMie * exp(-h / hDensityMie);
-            float3 s = sRayleigh + sMie;
-            float g = asymmetryMie, g2 = g * g, u2 = u * u;
-            float pRayleigh = 3 / (16 * PI) * (1 + u2);
-            float m = 1 + g2 - 2 * g * u;
-            float pMie = 3 / (8 * PI) * (1 - g2) * (1 + u2) / ((2 + g2) * m * sqrt(m));
-            float3 result;
-            result.x = s.x > 0 ? (pRayleigh * sRayleigh.x + pMie * sMie) / s.x : 0;
-            result.y = s.y > 0 ? (pRayleigh * sRayleigh.y + pMie * sMie) / s.y : 0;
-            result.z = s.z > 0 ? (pRayleigh * sRayleigh.z + pMie * sMie) / s.z : 0;
-            return result;
-        }
+        float3 terrainAlbedo;
     };
 
-    struct TransmittanceLut
+    float3 GetSigmaS(Properties properties, float h)
     {
-        Texture2D<float3> lut_;
-        SamplerState samplerState_;
-        Properties atmosphere_;
+        float3 rayleigh = properties.scatterRayleigh * exp(-h / properties.hDensityRayleigh);
+        float mie = properties.scatterMie * exp(-h / properties.hDensityMie);
+        return rayleigh + mie;
+    }
 
-        void Initialize(Texture2D<float3> lut, SamplerState samplerState s, Properties atmosphere)
-        {
-            lut_ = lut;
-            samplerState_ = s;
-            atmosphere_ = atmosphere;
-        }
+    float3 GetSigmaT(Properties properties, float h)
+    {
+        float3 rayleigh = properties.scatterRayleigh * exp(-h / properties.hDensityRayleigh);
+        float mie = (properties.scatterMie + properties.absorbMie) * exp(-h / properties.hDensityMie);
+        float3 ozone = properties.absorbOzone * max(0.0f, 1 - 0.5 * abs(h - properties.ozoneCenterHeight) / properties.ozoneThickness);
+        return rayleigh + mie + ozone;
+        return 0;
+    }
 
-        void Sample(float h, float theta)
-        {
-            float u = h / (atmosphere_.atmosphereRadius - atmosphere_.planetRadius);
-            float v = 0.5 + 0.5 * sin(theta);
-            return lut_.SampleLevel(samplerState_, float2(u, v), 0);
-        }
-    };
+    void GetSigmaST(Properties properties, float h, out float3 sigmaS, out float3 sigmaT)
+    {    
+        float3 rayleigh = properties.scatterRayleigh * exp(-h / properties.hDensityRayleigh);
+        float mieDensity = exp(-h / properties.hDensityMie);
+        float mieS = properties.scatterMie * mieDensity;
+        float mieT = (properties.scatterMie + properties.absorbMie) * mieDensity;
+        float3 ozone = properties.absorbOzone * max(0.0f, 1 - 0.5 * abs(h - properties.ozoneCenterHeight) / properties.ozoneThickness);
+        sigmaS = rayleigh + mieS;
+        sigmaT = rayleigh + mieT + ozone;
+    }
+
+    float3 EvaluatePhaseFunction(Properties properties, float h, float u)
+    {
+        float3 sRayleigh = properties.scatterRayleigh * exp(-h / properties.hDensityRayleigh);
+        float sMie = properties.scatterMie * exp(-h / properties.hDensityMie);
+        float3 s = sRayleigh + sMie;
+        float g = properties.asymmetryMie, g2 = g * g, u2 = u * u;
+        float pRayleigh = 3 / (16 * PI) * (1 + u2);
+        float m = 1 + g2 - 2 * g * u;
+        float pMie = 3 / (8 * PI) * (1 - g2) * (1 + u2) / ((2 + g2) * m * sqrt(m));
+        float3 result;
+        result.x = s.x > 0 ? (pRayleigh * sRayleigh.x + pMie * sMie) / s.x : 0;
+        result.y = s.y > 0 ? (pRayleigh * sRayleigh.y + pMie * sMie) / s.y : 0;
+        result.z = s.z > 0 ? (pRayleigh * sRayleigh.z + pMie * sMie) / s.z : 0;
+        return result;
+    }
+
+    float3 SampleTransmittanceLut(Texture2D<float3> lut, SamplerState s, Properties atmosphere, float h, float theta)
+    {
+        float u = h / (atmosphere.atmosphereRadius - atmosphere.planetRadius);
+        float v = 0.5 + 0.5 * sin(theta);
+        return lut.SampleLevel(s, float2(u, v), 0);
+    }
     
     bool TestRaySphere(float3 o, float3 d, float R)
     {

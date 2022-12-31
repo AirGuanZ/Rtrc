@@ -12,8 +12,8 @@ std::vector<Vector2f> GeneratePoissonDiskSamples(int count, int seed)
     std::default_random_engine rng(seed);
     std::uniform_real_distribution<float> dis(0, 1);
 
-    std::vector<cy::Vec2f> rawPoints(count);
-    for(int i = 0; i < count; ++i)
+    std::vector<cy::Vec2f> rawPoints(16 * count);
+    for(size_t i = 0; i < rawPoints.size(); ++i)
     {
         const float u = dis(rng);
         const float v = dis(rng);

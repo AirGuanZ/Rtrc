@@ -33,6 +33,19 @@ namespace AtmosphereDetail
 
         rtrc_var(float, planetRadius)      = 1e3f * 6360;
         rtrc_var(float, atmosphereRadius)  = 1e3f * 6460;
+
+        rtrc_var(Vector3f, terrainAlbedo) = { 0.3f, 0.3f, 0.3f };
+
+        auto operator<=>(const AtmosphereProperties &) const = default;
+    };
+
+    struct AtmosphereFrameParameters
+    {
+        AtmosphereProperties atmosphere;
+        Vector3f eyePosition;
+        Vector3f sunDirection;
+        Vector3f sunColor;
+        float sunIntensity;
     };
 
     class TransmittanceLut
@@ -86,14 +99,13 @@ namespace AtmosphereDetail
 
         void SetRayMarchingStepCount(int stepCount);
         void SetOutputResolution(const Vector2i &res);
-        void SetCamera(const Vector3f &eyePos);
-        void SetAtomsphere(const AtmosphereProperties *properties);
-        void SetSun(const Vector3f &direction, const Vector3f &intensity);
 
+        // 'parameters' must be valid until renderGraph is executed
         RenderGraphInterface AddToRenderGraph(
-            RG::RenderGraph              *renderGraph,
-            const TransmittanceLut       &transmittanceLut,
-            const MultiScatterLut        &multiScatterLut) const;
+            const AtmosphereFrameParameters *parameters,
+            RG::RenderGraph                 *renderGraph,
+            const TransmittanceLut          &transmittanceLut,
+            const MultiScatterLut           &multiScatterLut) const;
 
     private:
 
@@ -102,41 +114,48 @@ namespace AtmosphereDetail
 
         int stepCount_ = 32;
         Vector2i lutRes_;
-        Vector3f eyePos_;
-        const AtmosphereProperties *properties_;
-        Vector3f direction_;
-        Vector3f intensity_;
     };
 
     class AtmosphereRenderer : public Uncopyable
     {
     public:
-
-        using Properties = AtmosphereProperties;
-
+        
         struct RenderGraphInterface
         {
             RG::Pass *inPass = nullptr;
             RG::Pass *outPass = nullptr;
-            RG::TextureResource *skyLUT = nullptr;
-            RG::TextureResource *aerialLUT = nullptr;
+            RG::TextureResource *skyLut = nullptr;
         };
 
-        explicit AtmosphereRenderer(Device &device);
+        explicit AtmosphereRenderer(const BuiltinResourceManager &builtinResources);
+
+        void SetSunDirection(float radX, float radY);
+        void SetSunIntensity(float intensity);
+        void SetSunColor(const Vector3f &color);
+        void SetProperties(const AtmosphereProperties &properties);
+
+        void SetYOffset(float offset);
+
+        void SetTransmittanceLutResolution(const Vector2i &res);
+        void SetMultiScatterLutResolution(const Vector2i &res);
+        void SetSkyLutResolution(const Vector2i &res);
 
         RenderGraphInterface AddToRenderGraph(RG::RenderGraph &graph, const Camera &camera);
 
     private:
 
-        float sunAngleX_;
-        float sunAngleY_;
-        float sunIntensity_;
-        Vector3f sunColor_;
+        Device &device_;
+        const BuiltinResourceManager &builtinResources_;
+
+        AtmosphereFrameParameters frameParameters_;
+        float yOffset_;
 
         Vector2i transLutRes_;
         Vector2i msLutRes_;
-        Vector2i skyLutRes_;
-        Vector2i aerialLutRes_;
+        
+        Box<TransmittanceLut> transLut_;
+        Box<MultiScatterLut>  msLut_;
+        Box<SkyLut>           skyLut_;
     };
 
 } // namespace AtmosphereDetail

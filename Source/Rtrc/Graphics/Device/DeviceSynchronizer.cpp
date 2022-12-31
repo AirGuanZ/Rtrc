@@ -36,23 +36,25 @@ void DeviceSynchronizer::WaitIdle()
 {
     queue_->WaitIdle();
 
-    Callbacks callbacks;
+    if(!renderLoopFrames_.empty())
     {
-        std::lock_guard lock(currentFrameCallbacksMutex_);
-        callbacks.swap(currentFrameCallbacks_);
-    }
-    for(auto &e : callbacks)
-    {
-        e();
-    }
-
-    for(auto &frame : renderLoopFrames_)
-    {
-        for(auto &e :frame.callbacks)
+        Callbacks callbacks;
+        {
+            std::lock_guard lock(currentFrameCallbacksMutex_);
+            callbacks.swap(currentFrameCallbacks_);
+        }
+        for(auto &e : callbacks)
         {
             e();
         }
-        frame.callbacks.clear();
+        for(auto &frame : renderLoopFrames_)
+        {
+            for(auto &e : frame.callbacks)
+            {
+                e();
+            }
+            frame.callbacks.clear();
+        }
     }
 }
 
@@ -73,7 +75,27 @@ void DeviceSynchronizer::BeginRenderLoop(int frameCountInFlight)
 
 void DeviceSynchronizer::EndRenderLoop()
 {
-    WaitIdle();
+    assert(!renderLoopFrames_.empty());
+    queue_->WaitIdle();
+    {
+        Callbacks callbacks;
+        {
+            std::lock_guard lock(currentFrameCallbacksMutex_);
+            callbacks.swap(currentFrameCallbacks_);
+        }
+        for(auto &e : callbacks)
+        {
+            e();
+        }
+        for(auto &frame : renderLoopFrames_)
+        {
+            for(auto &e : frame.callbacks)
+            {
+                e();
+            }
+            frame.callbacks.clear();
+        }
+    }
     renderLoopFrames_.clear();
 }
 

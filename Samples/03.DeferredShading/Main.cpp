@@ -22,6 +22,8 @@ class Application : public Uncopyable
     Box<Camera> camera_;
     FreeCameraController cameraController_;
 
+    Box<AtmosphereRenderer> atmosphere_;
+
     Timer timer_;
 
     void Initialize()
@@ -52,6 +54,9 @@ class Application : public Uncopyable
         camera_->SetRotation(Vector3f(0.35, 0.4, 0));
         camera_->CalculateDerivedData();
         cameraController_.SetCamera(*camera_);
+
+        atmosphere_ = MakeBox<AtmosphereRenderer>(*builtinResources_);
+        atmosphere_->SetYOffset(256);
 
         {
             auto cubeMesh = builtinResources_->GetBuiltinMesh(BuiltinMesh::Cube);
@@ -92,7 +97,7 @@ class Application : public Uncopyable
         {
             input_->LockCursor(!input_->IsCursorLocked());
         }
-
+        
         const float wOverH = static_cast<float>(window_.GetFramebufferSize().x) / window_.GetFramebufferSize().y;
         camera_->SetProjection(Deg2Rad(60), wOverH, 0.1f, 100.0f);
         if(input_->IsCursorLocked())
@@ -104,7 +109,9 @@ class Application : public Uncopyable
         auto rg = device_->CreateRenderGraph();
         auto renderTarget = rg->RegisterSwapchainTexture(device_->GetSwapchain());
 
+        auto atmosphereRGData = atmosphere_->AddToRenderGraph(*rg, *camera_);
         auto deferredRendererRGData = renderer_->AddToRenderGraph(rg.get(), renderTarget, *scene_, *camera_);
+        Connect(atmosphereRGData.outPass, deferredRendererRGData.inPass);
         deferredRendererRGData.outPass->SetSignalFence(device_->GetFrameFence());
 
         executer_->Execute(rg);
