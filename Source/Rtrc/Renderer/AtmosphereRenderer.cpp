@@ -231,7 +231,7 @@ AtmosphereDetail::SkyLut::RenderGraphInterface AtmosphereDetail::SkyLut::AddToRe
 AtmosphereRenderer::AtmosphereRenderer(const BuiltinResourceManager &builtinResources)
     : device_(builtinResources.GetDevice()), builtinResources_(builtinResources)
 {
-    SetSunDirection(0, Deg2Rad(20.0f));
+    SetSunDirection(0, Deg2Rad(6.7f));
     SetSunIntensity(10);
     SetSunColor({ 1, 1, 1 });
     yOffset_ = 0;
@@ -318,12 +318,12 @@ AtmosphereRenderer::RenderGraphInterface AtmosphereDetail::AtmosphereRenderer::A
     frameParameters_.eyePosition.y += yOffset_;
 
     assert(skyLut_);
-    auto skyRG = skyLut_->AddToRenderGraph(&frameParameters_, &graph, *transLut_, *msLut_);
+    auto skyRGData = skyLut_->AddToRenderGraph(&frameParameters_, &graph, *transLut_, *msLut_);
 
     RenderGraphInterface ret;
-    ret.inPass = skyRG.inPass;
-    ret.outPass = skyRG.outPass;
-    ret.skyLut = skyRG.skyLut;
+    ret.inPass = skyRGData.inPass;
+    ret.outPass = skyRGData.outPass;
+    ret.skyLut = skyRGData.skyLut;
     return ret;
 }
 

@@ -34,6 +34,7 @@ class Application : public Uncopyable
             .SetMaximized(true)
             .Create();
         input_ = &window_.GetInput();
+
         device_ = Device::CreateGraphicsDevice(window_);
         executer_ = MakeBox<RG::Executer>(device_.get());
 
@@ -86,7 +87,7 @@ class Application : public Uncopyable
 
     void Frame()
     {
-        timer_.BeginFrame();
+        // Input
 
         if(window_.GetInput().IsKeyDown(KeyCode::Escape))
         {
@@ -97,7 +98,9 @@ class Application : public Uncopyable
         {
             input_->LockCursor(!input_->IsCursorLocked());
         }
-        
+
+        // Camera
+
         const float wOverH = static_cast<float>(window_.GetFramebufferSize().x) / window_.GetFramebufferSize().y;
         camera_->SetProjection(Deg2Rad(60), wOverH, 0.1f, 100.0f);
         if(input_->IsCursorLocked())
@@ -106,15 +109,34 @@ class Application : public Uncopyable
         }
         camera_->CalculateDerivedData();
 
-        auto rg = device_->CreateRenderGraph();
-        auto renderTarget = rg->RegisterSwapchainTexture(device_->GetSwapchain());
+        // Render graph
 
-        auto atmosphereRGData = atmosphere_->AddToRenderGraph(*rg, *camera_);
-        auto deferredRendererRGData = renderer_->AddToRenderGraph(rg.get(), renderTarget, *scene_, *camera_);
+        Box<RG::RenderGraph> rg = device_->CreateRenderGraph();
+        RG::TextureResource *renderTarget = rg->RegisterSwapchainTexture(device_->GetSwapchain());
+
+        // Atmosphere
+
+        const auto atmosphereRGData = atmosphere_->AddToRenderGraph(*rg, *camera_);
+
+        // Deferred rendering
+
+        Renderer::Parameters renderParameters;
+        renderParameters.skyLut = atmosphereRGData.skyLut;
+        const auto deferredRendererRGData = renderer_->AddToRenderGraph(
+            renderParameters, rg.get(), renderTarget, *scene_, *camera_);
+
+        // Dependencies
+
         Connect(atmosphereRGData.outPass, deferredRendererRGData.inPass);
+
+        // Frame fence
+
         deferredRendererRGData.outPass->SetSignalFence(device_->GetFrameFence());
 
+        // Execute render graph & present
+
         executer_->Execute(rg);
+        device_->Present();
     }
 
 public:
@@ -133,12 +155,12 @@ public:
         device_->BeginRenderLoop();
         while(!window_.ShouldClose())
         {
+            timer_.BeginFrame();
             if(!device_->BeginFrame())
             {
                 continue;
             }
             Frame();
-            device_->Present();
         }
         device_->EndRenderLoop();
     }

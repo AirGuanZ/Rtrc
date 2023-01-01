@@ -3,8 +3,6 @@
 namespace Atmosphere
 {
 
-    static float PI = 3.14159265;
-
     struct Properties
     {
         float3 scatterRayleigh;
@@ -23,6 +21,8 @@ namespace Atmosphere
 
         float3 terrainAlbedo;
     };
+
+    static float PI = 3.14159265;
 
     float3 GetSigmaS(Properties properties, float h)
     {
@@ -125,6 +125,16 @@ namespace Atmosphere
         delta = sqrt(delta);
         nearT = (-B + (C <= 0 ? delta : -delta)) / (2 * A);
         return (C <= 0) || (B <= 0);
+    }
+
+    // dir must be normalized
+    float2 ComputeSkyLutTexCoord(float3 dir)
+    {
+        float phi = any(dir != 0) ? atan2(dir.z, dir.x) : 0.0;
+        float u = phi / (2 * PI);
+        float theta = asin(dir.y);
+        float v = 0.5 + 0.5 * sign(theta) * sqrt(abs(theta) / (PI / 2));
+        return float2(u, v);
     }
 
 } // namespace Atmosphere

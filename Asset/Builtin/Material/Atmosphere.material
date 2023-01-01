@@ -246,7 +246,7 @@ Shader "Builtin/Atmosphere/GenerateSkyLut"
             float tx = h / (Pass.atmosphere.atmosphereRadius - Pass.atmosphere.planetRadius);
             float ty = 0.5 + 0.5 * sin(sunTheta);
             float3 ms = MultiScatterLutTexture.SampleLevel(LutSampler, float2(tx, ty), 0);
-            inScatter += (nextT - thisT) * eyeTrans * sigmaS * ms * Pass.sunIntensity;
+            inScatter += (nextT - thisT) * eyeTrans * sigmaS * ms;
         }
 
         sumSigmaT += deltaSumSigmaT;

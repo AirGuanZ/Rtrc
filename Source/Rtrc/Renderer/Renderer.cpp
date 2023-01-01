@@ -20,6 +20,7 @@ namespace DeferredRendererDetail
         rtrc_define(Texture2D<float4>, gbufferB,     FS);
         rtrc_define(Texture2D<float4>, gbufferC,     FS);
         rtrc_define(Texture2D<float>,  gbufferDepth, FS);
+        rtrc_define(Texture2D<float3>, skyLut,       FS);
 
         rtrc_uniform(Vector4f,                       gbufferSize);
         rtrc_uniform(CameraConstantBuffer,           camera);
@@ -38,6 +39,7 @@ Renderer::Renderer(Device &device, BuiltinResourceManager &builtinResources)
 }
 
 Renderer::RenderGraphInterface Renderer::AddToRenderGraph(
+    const Parameters    &parameters,
     RG::RenderGraph     *renderGraph,
     RG::TextureResource *renderTarget,
     const Scene         &scene,
@@ -139,6 +141,7 @@ Renderer::RenderGraphInterface Renderer::AddToRenderGraph(
         lightingPass->Use(gbufferC, RG::PIXEL_SHADER_TEXTURE_READ);
         lightingPass->Use(gbufferDepth, RG::PIXEL_SHADER_TEXTURE_READ);
         lightingPass->Use(image, RG::RENDER_TARGET_WRITE);
+        lightingPass->Use(parameters.skyLut, RG::PIXEL_SHADER_TEXTURE_READ);
 
         DeferredLightingPassData passData;
         passData.gbufferA     = gbufferA;
@@ -146,6 +149,7 @@ Renderer::RenderGraphInterface Renderer::AddToRenderGraph(
         passData.gbufferC     = gbufferC;
         passData.gbufferDepth = gbufferDepth;
         passData.image        = image;
+        passData.skyLut       = parameters.skyLut;
 
         lightingPass->SetCallback([this, passData](RG::PassContext &passContext)
         {
@@ -321,6 +325,7 @@ void Renderer::DoDeferredLightingPass(RG::PassContext &passContext, const Deferr
     auto gbufferC = passData.gbufferC->Get();
     auto gbufferDepth = passData.gbufferDepth->Get();
     auto image = passData.image->Get();
+    auto skyLut = passData.skyLut->Get();
 
     cmd.BeginRenderPass(ColorAttachment
     {
@@ -335,6 +340,7 @@ void Renderer::DoDeferredLightingPass(RG::PassContext &passContext, const Deferr
     perPassGroupData.gbufferB = gbufferB;
     perPassGroupData.gbufferC = gbufferC;
     perPassGroupData.gbufferDepth = gbufferDepth;
+    perPassGroupData.skyLut = skyLut;
     perPassGroupData.camera = camera_->GetConstantBufferData();
     perPassGroupData.gbufferSize =
         Vector4f(image->GetWidth(), image->GetHeight(), 1.0f / image->GetWidth(), 1.0f / image->GetHeight());

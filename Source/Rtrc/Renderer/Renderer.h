@@ -19,9 +19,15 @@ public:
         RG::Pass *outPass = nullptr;
     };
 
+    struct Parameters
+    {
+        RG::TextureResource *skyLut;
+    };
+
     Renderer(Device &device, BuiltinResourceManager &builtinResources);
 
     RenderGraphInterface AddToRenderGraph(
+        const Parameters    &parameters,
         RG::RenderGraph     *renderGraph,
         RG::TextureResource *renderTarget,
         const Scene         &scene,
@@ -44,6 +50,7 @@ private:
         RG::TextureResource *gbufferC     = nullptr;
         RG::TextureResource *gbufferDepth = nullptr;
         RG::TextureResource *image        = nullptr;
+        RG::TextureResource *skyLut       = nullptr;
     };
 
     void DoRenderGBuffersPass(RG::PassContext &passContext, const RenderGBuffersPassData &passData);

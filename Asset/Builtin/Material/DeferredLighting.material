@@ -13,26 +13,32 @@ Shader "Builtin/DeferredLighting"
 #vert VSMain
 #frag FSMain
 
+#include "Atmosphere.cginc"
 #include "Common/GBuffer.hlsl"
 #include "Common/Scene.hlsl"
 
 rtrc_group(Pass)
     BUILTIN_INTERNAL_GBUFFERS_FS
+    rtrc_define(Texture2D<float3>, SkyLutTexture, FS)
     rtrc_uniform(float4, gbufferSize)
     rtrc_uniform(CameraConstantBuffer, camera)
     rtrc_uniform(DirectionalLightConstantBuffer, directionalLight)
 rtrc_end
 
+rtrc_sampler(SkyLutSampler, filter = linear, address_u = repeat, address_v = clamp)
+
 struct VsInput
 {
     float2 position : POSITION;
     float2 uv       : UV;
+    float3 ray      : WORLD_RAY;
 };
 
 struct VsToFs
 {
     float4 position : SV_POSITION;
     float2 uv       : UV;
+    float3 ray      : WORLD_RAY;
 };
 
 VsToFs VSMain(VsInput input)
@@ -40,6 +46,7 @@ VsToFs VSMain(VsInput input)
     VsToFs output;
     output.position = float4(input.position, 1, 1);
     output.uv = input.uv;
+    output.ray = input.ray;
     return output;
 }
 
@@ -47,7 +54,12 @@ float4 FSMain(VsToFs input) : SV_TARGET
 {
     Builtin::GBufferPixelValue gbuffer = Builtin::LoadGBufferPixel(input.uv);
     if(gbuffer.depth >= 1)
-        return float4(0, 0, 0, 0);
+    {
+        float3 dir = normalize(input.ray);
+        float2 uv = Atmosphere::ComputeSkyLutTexCoord(dir);
+        float3 color = SkyLutTexture.SampleLevel(SkyLutSampler, uv, 0);
+        return float4(pow(color, 1 / 2.2), 1);
+    }
     float cosFactor = max(0, dot(gbuffer.normal, -Pass.directionalLight.direction));
     float3 color = 0.01 + cosFactor * Pass.directionalLight.color * Pass.directionalLight.intensity;
     return float4(pow(color, 1 / 2.2), 1);
