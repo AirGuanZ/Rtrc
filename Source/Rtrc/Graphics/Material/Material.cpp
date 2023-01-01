@@ -248,12 +248,16 @@ MaterialPassPropertyLayout::MaterialPassPropertyLayout(const MaterialPropertyHos
         auto &desc = bindingGroupLayout_->GetRHIObject()->GetDesc();
         for(auto &&[bindingIndex, binding] : Enumerate(desc.bindings))
         {
+            const std::string &bindingName = shader.GetBindingNameMap().GetBindingName(bindingGroupIndex_, bindingIndex);
+
             if(binding.type == RHI::BindingType::ConstantBuffer)
             {
-                if(binding.name != "Material")
+#if RTRC_DEBUG
+                if(bindingName != "Material")
                 {
                     throw Exception("Constant buffer in 'Material' binding group must have name 'Material'");
                 }
+#endif
                 continue;
             }
 
@@ -276,16 +280,16 @@ MaterialPassPropertyLayout::MaterialPassPropertyLayout(const MaterialPropertyHos
             default:
                 throw Exception(fmt::format(
                     "Unsupported binding type in 'Material' group: {} {}",
-                    GetBindingTypeName(binding.type), binding.name));
+                    GetBindingTypeName(binding.type), bindingName));
             }
 
-            const int indexInProperties = materialPropertyLayout.GetPropertyIndexByName(binding.name)
+            const int indexInProperties = materialPropertyLayout.GetPropertyIndexByName(bindingName)
                                         - materialPropertyLayout.GetValuePropertyCount();
             if(indexInProperties < 0)
             {
                 throw Exception(fmt::format(
                     "Binding '{} {}' in 'Material' binding group is not declared in material",
-                    GetBindingTypeName(binding.type), binding.name));
+                    GetBindingTypeName(binding.type), bindingName));
             }
 
             ResourceReference ref;

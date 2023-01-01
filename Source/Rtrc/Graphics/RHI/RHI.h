@@ -416,7 +416,6 @@ struct SwapchainDesc
 
 struct BindingDesc
 {
-    std::string              name;
     BindingType              type;
     ShaderStageFlag          shaderStages = ShaderStageFlags::All;
     std::optional<uint32_t>  arraySize;

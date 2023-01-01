@@ -17,7 +17,6 @@ RC<BindingGroupLayout> BindingGroupManager::CreateBindingGroupLayout(const Bindi
             for(auto &binding : desc.bindings)
             {
                 RHI::BindingDesc rhiBinding;
-                rhiBinding.name = binding.name;
                 rhiBinding.type = binding.type;
                 rhiBinding.shaderStages = binding.stages;
                 rhiBinding.arraySize = binding.arraySize;
@@ -31,11 +30,6 @@ RC<BindingGroupLayout> BindingGroupManager::CreateBindingGroupLayout(const Bindi
             auto ret = MakeRC<BindingGroupLayout>();
             ret->manager_ = this;
             ret->rhiLayout_ = device_->CreateBindingGroupLayout(rhiDesc);
-            for(size_t slot = 0; slot < desc.bindings.size(); ++slot)
-            {
-                auto &b = desc.bindings[slot];
-                ret->nameToSlot_[b.name] = static_cast<int>(slot);
-            }
             return ret;
         });
 }

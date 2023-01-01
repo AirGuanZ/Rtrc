@@ -34,9 +34,6 @@ public:
     void Set(int slot, T &&object);
 
     template<typename T>
-    void Set(std::string_view name, T &&object);
-
-    template<typename T>
     void Set(const T &value); // See BindingGroupDSL.h
 
     const RHI::BindingGroupPtr &GetRHIObject() const;
@@ -60,7 +57,6 @@ public:
 
     struct BindingDesc
     {
-        std::string              name;
         RHI::BindingType         type;
         RHI::ShaderStageFlag     stages;
         std::optional<uint32_t>  arraySize;
@@ -80,8 +76,6 @@ public:
 
     ~BindingGroupLayout();
 
-    int GetBindingSlotByName(std::string_view name) const;
-
     const RHI::BindingGroupLayoutPtr &GetRHIObject() const;
 
     RC<BindingGroup> CreateBindingGroup() const;
@@ -91,7 +85,6 @@ private:
     friend class BindingGroupManager;
 
     BindingGroupManager *manager_ = nullptr;
-    std::map<std::string, int, std::less<>> nameToSlot_;
     RHI::BindingGroupLayoutPtr rhiLayout_;
 };
 
@@ -216,13 +209,6 @@ void BindingGroup::Set(int slot, T &&object)
     }
 }
 
-template<typename T>
-void BindingGroup::Set(std::string_view name, T &&object)
-{
-    const int slot = layout_->GetBindingSlotByName(name);
-    this->Set(slot, std::forward<T>(object));
-}
-
 inline const RHI::BindingGroupPtr &BindingGroup::GetRHIObject() const
 {
     return rhiGroup_;
@@ -234,12 +220,6 @@ inline BindingGroupLayout::~BindingGroupLayout()
     {
         manager_->_internalRelease(*this);
     }
-}
-
-inline int BindingGroupLayout::GetBindingSlotByName(std::string_view name) const
-{
-    auto it = nameToSlot_.find(name);
-    return it == nameToSlot_.end() ? -1 : it->second;
 }
 
 inline RC<BindingGroup> BindingGroupLayout::CreateBindingGroup() const
@@ -259,10 +239,10 @@ inline BindingLayout::~BindingLayout()
         manager_->_internalRelease(*this);
     }
 }
+
 inline const RHI::BindingLayoutPtr &BindingLayout::GetRHIObject() const
 {
     return rhiLayout_;
 }
-
 
 RTRC_END

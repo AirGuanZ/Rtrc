@@ -1,7 +1,5 @@
 #pragma once
 
-#include <any>
-
 #include <Rtrc/Graphics/RHI/RHI.h>
 
 RTRC_BEGIN

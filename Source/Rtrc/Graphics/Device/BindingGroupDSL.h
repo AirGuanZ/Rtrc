@@ -316,7 +316,6 @@ namespace BindingGroupDSL
                     using MemberElement = typename MemberProxyTrait<M>::MemberProxyElement;
                     constexpr size_t arraySize = MemberProxyTrait<M>::ArraySize;
                     BindingGroupLayout::BindingDesc binding;
-                    binding.name = name;
                     binding.type = MemberElement::BindingType;
                     binding.stages = stages;
                     binding.arraySize = arraySize ? std::make_optional(static_cast<uint32_t>(arraySize)) : std::nullopt;
@@ -326,7 +325,6 @@ namespace BindingGroupDSL
             if constexpr(GetUniformDWordCount<T>() > 0)
             {
                 BindingGroupLayout::BindingDesc binding;
-                binding.name = "_rtrcGeneratedUniformBufferName";
                 binding.type = RHI::BindingType::ConstantBuffer;
                 binding.stages = RHI::ShaderStageFlags::All;
                 desc.bindings.push_back(binding);

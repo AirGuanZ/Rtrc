@@ -17,7 +17,6 @@ PerObjectConstantBufferBatch::PerObjectConstantBufferBatch(
         .bindings = {
             BindingGroupLayout::BindingDesc
             {
-                .name = bindingName_,
                 .type = RHI::BindingType::ConstantBuffer,
                 .stages = shaderStages_
             }

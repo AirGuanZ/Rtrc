@@ -161,7 +161,7 @@ void Compiler::GenerateSections()
     // need splitting when:
     //      signaling fence is not nil
     //      be the last user of swapchain texture
-    //      next pass is the first user of swapchain texture
+    //      next pass is the first user of swapchain texture (disabled)
 
     const SubTexUsers *swapchainTexUsers = nullptr;
     if(graph_->swapchainTexture_)
@@ -193,7 +193,7 @@ void Compiler::GenerateSections()
         if(swapchainTexUsers)
         {
             needNewSection |= passIndex == swapchainTexUsers->back().passIndex;
-            needNewSection |= passIndex + 1 == swapchainTexUsers->front().passIndex;
+            //needNewSection |= passIndex + 1 == swapchainTexUsers->front().passIndex;
         }
     }
 }
@@ -364,6 +364,7 @@ void Compiler::AllocateInternalResources(ExecutableResources &output)
         }
 
         output.indexToTexture[resourceIndex].texture = device_.CreatePooledTexture(desc);
+        output.indexToTexture[resourceIndex].texture->SetLayoutToUndefined();
     }
 }
 

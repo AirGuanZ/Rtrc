@@ -25,6 +25,7 @@ public:
 
     void SetState(const TextureSubrscState &state);
     void SetState(uint32_t mipLevel, uint32_t arrayLayer, const TextureSubrscState &state);
+    void SetLayoutToUndefined();
     const TextureSubrscState &GetState(uint32_t mipLevel, uint32_t arrayLayer) const;
 
 protected:
@@ -72,6 +73,14 @@ inline void StatefulTexture::SetState(const TextureSubrscState &state)
 inline void StatefulTexture::SetState(uint32_t mipLevel, uint32_t arrayLayer, const TextureSubrscState &state)
 {
     state_(mipLevel, arrayLayer) = state;
+}
+
+inline void StatefulTexture::SetLayoutToUndefined()
+{
+    for(auto &state : state_)
+    {
+        state.layout = RHI::TextureLayout::Undefined;
+    }
 }
 
 inline const TextureSubrscState &StatefulTexture::GetState(uint32_t mipLevel, uint32_t arrayLayer) const

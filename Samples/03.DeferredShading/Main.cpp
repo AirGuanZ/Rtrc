@@ -36,7 +36,7 @@ class Application : public Uncopyable
             .Create();
         input_ = &window_.GetInput();
 
-        device_ = Device::CreateGraphicsDevice(window_);
+        device_ = Device::CreateGraphicsDevice(window_, RHI::Format::B8G8R8A8_UNorm, 3, RTRC_DEBUG, false);
         executer_ = MakeBox<RG::Executer>(device_.get());
 
         materials_ = MakeBox<MaterialManager>();

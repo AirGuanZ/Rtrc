@@ -2,7 +2,8 @@
 
 #include <map>
 
-#include <Rtrc/Graphics/Shader/ShaderBindingGroup.h>
+#include <Rtrc/Graphics/Shader/ParsedBindingGroup.h>
+#include <Rtrc/Graphics/Shader/ShaderBindingNameMap.h>
 #include <Rtrc/Graphics/Shader/ShaderReflection.h>
 
 RTRC_BEGIN
@@ -43,6 +44,7 @@ public:
     int GetBindingGroupIndexForInlineSamplers() const;
 
     int GetBuiltinBindingGroupIndex(BuiltinBindingGroup bindingGroup) const;
+    const ShaderBindingNameMap &GetBindingNameMap() const;
 
     const Vector3i &GetThreadGroupSize() const; // Compute shader only
     Vector3i ComputeThreadGroupCount(const Vector3i &threadCount) const;
@@ -65,6 +67,8 @@ private:
     int builtinBindingGroupIndices_[EnumCount<BuiltinBindingGroup>];
 
     Vector3i computeShaderThreadGroupSize_;
+
+    ShaderBindingNameMap bindingNameMap_;
 };
 
 class Shader : public Uncopyable, public WithUniqueObjectID
@@ -94,6 +98,7 @@ public:
     int GetPerPassBindingGroup() const;
     int GetPerMaterialBindingGroup() const;
     int GetPerObjectBindingGroup() const;
+    const ShaderBindingNameMap &GetBindingNameMap() const;
 
     const RC<ShaderInfo> &GetInfo() const;
     const RC<ComputePipeline> &GetComputePipeline() const;
@@ -128,6 +133,11 @@ inline Vector3i ShaderInfo::ComputeThreadGroupCount(const Vector3i &threadCount)
         (threadCount.y + computeShaderThreadGroupSize_.y - 1) / computeShaderThreadGroupSize_.y,
         (threadCount.z + computeShaderThreadGroupSize_.z - 1) / computeShaderThreadGroupSize_.z
     };
+}
+
+inline const ShaderBindingNameMap &ShaderInfo::GetBindingNameMap() const
+{
+    return bindingNameMap_;
 }
 
 inline const RC<BindingLayout> &Shader::GetBindingLayout() const
@@ -198,6 +208,11 @@ inline int Shader::GetPerMaterialBindingGroup() const
 inline int Shader::GetPerObjectBindingGroup() const
 {
     return GetBuiltinBindingGroupIndex(BuiltinBindingGroup::Object);
+}
+
+inline const ShaderBindingNameMap &Shader::GetBindingNameMap() const
+{
+    return info_->GetBindingNameMap();
 }
 
 inline const RC<ShaderInfo> &Shader::GetInfo() const

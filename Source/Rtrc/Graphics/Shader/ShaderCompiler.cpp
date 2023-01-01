@@ -235,7 +235,6 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
         for(auto &binding : group.bindings)
         {
             BindingGroupLayout::BindingDesc rhiBindingDesc;
-            rhiBindingDesc.name = binding.name;
             rhiBindingDesc.type = binding.type;
             rhiBindingDesc.stages = binding.stages;
             rhiBindingDesc.arraySize = binding.arraySize;
@@ -246,10 +245,10 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
         {
             rhiGroupLayoutDesc.bindings.push_back({ BindingGroupLayout::BindingDesc
             {
-                .name = group.name,
                 .type = RHI::BindingType::ConstantBuffer,
                 .stages = RHI::ShaderStageFlags::All
             }});
+            bindingNameToSlots[group.name] = { static_cast<int>(groupIndex), static_cast<int>(group.bindings.size()) };
         }
 
         for(auto &&[slotIndex, binding] : Enumerate(group.bindings))
@@ -270,17 +269,16 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
         {
             samplers.push_back(device_->CreateSampler(s));
         }
-
         BindingGroupLayout::Desc groupLayoutDesc;
         groupLayoutDesc.bindings.push_back(BindingGroupLayout::BindingDesc
             {
-                .name = "_rtrcGeneratedInlineSamplerGroup",
                 .type = RHI::BindingType::Sampler,
                 .stages = RHI::ShaderStageFlags::All,
                 .arraySize = static_cast<uint32_t>(bindings.inlineSamplerDescs.size()),
                 .immutableSamplers = std::move(samplers)
             });
         inlineSamplerGroupIndex = static_cast<int>(groupLayouts.size());
+        bindingNameToSlots["_rtrcGeneratedSamplers"] = { inlineSamplerGroupIndex, 0 };
         groupLayouts.push_back(device_->CreateBindingGroupLayout(groupLayoutDesc));
     }
 
@@ -454,6 +452,18 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
         MergeCBuffers(*csRefl);
     }
     std::ranges::copy(std::ranges::views::values(slotToCBuffer), std::back_inserter(shader->info_->constantBuffers_));
+
+    auto &bindingNameMap = shader->info_->bindingNameMap_;
+    bindingNameMap.allBindingNames_.resize(groupLayouts.size());
+    for(size_t i = 0; i < groupLayouts.size(); ++i)
+    {
+        bindingNameMap.allBindingNames_[i].resize(groupLayouts[i]->GetRHIObject()->GetDesc().bindings.size());
+    }
+    for(auto &pair : bindingNameToSlots)
+    {
+        bindingNameMap.nameToSetAndSlot_[pair.first] = { pair.second.first, pair.second.second };
+        bindingNameMap.allBindingNames_[pair.second.first][pair.second.second] = pair.first;
+    }
 
     shader->info_->nameToBindingGroupLayoutIndex_ = std::move(bindings.nameToGroupIndex);
     shader->info_->bindingGroupLayouts_ = std::move(groupLayouts);
