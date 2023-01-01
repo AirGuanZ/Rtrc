@@ -29,13 +29,15 @@ Box<Device> Device::CreateGraphicsDevice(
     RHI::DevicePtr rhiDevice,
     Window        &window,
     RHI::Format    swapchainFormat,
-    int            swapchainImageCount)
+    int            swapchainImageCount,
+    bool           vsync)
 {
     Box<Device> ret{ new Device };
     ret->InitializeInternal(rhiDevice, false);
     ret->window_ = &window;
     ret->swapchainFormat_ = swapchainFormat;
     ret->swapchainImageCount_ = swapchainImageCount;
+    ret->vsync_ = vsync;
     ret->RecreateSwapchain();
     ret->window_->Attach([d = ret.get()](const WindowResizeEvent &e)
     {
@@ -52,7 +54,8 @@ Box<Device> Device::CreateGraphicsDevice(
     Window     &window,
     RHI::Format swapchainFormat,
     int         swapchainImageCount,
-    bool        debugMode)
+    bool        debugMode,
+    bool        vsync)
 {
     Box<Device> ret{ new Device };
     ret->instance_ = CreateVulkanInstance(RHI::VulkanInstanceDesc
@@ -72,6 +75,7 @@ Box<Device> Device::CreateGraphicsDevice(
     ret->window_ = &window;
     ret->swapchainFormat_ = swapchainFormat;
     ret->swapchainImageCount_ = swapchainImageCount;
+    ret->vsync_ = vsync;
     ret->RecreateSwapchain();
     ret->window_->Attach([d = ret.get()](const WindowResizeEvent &e)
     {
@@ -163,8 +167,9 @@ void Device::RecreateSwapchain()
     swapchain_.Reset();
     swapchain_ = device_->CreateSwapchain(RHI::SwapchainDesc
     {
-        .format = swapchainFormat_,
-        .imageCount = static_cast<uint32_t>(swapchainImageCount_)
+        .format     = swapchainFormat_,
+        .imageCount = static_cast<uint32_t>(swapchainImageCount_),
+        .vsync      = vsync_
     }, *window_);
 }
 

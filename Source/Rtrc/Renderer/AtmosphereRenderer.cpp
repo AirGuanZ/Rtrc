@@ -231,7 +231,7 @@ AtmosphereDetail::SkyLut::RenderGraphInterface AtmosphereDetail::SkyLut::AddToRe
 AtmosphereRenderer::AtmosphereRenderer(const BuiltinResourceManager &builtinResources)
     : device_(builtinResources.GetDevice()), builtinResources_(builtinResources)
 {
-    SetSunDirection(0, Deg2Rad(6.7f));
+    SetSunDirection(0, Deg2Rad(16.7f));
     SetSunIntensity(10);
     SetSunColor({ 1, 1, 1 });
     yOffset_ = 0;

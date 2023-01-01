@@ -22,13 +22,15 @@ public:
     static Box<Device> CreateGraphicsDevice(
         RHI::DevicePtr rhiDevice,
         Window        &window,
-        RHI::Format    swapchainFormat = RHI::Format::B8G8R8A8_UNorm,
-        int            swapchainImageCount = 3);
+        RHI::Format    swapchainFormat     = RHI::Format::B8G8R8A8_UNorm,
+        int            swapchainImageCount = 3,
+        bool           vsync               = true);
     static Box<Device> CreateGraphicsDevice(
         Window     &window,
         RHI::Format swapchainFormat     = RHI::Format::B8G8R8A8_UNorm,
         int         swapchainImageCount = 3,
-        bool        debugMode           = RTRC_DEBUG);
+        bool        debugMode           = RTRC_DEBUG,
+        bool        vsync               = true);
 
     ~Device();
 
@@ -162,6 +164,7 @@ private:
     Window           *window_              = nullptr;
     RHI::Format       swapchainFormat_     = RHI::Format::Unknown;
     int               swapchainImageCount_ = 0;
+    bool              vsync_               = true;
     RHI::SwapchainPtr swapchain_;
 
     Box<DeviceSynchronizer> sync_;

@@ -68,8 +68,8 @@ namespace AtmosphereDetail
     {
     public:
 
-        static constexpr int DIR_SAMPLE_COUNT = 64;
-        static constexpr int RAY_MARCH_STEP_COUNT = 256;
+        static constexpr int DIR_SAMPLE_COUNT = 2048;
+        static constexpr int RAY_MARCH_STEP_COUNT = 64;
 
         MultiScatterLut(
             const BuiltinResourceManager &builtinResources,

@@ -37,6 +37,8 @@ public:
 
     ~Window();
 
+    void SetTitle(const std::string &newTitle);
+
     bool IsInitialized() const;
 
     bool ShouldClose() const;

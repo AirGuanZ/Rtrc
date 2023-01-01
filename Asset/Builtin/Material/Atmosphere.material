@@ -140,7 +140,7 @@ Shader "Builtin/Atmosphere/GenerateMultiScatterLut"
                 sumL2 += dt * transmittance * sunTransmittance * sigmaS * rho;
             }
 
-            sumF      += dt * transmittance * sigmaS;
+            sumF += dt * transmittance * sigmaS;
             sumSigmaT += deltaSumSigmaT;
         }
 
@@ -153,7 +153,7 @@ Shader "Builtin/Atmosphere/GenerateMultiScatterLut"
         }
 
         innerL2 = sumL2;
-        innerF  = sumF;
+        innerF = sumF;
     }
 
     float3 ComputeM(float h, float sunTheta)

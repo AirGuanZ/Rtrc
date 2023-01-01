@@ -25,12 +25,13 @@ class Application : public Uncopyable
     Box<AtmosphereRenderer> atmosphere_;
 
     Timer timer_;
+    int fps_ = 0;
 
     void Initialize()
     {
         window_ = WindowBuilder()
             .SetSize(800, 800)
-            .SetTitle("Rtrc Sample: Deferred Shading")
+            .SetTitle("Rtrc Renderer")
             .SetMaximized(true)
             .Create();
         input_ = &window_.GetInput();
@@ -88,6 +89,12 @@ class Application : public Uncopyable
     void Frame()
     {
         // Input
+
+        if(timer_.GetFps() != fps_)
+        {
+            fps_ = timer_.GetFps();
+            window_.SetTitle(std::format("Rtrc Renderer. FPS: {}", timer_.GetFps()));
+        }
 
         if(window_.GetInput().IsKeyDown(KeyCode::Escape))
         {

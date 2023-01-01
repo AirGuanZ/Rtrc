@@ -21,6 +21,10 @@ class Timer
     Clock::time_point pauseStartPoint_;
     Clock::duration pausedTime_;
 
+    Clock::time_point secondPoint_;
+    int frames_;
+    int fps_;
+
 public:
 
     Timer();
@@ -34,6 +38,8 @@ public:
 
     double GetDeltaSeconds() const;
     double GetAccumulatedSeconds() const;
+
+    int GetFps() const;
 
     float GetDeltaSecondsF() const;
     float GetAccumulatedSecondsF() const;

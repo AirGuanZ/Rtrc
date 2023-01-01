@@ -340,6 +340,11 @@ bool Window::IsInitialized() const
     return impl_ != nullptr;
 }
 
+void Window::SetTitle(const std::string &newTitle)
+{
+    glfwSetWindowTitle(impl_->glfwWindow, newTitle.c_str());
+}
+
 bool Window::ShouldClose() const
 {
     assert(impl_);
