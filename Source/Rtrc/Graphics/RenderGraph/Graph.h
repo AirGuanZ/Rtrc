@@ -236,8 +236,8 @@ public:
 
     void SetQueue(Queue queue);
 
-    BufferResource  *CreateBuffer(const RHI::BufferDesc &desc);
-    TextureResource *CreateTexture2D(const RHI::TextureDesc &desc);
+    BufferResource  *CreateBuffer(const RHI::BufferDesc &desc, std::string name = {});
+    TextureResource *CreateTexture(const RHI::TextureDesc &desc, std::string name = {});
 
     BufferResource  *RegisterBuffer(RC<StatefulBuffer> buffer);
     TextureResource *RegisterTexture(RC<StatefulTexture> texture);
@@ -285,6 +285,7 @@ private:
         using BufferResource::BufferResource;
 
         RHI::BufferDesc rhiDesc;
+        std::string name;
     };
 
     class InternalTextureResource : public TextureResource
@@ -296,6 +297,7 @@ private:
         const RHI::TextureDesc &GetDesc() const override;
 
         RHI::TextureDesc rhiDesc;
+        std::string name;
     };
 
     class SwapchainTexture : public ExternalTextureResource

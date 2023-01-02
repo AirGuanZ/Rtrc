@@ -339,7 +339,8 @@ enum class PipelineStage : uint32_t
     RenderTarget   = 1 << 5,
     Copy           = 1 << 6,
     Clear          = 1 << 7,
-    Resolve        = 1 << 8
+    Resolve        = 1 << 8,
+    All            = 1 << 9
 };
 
 RTRC_DEFINE_ENUM_FLAGS(PipelineStage)
@@ -368,7 +369,8 @@ enum class ResourceAccess : uint32_t
     CopyWrite               = 1 << 16,
     ResolveRead             = 1 << 17,
     ResolveWrite            = 1 << 18,
-    ClearWrite              = 1 << 19
+    ClearWrite              = 1 << 19,
+    All                     = 1 << 20
 };
 
 RTRC_DEFINE_ENUM_FLAGS(ResourceAccess)

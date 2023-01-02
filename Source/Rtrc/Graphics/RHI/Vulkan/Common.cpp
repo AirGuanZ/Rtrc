@@ -408,7 +408,8 @@ VkPipelineStageFlags2 TranslatePipelineStageFlag(PipelineStageFlag flag)
         VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
         VK_PIPELINE_STAGE_2_COPY_BIT,
         VK_PIPELINE_STAGE_2_CLEAR_BIT,
-        VK_PIPELINE_STAGE_2_RESOLVE_BIT
+        VK_PIPELINE_STAGE_2_RESOLVE_BIT,
+        VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT
     };
     VkPipelineStageFlags2 result = 0;
     for(size_t i = 0; i < GetArraySize(bitToFlag); ++i)
@@ -432,7 +433,7 @@ VkAccessFlags2 TranslateAccessFlag(ResourceAccessFlag flag)
         VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
         VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
         VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-        VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+        VK_ACCESS_2_SHADER_SAMPLED_READ_BIT /*| VK_ACCESS_2_SHADER_STORAGE_READ_BIT*/,
         VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
         VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
         VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
@@ -444,7 +445,8 @@ VkAccessFlags2 TranslateAccessFlag(ResourceAccessFlag flag)
         VK_ACCESS_2_TRANSFER_WRITE_BIT,
         VK_ACCESS_2_TRANSFER_READ_BIT,
         VK_ACCESS_2_TRANSFER_WRITE_BIT,
-        VK_ACCESS_2_TRANSFER_WRITE_BIT
+        VK_ACCESS_2_TRANSFER_WRITE_BIT,
+        VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT
     };
     VkAccessFlags2 result = 0;
     for(size_t i = 0; i < GetArraySize(bitToFlag); ++i)

@@ -60,7 +60,7 @@ Renderer::RenderGraphInterface Renderer::AddToRenderGraph(
     // gbufferB: albedo, metallic
     // gbufferC: roughness
 
-    const auto gbufferA = renderGraph->CreateTexture2D(RHI::TextureDesc
+    const auto gbufferA = renderGraph->CreateTexture(RHI::TextureDesc
     {
         .dim                  = RHI::TextureDimension::Tex2D,
         .format               = RHI::Format::R10G10B10A2_UNorm,
@@ -72,8 +72,8 @@ Renderer::RenderGraphInterface Renderer::AddToRenderGraph(
         .usage                = RHI::TextureUsage::RenderTarget | RHI::TextureUsage::ShaderResource,
         .initialLayout        = RHI::TextureLayout::Undefined,
         .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
-    });
-    const auto gbufferB = renderGraph->CreateTexture2D(RHI::TextureDesc
+    }, "GBufferA");
+    const auto gbufferB = renderGraph->CreateTexture(RHI::TextureDesc
     {
         .dim                  = RHI::TextureDimension::Tex2D,
         .format               = RHI::Format::B8G8R8A8_UNorm,
@@ -85,8 +85,8 @@ Renderer::RenderGraphInterface Renderer::AddToRenderGraph(
         .usage                = RHI::TextureUsage::RenderTarget | RHI::TextureUsage::ShaderResource,
         .initialLayout        = RHI::TextureLayout::Undefined,
         .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
-    });
-    const auto gbufferC = renderGraph->CreateTexture2D(RHI::TextureDesc
+    }, "GBufferB");
+    const auto gbufferC = renderGraph->CreateTexture(RHI::TextureDesc
     {
         .dim                  = RHI::TextureDimension::Tex2D,
         .format               = RHI::Format::B8G8R8A8_UNorm,
@@ -98,8 +98,8 @@ Renderer::RenderGraphInterface Renderer::AddToRenderGraph(
         .usage                = RHI::TextureUsage::RenderTarget | RHI::TextureUsage::ShaderResource,
         .initialLayout        = RHI::TextureLayout::Undefined,
         .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
-    });
-    const auto gbufferDepth = renderGraph->CreateTexture2D(RHI::TextureDesc
+    }, "GBufferC");
+    const auto gbufferDepth = renderGraph->CreateTexture(RHI::TextureDesc
     {
         .dim                  = RHI::TextureDimension::Tex2D,
         .format               = RHI::Format::D32,
@@ -111,7 +111,7 @@ Renderer::RenderGraphInterface Renderer::AddToRenderGraph(
         .usage                = RHI::TextureUsage::DepthStencil | RHI::TextureUsage::ShaderResource,
         .initialLayout        = RHI::TextureLayout::Undefined,
         .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
-    });
+    }, "GBufferDepth");
 
     const auto image = renderTarget;
 
@@ -242,6 +242,7 @@ void Renderer::DoRenderGBuffersPass(RG::PassContext &passContext, const RenderGB
 
     // Render static meshes
 
+    RC<GraphicsPipeline> lastPipeline;
     for(auto &&[staticMeshIndex, staticMesh] : Enumerate(scene_->GetAllStaticMeshes()))
     {
         auto &mesh = staticMesh->GetMesh();
@@ -276,8 +277,13 @@ void Renderer::DoRenderGBuffersPass(RG::PassContext &passContext, const RenderGB
                     .depthStencilFormat     = passData.gbufferDepth->GetFormat(),
                 });
             });
-        
-        cmd.BindPipeline(pipeline);
+
+        if(pipeline != lastPipeline)
+        {
+            cmd.BindPipeline(pipeline);
+            lastPipeline = pipeline;
+        }
+
         BindMaterialProperties(*matPassInst, keywords, cmd, true);
         if(int index = shader->GetBuiltinBindingGroupIndex(ShaderInfo::BuiltinBindingGroup::Pass); index >= 0)
         {
@@ -305,8 +311,6 @@ void Renderer::DoRenderGBuffersPass(RG::PassContext &passContext, const RenderGB
 void Renderer::DoDeferredLightingPass(RG::PassContext &passContext, const DeferredLightingPassData &passData)
 {
     CommandBuffer &cmd = passContext.GetCommandBuffer();
-
-    device_.GetQueue().GetRHIObject()->WaitIdle();
 
     if(!deferredLightingPipeline_)
     {

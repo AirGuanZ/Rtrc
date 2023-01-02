@@ -60,6 +60,7 @@ AtmosphereDetail::TransmittanceLut::TransmittanceLut(
         .initialLayout        = RHI::TextureLayout::Undefined,
         .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
     });
+    lut->SetName("TransmittanceLut");
     srv_ = lut->CreateSRV();
     auto lutUav = lut->CreateUAV();
 
@@ -108,6 +109,7 @@ AtmosphereDetail::MultiScatterLut::MultiScatterLut(
                 .hostAccessType = RHI::BufferHostAccessType::SequentialWrite
             }, data.data());
     }
+    poissonDiskSamples->SetName("PoissonDiskSamples");
     poissonDiskSamples->SetDefaultStructStride(sizeof(Vector2f));
     auto poissonDiskSamplesSrv = poissonDiskSamples->GetSRV();
 
@@ -124,6 +126,7 @@ AtmosphereDetail::MultiScatterLut::MultiScatterLut(
         .initialLayout        = RHI::TextureLayout::Undefined,
         .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
     });
+    lut->SetName("MultiScatterLut");
     srv_ = lut->CreateSRV();
 
     auto material = builtinResources.GetBuiltinMaterial(BuiltinMaterial::Atmosphere);
@@ -180,7 +183,7 @@ AtmosphereDetail::SkyLut::RenderGraphInterface AtmosphereDetail::SkyLut::AddToRe
     const TransmittanceLut          &transmittanceLut,
     const MultiScatterLut           &multiScatterLut) const
 {
-    auto lut = renderGraph->CreateTexture2D(RHI::TextureDesc
+    auto lut = renderGraph->CreateTexture(RHI::TextureDesc
     {
         .dim                  = RHI::TextureDimension::Tex2D,
         .format               = RHI::Format::R32G32B32A32_Float,
@@ -192,7 +195,7 @@ AtmosphereDetail::SkyLut::RenderGraphInterface AtmosphereDetail::SkyLut::AddToRe
         .usage                = RHI::TextureUsage::UnorderAccess | RHI::TextureUsage::ShaderResource,
         .initialLayout        = RHI::TextureLayout::Undefined,
         .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
-    });
+    }, "SkyLut");
 
     auto pass = renderGraph->CreatePass("Generate Sky Lut");
     pass->Use(lut, RG::COMPUTE_UNORDERED_ACCESS_WRITE);

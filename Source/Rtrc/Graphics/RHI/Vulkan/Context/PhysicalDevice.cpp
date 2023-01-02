@@ -58,14 +58,9 @@ namespace VkPhysicalDeviceDetail
             .pNext = &customBorderColorFeatures,
             .dynamicRendering = true
         };
-        VkPhysicalDeviceTimelineSemaphoreFeatures timelineSemaphoreFeatures = {
-            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES,
-            .pNext = &dynamicRenderingFeatures,
-            .timelineSemaphore = true
-        };
         VkPhysicalDeviceSynchronization2Features sync2Features = {
             .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES,
-            .pNext = &timelineSemaphoreFeatures,
+            .pNext = &dynamicRenderingFeatures,
             .synchronization2 = true
         };
         VkPhysicalDeviceFeatures2 feature2 = {};
@@ -76,7 +71,6 @@ namespace VkPhysicalDeviceDetail
         if(!customBorderColorFeatures.customBorderColors ||
            !customBorderColorFeatures.customBorderColorWithoutFormat ||
            !dynamicRenderingFeatures.dynamicRendering ||
-           !timelineSemaphoreFeatures.timelineSemaphore ||
            !sync2Features.synchronization2)
         {
             return false;
@@ -142,8 +136,9 @@ std::vector<const char*> VulkanPhysicalDevice::GetRequiredExtensions(const Devic
 {
     std::vector<const char*> requiredExtensions =
     {
-        VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
-        VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME
+        // The following two extensions has been promoted to vk1.3/1.2
+        // VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
+        // VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME
     };
     if(desc.supportSwapchain)
     {
@@ -163,10 +158,6 @@ VkPhysicalDeviceFeatures2* VulkanPhysicalDevice::GetRequiredFeatures(ObjectRelea
     dynamicRenderingFeature->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES;
     dynamicRenderingFeature->dynamicRendering = VK_TRUE;
 
-    auto timelineFeature = arena.Create<VkPhysicalDeviceTimelineSemaphoreFeatures>();
-    timelineFeature->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES;
-    timelineFeature->timelineSemaphore = VK_TRUE;
-
     auto sync2Feature = arena.Create<VkPhysicalDeviceSynchronization2Features>();
     sync2Feature->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES;
     sync2Feature->synchronization2 = VK_TRUE;
@@ -177,8 +168,7 @@ VkPhysicalDeviceFeatures2* VulkanPhysicalDevice::GetRequiredFeatures(ObjectRelea
 
     customBorderColorFeature->pNext = nullptr;
     dynamicRenderingFeature->pNext = customBorderColorFeature;
-    timelineFeature->pNext = dynamicRenderingFeature;
-    sync2Feature->pNext = timelineFeature;
+    sync2Feature->pNext = dynamicRenderingFeature;
     features2->pNext = sync2Feature;
 
     return features2;

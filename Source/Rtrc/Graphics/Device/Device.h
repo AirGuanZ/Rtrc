@@ -24,13 +24,13 @@ public:
         Window        &window,
         RHI::Format    swapchainFormat     = RHI::Format::B8G8R8A8_UNorm,
         int            swapchainImageCount = 3,
-        bool           vsync               = true);
+        bool           vsync               = false);
     static Box<Device> CreateGraphicsDevice(
         Window     &window,
         RHI::Format swapchainFormat     = RHI::Format::B8G8R8A8_UNorm,
         int         swapchainImageCount = 3,
         bool        debugMode           = RTRC_DEBUG,
-        bool        vsync               = true);
+        bool        vsync               = false);
 
     ~Device();
 
@@ -43,7 +43,7 @@ public:
     void ExecuteAndWait(CommandBuffer commandBuffer);
     template<typename F> requires !std::is_same_v<std::remove_cvref_t<F>, CommandBuffer>
     void ExecuteAndWait(F &&f);
-    
+
     void ExecuteBarrier(
         const RC<StatefulBuffer> &buffer,
         RHI::PipelineStageFlag    stages,
@@ -126,7 +126,7 @@ public:
 
     RC<Texture>         CreateTexture(const RHI::TextureDesc &desc);
     RC<StatefulTexture> CreatePooledTexture(const RHI::TextureDesc &desc);
-    RC<Texture>         CreateColorTexture2D(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+    RC<Texture>         CreateColorTexture2D(uint8_t r, uint8_t g, uint8_t b, uint8_t a, const std::string &name = {});
 
     RC<DynamicBuffer> CreateDynamicBuffer();
     RC<SubBuffer>     CreateConstantBuffer(const void *data, size_t bytes);
@@ -338,8 +338,14 @@ inline bool Device::BeginFrame()
             return false;
         }
     }
-    sync_->WaitForOldFrame();
+
+    // Note: commandBufferManager->_internalEndFrame() should be called before sync_->WaitForOldFrame().
+    // Imagine that binding group B is bound to command buffer C in frame F. After F ends, B can be reused.
+    // If we put commandBufferManager->_internalEndFrame() after sync_->WaitForOldFrame(), C will be reset to initial
+    // state one frame later than B is reused, which means that B can be updated when still bound to C.
     commandBufferManager_->_internalEndFrame();
+    sync_->WaitForOldFrame();
+
     if(swapchain_ && !swapchain_->Acquire())
     {
         return false;

@@ -100,8 +100,8 @@ void CopyContext::UploadTexture2D(
         .beforeStages   = RHI::PipelineStage::None,
         .beforeAccesses = RHI::ResourceAccess::None,
         .beforeLayout   = RHI::TextureLayout::Undefined,
-        .afterStages    = RHI::PipelineStage::None,
-        .afterAccesses  = RHI::ResourceAccess::None,
+        .afterStages    = RHI::PipelineStage::Copy,
+        .afterAccesses  = RHI::ResourceAccess::CopyWrite,
         .afterLayout    = RHI::TextureLayout::CopyDst
     });
     commandBuffer->CopyBufferToColorTexture2D(texture->GetRHIObject(), mipLevel, arrayLayer, stagingBuffer, 0);

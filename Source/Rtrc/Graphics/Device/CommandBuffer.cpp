@@ -124,8 +124,8 @@ BarrierBatch &BarrierBatch::operator()(
 {
     return operator()(
         texture,
-        prevLayout, RHI::PipelineStage::None, RHI::ResourceAccess::None,
-        succLayout, RHI::PipelineStage::None, RHI::ResourceAccess::None);
+        prevLayout, RHI::PipelineStage::All, RHI::ResourceAccess::All,
+        succLayout, RHI::PipelineStage::All, RHI::ResourceAccess::All);
 }
 
 BarrierBatch &BarrierBatch::operator()(
@@ -372,10 +372,7 @@ CommandBuffer CommandBufferManager::Create()
 
 void CommandBufferManager::_internalEndFrame()
 {
-#if RTRC_DEBUG
     std::unique_lock lock(threadToActivePoolDataMutex_);
-#endif
-
     for(PerThreadPoolData &poolData : std::ranges::views::values(threadToActivePoolData_))
     {
         if(poolData.activePool)

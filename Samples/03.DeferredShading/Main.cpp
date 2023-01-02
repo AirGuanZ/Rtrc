@@ -64,7 +64,7 @@ class Application : public Uncopyable
             auto cubeMesh = builtinResources_->GetBuiltinMesh(BuiltinMesh::Cube);
             auto matInst = materials_->CreateMaterialInstance("Builtin/Surface/Diffuse");
             matInst->Set("Albedo", device_->CreateColorTexture2D(0, 255, 255, 255));
-
+            
             auto mesh = MakeRC<StaticMesh>();
             mesh->SetMesh(cubeMesh);
             mesh->SetMaterial(matInst);
@@ -89,7 +89,7 @@ class Application : public Uncopyable
     void Frame()
     {
         // Input
-
+        
         if(timer_.GetFps() != fps_)
         {
             fps_ = timer_.GetFps();

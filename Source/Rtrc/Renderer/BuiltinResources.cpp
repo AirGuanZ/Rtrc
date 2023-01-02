@@ -51,8 +51,8 @@ const Mesh &BuiltinResourceManager::GetFullscreenQuadMesh() const
 
 void BuiltinResourceManager::LoadBuiltinTextures()
 {
-    textures_[EnumToInt(BuiltinTexture::Black2D)] = device_.CreateColorTexture2D(0, 0, 0, 255);
-    textures_[EnumToInt(BuiltinTexture::White2D)] = device_.CreateColorTexture2D(255, 255, 255, 255);
+    textures_[EnumToInt(BuiltinTexture::Black2D)] = device_.CreateColorTexture2D(0, 0, 0, 255, "BuiltinBlack2D");
+    textures_[EnumToInt(BuiltinTexture::White2D)] = device_.CreateColorTexture2D(255, 255, 255, 255, "BuiltinWhite2D");
 }
 
 void BuiltinResourceManager::LoadBuiltinMeshes()

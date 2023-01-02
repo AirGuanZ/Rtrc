@@ -64,6 +64,8 @@ public:
     ~Buffer() override;
 
     const RHI::BufferPtr &GetRHIObject() const;
+    void SetName(std::string name);
+
     size_t GetSize() const;
     const RHI::BufferDesc &GetDesc() const;
 
@@ -122,6 +124,11 @@ inline Buffer::~Buffer()
 inline const RHI::BufferPtr &Buffer::GetRHIObject() const
 {
     return rhiBuffer_;
+}
+
+inline void Buffer::SetName(std::string name)
+{
+    rhiBuffer_->SetName(std::move(name));
 }
 
 inline size_t Buffer::GetSize() const

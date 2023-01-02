@@ -9,13 +9,27 @@ RTRC_RG_BEGIN
 namespace CompilerDetail
 {
 
-    void RemoveUnnecessaryAccessMask(RHI::ResourceAccessFlag &beforeAccess, RHI::ResourceAccessFlag &afterAccess)
+    void RemoveUnnecessaryBufferAccessMask(RHI::ResourceAccessFlag &beforeAccess, RHI::ResourceAccessFlag &afterAccess)
     {
         if(IsReadOnly(beforeAccess))
         {
             beforeAccess = RHI::ResourceAccess::None;
         }
         if(IsWriteOnly(afterAccess))
+        {
+            afterAccess = RHI::ResourceAccess::None;
+        }
+    }
+
+    void RemoveUnnecessaryTextureAccessMask(
+        RHI::TextureLayout beforeLayout, RHI::TextureLayout afterLayout,
+        RHI::ResourceAccessFlag &beforeAccess, RHI::ResourceAccessFlag &afterAccess)
+    {
+        if(IsReadOnly(beforeAccess))
+        {
+            beforeAccess = RHI::ResourceAccess::None;
+        }
+        if(IsWriteOnly(afterAccess) && beforeLayout == afterLayout)
         {
             afterAccess = RHI::ResourceAccess::None;
         }
@@ -328,6 +342,7 @@ void Compiler::AllocateInternalResources(ExecutableResources &output)
         {
             auto buffer = device_.CreateBuffer(desc);
             output.indexToBuffer[resourceIndex].buffer = MakeRC<WrappedStatefulBuffer>(std::move(buffer), BufferState{});
+            output.indexToBuffer[resourceIndex].buffer->SetName(std::move(intRsc->name));
         }
     }
 
@@ -365,6 +380,7 @@ void Compiler::AllocateInternalResources(ExecutableResources &output)
 
         output.indexToTexture[resourceIndex].texture = device_.CreatePooledTexture(desc);
         output.indexToTexture[resourceIndex].texture->SetLayoutToUndefined();
+        output.indexToTexture[resourceIndex].texture->SetName(std::move(intTex->name));
     }
 }
 
@@ -582,13 +598,14 @@ void Compiler::FillSections(ExecutableGraph &output)
             pass.beforeBufferBarriers = std::move(compilePass->beforeBufferTransitions);
             for(auto &b : pass.beforeBufferBarriers)
             {
-                CompilerDetail::RemoveUnnecessaryAccessMask(b.beforeAccesses, b.afterAccesses);
+                CompilerDetail::RemoveUnnecessaryBufferAccessMask(b.beforeAccesses, b.afterAccesses);
             }
 
             pass.beforeTextureBarriers = std::move(compilePass->beforeTextureTransitions);
             for(auto &b : pass.beforeTextureBarriers)
             {
-                CompilerDetail::RemoveUnnecessaryAccessMask(b.beforeAccesses, b.afterAccesses);
+                CompilerDetail::RemoveUnnecessaryTextureAccessMask(
+                    b.beforeLayout, b.afterLayout, b.beforeAccesses, b.afterAccesses);
             }
 
             if(rawPass->name_.empty())

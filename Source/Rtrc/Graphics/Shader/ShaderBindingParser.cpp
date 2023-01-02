@@ -66,7 +66,7 @@ void ShaderPreprocess::ParseKeywords(std::string &source, std::vector<std::strin
         ShaderTokenStream tokens(s, pos + KEYWORD.size());
         if(ShaderTokenStream::IsIdentifier(tokens.GetCurrentToken()))
         {
-            keywords.push_back(std::string(tokens.GetCurrentToken()));
+            keywords.push_back(tokens.GetCurrentToken());
             for(size_t i = 0; i < tokens.GetCurrentPosition(); ++i)
             {
                 if(source[i] != '\n')

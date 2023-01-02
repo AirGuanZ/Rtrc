@@ -141,21 +141,23 @@ void RenderGraph::SetQueue(Queue queue)
     queue_ = std::move(queue);
 }
 
-BufferResource *RenderGraph::CreateBuffer(const RHI::BufferDesc &desc)
+BufferResource *RenderGraph::CreateBuffer(const RHI::BufferDesc &desc, std::string name)
 {
     const int index = static_cast<int>(buffers_.size());
     auto resource = MakeBox<InternalBufferResource>(this, index);
     resource->rhiDesc = desc;
+    resource->name = std::move(name);
     buffers_.push_back(std::move(resource));
     textures_.push_back(nullptr);
     return buffers_.back().get();
 }
 
-TextureResource *RenderGraph::CreateTexture2D(const RHI::TextureDesc &desc)
+TextureResource *RenderGraph::CreateTexture(const RHI::TextureDesc &desc, std::string name)
 {
     const int index = static_cast<int>(textures_.size());
     auto resource = MakeBox<InternalTextureResource>(this, index);
     resource->rhiDesc = desc;
+    resource->name = std::move(name);
     textures_.push_back(std::move(resource));
     buffers_.push_back(nullptr);
     return textures_.back().get();
