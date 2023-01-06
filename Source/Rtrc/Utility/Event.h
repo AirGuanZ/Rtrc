@@ -252,7 +252,7 @@ void ReceiverSet<Event>::Detach(const Receiver<Event> *handler)
     handler->containedSets_.erase(this);
     handler->containedSetsWithOwnership_.erase(this);
     handlers_.erase(handler);
-    handlersWithOwnership_.erase(handlersWithOwnership_.find(handler));
+    handlersWithOwnership_.erase(handler);
 }
 
 template<typename Event>

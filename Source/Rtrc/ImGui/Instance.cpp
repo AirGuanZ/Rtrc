@@ -3,11 +3,11 @@
 #include <Rtrc/Graphics/Mesh/MeshLayout.h>
 #include <Rtrc/Graphics/Shader/ShaderCompiler.h>
 #include <Rtrc/ImGui/Instance.h>
-
-#include "imgui_internal.h"
+#include <Rtrc/Utility/Timer.h>
 
 RTRC_BEGIN
-    namespace ImGuiDetail
+
+namespace ImGuiDetail
 {
 
     ImGuiKey TranslateKey(KeyCode key)
@@ -181,7 +181,8 @@ float4 FSMain(VsToFs input) : SV_TARGET
         }
     };
 
-#define IMGUI_CONTEXT ImGuiDetail::ImGuiContextGuard guiContextGuard(data_->context)
+#define IMGUI_CONTEXT_EXPLICIT(CONTEXT) ImGuiDetail::ImGuiContextGuard guiContextGuard(CONTEXT)
+#define IMGUI_CONTEXT IMGUI_CONTEXT_EXPLICIT(data_->context)
 
 } // namespace ImGuiDetail
 
@@ -190,6 +191,9 @@ struct ImGuiInstance::Data
     Device *device = nullptr;
     Window *window = nullptr;
     ImGuiContext *context = nullptr;
+    Timer timer;
+
+    Box<EventReceiver> eventReceiver;
 
     RC<Shader>                                  shader;
     RC<BindingGroupLayout>                      cbufferBindingGroupLayout;
@@ -198,6 +202,13 @@ struct ImGuiInstance::Data
 
     RC<Texture> fontTexture;
     RC<BindingGroup> fontTextureBindingGroup;
+    
+    void WindowFocus(bool focused);
+    void CursorMove(float x, float y);
+    void MouseButton(KeyCode button, bool down);
+    void WheelScroll(float xoffset, float yoffset);
+    void Key(KeyCode key, bool down);
+    void Char(unsigned int ch);
 };
 
 ImGuiInstance::ImGuiInstance(Device &device, Window &window)
@@ -206,8 +217,13 @@ ImGuiInstance::ImGuiInstance(Device &device, Window &window)
     data_->device = &device;
     data_->window = &window;
     data_->context = ImGui::CreateContext();
-    data_->context->IO.IniFilename = nullptr;
+    WithRawContext([&]
+    {
+        ImGui::GetIO().IniFilename = nullptr;
+    });
 
+    data_->eventReceiver = MakeBox<EventReceiver>(data_.get(), &window);
+    
     ShaderCompiler shaderCompiler;
     shaderCompiler.SetDevice(&device);
 
@@ -228,6 +244,7 @@ ImGuiInstance::~ImGuiInstance()
 {
     if(data_)
     {
+        data_->eventReceiver.reset();
         ImGui::DestroyContext(data_->context);
     }
 }
@@ -249,21 +266,21 @@ void ImGuiInstance::Swap(ImGuiInstance &other) noexcept
     data_.swap(other.data_);
 }
 
-void ImGuiInstance::WindowFocus(bool focused)
+void ImGuiInstance::Data::WindowFocus(bool focused)
 {
-    IMGUI_CONTEXT;
+    IMGUI_CONTEXT_EXPLICIT(context);
     ImGui::GetIO().AddFocusEvent(focused);
 }
 
-void ImGuiInstance::CursorMove(float x, float y)
+void ImGuiInstance::Data::CursorMove(float x, float y)
 {
-    IMGUI_CONTEXT;
+    IMGUI_CONTEXT_EXPLICIT(context);
     ImGui::GetIO().AddMousePosEvent(x, y);
 }
 
-void ImGuiInstance::MouseButton(KeyCode button, bool down)
+void ImGuiInstance::Data::MouseButton(KeyCode button, bool down)
 {
-    IMGUI_CONTEXT;
+    IMGUI_CONTEXT_EXPLICIT(context);
     assert(button == KeyCode::MouseLeft || button == KeyCode::MouseMiddle || button == KeyCode::MouseRight);
     int translatedButton;
     if(button == KeyCode::MouseLeft)
@@ -281,27 +298,41 @@ void ImGuiInstance::MouseButton(KeyCode button, bool down)
     ImGui::GetIO().AddMouseButtonEvent(translatedButton, down);
 }
 
-void ImGuiInstance::WheelScroll(float xoffset, float yoffset)
+void ImGuiInstance::Data::WheelScroll(float xoffset, float yoffset)
 {
-    IMGUI_CONTEXT;
+    IMGUI_CONTEXT_EXPLICIT(context);
     ImGui::GetIO().AddMouseWheelEvent(xoffset, yoffset);
 }
 
-void ImGuiInstance::Key(KeyCode key, bool down)
+void ImGuiInstance::Data::Key(KeyCode key, bool down)
 {
-    IMGUI_CONTEXT;
+    IMGUI_CONTEXT_EXPLICIT(context);
     ImGui::GetIO().AddKeyEvent(ImGuiDetail::TranslateKey(key), down);
+    if(key == KeyCode::LeftCtrl || key == KeyCode::RightCtrl)
+    {
+        ImGui::GetIO().AddKeyEvent(ImGuiKey_ModCtrl, down);
+    }
+    else if(key == KeyCode::LeftShift || key == KeyCode::RightShift)
+    {
+        ImGui::GetIO().AddKeyEvent(ImGuiKey_ModShift, down);
+    }
+    else if(key == KeyCode::LeftAlt || key == KeyCode::RightAlt)
+    {
+        ImGui::GetIO().AddKeyEvent(ImGuiKey_ModAlt, down);
+    }
 }
 
-void ImGuiInstance::Char(unsigned ch)
+void ImGuiInstance::Data::Char(unsigned ch)
 {
-    IMGUI_CONTEXT;
+    IMGUI_CONTEXT_EXPLICIT(context);
     ImGui::GetIO().AddInputCharacter(ch);
 }
 
 void ImGuiInstance::BeginFrame()
 {
     IMGUI_CONTEXT;
+    data_->timer.BeginFrame();
+    ImGui::GetIO().DeltaTime = data_->timer.GetDeltaSecondsF();
     const Vector2i windowSize = data_->window->GetWindowSize();
     const Vector2i framebufferSize = data_->window->GetFramebufferSize();
     ImGui::GetIO().DisplaySize = ImVec2(static_cast<float>(windowSize.x), static_cast<float>(windowSize.y));
@@ -564,6 +595,61 @@ ImGuiContext *ImGuiInstance::GetImGuiContext()
     return data_->context;
 }
 
+ImGuiInstance::EventReceiver::EventReceiver(Data *data, Window *window)
+    : data_(data)
+{
+    window->Attach(static_cast<Receiver<WindowFocusEvent>*>(this));
+    window->GetInput().Attach(static_cast<Receiver<CursorMoveEvent> *>(this));
+    window->GetInput().Attach(static_cast<Receiver<WheelScrollEvent> *>(this));
+    window->GetInput().Attach(static_cast<Receiver<KeyDownEvent> *>(this));
+    window->GetInput().Attach(static_cast<Receiver<KeyUpEvent> *>(this));
+    window->GetInput().Attach(static_cast<Receiver<CharInputEvent> *>(this));
+}
+
+void ImGuiInstance::EventReceiver::Handle(const WindowFocusEvent &e)
+{
+    data_->WindowFocus(e.hasFocus);
+}
+
+void ImGuiInstance::EventReceiver::Handle(const CursorMoveEvent &e)
+{
+    data_->CursorMove(e.absoluteX, e.absoluteY);
+}
+
+void ImGuiInstance::EventReceiver::Handle(const WheelScrollEvent &e)
+{
+    data_->WheelScroll(0, static_cast<float>(e.relativeOffset));
+}
+
+void ImGuiInstance::EventReceiver::Handle(const KeyDownEvent &e)
+{
+    if(e.key == KeyCode::MouseLeft || e.key == KeyCode::MouseMiddle || e.key == KeyCode::MouseRight)
+    {
+        data_->MouseButton(e.key, true);
+    }
+    else
+    {
+        data_->Key(e.key, true);
+    }
+}
+
+void ImGuiInstance::EventReceiver::Handle(const KeyUpEvent &e)
+{
+    if(e.key == KeyCode::MouseLeft || e.key == KeyCode::MouseMiddle || e.key == KeyCode::MouseRight)
+    {
+        data_->MouseButton(e.key, false);
+    }
+    else
+    {
+        data_->Key(e.key, false);
+    }
+}
+
+void ImGuiInstance::EventReceiver::Handle(const CharInputEvent &e)
+{
+    data_->Char(e.charCode);
+}
+
 bool ImGuiInstance::Begin(const char *name, bool *open, ImGuiWindowFlags flags)
 {
     IMGUI_CONTEXT;
@@ -586,6 +672,12 @@ void ImGuiInstance::TextUnformatted(std::string_view text)
 {
     IMGUI_CONTEXT;
     ImGui::TextUnformatted(text.data(), text.data() + text.size());
+}
+
+bool ImGuiInstance::InputText(const char *label, MutableSpan<char> buffer, ImGuiInputTextFlags flags)
+{
+    IMGUI_CONTEXT;
+    return ImGui::InputText(label, buffer.GetData(), buffer.GetSize(), flags);
 }
 
 RTRC_END

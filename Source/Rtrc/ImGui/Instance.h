@@ -19,15 +19,6 @@ public:
     ImGuiInstance &operator=(ImGuiInstance &&other) noexcept;
     void Swap(ImGuiInstance &other) noexcept;
 
-    // Input event
-
-    void WindowFocus(bool focused);
-    void CursorMove(float x, float y);
-    void MouseButton(KeyCode button, bool down);
-    void WheelScroll(float xoffset, float yoffset);
-    void Key(KeyCode key, bool down);
-    void Char(unsigned int ch);
-
     // Frame event
 
     void BeginFrame();
@@ -52,6 +43,8 @@ public:
     void Text(fmt::format_string<Args...> fmt, Args&&...args);
     void TextUnformatted(std::string_view text);
 
+    bool InputText(const char *label, MutableSpan<char> buffer, ImGuiInputTextFlags flags = 0);
+
 private:
 
     RC<GraphicsPipeline> GetOrCreatePipeline(RHI::Format format);
@@ -61,6 +54,30 @@ private:
     ImGuiContext *GetImGuiContext();
 
     struct Data;
+
+    class EventReceiver :
+        public Receiver<WindowFocusEvent>,
+        public Receiver<CursorMoveEvent>,
+        public Receiver<WheelScrollEvent>,
+        public Receiver<KeyDownEvent>,
+        public Receiver<KeyUpEvent>,
+        public Receiver<CharInputEvent>
+    {
+    public:
+
+        EventReceiver(Data *data, Window *window);
+
+        void Handle(const WindowFocusEvent &e) override;
+        void Handle(const CursorMoveEvent  &e) override;
+        void Handle(const WheelScrollEvent &e) override;
+        void Handle(const KeyDownEvent     &e) override;
+        void Handle(const KeyUpEvent       &e) override;
+        void Handle(const CharInputEvent   &e) override;
+
+    private:
+
+        Data *data_;
+    };
 
     Box<Data> data_;
 };

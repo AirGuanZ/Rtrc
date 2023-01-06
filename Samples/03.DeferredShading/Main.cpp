@@ -105,15 +105,19 @@ class Application : public Uncopyable
             window_.SetCloseFlag(true);
         }
 
-        if(input_->IsKeyDown(KeyCode::LeftCtrl))
+        if(input_->IsKeyDown(KeyCode::LeftAlt))
         {
             input_->LockCursor(!input_->IsCursorLocked());
         }
 
-        if(imgui_->Begin("Test Window"))
+        if(imgui_->Begin("Test Window", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
         {
             imgui_->Button("Test Button");
             imgui_->Text("Test Formatted text: {}", 2.5f);
+
+            static char buffer[256] = {};
+            imgui_->InputText("Test Input", buffer);
+            imgui_->TextUnformatted(buffer);
         }
         imgui_->End();
 
