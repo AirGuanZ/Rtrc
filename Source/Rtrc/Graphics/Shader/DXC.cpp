@@ -168,7 +168,8 @@ std::vector<unsigned char> DXC::Compile(
         throw Exception("failed to get dxc operation status");
     }
 
-    if(FAILED(status))
+    const bool hasCompileError = FAILED(status);
+    if(hasCompileError || RTRC_DEBUG)
     {
         ComPtr<IDxcBlobUtf8> errors;
         if(FAILED(compileResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(errors.GetAddressOf()), nullptr)))
@@ -177,13 +178,19 @@ std::vector<unsigned char> DXC::Compile(
         }
         if(errors && errors->GetStringLength() > 0)
         {
-            std::string msg = errors->GetStringPointer();
+            const std::string msg = errors->GetStringPointer();
 #if RTRC_DEBUG
             std::cerr << msg << std::endl;
 #endif
-            throw Exception(std::move(msg));
+            if(hasCompileError)
+            {
+                throw Exception(msg);
+            }
         }
-        throw Exception("dxc: an unknown error occurred");
+        if(hasCompileError)
+        {
+            throw Exception("dxc: an unknown error occurred");
+        }
     }
 
     ComPtr<IDxcBlob> result;

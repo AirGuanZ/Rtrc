@@ -5,6 +5,20 @@
 
 RTRC_BEGIN
 
+namespace PipelineDetail
+{
+
+    bool IsCompatible(RHI::VertexAttributeType dataType, RHI::VertexAttributeType shaderInputType)
+    {
+        if(dataType == RHI::VertexAttributeType::UChar4Norm)
+        {
+            dataType = RHI::VertexAttributeType::Float4;
+        }
+        return dataType == shaderInputType;
+    }
+
+} // namespace PipelineDetail
+
 size_t GraphicsPipeline::DescKey::Hash() const
 {
     return Rtrc::Hash(
@@ -184,7 +198,7 @@ RC<GraphicsPipeline> PipelineManager::CreateGraphicsPipeline(const GraphicsPipel
 
                 auto attrib = vertexBufferLayout->GetAttributeBySemantic(var.semantic);
                 assert(attrib);
-                if(attrib->type != var.type)
+                if(!PipelineDetail::IsCompatible(attrib->type, var.type))
                 {
                     throw Exception(fmt::format(
                         "Type of semantic '{}' in mesh layout doesn't match shader input attribute", var.semantic));
@@ -195,7 +209,7 @@ RC<GraphicsPipeline> PipelineManager::CreateGraphicsPipeline(const GraphicsPipel
                     .location           = static_cast<uint32_t>(var.location),
                     .inputBufferIndex   = static_cast<uint32_t>(RHIVertexBufferIndex),
                     .byteOffsetInBuffer = static_cast<uint32_t>(attrib->byteOffsetInBuffer),
-                    .type               = var.type
+                    .type               = attrib->type
                 });
             }
         }

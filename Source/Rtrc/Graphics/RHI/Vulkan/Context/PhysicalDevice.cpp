@@ -9,7 +9,7 @@ namespace VkPhysicalDeviceDetail
 
     bool IsSuitable(VkPhysicalDevice device, const DeviceDesc &desc)
     {
-        // api version
+        // Api version
 
         VkPhysicalDeviceProperties properties;
         vkGetPhysicalDeviceProperties(device, &properties);
@@ -18,7 +18,7 @@ namespace VkPhysicalDeviceDetail
             return false;
         }
 
-        // basic extensions
+        // Basic extensions
 
         uint32_t supportedExtensionCount = 0;
         VK_FAIL_MSG(
@@ -46,32 +46,43 @@ namespace VkPhysicalDeviceDetail
             }
         }
 
-        // features
+        // Features
 
         VkPhysicalDeviceCustomBorderColorFeaturesEXT customBorderColorFeatures = {
-            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_FEATURES_EXT,
-            .customBorderColors = true,
-            .customBorderColorWithoutFormat = true
+            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_FEATURES_EXT
         };
         VkPhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeatures = {
             .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES,
-            .pNext = &customBorderColorFeatures,
-            .dynamicRendering = true
+            .pNext = &customBorderColorFeatures
         };
         VkPhysicalDeviceSynchronization2Features sync2Features = {
             .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES,
-            .pNext = &dynamicRenderingFeatures,
-            .synchronization2 = true
+            .pNext = &dynamicRenderingFeatures
+        };
+        VkPhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures =
+        {
+            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES,
+            .pNext = &sync2Features,
         };
         VkPhysicalDeviceFeatures2 feature2 = {};
         feature2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-        feature2.pNext = &sync2Features;
+        feature2.pNext = &descriptorIndexingFeatures;
 
         vkGetPhysicalDeviceFeatures2(device, &feature2);
-        if(!customBorderColorFeatures.customBorderColors ||
-           !customBorderColorFeatures.customBorderColorWithoutFormat ||
+
+        const bool customBorderColor = customBorderColorFeatures.customBorderColors &&
+                                       customBorderColorFeatures.customBorderColorWithoutFormat;
+
+        const bool bindless = descriptorIndexingFeatures.descriptorBindingPartiallyBound &&
+                              descriptorIndexingFeatures.runtimeDescriptorArray &&
+                              descriptorIndexingFeatures.descriptorBindingVariableDescriptorCount &&
+                              descriptorIndexingFeatures.descriptorBindingUpdateUnusedWhilePending &&
+                              descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing;
+
+        if(!customBorderColor ||
            !dynamicRenderingFeatures.dynamicRendering ||
-           !sync2Features.synchronization2)
+           !sync2Features.synchronization2 ||
+           !bindless)
         {
             return false;
         }
@@ -112,7 +123,7 @@ VulkanPhysicalDevice VulkanPhysicalDevice::Select(VkInstance instance, const Dev
     std::vector<VkPhysicalDevice> devices(deviceCount);
     VK_FAIL_MSG(
         vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data()),
-        "fauled to get vulkan physical devices");
+        "failed to get vulkan physical devices");
 
     uint32_t bestDeviceIndex = std::numeric_limits<uint32_t>::max();
     uint32_t bestScore = 0;
@@ -136,9 +147,10 @@ std::vector<const char*> VulkanPhysicalDevice::GetRequiredExtensions(const Devic
 {
     std::vector<const char*> requiredExtensions =
     {
-        // The following two extensions has been promoted to vk1.3/1.2
+        // The following three extensions has been promoted to core 1.2/1.3
         // VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
         // VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME
+        // VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME
     };
     if(desc.supportSwapchain)
     {
@@ -156,20 +168,30 @@ VkPhysicalDeviceFeatures2* VulkanPhysicalDevice::GetRequiredFeatures(ObjectRelea
 
     auto dynamicRenderingFeature = arena.Create<VkPhysicalDeviceDynamicRenderingFeatures>();
     dynamicRenderingFeature->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES;
-    dynamicRenderingFeature->dynamicRendering = VK_TRUE;
+    dynamicRenderingFeature->dynamicRendering = true;
 
     auto sync2Feature = arena.Create<VkPhysicalDeviceSynchronization2Features>();
     sync2Feature->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES;
-    sync2Feature->synchronization2 = VK_TRUE;
+    sync2Feature->synchronization2 = true;
+
+    auto bindlessFeature = arena.Create<VkPhysicalDeviceDescriptorIndexingFeatures>();
+    std::memset(bindlessFeature, 0, sizeof(VkPhysicalDeviceDescriptorIndexingFeatures));
+    bindlessFeature->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
+    bindlessFeature->descriptorBindingPartiallyBound = true;
+    bindlessFeature->runtimeDescriptorArray = true;
+    bindlessFeature->descriptorBindingVariableDescriptorCount = true;
+    bindlessFeature->descriptorBindingUpdateUnusedWhilePending = true;
+    bindlessFeature->shaderSampledImageArrayNonUniformIndexing = true;
 
     auto features2 = arena.Create<VkPhysicalDeviceFeatures2>();
     std::memset(features2, 0, sizeof(VkPhysicalDeviceFeatures2));
     features2->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 
     customBorderColorFeature->pNext = nullptr;
-    dynamicRenderingFeature->pNext = customBorderColorFeature;
-    sync2Feature->pNext = dynamicRenderingFeature;
-    features2->pNext = sync2Feature;
+    dynamicRenderingFeature ->pNext = customBorderColorFeature;
+    sync2Feature            ->pNext = dynamicRenderingFeature;
+    bindlessFeature         ->pNext = sync2Feature;
+    features2               ->pNext = bindlessFeature;
 
     return features2;
 }

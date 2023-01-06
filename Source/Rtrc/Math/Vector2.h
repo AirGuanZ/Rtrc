@@ -11,7 +11,9 @@ public:
 
     using Component = T;
 
-    explicit constexpr Vector2(T value = T());
+    constexpr Vector2();
+
+    explicit constexpr Vector2(T value);
 
     constexpr Vector2(T x, T y);
 
@@ -52,6 +54,13 @@ template<typename T>
 auto operator*(const Vector2<T> &a, T b);
 template<typename T>
 auto operator*(T a, const Vector2<T> &b);
+
+template<typename T>
+constexpr Vector2<T>::Vector2()
+    : Vector2(0)
+{
+    
+}
 
 template<typename T>
 constexpr Vector2<T>::Vector2(T value)

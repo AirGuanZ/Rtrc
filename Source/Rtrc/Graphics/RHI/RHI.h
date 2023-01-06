@@ -76,6 +76,7 @@ enum class Format : uint32_t
     Unknown,
 
     B8G8R8A8_UNorm,
+    R8G8B8A8_UNorm,
     R32G32_Float,
     R32G32B32A32_Float,
     R10G10B10A2_UNorm,
@@ -99,7 +100,8 @@ enum class VertexAttributeType : uint32_t
     Float,
     Float2,
     Float3,
-    Float4
+    Float4,
+    UChar4Norm,
 };
 
 const char *GetFormatName(Format format);

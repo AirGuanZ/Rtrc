@@ -53,7 +53,7 @@ Vs2Fs VSMain(VsInput input)
 	return output;
 }
 
-Builtin::GBufferPixel FSMain(Vs2Fs input) : SV_TARGET
+Builtin::GBufferPixelOutput FSMain(Vs2Fs input)
 {
 	float3 albedo = Albedo.Sample(AlbedoSampler, input.uv);
 	return Builtin::EncodeGBufferPixel(normalize(input.worldNormal), albedo, 0, 1);

@@ -363,11 +363,18 @@ Input &Window::GetInput() const
     return *impl_->input;
 }
 
+Vector2i Window::GetWindowSize() const
+{
+    int w, h;
+    glfwGetWindowSize(impl_->glfwWindow, &w, &h);
+    return { w, h };
+}
+
 Vector2i Window::GetFramebufferSize() const
 {
     int w, h;
     glfwGetFramebufferSize(impl_->glfwWindow, &w, &h);
-    return Vector2i(w, h);
+    return { w, h };
 }
 
 bool Window::HasFocus() const

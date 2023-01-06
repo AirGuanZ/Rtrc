@@ -90,7 +90,7 @@ void Input::_internalUpdate()
     absoluteX_ = newX;
     absoluteY_ = newY;
 
-    if(relativeX_ != 0 || relativeY_ != 0)
+    if(relativeX_ != 0.0f || relativeY_ != 0.0f)
     {
         sender_.Send(CursorMoveEvent{ 
             absoluteX_,
@@ -130,9 +130,11 @@ Input::Input(void *glfwWindow)
     assert(glfwWindow);
     glfwWindow_ = glfwWindow;
 
-    std::tie(absoluteX_, absoluteY_) = QueryCursorPosition();
+    absoluteX_ = 0;
+    absoluteY_ = 0;
     relativeX_ = 0;
     relativeY_ = 0;
+    std::tie(absoluteX_, absoluteY_) = QueryCursorPosition();
 
     glfwSetInputMode(static_cast<GLFWwindow *>(glfwWindow), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     lock_ = false;

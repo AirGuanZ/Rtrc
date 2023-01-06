@@ -76,7 +76,7 @@ Renderer::RenderGraphInterface Renderer::AddToRenderGraph(
     const auto gbufferB = renderGraph->CreateTexture(RHI::TextureDesc
     {
         .dim                  = RHI::TextureDimension::Tex2D,
-        .format               = RHI::Format::B8G8R8A8_UNorm,
+        .format               = RHI::Format::R8G8B8A8_UNorm,
         .width                = rtWidth,
         .height               = rtHeight,
         .arraySize            = 1,
@@ -89,7 +89,7 @@ Renderer::RenderGraphInterface Renderer::AddToRenderGraph(
     const auto gbufferC = renderGraph->CreateTexture(RHI::TextureDesc
     {
         .dim                  = RHI::TextureDimension::Tex2D,
-        .format               = RHI::Format::B8G8R8A8_UNorm,
+        .format               = RHI::Format::R8G8B8A8_UNorm,
         .width                = rtWidth,
         .height               = rtHeight,
         .arraySize            = 1,

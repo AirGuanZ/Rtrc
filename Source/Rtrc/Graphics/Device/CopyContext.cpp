@@ -128,6 +128,13 @@ void CopyContext::UploadTexture2D(
         UploadTexture2D(texture, arrayLayer, mipLevel, data.GetData());
         return;
     }
+    if(desc.format == RHI::Format::R8G8B8A8_UNorm)
+    {
+        auto tdata = image.To(ImageDynamic::U8x4);
+        auto &data = tdata.As<Image<Vector4b>>();
+        UploadTexture2D(texture, arrayLayer, mipLevel, data.GetData());
+        return;
+    }
     if(desc.format == RHI::Format::R32G32B32A32_Float)
     {
         auto tdata = image.To(ImageDynamic::F32x4);

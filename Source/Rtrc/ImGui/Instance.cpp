@@ -1,0 +1,591 @@
+#include <imgui.h>
+
+#include <Rtrc/Graphics/Mesh/MeshLayout.h>
+#include <Rtrc/Graphics/Shader/ShaderCompiler.h>
+#include <Rtrc/ImGui/Instance.h>
+
+#include "imgui_internal.h"
+
+RTRC_BEGIN
+    namespace ImGuiDetail
+{
+
+    ImGuiKey TranslateKey(KeyCode key)
+    {
+        using enum KeyCode;
+        switch(key)
+        {
+        case Space:         return ImGuiKey_Space;
+        case Apostrophe:    return ImGuiKey_Apostrophe;
+        case Comma:         return ImGuiKey_Comma;
+        case Minus:         return ImGuiKey_Minus;
+        case Period:        return ImGuiKey_Period;
+        case Slash:         return ImGuiKey_Slash;
+        case D0:            return ImGuiKey_0;
+        case D1:            return ImGuiKey_1;
+        case D2:            return ImGuiKey_2;
+        case D3:            return ImGuiKey_3;
+        case D4:            return ImGuiKey_4;
+        case D5:            return ImGuiKey_5;
+        case D6:            return ImGuiKey_6;
+        case D7:            return ImGuiKey_7;
+        case D8:            return ImGuiKey_8;
+        case D9:            return ImGuiKey_9;
+        case Semicolon:     return ImGuiKey_Semicolon;
+        case Equal:         return ImGuiKey_Equal;
+        case A:             return ImGuiKey_A;
+        case B:             return ImGuiKey_B;
+        case C:             return ImGuiKey_C;
+        case D:             return ImGuiKey_D;
+        case E:             return ImGuiKey_E;
+        case F:             return ImGuiKey_F;
+        case G:             return ImGuiKey_G;
+        case H:             return ImGuiKey_H;
+        case I:             return ImGuiKey_I;
+        case J:             return ImGuiKey_J;
+        case K:             return ImGuiKey_K;
+        case L:             return ImGuiKey_L;
+        case M:             return ImGuiKey_M;
+        case N:             return ImGuiKey_N;
+        case O:             return ImGuiKey_O;
+        case P:             return ImGuiKey_P;
+        case Q:             return ImGuiKey_Q;
+        case R:             return ImGuiKey_R;
+        case S:             return ImGuiKey_S;
+        case T:             return ImGuiKey_T;
+        case U:             return ImGuiKey_U;
+        case V:             return ImGuiKey_V;
+        case W:             return ImGuiKey_W;
+        case X:             return ImGuiKey_X;
+        case Y:             return ImGuiKey_Y;
+        case Z:             return ImGuiKey_Z;
+        case LeftBracket:   return ImGuiKey_LeftBracket;
+        case Backslash:     return ImGuiKey_Backslash;
+        case RightBracket:  return ImGuiKey_RightBracket;
+        case GraveAccent:   return ImGuiKey_GraveAccent;
+        case Escape:        return ImGuiKey_Escape;
+        case Enter:         return ImGuiKey_Enter;
+        case Tab:           return ImGuiKey_Tab;
+        case Backspace:     return ImGuiKey_Backspace;
+        case Insert:        return ImGuiKey_Insert;
+        case Delete:        return ImGuiKey_Delete;
+        case Right:         return ImGuiKey_RightArrow;
+        case Left:          return ImGuiKey_LeftArrow;
+        case Down:          return ImGuiKey_DownArrow;
+        case Up:            return ImGuiKey_UpArrow;
+        case Home:          return ImGuiKey_Home;
+        case End:           return ImGuiKey_End;
+        case F1:            return ImGuiKey_F1;
+        case F2:            return ImGuiKey_F2;
+        case F3:            return ImGuiKey_F3;
+        case F4:            return ImGuiKey_F4;
+        case F5:            return ImGuiKey_F5;
+        case F6:            return ImGuiKey_F6;
+        case F7:            return ImGuiKey_F7;
+        case F8:            return ImGuiKey_F8;
+        case F9:            return ImGuiKey_F9;
+        case F10:           return ImGuiKey_F10;
+        case F11:           return ImGuiKey_F11;
+        case F12:           return ImGuiKey_F12;
+        case NumPad0:       return ImGuiKey_Keypad0;
+        case NumPad1:       return ImGuiKey_Keypad1;
+        case NumPad2:       return ImGuiKey_Keypad2;
+        case NumPad3:       return ImGuiKey_Keypad3;
+        case NumPad4:       return ImGuiKey_Keypad4;
+        case NumPad5:       return ImGuiKey_Keypad5;
+        case NumPad6:       return ImGuiKey_Keypad6;
+        case NumPad7:       return ImGuiKey_Keypad7;
+        case NumPad8:       return ImGuiKey_Keypad8;
+        case NumPad9:       return ImGuiKey_Keypad9;
+        case NumPadDemical: return ImGuiKey_KeypadDecimal;
+        case NumPadDiv:     return ImGuiKey_KeypadDivide;
+        case NumPadMul:     return ImGuiKey_KeypadMultiply;
+        case NumPadSub:     return ImGuiKey_KeypadSubtract;
+        case NumPadAdd:     return ImGuiKey_KeypadAdd;
+        case NumPadEnter:   return ImGuiKey_KeyPadEnter;
+        case LeftShift:     return ImGuiKey_LeftShift;
+        case LeftCtrl:      return ImGuiKey_LeftCtrl;
+        case LeftAlt:       return ImGuiKey_LeftAlt;
+        case RightShift:    return ImGuiKey_RightShift;
+        case RightCtrl:     return ImGuiKey_RightCtrl;
+        case RightAlt:      return ImGuiKey_RightAlt;
+        default:            return ImGuiKey_None;
+        }
+    }
+
+    const char *SHADER_SOURCE = R"___(
+rtrc_group(CBuffer)
+    rtrc_uniform(float4x4, Matrix)
+rtrc_end
+
+rtrc_group(Pass)
+    rtrc_define(Texture2D<float4>, Texture, FS)
+rtrc_end
+
+rtrc_sampler(Sampler, filter = linear, address = repeat)
+
+struct VsInput
+{
+    float2 position : POSITION;
+    float2 uv       : UV;
+    float4 color    : COLOR;
+};
+
+struct VsToFs
+{
+    float4 position : SV_POSITION;
+    float2 uv       : UV;
+    float4 color    : COLOR;
+};
+
+VsToFs VSMain(VsInput input)
+{
+    VsToFs output;
+    output.position = mul(CBuffer.Matrix, float4(input.position, 0, 1));
+    output.uv       = input.uv;
+    output.color    = input.color;
+    return output;
+}
+
+float4 FSMain(VsToFs input) : SV_TARGET
+{
+    return input.color * Texture.Sample(Sampler, input.uv);
+}
+)___";
+
+    const MeshLayout *meshLayout = RTRC_MESH_LAYOUT(Buffer(
+        Attribute("POSITION", Float2),
+        Attribute("UV",       Float2),
+        Attribute("COLOR",    UChar4UNorm)));
+
+    rtrc_struct(CBuffer)
+    {
+        rtrc_var(Matrix4x4f, Matrix);
+    };
+
+    class ImGuiContextGuard : public Uncopyable
+    {
+        ImGuiContext *oldContext_;
+
+    public:
+
+        explicit ImGuiContextGuard(ImGuiContext *context)
+        {
+            oldContext_ = ImGui::GetCurrentContext();
+            ImGui::SetCurrentContext(context);
+        }
+
+        ~ImGuiContextGuard()
+        {
+            ImGui::SetCurrentContext(oldContext_);
+        }
+    };
+
+#define IMGUI_CONTEXT ImGuiDetail::ImGuiContextGuard guiContextGuard(data_->context)
+
+} // namespace ImGuiDetail
+
+struct ImGuiInstance::Data
+{
+    Device *device = nullptr;
+    Window *window = nullptr;
+    ImGuiContext *context = nullptr;
+
+    RC<Shader>                                  shader;
+    RC<BindingGroupLayout>                      cbufferBindingGroupLayout;
+    RC<BindingGroupLayout>                      passBindingGroupLayout;
+    std::map<RHI::Format, RC<GraphicsPipeline>> rtFormatToPipeline;
+
+    RC<Texture> fontTexture;
+    RC<BindingGroup> fontTextureBindingGroup;
+};
+
+ImGuiInstance::ImGuiInstance(Device &device, Window &window)
+{
+    data_ = MakeBox<Data>();
+    data_->device = &device;
+    data_->window = &window;
+    data_->context = ImGui::CreateContext();
+    data_->context->IO.IniFilename = nullptr;
+
+    ShaderCompiler shaderCompiler;
+    shaderCompiler.SetDevice(&device);
+
+    const ShaderCompiler::ShaderSource source =
+    {
+        .source = ImGuiDetail::SHADER_SOURCE,
+        .vsEntry = "VSMain",
+        .fsEntry = "FSMain"
+    };
+    data_->shader = shaderCompiler.Compile(source, {}, RTRC_DEBUG);
+    data_->cbufferBindingGroupLayout = data_->shader->GetBindingGroupLayoutByName("CBuffer");
+    data_->passBindingGroupLayout = data_->shader->GetBindingGroupLayoutByName("Pass");
+
+    RecreateFontTexture();
+}
+
+ImGuiInstance::~ImGuiInstance()
+{
+    if(data_)
+    {
+        ImGui::DestroyContext(data_->context);
+    }
+}
+
+ImGuiInstance::ImGuiInstance(ImGuiInstance &&other) noexcept
+    : ImGuiInstance()
+{
+    Swap(other);
+}
+
+ImGuiInstance &ImGuiInstance::operator=(ImGuiInstance &&other) noexcept
+{
+    Swap(other);
+    return *this;
+}
+
+void ImGuiInstance::Swap(ImGuiInstance &other) noexcept
+{
+    data_.swap(other.data_);
+}
+
+void ImGuiInstance::WindowFocus(bool focused)
+{
+    IMGUI_CONTEXT;
+    ImGui::GetIO().AddFocusEvent(focused);
+}
+
+void ImGuiInstance::CursorMove(float x, float y)
+{
+    IMGUI_CONTEXT;
+    ImGui::GetIO().AddMousePosEvent(x, y);
+}
+
+void ImGuiInstance::MouseButton(KeyCode button, bool down)
+{
+    IMGUI_CONTEXT;
+    assert(button == KeyCode::MouseLeft || button == KeyCode::MouseMiddle || button == KeyCode::MouseRight);
+    int translatedButton;
+    if(button == KeyCode::MouseLeft)
+    {
+        translatedButton = 0;
+    }
+    else if(button == KeyCode::MouseMiddle)
+    {
+        translatedButton = 2;
+    }
+    else
+    {
+        translatedButton = 1;
+    }
+    ImGui::GetIO().AddMouseButtonEvent(translatedButton, down);
+}
+
+void ImGuiInstance::WheelScroll(float xoffset, float yoffset)
+{
+    IMGUI_CONTEXT;
+    ImGui::GetIO().AddMouseWheelEvent(xoffset, yoffset);
+}
+
+void ImGuiInstance::Key(KeyCode key, bool down)
+{
+    IMGUI_CONTEXT;
+    ImGui::GetIO().AddKeyEvent(ImGuiDetail::TranslateKey(key), down);
+}
+
+void ImGuiInstance::Char(unsigned ch)
+{
+    IMGUI_CONTEXT;
+    ImGui::GetIO().AddInputCharacter(ch);
+}
+
+void ImGuiInstance::BeginFrame()
+{
+    IMGUI_CONTEXT;
+    const Vector2i windowSize = data_->window->GetWindowSize();
+    const Vector2i framebufferSize = data_->window->GetFramebufferSize();
+    ImGui::GetIO().DisplaySize = ImVec2(static_cast<float>(windowSize.x), static_cast<float>(windowSize.y));
+    ImGui::GetIO().DisplayFramebufferScale = ImVec2(
+        static_cast<float>(framebufferSize.x) / static_cast<float>(windowSize.x),
+        static_cast<float>(framebufferSize.y) / static_cast<float>(windowSize.y));
+    ImGui::NewFrame();
+}
+
+RG::Pass *ImGuiInstance::AddToRenderGraph(RG::TextureResource *renderTarget, RG::RenderGraph *renderGraph)
+{
+    auto pass = renderGraph->CreatePass("Render ImGui");
+    pass->Use(renderTarget, RG::RENDER_TARGET);
+    pass->SetCallback([this, renderTarget](RG::PassContext &ctx)
+    {
+        RenderImmediately(renderTarget->Get()->CreateRTV(), ctx.GetCommandBuffer(), false);
+    });
+    return pass;
+}
+
+void ImGuiInstance::RenderImmediately(const TextureRTV &rtv, CommandBuffer &commandBuffer, bool renderPassMark)
+{
+    IMGUI_CONTEXT;
+
+    // ImGui Render
+    
+    ImGui::Render();
+    const ImDrawData *drawData = ImGui::GetDrawData();
+    if(!drawData)
+    {
+        return;
+    }
+
+    if(drawData->CmdListsCount == 0)
+    {
+        return;
+    }
+
+    // Upload vertex/index data
+
+    RC<Buffer> vertexBuffer, indexBuffer;
+    if(drawData->TotalVtxCount > 0)
+    {
+        vertexBuffer = data_->device->CreateBuffer(RHI::BufferDesc
+            {
+                .size = drawData->TotalVtxCount * sizeof(ImDrawVert),
+                .usage = RHI::BufferUsage::VertexBuffer,
+                .hostAccessType = RHI::BufferHostAccessType::SequentialWrite
+            });
+        auto vertexData = static_cast<ImDrawVert *>(vertexBuffer->GetRHIObject()->Map(0, vertexBuffer->GetSize()));
+        size_t vertexOffset = 0;
+        for(int cmdListIdx = 0; cmdListIdx < drawData->CmdListsCount; ++cmdListIdx)
+        {
+            const ImDrawList *drawList = drawData->CmdLists[cmdListIdx];
+            std::memcpy(vertexData + vertexOffset, drawList->VtxBuffer.Data, drawList->VtxBuffer.size_in_bytes());
+            vertexOffset += drawList->VtxBuffer.size();
+        }
+        vertexBuffer->GetRHIObject()->Unmap(0, vertexBuffer->GetSize(), true);
+    }
+    if(drawData->TotalIdxCount > 0)
+    {
+        indexBuffer = data_->device->CreateBuffer(RHI::BufferDesc
+            {
+                .size = drawData->TotalIdxCount * sizeof(ImDrawIdx),
+                .usage = RHI::BufferUsage::IndexBuffer,
+                .hostAccessType = RHI::BufferHostAccessType::SequentialWrite
+            });
+        auto indexData = static_cast<ImDrawIdx *>(indexBuffer->GetRHIObject()->Map(0, indexBuffer->GetSize()));
+        size_t indexOffset = 0;
+        for(int cmdListIdx = 0; cmdListIdx < drawData->CmdListsCount; ++cmdListIdx)
+        {
+            const ImDrawList *drawList = drawData->CmdLists[cmdListIdx];
+            std::memcpy(indexData + indexOffset, drawList->IdxBuffer.Data, drawList->IdxBuffer.size_in_bytes());
+            indexOffset += drawList->IdxBuffer.size();
+        }
+        indexBuffer->GetRHIObject()->Unmap(0, indexBuffer->GetSize(), true);
+    }
+
+    // Render
+
+    if(renderPassMark)
+    {
+        commandBuffer.BeginDebugEvent("Render ImGui");
+    }
+    RTRC_SCOPE_EXIT
+    {
+        if(renderPassMark)
+        {
+            commandBuffer.EndDebugEvent();
+        }
+    };
+
+    const RHI::Format format = rtv.GetRHIObject()->GetDesc().format;
+    RC<GraphicsPipeline> pipeline = GetOrCreatePipeline(format);
+
+    commandBuffer.BeginRenderPass(ColorAttachment
+    {
+        .renderTargetView = rtv,
+        .loadOp = AttachmentLoadOp::Load,
+        .storeOp = AttachmentStoreOp::Store
+    });
+    RTRC_SCOPE_EXIT{ commandBuffer.EndRenderPass(); };
+
+    commandBuffer.BindPipeline(pipeline);
+    commandBuffer.SetViewports(rtv.GetTexture()->GetViewport());
+
+    // Inline sampler
+
+    if(auto index = data_->shader->GetBindingGroupIndexForInlineSamplers(); index >= 0)
+    {
+        commandBuffer.BindGraphicsGroup(index, data_->shader->GetBindingGroupForInlineSamplers());
+    }
+
+    // Vertex & Index buffer
+
+    if(vertexBuffer)
+    {
+        commandBuffer.SetVertexBuffers(0, vertexBuffer);
+    }
+
+    if(indexBuffer)
+    {
+        static_assert(sizeof(ImDrawIdx) == sizeof(uint16_t) || sizeof(ImDrawIdx) == sizeof(uint32_t));
+        if constexpr(sizeof(ImDrawIdx) == sizeof(uint32_t))
+        {
+            commandBuffer.SetIndexBuffer(indexBuffer, RHI::IndexBufferFormat::UInt32);
+        }
+        else
+        {
+            commandBuffer.SetIndexBuffer(indexBuffer, RHI::IndexBufferFormat::UInt16);
+        }
+    }
+    
+    // Constant buffer
+
+    {
+        const float L = drawData->DisplayPos.x;
+        const float R = drawData->DisplayPos.x + drawData->DisplaySize.x;
+        const float T = drawData->DisplayPos.y;
+        const float B = drawData->DisplayPos.y + drawData->DisplaySize.y;
+
+        ImGuiDetail::CBuffer cbufferData;
+        cbufferData.Matrix = Matrix4x4f(
+            2.0f / (R - L), 0.0f,           0.0f, (R + L) / (L - R),
+            0.0f,           2.0f / (T - B), 0.0f, (T + B) / (B - T),
+            0.0f,           0.0f,           0.5f, 0.5f,
+            0.0f,           0.0f,           0.0f, 1.0f);
+        auto cbuffer = data_->device->CreateConstantBuffer(cbufferData);
+        auto cbufferGroup = data_->cbufferBindingGroupLayout->CreateBindingGroup();
+        cbufferGroup->Set(0, cbuffer);
+        commandBuffer.BindGraphicsGroup(0, cbufferGroup);
+    }
+    
+    uint32_t vertexOffset = 0, indexOffset = 0;
+    for(int i = 0; i < drawData->CmdListsCount; ++i)
+    {
+        const ImDrawList *drawList = drawData->CmdLists[i];
+        for(const ImDrawCmd &drawCmd : drawList->CmdBuffer)
+        {
+            if(drawCmd.UserCallback)
+            {
+                drawCmd.UserCallback(drawList, &drawCmd);
+                continue;
+            }
+
+            // Scissor
+
+            ImVec2 clipMin(drawCmd.ClipRect.x - drawData->DisplayPos.x, drawCmd.ClipRect.y - drawData->DisplayPos.y);
+            ImVec2 clipMax(drawCmd.ClipRect.z - drawData->DisplayPos.x, drawCmd.ClipRect.w - drawData->DisplayPos.y);
+            if(clipMax.x <= clipMin.x || clipMax.y <= clipMin.y)
+            {
+                continue;
+            }
+            commandBuffer.SetScissors(Scissor{
+                { static_cast<int>(clipMin.x), static_cast<int>(clipMin.y) },
+                { static_cast<int>(clipMax.x - clipMin.x), static_cast<int>(clipMax.y - clipMin.y) }
+            });
+
+            // Texture
+
+            if(drawCmd.GetTexID() == data_->fontTexture.get())
+            {
+                commandBuffer.BindGraphicsGroup(1, data_->fontTextureBindingGroup);
+            }
+            else
+            {
+                auto texture = static_cast<Texture *>(drawCmd.GetTexID());
+                auto group = data_->passBindingGroupLayout->CreateBindingGroup();
+                group->Set(0, texture->CreateSRV());
+                commandBuffer.BindGraphicsGroup(1, group);
+            }
+
+            // Draw
+
+            commandBuffer.DrawIndexed(
+                static_cast<int>(drawCmd.ElemCount), 1,
+                static_cast<int>(indexOffset + drawCmd.IdxOffset),
+                static_cast<int>(vertexOffset + drawCmd.VtxOffset), 0);
+        }
+        vertexOffset += drawList->VtxBuffer.size();
+        indexOffset += drawList->IdxBuffer.size();
+    }
+}
+
+RC<GraphicsPipeline> ImGuiInstance::GetOrCreatePipeline(RHI::Format format)
+{
+    if(auto it = data_->rtFormatToPipeline.find(format); it != data_->rtFormatToPipeline.end())
+    {
+        return it->second;
+    }
+    auto pipeline = data_->device->CreateGraphicsPipeline(GraphicsPipeline::Desc
+    {
+        .shader                 = data_->shader,
+        .meshLayout             = ImGuiDetail::meshLayout,
+        .primitiveTopology      = RHI::PrimitiveTopology::TriangleList,
+        .fillMode               = RHI::FillMode::Fill,
+        .cullMode               = RHI::CullMode::DontCull,
+        .enableBlending         = true,
+        .blendingSrcColorFactor = RHI::BlendFactor::SrcAlpha,
+        .blendingDstColorFactor = RHI::BlendFactor::OneMinusSrcAlpha,
+        .blendingColorOp        = RHI::BlendOp::Add,
+        .blendingSrcAlphaFactor = RHI::BlendFactor::One,
+        .blendingDstAlphaFactor = RHI::BlendFactor::OneMinusSrcAlpha,
+        .blendingAlphaOp        = RHI::BlendOp::Add,
+        .colorAttachmentFormats = { format }
+    });
+    data_->rtFormatToPipeline.insert({ format, pipeline });
+    return pipeline;
+}
+
+void ImGuiInstance::RecreateFontTexture()
+{
+    IMGUI_CONTEXT;
+    unsigned char *data;
+    int width, height;
+    ImGui::GetIO().Fonts->GetTexDataAsRGBA32(&data, &width, &height);
+    data_->fontTexture = data_->device->GetCopyContext().CreateTexture2D(
+        RHI::TextureDesc
+        {
+            .dim                  = RHI::TextureDimension::Tex2D,
+            .format               = RHI::Format::R8G8B8A8_UNorm,
+            .width                = static_cast<uint32_t>(width),
+            .height               = static_cast<uint32_t>(height),
+            .arraySize            = 1,
+            .mipLevels            = 1,
+            .sampleCount          = 1,
+            .usage                = RHI::TextureUsage::ShaderResource,
+            .initialLayout        = RHI::TextureLayout::Undefined,
+            .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Concurrent
+        }, data);
+    data_->device->ExecuteBarrier(
+        data_->fontTexture, RHI::TextureLayout::CopyDst, RHI::TextureLayout::ShaderTexture);
+    data_->fontTextureBindingGroup = data_->passBindingGroupLayout->CreateBindingGroup();
+    data_->fontTextureBindingGroup->Set(0, data_->fontTexture->CreateSRV());
+    ImGui::GetIO().Fonts->SetTexID(data_->fontTexture.get());
+}
+
+ImGuiContext *ImGuiInstance::GetImGuiContext()
+{
+    return data_->context;
+}
+
+bool ImGuiInstance::Begin(const char *name, bool *open, ImGuiWindowFlags flags)
+{
+    IMGUI_CONTEXT;
+    return ImGui::Begin(name, open, flags);
+}
+
+void ImGuiInstance::End()
+{
+    IMGUI_CONTEXT;
+    return ImGui::End();
+}
+
+bool ImGuiInstance::Button(const char *name, const Vector2f &size)
+{
+    IMGUI_CONTEXT;
+    return ImGui::Button(name, ImVec2(size.x, size.y));
+}
+
+void ImGuiInstance::TextUnformatted(std::string_view text)
+{
+    IMGUI_CONTEXT;
+    ImGui::TextUnformatted(text.data(), text.data() + text.size());
+}
+
+RTRC_END

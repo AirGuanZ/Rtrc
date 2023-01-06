@@ -24,6 +24,8 @@ public:
 
     operator typename T::ElementType *() const;
 
+    const RC<Texture> &GetTexture() const { return texture_; }
+
 private:
 
     static_assert(

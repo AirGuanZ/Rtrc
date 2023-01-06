@@ -54,6 +54,7 @@ VkFormat TranslateTexelFormat(Format format)
     {
     case Format::Unknown:            return VK_FORMAT_UNDEFINED;
     case Format::B8G8R8A8_UNorm:     return VK_FORMAT_B8G8R8A8_UNORM;
+    case Format::R8G8B8A8_UNorm:     return VK_FORMAT_R8G8B8A8_UNORM;
     case Format::R32G32_Float:       return VK_FORMAT_R32G32_SFLOAT;
     case Format::R32G32B32A32_Float: return VK_FORMAT_R32G32B32A32_SFLOAT;
     case Format::R10G10B10A2_UNorm:  return VK_FORMAT_A2R10G10B10_UNORM_PACK32;
@@ -215,12 +216,17 @@ VkDescriptorType TranslateBindingType(BindingType type)
     case BindingType::RWTexture2DArray:
     case BindingType::RWTexture3DArray:
         return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-    case BindingType::Buffer:             return VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
-    case BindingType::RWBuffer:           return VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
+    case BindingType::Buffer:
+        return VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
+    case BindingType::RWBuffer:
+        return VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
     case BindingType::StructuredBuffer:
-    case BindingType::RWStructuredBuffer: return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    case BindingType::ConstantBuffer:     return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    case BindingType::Sampler:            return VK_DESCRIPTOR_TYPE_SAMPLER;
+    case BindingType::RWStructuredBuffer:
+        return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    case BindingType::ConstantBuffer:
+        return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    case BindingType::Sampler:
+        return VK_DESCRIPTOR_TYPE_SAMPLER;
     }
     Unreachable();
 }
@@ -433,7 +439,7 @@ VkAccessFlags2 TranslateAccessFlag(ResourceAccessFlag flag)
         VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
         VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
         VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-        VK_ACCESS_2_SHADER_SAMPLED_READ_BIT /*| VK_ACCESS_2_SHADER_STORAGE_READ_BIT*/,
+        VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
         VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
         VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
         VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
@@ -507,6 +513,7 @@ VkFormat TranslateInputAttributeType(VertexAttributeType type)
     case Float2: return VK_FORMAT_R32G32_SFLOAT;
     case Float3: return VK_FORMAT_R32G32B32_SFLOAT;
     case Float4: return VK_FORMAT_R32G32B32A32_SFLOAT;
+    case UChar4Norm: return VK_FORMAT_R8G8B8A8_UNORM;
     }
     Unreachable();
 }

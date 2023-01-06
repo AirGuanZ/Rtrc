@@ -24,6 +24,8 @@ namespace MeshLayoutDSL
     constexpr RHI::VertexAttributeType Float3 = RHI::VertexAttributeType::Float3;
     constexpr RHI::VertexAttributeType Float4 = RHI::VertexAttributeType::Float4;
 
+    constexpr RHI::VertexAttributeType UChar4UNorm = RHI::VertexAttributeType::UChar4Norm;
+
     struct Attribute
     {
         Attribute(std::string semantic, RHI::VertexAttributeType type)

@@ -15,9 +15,6 @@ namespace MeshLayoutDetail
     std::map<MeshLayoutDSL::Buffer, Box<VertexBufferLayout>> vertexBufferLayoutCache;
     tbb::spin_rw_mutex vertexBufferLayoutCacheMutex;
 
-    std::map<MeshLayoutDSL::LayoutDesc, Box<MeshLayout>> meshLayoutCache;
-    tbb::spin_rw_mutex meshLayoutCacheMutex;
-
     int VertexAttributeTypeToByteSize(RHI::VertexAttributeType type)
     {
         using enum RHI::VertexAttributeType;
@@ -39,6 +36,8 @@ namespace MeshLayoutDetail
         case UInt4:
         case Float4:
             return 16;
+        case UChar4Norm:
+            return 4;
         }
         Unreachable();
     }
@@ -119,6 +118,9 @@ int VertexBufferLayout::GetAttributeIndexBySemantic(std::string_view semantic) c
 const MeshLayout *MeshLayout::Create(const MeshLayoutDSL::LayoutDesc &_desc)
 {
     using namespace MeshLayoutDetail;
+
+    static std::map<MeshLayoutDSL::LayoutDesc, Box<MeshLayout>> meshLayoutCache;
+    static tbb::spin_rw_mutex meshLayoutCacheMutex;
 
     auto desc = _desc;
     Regularize(desc);

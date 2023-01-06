@@ -20,7 +20,7 @@ namespace Builtin
     rtrc_ref(_internalGBufferC,     FS) \
     rtrc_ref(_internalGBufferDepth, FS)
 
-    struct GBufferPixel
+    struct GBufferPixelOutput
     {
         float4 gbufferA : SV_TARGET0;
         float4 gbufferB : SV_TARGET1;
@@ -77,9 +77,9 @@ namespace Builtin
         return ret;
     }
 
-    GBufferPixel EncodeGBufferPixel(float3 worldNormal, float3 albedo, float metallic, float roughness)
+    GBufferPixelOutput EncodeGBufferPixel(float3 worldNormal, float3 albedo, float metallic, float roughness)
     {
-        GBufferPixel pixel;
+        GBufferPixelOutput pixel;
         pixel.gbufferA = float4(0.5 * worldNormal + 0.5, 0);
         pixel.gbufferB = float4(albedo, metallic);
         pixel.gbufferC = float4(roughness, 0, 0, 0);

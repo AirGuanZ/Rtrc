@@ -12,6 +12,8 @@ class Application : public Uncopyable
     Box<Device>       device_;
     Box<RG::Executer> executer_;
 
+    Box<ImGuiInstance> imgui_;
+
     Box<MaterialManager> materials_;
     Box<MeshLoader>      meshes_;
 
@@ -38,6 +40,8 @@ class Application : public Uncopyable
 
         device_ = Device::CreateGraphicsDevice(window_, RHI::Format::B8G8R8A8_UNorm, 3, RTRC_DEBUG, false);
         executer_ = MakeBox<RG::Executer>(device_.get());
+
+        imgui_ = MakeBox<ImGuiInstance>(*device_, window_);
 
         materials_ = MakeBox<MaterialManager>();
         materials_->SetDevice(device_.get());
@@ -106,6 +110,13 @@ class Application : public Uncopyable
             input_->LockCursor(!input_->IsCursorLocked());
         }
 
+        if(imgui_->Begin("Test Window"))
+        {
+            imgui_->Button("Test Button");
+            imgui_->Text("Test Formatted text: {}", 2.5f);
+        }
+        imgui_->End();
+
         // Camera
 
         const float wOverH = static_cast<float>(window_.GetFramebufferSize().x) / window_.GetFramebufferSize().y;
@@ -132,13 +143,15 @@ class Application : public Uncopyable
         const auto deferredRendererRGData = renderer_->AddToRenderGraph(
             renderParameters, rg.get(), renderTarget, *scene_, *camera_);
 
+        // ImGui
+
+        auto imguiPass = imgui_->AddToRenderGraph(renderTarget, rg.get());
+
         // Dependencies
 
         Connect(atmosphereRGData.outPass, deferredRendererRGData.inPass);
-
-        // Frame fence
-
-        deferredRendererRGData.outPass->SetSignalFence(device_->GetFrameFence());
+        Connect(deferredRendererRGData.outPass, imguiPass);
+        imguiPass->SetSignalFence(device_->GetFrameFence());
 
         // Execute render graph & present
 
@@ -167,6 +180,7 @@ public:
             {
                 continue;
             }
+            imgui_->BeginFrame();
             Frame();
         }
         device_->EndRenderLoop();

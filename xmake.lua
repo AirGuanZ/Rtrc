@@ -17,7 +17,8 @@ option("is_msvc")
 add_csnippets("is_msvc", "return (_MSC_VER)?0:-1;", { tryrun = true })
 option_end()
 
-set_runtimes(is_mode("debug") and "MTd" or "MT")
+vs_runtime_value = is_mode("debug") and "MTd" or "MT"
+set_runtimes(vs_runtime_value)
 set_targetdir("Build/Bin/"..(is_mode("debug") and "debug" or "release"))
 
 if is_mode("debug") then
@@ -40,7 +41,8 @@ add_requires("glfw", { configs = { glfw_include = "vulkan" } })
 includes("External/mimalloc")
 add_requires("mimalloc")
 
-includes("External/oneapi-tbb-2021.6.0")
+includes("External/tbb")
+add_requires("mytbb", { configs = { debug = is_mode("debug") } })
 
 add_requires("fmt 9.1.0", "stb 2021.09.10", "tinyexr v1.0.1")
 add_requires("vk-bootstrap v0.5", "spirv-reflect 1.2.189+1", "vulkan-memory-allocator v3.0.0")
@@ -50,6 +52,7 @@ add_requires("volk 1.3.231", { configs = { header_only = true } })
 includes("External/tinyobjloader")
 includes("External/dxc")
 includes("External/sigslot")
+includes("External/imgui")
 
 -- Targets
 
@@ -75,8 +78,8 @@ target("Rtrc")
     add_includedirs("External/avir", { public = false })
     add_includedirs("External/cy", { public = false })
     add_packages("glfw", "stb", "tinyexr")
-    add_packages("fmt", "mimalloc", { public = true })
-    add_deps("dxc", "tinyobjloader", "tbb", "sigslot")
+    add_packages("fmt", "mimalloc", "mytbb", { public = true })
+    add_deps("dxc", "tinyobjloader", "sigslot", "imgui")
 target_end()
 
 target("Test")

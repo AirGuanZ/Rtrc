@@ -47,6 +47,7 @@ public:
 
     Input &GetInput() const;
 
+    Vector2i GetWindowSize() const;
     Vector2i GetFramebufferSize() const;
 
     bool HasFocus() const;
