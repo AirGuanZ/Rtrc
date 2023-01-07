@@ -9,14 +9,14 @@ RTRC_BEGIN
 // See Asset/Builtin/Material/Common/Scene.hlsl
 rtrc_struct(CameraConstantBuffer)
 {
-    rtrc_var(Matrix4x4f,  worldToCameraMatrix);
-    rtrc_var(Matrix4x4f,  cameraToWorldMatrix);
-    rtrc_var(Matrix4x4f,  cameraToClipMatrix);
-    rtrc_var(Matrix4x4f,  clipToCameraMatrix);
-    rtrc_var(Matrix4x4f,  worldToClipMatrix);
-    rtrc_var(Matrix4x4f,  clipToWorldMatrix);
-    rtrc_var(Vector3f[4], cameraRays);
-    rtrc_var(Vector3f[4], worldRays);
+    rtrc_var(float4x4,  worldToCameraMatrix);
+    rtrc_var(float4x4,  cameraToWorldMatrix);
+    rtrc_var(float4x4,  cameraToClipMatrix);
+    rtrc_var(float4x4,  clipToCameraMatrix);
+    rtrc_var(float4x4,  worldToClipMatrix);
+    rtrc_var(float4x4,  clipToWorldMatrix);
+    rtrc_var(float3[4], cameraRays);
+    rtrc_var(float3[4], worldRays);
 };
 
 struct PerspectiveProjectionParameters

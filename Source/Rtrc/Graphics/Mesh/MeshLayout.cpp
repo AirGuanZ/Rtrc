@@ -12,9 +12,6 @@ RTRC_BEGIN
 
 namespace MeshLayoutDetail
 {
-    std::map<MeshLayoutDSL::Buffer, Box<VertexBufferLayout>> vertexBufferLayoutCache;
-    tbb::spin_rw_mutex vertexBufferLayoutCacheMutex;
-
     int VertexAttributeTypeToByteSize(RHI::VertexAttributeType type)
     {
         using enum RHI::VertexAttributeType;
@@ -55,6 +52,9 @@ namespace MeshLayoutDetail
 const VertexBufferLayout *VertexBufferLayout::Create(const MeshLayoutDSL::Buffer &desc)
 {
     using namespace MeshLayoutDetail;
+
+    static std::map<MeshLayoutDSL::Buffer, Box<VertexBufferLayout>> vertexBufferLayoutCache;
+    static tbb::spin_rw_mutex vertexBufferLayoutCacheMutex;
 
     {
         std::shared_lock readLock(vertexBufferLayoutCacheMutex);

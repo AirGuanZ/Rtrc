@@ -13,8 +13,8 @@ namespace AtmosphereDetail
     {
         // Rayleigh
 
-        rtrc_var(Vector3f, scatterRayleigh) = 1e-6f * Vector3f(5.802f, 13.558f, 33.1f);
-        rtrc_var(float, hDensityRayleigh)   = 1e3f * 8;
+        rtrc_var(float3, scatterRayleigh)  = 1e-6f * Vector3f(5.802f, 13.558f, 33.1f);
+        rtrc_var(float,  hDensityRayleigh) = 1e3f * 8;
 
         // Mie
 
@@ -25,16 +25,16 @@ namespace AtmosphereDetail
 
         // Ozone
 
-        rtrc_var(Vector3f, absorbOzone)    = 1e-6f * Vector3f(0.65f, 1.881f, 0.085f);
-        rtrc_var(float, ozoneCenterHeight) = 1e3f * 25;
-        rtrc_var(float, ozoneThickness)    = 1e3f * 30;
+        rtrc_var(float3, absorbOzone)       = 1e-6f * Vector3f(0.65f, 1.881f, 0.085f);
+        rtrc_var(float,  ozoneCenterHeight) = 1e3f * 25;
+        rtrc_var(float,  ozoneThickness)    = 1e3f * 30;
 
         // Geometry
 
         rtrc_var(float, planetRadius)      = 1e3f * 6360;
         rtrc_var(float, atmosphereRadius)  = 1e3f * 6460;
 
-        rtrc_var(Vector3f, terrainAlbedo) = { 0.3f, 0.3f, 0.3f };
+        rtrc_var(float3, terrainAlbedo) = { 0.3f, 0.3f, 0.3f };
 
         auto operator<=>(const AtmosphereProperties &) const = default;
     };

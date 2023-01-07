@@ -8,10 +8,10 @@ RTRC_BEGIN
 
 rtrc_struct(StaticMeshCBuffer)
 {
-    rtrc_var(Matrix4x4f, localToWorld);
-    rtrc_var(Matrix4x4f, worldToLocal);
-    rtrc_var(Matrix4x4f, localToCamera);
-    rtrc_var(Matrix4x4f, localToClip);
+    rtrc_var(float4x4, localToWorld);
+    rtrc_var(float4x4, worldToLocal);
+    rtrc_var(float4x4, localToCamera);
+    rtrc_var(float4x4, localToClip);
 };
 
 class StaticMesh : public SceneObject

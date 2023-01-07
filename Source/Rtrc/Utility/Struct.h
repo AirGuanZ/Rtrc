@@ -1,6 +1,9 @@
 #pragma once
 
-#include <Rtrc/Common.h>
+#include <Rtrc/Math/Vector2.h>
+#include <Rtrc/Math/Vector3.h>
+#include <Rtrc/Math/Vector4.h>
+#include <Rtrc/Math/Matrix4x4.h>
 
 RTRC_BEGIN
 
@@ -24,7 +27,7 @@ namespace StructDetail
     static_assert(sizeof(Sizer<19>) == 19);
 
     template<typename T, int I>
-    using MemberDesc = std::remove_pointer_t<decltype(T::_rtrcMemberIndexToDesc(static_cast<Int2Type<I> *>(0)))>;
+    using MemberDesc = std::remove_pointer_t<decltype(T::_rtrcMemberIndexToDesc(static_cast<Int2Type<I> *>(nullptr)))>;
 
     template<typename T, typename F, int I>
     constexpr void CallForMember(const F &f)
@@ -99,6 +102,17 @@ concept RtrcStruct = requires { typename T::_rtrcStructTypeFlag; };
             ::Rtrc::StructDetail::ForEachMember<_rtrcSelf>(f);            \
         }                                                                 \
         auto operator<=>(const _rtrcCBufferBase##NAME &) const = default; \
+        using float2   = ::Rtrc::Vector2f;                                \
+        using float3   = ::Rtrc::Vector3f;                                \
+        using float4   = ::Rtrc::Vector4f;                                \
+        using int2     = ::Rtrc::Vector2i;                                \
+        using int3     = ::Rtrc::Vector3i;                                \
+        using int4     = ::Rtrc::Vector4i;                                \
+        using uint     = uint32_t;                                        \
+        using uint2    = ::Rtrc::Vector2u;                                \
+        using uint3    = ::Rtrc::Vector3u;                                \
+        using uint4    = ::Rtrc::Vector4u;                                \
+        using float4x4 = ::Rtrc::Matrix4x4f;                              \
     };                                                                    \
     struct NAME : _rtrcCBufferBase##NAME
 

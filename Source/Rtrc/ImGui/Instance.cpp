@@ -153,14 +153,9 @@ float4 FSMain(VsToFs input) : SV_TARGET
 }
 )___";
 
-    const MeshLayout *meshLayout = RTRC_MESH_LAYOUT(Buffer(
-        Attribute("POSITION", Float2),
-        Attribute("UV",       Float2),
-        Attribute("COLOR",    UChar4UNorm)));
-
     rtrc_struct(CBuffer)
     {
-        rtrc_var(Matrix4x4f, Matrix);
+        rtrc_var(float4x4, Matrix);
     };
 
     class ImGuiContextGuard : public Uncopyable
@@ -566,6 +561,10 @@ void ImGuiInstance::RenderImmediately(const TextureRTV &rtv, CommandBuffer &comm
 
 RC<GraphicsPipeline> ImGuiInstance::GetOrCreatePipeline(RHI::Format format)
 {
+    static const MeshLayout *meshLayout = RTRC_MESH_LAYOUT(Buffer(
+        Attribute("POSITION", Float2),
+        Attribute("UV",       Float2),
+        Attribute("COLOR",    UChar4UNorm)));
     if(auto it = data_->rtFormatToPipeline.find(format); it != data_->rtFormatToPipeline.end())
     {
         return it->second;
@@ -573,7 +572,7 @@ RC<GraphicsPipeline> ImGuiInstance::GetOrCreatePipeline(RHI::Format format)
     auto pipeline = data_->device->CreateGraphicsPipeline(GraphicsPipeline::Desc
     {
         .shader                 = data_->shader,
-        .meshLayout             = ImGuiDetail::meshLayout,
+        .meshLayout             = meshLayout,
         .primitiveTopology      = RHI::PrimitiveTopology::TriangleList,
         .fillMode               = RHI::FillMode::Fill,
         .cullMode               = RHI::CullMode::DontCull,

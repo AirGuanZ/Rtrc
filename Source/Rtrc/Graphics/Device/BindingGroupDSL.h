@@ -7,6 +7,7 @@
 #include <Rtrc/Math/Vector2.h>
 #include <Rtrc/Math/Vector3.h>
 #include <Rtrc/Math/Vector4.h>
+#include <Rtrc/Math/Matrix4x4.h>
 #include <Rtrc/Utility/Struct.h>
 #include <Rtrc/Utility/MacroOverloading.h>
 
@@ -377,16 +378,17 @@ namespace BindingGroupDSL
             });                                                                                 \
         }                                                                                       \
         static constexpr std::string GroupName = #NAME_STR;                                     \
-        using float2 = ::Rtrc::Vector2f;                                                        \
-        using float3 = ::Rtrc::Vector3f;                                                        \
-        using float4 = ::Rtrc::Vector4f;                                                        \
-        using int2   = ::Rtrc::Vector2i;                                                        \
-        using int3   = ::Rtrc::Vector3i;                                                        \
-        using int4   = ::Rtrc::Vector4i;                                                        \
-        using uint   = uint32_t;                                                                \
-        using uint2  = ::Rtrc::Vector2u;                                                        \
-        using uint3  = ::Rtrc::Vector3u;                                                        \
-        using uint4  = ::Rtrc::Vector4u;                                                        \
+        using float2   = ::Rtrc::Vector2f;                                                      \
+        using float3   = ::Rtrc::Vector3f;                                                      \
+        using float4   = ::Rtrc::Vector4f;                                                      \
+        using int2     = ::Rtrc::Vector2i;                                                      \
+        using int3     = ::Rtrc::Vector3i;                                                      \
+        using int4     = ::Rtrc::Vector4i;                                                      \
+        using uint     = uint32_t;                                                              \
+        using uint2    = ::Rtrc::Vector2u;                                                      \
+        using uint3    = ::Rtrc::Vector3u;                                                      \
+        using uint4    = ::Rtrc::Vector4u;                                                      \
+        using float4x4 = ::Rtrc::Matrix4x4f;                                                    \
     };                                                                                          \
     struct NAME : _rtrcGroupBase##NAME
 

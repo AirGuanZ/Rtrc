@@ -22,7 +22,7 @@ namespace DeferredRendererDetail
         rtrc_define(Texture2D, gbufferDepth, FS);
         rtrc_define(Texture2D, skyLut,       FS);
 
-        rtrc_uniform(Vector4f,                       gbufferSize);
+        rtrc_uniform(float4,                         gbufferSize);
         rtrc_uniform(CameraConstantBuffer,           camera);
         rtrc_uniform(DirectionalLightConstantBuffer, directionalLight);
     };
