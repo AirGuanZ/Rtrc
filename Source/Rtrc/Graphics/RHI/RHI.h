@@ -79,7 +79,8 @@ enum class Format : uint32_t
     R8G8B8A8_UNorm,
     R32G32_Float,
     R32G32B32A32_Float,
-    R10G10B10A2_UNorm,
+    A2R10G10B10_UNorm,
+    A2B10G10R10_UNorm,
     R11G11B10_UFloat,
 
     D24S8,

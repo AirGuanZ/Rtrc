@@ -86,6 +86,8 @@ class Application : public Uncopyable
         }
 
         input_->LockCursor(true);
+        imgui_->SetInputEnabled(false);
+
         window_.SetFocus();
         timer_.Restart();
     }
@@ -108,18 +110,33 @@ class Application : public Uncopyable
         if(input_->IsKeyDown(KeyCode::LeftAlt))
         {
             input_->LockCursor(!input_->IsCursorLocked());
+            imgui_->SetInputEnabled(!input_->IsCursorLocked()); // Only enable gui input when cursor is not locked
         }
 
-        if(imgui_->Begin("Test Window", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+        auto &imgui = *imgui_;
+        if(imgui.Begin("Test Window", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
         {
-            imgui_->Button("Test Button");
-            imgui_->Text("Test Formatted text: {}", 2.5f);
+            if(imgui.Button("Test Button"))
+            {
+                window_.SetCloseFlag(true);
+            }
+            imgui.Text("Test Formatted text: {}", 2.5f);
 
             static char buffer[256] = {};
-            imgui_->InputText("Test Input", buffer);
-            imgui_->TextUnformatted(buffer);
+            imgui.InputText("Test Input", buffer);
+            imgui.TextUnformatted(buffer);
+
+            imgui.ArrowButton("Test Arrow", ImGuiDir_Right);
+
+            static int comboIndex = 0;
+            imgui.Combo("AAA", &comboIndex, { "A", "B", "C", "D", "E" });
+
+            imgui.ProgressBar(comboIndex / 4.0f);
+
+            static float vMin = 0, vMax = 1;
+            imgui.DragFloatRange2("Test Drag Float Range", &vMin, &vMax, 0.02f, -10, 10);
         }
-        imgui_->End();
+        imgui.End();
 
         // Camera
 

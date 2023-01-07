@@ -193,6 +193,7 @@ struct ImGuiInstance::Data
     ImGuiContext *context = nullptr;
     Timer timer;
 
+    bool enableInput = true;
     Box<EventReceiver> eventReceiver;
 
     RC<Shader>                                  shader;
@@ -217,12 +218,17 @@ ImGuiInstance::ImGuiInstance(Device &device, Window &window)
     data_->device = &device;
     data_->window = &window;
     data_->context = ImGui::CreateContext();
-    WithRawContext([&]
+    Do([&]
     {
         ImGui::GetIO().IniFilename = nullptr;
     });
 
+    data_->enableInput = true;
     data_->eventReceiver = MakeBox<EventReceiver>(data_.get(), &window);
+    Do([&]
+    {
+        ImGui::GetIO().AddFocusEvent(data_->window->HasFocus());
+    });
     
     ShaderCompiler shaderCompiler;
     shaderCompiler.SetDevice(&device);
@@ -266,16 +272,37 @@ void ImGuiInstance::Swap(ImGuiInstance &other) noexcept
     data_.swap(other.data_);
 }
 
+void ImGuiInstance::SetInputEnabled(bool enabled)
+{
+    IMGUI_CONTEXT;
+    data_->enableInput = enabled;
+    ImGui::GetIO().SetAppAcceptingEvents(enabled);
+}
+
+bool ImGuiInstance::IsInputEnabled() const
+{
+    return data_->enableInput;
+}
+
 void ImGuiInstance::Data::WindowFocus(bool focused)
 {
     IMGUI_CONTEXT_EXPLICIT(context);
     ImGui::GetIO().AddFocusEvent(focused);
 }
 
+void ImGuiInstance::ClearFocus()
+{
+    IMGUI_CONTEXT;
+    ImGui::SetWindowFocus(nullptr);
+}
+
 void ImGuiInstance::Data::CursorMove(float x, float y)
 {
     IMGUI_CONTEXT_EXPLICIT(context);
-    ImGui::GetIO().AddMousePosEvent(x, y);
+    if(enableInput)
+    {
+        ImGui::GetIO().AddMousePosEvent(x, y);
+    }
 }
 
 void ImGuiInstance::Data::MouseButton(KeyCode button, bool down)
@@ -328,17 +355,17 @@ void ImGuiInstance::Data::Char(unsigned ch)
     ImGui::GetIO().AddInputCharacter(ch);
 }
 
-void ImGuiInstance::BeginFrame()
+void ImGuiInstance::BeginFrame(const Vector2i &framebufferSize)
 {
     IMGUI_CONTEXT;
     data_->timer.BeginFrame();
     ImGui::GetIO().DeltaTime = data_->timer.GetDeltaSecondsF();
     const Vector2i windowSize = data_->window->GetWindowSize();
-    const Vector2i framebufferSize = data_->window->GetFramebufferSize();
+    const Vector2i tFramebufferSize = framebufferSize.x > 0 && framebufferSize.y > 0 ? framebufferSize : data_->window->GetFramebufferSize();
     ImGui::GetIO().DisplaySize = ImVec2(static_cast<float>(windowSize.x), static_cast<float>(windowSize.y));
     ImGui::GetIO().DisplayFramebufferScale = ImVec2(
-        static_cast<float>(framebufferSize.x) / static_cast<float>(windowSize.x),
-        static_cast<float>(framebufferSize.y) / static_cast<float>(windowSize.y));
+        static_cast<float>(tFramebufferSize.x) / static_cast<float>(windowSize.x),
+        static_cast<float>(tFramebufferSize.y) / static_cast<float>(windowSize.y));
     ImGui::NewFrame();
 }
 
@@ -441,7 +468,7 @@ void ImGuiInstance::RenderImmediately(const TextureRTV &rtv, CommandBuffer &comm
 
     // Inline sampler
 
-    if(auto index = data_->shader->GetBindingGroupIndexForInlineSamplers(); index >= 0)
+    if(int index = data_->shader->GetBindingGroupIndexForInlineSamplers(); index >= 0)
     {
         commandBuffer.BindGraphicsGroup(index, data_->shader->GetBindingGroupForInlineSamplers());
     }
@@ -650,10 +677,10 @@ void ImGuiInstance::EventReceiver::Handle(const CharInputEvent &e)
     data_->Char(e.charCode);
 }
 
-bool ImGuiInstance::Begin(const char *name, bool *open, ImGuiWindowFlags flags)
+bool ImGuiInstance::Begin(const char *label, bool *open, ImGuiWindowFlags flags)
 {
     IMGUI_CONTEXT;
-    return ImGui::Begin(name, open, flags);
+    return ImGui::Begin(label, open, flags);
 }
 
 void ImGuiInstance::End()
@@ -662,10 +689,390 @@ void ImGuiInstance::End()
     return ImGui::End();
 }
 
-bool ImGuiInstance::Button(const char *name, const Vector2f &size)
+bool ImGuiInstance::Button(const char *label, const Vector2f &size)
 {
     IMGUI_CONTEXT;
-    return ImGui::Button(name, ImVec2(size.x, size.y));
+    return ImGui::Button(label, size);
+}
+
+bool ImGuiInstance::SmallButton(const char *label)
+{
+    IMGUI_CONTEXT;
+    return ImGui::SmallButton(label);
+}
+
+bool ImGuiInstance::ArrowButton(const char *strId, ImGuiDir dir)
+{
+    IMGUI_CONTEXT;
+    return ImGui::ArrowButton(strId, dir);
+}
+
+bool ImGuiInstance::CheckBox(const char *label, bool *value)
+{
+    IMGUI_CONTEXT;
+    return ImGui::Checkbox(label, value);
+}
+
+bool ImGuiInstance::RadioButton(const char *label, bool active)
+{
+    IMGUI_CONTEXT;
+    return ImGui::RadioButton(label, active);
+}
+
+void ImGuiInstance::ProgressBar(float fraction, const Vector2f &size, const char *overlay)
+{
+    IMGUI_CONTEXT;
+    return ImGui::ProgressBar(fraction, size, overlay);
+}
+
+void ImGuiInstance::Bullet()
+{
+    IMGUI_CONTEXT;
+    return ImGui::Bullet();
+}
+
+bool ImGuiInstance::BeginCombo(const char *label, const char *previewValue, ImGuiComboFlags flags)
+{
+    IMGUI_CONTEXT;
+    return ImGui::BeginCombo(label, previewValue, flags);
+}
+
+void ImGuiInstance::EndCombo()
+{
+    IMGUI_CONTEXT;
+    return ImGui::EndCombo();
+}
+
+void ImGuiInstance::Combo(const char *label, int *curr, Span<std::string> items, int popupMaxHeightInItems)
+{
+    const int itemCount = static_cast<int>(items.size());
+    auto getItem = [&](int idx, const char **outItem)
+    {
+        if(idx < itemCount)
+        {
+            *outItem = items[idx].c_str();
+            return true;
+        }
+        return false;
+    };
+    Combo(label, curr, getItem, itemCount, popupMaxHeightInItems);
+}
+
+void ImGuiInstance::Combo(const char *label, int *curr, Span<const char*> items, int popupMaxHeightInItems)
+{
+    IMGUI_CONTEXT;
+    ImGui::Combo(label, curr, items.GetData(), static_cast<int>(items.size()), popupMaxHeightInItems);
+}
+
+void ImGuiInstance::Combo(const char *label, int *curr, std::initializer_list<const char*> items, int popupMaxHeightInItems)
+{
+    return Combo(label, curr, Span(items), popupMaxHeightInItems);
+}
+
+void ImGuiInstance::Combo(const char *label, int *curr, const char *itemsSeparatedByZeros, int popupMaxHeightInItems)
+{
+    IMGUI_CONTEXT;
+    ImGui::Combo(label, curr, itemsSeparatedByZeros, popupMaxHeightInItems);
+}
+
+void ImGuiInstance::Combo(const char *label, int *curr, const ItemGetter &getItem, int itemCount, int popupMaxHeightInItems)
+{
+    IMGUI_CONTEXT;
+    auto cGetter = +[](void *userData, int idx, const char **outItem)
+    {
+        auto &getter = *static_cast<const ItemGetter *>(userData);
+        return getter(idx, outItem);
+    };
+    auto getterData = const_cast<void *>(static_cast<const void *>(&getItem));
+    ImGui::Combo(label, curr, cGetter, getterData, itemCount, popupMaxHeightInItems);
+}
+
+bool ImGuiInstance::DragFloat(const char *label, float *v, float vSpeed, float vMin, float vMax, const char *format, ImGuiSliderFlags flags)
+{
+    IMGUI_CONTEXT;
+    return ImGui::DragFloat(label, v, vSpeed, vMin, vMax, format, flags);
+}
+
+bool ImGuiInstance::DragFloat2(const char *label, float *v, float vSpeed, float vMin, float vMax, const char *format, ImGuiSliderFlags flags)
+{
+    IMGUI_CONTEXT;
+    return ImGui::DragFloat2(label, v, vSpeed, vMin, vMax, format, flags);
+}
+
+bool ImGuiInstance::DragFloat3(const char *label, float *v, float vSpeed, float vMin, float vMax, const char *format, ImGuiSliderFlags flags)
+{
+    IMGUI_CONTEXT;
+    return ImGui::DragFloat3(label, v, vSpeed, vMin, vMax, format, flags);
+}
+
+bool ImGuiInstance::DragFloat4(const char *label, float *v, float vSpeed, float vMin, float vMax, const char *format, ImGuiSliderFlags flags)
+{
+    IMGUI_CONTEXT;
+    return ImGui::DragFloat4(label, v, vSpeed, vMin, vMax, format, flags);
+}
+
+bool ImGuiInstance::DragFloat2(const char *label, Vector2f *v, float vSpeed, float vMin, float vMax, const char *format, ImGuiSliderFlags flags)
+{
+    IMGUI_CONTEXT;
+    return DragFloat2(label, &v->x, vSpeed, vMin, vMax, format, flags);
+}
+
+bool ImGuiInstance::DragFloat3(const char *label, Vector3f *v, float vSpeed, float vMin, float vMax, const char *format, ImGuiSliderFlags flags)
+{
+    IMGUI_CONTEXT;
+    return DragFloat3(label, &v->x, vSpeed, vMin, vMax, format, flags);
+}
+
+bool ImGuiInstance::DragFloat4(const char *label, Vector4f *v, float vSpeed, float vMin, float vMax, const char *format, ImGuiSliderFlags flags)
+{
+    IMGUI_CONTEXT;
+    return DragFloat4(label, &v->x, vSpeed, vMin, vMax, format, flags);
+}
+
+bool ImGuiInstance::DragInt(const char *label, int *v, float vSpeed, int vMin, int vMax, const char *format, ImGuiSliderFlags flags)
+{
+    IMGUI_CONTEXT;
+    return ImGui::DragInt(label, v, vSpeed, vMin, vMax, format, flags);
+}
+
+bool ImGuiInstance::DragInt2(const char *label, int *v, float vSpeed, int vMin, int vMax, const char *format, ImGuiSliderFlags flags)
+{
+    IMGUI_CONTEXT;
+    return ImGui::DragInt2(label, v, vSpeed, vMin, vMax, format, flags);
+}
+
+bool ImGuiInstance::DragInt3(const char *label, int *v, float vSpeed, int vMin, int vMax, const char *format, ImGuiSliderFlags flags)
+{
+    IMGUI_CONTEXT;
+    return ImGui::DragInt3(label, v, vSpeed, vMin, vMax, format, flags);
+}
+
+bool ImGuiInstance::DragInt4(const char *label, int *v, float vSpeed, int vMin, int vMax, const char *format, ImGuiSliderFlags flags)
+{
+    IMGUI_CONTEXT;
+    return ImGui::DragInt4(label, v, vSpeed, vMin, vMax, format, flags);
+}
+
+bool ImGuiInstance::DragInt2(const char *label, Vector2i *v, float vSpeed, int vMin, int vMax, const char *format, ImGuiSliderFlags flags)
+{
+    IMGUI_CONTEXT;
+    return DragInt2(label, &v->x, vSpeed, vMin, vMax, format, flags);
+}
+
+bool ImGuiInstance::DragInt3(const char *label, Vector3i *v, float vSpeed, int vMin, int vMax, const char *format, ImGuiSliderFlags flags)
+{
+    IMGUI_CONTEXT;
+    return DragInt3(label, &v->x, vSpeed, vMin, vMax, format, flags);
+}
+
+bool ImGuiInstance::DragInt4(const char *label, Vector4i *v, float vSpeed, int vMin, int vMax, const char *format, ImGuiSliderFlags flags)
+{
+    IMGUI_CONTEXT;
+    return DragInt4(label, &v->x, vSpeed, vMin, vMax, format, flags);
+}
+
+bool ImGuiInstance::DragFloatRange2(const char *label, float *currMin, float *currMax, float vSpeed, float vMin, float vMax, const char *format, const char *formatMax, ImGuiSliderFlags flags)
+{
+    IMGUI_CONTEXT;
+    return ImGui::DragFloatRange2(label, currMin, currMax, vSpeed, vMin, vMax, format, formatMax, flags);
+}
+
+bool ImGuiInstance::DragIntRange2(const char *label, int *currMin, int *currMax, float vSpeed, int vMin, int vMax, const char *format, const char *formatMax, ImGuiSliderFlags flags)
+{
+    IMGUI_CONTEXT;
+    return ImGui::DragIntRange2(label, currMin, currMax, vSpeed, vMin, vMax, format, formatMax, flags);
+}
+
+bool ImGuiInstance::SliderFloat(const char *label, float *v, float vMin, float vMax, const char *format, ImGuiSliderFlags flags)
+{
+    IMGUI_CONTEXT;
+    return ImGui::SliderFloat(label, v, vMin, vMax, format, flags);
+}
+
+bool ImGuiInstance::SliderFloat2(const char *label, float *v, float vMin, float vMax, const char *format, ImGuiSliderFlags flags)
+{
+    IMGUI_CONTEXT;
+    return ImGui::SliderFloat2(label, v, vMin, vMax, format, flags);
+}
+
+bool ImGuiInstance::SliderFloat3(const char *label, float *v, float vMin, float vMax, const char *format, ImGuiSliderFlags flags)
+{
+    IMGUI_CONTEXT;
+    return ImGui::SliderFloat3(label, v, vMin, vMax, format, flags);
+}
+
+bool ImGuiInstance::SliderFloat4(const char *label, float *v, float vMin, float vMax, const char *format, ImGuiSliderFlags flags)
+{
+    IMGUI_CONTEXT;
+    return ImGui::SliderFloat4(label, v, vMin, vMax, format, flags);
+}
+
+bool ImGuiInstance::SliderFloat2(const char *label, Vector2f *v, float vMin, float vMax, const char *format, ImGuiSliderFlags flags)
+{
+    return SliderFloat2(label, &v->x, vMin, vMax, format, flags);
+}
+
+bool ImGuiInstance::SliderFloat3(const char *label, Vector3f *v, float vMin, float vMax, const char *format, ImGuiSliderFlags flags)
+{
+    return SliderFloat3(label, &v->x, vMin, vMax, format, flags);
+}
+
+bool ImGuiInstance::SliderFloat4(const char *label, Vector4f *v, float vMin, float vMax, const char *format, ImGuiSliderFlags flags)
+{
+    return SliderFloat4(label, &v->x, vMin, vMax, format, flags);
+}
+
+bool ImGuiInstance::SliderInt(const char *label, int *v, int vMin, int vMax, const char *format, ImGuiSliderFlags flags)
+{
+    IMGUI_CONTEXT;
+    return ImGui::SliderInt(label, v, vMin, vMax, format, flags);
+}
+
+bool ImGuiInstance::SliderInt2(const char *label, int *v, int vMin, int vMax, const char *format, ImGuiSliderFlags flags)
+{
+    IMGUI_CONTEXT;
+    return ImGui::SliderInt2(label, v, vMin, vMax, format, flags);
+}
+
+bool ImGuiInstance::SliderInt3(const char *label, int *v, int vMin, int vMax, const char *format, ImGuiSliderFlags flags)
+{
+    IMGUI_CONTEXT;
+    return ImGui::SliderInt3(label, v, vMin, vMax, format, flags);
+}
+
+bool ImGuiInstance::SliderInt4(const char *label, int *v, int vMin, int vMax, const char *format, ImGuiSliderFlags flags)
+{
+    IMGUI_CONTEXT;
+    return ImGui::SliderInt4(label, v, vMin, vMax, format, flags);
+}
+
+bool ImGuiInstance::SliderInt2(const char *label, Vector2i *v, int vMin, int vMax, const char *format, ImGuiSliderFlags flags)
+{
+    return SliderInt2(label, &v->x, vMin, vMax, format, flags);
+}
+
+bool ImGuiInstance::SliderInt3(const char *label, Vector3i *v, int vMin, int vMax, const char *format, ImGuiSliderFlags flags)
+{
+    return SliderInt3(label, &v->x, vMin, vMax, format, flags);
+}
+
+bool ImGuiInstance::SliderInt4(const char *label, Vector4i *v, int vMin, int vMax, const char *format, ImGuiSliderFlags flags)
+{
+    return SliderInt4(label, &v->x, vMin, vMax, format, flags);
+}
+
+bool ImGuiInstance::SliderAngle(const char *label, float *vRad, float vDegreeMin, float vDegreeMax, const char *format, ImGuiSliderFlags flags)
+{
+    IMGUI_CONTEXT;
+    return ImGui::SliderAngle(label, vRad, vDegreeMin, vDegreeMax, format, flags);
+}
+
+bool ImGuiInstance::InputFloat(const char *label, float *v, float step, float stepFast, const char *format, ImGuiInputTextFlags flags)
+{
+    IMGUI_CONTEXT;
+    return ImGui::InputFloat(label, v, step, stepFast, format, flags);
+}
+
+bool ImGuiInstance::InputDouble(const char *label, double *v, double step, double stepFast, const char *format, ImGuiInputTextFlags flags)
+{
+    IMGUI_CONTEXT;
+    return ImGui::InputDouble(label, v, step, stepFast, format, flags);
+}
+
+bool ImGuiInstance::InputInt(const char *label, int *v, int step, int stepFast, ImGuiInputTextFlags flags)
+{
+    IMGUI_CONTEXT;
+    return ImGui::InputInt(label, v, step, stepFast, flags);
+}
+
+bool ImGuiInstance::InputFloat2(const char *label, float *v, const char *format, ImGuiInputTextFlags flags)
+{
+    IMGUI_CONTEXT;
+    return ImGui::InputFloat2(label, v, format, flags);
+}
+
+bool ImGuiInstance::InputFloat3(const char *label, float *v, const char *format, ImGuiInputTextFlags flags)
+{
+    IMGUI_CONTEXT;
+    return ImGui::InputFloat3(label, v, format, flags);
+}
+
+bool ImGuiInstance::InputFloat4(const char *label, float *v, const char *format, ImGuiInputTextFlags flags)
+{
+    IMGUI_CONTEXT;
+    return ImGui::InputFloat4(label, v, format, flags);
+}
+
+bool ImGuiInstance::InputFloat2(const char *label, Vector2f *v, const char *format, ImGuiInputTextFlags flags)
+{
+    return InputFloat2(label, &v->x, format, flags);
+}
+
+bool ImGuiInstance::InputFloat3(const char *label, Vector3f *v, const char *format, ImGuiInputTextFlags flags)
+{
+    return InputFloat3(label, &v->x, format, flags);
+}
+
+bool ImGuiInstance::InputFloat4(const char *label, Vector4f *v, const char *format, ImGuiInputTextFlags flags)
+{
+    return InputFloat4(label, &v->x, format, flags);
+}
+
+bool ImGuiInstance::InputInt2(const char *label, int *v, ImGuiInputTextFlags flags)
+{
+    IMGUI_CONTEXT;
+    return ImGui::InputInt2(label, v, flags);
+}
+
+bool ImGuiInstance::InputInt3(const char *label, int *v, ImGuiInputTextFlags flags)
+{
+    IMGUI_CONTEXT;
+    return ImGui::InputInt3(label, v, flags);
+}
+
+bool ImGuiInstance::InputInt4(const char *label, int *v, ImGuiInputTextFlags flags)
+{
+    IMGUI_CONTEXT;
+    return ImGui::InputInt4(label, v, flags);
+}
+
+bool ImGuiInstance::InputInt2(const char *label, Vector2i *v, ImGuiInputTextFlags flags)
+{
+    return InputInt2(label, &v->x, flags);
+}
+
+bool ImGuiInstance::InputInt3(const char *label, Vector3i *v, ImGuiInputTextFlags flags)
+{
+    return InputInt3(label, &v->x, flags);
+}
+
+bool ImGuiInstance::InputInt4(const char *label, Vector4i *v, ImGuiInputTextFlags flags)
+{
+    return InputInt4(label, &v->x, flags);
+}
+
+bool ImGuiInstance::ColorEdit3(const char *label, float rgb[3], ImGuiColorEditFlags flags)
+{
+    IMGUI_CONTEXT;
+    return ImGui::ColorEdit3(label, rgb, flags);
+}
+
+bool ImGuiInstance::ColorEdit4(const char *label, float rgba[4], ImGuiColorEditFlags flags)
+{
+    IMGUI_CONTEXT;
+    return ImGui::ColorEdit4(label, rgba, flags);
+}
+
+bool ImGuiInstance::ColorPicker3(const char *label, float rgb[3], ImGuiColorEditFlags flags)
+{
+    IMGUI_CONTEXT;
+    return ImGui::ColorPicker3(label, rgb, flags);
+}
+
+bool ImGuiInstance::ColorPicker4(const char *label, float rgba[4], ImGuiColorEditFlags flags)
+{
+    IMGUI_CONTEXT;
+    return ImGui::ColorPicker4(label, rgba, flags);
 }
 
 void ImGuiInstance::TextUnformatted(std::string_view text)
@@ -681,3 +1088,9 @@ bool ImGuiInstance::InputText(const char *label, MutableSpan<char> buffer, ImGui
 }
 
 RTRC_END
+
+constexpr ImVec2::ImVec2(const Rtrc::Vector2<float> &v)
+    : ImVec2(v.x, v.y)
+{
+
+}

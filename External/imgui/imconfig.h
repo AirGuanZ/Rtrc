@@ -18,6 +18,10 @@ struct ImGuiContext;
 inline thread_local ImGuiContext* ThreadLocalImGuiContext = nullptr;
 #define GImGui ThreadLocalImGuiContext
 
+namespace Rtrc { template<typename T> class Vector2; }
+
+#define IM_VEC2_CLASS_EXTRA constexpr ImVec2(const Rtrc::Vector2<float> &v);
+
 //---- Define assertion handler. Defaults to calling assert().
 // If your macro uses multiple statements, make sure is enclosed in a 'do { .. } while (0)' block so it can be used as a single statement.
 //#define IM_ASSERT(_EXPR)  MyAssert(_EXPR)
