@@ -61,6 +61,7 @@ RTRC_RHI_FORWARD_DECL(MemoryBlock)
 
 struct GraphicsPipelineDesc;
 struct ComputePipelineDesc;
+class BindingGroupUpdateBatch;
 
 // =============================== rhi enums ===============================
 
@@ -859,6 +860,8 @@ public:
     virtual Ptr<BindingGroup>       CreateBindingGroup(const Ptr<BindingGroupLayout> &bindingGroupLayout) = 0;
     virtual Ptr<BindingLayout>      CreateBindingLayout(const BindingLayoutDesc &desc) = 0;
 
+    virtual void UpdateBindingGroups(const BindingGroupUpdateBatch &batch) = 0;
+
     virtual Ptr<Texture> CreateTexture(const TextureDesc &desc) = 0;
     virtual Ptr<Buffer>  CreateBuffer(const BufferDesc &desc) = 0;
     virtual Ptr<Sampler> CreateSampler(const SamplerDesc &desc) = 0;
@@ -913,25 +916,60 @@ public:
     virtual const BindingGroupLayoutDesc &GetDesc() const = 0;
 };
 
+struct ConstantBufferUpdate
+{
+    const Buffer *buffer;
+    size_t offset;
+    size_t range;
+};
+
+class BindingGroupUpdateBatch
+{
+public:
+
+    using UpdateData = Variant<
+        const BufferSRV *,
+        const BufferUAV *,
+        const TextureSRV *,
+        const TextureUAV *,
+        const Sampler *,
+        ConstantBufferUpdate>;
+
+    struct Record
+    {
+        BindingGroup *group;
+        int index;
+        UpdateData data;
+    };
+    
+    void Append(BindingGroup &group, int index, const BufferSRV  *bufferSRV);
+    void Append(BindingGroup &group, int index, const BufferUAV  *bufferUAV);
+    void Append(BindingGroup &group, int index, const TextureSRV *textureSRV);
+    void Append(BindingGroup &group, int index, const TextureUAV *textureUAV);
+    void Append(BindingGroup &group, int index, const Sampler    *sampler);
+    void Append(BindingGroup &group, int index, const ConstantBufferUpdate &cbuffer);
+
+    Span<Record> GetRecords() const { return records_; }
+
+private:
+
+    friend class Device;
+
+    std::vector<Record> records_;
+};
+
 class BindingGroup : public RHIObject
 {
 public:
 
-    struct UniformBufferModifyParameters
-    {
-        Ptr<Buffer> buffer;
-        size_t      offset;
-        size_t      range;
-    };
-
     virtual const BindingGroupLayout *GetLayout() const = 0;
 
-    virtual void ModifyMember(int index, const Ptr<BufferSRV>  &bufferSRV) = 0;
-    virtual void ModifyMember(int index, const Ptr<BufferUAV>  &bufferUAV) = 0;
-    virtual void ModifyMember(int index, const Ptr<TextureSRV> &textureSRV) = 0;
-    virtual void ModifyMember(int index, const Ptr<TextureUAV> &textureUAV) = 0;
-    virtual void ModifyMember(int index, const Ptr<Sampler>    &sampler) = 0;
-    virtual void ModifyMember(int index, const Ptr<Buffer>     &uniformBuffer, size_t offset, size_t range) = 0;
+    virtual void ModifyMember(int index, BufferSRV  *bufferSRV) = 0;
+    virtual void ModifyMember(int index, BufferUAV  *bufferUAV) = 0;
+    virtual void ModifyMember(int index, TextureSRV *textureSRV) = 0;
+    virtual void ModifyMember(int index, TextureUAV *textureUAV) = 0;
+    virtual void ModifyMember(int index, Sampler    *sampler) = 0;
+    virtual void ModifyMember(int index, const ConstantBufferUpdate &cbuffer) = 0;
 };
 
 class BindingLayout : public RHIObject
@@ -1326,6 +1364,37 @@ inline Viewport Viewport::Create(const TexturePtr &tex, float minDepth, float ma
 inline Scissor Scissor::Create(const TexturePtr &tex)
 {
     return Create(tex->GetDesc());
+}
+
+inline void BindingGroupUpdateBatch::Append(
+    BindingGroup &group, int index, const ConstantBufferUpdate &cbuffer)
+{
+    records_.push_back({ &group, index, cbuffer });
+}
+
+inline void BindingGroupUpdateBatch::Append(BindingGroup &group, int index, const BufferSRV *bufferSRV)
+{
+    records_.push_back({ &group, index, bufferSRV });
+}
+
+inline void BindingGroupUpdateBatch::Append(BindingGroup &group, int index, const BufferUAV *bufferUAV)
+{
+    records_.push_back({ &group, index, bufferUAV });
+}
+
+inline void BindingGroupUpdateBatch::Append(BindingGroup &group, int index, const Sampler *sampler)
+{
+    records_.push_back({ &group, index, sampler });
+}
+
+inline void BindingGroupUpdateBatch::Append(BindingGroup &group, int index, const TextureSRV *textureSRV)
+{
+    records_.push_back({ &group, index, textureSRV });
+}
+
+inline void BindingGroupUpdateBatch::Append(BindingGroup &group, int index, const TextureUAV *textureUAV)
+{
+    records_.push_back({ &group, index, textureUAV });
 }
 
 template <typename...Ts>

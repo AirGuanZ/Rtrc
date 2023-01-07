@@ -155,14 +155,18 @@ inline const RC<const BindingGroupLayout> &BindingGroup::GetLayout() const
 
 inline void BindingGroup::Set(int slot, RC<Buffer> cbuffer, size_t offset, size_t size)
 {
-    rhiGroup_->ModifyMember(slot, cbuffer->GetRHIObject(), offset, size);
+    rhiGroup_->ModifyMember(slot, RHI::ConstantBufferUpdate{ cbuffer->GetRHIObject().Get(), offset, size });
     boundObjects_[slot] = std::move(cbuffer);
 }
 
 inline void BindingGroup::Set(int slot, RC<SubBuffer> cbuffer)
 {
-    rhiGroup_->ModifyMember(
-        slot, cbuffer->GetFullBuffer()->GetRHIObject(), cbuffer->GetSubBufferOffset(), cbuffer->GetSubBufferSize());
+    RHI::ConstantBufferUpdate update =
+    {
+        cbuffer->GetFullBuffer()->GetRHIObject().Get(),
+        cbuffer->GetSubBufferOffset(),
+        cbuffer->GetSubBufferSize() };
+    rhiGroup_->ModifyMember(slot, update);
     boundObjects_[slot] = std::move(cbuffer);
 }
 

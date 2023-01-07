@@ -5,6 +5,7 @@
 #include <Rtrc/Graphics/RHI/Vulkan/Context/Device.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Context/Surface.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Context/Swapchain.h>
+#include <Rtrc/Graphics/RHI/Vulkan/Pipeline/BindingGroup.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/BindingGroupLayout.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/BindingLayout.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/ComputePipeline.h>
@@ -14,9 +15,12 @@
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/Queue.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/Semaphore.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Buffer.h>
+#include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferSRV.h>
+#include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferUAV.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/MemoryBlock.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Sampler.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Texture.h>
+#include <Rtrc/Graphics/RHI/Vulkan/Resource/TextureView.h>
 #include <Rtrc/Utility/Enumerate.h>
 #include <Rtrc/Utility/StaticVector.h>
 #include <Rtrc/Utility/Unreachable.h>
@@ -725,6 +729,49 @@ Ptr<BindingLayout> VulkanDevice::CreateBindingLayout(const BindingLayoutDesc &de
     RTRC_SCOPE_FAIL{ vkDestroyPipelineLayout(device_, layout, VK_ALLOC); };
 
     return MakePtr<VulkanBindingLayout>(desc, device_, layout);
+}
+
+void VulkanDevice::UpdateBindingGroups(const BindingGroupUpdateBatch &batch)
+{
+    LinearAllocator arena(1024 * 1024);
+    auto records = batch.GetRecords();
+    std::vector<VkWriteDescriptorSet> writes(records.GetSize());
+    for(auto &&[i, record] : Enumerate(records))
+    {
+        auto group = static_cast<VulkanBindingGroupInstance *>(record.group);
+        record.data.Match(
+            [&](const ConstantBufferUpdate &update)
+            {
+                auto buffer = static_cast<const VulkanBuffer *>(update.buffer);
+                group->Translate(arena, record.index, buffer, update.offset, update.range, writes[i]);
+            },
+            [&](const BufferSRV *bufferSrv)
+            {
+                auto srv = static_cast<const VulkanBufferSRV *>(bufferSrv);
+                group->Translate(arena, record.index, srv, writes[i]);
+            },
+            [&](const BufferUAV *bufferUav)
+            {
+                auto uav = static_cast<const VulkanBufferUAV *>(bufferUav);
+                group->Translate(arena, record.index, uav, writes[i]);
+            },
+            [&](const TextureSRV *textureSrv)
+            {
+                auto srv = static_cast<const VulkanTextureSRV *>(textureSrv);
+                group->Translate(arena, record.index, srv, writes[i]);
+            },
+            [&](const TextureUAV *textureUav)
+            {
+                auto uav = static_cast<const VulkanTextureUAV *>(textureUav);
+                group->Translate(arena, record.index, uav, writes[i]);
+            },
+            [&](const Sampler *sampler)
+            {
+                auto vkSampler = static_cast<const VulkanSampler *>(sampler);
+                group->Translate(arena, record.index, vkSampler, writes[i]);
+            });
+    }
+    vkUpdateDescriptorSets(device_, records.GetSize(), writes.data(), 0, nullptr);
 }
 
 Ptr<Texture> VulkanDevice::CreateTexture(const TextureDesc &desc)

@@ -135,6 +135,9 @@ class Application : public Uncopyable
 
             static float vMin = 0, vMax = 1;
             imgui.DragFloatRange2("Test Drag Float Range", &vMin, &vMax, 0.02f, -10, 10);
+
+            static Vector4f color;
+            imgui.ColorEdit4("Test Color Edit", &color.x, ImGuiColorEditFlags_HDR | ImGuiColorEditFlags_Float);
         }
         imgui.End();
 
@@ -196,11 +199,11 @@ public:
         device_->BeginRenderLoop();
         while(!window_.ShouldClose())
         {
-            timer_.BeginFrame();
             if(!device_->BeginFrame())
             {
                 continue;
             }
+            timer_.BeginFrame();
             imgui_->BeginFrame();
             Frame();
         }

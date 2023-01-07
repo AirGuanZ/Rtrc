@@ -172,6 +172,7 @@ void DynamicBuffer::SetData(const T &data)
     constexpr size_t deviceSize = 4 * ConstantBufferDetail::GetConstantBufferDWordCount<T>();
     if constexpr(deviceSize > 2048)
     {
+        // Avoid dynamic allocation for small buffer
         std::array<uint8_t, deviceSize> flattenData;
         ConstantBufferDetail::ForEachFlattenMember<T>([&]<typename M>(const char *, size_t hostOffset, size_t deviceOffset)
         {
