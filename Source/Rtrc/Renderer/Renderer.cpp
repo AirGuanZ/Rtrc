@@ -16,11 +16,11 @@ namespace DeferredRendererDetail
 
     rtrc_group(DeferredLighting_Pass, Pass)
     {
-        rtrc_define(Texture2D<float4>, gbufferA,     FS);
-        rtrc_define(Texture2D<float4>, gbufferB,     FS);
-        rtrc_define(Texture2D<float4>, gbufferC,     FS);
-        rtrc_define(Texture2D<float>,  gbufferDepth, FS);
-        rtrc_define(Texture2D<float3>, skyLut,       FS);
+        rtrc_define(Texture2D, gbufferA,     FS);
+        rtrc_define(Texture2D, gbufferB,     FS);
+        rtrc_define(Texture2D, gbufferC,     FS);
+        rtrc_define(Texture2D, gbufferDepth, FS);
+        rtrc_define(Texture2D, skyLut,       FS);
 
         rtrc_uniform(Vector4f,                       gbufferSize);
         rtrc_uniform(CameraConstantBuffer,           camera);
@@ -63,7 +63,7 @@ Renderer::RenderGraphInterface Renderer::AddToRenderGraph(
     const auto gbufferA = renderGraph->CreateTexture(RHI::TextureDesc
     {
         .dim                  = RHI::TextureDimension::Tex2D,
-        .format               = RHI::Format::R10G10B10A2_UNorm,
+        .format               = RHI::Format::A2R10G10B10_UNorm,
         .width                = rtWidth,
         .height               = rtHeight,
         .arraySize            = 1,

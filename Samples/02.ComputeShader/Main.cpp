@@ -10,8 +10,8 @@ rtrc_group(MainGroup)
     {
         rtrc_var(float, scale) = 0;
     };
-    rtrc_define(Texture2D<float4>,            InputTexture);
-    rtrc_define(RWTexture2D<float4>,          OutputTexture);
+    rtrc_define(Texture2D,                    InputTexture);
+    rtrc_define(RWTexture2D,                  OutputTexture);
     rtrc_define(ConstantBuffer<ScaleSetting>, ScaleSetting);
 };
 

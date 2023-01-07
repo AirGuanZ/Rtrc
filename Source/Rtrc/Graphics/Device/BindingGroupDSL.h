@@ -17,8 +17,7 @@ class Sampler;
 
 namespace BindingGroupDSL
 {
-
-    template<typename T>
+    
     struct MemberProxy_Texture2D
     {
         static constexpr RHI::BindingType BindingType = RHI::BindingType::Texture2D;
@@ -36,8 +35,7 @@ namespace BindingGroupDSL
             return *this;
         }
     };
-
-    template<typename T>
+    
     struct MemberProxy_RWTexture2D
     {
         static constexpr RHI::BindingType BindingType = RHI::BindingType::RWTexture2D;
@@ -55,8 +53,7 @@ namespace BindingGroupDSL
             return *this;
         }
     };
-
-    template<typename T>
+    
     struct MemberProxy_Texture3D
     {
         static constexpr RHI::BindingType BindingType = RHI::BindingType::Texture3D;
@@ -68,8 +65,7 @@ namespace BindingGroupDSL
             return *this;
         }
     };
-
-    template<typename T>
+    
     struct MemberProxy_RWTexture3D
     {
         static constexpr RHI::BindingType BindingType = RHI::BindingType::RWTexture3D;
@@ -81,8 +77,7 @@ namespace BindingGroupDSL
             return *this;
         }
     };
-
-    template<typename T>
+    
     struct MemberProxy_Texture2DArray
     {
         static constexpr RHI::BindingType BindingType = RHI::BindingType::Texture2DArray;
@@ -94,8 +89,7 @@ namespace BindingGroupDSL
             return *this;
         }
     };
-
-    template<typename T>
+    
     struct MemberProxy_RWTexture2DArray
     {
         static constexpr RHI::BindingType BindingType = RHI::BindingType::RWTexture2DArray;
@@ -107,8 +101,7 @@ namespace BindingGroupDSL
             return *this;
         }
     };
-
-    template<typename T>
+    
     struct MemberProxy_Texture3DArray
     {
         static constexpr RHI::BindingType BindingType = RHI::BindingType::Texture3DArray;
@@ -120,8 +113,7 @@ namespace BindingGroupDSL
             return *this;
         }
     };
-
-    template<typename T>
+    
     struct MemberProxy_RWTexture3DArray
     {
         static constexpr RHI::BindingType BindingType = RHI::BindingType::RWTexture3DArray;
@@ -133,8 +125,7 @@ namespace BindingGroupDSL
             return *this;
         }
     };
-
-    template<typename T>
+    
     struct MemberProxy_Buffer
     {
         static constexpr RHI::BindingType BindingType = RHI::BindingType::Buffer;
@@ -142,12 +133,12 @@ namespace BindingGroupDSL
 
         auto &operator=(BufferSRV value)
         {
+            assert(value.GetRHIObject()->GetDesc().format != RHI::Format::Unknown);
             _rtrcObj = std::move(value);
             return *this;
         }
     };
-
-    template<typename T>
+    
     struct MemberProxy_RWBuffer
     {
         static constexpr RHI::BindingType BindingType = RHI::BindingType::RWBuffer;
@@ -155,34 +146,35 @@ namespace BindingGroupDSL
 
         auto &operator=(BufferUAV value)
         {
+            assert(value.GetRHIObject()->GetDesc().format != RHI::Format::Unknown);
             _rtrcObj = std::move(value);
             return *this;
         }
     };
-
-    template<typename T>
+    
     struct MemberProxy_StructuredBuffer
     {
         static constexpr RHI::BindingType BindingType = RHI::BindingType::StructuredBuffer;
-        using Element = T;
+
         BufferSRV _rtrcObj;
 
         auto &operator=(BufferSRV value)
         {
+            assert(value.GetRHIObject()->GetDesc().stride);
             _rtrcObj = std::move(value);
             return *this;
         }
     };
-
-    template<typename T>
+    
     struct MemberProxy_RWStructuredBuffer
     {
         static constexpr RHI::BindingType BindingType = RHI::BindingType::RWStructuredBuffer;
-        using Element = T;
+
         BufferUAV _rtrcObj;
 
         auto &operator=(BufferUAV value)
         {
+            assert(value.GetRHIObject()->GetDesc().stride);
             _rtrcObj = std::move(value);
             return *this;
         }
@@ -204,6 +196,20 @@ namespace BindingGroupDSL
         auto &operator=(const T &value)
         {
             static_cast<T &>(*this) = value;
+            return *this;
+        }
+    };
+    
+    template<>
+    struct MemberProxy_ConstantBuffer<void>
+    {
+        static constexpr RHI::BindingType BindingType = RHI::BindingType::ConstantBuffer;
+
+        RC<DynamicBuffer> _rtrcObj;
+
+        auto &operator=(RC<DynamicBuffer> value)
+        {
+            _rtrcObj = std::move(value);
             return *this;
         }
     };

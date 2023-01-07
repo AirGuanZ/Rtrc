@@ -8,28 +8,28 @@ namespace AtmosphereDetail
 
     rtrc_group(TransmittanceLutPass, Pass)
     {
-        rtrc_define(RWTexture2D<float4>,   TransmittanceTextureRW);
+        rtrc_define(RWTexture2D,           TransmittanceTextureRW);
         rtrc_uniform(int2,                 outputResolution);
         rtrc_uniform(AtmosphereProperties, atmosphere);
     };
 
     rtrc_group(MultiScatterLutPass, Pass)
     {
-        rtrc_define(RWTexture2D<float4>,      MultiScatterTextureRW);
-        rtrc_define(StructuredBuffer<float2>, RawDirSamples);
-        rtrc_define(Texture2D<float3>,        TransmittanceLut);
-        rtrc_uniform(int2,                    outputResolution);
-        rtrc_uniform(int,                     dirSampleCount);
-        rtrc_uniform(int,                     rayMarchStepCount);
-        rtrc_uniform(AtmosphereProperties,    atmosphere);
-        rtrc_uniform(float3,                  terrainAlbedo);
+        rtrc_define(RWTexture2D,           MultiScatterTextureRW);
+        rtrc_define(StructuredBuffer,      RawDirSamples);
+        rtrc_define(Texture2D,             TransmittanceLut);
+        rtrc_uniform(int2,                 outputResolution);
+        rtrc_uniform(int,                  dirSampleCount);
+        rtrc_uniform(int,                  rayMarchStepCount);
+        rtrc_uniform(AtmosphereProperties, atmosphere);
+        rtrc_uniform(float3,               terrainAlbedo);
     };
 
     rtrc_group(SkyLutPass, Pass)
     {
-        rtrc_define(RWTexture2D<float4>,   SkyLutTextureRW);
-        rtrc_define(Texture2D<float3>,     TransmittanceLutTexture);
-        rtrc_define(Texture2D<float3>,     MultiScatterLutTexture);
+        rtrc_define(RWTexture2D,           SkyLutTextureRW);
+        rtrc_define(Texture2D,             TransmittanceLutTexture);
+        rtrc_define(Texture2D,             MultiScatterLutTexture);
         rtrc_uniform(AtmosphereProperties, atmosphere);
         rtrc_uniform(int2,                 outputResolution);
         rtrc_uniform(int,                  rayMarchStepCount);

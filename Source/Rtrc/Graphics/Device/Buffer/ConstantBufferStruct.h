@@ -32,9 +32,9 @@ namespace ConstantBufferDetail
     {
         if constexpr(std::is_array_v<T>)
         {
-            using Elem = typename ArrayTrait<T>::Element;
+            using Element = typename ArrayTrait<T>::Element;
             constexpr size_t Size = ArrayTrait<T>::Size;
-            constexpr size_t elemSize = GetConstantBufferDWordCount<Elem>();
+            constexpr size_t elemSize = GetConstantBufferDWordCount<Element>();
             return Size * UpAlignTo4(elemSize);
         }
         else if constexpr(RtrcStruct<T>)
