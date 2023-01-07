@@ -128,6 +128,7 @@ public:
     void _internalRelease(BindingGroupLayout &layout);
     void _internalRelease(BindingLayout &layout);
     ConstantBufferManagerInterface *_internalGetDefaultConstantBufferManager();
+    const RHI::DevicePtr &_internalGetRHIDevice();
 
 private:
 
@@ -165,7 +166,8 @@ inline void BindingGroup::Set(int slot, RC<SubBuffer> cbuffer)
     {
         cbuffer->GetFullBuffer()->GetRHIObject().Get(),
         cbuffer->GetSubBufferOffset(),
-        cbuffer->GetSubBufferSize() };
+        cbuffer->GetSubBufferSize()
+    };
     rhiGroup_->ModifyMember(slot, update);
     boundObjects_[slot] = std::move(cbuffer);
 }

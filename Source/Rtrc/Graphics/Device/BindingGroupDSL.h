@@ -453,8 +453,10 @@ void ApplyBindingGroup(BindingGroup &group, const T &value)
 }
 
 template<BindingGroupDSL::RtrcGroupStruct T>
-void ApplyBindingGroup(ConstantBufferManagerInterface *cbMgr, BindingGroup &group, const T &value)
+void ApplyBindingGroup(RHI::Device *device, ConstantBufferManagerInterface *cbMgr, BindingGroup &group, const T &value)
 {
+    RHI::BindingGroupUpdateBatch batch;
+
     int index = 0;
     T::ForEachFlattenMember(
         [&]<bool IsUniform, typename M, typename A>(const char *name, RHI::ShaderStageFlag stages, const A &accessor)
@@ -468,7 +470,12 @@ void ApplyBindingGroup(ConstantBufferManagerInterface *cbMgr, BindingGroup &grou
             {
                 if(accessor(&value)->_rtrcObj)
                 {
-                    group.Set(index++, accessor(&value)->_rtrcObj);
+                    auto cbuffer = accessor(&value)->_rtrcObj;
+                    batch.Append(*group.GetRHIObject(), index++, RHI::ConstantBufferUpdate{
+                    cbuffer->GetFullBuffer()->GetRHIObject().Get(),
+                    cbuffer->GetSubBufferOffset(),
+                    cbuffer->GetSubBufferSize()
+                    });
                 }
                 else
                 {
@@ -480,12 +487,16 @@ void ApplyBindingGroup(ConstantBufferManagerInterface *cbMgr, BindingGroup &grou
                             "setting constant buffer {} without giving pre-created cb object", name));
                     }
                     auto cbuffer = cbMgr->CreateConstantBuffer(static_cast<const CBufferStruct &>(*accessor(&value)));
-                    group.Set(index++, std::move(cbuffer));
+                    batch.Append(*group.GetRHIObject(), index++, RHI::ConstantBufferUpdate{
+                    cbuffer->GetFullBuffer()->GetRHIObject().Get(),
+                    cbuffer->GetSubBufferOffset(),
+                    cbuffer->GetSubBufferSize()
+                    });
                 }
             }
             else
             {
-                group.Set(index++, accessor(&value)->_rtrcObj);
+                batch.Append(*group.GetRHIObject(), index++, accessor(&value)->_rtrcObj.GetRHIObject().Get());
             }
         }
     });
@@ -499,8 +510,14 @@ void ApplyBindingGroup(ConstantBufferManagerInterface *cbMgr, BindingGroup &grou
         });
 
         auto cbuffer = cbMgr->CreateConstantBuffer(deviceData.data(), deviceData.size());
-        group.Set(index++, std::move(cbuffer));
+        batch.Append(*group.GetRHIObject(), index++, RHI::ConstantBufferUpdate{
+            cbuffer->GetFullBuffer()->GetRHIObject().Get(),
+            cbuffer->GetSubBufferOffset(),
+            cbuffer->GetSubBufferSize()
+        });
     }
+
+    device->UpdateBindingGroups(batch);
 }
 
 template<BindingGroupDSL::RtrcGroupStruct T>
@@ -510,16 +527,17 @@ void ApplyBindingGroup(const RC<BindingGroup> &group, const T &value)
 }
 
 template<BindingGroupDSL::RtrcGroupStruct T>
-void ApplyBindingGroup(DynamicBufferManager *cbMgr, const RC<BindingGroup> &group, const T &value)
+void ApplyBindingGroup(RHI::Device *device, DynamicBufferManager *cbMgr, const RC<BindingGroup> &group, const T &value)
 {
-    Rtrc::ApplyBindingGroup(cbMgr, *group, value);
+    Rtrc::ApplyBindingGroup(device, cbMgr, *group, value);
 }
 
 template<typename T>
 void BindingGroup::Set(const T &value)
 {
     static_assert(BindingGroupDSL::RtrcGroupStruct<T>);
-    Rtrc::ApplyBindingGroup(manager_->_internalGetDefaultConstantBufferManager(), *this, value);
+    Rtrc::ApplyBindingGroup(
+        manager_->_internalGetRHIDevice().Get(), manager_->_internalGetDefaultConstantBufferManager(), *this, value);
 }
 
 RTRC_END

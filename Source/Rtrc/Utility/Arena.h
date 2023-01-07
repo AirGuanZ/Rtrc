@@ -171,6 +171,7 @@ T *LinearAllocator::AllocateSmallObject()
         return AllocateSmallObject<T>();
     }
     restBytes_ -= alignBytes + sizeof(T);
+    currentPtr_ = alignedPtr + sizeof(T);
     return reinterpret_cast<T*>(alignedPtr);
 }
 
