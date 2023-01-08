@@ -110,7 +110,7 @@ void DynamicBufferManager::_internalSetData(DynamicBuffer &buffer, const void *d
     unsigned char *mappedChunkBuffer;
     {
         std::lock_guard lock(chunkMutex_);
-        auto &chunk = chunks_.At(freeBufferRecord.chunkIndex);
+        const Chunk &chunk = chunks_.At(freeBufferRecord.chunkIndex);
         buffer.buffer_ = chunk.buffer;
         mappedChunkBuffer = chunk.mappedBuffer;
     }

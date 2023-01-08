@@ -76,7 +76,7 @@ inline Quaternion Quaternion::FromMatrix(const Matrix3x3f &m)
     }
     else
     {
-        const int NEXT_LUT[3] = { 1, 2, 0 };
+        constexpr int NEXT_LUT[3] = { 1, 2, 0 };
         const int a = ArgMax(m[0][0], m[1][1], m[2][2]);
         const int b = NEXT_LUT[a];
         const int c = NEXT_LUT[b];

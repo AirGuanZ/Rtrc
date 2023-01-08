@@ -182,10 +182,8 @@ MaterialPassPropertyLayout::MaterialPassPropertyLayout(const MaterialPropertyHos
                 throw Exception("Only int/uint/float0123 properties are supported in 'Material' cbuffer");
             }
 
-            const int memberDWordCount =
-                member.matrixType == ShaderStruct::Member::MatrixType::Scalar ? 1 : member.rowSize;
-            const bool needNewLine = memberDWordCount >= 4 || (dwordOffset % 4) + memberDWordCount > 4;
-            if(needNewLine)
+            const int memberDWordCount = member.matrixType == ShaderStruct::Member::MatrixType::Scalar ? 1 : member.rowSize;
+            if(const bool needNewLine = memberDWordCount >= 4 || (dwordOffset % 4) + memberDWordCount > 4)
             {
                 dwordOffset = (dwordOffset + 3) / 4 * 4;
             }
@@ -196,7 +194,7 @@ MaterialPassPropertyLayout::MaterialPassPropertyLayout(const MaterialPropertyHos
                 using enum ShaderStruct::Member::MatrixType;
 
                 using Tuple = std::tuple<ShaderStruct::Member::ElementType, ShaderStruct::Member::MatrixType, int>;
-                static const Tuple typeToMemberInfo[] =
+                static constexpr Tuple typeToMemberInfo[] =
                 {
                     { Float, Scalar, 0 }, { Float, Vector, 2 }, { Float, Vector, 3 }, { Float, Vector, 4 },
                     { Int,   Scalar, 0 }, { Int,   Vector, 2 }, { Int,   Vector, 3 }, { Int,   Vector, 4 },

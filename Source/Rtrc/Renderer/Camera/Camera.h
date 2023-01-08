@@ -75,10 +75,6 @@ private:
     Vector3f up_;
 
     CameraConstantBuffer constantBufferData_;
-
-#if RTRC_DEBUG
-    bool isDerivedDataDirty_ = true;
-#endif
 };
 
 inline Camera::Camera()

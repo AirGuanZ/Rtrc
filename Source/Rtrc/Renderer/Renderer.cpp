@@ -372,9 +372,9 @@ void Renderer::DoDeferredLightingPass(RG::PassContext &passContext, const Deferr
         if(auto &dl = scene_->GetDirectionalLight())
         {
             const Light::DirectionalData &data = dl->GetDirectionalData();
+            perPassGroupData.directionalLight.direction = data.direction;
             perPassGroupData.directionalLight.color = dl->GetColor();
             perPassGroupData.directionalLight.intensity = dl->GetIntensity();
-            perPassGroupData.directionalLight.direction = data.direction;
         }
         else
         {

@@ -18,8 +18,8 @@ class Enumerate
 
         friend class Enumerate;
 
-        iterator(const std::size_t &i, const iter_type &iter)
-            : i_(i), iter_(iter) {}
+        iterator(const std::size_t &i, iter_type iter)
+            : i_(i), iter_(std::move(iter)) {}
 
         std::size_t i_;
         iter_type iter_;
@@ -46,11 +46,19 @@ class Enumerate
 
 public:
 
+    Enumerate(const Enumerate &) = delete;
+
+    Enumerate(Enumerate &&other) noexcept
+        : container_(std::move(other.container_))
+    {
+        
+    }
+
     template<typename U> requires !std::is_same_v<Enumerate, std::remove_reference_t<U>>
     explicit Enumerate(U &&container)
         : container_(std::forward<U>(container))
     {
-        
+
     }
 
     auto begin()
@@ -64,6 +72,7 @@ public:
     }
 
 private:
+
     T container_;
 };
 

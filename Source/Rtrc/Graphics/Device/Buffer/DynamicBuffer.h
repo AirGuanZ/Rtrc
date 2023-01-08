@@ -143,7 +143,7 @@ RC<SubBuffer> ConstantBufferManagerInterface::CreateConstantBuffer(const T &data
         std::vector<uint8_t> flattenData(deviceSize);
         ConstantBufferDetail::ForEachFlattenMember<T>([&]<typename M>(const char *, size_t hostOffset, size_t deviceOffset)
         {
-            auto dst = flattenData.data() + deviceOffset;
+            uint8_t *dst = flattenData.data() + deviceOffset;
             auto src = reinterpret_cast<const unsigned char *>(&data) + hostOffset;
             std::memcpy(dst, src, sizeof(M));
         });
@@ -187,7 +187,7 @@ void DynamicBuffer::SetData(const T &data)
         std::vector<uint8_t> flattenData(deviceSize);
         ConstantBufferDetail::ForEachFlattenMember<T>([&]<typename M>(const char *, size_t hostOffset, size_t deviceOffset)
         {
-            auto dst = flattenData.data() + deviceOffset;
+            uint8_t *dst = flattenData.data() + deviceOffset;
             auto src = reinterpret_cast<const unsigned char *>(&data) + hostOffset;
             std::memcpy(dst, src, sizeof(M));
         });

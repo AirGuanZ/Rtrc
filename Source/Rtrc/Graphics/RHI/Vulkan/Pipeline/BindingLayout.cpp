@@ -4,8 +4,8 @@
 
 RTRC_RHI_VK_BEGIN
 
-VulkanBindingLayout::VulkanBindingLayout(const BindingLayoutDesc &desc, VkDevice device, VkPipelineLayout layout)
-    : desc_(desc), device_(device), layout_(layout)
+VulkanBindingLayout::VulkanBindingLayout(BindingLayoutDesc desc, VkDevice device, VkPipelineLayout layout)
+    : desc_(std::move(desc)), device_(device), layout_(layout)
 {
 
 }

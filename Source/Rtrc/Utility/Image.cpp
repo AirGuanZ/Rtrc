@@ -127,7 +127,7 @@ namespace ImageDetail
         {
             throw Exception("failed to open file: " + filename);
         }
-        RTRC_SCOPE_EXIT{ std::fclose(file); };
+        RTRC_SCOPE_EXIT{ (void)std::fclose(file); };
 
         int x, y, c;
         auto bytes = stbi_load_from_file(file, &x, &y, &c, 0);
@@ -171,7 +171,7 @@ namespace ImageDetail
         {
             throw Exception("failed to open file: " + filename);
         }
-        RTRC_SCOPE_EXIT{ std::fclose(file); };
+        RTRC_SCOPE_EXIT{ (void)std::fclose(file); };
 
         int x, y, c;
         auto floats = stbi_loadf_from_file(file, &x, &y, &c, 3);

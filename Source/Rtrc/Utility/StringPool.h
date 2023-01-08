@@ -107,16 +107,11 @@ const std::string &PooledString<Tag, Index>::GetString() const
 
 RTRC_END
 
-namespace std
+template<typename Tag, typename Index>
+struct std::hash<Rtrc::PooledString<Tag, Index>>
 {
-
-    template<typename Tag, typename Index>
-    struct hash<Rtrc::PooledString<Tag, Index>>
+    size_t operator()(const Rtrc::PooledString<Tag, Index> &s) const noexcept
     {
-        size_t operator()(const Rtrc::PooledString<Tag, Index> &s) const noexcept
-        {
-            return std::hash<Index>{}(s.GetIndex());
-        }
-    };
-
-} // namespace std
+        return std::hash<Index>{}(s.GetIndex());
+    }
+};

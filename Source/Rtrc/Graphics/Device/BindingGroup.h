@@ -162,7 +162,7 @@ inline void BindingGroup::Set(int slot, RC<Buffer> cbuffer, size_t offset, size_
 
 inline void BindingGroup::Set(int slot, RC<SubBuffer> cbuffer)
 {
-    RHI::ConstantBufferUpdate update =
+    const RHI::ConstantBufferUpdate update =
     {
         cbuffer->GetFullBuffer()->GetRHIObject().Get(),
         cbuffer->GetSubBufferOffset(),
@@ -184,8 +184,7 @@ void BindingGroup::Set(int slot, T &&object)
 {
     if constexpr(std::is_same_v<std::remove_cvref_t<T>, RC<Texture>>)
     {
-        const RHI::BindingType type = layout_->GetRHIObject()->GetDesc().bindings[slot].type;
-        switch(type)
+        switch(const RHI::BindingType type = layout_->GetRHIObject()->GetDesc().bindings[slot].type)
         {
         case RHI::BindingType::Texture2D:
         case RHI::BindingType::Texture3D:

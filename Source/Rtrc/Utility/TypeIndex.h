@@ -55,16 +55,11 @@ private:
 
 RTRC_END
 
-namespace std
+template<>
+struct std::hash<Rtrc::TypeIndex>
 {
-
-    template<>
-    struct hash<Rtrc::TypeIndex>
+    size_t operator()(const Rtrc::TypeIndex &index) const noexcept
     {
-        size_t operator()(const Rtrc::TypeIndex &index) const noexcept
-        {
-            return index.GetHash();
-        }
-    };
-
-} // namespace std
+        return index.GetHash();
+    }
+};

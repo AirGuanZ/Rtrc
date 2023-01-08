@@ -56,8 +56,8 @@ public:
 
     MeshBuilder &SetLayout(const MeshLayout *layout);
     
-    MeshBuilder &SetVertexBuffer(int index, RC<SubBuffer> buffer);
-    MeshBuilder &SetIndexBuffer(RC<SubBuffer> buffer, RHI::IndexBufferFormat format);
+    MeshBuilder &SetVertexBuffer(int index, const RC<SubBuffer> &buffer);
+    MeshBuilder &SetIndexBuffer(const RC<SubBuffer> &buffer, RHI::IndexBufferFormat format);
 
     MeshBuilder &SetVertexCount(uint32_t count);
     MeshBuilder &SetIndexCount(uint32_t count);
@@ -141,7 +141,7 @@ inline MeshBuilder &MeshBuilder::SetLayout(const MeshLayout *layout)
     return *this;
 }
 
-inline MeshBuilder &MeshBuilder::SetVertexBuffer(int index, RC<SubBuffer> buffer)
+inline MeshBuilder &MeshBuilder::SetVertexBuffer(int index, const RC<SubBuffer> &buffer)
 {
     assert(layout_);
     vertexBuffers_[index] = buffer->GetFullBuffer();
@@ -149,7 +149,7 @@ inline MeshBuilder &MeshBuilder::SetVertexBuffer(int index, RC<SubBuffer> buffer
     return *this;
 }
 
-inline MeshBuilder &MeshBuilder::SetIndexBuffer(RC<SubBuffer> buffer, RHI::IndexBufferFormat format)
+inline MeshBuilder &MeshBuilder::SetIndexBuffer(const RC<SubBuffer> &buffer, RHI::IndexBufferFormat format)
 {
     indexBuffer_ = buffer->GetFullBuffer();
     indexBufferByteOffset_ = buffer->GetSubBufferOffset();

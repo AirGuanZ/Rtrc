@@ -33,6 +33,7 @@ end
 
 if has_config("is_msvc") then
     add_cxflags("/Zc:preprocessor")
+    add_defines("_CRT_SECURE_NO_WARNINGS")
 end
 
 -- External dependencies

@@ -92,6 +92,7 @@ std::vector<unsigned char> DXC::Compile(
     }
 
     std::vector<std::wstring> includeDirs;
+    includeDirs.reserve(shaderInfo.includeDirs.size());
     for(auto &inc : shaderInfo.includeDirs)
     {
         includeDirs.push_back(DXCDetail::ToWString(inc));
@@ -117,6 +118,7 @@ std::vector<unsigned char> DXC::Compile(
     arguments.push_back(targetProfile.c_str());
 
     std::vector<std::wstring> macros;
+    macros.reserve(shaderInfo.macros.size());
     for(auto &m : shaderInfo.macros)
     {
         macros.push_back(DXCDetail::ToWString("-D" + m.first + "=" + m.second));
@@ -201,7 +203,7 @@ std::vector<unsigned char> DXC::Compile(
 
     if(preprocessOutput)
     {
-        *preprocessOutput = reinterpret_cast<const char *>(result->GetBufferPointer());
+        *preprocessOutput = static_cast<const char *>(result->GetBufferPointer());
         return {};
     }
 

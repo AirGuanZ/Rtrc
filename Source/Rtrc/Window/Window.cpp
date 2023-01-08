@@ -157,8 +157,7 @@ namespace WindowDetail
     
     void GLFWWindowCloseCallback(GLFWwindow *window)
     {
-        auto impl = static_cast<Window::Impl *>(glfwGetWindowUserPointer(window));
-        if(impl)
+        if(auto impl = static_cast<Window::Impl *>(glfwGetWindowUserPointer(window)))
         {
             impl->sender.Send(WindowCloseEvent{});
         }
@@ -166,8 +165,7 @@ namespace WindowDetail
 
     void GLFWWindowResizeCallback(GLFWwindow *window, int width, int height)
     {
-        auto impl = static_cast<Window::Impl *>(glfwGetWindowUserPointer(window));
-        if(impl)
+        if(auto impl = static_cast<Window::Impl *>(glfwGetWindowUserPointer(window)))
         {
             impl->sender.Send(WindowResizeEvent{ width, height });
         }
@@ -175,8 +173,7 @@ namespace WindowDetail
 
     void GLFWScrollCallback(GLFWwindow *window, double xoffset, double yoffset)
     {
-        auto impl = static_cast<Window::Impl *>(glfwGetWindowUserPointer(window));
-        if(impl)
+        if(auto impl = static_cast<Window::Impl *>(glfwGetWindowUserPointer(window)))
         {
             impl->input->_internalTriggerWheelScroll(static_cast<int>(yoffset));
         }
@@ -250,8 +247,7 @@ namespace WindowDetail
 
     void GLFWCharInputCallback(GLFWwindow *window, unsigned int ch)
     {
-        auto impl = static_cast<Window::Impl *>(glfwGetWindowUserPointer(window));
-        if(impl)
+        if(auto impl = static_cast<Window::Impl *>(glfwGetWindowUserPointer(window)))
         {
             impl->input->_internalTriggerCharInput(ch);
         }
@@ -259,8 +255,7 @@ namespace WindowDetail
 
     void GLFWWindowFocusCallback(GLFWwindow *window, int focused)
     {
-        auto impl = static_cast<Window::Impl *>(glfwGetWindowUserPointer(window));
-        if(impl)
+        if(auto impl = static_cast<Window::Impl *>(glfwGetWindowUserPointer(window)))
         {
             const bool hasFocus = focused != 0;
             if(hasFocus != impl->hasFocus)
@@ -298,7 +293,7 @@ std::vector<std::string> Window::GetRequiredVulkanInstanceExtensions()
     std::vector<std::string> ret;
     for(uint32_t i = 0; i < count; ++i)
     {
-        ret.push_back(exts[i]);
+        ret.emplace_back(exts[i]);
     }
     return ret;
 #else

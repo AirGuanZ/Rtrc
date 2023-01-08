@@ -6,11 +6,11 @@
 RTRC_RHI_VK_BEGIN
 
 VulkanBindingGroupLayout::VulkanBindingGroupLayout(
-    const BindingGroupLayoutDesc             &desc,
+    BindingGroupLayoutDesc                    desc,
     std::vector<VkDescriptorSetLayoutBinding> bindings,
     VkDevice                                  device,
     VkDescriptorSetLayout                     layout)
-    : desc_(desc), bindings_(std::move(bindings)),
+    : desc_(std::move(desc)), bindings_(std::move(bindings)),
       device_(device), layout_(layout), poolCount_(0)
 {
     for(auto &binding : bindings_)
@@ -137,7 +137,7 @@ Ptr<BindingGroup> VulkanBindingGroupLayout::_internalCreateBindingGroupImpl() co
 void VulkanBindingGroupLayout::TransferNode(
     std::list<PoolInfo> &from, std::list<PoolInfo> &to, std::list<PoolInfo>::iterator iter)
 {
-    to.splice(to.begin(), from, iter);
+    to.splice(to.begin(), from, std::move(iter));
 }
 
 void VulkanBindingGroupLayout::AllocateNewDescriptorPool() const

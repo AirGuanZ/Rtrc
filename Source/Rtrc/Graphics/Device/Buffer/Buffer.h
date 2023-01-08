@@ -169,7 +169,7 @@ inline void Buffer::SetDefaultStructStride(size_t stride)
 inline void Buffer::Upload(const void *data, size_t offset, size_t size)
 {
     assert(offset + size <= size_);
-    auto ptr = rhiBuffer_->Map(offset, size, false);
+    void *ptr = rhiBuffer_->Map(offset, size, false);
     std::memcpy(ptr, data, size);
     rhiBuffer_->Unmap(offset, size, true);
 }
@@ -177,7 +177,7 @@ inline void Buffer::Upload(const void *data, size_t offset, size_t size)
 inline void Buffer::Download(void *data, size_t offset, size_t size)
 {
     assert(offset + size <= size_);
-    auto ptr = rhiBuffer_->Map(offset, size, true);
+    const void *ptr = rhiBuffer_->Map(offset, size, true);
     std::memcpy(data, ptr, size);
     rhiBuffer_->Unmap(offset, size, false);
 }

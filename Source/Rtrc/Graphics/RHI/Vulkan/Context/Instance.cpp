@@ -58,7 +58,7 @@ RTRC_RHI_END
 RTRC_RHI_VK_BEGIN
 
 VulkanInstance::VulkanInstance(VulkanInstanceDesc desc, vkb::Instance instance)
-    : desc_(desc), instance_(instance)
+    : desc_(std::move(desc)), instance_(instance)
 {
 
 }

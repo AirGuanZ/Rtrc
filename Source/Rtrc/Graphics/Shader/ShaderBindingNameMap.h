@@ -1,7 +1,6 @@
 #pragma once
 
 #include <map>
-#include <optional>
 
 #include <Rtrc/Utility/Uncopyable.h>
 

@@ -28,7 +28,7 @@ public:
     void AddIncludeDirectory(std::string_view dir);
 
     RC<Shader> Compile(
-        const ShaderSource &desc,
+        const ShaderSource &source,
         const Macros       &macros = {},
         bool                debug = RTRC_DEBUG) const;
 

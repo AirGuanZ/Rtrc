@@ -45,15 +45,11 @@ namespace VkDeviceDetail
         {
             throw Exception("failed to get vulkan physical device surface formats");
         };
-        
-        for(auto &f : supportedFormats)
+
+        return std::ranges::any_of(supportedFormats, [&](const VkSurfaceFormatKHR &f)
         {
-            if(f.format == expectedFormat && f.colorSpace == VK_COLORSPACE_SRGB_NONLINEAR_KHR)
-            {
-                return true;
-            }
-        }
-        return false;
+            return f.format == expectedFormat && f.colorSpace == VK_COLORSPACE_SRGB_NONLINEAR_KHR;
+        });
     }
 
     std::pair<VkSharingMode, StaticVector<uint32_t, 3>> GetVulkanSharingMode(

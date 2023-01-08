@@ -10,7 +10,7 @@ RTRC_RHI_IMPLEMENT(VulkanBindingLayout, BindingLayout)
 {
 public:
 
-    VulkanBindingLayout(const BindingLayoutDesc &desc, VkDevice device, VkPipelineLayout layout);
+    VulkanBindingLayout(BindingLayoutDesc desc, VkDevice device, VkPipelineLayout layout);
 
     ~VulkanBindingLayout() override;
 

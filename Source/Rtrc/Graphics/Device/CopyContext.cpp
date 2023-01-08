@@ -8,8 +8,8 @@ CopyContext::CopyContext(
     RHI::DevicePtr  device,
     BufferManager  *bufferManager,
     TextureManager *textureManager)
-    : device_(device),
-      copyQueue_(device->GetQueue(RHI::QueueType::Transfer)),
+    : device_(std::move(device)),
+      copyQueue_(device_->GetQueue(RHI::QueueType::Transfer)),
       bufferManager_(bufferManager),
       textureManager_(textureManager)
 {

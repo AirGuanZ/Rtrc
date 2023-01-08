@@ -29,8 +29,8 @@ uint32_t VulkanMemoryPropertyRequirements::_internalGetMemoryTypeBits() const
     return memoryTypeBits_;
 }
 
-VulkanMemoryBlock::VulkanMemoryBlock(const MemoryBlockDesc &desc, VmaAllocator allocator, VmaAllocation allocation)
-    : desc_(desc), allocator_(allocator), allocation_(allocation)
+VulkanMemoryBlock::VulkanMemoryBlock(MemoryBlockDesc desc, VmaAllocator allocator, VmaAllocation allocation)
+    : desc_(std::move(desc)), allocator_(allocator), allocation_(allocation)
 {
     
 }

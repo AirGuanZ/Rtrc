@@ -33,7 +33,7 @@ Box<Device> Device::CreateGraphicsDevice(
     bool           vsync)
 {
     Box<Device> ret{ new Device };
-    ret->InitializeInternal(rhiDevice, false);
+    ret->InitializeInternal(std::move(rhiDevice), false);
     ret->window_ = &window;
     ret->swapchainFormat_ = swapchainFormat;
     ret->swapchainImageCount_ = swapchainImageCount;

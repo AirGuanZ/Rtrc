@@ -332,7 +332,7 @@ inline bool Device::BeginFrame()
 {
     if(window_)
     {
-        window_->DoEvents();
+        Window::DoEvents();
         if(!window_->HasFocus() || window_->GetFramebufferSize().x <= 0 || window_->GetFramebufferSize().y <= 0)
         {
             return false;

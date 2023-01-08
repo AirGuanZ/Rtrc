@@ -405,7 +405,7 @@ VkSamplerAddressMode TranslateSamplerAddressMode(AddressMode mode)
 
 VkPipelineStageFlags2 TranslatePipelineStageFlag(PipelineStageFlag flag)
 {
-    static const VkPipelineStageFlags2 bitToFlag[] =
+    static constexpr VkPipelineStageFlags2 bitToFlag[] =
     {
         VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT,
         VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
@@ -552,7 +552,7 @@ VkImageAspectFlags GetAllAspects(Format format)
 
 void SetObjectName(VulkanDevice* device, VkObjectType type, VkCommonHandle object, const char* name)
 {
-    device->_internalSetObjectName(type, uint64_t(object), name);
+    device->_internalSetObjectName(type, reinterpret_cast<uint64_t>(object), name);
 }
 
 RTRC_RHI_VK_END

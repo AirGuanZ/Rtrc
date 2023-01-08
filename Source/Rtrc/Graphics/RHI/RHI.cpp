@@ -113,7 +113,7 @@ GraphicsPipelineBuilder &GraphicsPipelineBuilder::AddVertexInputBuffers(Span<Ver
     assert(!buffers.IsEmpty());
     const size_t initSize = vertexBuffers.size();
     vertexBuffers.resize(initSize + buffers.size());
-    std::copy(buffers.begin(), buffers.end(), &vertexBuffers[initSize]);
+    std::ranges::copy(buffers, &vertexBuffers[initSize]);
     return *this;
 }
 
@@ -122,7 +122,7 @@ GraphicsPipelineBuilder &GraphicsPipelineBuilder::AddVertexInputAttributes(Span<
     assert(!attributes.IsEmpty());
     const size_t initSize = vertexBuffers.size();
     vertexAttributs.resize(initSize + attributes.size());
-    std::copy(attributes.begin(), attributes.end(), &vertexAttributs[initSize]);
+    std::ranges::copy(attributes, &vertexAttributs[initSize]);
     return *this;
 }
 

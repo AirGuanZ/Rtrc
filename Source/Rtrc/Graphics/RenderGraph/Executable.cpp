@@ -84,8 +84,7 @@ void Executer::Execute(const ExecutableGraph &graph)
         {
             for(auto subrsc : EnumerateSubTextures(record.finalState))
             {
-                auto &optionalState = record.finalState(subrsc.mipLevel, subrsc.arrayLayer);
-                if(optionalState)
+                if(auto &optionalState = record.finalState(subrsc.mipLevel, subrsc.arrayLayer))
                 {
                     record.texture->SetState(subrsc.mipLevel, subrsc.arrayLayer, *optionalState);
                 }

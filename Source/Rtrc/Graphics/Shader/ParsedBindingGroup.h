@@ -31,7 +31,7 @@ inline void ParsedBindingGroupLayout::AppendSlot(Span<ParsedBindingDescription> 
 {
     const uint32_t offset = static_cast<uint32_t>(allDescs_.size());
     allDescs_.reserve(allDescs_.size() + aliasedDescs.size());
-    std::copy(aliasedDescs.begin(), aliasedDescs.end(), std::back_inserter(allDescs_));
+    std::ranges::copy(aliasedDescs, std::back_inserter(allDescs_));
     slotRecords_.push_back({ offset, aliasedDescs.GetSize() });
 }
 

@@ -83,4 +83,9 @@ ConstantBufferManagerInterface *BindingGroupManager::_internalGetDefaultConstant
     return defaultConstantBufferManager_;
 }
 
+const RHI::DevicePtr &BindingGroupManager::_internalGetRHIDevice()
+{
+    return device_;
+}
+
 RTRC_END

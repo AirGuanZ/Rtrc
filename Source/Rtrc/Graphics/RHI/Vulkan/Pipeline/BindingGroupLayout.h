@@ -22,7 +22,7 @@ public:
     using PoolInfoIterator = std::list<PoolInfo>::iterator;
 
     VulkanBindingGroupLayout(
-        const BindingGroupLayoutDesc             &desc,
+        BindingGroupLayoutDesc                    desc,
         std::vector<VkDescriptorSetLayoutBinding> bindings,
         VkDevice                                  device,
         VkDescriptorSetLayout                     layout);

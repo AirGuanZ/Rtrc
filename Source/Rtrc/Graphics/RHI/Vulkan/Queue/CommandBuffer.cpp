@@ -72,7 +72,7 @@ void VulkanCommandBuffer::BeginRenderPass(
     VkRenderingAttachmentInfo dsAttachments[2], *depthAttachment = nullptr, *stencilAttachment = nullptr;
     if(depthStencilAttachment.depthStencilView)
     {
-        VulkanTextureDsv *dsv = static_cast<VulkanTextureDsv *>(depthStencilAttachment.depthStencilView);
+        auto dsv = static_cast<VulkanTextureDsv *>(depthStencilAttachment.depthStencilView);
         if(HasDepthAspect(dsv->GetDesc().format))
         {
             dsAttachments[0] = VkRenderingAttachmentInfo
@@ -281,7 +281,7 @@ void VulkanCommandBuffer::DrawIndexed(
         static_cast<uint32_t>(indexCount),
         static_cast<uint32_t>(instanceCount),
         static_cast<uint32_t>(firstIndex),
-        static_cast<uint32_t>(firstVertex),
+        firstVertex,
         static_cast<uint32_t>(firstInstance));
 }
 

@@ -115,7 +115,7 @@ class Application : public Uncopyable
             imgui_->SetInputEnabled(!input_->IsCursorLocked()); // Only enable gui input when cursor is not locked
         }
 
-        /*auto &imgui = *imgui_;
+        auto &imgui = *imgui_;
         if(imgui.Begin("Rtrc Demo", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
         {
             imgui.TextUnformatted("F1     : Show/Hide Cursor");
@@ -123,7 +123,7 @@ class Application : public Uncopyable
             imgui.SliderAngle("Sun Direction", &sunAngle_, 1, 179, nullptr);
             sunAngle_ = std::clamp(sunAngle_, Deg2Rad(1), Deg2Rad(179));
         }
-        imgui.End();*/
+        imgui.End();
 
         // Camera
 

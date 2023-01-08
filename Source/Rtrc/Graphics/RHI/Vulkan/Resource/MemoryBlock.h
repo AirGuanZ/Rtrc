@@ -27,7 +27,7 @@ RTRC_RHI_IMPLEMENT(VulkanMemoryBlock, MemoryBlock)
 {
 public:
 
-    VulkanMemoryBlock(const MemoryBlockDesc &desc, VmaAllocator allocator, VmaAllocation allocation);
+    VulkanMemoryBlock(MemoryBlockDesc desc, VmaAllocator allocator, VmaAllocation allocation);
 
     ~VulkanMemoryBlock() override;
 
