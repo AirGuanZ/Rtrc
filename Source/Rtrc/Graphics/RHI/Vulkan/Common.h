@@ -3,7 +3,7 @@
 #include <volk.h>
 #include <vk_mem_alloc.h>
 
-#include <Rtrc/Graphics/RHI/RHI.h>
+#include <Rtrc/Graphics/RHI/RHIDeclaration.h>
 
 #define RTRC_RHI_VK_BEGIN RTRC_RHI_BEGIN namespace Vk {
 #define RTRC_RHI_VK_END   } RTRC_RHI_END

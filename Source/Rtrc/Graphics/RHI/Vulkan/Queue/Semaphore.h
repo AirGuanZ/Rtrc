@@ -4,7 +4,7 @@
 
 RTRC_RHI_VK_BEGIN
 
-class VulkanSemaphore : public Semaphore
+RTRC_RHI_IMPLEMENT(VulkanSemaphore, Semaphore)
 {
 public:
 
@@ -12,9 +12,9 @@ public:
 
     ~VulkanSemaphore() override;
 
-    uint64_t GetValue() const override;
+    uint64_t GetValue() const RTRC_RHI_OVERRIDE;
 
-    VkSemaphore GetNativeSemaphore() const;
+    VkSemaphore _internalGetNativeSemaphore() const;
 
 private:
 

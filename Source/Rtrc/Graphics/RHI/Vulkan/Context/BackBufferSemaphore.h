@@ -4,7 +4,7 @@
 
 RTRC_RHI_VK_BEGIN
 
-class VulkanBackBufferSemaphore : public BackBufferSemaphore
+RTRC_RHI_IMPLEMENT(VulkanBackBufferSemaphore, BackBufferSemaphore)
 {
 public:
 
@@ -12,7 +12,7 @@ public:
 
     ~VulkanBackBufferSemaphore() override;
 
-    VkSemaphore GetBinarySemaphore() const;
+    VkSemaphore _internalGetBinarySemaphore() const;
 
 private:
 

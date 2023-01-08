@@ -30,7 +30,7 @@ public:
     void Set(int slot, RC<Sampler>   sampler);
 
     template<typename T>
-        requires TypeList<BufferSRV, BufferUAV, TextureSRV, TextureUAV, RC<Texture>>::Contains<std::remove_cvref_t<T>>
+        requires TypeList<BufferSrv, BufferUav, TextureSrv, TextureUav, RC<Texture>>::Contains<std::remove_cvref_t<T>>
     void Set(int slot, T &&object);
 
     template<typename T>
@@ -179,7 +179,7 @@ inline void BindingGroup::Set(int slot, RC<Sampler> sampler)
 }
 
 template<typename T>
-    requires TypeList<BufferSRV, BufferUAV, TextureSRV, TextureUAV, RC<Texture>>::Contains<std::remove_cvref_t<T>>
+    requires TypeList<BufferSrv, BufferUav, TextureSrv, TextureUav, RC<Texture>>::Contains<std::remove_cvref_t<T>>
 void BindingGroup::Set(int slot, T &&object)
 {
     if constexpr(std::is_same_v<std::remove_cvref_t<T>, RC<Texture>>)
@@ -189,19 +189,19 @@ void BindingGroup::Set(int slot, T &&object)
         {
         case RHI::BindingType::Texture2D:
         case RHI::BindingType::Texture3D:
-            this->Set(slot, object->CreateSRV(0, 0, 0));
+            this->Set(slot, object->CreateSrv(0, 0, 0));
             break;
         case RHI::BindingType::Texture2DArray:
         case RHI::BindingType::Texture3DArray:
-            this->Set(slot, object->CreateSRV(0, 0, 0, 0));
+            this->Set(slot, object->CreateSrv(0, 0, 0, 0));
             break;
         case RHI::BindingType::RWTexture2D:
         case RHI::BindingType::RWTexture3D:
-            this->Set(slot, object->CreateUAV(0, 0));
+            this->Set(slot, object->CreateUav(0, 0));
             break;
         case RHI::BindingType::RWTexture2DArray:
         case RHI::BindingType::RWTexture3DArray:
-            this->Set(slot, object->CreateUAV(0, 0, 0));
+            this->Set(slot, object->CreateUav(0, 0, 0));
             break;
         default:
             throw Exception(fmt::format(

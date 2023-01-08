@@ -59,8 +59,8 @@ RTRC_IMPL_SET(const Vector3i &, Int3)
 RTRC_IMPL_SET(const Vector4i &, Int4)
 
 RTRC_IMPL_SET(const RC<Texture> &, Texture2D)
-RTRC_IMPL_SET(const TextureSRV &,  Texture2D)
-RTRC_IMPL_SET(const BufferSRV  &,  Buffer)
+RTRC_IMPL_SET(const TextureSrv &,  Texture2D)
+RTRC_IMPL_SET(const BufferSrv  &,  Buffer)
 RTRC_IMPL_SET(RC<Sampler>,         Sampler)
 
 #undef RTRC_IMPL_SET
@@ -110,21 +110,6 @@ template <bool Graphics>
 void MaterialPassInstance::BindPropertiesImpl(
     KeywordSet::ValueMask mask, const RHI::CommandBufferPtr &commandBuffer) const
 {
-    auto shader = pass_->GetShader(mask);
-    if(auto index = shader->GetBindingGroupIndexForInlineSamplers(); index >= 0)
-    {
-        if constexpr(Graphics)
-        {
-            commandBuffer->BindGroupToGraphicsPipeline(
-                index, shader->GetBindingGroupForInlineSamplers()->GetRHIObject());
-        }
-        else
-        {
-            commandBuffer->BindGroupToComputePipeline(
-                index, shader->GetBindingGroupForInlineSamplers()->GetRHIObject());
-        }
-    }
-
     auto subLayout = pass_->GetPropertyLayout(mask);
     const int bindingGroupIndex = subLayout->GetBindingGroupIndex();
     if(bindingGroupIndex < 0)

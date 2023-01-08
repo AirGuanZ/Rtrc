@@ -2,9 +2,7 @@
 
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/BindingLayout.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/GraphicsPipeline.h>
-#include <Rtrc/Graphics/RHI/Vulkan/Pipeline/Shader.h>
 #include <Rtrc/Utility/Enumerate.h>
-#include <Rtrc/Utility/ScopeGuard.h>
 
 RTRC_RHI_VK_BEGIN
 
@@ -25,7 +23,7 @@ const Ptr<BindingLayout> &VulkanGraphicsPipeline::GetBindingLayout() const
     return layout_;
 }
 
-VkPipeline VulkanGraphicsPipeline::GetNativePipeline() const
+VkPipeline VulkanGraphicsPipeline::_internalGetNativePipeline() const
 {
     return pipeline_;
 }

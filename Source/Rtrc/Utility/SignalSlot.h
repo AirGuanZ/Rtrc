@@ -8,7 +8,14 @@ RTRC_BEGIN
 
 // Simple wrapper of sigslot
 
-template<typename...Args>
+enum class SignalThreadPolicy
+{
+    SingleThread,
+    SpinLock,
+    Mutex
+};
+
+template<SignalThreadPolicy ThreadPolicy, typename...Args>
 class Signal;
 
 class Connection
@@ -22,13 +29,13 @@ public:
 
 private:
 
-    template<typename...Args>
+    template<SignalThreadPolicy ThreadPolicy, typename...Args>
     friend class Signal;
 
     sigslot::connection impl_;
 };
 
-template<typename...Args>
+template<SignalThreadPolicy ThreadPolicy, typename...Args>
 class Signal : public Uncopyable
 {
 public:
@@ -48,7 +55,15 @@ public:
 
 private:
 
-    sigslot::signal<Args...> impl_;
+    using Lockable = std::conditional_t<
+        ThreadPolicy == SignalThreadPolicy::SingleThread,
+        sigslot::detail::null_mutex,
+        std::conditional_t<
+            ThreadPolicy == SignalThreadPolicy::SpinLock,
+            sigslot::detail::spin_mutex,
+            std::mutex>>;
+
+    sigslot::signal_base<Lockable, Args...> impl_;
 };
 
 RTRC_END

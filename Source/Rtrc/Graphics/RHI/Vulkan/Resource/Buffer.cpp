@@ -2,8 +2,8 @@
 #include <shared_mutex>
 
 #include <Rtrc/Graphics/RHI/Vulkan/Context/Device.h>
-#include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferSRV.h>
-#include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferUAV.h>
+#include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferSrv.h>
+#include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferUav.h>
 #include <Rtrc/Utility/ScopeGuard.h>
 
 RTRC_RHI_VK_BEGIN
@@ -23,7 +23,7 @@ VulkanBuffer::~VulkanBuffer()
 {
     for(VkBufferView view : std::ranges::views::values(views_))
     {
-        vkDestroyBufferView(device_->GetNativeDevice(), view, VK_ALLOC);
+        vkDestroyBufferView(device_->_internalGetNativeDevice(), view, VK_ALLOC);
     }
 
     if(ownership_ == ResourceOwnership::Allocation)
@@ -32,7 +32,7 @@ VulkanBuffer::~VulkanBuffer()
     }
     else if(ownership_ == ResourceOwnership::Resource)
     {
-        vkDestroyBuffer(device_->GetNativeDevice(), buffer_, VK_ALLOC);
+        vkDestroyBuffer(device_->_internalGetNativeDevice(), buffer_, VK_ALLOC);
     }
 }
 
@@ -41,7 +41,7 @@ const BufferDesc &VulkanBuffer::GetDesc() const
     return desc_;
 }
 
-Ptr<BufferSRV> VulkanBuffer::CreateSRV(const BufferSRVDesc &desc) const
+Ptr<BufferSrv> VulkanBuffer::CreateSrv(const BufferSrvDesc &desc) const
 {
     VkBufferView view;
     if(desc.format != Format::Unknown)
@@ -56,10 +56,10 @@ Ptr<BufferSRV> VulkanBuffer::CreateSRV(const BufferSRVDesc &desc) const
     {
         view = VK_NULL_HANDLE;
     }
-    return MakePtr<VulkanBufferSRV>(this, desc, view);
+    return MakePtr<VulkanBufferSrv>(this, desc, view);
 }
 
-Ptr<BufferUAV> VulkanBuffer::CreateUAV(const BufferUAVDesc &desc) const
+Ptr<BufferUav> VulkanBuffer::CreateUav(const BufferUavDesc &desc) const
 {
     VkBufferView view;
     if(desc.format != Format::Unknown)
@@ -74,7 +74,7 @@ Ptr<BufferUAV> VulkanBuffer::CreateUAV(const BufferUAVDesc &desc) const
     {
         view = VK_NULL_HANDLE;
     }
-    return MakePtr<VulkanBufferUAV>(this, desc, view);
+    return MakePtr<VulkanBufferUav>(this, desc, view);
 }
 
 void *VulkanBuffer::Map(size_t offset, size_t size, bool invalidate)
@@ -116,7 +116,7 @@ void VulkanBuffer::FlushAfterWrite(size_t offset, size_t size)
         "failed to flush buffer memory");
 }
 
-VkBuffer VulkanBuffer::GetNativeBuffer() const
+VkBuffer VulkanBuffer::_internalGetNativeBuffer() const
 {
     return buffer_;
 }
@@ -148,9 +148,9 @@ VkBufferView VulkanBuffer::CreateBufferView(const ViewKey &key) const
 
     VkBufferView view;
     VK_FAIL_MSG(
-        vkCreateBufferView(device_->GetNativeDevice(), &createInfo, VK_ALLOC, &view),
+        vkCreateBufferView(device_->_internalGetNativeDevice(), &createInfo, VK_ALLOC, &view),
         "failed to create vulkan buffer view");
-    RTRC_SCOPE_FAIL{ vkDestroyBufferView(device_->GetNativeDevice(), view, VK_ALLOC); };
+    RTRC_SCOPE_FAIL{ vkDestroyBufferView(device_->_internalGetNativeDevice(), view, VK_ALLOC); };
 
     views_[key] = view;
     return view;

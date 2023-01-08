@@ -2,24 +2,24 @@
 
 RTRC_RHI_VK_BEGIN
 
-VulkanShader::VulkanShader(VkDevice device, VkShaderModule shaderModule, std::string entry, ShaderStage type)
+VulkanRawShader::VulkanRawShader(VkDevice device, VkShaderModule shaderModule, std::string entry, ShaderStage type)
     : device_(device), shaderModule_(shaderModule), entry_(std::move(entry)), type_(type)
 {
     
 }
 
-VulkanShader::~VulkanShader()
+VulkanRawShader::~VulkanRawShader()
 {
     assert(shaderModule_);
     vkDestroyShaderModule(device_, shaderModule_, VK_ALLOC);
 }
 
-ShaderStage VulkanShader::GetType() const
+ShaderStage VulkanRawShader::GetType() const
 {
     return type_;
 }
 
-VkPipelineShaderStageCreateInfo VulkanShader::GetStageCreateInfo() const
+VkPipelineShaderStageCreateInfo VulkanRawShader::_internalGetStageCreateInfo() const
 {
     return VkPipelineShaderStageCreateInfo{
         .sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,

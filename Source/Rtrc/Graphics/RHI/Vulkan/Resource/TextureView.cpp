@@ -2,39 +2,39 @@
 
 RTRC_RHI_VK_BEGIN
 
-VulkanTextureSRV::VulkanTextureSRV(const TextureSRVDesc &desc, VkImageView imageView)
+VulkanTextureSrv::VulkanTextureSrv(const TextureSrvDesc &desc, VkImageView imageView)
     : desc_(desc), imageView_(imageView)
 {
 
 }
 
-const TextureSRVDesc &VulkanTextureSRV::GetDesc() const
+const TextureSrvDesc &VulkanTextureSrv::GetDesc() const
 {
     return desc_;
 }
 
-VkImageView VulkanTextureSRV::GetNativeImageView() const
+VkImageView VulkanTextureSrv::_internalGetNativeImageView() const
 {
     return imageView_;
 }
 
-VulkanTextureUAV::VulkanTextureUAV(const TextureUAVDesc &desc, VkImageView imageView)
+VulkanTextureUav::VulkanTextureUav(const TextureUavDesc &desc, VkImageView imageView)
     : desc_(desc), imageView_(imageView)
 {
 
 }
 
-const TextureUAVDesc &VulkanTextureUAV::GetDesc() const
+const TextureUavDesc &VulkanTextureUav::GetDesc() const
 {
     return desc_;
 }
 
-VkImageView VulkanTextureUAV::GetNativeImageView() const
+VkImageView VulkanTextureUav::_internalGetNativeImageView() const
 {
     return imageView_;
 }
 
-VulkanTextureRTV::VulkanTextureRTV(const VulkanTexture *tex, const TextureRTVDesc &desc, VkImageView imageView)
+VulkanTextureRtv::VulkanTextureRtv(const VulkanTexture *tex, const TextureRtvDesc &desc, VkImageView imageView)
     : tex_(tex), desc_(desc), imageView_(imageView)
 {
     if(desc_.format == Format::Unknown)
@@ -43,17 +43,17 @@ VulkanTextureRTV::VulkanTextureRTV(const VulkanTexture *tex, const TextureRTVDes
     }
 }
 
-const TextureRTVDesc &VulkanTextureRTV::GetDesc() const
+const TextureRtvDesc &VulkanTextureRtv::GetDesc() const
 {
     return desc_;
 }
 
-VkImageView VulkanTextureRTV::GetNativeImageView() const
+VkImageView VulkanTextureRtv::_internalGetNativeImageView() const
 {
     return imageView_;
 }
 
-const VulkanTexture *VulkanTextureRTV::GetTexture() const
+const VulkanTexture *VulkanTextureRtv::_internalGetTexture() const
 {
     return tex_;
 }

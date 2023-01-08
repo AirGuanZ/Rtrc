@@ -38,7 +38,7 @@ void VulkanQueue::Submit(
     {
         vkCommandBuffers[i] = VkCommandBufferSubmitInfo{
             .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
-            .commandBuffer = static_cast<VulkanCommandBuffer *>(cb.Get())->GetNativeCommandBuffer()
+            .commandBuffer = static_cast<VulkanCommandBuffer *>(cb.Get())->_internalGetNativeCommandBuffer()
         };
     }
 
@@ -47,7 +47,7 @@ void VulkanQueue::Submit(
     {
         waitSemaphoreSubmitInfo.push_back({
             .sType     = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
-            .semaphore = static_cast<VulkanBackBufferSemaphore *>(waitBackBufferSemaphore.semaphore.Get())->GetBinarySemaphore(),
+            .semaphore = static_cast<VulkanBackBufferSemaphore *>(waitBackBufferSemaphore.semaphore.Get())->_internalGetBinarySemaphore(),
             .stageMask = TranslatePipelineStageFlag(waitBackBufferSemaphore.stages),
         });
     }
@@ -55,7 +55,7 @@ void VulkanQueue::Submit(
     {
         waitSemaphoreSubmitInfo.push_back({
             .sType     = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
-            .semaphore = static_cast<VulkanSemaphore*>(s.semaphore.Get())->GetNativeSemaphore(),
+            .semaphore = static_cast<VulkanSemaphore*>(s.semaphore.Get())->_internalGetNativeSemaphore(),
             .value     = s.value,
             .stageMask = TranslatePipelineStageFlag(s.stages)
         });
@@ -66,7 +66,7 @@ void VulkanQueue::Submit(
     {
         signalSemaphoreSubmitInfo.push_back({
             .sType     = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
-            .semaphore = static_cast<VulkanBackBufferSemaphore *>(signalBackBufferSemaphore.semaphore.Get())->GetBinarySemaphore(),
+            .semaphore = static_cast<VulkanBackBufferSemaphore *>(signalBackBufferSemaphore.semaphore.Get())->_internalGetBinarySemaphore(),
             .stageMask = TranslatePipelineStageFlag(signalBackBufferSemaphore.stages)
         });
     }
@@ -74,7 +74,7 @@ void VulkanQueue::Submit(
     {
         signalSemaphoreSubmitInfo.push_back({
             .sType     = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
-            .semaphore = static_cast<VulkanSemaphore*>(s.semaphore.Get())->GetNativeSemaphore(),
+            .semaphore = static_cast<VulkanSemaphore*>(s.semaphore.Get())->_internalGetNativeSemaphore(),
             .value     = s.value,
             .stageMask = TranslatePipelineStageFlag(s.stages)
         });
@@ -89,23 +89,23 @@ void VulkanQueue::Submit(
         .signalSemaphoreInfoCount = static_cast<uint32_t>(signalSemaphoreSubmitInfo.size()),
         .pSignalSemaphoreInfos    = signalSemaphoreSubmitInfo.data()
     };
-    auto fence = signalFence ? static_cast<VulkanFence *>(signalFence.Get())->GetNativeFence() : VK_NULL_HANDLE;
+    auto fence = signalFence ? static_cast<VulkanFence *>(signalFence.Get())->_internalGetNativeFence() : VK_NULL_HANDLE;
     VK_FAIL_MSG(
         vkQueueSubmit2(queue_, 1, &submitInfo, fence),
         "failed to submit to vulkan queue");
 }
 
-VkQueue VulkanQueue::GetNativeQueue() const
+VkQueue VulkanQueue::_internalGetNativeQueue() const
 {
     return queue_;
 }
 
-uint32_t VulkanQueue::GetNativeFamilyIndex() const
+uint32_t VulkanQueue::_internalGetNativeFamilyIndex() const
 {
     return queueFamilyIndex_;
 }
 
-Ptr<CommandPool> VulkanQueue::CreateCommandPoolImpl() const
+Ptr<CommandPool> VulkanQueue::_internalCreateCommandPoolImpl() const
 {
     const VkCommandPoolCreateInfo createInfo = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
@@ -113,9 +113,9 @@ Ptr<CommandPool> VulkanQueue::CreateCommandPoolImpl() const
     };
     VkCommandPool pool;
     VK_FAIL_MSG(
-        vkCreateCommandPool(device_->GetNativeDevice(), &createInfo, VK_ALLOC, &pool),
+        vkCreateCommandPool(device_->_internalGetNativeDevice(), &createInfo, VK_ALLOC, &pool),
         "failed to create vulkan command pool");
-    RTRC_SCOPE_FAIL{ vkDestroyCommandPool(device_->GetNativeDevice(), pool, VK_ALLOC); };
+    RTRC_SCOPE_FAIL{ vkDestroyCommandPool(device_->_internalGetNativeDevice(), pool, VK_ALLOC); };
     return MakePtr<VulkanCommandPool>(device_, GetType(), pool);
 }
 

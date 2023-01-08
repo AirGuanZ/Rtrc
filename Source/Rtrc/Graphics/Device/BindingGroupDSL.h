@@ -22,9 +22,9 @@ namespace BindingGroupDSL
     struct MemberProxy_Texture2D
     {
         static constexpr RHI::BindingType BindingType = RHI::BindingType::Texture2D;
-        TextureSRV _rtrcObj;
+        TextureSrv _rtrcObj;
 
-        auto &operator=(TextureSRV value)
+        auto &operator=(TextureSrv value)
         {
             _rtrcObj = std::move(value);
             return *this;
@@ -32,7 +32,7 @@ namespace BindingGroupDSL
 
         auto &operator=(const RC<Texture> &tex)
         {
-            _rtrcObj = tex->CreateSRV(0, 0, 0);
+            _rtrcObj = tex->CreateSrv(0, 0, 0);
             return *this;
         }
     };
@@ -40,9 +40,9 @@ namespace BindingGroupDSL
     struct MemberProxy_RWTexture2D
     {
         static constexpr RHI::BindingType BindingType = RHI::BindingType::RWTexture2D;
-        TextureUAV _rtrcObj;
+        TextureUav _rtrcObj;
 
-        auto &operator=(TextureUAV value)
+        auto &operator=(TextureUav value)
         {
             _rtrcObj = std::move(value);
             return *this;
@@ -50,7 +50,7 @@ namespace BindingGroupDSL
 
         auto &operator=(const RC<Texture> &tex)
         {
-            _rtrcObj = tex->CreateUAV(0, 0);
+            _rtrcObj = tex->CreateUav(0, 0);
             return *this;
         }
     };
@@ -58,9 +58,9 @@ namespace BindingGroupDSL
     struct MemberProxy_Texture3D
     {
         static constexpr RHI::BindingType BindingType = RHI::BindingType::Texture3D;
-        TextureSRV _rtrcObj;
+        TextureSrv _rtrcObj;
 
-        auto &operator=(TextureSRV value)
+        auto &operator=(TextureSrv value)
         {
             _rtrcObj = std::move(value);
             return *this;
@@ -70,9 +70,9 @@ namespace BindingGroupDSL
     struct MemberProxy_RWTexture3D
     {
         static constexpr RHI::BindingType BindingType = RHI::BindingType::RWTexture3D;
-        TextureUAV _rtrcObj;
+        TextureUav _rtrcObj;
 
-        auto &operator=(TextureUAV value)
+        auto &operator=(TextureUav value)
         {
             _rtrcObj = std::move(value);
             return *this;
@@ -82,9 +82,9 @@ namespace BindingGroupDSL
     struct MemberProxy_Texture2DArray
     {
         static constexpr RHI::BindingType BindingType = RHI::BindingType::Texture2DArray;
-        TextureSRV _rtrcObj;
+        TextureSrv _rtrcObj;
 
-        auto &operator=(TextureSRV value)
+        auto &operator=(TextureSrv value)
         {
             _rtrcObj = std::move(value);
             return *this;
@@ -94,9 +94,9 @@ namespace BindingGroupDSL
     struct MemberProxy_RWTexture2DArray
     {
         static constexpr RHI::BindingType BindingType = RHI::BindingType::RWTexture2DArray;
-        TextureUAV _rtrcObj;
+        TextureUav _rtrcObj;
 
-        auto &operator=(TextureUAV value)
+        auto &operator=(TextureUav value)
         {
             _rtrcObj = std::move(value);
             return *this;
@@ -106,9 +106,9 @@ namespace BindingGroupDSL
     struct MemberProxy_Texture3DArray
     {
         static constexpr RHI::BindingType BindingType = RHI::BindingType::Texture3DArray;
-        TextureSRV _rtrcObj;
+        TextureSrv _rtrcObj;
 
-        auto &operator=(TextureSRV value)
+        auto &operator=(TextureSrv value)
         {
             _rtrcObj = std::move(value);
             return *this;
@@ -118,9 +118,9 @@ namespace BindingGroupDSL
     struct MemberProxy_RWTexture3DArray
     {
         static constexpr RHI::BindingType BindingType = RHI::BindingType::RWTexture3DArray;
-        TextureUAV _rtrcObj;
+        TextureUav _rtrcObj;
 
-        auto &operator=(TextureUAV value)
+        auto &operator=(TextureUav value)
         {
             _rtrcObj = std::move(value);
             return *this;
@@ -130,9 +130,9 @@ namespace BindingGroupDSL
     struct MemberProxy_Buffer
     {
         static constexpr RHI::BindingType BindingType = RHI::BindingType::Buffer;
-        BufferSRV _rtrcObj;
+        BufferSrv _rtrcObj;
 
-        auto &operator=(BufferSRV value)
+        auto &operator=(BufferSrv value)
         {
             assert(value.GetRHIObject()->GetDesc().format != RHI::Format::Unknown);
             _rtrcObj = std::move(value);
@@ -143,9 +143,9 @@ namespace BindingGroupDSL
     struct MemberProxy_RWBuffer
     {
         static constexpr RHI::BindingType BindingType = RHI::BindingType::RWBuffer;
-        BufferUAV _rtrcObj;
+        BufferUav _rtrcObj;
 
-        auto &operator=(BufferUAV value)
+        auto &operator=(BufferUav value)
         {
             assert(value.GetRHIObject()->GetDesc().format != RHI::Format::Unknown);
             _rtrcObj = std::move(value);
@@ -157,9 +157,9 @@ namespace BindingGroupDSL
     {
         static constexpr RHI::BindingType BindingType = RHI::BindingType::StructuredBuffer;
 
-        BufferSRV _rtrcObj;
+        BufferSrv _rtrcObj;
 
-        auto &operator=(BufferSRV value)
+        auto &operator=(BufferSrv value)
         {
             assert(value.GetRHIObject()->GetDesc().stride);
             _rtrcObj = std::move(value);
@@ -171,9 +171,9 @@ namespace BindingGroupDSL
     {
         static constexpr RHI::BindingType BindingType = RHI::BindingType::RWStructuredBuffer;
 
-        BufferUAV _rtrcObj;
+        BufferUav _rtrcObj;
 
-        auto &operator=(BufferUAV value)
+        auto &operator=(BufferUav value)
         {
             assert(value.GetRHIObject()->GetDesc().stride);
             _rtrcObj = std::move(value);

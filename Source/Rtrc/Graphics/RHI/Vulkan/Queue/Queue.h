@@ -4,15 +4,19 @@
 
 RTRC_RHI_VK_BEGIN
 
-class VulkanQueue : public Queue
+RTRC_RHI_IMPLEMENT(VulkanQueue, Queue)
 {
 public:
 
+#ifdef RTRC_STATIC_RHI
+    RTRC_RHI_QUEUE_COMMON
+#endif
+
     VulkanQueue(VulkanDevice *device, VkQueue queue, QueueType type, uint32_t queueFamilyIndex);
 
-    QueueType GetType() const override;
+    QueueType GetType() const RTRC_RHI_OVERRIDE;
 
-    void WaitIdle() override;
+    void WaitIdle() RTRC_RHI_OVERRIDE;
 
     void Submit(
         BackBufferSemaphoreDependency waitBackBufferSemaphore,
@@ -20,13 +24,13 @@ public:
         Span<Ptr<CommandBuffer>>      commandBuffers,
         BackBufferSemaphoreDependency signalBackBufferSemaphore,
         Span<SemaphoreDependency>     signalSemaphores,
-        const Ptr<Fence>             &signalFence) override;
+        const Ptr<Fence>             &signalFence) RTRC_RHI_OVERRIDE;
 
-    VkQueue GetNativeQueue() const;
+    VkQueue _internalGetNativeQueue() const;
 
-    uint32_t GetNativeFamilyIndex() const;
+    uint32_t _internalGetNativeFamilyIndex() const;
 
-    Ptr<CommandPool> CreateCommandPoolImpl() const;
+    Ptr<CommandPool> _internalCreateCommandPoolImpl() const;
 
 private:
 

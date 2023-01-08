@@ -9,9 +9,25 @@
 
 RTRC_BEGIN
 
+namespace RendererDetail
+{
+
+    enum class StencilMaskBit : uint8_t
+    {
+        Nothing = 0,
+        Regular = 1 << 0
+    };
+
+    RTRC_DEFINE_ENUM_FLAGS(StencilMaskBit)
+
+} // namespace RendererDetail
+
 class Renderer : public Uncopyable
 {
 public:
+
+    using StencilMaskBit = RendererDetail::StencilMaskBit;
+    using StencilMask = EnumFlags<StencilMaskBit>;
 
     struct RenderGraphInterface
     {

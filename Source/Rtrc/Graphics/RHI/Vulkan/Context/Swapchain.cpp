@@ -17,12 +17,12 @@ VulkanSwapchain::VulkanSwapchain(
 
     uint32_t imageCount;
     VK_FAIL_MSG(
-        vkGetSwapchainImagesKHR(device_->GetNativeDevice(), swapchain_, &imageCount, nullptr),
+        vkGetSwapchainImagesKHR(device_->_internalGetNativeDevice(), swapchain_, &imageCount, nullptr),
         "failed to get vulkan swapchain image count");
 
     std::vector<VkImage> images(imageCount);
     VK_FAIL_MSG(
-        vkGetSwapchainImagesKHR(device_->GetNativeDevice(), swapchain_, &imageCount, images.data()),
+        vkGetSwapchainImagesKHR(device_->_internalGetNativeDevice(), swapchain_, &imageCount, images.data()),
         "failed to get vulkan swapchain images");
 
     for(auto vkImage : images)
@@ -45,20 +45,20 @@ VulkanSwapchain::VulkanSwapchain(
 
         {
             VK_FAIL_MSG(
-                vkCreateSemaphore(device_->GetNativeDevice(), &semaphoreCreateInfo, VK_ALLOC, &semaphore),
+                vkCreateSemaphore(device_->_internalGetNativeDevice(), &semaphoreCreateInfo, VK_ALLOC, &semaphore),
                 "failed to create vulkan semaphores for swapchain");
-            RTRC_SCOPE_FAIL{ vkDestroySemaphore(device_->GetNativeDevice(), semaphore, VK_ALLOC); };
+            RTRC_SCOPE_FAIL{ vkDestroySemaphore(device_->_internalGetNativeDevice(), semaphore, VK_ALLOC); };
             imageAcquireSemaphores_.push_back(
-                MakePtr<VulkanBackBufferSemaphore>(device_->GetNativeDevice(), semaphore));
+                MakePtr<VulkanBackBufferSemaphore>(device_->_internalGetNativeDevice(), semaphore));
         }
 
         {
             VK_FAIL_MSG(
-                vkCreateSemaphore(device_->GetNativeDevice(), &semaphoreCreateInfo, VK_ALLOC, &semaphore),
+                vkCreateSemaphore(device_->_internalGetNativeDevice(), &semaphoreCreateInfo, VK_ALLOC, &semaphore),
                 "failed to create vulkan semaphores for swapchain");
-            RTRC_SCOPE_FAIL{ vkDestroySemaphore(device_->GetNativeDevice(), semaphore, VK_ALLOC); };
+            RTRC_SCOPE_FAIL{ vkDestroySemaphore(device_->_internalGetNativeDevice(), semaphore, VK_ALLOC); };
             imagePresentSemaphores_.push_back(
-                MakePtr<VulkanBackBufferSemaphore>(device_->GetNativeDevice(), semaphore));
+                MakePtr<VulkanBackBufferSemaphore>(device_->_internalGetNativeDevice(), semaphore));
         }
     }
 
@@ -68,7 +68,7 @@ VulkanSwapchain::VulkanSwapchain(
 
 VulkanSwapchain::~VulkanSwapchain()
 {
-    vkDestroySwapchainKHR(device_->GetNativeDevice(), swapchain_, VK_ALLOC);
+    vkDestroySwapchainKHR(device_->_internalGetNativeDevice(), swapchain_, VK_ALLOC);
 }
 
 bool VulkanSwapchain::Acquire()
@@ -77,8 +77,8 @@ bool VulkanSwapchain::Acquire()
 
     auto &imageAcquireSemaphore = imageAcquireSemaphores_[frameIndex_];
     const VkResult acquireResult = vkAcquireNextImageKHR(
-        device_->GetNativeDevice(), swapchain_, UINT64_MAX,
-        imageAcquireSemaphore->GetBinarySemaphore(), VK_NULL_HANDLE, &imageIndex_);
+        device_->_internalGetNativeDevice(), swapchain_, UINT64_MAX,
+        imageAcquireSemaphore->_internalGetBinarySemaphore(), VK_NULL_HANDLE, &imageIndex_);
 
     if(acquireResult == VK_ERROR_OUT_OF_DATE_KHR)
     {
@@ -105,7 +105,7 @@ Ptr<BackBufferSemaphore> VulkanSwapchain::GetPresentSemaphore()
 
 void VulkanSwapchain::Present()
 {
-    const auto presentSemaphore = imagePresentSemaphores_[frameIndex_]->GetBinarySemaphore();
+    const auto presentSemaphore = imagePresentSemaphores_[frameIndex_]->_internalGetBinarySemaphore();
     const VkPresentInfoKHR presentInfo = {
         .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
         .waitSemaphoreCount = 1,
@@ -114,7 +114,7 @@ void VulkanSwapchain::Present()
         .pSwapchains        = &swapchain_,
         .pImageIndices      = &imageIndex_
     };
-    (void)vkQueuePresentKHR(presentQueue_->GetNativeQueue(), &presentInfo);
+    (void)vkQueuePresentKHR(presentQueue_->_internalGetNativeQueue(), &presentInfo);
 }
 
 int VulkanSwapchain::GetRenderTargetCount() const

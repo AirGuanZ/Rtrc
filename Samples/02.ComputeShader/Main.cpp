@@ -35,7 +35,7 @@ void Run()
 
     auto inputTexture = device->GetCopyContext().LoadTexture2D(
         "Asset/Sample/01.TexturedQuad/MainTexture.png", RHI::Format::B8G8R8A8_UNorm, RHI::TextureUsage::ShaderResource, false);
-    auto inputTextureSRV = inputTexture->CreateSRV();
+    auto inputTextureSrv = inputTexture->CreateSrv();
 
     auto outputTexture = StatefulTexture::FromTexture(device->CreateTexture(RHI::TextureDesc
         {
@@ -50,7 +50,7 @@ void Run()
             .initialLayout = RHI::TextureLayout::Undefined,
             .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
         }));
-    auto outputTextureUAV = outputTexture->CreateUAV();
+    auto outputTextureUav = outputTexture->CreateUav();
 
     auto readbackBuffer = device->CreateBuffer(RHI::BufferDesc
         {

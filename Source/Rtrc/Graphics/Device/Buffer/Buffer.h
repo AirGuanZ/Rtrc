@@ -9,8 +9,8 @@ class Buffer;
 template<typename T>
 class TBufferView;
 
-using BufferSRV = TBufferView<RHI::BufferSRVPtr>;
-using BufferUAV = TBufferView<RHI::BufferUAVPtr>;
+using BufferSrv = TBufferView<RHI::BufferSrvPtr>;
+using BufferUav = TBufferView<RHI::BufferUavPtr>;
 
 class BufferManagerInterface;
 
@@ -79,13 +79,13 @@ public:
     void Upload(const void *data, size_t offset, size_t size);
     void Download(void *data, size_t offset, size_t size);
 
-    BufferSRV GetSRV();
-    BufferSRV GetSRV(RHI::Format texelFormat);
-    BufferSRV GetSRV(size_t structStride);
+    BufferSrv GetSrv();
+    BufferSrv GetSrv(RHI::Format texelFormat);
+    BufferSrv GetSrv(size_t structStride);
 
-    BufferUAV GetUAV();
-    BufferUAV GetUAV(RHI::Format texelFormat);
-    BufferUAV GetUAV(size_t structStride);
+    BufferUav GetUav();
+    BufferUav GetUav(RHI::Format texelFormat);
+    BufferUav GetUav(size_t structStride);
 
 private:
 

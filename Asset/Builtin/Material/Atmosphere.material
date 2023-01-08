@@ -24,7 +24,7 @@ Shader "Builtin/Atmosphere/GenerateTransmittanceLut"
 
     #compute CSMain
 
-    #include "Atmosphere.cginc"
+    #include "Atmosphere.hlsl"
 
     #define SAMPLE_COUNT 256
 
@@ -72,7 +72,7 @@ Shader "Builtin/Atmosphere/GenerateMultiScatterLut"
 
     #compute CSMain
 
-    #include "Atmosphere.cginc"
+    #include "Atmosphere.hlsl"
 
     rtrc_group(Pass)
         rtrc_define(RWTexture2D<float4>,      MultiScatterTextureRW)
@@ -202,7 +202,7 @@ Shader "Builtin/Atmosphere/GenerateSkyLut"
 
     #compute CSMain
 
-    #include "Atmosphere.cginc"
+    #include "Atmosphere.hlsl"
 
     rtrc_group(Pass)
         rtrc_define(RWTexture2D<float4>,     SkyLutTextureRW)

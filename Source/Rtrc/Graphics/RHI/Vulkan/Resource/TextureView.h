@@ -1,68 +1,67 @@
 #pragma once
 
-#include <Rtrc/Graphics/RHI/Vulkan/Common.h>
-
-#include "Texture.h"
+#include <Rtrc/Graphics/RHI/Vulkan/Resource/Texture.h>
 
 RTRC_RHI_VK_BEGIN
-    class VulkanTexture;
 
-class VulkanTextureSRV : public TextureSRV
+class VulkanTexture;
+
+RTRC_RHI_IMPLEMENT(VulkanTextureSrv, TextureSrv)
 {
 public:
 
-    VulkanTextureSRV(const TextureSRVDesc &desc, VkImageView imageView);
+    VulkanTextureSrv(const TextureSrvDesc &desc, VkImageView imageView);
 
-    const TextureSRVDesc &GetDesc() const override;
+    const TextureSrvDesc &GetDesc() const RTRC_RHI_OVERRIDE;
 
-    VkImageView GetNativeImageView() const;
+    VkImageView _internalGetNativeImageView() const;
 
 private:
 
-    TextureSRVDesc desc_;
+    TextureSrvDesc desc_;
     VkImageView imageView_;
 };
 
-class VulkanTextureUAV : public TextureUAV
+RTRC_RHI_IMPLEMENT(VulkanTextureUav, TextureUav)
 {
 public:
 
-    VulkanTextureUAV(const TextureUAVDesc &desc, VkImageView imageView);
+    VulkanTextureUav(const TextureUavDesc &desc, VkImageView imageView);
 
-    const TextureUAVDesc &GetDesc() const override;
+    const TextureUavDesc &GetDesc() const RTRC_RHI_OVERRIDE;
 
-    VkImageView GetNativeImageView() const;
+    VkImageView _internalGetNativeImageView() const;
 
 private:
 
-    TextureUAVDesc desc_;
+    TextureUavDesc desc_;
     VkImageView imageView_;
 };
 
-class VulkanTextureRTV : public TextureRTV
+RTRC_RHI_IMPLEMENT(VulkanTextureRtv, TextureRtv)
 {
 public:
 
-    VulkanTextureRTV(const VulkanTexture *tex, const TextureRTVDesc &desc, VkImageView imageView);
+    VulkanTextureRtv(const VulkanTexture *tex, const TextureRtvDesc &desc, VkImageView imageView);
 
-    const TextureRTVDesc &GetDesc() const override;
+    const TextureRtvDesc &GetDesc() const RTRC_RHI_OVERRIDE;
 
-    VkImageView GetNativeImageView() const;
+    VkImageView _internalGetNativeImageView() const;
 
-    const VulkanTexture *GetTexture() const;
+    const VulkanTexture *_internalGetTexture() const;
 
 private:
 
     const VulkanTexture *tex_;
-    TextureRTVDesc desc_;
+    TextureRtvDesc desc_;
     VkImageView imageView_;
 };
 
-class VulkanTextureDSV : public TextureDSV
+RTRC_RHI_IMPLEMENT(VulkanTextureDsv, TextureDsv)
 {
 public:
 
-    VulkanTextureDSV(const VulkanTexture *tex, const TextureDSVDesc &desc, VkImageView imageView)
+    VulkanTextureDsv(const VulkanTexture *tex, const TextureDsvDesc &desc, VkImageView imageView)
         : tex_(tex), desc_(desc), imageView_(imageView)
     {
         if(desc_.format == Format::Unknown)
@@ -71,16 +70,16 @@ public:
         }
     }
 
-    const TextureDSVDesc &GetDesc() const override { return desc_; }
+    const TextureDsvDesc &GetDesc() const RTRC_RHI_OVERRIDE { return desc_; }
 
-    VkImageView GetNativeImageView() const { return imageView_; }
+    VkImageView _internalGetNativeImageView() const { return imageView_; }
 
-    const VulkanTexture *GetTexture() const { return tex_; }
+    const VulkanTexture *_internalGetTexture() const { return tex_; }
 
 private:
 
     const VulkanTexture *tex_;
-    TextureDSVDesc desc_;
+    TextureDsvDesc desc_;
     VkImageView imageView_;
 };
 

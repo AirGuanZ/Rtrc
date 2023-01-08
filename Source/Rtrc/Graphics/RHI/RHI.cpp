@@ -179,21 +179,24 @@ GraphicsPipelineBuilder &GraphicsPipelineBuilder::SetStencilTest(bool enableTest
     return *this;
 }
 
+GraphicsPipelineBuilder &GraphicsPipelineBuilder::SetStencilMask(uint8_t readMask, uint8_t writeMask)
+{
+    stencilReadMask = readMask;
+    stencilWriteMask = writeMask;
+    return *this;
+}
+
 GraphicsPipelineBuilder &GraphicsPipelineBuilder::SetStencilFrontOp(
     StencilOp depthFailOp,
     StencilOp failOp,
     StencilOp passOp,
-    CompareOp compareOp,
-    uint32_t  compareMask,
-    uint32_t  writeMask)
+    CompareOp compareOp)
 {
     frontStencilOp = StencilOps{
         .depthFailOp = depthFailOp,
         .failOp = failOp,
         .passOp = passOp,
-        .compareOp = compareOp,
-        .compareMask = compareMask,
-        .writeMask = writeMask
+        .compareOp = compareOp
     };
     return *this;
 }
@@ -202,17 +205,13 @@ GraphicsPipelineBuilder &GraphicsPipelineBuilder::SetStencilBackOp(
     StencilOp depthFailOp,
     StencilOp failOp,
     StencilOp passOp,
-    CompareOp compareOp,
-    uint32_t  compareMask,
-    uint32_t  writeMask)
+    CompareOp compareOp)
 {
     backStencilOp = StencilOps{
         .depthFailOp = depthFailOp,
         .failOp = failOp,
         .passOp = passOp,
-        .compareOp = compareOp,
-        .compareMask = compareMask,
-        .writeMask = writeMask
+        .compareOp = compareOp
     };
     return *this;
 }

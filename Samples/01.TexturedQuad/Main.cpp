@@ -104,14 +104,14 @@ void Run()
         auto renderTarget = graph->RegisterSwapchainTexture(device->GetSwapchain());
 
         auto quadPass = graph->CreatePass("DrawQuad");
-        quadPass->Use(renderTarget, RG::RENDER_TARGET);
+        quadPass->Use(renderTarget, RG::COLOR_ATTACHMENT);
         quadPass->SetCallback([&](RG::PassContext &context)
         {
             auto rt = renderTarget->Get();
             auto &commandBuffer = context.GetCommandBuffer();
             commandBuffer.BeginRenderPass(ColorAttachment
             {
-                .renderTargetView = rt->CreateRTV(),
+                .renderTargetView = rt->CreateRtv(),
                 .loadOp       = AttachmentLoadOp::Clear,
                 .storeOp      = AttachmentStoreOp::Store,
                 .clearValue   = ColorClearValue{ 0, 1, 1, 1 }

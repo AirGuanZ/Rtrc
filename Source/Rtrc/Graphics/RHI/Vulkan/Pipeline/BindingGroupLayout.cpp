@@ -51,78 +51,78 @@ const BindingGroupLayoutDesc &VulkanBindingGroupLayout::GetDesc() const
     return desc_;
 }
 
-VkDescriptorSetLayout VulkanBindingGroupLayout::GetLayout() const
+VkDescriptorSetLayout VulkanBindingGroupLayout::_internalGetNativeLayout() const
 {
     return layout_;
 }
 
-void VulkanBindingGroupLayout::ReleaseSet(VkDescriptorSet set) const
+void VulkanBindingGroupLayout::_internalReleaseSet(VkDescriptorSet set) const
 {
     std::lock_guard lock(poolMutex_);
     freeSets_.push_back(set);
 }
 
-bool VulkanBindingGroupLayout::IsSlotTexelBuffer(int index) const
+bool VulkanBindingGroupLayout::_internalIsSlotTexelBuffer(int index) const
 {
     return desc_.bindings[index].type == BindingType::Buffer;
 }
 
-bool VulkanBindingGroupLayout::IsSlotStorageTexelBuffer(int index) const
+bool VulkanBindingGroupLayout::_internalIsSlotStorageTexelBuffer(int index) const
 {
     return desc_.bindings[index].type == BindingType::RWBuffer;
 }
 
-bool VulkanBindingGroupLayout::IsSlotStructuredBuffer(int index) const
+bool VulkanBindingGroupLayout::_internalIsSlotStructuredBuffer(int index) const
 {
     return desc_.bindings[index].type == BindingType::StructuredBuffer;
 }
 
-bool VulkanBindingGroupLayout::IsSlotRWStructuredBuffer(int index) const
+bool VulkanBindingGroupLayout::_internalIsSlotRWStructuredBuffer(int index) const
 {
     return desc_.bindings[index].type == BindingType::RWStructuredBuffer;
 }
 
-bool VulkanBindingGroupLayout::IsSlotTexture2D(int index) const
+bool VulkanBindingGroupLayout::_internalIsSlotTexture2D(int index) const
 {
     return desc_.bindings[index].type == BindingType::Texture2D;
 }
 
-bool VulkanBindingGroupLayout::IsSlotRWTexture2D(int index) const
+bool VulkanBindingGroupLayout::_internalIsSlotRWTexture2D(int index) const
 {
     return desc_.bindings[index].type == BindingType::RWTexture2D;
 }
 
-bool VulkanBindingGroupLayout::IsSlotTexture3D(int index) const
+bool VulkanBindingGroupLayout::_internalIsSlotTexture3D(int index) const
 {
     return desc_.bindings[index].type == BindingType::Texture3D;
 }
 
-bool VulkanBindingGroupLayout::IsSlotRWTexture3D(int index) const
+bool VulkanBindingGroupLayout::_internalIsSlotRWTexture3D(int index) const
 {
     return desc_.bindings[index].type == BindingType::RWTexture3D;
 }
 
-bool VulkanBindingGroupLayout::IsSlotTexture2DArray(int index) const
+bool VulkanBindingGroupLayout::_internalIsSlotTexture2DArray(int index) const
 {
     return desc_.bindings[index].type == BindingType::Texture2DArray;
 }
 
-bool VulkanBindingGroupLayout::IsSlotRWTexture2DArray(int index) const
+bool VulkanBindingGroupLayout::_internalIsSlotRWTexture2DArray(int index) const
 {
     return desc_.bindings[index].type == BindingType::RWTexture2DArray;
 }
 
-bool VulkanBindingGroupLayout::IsSlotTexture3DArray(int index) const
+bool VulkanBindingGroupLayout::_internalIsSlotTexture3DArray(int index) const
 {
     return desc_.bindings[index].type == BindingType::Texture3DArray;
 }
 
-bool VulkanBindingGroupLayout::IsSlotRWTexture3DArray(int index) const
+bool VulkanBindingGroupLayout::_internalIsSlotRWTexture3DArray(int index) const
 {
     return desc_.bindings[index].type == BindingType::RWTexture3DArray;
 }
 
-Ptr<BindingGroup> VulkanBindingGroupLayout::CreateBindingGroupImpl() const
+Ptr<BindingGroup> VulkanBindingGroupLayout::_internalCreateBindingGroupImpl() const
 {
     std::lock_guard lock(poolMutex_);
     if(freeSets_.empty())
@@ -131,7 +131,7 @@ Ptr<BindingGroup> VulkanBindingGroupLayout::CreateBindingGroupImpl() const
     }
     auto set = freeSets_.back();
     freeSets_.pop_back();
-    return MakePtr<VulkanBindingGroupInstance>(device_, this, set);
+    return MakePtr<VulkanBindingGroup>(device_, this, set);
 }
 
 void VulkanBindingGroupLayout::TransferNode(

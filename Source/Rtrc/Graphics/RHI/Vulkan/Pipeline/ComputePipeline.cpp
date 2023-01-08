@@ -22,7 +22,7 @@ const Ptr<BindingLayout> &VulkanComputePipeline::GetBindingLayout() const
     return layout_;
 }
 
-VkPipeline VulkanComputePipeline::GetNativePipeline() const
+VkPipeline VulkanComputePipeline::_internalGetNativePipeline() const
 {
     return pipeline_;
 }

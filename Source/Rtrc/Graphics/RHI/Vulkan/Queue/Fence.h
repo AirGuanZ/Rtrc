@@ -4,7 +4,7 @@
 
 RTRC_RHI_VK_BEGIN
 
-class VulkanFence : public Fence
+RTRC_RHI_IMPLEMENT(VulkanFence, Fence)
 {
 public:
 
@@ -12,11 +12,11 @@ public:
 
     ~VulkanFence() override;
 
-    void Reset() override;
+    void Reset() RTRC_RHI_OVERRIDE;
 
-    void Wait() override;
+    void Wait() RTRC_RHI_OVERRIDE;
 
-    VkFence GetNativeFence() const;
+    VkFence _internalGetNativeFence() const;
 
 private:
 

@@ -367,15 +367,15 @@ void ImGuiInstance::BeginFrame(const Vector2i &framebufferSize)
 RG::Pass *ImGuiInstance::AddToRenderGraph(RG::TextureResource *renderTarget, RG::RenderGraph *renderGraph)
 {
     auto pass = renderGraph->CreatePass("Render ImGui");
-    pass->Use(renderTarget, RG::RENDER_TARGET);
+    pass->Use(renderTarget, RG::COLOR_ATTACHMENT);
     pass->SetCallback([this, renderTarget](RG::PassContext &ctx)
     {
-        RenderImmediately(renderTarget->Get()->CreateRTV(), ctx.GetCommandBuffer(), false);
+        RenderImmediately(renderTarget->Get()->CreateRtv(), ctx.GetCommandBuffer(), false);
     });
     return pass;
 }
 
-void ImGuiInstance::RenderImmediately(const TextureRTV &rtv, CommandBuffer &commandBuffer, bool renderPassMark)
+void ImGuiInstance::RenderImmediately(const TextureRtv &rtv, CommandBuffer &commandBuffer, bool renderPassMark)
 {
     IMGUI_CONTEXT;
 
@@ -461,13 +461,6 @@ void ImGuiInstance::RenderImmediately(const TextureRTV &rtv, CommandBuffer &comm
     commandBuffer.BindPipeline(pipeline);
     commandBuffer.SetViewports(rtv.GetTexture()->GetViewport());
 
-    // Inline sampler
-
-    if(int index = data_->shader->GetBindingGroupIndexForInlineSamplers(); index >= 0)
-    {
-        commandBuffer.BindGraphicsGroup(index, data_->shader->GetBindingGroupForInlineSamplers());
-    }
-
     // Vertex & Index buffer
 
     if(vertexBuffer)
@@ -543,7 +536,7 @@ void ImGuiInstance::RenderImmediately(const TextureRTV &rtv, CommandBuffer &comm
             {
                 auto texture = static_cast<Texture *>(drawCmd.GetTexID());
                 auto group = data_->passBindingGroupLayout->CreateBindingGroup();
-                group->Set(0, texture->CreateSRV());
+                group->Set(0, texture->CreateSrv());
                 commandBuffer.BindGraphicsGroup(1, group);
             }
 
@@ -612,7 +605,7 @@ void ImGuiInstance::RecreateFontTexture()
     data_->device->ExecuteBarrier(
         data_->fontTexture, RHI::TextureLayout::CopyDst, RHI::TextureLayout::ShaderTexture);
     data_->fontTextureBindingGroup = data_->passBindingGroupLayout->CreateBindingGroup();
-    data_->fontTextureBindingGroup->Set(0, data_->fontTexture->CreateSRV());
+    data_->fontTextureBindingGroup->Set(0, data_->fontTexture->CreateSrv());
     ImGui::GetIO().Fonts->SetTexID(data_->fontTexture.get());
 }
 

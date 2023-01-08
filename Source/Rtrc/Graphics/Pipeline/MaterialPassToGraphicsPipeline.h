@@ -43,7 +43,7 @@ private:
     PipelineRecord &GetPipelineRecord(const PipelineKey &key);
     void RemovePipelineRecord(const PipelineKey &key);
 
-    // An item is removed when the pass is destroyed
+    // An item is removed when the material pass is destroyed
     std::unordered_map<PipelineKey, PipelineRecord, HashOperator<PipelineKey>> pipelineCache_;
     tbb::spin_rw_mutex pipelineCacheMutex_;
 };

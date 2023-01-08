@@ -4,6 +4,8 @@ option("vulkan_backend")
     set_default(true)
 option("directx12_backend")
     set_default(false)
+option("static_rhi")
+    set_default(false)
 option_end()
 
 -- Global settings
@@ -70,9 +72,13 @@ target("Rtrc")
     if has_config("vulkan_backend") then
         add_headerfiles("Source/Rtrc/Graphics/RHI/Vulkan/**.h")
         add_files("Source/Rtrc/Graphics/RHI/Vulkan/**.cpp", { unity_group = "VulkanRHI" })
-        add_defines("RTRC_RHI_VULKAN", { public = true })
+        add_defines("RTRC_RHI_VULKAN=1", { public = true })
         add_defines("VMA_STATIC_VULKAN_FUNCTIONS=0", "VMA_DYNAMIC_VULKAN_FUNCTIONS=1", { public = false })
-        add_packages("spirv-reflect", "volk", "vk-bootstrap", "vulkan-memory-allocator")
+        add_packages("spirv-reflect")
+        add_packages("volk", "vk-bootstrap", "vulkan-memory-allocator", { public = has_config("static_rhi") })
+    end
+    if has_config("static_rhi") then
+        add_defines("RTRC_STATIC_RHI=1", { public = true })
     end
     -- Dependencies
     add_includedirs("External/avir", { public = false })

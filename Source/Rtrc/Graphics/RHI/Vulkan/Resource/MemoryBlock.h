@@ -4,26 +4,26 @@
 
 RTRC_RHI_VK_BEGIN
 
-class VulkanMemoryPropertyRequirements : public MemoryPropertyRequirements
+RTRC_RHI_IMPLEMENT(VulkanMemoryPropertyRequirements, MemoryPropertyRequirements)
 {
 public:
 
     explicit VulkanMemoryPropertyRequirements(uint32_t memoryTypeBits);
 
-    bool IsValid() const override;
+    bool IsValid() const RTRC_RHI_OVERRIDE;
 
-    bool Merge(const MemoryPropertyRequirements& other) override;
+    bool Merge(const MemoryPropertyRequirements& other) RTRC_RHI_OVERRIDE;
 
-    Ptr<MemoryPropertyRequirements> Clone() const override;
+    Ptr<MemoryPropertyRequirements> Clone() const RTRC_RHI_OVERRIDE;
 
-    uint32_t GetMemoryTypeBits() const;
+    uint32_t _internalGetMemoryTypeBits() const;
 
 private:
 
     uint32_t memoryTypeBits_;
 };
 
-class VulkanMemoryBlock : public MemoryBlock
+RTRC_RHI_IMPLEMENT(VulkanMemoryBlock, MemoryBlock)
 {
 public:
 
@@ -31,7 +31,7 @@ public:
 
     ~VulkanMemoryBlock() override;
 
-    const MemoryBlockDesc &GetDesc() const override;
+    const MemoryBlockDesc &GetDesc() const RTRC_RHI_OVERRIDE;
 
     VmaAllocator GetAllocator() const;
 

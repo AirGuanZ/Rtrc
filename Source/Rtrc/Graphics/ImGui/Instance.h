@@ -32,7 +32,7 @@ public:
 
     // rt must be externally synchronized
     // assert(rtv.size == frameBufferSize)
-    void RenderImmediately(const TextureRTV &rtv, CommandBuffer &commandBuffer, bool renderPassMark = true);
+    void RenderImmediately(const TextureRtv &rtv, CommandBuffer &commandBuffer, bool renderPassMark = true);
 
     // =========== GUI ===========
 

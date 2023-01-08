@@ -9,7 +9,12 @@
 
 RTRC_RHI_BEGIN
 
+#if defined(RTRC_STATIC_RHI) && defined(RTRC_RHI_VULKAN)
+namespace Vk { class VulkanSurface; }
+using Surface = Vk::VulkanSurface;
+#else
 class Surface;
+#endif
 
 RTRC_RHI_END
 

@@ -23,7 +23,7 @@ uint64_t VulkanSemaphore::GetValue() const
     return value;
 }
 
-VkSemaphore VulkanSemaphore::GetNativeSemaphore() const
+VkSemaphore VulkanSemaphore::_internalGetNativeSemaphore() const
 {
     return semaphore_;
 }

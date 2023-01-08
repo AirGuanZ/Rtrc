@@ -248,12 +248,20 @@ void CommandBuffer::BindPipeline(const RC<GraphicsPipeline> &graphicsPipeline)
 {
     CheckThreadID();
     rhiCommandBuffer_->BindPipeline(graphicsPipeline->GetRHIObject());
+    if(int index = graphicsPipeline->GetShaderInfo()->GetBindingGroupIndexForInlineSamplers(); index >= 0)
+    {
+        BindGraphicsGroup(index, graphicsPipeline->GetShaderInfo()->GetBindingGroupForInlineSamplers());
+    }
 }
 
 void CommandBuffer::BindPipeline(const RC<ComputePipeline> &computePipeline)
 {
     CheckThreadID();
     rhiCommandBuffer_->BindPipeline(computePipeline->GetRHIObject());
+    if(int index = computePipeline->GetShaderInfo()->GetBindingGroupIndexForInlineSamplers(); index >= 0)
+    {
+        BindComputeGroup(index, computePipeline->GetShaderInfo()->GetBindingGroupForInlineSamplers());
+    }
 }
 
 void CommandBuffer::BindGraphicsGroup(int index, const RC<BindingGroup> &group)
@@ -303,6 +311,12 @@ void CommandBuffer::BindMesh(const Mesh &mesh)
 {
     CheckThreadID();
     mesh.Bind(*this);
+}
+
+void CommandBuffer::SetStencilReferenceValue(uint8_t value)
+{
+    CheckThreadID();
+    rhiCommandBuffer_->SetStencilReferenceValue(value);
 }
 
 void CommandBuffer::Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance)

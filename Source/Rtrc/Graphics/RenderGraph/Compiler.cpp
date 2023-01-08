@@ -520,7 +520,7 @@ void Compiler::GenerateBarriers(const ExecutableResources &resources)
                     .texture      = resources.indexToTexture[tex->GetResourceIndex()].texture->GetRHIObject(),
                     .subresources = RHI::TextureSubresources
                     {
-                        .mipLevel = subrsc.mipLevel,
+                        .mipLevel   = subrsc.mipLevel,
                         .levelCount = 1,
                         .arrayLayer = subrsc.arrayLayer,
                         .layerCount = 1

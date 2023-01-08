@@ -4,7 +4,7 @@
 
 RTRC_RHI_VK_BEGIN
 
-class VulkanCommandPool : public CommandPool
+RTRC_RHI_IMPLEMENT(VulkanCommandPool, CommandPool)
 {
 public:
 
@@ -12,11 +12,11 @@ public:
 
     ~VulkanCommandPool() override;
 
-    void Reset() override;
+    void Reset() RTRC_RHI_OVERRIDE;
 
-    QueueType GetType() const override;
+    QueueType GetType() const RTRC_RHI_OVERRIDE;
 
-    Ptr<CommandBuffer> NewCommandBuffer() override;
+    Ptr<CommandBuffer> NewCommandBuffer() RTRC_RHI_OVERRIDE;
 
 private:
 

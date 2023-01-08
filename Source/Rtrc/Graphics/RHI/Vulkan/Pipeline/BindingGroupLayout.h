@@ -8,7 +8,7 @@
 
 RTRC_RHI_VK_BEGIN
 
-class VulkanBindingGroupLayout : public BindingGroupLayout
+RTRC_RHI_IMPLEMENT(VulkanBindingGroupLayout, BindingGroupLayout)
 {
 public:
 
@@ -29,31 +29,31 @@ public:
 
     ~VulkanBindingGroupLayout() override;
 
-    const BindingGroupLayoutDesc &GetDesc() const override;
+    const BindingGroupLayoutDesc &GetDesc() const RTRC_RHI_OVERRIDE;
 
-    VkDescriptorSetLayout GetLayout() const;
+    VkDescriptorSetLayout _internalGetNativeLayout() const;
 
-    void ReleaseSet(VkDescriptorSet set) const;
+    void _internalReleaseSet(VkDescriptorSet set) const;
 
-    bool IsSlotTexelBuffer(int index) const;
-    bool IsSlotStorageTexelBuffer(int index) const;
+    bool _internalIsSlotTexelBuffer(int index) const;
+    bool _internalIsSlotStorageTexelBuffer(int index) const;
 
-    bool IsSlotStructuredBuffer(int index) const;
-    bool IsSlotRWStructuredBuffer(int index) const;
+    bool _internalIsSlotStructuredBuffer(int index) const;
+    bool _internalIsSlotRWStructuredBuffer(int index) const;
 
-    bool IsSlotTexture2D(int index) const;
-    bool IsSlotRWTexture2D(int index) const;
+    bool _internalIsSlotTexture2D(int index) const;
+    bool _internalIsSlotRWTexture2D(int index) const;
 
-    bool IsSlotTexture3D(int index) const;
-    bool IsSlotRWTexture3D(int index) const;
+    bool _internalIsSlotTexture3D(int index) const;
+    bool _internalIsSlotRWTexture3D(int index) const;
 
-    bool IsSlotTexture2DArray(int index) const;
-    bool IsSlotRWTexture2DArray(int index) const;
+    bool _internalIsSlotTexture2DArray(int index) const;
+    bool _internalIsSlotRWTexture2DArray(int index) const;
 
-    bool IsSlotTexture3DArray(int index) const;
-    bool IsSlotRWTexture3DArray(int index) const;
+    bool _internalIsSlotTexture3DArray(int index) const;
+    bool _internalIsSlotRWTexture3DArray(int index) const;
 
-    Ptr<BindingGroup> CreateBindingGroupImpl() const;
+    Ptr<BindingGroup> _internalCreateBindingGroupImpl() const;
 
 private:
 

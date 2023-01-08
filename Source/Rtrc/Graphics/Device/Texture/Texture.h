@@ -8,10 +8,10 @@ class Texture;
 template<typename T>
 class TTextureView;
 
-using TextureSRV = TTextureView<RHI::TextureSRVPtr>;
-using TextureUAV = TTextureView<RHI::TextureUAVPtr>;
-using TextureRTV = TTextureView<RHI::TextureRTVPtr>;
-using TextureDSV = TTextureView<RHI::TextureDSVPtr>;
+using TextureSrv = TTextureView<RHI::TextureSrvPtr>;
+using TextureUav = TTextureView<RHI::TextureUavPtr>;
+using TextureRtv = TTextureView<RHI::TextureRtvPtr>;
+using TextureDsv = TTextureView<RHI::TextureDsvPtr>;
 
 namespace TextureImpl
 {
@@ -61,16 +61,17 @@ public:
     uint32_t GetArraySize() const;
     uint32_t GetMipmapLevelCount() const;
 
-    TextureSRV CreateSRV(); // non-array view for single-layer texture, array view for multi-layer texture
-    TextureSRV CreateSRV(uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer);                      // non-array view
-    TextureSRV CreateSRV(uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, uint32_t layerCount); // array view
+    TextureSrv CreateSrv(RHI::TextureSrvFlag flags = 0); // non-array view for single-layer texture, array view for multi-layer texture
+    TextureSrv CreateSrv(uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, RHI::TextureSrvFlag flags = 0);                      // non-array view
+    TextureSrv CreateSrv(
+        uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, uint32_t layerCount, RHI::TextureSrvFlag flags = 0); // array view
     
-    TextureUAV CreateUAV(); // non-array view for single-layer texture, array view for multi-layer texture
-    TextureUAV CreateUAV(uint32_t mipLevel, uint32_t arrayLayer);                      // non-array view
-    TextureUAV CreateUAV(uint32_t mipLevel, uint32_t arrayLayer, uint32_t layerCount); // array view
+    TextureUav CreateUav(); // non-array view for single-layer texture, array view for multi-layer texture
+    TextureUav CreateUav(uint32_t mipLevel, uint32_t arrayLayer);                      // non-array view
+    TextureUav CreateUav(uint32_t mipLevel, uint32_t arrayLayer, uint32_t layerCount); // array view
 
-    TextureRTV CreateRTV(uint32_t mipLevel = 0, uint32_t arrayLayer = 0);
-    TextureDSV CreateDSV(uint32_t mipLevel = 0, uint32_t arrayLayer = 0);
+    TextureRtv CreateRtv(uint32_t mipLevel = 0, uint32_t arrayLayer = 0);
+    TextureDsv CreateDsv(uint32_t mipLevel = 0, uint32_t arrayLayer = 0);
 
     RHI::Viewport GetViewport(float minDepth = 0, float maxDepth = 1) const;
     RHI::Scissor GetScissor() const;

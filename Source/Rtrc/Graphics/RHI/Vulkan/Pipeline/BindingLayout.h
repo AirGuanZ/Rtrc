@@ -6,7 +6,7 @@
 
 RTRC_RHI_VK_BEGIN
 
-class VulkanBindingLayout : public BindingLayout
+RTRC_RHI_IMPLEMENT(VulkanBindingLayout, BindingLayout)
 {
 public:
 
@@ -14,7 +14,7 @@ public:
 
     ~VulkanBindingLayout() override;
 
-    VkPipelineLayout GetNativeLayout() const;
+    VkPipelineLayout _internalGetNativeLayout() const;
 
 private:
 

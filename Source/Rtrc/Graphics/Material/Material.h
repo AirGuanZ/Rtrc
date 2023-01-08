@@ -115,7 +115,7 @@ public:
         size_t indexInBindingGroup;
     };
 
-    using MaterialResource = Variant<BufferSRV, TextureSRV, RC<Texture>, RC<Sampler>>;
+    using MaterialResource = Variant<BufferSrv, TextureSrv, RC<Texture>, RC<Sampler>>;
 
     MaterialPassPropertyLayout(const MaterialPropertyHostLayout &materialPropertyLayout, const Shader &shader);
 
@@ -176,7 +176,7 @@ private:
 
     tbb::spin_rw_mutex propertyLayoutsMutex_;
 
-    Signal<> onDestroyCallbacks_;
+    Signal<SignalThreadPolicy::SpinLock> onDestroyCallbacks_;
 };
 
 class Material : public std::enable_shared_from_this<Material>, public InObjectCache

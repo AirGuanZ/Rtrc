@@ -150,7 +150,7 @@ private:
     T *ptr_;
 };
 
-template<typename U, typename T> requires std::is_base_of_v<T, U>
+template<typename U, typename T> requires std::is_base_of_v<T, U> || std::is_same_v<T, U>
 ReferenceCountedPtr<U> DynamicCast(const ReferenceCountedPtr<T> &ptr)
 {
     auto castedPtr = dynamic_cast<U *>(ptr.Get());

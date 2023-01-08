@@ -18,7 +18,7 @@ public:
 
 private:
 
-    static_assert(std::is_same_v<T, RHI::BufferSRVPtr> || std::is_same_v<T, RHI::BufferUAVPtr>);
+    static_assert(std::is_same_v<T, RHI::BufferSrvPtr> || std::is_same_v<T, RHI::BufferUavPtr>);
 
     RC<Buffer> buffer_;
     T view_;
@@ -43,20 +43,20 @@ TBufferView<T>::TBufferView(RC<Buffer> buffer, RHI::Format format, size_t struct
     : buffer_(std::move(buffer))
 {
     assert(format != RHI::Format::Unknown || structStride != 0);
-    const RHI::BufferSRVDesc desc =
+    const RHI::BufferSrvDesc desc =
     {
         .format = format,
         .offset = 0,
         .range = static_cast<uint32_t>(buffer_->GetSize()),
         .stride = static_cast<uint32_t>(structStride)
     };
-    if constexpr(std::is_same_v<T, RHI::BufferSRVPtr>)
+    if constexpr(std::is_same_v<T, RHI::BufferSrvPtr>)
     {
-        view_ = buffer_->GetRHIObject()->CreateSRV(desc);
+        view_ = buffer_->GetRHIObject()->CreateSrv(desc);
     }
     else
     {
-        view_ = buffer_->GetRHIObject()->CreateUAV(desc);
+        view_ = buffer_->GetRHIObject()->CreateUav(desc);
     }
 }
 
@@ -66,34 +66,34 @@ const T &TBufferView<T>::GetRHIObject() const
     return view_;
 }
 
-inline BufferSRV Buffer::GetSRV()
+inline BufferSrv Buffer::GetSrv()
 {
-    return BufferSRV(shared_from_this(), defaultViewTexelFormat_, defaultViewStructStride_);
+    return BufferSrv(shared_from_this(), defaultViewTexelFormat_, defaultViewStructStride_);
 }
 
-inline TBufferView<RHI::BufferSRVPtr> Buffer::GetSRV(RHI::Format texelFormat)
+inline TBufferView<RHI::BufferSrvPtr> Buffer::GetSrv(RHI::Format texelFormat)
 {
-    return BufferSRV(shared_from_this(), texelFormat);
+    return BufferSrv(shared_from_this(), texelFormat);
 }
 
-inline TBufferView<RHI::BufferSRVPtr> Buffer::GetSRV(size_t structStride)
+inline TBufferView<RHI::BufferSrvPtr> Buffer::GetSrv(size_t structStride)
 {
-    return BufferSRV(shared_from_this(), structStride);
+    return BufferSrv(shared_from_this(), structStride);
 }
 
-inline BufferUAV Buffer::GetUAV()
+inline BufferUav Buffer::GetUav()
 {
-    return BufferUAV(shared_from_this(), defaultViewTexelFormat_, defaultViewStructStride_);
+    return BufferUav(shared_from_this(), defaultViewTexelFormat_, defaultViewStructStride_);
 }
 
-inline TBufferView<RHI::BufferUAVPtr> Buffer::GetUAV(RHI::Format texelFormat)
+inline TBufferView<RHI::BufferUavPtr> Buffer::GetUav(RHI::Format texelFormat)
 {
-    return BufferUAV(shared_from_this(), texelFormat);
+    return BufferUav(shared_from_this(), texelFormat);
 }
 
-inline TBufferView<RHI::BufferUAVPtr> Buffer::GetUAV(size_t structStride)
+inline TBufferView<RHI::BufferUavPtr> Buffer::GetUav(size_t structStride)
 {
-    return BufferUAV(shared_from_this(), structStride);
+    return BufferUav(shared_from_this(), structStride);
 }
 
 RTRC_END

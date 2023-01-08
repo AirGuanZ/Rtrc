@@ -4,22 +4,22 @@
 
 RTRC_RHI_VK_BEGIN
 
-class VulkanBufferSRV : public BufferSRV
+RTRC_RHI_IMPLEMENT(VulkanBufferSrv, BufferSrv)
 {
 public:
 
-    VulkanBufferSRV(const VulkanBuffer *buffer, const BufferSRVDesc &desc, VkBufferView view);
+    VulkanBufferSrv(const VulkanBuffer *buffer, const BufferSrvDesc &desc, VkBufferView view);
 
-    const BufferSRVDesc &GetDesc() const override;
+    const BufferSrvDesc &GetDesc() const RTRC_RHI_OVERRIDE;
 
-    const VulkanBuffer *GetBuffer() const;
+    const VulkanBuffer *_internalGetBuffer() const;
 
-    VkBufferView GetNativeView() const;
+    VkBufferView _internalGetNativeView() const;
 
 private:
 
     const VulkanBuffer *buffer_;
-    BufferSRVDesc desc_;
+    BufferSrvDesc desc_;
     VkBufferView view_;
 };
 

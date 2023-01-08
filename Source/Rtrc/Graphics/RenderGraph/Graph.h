@@ -28,44 +28,44 @@ struct UseInfo
     RHI::ResourceAccessFlag accesses = RHI::ResourceAccess::None;
 };
 
-inline constexpr UseInfo RENDER_TARGET =
+inline constexpr UseInfo COLOR_ATTACHMENT =
 {
-    .layout   = RHI::TextureLayout::RenderTarget,
+    .layout   = RHI::TextureLayout::ColorAttachment,
     .stages   = RHI::PipelineStage::RenderTarget,
     .accesses = RHI::ResourceAccess::RenderTargetWrite | RHI::ResourceAccess::RenderTargetRead
 };
 
-inline constexpr UseInfo RENDER_TARGET_READ =
+inline constexpr UseInfo COLOR_ATTACHMENT_READONLY =
 {
-    .layout   = RHI::TextureLayout::RenderTarget,
+    .layout   = RHI::TextureLayout::ColorAttachment,
     .stages   = RHI::PipelineStage::RenderTarget,
     .accesses = RHI::ResourceAccess::RenderTargetRead
 };
 
-inline constexpr UseInfo RENDER_TARGET_WRITE =
+inline constexpr UseInfo COLOR_ATTACHMENT_WRITEONLY =
 {
-    .layout   = RHI::TextureLayout::RenderTarget,
+    .layout   = RHI::TextureLayout::ColorAttachment,
     .stages   = RHI::PipelineStage::RenderTarget,
     .accesses = RHI::ResourceAccess::RenderTargetWrite
 };
 
-inline constexpr UseInfo DEPTH_STENCIL =
+inline constexpr UseInfo DEPTH_STENCIL_ATTACHMENT =
 {
-    .layout   = RHI::TextureLayout::DepthStencil,
+    .layout   = RHI::TextureLayout::DepthStencilAttachment,
     .stages   = RHI::PipelineStage::DepthStencil,
     .accesses = RHI::ResourceAccess::DepthStencilRead | RHI::ResourceAccess::DepthStencilWrite
 };
 
-inline constexpr UseInfo DEPTH_STENCIL_WRITE =
+inline constexpr UseInfo DEPTH_STENCIL_ATTACHMENT_WRITEONLY =
 {
-    .layout   = RHI::TextureLayout::DepthStencil,
+    .layout   = RHI::TextureLayout::DepthStencilAttachment,
     .stages   = RHI::PipelineStage::DepthStencil,
     .accesses = RHI::ResourceAccess::DepthStencilWrite
 };
 
-inline constexpr UseInfo DEPTH_STENCIL_READ =
+inline constexpr UseInfo DEPTH_STENCIL_ATTACHMENT_READONLY =
 {
-    .layout   = RHI::TextureLayout::DepthStencil,
+    .layout   = RHI::TextureLayout::DepthStencilAttachment,
     .stages   = RHI::PipelineStage::DepthStencil,
     .accesses = RHI::ResourceAccess::DepthStencilRead
 };
@@ -77,21 +77,21 @@ inline constexpr UseInfo CLEAR_DST =
     .accesses = RHI::ResourceAccess::ClearWrite
 };
 
-inline constexpr UseInfo PIXEL_SHADER_TEXTURE_READ =
+inline constexpr UseInfo PIXEL_SHADER_TEXTURE =
 {
     .layout = RHI::TextureLayout::ShaderTexture,
     .stages = RHI::PipelineStage::FragmentShader,
     .accesses = RHI::ResourceAccess::TextureRead
 };
 
-inline constexpr UseInfo COMPUTE_UNORDERED_ACCESS =
+inline constexpr UseInfo COMPUTE_SHADER_RWTEXTURE =
 {
     .layout = RHI::TextureLayout::ShaderRWTexture,
     .stages = RHI::PipelineStage::ComputeShader,
     .accesses = RHI::ResourceAccess::RWTextureRead | RHI::ResourceAccess::RWTextureWrite
 };
 
-inline constexpr UseInfo COMPUTE_UNORDERED_ACCESS_WRITE =
+inline constexpr UseInfo COMPUTE_SHADER_RWTEXTURE_WRITEONLY =
 {
     .layout = RHI::TextureLayout::ShaderRWTexture,
     .stages = RHI::PipelineStage::ComputeShader,

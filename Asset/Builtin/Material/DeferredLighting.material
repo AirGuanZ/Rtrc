@@ -13,7 +13,8 @@ Shader "Builtin/DeferredLighting"
 #vert VSMain
 #frag FSMain
 
-#include "Atmosphere.cginc"
+#include "Atmosphere.hlsl"
+#include "Common/Color.hlsl"
 #include "Common/GBuffer.hlsl"
 #include "Common/Scene.hlsl"
 
@@ -53,16 +54,22 @@ VsToFs VSMain(VsInput input)
 float4 FSMain(VsToFs input) : SV_TARGET
 {
     Builtin::GBufferPixelValue gbuffer = Builtin::LoadGBufferPixel(input.uv);
+    float3 color;
     if(gbuffer.depth >= 1)
     {
         float3 dir = normalize(input.ray);
         float2 uv = Atmosphere::ComputeSkyLutTexCoord(dir);
-        float3 color = SkyLutTexture.SampleLevel(SkyLutSampler, uv, 0);
-        return float4(pow(color, 1 / 2.2), 1);
+        color = SkyLutTexture.SampleLevel(SkyLutSampler, uv, 0);
     }
-    float cosFactor = max(0, dot(gbuffer.normal, -Pass.directionalLight.direction));
-    float3 color = 0.01 + cosFactor * Pass.directionalLight.color * Pass.directionalLight.intensity;
-    return float4(pow(color, 1 / 2.2), 1);
+    else
+    {
+        float cosFactor = max(0, dot(gbuffer.normal, -Pass.directionalLight.direction));
+        color = 0.01 + cosFactor * Pass.directionalLight.color * Pass.directionalLight.intensity;
+    }
+    color = Tonemap(color);
+    color = pow(color, 1 / 2.2);
+    color = Dither01(color, input.uv);
+    return float4(color, 1);
 }
 
 } // Shader "Builtin/DeferredLighting"

@@ -8,7 +8,7 @@
 
 RTRC_RHI_VK_BEGIN
 
-class VulkanBuffer : public Buffer
+RTRC_RHI_IMPLEMENT(VulkanBuffer, Buffer)
 {
 public:
 
@@ -23,21 +23,21 @@ public:
 
     ~VulkanBuffer() override;
 
-    const BufferDesc &GetDesc() const override;
+    const BufferDesc &GetDesc() const RTRC_RHI_OVERRIDE;
 
-    Ptr<BufferSRV> CreateSRV(const BufferSRVDesc &desc) const override;
+    Ptr<BufferSrv> CreateSrv(const BufferSrvDesc &desc) const RTRC_RHI_OVERRIDE;
 
-    Ptr<BufferUAV> CreateUAV(const BufferUAVDesc &desc) const override;
+    Ptr<BufferUav> CreateUav(const BufferUavDesc &desc) const RTRC_RHI_OVERRIDE;
 
-    void *Map(size_t offset, size_t size, bool invalidate) override;
+    void *Map(size_t offset, size_t size, bool invalidate = false) RTRC_RHI_OVERRIDE;
 
-    void Unmap(size_t offset, size_t size, bool flush) override;
+    void Unmap(size_t offset, size_t size, bool flush = false) RTRC_RHI_OVERRIDE;
 
-    void InvalidateBeforeRead(size_t offset, size_t size) override;
+    void InvalidateBeforeRead(size_t offset, size_t size) RTRC_RHI_OVERRIDE;
 
-    void FlushAfterWrite(size_t offset, size_t size) override;
+    void FlushAfterWrite(size_t offset, size_t size) RTRC_RHI_OVERRIDE;
 
-    VkBuffer GetNativeBuffer() const;
+    VkBuffer _internalGetNativeBuffer() const;
 
 private:
 

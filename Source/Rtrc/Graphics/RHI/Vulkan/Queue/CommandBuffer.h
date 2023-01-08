@@ -6,7 +6,7 @@ RTRC_RHI_VK_BEGIN
 
 class VulkanDevice;
 
-class VulkanCommandBuffer : public CommandBuffer
+RTRC_RHI_IMPLEMENT(VulkanCommandBuffer, CommandBuffer)
 {
 public:
 
@@ -14,49 +14,55 @@ public:
 
     ~VulkanCommandBuffer() override;
 
-    void Begin() override;
-    void End() override;
+    void Begin() RTRC_RHI_OVERRIDE;
+    void End() RTRC_RHI_OVERRIDE;
 
     void BeginRenderPass(
         Span<RenderPassColorAttachment>         colorAttachments,
-        const RenderPassDepthStencilAttachment &depthStencilAttachment) override;
-    void EndRenderPass() override;
+        const RenderPassDepthStencilAttachment &depthStencilAttachment) RTRC_RHI_OVERRIDE;
+    void EndRenderPass() RTRC_RHI_OVERRIDE;
 
-    void BindPipeline(const Ptr<GraphicsPipeline> &pipeline) override;
-    void BindPipeline(const Ptr<ComputePipeline> &pipeline) override;
+    void BindPipeline(const Ptr<GraphicsPipeline> &pipeline) RTRC_RHI_OVERRIDE;
+    void BindPipeline(const Ptr<ComputePipeline> &pipeline) RTRC_RHI_OVERRIDE;
     
-    void BindGroupsToGraphicsPipeline(int startIndex, Span<RC<BindingGroup>> groups) override;
-    void BindGroupsToComputePipeline(int startIndex, Span<RC<BindingGroup>> groups) override;
-    void BindGroupToGraphicsPipeline(int index, const Ptr<BindingGroup> &group) override;
-    void BindGroupToComputePipeline(int index, const Ptr<BindingGroup> &group) override;
+    void BindGroupsToGraphicsPipeline(int startIndex, Span<RC<BindingGroup>> groups) RTRC_RHI_OVERRIDE;
+    void BindGroupsToComputePipeline(int startIndex, Span<RC<BindingGroup>> groups) RTRC_RHI_OVERRIDE;
+    void BindGroupToGraphicsPipeline(int index, const Ptr<BindingGroup> &group) RTRC_RHI_OVERRIDE;
+    void BindGroupToComputePipeline(int index, const Ptr<BindingGroup> &group) RTRC_RHI_OVERRIDE;
 
-    void SetViewports(Span<Viewport> viewports) override;
-    void SetScissors(Span<Scissor> scissors) override;
+    void SetViewports(Span<Viewport> viewports) RTRC_RHI_OVERRIDE;
+    void SetScissors(Span<Scissor> scissors) RTRC_RHI_OVERRIDE;
 
-    void SetViewportsWithCount(Span<Viewport> viewports) override;
-    void SetScissorsWithCount(Span<Scissor> scissors) override;
+    void SetViewportsWithCount(Span<Viewport> viewports) RTRC_RHI_OVERRIDE;
+    void SetScissorsWithCount(Span<Scissor> scissors) RTRC_RHI_OVERRIDE;
 
-    void SetVertexBuffer(int slot, Span<BufferPtr> buffers, Span<size_t> byteOffsets) override;
-    void SetIndexBuffer(const BufferPtr &buffer, size_t byteOffset, IndexBufferFormat format) override;
+    void SetVertexBuffer(int slot, Span<BufferPtr> buffers, Span<size_t> byteOffsets) RTRC_RHI_OVERRIDE;
+    void SetIndexBuffer(const BufferPtr &buffer, size_t byteOffset, IndexBufferFormat format) RTRC_RHI_OVERRIDE;
 
-    void Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance) override;
-    void DrawIndexed(int indexCount, int instanceCount, int firstIndex, int firstVertex, int firstInstance) override;
+    void SetStencilReferenceValue(uint8_t value) RTRC_RHI_OVERRIDE;
 
-    void Dispatch(int groupCountX, int groupCountY, int groupCountZ) override;
+    void Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance) RTRC_RHI_OVERRIDE;
+    void DrawIndexed(int indexCount, int instanceCount, int firstIndex, int firstVertex, int firstInstance) RTRC_RHI_OVERRIDE;
 
-    void CopyBuffer(Buffer *dst, size_t dstOffset, Buffer *src, size_t srcOffset, size_t range) override;
+    void Dispatch(int groupCountX, int groupCountY, int groupCountZ) RTRC_RHI_OVERRIDE;
+
+    void CopyBuffer(Buffer *dst, size_t dstOffset, Buffer *src, size_t srcOffset, size_t range) RTRC_RHI_OVERRIDE;
 
     void CopyBufferToColorTexture2D(
-        Texture *dst, uint32_t mipLevel, uint32_t arrayLayer, Buffer *src, size_t srcOffset) override;
+        Texture *dst, uint32_t mipLevel, uint32_t arrayLayer, Buffer *src, size_t srcOffset) RTRC_RHI_OVERRIDE;
     void CopyColorTexture2DToBuffer(
-        Buffer *dst, size_t dstOffset, Texture *src, uint32_t mipLevel, uint32_t arrayLayer) override;
+        Buffer *dst, size_t dstOffset, Texture *src, uint32_t mipLevel, uint32_t arrayLayer) RTRC_RHI_OVERRIDE;
 
-    void ClearColorTexture2D(Texture *dst, const ColorClearValue &clearValue) override;
+    void ClearColorTexture2D(Texture *dst, const ColorClearValue &clearValue) RTRC_RHI_OVERRIDE;
 
-    void BeginDebugEvent(const DebugLabel &label) override;
-    void EndDebugEvent() override;
+    void BeginDebugEvent(const DebugLabel &label) RTRC_RHI_OVERRIDE;
+    void EndDebugEvent() RTRC_RHI_OVERRIDE;
 
-    VkCommandBuffer GetNativeCommandBuffer() const;
+#ifdef RTRC_STATIC_RHI
+    RTRC_RHI_COMMAND_BUFFER_COMMON_METHODS
+#endif
+
+    VkCommandBuffer _internalGetNativeCommandBuffer() const;
 
 protected:
 
@@ -64,7 +70,7 @@ protected:
         Span<TextureTransitionBarrier> textureTransitions,
         Span<BufferTransitionBarrier>  bufferTransitions,
         Span<TextureReleaseBarrier>    textureReleaseBarriers,
-        Span<TextureAcquireBarrier>    textureAcquireBarriers) override;
+        Span<TextureAcquireBarrier>    textureAcquireBarriers) RTRC_RHI_OVERRIDE;
 
 private:
 

@@ -15,8 +15,8 @@
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/Queue.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/Semaphore.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Buffer.h>
-#include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferSRV.h>
-#include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferUAV.h>
+#include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferSrv.h>
+#include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferUav.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/MemoryBlock.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Sampler.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Texture.h>
@@ -244,7 +244,7 @@ Ptr<Queue> VulkanDevice::GetQueue(QueueType type)
 Ptr<CommandPool> VulkanDevice::CreateCommandPool(const Ptr<Queue> &queue)
 {
     auto vkQueue = reinterpret_cast<const VulkanQueue *>(queue.Get());
-    return vkQueue->CreateCommandPoolImpl();
+    return vkQueue->_internalCreateCommandPoolImpl();
 }
 
 Ptr<Fence> VulkanDevice::CreateFence(bool signaled)
@@ -270,7 +270,7 @@ Ptr<Swapchain> VulkanDevice::CreateSwapchain(const SwapchainDesc &desc, Window &
 
     VkSurfaceCapabilitiesKHR surfaceCapabilities;
     VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
-        physicalDevice_.GetNativeHandle(), surface->GetSurface(), &surfaceCapabilities))
+        physicalDevice_.GetNativeHandle(), surface->_internalGetSurface(), &surfaceCapabilities))
     {
         throw Exception("failed to get vulkan physical device surface capabilities");
     };
@@ -278,7 +278,7 @@ Ptr<Swapchain> VulkanDevice::CreateSwapchain(const SwapchainDesc &desc, Window &
     // check format
 
     const auto requiredFormat = TranslateTexelFormat(desc.format);
-    if(!VkDeviceDetail::CheckFormatSupport(physicalDevice_.GetNativeHandle(), surface->GetSurface(), requiredFormat))
+    if(!VkDeviceDetail::CheckFormatSupport(physicalDevice_.GetNativeHandle(), surface->_internalGetSurface(), requiredFormat))
     {
         throw Exception(fmt::format("surface format {} is not supported", GetFormatName(desc.format)));
     }
@@ -288,13 +288,13 @@ Ptr<Swapchain> VulkanDevice::CreateSwapchain(const SwapchainDesc &desc, Window &
     uint32_t supportedPresentModeCount;
     VK_FAIL_MSG(
         vkGetPhysicalDeviceSurfacePresentModesKHR(
-            physicalDevice_.GetNativeHandle(), surface->GetSurface(), &supportedPresentModeCount, nullptr),
+            physicalDevice_.GetNativeHandle(), surface->_internalGetSurface(), &supportedPresentModeCount, nullptr),
         "failed to get vulkan surface present mode count");
 
     std::vector<VkPresentModeKHR> supportedPresentModes(supportedPresentModeCount);
     VK_FAIL_MSG(
         vkGetPhysicalDeviceSurfacePresentModesKHR(
-            physicalDevice_.GetNativeHandle(), surface->GetSurface(),
+            physicalDevice_.GetNativeHandle(), surface->_internalGetSurface(),
             &supportedPresentModeCount, supportedPresentModes.data()),
         "failed to get vulkan surface present modes");
 
@@ -342,7 +342,7 @@ Ptr<Swapchain> VulkanDevice::CreateSwapchain(const SwapchainDesc &desc, Window &
 
     const VkSwapchainCreateInfoKHR swapchainCreateInfo = {
         .sType                 = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-        .surface               = surface->GetSurface(),
+        .surface               = surface->_internalGetSurface(),
         .minImageCount         = imageCount,
         .imageFormat           = requiredFormat,
         .imageColorSpace       = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
@@ -414,7 +414,7 @@ Ptr<RawShader> VulkanDevice::CreateShader(const void *data, size_t size, std::st
         vkCreateShaderModule(device_, &createInfo, VK_ALLOC, &shaderModule),
         "failed to create vulkan shader module");
     RTRC_SCOPE_FAIL{ vkDestroyShaderModule(device_, shaderModule, VK_ALLOC); };
-    return MakePtr<VulkanShader>(device_, shaderModule, std::move(entryPoint), type);
+    return MakePtr<VulkanRawShader>(device_, shaderModule, std::move(entryPoint), type);
 }
 
 Ptr<GraphicsPipeline> VulkanDevice::CreateGraphicsPipeline(const GraphicsPipelineDesc &desc)
@@ -440,8 +440,8 @@ Ptr<GraphicsPipeline> VulkanDevice::CreateGraphicsPipeline(const GraphicsPipelin
     };
 
     const VkPipelineShaderStageCreateInfo stages[] = {
-        static_cast<VulkanShader *>(desc.vertexShader.Get())->GetStageCreateInfo(),
-        static_cast<VulkanShader *>(desc.fragmentShader.Get())->GetStageCreateInfo()
+        static_cast<VulkanRawShader *>(desc.vertexShader.Get())->_internalGetStageCreateInfo(),
+        static_cast<VulkanRawShader *>(desc.fragmentShader.Get())->_internalGetStageCreateInfo()
     };
 
     std::vector<VkVertexInputBindingDescription> inputBindingDescs;
@@ -534,8 +534,8 @@ Ptr<GraphicsPipeline> VulkanDevice::CreateGraphicsPipeline(const GraphicsPipelin
         .passOp = TranslateStencilOp(desc.frontStencilOp.passOp),
         .depthFailOp = TranslateStencilOp(desc.frontStencilOp.depthFailOp),
         .compareOp = TranslateCompareOp(desc.frontStencilOp.compareOp),
-        .compareMask = desc.frontStencilOp.compareMask,
-        .writeMask = desc.frontStencilOp.writeMask,
+        .compareMask = desc.stencilReadMask,
+        .writeMask = desc.stencilWriteMask,
         .reference = 0
     };
 
@@ -544,8 +544,8 @@ Ptr<GraphicsPipeline> VulkanDevice::CreateGraphicsPipeline(const GraphicsPipelin
         .passOp = TranslateStencilOp(desc.backStencilOp.passOp),
         .depthFailOp = TranslateStencilOp(desc.backStencilOp.depthFailOp),
         .compareOp = TranslateCompareOp(desc.backStencilOp.compareOp),
-        .compareMask = desc.backStencilOp.compareMask,
-        .writeMask = desc.backStencilOp.writeMask,
+        .compareMask = desc.stencilReadMask,
+        .writeMask = desc.stencilWriteMask,
         .reference = 0
     };
 
@@ -568,7 +568,7 @@ Ptr<GraphicsPipeline> VulkanDevice::CreateGraphicsPipeline(const GraphicsPipelin
         .dstAlphaBlendFactor = TranslateBlendFactor(desc.blendingDstAlphaFactor),
         .alphaBlendOp = TranslateBlendOp(desc.blendingAlphaOp),
         .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT
-                             | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
+                        | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
     };
     std::vector blendAttachments(colorAttachments.size(), blendAttachment);
     const VkPipelineColorBlendStateCreateInfo colorBlendState = {
@@ -576,32 +576,29 @@ Ptr<GraphicsPipeline> VulkanDevice::CreateGraphicsPipeline(const GraphicsPipelin
         .attachmentCount = static_cast<uint32_t>(colorAttachments.size()),
         .pAttachments = blendAttachments.data()
     };
-
-    uint32_t dynamicStateCount = 0;
-    VkDynamicState dynamicStates[2];
-
+    
+    StaticVector<VkDynamicState, 3> dynamicStates;
     if(desc.viewports.Is<int>())
     {
-        dynamicStates[dynamicStateCount++] = VK_DYNAMIC_STATE_VIEWPORT;
+        dynamicStates.PushBack(VK_DYNAMIC_STATE_VIEWPORT);
     }
     else if(desc.viewports.Is<DynamicViewportCount>())
     {
-        dynamicStates[dynamicStateCount++] = VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT;
+        dynamicStates.PushBack(VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT);
     }
-
     if(desc.scissors.Is<int>())
     {
-        dynamicStates[dynamicStateCount++] = VK_DYNAMIC_STATE_SCISSOR;
+        dynamicStates.PushBack(VK_DYNAMIC_STATE_SCISSOR);
     }
     else if(desc.scissors.Is<DynamicScissorCount>())
     {
-        dynamicStates[dynamicStateCount++] = VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT;
+        dynamicStates.PushBack(VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT);
     }
-
+    dynamicStates.PushBack(VK_DYNAMIC_STATE_STENCIL_REFERENCE);
     const VkPipelineDynamicStateCreateInfo dynamicState = {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-        .dynamicStateCount = dynamicStateCount,
-        .pDynamicStates = dynamicStates
+        .dynamicStateCount = static_cast<uint32_t>(dynamicStates.GetSize()),
+        .pDynamicStates = dynamicStates.GetData()
     };
 
     auto vkBindingLayout = static_cast<VulkanBindingLayout *>(desc.bindingLayout.Get());
@@ -618,7 +615,7 @@ Ptr<GraphicsPipeline> VulkanDevice::CreateGraphicsPipeline(const GraphicsPipelin
         .pDepthStencilState = &depthStencilState,
         .pColorBlendState = &colorBlendState,
         .pDynamicState = &dynamicState,
-        .layout = vkBindingLayout->GetNativeLayout()
+        .layout = vkBindingLayout->_internalGetNativeLayout()
     };
 
     VkPipeline pipeline;
@@ -634,8 +631,8 @@ Ptr<ComputePipeline> VulkanDevice::CreateComputePipeline(const ComputePipelineDe
 {
     const VkComputePipelineCreateInfo pipelineCreateInfo = {
    .sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-   .stage = static_cast<VulkanShader *>(desc.computeShader.Get())->GetStageCreateInfo(),
-   .layout = static_cast<VulkanBindingLayout *>(desc.bindingLayout.Get())->GetNativeLayout()
+   .stage = static_cast<VulkanRawShader *>(desc.computeShader.Get())->_internalGetStageCreateInfo(),
+   .layout = static_cast<VulkanBindingLayout *>(desc.bindingLayout.Get())->_internalGetNativeLayout()
     };
     VkPipeline pipeline;
     VK_FAIL_MSG(
@@ -670,7 +667,7 @@ Ptr<BindingGroupLayout> VulkanDevice::CreateBindingGroupLayout(const BindingGrou
         }
         for(auto &s : binding.immutableSamplers)
         {
-            samplers.push_back(static_cast<VulkanSampler*>(s.Get())->GetNativeSampler());
+            samplers.push_back(static_cast<VulkanSampler*>(s.Get())->_internalGetNativeSampler());
         }
     }
 
@@ -706,7 +703,7 @@ Ptr<BindingGroupLayout> VulkanDevice::CreateBindingGroupLayout(const BindingGrou
 
 Ptr<BindingGroup> VulkanDevice::CreateBindingGroup(const Ptr<BindingGroupLayout> &bindingGroupLayout)
 {
-    return reinterpret_cast<const VulkanBindingGroupLayout *>(bindingGroupLayout.Get())->CreateBindingGroupImpl();
+    return reinterpret_cast<const VulkanBindingGroupLayout *>(bindingGroupLayout.Get())->_internalCreateBindingGroupImpl();
 }
 
 Ptr<BindingLayout> VulkanDevice::CreateBindingLayout(const BindingLayoutDesc &desc)
@@ -714,7 +711,7 @@ Ptr<BindingLayout> VulkanDevice::CreateBindingLayout(const BindingLayoutDesc &de
     std::vector<VkDescriptorSetLayout> setLayouts;
     for(auto &group : desc.groups)
     {
-        setLayouts.push_back(reinterpret_cast<VulkanBindingGroupLayout *>(group.Get())->GetLayout());
+        setLayouts.push_back(reinterpret_cast<VulkanBindingGroupLayout *>(group.Get())->_internalGetNativeLayout());
     }
     const VkPipelineLayoutCreateInfo createInfo = {
         .sType          = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
@@ -738,37 +735,37 @@ void VulkanDevice::UpdateBindingGroups(const BindingGroupUpdateBatch &batch)
     std::vector<VkWriteDescriptorSet> writes(records.GetSize());
     for(auto &&[i, record] : Enumerate(records))
     {
-        auto group = static_cast<VulkanBindingGroupInstance *>(record.group);
+        auto group = static_cast<VulkanBindingGroup *>(record.group);
         record.data.Match(
             [&](const ConstantBufferUpdate &update)
             {
                 auto buffer = static_cast<const VulkanBuffer *>(update.buffer);
-                group->Translate(arena, record.index, buffer, update.offset, update.range, writes[i]);
+                group->_internalTranslate(arena, record.index, buffer, update.offset, update.range, writes[i]);
             },
-            [&](const BufferSRV *bufferSrv)
+            [&](const BufferSrv *bufferSrv)
             {
-                auto srv = static_cast<const VulkanBufferSRV *>(bufferSrv);
-                group->Translate(arena, record.index, srv, writes[i]);
+                auto srv = static_cast<const VulkanBufferSrv *>(bufferSrv);
+                group->_internalTranslate(arena, record.index, srv, writes[i]);
             },
-            [&](const BufferUAV *bufferUav)
+            [&](const BufferUav *bufferUav)
             {
-                auto uav = static_cast<const VulkanBufferUAV *>(bufferUav);
-                group->Translate(arena, record.index, uav, writes[i]);
+                auto uav = static_cast<const VulkanBufferUav *>(bufferUav);
+                group->_internalTranslate(arena, record.index, uav, writes[i]);
             },
-            [&](const TextureSRV *textureSrv)
+            [&](const TextureSrv *textureSrv)
             {
-                auto srv = static_cast<const VulkanTextureSRV *>(textureSrv);
-                group->Translate(arena, record.index, srv, writes[i]);
+                auto srv = static_cast<const VulkanTextureSrv *>(textureSrv);
+                group->_internalTranslate(arena, record.index, srv, writes[i]);
             },
-            [&](const TextureUAV *textureUav)
+            [&](const TextureUav *textureUav)
             {
-                auto uav = static_cast<const VulkanTextureUAV *>(textureUav);
-                group->Translate(arena, record.index, uav, writes[i]);
+                auto uav = static_cast<const VulkanTextureUav *>(textureUav);
+                group->_internalTranslate(arena, record.index, uav, writes[i]);
             },
             [&](const Sampler *sampler)
             {
                 auto vkSampler = static_cast<const VulkanSampler *>(sampler);
-                group->Translate(arena, record.index, vkSampler, writes[i]);
+                group->_internalTranslate(arena, record.index, vkSampler, writes[i]);
             });
     }
     vkUpdateDescriptorSets(device_, records.GetSize(), writes.data(), 0, nullptr);
@@ -923,7 +920,7 @@ Ptr<MemoryBlock> VulkanDevice::CreateMemoryBlock(const MemoryBlockDesc &desc)
     const VkMemoryRequirements memoryRequirements = {
         .size = desc.size,
         .alignment = desc.alignment,
-        .memoryTypeBits = static_cast<VulkanMemoryPropertyRequirements*>(desc.properties.Get())->GetMemoryTypeBits()
+        .memoryTypeBits = static_cast<VulkanMemoryPropertyRequirements*>(desc.properties.Get())->_internalGetMemoryTypeBits()
     };
     VmaAllocationCreateInfo allocCreateInfo = {};
     allocCreateInfo.preferredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
@@ -987,12 +984,7 @@ void VulkanDevice::WaitIdle()
         "failed to call vkDeviceWaitIdle");
 }
 
-VkDevice VulkanDevice::GetNativeDevice()
-{
-    return device_;
-}
-
-void VulkanDevice::SetObjectName(VkObjectType objectType, uint64_t objectHandle, const char* name)
+void VulkanDevice::_internalSetObjectName(VkObjectType objectType, uint64_t objectHandle, const char* name)
 {
     if(enableDebug_ && vkSetDebugUtilsObjectNameEXT)
     {
@@ -1007,18 +999,18 @@ void VulkanDevice::SetObjectName(VkObjectType objectType, uint64_t objectHandle,
     }
 }
 
-uint32_t VulkanDevice::GetQueueFamilyIndex(QueueType type) const
+uint32_t VulkanDevice::_internalGetQueueFamilyIndex(QueueType type) const
 {
     switch(type)
     {
-    case QueueType::Graphics: return graphicsQueue_->GetNativeFamilyIndex();
-    case QueueType::Compute: return computeQueue_->GetNativeFamilyIndex();
-    case QueueType::Transfer: return transferQueue_->GetNativeFamilyIndex();
+    case QueueType::Graphics: return graphicsQueue_->_internalGetNativeFamilyIndex();
+    case QueueType::Compute: return computeQueue_->_internalGetNativeFamilyIndex();
+    case QueueType::Transfer: return transferQueue_->_internalGetNativeFamilyIndex();
     }
     Unreachable();
 }
 
-VkDevice VulkanDevice::GetNativeDevice() const
+VkDevice VulkanDevice::_internalGetNativeDevice() const
 {
     return device_;
 }

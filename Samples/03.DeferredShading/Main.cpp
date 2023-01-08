@@ -20,11 +20,13 @@ class Application : public Uncopyable
     Box<BuiltinResourceManager> builtinResources_;
     Box<Renderer> renderer_;
 
+    RC<Light> mainLight_;
     Box<Scene> scene_;
     Box<Camera> camera_;
     FreeCameraController cameraController_;
 
     Box<AtmosphereRenderer> atmosphere_;
+    float sunAngle_ = Deg2Rad(179);
 
     Timer timer_;
     int fps_ = 0;
@@ -62,7 +64,7 @@ class Application : public Uncopyable
         cameraController_.SetCamera(*camera_);
 
         atmosphere_ = MakeBox<AtmosphereRenderer>(*builtinResources_);
-        atmosphere_->SetYOffset(256);
+        atmosphere_->SetYOffset(1024);
 
         {
             auto cubeMesh = builtinResources_->GetBuiltinMesh(BuiltinMesh::Cube);
@@ -77,12 +79,12 @@ class Application : public Uncopyable
         }
 
         {
-            auto light = MakeRC<Light>();
-            light->SetType(Light::Type::Directional);
-            light->GetDirectionalData().direction = Normalize(Vector3f(0.4, -1, 0.2));
-            light->SetColor(Vector3f(0, 1, 1));
-            light->SetIntensity(1);
-            scene_->AddLight(light);
+            mainLight_ = MakeRC<Light>();
+            mainLight_->SetType(Light::Type::Directional);
+            mainLight_->GetDirectionalData().direction = Normalize(Vector3f(0.4, -1, 0.2));
+            mainLight_->SetColor(Vector3f(0, 1, 1));
+            mainLight_->SetIntensity(1);
+            scene_->AddLight(mainLight_);
         }
 
         input_->LockCursor(true);
@@ -107,39 +109,21 @@ class Application : public Uncopyable
             window_.SetCloseFlag(true);
         }
 
-        if(input_->IsKeyDown(KeyCode::LeftAlt))
+        if(input_->IsKeyDown(KeyCode::F1))
         {
             input_->LockCursor(!input_->IsCursorLocked());
             imgui_->SetInputEnabled(!input_->IsCursorLocked()); // Only enable gui input when cursor is not locked
         }
 
-        auto &imgui = *imgui_;
-        if(imgui.Begin("Test Window", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+        /*auto &imgui = *imgui_;
+        if(imgui.Begin("Rtrc Demo", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
         {
-            if(imgui.Button("Test Button"))
-            {
-                window_.SetCloseFlag(true);
-            }
-            imgui.Text("Test Formatted text: {}", 2.5f);
-
-            static char buffer[256] = {};
-            imgui.InputText("Test Input", buffer);
-            imgui.TextUnformatted(buffer);
-
-            imgui.ArrowButton("Test Arrow", ImGuiDir_Right);
-
-            static int comboIndex = 0;
-            imgui.Combo("AAA", &comboIndex, { "A", "B", "C", "D", "E" });
-
-            imgui.ProgressBar(comboIndex / 4.0f);
-
-            static float vMin = 0, vMax = 1;
-            imgui.DragFloatRange2("Test Drag Float Range", &vMin, &vMax, 0.02f, -10, 10);
-
-            static Vector4f color;
-            imgui.ColorEdit4("Test Color Edit", &color.x, ImGuiColorEditFlags_HDR | ImGuiColorEditFlags_Float);
+            imgui.TextUnformatted("F1     : Show/Hide Cursor");
+            imgui.TextUnformatted("Escape : Exit");
+            imgui.SliderAngle("Sun Direction", &sunAngle_, 1, 179, nullptr);
+            sunAngle_ = std::clamp(sunAngle_, Deg2Rad(1), Deg2Rad(179));
         }
-        imgui.End();
+        imgui.End();*/
 
         // Camera
 
@@ -158,6 +142,23 @@ class Application : public Uncopyable
 
         // Atmosphere
 
+        {
+            float radX, radY;
+            if(sunAngle_ > PI / 2)
+            {
+                radX = PI;
+                radY = PI - sunAngle_;
+            }
+            else
+            {
+                radX = 0;
+                radY = sunAngle_;
+            }
+            const Vector3f direction = -Vector3f(
+                std::cos(radX) * std::cos(radY), std::sin(radY), std::sin(radX) * std::cos(radY));
+            atmosphere_->SetSunDirection(direction);
+            mainLight_->GetDirectionalData().direction = direction;
+        }
         const auto atmosphereRGData = atmosphere_->AddToRenderGraph(*rg, *camera_);
 
         // Deferred rendering

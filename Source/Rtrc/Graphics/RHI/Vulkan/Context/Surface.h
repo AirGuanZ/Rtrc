@@ -4,7 +4,7 @@
 
 RTRC_RHI_VK_BEGIN
 
-class VulkanSurface : public Surface
+RTRC_RHI_IMPLEMENT(VulkanSurface, Surface)
 {
 public:
 
@@ -12,7 +12,7 @@ public:
 
     ~VulkanSurface() override;
 
-    VkSurfaceKHR GetSurface() const;
+    VkSurfaceKHR _internalGetSurface() const;
 
 private:
 

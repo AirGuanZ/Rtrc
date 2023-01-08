@@ -1,24 +1,24 @@
-#include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferUAV.h>
+#include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferUav.h>
 
 RTRC_RHI_VK_BEGIN
 
-VulkanBufferUAV::VulkanBufferUAV(const VulkanBuffer *buffer, const BufferUAVDesc &desc, VkBufferView view)
+VulkanBufferUav::VulkanBufferUav(const VulkanBuffer *buffer, const BufferUavDesc &desc, VkBufferView view)
     : buffer_(buffer), desc_(desc), view_(view)
 {
     
 }
 
-const BufferUAVDesc &VulkanBufferUAV::GetDesc() const
+const BufferUavDesc &VulkanBufferUav::GetDesc() const
 {
     return desc_;
 }
 
-const VulkanBuffer *VulkanBufferUAV::GetBuffer() const
+const VulkanBuffer *VulkanBufferUav::GetBuffer() const
 {
     return buffer_;
 }
 
-VkBufferView VulkanBufferUAV::GetNativeView() const
+VkBufferView VulkanBufferUav::_internalGetNativeView() const
 {
     assert(view_);
     return view_;

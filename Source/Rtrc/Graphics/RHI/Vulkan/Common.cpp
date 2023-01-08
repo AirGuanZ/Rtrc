@@ -468,20 +468,23 @@ VkAccessFlags2 TranslateAccessFlag(ResourceAccessFlag flag)
 
 VkImageLayout TranslateImageLayout(TextureLayout layout)
 {
+    using enum TextureLayout;
     switch(layout)
     {
-    case TextureLayout::Undefined:            return VK_IMAGE_LAYOUT_UNDEFINED;
-    case TextureLayout::RenderTarget:         return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    case TextureLayout::DepthStencil:         return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-    case TextureLayout::DepthStencilReadOnly: return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-    case TextureLayout::ShaderTexture:        return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    case TextureLayout::ShaderRWTexture:      return VK_IMAGE_LAYOUT_GENERAL;
-    case TextureLayout::CopySrc:              return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-    case TextureLayout::CopyDst:              return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    case TextureLayout::ResolveSrc:           return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-    case TextureLayout::ResolveDst:
-    case TextureLayout::ClearDst:             return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    case TextureLayout::Present:              return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    case Undefined:                                    return VK_IMAGE_LAYOUT_UNDEFINED;
+    case ColorAttachment:                              return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    case DepthStencilAttachment:                       return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    case DepthStencilReadOnlyAttachment:               return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+    case DepthShaderTexture_StencilAttachment:         return VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL;
+    case DepthShaderTexture_StencilReadOnlyAttachment: return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+    case ShaderTexture:                                return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    case ShaderRWTexture:                              return VK_IMAGE_LAYOUT_GENERAL;
+    case CopySrc:                                      return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    case CopyDst:                                      return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    case ResolveSrc:                                   return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    case ResolveDst:                                   return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    case ClearDst:                                     return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    case Present:                                      return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
     }
     Unreachable();
 }
@@ -532,18 +535,24 @@ bool HasDepthStencilAspect(Format format)
 VkImageAspectFlags GetAllAspects(Format format)
 {
     if(HasColorAspect(format))
+    {
         return VK_IMAGE_ASPECT_COLOR_BIT;
+    }
     VkImageAspectFlags ret = 0;
     if(HasDepthAspect(format))
-        ret = VK_IMAGE_ASPECT_DEPTH_BIT;
+    {
+        ret |= VK_IMAGE_ASPECT_DEPTH_BIT;
+    }
     if(HasStencilAspect(format))
-        ret = VK_IMAGE_ASPECT_STENCIL_BIT;
+    {
+        ret |= VK_IMAGE_ASPECT_STENCIL_BIT;
+    }
     return ret;
 }
 
 void SetObjectName(VulkanDevice* device, VkObjectType type, VkCommonHandle object, const char* name)
 {
-    device->SetObjectName(type, uint64_t(object), name);
+    device->_internalSetObjectName(type, uint64_t(object), name);
 }
 
 RTRC_RHI_VK_END

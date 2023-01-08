@@ -6,7 +6,7 @@
 
 RTRC_RHI_VK_BEGIN
 
-class VulkanInstance : public Instance
+RTRC_RHI_IMPLEMENT(VulkanInstance, Instance)
 {
 public:
 
@@ -14,7 +14,7 @@ public:
 
     ~VulkanInstance() override;
 
-    Ptr<Device> CreateDevice(const DeviceDesc &desc) override;
+    Ptr<Device> CreateDevice(const DeviceDesc &desc) RTRC_RHI_OVERRIDE;
 
 private:
 

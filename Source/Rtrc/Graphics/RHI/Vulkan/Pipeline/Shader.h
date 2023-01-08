@@ -4,17 +4,17 @@
 
 RTRC_RHI_VK_BEGIN
 
-class VulkanShader : public RawShader
+RTRC_RHI_IMPLEMENT(VulkanRawShader, RawShader)
 {
 public:
 
-    VulkanShader(VkDevice device, VkShaderModule shaderModule, std::string entry, ShaderStage type);
+    VulkanRawShader(VkDevice device, VkShaderModule shaderModule, std::string entry, ShaderStage type);
 
-    ~VulkanShader() override;
+    ~VulkanRawShader() override;
 
-    ShaderStage GetType() const override;
+    ShaderStage GetType() const RTRC_RHI_OVERRIDE;
 
-    VkPipelineShaderStageCreateInfo GetStageCreateInfo() const;
+    VkPipelineShaderStageCreateInfo _internalGetStageCreateInfo() const;
 
 private:
 

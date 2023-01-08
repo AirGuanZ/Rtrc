@@ -31,8 +31,8 @@ public:
     void Set(std::string_view name, const Vector4i &value);
 
     void Set(std::string_view name, const RC<Texture> &tex);
-    void Set(std::string_view name, const TextureSRV &srv);
-    void Set(std::string_view name, const BufferSRV &srv);
+    void Set(std::string_view name, const TextureSrv &srv);
+    void Set(std::string_view name, const BufferSrv &srv);
     void Set(std::string_view name, RC<Sampler> sampler);
 
     const unsigned char *GetValueBuffer() const { return valueBuffer_.data(); }
@@ -138,8 +138,8 @@ public:
     void Set(std::string_view name, const Vector3i &value) { SetPropertyImpl<true>(name, value); }
     void Set(std::string_view name, const Vector4i &value) { SetPropertyImpl<true>(name, value); }
 
-    void Set(std::string_view name, const TextureSRV &srv) { SetPropertyImpl<false>(name, srv); }
-    void Set(std::string_view name, const BufferSRV &srv)  { SetPropertyImpl<false>(name, srv); }
+    void Set(std::string_view name, const TextureSrv &srv) { SetPropertyImpl<false>(name, srv); }
+    void Set(std::string_view name, const BufferSrv &srv)  { SetPropertyImpl<false>(name, srv); }
     void Set(std::string_view name, RC<Sampler> sampler)   { SetPropertyImpl<false>(name, sampler); }
 
 private:

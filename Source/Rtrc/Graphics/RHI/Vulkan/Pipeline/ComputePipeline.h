@@ -4,7 +4,7 @@
 
 RTRC_RHI_VK_BEGIN
 
-class VulkanComputePipeline : public ComputePipeline
+RTRC_RHI_IMPLEMENT(VulkanComputePipeline, ComputePipeline)
 {
 public:
 
@@ -12,9 +12,9 @@ public:
 
     ~VulkanComputePipeline() override;
 
-    const Ptr<BindingLayout> &GetBindingLayout() const override;
+    const Ptr<BindingLayout> &GetBindingLayout() const RTRC_RHI_OVERRIDE;
 
-    VkPipeline GetNativePipeline() const;
+    VkPipeline _internalGetNativePipeline() const;
 
 private:
 

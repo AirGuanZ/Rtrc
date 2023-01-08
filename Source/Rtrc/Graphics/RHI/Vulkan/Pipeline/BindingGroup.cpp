@@ -1,36 +1,36 @@
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/BindingGroup.h>
-#include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferSRV.h>
-#include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferUAV.h>
+#include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferSrv.h>
+#include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferUav.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Sampler.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/TextureView.h>
 
 RTRC_RHI_VK_BEGIN
 
-VulkanBindingGroupInstance::VulkanBindingGroupInstance(
+VulkanBindingGroup::VulkanBindingGroup(
     VkDevice device, const VulkanBindingGroupLayout *layout, VkDescriptorSet set)
     : device_(device), layout_(layout), set_(set)
 {
     
 }
 
-VulkanBindingGroupInstance::~VulkanBindingGroupInstance()
+VulkanBindingGroup::~VulkanBindingGroup()
 {
-    layout_->ReleaseSet(set_);
+    layout_->_internalReleaseSet(set_);
 }
 
-const BindingGroupLayout *VulkanBindingGroupInstance::GetLayout() const
+const BindingGroupLayout *VulkanBindingGroup::GetLayout() const
 {
     return layout_;
 }
 
-void VulkanBindingGroupInstance::ModifyMember(int index, BufferSRV *bufferSRV)
+void VulkanBindingGroup::ModifyMember(int index, BufferSrv *bufferSrv)
 {
-    auto rawBufferSRV = static_cast<VulkanBufferSRV *>(bufferSRV);
-    auto &desc = rawBufferSRV->GetDesc();
+    auto rawBufferSrv = static_cast<VulkanBufferSrv *>(bufferSrv);
+    auto &desc = rawBufferSrv->GetDesc();
 
-    if(layout_->IsSlotTexelBuffer(index))
+    if(layout_->_internalIsSlotTexelBuffer(index))
     {
-        VkBufferView bufferView = rawBufferSRV->GetNativeView();
+        VkBufferView bufferView = rawBufferSrv->_internalGetNativeView();
         assert(bufferView);
         const VkWriteDescriptorSet write = {
             .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -45,10 +45,10 @@ void VulkanBindingGroupInstance::ModifyMember(int index, BufferSRV *bufferSRV)
     }
     else
     {
-        assert(layout_->IsSlotStructuredBuffer(index));
+        assert(layout_->_internalIsSlotStructuredBuffer(index));
         assert(desc.stride != 0);
         const VkDescriptorBufferInfo bufferInfo = {
-            .buffer = rawBufferSRV->GetBuffer()->GetNativeBuffer(),
+            .buffer = rawBufferSrv->_internalGetBuffer()->_internalGetNativeBuffer(),
             .offset = desc.offset,
             .range  = desc.range
         };
@@ -65,14 +65,14 @@ void VulkanBindingGroupInstance::ModifyMember(int index, BufferSRV *bufferSRV)
     }
 }
 
-void VulkanBindingGroupInstance::ModifyMember(int index, BufferUAV *bufferUAV)
+void VulkanBindingGroup::ModifyMember(int index, BufferUav *bufferUav)
 {
-    auto rawBufferUAV = static_cast<VulkanBufferUAV *>(bufferUAV);
-    auto &desc = rawBufferUAV->GetDesc();
+    auto rawBufferUav = static_cast<VulkanBufferUav *>(bufferUav);
+    auto &desc = rawBufferUav->GetDesc();
 
-    if(layout_->IsSlotStorageTexelBuffer(index))
+    if(layout_->_internalIsSlotStorageTexelBuffer(index))
     {
-        VkBufferView bufferView = rawBufferUAV->GetNativeView();
+        VkBufferView bufferView = rawBufferUav->_internalGetNativeView();
         assert(bufferView);
         const VkWriteDescriptorSet write = {
             .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -87,10 +87,10 @@ void VulkanBindingGroupInstance::ModifyMember(int index, BufferUAV *bufferUAV)
     }
     else
     {
-        assert(layout_->IsSlotRWStructuredBuffer(index));
+        assert(layout_->_internalIsSlotRWStructuredBuffer(index));
         assert(desc.stride != 0);
         const VkDescriptorBufferInfo bufferInfo = {
-            .buffer = rawBufferUAV->GetBuffer()->GetNativeBuffer(),
+            .buffer = rawBufferUav->GetBuffer()->_internalGetNativeBuffer(),
             .offset = desc.offset,
             .range  = desc.range
         };
@@ -107,14 +107,27 @@ void VulkanBindingGroupInstance::ModifyMember(int index, BufferUAV *bufferUAV)
     }
 }
 
-void VulkanBindingGroupInstance::ModifyMember(int index, TextureSRV *textureSRV)
+void VulkanBindingGroup::ModifyMember(int index, TextureSrv *textureSrv)
 {
-    auto rawTexSRV = static_cast<VulkanTextureSRV *>(textureSRV);
-    assert(layout_->IsSlotTexture2D(index) || layout_->IsSlotTexture3D(index) ||
-           layout_->IsSlotTexture2DArray(index) || layout_->IsSlotTexture3DArray(index));
+    auto rawTexSrv = static_cast<VulkanTextureSrv *>(textureSrv);
+    assert(layout_->_internalIsSlotTexture2D(index) || layout_->_internalIsSlotTexture3D(index) ||
+           layout_->_internalIsSlotTexture2DArray(index) || layout_->_internalIsSlotTexture3DArray(index));
+    VkImageLayout imageLayout;
+    if(textureSrv->GetDesc().flags.contains(TextureSrvFlagBit::SpecialLayout_DepthSrv_StencilAttachment))
+    {
+        imageLayout = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL;
+    }
+    else if(textureSrv->GetDesc().flags.contains(TextureSrvFlagBit::SpecialLayout_DepthSrv_StencilAttachmentReadOnly))
+    {
+        imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+    }
+    else
+    {
+        imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    }
     const VkDescriptorImageInfo imageInfo = {
-        .imageView   = rawTexSRV->GetNativeImageView(),
-        .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+        .imageView   = rawTexSrv->_internalGetNativeImageView(),
+        .imageLayout = imageLayout
     };
     const VkWriteDescriptorSet write = {
         .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -128,13 +141,13 @@ void VulkanBindingGroupInstance::ModifyMember(int index, TextureSRV *textureSRV)
     vkUpdateDescriptorSets(device_, 1, &write, 0, nullptr);
 }
 
-void VulkanBindingGroupInstance::ModifyMember(int index, TextureUAV *textureUAV)
+void VulkanBindingGroup::ModifyMember(int index, TextureUav *textureUav)
 {
-    auto rawTexUAV = static_cast<VulkanTextureUAV *>(textureUAV);
-    assert(layout_->IsSlotRWTexture2D(index) || layout_->IsSlotRWTexture3D(index) ||
-           layout_->IsSlotRWTexture2DArray(index) || layout_->IsSlotRWTexture3DArray(index));
+    auto rawTexUav = static_cast<VulkanTextureUav *>(textureUav);
+    assert(layout_->_internalIsSlotRWTexture2D(index) || layout_->_internalIsSlotRWTexture3D(index) ||
+           layout_->_internalIsSlotRWTexture2DArray(index) || layout_->_internalIsSlotRWTexture3DArray(index));
     const VkDescriptorImageInfo imageInfo = {
-        .imageView   = rawTexUAV->GetNativeImageView(),
+        .imageView   = rawTexUav->_internalGetNativeImageView(),
         .imageLayout = VK_IMAGE_LAYOUT_GENERAL
     };
     const VkWriteDescriptorSet write = {
@@ -149,11 +162,11 @@ void VulkanBindingGroupInstance::ModifyMember(int index, TextureUAV *textureUAV)
     vkUpdateDescriptorSets(device_, 1, &write, 0, nullptr);
 }
 
-void VulkanBindingGroupInstance::ModifyMember(int index, Sampler *sampler)
+void VulkanBindingGroup::ModifyMember(int index, Sampler *sampler)
 {
     auto rawSampler = static_cast<VulkanSampler *>(sampler);
     const VkDescriptorImageInfo samplerInfo = {
-        .sampler = rawSampler->GetNativeSampler()
+        .sampler = rawSampler->_internalGetNativeSampler()
     };
     const VkWriteDescriptorSet write = {
         .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -167,10 +180,10 @@ void VulkanBindingGroupInstance::ModifyMember(int index, Sampler *sampler)
     vkUpdateDescriptorSets(device_, 1, &write, 0, nullptr);
 }
 
-void VulkanBindingGroupInstance::ModifyMember(int index, const ConstantBufferUpdate &cbuffer)
+void VulkanBindingGroup::ModifyMember(int index, const ConstantBufferUpdate &cbuffer)
 {
     const VkDescriptorBufferInfo bufferInfo = {
-        .buffer = static_cast<const VulkanBuffer *>(cbuffer.buffer)->GetNativeBuffer(),
+        .buffer = static_cast<const VulkanBuffer *>(cbuffer.buffer)->_internalGetNativeBuffer(),
         .offset = cbuffer.offset,
         .range  = cbuffer.range
     };
@@ -186,18 +199,18 @@ void VulkanBindingGroupInstance::ModifyMember(int index, const ConstantBufferUpd
     vkUpdateDescriptorSets(device_, 1, &write, 0, nullptr);
 }
 
-VkDescriptorSet VulkanBindingGroupInstance::GetNativeSet() const
+VkDescriptorSet VulkanBindingGroup::_internalGetNativeSet() const
 {
     return set_;
 }
 
-void VulkanBindingGroupInstance::Translate(
-    LinearAllocator &arena, int index, const VulkanBufferSRV *bufferSrv, VkWriteDescriptorSet &write) const
+void VulkanBindingGroup::_internalTranslate(
+    LinearAllocator &arena, int index, const VulkanBufferSrv *bufferSrv, VkWriteDescriptorSet &write) const
 {
-    if(layout_->IsSlotTexelBuffer(index))
+    if(layout_->_internalIsSlotTexelBuffer(index))
     {
         auto bufferView = arena.Create<VkBufferView>();
-        *bufferView = bufferSrv->GetNativeView();
+        *bufferView = bufferSrv->_internalGetNativeView();
         write = {
             .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             .dstSet           = set_,
@@ -210,12 +223,12 @@ void VulkanBindingGroupInstance::Translate(
     }
     else
     {
-        assert(layout_->IsSlotStructuredBuffer(index));
+        assert(layout_->_internalIsSlotStructuredBuffer(index));
         auto &desc = bufferSrv->GetDesc();
         assert(desc.stride != 0);
         auto bufferInfo = arena.Create<VkDescriptorBufferInfo>();
         *bufferInfo = {
-            .buffer = bufferSrv->GetBuffer()->GetNativeBuffer(),
+            .buffer = bufferSrv->_internalGetBuffer()->_internalGetNativeBuffer(),
             .offset = desc.offset,
             .range = desc.range
         };
@@ -231,15 +244,15 @@ void VulkanBindingGroupInstance::Translate(
     }
 }
 
-void VulkanBindingGroupInstance::Translate(
-    LinearAllocator &arena, int index, const VulkanBufferUAV *bufferUAV, VkWriteDescriptorSet &write) const
+void VulkanBindingGroup::_internalTranslate(
+    LinearAllocator &arena, int index, const VulkanBufferUav *bufferUav, VkWriteDescriptorSet &write) const
 {
-    auto &desc = bufferUAV->GetDesc();
+    auto &desc = bufferUav->GetDesc();
 
-    if(layout_->IsSlotStorageTexelBuffer(index))
+    if(layout_->_internalIsSlotStorageTexelBuffer(index))
     {
         auto bufferView = arena.Create<VkBufferView>();
-        *bufferView = bufferUAV->GetNativeView();
+        *bufferView = bufferUav->_internalGetNativeView();
         write = {
             .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             .dstSet           = set_,
@@ -252,11 +265,11 @@ void VulkanBindingGroupInstance::Translate(
     }
     else
     {
-        assert(layout_->IsSlotRWStructuredBuffer(index));
+        assert(layout_->_internalIsSlotRWStructuredBuffer(index));
         assert(desc.stride != 0);
         auto bufferInfo = arena.Create<VkDescriptorBufferInfo>();
         *bufferInfo = {
-            .buffer = bufferUAV->GetBuffer()->GetNativeBuffer(),
+            .buffer = bufferUav->GetBuffer()->_internalGetNativeBuffer(),
             .offset = desc.offset,
             .range  = desc.range
         };
@@ -272,15 +285,28 @@ void VulkanBindingGroupInstance::Translate(
     }
 }
 
-void VulkanBindingGroupInstance::Translate(
-    LinearAllocator &arena, int index, const VulkanTextureSRV *textureSrv, VkWriteDescriptorSet &write) const
+void VulkanBindingGroup::_internalTranslate(
+    LinearAllocator &arena, int index, const VulkanTextureSrv *textureSrv, VkWriteDescriptorSet &write) const
 {
-    assert(layout_->IsSlotTexture2D(index) || layout_->IsSlotTexture3D(index) ||
-           layout_->IsSlotTexture2DArray(index) || layout_->IsSlotTexture3DArray(index));
+    assert(layout_->_internalIsSlotTexture2D(index) || layout_->_internalIsSlotTexture3D(index) ||
+           layout_->_internalIsSlotTexture2DArray(index) || layout_->_internalIsSlotTexture3DArray(index));
+    VkImageLayout imageLayout;
+    if(textureSrv->GetDesc().flags.contains(TextureSrvFlagBit::SpecialLayout_DepthSrv_StencilAttachment))
+    {
+        imageLayout = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL;
+    }
+    else if(textureSrv->GetDesc().flags.contains(TextureSrvFlagBit::SpecialLayout_DepthSrv_StencilAttachmentReadOnly))
+    {
+        imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+    }
+    else
+    {
+        imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    }
     auto imageInfo = arena.Create<VkDescriptorImageInfo>();
     *imageInfo = {
-        .imageView   = textureSrv->GetNativeImageView(),
-        .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+        .imageView   = textureSrv->_internalGetNativeImageView(),
+        .imageLayout = imageLayout
     };
     write = {
         .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -293,14 +319,14 @@ void VulkanBindingGroupInstance::Translate(
     };
 }
 
-void VulkanBindingGroupInstance::Translate(
-    LinearAllocator &arena, int index, const VulkanTextureUAV *textureUAV, VkWriteDescriptorSet &write) const
+void VulkanBindingGroup::_internalTranslate(
+    LinearAllocator &arena, int index, const VulkanTextureUav *textureUav, VkWriteDescriptorSet &write) const
 {
-    assert(layout_->IsSlotRWTexture2D(index) || layout_->IsSlotRWTexture3D(index) ||
-           layout_->IsSlotRWTexture2DArray(index) || layout_->IsSlotRWTexture3DArray(index));
+    assert(layout_->_internalIsSlotRWTexture2D(index) || layout_->_internalIsSlotRWTexture3D(index) ||
+           layout_->_internalIsSlotRWTexture2DArray(index) || layout_->_internalIsSlotRWTexture3DArray(index));
     auto imageInfo = arena.Create<VkDescriptorImageInfo>();
     *imageInfo = {
-        .imageView   = textureUAV->GetNativeImageView(),
+        .imageView   = textureUav->_internalGetNativeImageView(),
         .imageLayout = VK_IMAGE_LAYOUT_GENERAL
     };
     write = {
@@ -314,12 +340,12 @@ void VulkanBindingGroupInstance::Translate(
     };
 }
 
-void VulkanBindingGroupInstance::Translate(
+void VulkanBindingGroup::_internalTranslate(
     LinearAllocator &arena, int index, const VulkanSampler *sampler, VkWriteDescriptorSet &write) const
 {
     auto samplerInfo = arena.Create<VkDescriptorImageInfo>();
     *samplerInfo = {
-        .sampler = sampler->GetNativeSampler()
+        .sampler = sampler->_internalGetNativeSampler()
     };
     write = {
         .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -333,13 +359,13 @@ void VulkanBindingGroupInstance::Translate(
     vkUpdateDescriptorSets(device_, 1, &write, 0, nullptr);
 }
 
-void VulkanBindingGroupInstance::Translate(
+void VulkanBindingGroup::_internalTranslate(
     LinearAllocator &arena, int index,
     const VulkanBuffer *cbuffer, size_t offset, size_t range, VkWriteDescriptorSet &write) const
 {
     auto bufferInfo = arena.Create<VkDescriptorBufferInfo>();
     *bufferInfo = {
-        .buffer = cbuffer->GetNativeBuffer(),
+        .buffer = cbuffer->_internalGetNativeBuffer(),
         .offset = offset,
         .range  = range
     };

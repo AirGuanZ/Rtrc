@@ -4,7 +4,7 @@
 
 RTRC_RHI_VK_BEGIN
 
-class VulkanGraphicsPipeline : public GraphicsPipeline
+RTRC_RHI_IMPLEMENT(VulkanGraphicsPipeline, GraphicsPipeline)
 {
 public:
 
@@ -12,9 +12,9 @@ public:
 
     ~VulkanGraphicsPipeline() override;
 
-    const Ptr<BindingLayout> &GetBindingLayout() const override;
+    const Ptr<BindingLayout> &GetBindingLayout() const RTRC_RHI_OVERRIDE;
 
-    VkPipeline GetNativePipeline() const;
+    VkPipeline _internalGetNativePipeline() const;
 
 private:
 

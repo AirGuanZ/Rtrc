@@ -39,6 +39,8 @@ size_t GraphicsPipeline::DescKey::Hash() const
         enableDepthWrite,
         depthCompareOp,
         enableStencilTest,
+        stencilReadMask,
+        stencilWriteMask,
         frontStencil,
         backStencil,
         enableBlending,
@@ -119,6 +121,8 @@ GraphicsPipeline::DescKey GraphicsPipeline::Desc::AsKey() const
     RTRC_COPY_STATE(depthCompareOp);
 
     RTRC_COPY_STATE(enableStencilTest);
+    RTRC_COPY_STATE(stencilReadMask);
+    RTRC_COPY_STATE(stencilWriteMask);
     RTRC_COPY_STATE(frontStencil);
     RTRC_COPY_STATE(backStencil);
     RTRC_COPY_STATE(enableBlending);
@@ -244,6 +248,8 @@ RC<GraphicsPipeline> PipelineManager::CreateGraphicsPipeline(const GraphicsPipel
         rhiDesc.depthCompareOp   = desc.depthCompareOp;
 
         rhiDesc.enableStencilTest = desc.enableStencilTest;
+        rhiDesc.stencilReadMask   = desc.stencilReadMask;
+        rhiDesc.stencilWriteMask  = desc.stencilWriteMask;
         rhiDesc.frontStencilOp    = desc.frontStencil;
         rhiDesc.backStencilOp     = desc.backStencil;
 
@@ -283,6 +289,7 @@ RC<ComputePipeline> PipelineManager::CreateComputePipeline(const RC<Shader> &sha
         auto ret = MakeRC<ComputePipeline>();
         ret->rhiObject_ = device_->CreateComputePipeline(rhiDesc);
         ret->manager_ = this;
+        ret->shaderInfo_ = shader->GetInfo();
         return ret;
     });
 }

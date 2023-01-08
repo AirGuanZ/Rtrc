@@ -5,42 +5,42 @@
 
 RTRC_RHI_VK_BEGIN
 
-class VulkanBufferSRV;
-class VulkanBufferUAV;
-class VulkanTextureSRV;
-class VulkanTextureUAV;
+class VulkanBufferSrv;
+class VulkanBufferUav;
+class VulkanTextureSrv;
+class VulkanTextureUav;
 class VulkanSampler;
 class VulkanBuffer;
 
-class VulkanBindingGroupInstance : public BindingGroup
+RTRC_RHI_IMPLEMENT(VulkanBindingGroup, BindingGroup)
 {
 public:
 
-    VulkanBindingGroupInstance(VkDevice device, const VulkanBindingGroupLayout *layout, VkDescriptorSet set);
-    ~VulkanBindingGroupInstance() override;
+    VulkanBindingGroup(VkDevice device, const VulkanBindingGroupLayout *layout, VkDescriptorSet set);
+    ~VulkanBindingGroup() override;
 
-    const BindingGroupLayout *GetLayout() const override;
+    const BindingGroupLayout *GetLayout() const RTRC_RHI_OVERRIDE;
 
-    void ModifyMember(int index, BufferSRV  *bufferSRV) override;
-    void ModifyMember(int index, BufferUAV  *bufferUAV) override;
-    void ModifyMember(int index, TextureSRV *textureSRV) override;
-    void ModifyMember(int index, TextureUAV *textureUAV) override;
-    void ModifyMember(int index, Sampler    *sampler) override;
-    void ModifyMember(int index, const ConstantBufferUpdate &cbuffer) override;
+    void ModifyMember(int index, BufferSrv  *bufferSrv) RTRC_RHI_OVERRIDE;
+    void ModifyMember(int index, BufferUav  *bufferUav) RTRC_RHI_OVERRIDE;
+    void ModifyMember(int index, TextureSrv *textureSrv) RTRC_RHI_OVERRIDE;
+    void ModifyMember(int index, TextureUav *textureUav) RTRC_RHI_OVERRIDE;
+    void ModifyMember(int index, Sampler    *sampler) RTRC_RHI_OVERRIDE;
+    void ModifyMember(int index, const ConstantBufferUpdate &cbuffer) RTRC_RHI_OVERRIDE;
 
-    VkDescriptorSet GetNativeSet() const;
+    VkDescriptorSet _internalGetNativeSet() const;
 
-    void Translate(
-        LinearAllocator &arena, int index, const VulkanBufferSRV *bufferSrv, VkWriteDescriptorSet &write) const;
-    void Translate(
-        LinearAllocator &arena, int index, const VulkanBufferUAV *bufferUAV, VkWriteDescriptorSet &write) const;
-    void Translate(
-        LinearAllocator &arena, int index, const VulkanTextureSRV *textureSrv, VkWriteDescriptorSet &write) const;
-    void Translate(
-        LinearAllocator &arena, int index, const VulkanTextureUAV *textureUAV, VkWriteDescriptorSet &write) const;
-    void Translate(
+    void _internalTranslate(
+        LinearAllocator &arena, int index, const VulkanBufferSrv *bufferSrv, VkWriteDescriptorSet &write) const;
+    void _internalTranslate(
+        LinearAllocator &arena, int index, const VulkanBufferUav *bufferUav, VkWriteDescriptorSet &write) const;
+    void _internalTranslate(
+        LinearAllocator &arena, int index, const VulkanTextureSrv *textureSrv, VkWriteDescriptorSet &write) const;
+    void _internalTranslate(
+        LinearAllocator &arena, int index, const VulkanTextureUav *textureUav, VkWriteDescriptorSet &write) const;
+    void _internalTranslate(
         LinearAllocator &arena, int index, const VulkanSampler *sampler, VkWriteDescriptorSet &write) const;
-    void Translate(
+    void _internalTranslate(
         LinearAllocator &arena, int index,
         const VulkanBuffer *cbuffer, size_t offset, size_t range, VkWriteDescriptorSet &write) const;
 

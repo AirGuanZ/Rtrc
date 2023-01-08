@@ -15,7 +15,7 @@ bool VulkanMemoryPropertyRequirements::IsValid() const
 
 bool VulkanMemoryPropertyRequirements::Merge(const MemoryPropertyRequirements &other)
 {
-    memoryTypeBits_ &= static_cast<const VulkanMemoryPropertyRequirements &>(other).GetMemoryTypeBits();
+    memoryTypeBits_ &= static_cast<const VulkanMemoryPropertyRequirements &>(other)._internalGetMemoryTypeBits();
     return IsValid();
 }
 
@@ -24,7 +24,7 @@ Ptr<MemoryPropertyRequirements> VulkanMemoryPropertyRequirements::Clone() const
     return MakePtr<VulkanMemoryPropertyRequirements>(memoryTypeBits_);
 }
 
-uint32_t VulkanMemoryPropertyRequirements::GetMemoryTypeBits() const
+uint32_t VulkanMemoryPropertyRequirements::_internalGetMemoryTypeBits() const
 {
     return memoryTypeBits_;
 }

@@ -59,6 +59,8 @@ public:
         CompareOp depthCompareOp   = CompareOp::Always;
 
         bool       enableStencilTest = false;
+        uint8_t    stencilReadMask   = 0xff;
+        uint8_t    stencilWriteMask  = 0xff;
         StencilOps frontStencil;
         StencilOps backStencil;
 
@@ -104,6 +106,8 @@ public:
         CompareOp depthCompareOp   = CompareOp::Always;
 
         bool       enableStencilTest = false;
+        uint8_t    stencilReadMask = 0;
+        uint8_t    stencilWriteMask = 0;
         StencilOps frontStencil;
         StencilOps backStencil;
 
@@ -135,7 +139,15 @@ private:
 
 class ComputePipeline : public GeneralGPUObject<RHI::ComputePipelinePtr>, public InObjectCache
 {
+public:
+
+    const RC<const ShaderInfo> &GetShaderInfo() const;
+
     friend class PipelineManager;
+
+private:
+
+    RC<const ShaderInfo> shaderInfo_;
 };
 
 class PipelineManager : public GeneralGPUObjectManager
@@ -156,6 +168,11 @@ private:
 };
 
 inline const RC<const ShaderInfo> &GraphicsPipeline::GetShaderInfo() const
+{
+    return shaderInfo_;
+}
+
+inline const RC<const ShaderInfo> &ComputePipeline::GetShaderInfo() const
 {
     return shaderInfo_;
 }

@@ -7,7 +7,7 @@
 
 RTRC_RHI_VK_BEGIN
 
-class VulkanSwapchain : public Swapchain
+RTRC_RHI_IMPLEMENT(VulkanSwapchain, Swapchain)
 {
 public:
 
@@ -20,19 +20,19 @@ public:
 
     ~VulkanSwapchain() override;
 
-    bool Acquire() override;
+    bool Acquire() RTRC_RHI_OVERRIDE;
 
-    Ptr<BackBufferSemaphore> GetAcquireSemaphore() override;
+    Ptr<BackBufferSemaphore> GetAcquireSemaphore() RTRC_RHI_OVERRIDE;
 
-    Ptr<BackBufferSemaphore> GetPresentSemaphore() override;
+    Ptr<BackBufferSemaphore> GetPresentSemaphore() RTRC_RHI_OVERRIDE;
 
-    void Present() override;
+    void Present() RTRC_RHI_OVERRIDE;
 
-    int GetRenderTargetCount() const override;
+    int GetRenderTargetCount() const RTRC_RHI_OVERRIDE;
 
-    const TextureDesc &GetRenderTargetDesc() const override;
+    const TextureDesc &GetRenderTargetDesc() const RTRC_RHI_OVERRIDE;
 
-    Ptr<Texture> GetRenderTarget() const override;
+    Ptr<Texture> GetRenderTarget() const RTRC_RHI_OVERRIDE;
 
 private:
 

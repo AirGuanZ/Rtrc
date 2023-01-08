@@ -8,9 +8,13 @@
 
 RTRC_RHI_VK_BEGIN
 
-class VulkanTexture : public Texture
+RTRC_RHI_IMPLEMENT(VulkanTexture, Texture)
 {
 public:
+
+#ifdef RTRC_STATIC_RHI
+    RTRC_RHI_TEXTURE_COMMON
+#endif
 
     VK_SET_OBJECT_NAME(device_, image_, VK_OBJECT_TYPE_IMAGE)
 
@@ -23,14 +27,14 @@ public:
 
     ~VulkanTexture() override;
 
-    const TextureDesc &GetDesc() const override;
+    const TextureDesc &GetDesc() const RTRC_RHI_OVERRIDE;
 
-    Ptr<TextureRTV> CreateRTV(const TextureRTVDesc &desc) const override;
-    Ptr<TextureSRV> CreateSRV(const TextureSRVDesc &desc) const override;
-    Ptr<TextureUAV> CreateUAV(const TextureUAVDesc &desc) const override;
-    Ptr<TextureDSV> CreateDSV(const TextureDSVDesc &desc) const override;
+    Ptr<TextureRtv> CreateRtv(const TextureRtvDesc &desc) const RTRC_RHI_OVERRIDE;
+    Ptr<TextureSrv> CreateSrv(const TextureSrvDesc &desc) const RTRC_RHI_OVERRIDE;
+    Ptr<TextureUav> CreateUav(const TextureUavDesc &desc) const RTRC_RHI_OVERRIDE;
+    Ptr<TextureDsv> CreateDsv(const TextureDsvDesc &desc) const RTRC_RHI_OVERRIDE;
 
-    VkImage GetNativeImage() const;
+    VkImage _internalGetNativeImage() const;
 
 private:
 

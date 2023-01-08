@@ -61,8 +61,8 @@ AtmosphereDetail::TransmittanceLut::TransmittanceLut(
         .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
     });
     lut->SetName("TransmittanceLut");
-    srv_ = lut->CreateSRV();
-    auto lutUav = lut->CreateUAV();
+    srv_ = lut->CreateSrv();
+    auto lutUav = lut->CreateUav();
 
     auto material = builtinResources.GetBuiltinMaterial(BuiltinMaterial::Atmosphere);
     auto matPass = material->GetPassByTag("GenerateTransmittanceLut");
@@ -80,11 +80,6 @@ AtmosphereDetail::TransmittanceLut::TransmittanceLut(
     {
         cmd.BindPipeline(pipeline);
         cmd.BindComputeGroup(0, passGroup);
-        if(shader->GetBindingGroupForInlineSamplers())
-        {
-            cmd.BindComputeGroup(
-                shader->GetBindingGroupIndexForInlineSamplers(), shader->GetBindingGroupForInlineSamplers());
-        }
         cmd.Dispatch(shader->ComputeThreadGroupCount(Vector3i(resolution, 1)));
     });
     device.ExecuteBarrier(lut, RHI::TextureLayout::ShaderRWTexture, RHI::TextureLayout::ShaderTexture);
@@ -111,7 +106,7 @@ AtmosphereDetail::MultiScatterLut::MultiScatterLut(
     }
     poissonDiskSamples->SetName("PoissonDiskSamples");
     poissonDiskSamples->SetDefaultStructStride(sizeof(Vector2f));
-    auto poissonDiskSamplesSrv = poissonDiskSamples->GetSRV();
+    auto poissonDiskSamplesSrv = poissonDiskSamples->GetSrv();
 
     auto lut = device.CreateTexture(RHI::TextureDesc
     {
@@ -127,7 +122,7 @@ AtmosphereDetail::MultiScatterLut::MultiScatterLut(
         .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
     });
     lut->SetName("MultiScatterLut");
-    srv_ = lut->CreateSRV();
+    srv_ = lut->CreateSrv();
 
     auto material = builtinResources.GetBuiltinMaterial(BuiltinMaterial::Atmosphere);
     auto matPass = material->GetPassByTag("GenerateMultiScatterLut");
@@ -135,7 +130,7 @@ AtmosphereDetail::MultiScatterLut::MultiScatterLut(
     auto pipeline = shader->GetComputePipeline();
 
     MultiScatterLutPass passData;
-    passData.MultiScatterTextureRW = lut->CreateUAV();
+    passData.MultiScatterTextureRW = lut->CreateUav();
     passData.RawDirSamples = poissonDiskSamplesSrv;
     passData.TransmittanceLut = transmittanceLut.GetLut();
     passData.outputResolution = resolution;
@@ -149,18 +144,13 @@ AtmosphereDetail::MultiScatterLut::MultiScatterLut(
     {
         cmd.BindPipeline(pipeline);
         cmd.BindComputeGroup(0, passGroup);
-        if(shader->GetBindingGroupForInlineSamplers())
-        {
-            cmd.BindComputeGroup(
-                shader->GetBindingGroupIndexForInlineSamplers(), shader->GetBindingGroupForInlineSamplers());
-        }
         cmd.Dispatch(shader->ComputeThreadGroupCount(Vector3i(resolution, 1)));
     });
     device.ExecuteBarrier(lut, RHI::TextureLayout::ShaderRWTexture, RHI::TextureLayout::ShaderTexture);
 }
 
 AtmosphereDetail::SkyLut::SkyLut(const BuiltinResourceManager &builtinResources)
-    : device_(builtinResources.GetDevice())
+    : device_(builtinResources.GetDevice()), stepCount_(0)
 {
     auto material = builtinResources.GetBuiltinMaterial(BuiltinMaterial::Atmosphere);
     auto pass = material->GetPassByTag("GenerateSkyLut");
@@ -198,7 +188,7 @@ AtmosphereDetail::SkyLut::RenderGraphInterface AtmosphereDetail::SkyLut::AddToRe
     }, "SkyLut");
 
     auto pass = renderGraph->CreatePass("Generate Sky Lut");
-    pass->Use(lut, RG::COMPUTE_UNORDERED_ACCESS_WRITE);
+    pass->Use(lut, RG::COMPUTE_SHADER_RWTEXTURE_WRITEONLY);
     pass->SetCallback([this, lut, parameters, &transmittanceLut, &multiScatterLut](RG::PassContext &passCtx)
     {
         SkyLutPass passGroupData;
@@ -216,11 +206,6 @@ AtmosphereDetail::SkyLut::RenderGraphInterface AtmosphereDetail::SkyLut::AddToRe
         auto &cmd = passCtx.GetCommandBuffer();
         cmd.BindPipeline(shader_->GetComputePipeline());
         cmd.BindComputeGroup(0, passGroup);
-        if(shader_->GetBindingGroupForInlineSamplers())
-        {
-            cmd.BindComputeGroup(
-                shader_->GetBindingGroupIndexForInlineSamplers(), shader_->GetBindingGroupForInlineSamplers());
-        }
         cmd.Dispatch(shader_->ComputeThreadGroupCount(Vector3i(lutRes_, 1)));
     });
 
@@ -234,7 +219,7 @@ AtmosphereDetail::SkyLut::RenderGraphInterface AtmosphereDetail::SkyLut::AddToRe
 AtmosphereRenderer::AtmosphereRenderer(const BuiltinResourceManager &builtinResources)
     : device_(builtinResources.GetDevice()), builtinResources_(builtinResources)
 {
-    SetSunDirection(0, Deg2Rad(16.7f));
+    SetSunDirection(Vector3f(0, -1, 0));
     SetSunIntensity(10);
     SetSunColor({ 1, 1, 1 });
     yOffset_ = 0;
@@ -244,18 +229,12 @@ AtmosphereRenderer::AtmosphereRenderer(const BuiltinResourceManager &builtinReso
     
     skyLut_ = MakeBox<SkyLut>(builtinResources_);
     skyLut_->SetRayMarchingStepCount(32);
-    skyLut_->SetOutputResolution({ 128, 128 });
+    skyLut_->SetOutputResolution({ 256, 128 });
 }
 
-void AtmosphereDetail::AtmosphereRenderer::SetSunDirection(float radX, float radY)
+void AtmosphereDetail::AtmosphereRenderer::SetSunDirection(const Vector3f &normalizedSunToScene)
 {
-    radY = -radY;
-    frameParameters_.sunDirection =
-    {
-        std::cos(radX) * std::cos(radY),
-        std::sin(radY),
-        std::sin(radX) * std::cos(radY)
-    };
+    frameParameters_.sunDirection = normalizedSunToScene;
 }
 
 void AtmosphereDetail::AtmosphereRenderer::SetSunIntensity(float intensity)
@@ -291,6 +270,7 @@ void AtmosphereDetail::AtmosphereRenderer::SetTransmittanceLutResolution(const V
         transLut_ = {};
     }
 }
+
 void AtmosphereDetail::AtmosphereRenderer::SetMultiScatterLutResolution(const Vector2i &res)
 {
     if(res != msLutRes_)

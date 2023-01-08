@@ -4,22 +4,22 @@
 
 RTRC_RHI_VK_BEGIN
 
-class VulkanBufferUAV : public BufferUAV
+RTRC_RHI_IMPLEMENT(VulkanBufferUav, BufferUav)
 {
 public:
 
-    VulkanBufferUAV(const VulkanBuffer *buffer, const BufferUAVDesc &desc, VkBufferView view);
+    VulkanBufferUav(const VulkanBuffer *buffer, const BufferUavDesc &desc, VkBufferView view);
 
-    const BufferUAVDesc &GetDesc() const override;
+    const BufferUavDesc &GetDesc() const RTRC_RHI_OVERRIDE;
 
     const VulkanBuffer *GetBuffer() const;
 
-    VkBufferView GetNativeView() const;
+    VkBufferView _internalGetNativeView() const;
 
 private:
 
     const VulkanBuffer *buffer_;
-    BufferUAVDesc desc_;
+    BufferUavDesc desc_;
     VkBufferView view_;
 };
 

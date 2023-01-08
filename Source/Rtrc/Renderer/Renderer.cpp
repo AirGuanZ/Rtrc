@@ -102,7 +102,7 @@ Renderer::RenderGraphInterface Renderer::AddToRenderGraph(
     const auto gbufferDepth = renderGraph->CreateTexture(RHI::TextureDesc
     {
         .dim                  = RHI::TextureDimension::Tex2D,
-        .format               = RHI::Format::D32,
+        .format               = RHI::Format::D24S8,
         .width                = rtWidth,
         .height               = rtHeight,
         .arraySize            = 1,
@@ -117,10 +117,10 @@ Renderer::RenderGraphInterface Renderer::AddToRenderGraph(
 
     RG::Pass *gbufferPass = renderGraph->CreatePass("Render GBuffers");
     {
-        gbufferPass->Use(gbufferA, RG::RENDER_TARGET_WRITE);
-        gbufferPass->Use(gbufferB, RG::RENDER_TARGET_WRITE);
-        gbufferPass->Use(gbufferC, RG::RENDER_TARGET_WRITE);
-        gbufferPass->Use(gbufferDepth, RG::DEPTH_STENCIL);
+        gbufferPass->Use(gbufferA, RG::COLOR_ATTACHMENT_WRITEONLY);
+        gbufferPass->Use(gbufferB, RG::COLOR_ATTACHMENT_WRITEONLY);
+        gbufferPass->Use(gbufferC, RG::COLOR_ATTACHMENT_WRITEONLY);
+        gbufferPass->Use(gbufferDepth, RG::DEPTH_STENCIL_ATTACHMENT);
 
         RenderGBuffersPassData passData;
         passData.gbufferA     = gbufferA;
@@ -136,12 +136,17 @@ Renderer::RenderGraphInterface Renderer::AddToRenderGraph(
 
     RG::Pass *lightingPass = renderGraph->CreatePass("Deferred Lighting");
     {
-        lightingPass->Use(gbufferA, RG::PIXEL_SHADER_TEXTURE_READ);
-        lightingPass->Use(gbufferB, RG::PIXEL_SHADER_TEXTURE_READ);
-        lightingPass->Use(gbufferC, RG::PIXEL_SHADER_TEXTURE_READ);
-        lightingPass->Use(gbufferDepth, RG::PIXEL_SHADER_TEXTURE_READ);
-        lightingPass->Use(image, RG::RENDER_TARGET_WRITE);
-        lightingPass->Use(parameters.skyLut, RG::PIXEL_SHADER_TEXTURE_READ);
+        lightingPass->Use(gbufferA, RG::PIXEL_SHADER_TEXTURE);
+        lightingPass->Use(gbufferB, RG::PIXEL_SHADER_TEXTURE);
+        lightingPass->Use(gbufferC, RG::PIXEL_SHADER_TEXTURE);
+        lightingPass->Use(gbufferDepth, RG::UseInfo
+        {
+            .layout = RHI::TextureLayout::DepthShaderTexture_StencilReadOnlyAttachment,
+            .stages = RHI::PipelineStage::FragmentShader | RHI::PipelineStage::DepthStencil,
+            .accesses = RHI::ResourceAccess::TextureRead | RHI::ResourceAccess::DepthStencilRead
+        });
+        lightingPass->Use(image, RG::COLOR_ATTACHMENT_WRITEONLY);
+        lightingPass->Use(parameters.skyLut, RG::PIXEL_SHADER_TEXTURE);
 
         DeferredLightingPassData passData;
         passData.gbufferA     = gbufferA;
@@ -185,21 +190,21 @@ void Renderer::DoRenderGBuffersPass(RG::PassContext &passContext, const RenderGB
     {
         ColorAttachment
         {
-            .renderTargetView = gbufferA->CreateRTV(),
+            .renderTargetView = gbufferA->CreateRtv(),
             .loadOp = AttachmentLoadOp::Clear,
             .storeOp = AttachmentStoreOp::Store,
             .clearValue = { 0, 0, 0, 0 }
         },
         ColorAttachment
         {
-            .renderTargetView = gbufferB->CreateRTV(),
+            .renderTargetView = gbufferB->CreateRtv(),
             .loadOp = AttachmentLoadOp::Clear,
             .storeOp = AttachmentStoreOp::Store,
             .clearValue = { 0, 0, 0, 0 }
         },
         ColorAttachment
         {
-            .renderTargetView = gbufferC->CreateRTV(),
+            .renderTargetView = gbufferC->CreateRtv(),
             .loadOp = AttachmentLoadOp::Clear,
             .storeOp = AttachmentStoreOp::Store,
             .clearValue = { 0, 0, 0, 0 }
@@ -207,7 +212,7 @@ void Renderer::DoRenderGBuffersPass(RG::PassContext &passContext, const RenderGB
     },
     DepthStencilAttachment
     {
-        .depthStencilView = gbufferDepth->CreateDSV(),
+        .depthStencilView = gbufferDepth->CreateDsv(),
         .loadOp = AttachmentLoadOp::Clear,
         .storeOp = AttachmentStoreOp::Store,
         .clearValue = DepthStencilClearValue{ 1, 0 }
@@ -240,6 +245,12 @@ void Renderer::DoRenderGBuffersPass(RG::PassContext &passContext, const RenderGB
     }
     staticMeshConstantBufferBatch_.Flush();
 
+    // Dynamic states
+
+    cmd.SetStencilReferenceValue(EnumToInt(StencilMaskBit::Regular));
+    cmd.SetViewports(gbufferA->GetViewport());
+    cmd.SetScissors(gbufferA->GetScissor());
+
     // Render static meshes
 
     RC<GraphicsPipeline> lastPipeline;
@@ -268,6 +279,16 @@ void Renderer::DoRenderGBuffersPass(RG::PassContext &passContext, const RenderGB
                     .enableDepthTest        = true,
                     .enableDepthWrite       = true,
                     .depthCompareOp         = RHI::CompareOp::Less,
+                    .enableStencilTest      = true,
+                    .stencilReadMask        = 0xff,
+                    .stencilWriteMask       = EnumToInt(StencilMaskBit::Regular),
+                    .frontStencil           = GraphicsPipeline::StencilOps
+                    {
+                        .depthFailOp = RHI::StencilOp::Keep,
+                        .failOp      = RHI::StencilOp::Keep,
+                        .passOp      = RHI::StencilOp::Replace,
+                        .compareOp   = RHI::CompareOp::Always
+                    },
                     .colorAttachmentFormats =
                     {
                         passData.gbufferA->GetFormat(),
@@ -293,8 +314,6 @@ void Renderer::DoRenderGBuffersPass(RG::PassContext &passContext, const RenderGB
         {
             cmd.BindGraphicsGroup(index, staticMeshBindingGroups[staticMeshIndex]);
         }
-        cmd.SetViewports(gbufferA->GetViewport());
-        cmd.SetScissors(gbufferA->GetScissor());
         cmd.BindMesh(*mesh);
 
         if(mesh->HasIndexBuffer())
@@ -331,52 +350,49 @@ void Renderer::DoDeferredLightingPass(RG::PassContext &passContext, const Deferr
     auto image = passData.image->Get();
     auto skyLut = passData.skyLut->Get();
 
-    cmd.BeginRenderPass(ColorAttachment
     {
-        .renderTargetView = image->CreateRTV(),
-        .loadOp = AttachmentLoadOp::DontCare,
-        .storeOp = AttachmentStoreOp::Store,
-    });
-    RTRC_SCOPE_EXIT{ cmd.EndRenderPass(); };
+        cmd.BeginRenderPass(ColorAttachment
+            {
+                .renderTargetView = image->CreateRtv(),
+                .loadOp = AttachmentLoadOp::DontCare,
+                .storeOp = AttachmentStoreOp::Store,
+            });
+        RTRC_SCOPE_EXIT{ cmd.EndRenderPass(); };
 
-    DeferredRendererDetail::DeferredLighting_Pass perPassGroupData;
-    perPassGroupData.gbufferA = gbufferA;
-    perPassGroupData.gbufferB = gbufferB;
-    perPassGroupData.gbufferC = gbufferC;
-    perPassGroupData.gbufferDepth = gbufferDepth;
-    perPassGroupData.skyLut = skyLut;
-    perPassGroupData.camera = camera_->GetConstantBufferData();
-    perPassGroupData.gbufferSize =
-        Vector4f(image->GetWidth(), image->GetHeight(), 1.0f / image->GetWidth(), 1.0f / image->GetHeight());
-    if(auto &dl = scene_->GetDirectionalLight())
-    {
-        const Light::DirectionalData &data = dl->GetDirectionalData();
-        perPassGroupData.directionalLight.color = dl->GetColor();
-        perPassGroupData.directionalLight.intensity = dl->GetIntensity();
-        perPassGroupData.directionalLight.direction = data.direction;
+        DeferredRendererDetail::DeferredLighting_Pass perPassGroupData;
+        perPassGroupData.gbufferA = gbufferA;
+        perPassGroupData.gbufferB = gbufferB;
+        perPassGroupData.gbufferC = gbufferC;
+        perPassGroupData.gbufferDepth = gbufferDepth->CreateSrv(
+            RHI::TextureSrvFlagBit::SpecialLayout_DepthSrv_StencilAttachmentReadOnly);
+        perPassGroupData.skyLut = skyLut;
+        perPassGroupData.camera = camera_->GetConstantBufferData();
+        perPassGroupData.gbufferSize =
+            Vector4f(image->GetWidth(), image->GetHeight(), 1.0f / image->GetWidth(), 1.0f / image->GetHeight());
+        if(auto &dl = scene_->GetDirectionalLight())
+        {
+            const Light::DirectionalData &data = dl->GetDirectionalData();
+            perPassGroupData.directionalLight.color = dl->GetColor();
+            perPassGroupData.directionalLight.intensity = dl->GetIntensity();
+            perPassGroupData.directionalLight.direction = data.direction;
+        }
+        else
+        {
+            perPassGroupData.directionalLight.intensity = 0;
+        }
+
+        cmd.BindPipeline(deferredLightingPipeline_);
+
+        RC<BindingGroup> perPassGroup = device_.CreateBindingGroup(perPassGroupData);
+        const int groupIndex =
+            deferredLightingPipeline_->GetShaderInfo()->GetBuiltinBindingGroupIndex(Shader::BuiltinBindingGroup::Pass);
+        cmd.BindGraphicsGroup(groupIndex, std::move(perPassGroup));
+
+        cmd.SetViewports(gbufferA->GetViewport());
+        cmd.SetScissors(gbufferA->GetScissor());
+        cmd.BindMesh(fullscreenTriangleWithRays_);
+        cmd.Draw(fullscreenTriangleWithRays_.GetVertexCount(), 1, 0, 0);
     }
-    else
-    {
-        perPassGroupData.directionalLight.intensity = 0;
-    }
-    
-    cmd.BindPipeline(deferredLightingPipeline_);
-
-    RC<BindingGroup> perPassGroup = device_.CreateBindingGroup(perPassGroupData);
-    const int groupIndex =
-        deferredLightingPipeline_->GetShaderInfo()->GetBuiltinBindingGroupIndex(Shader::BuiltinBindingGroup::Pass);
-    cmd.BindGraphicsGroup(groupIndex, std::move(perPassGroup));
-
-    if(auto &inlineSamplerGroup = deferredLightingPipeline_->GetShaderInfo()->GetBindingGroupForInlineSamplers())
-    {
-        cmd.BindGraphicsGroup(
-            deferredLightingPipeline_->GetShaderInfo()->GetBindingGroupIndexForInlineSamplers(), inlineSamplerGroup);
-    }
-
-    cmd.SetViewports(gbufferA->GetViewport());
-    cmd.SetScissors(gbufferA->GetScissor());
-    cmd.BindMesh(fullscreenTriangleWithRays_);
-    cmd.Draw(fullscreenTriangleWithRays_.GetVertexCount(), 1, 0, 0);
 }
 
 RTRC_END

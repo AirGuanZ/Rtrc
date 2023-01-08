@@ -57,11 +57,11 @@ namespace AtmosphereDetail
             const AtmosphereProperties   &properties,
             const Vector2i               &resolution);
 
-        const TextureSRV &GetLut() const { return srv_; }
+        const TextureSrv &GetLut() const { return srv_; }
 
     private:
 
-        TextureSRV srv_;
+        TextureSrv srv_;
     };
 
     class MultiScatterLut
@@ -77,11 +77,11 @@ namespace AtmosphereDetail
             const AtmosphereProperties   &properties,
             const Vector2i               &resolution);
 
-        const TextureSRV &GetLut() const { return srv_; }
+        const TextureSrv &GetLut() const { return srv_; }
 
     private:
 
-        TextureSRV srv_;
+        TextureSrv srv_;
     };
 
     class SkyLut
@@ -112,7 +112,7 @@ namespace AtmosphereDetail
         Device &device_;
         RC<Shader> shader_;
 
-        int stepCount_ = 32;
+        int stepCount_;
         Vector2i lutRes_;
     };
 
@@ -129,7 +129,7 @@ namespace AtmosphereDetail
 
         explicit AtmosphereRenderer(const BuiltinResourceManager &builtinResources);
 
-        void SetSunDirection(float radX, float radY);
+        void SetSunDirection(const Vector3f &normalizedSunToScene);
         void SetSunIntensity(float intensity);
         void SetSunColor(const Vector3f &color);
         void SetProperties(const AtmosphereProperties &properties);

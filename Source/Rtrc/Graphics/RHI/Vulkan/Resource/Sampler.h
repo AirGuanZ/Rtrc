@@ -4,7 +4,7 @@
 
 RTRC_RHI_VK_BEGIN
 
-class VulkanSampler : public Sampler
+RTRC_RHI_IMPLEMENT(VulkanSampler, Sampler)
 {
 public:
 
@@ -14,9 +14,9 @@ public:
 
     ~VulkanSampler() override;
 
-    const SamplerDesc &GetDesc() const override;
+    const SamplerDesc &GetDesc() const RTRC_RHI_OVERRIDE;
 
-    VkSampler GetNativeSampler() const;
+    VkSampler _internalGetNativeSampler() const;
 
 private:
 

@@ -331,10 +331,10 @@ void MaterialPassPropertyLayout::FillBindingGroup(
         switch(ref.type)
         {
         case MaterialProperty::Type::Buffer:
-            bindingGroup.Set(ref.indexInBindingGroup, resource.As<BufferSRV>());
+            bindingGroup.Set(ref.indexInBindingGroup, resource.As<BufferSrv>());
             break;
         case MaterialProperty::Type::Texture2D:
-            if(auto srv = resource.AsIf<TextureSRV>())
+            if(auto srv = resource.AsIf<TextureSrv>())
             {
                 bindingGroup.Set(ref.indexInBindingGroup, *srv);
             }

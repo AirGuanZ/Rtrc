@@ -25,7 +25,7 @@ void VulkanFence::Wait()
     vkWaitForFences(device_, 1, &fence_, true, UINT64_MAX);
 }
 
-VkFence VulkanFence::GetNativeFence() const
+VkFence VulkanFence::_internalGetNativeFence() const
 {
     return fence_;
 }

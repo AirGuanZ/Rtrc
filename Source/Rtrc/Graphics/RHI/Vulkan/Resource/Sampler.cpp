@@ -12,7 +12,7 @@ VulkanSampler::VulkanSampler(const SamplerDesc &desc, VulkanDevice *device, VkSa
 VulkanSampler::~VulkanSampler()
 {
     assert(device_ && sampler_);
-    vkDestroySampler(device_->GetNativeDevice(), sampler_, VK_ALLOC);
+    vkDestroySampler(device_->_internalGetNativeDevice(), sampler_, VK_ALLOC);
 }
 
 const SamplerDesc &VulkanSampler::GetDesc() const
@@ -20,7 +20,7 @@ const SamplerDesc &VulkanSampler::GetDesc() const
     return desc_;
 }
 
-VkSampler VulkanSampler::GetNativeSampler() const
+VkSampler VulkanSampler::_internalGetNativeSampler() const
 {
     return sampler_;
 }

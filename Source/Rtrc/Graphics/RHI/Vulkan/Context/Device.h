@@ -5,7 +5,7 @@
 
 RTRC_RHI_VK_BEGIN
 
-class VulkanDevice : public Device
+RTRC_RHI_IMPLEMENT(VulkanDevice, Device)
 {
 public:
 
@@ -25,56 +25,54 @@ public:
 
     ~VulkanDevice() override;
 
-    Ptr<Queue> GetQueue(QueueType type) override;
+    Ptr<Queue> GetQueue(QueueType type) RTRC_RHI_OVERRIDE;
 
-    Ptr<CommandPool> CreateCommandPool(const Ptr<Queue> &queue) override;
+    Ptr<CommandPool> CreateCommandPool(const Ptr<Queue> &queue) RTRC_RHI_OVERRIDE;
 
-    Ptr<Fence> CreateFence(bool signaled) override;
+    Ptr<Fence> CreateFence(bool signaled) RTRC_RHI_OVERRIDE;
 
-    Ptr<Swapchain> CreateSwapchain(const SwapchainDesc &desc, Window &window) override;
+    Ptr<Swapchain> CreateSwapchain(const SwapchainDesc &desc, Window &window) RTRC_RHI_OVERRIDE;
 
-    Ptr<Semaphore> CreateSemaphore(uint64_t initialValue) override;
+    Ptr<Semaphore> CreateSemaphore(uint64_t initialValue) RTRC_RHI_OVERRIDE;
 
-    Ptr<RawShader> CreateShader(const void *data, size_t size, std::string entryPoint, ShaderStage type) override;
+    Ptr<RawShader> CreateShader(const void *data, size_t size, std::string entryPoint, ShaderStage type) RTRC_RHI_OVERRIDE;
 
-    Ptr<GraphicsPipeline> CreateGraphicsPipeline(const GraphicsPipelineDesc &desc) override;
-    Ptr<ComputePipeline>  CreateComputePipeline(const ComputePipelineDesc &desc) override;
+    Ptr<GraphicsPipeline> CreateGraphicsPipeline(const GraphicsPipelineDesc &desc) RTRC_RHI_OVERRIDE;
+    Ptr<ComputePipeline>  CreateComputePipeline(const ComputePipelineDesc &desc) RTRC_RHI_OVERRIDE;
 
-    Ptr<BindingGroupLayout> CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc) override;
-    Ptr<BindingGroup>       CreateBindingGroup(const Ptr<BindingGroupLayout> &bindingGroupLayout) override;
-    Ptr<BindingLayout>      CreateBindingLayout(const BindingLayoutDesc &desc) override;
+    Ptr<BindingGroupLayout> CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc) RTRC_RHI_OVERRIDE;
+    Ptr<BindingGroup>       CreateBindingGroup(const Ptr<BindingGroupLayout> &bindingGroupLayout) RTRC_RHI_OVERRIDE;
+    Ptr<BindingLayout>      CreateBindingLayout(const BindingLayoutDesc &desc) RTRC_RHI_OVERRIDE;
 
-    void UpdateBindingGroups(const BindingGroupUpdateBatch &batch) override;
+    void UpdateBindingGroups(const BindingGroupUpdateBatch &batch) RTRC_RHI_OVERRIDE;
 
-    Ptr<Texture> CreateTexture(const TextureDesc &desc) override;
+    Ptr<Texture> CreateTexture(const TextureDesc &desc) RTRC_RHI_OVERRIDE;
 
-    Ptr<Buffer> CreateBuffer(const BufferDesc &desc) override;
+    Ptr<Buffer> CreateBuffer(const BufferDesc &desc) RTRC_RHI_OVERRIDE;
 
-    Ptr<Sampler> CreateSampler(const SamplerDesc &desc) override;
+    Ptr<Sampler> CreateSampler(const SamplerDesc &desc) RTRC_RHI_OVERRIDE;
 
     Ptr<MemoryPropertyRequirements> GetMemoryRequirements(
-        const BufferDesc &desc, size_t *size, size_t *alignment) const override;
+        const BufferDesc &desc, size_t *size, size_t *alignment) const RTRC_RHI_OVERRIDE;
     Ptr<MemoryPropertyRequirements> GetMemoryRequirements(
-        const TextureDesc &desc, size_t *size, size_t *alignment) const override;
+        const TextureDesc &desc, size_t *size, size_t *alignment) const RTRC_RHI_OVERRIDE;
 
-    Ptr<MemoryBlock> CreateMemoryBlock(const MemoryBlockDesc &desc) override;
+    Ptr<MemoryBlock> CreateMemoryBlock(const MemoryBlockDesc &desc) RTRC_RHI_OVERRIDE;
 
     Ptr<Texture> CreatePlacedTexture(
-        const TextureDesc &desc, const Ptr<MemoryBlock> &memoryBlock, size_t offsetInMemoryBlock) override;
+        const TextureDesc &desc, const Ptr<MemoryBlock> &memoryBlock, size_t offsetInMemoryBlock) RTRC_RHI_OVERRIDE;
     Ptr<Buffer> CreatePlacedBuffer(
-        const BufferDesc &desc, const Ptr<MemoryBlock> &memoryBlock, size_t offsetInMemoryBlock) override;
+        const BufferDesc &desc, const Ptr<MemoryBlock> &memoryBlock, size_t offsetInMemoryBlock) RTRC_RHI_OVERRIDE;
 
-    size_t GetConstantBufferAlignment() const override;
+    size_t GetConstantBufferAlignment() const RTRC_RHI_OVERRIDE;
 
-    void WaitIdle() override;
+    void WaitIdle() RTRC_RHI_OVERRIDE;
 
-    VkDevice GetNativeDevice();
+    void _internalSetObjectName(VkObjectType objectType, uint64_t objectHandle, const char *name);
 
-    void SetObjectName(VkObjectType objectType, uint64_t objectHandle, const char *name);
+    uint32_t _internalGetQueueFamilyIndex(QueueType type) const;
 
-    uint32_t GetQueueFamilyIndex(QueueType type) const;
-
-    VkDevice GetNativeDevice() const;
+    VkDevice _internalGetNativeDevice() const;
 
 private:
 

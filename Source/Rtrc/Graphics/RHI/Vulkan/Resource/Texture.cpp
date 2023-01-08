@@ -24,7 +24,7 @@ VulkanTexture::~VulkanTexture()
 {
     for(VkImageView view : std::ranges::views::values(views_))
     {
-        vkDestroyImageView(device_->GetNativeDevice(), view, VK_ALLOC);
+        vkDestroyImageView(device_->_internalGetNativeDevice(), view, VK_ALLOC);
     }
     if(ownership_ == ResourceOwnership::Allocation)
     {
@@ -32,7 +32,7 @@ VulkanTexture::~VulkanTexture()
     }
     else if(ownership_ == ResourceOwnership::Resource)
     {
-        vkDestroyImage(device_->GetNativeDevice(), image_, VK_ALLOC);
+        vkDestroyImage(device_->_internalGetNativeDevice(), image_, VK_ALLOC);
     }
 }
 
@@ -41,7 +41,7 @@ const TextureDesc & VulkanTexture::GetDesc() const
     return desc_;
 }
 
-Ptr<TextureRTV> VulkanTexture::CreateRTV(const TextureRTVDesc &desc) const
+Ptr<TextureRtv> VulkanTexture::CreateRtv(const TextureRtvDesc &desc) const
 {
     auto imageView = CreateImageView(ViewKey{
         .aspect         = VK_IMAGE_ASPECT_COLOR_BIT,
@@ -51,10 +51,10 @@ Ptr<TextureRTV> VulkanTexture::CreateRTV(const TextureRTVDesc &desc) const
         .baseArrayLayer = desc.arrayLayer,
         .layerCount     = 1
     });
-    return MakePtr<VulkanTextureRTV>(this, desc, imageView);
+    return MakePtr<VulkanTextureRtv>(this, desc, imageView);
 }
 
-Ptr<TextureSRV> VulkanTexture::CreateSRV(const TextureSRVDesc &desc) const
+Ptr<TextureSrv> VulkanTexture::CreateSrv(const TextureSrvDesc &desc) const
 {
     const VkImageAspectFlags aspect =
         HasDepthAspect(desc_.format) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
@@ -67,10 +67,10 @@ Ptr<TextureSRV> VulkanTexture::CreateSRV(const TextureSRVDesc &desc) const
         .baseArrayLayer = desc.baseArrayLayer,
         .layerCount     = desc.layerCount > 0 ? desc.layerCount : desc_.arraySize
     });
-    return MakePtr<VulkanTextureSRV>(desc, imageView);
+    return MakePtr<VulkanTextureSrv>(desc, imageView);
 }
 
-Ptr<TextureUAV> VulkanTexture::CreateUAV(const TextureUAVDesc &desc) const
+Ptr<TextureUav> VulkanTexture::CreateUav(const TextureUavDesc &desc) const
 {
     auto imageView = CreateImageView(ViewKey{
         .isArray        = desc.isArray,
@@ -81,10 +81,10 @@ Ptr<TextureUAV> VulkanTexture::CreateUAV(const TextureUAVDesc &desc) const
         .baseArrayLayer = desc.baseArrayLayer,
         .layerCount     = desc.layerCount > 0 ? desc.layerCount : desc_.arraySize
     });
-    return MakePtr<VulkanTextureUAV>(desc, imageView);
+    return MakePtr<VulkanTextureUav>(desc, imageView);
 }
 
-Ptr<TextureDSV> VulkanTexture::CreateDSV(const TextureDSVDesc &desc) const
+Ptr<TextureDsv> VulkanTexture::CreateDsv(const TextureDsvDesc &desc) const
 {
     const VkImageAspectFlags aspect =
         (HasDepthAspect(desc_.format) ? VK_IMAGE_ASPECT_DEPTH_BIT : 0) |
@@ -98,10 +98,10 @@ Ptr<TextureDSV> VulkanTexture::CreateDSV(const TextureDSVDesc &desc) const
         .baseArrayLayer = desc.arrayLayer,
         .layerCount     = 1
     });
-    return MakePtr<VulkanTextureDSV>(this, desc, imageView);
+    return MakePtr<VulkanTextureDsv>(this, desc, imageView);
 }
 
-VkImage VulkanTexture::GetNativeImage() const
+VkImage VulkanTexture::_internalGetNativeImage() const
 {
     return image_;
 }
@@ -159,9 +159,9 @@ VkImageView VulkanTexture::CreateImageView(const ViewKey &key) const
 
     VkImageView imageView;
     VK_FAIL_MSG(
-        vkCreateImageView(device_->GetNativeDevice(), &createInfo, VK_ALLOC, &imageView),
+        vkCreateImageView(device_->_internalGetNativeDevice(), &createInfo, VK_ALLOC, &imageView),
         "failed to create vulkan image view");
-    RTRC_SCOPE_FAIL{ vkDestroyImageView(device_->GetNativeDevice(), imageView, VK_ALLOC); };
+    RTRC_SCOPE_FAIL{ vkDestroyImageView(device_->_internalGetNativeDevice(), imageView, VK_ALLOC); };
     
     views_[key] = imageView;
     return imageView;
