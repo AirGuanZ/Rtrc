@@ -108,9 +108,9 @@ namespace Atmosphere
             return false;
         delta = sqrt(delta);
         float inv2A = 1.0 / (A + A);
-        nearT = (-B - delta) * inv2A;
+        nearT = max(0, (-B - delta) * inv2A);
         farT = (-B + delta) * inv2A;
-        return true;
+        return nearT <= farT;
     }
 
     // returns smaller non-negative t

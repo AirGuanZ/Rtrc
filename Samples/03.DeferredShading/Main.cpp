@@ -64,7 +64,7 @@ class Application : public Uncopyable
         cameraController_.SetCamera(*camera_);
 
         atmosphere_ = MakeBox<AtmosphereRenderer>(*builtinResources_);
-        atmosphere_->SetYOffset(1024);
+        atmosphere_->SetYOffset(2 * 1000);
 
         {
             auto cubeMesh = builtinResources_->GetBuiltinMesh(BuiltinMesh::Cube);
@@ -143,19 +143,7 @@ class Application : public Uncopyable
         // Atmosphere
 
         {
-            float radX, radY;
-            if(sunAngle_ > PI / 2)
-            {
-                radX = PI;
-                radY = PI - sunAngle_;
-            }
-            else
-            {
-                radX = 0;
-                radY = sunAngle_;
-            }
-            const Vector3f direction = -Vector3f(
-                std::cos(radX) * std::cos(radY), std::sin(radY), std::sin(radX) * std::cos(radY));
+            const Vector3f direction = -Vector3f(std::cos(sunAngle_), std::sin(sunAngle_), 0);
             atmosphere_->SetSunDirection(direction);
             mainLight_->GetDirectionalData().direction = direction;
         }
