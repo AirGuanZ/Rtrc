@@ -153,7 +153,7 @@ Mesh MeshLoader::LoadFromObjFile(const std::string &filename, const Options &opt
         bool useUInt16 = true;
         for(uint32_t index : meshData.indexData)
         {
-            if(index > std::numeric_limits<uint16_t>::max())
+            if(index > (std::numeric_limits<uint16_t>::max)())
             {
                 useUInt16 = false;
                 break;

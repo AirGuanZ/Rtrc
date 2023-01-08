@@ -125,7 +125,7 @@ VulkanPhysicalDevice VulkanPhysicalDevice::Select(VkInstance instance, const Dev
         vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data()),
         "failed to get vulkan physical devices");
 
-    uint32_t bestDeviceIndex = std::numeric_limits<uint32_t>::max();
+    uint32_t bestDeviceIndex = (std::numeric_limits<uint32_t>::max)();
     uint32_t bestScore = 0;
     for(uint32_t i = 0; i < deviceCount; ++i)
     {

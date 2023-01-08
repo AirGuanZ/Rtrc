@@ -6,7 +6,7 @@ RTRC_BEGIN
 DynamicBufferManager::DynamicBufferManager(RHI::DevicePtr device, DeviceSynchronizer &sync, size_t chunkSize)
     : device_(std::move(device)), sync_(sync)
 {
-    chunkSize = std::max(MIN_SLAB_SIZE, chunkSize);
+    chunkSize = (std::max)(MIN_SLAB_SIZE, chunkSize);
     cbufferAlignment_ = device_->GetConstantBufferAlignment();
     sharedData_ = MakeRC<SharedData>();
 
@@ -57,10 +57,10 @@ void DynamicBufferManager::_internalSetData(DynamicBuffer &buffer, const void *d
 
     // Compute real size
 
-    size_t allocatedSize = std::max(size, MIN_SLAB_SIZE);
+    size_t allocatedSize = (std::max)(size, MIN_SLAB_SIZE);
     if(isConstantBuffer)
     {
-        allocatedSize = std::max(allocatedSize, cbufferAlignment_);
+        allocatedSize = (std::max)(allocatedSize, cbufferAlignment_);
     }
 
     // Allocate

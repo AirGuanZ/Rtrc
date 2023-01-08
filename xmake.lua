@@ -13,10 +13,10 @@ option_end()
 set_arch("x64")
 set_languages("c++23")
 add_rules("mode.debug", "mode.release")
-add_rules("c++.unity_build", { batchsize = 4 })
+add_rules("c++.unity_build", { batchsize = 16 })
 
 option("is_msvc")
-add_csnippets("is_msvc", "return (_MSC_VER)?0:-1;", { tryrun = true })
+    add_csnippets("is_msvc", "return (_MSC_VER)?0:-1;", { tryrun = true })
 option_end()
 
 vs_runtime_value = is_mode("debug") and "MTd" or "MT"
@@ -25,6 +25,10 @@ set_targetdir("Build/Bin/"..(is_mode("debug") and "debug" or "release"))
 
 if is_mode("debug") then
     add_defines("DEBUG", "_DEBUG")
+end
+
+if is_mode("release") then
+    set_policy("build.optimization.lto", true)
 end
 
 if is_plat("windows") then
@@ -47,15 +51,19 @@ add_requires("mimalloc")
 includes("External/tbb")
 add_requires("mytbb", { configs = { debug = is_mode("debug") } })
 
+includes("External/dxc")
+add_requires("mydxc")
+
 add_requires("fmt 9.1.0", "stb 2021.09.10", "tinyexr v1.0.1")
 add_requires("vk-bootstrap v0.5", "spirv-reflect 1.2.189+1", "vulkan-memory-allocator v3.0.0")
 add_requires("catch2 3.1.0")
 add_requires("volk 1.3.231", { configs = { header_only = true } })
 
 includes("External/tinyobjloader")
-includes("External/dxc")
 includes("External/sigslot")
 includes("External/imgui")
+includes("External/avir")
+includes("External/cy")
 
 -- Targets
 
@@ -82,11 +90,9 @@ target("Rtrc")
         add_defines("RTRC_STATIC_RHI=1", { public = true })
     end
     -- Dependencies
-    add_includedirs("External/avir", { public = false })
-    add_includedirs("External/cy", { public = false })
-    add_packages("glfw", "stb", "tinyexr")
+    add_packages("mydxc", "glfw", "stb", "tinyexr")
     add_packages("fmt", "mimalloc", "mytbb", { public = true })
-    add_deps("dxc", "tinyobjloader", "sigslot", "imgui")
+    add_deps("tinyobjloader", "sigslot", "imgui", "avir", "cy")
 target_end()
 
 target("Test")

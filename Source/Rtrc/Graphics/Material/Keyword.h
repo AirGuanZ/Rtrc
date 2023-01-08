@@ -55,7 +55,7 @@ public:
 
         friend class KeywordSet;
 
-        ValueMask mask_ = std::numeric_limits<ValueMask>::max();
+        ValueMask mask_ = (std::numeric_limits<ValueMask>::max)();
         ValueMask value_ = 0;
     };
 
@@ -64,9 +64,7 @@ public:
         assert(bitCount <= 8);
         records_.push_back({ keyword, bitCount });
         totalBitCount_ += bitCount;
-#if RTRC_DEBUG
         assert(totalBitCount_ <= MAX_TOTAL_VALUE_BIT_COUNT && "number of keyword value bits exceeds max limit (32)");
-#endif
     }
 
     ValueMask ExtractValueMask(const KeywordValueContext &valueContext) const

@@ -13,7 +13,7 @@ class PooledString
 {
 public:
 
-    static constexpr Index INVALID_INDEX = std::numeric_limits<Index>::max();
+    static constexpr Index INVALID_INDEX = (std::numeric_limits<Index>::max)();
 
     PooledString();
     PooledString(std::string_view str);
