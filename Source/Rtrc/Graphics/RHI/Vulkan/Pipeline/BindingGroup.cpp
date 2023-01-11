@@ -23,7 +23,7 @@ const BindingGroupLayout *VulkanBindingGroup::GetLayout() const
     return layout_;
 }
 
-void VulkanBindingGroup::ModifyMember(int index, BufferSrv *bufferSrv)
+void VulkanBindingGroup::ModifyMember(int index, int arrayElem, BufferSrv *bufferSrv)
 {
     auto rawBufferSrv = static_cast<VulkanBufferSrv *>(bufferSrv);
     auto &desc = rawBufferSrv->GetDesc();
@@ -36,7 +36,7 @@ void VulkanBindingGroup::ModifyMember(int index, BufferSrv *bufferSrv)
             .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             .dstSet           = set_,
             .dstBinding       = static_cast<uint32_t>(index),
-            .dstArrayElement  = 0,
+            .dstArrayElement  = static_cast<uint32_t>(arrayElem),
             .descriptorCount  = 1,
             .descriptorType   = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,
             .pTexelBufferView = &bufferView
@@ -56,7 +56,7 @@ void VulkanBindingGroup::ModifyMember(int index, BufferSrv *bufferSrv)
             .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             .dstSet          = set_,
             .dstBinding      = static_cast<uint32_t>(index),
-            .dstArrayElement = 0,
+            .dstArrayElement = static_cast<uint32_t>(arrayElem),
             .descriptorCount = 1,
             .descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
             .pBufferInfo     = &bufferInfo
@@ -65,7 +65,7 @@ void VulkanBindingGroup::ModifyMember(int index, BufferSrv *bufferSrv)
     }
 }
 
-void VulkanBindingGroup::ModifyMember(int index, BufferUav *bufferUav)
+void VulkanBindingGroup::ModifyMember(int index, int arrayElem, BufferUav *bufferUav)
 {
     auto rawBufferUav = static_cast<VulkanBufferUav *>(bufferUav);
     auto &desc = rawBufferUav->GetDesc();
@@ -78,7 +78,7 @@ void VulkanBindingGroup::ModifyMember(int index, BufferUav *bufferUav)
             .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             .dstSet           = set_,
             .dstBinding       = static_cast<uint32_t>(index),
-            .dstArrayElement  = 0,
+            .dstArrayElement  = static_cast<uint32_t>(arrayElem),
             .descriptorCount  = 1,
             .descriptorType   = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,
             .pTexelBufferView = &bufferView
@@ -98,7 +98,7 @@ void VulkanBindingGroup::ModifyMember(int index, BufferUav *bufferUav)
             .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             .dstSet          = set_,
             .dstBinding      = static_cast<uint32_t>(index),
-            .dstArrayElement = 0,
+            .dstArrayElement = static_cast<uint32_t>(arrayElem),
             .descriptorCount = 1,
             .descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
             .pBufferInfo     = &bufferInfo
@@ -107,7 +107,7 @@ void VulkanBindingGroup::ModifyMember(int index, BufferUav *bufferUav)
     }
 }
 
-void VulkanBindingGroup::ModifyMember(int index, TextureSrv *textureSrv)
+void VulkanBindingGroup::ModifyMember(int index, int arrayElem, TextureSrv *textureSrv)
 {
     auto rawTexSrv = static_cast<VulkanTextureSrv *>(textureSrv);
     assert(layout_->_internalIsSlotTexture2D(index) || layout_->_internalIsSlotTexture3D(index) ||
@@ -133,7 +133,7 @@ void VulkanBindingGroup::ModifyMember(int index, TextureSrv *textureSrv)
         .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
         .dstSet          = set_,
         .dstBinding      = static_cast<uint32_t>(index),
-        .dstArrayElement = 0,
+        .dstArrayElement = static_cast<uint32_t>(arrayElem),
         .descriptorCount = 1,
         .descriptorType  = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
         .pImageInfo      = &imageInfo
@@ -141,7 +141,7 @@ void VulkanBindingGroup::ModifyMember(int index, TextureSrv *textureSrv)
     vkUpdateDescriptorSets(device_, 1, &write, 0, nullptr);
 }
 
-void VulkanBindingGroup::ModifyMember(int index, TextureUav *textureUav)
+void VulkanBindingGroup::ModifyMember(int index, int arrayElem, TextureUav *textureUav)
 {
     auto rawTexUav = static_cast<VulkanTextureUav *>(textureUav);
     assert(layout_->_internalIsSlotRWTexture2D(index) || layout_->_internalIsSlotRWTexture3D(index) ||
@@ -154,7 +154,7 @@ void VulkanBindingGroup::ModifyMember(int index, TextureUav *textureUav)
         .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
         .dstSet          = set_,
         .dstBinding      = static_cast<uint32_t>(index),
-        .dstArrayElement = 0,
+        .dstArrayElement = static_cast<uint32_t>(arrayElem),
         .descriptorCount = 1,
         .descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
         .pImageInfo      = &imageInfo
@@ -162,7 +162,7 @@ void VulkanBindingGroup::ModifyMember(int index, TextureUav *textureUav)
     vkUpdateDescriptorSets(device_, 1, &write, 0, nullptr);
 }
 
-void VulkanBindingGroup::ModifyMember(int index, Sampler *sampler)
+void VulkanBindingGroup::ModifyMember(int index, int arrayElem, Sampler *sampler)
 {
     auto rawSampler = static_cast<VulkanSampler *>(sampler);
     const VkDescriptorImageInfo samplerInfo = {
@@ -172,7 +172,7 @@ void VulkanBindingGroup::ModifyMember(int index, Sampler *sampler)
         .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
         .dstSet          = set_,
         .dstBinding      = static_cast<uint32_t>(index),
-        .dstArrayElement = 0,
+        .dstArrayElement = static_cast<uint32_t>(arrayElem),
         .descriptorCount = 1,
         .descriptorType  = VK_DESCRIPTOR_TYPE_SAMPLER,
         .pImageInfo      = &samplerInfo
@@ -180,7 +180,7 @@ void VulkanBindingGroup::ModifyMember(int index, Sampler *sampler)
     vkUpdateDescriptorSets(device_, 1, &write, 0, nullptr);
 }
 
-void VulkanBindingGroup::ModifyMember(int index, const ConstantBufferUpdate &cbuffer)
+void VulkanBindingGroup::ModifyMember(int index, int arrayElem, const ConstantBufferUpdate &cbuffer)
 {
     const VkDescriptorBufferInfo bufferInfo = {
         .buffer = static_cast<const VulkanBuffer *>(cbuffer.buffer)->_internalGetNativeBuffer(),
@@ -191,7 +191,7 @@ void VulkanBindingGroup::ModifyMember(int index, const ConstantBufferUpdate &cbu
         .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
         .dstSet          = set_,
         .dstBinding      = static_cast<uint32_t>(index),
-        .dstArrayElement = 0,
+        .dstArrayElement = static_cast<uint32_t>(arrayElem),
         .descriptorCount = 1,
         .descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
         .pBufferInfo     = &bufferInfo
@@ -205,7 +205,8 @@ VkDescriptorSet VulkanBindingGroup::_internalGetNativeSet() const
 }
 
 void VulkanBindingGroup::_internalTranslate(
-    LinearAllocator &arena, int index, const VulkanBufferSrv *bufferSrv, VkWriteDescriptorSet &write) const
+    LinearAllocator &arena, int index, int arrayElem,
+    const VulkanBufferSrv *bufferSrv, VkWriteDescriptorSet &write) const
 {
     if(layout_->_internalIsSlotTexelBuffer(index))
     {
@@ -215,7 +216,7 @@ void VulkanBindingGroup::_internalTranslate(
             .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             .dstSet           = set_,
             .dstBinding       = static_cast<uint32_t>(index),
-            .dstArrayElement  = 0,
+            .dstArrayElement  = static_cast<uint32_t>(arrayElem),
             .descriptorCount  = 1,
             .descriptorType   = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,
             .pTexelBufferView = bufferView
@@ -236,7 +237,7 @@ void VulkanBindingGroup::_internalTranslate(
             .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             .dstSet          = set_,
             .dstBinding      = static_cast<uint32_t>(index),
-            .dstArrayElement = 0,
+            .dstArrayElement = static_cast<uint32_t>(arrayElem),
             .descriptorCount = 1,
             .descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
             .pBufferInfo     = bufferInfo
@@ -245,7 +246,8 @@ void VulkanBindingGroup::_internalTranslate(
 }
 
 void VulkanBindingGroup::_internalTranslate(
-    LinearAllocator &arena, int index, const VulkanBufferUav *bufferUav, VkWriteDescriptorSet &write) const
+    LinearAllocator &arena, int index, int arrayElem,
+    const VulkanBufferUav *bufferUav, VkWriteDescriptorSet &write) const
 {
     auto &desc = bufferUav->GetDesc();
 
@@ -257,7 +259,7 @@ void VulkanBindingGroup::_internalTranslate(
             .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             .dstSet           = set_,
             .dstBinding       = static_cast<uint32_t>(index),
-            .dstArrayElement  = 0,
+            .dstArrayElement  = static_cast<uint32_t>(arrayElem),
             .descriptorCount  = 1,
             .descriptorType   = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,
             .pTexelBufferView = bufferView
@@ -277,7 +279,7 @@ void VulkanBindingGroup::_internalTranslate(
             .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             .dstSet          = set_,
             .dstBinding      = static_cast<uint32_t>(index),
-            .dstArrayElement = 0,
+            .dstArrayElement = static_cast<uint32_t>(arrayElem),
             .descriptorCount = 1,
             .descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
             .pBufferInfo     = bufferInfo
@@ -286,7 +288,8 @@ void VulkanBindingGroup::_internalTranslate(
 }
 
 void VulkanBindingGroup::_internalTranslate(
-    LinearAllocator &arena, int index, const VulkanTextureSrv *textureSrv, VkWriteDescriptorSet &write) const
+    LinearAllocator &arena, int index, int arrayElem,
+    const VulkanTextureSrv *textureSrv, VkWriteDescriptorSet &write) const
 {
     assert(layout_->_internalIsSlotTexture2D(index) || layout_->_internalIsSlotTexture3D(index) ||
            layout_->_internalIsSlotTexture2DArray(index) || layout_->_internalIsSlotTexture3DArray(index));
@@ -312,7 +315,7 @@ void VulkanBindingGroup::_internalTranslate(
         .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
         .dstSet          = set_,
         .dstBinding      = static_cast<uint32_t>(index),
-        .dstArrayElement = 0,
+        .dstArrayElement = static_cast<uint32_t>(arrayElem),
         .descriptorCount = 1,
         .descriptorType  = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
         .pImageInfo      = imageInfo
@@ -320,7 +323,8 @@ void VulkanBindingGroup::_internalTranslate(
 }
 
 void VulkanBindingGroup::_internalTranslate(
-    LinearAllocator &arena, int index, const VulkanTextureUav *textureUav, VkWriteDescriptorSet &write) const
+    LinearAllocator &arena, int index, int arrayElem,
+    const VulkanTextureUav *textureUav, VkWriteDescriptorSet &write) const
 {
     assert(layout_->_internalIsSlotRWTexture2D(index) || layout_->_internalIsSlotRWTexture3D(index) ||
            layout_->_internalIsSlotRWTexture2DArray(index) || layout_->_internalIsSlotRWTexture3DArray(index));
@@ -333,7 +337,7 @@ void VulkanBindingGroup::_internalTranslate(
         .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
         .dstSet          = set_,
         .dstBinding      = static_cast<uint32_t>(index),
-        .dstArrayElement = 0,
+        .dstArrayElement = static_cast<uint32_t>(arrayElem),
         .descriptorCount = 1,
         .descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
         .pImageInfo      = imageInfo
@@ -341,7 +345,8 @@ void VulkanBindingGroup::_internalTranslate(
 }
 
 void VulkanBindingGroup::_internalTranslate(
-    LinearAllocator &arena, int index, const VulkanSampler *sampler, VkWriteDescriptorSet &write) const
+    LinearAllocator &arena, int index, int arrayElem,
+    const VulkanSampler *sampler, VkWriteDescriptorSet &write) const
 {
     auto samplerInfo = arena.Create<VkDescriptorImageInfo>();
     *samplerInfo = {
@@ -351,7 +356,7 @@ void VulkanBindingGroup::_internalTranslate(
         .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
         .dstSet          = set_,
         .dstBinding      = static_cast<uint32_t>(index),
-        .dstArrayElement = 0,
+        .dstArrayElement = static_cast<uint32_t>(arrayElem),
         .descriptorCount = 1,
         .descriptorType  = VK_DESCRIPTOR_TYPE_SAMPLER,
         .pImageInfo      = samplerInfo
@@ -360,7 +365,7 @@ void VulkanBindingGroup::_internalTranslate(
 }
 
 void VulkanBindingGroup::_internalTranslate(
-    LinearAllocator &arena, int index,
+    LinearAllocator &arena, int index, int arrayElem,
     const VulkanBuffer *cbuffer, size_t offset, size_t range, VkWriteDescriptorSet &write) const
 {
     auto bufferInfo = arena.Create<VkDescriptorBufferInfo>();
@@ -373,7 +378,7 @@ void VulkanBindingGroup::_internalTranslate(
         .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
         .dstSet          = set_,
         .dstBinding      = static_cast<uint32_t>(index),
-        .dstArrayElement = 0,
+        .dstArrayElement = static_cast<uint32_t>(arrayElem),
         .descriptorCount = 1,
         .descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
         .pBufferInfo     = bufferInfo

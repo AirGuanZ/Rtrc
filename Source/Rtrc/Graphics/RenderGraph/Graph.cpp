@@ -215,6 +215,22 @@ Pass *RenderGraph::CreatePass(std::string name)
     return passes_.back().get();
 }
 
+Pass *RenderGraph::CreateClearTexture2DPass(std::string name, TextureResource *tex2D, const Vector4f &clearValue)
+{
+    auto pass = CreatePass(std::move(name));
+    pass->Use(tex2D, CLEAR_DST);
+    pass->SetCallback([tex2D, clearValue](PassContext &context)
+    {
+        context.GetCommandBuffer().ClearColorTexture2D(tex2D->Get(), clearValue);
+    });
+    return pass;
+}
+
+Pass *RenderGraph::CreateDummyPass(std::string name)
+{
+    return CreatePass(std::move(name));
+}
+
 const RHI::TextureDesc &RenderGraph::ExternalTextureResource::GetDesc() const
 {
     return texture->GetDesc();

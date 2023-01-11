@@ -36,7 +36,7 @@ void DeviceSynchronizer::WaitIdle()
 {
     queue_->WaitIdle();
 
-    if(!renderLoopFrames_.empty())
+    if(renderLoopFrames_.empty())
     {
         Callbacks callbacks;
         {
@@ -46,14 +46,6 @@ void DeviceSynchronizer::WaitIdle()
         for(auto &e : callbacks)
         {
             e();
-        }
-        for(auto &frame : renderLoopFrames_)
-        {
-            for(auto &e : frame.callbacks)
-            {
-                e();
-            }
-            frame.callbacks.clear();
         }
     }
 }

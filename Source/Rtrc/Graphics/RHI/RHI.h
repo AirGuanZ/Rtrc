@@ -45,32 +45,68 @@ inline Scissor Scissor::Create(const TexturePtr &tex)
 inline void BindingGroupUpdateBatch::Append(
     BindingGroup &group, int index, const ConstantBufferUpdate &cbuffer)
 {
-    records_.push_back({ &group, index, cbuffer });
+    records_.push_back({ &group, index, 0, cbuffer });
 }
 
 inline void BindingGroupUpdateBatch::Append(BindingGroup &group, int index, const BufferSrv *bufferSrv)
 {
-    records_.push_back({ &group, index, bufferSrv });
+    records_.push_back({ &group, index, 0, bufferSrv });
 }
 
 inline void BindingGroupUpdateBatch::Append(BindingGroup &group, int index, const BufferUav *bufferUav)
 {
-    records_.push_back({ &group, index, bufferUav });
+    records_.push_back({ &group, index, 0, bufferUav });
 }
 
 inline void BindingGroupUpdateBatch::Append(BindingGroup &group, int index, const Sampler *sampler)
 {
-    records_.push_back({ &group, index, sampler });
+    records_.push_back({ &group, index, 0, sampler });
 }
 
 inline void BindingGroupUpdateBatch::Append(BindingGroup &group, int index, const TextureSrv *textureSrv)
 {
-    records_.push_back({ &group, index, textureSrv });
+    records_.push_back({ &group, index, 0, textureSrv });
 }
 
 inline void BindingGroupUpdateBatch::Append(BindingGroup &group, int index, const TextureUav *textureUav)
 {
-    records_.push_back({ &group, index, textureUav });
+    records_.push_back({ &group, index, 0, textureUav });
+}
+
+inline void BindingGroupUpdateBatch::Append(
+    BindingGroup &group, int index, int arrayElem, const ConstantBufferUpdate &cbuffer)
+{
+    records_.push_back({ &group, index, arrayElem, cbuffer });
+}
+
+inline void BindingGroupUpdateBatch::Append(
+    BindingGroup &group, int index, int arrayElem, const BufferSrv *bufferSrv)
+{
+    records_.push_back({ &group, index, arrayElem, bufferSrv });
+}
+
+inline void BindingGroupUpdateBatch::Append(
+    BindingGroup &group, int index, int arrayElem, const BufferUav *bufferUav)
+{
+    records_.push_back({ &group, index, arrayElem, bufferUav });
+}
+
+inline void BindingGroupUpdateBatch::Append(
+    BindingGroup &group, int index, int arrayElem, const Sampler *sampler)
+{
+    records_.push_back({ &group, index, arrayElem, sampler });
+}
+
+inline void BindingGroupUpdateBatch::Append(
+    BindingGroup &group, int index, int arrayElem, const TextureSrv *textureSrv)
+{
+    records_.push_back({ &group, index, arrayElem, textureSrv });
+}
+
+inline void BindingGroupUpdateBatch::Append(
+    BindingGroup &group, int index, int arrayElem, const TextureUav *textureUav)
+{
+    records_.push_back({ &group, index, arrayElem, textureUav });
 }
 
 RTRC_RHI_END

@@ -224,8 +224,8 @@ T *LinearAllocator::Create(Args &&... args)
         {
             ret = static_cast<T *>(mi_aligned_alloc(alignof(T), sizeof(T)));
         };
-        new(ret) T(std::forward<Args>(args)...);
-        new(destructor) LargeDestructor<T>(ret);
+        ret = new(ret) T(std::forward<Args>(args)...);
+        destructor = new(destructor) LargeDestructor<T>(ret);
         destructor->next = destructorEntry_;
         destructorEntry_ = destructor;
         return ret;
@@ -234,15 +234,15 @@ T *LinearAllocator::Create(Args &&... args)
     if constexpr(std::is_trivially_destructible_v<T>)
     {
         T *ret = AllocateSmallObject<T>();
-        new(ret) T(std::forward<Args>(args)...);
+        ret = new(ret) T(std::forward<Args>(args)...);
         return ret;
     }
     else
     {
         auto destructor = AllocateSmallObject<RegularDestructor<T>>();
         T *ret = AllocateSmallObject<T>();
-        new(ret) T(std::forward<Args>(args)...);
-        new(destructor) RegularDestructor<T>(ret);
+        ret = new(ret) T(std::forward<Args>(args)...);
+        destructor = new(destructor) RegularDestructor<T>(ret);
         destructor->next = destructorEntry_;
         destructorEntry_ = destructor;
         return ret;

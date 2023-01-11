@@ -319,6 +319,13 @@ void CommandBuffer::SetStencilReferenceValue(uint8_t value)
     rhiCommandBuffer_->SetStencilReferenceValue(value);
 }
 
+void CommandBuffer::ClearColorTexture2D(const RC<Texture> &tex, const Vector4f &color)
+{
+    CheckThreadID();
+    rhiCommandBuffer_->ClearColorTexture2D(
+        tex->GetRHIObject().Get(), ColorClearValue{ color.x, color.y, color.z, color.w });
+}
+
 void CommandBuffer::Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance)
 {
     CheckThreadID();

@@ -25,7 +25,8 @@ public:
         BindingGroupLayoutDesc                    desc,
         std::vector<VkDescriptorSetLayoutBinding> bindings,
         VkDevice                                  device,
-        VkDescriptorSetLayout                     layout);
+        VkDescriptorSetLayout                     layout,
+        bool                                      hasBindlessBinding);
 
     ~VulkanBindingGroupLayout() override;
 
@@ -62,6 +63,7 @@ private:
     void AllocateNewDescriptorPool() const;
 
     const BindingGroupLayoutDesc desc_;
+    bool hasBindlessBinding_;
     std::vector<VkDescriptorSetLayoutBinding> bindings_;
 
     VkDevice device_;

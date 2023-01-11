@@ -682,11 +682,35 @@ Ptr<BindingGroupLayout> VulkanDevice::CreateBindingGroupLayout(const BindingGrou
         samplerOffset += binding.immutableSamplers.size();
     }
 
-    const VkDescriptorSetLayoutCreateInfo createInfo = {
+    VkDescriptorSetLayoutCreateInfo createInfo = {
         .sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
         .bindingCount = static_cast<uint32_t>(descSetBindings.size()),
         .pBindings    = descSetBindings.data()
     };
+
+    std::vector<VkDescriptorBindingFlags> bindingFlags;
+    VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsInfo;
+    const bool bindless = std::ranges::any_of(desc.bindings, [](const BindingDesc &b) { return b.bindless; });
+    if(bindless)
+    {
+        bindingFlags.resize(desc.bindings.size(), 0);
+        for(auto &&[index, binding] : Enumerate(desc.bindings))
+        {
+            if(binding.bindless)
+            {
+                bindingFlags[index] = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT
+                                    | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT
+                                    | VK_DESCRIPTOR_BINDING_UPDATE_UNUSED_WHILE_PENDING_BIT;
+            }
+        }
+        bindingFlagsInfo = VkDescriptorSetLayoutBindingFlagsCreateInfo
+        {
+            .sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,
+            .bindingCount  = createInfo.bindingCount,
+            .pBindingFlags = bindingFlags.data()
+        };
+        createInfo.pNext = &bindingFlagsInfo;
+    }
 
     VkDescriptorSetLayout layout;
     VK_FAIL_MSG(
@@ -694,7 +718,7 @@ Ptr<BindingGroupLayout> VulkanDevice::CreateBindingGroupLayout(const BindingGrou
         "failed to create vulkan descriptor set layout");
     RTRC_SCOPE_FAIL{ vkDestroyDescriptorSetLayout(device_, layout, VK_ALLOC); };
 
-    return MakePtr<VulkanBindingGroupLayout>(desc, std::move(descSetBindings), device_, layout);
+    return MakePtr<VulkanBindingGroupLayout>(desc, std::move(descSetBindings), device_, layout, bindless);
 }
 
 Ptr<BindingGroup> VulkanDevice::CreateBindingGroup(const Ptr<BindingGroupLayout> &bindingGroupLayout)
@@ -736,32 +760,38 @@ void VulkanDevice::UpdateBindingGroups(const BindingGroupUpdateBatch &batch)
             [&](const ConstantBufferUpdate &update)
             {
                 auto buffer = static_cast<const VulkanBuffer *>(update.buffer);
-                group->_internalTranslate(arena, record.index, buffer, update.offset, update.range, writes[i]);
+                group->_internalTranslate(
+                    arena, record.index, record.arrayElem, buffer, update.offset, update.range, writes[i]);
             },
             [&](const BufferSrv *bufferSrv)
             {
                 auto srv = static_cast<const VulkanBufferSrv *>(bufferSrv);
-                group->_internalTranslate(arena, record.index, srv, writes[i]);
+                group->_internalTranslate(
+                    arena, record.index, record.arrayElem, srv, writes[i]);
             },
             [&](const BufferUav *bufferUav)
             {
                 auto uav = static_cast<const VulkanBufferUav *>(bufferUav);
-                group->_internalTranslate(arena, record.index, uav, writes[i]);
+                group->_internalTranslate(
+                    arena, record.index, record.arrayElem, uav, writes[i]);
             },
             [&](const TextureSrv *textureSrv)
             {
                 auto srv = static_cast<const VulkanTextureSrv *>(textureSrv);
-                group->_internalTranslate(arena, record.index, srv, writes[i]);
+                group->_internalTranslate(
+                    arena, record.index, record.arrayElem, srv, writes[i]);
             },
             [&](const TextureUav *textureUav)
             {
                 auto uav = static_cast<const VulkanTextureUav *>(textureUav);
-                group->_internalTranslate(arena, record.index, uav, writes[i]);
+                group->_internalTranslate(
+                    arena, record.index, record.arrayElem, uav, writes[i]);
             },
             [&](const Sampler *sampler)
             {
                 auto vkSampler = static_cast<const VulkanSampler *>(sampler);
-                group->_internalTranslate(arena, record.index, vkSampler, writes[i]);
+                group->_internalTranslate(
+                    arena, record.index, record.arrayElem, vkSampler, writes[i]);
             });
     }
     vkUpdateDescriptorSets(device_, records.GetSize(), writes.data(), 0, nullptr);

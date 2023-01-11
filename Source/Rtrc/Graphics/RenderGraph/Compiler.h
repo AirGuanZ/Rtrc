@@ -8,7 +8,7 @@ class Compiler : public Uncopyable
 {
 public:
 
-    Compiler(Device &device);
+    explicit Compiler(Device &device);
 
     void Compile(const RenderGraph &graph, ExecutableGraph &result);
 

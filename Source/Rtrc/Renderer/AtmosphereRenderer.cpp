@@ -28,12 +28,15 @@ namespace AtmosphereDetail
     rtrc_group(SkyLutPass, Pass)
     {
         rtrc_define(RWTexture2D,           SkyLutTextureRW);
+        rtrc_define(Texture2D,             SkyHistoryLutTexture);
         rtrc_define(Texture2D,             TransmittanceLutTexture);
         rtrc_define(Texture2D,             MultiScatterLutTexture);
         rtrc_uniform(AtmosphereProperties, atmosphere);
         rtrc_uniform(int2,                 outputResolution);
         rtrc_uniform(int,                  rayMarchStepCount);
+        rtrc_uniform(float,                frameRandom01);
         rtrc_uniform(float3,               eyePos);
+        rtrc_uniform(float,                lerpFactor);
         rtrc_uniform(float3,               sunDirection);
         rtrc_uniform(float3,               sunIntensity);
     };
@@ -150,7 +153,7 @@ AtmosphereDetail::MultiScatterLut::MultiScatterLut(
 }
 
 AtmosphereDetail::SkyLut::SkyLut(const BuiltinResourceManager &builtinResources)
-    : device_(builtinResources.GetDevice()), stepCount_(0)
+    : device_(builtinResources.GetDevice()), randomEngine_(42), stepCount_(0)
 {
     auto material = builtinResources.GetBuiltinMaterial(BuiltinMaterial::Atmosphere);
     auto pass = material->GetPassByTag("GenerateSkyLut");
@@ -171,34 +174,36 @@ AtmosphereDetail::SkyLut::RenderGraphInterface AtmosphereDetail::SkyLut::AddToRe
     const AtmosphereFrameParameters *parameters,
     RG::RenderGraph                 *renderGraph,
     const TransmittanceLut          &transmittanceLut,
-    const MultiScatterLut           &multiScatterLut) const
+    const MultiScatterLut           &multiScatterLut)
 {
-    auto lut = renderGraph->CreateTexture(RHI::TextureDesc
-    {
-        .dim                  = RHI::TextureDimension::Tex2D,
-        .format               = RHI::Format::R32G32B32A32_Float,
-        .width                = static_cast<uint32_t>(lutRes_.x),
-        .height               = static_cast<uint32_t>(lutRes_.y),
-        .arraySize            = 1,
-        .mipLevels            = 1,
-        .sampleCount          = 1,
-        .usage                = RHI::TextureUsage::UnorderAccess | RHI::TextureUsage::ShaderResource,
-        .initialLayout        = RHI::TextureLayout::Undefined,
-        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
-    }, "SkyLut");
+    std::swap(prevLut_, currLut_);
 
+    auto prevLutRG = PrepareLut(renderGraph, prevLut_);
+    auto currLutRG = PrepareLut(renderGraph, currLut_);
+
+    auto prevLut = prevLutRG.lut;
+    auto currLut = currLutRG.lut;
+    
     auto pass = renderGraph->CreatePass("Generate Sky Lut");
-    pass->Use(lut, RG::COMPUTE_SHADER_RWTEXTURE_WRITEONLY);
-    pass->SetCallback([this, lut, parameters, &transmittanceLut, &multiScatterLut](RG::PassContext &passCtx)
+    pass->Use(currLut, RG::COMPUTE_SHADER_RWTEXTURE_WRITEONLY);
+    pass->Use(prevLut, RG::COMPUTE_SHADER_TEXTURE);
+    pass->SetCallback(
+        [this, currLut, prevLut, parameters, &transmittanceLut, &multiScatterLut](RG::PassContext &passCtx)
     {
+        float lerpFactor = 1.0f - std::pow(0.03f, 0.4f * parameters->dt);
+        lerpFactor = std::clamp(lerpFactor, 0.001f, 0.05f);
+
         SkyLutPass passGroupData;
-        passGroupData.SkyLutTextureRW         = lut->Get();
+        passGroupData.SkyLutTextureRW         = currLut->Get();
+        passGroupData.SkyHistoryLutTexture    = prevLut->Get();
         passGroupData.TransmittanceLutTexture = transmittanceLut.GetLut();
         passGroupData.MultiScatterLutTexture  = multiScatterLut.GetLut();
         passGroupData.atmosphere              = parameters->atmosphere;
         passGroupData.outputResolution        = lutRes_;
         passGroupData.rayMarchStepCount       = stepCount_;
+        passGroupData.frameRandom01           = std::uniform_real_distribution<float>(0, 1)(randomEngine_);
         passGroupData.eyePos                  = parameters->eyePosition;
+        passGroupData.lerpFactor              = lerpFactor;
         passGroupData.sunDirection            = parameters->sunDirection;
         passGroupData.sunIntensity            = parameters->sunIntensity * parameters->sunColor;
         auto passGroup = device_.CreateBindingGroup(passGroupData);
@@ -210,9 +215,48 @@ AtmosphereDetail::SkyLut::RenderGraphInterface AtmosphereDetail::SkyLut::AddToRe
     });
 
     RenderGraphInterface ret;
-    ret.inPass = pass;
+
+    auto entryPass = renderGraph->CreateDummyPass("Begin Sky Lut Generation");
+    Connect(entryPass, prevLutRG.clearPass);
+    Connect(entryPass, currLutRG.clearPass);
+    Connect(prevLutRG.clearPass, pass);
+    Connect(currLutRG.clearPass, pass);
+
+    ret.inPass = entryPass;
     ret.outPass = pass;
-    ret.skyLut = lut;
+    ret.skyLut = currLut;
+    return ret;
+}
+
+AtmosphereDetail::SkyLut::PrepareLutRGInterface AtmosphereDetail::SkyLut::PrepareLut(
+    RG::RenderGraph *renderGraph, RC<StatefulTexture> &lut)
+{
+    PrepareLutRGInterface ret;
+    if(lut && lut->GetWidth() == lutRes_.x && lut->GetHeight() == lutRes_.y)
+    {
+        ret.clearPass = renderGraph->CreateDummyPass("Clear Sky Lut");
+        ret.lut = renderGraph->RegisterTexture(lut);
+        return ret;
+    }
+
+    lut = device_.CreatePooledTexture(RHI::TextureDesc
+    {
+        .dim                  = RHI::TextureDimension::Tex2D,
+        .format               = RHI::Format::R32G32B32A32_Float,
+        .width                = static_cast<uint32_t>(lutRes_.x),
+        .height               = static_cast<uint32_t>(lutRes_.y),
+        .arraySize            = 1,
+        .mipLevels            = 1,
+        .sampleCount          = 1,
+        .usage                = RHI::TextureUsage::UnorderAccess |
+                                RHI::TextureUsage::ShaderResource |
+                                RHI::TextureUsage::TransferDst,
+        .initialLayout        = RHI::TextureLayout::Undefined,
+        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
+    });
+
+    ret.lut = renderGraph->RegisterTexture(lut);
+    ret.clearPass = renderGraph->CreateClearTexture2DPass("Clear Sky Lut", ret.lut, { 0, 0, 0, 0 });
     return ret;
 }
 
@@ -228,7 +272,7 @@ AtmosphereRenderer::AtmosphereRenderer(const BuiltinResourceManager &builtinReso
     msLutRes_ = { 256, 256 };
     
     skyLut_ = MakeBox<SkyLut>(builtinResources_);
-    skyLut_->SetRayMarchingStepCount(32);
+    skyLut_->SetRayMarchingStepCount(24);
     skyLut_->SetOutputResolution({ 256, 128 });
 }
 
@@ -286,7 +330,7 @@ void AtmosphereRenderer::SetSkyLutResolution(const Vector2i &res)
 }
 
 AtmosphereRenderer::RenderGraphInterface AtmosphereDetail::AtmosphereRenderer::AddToRenderGraph(
-    RG::RenderGraph &graph, const Camera &camera)
+    RG::RenderGraph &graph, const Camera &camera, float dt)
 {
     if(!transLut_)
     {
@@ -299,6 +343,7 @@ AtmosphereRenderer::RenderGraphInterface AtmosphereDetail::AtmosphereRenderer::A
 
     frameParameters_.eyePosition = camera.GetPosition();
     frameParameters_.eyePosition.y += yOffset_;
+    frameParameters_.dt = dt;
 
     assert(skyLut_);
     auto skyRGData = skyLut_->AddToRenderGraph(&frameParameters_, &graph, *transLut_, *msLut_);

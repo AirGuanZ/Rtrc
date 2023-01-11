@@ -84,6 +84,13 @@ inline constexpr UseInfo PIXEL_SHADER_TEXTURE =
     .accesses = RHI::ResourceAccess::TextureRead
 };
 
+inline constexpr UseInfo COMPUTE_SHADER_TEXTURE =
+{
+    .layout = RHI::TextureLayout::ShaderTexture,
+    .stages = RHI::PipelineStage::ComputeShader,
+    .accesses = RHI::ResourceAccess::TextureRead
+};
+
 inline constexpr UseInfo COMPUTE_SHADER_RWTEXTURE =
 {
     .layout = RHI::TextureLayout::ShaderRWTexture,
@@ -215,7 +222,7 @@ private:
     friend class Compiler;
 
     Pass(int index, std::string name);
-
+    
     int           index_;
     std::string   name_;
     Callback      callback_;
@@ -249,7 +256,9 @@ public:
 
     TextureResource *RegisterSwapchainTexture(const RHI::SwapchainPtr &swapchain);
 
-    Pass *CreatePass(std::string name = {});
+    Pass *CreatePass(std::string name);
+    Pass *CreateClearTexture2DPass(std::string name, TextureResource *tex2D, const Vector4f &clearValue);
+    Pass *CreateDummyPass(std::string name);
 
 private:
 

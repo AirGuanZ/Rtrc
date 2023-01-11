@@ -10,8 +10,7 @@ RTRC_BEGIN
 template<typename T, size_t N>
 class StaticVector
 {
-
-    T *Addr(size_t i)
+    T *RawAddr(size_t i)
     {
         return reinterpret_cast<T *>(&data_) + i;
     }
@@ -33,7 +32,7 @@ public:
         RTRC_SCOPE_FAIL{ Destruct(); };
         while(size_ < initData.size())
         {
-            new(Addr(size_)) T(std::data(initData)[size_]);
+            new(RawAddr(size_)) T(std::data(initData)[size_]);
             ++size_;
         }
     }
@@ -45,7 +44,7 @@ public:
         RTRC_SCOPE_FAIL{ Destruct(); };
         while(size_ < initialCount)
         {
-            new(Addr(size_)) T(value);
+            new(RawAddr(size_)) T(value);
             ++size_;
         }
     }
@@ -56,7 +55,7 @@ public:
         RTRC_SCOPE_FAIL{ Destruct(); };
         while(size_ < other.GetSize())
         {
-            new(GetData() + size_) T(other.At(size_));
+            new(RawAddr(size_)) T(other.At(size_));
             ++size_;
         }
     }
@@ -100,7 +99,7 @@ public:
         {
             for(size_t i = other.size_; i < size_; ++i)
             {
-                new (other.GetData() + i) T(std::move(At(i)));
+                new (other.RawAddr(i)) T(std::move(At(i)));
                 At(i).~T();
             }
         }
@@ -108,7 +107,7 @@ public:
         {
             for(size_t i = size_; i < other.size_; ++i)
             {
-                new (GetData() + i) T(std::move(other.At(i)));
+                new (RawAddr(i)) T(std::move(other.At(i)));
                 other.At(i).~T();
             }
         }
@@ -119,14 +118,14 @@ public:
     void PushBack(const T &value)
     {
         assert(size_ < Capacity);
-        new (reinterpret_cast<T *>(&data_) + size_) T(value);
+        new (RawAddr(size_)) T(value);
         ++size_;
     }
 
     void PushBack(T &&value) noexcept
     {
         assert(size_ < Capacity);
-        new (reinterpret_cast<T *>(&data_) + size_) T(std::move(value));
+        new (RawAddr(size_)) T(std::move(value));
         ++size_;
     }
 
@@ -150,13 +149,13 @@ public:
     const T &At(size_t i) const
     {
         assert(i < size_);
-        return *(reinterpret_cast<const T *>(&data_) + i);
+        return *std::launder(reinterpret_cast<const T *>(&data_) + i);
     }
 
     T &At(size_t i)
     {
         assert(i < size_);
-        return *(reinterpret_cast<T *>(&data_) + i);
+        return *std::launder(reinterpret_cast<T *>(&data_) + i);
     }
 
     size_t GetSize() const
@@ -166,12 +165,12 @@ public:
 
     const T *GetData() const
     {
-        return reinterpret_cast<const T *>(&data_);
+        return std::launder(reinterpret_cast<const T *>(&data_));
     }
 
     T *GetData()
     {
-        return reinterpret_cast<T *>(&data_);
+        return std::launder(reinterpret_cast<T *>(&data_));
     }
 
     bool IsEmpty() const
@@ -205,10 +204,10 @@ public:
         return true;
     }
 
-    auto begin() { return reinterpret_cast<T *>(&data_); }
+    auto begin() { return std::launder(reinterpret_cast<T *>(&data_)); }
     auto end() { return begin() + size_; }
 
-    auto begin() const { return reinterpret_cast<const T *>(&data_); }
+    auto begin() const { return std::launder(reinterpret_cast<const T *>(&data_)); }
     auto end() const { return begin() + size_; }
 
     size_t Hash() const

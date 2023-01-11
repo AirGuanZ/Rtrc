@@ -200,14 +200,14 @@ template<typename T>
 const T &SlotVector<T>::At(int index) const
 {
     assert(isUsed_[index]);
-    return *reinterpret_cast<const T *>(&values_[index]);
+    return *std::launder(reinterpret_cast<const T *>(&values_[index]));
 }
 
 template<typename T>
 T &SlotVector<T>::At(int index)
 {
     assert(isUsed_[index]);
-    return *reinterpret_cast<T *>(&values_[index]);
+    return *std::launder(reinterpret_cast<T *>(&values_[index]));
 }
 
 template<typename T>
@@ -248,8 +248,8 @@ void SlotVector<T>::Grow()
         {
             if(isUsed_[i])
             {
-                new(&newValues[i]) T(std::move(At(i)));
-                At(i).~T();
+                new(&newValues[i]) T(std::move(At(static_cast<int>(i))));
+                At(static_cast<int>(i)).~T();
             }
         }
         values_ = std::move(newValues);

@@ -151,6 +151,8 @@ public:
 
     void SetStencilReferenceValue(uint8_t value);
 
+    void ClearColorTexture2D(const RC<Texture> &tex, const Vector4f &color);
+
     void Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance);
     void DrawIndexed(int indexCount, int instanceCount, int firstIndex, int firstVertex, int firstInstance);
     void Dispatch(int groupCountX, int groupCountY, int groupCountZ);

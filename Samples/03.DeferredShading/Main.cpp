@@ -147,7 +147,7 @@ class Application : public Uncopyable
             atmosphere_->SetSunDirection(direction);
             mainLight_->GetDirectionalData().direction = direction;
         }
-        const auto atmosphereRGData = atmosphere_->AddToRenderGraph(*rg, *camera_);
+        const auto atmosphereRGData = atmosphere_->AddToRenderGraph(*rg, *camera_, timer_.GetDeltaSecondsF());
 
         // Deferred rendering
 

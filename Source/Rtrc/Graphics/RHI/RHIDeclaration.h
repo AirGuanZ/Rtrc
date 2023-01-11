@@ -458,6 +458,7 @@ struct BindingDesc
     ShaderStageFlag          shaderStages = ShaderStageFlags::All;
     std::optional<uint32_t>  arraySize;
     std::vector<SamplerPtr>  immutableSamplers;
+    bool                     bindless = false;
 
     auto operator<=>(const BindingDesc &other) const = default;
     bool operator==(const BindingDesc &) const = default;
@@ -882,6 +883,7 @@ public:
     {
         BindingGroup *group;
         int index;
+        int arrayElem;
         UpdateData data;
     };
 
@@ -891,6 +893,13 @@ public:
     void Append(BindingGroup &group, int index, const TextureUav *textureUav);
     void Append(BindingGroup &group, int index, const Sampler *sampler);
     void Append(BindingGroup &group, int index, const ConstantBufferUpdate &cbuffer);
+
+    void Append(BindingGroup &group, int index, int arrayElem, const BufferSrv *bufferSrv);
+    void Append(BindingGroup &group, int index, int arrayElem, const BufferUav *bufferUav);
+    void Append(BindingGroup &group, int index, int arrayElem, const TextureSrv *textureSrv);
+    void Append(BindingGroup &group, int index, int arrayElem, const TextureUav *textureUav);
+    void Append(BindingGroup &group, int index, int arrayElem, const Sampler *sampler);
+    void Append(BindingGroup &group, int index, int arrayElem, const ConstantBufferUpdate &cbuffer);
 
     Span<Record> GetRecords() const { return records_; }
 
@@ -1066,6 +1075,14 @@ public:
     uint32_t         GetHeight()    const { return GetDesc().height; }                                   \
     uint32_t         GetDepth()     const { return GetDesc().depth; }
 
+#define RTRC_RHI_BINDING_GROUP_COMMON                                                                               \
+    void ModifyMember(int index, BufferSrv *bufferSrv)                { this->ModifyMember(index, 0, bufferSrv);  } \
+    void ModifyMember(int index, BufferUav *bufferUav)                { this->ModifyMember(index, 0, bufferUav);  } \
+    void ModifyMember(int index, TextureSrv *textureSrv)              { this->ModifyMember(index, 0, textureSrv); } \
+    void ModifyMember(int index, TextureUav *textureUav)              { this->ModifyMember(index, 0, textureUav); } \
+    void ModifyMember(int index, Sampler *sampler)                    { this->ModifyMember(index, 0, sampler);    } \
+    void ModifyMember(int index, const ConstantBufferUpdate &cbuffer) { this->ModifyMember(index, 0, cbuffer);    }
+
 #ifndef RTRC_STATIC_RHI
 
 class Surface : public RHIObject
@@ -1162,14 +1179,16 @@ class BindingGroup : public RHIObject
 {
 public:
 
-    RTRC_RHI_API const BindingGroupLayout *GetLayout() const RTRC_RHI_API_PURE;
+    RTRC_RHI_BINDING_GROUP_COMMON
 
-    RTRC_RHI_API void ModifyMember(int index, BufferSrv  *bufferSrv) RTRC_RHI_API_PURE;
-    RTRC_RHI_API void ModifyMember(int index, BufferUav  *bufferUav) RTRC_RHI_API_PURE;
-    RTRC_RHI_API void ModifyMember(int index, TextureSrv *textureSrv) RTRC_RHI_API_PURE;
-    RTRC_RHI_API void ModifyMember(int index, TextureUav *textureUav) RTRC_RHI_API_PURE;
-    RTRC_RHI_API void ModifyMember(int index, Sampler    *sampler) RTRC_RHI_API_PURE;
-    RTRC_RHI_API void ModifyMember(int index, const ConstantBufferUpdate &cbuffer) RTRC_RHI_API_PURE;
+    RTRC_RHI_API const BindingGroupLayout *GetLayout() const RTRC_RHI_API_PURE;
+    
+    RTRC_RHI_API void ModifyMember(int index, int arrayElem, BufferSrv                  *bufferSrv)  RTRC_RHI_API_PURE;
+    RTRC_RHI_API void ModifyMember(int index, int arrayElem, BufferUav                  *bufferUav)  RTRC_RHI_API_PURE;
+    RTRC_RHI_API void ModifyMember(int index, int arrayElem, TextureSrv                 *textureSrv) RTRC_RHI_API_PURE;
+    RTRC_RHI_API void ModifyMember(int index, int arrayElem, TextureUav                 *textureUav) RTRC_RHI_API_PURE;
+    RTRC_RHI_API void ModifyMember(int index, int arrayElem, Sampler                    *sampler)    RTRC_RHI_API_PURE;
+    RTRC_RHI_API void ModifyMember(int index, int arrayElem, const ConstantBufferUpdate &cbuffer)    RTRC_RHI_API_PURE;
 };
 
 class BindingLayout : public RHIObject

@@ -206,12 +206,15 @@ Shader "Builtin/Atmosphere/GenerateSkyLut"
 
     rtrc_group(Pass)
         rtrc_define(RWTexture2D<float4>,     SkyLutTextureRW)
+        rtrc_define(Texture2D<float3>,       SkyHistoryLutTexture)
         rtrc_define(Texture2D<float3>,       TransmittanceLutTexture)
         rtrc_define(Texture2D<float3>,       MultiScatterLutTexture)
         rtrc_uniform(Atmosphere::Properties, atmosphere)
         rtrc_uniform(int2,                   outputResolution)
         rtrc_uniform(int,                    rayMarchStepCount)
+        rtrc_uniform(float,                  frameRandom01)
         rtrc_uniform(float3,                 eyePos)
+        rtrc_uniform(float,                  lerpFactor)
         rtrc_uniform(float3,                 sunDirection)
         rtrc_uniform(float3,                 sunIntensity)
     rtrc_end
@@ -221,16 +224,16 @@ Shader "Builtin/Atmosphere/GenerateSkyLut"
     static float PI = 3.14159265;
 
     void RayMarchStep(
-        float phaseU, float3 ori, float3 dir, float thisT, float nextT,
+        float phaseU, float3 ori, float3 dir, float t, float dt,
         inout float3 sumSigmaT, inout float3 inScatter)
     {
-        float3 posR = float3(0, ori.y + Pass.atmosphere.planetRadius, 0) + dir * 0.5 * (thisT + nextT);
+        float3 posR = float3(0, ori.y + Pass.atmosphere.planetRadius, 0) + dir * t;
         float h = length(posR) - Pass.atmosphere.planetRadius;
 
         float3 sigmaS, sigmaT;
         Atmosphere::GetSigmaST(Pass.atmosphere, h, sigmaS, sigmaT);
 
-        float3 deltaSumSigmaT = (nextT - thisT) * sigmaT;
+        float3 deltaSumSigmaT = dt * sigmaT;
         float3 eyeTrans = exp(-sumSigmaT - 0.5 * deltaSumSigmaT);
         float sunTheta = PI / 2 - acos(dot(-Pass.sunDirection, normalize(posR)));
 
@@ -239,14 +242,14 @@ Shader "Builtin/Atmosphere/GenerateSkyLut"
             float3 rho = Atmosphere::EvaluatePhaseFunction(Pass.atmosphere, h, phaseU);
             float3 sunTrans = Atmosphere::SampleTransmittanceLut(
                     TransmittanceLutTexture, LutSampler, Pass.atmosphere, h, sunTheta);
-            inScatter += (nextT - thisT) * eyeTrans * sigmaS * rho * sunTrans;
+            inScatter += dt * eyeTrans * sigmaS * rho * sunTrans;
         }
 
         {
             float tx = h / (Pass.atmosphere.atmosphereRadius - Pass.atmosphere.planetRadius);
             float ty = 0.5 + 0.5 * sin(sunTheta);
             float3 ms = MultiScatterLutTexture.SampleLevel(LutSampler, float2(tx, ty), 0);
-            inScatter += (nextT - thisT) * eyeTrans * sigmaS * ms;
+            inScatter += dt * eyeTrans * sigmaS * ms;
         }
 
         sumSigmaT += deltaSumSigmaT;
@@ -294,15 +297,16 @@ Shader "Builtin/Atmosphere/GenerateSkyLut"
         float phaseU = dot(Pass.sunDirection, -dir);
         float3 inScatter = 0, sumSigmaT = 0;
         float dt = (endT - begT) / Pass.rayMarchStepCount;
-        float t = begT + 0.5 * dt;
+        float t = begT + Pass.frameRandom01 * dt;
         for(int i = 0; i < Pass.rayMarchStepCount; ++i)
         {
-            float nextT = t + dt;
-            RayMarchStep(phaseU, ori, dir, t, nextT, sumSigmaT, inScatter);
-            t = nextT;
+            RayMarchStep(phaseU, ori, dir, t, dt, sumSigmaT, inScatter);
+            t += dt;
         }
 
-        SkyLutTextureRW[tid] = float4(inScatter * Pass.sunIntensity, 1);
+        float3 curr = inScatter * Pass.sunIntensity;
+        float3 prev = SkyHistoryLutTexture[tid];
+        SkyLutTextureRW[tid] = float4(lerp(prev, curr, Pass.lerpFactor), 1);
     }
 
 } // Shader "Builtin/Atmosphere/GenerateSkyLut"

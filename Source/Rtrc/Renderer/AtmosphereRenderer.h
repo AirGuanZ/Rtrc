@@ -1,5 +1,7 @@
 #pragma once
 
+#include <random>
+
 #include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/Renderer/BuiltinResources.h>
 #include <Rtrc/Renderer/Camera/Camera.h>
@@ -46,6 +48,7 @@ namespace AtmosphereDetail
         Vector3f sunDirection;
         Vector3f sunColor;
         float sunIntensity;
+        float dt;
     };
 
     class TransmittanceLut
@@ -105,15 +108,27 @@ namespace AtmosphereDetail
             const AtmosphereFrameParameters *parameters,
             RG::RenderGraph                 *renderGraph,
             const TransmittanceLut          &transmittanceLut,
-            const MultiScatterLut           &multiScatterLut) const;
+            const MultiScatterLut           &multiScatterLut);
 
     private:
+
+        struct PrepareLutRGInterface
+        {
+            RG::Pass *clearPass;
+            RG::TextureResource *lut;
+        };
+
+        PrepareLutRGInterface PrepareLut(RG::RenderGraph *renderGraph, RC<StatefulTexture> &lut);
 
         Device &device_;
         RC<Shader> shader_;
 
+        std::default_random_engine randomEngine_;
         int stepCount_;
         Vector2i lutRes_;
+
+        RC<StatefulTexture> prevLut_;
+        RC<StatefulTexture> currLut_;
     };
 
     class AtmosphereRenderer : public Uncopyable
@@ -140,7 +155,7 @@ namespace AtmosphereDetail
         void SetMultiScatterLutResolution(const Vector2i &res);
         void SetSkyLutResolution(const Vector2i &res);
 
-        RenderGraphInterface AddToRenderGraph(RG::RenderGraph &graph, const Camera &camera);
+        RenderGraphInterface AddToRenderGraph(RG::RenderGraph &graph, const Camera &camera, float dt);
 
     private:
 

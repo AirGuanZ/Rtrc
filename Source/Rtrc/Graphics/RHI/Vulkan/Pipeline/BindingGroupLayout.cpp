@@ -9,8 +9,9 @@ VulkanBindingGroupLayout::VulkanBindingGroupLayout(
     BindingGroupLayoutDesc                    desc,
     std::vector<VkDescriptorSetLayoutBinding> bindings,
     VkDevice                                  device,
-    VkDescriptorSetLayout                     layout)
-    : desc_(std::move(desc)), bindings_(std::move(bindings)),
+    VkDescriptorSetLayout                     layout,
+    bool                                      hasBindlessBinding)
+    : desc_(std::move(desc)), hasBindlessBinding_(hasBindlessBinding), bindings_(std::move(bindings)),
       device_(device), layout_(layout), poolCount_(0)
 {
     for(auto &binding : bindings_)
@@ -154,8 +155,10 @@ void VulkanBindingGroupLayout::AllocateNewDescriptorPool() const
         });
     }
 
+    const VkDescriptorPoolCreateFlags flags = hasBindlessBinding_ ? VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT : 0;
     const VkDescriptorPoolCreateInfo createInfo = {
         .sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+        .flags         = flags,
         .maxSets       = static_cast<uint32_t>(maxSets),
         .poolSizeCount = static_cast<uint32_t>(poolSizes.size()),
         .pPoolSizes    = poolSizes.data()
