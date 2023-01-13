@@ -24,6 +24,7 @@ RC<BindingGroupLayout> BindingGroupManager::CreateBindingGroupLayout(const Bindi
                 {
                     rhiBinding.immutableSamplers.push_back(s->GetRHIObject());
                 }
+                rhiBinding.bindless = binding.bindless;
                 rhiDesc.bindings.push_back(rhiBinding);
             }
 

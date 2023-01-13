@@ -250,7 +250,7 @@ namespace BindingGroupDSL
         size_t dwordCount = 0;
         T::ForEachFlattenMember(
             [&dwordCount]<bool IsUniform, typename M, typename A>
-            (const char *name, RHI::ShaderStageFlag stages, const A &accessor)
+            (const char *name, RHI::ShaderStageFlag stages, const A &accessor, bool isBindless)
         {
             if constexpr(IsUniform)
             {
@@ -280,7 +280,7 @@ namespace BindingGroupDSL
         size_t deviceDWordOffset = 0;
         T::ForEachFlattenMember(
             [&deviceDWordOffset, &f]<bool IsUniform, typename M, typename A>
-            (const char *name, RHI::ShaderStageFlag stages, const A &accessor)
+            (const char *name, RHI::ShaderStageFlag stages, const A &accessor, bool isBindless)
         {
             if constexpr(IsUniform)
             {
@@ -316,7 +316,7 @@ namespace BindingGroupDSL
             BindingGroupLayout::Desc desc;
             T::ForEachFlattenMember(
                 [&desc]<bool IsUniform, typename M, typename A>
-                (const char *name, RHI::ShaderStageFlag stages, const A &accessor)
+                (const char *name, RHI::ShaderStageFlag stages, const A &accessor, bool isBindless)
             {
                 if constexpr(!IsUniform)
                 {
@@ -326,6 +326,7 @@ namespace BindingGroupDSL
                     binding.type = MemberElement::BindingType;
                     binding.stages = stages;
                     binding.arraySize = arraySize ? std::make_optional(static_cast<uint32_t>(arraySize)) : std::nullopt;
+                    binding.bindless = isBindless;
                     desc.bindings.push_back(binding);
                 }
             });
@@ -344,52 +345,52 @@ namespace BindingGroupDSL
 } // namespace BindingGroupDSL
 
 #define rtrc_group1(NAME) rtrc_group2(NAME, NAME)
-#define rtrc_group2(NAME, NAME_STR)                                                             \
-    struct NAME;                                                                                \
-    struct _rtrcGroupBase##NAME                                                                 \
-    {                                                                                           \
-        using _rtrcSelf = NAME;                                                                 \
-        struct _rtrcGroupTypeFlag{};                                                            \
-        static ::Rtrc::StructDetail::Sizer<1> _rtrcMemberCounter(...);                          \
-        template<typename F>                                                                    \
-        static constexpr void ForEachMember(const F &f)                                         \
-        {                                                                                       \
-            ::Rtrc::StructDetail::ForEachMember<_rtrcSelf>(f);                                  \
-        }                                                                                       \
-        template<typename F, typename A = std::identity>                                        \
-        static constexpr void ForEachFlattenMember(                                             \
-            const F &f,                                                                         \
-            ::Rtrc::RHI::ShaderStageFlag stageMask = ::Rtrc::RHI::ShaderStageFlags::All,        \
-            const std::identity &accessor = {})                                                 \
-        {                                                                                       \
-            ::Rtrc::StructDetail::ForEachMember<_rtrcSelf>([&]<bool IsUniform, typename M>      \
-            (M _rtrcSelf::* ptr, const char *name, ::Rtrc::RHI::ShaderStageFlag stages)         \
-            {                                                                                   \
-                auto newAccessor = [&]<typename P>(P p) constexpr -> decltype(auto)             \
-                    { static_assert(std::is_pointer_v<P>); return &(accessor(p)->*ptr); };      \
-                if constexpr(::Rtrc::BindingGroupDSL::RtrcGroupStruct<M>)                       \
-                {                                                                               \
-                    M::ForEachFlattenMember(f, stageMask & stages, newAccessor);                \
-                }                                                                               \
-                else                                                                            \
-                {                                                                               \
-                    f.template operator()<IsUniform, M>(name, stageMask & stages, newAccessor); \
-                }                                                                               \
-            });                                                                                 \
-        }                                                                                       \
-        static constexpr std::string GroupName = #NAME_STR;                                     \
-        using float2   = ::Rtrc::Vector2f;                                                      \
-        using float3   = ::Rtrc::Vector3f;                                                      \
-        using float4   = ::Rtrc::Vector4f;                                                      \
-        using int2     = ::Rtrc::Vector2i;                                                      \
-        using int3     = ::Rtrc::Vector3i;                                                      \
-        using int4     = ::Rtrc::Vector4i;                                                      \
-        using uint     = uint32_t;                                                              \
-        using uint2    = ::Rtrc::Vector2u;                                                      \
-        using uint3    = ::Rtrc::Vector3u;                                                      \
-        using uint4    = ::Rtrc::Vector4u;                                                      \
-        using float4x4 = ::Rtrc::Matrix4x4f;                                                    \
-    };                                                                                          \
+#define rtrc_group2(NAME, NAME_STR)                                                                         \
+    struct NAME;                                                                                            \
+    struct _rtrcGroupBase##NAME                                                                             \
+    {                                                                                                       \
+        using _rtrcSelf = NAME;                                                                             \
+        struct _rtrcGroupTypeFlag{};                                                                        \
+        static ::Rtrc::StructDetail::Sizer<1> _rtrcMemberCounter(...);                                      \
+        template<typename F>                                                                                \
+        static constexpr void ForEachMember(const F &f)                                                     \
+        {                                                                                                   \
+            ::Rtrc::StructDetail::ForEachMember<_rtrcSelf>(f);                                              \
+        }                                                                                                   \
+        template<typename F, typename A = std::identity>                                                    \
+        static constexpr void ForEachFlattenMember(                                                         \
+            const F &f,                                                                                     \
+            ::Rtrc::RHI::ShaderStageFlag stageMask = ::Rtrc::RHI::ShaderStageFlags::All,                    \
+            const std::identity &accessor = {})                                                             \
+        {                                                                                                   \
+            ::Rtrc::StructDetail::ForEachMember<_rtrcSelf>([&]<bool IsUniform, typename M>                  \
+            (M _rtrcSelf::* ptr, const char *name, ::Rtrc::RHI::ShaderStageFlag stages, bool isBindless)    \
+            {                                                                                               \
+                auto newAccessor = [&]<typename P>(P p) constexpr -> decltype(auto)                         \
+                    { static_assert(std::is_pointer_v<P>); return &(accessor(p)->*ptr); };                  \
+                if constexpr(::Rtrc::BindingGroupDSL::RtrcGroupStruct<M>)                                   \
+                {                                                                                           \
+                    M::ForEachFlattenMember(f, stageMask & stages, newAccessor);                            \
+                }                                                                                           \
+                else                                                                                        \
+                {                                                                                           \
+                    f.template operator()<IsUniform, M>(name, stageMask & stages, newAccessor, isBindless); \
+                }                                                                                           \
+            });                                                                                             \
+        }                                                                                                   \
+        static constexpr std::string GroupName = #NAME_STR;                                                 \
+        using float2   = ::Rtrc::Vector2f;                                                                  \
+        using float3   = ::Rtrc::Vector3f;                                                                  \
+        using float4   = ::Rtrc::Vector4f;                                                                  \
+        using int2     = ::Rtrc::Vector2i;                                                                  \
+        using int3     = ::Rtrc::Vector3i;                                                                  \
+        using int4     = ::Rtrc::Vector4i;                                                                  \
+        using uint     = uint32_t;                                                                          \
+        using uint2    = ::Rtrc::Vector2u;                                                                  \
+        using uint3    = ::Rtrc::Vector3u;                                                                  \
+        using uint4    = ::Rtrc::Vector4u;                                                                  \
+        using float4x4 = ::Rtrc::Matrix4x4f;                                                                \
+    };                                                                                                      \
     struct NAME : _rtrcGroupBase##NAME
 
 #define rtrc_group(...) RTRC_MACRO_OVERLOADING(rtrc_group, __VA_ARGS__)
@@ -403,22 +404,26 @@ namespace BindingGroupDSL
         return (STAGES);                          \
     }())
 
-#define rtrc_define2(TYPE, NAME) RTRC_DEFINE_IMPL(TYPE, NAME, ::Rtrc::RHI::ShaderStageFlags::All)
-#define rtrc_define3(TYPE, NAME, STAGES) RTRC_DEFINE_IMPL(TYPE, NAME, RTRC_INLINE_STAGE_DECLERATION(STAGES))
-#define rtrc_define(...) RTRC_MACRO_OVERLOADING(rtrc_define, __VA_ARGS__)
+#define rtrc_define2(TYPE, NAME)         RTRC_DEFINE_IMPL(TYPE, NAME, ::Rtrc::RHI::ShaderStageFlags::All, false)
+#define rtrc_define3(TYPE, NAME, STAGES) RTRC_DEFINE_IMPL(TYPE, NAME, RTRC_INLINE_STAGE_DECLERATION(STAGES), false)
+#define rtrc_define(...)                 RTRC_MACRO_OVERLOADING(rtrc_define, __VA_ARGS__)
 
-#define rtrc_uniform(TYPE, NAME)                                                                  \
-    RTRC_META_STRUCT_PRE_MEMBER(NAME)                                                             \
-        f.template operator()<true>(&_rtrcSelf::NAME, #NAME, ::Rtrc::RHI::ShaderStageFlags::All); \
-    RTRC_META_STRUCT_POST_MEMBER(NAME)                                                            \
-    using _rtrcMemberType##NAME = TYPE;                                                           \
+#define rtrc_define_bindless2(TYPE, NAME)         RTRC_DEFINE_IMPL(TYPE, NAME, ::Rtrc::RHI::ShaderStageFlags::All, true)
+#define rtrc_define_bindless3(TYPE, NAME, STAGES) RTRC_DEFINE_IMPL(TYPE, NAME, RTRC_INLINE_STAGE_DECLERATION(STAGES), true)
+#define rtrc_define_bindless(...)                 RTRC_MACRO_OVERLOADING(rtrc_define, __VA_ARGS__)
+
+#define rtrc_uniform(TYPE, NAME)                                                                         \
+    RTRC_META_STRUCT_PRE_MEMBER(NAME)                                                                    \
+        f.template operator()<true>(&_rtrcSelf::NAME, #NAME, ::Rtrc::RHI::ShaderStageFlags::All, false); \
+    RTRC_META_STRUCT_POST_MEMBER(NAME)                                                                   \
+    using _rtrcMemberType##NAME = TYPE;                                                                  \
     _rtrcMemberType##NAME NAME
 
-#define RTRC_DEFINE_IMPL(TYPE, NAME, STAGES)                                   \
-    RTRC_META_STRUCT_PRE_MEMBER(NAME)                                          \
-        f.template operator()<false>(&_rtrcSelf::NAME, #NAME, STAGES);         \
-    RTRC_META_STRUCT_POST_MEMBER(NAME)                                         \
-    using _rtrcMemberType##NAME = ::Rtrc::BindingGroupDSL::MemberProxy_##TYPE; \
+#define RTRC_DEFINE_IMPL(TYPE, NAME, STAGES, IS_BINDLESS)                           \
+    RTRC_META_STRUCT_PRE_MEMBER(NAME)                                               \
+        f.template operator()<false>(&_rtrcSelf::NAME, #NAME, STAGES, IS_BINDLESS); \
+    RTRC_META_STRUCT_POST_MEMBER(NAME)                                              \
+    using _rtrcMemberType##NAME = ::Rtrc::BindingGroupDSL::MemberProxy_##TYPE;      \
     _rtrcMemberType##NAME NAME
 
 #define rtrc_inline2(TYPE, NAME) RTRC_INLINE_IMPL(TYPE, NAME, ::Rtrc::RHI::ShaderStageFlags::All)
@@ -442,7 +447,8 @@ void ApplyBindingGroup(BindingGroup &group, const T &value)
 {
     int index = 0;
     T::ForEachFlattenMember(
-        [&]<bool IsUniform, typename M, typename A>(const char *name, RHI::ShaderStageFlag stages, const A &accessor)
+        [&]<bool IsUniform, typename M, typename A>
+        (const char *name, RHI::ShaderStageFlag stages, const A &accessor, bool isBindless)
     {
         static_assert(!IsUniform);
         using MemberElement = typename BindingGroupDSL::MemberProxyTrait<M>::MemberProxyElement;
@@ -459,14 +465,25 @@ void ApplyBindingGroup(RHI::Device *device, ConstantBufferManagerInterface *cbMg
 
     int index = 0;
     T::ForEachFlattenMember(
-        [&]<bool IsUniform, typename M, typename A>(const char *name, RHI::ShaderStageFlag stages, const A &accessor)
+        [&]<bool IsUniform, typename M, typename A>
+        (const char *name, RHI::ShaderStageFlag stages, const A &accessor, bool isBindless)
     {
         if constexpr(!IsUniform)
         {
             using MemberElement = typename BindingGroupDSL::MemberProxyTrait<M>::MemberProxyElement;
             constexpr size_t arraySize = BindingGroupDSL::MemberProxyTrait<M>::ArraySize;
-            static_assert(arraySize == 0, "ApplyBindingGroup: array is not implemented");
-            if constexpr(MemberElement::BindingType == RHI::BindingType::ConstantBuffer)
+            static_assert(
+                arraySize == 0 || MemberElement::BindingType != RHI::BindingType::ConstantBuffer,
+                "ConstantBuffer array hasn't been supported");
+            if constexpr(arraySize > 0)
+            {
+                for(size_t i = 0; i < arraySize; ++i)
+                {
+                    batch.Append(*group.GetRHIObject(), index, i, (*accessor(&value))[i]._rtrcObj.GetRHIObject().Get());
+                }
+                index++;
+            }
+            else if constexpr(MemberElement::BindingType == RHI::BindingType::ConstantBuffer)
             {
                 if(accessor(&value)->_rtrcObj)
                 {

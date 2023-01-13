@@ -750,6 +750,8 @@ Ptr<BindingLayout> VulkanDevice::CreateBindingLayout(const BindingLayoutDesc &de
 
 void VulkanDevice::UpdateBindingGroups(const BindingGroupUpdateBatch &batch)
 {
+    // TODO: batch updates of continuous array elements
+
     LinearAllocator arena(1024 * 1024);
     auto records = batch.GetRecords();
     std::vector<VkWriteDescriptorSet> writes(records.GetSize());

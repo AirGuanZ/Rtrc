@@ -61,6 +61,7 @@ public:
         RHI::ShaderStageFlag     stages;
         std::optional<uint32_t>  arraySize;
         std::vector<RC<Sampler>> immutableSamplers;
+        bool                     bindless = false;
 
         auto operator<=>(const BindingDesc &) const = default;
         bool operator==(const BindingDesc &) const = default;
