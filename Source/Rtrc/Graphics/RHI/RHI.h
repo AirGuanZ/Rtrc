@@ -42,8 +42,7 @@ inline Scissor Scissor::Create(const TexturePtr &tex)
     return Create(tex->GetDesc());
 }
 
-inline void BindingGroupUpdateBatch::Append(
-    BindingGroup &group, int index, const ConstantBufferUpdate &cbuffer)
+inline void BindingGroupUpdateBatch::Append(BindingGroup &group, int index, const ConstantBufferUpdate &cbuffer)
 {
     records_.push_back({ &group, index, 0, cbuffer });
 }

@@ -423,8 +423,8 @@ enum class AttachmentStoreOp
 
 enum class QueueConcurrentAccessMode
 {
-    Exclusive, // exclusively accessed by one queue
-    Concurrent // concurrently accessed by graphics/compute queues
+    Exclusive, // Exclusively accessed by one queue
+    Concurrent // Concurrently accessed by graphics/compute queues
 };
 
 enum class TextureSrvFlagBit
@@ -472,9 +472,20 @@ struct BindingGroupLayoutDesc
     bool operator==(const BindingGroupLayoutDesc &) const = default;
 };
 
+struct PushConstantRange
+{
+    uint32_t offset;
+    uint32_t size;
+    ShaderStageFlag stages;
+
+    auto operator<=>(const PushConstantRange &) const = default;
+    bool operator==(const PushConstantRange &) const = default;
+};
+
 struct BindingLayoutDesc
 {
     std::vector<Ptr<BindingGroupLayout>> groups;
+    std::vector<PushConstantRange> pushConstantRanges;
 
     auto operator<=>(const BindingLayoutDesc &) const = default;
     bool operator==(const BindingLayoutDesc &) const = default;
@@ -1267,6 +1278,10 @@ public:
     RTRC_RHI_API void SetIndexBuffer(const BufferPtr &buffer, size_t byteOffset, IndexBufferFormat format) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void SetStencilReferenceValue(uint8_t value) RTRC_RHI_API_PURE;
+
+    RTRC_RHI_API void SetPushConstants(
+        const BindingLayoutPtr &bindingLayout, ShaderStageFlag stages,
+        uint32_t offset, uint32_t size, const void *values) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance) RTRC_RHI_API_PURE;
     RTRC_RHI_API void DrawIndexed(int indexCount, int instanceCount, int firstIndex, int firstVertex, int firstInstance) RTRC_RHI_API_PURE;

@@ -81,7 +81,7 @@ AtmosphereDetail::TransmittanceLut::TransmittanceLut(
     device.ExecuteBarrier(lut, RHI::TextureLayout::Undefined, RHI::TextureLayout::ShaderRWTexture);
     device.ExecuteAndWait([&](CommandBuffer &cmd)
     {
-        cmd.BindPipeline(pipeline);
+        cmd.BindComputePipeline(pipeline);
         cmd.BindComputeGroup(0, passGroup);
         cmd.Dispatch(shader->ComputeThreadGroupCount(Vector3i(resolution, 1)));
     });
@@ -145,7 +145,7 @@ AtmosphereDetail::MultiScatterLut::MultiScatterLut(
     device.ExecuteBarrier(lut, RHI::TextureLayout::Undefined, RHI::TextureLayout::ShaderRWTexture);
     device.ExecuteAndWait([&](CommandBuffer &cmd)
     {
-        cmd.BindPipeline(pipeline);
+        cmd.BindComputePipeline(pipeline);
         cmd.BindComputeGroup(0, passGroup);
         cmd.Dispatch(shader->ComputeThreadGroupCount(Vector3i(resolution, 1)));
     });
@@ -209,7 +209,7 @@ AtmosphereDetail::SkyLut::RenderGraphInterface AtmosphereDetail::SkyLut::AddToRe
         auto passGroup = device_.CreateBindingGroup(passGroupData);
 
         auto &cmd = passCtx.GetCommandBuffer();
-        cmd.BindPipeline(shader_->GetComputePipeline());
+        cmd.BindComputePipeline(shader_->GetComputePipeline());
         cmd.BindComputeGroup(0, passGroup);
         cmd.Dispatch(shader_->ComputeThreadGroupCount(Vector3i(lutRes_, 1)));
     });

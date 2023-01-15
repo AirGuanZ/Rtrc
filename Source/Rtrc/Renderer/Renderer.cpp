@@ -301,7 +301,7 @@ void Renderer::DoRenderGBuffersPass(RG::PassContext &passContext, const RenderGB
 
         if(pipeline != lastPipeline)
         {
-            cmd.BindPipeline(pipeline);
+            cmd.BindGraphicsPipeline(pipeline);
             lastPipeline = pipeline;
         }
 
@@ -381,7 +381,7 @@ void Renderer::DoDeferredLightingPass(RG::PassContext &passContext, const Deferr
             perPassGroupData.directionalLight.intensity = 0;
         }
 
-        cmd.BindPipeline(deferredLightingPipeline_);
+        cmd.BindGraphicsPipeline(deferredLightingPipeline_);
 
         RC<BindingGroup> perPassGroup = device_.CreateBindingGroup(perPassGroupData);
         const int groupIndex =

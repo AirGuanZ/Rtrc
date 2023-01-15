@@ -192,6 +192,9 @@ void CommandBuffer::End()
 {
     CheckThreadID();
     rhiCommandBuffer_->End();
+
+    currentGraphicsPipeline_ = {};
+    currentComputePipeline_ = {};
 }
 
 void CommandBuffer::BeginDebugEvent(std::string name, const std::optional<Vector4f> &color)
@@ -244,7 +247,7 @@ void CommandBuffer::EndRenderPass()
     rhiCommandBuffer_->EndRenderPass();
 }
 
-void CommandBuffer::BindPipeline(const RC<GraphicsPipeline> &graphicsPipeline)
+void CommandBuffer::BindGraphicsPipeline(const RC<GraphicsPipeline> &graphicsPipeline)
 {
     CheckThreadID();
     rhiCommandBuffer_->BindPipeline(graphicsPipeline->GetRHIObject());
@@ -252,9 +255,10 @@ void CommandBuffer::BindPipeline(const RC<GraphicsPipeline> &graphicsPipeline)
     {
         BindGraphicsGroup(index, graphicsPipeline->GetShaderInfo()->GetBindingGroupForInlineSamplers());
     }
+    currentGraphicsPipeline_ = graphicsPipeline;
 }
 
-void CommandBuffer::BindPipeline(const RC<ComputePipeline> &computePipeline)
+void CommandBuffer::BindComputePipeline(const RC<ComputePipeline> &computePipeline)
 {
     CheckThreadID();
     rhiCommandBuffer_->BindPipeline(computePipeline->GetRHIObject());
@@ -262,6 +266,7 @@ void CommandBuffer::BindPipeline(const RC<ComputePipeline> &computePipeline)
     {
         BindComputeGroup(index, computePipeline->GetShaderInfo()->GetBindingGroupForInlineSamplers());
     }
+    currentComputePipeline_ = computePipeline;
 }
 
 void CommandBuffer::BindGraphicsGroup(int index, const RC<BindingGroup> &group)
@@ -317,6 +322,20 @@ void CommandBuffer::SetStencilReferenceValue(uint8_t value)
 {
     CheckThreadID();
     rhiCommandBuffer_->SetStencilReferenceValue(value);
+}
+
+void CommandBuffer::SetGraphicsPushConstants(RHI::ShaderStageFlag stages, size_t offset, size_t size, const void *data)
+{
+    CheckThreadID();
+    rhiCommandBuffer_->SetPushConstants(
+        currentGraphicsPipeline_->GetRHIObject()->GetBindingLayout(), stages, offset, size, data);
+}
+
+void CommandBuffer::SetComputePushConstants(RHI::ShaderStageFlag stages, size_t offset, size_t size, const void *data)
+{
+    CheckThreadID();
+    rhiCommandBuffer_->SetPushConstants(
+        currentComputePipeline_->GetRHIObject()->GetBindingLayout(), stages, offset, size, data);
 }
 
 void CommandBuffer::ClearColorTexture2D(const RC<Texture> &tex, const Vector4f &color)

@@ -4,10 +4,6 @@
 #include <Rtrc/Graphics/Device/Buffer/Buffer.h>
 #include <Rtrc/Graphics/Device/Buffer/DynamicBuffer.h>
 #include <Rtrc/Graphics/Device/Texture/Texture.h>
-#include <Rtrc/Math/Vector2.h>
-#include <Rtrc/Math/Vector3.h>
-#include <Rtrc/Math/Vector4.h>
-#include <Rtrc/Math/Matrix4x4.h>
 #include <Rtrc/Utility/Struct.h>
 #include <Rtrc/Utility/MacroOverloading.h>
 
@@ -408,9 +404,9 @@ namespace BindingGroupDSL
 #define rtrc_define3(TYPE, NAME, STAGES) RTRC_DEFINE_IMPL(TYPE, NAME, RTRC_INLINE_STAGE_DECLERATION(STAGES), false)
 #define rtrc_define(...)                 RTRC_MACRO_OVERLOADING(rtrc_define, __VA_ARGS__)
 
-#define rtrc_define_bindless2(TYPE, NAME)         RTRC_DEFINE_IMPL(TYPE, NAME, ::Rtrc::RHI::ShaderStageFlags::All, true)
-#define rtrc_define_bindless3(TYPE, NAME, STAGES) RTRC_DEFINE_IMPL(TYPE, NAME, RTRC_INLINE_STAGE_DECLERATION(STAGES), true)
-#define rtrc_define_bindless(...)                 RTRC_MACRO_OVERLOADING(rtrc_define, __VA_ARGS__)
+#define rtrc_bindless2(TYPE, NAME)         RTRC_DEFINE_IMPL(TYPE, NAME, ::Rtrc::RHI::ShaderStageFlags::All, true)
+#define rtrc_bindless3(TYPE, NAME, STAGES) RTRC_DEFINE_IMPL(TYPE, NAME, RTRC_INLINE_STAGE_DECLERATION(STAGES), true)
+#define rtrc_bindless(...)                 RTRC_MACRO_OVERLOADING(rtrc_define, __VA_ARGS__)
 
 #define rtrc_uniform(TYPE, NAME)                                                                         \
     RTRC_META_STRUCT_PRE_MEMBER(NAME)                                                                    \

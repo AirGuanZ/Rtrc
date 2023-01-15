@@ -5,6 +5,7 @@
 #include <Rtrc/Graphics/Shader/ParsedBindingGroup.h>
 #include <Rtrc/Graphics/Shader/ShaderBindingNameMap.h>
 #include <Rtrc/Graphics/Shader/ShaderReflection.h>
+#include <Rtrc/Utility/Unreachable.h>
 
 RTRC_BEGIN
 
@@ -78,6 +79,11 @@ public:
     using BuiltinBindingGroup = ShaderInfo::BuiltinBindingGroup;
 
     const RHI::RawShaderPtr &GetRawShader(RHI::ShaderStage stage) const;
+
+    const RC<ShaderInfo> &GetInfo() const;
+
+    // Wrapped interfaces of ShaderInfo
+
     const RC<BindingLayout> &GetBindingLayout() const;
 
     Span<ShaderIOVar> GetInputVariables() const;
@@ -100,7 +106,6 @@ public:
     int GetPerObjectBindingGroup() const;
     const ShaderBindingNameMap &GetBindingNameMap() const;
 
-    const RC<ShaderInfo> &GetInfo() const;
     const RC<ComputePipeline> &GetComputePipeline() const;
     const Vector3i &GetThreadGroupSize() const; // Compute shader only
     Vector3i ComputeThreadGroupCount(const Vector3i &threadCount) const;
@@ -115,6 +120,59 @@ private:
     RC<ShaderInfo> info_;
     RC<ComputePipeline> computePipeline_;
 };
+
+inline const RC<BindingLayout> &ShaderInfo::GetBindingLayout() const
+{
+    return bindingLayout_;
+}
+
+inline Span<ShaderIOVar> ShaderInfo::GetInputVariables() const
+{
+    return VSInput_;
+}
+
+inline Span<ShaderConstantBuffer> ShaderInfo::GetConstantBuffers() const
+{
+    return constantBuffers_;
+}
+
+inline int ShaderInfo::GetBindingGroupCount() const
+{
+    return static_cast<int>(bindingGroupLayouts_.size());
+}
+
+inline const std::string &ShaderInfo::GetBindingGroupNameByIndex(int index) const
+{
+    return bindingGroupNames_[index];
+}
+
+inline const RC<BindingGroupLayout> &ShaderInfo::GetBindingGroupLayoutByName(std::string_view name) const
+{
+    static const RC<BindingGroupLayout> nil;
+    const auto it = nameToBindingGroupLayoutIndex_.find(name);
+    return it != nameToBindingGroupLayoutIndex_.end() ? GetBindingGroupLayoutByIndex(it->second) : nil;
+}
+
+inline const RC<BindingGroupLayout> &ShaderInfo::GetBindingGroupLayoutByIndex(int index) const
+{
+    return bindingGroupLayouts_[index];
+}
+
+inline int ShaderInfo::GetBindingGroupIndexByName(std::string_view name) const
+{
+    const auto it = nameToBindingGroupLayoutIndex_.find(name);
+    return it != nameToBindingGroupLayoutIndex_.end() ? it->second : -1;
+}
+
+inline const RC<BindingGroup> &ShaderInfo::GetBindingGroupForInlineSamplers() const
+{
+    return bindingGroupForInlineSamplers_;
+}
+
+inline int ShaderInfo::GetBindingGroupIndexForInlineSamplers() const
+{
+    return bindingGroupForInlineSamplers_ ? (static_cast<int>(bindingGroupLayouts_.size()) - 1) : -1;
+}
 
 inline int ShaderInfo::GetBuiltinBindingGroupIndex(BuiltinBindingGroup bindingGroup) const
 {
@@ -138,6 +196,22 @@ inline Vector3i ShaderInfo::ComputeThreadGroupCount(const Vector3i &threadCount)
 inline const ShaderBindingNameMap &ShaderInfo::GetBindingNameMap() const
 {
     return bindingNameMap_;
+}
+
+inline const RHI::RawShaderPtr &Shader::GetRawShader(RHI::ShaderStage stage) const
+{
+    switch(stage)
+    {
+    case RHI::ShaderStage::VertexShader:   return VS_;
+    case RHI::ShaderStage::FragmentShader: return FS_;
+    case RHI::ShaderStage::ComputeShader:  return CS_;
+    }
+    Unreachable();
+}
+
+inline const RC<ShaderInfo> &Shader::GetInfo() const
+{
+    return info_;
 }
 
 inline const RC<BindingLayout> &Shader::GetBindingLayout() const
@@ -213,11 +287,6 @@ inline int Shader::GetPerObjectBindingGroup() const
 inline const ShaderBindingNameMap &Shader::GetBindingNameMap() const
 {
     return info_->GetBindingNameMap();
-}
-
-inline const RC<ShaderInfo> &Shader::GetInfo() const
-{
-    return info_;
 }
 
 inline const RC<ComputePipeline> &Shader::GetComputePipeline() const

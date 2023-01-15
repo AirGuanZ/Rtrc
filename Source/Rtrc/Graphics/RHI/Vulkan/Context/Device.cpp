@@ -733,10 +733,24 @@ Ptr<BindingLayout> VulkanDevice::CreateBindingLayout(const BindingLayoutDesc &de
     {
         setLayouts.push_back(reinterpret_cast<VulkanBindingGroupLayout *>(group.Get())->_internalGetNativeLayout());
     }
+
+    std::vector<VkPushConstantRange> pushConstantRanges;
+    for(auto &range : desc.pushConstantRanges)
+    {
+        pushConstantRanges.push_back(VkPushConstantRange
+        {
+            .stageFlags = TranslateShaderStageFlag(range.stages),
+            .offset     = range.offset,
+            .size       = range.size
+        });
+    }
+
     const VkPipelineLayoutCreateInfo createInfo = {
-        .sType          = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-        .setLayoutCount = static_cast<uint32_t>(setLayouts.size()),
-        .pSetLayouts    = setLayouts.data()
+        .sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+        .setLayoutCount         = static_cast<uint32_t>(setLayouts.size()),
+        .pSetLayouts            = setLayouts.data(),
+        .pushConstantRangeCount = static_cast<uint32_t>(pushConstantRanges.size()),
+        .pPushConstantRanges    = pushConstantRanges.data()
     };
 
     VkPipelineLayout layout;

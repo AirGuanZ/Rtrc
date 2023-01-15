@@ -458,7 +458,7 @@ void ImGuiInstance::RenderImmediately(const TextureRtv &rtv, CommandBuffer &comm
     });
     RTRC_SCOPE_EXIT{ commandBuffer.EndRenderPass(); };
 
-    commandBuffer.BindPipeline(pipeline);
+    commandBuffer.BindGraphicsPipeline(pipeline);
     commandBuffer.SetViewports(rtv.GetTexture()->GetViewport());
 
     // Vertex & Index buffer

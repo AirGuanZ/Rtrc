@@ -263,6 +263,13 @@ void VulkanCommandBuffer::SetStencilReferenceValue(uint8_t value)
     vkCmdSetStencilReference(commandBuffer_, VK_STENCIL_FACE_FRONT_AND_BACK, value);
 }
 
+void VulkanCommandBuffer::SetPushConstants(
+    const BindingLayoutPtr &bindingLayout, ShaderStageFlag stages, uint32_t offset, uint32_t size, const void *values)
+{
+    auto vulkanBindingLayout = static_cast<const VulkanBindingLayout *>(bindingLayout.Get())->_internalGetNativeLayout();
+    vkCmdPushConstants(commandBuffer_, vulkanBindingLayout, TranslateShaderStageFlag(stages), offset, size, values);
+}
+
 void VulkanCommandBuffer::Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance)
 {
     vkCmdDraw(

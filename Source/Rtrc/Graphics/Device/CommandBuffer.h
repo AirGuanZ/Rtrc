@@ -136,8 +136,8 @@ public:
     void BeginRenderPass(Span<ColorAttachment> colorAttachments, const DepthStencilAttachment &depthStencilAttachment);
     void EndRenderPass();
 
-    void BindPipeline(const RC<GraphicsPipeline> &graphicsPipeline);
-    void BindPipeline(const RC<ComputePipeline> &computePipeline);
+    void BindGraphicsPipeline(const RC<GraphicsPipeline> &graphicsPipeline);
+    void BindComputePipeline(const RC<ComputePipeline> &computePipeline);
 
     void BindGraphicsGroup(int index, const RC<BindingGroup> &group);
     void BindComputeGroup(int index, const RC<BindingGroup> &group);
@@ -150,6 +150,9 @@ public:
     void BindMesh(const Mesh &mesh);
 
     void SetStencilReferenceValue(uint8_t value);
+
+    void SetGraphicsPushConstants(RHI::ShaderStageFlag stages, size_t offset, size_t size, const void *data);
+    void SetComputePushConstants(RHI::ShaderStageFlag stages, size_t offset, size_t size, const void *data);
 
     void ClearColorTexture2D(const RC<Texture> &tex, const Vector4f &color);
 
@@ -228,6 +231,11 @@ private:
 #if RTRC_DEBUG
     std::thread::id threadID_;
 #endif
+
+    // Temporal data
+
+    RC<GraphicsPipeline> currentGraphicsPipeline_;
+    RC<ComputePipeline> currentComputePipeline_;
 };
 
 class CommandBufferManager : public Uncopyable

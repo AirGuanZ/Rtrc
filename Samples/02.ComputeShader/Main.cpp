@@ -73,7 +73,7 @@ void Run()
             (inputTexture, RHI::TextureLayout::CopyDst, RHI::TextureLayout::ShaderTexture)
             (outputTexture, RHI::TextureLayout::ShaderRWTexture, RHI::PipelineStage::None, RHI::ResourceAccess::None));
 
-        cmd.BindPipeline(pipeline);
+        cmd.BindComputePipeline(pipeline);
         matPassInst->BindGraphicsProperties(keywords, cmd);
         cmd.BindComputeGroup(bindingGroupIndex, bindingGroup);
 

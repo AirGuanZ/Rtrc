@@ -34,7 +34,7 @@ public:
     void Set(int slot, T &&object);
 
     template<typename T>
-    void Set(const T &value); // See BindingGroupDSL.h
+    void Set(const T &value); // Impl in BindingGroupDSL.h
 
     const RHI::BindingGroupPtr &GetRHIObject() const;
 
@@ -49,9 +49,7 @@ private:
     std::vector<std::any> boundObjects_;
 };
 
-class BindingGroupLayout :
-    public InObjectCache,
-    public std::enable_shared_from_this<BindingGroupLayout>
+class BindingGroupLayout : public InObjectCache, public std::enable_shared_from_this<BindingGroupLayout>
 {
 public:
 
@@ -108,7 +106,7 @@ private:
     friend class BindingGroupManager;
 
     BindingGroupManager *manager_ = nullptr;
-    Desc desc; // group layouts will not be released before the parent binding layout is released
+    Desc desc; // Group layouts will not be released before the parent binding layout is released
     RHI::BindingLayoutPtr rhiLayout_;
 };
 

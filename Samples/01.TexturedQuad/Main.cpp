@@ -116,7 +116,7 @@ void Run()
                 .storeOp      = AttachmentStoreOp::Store,
                 .clearValue   = ColorClearValue{ 0, 1, 1, 1 }
             });
-            commandBuffer.BindPipeline(pipeline);
+            commandBuffer.BindGraphicsPipeline(pipeline);
             commandBuffer.BindMesh(mesh);
             matPassInst->BindGraphicsProperties(keywords, commandBuffer);
             commandBuffer.SetViewports(rt->GetViewport());

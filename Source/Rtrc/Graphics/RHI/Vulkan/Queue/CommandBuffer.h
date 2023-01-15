@@ -41,6 +41,10 @@ public:
 
     void SetStencilReferenceValue(uint8_t value) RTRC_RHI_OVERRIDE;
 
+    void SetPushConstants(
+        const BindingLayoutPtr &bindingLayout, ShaderStageFlag stages,
+        uint32_t offset, uint32_t size, const void *values) RTRC_RHI_OVERRIDE;
+
     void Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance) RTRC_RHI_OVERRIDE;
     void DrawIndexed(int indexCount, int instanceCount, int firstIndex, int firstVertex, int firstInstance) RTRC_RHI_OVERRIDE;
 
