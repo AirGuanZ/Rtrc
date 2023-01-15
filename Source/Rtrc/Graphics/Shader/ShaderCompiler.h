@@ -48,6 +48,7 @@ private:
         std::string name;
         std::string valuePropertyDefinitions;
         std::vector<ParsedBinding> bindings;
+        std::vector<bool>          isRef;
     };
 
     struct Bindings
@@ -64,6 +65,12 @@ private:
 
         std::vector<RHI::SamplerDesc>   inlineSamplerDescs;
         std::map<std::string, int>      inlineSamplerNameToDescIndex;
+
+        // Push constants
+
+        std::vector<Shader::PushConstantRange> pushConstantRanges;
+        std::vector<std::string>               pushConstantRangeContents;
+        std::vector<std::string>               pushConstantRangeNames;
     };
 
     std::string MapFilename(std::string_view filename) const;
@@ -73,7 +80,11 @@ private:
 
     void ParseInlineSampler(ShaderTokenStream &tokens, std::string &name, RHI::SamplerDesc &desc) const;
 
-    Bindings CollectBindingsInStage(const std::string &source) const;
+    void ParsePushConstantRange(
+        ShaderTokenStream &tokens, std::string &name, std::string &content,
+        Shader::PushConstantRange &range, uint32_t &nextOffset) const;
+
+    Bindings CollectBindings(const std::string &source) const;
 
     Device *device_ = nullptr;
     std::filesystem::path rootDir_;

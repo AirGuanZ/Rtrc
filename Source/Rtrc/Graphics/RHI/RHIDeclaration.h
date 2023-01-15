@@ -152,22 +152,17 @@ enum class ShaderStage : uint8_t
 {
     VertexShader   = 0b0001,
     FragmentShader = 0b0010,
-    ComputeShader  = 0b0100
+    ComputeShader  = 0b0100,
+
+    VS = VertexShader,
+    FS = FragmentShader,
+    CS = ComputeShader,
+    All = VS | FS | CS
 };
 
 RTRC_DEFINE_ENUM_FLAGS(ShaderStage)
 
 using ShaderStageFlag = EnumFlags<ShaderStage>;
-
-namespace ShaderStageFlags
-{
-
-    constexpr auto VS  = ShaderStageFlag(ShaderStage::VertexShader);
-    constexpr auto FS  = ShaderStageFlag(ShaderStage::FragmentShader);
-    constexpr auto CS  = ShaderStageFlag(ShaderStage::ComputeShader);
-    constexpr auto All = VS | FS | CS;
-
-} // namespace ShaderStageFlags
 
 enum class PrimitiveTopology
 {
@@ -455,7 +450,7 @@ struct SwapchainDesc
 struct BindingDesc
 {
     BindingType              type;
-    ShaderStageFlag          shaderStages = ShaderStageFlags::All;
+    ShaderStageFlag          shaderStages = ShaderStage::All;
     std::optional<uint32_t>  arraySize;
     std::vector<SamplerPtr>  immutableSamplers;
     bool                     bindless = false;

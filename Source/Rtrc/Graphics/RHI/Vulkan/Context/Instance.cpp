@@ -11,6 +11,39 @@
 
 RTRC_RHI_BEGIN
 
+namespace VkInstanceDetail
+{
+
+    VkBool32 DebugMessengerCallback(
+        VkDebugUtilsMessageSeverityFlagBitsEXT           messageSeverity,
+        VkDebugUtilsMessageTypeFlagsEXT                  messageTypes,
+        const VkDebugUtilsMessengerCallbackDataEXT      *pCallbackData,
+        void                                            *pUserData)
+    {
+        const char *type = "Unknown";
+        switch(messageTypes)
+        {
+        case VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT:                type = "General"; break;
+        case VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT:             type = "Validation"; break;
+        case VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT:            type = "Performance"; break;
+        case VK_DEBUG_UTILS_MESSAGE_TYPE_DEVICE_ADDRESS_BINDING_BIT_EXT: type = "DeviceAddressBinding"; break;
+        }
+        switch(messageSeverity)
+        {
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
+            LogDebug("[{}] {}", type, pCallbackData->pMessage); break;
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
+            LogInfo("[{}] {}", type, pCallbackData->pMessage);  break;
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
+            LogWarn("[{}] {}", type, pCallbackData->pMessage);  break;
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+            LogError("[{}] {}", type, pCallbackData->pMessage); break;
+        }
+        return true;
+    }
+
+} // namespace VkInstanceDetail
+
 void InitializeVulkanBackend()
 {
     static std::once_flag initVolkFlag;
@@ -36,7 +69,7 @@ Ptr<Instance> CreateVulkanInstance(const VulkanInstanceDesc &desc)
     if(desc.debugMode)
     {
         instanceBuilder
-            .use_default_debug_messenger()
+            .set_debug_callback(VkInstanceDetail::DebugMessengerCallback)
             .request_validation_layers();
     }
 

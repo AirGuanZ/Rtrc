@@ -33,7 +33,7 @@ Renderer::Renderer(Device &device, BuiltinResourceManager &builtinResources)
     : device_(device)
     , builtinResources_(builtinResources)
     , staticMeshConstantBufferBatch_(
-          ConstantBufferSize<StaticMeshCBuffer>, "Object", RHI::ShaderStageFlags::All, device)
+          ConstantBufferSize<StaticMeshCBuffer>, "Object", RHI::ShaderStage::All, device)
 {
 
 }

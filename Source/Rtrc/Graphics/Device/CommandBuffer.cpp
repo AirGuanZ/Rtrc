@@ -324,18 +324,40 @@ void CommandBuffer::SetStencilReferenceValue(uint8_t value)
     rhiCommandBuffer_->SetStencilReferenceValue(value);
 }
 
-void CommandBuffer::SetGraphicsPushConstants(RHI::ShaderStageFlag stages, size_t offset, size_t size, const void *data)
+void CommandBuffer::SetGraphicsPushConstants(
+    RHI::ShaderStageFlag stages, uint32_t offset, uint32_t size, const void *data)
 {
     CheckThreadID();
+    assert(currentGraphicsPipeline_);
     rhiCommandBuffer_->SetPushConstants(
         currentGraphicsPipeline_->GetRHIObject()->GetBindingLayout(), stages, offset, size, data);
 }
 
-void CommandBuffer::SetComputePushConstants(RHI::ShaderStageFlag stages, size_t offset, size_t size, const void *data)
+void CommandBuffer::SetComputePushConstants(
+    RHI::ShaderStageFlag stages, uint32_t offset, uint32_t size, const void *data)
 {
     CheckThreadID();
+    assert(currentComputePipeline_);
     rhiCommandBuffer_->SetPushConstants(
         currentComputePipeline_->GetRHIObject()->GetBindingLayout(), stages, offset, size, data);
+}
+
+void CommandBuffer::SetGraphicsPushConstants(uint32_t rangeIndex, const void *data)
+{
+    assert(
+        currentGraphicsPipeline_ &&
+        rangeIndex < currentGraphicsPipeline_->GetShaderInfo()->GetPushConstantRanges().GetSize());
+    const RHI::PushConstantRange &range = currentGraphicsPipeline_->GetShaderInfo()->GetPushConstantRanges()[rangeIndex];
+    SetGraphicsPushConstants(range.stages, range.offset, range.size, data);
+}
+
+void CommandBuffer::SetComputePushConstants(uint32_t rangeIndex, const void *data)
+{
+    assert(
+        currentComputePipeline_ &&
+        rangeIndex < currentComputePipeline_->GetShaderInfo()->GetPushConstantRanges().GetSize());
+    const RHI::PushConstantRange &range = currentComputePipeline_->GetShaderInfo()->GetPushConstantRanges()[rangeIndex];
+    SetComputePushConstants(range.stages, range.offset, range.size, data);
 }
 
 void CommandBuffer::ClearColorTexture2D(const RC<Texture> &tex, const Vector4f &color)

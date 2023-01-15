@@ -142,6 +142,7 @@ int main()
     }
     catch(const std::exception &e)
     {
+        LogError(e.what());
         std::cerr << e.what() << std::endl;
     }
 }

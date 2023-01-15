@@ -26,12 +26,16 @@ public:
         Count
     };
 
+    using PushConstantRange = RHI::PushConstantRange;
+
     virtual ~ShaderInfo() = default;
 
     const RC<BindingLayout> &GetBindingLayout() const;
 
     Span<ShaderIOVar> GetInputVariables() const;
     Span<ShaderConstantBuffer> GetConstantBuffers() const;
+
+    // Binding group
 
     int GetBindingGroupCount() const;
 
@@ -40,15 +44,24 @@ public:
 
     const RC<BindingGroupLayout> &GetBindingGroupLayoutByName(std::string_view name) const; // returns -1 if not found
     const RC<BindingGroupLayout> &GetBindingGroupLayoutByIndex(int index) const;
+
+    int GetBuiltinBindingGroupIndex(BuiltinBindingGroup bindingGroup) const;
+
+    const ShaderBindingNameMap &GetBindingNameMap() const;
+
+    // Inline samplers
     
     const RC<BindingGroup> &GetBindingGroupForInlineSamplers() const;
     int GetBindingGroupIndexForInlineSamplers() const;
 
-    int GetBuiltinBindingGroupIndex(BuiltinBindingGroup bindingGroup) const;
-    const ShaderBindingNameMap &GetBindingNameMap() const;
+    // Compute thread group
 
     const Vector3i &GetThreadGroupSize() const; // Compute shader only
     Vector3i ComputeThreadGroupCount(const Vector3i &threadCount) const;
+
+    // Push constant
+
+    Span<PushConstantRange> GetPushConstantRanges() const;
 
 private:
 
@@ -61,15 +74,15 @@ private:
     std::vector<RC<BindingGroupLayout>>     bindingGroupLayouts_;
     std::vector<std::string>                bindingGroupNames_;
     RC<BindingLayout>                       bindingLayout_;
+    ShaderBindingNameMap                    bindingNameMap_;
+    int                                     builtinBindingGroupIndices_[EnumCount<BuiltinBindingGroup>];
 
     // Should be the last group, if present
     RC<BindingGroup> bindingGroupForInlineSamplers_;
 
-    int builtinBindingGroupIndices_[EnumCount<BuiltinBindingGroup>];
-
     Vector3i computeShaderThreadGroupSize_;
 
-    ShaderBindingNameMap bindingNameMap_;
+    std::vector<PushConstantRange> pushConstantRanges_;
 };
 
 class Shader : public Uncopyable, public WithUniqueObjectID
@@ -77,6 +90,7 @@ class Shader : public Uncopyable, public WithUniqueObjectID
 public:
 
     using BuiltinBindingGroup = ShaderInfo::BuiltinBindingGroup;
+    using PushConstantRange = ShaderInfo::PushConstantRange;
 
     const RHI::RawShaderPtr &GetRawShader(RHI::ShaderStage stage) const;
 
@@ -109,6 +123,8 @@ public:
     const RC<ComputePipeline> &GetComputePipeline() const;
     const Vector3i &GetThreadGroupSize() const; // Compute shader only
     Vector3i ComputeThreadGroupCount(const Vector3i &threadCount) const;
+
+    Span<ShaderInfo::PushConstantRange> GetPushConstantRanges() const;
 
 private:
     
@@ -191,6 +207,11 @@ inline Vector3i ShaderInfo::ComputeThreadGroupCount(const Vector3i &threadCount)
         (threadCount.y + computeShaderThreadGroupSize_.y - 1) / computeShaderThreadGroupSize_.y,
         (threadCount.z + computeShaderThreadGroupSize_.z - 1) / computeShaderThreadGroupSize_.z
     };
+}
+
+inline Span<ShaderInfo::PushConstantRange> ShaderInfo::GetPushConstantRanges() const
+{
+    return pushConstantRanges_;
 }
 
 inline const ShaderBindingNameMap &ShaderInfo::GetBindingNameMap() const
@@ -302,6 +323,11 @@ inline const Vector3i &Shader::GetThreadGroupSize() const
 inline Vector3i Shader::ComputeThreadGroupCount(const Vector3i &threadCount) const
 {
     return info_->ComputeThreadGroupCount(threadCount);
+}
+
+inline Span<ShaderInfo::PushConstantRange> Shader::GetPushConstantRanges() const
+{
+    return info_->GetPushConstantRanges();
 }
 
 RTRC_END

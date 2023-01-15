@@ -151,8 +151,11 @@ public:
 
     void SetStencilReferenceValue(uint8_t value);
 
-    void SetGraphicsPushConstants(RHI::ShaderStageFlag stages, size_t offset, size_t size, const void *data);
-    void SetComputePushConstants(RHI::ShaderStageFlag stages, size_t offset, size_t size, const void *data);
+    void SetGraphicsPushConstants(RHI::ShaderStageFlag stages, uint32_t offset, uint32_t size, const void *data);
+    void SetComputePushConstants(RHI::ShaderStageFlag stages, uint32_t offset, uint32_t size, const void *data);
+
+    void SetGraphicsPushConstants(uint32_t rangeIndex, const void *data);
+    void SetComputePushConstants(uint32_t rangeIndex, const void *data);
 
     void ClearColorTexture2D(const RC<Texture> &tex, const Vector4f &color);
 

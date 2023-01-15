@@ -58,6 +58,7 @@ add_requires("fmt 9.1.0", "stb 2021.09.10", "tinyexr v1.0.1")
 add_requires("vk-bootstrap v0.5", "spirv-reflect 1.2.189+1", "vulkan-memory-allocator v3.0.0")
 add_requires("catch2 3.1.0")
 add_requires("volk 1.3.231", { configs = { header_only = true } })
+add_requires("spdlog v1.11.0")
 
 includes("External/tinyobjloader")
 includes("External/sigslot")
@@ -91,7 +92,7 @@ target("Rtrc")
     end
     -- Dependencies
     add_packages("mydxc", "glfw", "stb", "tinyexr")
-    add_packages("fmt", "mimalloc", "mytbb", { public = true })
+    add_packages("spdlog", "fmt", "mimalloc", "mytbb", { public = true })
     add_deps("tinyobjloader", "sigslot", "imgui", "avir", "cy")
 target_end()
 

@@ -12,12 +12,18 @@ DeviceSynchronizer::DeviceSynchronizer(RHI::DevicePtr device, RHI::QueuePtr queu
 
 DeviceSynchronizer::~DeviceSynchronizer()
 {
-    queue_->WaitIdle();
-
-    assert(renderLoopFrames_.empty() && "DeviceSynchronizer is destructed in renderloop");
-    for(auto &e : currentFrameCallbacks_)
+    device_->WaitIdle();
+    if(std::uncaught_exceptions())
     {
-        e();
+        EndRenderLoop();
+    }
+    else
+    {
+        assert(renderLoopFrames_.empty() && "DeviceSynchronizer is destructed in renderloop");
+        for(auto &e : currentFrameCallbacks_)
+        {
+            e();
+        }
     }
 }
 

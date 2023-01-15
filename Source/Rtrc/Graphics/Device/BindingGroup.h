@@ -94,6 +94,7 @@ public:
     struct Desc
     {
         std::vector<RC<BindingGroupLayout>> groupLayouts;
+        std::vector<RHI::PushConstantRange> pushConstantRanges;
         auto operator<=>(const Desc &) const = default;
     };
 

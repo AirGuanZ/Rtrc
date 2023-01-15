@@ -139,4 +139,57 @@ private:
     UniqueID uniqueID_;
 };
 
+void LogDebugUnformatted(std::string_view msg);
+void LogInfoUnformatted(std::string_view msg);
+void LogWarningUnformatted(std::string_view msg);
+void LogErrorUnformatted(std::string_view msg);
+
+template<typename...Args>
+void LogDebug(fmt::format_string<Args...> fmtStr, Args&&...args)
+{
+    Rtrc::LogDebugUnformatted(fmt::format(fmtStr, std::forward<Args>(args)...));
+}
+
+template<typename...Args>
+void LogInfo(fmt::format_string<Args...> fmtStr, Args&&...args)
+{
+    Rtrc::LogInfoUnformatted(fmt::format(fmtStr, std::forward<Args>(args)...));
+}
+
+template<typename...Args>
+void LogWarn(fmt::format_string<Args...> fmtStr, Args&&...args)
+{
+    Rtrc::LogWarningUnformatted(fmt::format(fmtStr, std::forward<Args>(args)...));
+}
+
+template<typename...Args>
+void LogError(fmt::format_string<Args...> fmtStr, Args&&...args)
+{
+    Rtrc::LogErrorUnformatted(fmt::format(fmtStr, std::forward<Args>(args)...));
+}
+
+template<typename T>
+void LogDebug(const T &msg)
+{
+    Rtrc::LogDebug("{}", msg);
+}
+
+template<typename T>
+void LogInfo(const T &msg)
+{
+    Rtrc::LogInfo("{}", msg);
+}
+
+template<typename T>
+void LogWarn(const T &msg)
+{
+    Rtrc::LogWarn("{}", msg);
+}
+
+template<typename T>
+void LogError(const T &msg)
+{
+    Rtrc::LogError("{}", msg);
+}
+
 RTRC_END

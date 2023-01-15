@@ -55,6 +55,7 @@ RC<BindingLayout> BindingGroupManager::CreateBindingLayout(const BindingLayout::
             {
                 rhiDesc.groups.push_back(group->GetRHIObject());
             }
+            rhiDesc.pushConstantRanges = desc.pushConstantRanges;
 
             auto ret = MakeRC<BindingLayout>();
             ret->manager_ = this;

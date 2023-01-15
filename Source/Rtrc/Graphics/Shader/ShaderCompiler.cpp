@@ -95,19 +95,19 @@ namespace ShaderCompilerDetail
         {
             if(tokens.GetCurrentToken() == "VS")
             {
-                stages |= RHI::ShaderStageFlags::VS;
+                stages |= RHI::ShaderStage::VS;
             }
             else if(tokens.GetCurrentToken() == "FS" || tokens.GetCurrentToken() == "PS")
             {
-                stages |= RHI::ShaderStageFlags::FS;
+                stages |= RHI::ShaderStage::FS;
             }
             else if(tokens.GetCurrentToken() == "CS")
             {
-                stages |= RHI::ShaderStageFlags::CS;
+                stages |= RHI::ShaderStage::CS;
             }
             else if(tokens.GetCurrentToken() == "All")
             {
-                stages |= RHI::ShaderStageFlags::All;
+                stages |= RHI::ShaderStage::All;
             }
             else
             {
@@ -175,6 +175,8 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
         .includeDirs = std::move(includeDirs),
         .macros = macros
     };
+    shaderInfo.macros.insert({ "rtrc_push_constant(...)", "_rtrc_push_constant_impl2(__COUNTER__, __VA_ARGS__)" });
+    shaderInfo.macros.insert({ "_rtrc_push_constant_impl2(...)", "_rtrc_push_constant_impl(__VA_ARGS__)" });
     
     for(size_t i = 0; i < shaderInfo.source.size() && shaderInfo.source[i] != '\n'; ++i)
     {
@@ -199,29 +201,41 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     // Parse bindings
 
     Bindings bindings; bool hasParsedBindings = false;
+    auto parseBindings = [&](const std::string &src)
+    {
+        assert(!hasParsedBindings);
+        try
+        {
+            bindings = CollectBindings(src);
+            hasParsedBindings = true;
+        }
+        catch(const std::exception &e)
+        {
+            LogError(e.what());
+            throw;
+        }
+    };
+
     if(!hasParsedBindings && !source.vsEntry.empty())
     {
         shaderInfo.entryPoint = source.vsEntry;
         std::string preprocessed;
         dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_VS_6_0, debug, &preprocessed);
-        bindings = CollectBindingsInStage(preprocessed);
-        hasParsedBindings = true;
+        parseBindings(preprocessed);
     }
     if(!hasParsedBindings && !source.fsEntry.empty())
     {
         shaderInfo.entryPoint = source.fsEntry;
         std::string preprocessed;
         dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_FS_6_0, debug, &preprocessed);
-        bindings = CollectBindingsInStage(preprocessed);
-        hasParsedBindings = true;
+        parseBindings(preprocessed);
     }
     if(!hasParsedBindings && !source.csEntry.empty())
     {
         shaderInfo.entryPoint = source.csEntry;
         std::string preprocessed;
         dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_CS_6_0, debug, &preprocessed);
-        bindings = CollectBindingsInStage(preprocessed);
-        hasParsedBindings = true;
+        parseBindings(preprocessed);
     }
 
     // Regular groups
@@ -246,7 +260,7 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
             rhiGroupLayoutDesc.bindings.push_back({ BindingGroupLayout::BindingDesc
             {
                 .type = RHI::BindingType::ConstantBuffer,
-                .stages = RHI::ShaderStageFlags::All
+                .stages = RHI::ShaderStage::All
             }});
             bindingNameToSlots[group.name] = { static_cast<int>(groupIndex), static_cast<int>(group.bindings.size()) };
         }
@@ -273,7 +287,7 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
         groupLayoutDesc.bindings.push_back(BindingGroupLayout::BindingDesc
             {
                 .type = RHI::BindingType::Sampler,
-                .stages = RHI::ShaderStageFlags::All,
+                .stages = RHI::ShaderStage::All,
                 .arraySize = static_cast<uint32_t>(bindings.inlineSamplerDescs.size()),
                 .immutableSamplers = std::move(samplers)
             });
@@ -284,19 +298,24 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
 
     // Macros
 
-    Macros finalMacros = macros;
+    Macros finalMacros = std::move(shaderInfo.macros);
     finalMacros["rtrc_group(NAME)"] = "_rtrc_group_##NAME";
     finalMacros["rtrc_define(TYPE, NAME, ...)"] = "_rtrc_resource_##NAME";
-    finalMacros["rtrc_end"] = "";
+    finalMacros["rtrc_end"] = "};";
     finalMacros["rtrc_uniform(A, B)"] = "";
     finalMacros["rtrc_sampler(NAME, ...)"] = "";
     finalMacros["rtrc_ref(NAME, ...)"] = "";
+    finalMacros["_rtrc_push_constant_impl(NAME, ...)"] = "_rtrc_push_constant_##NAME";
 
     for(auto &group : bindings.groups)
     {
-        for(auto &binding : group.bindings)
+        std::string groupLeft = fmt::format("_rtrc_group_{}", group.name);
+        std::string groupRight;
+
+        for(auto &&[bindingIndex, binding] : Enumerate(group.bindings))
         {
             const auto [set, slot] = bindingNameToSlots.at(binding.name);
+
             std::string left = fmt::format("_rtrc_resource_{}", binding.name);
             std::string right = fmt::format(
                 "[[vk::binding({}, {})]] {}{} {}{};",
@@ -305,20 +324,50 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
                 binding.templateParam.empty() ? std::string{} : fmt::format("<{}>", binding.templateParam),
                 binding.name,
                 binding.arraySize ? fmt::format("[{}]", *binding.arraySize) : "");
-            finalMacros.insert({ std::move(left), std::move(right) });
+
+            if(group.isRef[bindingIndex])
+            {
+                finalMacros.insert({ std::move(left), std::move(right) });
+            }
+            else
+            {
+                finalMacros.insert({ std::move(left), "" });
+                groupRight += right;
+            }
         }
 
-        std::string groupLeft = fmt::format("_rtrc_group_{}", group.name);
-        std::string groupRight;
         if(!group.valuePropertyDefinitions.empty())
         {
-            groupRight = fmt::format(
+            groupRight += fmt::format(
                 "struct _rtrcGeneratedStruct{} {{ {} }}; "
                 "[[vk::binding({}, {})]] ConstantBuffer<_rtrcGeneratedStruct{}> {};",
                 group.name, group.valuePropertyDefinitions, group.bindings.size(),
                 bindings.nameToGroupIndex.at(group.name), group.name, group.name);
         }
+
+        groupRight += fmt::format("struct group_dummy_struct_{} {{", group.name);
         finalMacros.insert({ std::move(groupLeft), std::move(groupRight) });
+    }
+
+    std::string pushConstantContent;
+    for(auto &content : bindings.pushConstantRangeContents)
+    {
+        pushConstantContent += content;
+    }
+    for(size_t i = 0; i < bindings.pushConstantRanges.size(); ++i)
+    {
+        const std::string &name = bindings.pushConstantRangeNames[i];
+
+        std::string left = fmt::format("_rtrc_push_constant_{}", name);
+        std::string right;
+        if(i == 0)
+        {
+            right = fmt::format(
+                "struct rtrc_push_constant_struct {{ {} }}; "
+                "[[vk::push_constant]] rtrc_push_constant_struct PushConstant;", pushConstantContent);
+        }
+        right += fmt::format("struct rtrc_push_constant_dummy_struct_{} {{", name);
+        finalMacros.insert({ std::move(left), std::move(right) });
     }
 
     std::string generatedShaderPrefix;
@@ -474,6 +523,7 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     {
         bindingLayoutDesc.groupLayouts.push_back(group);
     }
+    bindingLayoutDesc.pushConstantRanges = bindings.pushConstantRanges;
     shader->info_->bindingLayout_ = device_->CreateBindingLayout(bindingLayoutDesc);
 
     if(inlineSamplerGroupIndex >= 0)
@@ -490,6 +540,8 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
         shader->info_->computeShaderThreadGroupSize_ = csRefl->GetComputeShaderThreadGroupSize();
         shader->computePipeline_ = device_->CreateComputePipeline(shader);
     }
+
+    shader->info_->pushConstantRanges_ = std::move(bindings.pushConstantRanges);
 
     return shader;
 }
@@ -557,7 +609,7 @@ ShaderCompiler::ParsedBinding ShaderCompiler::ParseBinding(ShaderTokenStream &to
     }
     tokens.Next();
 
-    RHI::ShaderStageFlag stages = RHI::ShaderStageFlags::All;
+    RHI::ShaderStageFlag stages = RHI::ShaderStage::All;
     if(tokens.GetCurrentToken() == ",")
     {
         tokens.Next();
@@ -649,13 +701,124 @@ void ShaderCompiler::ParseInlineSampler(ShaderTokenStream &tokens, std::string &
     }
 }
 
-ShaderCompiler::Bindings ShaderCompiler::CollectBindingsInStage(const std::string &source) const
+void ShaderCompiler::ParsePushConstantRange(
+    ShaderTokenStream &tokens, std::string &name, std::string &content,
+    Shader::PushConstantRange &range, uint32_t &nextOffset) const
+{
+    tokens.ConsumeOrThrow("_rtrc_push_constant_impl");
+    tokens.ConsumeOrThrow("(");
+    name = tokens.GetCurrentToken();
+    tokens.Next();
+    tokens.ConsumeOrThrow(",");
+    if(tokens.GetCurrentToken() != ")")
+    {
+        range.stages = ShaderCompilerDetail::ParseStages(tokens);
+    }
+    else
+    {
+        range.stages = RHI::ShaderStage::All;
+    }
+    tokens.ConsumeOrThrow(")");
+
+    bool isFirstMember = true;
+    while(true)
+    {
+        if(tokens.IsFinished())
+        {
+            tokens.Throw("rtrc_end expected for rtrc_push_constant()");
+        }
+
+        if(tokens.GetCurrentToken() == "rtrc_end")
+        {
+            break;
+        }
+
+        const std::string type = tokens.GetCurrentToken();
+        tokens.Next();
+
+        static const std::map<std::string, std::pair<uint32_t, uint32_t>> typeToOffsetAndSize =
+        {
+            { "float",  { 4,  4 } },
+            { "int",    { 4,  4 } },
+            { "uint",   { 4,  4 } },
+            { "float2", { 8,  8 } },
+            { "int2",   { 8,  8 } },
+            { "uint2",  { 8,  8 } },
+            { "float3", { 16, 12 } },
+            { "int3",   { 16, 12 } },
+            { "uint3",  { 16, 12 } },
+            { "float4", { 16, 16 } },
+            { "int4",   { 16, 16 } },
+            { "uint4",  { 16, 16 } },
+        };
+
+        uint32_t offset, size;
+        if(auto it = typeToOffsetAndSize.find(type); it == typeToOffsetAndSize.end())
+        {
+            tokens.Throw(fmt::format("Unsupported type in push constant block: {}", tokens.GetCurrentToken()));
+        }
+        else
+        {
+            std::tie(offset, size) = it->second;
+        }
+
+        if(!ShaderTokenStream::IsIdentifier(tokens.GetCurrentToken()))
+        {
+            tokens.Throw("Push constant variable name expected");
+        }
+        const std::string varName = tokens.GetCurrentToken();
+        tokens.Next();
+
+        std::optional<uint32_t> arraySize;
+        if(tokens.GetCurrentToken() == "[")
+        {
+            tokens.Next();
+            try
+            {
+                arraySize = std::stoul(tokens.GetCurrentToken());
+            }
+            catch(...)
+            {
+                tokens.Throw(fmt::format("Invalid array size: {}", tokens.GetCurrentToken()));
+            }
+            tokens.Next();
+            tokens.ConsumeOrThrow("]");
+        }
+
+        tokens.ConsumeOrThrow(";");
+
+        nextOffset = UpAlignTo(nextOffset, offset);
+        if(isFirstMember)
+        {
+            isFirstMember = false;
+            range.offset = nextOffset;
+        }
+
+        content += fmt::format(
+            "[[vk::offset({})]] {} {}{};", nextOffset, type, varName,
+            arraySize.has_value() ? fmt::format("[{}]", *arraySize) : std::string());
+        nextOffset += size * arraySize.value_or(1);
+    }
+
+    if(isFirstMember)
+    {
+        range.offset = nextOffset;
+        range.size = 0;
+    }
+    else
+    {
+        range.size = nextOffset - range.offset;
+    }
+}
+
+ShaderCompiler::Bindings ShaderCompiler::CollectBindings(const std::string &source) const
 {
     using namespace ShaderCompilerDetail;
 
-    constexpr std::string_view RESOURCE = "rtrc_define";
-    constexpr std::string_view GROUP    = "rtrc_group";
-    constexpr std::string_view SAMPLER  = "rtrc_sampler";
+    constexpr std::string_view RESOURCE      = "rtrc_define";
+    constexpr std::string_view GROUP         = "rtrc_group";
+    constexpr std::string_view SAMPLER       = "rtrc_sampler";
+    constexpr std::string_view PUSH_CONSTANT = "_rtrc_push_constant_impl";
 
     std::set<std::string>                parsedBindingNames;
     std::map<std::string, ParsedBinding> ungroupedBindings;
@@ -667,13 +830,20 @@ ShaderCompiler::Bindings ShaderCompiler::CollectBindingsInStage(const std::strin
     std::map<std::string, int>      inlineSamplerNameToDescIndex;
     std::map<RHI::SamplerDesc, int> inlineSamplerDescToIndex;
 
+    std::vector<Shader::PushConstantRange> pushConstantRanges;
+    std::vector<std::string>               pushConstantRangeContents;
+    std::vector<std::string>               pushConstantRangeNames;
+    uint32_t                               pushConstantRangeOffset = 0;
+
     size_t keywordBeginPos = 0;
     while(true)
     {
-        const size_t resourcePos = FindKeyword(source, RESOURCE, keywordBeginPos);
-        const size_t groupPos = FindKeyword(source, GROUP, keywordBeginPos);
-        const size_t samplerPos = FindKeyword(source, SAMPLER, keywordBeginPos);
-        const size_t minPos = (std::min)({ resourcePos, groupPos, samplerPos });
+        const size_t resourcePos     = FindKeyword(source, RESOURCE, keywordBeginPos);
+        const size_t groupPos        = FindKeyword(source, GROUP, keywordBeginPos);
+        const size_t samplerPos      = FindKeyword(source, SAMPLER, keywordBeginPos);
+        const size_t pushConstantPos = FindKeyword(source, PUSH_CONSTANT, keywordBeginPos);
+        const size_t minPos = (std::min)({ resourcePos, groupPos, samplerPos, pushConstantPos });
+
         if(minPos == std::string::npos)
         {
             break;
@@ -704,14 +874,12 @@ ShaderCompiler::Bindings ShaderCompiler::CollectBindingsInStage(const std::strin
             ParseInlineSampler(tokens, name, desc);
             tokens.ConsumeOrThrow(")");
 
-            if(auto it = inlineSamplerNameToDescIndex.find(name);
-               it != inlineSamplerNameToDescIndex.end())
+            if(auto it = inlineSamplerNameToDescIndex.find(name); it != inlineSamplerNameToDescIndex.end())
             {
                 throw Exception(fmt::format("Sampler {} is defined multiple times", name));
             }
 
-            if(auto it = inlineSamplerDescToIndex.find(desc);
-               it != inlineSamplerDescToIndex.end())
+            if(auto it = inlineSamplerDescToIndex.find(desc); it != inlineSamplerDescToIndex.end())
             {
                 inlineSamplerNameToDescIndex[name] = it->second;
                 continue;
@@ -721,6 +889,16 @@ ShaderCompiler::Bindings ShaderCompiler::CollectBindingsInStage(const std::strin
             inlineSamplerNameToDescIndex[name] = newDescIndex;
             inlineSamplerDescToIndex[desc] = newDescIndex;
             inlineSamplerDescs.push_back(desc);
+            continue;
+        }
+
+        if(minPos == pushConstantPos)
+        {
+            keywordBeginPos = pushConstantPos + PUSH_CONSTANT.size();
+            ShaderTokenStream tokens(source, pushConstantPos);
+            ParsePushConstantRange(
+                tokens, pushConstantRangeNames.emplace_back(), pushConstantRangeContents.emplace_back(),
+                pushConstantRanges.emplace_back(), pushConstantRangeOffset);
             continue;
         }
 
@@ -752,6 +930,7 @@ ShaderCompiler::Bindings ShaderCompiler::CollectBindingsInStage(const std::strin
                 if(RESOURCE_PROPERTIES.contains(tokens.GetCurrentToken()))
                 {
                     currentGroup.bindings.push_back(ParseBinding<true>(tokens));
+                    currentGroup.isRef.push_back(false);
                     const std::string &bindingName = currentGroup.bindings.back().name;
                     if(parsedBindingNames.contains(bindingName))
                     {
@@ -782,6 +961,7 @@ ShaderCompiler::Bindings ShaderCompiler::CollectBindingsInStage(const std::strin
                 }
 
                 currentGroup.bindings.push_back(it->second);
+                currentGroup.isRef.push_back(true);
                 ungroupedBindings.erase(it);
                 tokens.Next();
 
@@ -792,7 +972,7 @@ ShaderCompiler::Bindings ShaderCompiler::CollectBindingsInStage(const std::strin
                 }
                 else
                 {
-                    currentGroup.bindings.back().stages = RHI::ShaderStageFlags::All;
+                    currentGroup.bindings.back().stages = RHI::ShaderStage::All;
                 }
 
                 tokens.ConsumeOrThrow(")");
@@ -848,6 +1028,10 @@ ShaderCompiler::Bindings ShaderCompiler::CollectBindingsInStage(const std::strin
     }
     bindings.inlineSamplerDescs = std::move(inlineSamplerDescs);
     bindings.inlineSamplerNameToDescIndex = std::move(inlineSamplerNameToDescIndex);
+
+    bindings.pushConstantRanges = std::move(pushConstantRanges);
+    bindings.pushConstantRangeContents = std::move(pushConstantRangeContents);
+    bindings.pushConstantRangeNames = std::move(pushConstantRangeNames);
 
     return bindings;
 }

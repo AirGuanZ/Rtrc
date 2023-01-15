@@ -74,6 +74,8 @@ VkShaderStageFlagBits TranslateShaderType(ShaderStage type)
     case ShaderStage::VertexShader:   return VK_SHADER_STAGE_VERTEX_BIT;
     case ShaderStage::FragmentShader: return VK_SHADER_STAGE_FRAGMENT_BIT;
     case ShaderStage::ComputeShader:  return VK_SHADER_STAGE_COMPUTE_BIT;
+    case ShaderStage::All:
+        throw Exception(fmt::format("Single shader stage expected. Actual: {0:x}", static_cast<uint32_t>(type)));
     }
     Unreachable();
 }
