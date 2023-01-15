@@ -204,16 +204,8 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     auto parseBindings = [&](const std::string &src)
     {
         assert(!hasParsedBindings);
-        try
-        {
-            bindings = CollectBindings(src);
-            hasParsedBindings = true;
-        }
-        catch(const std::exception &e)
-        {
-            LogError(e.what());
-            throw;
-        }
+        bindings = CollectBindings(src);
+        hasParsedBindings = true;
     };
 
     if(!hasParsedBindings && !source.vsEntry.empty())
@@ -301,7 +293,6 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     Macros finalMacros = std::move(shaderInfo.macros);
     finalMacros["rtrc_group(NAME)"] = "_rtrc_group_##NAME";
     finalMacros["rtrc_define(TYPE, NAME, ...)"] = "_rtrc_resource_##NAME";
-    finalMacros["rtrc_end"] = "};";
     finalMacros["rtrc_uniform(A, B)"] = "";
     finalMacros["rtrc_sampler(NAME, ...)"] = "";
     finalMacros["rtrc_ref(NAME, ...)"] = "";
@@ -345,7 +336,7 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
                 bindings.nameToGroupIndex.at(group.name), group.name, group.name);
         }
 
-        groupRight += fmt::format("struct group_dummy_struct_{} {{", group.name);
+        groupRight += fmt::format("struct group_dummy_struct_{}", group.name);
         finalMacros.insert({ std::move(groupLeft), std::move(groupRight) });
     }
 
@@ -366,7 +357,7 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
                 "struct rtrc_push_constant_struct {{ {} }}; "
                 "[[vk::push_constant]] rtrc_push_constant_struct PushConstant;", pushConstantContent);
         }
-        right += fmt::format("struct rtrc_push_constant_dummy_struct_{} {{", name);
+        right += fmt::format("struct rtrc_push_constant_dummy_struct_{}", name);
         finalMacros.insert({ std::move(left), std::move(right) });
     }
 
@@ -719,16 +710,17 @@ void ShaderCompiler::ParsePushConstantRange(
         range.stages = RHI::ShaderStage::All;
     }
     tokens.ConsumeOrThrow(")");
+    tokens.ConsumeOrThrow("{");
 
     bool isFirstMember = true;
     while(true)
     {
         if(tokens.IsFinished())
         {
-            tokens.Throw("rtrc_end expected for rtrc_push_constant()");
+            tokens.Throw("'}' expected for rtrc_push_constant()");
         }
 
-        if(tokens.GetCurrentToken() == "rtrc_end")
+        if(tokens.GetCurrentToken() == "}")
         {
             break;
         }
@@ -912,6 +904,7 @@ ShaderCompiler::Bindings ShaderCompiler::CollectBindings(const std::string &sour
         }
         tokens.Next();
         tokens.ConsumeOrThrow(")");
+        tokens.ConsumeOrThrow("{");
         if(parsedGroupNames.contains(groupName))
         {
             tokens.Throw(fmt::format("Group {} is already defined", groupName));
@@ -1002,14 +995,14 @@ ShaderCompiler::Bindings ShaderCompiler::CollectBindings(const std::string &sour
                 tokens.Next();
                 tokens.ConsumeOrThrow(")");
             }
-            else if(tokens.GetCurrentToken() == "rtrc_end")
+            else if(tokens.GetCurrentToken() == "}")
             {
                 keywordBeginPos = tokens.GetCurrentPosition();
                 break;
             }
             else
             {
-                tokens.Throw("'rtrc_define', 'rtrc_uniform' or 'rtrc_end' expected");
+                tokens.Throw("'rtrc_define', 'rtrc_uniform' or '}' expected");
             }
         }
     }

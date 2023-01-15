@@ -99,8 +99,8 @@ Device::~Device()
     {
         mainQueue_.GetRHIObject()->WaitIdle();
     }
-
-    sync_->WaitIdle();
+    
+    sync_->PrepareDestruction();
 
     bindingLayoutManager_.reset();
     copyContext_.reset();

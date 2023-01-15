@@ -21,11 +21,12 @@ Shader "Quad"
     #keyword DADADA
 
     rtrc_group(Material)
+    {
         rtrc_define(Texture2DArray<float4>, MainTexture)
         rtrc_define(SamplerState, MainSampler)
         rtrc_uniform(float, scale)
         rtrc_uniform(float, mipLevel)
-    rtrc_end
+    };
 
     struct VSInput
     {

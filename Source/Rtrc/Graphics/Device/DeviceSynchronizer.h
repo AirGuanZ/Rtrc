@@ -19,6 +19,7 @@ public:
     void OnFrameComplete(std::move_only_function<void()> callback);
 
     void WaitIdle();
+    void PrepareDestruction();
 
     void BeginRenderLoop(int frameCountInFlight);
     void EndRenderLoop();

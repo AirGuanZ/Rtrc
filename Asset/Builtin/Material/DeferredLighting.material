@@ -19,12 +19,13 @@ Shader "Builtin/DeferredLighting"
 #include "Common/Scene.hlsl"
 
 rtrc_group(Pass)
+{
     BUILTIN_INTERNAL_GBUFFERS_FS
     rtrc_define(Texture2D<float3>, SkyLutTexture, FS)
     rtrc_uniform(float4, gbufferSize)
     rtrc_uniform(CameraConstantBuffer, camera)
     rtrc_uniform(DirectionalLightConstantBuffer, directionalLight)
-rtrc_end
+};
 
 rtrc_sampler(SkyLutSampler, filter = linear, address_u = repeat, address_v = clamp)
 

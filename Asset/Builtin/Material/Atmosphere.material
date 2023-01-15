@@ -29,10 +29,11 @@ Shader "Builtin/Atmosphere/GenerateTransmittanceLut"
     #define SAMPLE_COUNT 256
 
     rtrc_group(Pass)
+    {
         rtrc_define(RWTexture2D<float4>,     TransmittanceTextureRW)
         rtrc_uniform(int2,                   outputResolution)
         rtrc_uniform(Atmosphere::Properties, atmosphere)
-    rtrc_end
+    };
 
     [numthreads(16, 16, 1)]
     void CSMain(int2 tid : SV_DispatchThreadID)
@@ -75,6 +76,7 @@ Shader "Builtin/Atmosphere/GenerateMultiScatterLut"
     #include "Atmosphere.hlsl"
 
     rtrc_group(Pass)
+    {
         rtrc_define(RWTexture2D<float4>,      MultiScatterTextureRW)
         rtrc_define(StructuredBuffer<float2>, RawDirSamples)
         rtrc_define(Texture2D<float3>,        TransmittanceLutTexture)
@@ -82,7 +84,7 @@ Shader "Builtin/Atmosphere/GenerateMultiScatterLut"
         rtrc_uniform(int,                     dirSampleCount)
         rtrc_uniform(int,                     rayMarchStepCount)
         rtrc_uniform(Atmosphere::Properties,  atmosphere)
-    rtrc_end
+    };
 
     rtrc_sampler(TransmittanceLutSampler, filter = linear, address = clamp)
 
@@ -205,6 +207,7 @@ Shader "Builtin/Atmosphere/GenerateSkyLut"
     #include "Atmosphere.hlsl"
 
     rtrc_group(Pass)
+    {
         rtrc_define(RWTexture2D<float4>,     SkyLutTextureRW)
         rtrc_define(Texture2D<float3>,       SkyHistoryLutTexture)
         rtrc_define(Texture2D<float3>,       TransmittanceLutTexture)
@@ -217,7 +220,7 @@ Shader "Builtin/Atmosphere/GenerateSkyLut"
         rtrc_uniform(float,                  lerpFactor)
         rtrc_uniform(float3,                 sunDirection)
         rtrc_uniform(float3,                 sunIntensity)
-    rtrc_end
+    };
 
     rtrc_sampler(LutSampler, filter = linear, address = clamp)
 

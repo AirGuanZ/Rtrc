@@ -115,12 +115,14 @@ namespace ImGuiDetail
 
     const char *SHADER_SOURCE = R"___(
 rtrc_group(CBuffer)
+{
     rtrc_uniform(float4x4, Matrix)
-rtrc_end
+};
 
 rtrc_group(Pass)
+{
     rtrc_define(Texture2D<float4>, Texture, FS)
-rtrc_end
+};
 
 rtrc_sampler(Sampler, filter = linear, address = repeat)
 

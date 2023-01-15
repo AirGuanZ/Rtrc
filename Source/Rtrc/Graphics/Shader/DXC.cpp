@@ -179,7 +179,6 @@ std::vector<unsigned char> DXC::Compile(
             const std::string msg = errors->GetStringPointer();
             if(hasCompileError)
             {
-                LogError(msg);
                 throw Exception(msg);
             }
 #if RTRC_DEBUG
