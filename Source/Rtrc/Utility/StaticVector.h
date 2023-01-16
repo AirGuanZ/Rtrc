@@ -115,6 +115,16 @@ public:
         std::swap(size_, other.size_);
     }
 
+    void Resize(size_t newSize)
+    {
+        this->ResizeImpl(newSize, [](T *addr) { new(addr) T(); });
+    }
+
+    void Resize(size_t newSize, const T &newValue)
+    {
+        this->ResizeImpl(newSize, [&newValue](T *addr) { new(addr) T(newValue); });
+    }
+
     void PushBack(const T &value)
     {
         assert(size_ < Capacity);
@@ -218,6 +228,39 @@ public:
 private:
 
     using AlignedStorage = std::aligned_storage_t<sizeof(T) *N, alignof(T)>;
+
+    template<typename Constructor>
+    void ResizeImpl(size_t newSize, const Constructor &constructor)
+    {
+        if(newSize > size_)
+        {
+            const size_t oldSize = size_;
+            try
+            {
+                while(size_ < newSize)
+                {
+                    constructor(RawAddr(size_));
+                    ++size_;
+                }
+            }
+            catch(...)
+            {
+                for(size_t i = oldSize; i < size_; ++i)
+                {
+                    At(i).~T();
+                }
+                throw;
+            }
+        }
+        else // newSize <= size_
+        {
+            while(size_ > newSize)
+            {
+                At(size_ - 1).~T();
+                --size_;
+            }
+        }
+    }
 
     void Destruct()
     {

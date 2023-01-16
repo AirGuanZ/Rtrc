@@ -59,7 +59,6 @@ BarrierBatch &BarrierBatch::operator()(
     return *this;
 }
 
-
 BarrierBatch &BarrierBatch::operator()(
     const RC<Buffer>       &buffer,
     RHI::PipelineStageFlag  prevStages,
@@ -164,7 +163,7 @@ CommandBuffer &CommandBuffer::operator=(CommandBuffer &&other) noexcept
 
 void CommandBuffer::Swap(CommandBuffer &other) noexcept
 {
-    RTRC_SWAP_MEMBERS(*this, other, manager_, queueType_, rhiCommandBuffer_, pool_)
+    RTRC_SWAP_MEMBERS(*this, other, manager_, queueType_, rhiCommandBuffer_, pool_);
 #if RTRC_DEBUG
     std::swap(threadID_, other.threadID_);
 #endif
@@ -269,6 +268,16 @@ void CommandBuffer::BindComputePipeline(const RC<ComputePipeline> &computePipeli
     currentComputePipeline_ = computePipeline;
 }
 
+const GraphicsPipeline *CommandBuffer::GetCurrentGraphicsPipeline() const
+{
+    return currentGraphicsPipeline_.get();
+}
+
+const ComputePipeline *CommandBuffer::GetCurrentComputePipeline() const
+{
+    return currentComputePipeline_.get();
+}
+
 void CommandBuffer::BindGraphicsGroup(int index, const RC<BindingGroup> &group)
 {
     CheckThreadID();
@@ -324,7 +333,7 @@ void CommandBuffer::SetStencilReferenceValue(uint8_t value)
     rhiCommandBuffer_->SetStencilReferenceValue(value);
 }
 
-void CommandBuffer::SetGraphicsPushConstants(
+void CommandBuffer::SetGraphicsPushConstantRange(
     RHI::ShaderStageFlag stages, uint32_t offset, uint32_t size, const void *data)
 {
     CheckThreadID();
@@ -333,7 +342,7 @@ void CommandBuffer::SetGraphicsPushConstants(
         currentGraphicsPipeline_->GetRHIObject()->GetBindingLayout(), stages, offset, size, data);
 }
 
-void CommandBuffer::SetComputePushConstants(
+void CommandBuffer::SetComputePushConstantRange(
     RHI::ShaderStageFlag stages, uint32_t offset, uint32_t size, const void *data)
 {
     CheckThreadID();
@@ -342,22 +351,80 @@ void CommandBuffer::SetComputePushConstants(
         currentComputePipeline_->GetRHIObject()->GetBindingLayout(), stages, offset, size, data);
 }
 
-void CommandBuffer::SetGraphicsPushConstants(uint32_t rangeIndex, const void *data)
+void CommandBuffer::SetGraphicsPushConstantRange(uint32_t rangeIndex, const void *data)
 {
     assert(
         currentGraphicsPipeline_ &&
         rangeIndex < currentGraphicsPipeline_->GetShaderInfo()->GetPushConstantRanges().GetSize());
     const RHI::PushConstantRange &range = currentGraphicsPipeline_->GetShaderInfo()->GetPushConstantRanges()[rangeIndex];
-    SetGraphicsPushConstants(range.stages, range.offset, range.size, data);
+    SetGraphicsPushConstantRange(range.stages, range.offset, range.size, data);
 }
 
-void CommandBuffer::SetComputePushConstants(uint32_t rangeIndex, const void *data)
+void CommandBuffer::SetComputePushConstantRange(uint32_t rangeIndex, const void *data)
 {
     assert(
         currentComputePipeline_ &&
         rangeIndex < currentComputePipeline_->GetShaderInfo()->GetPushConstantRanges().GetSize());
     const RHI::PushConstantRange &range = currentComputePipeline_->GetShaderInfo()->GetPushConstantRanges()[rangeIndex];
-    SetComputePushConstants(range.stages, range.offset, range.size, data);
+    SetComputePushConstantRange(range.stages, range.offset, range.size, data);
+}
+
+void CommandBuffer::SetGraphicsPushConstants(const void *data, uint32_t size)
+{
+    const GraphicsPipeline *pipeline = GetCurrentGraphicsPipeline();
+    assert(pipeline);
+    const Span<Shader::PushConstantRange> pushConstantRanges = pipeline->GetShaderInfo()->GetPushConstantRanges();
+    for(const Shader::PushConstantRange &range : pushConstantRanges)
+    {
+        const uint32_t clampedEnd = std::min(range.offset + range.size, size);
+        const uint32_t actualSize = clampedEnd - range.offset;
+        if(actualSize > 0)
+        {
+            SetGraphicsPushConstantRange(
+                range.stages, range.offset, range.size, static_cast<const unsigned char*>(data) + range.offset);
+        }
+        else
+        {
+            break;
+        }
+    }
+}
+
+void CommandBuffer::SetComputePushConstants(const void *data, uint32_t size)
+{
+    const ComputePipeline *pipeline = GetCurrentComputePipeline();
+    assert(pipeline);
+    const Span<Shader::PushConstantRange> pushConstantRanges = pipeline->GetShaderInfo()->GetPushConstantRanges();
+    for(const Shader::PushConstantRange &range : pushConstantRanges)
+    {
+        const uint32_t clampedEnd = std::min(range.offset + range.size, size);
+        const uint32_t actualSize = clampedEnd - range.offset;
+        if(actualSize > 0)
+        {
+            SetComputePushConstantRange(
+                range.stages, range.offset, range.size, static_cast<const unsigned char *>(data) + range.offset);
+        }
+        else
+        {
+            break;
+        }
+    }
+}
+
+void CommandBuffer::SetGraphicsPushConstants(Span<unsigned char> data)
+{
+    if(!data.IsEmpty())
+    {
+        SetGraphicsPushConstants(data.GetData(), data.GetSize());
+    }
+}
+
+void CommandBuffer::SetComputePushConstants(Span<unsigned char> data)
+{
+    if(!data.IsEmpty())
+    {
+        SetComputePushConstants(data.GetData(), data.GetSize());
+    }
 }
 
 void CommandBuffer::ClearColorTexture2D(const RC<Texture> &tex, const Vector4f &color)

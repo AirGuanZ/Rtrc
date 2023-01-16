@@ -467,6 +467,8 @@ struct BindingGroupLayoutDesc
     bool operator==(const BindingGroupLayoutDesc &) const = default;
 };
 
+constexpr uint32_t STANDARD_PUSH_CONSTANT_BLOCK_SIZE = 256;
+
 struct PushConstantRange
 {
     uint32_t offset;

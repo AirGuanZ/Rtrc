@@ -163,7 +163,7 @@ inline void DynamicBuffer::Swap(DynamicBuffer &other) noexcept
 {
     RTRC_SWAP_MEMBERS(
         *this, other,
-        buffer_, offset_, size_, manager_, chunkIndex_, slabIndex_)
+        buffer_, offset_, size_, manager_, chunkIndex_, slabIndex_);
 }
 
 template<RtrcStruct T>

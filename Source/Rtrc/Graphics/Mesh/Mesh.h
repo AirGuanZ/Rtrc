@@ -93,14 +93,10 @@ inline Mesh &Mesh::operator=(Mesh &&other) noexcept
 
 inline void Mesh::Swap(Mesh &other) noexcept
 {
-    std::swap(vertexCount_, other.vertexCount_);
-    std::swap(indexCount_, other.indexCount_);
-    std::swap(layout_, other.layout_);
-    std::swap(vertexBuffers_, other.vertexBuffers_);
-    std::swap(vertexBufferByteOffsets_, other.vertexBufferByteOffsets_);
-    std::swap(indexBufferFormat_, other.indexBufferFormat_);
-    std::swap(indexBuffer_, other.indexBuffer_);
-    std::swap(indexBufferByteOffset_, other.indexBufferByteOffset_);
+    RTRC_SWAP_MEMBERS(
+        *this, other,
+        vertexCount_, indexCount_, layout_, vertexBuffers_, vertexBufferByteOffsets_,
+        indexBufferFormat_, indexBuffer_, indexBufferByteOffset_);
 }
 
 inline const MeshLayout *Mesh::GetLayout() const

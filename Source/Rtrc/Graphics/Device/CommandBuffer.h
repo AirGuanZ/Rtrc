@@ -139,6 +139,9 @@ public:
     void BindGraphicsPipeline(const RC<GraphicsPipeline> &graphicsPipeline);
     void BindComputePipeline(const RC<ComputePipeline> &computePipeline);
 
+    const GraphicsPipeline *GetCurrentGraphicsPipeline() const;
+    const ComputePipeline *GetCurrentComputePipeline() const;
+
     void BindGraphicsGroup(int index, const RC<BindingGroup> &group);
     void BindComputeGroup(int index, const RC<BindingGroup> &group);
     
@@ -151,11 +154,22 @@ public:
 
     void SetStencilReferenceValue(uint8_t value);
 
-    void SetGraphicsPushConstants(RHI::ShaderStageFlag stages, uint32_t offset, uint32_t size, const void *data);
-    void SetComputePushConstants(RHI::ShaderStageFlag stages, uint32_t offset, uint32_t size, const void *data);
+    void SetGraphicsPushConstantRange(RHI::ShaderStageFlag stages, uint32_t offset, uint32_t size, const void *data);
+    void SetComputePushConstantRange(RHI::ShaderStageFlag stages, uint32_t offset, uint32_t size, const void *data);
 
-    void SetGraphicsPushConstants(uint32_t rangeIndex, const void *data);
-    void SetComputePushConstants(uint32_t rangeIndex, const void *data);
+    void SetGraphicsPushConstantRange(uint32_t rangeIndex, const void *data);
+    void SetComputePushConstantRange(uint32_t rangeIndex, const void *data);
+
+    void SetGraphicsPushConstants(const void *data, uint32_t size);
+    void SetComputePushConstants(const void *data, uint32_t size);
+
+    void SetGraphicsPushConstants(Span<unsigned char> data);
+    void SetComputePushConstants(Span<unsigned char> data);
+
+    template<typename T> requires std::is_trivially_copyable_v<T>
+    void SetGraphicsPushConstants(const T &data);
+    template<typename T> requires std::is_trivially_copyable_v<T>
+    void SetComputePushConstants(const T &data);
 
     void ClearColorTexture2D(const RC<Texture> &tex, const Vector4f &color);
 
@@ -276,6 +290,18 @@ private:
 
     tbb::concurrent_queue<RHI::CommandPoolPtr> freePools_;
 };
+
+template<typename T> requires std::is_trivially_copyable_v<T>
+void CommandBuffer::SetGraphicsPushConstants(const T &data)
+{
+    this->SetGraphicsPushConstants(&data, sizeof(data));
+}
+
+template<typename T> requires std::is_trivially_copyable_v<T>
+void CommandBuffer::SetComputePushConstants(const T &data)
+{
+    this->SetComputePushConstants(&data, sizeof(data));
+}
 
 inline void CommandBuffer::ExecuteBarrier(
     const RC<StatefulBuffer> &buffer,

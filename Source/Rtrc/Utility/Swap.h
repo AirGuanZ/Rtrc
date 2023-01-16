@@ -36,6 +36,6 @@ void SwapMember(T &a, T &b, M T::*m) noexcept(noexcept(Rtrc::Swap(a.*m, b.*m)))
 }
 
 #define RTRC_SWAP_MEMBER(A, B, M) (::Rtrc::SwapMember(A, B, &std::remove_cvref_t<decltype(A)>::M));
-#define RTRC_SWAP_MEMBERS(A, B, ...) { RTRC_MACRO_FOREACH_3(RTRC_SWAP_MEMBER, A, B, __VA_ARGS__) }
+#define RTRC_SWAP_MEMBERS(A, B, ...) ([&]{ RTRC_MACRO_FOREACH_3(RTRC_SWAP_MEMBER, A, B, __VA_ARGS__) }())
 
 RTRC_END
