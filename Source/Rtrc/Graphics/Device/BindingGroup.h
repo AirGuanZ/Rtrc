@@ -68,6 +68,7 @@ public:
     struct Desc
     {
         std::vector<BindingDesc> bindings;
+        bool variableArraySize = false;
 
         auto operator<=>(const Desc &) const = default;
         bool operator==(const Desc &) const = default;

@@ -13,14 +13,16 @@ option_end()
 set_arch("x64")
 set_languages("c++23")
 add_rules("mode.debug", "mode.release")
-add_rules("c++.unity_build", { batchsize = 16 })
+
+if is_mode("release") then
+    add_rules("c++.unity_build", { batchsize = 16 })
+end
 
 option("is_msvc")
     add_csnippets("is_msvc", "return (_MSC_VER)?0:-1;", { tryrun = true })
 option_end()
 
-vs_runtime_value = is_mode("debug") and "MTd" or "MT"
-set_runtimes(vs_runtime_value)
+set_runtimes(is_mode("debug") and "MTd" or "MT")
 set_targetdir("Build/Bin/"..(is_mode("debug") and "debug" or "release"))
 
 if is_mode("debug") then

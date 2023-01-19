@@ -246,6 +246,24 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
             rhiBindingDesc.arraySize = binding.arraySize;
             rhiBindingDesc.bindless  = binding.bindless;
             rhiGroupLayoutDesc.bindings.push_back(rhiBindingDesc);
+
+            if(binding.variableArraySize)
+            {
+                if(&binding != &group.bindings.back())
+                {
+                    throw Exception(fmt::format(
+                        "Binding {} has variable array size but is not the last one in binding group {}",
+                        binding.name, group.name));
+                }
+                if(!group.valuePropertyDefinitions.empty())
+                {
+                    throw Exception(fmt::format(
+                        "Binding {} has variable array size, "
+                        "which is not compatible with rtrc_uniform in binding group {}",
+                        binding.name, group.name));
+                }
+                rhiGroupLayoutDesc.variableArraySize = true;
+            }
         }
 
         if(!group.valuePropertyDefinitions.empty())
@@ -368,13 +386,16 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     //          struct _rtrc_push_constant_dummy_struct_1
 
     Macros finalMacros = std::move(shaderInfo.macros);
-    finalMacros["rtrc_group(NAME)"]             = "_rtrc_group_##NAME";
-    finalMacros["rtrc_define(TYPE, NAME, ...)"] = "_rtrc_resource_##NAME";
-    finalMacros["rtrc_uniform(A, B)"]           = "";
-    finalMacros["rtrc_sampler(NAME, ...)"]      = "_rtrc_sampler_##NAME";
-    finalMacros["rtrc_ref(NAME, ...)"]          = "";
+    finalMacros["rtrc_group(NAME)"]               = "_rtrc_group_##NAME";
+    finalMacros["rtrc_define(TYPE, NAME, ...)"]   = "_rtrc_resource_##NAME";
+    finalMacros["rtrc_bindless(TYPE, NAME, ...)"] = "_rtrc_resource_##NAME";
+    finalMacros["rtrc_uniform(A, B)"]             = "";
+    finalMacros["rtrc_sampler(NAME, ...)"]        = "_rtrc_sampler_##NAME";
+    finalMacros["rtrc_ref(NAME, ...)"]            = "";
     // rtrc_push_constant(...) is replaced with _rtrc_push_constant_impl(value of __COUNTER__, ...) in preprocessing
     finalMacros["_rtrc_push_constant_impl(NAME, ...)"] = "_rtrc_push_constant_##NAME";
+
+    bool hasBindless = false;
 
     for(auto &group : bindings.groups)
     {
@@ -391,8 +412,7 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
                 slot, set,
                 ShaderCompilerDetail::BindingTypeToTypeName(binding.type),
                 binding.templateParam.empty() ? std::string{} : fmt::format("<{}>", binding.templateParam),
-                binding.name,
-                binding.arraySize ? fmt::format("[{}]", *binding.arraySize) : "");
+                binding.name, binding.GetArraySpeficier());
 
             if(group.isRef[bindingIndex])
             {
@@ -403,6 +423,8 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
                 finalMacros.insert({ std::move(left), "" });
                 groupRight += right;
             }
+
+            hasBindless |= binding.bindless;
         }
 
         if(!group.valuePropertyDefinitions.empty())
@@ -465,14 +487,15 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
             slot, setForUngroupedBindings,
             ShaderCompilerDetail::BindingTypeToTypeName(binding.type),
             binding.templateParam.empty() ? std::string{} : fmt::format("<{}>", binding.templateParam),
-            binding.name, binding.arraySize ? fmt::format("[{}]", *binding.arraySize) : "");
+            binding.name, binding.GetArraySpeficier());
         finalMacros.insert({ std::move(left), std::move(right) });
     }
 
     // Compile
 
-    shaderInfo.macros = finalMacros;
-    shaderInfo.source = "_rtrc_generated_shader_prefix" + shaderInfo.source;
+    shaderInfo.macros   = finalMacros;
+    shaderInfo.source   = "_rtrc_generated_shader_prefix" + shaderInfo.source;
+    shaderInfo.bindless = hasBindless;
 
     std::vector<uint8_t> vsData, fsData, csData;
     Box<SPIRVReflection> vsRefl, fsRefl, csRefl;
@@ -495,7 +518,7 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
         csRefl = MakeBox<SPIRVReflection>(csData, source.csEntry);
     }
 
-    // Check usage of ungrouped bindings
+    // Check uses of ungrouped bindings
 
     auto EnsureAllUsedResourcesAreGrouped = [&](const Box<SPIRVReflection> &refl, std::string_view stageName)
     {
@@ -620,6 +643,20 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     return shader;
 }
 
+std::string ShaderCompiler::ParsedBinding::GetArraySpeficier() const
+{
+    if(variableArraySize)
+    {
+        assert(!arraySize.has_value());
+        return "[]";
+    }
+    if(arraySize.has_value())
+    {
+        return fmt::format("[{}]", arraySize.value());
+    }
+    return {};
+}
+
 std::string ShaderCompiler::MapFilename(std::string_view filename) const
 {
     std::filesystem::path path = filename;
@@ -631,7 +668,7 @@ std::string ShaderCompiler::MapFilename(std::string_view filename) const
     return absolute(path).lexically_normal().string();
 }
 
-template<bool AllowStageSpecifier>
+template<bool AllowStageSpecifier, bool IsBindless>
 ShaderCompiler::ParsedBinding ShaderCompiler::ParseBinding(ShaderTokenStream &tokens) const
 {
     using namespace ShaderCompilerDetail;
@@ -663,15 +700,44 @@ ShaderCompiler::ParsedBinding ShaderCompiler::ParseBinding(ShaderTokenStream &to
     if(tokens.GetCurrentToken() == "[")
     {
         tokens.Next();
-        try
+        if constexpr(IsBindless)
         {
-            arraySize = std::stoi(tokens.GetCurrentToken());
+            if(tokens.GetCurrentToken() != "]")
+            {
+                try
+                {
+                    arraySize = std::stoi(tokens.GetCurrentToken());
+                    tokens.Next();
+                }
+                catch(...)
+                {
+                    tokens.Throw(fmt::format("invalid array size: {}", tokens.GetCurrentToken()));
+                }
+            }
         }
-        catch(...)
+        else
         {
-            tokens.Throw(fmt::format("invalid array size: {}", tokens.GetCurrentToken()));
+            try
+            {
+                arraySize = std::stoi(tokens.GetCurrentToken());
+                tokens.Next();
+            }
+            catch(...)
+            {
+                tokens.Throw(fmt::format("invalid array size: {}", tokens.GetCurrentToken()));
+            }
         }
         tokens.ConsumeOrThrow("]");
+    }
+    else if constexpr(IsBindless)
+    {
+        tokens.Throw("Bindless item must have an array speficier");
+    }
+
+    bool isVariableArraySize = false;
+    if constexpr(IsBindless)
+    {
+        isVariableArraySize = !arraySize.has_value();
     }
 
     tokens.ConsumeOrThrow(",");
@@ -696,7 +762,9 @@ ShaderCompiler::ParsedBinding ShaderCompiler::ParseBinding(ShaderTokenStream &to
         .type = bindingType,
         .arraySize = arraySize,
         .stages = stages,
-        .templateParam = std::move(templateParam)
+        .templateParam = std::move(templateParam),
+        .bindless = IsBindless,
+        .variableArraySize = isVariableArraySize
     };
 }
 
@@ -926,38 +994,24 @@ ShaderCompiler::Bindings ShaderCompiler::CollectBindings(const std::string &sour
             break;
         }
 
-        if(minPos == resourcePos)
+        if(minPos == resourcePos || minPos == bindlessPos)
         {
-            keywordBeginPos = resourcePos + RESOURCE.size();
+            keywordBeginPos = minPos + (minPos == resourcePos ? RESOURCE.size() : BINDLESS.size());
             ShaderTokenStream tokens(source, keywordBeginPos);
             tokens.ConsumeOrThrow("(");
-            ParsedBinding binding = ParseBinding<false>(tokens);
+            ParsedBinding binding;
+            if(minPos == resourcePos)
+            {
+                binding = ParseBinding<false, false>(tokens);
+            }
+            else
+            {
+                binding = ParseBinding<false, true>(tokens);
+            }
             if(parsedBindingNames.contains(binding.name))
             {
                 tokens.Throw(fmt::format("Binding {} is defined multiple times", binding.name));
             }
-            parsedBindingNames.insert(binding.name);
-            ungroupedBindings.insert({ binding.name, binding });
-            tokens.ConsumeOrThrow(")");
-            continue;
-        }
-
-        if(minPos == bindlessPos)
-        {
-            keywordBeginPos = bindlessPos + BINDLESS.size();
-            ShaderTokenStream tokens(source, keywordBeginPos);
-            tokens.ConsumeOrThrow("(");
-            ParsedBinding binding = ParseBinding<false>(tokens);
-            if(parsedBindingNames.contains(binding.name))
-            {
-                tokens.Throw(fmt::format("Binding {} is defined multiple times", binding.name));
-            }
-            if(!binding.arraySize.has_value())
-            {
-                tokens.Throw(fmt::format(
-                "Binding {} is declared with 'rtrc_bindless' but doesn't has an array size", binding.name));
-            }
-            binding.bindless = true;
             parsedBindingNames.insert(binding.name);
             ungroupedBindings.insert({ binding.name, binding });
             tokens.ConsumeOrThrow(")");
@@ -1020,45 +1074,28 @@ ShaderCompiler::Bindings ShaderCompiler::CollectBindings(const std::string &sour
 
         while(true)
         {
-            if(tokens.GetCurrentToken() == RESOURCE)
+            if(tokens.GetCurrentToken() == RESOURCE || tokens.GetCurrentToken() == BINDLESS)
             {
+                const bool isBindless = tokens.GetCurrentToken() == BINDLESS;
                 tokens.Next();
                 tokens.ConsumeOrThrow("(");
                 if(RESOURCE_PROPERTIES.contains(tokens.GetCurrentToken()))
                 {
-                    auto &binding = currentGroup.bindings.emplace_back(ParseBinding<true>(tokens));
+                    auto &binding = currentGroup.bindings.emplace_back();
+                    if(isBindless)
+                    {
+                        binding = ParseBinding<true, true>(tokens);
+                    }
+                    else
+                    {
+                        binding = ParseBinding<true, false>(tokens);
+                    }
                     currentGroup.isRef.push_back(false);
                     if(parsedBindingNames.contains(binding.name))
                     {
                         tokens.Throw(fmt::format("Resource {} is defined multiple times", binding.name));
                     }
                     parsedBindingNames.insert(binding.name);
-                }
-                else
-                {
-                    tokens.Throw(fmt::format("Unknown resource type: {}", tokens.GetCurrentToken()));
-                }
-                tokens.ConsumeOrThrow(")");
-            }
-            else if(tokens.GetCurrentToken() == BINDLESS)
-            {
-                tokens.Next();
-                tokens.ConsumeOrThrow("(");
-                if(RESOURCE_PROPERTIES.contains(tokens.GetCurrentToken()))
-                {
-                    auto &binding = currentGroup.bindings.emplace_back(ParseBinding<true>(tokens));
-                    currentGroup.isRef.push_back(false);
-                    if(parsedBindingNames.contains(binding.name))
-                    {
-                        tokens.Throw(fmt::format("Resource {} is defined multiple times", binding.name));
-                    }
-                    parsedBindingNames.insert(binding.name);
-                    if(!binding.arraySize.has_value())
-                    {
-                        tokens.Throw(fmt::format(
-                            "Binding {} is declared with 'rtrc_bindless' but doesn't has an array size", binding.name));
-                    }
-                    binding.bindless = true;
                 }
                 else
                 {

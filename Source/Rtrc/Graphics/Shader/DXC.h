@@ -26,6 +26,7 @@ public:
         std::string entryPoint;
         std::vector<std::string> includeDirs;
         std::map<std::string, std::string> macros;
+        bool bindless = false;
     };
 
     DXC();

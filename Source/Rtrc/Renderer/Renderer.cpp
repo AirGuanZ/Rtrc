@@ -183,7 +183,7 @@ void Renderer::DoRenderGBuffersPass(RG::PassContext &passContext, const RenderGB
     gbufferB->SetName("GBufferB");
     gbufferC->SetName("GBufferC");
     gbufferDepth->SetName("GBufferDepth");
-
+    
     // Render pass
 
     cmd.BeginRenderPass(

@@ -462,6 +462,7 @@ struct BindingDesc
 struct BindingGroupLayoutDesc
 {
     std::vector<BindingDesc> bindings;
+    bool variableArraySize = false; // When present, the last binding item must be bindless
 
     auto operator<=>(const BindingGroupLayoutDesc &other) const = default;
     bool operator==(const BindingGroupLayoutDesc &) const = default;
@@ -1118,14 +1119,16 @@ public:
     RTRC_RHI_API Ptr<Fence>     CreateFence(bool signaled) RTRC_RHI_API_PURE;
     RTRC_RHI_API Ptr<Semaphore> CreateSemaphore(uint64_t initialValue) RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API Ptr<RawShader> CreateShader(const void *data, size_t size, std::string entryPoint, ShaderStage type) RTRC_RHI_API_PURE;
+    RTRC_RHI_API Ptr<RawShader> CreateShader(
+        const void *data, size_t size, std::string entryPoint, ShaderStage type) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API Ptr<GraphicsPipeline> CreateGraphicsPipeline(const GraphicsPipelineDesc &desc) RTRC_RHI_API_PURE;
     RTRC_RHI_API Ptr<ComputePipeline>  CreateComputePipeline (const ComputePipelineDesc &desc) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API Ptr<BindingGroupLayout> CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc) RTRC_RHI_API_PURE;
-    RTRC_RHI_API Ptr<BindingGroup>       CreateBindingGroup(const Ptr<BindingGroupLayout> &bindingGroupLayout) RTRC_RHI_API_PURE;
-    RTRC_RHI_API Ptr<BindingLayout>      CreateBindingLayout(const BindingLayoutDesc &desc) RTRC_RHI_API_PURE;
+    RTRC_RHI_API Ptr<BindingGroup> CreateBindingGroup(
+        const Ptr<BindingGroupLayout> &bindingGroupLayout, uint32_t variableArraySize = 0) RTRC_RHI_API_PURE;
+    RTRC_RHI_API Ptr<BindingLayout> CreateBindingLayout(const BindingLayoutDesc &desc) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void UpdateBindingGroups(const BindingGroupUpdateBatch &batch) RTRC_RHI_API_PURE;
 

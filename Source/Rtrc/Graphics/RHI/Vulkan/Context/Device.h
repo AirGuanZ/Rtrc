@@ -41,8 +41,9 @@ public:
     Ptr<ComputePipeline>  CreateComputePipeline(const ComputePipelineDesc &desc) RTRC_RHI_OVERRIDE;
 
     Ptr<BindingGroupLayout> CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc) RTRC_RHI_OVERRIDE;
-    Ptr<BindingGroup>       CreateBindingGroup(const Ptr<BindingGroupLayout> &bindingGroupLayout) RTRC_RHI_OVERRIDE;
-    Ptr<BindingLayout>      CreateBindingLayout(const BindingLayoutDesc &desc) RTRC_RHI_OVERRIDE;
+    Ptr<BindingGroup> CreateBindingGroup(
+        const Ptr<BindingGroupLayout> &bindingGroupLayout, uint32_t variableArraySize = 0) RTRC_RHI_OVERRIDE;
+    Ptr<BindingLayout> CreateBindingLayout(const BindingLayoutDesc &desc) RTRC_RHI_OVERRIDE;
 
     void UpdateBindingGroups(const BindingGroupUpdateBatch &batch) RTRC_RHI_OVERRIDE;
 

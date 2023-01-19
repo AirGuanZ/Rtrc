@@ -100,6 +100,9 @@ constexpr T UpAlignTo(T v, T align)
     return (v + (align - 1)) / align * align;
 }
 
+template<typename T>
+constexpr bool AlwaysFalse = false;
+
 template<typename T> requires std::is_scoped_enum_v<T>
 constexpr auto EnumCount = std::underlying_type_t<T>(T::Count);
 

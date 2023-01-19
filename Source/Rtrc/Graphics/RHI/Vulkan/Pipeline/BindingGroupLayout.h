@@ -34,7 +34,7 @@ public:
 
     VkDescriptorSetLayout _internalGetNativeLayout() const;
 
-    void _internalReleaseSet(VkDescriptorSet set) const;
+    void _internalReleaseSet(VkDescriptorPool pool, VkDescriptorSet set) const;
 
     bool _internalIsSlotTexelBuffer(int index) const;
     bool _internalIsSlotStorageTexelBuffer(int index) const;
@@ -54,7 +54,7 @@ public:
     bool _internalIsSlotTexture3DArray(int index) const;
     bool _internalIsSlotRWTexture3DArray(int index) const;
 
-    Ptr<BindingGroup> _internalCreateBindingGroupImpl() const;
+    Ptr<BindingGroup> _internalCreateBindingGroupImpl(uint32_t variableArraySize) const;
 
 private:
 

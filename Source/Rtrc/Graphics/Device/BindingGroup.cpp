@@ -27,6 +27,7 @@ RC<BindingGroupLayout> BindingGroupManager::CreateBindingGroupLayout(const Bindi
                 rhiBinding.bindless = binding.bindless;
                 rhiDesc.bindings.push_back(rhiBinding);
             }
+            rhiDesc.variableArraySize = desc.variableArraySize;
 
             auto ret = MakeRC<BindingGroupLayout>();
             ret->manager_ = this;

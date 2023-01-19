@@ -14,7 +14,15 @@ class Sampler;
 
 namespace BindingGroupDSL
 {
-    
+
+    enum class BindingFlagBit : uint8_t
+    {
+        Bindless = 1 << 0,
+        VariableArraySize = 1 << 1,
+    };
+    RTRC_DEFINE_ENUM_FLAGS(BindingFlagBit)
+    using BindingFlags = EnumFlags<BindingFlagBit>;
+
     struct MemberProxy_Texture2D
     {
         static constexpr RHI::BindingType BindingType = RHI::BindingType::Texture2D;
@@ -246,7 +254,7 @@ namespace BindingGroupDSL
         size_t dwordCount = 0;
         T::ForEachFlattenMember(
             [&dwordCount]<bool IsUniform, typename M, typename A>
-            (const char *name, RHI::ShaderStageFlag stages, const A &accessor, bool isBindless)
+            (const char *name, RHI::ShaderStageFlag stages, const A &accessor, BindingFlags flags)
         {
             if constexpr(IsUniform)
             {
@@ -276,7 +284,7 @@ namespace BindingGroupDSL
         size_t deviceDWordOffset = 0;
         T::ForEachFlattenMember(
             [&deviceDWordOffset, &f]<bool IsUniform, typename M, typename A>
-            (const char *name, RHI::ShaderStageFlag stages, const A &accessor, bool isBindless)
+            (const char *name, RHI::ShaderStageFlag stages, const A &accessor, BindingFlags flags)
         {
             if constexpr(IsUniform)
             {
@@ -312,7 +320,7 @@ namespace BindingGroupDSL
             BindingGroupLayout::Desc desc;
             T::ForEachFlattenMember(
                 [&desc]<bool IsUniform, typename M, typename A>
-                (const char *name, RHI::ShaderStageFlag stages, const A &accessor, bool isBindless)
+                (const char *name, RHI::ShaderStageFlag stages, const A &accessor, BindingFlags flags)
             {
                 if constexpr(!IsUniform)
                 {
@@ -322,8 +330,9 @@ namespace BindingGroupDSL
                     binding.type = MemberElement::BindingType;
                     binding.stages = stages;
                     binding.arraySize = arraySize ? std::make_optional(static_cast<uint32_t>(arraySize)) : std::nullopt;
-                    binding.bindless = isBindless;
+                    binding.bindless = flags.contains(BindingFlagBit::Bindless);
                     desc.bindings.push_back(binding);
+                    desc.variableArraySize |= flags.contains(BindingFlagBit::VariableArraySize);
                 }
             });
             if constexpr(GetUniformDWordCount<T>() > 0)
@@ -335,6 +344,20 @@ namespace BindingGroupDSL
             }
             return desc;
         }();
+        return ret;
+    }
+
+    constexpr BindingFlags CreateBindingFlags(bool isBindless, bool hasVariableArraySize)
+    {
+        BindingFlags ret = 0;
+        if(isBindless)
+        {
+            ret |= BindingFlagBit::Bindless;
+        }
+        if(hasVariableArraySize)
+        {
+            ret |= BindingFlagBit::VariableArraySize;
+        }
         return ret;
     }
 
@@ -360,7 +383,8 @@ namespace BindingGroupDSL
             const std::identity &accessor = {})                                                             \
         {                                                                                                   \
             ::Rtrc::StructDetail::ForEachMember<_rtrcSelf>([&]<bool IsUniform, typename M>                  \
-            (M _rtrcSelf::* ptr, const char *name, ::Rtrc::RHI::ShaderStageFlag stages, bool isBindless)    \
+            (M _rtrcSelf::* ptr, const char *name, ::Rtrc::RHI::ShaderStageFlag stages,                     \
+             ::Rtrc::BindingGroupDSL::BindingFlags flags)                                                   \
             {                                                                                               \
                 auto newAccessor = [&]<typename P>(P p) constexpr -> decltype(auto)                         \
                     { static_assert(std::is_pointer_v<P>); return &(accessor(p)->*ptr); };                  \
@@ -370,7 +394,7 @@ namespace BindingGroupDSL
                 }                                                                                           \
                 else                                                                                        \
                 {                                                                                           \
-                    f.template operator()<IsUniform, M>(name, stageMask & stages, newAccessor, isBindless); \
+                    f.template operator()<IsUniform, M>(name, stageMask & stages, newAccessor, flags);      \
                 }                                                                                           \
             });                                                                                             \
         }                                                                                                   \
@@ -400,36 +424,49 @@ namespace BindingGroupDSL
         return (STAGES);                          \
     }())
 
-#define rtrc_define2(TYPE, NAME)         RTRC_DEFINE_IMPL(TYPE, NAME, ::Rtrc::RHI::ShaderStage::All, false)
-#define rtrc_define3(TYPE, NAME, STAGES) RTRC_DEFINE_IMPL(TYPE, NAME, RTRC_INLINE_STAGE_DECLERATION(STAGES), false)
+#define rtrc_define2(TYPE, NAME)         RTRC_DEFINE_IMPL(TYPE, NAME, ::Rtrc::RHI::ShaderStage::All, false, false)
+#define rtrc_define3(TYPE, NAME, STAGES) RTRC_DEFINE_IMPL(TYPE, NAME, RTRC_INLINE_STAGE_DECLERATION(STAGES), false, false)
 #define rtrc_define(...)                 RTRC_MACRO_OVERLOADING(rtrc_define, __VA_ARGS__)
 
-#define rtrc_bindless2(TYPE, NAME)         RTRC_DEFINE_IMPL(TYPE, NAME, ::Rtrc::RHI::ShaderStage::All, true)
-#define rtrc_bindless3(TYPE, NAME, STAGES) RTRC_DEFINE_IMPL(TYPE, NAME, RTRC_INLINE_STAGE_DECLERATION(STAGES), true)
-#define rtrc_bindless(...)                 RTRC_MACRO_OVERLOADING(rtrc_define, __VA_ARGS__)
+#define rtrc_bindless2(TYPE, NAME)         RTRC_DEFINE_IMPL(TYPE, NAME, ::Rtrc::RHI::ShaderStage::All, true, false)
+#define rtrc_bindless3(TYPE, NAME, STAGES) RTRC_DEFINE_IMPL(TYPE, NAME, RTRC_INLINE_STAGE_DECLERATION(STAGES), true, false)
+#define rtrc_bindless(...)                 RTRC_MACRO_OVERLOADING(rtrc_bindless, __VA_ARGS__)
 
-#define rtrc_uniform(TYPE, NAME)                                                                         \
-    RTRC_META_STRUCT_PRE_MEMBER(NAME)                                                                    \
-        f.template operator()<true>(&_rtrcSelf::NAME, #NAME, ::Rtrc::RHI::ShaderStage::All, false); \
-    RTRC_META_STRUCT_POST_MEMBER(NAME)                                                                   \
-    using _rtrcMemberType##NAME = TYPE;                                                                  \
+#define rtrc_bindless_variable_size_2(TYPE, NAME) \
+    RTRC_DEFINE_IMPL(TYPE, NAME, ::Rtrc::RHI::ShaderStages::All, true, true)
+#define rtrc_bindless_variable_size_3(TYPE, NAME, STAGES) \
+    RTRC_DEFINE_IMPL(TYPE, NAME, RTRC_INLINE_STAGE_DECLERATION(STAGES), true, true)
+// Can't be together with rtrc_uniform since binding with variable array size must be the last one in binding group
+#define rtrc_bindless_variable_size(...) RTRC_MACRO_OVERLOADING(rtrc_bindless_variable_size, __VA_ARGS__)
+
+#define rtrc_uniform(TYPE, NAME)                                        \
+    RTRC_META_STRUCT_PRE_MEMBER(NAME)                                   \
+        f.template operator()<true>(                                    \
+            &_rtrcSelf::NAME, #NAME, ::Rtrc::RHI::ShaderStage::All,     \
+            ::Rtrc::BindingGroupDSL::CreateBindingFlags(false, false)); \
+    RTRC_META_STRUCT_POST_MEMBER(NAME)                                  \
+    using _rtrcMemberType##NAME = TYPE;                                 \
     _rtrcMemberType##NAME NAME
 
-#define RTRC_DEFINE_IMPL(TYPE, NAME, STAGES, IS_BINDLESS)                           \
-    RTRC_META_STRUCT_PRE_MEMBER(NAME)                                               \
-        f.template operator()<false>(&_rtrcSelf::NAME, #NAME, STAGES, IS_BINDLESS); \
-    RTRC_META_STRUCT_POST_MEMBER(NAME)                                              \
-    using _rtrcMemberType##NAME = ::Rtrc::BindingGroupDSL::MemberProxy_##TYPE;      \
+#define RTRC_DEFINE_IMPL(TYPE, NAME, STAGES, IS_BINDLESS, VARIABLE_ARRAY_SIZE)              \
+    RTRC_META_STRUCT_PRE_MEMBER(NAME)                                                       \
+        f.template operator()<false>(                                                       \
+            &_rtrcSelf::NAME, #NAME, STAGES,                                                \
+            ::Rtrc::BindingGroupDSL::CreateBindingFlags(IS_BINDLESS, VARIABLE_ARRAY_SIZE)); \
+    RTRC_META_STRUCT_POST_MEMBER(NAME)                                                      \
+    using _rtrcMemberType##NAME = ::Rtrc::BindingGroupDSL::MemberProxy_##TYPE;              \
     _rtrcMemberType##NAME NAME
 
 #define rtrc_inline2(TYPE, NAME) RTRC_INLINE_IMPL(TYPE, NAME, ::Rtrc::RHI::ShaderStage::All)
 #define rtrc_inline3(TYPE, NAME, STAGES) RTRC_INLINE_IMPL(TYPE, NAME, RTRC_INLINE_STAGE_DECLERATION(STAGES))
 #define rtrc_inline(...) RTRC_MACRO_OVERLOADING(rtrc_inline, __VA_ARGS__)
 
-#define RTRC_INLINE_IMPL(TYPE, NAME, STAGES)                           \
-    RTRC_META_STRUCT_PRE_MEMBER(NAME)                                  \
-        f.template operator()<false>(&_rtrcSelf::NAME, #NAME, STAGES); \
-    RTRC_META_STRUCT_POST_MEMBER(NAME)                                 \
+#define RTRC_INLINE_IMPL(TYPE, NAME, STAGES)                            \
+    RTRC_META_STRUCT_PRE_MEMBER(NAME)                                   \
+        f.template operator()<false>(                                   \
+            &_rtrcSelf::NAME, #NAME, STAGES,                            \
+            ::Rtrc::BindingGroupDSL::CreateBindingFlags(false, false)); \
+    RTRC_META_STRUCT_POST_MEMBER(NAME)                                  \
     TYPE NAME
 
 template<BindingGroupDSL::RtrcGroupStruct T>
@@ -444,7 +481,7 @@ void ApplyBindingGroup(BindingGroup &group, const T &value)
     int index = 0;
     T::ForEachFlattenMember(
         [&]<bool IsUniform, typename M, typename A>
-        (const char *name, RHI::ShaderStageFlag stages, const A &accessor, bool isBindless)
+        (const char *name, RHI::ShaderStageFlag stages, const A &accessor, BindingGroupDSL::BindingFlags flags)
     {
         static_assert(!IsUniform);
         using MemberElement = typename BindingGroupDSL::MemberProxyTrait<M>::MemberProxyElement;
@@ -458,12 +495,13 @@ template<BindingGroupDSL::RtrcGroupStruct T>
 void ApplyBindingGroup(RHI::Device *device, ConstantBufferManagerInterface *cbMgr, BindingGroup &group, const T &value)
 {
     RHI::BindingGroupUpdateBatch batch;
-
     int index = 0;
     T::ForEachFlattenMember(
         [&]<bool IsUniform, typename M, typename A>
-        (const char *name, RHI::ShaderStageFlag stages, const A &accessor, bool isBindless)
+        (const char *name, RHI::ShaderStageFlag stages, const A &accessor, BindingGroupDSL::BindingFlags flags)
     {
+        assert(!flags.contains(BindingGroupDSL::BindingFlagBit::Bindless));
+        assert(!flags.contains(BindingGroupDSL::BindingFlagBit::VariableArraySize));
         if constexpr(!IsUniform)
         {
             using MemberElement = typename BindingGroupDSL::MemberProxyTrait<M>::MemberProxyElement;

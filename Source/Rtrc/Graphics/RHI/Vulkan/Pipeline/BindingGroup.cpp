@@ -7,15 +7,15 @@
 RTRC_RHI_VK_BEGIN
 
 VulkanBindingGroup::VulkanBindingGroup(
-    VkDevice device, const VulkanBindingGroupLayout *layout, VkDescriptorSet set)
-    : device_(device), layout_(layout), set_(set)
+    VkDevice device, const VulkanBindingGroupLayout *layout, VkDescriptorPool pool, VkDescriptorSet set)
+    : device_(device), layout_(layout), pool_(pool), set_(set)
 {
     
 }
 
 VulkanBindingGroup::~VulkanBindingGroup()
 {
-    layout_->_internalReleaseSet(set_);
+    layout_->_internalReleaseSet(pool_, set_);
 }
 
 const BindingGroupLayout *VulkanBindingGroup::GetLayout() const

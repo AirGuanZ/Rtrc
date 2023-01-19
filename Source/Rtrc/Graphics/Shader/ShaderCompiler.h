@@ -42,6 +42,10 @@ private:
         RHI::ShaderStageFlag    stages = {};
         std::string             templateParam;
         bool                    bindless = false;
+        bool                    variableArraySize = false;
+
+        // "[3]" or "[]"
+        std::string GetArraySpeficier() const;
     };
 
     struct ParsedBindingGroup
@@ -76,7 +80,7 @@ private:
 
     std::string MapFilename(std::string_view filename) const;
 
-    template<bool AllowStageSpecifier>
+    template<bool AllowStageSpecifier, bool IsBindless>
     ParsedBinding ParseBinding(ShaderTokenStream &tokens) const;
 
     void ParseInlineSampler(ShaderTokenStream &tokens, std::string &name, RHI::SamplerDesc &desc) const;

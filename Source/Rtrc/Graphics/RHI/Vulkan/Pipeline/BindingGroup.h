@@ -20,7 +20,8 @@ public:
     RTRC_RHI_BINDING_GROUP_COMMON
 #endif
 
-    VulkanBindingGroup(VkDevice device, const VulkanBindingGroupLayout *layout, VkDescriptorSet set);
+    VulkanBindingGroup(
+        VkDevice device, const VulkanBindingGroupLayout *layout, VkDescriptorPool pool, VkDescriptorSet set);
     ~VulkanBindingGroup() override;
 
     const BindingGroupLayout *GetLayout() const RTRC_RHI_OVERRIDE;
@@ -57,6 +58,7 @@ private:
 
     VkDevice device_;
     const VulkanBindingGroupLayout *layout_;
+    VkDescriptorPool pool_;
     VkDescriptorSet set_;
 };
 

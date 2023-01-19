@@ -73,11 +73,21 @@ namespace VkPhysicalDeviceDetail
         const bool customBorderColor = customBorderColorFeatures.customBorderColors &&
                                        customBorderColorFeatures.customBorderColorWithoutFormat;
 
-        const bool bindless = descriptorIndexingFeatures.descriptorBindingPartiallyBound &&
-                              descriptorIndexingFeatures.runtimeDescriptorArray &&
+        const bool bindless = descriptorIndexingFeatures.runtimeDescriptorArray &&
+                              descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing &&
+                              descriptorIndexingFeatures.shaderStorageImageArrayNonUniformIndexing &&
+                              descriptorIndexingFeatures.shaderStorageBufferArrayNonUniformIndexing &&
+                              descriptorIndexingFeatures.shaderUniformTexelBufferArrayNonUniformIndexing &&
+                              descriptorIndexingFeatures.shaderStorageTexelBufferArrayNonUniformIndexing &&
+                              descriptorIndexingFeatures.descriptorBindingPartiallyBound &&
+                              descriptorIndexingFeatures.descriptorBindingUpdateUnusedWhilePending &&
                               descriptorIndexingFeatures.descriptorBindingVariableDescriptorCount &&
                               descriptorIndexingFeatures.descriptorBindingUpdateUnusedWhilePending &&
-                              descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing;
+                              descriptorIndexingFeatures.descriptorBindingSampledImageUpdateAfterBind &&
+                              descriptorIndexingFeatures.descriptorBindingStorageImageUpdateAfterBind &&
+                              descriptorIndexingFeatures.descriptorBindingStorageBufferUpdateAfterBind &&
+                              descriptorIndexingFeatures.descriptorBindingUniformTexelBufferUpdateAfterBind &&
+                              descriptorIndexingFeatures.descriptorBindingStorageTexelBufferUpdateAfterBind;
 
         if(!customBorderColor ||
            !dynamicRenderingFeatures.dynamicRendering ||
@@ -177,11 +187,21 @@ VkPhysicalDeviceFeatures2* VulkanPhysicalDevice::GetRequiredFeatures(ObjectRelea
     auto bindlessFeature = arena.Create<VkPhysicalDeviceDescriptorIndexingFeatures>();
     std::memset(bindlessFeature, 0, sizeof(VkPhysicalDeviceDescriptorIndexingFeatures));
     bindlessFeature->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
-    bindlessFeature->descriptorBindingPartiallyBound = true;
     bindlessFeature->runtimeDescriptorArray = true;
+    bindlessFeature->shaderSampledImageArrayNonUniformIndexing = true;
+    bindlessFeature->shaderStorageImageArrayNonUniformIndexing = true;
+    bindlessFeature->shaderStorageBufferArrayNonUniformIndexing = true;
+    bindlessFeature->shaderUniformTexelBufferArrayNonUniformIndexing = true;
+    bindlessFeature->shaderStorageTexelBufferArrayNonUniformIndexing = true;
+    bindlessFeature->descriptorBindingPartiallyBound = true;
+    bindlessFeature->descriptorBindingUpdateUnusedWhilePending = true;
     bindlessFeature->descriptorBindingVariableDescriptorCount = true;
     bindlessFeature->descriptorBindingUpdateUnusedWhilePending = true;
-    bindlessFeature->shaderSampledImageArrayNonUniformIndexing = true;
+    bindlessFeature->descriptorBindingSampledImageUpdateAfterBind = true;
+    bindlessFeature->descriptorBindingStorageImageUpdateAfterBind = true;
+    bindlessFeature->descriptorBindingStorageBufferUpdateAfterBind = true;
+    bindlessFeature->descriptorBindingUniformTexelBufferUpdateAfterBind = true;
+    bindlessFeature->descriptorBindingStorageTexelBufferUpdateAfterBind = true;
 
     auto features2 = arena.Create<VkPhysicalDeviceFeatures2>();
     std::memset(features2, 0, sizeof(VkPhysicalDeviceFeatures2));

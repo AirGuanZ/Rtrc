@@ -142,6 +142,11 @@ std::vector<unsigned char> DXC::Compile(
         arguments.push_back(L"-O3");
     }
 
+    if(shaderInfo.bindless)
+    {
+        arguments.push_back(L"-fspv-extension=SPV_EXT_descriptor_indexing");
+    }
+
     if(preprocessOutput)
     {
         arguments.push_back(L"-P");
