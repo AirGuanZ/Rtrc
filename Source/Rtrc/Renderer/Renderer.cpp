@@ -316,6 +316,11 @@ void Renderer::DoRenderGBuffersPass(RG::PassContext &passContext, const RenderGB
         }
         cmd.BindMesh(*mesh);
 
+        if(auto pushConstantData = staticMesh->GetPushConstantData(); !pushConstantData.IsEmpty())
+        {
+            cmd.SetGraphicsPushConstants(pushConstantData);
+        }
+
         if(mesh->HasIndexBuffer())
         {
             cmd.DrawIndexed(mesh->GetIndexCount(), 1, 0, 0, 0);

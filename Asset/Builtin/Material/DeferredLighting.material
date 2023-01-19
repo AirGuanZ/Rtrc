@@ -66,6 +66,7 @@ float4 FSMain(VsToFs input) : SV_TARGET
     {
         float cosFactor = max(0, dot(gbuffer.normal, -Pass.directionalLight.direction));
         color = 0.01 + cosFactor * Pass.directionalLight.color * Pass.directionalLight.intensity;
+        color *= gbuffer.albedo;
     }
     color = Tonemap(color);
     color = pow(color, 1 / 2.2);

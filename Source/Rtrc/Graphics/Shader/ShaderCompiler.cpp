@@ -241,9 +241,10 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
         for(auto &binding : group.bindings)
         {
             BindingGroupLayout::BindingDesc rhiBindingDesc;
-            rhiBindingDesc.type = binding.type;
-            rhiBindingDesc.stages = binding.stages;
+            rhiBindingDesc.type      = binding.type;
+            rhiBindingDesc.stages    = binding.stages;
             rhiBindingDesc.arraySize = binding.arraySize;
+            rhiBindingDesc.bindless  = binding.bindless;
             rhiGroupLayoutDesc.bindings.push_back(rhiBindingDesc);
         }
 
@@ -290,12 +291,89 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
 
     // Macros
 
+    // Binding group transformation:
+    //
+    //      rtrc_define(Texture2D<float4>, TexA)
+    //      rtrc_group(GroupName)
+    //      {
+    //          rtrc_ref(TexA)
+    //          rtrc_define(Texture2D<float3>, TexB)
+    //          rtrc_uniform(float3, xyz)
+    //          rtrc_uniform(float3, w)
+    //      };
+    // ===>
+    //      _rtrc_resource_TexA
+    //      _rtrc_group_GroupName
+    //      {
+    //
+    //          _rtrc_resource_TexB;
+    //
+    //          
+    //      };
+    // where:
+    //      _rtrc_resource_TexA expands to:
+    //          [[vk::binding(0, 0)]] Texture2D<float4> TexA;
+    //      _rtrc_group_GroupName expands to:
+    //          [[vk::binding(1, 0)]] Texture2D<float3> TexB;
+    //          struct _rtrc_generated_cbuffer_struct_GroupName
+    //          {
+    //              float3 xyz;
+    //              float w;
+    //          };
+    //          [[vk::binding(2, 0)]] ConstantBuffer<_rtrc_generated_cbuffer_struct_GroupName> GroupName;
+    //          struct group_dummy_struct_GroupName
+    //      and _rtrc_resource_TexB expands to nothing
+
+    // Inline sampler transformation:
+    //
+    //      rtrc_sampler(SamplerA, filter = point, address = clamp)
+    //      rtrc_sampler(SamplerB, filter = linear, address_u = clamp, address_v = repeat)
+    //  ===>
+    //      _rtrc_sampler_SamplerA
+    //      _rtrc_sampler_SamplerB
+    //  ===>
+    //      static SamplerState SamplerA = _rtrc_generated_samplers[0];
+    //      static SamplerState SamplerB = _rtrc_generated_samplers[1];
+    //  where _rtrc_generated_samplers is defined in _rtrc_generated_shader_prefix, which is put at the shader begining:
+    //      [[vk::binding(0, x)]] SamplerState _rtrc_generated_samplers[2]; // x = last_binding_group_index + 1
+
+    // Push constant block transformation:
+    //
+    //      rtrc_push_constant(VS)
+    //      {
+    //      	float3 position;
+    //      };
+    //      rtrc_push_constant(FS)
+    //      {
+    //      	float3 albedo;
+    //      };
+    //      ===>
+    //      _rtrc_push_constant_0 // Note that blocker indices 0 and 1 are generated with builtin macro __COUNTER__
+    //      {
+    //      	float3 offset;
+    //      };
+    //      _rtrc_push_constant_1
+    //      {
+    //      	float3 albedo;
+    //      };
+    // where:
+    //      _rtrc_push_constant_0 expands to:
+    //          struct _rtrc_push_constant_struct
+    //          {
+    //          	[[vk::offset(0)]] float3 position;
+    //          	[[vk::offset(16)]] float3 albedo;
+    //          };
+    //          struct _rtrc_push_constant_dummy_struct_0
+    //      _rtrc_push_constant_1 expands to:
+    //          struct _rtrc_push_constant_dummy_struct_1
+
     Macros finalMacros = std::move(shaderInfo.macros);
-    finalMacros["rtrc_group(NAME)"] = "_rtrc_group_##NAME";
+    finalMacros["rtrc_group(NAME)"]             = "_rtrc_group_##NAME";
     finalMacros["rtrc_define(TYPE, NAME, ...)"] = "_rtrc_resource_##NAME";
-    finalMacros["rtrc_uniform(A, B)"] = "";
-    finalMacros["rtrc_sampler(NAME, ...)"] = "";
-    finalMacros["rtrc_ref(NAME, ...)"] = "";
+    finalMacros["rtrc_uniform(A, B)"]           = "";
+    finalMacros["rtrc_sampler(NAME, ...)"]      = "_rtrc_sampler_##NAME";
+    finalMacros["rtrc_ref(NAME, ...)"]          = "";
+    // rtrc_push_constant(...) is replaced with _rtrc_push_constant_impl(value of __COUNTER__, ...) in preprocessing
     finalMacros["_rtrc_push_constant_impl(NAME, ...)"] = "_rtrc_push_constant_##NAME";
 
     for(auto &group : bindings.groups)
@@ -330,8 +408,8 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
         if(!group.valuePropertyDefinitions.empty())
         {
             groupRight += fmt::format(
-                "struct _rtrcGeneratedStruct{} {{ {} }}; "
-                "[[vk::binding({}, {})]] ConstantBuffer<_rtrcGeneratedStruct{}> {};",
+                "struct _rtrc_generated_cbuffer_struct_{} {{ {} }}; "
+                "[[vk::binding({}, {})]] ConstantBuffer<_rtrc_generated_cbuffer_struct_{}> {};",
                 group.name, group.valuePropertyDefinitions, group.bindings.size(),
                 bindings.nameToGroupIndex.at(group.name), group.name, group.name);
         }
@@ -354,10 +432,10 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
         if(i == 0)
         {
             right = fmt::format(
-                "struct rtrc_push_constant_struct {{ {} }}; "
-                "[[vk::push_constant]] rtrc_push_constant_struct PushConstant;", pushConstantContent);
+                "struct _rtrc_push_constant_struct {{ {} }}; "
+                "[[vk::push_constant]] _rtrc_push_constant_struct PushConstant;", pushConstantContent);
         }
-        right += fmt::format("struct rtrc_push_constant_dummy_struct_{}", name);
+        right += fmt::format("struct _rtrc_push_constant_dummy_struct_{}", name);
         finalMacros.insert({ std::move(left), std::move(right) });
     }
 
@@ -365,14 +443,16 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     if(inlineSamplerGroupIndex >= 0)
     {
         generatedShaderPrefix += fmt::format(
-            "[[vk::binding(0, {})]] SamplerState _rtrcGeneratedSamplers[{}];",
+            "[[vk::binding(0, {})]] SamplerState _rtrc_generated_samplers[{}];",
             inlineSamplerGroupIndex, bindings.inlineSamplerDescs.size());
     }
-    finalMacros["_rtrcGeneratedPrefix"] = std::move(generatedShaderPrefix);
+    finalMacros["_rtrc_generated_shader_prefix"] += std::move(generatedShaderPrefix);
 
     for(auto &[name, slot] : bindings.inlineSamplerNameToDescIndex)
     {
-        finalMacros.insert({ name, fmt::format("_rtrcGeneratedSamplers[{}]", slot)});
+        std::string left = fmt::format("_rtrc_sampler_{}", name);
+        std::string right = fmt::format("static SamplerState {} = _rtrc_generated_samplers[{}];", name, slot);
+        finalMacros.insert({ std::move(left), std::move(right) });
     }
 
     const int setForUngroupedBindings = static_cast<int>(groupLayouts.size());
@@ -385,15 +465,14 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
             slot, setForUngroupedBindings,
             ShaderCompilerDetail::BindingTypeToTypeName(binding.type),
             binding.templateParam.empty() ? std::string{} : fmt::format("<{}>", binding.templateParam),
-            binding.name,
-            binding.arraySize ? fmt::format("[{}]", *binding.arraySize) : "");
+            binding.name, binding.arraySize ? fmt::format("[{}]", *binding.arraySize) : "");
         finalMacros.insert({ std::move(left), std::move(right) });
     }
 
     // Compile
 
     shaderInfo.macros = finalMacros;
-    shaderInfo.source = "_rtrcGeneratedPrefix" + shaderInfo.source;
+    shaderInfo.source = "_rtrc_generated_shader_prefix" + shaderInfo.source;
 
     std::vector<uint8_t> vsData, fsData, csData;
     Box<SPIRVReflection> vsRefl, fsRefl, csRefl;
@@ -522,9 +601,13 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
         shader->info_->bindingGroupForInlineSamplers_ = shader->info_->bindingGroupLayouts_.back()->CreateBindingGroup();
     }
 
-    shader->info_->builtinBindingGroupIndices_[EnumToInt(Shader::BuiltinBindingGroup::Pass)]     = shader->GetBindingGroupIndexByName("Pass");
-    shader->info_->builtinBindingGroupIndices_[EnumToInt(Shader::BuiltinBindingGroup::Material)] = shader->GetBindingGroupIndexByName("Material");
-    shader->info_->builtinBindingGroupIndices_[EnumToInt(Shader::BuiltinBindingGroup::Object)]   = shader->GetBindingGroupIndexByName("Object");
+    auto SetBuiltinBindingGroupIndex = [&](Shader::BuiltinBindingGroup group, std::string_view name)
+    {
+        shader->info_->builtinBindingGroupIndices_[EnumToInt(group)] = shader->GetBindingGroupIndexByName(name);
+    };
+    SetBuiltinBindingGroupIndex(Shader::BuiltinBindingGroup::Pass,     "Pass");
+    SetBuiltinBindingGroupIndex(Shader::BuiltinBindingGroup::Material, "Material");
+    SetBuiltinBindingGroupIndex(Shader::BuiltinBindingGroup::Object,   "Object");
 
     if(shader->CS_)
     {
@@ -808,6 +891,7 @@ ShaderCompiler::Bindings ShaderCompiler::CollectBindings(const std::string &sour
     using namespace ShaderCompilerDetail;
 
     constexpr std::string_view RESOURCE      = "rtrc_define";
+    constexpr std::string_view BINDLESS      = "rtrc_bindless";
     constexpr std::string_view GROUP         = "rtrc_group";
     constexpr std::string_view SAMPLER       = "rtrc_sampler";
     constexpr std::string_view PUSH_CONSTANT = "_rtrc_push_constant_impl";
@@ -831,10 +915,11 @@ ShaderCompiler::Bindings ShaderCompiler::CollectBindings(const std::string &sour
     while(true)
     {
         const size_t resourcePos     = FindKeyword(source, RESOURCE, keywordBeginPos);
+        const size_t bindlessPos     = FindKeyword(source, BINDLESS, keywordBeginPos);
         const size_t groupPos        = FindKeyword(source, GROUP, keywordBeginPos);
         const size_t samplerPos      = FindKeyword(source, SAMPLER, keywordBeginPos);
         const size_t pushConstantPos = FindKeyword(source, PUSH_CONSTANT, keywordBeginPos);
-        const size_t minPos = (std::min)({ resourcePos, groupPos, samplerPos, pushConstantPos });
+        const size_t minPos = (std::min)({ resourcePos, bindlessPos, groupPos, samplerPos, pushConstantPos });
 
         if(minPos == std::string::npos)
         {
@@ -857,6 +942,28 @@ ShaderCompiler::Bindings ShaderCompiler::CollectBindings(const std::string &sour
             continue;
         }
 
+        if(minPos == bindlessPos)
+        {
+            keywordBeginPos = bindlessPos + BINDLESS.size();
+            ShaderTokenStream tokens(source, keywordBeginPos);
+            tokens.ConsumeOrThrow("(");
+            ParsedBinding binding = ParseBinding<false>(tokens);
+            if(parsedBindingNames.contains(binding.name))
+            {
+                tokens.Throw(fmt::format("Binding {} is defined multiple times", binding.name));
+            }
+            if(!binding.arraySize.has_value())
+            {
+                tokens.Throw(fmt::format(
+                "Binding {} is declared with 'rtrc_bindless' but doesn't has an array size", binding.name));
+            }
+            binding.bindless = true;
+            parsedBindingNames.insert(binding.name);
+            ungroupedBindings.insert({ binding.name, binding });
+            tokens.ConsumeOrThrow(")");
+            continue;
+        }
+
         if(minPos == samplerPos)
         {
             keywordBeginPos = samplerPos + SAMPLER.size();
@@ -865,18 +972,15 @@ ShaderCompiler::Bindings ShaderCompiler::CollectBindings(const std::string &sour
             std::string name; RHI::SamplerDesc desc;
             ParseInlineSampler(tokens, name, desc);
             tokens.ConsumeOrThrow(")");
-
             if(auto it = inlineSamplerNameToDescIndex.find(name); it != inlineSamplerNameToDescIndex.end())
             {
                 throw Exception(fmt::format("Sampler {} is defined multiple times", name));
             }
-
             if(auto it = inlineSamplerDescToIndex.find(desc); it != inlineSamplerDescToIndex.end())
             {
                 inlineSamplerNameToDescIndex[name] = it->second;
                 continue;
             }
-
             const int newDescIndex = static_cast<int>(inlineSamplerDescs.size());
             inlineSamplerNameToDescIndex[name] = newDescIndex;
             inlineSamplerDescToIndex[desc] = newDescIndex;
@@ -922,14 +1026,39 @@ ShaderCompiler::Bindings ShaderCompiler::CollectBindings(const std::string &sour
                 tokens.ConsumeOrThrow("(");
                 if(RESOURCE_PROPERTIES.contains(tokens.GetCurrentToken()))
                 {
-                    currentGroup.bindings.push_back(ParseBinding<true>(tokens));
+                    auto &binding = currentGroup.bindings.emplace_back(ParseBinding<true>(tokens));
                     currentGroup.isRef.push_back(false);
-                    const std::string &bindingName = currentGroup.bindings.back().name;
-                    if(parsedBindingNames.contains(bindingName))
+                    if(parsedBindingNames.contains(binding.name))
                     {
-                        tokens.Throw(fmt::format("Resource {} is defined multiple times", bindingName));
+                        tokens.Throw(fmt::format("Resource {} is defined multiple times", binding.name));
                     }
-                    parsedBindingNames.insert(bindingName);
+                    parsedBindingNames.insert(binding.name);
+                }
+                else
+                {
+                    tokens.Throw(fmt::format("Unknown resource type: {}", tokens.GetCurrentToken()));
+                }
+                tokens.ConsumeOrThrow(")");
+            }
+            else if(tokens.GetCurrentToken() == BINDLESS)
+            {
+                tokens.Next();
+                tokens.ConsumeOrThrow("(");
+                if(RESOURCE_PROPERTIES.contains(tokens.GetCurrentToken()))
+                {
+                    auto &binding = currentGroup.bindings.emplace_back(ParseBinding<true>(tokens));
+                    currentGroup.isRef.push_back(false);
+                    if(parsedBindingNames.contains(binding.name))
+                    {
+                        tokens.Throw(fmt::format("Resource {} is defined multiple times", binding.name));
+                    }
+                    parsedBindingNames.insert(binding.name);
+                    if(!binding.arraySize.has_value())
+                    {
+                        tokens.Throw(fmt::format(
+                            "Binding {} is declared with 'rtrc_bindless' but doesn't has an array size", binding.name));
+                    }
+                    binding.bindless = true;
                 }
                 else
                 {
@@ -941,23 +1070,19 @@ ShaderCompiler::Bindings ShaderCompiler::CollectBindings(const std::string &sour
             {
                 tokens.Next();
                 tokens.ConsumeOrThrow("(");
-
                 if(!ShaderTokenStream::IsIdentifier(tokens.GetCurrentToken()))
                 {
                     tokens.Throw(fmt::format("Invalid binding name: {}", tokens.GetCurrentToken()));
                 }
-
                 auto it = ungroupedBindings.find(tokens.GetCurrentToken());
                 if(it == ungroupedBindings.end())
                 {
                     tokens.Throw(fmt::format("{} was not defined as a resource binding", tokens.GetCurrentToken()));
                 }
-
                 currentGroup.bindings.push_back(it->second);
                 currentGroup.isRef.push_back(true);
                 ungroupedBindings.erase(it);
                 tokens.Next();
-
                 if(tokens.GetCurrentToken() == ",")
                 {
                     tokens.Next();
@@ -967,7 +1092,6 @@ ShaderCompiler::Bindings ShaderCompiler::CollectBindings(const std::string &sour
                 {
                     currentGroup.bindings.back().stages = RHI::ShaderStage::All;
                 }
-
                 tokens.ConsumeOrThrow(")");
             }
             else if(tokens.GetCurrentToken() == "rtrc_uniform")

@@ -96,7 +96,7 @@ inline const RC<MaterialInstance> &StaticMesh::GetMaterial() const
 
 inline Span<unsigned char> StaticMesh::GetPushConstantData() const
 {
-    return *pushConstantData_;
+    return pushConstantData_ ? *pushConstantData_ : Span<unsigned char>();
 }
 
 RTRC_END

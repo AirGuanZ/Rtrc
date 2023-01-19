@@ -74,6 +74,10 @@ class Application : public Uncopyable
             auto mesh = MakeRC<StaticMesh>();
             mesh->SetMesh(cubeMesh);
             mesh->SetMaterial(matInst);
+
+            Vector4f albedo = { 0, 0, 255, 255 };
+            mesh->SetPushConstantData(albedo);
+
             mesh->UpdateWorldMatrixRecursively(true);
             scene_->AddMesh(std::move(mesh));
         }
@@ -82,7 +86,7 @@ class Application : public Uncopyable
             mainLight_ = MakeRC<Light>();
             mainLight_->SetType(Light::Type::Directional);
             mainLight_->GetDirectionalData().direction = Normalize(Vector3f(0.4, -1, 0.2));
-            mainLight_->SetColor(Vector3f(0, 1, 1));
+            mainLight_->SetColor(Vector3f(1));
             mainLight_->SetIntensity(1);
             scene_->AddLight(mainLight_);
         }

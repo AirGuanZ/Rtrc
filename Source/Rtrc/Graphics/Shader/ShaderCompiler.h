@@ -41,6 +41,7 @@ private:
         std::optional<uint32_t> arraySize;
         RHI::ShaderStageFlag    stages = {};
         std::string             templateParam;
+        bool                    bindless = false;
     };
 
     struct ParsedBindingGroup
