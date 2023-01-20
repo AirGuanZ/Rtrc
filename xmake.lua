@@ -16,6 +16,7 @@ add_rules("mode.debug", "mode.release")
 
 if is_mode("release") then
     add_rules("c++.unity_build", { batchsize = 16 })
+    set_policy("build.optimization.lto", true)
 end
 
 option("is_msvc")
@@ -27,10 +28,6 @@ set_targetdir("Build/Bin/"..(is_mode("debug") and "debug" or "release"))
 
 if is_mode("debug") then
     add_defines("DEBUG", "_DEBUG")
-end
-
-if is_mode("release") then
-    set_policy("build.optimization.lto", true)
 end
 
 if is_plat("windows") then
@@ -56,10 +53,10 @@ add_requires("mytbb", { configs = { debug = is_mode("debug") } })
 includes("External/dxc")
 add_requires("mydxc")
 
-add_requires("fmt 9.1.0", "stb 2021.09.10", "tinyexr v1.0.1")
+add_requires("stb 2021.09.10", "tinyexr v1.0.1")
 add_requires("vk-bootstrap v0.5", "spirv-reflect 1.2.189+1", "vulkan-memory-allocator v3.0.0")
 add_requires("catch2 3.1.0")
-add_requires("volk 1.3.231", { configs = { header_only = true } })
+add_requires("fmt 9.1.0", "volk 1.3.231", { configs = { header_only = true } })
 add_requires("spdlog v1.11.0")
 
 includes("External/tinyobjloader")

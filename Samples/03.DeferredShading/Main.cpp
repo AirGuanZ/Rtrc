@@ -1,5 +1,3 @@
-#include <iostream>
-
 #include <Rtrc/Rtrc.h>
 
 using namespace Rtrc;
