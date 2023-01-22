@@ -10,20 +10,9 @@ ResourceManager::ResourceManager(Device *device, bool debugMode)
     meshManager_.SetDevice(device);
 }
 
-void ResourceManager::AddFiles(const std::set<std::filesystem::path> &filenames)
-{
-    materialManager_.AddFiles(filenames);
-    meshManager_.AddFiles(filenames);
-}
-
 void ResourceManager::AddMaterialFiles(const std::set<std::filesystem::path> &filenames)
 {
     materialManager_.AddFiles(filenames);
-}
-
-void ResourceManager::AddMeshFiles(const std::set<std::filesystem::path> &filenames)
-{
-    meshManager_.AddFiles(filenames);
 }
 
 void ResourceManager::AddShaderIncludeDirectory(std::string_view dir)
@@ -51,7 +40,7 @@ RC<MaterialInstance> ResourceManager::CreateMaterialInstance(const std::string &
     return materialManager_.CreateMaterialInstance(name);
 }
 
-RC<Mesh> ResourceManager::GetMesh(const std::string &name, const MeshManager::Options &options)
+RC<Mesh> ResourceManager::GetMesh(std::string_view name, const MeshManager::Options &options)
 {
     return meshManager_.GetMesh(name, options);
 }

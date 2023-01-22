@@ -40,7 +40,7 @@ class Application : public Uncopyable
         imgui_ = MakeBox<ImGuiInstance>(*device_, window_);
 
         resources_ = MakeBox<ResourceManager>(device_.get());
-        resources_->AddFiles($rtrc_get_files("Asset/Builtin/*/*.*"));
+        resources_->AddMaterialFiles($rtrc_get_files("Asset/Builtin/*/*.*"));
         resources_->AddShaderIncludeDirectory("Asset");
         
         renderer_ = MakeBox<Renderer>(*device_, resources_->GetBuiltinResources());

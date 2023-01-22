@@ -682,13 +682,9 @@ Ptr<BindingGroupLayout> VulkanDevice::CreateBindingGroupLayout(const BindingGrou
         samplerOffset += binding.immutableSamplers.size();
     }
 
-    if(desc.variableArraySize)
-    {
-        assert(!desc.bindings.back().arraySize.has_value());
-        assert(desc.bindings.back().bindless);
-        descSetBindings.back().descriptorCount = 0;
-    }
-
+    assert(!desc.variableArraySize || desc.bindings.back().arraySize.has_value());
+    assert(!desc.variableArraySize || desc.bindings.back().bindless);
+    
     VkDescriptorSetLayoutCreateInfo createInfo = {
         .sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
         .bindingCount = static_cast<uint32_t>(descSetBindings.size()),

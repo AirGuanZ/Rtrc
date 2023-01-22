@@ -57,7 +57,7 @@ SlotVector<T>::SlotVector(size_t initialCapacity)
         freeSlots_.resize(initialCapacity);
         for(size_t i = 0; i < initialCapacity; ++i)
         {
-            freeSlots_[i] = i;
+            freeSlots_[i] = static_cast<int>(i);
         }
     }
 }

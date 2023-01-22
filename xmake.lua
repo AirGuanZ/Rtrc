@@ -118,3 +118,4 @@ end
 add_sample("01.TexturedQuad")
 add_sample("02.ComputeShader")
 add_sample("03.DeferredShading")
+add_sample("04.BindlessTexture")

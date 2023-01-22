@@ -23,13 +23,13 @@ void Run()
     auto device = Device::CreateGraphicsDevice(window);
 
     ResourceManager resourceManager(device.get());
-    resourceManager.AddFiles($rtrc_get_files("Asset/Sample/01.TexturedQuad/*.*"));
+    resourceManager.AddMaterialFiles($rtrc_get_files("Asset/Sample/01.TexturedQuad/*.*"));
 
     // Mesh
 
-    auto mesh = resourceManager.GetMesh("Quad");
+    auto mesh = resourceManager.GetMesh("Asset/Sample/01.TexturedQuad/Quad.obj");
 
-    // Pipelin
+    // Pipeline
 
     KeywordValueContext keywords;
     keywords.Set(RTRC_KEYWORD(DADADA), 1);

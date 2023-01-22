@@ -77,7 +77,14 @@ private:
         std::vector<std::string>               pushConstantRangeNames;
     };
 
-    template<bool AllowStageSpecifier, bool IsBindless>
+    enum class BindingCategory
+    {
+        Regular,
+        Bindless,
+        BindlessWithVariableSize
+    };
+
+    template<bool AllowStageSpecifier, BindingCategory Category>
     ParsedBinding ParseBinding(ShaderTokenStream &tokens) const;
 
     void ParseInlineSampler(ShaderTokenStream &tokens, std::string &name, RHI::SamplerDesc &desc) const;

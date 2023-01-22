@@ -183,44 +183,12 @@ void MeshManager::SetDevice(Device *device)
     device_ = device;
 }
 
-void MeshManager::AddFiles(const std::set<std::filesystem::path> &filenames)
+RC<Mesh> MeshManager::GetMesh(std::string_view name, const Options &options)
 {
-    for(auto &path : filenames)
+    const std::string filename = absolute(std::filesystem::path(name)).lexically_normal().string();
+    return meshCache_.GetOrCreate(std::make_pair(filename, options), [&]
     {
-        if(ToLower(path.extension().string()) != ".obj")
-        {
-            continue;
-        }
-
-        std::string meshName = path.stem().string();
-        std::string filename = absolute(path).lexically_normal().string();
-
-        if(auto it = meshNameToFilename_.find(meshName); it != meshNameToFilename_.end())
-        {
-            if(it->second != filename)
-            {
-                throw Exception(fmt::format(
-                "MeshManager::AddFiles: conflicting filenames",
-                    filename, it->second));
-            }
-        }
-        else
-        {
-            meshNameToFilename_.insert({ std::move(meshName), std::move(filename) });
-        }
-    }
-}
-
-RC<Mesh> MeshManager::GetMesh(const std::string &name, const Options &options)
-{
-    return meshCache_.GetOrCreate(std::make_pair(name, options), [&]
-    {
-        auto it = meshNameToFilename_.find(name);
-        if(it == meshNameToFilename_.end())
-        {
-            throw Exception(fmt::format("Unknown mesh name: {}", name));
-        }
-        return Load(device_, it->second, options);
+        return Load(device_, filename, options);
     });
 }
 

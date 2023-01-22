@@ -36,12 +36,12 @@ RC<BindingGroupLayout> BindingGroupManager::CreateBindingGroupLayout(const Bindi
         });
 }
 
-RC<BindingGroup> BindingGroupManager::CreateBindingGroup(RC<const BindingGroupLayout> groupLayout)
+RC<BindingGroup> BindingGroupManager::CreateBindingGroup(
+    RC<const BindingGroupLayout> groupLayout, int variableBindingCount)
 {
     auto ret = MakeRC<BindingGroup>();
-    ret->rhiGroup_ = device_->CreateBindingGroup(groupLayout->rhiLayout_);
+    ret->rhiGroup_ = device_->CreateBindingGroup(groupLayout->rhiLayout_, variableBindingCount);
     ret->manager_ = this;
-    ret->boundObjects_.resize(groupLayout->rhiLayout_->GetDesc().bindings.size());
     ret->layout_ = std::move(groupLayout);
     return ret;
 }

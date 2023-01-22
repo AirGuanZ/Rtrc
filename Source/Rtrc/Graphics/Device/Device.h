@@ -111,13 +111,13 @@ public:
     RC<BindingGroupLayout> CreateBindingGroupLayout(const BindingGroupLayout::Desc &desc);
 
     template<BindingGroupDSL::RtrcGroupStruct T>
-    RC<BindingGroup> CreateBindingGroup();
+    RC<BindingGroup> CreateBindingGroup(int variableBindingCount = 0);
     template<BindingGroupDSL::RtrcGroupStruct T>
-    RC<BindingGroup> CreateBindingGroup(const RC<BindingGroupLayout> &layoutHint);
+    RC<BindingGroup> CreateBindingGroup(const RC<BindingGroupLayout> &layoutHint, int variableBindingCount = 0);
     template<BindingGroupDSL::RtrcGroupStruct T>
-    RC<BindingGroup> CreateBindingGroup(const T &value);
+    RC<BindingGroup> CreateBindingGroup(const T &value, int variableBindingCount = 0);
     template<BindingGroupDSL::RtrcGroupStruct T>
-    RC<BindingGroup> CreateBindingGroup(const T &value, const RC<BindingGroupLayout> &layoutHint);
+    RC<BindingGroup> CreateBindingGroup(const T &value, const RC<BindingGroupLayout> &layoutHint, int variableBindingCount = 0);
 
     RC<BindingLayout> CreateBindingLayout(const BindingLayout::Desc &desc);
 
@@ -384,30 +384,30 @@ inline RC<BindingLayout> Device::CreateBindingLayout(const BindingLayout::Desc &
 }
 
 template<BindingGroupDSL::RtrcGroupStruct T>
-RC<BindingGroup> Device::CreateBindingGroup()
+RC<BindingGroup> Device::CreateBindingGroup(int variableBindingCount)
 {
-    return this->CreateBindingGroupLayout<T>()->CreateBindingGroup();
+    return this->CreateBindingGroupLayout<T>()->CreateBindingGroup(variableBindingCount);
 }
 
 template<BindingGroupDSL::RtrcGroupStruct T>
-RC<BindingGroup> Device::CreateBindingGroup(const RC<BindingGroupLayout> &layoutHint)
+RC<BindingGroup> Device::CreateBindingGroup(const RC<BindingGroupLayout> &layoutHint, int variableBindingCount)
 {
     assert(layoutHint == this->CreateBindingGroupLayout<T>());
-    return layoutHint->CreateBindingGroup();
+    return layoutHint->CreateBindingGroup(variableBindingCount);
 }
 
 template<BindingGroupDSL::RtrcGroupStruct T>
-RC<BindingGroup> Device::CreateBindingGroup(const T &value)
+RC<BindingGroup> Device::CreateBindingGroup(const T &value, int variableBindingCount)
 {
-    auto group = this->CreateBindingGroup<T>();
+    auto group = this->CreateBindingGroup<T>(variableBindingCount);
     Rtrc::ApplyBindingGroup(device_.Get(), dynamicBufferManager_.get(), group, value);
     return group;
 }
 
 template<BindingGroupDSL::RtrcGroupStruct T>
-RC<BindingGroup> Device::CreateBindingGroup(const T &value, const RC<BindingGroupLayout> &layoutHint)
+RC<BindingGroup> Device::CreateBindingGroup(const T &value, const RC<BindingGroupLayout> &layoutHint, int variableBindingCount)
 {
-    auto group = this->CreateBindingGroup<T>(layoutHint);
+    auto group = this->CreateBindingGroup<T>(layoutHint, variableBindingCount);
     Rtrc::ApplyBindingGroup(device_.Get(), dynamicBufferManager_.get(), group, value);
     return group;
 }

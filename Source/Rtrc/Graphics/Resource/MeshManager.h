@@ -28,10 +28,8 @@ public:
     MeshManager();
 
     void SetDevice(Device *device);
-
-    void AddFiles(const std::set<std::filesystem::path> &filenames);
-
-    RC<Mesh> GetMesh(const std::string &name, const Options &options = {});
+    
+    RC<Mesh> GetMesh(std::string_view name, const Options &options = {});
 
 private:
 
@@ -41,8 +39,7 @@ private:
         const Vector3f &nor);
 
     Device *device_;
-
-    std::map<std::string, std::string, std::less<>> meshNameToFilename_;
+    
     ObjectCache<std::pair<std::string, Options>, Mesh, true, true> meshCache_;
 };
 

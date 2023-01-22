@@ -11,13 +11,8 @@ class ResourceManager : public Uncopyable
 public:
 
     explicit ResourceManager(Device *device, bool debugMode = RTRC_DEBUG);
-
-    // .material, .shader -> Material
-    // .obj -> Mesh
-    void AddFiles(const std::set<std::filesystem::path> &filenames);
-
+    
     void AddMaterialFiles(const std::set<std::filesystem::path> &filenames);
-    void AddMeshFiles(const std::set<std::filesystem::path> &filenames);
 
     void AddShaderIncludeDirectory(std::string_view dir);
 
@@ -27,7 +22,7 @@ public:
 
     RC<MaterialInstance> CreateMaterialInstance(const std::string &name);
 
-    RC<Mesh> GetMesh(const std::string &name, const MeshManager::Options &options = {});
+    RC<Mesh> GetMesh(std::string_view name, const MeshManager::Options &options = {});
 
     const BuiltinResourceManager &GetBuiltinResources() const;
 

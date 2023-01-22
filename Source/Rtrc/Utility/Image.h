@@ -400,7 +400,7 @@ Image<T>::Image(const Image &other)
 
 template<typename T>
 Image<T>::Image(Image &&other) noexcept
-    : Image()
+    : width_(0), height_(0)
 {
     this->Swap(other);
 }

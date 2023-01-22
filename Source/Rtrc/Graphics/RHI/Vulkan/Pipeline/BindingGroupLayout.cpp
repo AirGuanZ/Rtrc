@@ -21,7 +21,10 @@ VulkanBindingGroupLayout::VulkanBindingGroupLayout(
         {
             if(poolSize.type == binding.descriptorType)
             {
-                poolSize.descriptorCount += binding.descriptorCount;
+                if(!(desc_.variableArraySize && &binding == &bindings_.back()))
+                {
+                    poolSize.descriptorCount += binding.descriptorCount;
+                }
                 found = true;
                 break;
             }

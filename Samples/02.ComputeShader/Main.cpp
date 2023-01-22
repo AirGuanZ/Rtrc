@@ -20,7 +20,7 @@ void Run()
     auto device = Device::CreateComputeDevice();
 
     ResourceManager resourceManager(device.get());
-    resourceManager.AddFiles($rtrc_get_files("Asset/Sample/02.ComputeShader/*.*"));
+    resourceManager.AddMaterialFiles($rtrc_get_files("Asset/Sample/02.ComputeShader/*.*"));
     
     KeywordValueContext keywords;
 

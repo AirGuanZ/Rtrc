@@ -12,5 +12,6 @@
 #include <Rtrc/Utility/File.h>
 #include <Rtrc/Utility/Image.h>
 #include <Rtrc/Utility/Malloc.h>
+#include <Rtrc/Utility/RangeSet.h>
 #include <Rtrc/Window/Input.h>
 #include <Rtrc/Window/Window.h>
