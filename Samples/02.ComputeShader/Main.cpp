@@ -18,14 +18,13 @@ rtrc_group(MainGroup)
 void Run()
 {
     auto device = Device::CreateComputeDevice();
-    
-    MaterialManager materialManager;
-    materialManager.SetDevice(device.get());
-    materialManager.SetRootDirectory("Asset/Sample/02.ComputeShader/");
 
+    ResourceManager resourceManager(device.get());
+    resourceManager.AddFiles($rtrc_get_files("Asset/Sample/02.ComputeShader/*.*"));
+    
     KeywordValueContext keywords;
 
-    auto material = materialManager.GetMaterial("ScaleImage");
+    auto material = resourceManager.GetMaterial("ScaleImage");
     auto matPass = material->GetPassByTag("Default");
     auto shader = matPass->GetShader(keywords);
     auto pipeline = shader->GetComputePipeline();

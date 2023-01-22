@@ -332,4 +332,9 @@ void DirectoryFilter::Apply(std::set<std::filesystem::path> &set, const ExcludeC
     }
 }
 
+void DirectoryFilter::Apply(std::set<std::filesystem::path> &set, const EmptyCommand &command)
+{
+    // do nothing
+}
+
 RTRC_END

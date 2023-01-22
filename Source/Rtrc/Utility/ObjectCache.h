@@ -30,13 +30,13 @@ namespace ObjectCacheDetail
     template<bool UseHashMap, typename Key, typename Value>
     struct ObjectCacheMap
     {
-        using Type = std::map<Key, Value>;
+        using Type = std::map<Key, Value, std::less<>>;
     };
 
     template<typename Key, typename Value>
     struct ObjectCacheMap<true, Key, Value>
     {
-        using Type = std::unordered_map<Key, Value, HashOperator<Key>>;
+        using Type = std::unordered_map<Key, Value, HashOperator<>>;
     };
 
     class ObjectCacheInterface : public Uncopyable
@@ -57,14 +57,17 @@ class InObjectCache : public Uncopyable
     template<typename Key, typename Value, bool ThreadSafe, bool HashMap>
     friend class ObjectCache;
 
-    ObjectCacheDetail::ObjectCacheInterface *cache_;
-    void *iterator_;
+    ObjectCacheDetail::ObjectCacheInterface *cache_ = nullptr;
+    void *iterator_ = nullptr;
 
 public:
 
     ~InObjectCache()
     {
-        cache_->_internalRelease(*this);
+        if(cache_)
+        {
+            cache_->_internalRelease(*this);
+        }
     }
 };
 

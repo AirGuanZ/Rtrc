@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Rtrc/Graphics/Device/DeviceSynchronizer.h>
+#include <Rtrc/Utility/ObjectCache.h>
 
 RTRC_BEGIN
 
@@ -41,7 +42,10 @@ namespace TextureImpl
 
 } // namespace TextureImpl
 
-class Texture : protected TextureImpl::TextureData, public Uncopyable, public std::enable_shared_from_this<Texture>
+class Texture :
+    protected TextureImpl::TextureData,
+    public std::enable_shared_from_this<Texture>,
+    public InObjectCache
 {
 public:
 
@@ -61,14 +65,20 @@ public:
     uint32_t GetArraySize() const;
     uint32_t GetMipmapLevelCount() const;
 
-    TextureSrv CreateSrv(RHI::TextureSrvFlag flags = 0); // non-array view for single-layer texture, array view for multi-layer texture
-    TextureSrv CreateSrv(uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, RHI::TextureSrvFlag flags = 0);                      // non-array view
+    // non-array view for single-layer texture, array view for multi-layer texture
+    TextureSrv CreateSrv(RHI::TextureSrvFlag flags = 0);
+    // non-array view
+    TextureSrv CreateSrv(uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, RHI::TextureSrvFlag flags = 0);
+    // array view
     TextureSrv CreateSrv(
-        uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, uint32_t layerCount, RHI::TextureSrvFlag flags = 0); // array view
-    
-    TextureUav CreateUav(); // non-array view for single-layer texture, array view for multi-layer texture
-    TextureUav CreateUav(uint32_t mipLevel, uint32_t arrayLayer);                      // non-array view
-    TextureUav CreateUav(uint32_t mipLevel, uint32_t arrayLayer, uint32_t layerCount); // array view
+        uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, uint32_t layerCount, RHI::TextureSrvFlag flags = 0);
+
+    // non-array view for single-layer texture, array view for multi-layer texture
+    TextureUav CreateUav();
+    // non-array view
+    TextureUav CreateUav(uint32_t mipLevel, uint32_t arrayLayer);
+    // array view
+    TextureUav CreateUav(uint32_t mipLevel, uint32_t arrayLayer, uint32_t layerCount);
 
     TextureRtv CreateRtv(uint32_t mipLevel = 0, uint32_t arrayLayer = 0);
     TextureDsv CreateDsv(uint32_t mipLevel = 0, uint32_t arrayLayer = 0);

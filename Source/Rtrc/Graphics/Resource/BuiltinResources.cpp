@@ -1,6 +1,7 @@
-#include <Rtrc/Graphics/Mesh/MeshLoader.h>
-#include <Rtrc/Renderer/BuiltinResources.h>
+#include <Rtrc/Graphics/Resource/BuiltinResources.h>
+#include <Rtrc/Graphics/Resource/MeshManager.h>
 #include <Rtrc/Renderer/Utility/FullscreenPrimitive.h>
+#include <Rtrc/Utility/DirectoryFilter.h>
 
 RTRC_BEGIN
 
@@ -9,8 +10,9 @@ BuiltinResourceManager::BuiltinResourceManager(Device &device)
 {
     materialManager_.SetDebugMode(RTRC_DEBUG);
     materialManager_.SetDevice(&device_);
-    materialManager_.SetRootDirectory("./Asset/Builtin/Material/");
-    
+    materialManager_.AddFiles($rtrc_get_files("Asset/Builtin/Material/*.*"));
+    materialManager_.AddIncludeDirectory("Asset/Builtin/Material");
+
     LoadBuiltinTextures();
     LoadBuiltinMeshes();
     LoadBuiltinMaterials();
@@ -57,12 +59,8 @@ void BuiltinResourceManager::LoadBuiltinTextures()
 
 void BuiltinResourceManager::LoadBuiltinMeshes()
 {
-    MeshLoader meshManager;
-    meshManager.SetCopyContext(&device_.GetCopyContext());
-    meshManager.SetRootDirectory("./Asset/Builtin/Mesh/");
-
 #define LOAD_BUILTIN_MESH(NAME) \
-    meshes_[EnumToInt(BuiltinMesh::NAME)] = ToRC(meshManager.LoadFromObjFile(#NAME ".obj"))
+    meshes_[EnumToInt(BuiltinMesh::NAME)] = ToRC(MeshManager::Load(&device_, "Asset/Builtin/Mesh/" #NAME ".obj", {}))
     LOAD_BUILTIN_MESH(Cube);
 #undef LOAD_BUILTIN_MESH
 }

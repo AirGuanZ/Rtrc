@@ -29,7 +29,7 @@ namespace DeferredRendererDetail
 
 } // namespace DeferredRendererDetail
 
-Renderer::Renderer(Device &device, BuiltinResourceManager &builtinResources)
+Renderer::Renderer(Device &device, const BuiltinResourceManager &builtinResources)
     : device_(device)
     , builtinResources_(builtinResources)
     , staticMeshConstantBufferBatch_(

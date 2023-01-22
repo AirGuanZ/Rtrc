@@ -130,12 +130,6 @@ void ShaderCompiler::SetDevice(Device *device)
     device_ = device;
 }
 
-void ShaderCompiler::SetRootDirectory(std::string_view rootDir)
-{
-    rootDir_ = std::filesystem::absolute(rootDir).lexically_normal();
-    includeDirs_.insert(rootDir_.string());
-}
-
 void ShaderCompiler::AddIncludeDirectory(std::string_view dir)
 {
     includeDirs_.insert(std::filesystem::absolute(dir).lexically_normal().string());
@@ -655,17 +649,6 @@ std::string ShaderCompiler::ParsedBinding::GetArraySpeficier() const
         return fmt::format("[{}]", arraySize.value());
     }
     return {};
-}
-
-std::string ShaderCompiler::MapFilename(std::string_view filename) const
-{
-    std::filesystem::path path = filename;
-    path = path.lexically_normal();
-    if(path.is_relative())
-    {
-        path = rootDir_ / path;
-    }
-    return absolute(path).lexically_normal().string();
 }
 
 template<bool AllowStageSpecifier, bool IsBindless>

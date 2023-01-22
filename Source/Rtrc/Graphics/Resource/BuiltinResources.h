@@ -1,8 +1,8 @@
 #pragma once
 
-#include <Rtrc/Graphics/Material/Material.h>
 #include <Rtrc/Graphics/Mesh/Mesh.h>
 #include <Rtrc/Graphics/Device/Device.h>
+#include <Rtrc/Graphics/Resource/MaterialManager.h>
 
 RTRC_BEGIN
 

@@ -22,29 +22,25 @@ void Run()
 
     auto device = Device::CreateGraphicsDevice(window);
 
+    ResourceManager resourceManager(device.get());
+    resourceManager.AddFiles($rtrc_get_files("Asset/Sample/01.TexturedQuad/*.*"));
+
     // Mesh
 
-    MeshLoader meshManager;
-    meshManager.SetCopyContext(&device->GetCopyContext());
-    meshManager.SetRootDirectory("Asset/Sample/01.TexturedQuad");
-    auto mesh = meshManager.LoadFromObjFile("Quad.obj");
+    auto mesh = resourceManager.GetMesh("Quad");
 
-    // Pipeline
-
-    MaterialManager materialManager;
-    materialManager.SetDevice(device.get());
-    materialManager.SetRootDirectory("Asset/Sample/01.TexturedQuad/");
+    // Pipelin
 
     KeywordValueContext keywords;
     keywords.Set(RTRC_KEYWORD(DADADA), 1);
 
-    auto material = materialManager.GetMaterial("Quad");
+    auto material = resourceManager.GetMaterial("Quad");
     auto matPass = material->GetPassByTag("Default");
     auto shader = matPass->GetShader(keywords);
 
     auto pipeline = device->CreateGraphicsPipeline({
         .shader = shader,
-        .meshLayout = mesh.GetLayout(),
+        .meshLayout = mesh->GetLayout(),
         .colorAttachmentFormats = { device->GetSwapchainImageDesc().format }
     });
 
@@ -117,7 +113,7 @@ void Run()
                 .clearValue   = ColorClearValue{ 0, 1, 1, 1 }
             });
             commandBuffer.BindGraphicsPipeline(pipeline);
-            commandBuffer.BindMesh(mesh);
+            commandBuffer.BindMesh(*mesh);
             matPassInst->BindGraphicsProperties(keywords, commandBuffer);
             commandBuffer.SetViewports(rt->GetViewport());
             commandBuffer.SetScissors(rt->GetScissor());

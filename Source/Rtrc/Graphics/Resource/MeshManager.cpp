@@ -1,43 +1,20 @@
-#include <Rtrc/Graphics/Mesh/MeshLoader.h>
+#include <Rtrc/Graphics/Device/Device.h>
+#include <Rtrc/Graphics/Resource/MeshManager.h>
 #include <Rtrc/Math/Frame.h>
 #include <Rtrc/Utility/MeshData.h>
+#include <Rtrc/Utility/String.h>
 
 RTRC_BEGIN
 
-namespace MeshLoaderDetail
+size_t MeshManager::Options::Hash() const
 {
-
-    Vector3f ComputeTangent(
-        const Vector3f &B_A, const Vector3f &C_A,
-        const Vector2f &b_a, const Vector2f &c_a,
-        const Vector3f &nor)
-    {
-        const float m00 = b_a.x, m01 = b_a.y;
-        const float m10 = c_a.x, m11 = c_a.y;
-        const float det = m00 * m11 - m01 * m10;
-        if(det == 0.0f)
-        {
-            return Frame::FromZ(nor).x;
-        }
-        const float invDet = 1 / det;
-        return Normalize(m11 * invDet * B_A - m01 * invDet * C_A);
-    }
-
-} // namespace MeshLoaderDetail
-
-void MeshLoader::SetCopyContext(CopyContext *copyContext)
-{
-    copyContext_ = copyContext;
+    return (generateTangentIfNotPresent ? 1 : 0) |
+           (noIndexBuffer ? 2 : 0);
 }
 
-void MeshLoader::SetRootDirectory(std::string_view rootDir)
+Mesh MeshManager::Load(Device *device, const std::string &filename, const Options &options)
 {
-    rootDir_ = std::filesystem::absolute(rootDir).lexically_normal();
-}
-
-Mesh MeshLoader::LoadFromObjFile(const std::string &filename, const Options &options)
-{
-    MeshData meshData = MeshData::LoadFromObjFile(MapFilename(filename));
+    MeshData meshData = MeshData::LoadFromObjFile(filename);
 
     // Remove index data when tangent vectors are required. Theoretically we only need to do this when
     // tangents of different faces don't match at the same vertex.
@@ -64,7 +41,7 @@ Mesh MeshLoader::LoadFromObjFile(const std::string &filename, const Options &opt
             const Vector2f tb = meshData.texCoordData[j + 1];
             const Vector2f tc = meshData.texCoordData[j + 2];
             const Vector3f nor = Normalize(na + nb + nc);
-            const Vector3f tangent = MeshLoaderDetail::ComputeTangent(b - a, c - a, tb - ta, tc - ta, nor);
+            const Vector3f tangent = ComputeTangent(b - a, c - a, tb - ta, tc - ta, nor);
             tangentData[j + 0] = tangent;
             tangentData[j + 1] = tangent;
             tangentData[j + 2] = tangent;
@@ -106,7 +83,7 @@ Mesh MeshLoader::LoadFromObjFile(const std::string &filename, const Options &opt
         }
         meshBuilder.SetVertexCount(static_cast<uint32_t>(vertexData.size()));
 
-        auto vertexBuffer = copyContext_->CreateBuffer(
+        auto vertexBuffer = device->GetCopyContext().CreateBuffer(
             RHI::BufferDesc{
                 sizeof(Vertex) * vertexData.size(),
                 RHI::BufferUsage::VertexBuffer,
@@ -138,7 +115,7 @@ Mesh MeshLoader::LoadFromObjFile(const std::string &filename, const Options &opt
         }
         meshBuilder.SetVertexCount(static_cast<uint32_t>(vertexData.size()));
         
-        auto vertexBuffer = copyContext_->CreateBuffer(
+        auto vertexBuffer = device->GetCopyContext().CreateBuffer(
             RHI::BufferDesc{
                 sizeof(Vertex) * vertexData.size(),
                 RHI::BufferUsage::VertexBuffer,
@@ -169,7 +146,7 @@ Mesh MeshLoader::LoadFromObjFile(const std::string &filename, const Options &opt
             {
                 uint16IndexData[i] = static_cast<uint16_t>(meshData.indexData[i]);
             }
-            indexBuffer = copyContext_->CreateBuffer(
+            indexBuffer = device->GetCopyContext().CreateBuffer(
                 RHI::BufferDesc{
                     sizeof(uint16_t) * uint16IndexData.size(),
                     RHI::BufferUsage::IndexBuffer,
@@ -179,7 +156,7 @@ Mesh MeshLoader::LoadFromObjFile(const std::string &filename, const Options &opt
         }
         else
         {
-            indexBuffer = copyContext_->CreateBuffer(
+            indexBuffer = device->GetCopyContext().CreateBuffer(
                 RHI::BufferDesc{
                     sizeof(uint32_t) * meshData.indexData.size(),
                     RHI::BufferUsage::IndexBuffer,
@@ -195,15 +172,84 @@ Mesh MeshLoader::LoadFromObjFile(const std::string &filename, const Options &opt
     return meshBuilder.CreateMesh();
 }
 
-std::string MeshLoader::MapFilename(std::string_view filename) const
+MeshManager::MeshManager()
+    : device_(nullptr)
 {
-    std::filesystem::path path = filename;
-    path = path.lexically_normal();
-    if(path.is_relative())
+    
+}
+
+void MeshManager::SetDevice(Device *device)
+{
+    device_ = device;
+}
+
+void MeshManager::AddFiles(const std::set<std::filesystem::path> &filenames)
+{
+    for(auto &path : filenames)
     {
-        path = rootDir_ / path;
+        if(ToLower(path.extension().string()) != ".obj")
+        {
+            continue;
+        }
+
+        std::string meshName = path.stem().string();
+        std::string filename = absolute(path).lexically_normal().string();
+
+        if(auto it = meshNameToFilename_.find(meshName); it != meshNameToFilename_.end())
+        {
+            if(it->second != filename)
+            {
+                throw Exception(fmt::format(
+                "MeshManager::AddFiles: conflicting filenames",
+                    filename, it->second));
+            }
+        }
+        else
+        {
+            meshNameToFilename_.insert({ std::move(meshName), std::move(filename) });
+        }
     }
-    return absolute(path).lexically_normal().string();
+}
+
+RC<Mesh> MeshManager::GetMesh(const std::string &name, const Options &options)
+{
+    return meshCache_.GetOrCreate(std::make_pair(name, options), [&]
+    {
+        auto it = meshNameToFilename_.find(name);
+        if(it == meshNameToFilename_.end())
+        {
+            throw Exception(fmt::format("Unknown mesh name: {}", name));
+        }
+        return Load(device_, it->second, options);
+    });
+}
+
+Vector3f MeshManager::ComputeTangent(
+    const Vector3f &B_A, const Vector3f &C_A, const Vector2f &b_a, const Vector2f &c_a, const Vector3f &nor)
+{
+    const float m00 = b_a.x, m01 = b_a.y;
+    const float m10 = c_a.x, m11 = c_a.y;
+    const float det = m00 * m11 - m01 * m10;
+    if(det == 0.0f)
+    {
+        return Frame::FromZ(nor).x;
+    }
+    const float invDet = 1 / det;
+    return Normalize(m11 * invDet * B_A - m01 * invDet * C_A);
+}
+
+bool operator<(
+    const std::pair<std::string, MeshManager::Options> &lhs,
+    const std::pair<std::string_view, MeshManager::Options> &rhs)
+{
+    return std::make_pair(std::string_view(lhs.first), lhs.second) < rhs;
+}
+
+bool operator<(
+    const std::pair<std::string_view, MeshManager::Options> &lhs,
+    const std::pair<std::string, MeshManager::Options> &rhs)
+{
+    return lhs < std::make_pair(std::string_view(rhs.first), rhs.second);
 }
 
 RTRC_END

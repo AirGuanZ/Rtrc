@@ -10,13 +10,9 @@ class Application : public Uncopyable
     Box<Device>       device_;
     Box<RG::Executer> executer_;
 
-    Box<ImGuiInstance> imgui_;
-
-    Box<MaterialManager> materials_;
-    Box<MeshLoader>      meshes_;
-
-    Box<BuiltinResourceManager> builtinResources_;
-    Box<Renderer> renderer_;
+    Box<ImGuiInstance>   imgui_;
+    Box<ResourceManager> resources_;
+    Box<Renderer>        renderer_;
 
     RC<Light> mainLight_;
     Box<Scene> scene_;
@@ -43,16 +39,11 @@ class Application : public Uncopyable
 
         imgui_ = MakeBox<ImGuiInstance>(*device_, window_);
 
-        materials_ = MakeBox<MaterialManager>();
-        materials_->SetDevice(device_.get());
-        materials_->SetRootDirectory("Asset");
-
-        meshes_ = MakeBox<MeshLoader>();
-        meshes_->SetCopyContext(&device_->GetCopyContext());
-        meshes_->SetRootDirectory("Asset");
-
-        builtinResources_ = MakeBox<BuiltinResourceManager>(*device_);
-        renderer_ = MakeBox<Renderer>(*device_, *builtinResources_);
+        resources_ = MakeBox<ResourceManager>(device_.get());
+        resources_->AddFiles($rtrc_get_files("Asset/Builtin/*/*.*"));
+        resources_->AddShaderIncludeDirectory("Asset");
+        
+        renderer_ = MakeBox<Renderer>(*device_, resources_->GetBuiltinResources());
 
         scene_ = MakeBox<Scene>();
         camera_ = MakeBox<Camera>();
@@ -61,12 +52,12 @@ class Application : public Uncopyable
         camera_->CalculateDerivedData();
         cameraController_.SetCamera(*camera_);
 
-        atmosphere_ = MakeBox<AtmosphereRenderer>(*builtinResources_);
+        atmosphere_ = MakeBox<AtmosphereRenderer>(resources_->GetBuiltinResources());
         atmosphere_->SetYOffset(2 * 1000);
 
         {
-            auto cubeMesh = builtinResources_->GetBuiltinMesh(BuiltinMesh::Cube);
-            auto matInst = materials_->CreateMaterialInstance("Builtin/Surface/Diffuse");
+            auto cubeMesh = resources_->GetBuiltinResources().GetBuiltinMesh(BuiltinMesh::Cube);
+            auto matInst = resources_->CreateMaterialInstance("Builtin/Surface/Diffuse");
             matInst->Set("Albedo", device_->CreateColorTexture2D(0, 255, 255, 255));
             
             auto mesh = MakeRC<StaticMesh>();

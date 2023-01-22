@@ -4,6 +4,7 @@
 #include <set>
 
 #include <Rtrc/Utility/Span.h>
+#include <Rtrc/Utility/MacroForEach.h>
 #include <Rtrc/Utility/Variant.h>
 
 RTRC_BEGIN
@@ -11,14 +12,18 @@ RTRC_BEGIN
 namespace DirectoryFilter
 {
 
+    struct EmptyCommand   { };
     struct IncludeCommand { std::string range; };
     struct ExcludeCommand { std::string range; };
 
-    inline IncludeCommand operator+(IncludeCommand cmd) { return std::move(cmd); }
+    inline IncludeCommand operator+(IncludeCommand cmd) { return cmd; }
     inline ExcludeCommand operator-(IncludeCommand cmd) { return ExcludeCommand{ std::move(cmd.range) }; }
 
     template<typename T>
-    concept Command = std::is_same_v<T, IncludeCommand> || std::is_same_v<T, ExcludeCommand>;
+    concept Command = std::is_same_v<T, IncludeCommand>
+                   || std::is_same_v<T, ExcludeCommand>
+                   || std::is_same_v<T, EmptyCommand>
+                   || requires (T x) { std::string(x); };
 
     using CommandVariant = Variant<IncludeCommand, ExcludeCommand>;
 
@@ -32,13 +37,21 @@ namespace DirectoryFilter
 
     void Apply(std::set<std::filesystem::path> &set, const IncludeCommand &command);
     void Apply(std::set<std::filesystem::path> &set, const ExcludeCommand &command);
+    void Apply(std::set<std::filesystem::path> &set, const EmptyCommand   &command);
+
+    template<typename T> requires requires (T x) { std::string(x); }
+    void Apply(std::set<std::filesystem::path> &set, T &&command)
+    {
+        Apply(set, Include(std::string(std::forward<T>(command))));
+    }
 
 } // namespace DirectoryFilter
 
-#define RTRC_FILTER_FILES(...)                                    \
+#define $rtrc_get_files(...)                                      \
     ([&]                                                          \
     {                                                             \
-        auto Files = ::Rtrc::DirectoryFilter::Include;            \
+        auto add    = ::Rtrc::DirectoryFilter::Include;           \
+        auto remove = ::Rtrc::DirectoryFilter::Exclude;           \
         return ::Rtrc::DirectoryFilter::FilterFiles(__VA_ARGS__); \
     }())
 

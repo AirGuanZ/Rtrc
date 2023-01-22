@@ -2,7 +2,7 @@
 
 #include <Rtrc/Graphics/Pipeline/MaterialPassToGraphicsPipeline.h>
 #include <Rtrc/Graphics/RenderGraph/Graph.h>
-#include <Rtrc/Renderer/BuiltinResources.h>
+#include <Rtrc/Graphics/Resource/BuiltinResources.h>
 #include <Rtrc/Renderer/Camera/Camera.h>
 #include <Rtrc/Renderer/Scene/Scene.h>
 #include <Rtrc/Renderer/Utility/PerObjectConstantBufferUtility.h>
@@ -40,7 +40,7 @@ public:
         RG::TextureResource *skyLut;
     };
 
-    Renderer(Device &device, BuiltinResourceManager &builtinResources);
+    Renderer(Device &device, const BuiltinResourceManager &builtinResources);
 
     RenderGraphInterface AddToRenderGraph(
         const Parameters    &parameters,
@@ -76,7 +76,7 @@ private:
     // Persistent
 
     Device &device_;
-    BuiltinResourceManager &builtinResources_;
+    const BuiltinResourceManager &builtinResources_;
 
     MaterialPassToGraphicsPipeline renderGBuffersPipelines_;
     

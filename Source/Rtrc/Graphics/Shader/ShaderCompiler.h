@@ -24,7 +24,6 @@ public:
     };
 
     void SetDevice(Device *device);
-    void SetRootDirectory(std::string_view rootDir);
     void AddIncludeDirectory(std::string_view dir);
 
     RC<Shader> Compile(
@@ -77,8 +76,6 @@ private:
         std::vector<std::string>               pushConstantRangeContents;
         std::vector<std::string>               pushConstantRangeNames;
     };
-
-    std::string MapFilename(std::string_view filename) const;
 
     template<bool AllowStageSpecifier, bool IsBindless>
     ParsedBinding ParseBinding(ShaderTokenStream &tokens) const;

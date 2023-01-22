@@ -2,13 +2,14 @@
 
 #include <Rtrc/Graphics/Mesh/MeshLayout.h>
 #include <Rtrc/Graphics/Device/Buffer.h>
+#include <Rtrc/Utility/ObjectCache.h>
 
 RTRC_BEGIN
 
 class CommandBuffer;
 class DynamicBuffer;
 
-class Mesh : public Uncopyable
+class Mesh : public InObjectCache
 {
 public:
 

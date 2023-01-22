@@ -3,7 +3,7 @@
 #include <random>
 
 #include <Rtrc/Graphics/Device/Device.h>
-#include <Rtrc/Renderer/BuiltinResources.h>
+#include <Rtrc/Graphics/Resource/BuiltinResources.h>
 #include <Rtrc/Renderer/Camera/Camera.h>
 
 RTRC_BEGIN

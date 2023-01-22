@@ -39,7 +39,7 @@ namespace SharedObjectPoolDetail
     {
     protected:
 
-        std::unordered_map<Key, std::weak_ptr<Value>, HashOperator<Key>> keyToValue_;
+        std::unordered_map<Key, std::weak_ptr<Value>, HashOperator<>> keyToValue_;
     };
 
 } // namespace SharedObjectPoolDetail

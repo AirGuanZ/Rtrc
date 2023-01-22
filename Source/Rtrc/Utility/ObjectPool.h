@@ -29,7 +29,7 @@ namespace ObjectPoolDetail
     template<typename Key, typename Value>
     struct Map<true, Key, Value>
     {
-        using Type = std::unordered_multimap<Key, Value, HashOperator<Key>>;
+        using Type = std::unordered_multimap<Key, Value, HashOperator<>>;
     };
 
 } // namespace ObjectPoolDetail
