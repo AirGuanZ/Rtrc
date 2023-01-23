@@ -249,7 +249,7 @@ private:
     std::thread::id threadID_;
 #endif
 
-    // Temporal data
+    // Temporary data
 
     RC<GraphicsPipeline> currentGraphicsPipeline_;
     RC<ComputePipeline> currentComputePipeline_;

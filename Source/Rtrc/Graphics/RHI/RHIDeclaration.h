@@ -150,14 +150,30 @@ enum class IndexBufferFormat
 
 enum class ShaderStage : uint8_t
 {
-    VertexShader   = 0b0001,
-    FragmentShader = 0b0010,
-    ComputeShader  = 0b0100,
+    VertexShader   = 1u << 0,
+    FragmentShader = 1u << 1,
+    ComputeShader  = 1u << 2,
 
-    VS = VertexShader,
-    FS = FragmentShader,
-    CS = ComputeShader,
-    All = VS | FS | CS
+    RT_RayGenShader        = 1u << 3,
+    RT_MissShader          = 1u << 4,
+
+    RT_ClosestHitShader    = 1u << 5,
+    RT_IntersectionShader  = 1u << 6,
+    RT_AnyHitShader        = 1u << 7,
+
+    VS  = VertexShader,
+    FS  = FragmentShader,
+    CS  = ComputeShader,
+
+    RT_RGS = RT_RayGenShader,
+    RT_CHS = RT_ClosestHitShader,
+    RT_MS  = RT_MissShader,
+    RT_IS  = RT_IntersectionShader,
+    RT_AS  = RT_AnyHitShader,
+
+    AllGraphics = VS | FS,
+    AllRT       = RT_RGS | RT_CHS | RT_MS | RT_IS | RT_AS,
+    All         = AllGraphics | AllRT | CS
 };
 
 RTRC_DEFINE_ENUM_FLAGS(ShaderStage)

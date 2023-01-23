@@ -180,16 +180,24 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
         }
     }
 
-    // Shader type
+    // Shader category
 
     const bool hasVS = !source.vsEntry.empty();
     const bool hasFS = !source.fsEntry.empty();
     const bool hasCS = !source.csEntry.empty();
-    const bool isGraphicsShader = hasVS && hasFS && !hasCS;
-    const bool isComputeShader = !hasVS && !hasFS && hasCS;
-    if(!isGraphicsShader && !isComputeShader)
+
+    Shader::Category category;
+    if(hasVS && hasFS && !hasCS)
     {
-        throw Exception("Invalid shader type. Must be (VS & FS) or (CS)");
+        category = Shader::Category::Graphics;
+    }
+    else if(!hasVS && !hasFS && hasCS)
+    {
+        category = Shader::Category::Compute;
+    }
+    else
+    {
+        throw Exception("Invalid shader category. Must be (VS & FS) or (CS)");
     }
 
     // Parse bindings
@@ -202,21 +210,21 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
         hasParsedBindings = true;
     };
 
-    if(!hasParsedBindings && !source.vsEntry.empty())
+    if(!hasParsedBindings && hasVS)
     {
         shaderInfo.entryPoint = source.vsEntry;
         std::string preprocessed;
         dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_VS_6_0, debug, &preprocessed);
         parseBindings(preprocessed);
     }
-    if(!hasParsedBindings && !source.fsEntry.empty())
+    if(!hasParsedBindings && hasFS)
     {
         shaderInfo.entryPoint = source.fsEntry;
         std::string preprocessed;
         dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_FS_6_0, debug, &preprocessed);
         parseBindings(preprocessed);
     }
-    if(!hasParsedBindings && !source.csEntry.empty())
+    if(!hasParsedBindings && hasCS)
     {
         shaderInfo.entryPoint = source.csEntry;
         std::string preprocessed;
@@ -494,19 +502,19 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
 
     std::vector<uint8_t> vsData, fsData, csData;
     Box<SPIRVReflection> vsRefl, fsRefl, csRefl;
-    if(!source.vsEntry.empty())
+    if(hasVS)
     {
         shaderInfo.entryPoint = source.vsEntry;
         vsData = dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_VS_6_0, debug, nullptr);
         vsRefl = MakeBox<SPIRVReflection>(vsData, source.vsEntry);
     }
-    if(!source.fsEntry.empty())
+    if(hasFS)
     {
         shaderInfo.entryPoint = source.fsEntry;
         fsData = dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_FS_6_0, debug, nullptr);
         fsRefl = MakeBox<SPIRVReflection>(fsData, source.fsEntry);
     }
-    if(!source.csEntry.empty())
+    if(hasCS)
     {
         shaderInfo.entryPoint = source.csEntry;
         csData = dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_CS_6_0, debug, nullptr);
@@ -537,20 +545,21 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
 
     auto shader = MakeRC<Shader>();
     shader->info_ = MakeRC<ShaderInfo>();
-    if(!vsData.empty())
+    shader->category_ = category;
+    if(hasVS)
     {
-        shader->VS_ = device_->GetRawDevice()->CreateShader(
+        shader->rawShaders_[Shader::VS_INDEX] = device_->GetRawDevice()->CreateShader(
             vsData.data(), vsData.size(), source.vsEntry, RHI::ShaderStage::VertexShader);
         shader->info_->VSInput_ = vsRefl->GetInputVariables();
     }
-    if(!fsData.empty())
+    if(hasFS)
     {
-        shader->FS_ = device_->GetRawDevice()->CreateShader(
+        shader->rawShaders_[Shader::FS_INDEX] = device_->GetRawDevice()->CreateShader(
             fsData.data(), fsData.size(), source.fsEntry, RHI::ShaderStage::FragmentShader);
     }
-    if(!csData.empty())
+    if(hasCS)
     {
-        shader->CS_ = device_->GetRawDevice()->CreateShader(
+        shader->rawShaders_[Shader::CS_INDEX] = device_->GetRawDevice()->CreateShader(
             csData.data(), csData.size(), source.csEntry, RHI::ShaderStage::ComputeShader);
     }
 
@@ -576,15 +585,15 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
 #endif
         }
     };
-    if(vsRefl)
+    if(hasVS)
     {
         MergeCBuffers(*vsRefl);
     }
-    if(fsRefl)
+    if(hasFS)
     {
         MergeCBuffers(*fsRefl);
     }
-    if(csRefl)
+    if(hasCS)
     {
         MergeCBuffers(*csRefl);
     }
@@ -627,7 +636,7 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     SetBuiltinBindingGroupIndex(Shader::BuiltinBindingGroup::Material, "Material");
     SetBuiltinBindingGroupIndex(Shader::BuiltinBindingGroup::Object,   "Object");
 
-    if(shader->CS_)
+    if(hasCS)
     {
         shader->info_->computeShaderThreadGroupSize_ = csRefl->GetComputeShaderThreadGroupSize();
         shader->computePipeline_ = device_->CreateComputePipeline(shader);

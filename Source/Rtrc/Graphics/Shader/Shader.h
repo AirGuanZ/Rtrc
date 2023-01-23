@@ -130,9 +130,29 @@ private:
     
     friend class ShaderCompiler;
 
-    RHI::RawShaderPtr VS_;
-    RHI::RawShaderPtr FS_;
-    RHI::RawShaderPtr CS_;
+    enum class Category
+    {
+        Graphics,
+        Compute,
+        RayTracingCommon,
+        RayTracingHit
+    };
+
+    static constexpr int VS_INDEX = 0;
+    static constexpr int FS_INDEX = 1;
+
+    static constexpr int CS_INDEX = 0;
+
+    static constexpr int RT_RGS_INDEX = 0;
+    static constexpr int RT_MS_INDEX  = 1;
+
+    static constexpr int RT_CHS_INDEX = 0;
+    static constexpr int RT_IS_INDEX  = 1;
+    static constexpr int RT_AHS_INDEX = 2;
+
+    Category category_;
+    RHI::RawShaderPtr rawShaders_[3];
+    
     RC<ShaderInfo> info_;
     RC<ComputePipeline> computePipeline_;
 };
@@ -221,11 +241,20 @@ inline const ShaderBindingNameMap &ShaderInfo::GetBindingNameMap() const
 
 inline const RHI::RawShaderPtr &Shader::GetRawShader(RHI::ShaderStage stage) const
 {
+    using enum RHI::ShaderStage;
+    using enum Category;
     switch(stage)
     {
-    case RHI::ShaderStage::VertexShader:   return VS_;
-    case RHI::ShaderStage::FragmentShader: return FS_;
-    case RHI::ShaderStage::ComputeShader:  return CS_;
+    case VertexShader:          assert(category_ == Graphics);         return rawShaders_[VS_INDEX];
+    case FragmentShader:        assert(category_ == Graphics);         return rawShaders_[FS_INDEX];
+    case ComputeShader:         assert(category_ == Compute);          return rawShaders_[CS_INDEX];
+    case RT_RayGenShader:       assert(category_ == RayTracingCommon); return rawShaders_[RT_RGS_INDEX];
+    case RT_MissShader:         assert(category_ == RayTracingCommon); return rawShaders_[RT_MS_INDEX];
+    case RT_ClosestHitShader:   assert(category_ == RayTracingHit);    return rawShaders_[RT_CHS_INDEX];
+    case RT_IntersectionShader: assert(category_ == RayTracingHit);    return rawShaders_[RT_IS_INDEX];
+    case RT_AnyHitShader:       assert(category_ == RayTracingHit);    return rawShaders_[RT_AHS_INDEX];
+    default:
+        break;
     }
     Unreachable();
 }

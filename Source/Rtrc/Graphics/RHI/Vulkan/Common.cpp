@@ -69,12 +69,20 @@ VkFormat TranslateTexelFormat(Format format)
 
 VkShaderStageFlagBits TranslateShaderType(ShaderStage type)
 {
+    using enum ShaderStage;
     switch(type)
     {
-    case ShaderStage::VertexShader:   return VK_SHADER_STAGE_VERTEX_BIT;
-    case ShaderStage::FragmentShader: return VK_SHADER_STAGE_FRAGMENT_BIT;
-    case ShaderStage::ComputeShader:  return VK_SHADER_STAGE_COMPUTE_BIT;
-    case ShaderStage::All:
+    case VertexShader:          return VK_SHADER_STAGE_VERTEX_BIT;
+    case FragmentShader:        return VK_SHADER_STAGE_FRAGMENT_BIT;
+    case ComputeShader:         return VK_SHADER_STAGE_COMPUTE_BIT;
+    case RT_RayGenShader:       return VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+    case RT_ClosestHitShader:   return VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+    case RT_MissShader:         return VK_SHADER_STAGE_MISS_BIT_KHR;
+    case RT_IntersectionShader: return VK_SHADER_STAGE_INTERSECTION_BIT_KHR;
+    case RT_AnyHitShader:       return VK_SHADER_STAGE_ANY_HIT_BIT_KHR;
+    case AllGraphics:
+    case AllRT:
+    case All:
         throw Exception(fmt::format("Single shader stage expected. Actual: {0:x}", static_cast<uint32_t>(type)));
     }
     Unreachable();
@@ -83,9 +91,14 @@ VkShaderStageFlagBits TranslateShaderType(ShaderStage type)
 VkShaderStageFlags TranslateShaderStageFlag(EnumFlags<ShaderStage> flags)
 {
     VkShaderStageFlags result = 0;
-    result |= flags.contains(ShaderStage::VertexShader) ? VK_SHADER_STAGE_VERTEX_BIT : 0;
-    result |= flags.contains(ShaderStage::FragmentShader) ? VK_SHADER_STAGE_FRAGMENT_BIT : 0;
-    result |= flags.contains(ShaderStage::ComputeShader) ? VK_SHADER_STAGE_COMPUTE_BIT : 0;
+    result |= flags.contains(ShaderStage::VertexShader)          ? VK_SHADER_STAGE_VERTEX_BIT           : 0;
+    result |= flags.contains(ShaderStage::FragmentShader)        ? VK_SHADER_STAGE_FRAGMENT_BIT         : 0;
+    result |= flags.contains(ShaderStage::ComputeShader)         ? VK_SHADER_STAGE_COMPUTE_BIT          : 0;
+    result |= flags.contains(ShaderStage::RT_RayGenShader)       ? VK_SHADER_STAGE_RAYGEN_BIT_KHR       : 0;
+    result |= flags.contains(ShaderStage::RT_ClosestHitShader)   ? VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR  : 0;
+    result |= flags.contains(ShaderStage::RT_MissShader)         ? VK_SHADER_STAGE_MISS_BIT_KHR         : 0;
+    result |= flags.contains(ShaderStage::RT_IntersectionShader) ? VK_SHADER_STAGE_INTERSECTION_BIT_KHR : 0;
+    result |= flags.contains(ShaderStage::RT_AnyHitShader)       ? VK_SHADER_STAGE_ANY_HIT_BIT_KHR      : 0;
     return result;
 }
 

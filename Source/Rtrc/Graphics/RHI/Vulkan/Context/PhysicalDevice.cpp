@@ -114,6 +114,7 @@ namespace VkPhysicalDeviceDetail
             result += 2000;
         }
         result += properties.limits.maxImageDimension2D;
+        LogInfo("Rate physical device: {}, score = {}", properties.deviceName, result);
         return result;
     }
 
