@@ -339,7 +339,7 @@ namespace BindingGroupDSL
             {
                 BindingGroupLayout::BindingDesc binding;
                 binding.type = RHI::BindingType::ConstantBuffer;
-                binding.stages = RHI::ShaderStage::All;
+                binding.stages = T::_rtrcGroupDefaultStages;
                 desc.bindings.push_back(binding);
             }
             return desc;
@@ -363,14 +363,17 @@ namespace BindingGroupDSL
 
 } // namespace BindingGroupDSL
 
-#define rtrc_group1(NAME) rtrc_group2(NAME, NAME)
-#define rtrc_group2(NAME, NAME_STR)                                                                         \
+#define rtrc_group1(NAME) rtrc_group2(NAME, ::Rtrc::RHI::ShaderStage::All)
+#define rtrc_group2(NAME, DEFAULT_STAGES) RTRC_GROUP_IMPL(NAME, RTRC_INLINE_STAGE_DECLERATION(DEFAULT_STAGES))
+
+#define RTRC_GROUP_IMPL(NAME, DEFAULT_STAGES)                                                               \
     struct NAME;                                                                                            \
     struct _rtrcGroupBase##NAME                                                                             \
     {                                                                                                       \
         using _rtrcSelf = NAME;                                                                             \
         struct _rtrcGroupTypeFlag{};                                                                        \
         static ::Rtrc::StructDetail::Sizer<1> _rtrcMemberCounter(...);                                      \
+        static constexpr auto _rtrcGroupDefaultStages = (DEFAULT_STAGES);                                   \
         template<typename F>                                                                                \
         static constexpr void ForEachMember(const F &f)                                                     \
         {                                                                                                   \
@@ -398,7 +401,6 @@ namespace BindingGroupDSL
                 }                                                                                           \
             });                                                                                             \
         }                                                                                                   \
-        static constexpr std::string GroupName = #NAME_STR;                                                 \
         using float2   = ::Rtrc::Vector2f;                                                                  \
         using float3   = ::Rtrc::Vector3f;                                                                  \
         using float4   = ::Rtrc::Vector4f;                                                                  \
@@ -415,25 +417,34 @@ namespace BindingGroupDSL
 
 #define rtrc_group(...) RTRC_MACRO_OVERLOADING(rtrc_group, __VA_ARGS__)
 
-#define RTRC_INLINE_STAGE_DECLERATION(STAGES)     \
-    ([]{                                          \
-        using ::Rtrc::RHI::ShaderStage::VS;       \
-        using ::Rtrc::RHI::ShaderStage::FS;       \
-        using ::Rtrc::RHI::ShaderStage::CS;       \
-        using ::Rtrc::RHI::ShaderStage::All;      \
-        return (STAGES);                          \
+#define RTRC_INLINE_STAGE_DECLERATION(STAGES)                            \
+    ([]{                                                                 \
+        using ::Rtrc::RHI::ShaderStage::VS;                              \
+        using ::Rtrc::RHI::ShaderStage::FS;                              \
+        using ::Rtrc::RHI::ShaderStage::CS;                              \
+        using ::Rtrc::RHI::ShaderStage::RT_RGS;                          \
+        using ::Rtrc::RHI::ShaderStage::RT_MS;                           \
+        using ::Rtrc::RHI::ShaderStage::RT_CHS;                          \
+        using ::Rtrc::RHI::ShaderStage::RT_IS;                           \
+        using ::Rtrc::RHI::ShaderStage::RT_AHS;                          \
+        constexpr auto Graphics = ::Rtrc::RHI::ShaderStage::AllGraphics; \
+        constexpr auto RTCommon = ::Rtrc::RHI::ShaderStage::AllRTCommon; \
+        constexpr auto RTHit    = ::Rtrc::RHI::ShaderStage::AllRTHit;    \
+        constexpr auto RT       = ::Rtrc::RHI::ShaderStage::AllRT;       \
+        using ::Rtrc::RHI::ShaderStage::All;                             \
+        return (STAGES);                                                 \
     }())
 
-#define rtrc_define2(TYPE, NAME)         RTRC_DEFINE_IMPL(TYPE, NAME, ::Rtrc::RHI::ShaderStage::All, false, false)
+#define rtrc_define2(TYPE, NAME)         RTRC_DEFINE_IMPL(TYPE, NAME, _rtrcGroupDefaultStages, false, false)
 #define rtrc_define3(TYPE, NAME, STAGES) RTRC_DEFINE_IMPL(TYPE, NAME, RTRC_INLINE_STAGE_DECLERATION(STAGES), false, false)
 #define rtrc_define(...)                 RTRC_MACRO_OVERLOADING(rtrc_define, __VA_ARGS__)
 
-#define rtrc_bindless2(TYPE, NAME)         RTRC_DEFINE_IMPL(TYPE, NAME, ::Rtrc::RHI::ShaderStage::All, true, false)
+#define rtrc_bindless2(TYPE, NAME)         RTRC_DEFINE_IMPL(TYPE, NAME, _rtrcGroupDefaultStages, true, false)
 #define rtrc_bindless3(TYPE, NAME, STAGES) RTRC_DEFINE_IMPL(TYPE, NAME, RTRC_INLINE_STAGE_DECLERATION(STAGES), true, false)
 #define rtrc_bindless(...)                 RTRC_MACRO_OVERLOADING(rtrc_bindless, __VA_ARGS__)
 
 #define rtrc_bindless_variable_size_2(TYPE, NAME) \
-    RTRC_DEFINE_IMPL(TYPE, NAME, ::Rtrc::RHI::ShaderStages::All, true, true)
+    RTRC_DEFINE_IMPL(TYPE, NAME, _rtrcGroupDefaultStages, true, true)
 #define rtrc_bindless_variable_size_3(TYPE, NAME, STAGES) \
     RTRC_DEFINE_IMPL(TYPE, NAME, RTRC_INLINE_STAGE_DECLERATION(STAGES), true, true)
 // Can't be together with rtrc_uniform since binding with variable array size must be the last one in binding group
@@ -442,7 +453,7 @@ namespace BindingGroupDSL
 #define rtrc_uniform(TYPE, NAME)                                        \
     RTRC_META_STRUCT_PRE_MEMBER(NAME)                                   \
         f.template operator()<true>(                                    \
-            &_rtrcSelf::NAME, #NAME, ::Rtrc::RHI::ShaderStage::All,     \
+            &_rtrcSelf::NAME, #NAME, _rtrcGroupDefaultStages,           \
             ::Rtrc::BindingGroupDSL::CreateBindingFlags(false, false)); \
     RTRC_META_STRUCT_POST_MEMBER(NAME)                                  \
     using _rtrcMemberType##NAME = TYPE;                                 \
@@ -457,7 +468,7 @@ namespace BindingGroupDSL
     using _rtrcMemberType##NAME = ::Rtrc::BindingGroupDSL::MemberProxy_##TYPE;              \
     _rtrcMemberType##NAME NAME
 
-#define rtrc_inline2(TYPE, NAME) RTRC_INLINE_IMPL(TYPE, NAME, ::Rtrc::RHI::ShaderStage::All)
+#define rtrc_inline2(TYPE, NAME) RTRC_INLINE_IMPL(TYPE, NAME, _rtrcGroupDefaultStages)
 #define rtrc_inline3(TYPE, NAME, STAGES) RTRC_INLINE_IMPL(TYPE, NAME, RTRC_INLINE_STAGE_DECLERATION(STAGES))
 #define rtrc_inline(...) RTRC_MACRO_OVERLOADING(rtrc_inline, __VA_ARGS__)
 

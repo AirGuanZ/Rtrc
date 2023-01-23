@@ -18,9 +18,14 @@ public:
         std::string filename;
         std::string source;
 
-        std::string vsEntry;
-        std::string fsEntry;
-        std::string csEntry;
+        std::string vertexEntry;
+        std::string fragmentEntry;
+        std::string computeEntry;
+        std::string raygenEntry;
+        std::string missEntry;
+        std::string closestHitEntry;
+        std::string intersectionEntry;
+        std::string anyHitEntry;
     };
 
     void SetDevice(Device *device);
@@ -53,6 +58,7 @@ private:
         std::string valuePropertyDefinitions;
         std::vector<ParsedBinding> bindings;
         std::vector<bool>          isRef;
+        RHI::ShaderStageFlag       defaultStages;
     };
 
     struct Bindings
@@ -85,15 +91,15 @@ private:
     };
 
     template<bool AllowStageSpecifier, BindingCategory Category>
-    ParsedBinding ParseBinding(ShaderTokenStream &tokens) const;
+    ParsedBinding ParseBinding(ShaderTokenStream &tokens, RHI::ShaderStageFlag groupDefaultStages) const;
 
     void ParseInlineSampler(ShaderTokenStream &tokens, std::string &name, RHI::SamplerDesc &desc) const;
 
     void ParsePushConstantRange(
         ShaderTokenStream &tokens, std::string &name, std::string &content,
-        Shader::PushConstantRange &range, uint32_t &nextOffset) const;
+        Shader::PushConstantRange &range, uint32_t &nextOffset, Shader::Category category) const;
 
-    Bindings CollectBindings(const std::string &source) const;
+    Bindings CollectBindings(const std::string &source, Shader::Category category) const;
 
     Device *device_ = nullptr;
     std::filesystem::path rootDir_;

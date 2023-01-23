@@ -18,6 +18,14 @@ class ShaderInfo : public Uncopyable
 {
 public:
 
+    enum class Category
+    {
+        Graphics,
+        Compute,
+        RayTracingCommon,
+        RayTracingHit
+    };
+
     enum class BuiltinBindingGroup
     {
         Pass,
@@ -29,6 +37,8 @@ public:
     using PushConstantRange = RHI::PushConstantRange;
 
     virtual ~ShaderInfo() = default;
+
+    Category GetCategory() const;
 
     const RC<BindingLayout> &GetBindingLayout() const;
 
@@ -67,6 +77,8 @@ private:
 
     friend class ShaderCompiler;
 
+    Category category_;
+
     std::vector<ShaderIOVar>          VSInput_;
     std::vector<ShaderConstantBuffer> constantBuffers_;
 
@@ -89,9 +101,11 @@ class Shader : public Uncopyable, public WithUniqueObjectID
 {
 public:
 
+    using Category = ShaderInfo::Category;
     using BuiltinBindingGroup = ShaderInfo::BuiltinBindingGroup;
     using PushConstantRange = ShaderInfo::PushConstantRange;
 
+    Category GetCategory() const;
     const RHI::RawShaderPtr &GetRawShader(RHI::ShaderStage stage) const;
 
     const RC<ShaderInfo> &GetInfo() const;
@@ -130,14 +144,6 @@ private:
     
     friend class ShaderCompiler;
 
-    enum class Category
-    {
-        Graphics,
-        Compute,
-        RayTracingCommon,
-        RayTracingHit
-    };
-
     static constexpr int VS_INDEX = 0;
     static constexpr int FS_INDEX = 1;
 
@@ -150,12 +156,16 @@ private:
     static constexpr int RT_IS_INDEX  = 1;
     static constexpr int RT_AHS_INDEX = 2;
 
-    Category category_;
     RHI::RawShaderPtr rawShaders_[3];
     
     RC<ShaderInfo> info_;
     RC<ComputePipeline> computePipeline_;
 };
+
+inline ShaderInfo::Category ShaderInfo::GetCategory() const
+{
+    return category_;
+}
 
 inline const RC<BindingLayout> &ShaderInfo::GetBindingLayout() const
 {
@@ -239,20 +249,25 @@ inline const ShaderBindingNameMap &ShaderInfo::GetBindingNameMap() const
     return bindingNameMap_;
 }
 
+inline Shader::Category Shader::GetCategory() const
+{
+    return info_->GetCategory();
+}
+
 inline const RHI::RawShaderPtr &Shader::GetRawShader(RHI::ShaderStage stage) const
 {
     using enum RHI::ShaderStage;
     using enum Category;
     switch(stage)
     {
-    case VertexShader:          assert(category_ == Graphics);         return rawShaders_[VS_INDEX];
-    case FragmentShader:        assert(category_ == Graphics);         return rawShaders_[FS_INDEX];
-    case ComputeShader:         assert(category_ == Compute);          return rawShaders_[CS_INDEX];
-    case RT_RayGenShader:       assert(category_ == RayTracingCommon); return rawShaders_[RT_RGS_INDEX];
-    case RT_MissShader:         assert(category_ == RayTracingCommon); return rawShaders_[RT_MS_INDEX];
-    case RT_ClosestHitShader:   assert(category_ == RayTracingHit);    return rawShaders_[RT_CHS_INDEX];
-    case RT_IntersectionShader: assert(category_ == RayTracingHit);    return rawShaders_[RT_IS_INDEX];
-    case RT_AnyHitShader:       assert(category_ == RayTracingHit);    return rawShaders_[RT_AHS_INDEX];
+    case VertexShader:          assert(GetCategory() == Graphics);         return rawShaders_[VS_INDEX];
+    case FragmentShader:        assert(GetCategory() == Graphics);         return rawShaders_[FS_INDEX];
+    case ComputeShader:         assert(GetCategory() == Compute);          return rawShaders_[CS_INDEX];
+    case RT_RayGenShader:       assert(GetCategory() == RayTracingCommon); return rawShaders_[RT_RGS_INDEX];
+    case RT_MissShader:         assert(GetCategory() == RayTracingCommon); return rawShaders_[RT_MS_INDEX];
+    case RT_ClosestHitShader:   assert(GetCategory() == RayTracingHit);    return rawShaders_[RT_CHS_INDEX];
+    case RT_IntersectionShader: assert(GetCategory() == RayTracingHit);    return rawShaders_[RT_IS_INDEX];
+    case RT_AnyHitShader:       assert(GetCategory() == RayTracingHit);    return rawShaders_[RT_AHS_INDEX];
     default:
         break;
     }

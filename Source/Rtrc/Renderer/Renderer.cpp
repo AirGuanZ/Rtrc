@@ -9,12 +9,12 @@ RTRC_BEGIN
 namespace DeferredRendererDetail
 {
 
-    rtrc_group(GBuffer_Pass, Pass)
+    rtrc_group(GBuffer_Pass)
     {
         rtrc_uniform(CameraConstantBuffer, Camera);
     };
 
-    rtrc_group(DeferredLighting_Pass, Pass)
+    rtrc_group(DeferredLighting_Pass, FS)
     {
         rtrc_define(Texture2D, gbufferA,     FS);
         rtrc_define(Texture2D, gbufferB,     FS);

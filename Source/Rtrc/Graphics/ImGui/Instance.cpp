@@ -233,8 +233,8 @@ ImGuiInstance::ImGuiInstance(Device &device, Window &window)
     const ShaderCompiler::ShaderSource source =
     {
         .source = ImGuiDetail::SHADER_SOURCE,
-        .vsEntry = "VSMain",
-        .fsEntry = "FSMain"
+        .vertexEntry = "VSMain",
+        .fragmentEntry = "FSMain"
     };
     data_->shader = shaderCompiler.Compile(source, {}, RTRC_DEBUG);
     data_->cbufferBindingGroupLayout = data_->shader->GetBindingGroupLayoutByName("CBuffer");

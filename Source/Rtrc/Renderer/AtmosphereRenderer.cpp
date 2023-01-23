@@ -6,14 +6,14 @@ RTRC_BEGIN
 namespace AtmosphereDetail
 {
 
-    rtrc_group(TransmittanceLutPass, Pass)
+    rtrc_group(TransmittanceLutPass)
     {
         rtrc_define(RWTexture2D,           TransmittanceTextureRW);
         rtrc_uniform(int2,                 outputResolution);
         rtrc_uniform(AtmosphereProperties, atmosphere);
     };
 
-    rtrc_group(MultiScatterLutPass, Pass)
+    rtrc_group(MultiScatterLutPass)
     {
         rtrc_define(RWTexture2D,           MultiScatterTextureRW);
         rtrc_define(StructuredBuffer,      RawDirSamples);
@@ -25,7 +25,7 @@ namespace AtmosphereDetail
         rtrc_uniform(float3,               terrainAlbedo);
     };
 
-    rtrc_group(SkyLutPass, Pass)
+    rtrc_group(SkyLutPass)
     {
         rtrc_define(RWTexture2D,           SkyLutTextureRW);
         rtrc_define(Texture2D,             SkyHistoryLutTexture);

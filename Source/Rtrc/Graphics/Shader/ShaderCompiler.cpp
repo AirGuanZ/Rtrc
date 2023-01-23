@@ -105,6 +105,34 @@ namespace ShaderCompilerDetail
             {
                 stages |= RHI::ShaderStage::CS;
             }
+            else if(tokens.GetCurrentToken() == "RT_RGS")
+            {
+                stages |= RHI::ShaderStage::RT_RGS;
+            }
+            else if(tokens.GetCurrentToken() == "RT_MS")
+            {
+                stages |= RHI::ShaderStage::RT_MS;
+            }
+            else if(tokens.GetCurrentToken() == "RT_CHS")
+            {
+                stages |= RHI::ShaderStage::RT_CHS;
+            }
+            else if(tokens.GetCurrentToken() == "RT_IS")
+            {
+                stages |= RHI::ShaderStage::RT_IS;
+            }
+            else if(tokens.GetCurrentToken() == "RT_AHS")
+            {
+                stages |= RHI::ShaderStage::RT_AHS;
+            }
+            else if(tokens.GetCurrentToken() == "Graphics")
+            {
+                stages |= RHI::ShaderStage::AllGraphics;
+            }
+            else if(tokens.GetCurrentToken() == "RT" || tokens.GetCurrentToken() == "RayTracing")
+            {
+                stages |= RHI::ShaderStage::AllRT;
+            }
             else if(tokens.GetCurrentToken() == "All")
             {
                 stages |= RHI::ShaderStage::All;
@@ -119,6 +147,19 @@ namespace ShaderCompilerDetail
                 break;
             }
             tokens.Next();
+        }
+        return stages;
+    }
+
+    RHI::ShaderStageFlag ShaderCategoryToStages(Shader::Category category)
+    {
+        RHI::ShaderStageFlag stages = RHI::ShaderStage::All;
+        switch(category)
+        {
+        case Shader::Category::Graphics:         stages = RHI::ShaderStage::AllGraphics; break;
+        case Shader::Category::Compute:          stages = RHI::ShaderStage::CS;          break;
+        case Shader::Category::RayTracingCommon: stages = RHI::ShaderStage::AllRTCommon; break;
+        case Shader::Category::RayTracingHit:    stages = RHI::ShaderStage::AllRTHit;    break;
         }
         return stages;
     }
@@ -182,9 +223,9 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
 
     // Shader category
 
-    const bool hasVS = !source.vsEntry.empty();
-    const bool hasFS = !source.fsEntry.empty();
-    const bool hasCS = !source.csEntry.empty();
+    const bool hasVS = !source.vertexEntry.empty();
+    const bool hasFS = !source.fragmentEntry.empty();
+    const bool hasCS = !source.computeEntry.empty();
 
     Shader::Category category;
     if(hasVS && hasFS && !hasCS)
@@ -206,27 +247,27 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     auto parseBindings = [&](const std::string &src)
     {
         assert(!hasParsedBindings);
-        bindings = CollectBindings(src);
+        bindings = CollectBindings(src, category);
         hasParsedBindings = true;
     };
 
     if(!hasParsedBindings && hasVS)
     {
-        shaderInfo.entryPoint = source.vsEntry;
+        shaderInfo.entryPoint = source.vertexEntry;
         std::string preprocessed;
         dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_VS_6_0, debug, &preprocessed);
         parseBindings(preprocessed);
     }
     if(!hasParsedBindings && hasFS)
     {
-        shaderInfo.entryPoint = source.fsEntry;
+        shaderInfo.entryPoint = source.fragmentEntry;
         std::string preprocessed;
         dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_FS_6_0, debug, &preprocessed);
         parseBindings(preprocessed);
     }
     if(!hasParsedBindings && hasCS)
     {
-        shaderInfo.entryPoint = source.csEntry;
+        shaderInfo.entryPoint = source.computeEntry;
         std::string preprocessed;
         dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_CS_6_0, debug, &preprocessed);
         parseBindings(preprocessed);
@@ -273,7 +314,7 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
             rhiGroupLayoutDesc.bindings.push_back({ BindingGroupLayout::BindingDesc
             {
                 .type = RHI::BindingType::ConstantBuffer,
-                .stages = RHI::ShaderStage::All
+                .stages = group.defaultStages
             }});
             bindingNameToSlots[group.name] = { static_cast<int>(groupIndex), static_cast<int>(group.bindings.size()) };
         }
@@ -300,7 +341,7 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
         groupLayoutDesc.bindings.push_back(BindingGroupLayout::BindingDesc
             {
                 .type = RHI::BindingType::Sampler,
-                .stages = RHI::ShaderStage::All,
+                .stages = ShaderCompilerDetail::ShaderCategoryToStages(category),
                 .arraySize = static_cast<uint32_t>(bindings.inlineSamplerDescs.size()),
                 .immutableSamplers = std::move(samplers)
             });
@@ -388,7 +429,7 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     //          struct _rtrc_push_constant_dummy_struct_1
 
     Macros finalMacros = std::move(shaderInfo.macros);
-    finalMacros["rtrc_group(NAME)"]                       = "_rtrc_group_##NAME";
+    finalMacros["rtrc_group(NAME, ...)"]                  = "_rtrc_group_##NAME";
     finalMacros["rtrc_define(TYPE, NAME, ...)"]           = "_rtrc_resource_##NAME";
     finalMacros["rtrc_bindless(TYPE, NAME, ...)"]         = "_rtrc_resource_##NAME";
     finalMacros["rtrc_bindless_varsize(TYPE, NAME, ...)"] = "_rtrc_resource_##NAME";
@@ -504,21 +545,21 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     Box<SPIRVReflection> vsRefl, fsRefl, csRefl;
     if(hasVS)
     {
-        shaderInfo.entryPoint = source.vsEntry;
+        shaderInfo.entryPoint = source.vertexEntry;
         vsData = dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_VS_6_0, debug, nullptr);
-        vsRefl = MakeBox<SPIRVReflection>(vsData, source.vsEntry);
+        vsRefl = MakeBox<SPIRVReflection>(vsData, source.vertexEntry);
     }
     if(hasFS)
     {
-        shaderInfo.entryPoint = source.fsEntry;
+        shaderInfo.entryPoint = source.fragmentEntry;
         fsData = dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_FS_6_0, debug, nullptr);
-        fsRefl = MakeBox<SPIRVReflection>(fsData, source.fsEntry);
+        fsRefl = MakeBox<SPIRVReflection>(fsData, source.fragmentEntry);
     }
     if(hasCS)
     {
-        shaderInfo.entryPoint = source.csEntry;
+        shaderInfo.entryPoint = source.computeEntry;
         csData = dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_CS_6_0, debug, nullptr);
-        csRefl = MakeBox<SPIRVReflection>(csData, source.csEntry);
+        csRefl = MakeBox<SPIRVReflection>(csData, source.computeEntry);
     }
 
     // Check uses of ungrouped bindings
@@ -545,22 +586,22 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
 
     auto shader = MakeRC<Shader>();
     shader->info_ = MakeRC<ShaderInfo>();
-    shader->category_ = category;
+    shader->info_->category_ = category;
     if(hasVS)
     {
         shader->rawShaders_[Shader::VS_INDEX] = device_->GetRawDevice()->CreateShader(
-            vsData.data(), vsData.size(), source.vsEntry, RHI::ShaderStage::VertexShader);
+            vsData.data(), vsData.size(), source.vertexEntry, RHI::ShaderStage::VertexShader);
         shader->info_->VSInput_ = vsRefl->GetInputVariables();
     }
     if(hasFS)
     {
         shader->rawShaders_[Shader::FS_INDEX] = device_->GetRawDevice()->CreateShader(
-            fsData.data(), fsData.size(), source.fsEntry, RHI::ShaderStage::FragmentShader);
+            fsData.data(), fsData.size(), source.fragmentEntry, RHI::ShaderStage::FragmentShader);
     }
     if(hasCS)
     {
         shader->rawShaders_[Shader::CS_INDEX] = device_->GetRawDevice()->CreateShader(
-            csData.data(), csData.size(), source.csEntry, RHI::ShaderStage::ComputeShader);
+            csData.data(), csData.size(), source.computeEntry, RHI::ShaderStage::ComputeShader);
     }
 
     // Constant buffers
@@ -662,7 +703,8 @@ std::string ShaderCompiler::ParsedBinding::GetArraySpeficier() const
 }
 
 template<bool AllowStageSpecifier, ShaderCompiler::BindingCategory Category>
-ShaderCompiler::ParsedBinding ShaderCompiler::ParseBinding(ShaderTokenStream &tokens) const
+ShaderCompiler::ParsedBinding ShaderCompiler::ParseBinding(
+    ShaderTokenStream &tokens, RHI::ShaderStageFlag groupDefaultStages) const
 {
     using namespace ShaderCompilerDetail;
 
@@ -734,7 +776,7 @@ ShaderCompiler::ParsedBinding ShaderCompiler::ParseBinding(ShaderTokenStream &to
     }
     tokens.Next();
 
-    RHI::ShaderStageFlag stages = RHI::ShaderStage::All;
+    RHI::ShaderStageFlag stages = groupDefaultStages;
     if(tokens.GetCurrentToken() == ",")
     {
         tokens.Next();
@@ -830,7 +872,7 @@ void ShaderCompiler::ParseInlineSampler(ShaderTokenStream &tokens, std::string &
 
 void ShaderCompiler::ParsePushConstantRange(
     ShaderTokenStream &tokens, std::string &name, std::string &content,
-    Shader::PushConstantRange &range, uint32_t &nextOffset) const
+    Shader::PushConstantRange &range, uint32_t &nextOffset, Shader::Category category) const
 {
     tokens.ConsumeOrThrow("_rtrc_push_constant_impl");
     tokens.ConsumeOrThrow("(");
@@ -843,7 +885,7 @@ void ShaderCompiler::ParsePushConstantRange(
     }
     else
     {
-        range.stages = RHI::ShaderStage::All;
+        range.stages = ShaderCompilerDetail::ShaderCategoryToStages(category);
     }
     tokens.ConsumeOrThrow(")");
     tokens.ConsumeOrThrow("{");
@@ -939,7 +981,7 @@ void ShaderCompiler::ParsePushConstantRange(
     }
 }
 
-ShaderCompiler::Bindings ShaderCompiler::CollectBindings(const std::string &source) const
+ShaderCompiler::Bindings ShaderCompiler::CollectBindings(const std::string &source, Shader::Category category) const
 {
     using namespace ShaderCompilerDetail;
 
@@ -989,15 +1031,15 @@ ShaderCompiler::Bindings ShaderCompiler::CollectBindings(const std::string &sour
             ParsedBinding binding;
             if(minPos == resourcePos)
             {
-                binding = ParseBinding<false, BindingCategory::Regular>(tokens);
+                binding = ParseBinding<false, BindingCategory::Regular>(tokens, RHI::ShaderStage::All);
             }
             else if(minPos == bindlessPos)
             {
-                binding = ParseBinding<false, BindingCategory::Bindless>(tokens);
+                binding = ParseBinding<false, BindingCategory::Bindless>(tokens, RHI::ShaderStage::All);
             }
             else
             {
-                binding = ParseBinding<false, BindingCategory::BindlessWithVariableSize>(tokens);
+                binding = ParseBinding<false, BindingCategory::BindlessWithVariableSize>(tokens, RHI::ShaderStage::All);
             }
             if(parsedBindingNames.contains(binding.name))
             {
@@ -1039,7 +1081,7 @@ ShaderCompiler::Bindings ShaderCompiler::CollectBindings(const std::string &sour
             ShaderTokenStream tokens(source, pushConstantPos);
             ParsePushConstantRange(
                 tokens, pushConstantRangeNames.emplace_back(), pushConstantRangeContents.emplace_back(),
-                pushConstantRanges.emplace_back(), pushConstantRangeOffset);
+                pushConstantRanges.emplace_back(), pushConstantRangeOffset, category);
             continue;
         }
 
@@ -1052,6 +1094,12 @@ ShaderCompiler::Bindings ShaderCompiler::CollectBindings(const std::string &sour
             tokens.Throw("Group name expected");
         }
         tokens.Next();
+        RHI::ShaderStageFlag groupDefaultStages = RHI::ShaderStage::All;
+        if(tokens.GetCurrentToken() == ",")
+        {
+            tokens.Next();
+            groupDefaultStages = ParseStages(tokens);
+        }
         tokens.ConsumeOrThrow(")");
         tokens.ConsumeOrThrow("{");
         if(parsedGroupNames.contains(groupName))
@@ -1062,6 +1110,7 @@ ShaderCompiler::Bindings ShaderCompiler::CollectBindings(const std::string &sour
 
         ParsedBindingGroup &currentGroup = parsedGroups.emplace_back();
         currentGroup.name = std::move(groupName);
+        currentGroup.defaultStages = groupDefaultStages;
 
         while(true)
         {
@@ -1078,15 +1127,15 @@ ShaderCompiler::Bindings ShaderCompiler::CollectBindings(const std::string &sour
                     auto &binding = currentGroup.bindings.emplace_back();
                     if(isRegular)
                     {
-                        binding = ParseBinding<true, BindingCategory::Regular>(tokens);
+                        binding = ParseBinding<true, BindingCategory::Regular>(tokens, groupDefaultStages);
                     }
                     else if(isBindless)
                     {
-                        binding = ParseBinding<true, BindingCategory::Bindless>(tokens);
+                        binding = ParseBinding<true, BindingCategory::Bindless>(tokens, groupDefaultStages);
                     }
                     else
                     {
-                        binding = ParseBinding<true, BindingCategory::BindlessWithVariableSize>(tokens);
+                        binding = ParseBinding<true, BindingCategory::BindlessWithVariableSize>(tokens, groupDefaultStages);
                     }
                     currentGroup.isRef.push_back(false);
                     if(parsedBindingNames.contains(binding.name))
@@ -1125,7 +1174,7 @@ ShaderCompiler::Bindings ShaderCompiler::CollectBindings(const std::string &sour
                 }
                 else
                 {
-                    currentGroup.bindings.back().stages = RHI::ShaderStage::All;
+                    currentGroup.bindings.back().stages = groupDefaultStages;
                 }
                 tokens.ConsumeOrThrow(")");
             }

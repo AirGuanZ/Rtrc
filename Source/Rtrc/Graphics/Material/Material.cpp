@@ -199,7 +199,7 @@ void MaterialPassPropertyLayout::FillConstantBufferContent(const void *valueBuff
 void MaterialPassPropertyLayout::FillBindingGroup(
     BindingGroup          &bindingGroup,
     Span<MaterialResource> materialResources,
-    RC<DynamicBuffer>     cbuffer) const
+    RC<DynamicBuffer>      cbuffer) const
 {
     // Constant buffer
 

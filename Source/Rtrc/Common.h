@@ -142,6 +142,15 @@ private:
     UniqueID uniqueID_;
 };
 
+enum class LogLevel
+{
+    Debug = 0,
+    Release,
+    Default = RTRC_DEBUG ? Debug : Release
+};
+
+void SetLogLevel(LogLevel level);
+
 void LogDebugUnformatted(std::string_view msg);
 void LogInfoUnformatted(std::string_view msg);
 void LogWarningUnformatted(std::string_view msg);

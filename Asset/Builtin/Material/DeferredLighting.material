@@ -18,7 +18,7 @@ Shader "Builtin/DeferredLighting"
 #include "Common/GBuffer.hlsl"
 #include "Common/Scene.hlsl"
 
-rtrc_group(Pass)
+rtrc_group(Pass, FS)
 {
     BUILTIN_INTERNAL_GBUFFERS_FS
     rtrc_define(Texture2D<float3>, SkyLutTexture, FS)
@@ -28,12 +28,6 @@ rtrc_group(Pass)
 };
 
 rtrc_sampler(SkyLutSampler, filter = linear, address_u = repeat, address_v = clamp)
-
-rtrc_group(TestGroup) // Unused
-{
-    rtrc_bindless(Texture3D<float4>[256], BindlessArray1)
-    rtrc_bindless_varsize(Texture2D<float4>[256], BindlessArray2)
-};
 
 struct VsInput
 {

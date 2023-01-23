@@ -4,6 +4,36 @@
 
 RTRC_BEGIN
 
+namespace CommonDetail
+{
+
+    class SetSpdLogLevel
+    {
+    public:
+
+        SetSpdLogLevel()
+        {
+            SetLogLevel(LogLevel::Default);
+        }
+    };
+
+    SetSpdLogLevel gSetSpdLogLevel;
+
+} // namespace CommonDetail
+
+void SetLogLevel(LogLevel level)
+{
+    switch(level)
+    {
+    case LogLevel::Debug:
+        spdlog::set_level(spdlog::level::debug);
+        break;
+    case LogLevel::Release:
+        spdlog::set_level(spdlog::level::warn);
+        break;
+    }
+}
+
 void LogDebugUnformatted(std::string_view msg)
 {
     spdlog::debug(msg);
