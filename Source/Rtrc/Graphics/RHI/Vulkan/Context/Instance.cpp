@@ -59,7 +59,7 @@ Ptr<Instance> CreateVulkanInstance(const VulkanInstanceDesc &desc)
         .set_app_name("RtrcApplication")
         .set_engine_name("RtrcEngine")
         .require_api_version(1, 3)
-        .set_allocation_callbacks(VK_ALLOC);
+        .set_allocation_callbacks(RTRC_VK_ALLOC);
 
     for(auto &e : desc.extensions)
     {
@@ -197,10 +197,10 @@ Ptr<Device> VulkanInstance::CreateDevice(const DeviceDesc &desc)
         .ppEnabledExtensionNames = extensions.data()
     };
     VkDevice device;
-    VK_FAIL_MSG(
-        vkCreateDevice(physicalDevice.GetNativeHandle(), &deviceCreateInfo, VK_ALLOC, &device),
+    RTRC_VK_FAIL_MSG(
+        vkCreateDevice(physicalDevice.GetNativeHandle(), &deviceCreateInfo, RTRC_VK_ALLOC, &device),
         "failed to create vulkan device");
-    RTRC_SCOPE_FAIL{ vkDestroyDevice(device, VK_ALLOC); };
+    RTRC_SCOPE_FAIL{ vkDestroyDevice(device, RTRC_VK_ALLOC); };
 
     VulkanDevice::QueueFamilyInfo queueFamilies;
     if(desc.graphicsQueue)

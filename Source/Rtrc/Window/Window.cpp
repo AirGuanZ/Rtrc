@@ -390,7 +390,7 @@ ReferenceCountedPtr<RHI::Surface> Window::CreateVulkanSurface(void *vkInstance)
 
     VkSurfaceKHR surface;
     auto instance = static_cast<VkInstance>(vkInstance);
-    VK_CHECK(glfwCreateWindowSurface(instance, impl_->glfwWindow, VK_ALLOC, &surface))
+    RTRC_VK_CHECK(glfwCreateWindowSurface(instance, impl_->glfwWindow, RTRC_VK_ALLOC, &surface))
     {
         throw Exception("failed to create vulkan surface");
     };

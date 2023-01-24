@@ -15,7 +15,7 @@ VulkanGraphicsPipeline::VulkanGraphicsPipeline(Ptr<BindingLayout> layout, VkDevi
 VulkanGraphicsPipeline::~VulkanGraphicsPipeline()
 {
     assert(pipeline_);
-    vkDestroyPipeline(device_, pipeline_, VK_ALLOC);
+    vkDestroyPipeline(device_, pipeline_, RTRC_VK_ALLOC);
 }
 
 const Ptr<BindingLayout> &VulkanGraphicsPipeline::GetBindingLayout() const

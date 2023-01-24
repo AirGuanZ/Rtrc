@@ -16,7 +16,7 @@ public:
     RTRC_RHI_TEXTURE_COMMON
 #endif
 
-    VK_SET_OBJECT_NAME(device_, image_, VK_OBJECT_TYPE_IMAGE)
+    RTRC_VK_SET_OBJECT_NAME(device_, image_, VK_OBJECT_TYPE_IMAGE)
 
     VulkanTexture(
         const TextureDesc          &desc,

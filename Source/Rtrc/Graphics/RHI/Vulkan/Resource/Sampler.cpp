@@ -12,7 +12,7 @@ VulkanSampler::VulkanSampler(const SamplerDesc &desc, VulkanDevice *device, VkSa
 VulkanSampler::~VulkanSampler()
 {
     assert(device_ && sampler_);
-    vkDestroySampler(device_->_internalGetNativeDevice(), sampler_, VK_ALLOC);
+    vkDestroySampler(device_->_internalGetNativeDevice(), sampler_, RTRC_VK_ALLOC);
 }
 
 const SamplerDesc &VulkanSampler::GetDesc() const

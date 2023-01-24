@@ -11,7 +11,7 @@ VulkanSurface::VulkanSurface(VkInstance instance, VkSurfaceKHR surface)
 VulkanSurface::~VulkanSurface()
 {
     assert(instance_ && surface_);
-    vkDestroySurfaceKHR(instance_, surface_, VK_ALLOC);
+    vkDestroySurfaceKHR(instance_, surface_, RTRC_VK_ALLOC);
 }
 
 VkSurfaceKHR VulkanSurface::_internalGetSurface() const

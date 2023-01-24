@@ -67,7 +67,20 @@ VkFormat TranslateTexelFormat(Format format)
     Unreachable();
 }
 
-VkShaderStageFlagBits TranslateShaderType(ShaderStage type)
+VkShaderStageFlagBits TranslateShaderType(ShaderType type)
+{
+    using enum ShaderType;
+    switch(type)
+    {
+    case VertexShader:     return VK_SHADER_STAGE_VERTEX_BIT;
+    case FragmentShader:   return VK_SHADER_STAGE_FRAGMENT_BIT;
+    case ComputeShader:    return VK_SHADER_STAGE_COMPUTE_BIT;
+    case RayTracingShader: Unreachable();
+    }
+    Unreachable();
+}
+
+VkShaderStageFlagBits TranslateShaderStage(ShaderStage type)
 {
     using enum ShaderStage;
     switch(type)
@@ -80,12 +93,10 @@ VkShaderStageFlagBits TranslateShaderType(ShaderStage type)
     case RT_MissShader:         return VK_SHADER_STAGE_MISS_BIT_KHR;
     case RT_IntersectionShader: return VK_SHADER_STAGE_INTERSECTION_BIT_KHR;
     case RT_AnyHitShader:       return VK_SHADER_STAGE_ANY_HIT_BIT_KHR;
-    case AllGraphics:
-    case AllRT:
-    case All:
+    case CallableShader:        return VK_SHADER_STAGE_CALLABLE_BIT_KHR;
+    default:
         throw Exception(fmt::format("Single shader stage expected. Actual: {0:x}", static_cast<uint32_t>(type)));
     }
-    Unreachable();
 }
 
 VkShaderStageFlags TranslateShaderStageFlag(EnumFlags<ShaderStage> flags)
@@ -99,6 +110,7 @@ VkShaderStageFlags TranslateShaderStageFlag(EnumFlags<ShaderStage> flags)
     result |= flags.contains(ShaderStage::RT_MissShader)         ? VK_SHADER_STAGE_MISS_BIT_KHR         : 0;
     result |= flags.contains(ShaderStage::RT_IntersectionShader) ? VK_SHADER_STAGE_INTERSECTION_BIT_KHR : 0;
     result |= flags.contains(ShaderStage::RT_AnyHitShader)       ? VK_SHADER_STAGE_ANY_HIT_BIT_KHR      : 0;
+    result |= flags.contains(ShaderStage::CallableShader)        ? VK_SHADER_STAGE_CALLABLE_BIT_KHR     : 0;
     return result;
 }
 

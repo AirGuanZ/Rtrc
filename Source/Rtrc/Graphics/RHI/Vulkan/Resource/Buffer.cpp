@@ -2,8 +2,7 @@
 #include <shared_mutex>
 
 #include <Rtrc/Graphics/RHI/Vulkan/Context/Device.h>
-#include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferSrv.h>
-#include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferUav.h>
+#include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferView.h>
 #include <Rtrc/Utility/ScopeGuard.h>
 
 RTRC_RHI_VK_BEGIN
@@ -23,7 +22,7 @@ VulkanBuffer::~VulkanBuffer()
 {
     for(VkBufferView view : std::ranges::views::values(views_))
     {
-        vkDestroyBufferView(device_->_internalGetNativeDevice(), view, VK_ALLOC);
+        vkDestroyBufferView(device_->_internalGetNativeDevice(), view, RTRC_VK_ALLOC);
     }
 
     if(ownership_ == ResourceOwnership::Allocation)
@@ -32,7 +31,7 @@ VulkanBuffer::~VulkanBuffer()
     }
     else if(ownership_ == ResourceOwnership::Resource)
     {
-        vkDestroyBuffer(device_->_internalGetNativeDevice(), buffer_, VK_ALLOC);
+        vkDestroyBuffer(device_->_internalGetNativeDevice(), buffer_, RTRC_VK_ALLOC);
     }
 }
 
@@ -82,7 +81,7 @@ void *VulkanBuffer::Map(size_t offset, size_t size, bool invalidate)
     assert(ownership_ == ResourceOwnership::Allocation);
     assert(alloc_.allocator && alloc_.allocation);
     void *result;
-    VK_FAIL_MSG(
+    RTRC_VK_FAIL_MSG(
         vmaMapMemory(alloc_.allocator, alloc_.allocation, &result),
         "failed to map vulkan buffer memory");
     if(invalidate)
@@ -104,14 +103,14 @@ void VulkanBuffer::Unmap(size_t offset, size_t size, bool flush)
 
 void VulkanBuffer::InvalidateBeforeRead(size_t offset, size_t size)
 {
-    VK_FAIL_MSG(
+    RTRC_VK_FAIL_MSG(
         vmaInvalidateAllocation(alloc_.allocator, alloc_.allocation, offset, size),
         "failed to invalidate mapped buffer memory");
 }
 
 void VulkanBuffer::FlushAfterWrite(size_t offset, size_t size)
 {
-    VK_FAIL_MSG(
+    RTRC_VK_FAIL_MSG(
         vmaFlushAllocation(alloc_.allocator, alloc_.allocation, offset, size),
         "failed to flush buffer memory");
 }
@@ -147,10 +146,10 @@ VkBufferView VulkanBuffer::CreateBufferView(const ViewKey &key) const
     };
 
     VkBufferView view;
-    VK_FAIL_MSG(
-        vkCreateBufferView(device_->_internalGetNativeDevice(), &createInfo, VK_ALLOC, &view),
+    RTRC_VK_FAIL_MSG(
+        vkCreateBufferView(device_->_internalGetNativeDevice(), &createInfo, RTRC_VK_ALLOC, &view),
         "failed to create vulkan buffer view");
-    RTRC_SCOPE_FAIL{ vkDestroyBufferView(device_->_internalGetNativeDevice(), view, VK_ALLOC); };
+    RTRC_SCOPE_FAIL{ vkDestroyBufferView(device_->_internalGetNativeDevice(), view, RTRC_VK_ALLOC); };
 
     views_[key] = view;
     return view;

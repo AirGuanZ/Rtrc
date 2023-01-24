@@ -1,6 +1,5 @@
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/BindingGroup.h>
-#include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferSrv.h>
-#include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferUav.h>
+#include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferView.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Sampler.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/TextureView.h>
 

@@ -12,6 +12,8 @@
 #include <Rtrc/Utility/Variant.h>
 #include <Rtrc/Window/Window.h>
 
+#include "RHIDeclaration.h"
+
 RTRC_RHI_BEGIN
 
 template<typename T>
@@ -75,6 +77,7 @@ RTRC_RHI_FORWARD_DECL(TextureDsv)
 RTRC_RHI_FORWARD_DECL(Buffer)
 RTRC_RHI_FORWARD_DECL(BufferSrv)
 RTRC_RHI_FORWARD_DECL(BufferUav)
+RTRC_RHI_FORWARD_DECL(RayTracingLibrary)
 RTRC_RHI_FORWARD_DECL(Sampler)
 RTRC_RHI_FORWARD_DECL(MemoryPropertyRequirements)
 RTRC_RHI_FORWARD_DECL(MemoryBlock)
@@ -148,7 +151,15 @@ enum class IndexBufferFormat
     UInt32
 };
 
-enum class ShaderStage : uint8_t
+enum class ShaderType : uint8_t
+{
+    VertexShader     = 1u << 0,
+    FragmentShader   = 1u << 1,
+    ComputeShader    = 1u << 2,
+    RayTracingShader = 1u << 3,
+};
+
+enum class ShaderStage : uint32_t
 {
     VertexShader          = 1u << 0,
     FragmentShader        = 1u << 1,
@@ -158,6 +169,7 @@ enum class ShaderStage : uint8_t
     RT_ClosestHitShader   = 1u << 5,
     RT_IntersectionShader = 1u << 6,
     RT_AnyHitShader       = 1u << 7,
+    CallableShader        = 1u << 8,
 
     VS = VertexShader,
     FS = FragmentShader,
@@ -172,7 +184,7 @@ enum class ShaderStage : uint8_t
     AllGraphics = VS | FS,
     AllRTCommon = RT_RGS | RT_MS,
     AllRTHit    = RT_CHS | RT_IS | RT_AHS,
-    AllRT       = AllRTCommon | AllRTHit,
+    AllRT       = AllRTCommon | AllRTHit | CallableShader,
     All         = AllGraphics | AllRT | CS
 };
 
@@ -463,6 +475,12 @@ struct SwapchainDesc
     bool vsync = true;
 };
 
+struct RawShaderEntry
+{
+    ShaderStage stage;
+    std::string name;
+};
+
 struct BindingDesc
 {
     BindingType              type;
@@ -633,10 +651,10 @@ struct BufferDesc
 
 struct BufferSrvDesc
 {
-    Format   format; // for texel buffer
+    Format   format; // For texel buffer
     uint32_t offset;
     uint32_t range;
-    uint32_t stride; // for structured buffer
+    uint32_t stride; // For structured buffer
 };
 
 using BufferUavDesc = BufferSrvDesc;
@@ -653,29 +671,29 @@ struct TextureTransitionBarrier
     TextureLayout           afterLayout;
 };
 
-// for non-sharing resource, every cross-queue sync needs a release/acquire pair
+// For non-sharing resource, every cross-queue sync needs a release/acquire pair
 struct TextureReleaseBarrier
 {
-    Texture                *texture;
-    TextureSubresources     subresources;
-    PipelineStageFlag       beforeStages;
-    ResourceAccessFlag      beforeAccesses;
-    TextureLayout           beforeLayout;
-    TextureLayout           afterLayout;
-    QueueType               beforeQueue;
-    QueueType               afterQueue;
+    Texture            *texture;
+    TextureSubresources subresources;
+    PipelineStageFlag   beforeStages;
+    ResourceAccessFlag  beforeAccesses;
+    TextureLayout       beforeLayout;
+    TextureLayout       afterLayout;
+    QueueType           beforeQueue;
+    QueueType           afterQueue;
 };
 
 struct TextureAcquireBarrier
 {
-    Texture                *texture;
-    TextureSubresources     subresources;
-    TextureLayout           beforeLayout;
-    PipelineStageFlag       afterStages;
-    ResourceAccessFlag      afterAccesses;
-    TextureLayout           afterLayout;
-    QueueType               beforeQueue;
-    QueueType               afterQueue;
+    Texture            *texture;
+    TextureSubresources subresources;
+    TextureLayout       beforeLayout;
+    PipelineStageFlag   afterStages;
+    ResourceAccessFlag  afterAccesses;
+    TextureLayout       afterLayout;
+    QueueType           beforeQueue;
+    QueueType           afterQueue;
 };
 
 struct BufferTransitionBarrier
@@ -769,10 +787,10 @@ struct DynamicScissorCount
     size_t Hash() const { return 2; }
 };
 
-// fixed viewports; dynamic viewports with fixed count; dynamic count
+// Fixed viewports; dynamic viewports with fixed count; dynamic count
 using Viewports = Variant<std::monostate, std::vector<Viewport>, int, DynamicViewportCount>;
 
-// fixed viewports; dynamic viewports with fixed count; dynamic count
+// Fixed viewports; dynamic viewports with fixed count; dynamic count
 using Scissors = Variant<std::monostate, std::vector<Scissor>, int, DynamicScissorCount>;
 
 struct VertexInputBuffer
@@ -950,48 +968,48 @@ public:
     GraphicsPipelineBuilder &AddVertexInputBuffers(Span<VertexInputBuffer> buffers);
     GraphicsPipelineBuilder &AddVertexInputAttributes(Span<VertexInputAttribute> attributes);
 
-    // default is trianglelist
+    // Default is trianglelist
     GraphicsPipelineBuilder &SetPrimitiveTopology(PrimitiveTopology topology);
 
-    // default is fill
+    // Default is fill
     GraphicsPipelineBuilder &SetFillMode(FillMode mode);
 
-    // default is cullnone
+    // Default is cullnone
     GraphicsPipelineBuilder &SetCullMode(CullMode mode);
 
-    // default is cw
+    // Default is cw
     GraphicsPipelineBuilder &SetFrontFace(FrontFaceMode mode);
 
-    // default is 0
+    // Default is 0
     GraphicsPipelineBuilder &SetDepthBias(float constFactor, float slopeFactor, float clamp);
 
-    // default is 1
+    // Default is 1
     GraphicsPipelineBuilder &SetMultisample(int sampleCount);
 
-    // default is disabled
+    // Default is disabled
     GraphicsPipelineBuilder &SetDepthTest(bool enableTest, bool enableWrite, CompareOp compareOp);
 
-    // default is disabled
+    // Default is disabled
     GraphicsPipelineBuilder &SetStencilTest(bool enableTest);
 
-    // default is 0
+    // Default is 0
     GraphicsPipelineBuilder &SetStencilMask(uint8_t readMask, uint8_t writeMask);
 
-    // default is keep, keep, keep, always, 0xff, 0xff
+    // Default is keep, keep, keep, always, 0xff, 0xff
     GraphicsPipelineBuilder &SetStencilFrontOp(
         StencilOp depthFailOp,
         StencilOp failOp,
         StencilOp passOp,
         CompareOp compareOp);
 
-    // default is keep, keep, keep, always, 0xff, 0xff
+    // Default is keep, keep, keep, always, 0xff, 0xff
     GraphicsPipelineBuilder &SetStencilBackOp(
         StencilOp depthFailOp,
         StencilOp failOp,
         StencilOp passOp,
         CompareOp compareOp);
 
-    // default is disabled
+    // Default is disabled
     // src: from fragment shader
     // dst: from render target
     // out = srcFactor * src op dstFactor * dst
@@ -1004,10 +1022,10 @@ public:
         BlendFactor dstAlphaFactor,
         BlendOp     alphaOp);
 
-    // default is empty
+    // Default is empty
     GraphicsPipelineBuilder &AddColorAttachment(Format format);
 
-    // default is undefined
+    // Default is undefined
     GraphicsPipelineBuilder &SetDepthStencilAttachment(Format format);
 
     Ptr<GraphicsPipeline> CreatePipeline(const DevicePtr &device) const;
@@ -1135,11 +1153,12 @@ public:
     RTRC_RHI_API Ptr<Fence>     CreateFence(bool signaled) RTRC_RHI_API_PURE;
     RTRC_RHI_API Ptr<Semaphore> CreateSemaphore(uint64_t initialValue) RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API Ptr<RawShader> CreateShader(
-        const void *data, size_t size, std::string entryPoint, ShaderStage type) RTRC_RHI_API_PURE;
+    RTRC_RHI_API Ptr<RawShader> CreateShader(const void *data, size_t size, std::vector<RawShaderEntry> entries) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API Ptr<GraphicsPipeline> CreateGraphicsPipeline(const GraphicsPipelineDesc &desc) RTRC_RHI_API_PURE;
     RTRC_RHI_API Ptr<ComputePipeline>  CreateComputePipeline (const ComputePipelineDesc &desc) RTRC_RHI_API_PURE;
+
+    RTRC_RHI_API Ptr<RayTracingLibrary> CreateRayTracingLibrary(const RawShaderPtr &shader) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API Ptr<BindingGroupLayout> CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc) RTRC_RHI_API_PURE;
     RTRC_RHI_API Ptr<BindingGroup> CreateBindingGroup(
@@ -1328,9 +1347,12 @@ protected:
 
 class RawShader : public RHIObject
 {
-public:
 
-    RTRC_RHI_API ShaderStage GetType() const RTRC_RHI_API_PURE;
+};
+
+class RayTracingLibrary : public RHIObject
+{
+
 };
 
 class GraphicsPipeline : public RHIObject
@@ -1425,7 +1447,7 @@ public:
     RTRC_RHI_API const SamplerDesc &GetDesc() const RTRC_RHI_API_PURE;
 };
 
-// all memory requirements other than size & alignment
+// All memory requirements other than size & alignment
 class MemoryPropertyRequirements : public RHIObject
 {
 public:
@@ -1450,7 +1472,7 @@ public:
 
 #ifdef RTRC_RHI_VULKAN
 
-// can be called multiple times
+// Can be called multiple times
 void InitializeVulkanBackend();
 
 struct VulkanInstanceDesc

@@ -417,22 +417,23 @@ namespace BindingGroupDSL
 
 #define rtrc_group(...) RTRC_MACRO_OVERLOADING(rtrc_group, __VA_ARGS__)
 
-#define RTRC_INLINE_STAGE_DECLERATION(STAGES)                            \
-    ([]{                                                                 \
-        using ::Rtrc::RHI::ShaderStage::VS;                              \
-        using ::Rtrc::RHI::ShaderStage::FS;                              \
-        using ::Rtrc::RHI::ShaderStage::CS;                              \
-        using ::Rtrc::RHI::ShaderStage::RT_RGS;                          \
-        using ::Rtrc::RHI::ShaderStage::RT_MS;                           \
-        using ::Rtrc::RHI::ShaderStage::RT_CHS;                          \
-        using ::Rtrc::RHI::ShaderStage::RT_IS;                           \
-        using ::Rtrc::RHI::ShaderStage::RT_AHS;                          \
-        constexpr auto Graphics = ::Rtrc::RHI::ShaderStage::AllGraphics; \
-        constexpr auto RTCommon = ::Rtrc::RHI::ShaderStage::AllRTCommon; \
-        constexpr auto RTHit    = ::Rtrc::RHI::ShaderStage::AllRTHit;    \
-        constexpr auto RT       = ::Rtrc::RHI::ShaderStage::AllRT;       \
-        using ::Rtrc::RHI::ShaderStage::All;                             \
-        return (STAGES);                                                 \
+#define RTRC_INLINE_STAGE_DECLERATION(STAGES)                               \
+    ([]{                                                                    \
+        using ::Rtrc::RHI::ShaderStage::VS;                                 \
+        using ::Rtrc::RHI::ShaderStage::FS;                                 \
+        using ::Rtrc::RHI::ShaderStage::CS;                                 \
+        using ::Rtrc::RHI::ShaderStage::RT_RGS;                             \
+        using ::Rtrc::RHI::ShaderStage::RT_MS;                              \
+        using ::Rtrc::RHI::ShaderStage::RT_CHS;                             \
+        using ::Rtrc::RHI::ShaderStage::RT_IS;                              \
+        using ::Rtrc::RHI::ShaderStage::RT_AHS;                             \
+        constexpr auto Graphics = ::Rtrc::RHI::ShaderStage::AllGraphics;    \
+        constexpr auto Callable = ::Rtrc::RHI::ShaderStage::CallableShader; \
+        constexpr auto RTCommon = ::Rtrc::RHI::ShaderStage::AllRTCommon;    \
+        constexpr auto RTHit    = ::Rtrc::RHI::ShaderStage::AllRTHit;       \
+        constexpr auto RT       = ::Rtrc::RHI::ShaderStage::AllRT;          \
+        using ::Rtrc::RHI::ShaderStage::All;                                \
+        return (STAGES);                                                    \
     }())
 
 #define rtrc_define2(TYPE, NAME)         RTRC_DEFINE_IMPL(TYPE, NAME, _rtrcGroupDefaultStages, false, false)

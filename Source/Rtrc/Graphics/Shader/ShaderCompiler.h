@@ -21,11 +21,7 @@ public:
         std::string vertexEntry;
         std::string fragmentEntry;
         std::string computeEntry;
-        std::string raygenEntry;
-        std::string missEntry;
-        std::string closestHitEntry;
-        std::string intersectionEntry;
-        std::string anyHitEntry;
+        bool isRayTracingShader = false;
     };
 
     void SetDevice(Device *device);
@@ -100,7 +96,7 @@ private:
         Shader::PushConstantRange &range, uint32_t &nextOffset, Shader::Category category) const;
 
     Bindings CollectBindings(const std::string &source, Shader::Category category) const;
-
+    
     Device *device_ = nullptr;
     std::filesystem::path rootDir_;
     std::set<std::string> includeDirs_;

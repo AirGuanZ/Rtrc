@@ -60,7 +60,7 @@ namespace ShaderReflDetail
         return inputName;
     }
 
-    void ReflectInputVariables(
+    void GetInputVariables(
         const SpvReflectShaderModule &shaderModule, const char *entryPoint, std::vector<ShaderIOVar> &result)
     {
         assert(result.empty());
@@ -208,7 +208,7 @@ bool SPIRVReflection::IsBindingUsed(std::string_view name) const
 std::vector<ShaderIOVar> SPIRVReflection::GetInputVariables() const
 {
     std::vector<ShaderIOVar> result;
-    ShaderReflDetail::ReflectInputVariables(*shaderModule_, entry_.c_str(), result);
+    ShaderReflDetail::GetInputVariables(*shaderModule_, entry_.c_str(), result);
     return result;
 }
 
@@ -226,6 +226,33 @@ Vector3i SPIRVReflection::GetComputeShaderThreadGroupSize() const
     ret.x = static_cast<int>(localSize.x);
     ret.y = static_cast<int>(localSize.y);
     ret.z = static_cast<int>(localSize.z);
+    return ret;
+}
+
+std::vector<RHI::RawShaderEntry> SPIRVReflection::GetEntries() const
+{
+    std::vector<RHI::RawShaderEntry> ret;
+    ret.reserve(shaderModule_->entry_point_count);
+    for(uint32_t i = 0; i < shaderModule_->entry_point_count; ++i)
+    {
+        using enum RHI::ShaderStage;
+        RHI::RawShaderEntry &entry = ret.emplace_back();
+        switch(shaderModule_->entry_points[i].shader_stage)
+        {
+        case SPV_REFLECT_SHADER_STAGE_VERTEX_BIT:           entry.stage = VertexShader;          break;
+        case SPV_REFLECT_SHADER_STAGE_FRAGMENT_BIT:         entry.stage = FragmentShader;        break;
+        case SPV_REFLECT_SHADER_STAGE_COMPUTE_BIT:          entry.stage = ComputeShader;         break;
+        case SPV_REFLECT_SHADER_STAGE_RAYGEN_BIT_KHR:       entry.stage = RT_RayGenShader;       break;
+        case SPV_REFLECT_SHADER_STAGE_ANY_HIT_BIT_KHR:      entry.stage = RT_AnyHitShader;       break;
+        case SPV_REFLECT_SHADER_STAGE_CLOSEST_HIT_BIT_KHR:  entry.stage = RT_ClosestHitShader;   break;
+        case SPV_REFLECT_SHADER_STAGE_MISS_BIT_KHR:         entry.stage = RT_MissShader;         break;
+        case SPV_REFLECT_SHADER_STAGE_INTERSECTION_BIT_KHR: entry.stage = RT_IntersectionShader; break;
+        case SPV_REFLECT_SHADER_STAGE_CALLABLE_BIT_KHR:     entry.stage = CallableShader;        break;
+        default:
+            throw Exception("Unsupported shader entry type");
+        }
+        entry.name = shaderModule_->entry_points[i].name;
+    }
     return ret;
 }
 

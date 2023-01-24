@@ -13,7 +13,7 @@ VulkanCommandPool::VulkanCommandPool(VulkanDevice *device, QueueType type, VkCom
 VulkanCommandPool::~VulkanCommandPool()
 {
     commandBuffers_.clear();
-    vkDestroyCommandPool(device_->_internalGetNativeDevice(), pool_, VK_ALLOC);
+    vkDestroyCommandPool(device_->_internalGetNativeDevice(), pool_, RTRC_VK_ALLOC);
 }
 
 void VulkanCommandPool::Reset()
@@ -45,7 +45,7 @@ void VulkanCommandPool::CreateCommandBuffer()
         .commandBufferCount = 1
     };
     VkCommandBuffer newBuffer;
-    VK_FAIL_MSG(
+    RTRC_VK_FAIL_MSG(
         vkAllocateCommandBuffers(device_->_internalGetNativeDevice(), &allocateInfo, &newBuffer),
         "failed to allocate new command buffer");
     RTRC_SCOPE_FAIL{ vkFreeCommandBuffers(device_->_internalGetNativeDevice(), pool_, 1, &newBuffer); };

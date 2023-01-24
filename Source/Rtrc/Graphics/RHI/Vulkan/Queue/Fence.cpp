@@ -10,12 +10,12 @@ VulkanFence::VulkanFence(VkDevice device, VkFence fence)
 
 VulkanFence::~VulkanFence()
 {
-    vkDestroyFence(device_, fence_, VK_ALLOC);
+    vkDestroyFence(device_, fence_, RTRC_VK_ALLOC);
 }
 
 void VulkanFence::Reset()
 {
-    VK_FAIL_MSG(
+    RTRC_VK_FAIL_MSG(
         vkResetFences(device_, 1, &fence_),
         "failed to reset vulkan fence");
 }

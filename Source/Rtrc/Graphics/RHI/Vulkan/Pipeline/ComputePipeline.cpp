@@ -12,7 +12,7 @@ VulkanComputePipeline::VulkanComputePipeline(Ptr<BindingLayout> layout, VkDevice
 VulkanComputePipeline::~VulkanComputePipeline()
 {
     assert(device_ && pipeline_);
-    vkDestroyPipeline(device_, pipeline_, VK_ALLOC);
+    vkDestroyPipeline(device_, pipeline_, RTRC_VK_ALLOC);
 }
 
 const Ptr<BindingLayout> &VulkanComputePipeline::GetBindingLayout() const

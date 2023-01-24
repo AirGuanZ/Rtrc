@@ -23,17 +23,18 @@ struct VkResultChecker
     }
 };
 
-#define VK_CHECK(RESULT) ::Rtrc::RHI::Vk::VkResultChecker{(RESULT)}+[&](VkResult errorCode)->void
-#define VK_FAIL_MSG(RESULT, MSG) do { VK_CHECK(RESULT) { throw ::Rtrc::Exception(MSG); }; } while(false)
+#define RTRC_VK_CHECK(RESULT) ::Rtrc::RHI::Vk::VkResultChecker{(RESULT)}+[&](VkResult errorCode)->void
+#define RTRC_VK_FAIL_MSG(RESULT, MSG) do { RTRC_VK_CHECK(RESULT) { throw ::Rtrc::Exception(MSG); }; } while(false)
 
 extern VkAllocationCallbacks RtrcGlobalVulkanAllocationCallbacks;
-#define VK_ALLOC (&Rtrc::RHI::Vk::RtrcGlobalVulkanAllocationCallbacks)
+#define RTRC_VK_ALLOC (&Rtrc::RHI::Vk::RtrcGlobalVulkanAllocationCallbacks)
 
 #define RTRC_VULKAN_API_VERSION VK_API_VERSION_1_3
 
 VkImageType              TranslateTextureDimension      (TextureDimension dim);
 VkFormat                 TranslateTexelFormat           (Format format);
-VkShaderStageFlagBits    TranslateShaderType            (ShaderStage type);
+VkShaderStageFlagBits    TranslateShaderType            (ShaderType type);
+VkShaderStageFlagBits    TranslateShaderStage           (ShaderStage type);
 VkShaderStageFlags       TranslateShaderStageFlag       (EnumFlags<ShaderStage> flag);
 VkPrimitiveTopology      TranslatePrimitiveTopology     (PrimitiveTopology topology);
 VkPolygonMode            TranslateFillMode              (FillMode mode);
@@ -91,7 +92,7 @@ using VkCommonHandle = uint64_t;
 
 void SetObjectName(VulkanDevice *device, VkObjectType type, VkCommonHandle object, const char *name);
 
-#define VK_SET_OBJECT_NAME(DEVICE, OBJECT, TYPE)                                            \
+#define RTRC_VK_SET_OBJECT_NAME(DEVICE, OBJECT, TYPE)                                            \
     void SetName(std::string name) override                                                 \
     {                                                                                       \
         RHIObject::SetName(std::move(name));                                                \

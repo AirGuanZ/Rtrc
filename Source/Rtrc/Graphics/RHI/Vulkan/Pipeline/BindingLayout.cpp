@@ -13,7 +13,7 @@ VulkanBindingLayout::VulkanBindingLayout(BindingLayoutDesc desc, VkDevice device
 VulkanBindingLayout::~VulkanBindingLayout()
 {
     assert(device_ && layout_);
-    vkDestroyPipelineLayout(device_, layout_, VK_ALLOC);
+    vkDestroyPipelineLayout(device_, layout_, RTRC_VK_ALLOC);
 }
 
 VkPipelineLayout VulkanBindingLayout::_internalGetNativeLayout() const

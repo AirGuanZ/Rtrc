@@ -24,7 +24,7 @@ VulkanTexture::~VulkanTexture()
 {
     for(VkImageView view : std::ranges::views::values(views_))
     {
-        vkDestroyImageView(device_->_internalGetNativeDevice(), view, VK_ALLOC);
+        vkDestroyImageView(device_->_internalGetNativeDevice(), view, RTRC_VK_ALLOC);
     }
     if(ownership_ == ResourceOwnership::Allocation)
     {
@@ -32,7 +32,7 @@ VulkanTexture::~VulkanTexture()
     }
     else if(ownership_ == ResourceOwnership::Resource)
     {
-        vkDestroyImage(device_->_internalGetNativeDevice(), image_, VK_ALLOC);
+        vkDestroyImage(device_->_internalGetNativeDevice(), image_, RTRC_VK_ALLOC);
     }
 }
 
@@ -158,10 +158,10 @@ VkImageView VulkanTexture::CreateImageView(const ViewKey &key) const
     };
 
     VkImageView imageView;
-    VK_FAIL_MSG(
-        vkCreateImageView(device_->_internalGetNativeDevice(), &createInfo, VK_ALLOC, &imageView),
+    RTRC_VK_FAIL_MSG(
+        vkCreateImageView(device_->_internalGetNativeDevice(), &createInfo, RTRC_VK_ALLOC, &imageView),
         "failed to create vulkan image view");
-    RTRC_SCOPE_FAIL{ vkDestroyImageView(device_->_internalGetNativeDevice(), imageView, VK_ALLOC); };
+    RTRC_SCOPE_FAIL{ vkDestroyImageView(device_->_internalGetNativeDevice(), imageView, RTRC_VK_ALLOC); };
     
     views_[key] = imageView;
     return imageView;

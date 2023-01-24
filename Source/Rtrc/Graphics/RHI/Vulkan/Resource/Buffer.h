@@ -12,7 +12,7 @@ RTRC_RHI_IMPLEMENT(VulkanBuffer, Buffer)
 {
 public:
 
-    VK_SET_OBJECT_NAME(device_, buffer_, VK_OBJECT_TYPE_BUFFER)
+    RTRC_VK_SET_OBJECT_NAME(device_, buffer_, VK_OBJECT_TYPE_BUFFER)
 
     VulkanBuffer(
         const BufferDesc      &desc,

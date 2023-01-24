@@ -214,13 +214,13 @@ private:
                 }
                 const std::string filename = source_.substr(filenameStart, filenameEnd - filenameStart);
 
-                throw Exception(fmt::format("parsing error at {}, line {}. {}", filename, line, msg));
+                throw Exception(fmt::format("Parsing error at {}, line {}. {}", filename, line, msg));
             }
 
             ++line;
         }
         throw Exception(fmt::format(
-            "invalid shader source file: '#line FILENAME' not found before the {}th character", nextPos_ + 1));
+            "Invalid shader source file: '#line FILENAME' not found before the {}th character", nextPos_ + 1));
     }
 
     [[noreturn]] void ThrowInMaterialMode(std::string_view msg) const

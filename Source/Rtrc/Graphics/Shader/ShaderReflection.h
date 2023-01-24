@@ -84,6 +84,7 @@ public:
     virtual std::vector<ShaderIOVar> GetInputVariables() const = 0;
     virtual std::vector<ShaderConstantBuffer> GetConstantBuffers() const = 0;
     virtual Vector3i GetComputeShaderThreadGroupSize() const = 0;
+    virtual std::vector<RHI::RawShaderEntry> GetEntries() const = 0;
 };
 
 class SPIRVReflection : public ShaderReflection, public Uncopyable
@@ -97,6 +98,7 @@ public:
     std::vector<ShaderIOVar> GetInputVariables() const override;
     std::vector<ShaderConstantBuffer> GetConstantBuffers() const override;
     Vector3i GetComputeShaderThreadGroupSize() const override;
+    std::vector<RHI::RawShaderEntry> GetEntries() const override;
 
 private:
 

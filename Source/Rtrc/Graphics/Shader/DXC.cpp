@@ -99,16 +99,21 @@ std::vector<unsigned char> DXC::Compile(
         arguments.push_back(inc.c_str());
     }
 
-    const auto entryPoint = DXCDetail::ToWString(shaderInfo.entryPoint);
-    arguments.push_back(L"-E");
-    arguments.push_back(entryPoint.c_str());
+    std::wstring entryPoint;
+    if(target != Target::Vulkan_1_3_RT_6_0)
+    {
+        entryPoint = DXCDetail::ToWString(shaderInfo.entryPoint);
+        arguments.push_back(L"-E");
+        arguments.push_back(entryPoint.c_str());
+    }
 
     std::wstring targetProfile;
     switch(target)
     {
-    case Target::Vulkan_1_3_VS_6_0: targetProfile = L"vs_6_0"; break;
-    case Target::Vulkan_1_3_FS_6_0: targetProfile = L"ps_6_0"; break;
-    case Target::Vulkan_1_3_CS_6_0: targetProfile = L"cs_6_0"; break;
+    case Target::Vulkan_1_3_VS_6_0: targetProfile = L"vs_6_0";  break;
+    case Target::Vulkan_1_3_FS_6_0: targetProfile = L"ps_6_0";  break;
+    case Target::Vulkan_1_3_CS_6_0: targetProfile = L"cs_6_0";  break;
+    case Target::Vulkan_1_3_RT_6_0: targetProfile = L"lib_6_0"; break;
     }
     arguments.push_back(L"-T");
     arguments.push_back(targetProfile.c_str());
@@ -162,13 +167,13 @@ std::vector<unsigned char> DXC::Compile(
         &sourceBuffer, arguments.data(), static_cast<uint32_t>(arguments.size()),
         impl_->defaultHandler.Get(), IID_PPV_ARGS(compileResult.GetAddressOf()))))
     {
-        throw Exception("failed to call DXC::Compile");
+        throw Exception("Failed to call DXC::Compile");
     }
 
     HRESULT status;
     if(FAILED(compileResult->GetStatus(&status)))
     {
-        throw Exception("failed to get dxc operation status");
+        throw Exception("Failed to get dxc operation status");
     }
 
     const bool hasCompileError = FAILED(status);
@@ -177,7 +182,7 @@ std::vector<unsigned char> DXC::Compile(
         ComPtr<IDxcBlobUtf8> errors;
         if(FAILED(compileResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(errors.GetAddressOf()), nullptr)))
         {
-            throw Exception("failed to get error message from DXC");
+            throw Exception("Failed to get error message from DXC");
         }
         if(errors && errors->GetStringLength() > 0)
         {
@@ -192,14 +197,14 @@ std::vector<unsigned char> DXC::Compile(
         }
         if(hasCompileError)
         {
-            throw Exception("dxc: an unknown error occurred");
+            throw Exception("DXC: an unknown error occurred");
         }
     }
 
     ComPtr<IDxcBlob> result;
     if(FAILED(compileResult->GetResult(result.GetAddressOf())))
     {
-        throw Exception("failed to get dxc compile result");
+        throw Exception("Failed to get dxc compile result");
     }
 
     if(preprocessOutput)

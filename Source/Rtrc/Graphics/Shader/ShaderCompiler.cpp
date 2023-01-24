@@ -129,6 +129,10 @@ namespace ShaderCompilerDetail
             {
                 stages |= RHI::ShaderStage::AllGraphics;
             }
+            else if(tokens.GetCurrentToken() == "Callable")
+            {
+                stages |= RHI::ShaderStage::CallableShader;
+            }
             else if(tokens.GetCurrentToken() == "RT" || tokens.GetCurrentToken() == "RayTracing")
             {
                 stages |= RHI::ShaderStage::AllRT;
@@ -156,10 +160,9 @@ namespace ShaderCompilerDetail
         RHI::ShaderStageFlag stages = RHI::ShaderStage::All;
         switch(category)
         {
-        case Shader::Category::Graphics:         stages = RHI::ShaderStage::AllGraphics; break;
-        case Shader::Category::Compute:          stages = RHI::ShaderStage::CS;          break;
-        case Shader::Category::RayTracingCommon: stages = RHI::ShaderStage::AllRTCommon; break;
-        case Shader::Category::RayTracingHit:    stages = RHI::ShaderStage::AllRTHit;    break;
+        case Shader::Category::Graphics:   stages = RHI::ShaderStage::AllGraphics; break;
+        case Shader::Category::Compute:    stages = RHI::ShaderStage::CS;          break;
+        case Shader::Category::RayTracing: stages = RHI::ShaderStage::AllRT;       break;
         }
         return stages;
     }
@@ -226,25 +229,30 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     const bool hasVS = !source.vertexEntry.empty();
     const bool hasFS = !source.fragmentEntry.empty();
     const bool hasCS = !source.computeEntry.empty();
+    const bool hasRT = source.isRayTracingShader;
 
     Shader::Category category;
-    if(hasVS && hasFS && !hasCS)
+    if(hasVS && hasFS && !hasCS && !hasRT)
     {
         category = Shader::Category::Graphics;
     }
-    else if(!hasVS && !hasFS && hasCS)
+    else if(!hasVS && !hasFS && hasCS && !hasRT)
     {
         category = Shader::Category::Compute;
     }
+    else if(!hasVS && !hasFS && !hasCS && hasRT)
+    {
+        category = Shader::Category::RayTracing;
+    }
     else
     {
-        throw Exception("Invalid shader category. Must be (VS & FS) or (CS)");
+        throw Exception("Invalid shader category. Must be (VS & FS), (CS) or (RT)");
     }
 
     // Parse bindings
 
     Bindings bindings; bool hasParsedBindings = false;
-    auto parseBindings = [&](const std::string &src)
+    auto GetBindings = [&](const std::string &src)
     {
         assert(!hasParsedBindings);
         bindings = CollectBindings(src, category);
@@ -256,21 +264,27 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
         shaderInfo.entryPoint = source.vertexEntry;
         std::string preprocessed;
         dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_VS_6_0, debug, &preprocessed);
-        parseBindings(preprocessed);
+        GetBindings(preprocessed);
     }
     if(!hasParsedBindings && hasFS)
     {
         shaderInfo.entryPoint = source.fragmentEntry;
         std::string preprocessed;
         dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_FS_6_0, debug, &preprocessed);
-        parseBindings(preprocessed);
+        GetBindings(preprocessed);
     }
     if(!hasParsedBindings && hasCS)
     {
         shaderInfo.entryPoint = source.computeEntry;
         std::string preprocessed;
         dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_CS_6_0, debug, &preprocessed);
-        parseBindings(preprocessed);
+        GetBindings(preprocessed);
+    }
+    if(!hasParsedBindings && hasRT)
+    {
+        std::string preprocessed;
+        dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_RT_6_0, debug, &preprocessed);
+        GetBindings(preprocessed);
     }
 
     // Regular groups
@@ -541,8 +555,8 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     shaderInfo.source   = "_rtrc_generated_shader_prefix" + shaderInfo.source;
     shaderInfo.bindless = hasBindless;
 
-    std::vector<uint8_t> vsData, fsData, csData;
-    Box<SPIRVReflection> vsRefl, fsRefl, csRefl;
+    std::vector<uint8_t> vsData, fsData, csData, rtData;
+    Box<SPIRVReflection> vsRefl, fsRefl, csRefl, rtRefl;
     if(hasVS)
     {
         shaderInfo.entryPoint = source.vertexEntry;
@@ -560,6 +574,11 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
         shaderInfo.entryPoint = source.computeEntry;
         csData = dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_CS_6_0, debug, nullptr);
         csRefl = MakeBox<SPIRVReflection>(csData, source.computeEntry);
+    }
+    if(hasRT)
+    {
+        rtData = dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_RT_6_0, debug, nullptr);
+        rtRefl = MakeBox<SPIRVReflection>(rtData, std::string{});
     }
 
     // Check uses of ungrouped bindings
@@ -581,6 +600,7 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     EnsureAllUsedResourcesAreGrouped(vsRefl, "vertex shader");
     EnsureAllUsedResourcesAreGrouped(fsRefl, "fragment shader");
     EnsureAllUsedResourcesAreGrouped(csRefl, "compute shader");
+    EnsureAllUsedResourcesAreGrouped(rtRefl, "ray tracing shader");
 
     // Shader
 
@@ -590,18 +610,24 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     if(hasVS)
     {
         shader->rawShaders_[Shader::VS_INDEX] = device_->GetRawDevice()->CreateShader(
-            vsData.data(), vsData.size(), source.vertexEntry, RHI::ShaderStage::VertexShader);
+            vsData.data(), vsData.size(), { { RHI::ShaderStage::VertexShader, source.vertexEntry } });
         shader->info_->VSInput_ = vsRefl->GetInputVariables();
     }
     if(hasFS)
     {
         shader->rawShaders_[Shader::FS_INDEX] = device_->GetRawDevice()->CreateShader(
-            fsData.data(), fsData.size(), source.fragmentEntry, RHI::ShaderStage::FragmentShader);
+            fsData.data(), fsData.size(), { { RHI::ShaderStage::FragmentShader, source.fragmentEntry } });
     }
     if(hasCS)
     {
         shader->rawShaders_[Shader::CS_INDEX] = device_->GetRawDevice()->CreateShader(
-            csData.data(), csData.size(), source.computeEntry, RHI::ShaderStage::ComputeShader);
+            csData.data(), csData.size(), { { RHI::ShaderStage::ComputeShader, source.computeEntry } });
+    }
+    if(hasRT)
+    {
+        std::vector<RHI::RawShaderEntry> rayTracingEntries = rtRefl->GetEntries();
+        shader->rawShaders_[Shader::RT_INDEX] = device_->GetRawDevice()->CreateShader(
+            rtData.data(), rtData.size(), std::move(rayTracingEntries));
     }
 
     // Constant buffers
@@ -637,6 +663,10 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     if(hasCS)
     {
         MergeCBuffers(*csRefl);
+    }
+    if(hasRT)
+    {
+        MergeCBuffers(*rtRefl);
     }
     std::ranges::copy(std::ranges::views::values(slotToCBuffer), std::back_inserter(shader->info_->constantBuffers_));
 
@@ -713,7 +743,7 @@ ShaderCompiler::ParsedBinding ShaderCompiler::ParseBinding(
     auto it = RESOURCE_PROPERTIES.find(tokens.GetCurrentToken());
     if(it == RESOURCE_PROPERTIES.end())
     {
-        tokens.Throw(fmt::format("unknown resource type: {}", tokens.GetCurrentToken()));
+        tokens.Throw(fmt::format("Unknown resource type: {}", tokens.GetCurrentToken()));
     }
     tokens.Next();
     const RHI::BindingType bindingType = it->second;
@@ -725,7 +755,7 @@ ShaderCompiler::ParsedBinding ShaderCompiler::ParseBinding(
         templateParam = tokens.GetCurrentToken();
         if(!ShaderTokenStream::IsIdentifier(templateParam))
         {
-            tokens.Throw("resource template parameter expected");
+            tokens.Throw("Resource template parameter expected");
         }
         tokens.Next();
         tokens.ConsumeOrThrow(">");
@@ -745,7 +775,7 @@ ShaderCompiler::ParsedBinding ShaderCompiler::ParseBinding(
             }
             catch(...)
             {
-                tokens.Throw(fmt::format("invalid array size: {}", tokens.GetCurrentToken()));
+                tokens.Throw(fmt::format("Invalid array size: {}", tokens.GetCurrentToken()));
             }
         }
         else
@@ -757,7 +787,7 @@ ShaderCompiler::ParsedBinding ShaderCompiler::ParseBinding(
             }
             catch(...)
             {
-                tokens.Throw(fmt::format("invalid array size: {}", tokens.GetCurrentToken()));
+                tokens.Throw(fmt::format("Invalid array size: {}", tokens.GetCurrentToken()));
             }
         }
         tokens.ConsumeOrThrow("]");
@@ -772,7 +802,7 @@ ShaderCompiler::ParsedBinding ShaderCompiler::ParseBinding(
     std::string bindingName = tokens.GetCurrentToken();
     if(!ShaderTokenStream::IsIdentifier(bindingName))
     {
-        tokens.Throw("binding name expected");
+        tokens.Throw("Binding name expected");
     }
     tokens.Next();
 
@@ -1182,10 +1212,6 @@ ShaderCompiler::Bindings ShaderCompiler::CollectBindings(const std::string &sour
             {
                 tokens.Next();
                 tokens.ConsumeOrThrow("(");
-                //if(!VALUE_PROPERTIES.contains(tokens.GetCurrentToken()))
-                //{
-                //    tokens.Throw(fmt::format("Unknown value property type: {}", tokens.GetCurrentToken()));
-                //}
                 currentGroup.valuePropertyDefinitions += tokens.GetCurrentToken();
                 tokens.Next();
                 while(tokens.GetCurrentToken() == "::")

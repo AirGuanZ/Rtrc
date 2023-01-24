@@ -8,8 +8,7 @@ RTRC_BEGIN
 
 size_t MeshManager::Options::Hash() const
 {
-    return (generateTangentIfNotPresent ? 1 : 0) |
-           (noIndexBuffer ? 2 : 0);
+    return (generateTangentIfNotPresent ? 1 : 0) | (noIndexBuffer ? 2 : 0);
 }
 
 Mesh MeshManager::Load(Device *device, const std::string &filename, const Options &options)
@@ -204,20 +203,6 @@ Vector3f MeshManager::ComputeTangent(
     }
     const float invDet = 1 / det;
     return Normalize(m11 * invDet * B_A - m01 * invDet * C_A);
-}
-
-bool operator<(
-    const std::pair<std::string, MeshManager::Options> &lhs,
-    const std::pair<std::string_view, MeshManager::Options> &rhs)
-{
-    return std::make_pair(std::string_view(lhs.first), lhs.second) < rhs;
-}
-
-bool operator<(
-    const std::pair<std::string_view, MeshManager::Options> &lhs,
-    const std::pair<std::string, MeshManager::Options> &rhs)
-{
-    return lhs < std::make_pair(std::string_view(rhs.first), rhs.second);
 }
 
 RTRC_END

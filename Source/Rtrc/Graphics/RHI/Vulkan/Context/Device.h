@@ -35,10 +35,12 @@ public:
 
     Ptr<Semaphore> CreateSemaphore(uint64_t initialValue) RTRC_RHI_OVERRIDE;
 
-    Ptr<RawShader> CreateShader(const void *data, size_t size, std::string entryPoint, ShaderStage type) RTRC_RHI_OVERRIDE;
+    Ptr<RawShader> CreateShader(const void *data, size_t size, std::vector<RawShaderEntry> entries) RTRC_RHI_OVERRIDE;
 
     Ptr<GraphicsPipeline> CreateGraphicsPipeline(const GraphicsPipelineDesc &desc) RTRC_RHI_OVERRIDE;
     Ptr<ComputePipeline>  CreateComputePipeline(const ComputePipelineDesc &desc) RTRC_RHI_OVERRIDE;
+
+    Ptr<RayTracingLibrary> CreateRayTracingLibrary(const RawShaderPtr &shader) RTRC_RHI_OVERRIDE;
 
     Ptr<BindingGroupLayout> CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc) RTRC_RHI_OVERRIDE;
     Ptr<BindingGroup> CreateBindingGroup(

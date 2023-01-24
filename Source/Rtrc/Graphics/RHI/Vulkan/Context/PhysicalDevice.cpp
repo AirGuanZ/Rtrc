@@ -21,12 +21,12 @@ namespace VkPhysicalDeviceDetail
         // Basic extensions
 
         uint32_t supportedExtensionCount = 0;
-        VK_FAIL_MSG(
+        RTRC_VK_FAIL_MSG(
             vkEnumerateDeviceExtensionProperties(device, nullptr, &supportedExtensionCount, nullptr),
             "failed to get vulkan device extension property count");
 
         std::vector<VkExtensionProperties> supportedExtensions(supportedExtensionCount);
-        VK_FAIL_MSG(
+        RTRC_VK_FAIL_MSG(
             vkEnumerateDeviceExtensionProperties(
                 device, nullptr, &supportedExtensionCount, supportedExtensions.data()),
             "failed to get vulkan device extension properties");
@@ -123,7 +123,7 @@ namespace VkPhysicalDeviceDetail
 VulkanPhysicalDevice VulkanPhysicalDevice::Select(VkInstance instance, const DeviceDesc &desc)
 {
     uint32_t deviceCount;
-    VK_FAIL_MSG(
+    RTRC_VK_FAIL_MSG(
         vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr),
         "failed to get vulkan physical device count");
     if(!deviceCount)
@@ -132,7 +132,7 @@ VulkanPhysicalDevice VulkanPhysicalDevice::Select(VkInstance instance, const Dev
     }
 
     std::vector<VkPhysicalDevice> devices(deviceCount);
-    VK_FAIL_MSG(
+    RTRC_VK_FAIL_MSG(
         vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data()),
         "failed to get vulkan physical devices");
 

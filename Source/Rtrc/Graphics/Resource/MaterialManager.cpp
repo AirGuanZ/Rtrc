@@ -1,5 +1,4 @@
 #include <Rtrc/Graphics/Resource/MaterialManager.h>
-#include <Rtrc/Graphics/Shader/ShaderBindingParser.h>
 #include <Rtrc/Graphics/Shader/ShaderTokenStream.h>
 #include <Rtrc/Utility/Enumerate.h>
 #include <Rtrc/Utility/File.h>
@@ -113,6 +112,180 @@ namespace MaterialDetail
         }
     }
 
+    bool HasPragma(std::string &source, const std::string &pragmaName)
+    {
+        assert(ShaderTokenStream::IsIdentifier(pragmaName));
+        size_t beginPos = 0;
+        while(true)
+        {
+            const size_t pos = source.find("#" + pragmaName, beginPos);
+            if(pos == std::string::npos)
+            {
+                return false;
+            }
+
+            const size_t findLen = 1 + pragmaName.size();
+            if(!ShaderTokenStream::IsNonIdentifierChar(source[pos + findLen]))
+            {
+                beginPos = pos + findLen;
+                continue;
+            }
+
+            return true;
+        }
+    }
+
+    bool ParseEntryPragma(std::string &source, const std::string &entryName, std::string &result)
+    {
+        assert(ShaderTokenStream::IsIdentifier(entryName));
+        size_t beginPos = 0;
+        while(true)
+        {
+            const size_t pos = source.find("#" + entryName, beginPos);
+            if(pos == std::string::npos)
+            {
+                return false;
+            }
+
+            const size_t findLen = 1 + entryName.size();
+            if(!ShaderTokenStream::IsNonIdentifierChar(source[pos + findLen]))
+            {
+                beginPos = pos + findLen;
+                continue;
+            }
+
+            std::string s = source;
+            ShaderTokenStream tokens(s, pos + findLen);
+            if(ShaderTokenStream::IsIdentifier(tokens.GetCurrentToken()))
+            {
+                result = tokens.GetCurrentToken();
+                for(size_t i = pos; i < tokens.GetCurrentPosition(); ++i)
+                {
+                    if(source[i] != '\n')
+                    {
+                        source[i] = ' ';
+                    }
+                }
+                return true;
+            }
+            tokens.Throw(fmt::format("expect identifier after '#{}'", entryName));
+        }
+    }
+
+    void ParseKeywords(std::string &source, std::vector<std::string> &keywords)
+    {
+        assert(keywords.empty());
+        size_t beginPos = 0;
+        while(true)
+        {
+            constexpr std::string_view KEYWORD = "#keyword";
+            const size_t pos = source.find(KEYWORD, beginPos);
+            if(pos == std::string::npos)
+            {
+                return;
+            }
+
+            if(!ShaderTokenStream::IsNonIdentifierChar(source[pos + KEYWORD.size()]))
+            {
+                beginPos = pos + KEYWORD.size();
+                continue;
+            }
+
+            std::string s = source;
+            ShaderTokenStream tokens(s, pos + KEYWORD.size());
+            if(ShaderTokenStream::IsIdentifier(tokens.GetCurrentToken()))
+            {
+                keywords.push_back(tokens.GetCurrentToken());
+                for(size_t i = 0; i < tokens.GetCurrentPosition(); ++i)
+                {
+                    if(source[i] != '\n')
+                    {
+                        source[i] = ' ';
+                    }
+                }
+                beginPos = tokens.GetCurrentPosition();
+            }
+            else
+            {
+                tokens.Throw("identifier expected after '#keyword'");
+            }
+        }
+    }
+
+    void RemoveComments(std::string &source)
+    {
+        for(char &c : source)
+        {
+            if(c == '\r')
+            {
+                c = ' ';
+            }
+        }
+
+        size_t pos = 0;
+        while(pos < source.size())
+        {
+            if(source[pos] == '/' && source[pos + 1] == '/')
+            {
+                // find '\n'
+                size_t endPos = pos;
+                while(endPos < source.size() && source[endPos] != '\n')
+                {
+                    source[endPos] = ' ';
+                    ++endPos;
+                }
+                pos = endPos + 1;
+            }
+            else if(source[pos] == '/' && source[pos + 1] == '*')
+            {
+                // find "*/"
+                const size_t newPos = source.find("*/", pos);
+                if(newPos == std::string::npos)
+                {
+                    throw Exception("\"*/\" expected");
+                }
+                for(size_t i = pos; i < newPos + 2; ++i)
+                {
+                    if(!std::isspace(source[i]))
+                    {
+                        source[i] = ' ';
+                    }
+                }
+                pos = newPos + 2;
+            }
+            else if(source[pos] == '"')
+            {
+                // skip string
+
+                size_t endPos = pos + 1;
+                while(true)
+                {
+                    if(endPos >= source.size())
+                    {
+                        throw Exception("enclosing '\"' expected");
+                    }
+                    if(source[endPos] == '\\')
+                    {
+                        endPos += 2;
+                    }
+                    else if(source[endPos] == '"')
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        ++endPos;
+                    }
+                }
+                pos = endPos + 1;
+            }
+            else
+            {
+                ++pos;
+            }
+        }
+    }
+
 } // namespace MaterialDetail
 
 MaterialManager::MaterialManager()
@@ -181,13 +354,11 @@ void MaterialManager::SetDebugMode(bool debug)
 
 RC<Material> MaterialManager::GetMaterial(const std::string &name)
 {
-    //assert(materialNameToFilename_.contains(name));
     return materialPool_.GetOrCreate(name, [&] { return CreateMaterial(name); });
 }
 
 RC<ShaderTemplate> MaterialManager::GetShaderTemplate(const std::string &name)
 {
-    //assert(shaderNameToFilename_.contains(name));
     return shaderPool_.GetOrCreate(name, [&] { return CreateShaderTemplate(name); });
 }
 
@@ -206,7 +377,7 @@ RC<MaterialInstance> MaterialManager::CreateMaterialInstance(const std::string &
 void MaterialManager::ProcessShaderFile(int filenameIndex, const std::string &filename)
 {
     std::string source = File::ReadTextFile(filename);
-    ShaderPreprocess::RemoveComments(source);
+    MaterialDetail::RemoveComments(source);
 
     size_t begPos = 0;
     while (true)
@@ -229,7 +400,7 @@ void MaterialManager::ProcessShaderFile(int filenameIndex, const std::string &fi
 void MaterialManager::ProcessMaterialFile(int filenameIndex, const std::string &filename)
 {
     std::string source = File::ReadTextFile(filename);
-    ShaderPreprocess::RemoveComments(source);
+    MaterialDetail::RemoveComments(source);
 
     size_t begPos = 0;
     while(true)
@@ -260,7 +431,7 @@ RC<Material> MaterialManager::CreateMaterial(std::string_view name)
 
     std::string source = File::ReadTextFile(filenames_[fileRef.filenameIndex]);
     source = source.substr(0, fileRef.endPos);
-    ShaderPreprocess::RemoveComments(source);
+    MaterialDetail::RemoveComments(source);
     ShaderTokenStream tokens(source, fileRef.beginPos, ShaderTokenStream::ErrorMode::Material);
 
     std::vector<MaterialProperty> properties;
@@ -377,7 +548,7 @@ RC<ShaderTemplate> MaterialManager::CreateShaderTemplate(std::string_view name)
     const FileReference &fileRef = it->second;
 
     std::string source = File::ReadTextFile(filenames_[fileRef.filenameIndex]);
-    ShaderPreprocess::RemoveComments(source);
+    MaterialDetail::RemoveComments(source);
     for(size_t i = 0; i < fileRef.beginPos; ++i)
     {
         if(source[i] != '\n')
@@ -387,32 +558,40 @@ RC<ShaderTemplate> MaterialManager::CreateShaderTemplate(std::string_view name)
     }
     source = source.substr(0, fileRef.endPos);
     
-    std::string VSEntry, FSEntry, CSEntry;
+    std::string VSEntry, FSEntry, CSEntry; bool isRT = false;
     for(auto s : { "vertex", "vert" })
     {
-        if(ShaderPreprocess::ParseEntryPragma(source, s, VSEntry))
+        if(MaterialDetail::ParseEntryPragma(source, s, VSEntry))
         {
             break;
         }
     }
     for(auto &s : { "fragment", "frag", "pixel" })
     {
-        if(ShaderPreprocess::ParseEntryPragma(source, s, FSEntry))
+        if(MaterialDetail::ParseEntryPragma(source, s, FSEntry))
         {
             break;
         }
     }
     for(auto &s : { "compute", "comp" })
     {
-        if(ShaderPreprocess::ParseEntryPragma(source, s, CSEntry))
+        if(MaterialDetail::ParseEntryPragma(source, s, CSEntry))
         {
+            break;
+        }
+    }
+    for(auto &s : { "rt", "raytracing" })
+    {
+        if(MaterialDetail::HasPragma(source, s))
+        {
+            isRT = true;
             break;
         }
     }
 
     std::vector<std::string> keywordStrings;
     KeywordSet keywordSet;
-    ShaderPreprocess::ParseKeywords(source, keywordStrings);
+    MaterialDetail::ParseKeywords(source, keywordStrings);
     for(auto &s : keywordStrings)
     {
         keywordSet.AddKeyword(Keyword(s), 1);
@@ -420,14 +599,15 @@ RC<ShaderTemplate> MaterialManager::CreateShaderTemplate(std::string_view name)
     const int totalKeywordBitCount = keywordSet.GetTotalBitCount();
 
     auto shaderTemplate = MakeRC<ShaderTemplate>();
-    shaderTemplate->debug_           = debug_;
-    shaderTemplate->keywordSet_      = std::move(keywordSet);
-    shaderTemplate->source_.source   = source;
-    shaderTemplate->source_.filename = filenames_[fileRef.filenameIndex];
-    shaderTemplate->source_.vertexEntry  = std::move(VSEntry);
-    shaderTemplate->source_.fragmentEntry  = std::move(FSEntry);
-    shaderTemplate->source_.computeEntry  = std::move(CSEntry);
-    shaderTemplate->shaderCompiler_  = &shaderCompiler_;
+    shaderTemplate->debug_                     = debug_;
+    shaderTemplate->keywordSet_                = std::move(keywordSet);
+    shaderTemplate->source_.source             = std::move(source);
+    shaderTemplate->source_.filename           = filenames_[fileRef.filenameIndex];
+    shaderTemplate->source_.vertexEntry        = std::move(VSEntry);
+    shaderTemplate->source_.fragmentEntry      = std::move(FSEntry);
+    shaderTemplate->source_.computeEntry       = std::move(CSEntry);
+    shaderTemplate->source_.isRayTracingShader = isRT;
+    shaderTemplate->shaderCompiler_            = &shaderCompiler_;
     shaderTemplate->compiledShaders_.resize(1 << totalKeywordBitCount);
 
     return shaderTemplate;

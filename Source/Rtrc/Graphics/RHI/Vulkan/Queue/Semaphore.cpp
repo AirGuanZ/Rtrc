@@ -11,13 +11,13 @@ VulkanSemaphore::VulkanSemaphore(VkDevice device, VkSemaphore semaphore)
 VulkanSemaphore::~VulkanSemaphore()
 {
     assert(device_ && semaphore_);
-    vkDestroySemaphore(device_, semaphore_, VK_ALLOC);
+    vkDestroySemaphore(device_, semaphore_, RTRC_VK_ALLOC);
 }
 
 uint64_t VulkanSemaphore::GetValue() const
 {
     uint64_t value;
-    VK_FAIL_MSG(
+    RTRC_VK_FAIL_MSG(
         vkGetSemaphoreCounterValue(device_, semaphore_, &value),
         "failed to get vulkan semaphore value");
     return value;

@@ -15,8 +15,7 @@
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/Queue.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/Semaphore.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Buffer.h>
-#include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferSrv.h>
-#include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferUav.h>
+#include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferView.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/MemoryBlock.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Sampler.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Texture.h>
@@ -24,6 +23,10 @@
 #include <Rtrc/Utility/Enumerate.h>
 #include <Rtrc/Utility/StaticVector.h>
 #include <Rtrc/Utility/Unreachable.h>
+
+#ifdef RTRC_STATIC_RHI
+#include <Rtrc/Graphics/RHI/Vulkan/Queue/CommandPool.h>
+#endif
 
 RTRC_RHI_VK_BEGIN
 
@@ -33,14 +36,14 @@ namespace VkDeviceDetail
     bool CheckFormatSupport(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkFormat expectedFormat)
     {
         uint32_t supportedFormatCount;
-        VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(
+        RTRC_VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(
             physicalDevice, surface, &supportedFormatCount, nullptr))
         {
             throw Exception("Failed to get vulkan physical device surface format count");
         };
 
         std::vector<VkSurfaceFormatKHR> supportedFormats(supportedFormatCount);
-        VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(
+        RTRC_VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(
             physicalDevice, surface, &supportedFormatCount, supportedFormats.data()))
         {
             throw Exception("Failed to get vulkan physical device surface formats");
@@ -210,12 +213,12 @@ VulkanDevice::VulkanDevice(
     const VmaAllocatorCreateInfo vmaCreateInfo = {
         .physicalDevice       = physicalDevice_.GetNativeHandle(),
         .device               = device_,
-        .pAllocationCallbacks = VK_ALLOC,
+        .pAllocationCallbacks = RTRC_VK_ALLOC,
         .pVulkanFunctions     = &vmaFunctions,
         .instance             = instance_,
         .vulkanApiVersion     = RTRC_VULKAN_API_VERSION
     };
-    VK_FAIL_MSG(
+    RTRC_VK_FAIL_MSG(
         vmaCreateAllocator(&vmaCreateInfo, &allocator_),
         "Failed to create vulkan memory allocator");
 }
@@ -223,7 +226,7 @@ VulkanDevice::VulkanDevice(
 VulkanDevice::~VulkanDevice()
 {
     vmaDestroyAllocator(allocator_);
-    vkDestroyDevice(device_, VK_ALLOC);
+    vkDestroyDevice(device_, RTRC_VK_ALLOC);
 }
 
 Ptr<Queue> VulkanDevice::GetQueue(QueueType type)
@@ -250,10 +253,10 @@ Ptr<Fence> VulkanDevice::CreateFence(bool signaled)
         .flags = signaled ? VK_FENCE_CREATE_SIGNALED_BIT : VkFenceCreateFlags{}
     };
     VkFence fence;
-    VK_FAIL_MSG(
-        vkCreateFence(device_, &createInfo, VK_ALLOC, &fence),
+    RTRC_VK_FAIL_MSG(
+        vkCreateFence(device_, &createInfo, RTRC_VK_ALLOC, &fence),
         "Failed to create vulkan fence");
-    RTRC_SCOPE_FAIL{ vkDestroyFence(device_, fence, VK_ALLOC); };
+    RTRC_SCOPE_FAIL{ vkDestroyFence(device_, fence, RTRC_VK_ALLOC); };
     return MakePtr<VulkanFence>(device_, fence);
 }
 
@@ -265,7 +268,7 @@ Ptr<Swapchain> VulkanDevice::CreateSwapchain(const SwapchainDesc &desc, Window &
     // surface capabilities
 
     VkSurfaceCapabilitiesKHR surfaceCapabilities;
-    VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+    RTRC_VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
         physicalDevice_.GetNativeHandle(), surface->_internalGetSurface(), &surfaceCapabilities))
     {
         throw Exception("Failed to get vulkan physical device surface capabilities");
@@ -282,13 +285,13 @@ Ptr<Swapchain> VulkanDevice::CreateSwapchain(const SwapchainDesc &desc, Window &
     // present mode
 
     uint32_t supportedPresentModeCount;
-    VK_FAIL_MSG(
+    RTRC_VK_FAIL_MSG(
         vkGetPhysicalDeviceSurfacePresentModesKHR(
             physicalDevice_.GetNativeHandle(), surface->_internalGetSurface(), &supportedPresentModeCount, nullptr),
         "Failed to get vulkan surface present mode count");
 
     std::vector<VkPresentModeKHR> supportedPresentModes(supportedPresentModeCount);
-    VK_FAIL_MSG(
+    RTRC_VK_FAIL_MSG(
         vkGetPhysicalDeviceSurfacePresentModesKHR(
             physicalDevice_.GetNativeHandle(), surface->_internalGetSurface(),
             &supportedPresentModeCount, supportedPresentModes.data()),
@@ -355,10 +358,10 @@ Ptr<Swapchain> VulkanDevice::CreateSwapchain(const SwapchainDesc &desc, Window &
     };
 
     VkSwapchainKHR swapchain;
-    VK_FAIL_MSG(
-        vkCreateSwapchainKHR(device_, &swapchainCreateInfo, VK_ALLOC, &swapchain),
+    RTRC_VK_FAIL_MSG(
+        vkCreateSwapchainKHR(device_, &swapchainCreateInfo, RTRC_VK_ALLOC, &swapchain),
         "Failed to create vulkan swapchain");
-    RTRC_SCOPE_FAIL{ vkDestroySwapchainKHR(device_, swapchain, VK_ALLOC); };
+    RTRC_SCOPE_FAIL{ vkDestroySwapchainKHR(device_, swapchain, RTRC_VK_ALLOC); };
 
     // construct result
 
@@ -390,15 +393,15 @@ Ptr<Semaphore> VulkanDevice::CreateSemaphore(uint64_t initialValue)
     };
 
     VkSemaphore semaphore;
-    VK_FAIL_MSG(
-        vkCreateSemaphore(device_, &createInfo, VK_ALLOC, &semaphore),
+    RTRC_VK_FAIL_MSG(
+        vkCreateSemaphore(device_, &createInfo, RTRC_VK_ALLOC, &semaphore),
         "Failed to create vulkan semaphore");
-    RTRC_SCOPE_FAIL{ vkDestroySemaphore(device_, semaphore, VK_ALLOC); };
+    RTRC_SCOPE_FAIL{ vkDestroySemaphore(device_, semaphore, RTRC_VK_ALLOC); };
 
     return MakePtr<VulkanSemaphore>(device_, semaphore);
 }
 
-Ptr<RawShader> VulkanDevice::CreateShader(const void *data, size_t size, std::string entryPoint, ShaderStage type)
+Ptr<RawShader> VulkanDevice::CreateShader(const void *data, size_t size, std::vector<RawShaderEntry> entries)
 {
     const VkShaderModuleCreateInfo createInfo = {
         .sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
@@ -406,11 +409,10 @@ Ptr<RawShader> VulkanDevice::CreateShader(const void *data, size_t size, std::st
         .pCode    = static_cast<const uint32_t*>(data)
     };
     VkShaderModule shaderModule;
-    VK_FAIL_MSG(
-        vkCreateShaderModule(device_, &createInfo, VK_ALLOC, &shaderModule),
+    RTRC_VK_FAIL_MSG(
+        vkCreateShaderModule(device_, &createInfo, RTRC_VK_ALLOC, &shaderModule),
         "Failed to create vulkan shader module");
-    RTRC_SCOPE_FAIL{ vkDestroyShaderModule(device_, shaderModule, VK_ALLOC); };
-    return MakePtr<VulkanRawShader>(device_, shaderModule, std::move(entryPoint), type);
+    return MakePtr<VulkanRawShader>(device_, shaderModule, std::move(entries));
 }
 
 Ptr<GraphicsPipeline> VulkanDevice::CreateGraphicsPipeline(const GraphicsPipelineDesc &desc)
@@ -615,10 +617,10 @@ Ptr<GraphicsPipeline> VulkanDevice::CreateGraphicsPipeline(const GraphicsPipelin
     };
 
     VkPipeline pipeline;
-    VK_FAIL_MSG(
-        vkCreateGraphicsPipelines(device_, VK_NULL_HANDLE, 1, &pipelineCreateInfo, VK_ALLOC, &pipeline),
+    RTRC_VK_FAIL_MSG(
+        vkCreateGraphicsPipelines(device_, VK_NULL_HANDLE, 1, &pipelineCreateInfo, RTRC_VK_ALLOC, &pipeline),
         "Failed to create vulkan graphics pipeline");
-    RTRC_SCOPE_FAIL{ vkDestroyPipeline(device_, pipeline, VK_ALLOC); };
+    RTRC_SCOPE_FAIL{ vkDestroyPipeline(device_, pipeline, RTRC_VK_ALLOC); };
 
     return MakePtr<VulkanGraphicsPipeline>(desc.bindingLayout, device_, pipeline);
 }
@@ -626,16 +628,28 @@ Ptr<GraphicsPipeline> VulkanDevice::CreateGraphicsPipeline(const GraphicsPipelin
 Ptr<ComputePipeline> VulkanDevice::CreateComputePipeline(const ComputePipelineDesc &desc)
 {
     const VkComputePipelineCreateInfo pipelineCreateInfo = {
-   .sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-   .stage = static_cast<VulkanRawShader *>(desc.computeShader.Get())->_internalGetStageCreateInfo(),
-   .layout = static_cast<VulkanBindingLayout *>(desc.bindingLayout.Get())->_internalGetNativeLayout()
+        .sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
+        .stage = static_cast<VulkanRawShader *>(desc.computeShader.Get())->_internalGetStageCreateInfo(),
+        .layout = static_cast<VulkanBindingLayout *>(desc.bindingLayout.Get())->_internalGetNativeLayout()
     };
     VkPipeline pipeline;
-    VK_FAIL_MSG(
-        vkCreateComputePipelines(device_, VK_NULL_HANDLE, 1, &pipelineCreateInfo, VK_ALLOC, &pipeline),
+    RTRC_VK_FAIL_MSG(
+        vkCreateComputePipelines(device_, VK_NULL_HANDLE, 1, &pipelineCreateInfo, RTRC_VK_ALLOC, &pipeline),
         "Failed to create vulkan compute pipeline");
-    RTRC_SCOPE_FAIL{ vkDestroyPipeline(device_, pipeline, VK_ALLOC); };
+    RTRC_SCOPE_FAIL{ vkDestroyPipeline(device_, pipeline, RTRC_VK_ALLOC); };
     return MakePtr<VulkanComputePipeline>(desc.bindingLayout, device_, pipeline);
+}
+
+Ptr<RayTracingLibrary> VulkanDevice::CreateRayTracingLibrary(const RawShaderPtr &shader)
+{
+    const VkRayTracingPipelineCreateInfoKHR pipelineCreateInfo =
+    {
+        .sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR,
+        .flags = VK_PIPELINE_CREATE_LIBRARY_BIT_KHR
+    };
+
+    // TODO
+    return {};
 }
 
 Ptr<BindingGroupLayout> VulkanDevice::CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc)
@@ -722,10 +736,10 @@ Ptr<BindingGroupLayout> VulkanDevice::CreateBindingGroupLayout(const BindingGrou
     }
 
     VkDescriptorSetLayout layout;
-    VK_FAIL_MSG(
-        vkCreateDescriptorSetLayout(device_, &createInfo, VK_ALLOC, &layout),
+    RTRC_VK_FAIL_MSG(
+        vkCreateDescriptorSetLayout(device_, &createInfo, RTRC_VK_ALLOC, &layout),
         "Failed to create vulkan descriptor set layout");
-    RTRC_SCOPE_FAIL{ vkDestroyDescriptorSetLayout(device_, layout, VK_ALLOC); };
+    RTRC_SCOPE_FAIL{ vkDestroyDescriptorSetLayout(device_, layout, RTRC_VK_ALLOC); };
 
     return MakePtr<VulkanBindingGroupLayout>(desc, std::move(descSetBindings), device_, layout, bindless);
 }
@@ -765,10 +779,10 @@ Ptr<BindingLayout> VulkanDevice::CreateBindingLayout(const BindingLayoutDesc &de
     };
 
     VkPipelineLayout layout;
-    VK_FAIL_MSG(
-        vkCreatePipelineLayout(device_, &createInfo, VK_ALLOC, &layout),
+    RTRC_VK_FAIL_MSG(
+        vkCreatePipelineLayout(device_, &createInfo, RTRC_VK_ALLOC, &layout),
         "Failed to create vulkan pipeline layout");
-    RTRC_SCOPE_FAIL{ vkDestroyPipelineLayout(device_, layout, VK_ALLOC); };
+    RTRC_SCOPE_FAIL{ vkDestroyPipelineLayout(device_, layout, RTRC_VK_ALLOC); };
 
     return MakePtr<VulkanBindingLayout>(desc, device_, layout);
 }
@@ -830,7 +844,7 @@ Ptr<Texture> VulkanDevice::CreateTexture(const TextureDesc &desc)
     const VmaAllocationCreateInfo allocCreateInfo = { .usage = VMA_MEMORY_USAGE_AUTO };
 
     VkImage image; VmaAllocation alloc;
-    VK_FAIL_MSG(
+    RTRC_VK_FAIL_MSG(
         vmaCreateImage(allocator_, &imageCreateInfo.createInfo, &allocCreateInfo, &image, &alloc, nullptr),
         "Failed to create vulkan image");
     RTRC_SCOPE_FAIL{ vmaDestroyImage(allocator_, image, alloc); };
@@ -852,7 +866,7 @@ Ptr<Buffer> VulkanDevice::CreateBuffer(const BufferDesc &desc)
     };
 
     VkBuffer buffer; VmaAllocation alloc;
-    VK_FAIL_MSG(
+    RTRC_VK_FAIL_MSG(
         vmaCreateBuffer(allocator_, &createInfo.createInfo, &allocCreateInfo, &buffer, &alloc, nullptr),
         "Failed to create vulkan buffer");
     RTRC_SCOPE_FAIL{ vmaDestroyBuffer(allocator_, buffer, alloc); };
@@ -913,10 +927,10 @@ Ptr<Sampler> VulkanDevice::CreateSampler(const SamplerDesc &desc)
     }
 
     VkSampler sampler;
-    VK_FAIL_MSG(
-        vkCreateSampler(device_, &createInfo, VK_ALLOC, &sampler),
+    RTRC_VK_FAIL_MSG(
+        vkCreateSampler(device_, &createInfo, RTRC_VK_ALLOC, &sampler),
         "Failed to create vulkan sampler");
-    RTRC_SCOPE_FAIL{ vkDestroySampler(device_, sampler, VK_ALLOC); };
+    RTRC_SCOPE_FAIL{ vkDestroySampler(device_, sampler, RTRC_VK_ALLOC); };
 
     return MakePtr<VulkanSampler>(desc, this, sampler);
 }
@@ -979,7 +993,7 @@ Ptr<MemoryBlock> VulkanDevice::CreateMemoryBlock(const MemoryBlockDesc &desc)
     allocCreateInfo.preferredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
     VmaAllocation alloc;
-    VK_FAIL_MSG(
+    RTRC_VK_FAIL_MSG(
         vmaAllocateMemory(allocator_, &memoryRequirements, &allocCreateInfo, &alloc, nullptr),
         "Failed to allocate memory block");
     RTRC_SCOPE_FAIL{ vmaFreeMemory(allocator_, alloc); };
@@ -992,13 +1006,13 @@ Ptr<Texture> VulkanDevice::CreatePlacedTexture(
 {
     const auto imageCreateInfo = VkDeviceDetail::TranslateImageCreateInfo(desc, queueFamilies_);
     VkImage image;
-    VK_FAIL_MSG(
-        vkCreateImage(device_, &imageCreateInfo.createInfo, VK_ALLOC, &image),
+    RTRC_VK_FAIL_MSG(
+        vkCreateImage(device_, &imageCreateInfo.createInfo, RTRC_VK_ALLOC, &image),
         "Failed to create placed vulkan image");
-    RTRC_SCOPE_FAIL{ vkDestroyImage(device_, image, VK_ALLOC); };
+    RTRC_SCOPE_FAIL{ vkDestroyImage(device_, image, RTRC_VK_ALLOC); };
 
     auto vkMemoryBlock = static_cast<VulkanMemoryBlock *>(memoryBlock.Get());
-    VK_FAIL_MSG(
+    RTRC_VK_FAIL_MSG(
         vmaBindImageMemory2(allocator_, vkMemoryBlock->GetAllocation(), offsetInMemoryBlock, image, nullptr),
         "Failed to bind vma memory with placed vulkan image");
 
@@ -1011,13 +1025,13 @@ Ptr<Buffer> VulkanDevice::CreatePlacedBuffer(
 {
     const auto bufferCreateInfo = VkDeviceDetail::TranslateBufferCreateInfo(desc, queueFamilies_);
     VkBuffer buffer;
-    VK_FAIL_MSG(
-        vkCreateBuffer(device_, &bufferCreateInfo.createInfo, VK_ALLOC, &buffer),
+    RTRC_VK_FAIL_MSG(
+        vkCreateBuffer(device_, &bufferCreateInfo.createInfo, RTRC_VK_ALLOC, &buffer),
         "Failed to create placed vulkan buffer");
-    RTRC_SCOPE_FAIL{ vkDestroyBuffer(device_, buffer, VK_ALLOC); };
+    RTRC_SCOPE_FAIL{ vkDestroyBuffer(device_, buffer, RTRC_VK_ALLOC); };
 
     auto vkMemoryBlock = static_cast<VulkanMemoryBlock *>(memoryBlock.Get());
-    VK_FAIL_MSG(
+    RTRC_VK_FAIL_MSG(
         vmaBindBufferMemory2(allocator_, vkMemoryBlock->GetAllocation(), offsetInMemoryBlock, buffer, nullptr),
         "Failed to bind vma memory with placed vulkan buffer");
 
@@ -1032,7 +1046,7 @@ size_t VulkanDevice::GetConstantBufferAlignment() const
 
 void VulkanDevice::WaitIdle()
 {
-    VK_FAIL_MSG(
+    RTRC_VK_FAIL_MSG(
         vkDeviceWaitIdle(device_),
         "Failed to call vkDeviceWaitIdle");
 }

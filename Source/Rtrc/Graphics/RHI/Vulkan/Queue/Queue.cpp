@@ -22,7 +22,7 @@ QueueType VulkanQueue::GetType() const
 
 void VulkanQueue::WaitIdle()
 {
-    VK_FAIL_MSG(vkQueueWaitIdle(queue_), "failed to wait queue idle");
+    RTRC_VK_FAIL_MSG(vkQueueWaitIdle(queue_), "failed to wait queue idle");
 }
 
 void VulkanQueue::Submit(
@@ -90,7 +90,7 @@ void VulkanQueue::Submit(
         .pSignalSemaphoreInfos    = signalSemaphoreSubmitInfo.data()
     };
     auto fence = signalFence ? static_cast<VulkanFence *>(signalFence.Get())->_internalGetNativeFence() : VK_NULL_HANDLE;
-    VK_FAIL_MSG(
+    RTRC_VK_FAIL_MSG(
         vkQueueSubmit2(queue_, 1, &submitInfo, fence),
         "failed to submit to vulkan queue");
 }
@@ -112,10 +112,10 @@ Ptr<CommandPool> VulkanQueue::_internalCreateCommandPoolImpl() const
         .queueFamilyIndex = queueFamilyIndex_
     };
     VkCommandPool pool;
-    VK_FAIL_MSG(
-        vkCreateCommandPool(device_->_internalGetNativeDevice(), &createInfo, VK_ALLOC, &pool),
+    RTRC_VK_FAIL_MSG(
+        vkCreateCommandPool(device_->_internalGetNativeDevice(), &createInfo, RTRC_VK_ALLOC, &pool),
         "failed to create vulkan command pool");
-    RTRC_SCOPE_FAIL{ vkDestroyCommandPool(device_->_internalGetNativeDevice(), pool, VK_ALLOC); };
+    RTRC_SCOPE_FAIL{ vkDestroyCommandPool(device_->_internalGetNativeDevice(), pool, RTRC_VK_ALLOC); };
     return MakePtr<VulkanCommandPool>(device_, GetType(), pool);
 }
 

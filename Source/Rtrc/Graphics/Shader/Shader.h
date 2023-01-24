@@ -22,8 +22,7 @@ public:
     {
         Graphics,
         Compute,
-        RayTracingCommon,
-        RayTracingHit
+        RayTracing
     };
 
     enum class BuiltinBindingGroup
@@ -77,7 +76,7 @@ private:
 
     friend class ShaderCompiler;
 
-    Category category_;
+    Category category_ = Category::Graphics;
 
     std::vector<ShaderIOVar>          VSInput_;
     std::vector<ShaderConstantBuffer> constantBuffers_;
@@ -87,7 +86,7 @@ private:
     std::vector<std::string>                bindingGroupNames_;
     RC<BindingLayout>                       bindingLayout_;
     ShaderBindingNameMap                    bindingNameMap_;
-    int                                     builtinBindingGroupIndices_[EnumCount<BuiltinBindingGroup>];
+    int                                     builtinBindingGroupIndices_[EnumCount<BuiltinBindingGroup>] = {};
 
     // Should be the last group, if present
     RC<BindingGroup> bindingGroupForInlineSamplers_;
@@ -106,7 +105,7 @@ public:
     using PushConstantRange = ShaderInfo::PushConstantRange;
 
     Category GetCategory() const;
-    const RHI::RawShaderPtr &GetRawShader(RHI::ShaderStage stage) const;
+    const RHI::RawShaderPtr &GetRawShader(RHI::ShaderType type) const;
 
     const RC<ShaderInfo> &GetInfo() const;
 
@@ -146,17 +145,10 @@ private:
 
     static constexpr int VS_INDEX = 0;
     static constexpr int FS_INDEX = 1;
-
     static constexpr int CS_INDEX = 0;
+    static constexpr int RT_INDEX = 0;
 
-    static constexpr int RT_RGS_INDEX = 0;
-    static constexpr int RT_MS_INDEX  = 1;
-
-    static constexpr int RT_CHS_INDEX = 0;
-    static constexpr int RT_IS_INDEX  = 1;
-    static constexpr int RT_AHS_INDEX = 2;
-
-    RHI::RawShaderPtr rawShaders_[3];
+    RHI::RawShaderPtr rawShaders_[2];
     
     RC<ShaderInfo> info_;
     RC<ComputePipeline> computePipeline_;
@@ -254,20 +246,16 @@ inline Shader::Category Shader::GetCategory() const
     return info_->GetCategory();
 }
 
-inline const RHI::RawShaderPtr &Shader::GetRawShader(RHI::ShaderStage stage) const
+inline const RHI::RawShaderPtr &Shader::GetRawShader(RHI::ShaderType type) const
 {
-    using enum RHI::ShaderStage;
+    using enum RHI::ShaderType;
     using enum Category;
-    switch(stage)
+    switch(type)
     {
-    case VertexShader:          assert(GetCategory() == Graphics);         return rawShaders_[VS_INDEX];
-    case FragmentShader:        assert(GetCategory() == Graphics);         return rawShaders_[FS_INDEX];
-    case ComputeShader:         assert(GetCategory() == Compute);          return rawShaders_[CS_INDEX];
-    case RT_RayGenShader:       assert(GetCategory() == RayTracingCommon); return rawShaders_[RT_RGS_INDEX];
-    case RT_MissShader:         assert(GetCategory() == RayTracingCommon); return rawShaders_[RT_MS_INDEX];
-    case RT_ClosestHitShader:   assert(GetCategory() == RayTracingHit);    return rawShaders_[RT_CHS_INDEX];
-    case RT_IntersectionShader: assert(GetCategory() == RayTracingHit);    return rawShaders_[RT_IS_INDEX];
-    case RT_AnyHitShader:       assert(GetCategory() == RayTracingHit);    return rawShaders_[RT_AHS_INDEX];
+    case VertexShader:     assert(GetCategory() == Graphics);   return rawShaders_[VS_INDEX];
+    case FragmentShader:   assert(GetCategory() == Graphics);   return rawShaders_[FS_INDEX];
+    case ComputeShader:    assert(GetCategory() == Compute);    return rawShaders_[CS_INDEX];
+    case RayTracingShader: assert(GetCategory() == RayTracing); return rawShaders_[RT_INDEX];
     default:
         break;
     }

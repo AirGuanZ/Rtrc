@@ -28,8 +28,6 @@ class MaterialInstance;
 class ShaderTokenStream;
 
 // Property declared at material scope
-// MaterialPass can reference these properties using 'IMPORT_RESOURCE(Name)' in 'Material' group
-//                                               or 'IMPORT_PROPERTY(Name)' in constant buffer
 struct MaterialProperty
 {
     enum class Type
@@ -255,7 +253,9 @@ inline Span<MaterialProperty> MaterialPropertyHostLayout::GetProperties() const
 
 inline Span<MaterialProperty> MaterialPropertyHostLayout::GetResourceProperties() const
 {
-    return Span(sortedProperties_.data() + GetValuePropertyCount(), sortedProperties_.size() - GetValuePropertyCount());
+    const MaterialProperty *begin = sortedProperties_.data() + GetValuePropertyCount();
+    const size_t count = sortedProperties_.size() - GetValuePropertyCount();
+    return Span(begin, count);
 }
 
 inline Span<MaterialProperty> MaterialPropertyHostLayout::GetValueProperties() const

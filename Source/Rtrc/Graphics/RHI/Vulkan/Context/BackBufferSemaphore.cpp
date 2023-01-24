@@ -11,7 +11,7 @@ VulkanBackBufferSemaphore::VulkanBackBufferSemaphore(VkDevice device, VkSemaphor
 VulkanBackBufferSemaphore::~VulkanBackBufferSemaphore()
 {
     assert(binarySemaphore_);
-    vkDestroySemaphore(device_, binarySemaphore_, VK_ALLOC);
+    vkDestroySemaphore(device_, binarySemaphore_, RTRC_VK_ALLOC);
 }
 
 VkSemaphore VulkanBackBufferSemaphore::_internalGetBinarySemaphore() const

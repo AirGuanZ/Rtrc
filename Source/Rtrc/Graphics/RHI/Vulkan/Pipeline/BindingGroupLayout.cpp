@@ -1,6 +1,7 @@
 #include <mutex>
 
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/BindingGroup.h>
+#include <Rtrc/Graphics/RHI/Vulkan/Resource/Sampler.h>
 #include <Rtrc/Utility/ScopeGuard.h>
 
 RTRC_RHI_VK_BEGIN
@@ -44,9 +45,9 @@ VulkanBindingGroupLayout::~VulkanBindingGroupLayout()
     assert(layout_);
     for(auto pool : pools_)
     {
-        vkDestroyDescriptorPool(device_, pool, VK_ALLOC);
+        vkDestroyDescriptorPool(device_, pool, RTRC_VK_ALLOC);
     }
-    vkDestroyDescriptorSetLayout(device_, layout_, VK_ALLOC);
+    vkDestroyDescriptorSetLayout(device_, layout_, RTRC_VK_ALLOC);
 }
 
 const BindingGroupLayoutDesc &VulkanBindingGroupLayout::GetDesc() const
@@ -63,7 +64,7 @@ void VulkanBindingGroupLayout::_internalReleaseSet(VkDescriptorPool pool, VkDesc
 {
     if(desc_.variableArraySize)
     {
-        vkDestroyDescriptorPool(device_, pool, VK_ALLOC);
+        vkDestroyDescriptorPool(device_, pool, RTRC_VK_ALLOC);
     }
     else
     {
@@ -172,10 +173,10 @@ Ptr<BindingGroup> VulkanBindingGroupLayout::_internalCreateBindingGroupImpl(uint
         .pPoolSizes = poolSizes.data()
     };
     VkDescriptorPool pool;
-    VK_FAIL_MSG(
-        vkCreateDescriptorPool(device_, &createInfo, VK_ALLOC, &pool),
+    RTRC_VK_FAIL_MSG(
+        vkCreateDescriptorPool(device_, &createInfo, RTRC_VK_ALLOC, &pool),
         "Failed to create vulkan descriptor pool for descriptor set with variable descriptor count");
-    RTRC_SCOPE_FAIL{ vkDestroyDescriptorPool(device_, pool, VK_ALLOC); };
+    RTRC_SCOPE_FAIL{ vkDestroyDescriptorPool(device_, pool, RTRC_VK_ALLOC); };
     
     const VkDescriptorSetVariableDescriptorCountAllocateInfo variableDescriptorCountInfo =
     {
@@ -192,7 +193,7 @@ Ptr<BindingGroup> VulkanBindingGroupLayout::_internalCreateBindingGroupImpl(uint
         .pSetLayouts = &layout_
     };
     VkDescriptorSet set;
-    VK_FAIL_MSG(
+    RTRC_VK_FAIL_MSG(
         vkAllocateDescriptorSets(device_, &allocInfo, &set),
         "Failed to allocate vulkan descriptor set with variable descriptor count");
 
@@ -228,10 +229,10 @@ void VulkanBindingGroupLayout::AllocateNewDescriptorPool() const
         .pPoolSizes    = poolSizes.data()
     };
     VkDescriptorPool pool;
-    VK_FAIL_MSG(
-        vkCreateDescriptorPool(device_, &createInfo, VK_ALLOC, &pool),
+    RTRC_VK_FAIL_MSG(
+        vkCreateDescriptorPool(device_, &createInfo, RTRC_VK_ALLOC, &pool),
         "Failed to create vulkan descriptor pool");
-    RTRC_SCOPE_FAIL{ vkDestroyDescriptorPool(device_, pool, VK_ALLOC); };
+    RTRC_SCOPE_FAIL{ vkDestroyDescriptorPool(device_, pool, RTRC_VK_ALLOC); };
 
     freeSets_.reserve(freeSets_.size() + maxSets);
     const size_t oldSize = freeSets_.size();
@@ -246,7 +247,7 @@ void VulkanBindingGroupLayout::AllocateNewDescriptorPool() const
     for(int i = 0; i < maxSets; ++i)
     {
         VkDescriptorSet set;
-        VK_FAIL_MSG(
+        RTRC_VK_FAIL_MSG(
             vkAllocateDescriptorSets(device_, &allocInfo, &set),
             "failed to allocate vulkan descriptor set");
         freeSets_.push_back(set);

@@ -16,12 +16,12 @@ VulkanSwapchain::VulkanSwapchain(
     // images
 
     uint32_t imageCount;
-    VK_FAIL_MSG(
+    RTRC_VK_FAIL_MSG(
         vkGetSwapchainImagesKHR(device_->_internalGetNativeDevice(), swapchain_, &imageCount, nullptr),
         "failed to get vulkan swapchain image count");
 
     std::vector<VkImage> images(imageCount);
-    VK_FAIL_MSG(
+    RTRC_VK_FAIL_MSG(
         vkGetSwapchainImagesKHR(device_->_internalGetNativeDevice(), swapchain_, &imageCount, images.data()),
         "failed to get vulkan swapchain images");
 
@@ -44,19 +44,19 @@ VulkanSwapchain::VulkanSwapchain(
         VkSemaphore semaphore;
 
         {
-            VK_FAIL_MSG(
-                vkCreateSemaphore(device_->_internalGetNativeDevice(), &semaphoreCreateInfo, VK_ALLOC, &semaphore),
+            RTRC_VK_FAIL_MSG(
+                vkCreateSemaphore(device_->_internalGetNativeDevice(), &semaphoreCreateInfo, RTRC_VK_ALLOC, &semaphore),
                 "failed to create vulkan semaphores for swapchain");
-            RTRC_SCOPE_FAIL{ vkDestroySemaphore(device_->_internalGetNativeDevice(), semaphore, VK_ALLOC); };
+            RTRC_SCOPE_FAIL{ vkDestroySemaphore(device_->_internalGetNativeDevice(), semaphore, RTRC_VK_ALLOC); };
             imageAcquireSemaphores_.push_back(
                 MakePtr<VulkanBackBufferSemaphore>(device_->_internalGetNativeDevice(), semaphore));
         }
 
         {
-            VK_FAIL_MSG(
-                vkCreateSemaphore(device_->_internalGetNativeDevice(), &semaphoreCreateInfo, VK_ALLOC, &semaphore),
+            RTRC_VK_FAIL_MSG(
+                vkCreateSemaphore(device_->_internalGetNativeDevice(), &semaphoreCreateInfo, RTRC_VK_ALLOC, &semaphore),
                 "failed to create vulkan semaphores for swapchain");
-            RTRC_SCOPE_FAIL{ vkDestroySemaphore(device_->_internalGetNativeDevice(), semaphore, VK_ALLOC); };
+            RTRC_SCOPE_FAIL{ vkDestroySemaphore(device_->_internalGetNativeDevice(), semaphore, RTRC_VK_ALLOC); };
             imagePresentSemaphores_.push_back(
                 MakePtr<VulkanBackBufferSemaphore>(device_->_internalGetNativeDevice(), semaphore));
         }
@@ -68,7 +68,7 @@ VulkanSwapchain::VulkanSwapchain(
 
 VulkanSwapchain::~VulkanSwapchain()
 {
-    vkDestroySwapchainKHR(device_->_internalGetNativeDevice(), swapchain_, VK_ALLOC);
+    vkDestroySwapchainKHR(device_->_internalGetNativeDevice(), swapchain_, RTRC_VK_ALLOC);
 }
 
 bool VulkanSwapchain::Acquire()

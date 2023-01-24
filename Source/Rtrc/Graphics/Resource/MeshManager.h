@@ -1,7 +1,5 @@
 #pragma once
 
-#include <filesystem>
-
 #include <Rtrc/Graphics/Mesh/Mesh.h>
 #include <Rtrc/Utility/ObjectCache.h>
 
@@ -42,13 +40,5 @@ private:
     
     ObjectCache<std::pair<std::string, Options>, Mesh, true, true> meshCache_;
 };
-
-bool operator<(
-    const std::pair<std::string, MeshManager::Options> &lhs,
-    const std::pair<std::string_view, MeshManager::Options> &rhs);
-
-bool operator<(
-    const std::pair<std::string_view, MeshManager::Options> &lhs,
-    const std::pair<std::string, MeshManager::Options> &rhs);
 
 RTRC_END

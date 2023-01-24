@@ -39,14 +39,14 @@ void VulkanCommandBuffer::Begin()
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
         .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
     };
-    VK_FAIL_MSG(
+    RTRC_VK_FAIL_MSG(
         vkBeginCommandBuffer(commandBuffer_, &beginInfo),
         "failed to begin vulkan command buffer");
 }
 
 void VulkanCommandBuffer::End()
 {
-    VK_FAIL_MSG(
+    RTRC_VK_FAIL_MSG(
         vkEndCommandBuffer(commandBuffer_),
         "failed to end vulkan command buffer");
 }

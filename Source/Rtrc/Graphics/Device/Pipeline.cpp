@@ -63,12 +63,12 @@ void GraphicsPipeline::Desc::Validate() const
         VALIDATE_FAIL("'shader' is not set");
     }
 
-    if(!shader->GetRawShader(RHI::ShaderStage::VertexShader))
+    if(!shader->GetRawShader(RHI::ShaderType::VertexShader))
     {
         VALIDATE_FAIL("'shader' doesn't contain vertex shader");
     }
 
-    if(!shader->GetRawShader(RHI::ShaderStage::FragmentShader))
+    if(!shader->GetRawShader(RHI::ShaderType::FragmentShader))
     {
         VALIDATE_FAIL("'shader' doesn't contain fragment shader");
     }
@@ -155,8 +155,8 @@ RC<GraphicsPipeline> PipelineManager::CreateGraphicsPipeline(const GraphicsPipel
     {
         RHI::GraphicsPipelineDesc rhiDesc;
 
-        rhiDesc.vertexShader   = desc.shader->GetRawShader(RHI::ShaderStage::VertexShader);
-        rhiDesc.fragmentShader = desc.shader->GetRawShader(RHI::ShaderStage::FragmentShader);
+        rhiDesc.vertexShader   = desc.shader->GetRawShader(RHI::ShaderType::VertexShader);
+        rhiDesc.fragmentShader = desc.shader->GetRawShader(RHI::ShaderType::FragmentShader);
         rhiDesc.bindingLayout  = desc.shader->GetBindingLayout()->GetRHIObject();
         rhiDesc.viewports      = desc.viewports;
         rhiDesc.scissors       = desc.scissors;
@@ -279,7 +279,7 @@ RC<ComputePipeline> PipelineManager::CreateComputePipeline(const RC<Shader> &sha
     return computePipelineCache_.GetOrCreate(shader->GetUniqueID(), [&]
     {
         RHI::ComputePipelineDesc rhiDesc;
-        rhiDesc.computeShader = shader->GetRawShader(RHI::ShaderStage::ComputeShader);
+        rhiDesc.computeShader = shader->GetRawShader(RHI::ShaderType::ComputeShader);
         if(!rhiDesc.computeShader)
         {
             throw Exception("'shader' doesn't contain compute shader");

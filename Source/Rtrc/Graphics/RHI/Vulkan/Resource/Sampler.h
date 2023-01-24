@@ -8,7 +8,7 @@ RTRC_RHI_IMPLEMENT(VulkanSampler, Sampler)
 {
 public:
 
-    VK_SET_OBJECT_NAME(device_, sampler_, VK_OBJECT_TYPE_SAMPLER)
+    RTRC_VK_SET_OBJECT_NAME(device_, sampler_, VK_OBJECT_TYPE_SAMPLER)
 
     VulkanSampler(const SamplerDesc &desc, VulkanDevice *device, VkSampler sampler);
 
