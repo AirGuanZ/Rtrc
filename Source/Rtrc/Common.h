@@ -151,15 +151,15 @@ enum class LogLevel
 
 void SetLogLevel(LogLevel level);
 
-void LogDebugUnformatted(std::string_view msg);
+void LogVerboseUnformatted(std::string_view msg);
 void LogInfoUnformatted(std::string_view msg);
 void LogWarningUnformatted(std::string_view msg);
 void LogErrorUnformatted(std::string_view msg);
 
 template<typename...Args>
-void LogDebug(fmt::format_string<Args...> fmtStr, Args&&...args)
+void LogVerbose(fmt::format_string<Args...> fmtStr, Args&&...args)
 {
-    Rtrc::LogDebugUnformatted(fmt::format(fmtStr, std::forward<Args>(args)...));
+    Rtrc::LogVerboseUnformatted(fmt::format(fmtStr, std::forward<Args>(args)...));
 }
 
 template<typename...Args>
@@ -181,9 +181,9 @@ void LogError(fmt::format_string<Args...> fmtStr, Args&&...args)
 }
 
 template<typename T>
-void LogDebug(const T &msg)
+void LogVerbose(const T &msg)
 {
-    Rtrc::LogDebug("{}", msg);
+    Rtrc::LogVerbose("{}", msg);
 }
 
 template<typename T>

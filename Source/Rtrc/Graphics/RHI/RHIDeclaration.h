@@ -12,8 +12,6 @@
 #include <Rtrc/Utility/Variant.h>
 #include <Rtrc/Window/Window.h>
 
-#include "RHIDeclaration.h"
-
 RTRC_RHI_BEGIN
 
 template<typename T>

@@ -23,21 +23,25 @@ namespace VkInstanceDetail
         const char *type = "Unknown";
         switch(messageTypes)
         {
-        case VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT:                type = "General"; break;
-        case VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT:             type = "Validation"; break;
-        case VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT:            type = "Performance"; break;
+        case VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT:                type = "General";              break;
+        case VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT:             type = "Validation";           break;
+        case VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT:            type = "Performance";          break;
         case VK_DEBUG_UTILS_MESSAGE_TYPE_DEVICE_ADDRESS_BINDING_BIT_EXT: type = "DeviceAddressBinding"; break;
+        default:
+            break;
         }
         switch(messageSeverity)
         {
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-            LogDebug("[{}] {}", type, pCallbackData->pMessage); break;
+            LogVerbose("[{}] {}", type, pCallbackData->pMessage); break;
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
             LogInfo("[{}] {}", type, pCallbackData->pMessage);  break;
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
             LogWarn("[{}] {}", type, pCallbackData->pMessage);  break;
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
             LogError("[{}] {}", type, pCallbackData->pMessage); break;
+        default:
+            break;
         }
         return true;
     }
@@ -76,7 +80,7 @@ Ptr<Instance> CreateVulkanInstance(const VulkanInstanceDesc &desc)
     auto buildInstanceResult = instanceBuilder.build();
     if(!buildInstanceResult)
     {
-        throw Exception("failed to create vulkan instance: " + buildInstanceResult.error().message());
+        throw Exception("Failed to create vulkan instance: " + buildInstanceResult.error().message());
     }
 
     auto instance = buildInstanceResult.value();
@@ -106,6 +110,10 @@ Ptr<Device> VulkanInstance::CreateDevice(const DeviceDesc &desc)
     // physical device
 
     auto physicalDevice = VulkanPhysicalDevice::Select(instance_.instance, desc);
+    if(!physicalDevice.GetNativeHandle())
+    {
+        throw Exception("No suitable physical device");
+    }
 
     // queues
 
@@ -116,7 +124,7 @@ Ptr<Device> VulkanInstance::CreateDevice(const DeviceDesc &desc)
     {
         if(!physicalDevice.GetGraphicsQueueFamily())
         {
-            throw Exception("selected physical device doesn't support graphics queue");
+            throw Exception("Selected physical device doesn't support graphics queue");
         }
         queueCreateInfos.push_back(VkDeviceQueueCreateInfo{
             .sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
@@ -130,7 +138,7 @@ Ptr<Device> VulkanInstance::CreateDevice(const DeviceDesc &desc)
     {
         if(!physicalDevice.GetComputeQueueFamily())
         {
-            throw Exception("selected physical device doesn't support compute queue");
+            throw Exception("Selected physical device doesn't support compute queue");
         }
 
         bool needNewQueueFamily = true;
@@ -157,7 +165,7 @@ Ptr<Device> VulkanInstance::CreateDevice(const DeviceDesc &desc)
     {
         if(!physicalDevice.GetTransferQueueFamily())
         {
-            throw Exception("selected physical device doesn't support transfer queue");
+            throw Exception("Selected physical device doesn't support transfer queue");
         }
 
         bool needNewQueueFamily = true;
@@ -180,17 +188,18 @@ Ptr<Device> VulkanInstance::CreateDevice(const DeviceDesc &desc)
         }
     }
 
-    // features & extensions
+    // Features & extensions
+    
+    std::unique_ptr<unsigned char[]> features2Storage;
+    VkPhysicalDeviceFeatures2 features2 = VulkanPhysicalDevice::GetRequiredFeatures(features2Storage);
 
-    ObjectReleaser arena;
-    auto features2 = VulkanPhysicalDevice::GetRequiredFeatures(arena);
     const std::vector<const char *> extensions = VulkanPhysicalDevice::GetRequiredExtensions(desc);
 
-    // logical device
+    // Logical device
 
     const VkDeviceCreateInfo deviceCreateInfo = {
         .sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-        .pNext                   = features2,
+        .pNext                   = &features2,
         .queueCreateInfoCount    = static_cast<uint32_t>(queueCreateInfos.size()),
         .pQueueCreateInfos       = queueCreateInfos.data(),
         .enabledExtensionCount   = static_cast<uint32_t>(extensions.size()),
@@ -199,7 +208,7 @@ Ptr<Device> VulkanInstance::CreateDevice(const DeviceDesc &desc)
     VkDevice device;
     RTRC_VK_FAIL_MSG(
         vkCreateDevice(physicalDevice.GetNativeHandle(), &deviceCreateInfo, RTRC_VK_ALLOC, &device),
-        "failed to create vulkan device");
+        "Failed to create vulkan device");
     RTRC_SCOPE_FAIL{ vkDestroyDevice(device, RTRC_VK_ALLOC); };
 
     VulkanDevice::QueueFamilyInfo queueFamilies;

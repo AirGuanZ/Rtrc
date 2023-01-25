@@ -91,17 +91,23 @@ Box<Device> Device::CreateGraphicsDevice(
 
 Device::~Device()
 {
-    if(mainQueue_.GetRHIObject()->GetType() == RHI::QueueType::Graphics && window_)
+    if(mainQueue_.GetRHIObject())
     {
-        // Present queue must be properly synchronized
-        device_->WaitIdle();
+        if(mainQueue_.GetRHIObject()->GetType() == RHI::QueueType::Graphics && window_)
+        {
+            // Present queue must be properly synchronized
+            device_->WaitIdle();
+        }
+        else
+        {
+            mainQueue_.GetRHIObject()->WaitIdle();
+        }
     }
-    else
+
+    if(sync_)
     {
-        mainQueue_.GetRHIObject()->WaitIdle();
+        sync_->PrepareDestruction();
     }
-    
-    sync_->PrepareDestruction();
 
     bindingLayoutManager_.reset();
     copyContext_.reset();
@@ -113,7 +119,6 @@ Device::~Device()
     samplerManager_.reset();
     textureManager_.reset();
     pooledTextureManager_.reset();
-
     sync_.reset();
 }
 

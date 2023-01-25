@@ -14,8 +14,8 @@ public:
     static VulkanPhysicalDevice Select(VkInstance instance, const DeviceDesc &desc);
 
     static std::vector<const char*> GetRequiredExtensions(const DeviceDesc &desc);
-
-    static VkPhysicalDeviceFeatures2 *GetRequiredFeatures(ObjectReleaser &arena);
+    
+    static VkPhysicalDeviceFeatures2 GetRequiredFeatures(std::unique_ptr<unsigned char[]> &storage);
 
     explicit VulkanPhysicalDevice(VkPhysicalDevice device = nullptr);
 

@@ -34,7 +34,7 @@ void SetLogLevel(LogLevel level)
     }
 }
 
-void LogDebugUnformatted(std::string_view msg)
+void LogVerboseUnformatted(std::string_view msg)
 {
     spdlog::debug(msg);
 }

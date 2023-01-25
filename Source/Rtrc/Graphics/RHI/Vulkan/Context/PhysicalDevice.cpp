@@ -1,21 +1,219 @@
+#include <ranges>
+
 #include <Rtrc/Graphics/RHI/Vulkan/Context/PhysicalDevice.h>
+#include <Rtrc/Utility/MacroForEach.h>
 
 RTRC_RHI_VK_BEGIN
 
 namespace VkPhysicalDeviceDetail
 {
 
-    bool IsSuitable(VkPhysicalDevice device, const DeviceDesc &desc)
+    struct PhysicalDeviceFeature
+    {
+        std::string name;
+        size_t size;
+        size_t alignment;
+        VkStructureType type;
+        std::vector<std::pair<size_t, std::string>> boolOffsetAndNames;
+    };
+
+#define PHYSICAL_DEVICE_FEATURE_BOOL_MEMBER(NAME) \
+    ret.boolOffsetAndNames.push_back({ offsetof(StructType, NAME), #NAME });
+
+#define ADD_PHYSICAL_DEVICE_FEATURE(STRUCT_NAME, VK_TYPE, ...)                 \
+    ret.push_back([&]                                                          \
+    {                                                                          \
+        PhysicalDeviceFeature ret = {};                                        \
+        ret.name = #STRUCT_NAME;                                               \
+        ret.size = sizeof(STRUCT_NAME);                                        \
+        ret.alignment = alignof(STRUCT_NAME);                                  \
+        ret.type = VK_TYPE;                                                    \
+        using StructType = STRUCT_NAME;                                        \
+        RTRC_MACRO_FOREACH_1(PHYSICAL_DEVICE_FEATURE_BOOL_MEMBER, __VA_ARGS__) \
+        return ret;                                                            \
+    }())
+
+    std::vector<PhysicalDeviceFeature> GetRequiredPhysicalDeviceFeatures()
+    {
+        std::vector<PhysicalDeviceFeature> ret;
+
+        ADD_PHYSICAL_DEVICE_FEATURE(
+            VkPhysicalDeviceCustomBorderColorFeaturesEXT,
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_FEATURES_EXT,
+            customBorderColors,
+            customBorderColorWithoutFormat);
+
+        ADD_PHYSICAL_DEVICE_FEATURE(
+            VkPhysicalDeviceDynamicRenderingFeatures,
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES,
+            dynamicRendering);
+
+        ADD_PHYSICAL_DEVICE_FEATURE(
+            VkPhysicalDeviceSynchronization2Features,
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES,
+            synchronization2);
+
+        ADD_PHYSICAL_DEVICE_FEATURE(
+            VkPhysicalDeviceDescriptorIndexingFeatures,
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES,
+            shaderInputAttachmentArrayDynamicIndexing,
+            shaderUniformTexelBufferArrayDynamicIndexing,
+            shaderStorageTexelBufferArrayDynamicIndexing,
+            shaderUniformBufferArrayNonUniformIndexing,
+            shaderSampledImageArrayNonUniformIndexing,
+            shaderStorageBufferArrayNonUniformIndexing,
+            shaderStorageImageArrayNonUniformIndexing,
+            shaderInputAttachmentArrayNonUniformIndexing,
+            shaderUniformTexelBufferArrayNonUniformIndexing,
+            shaderStorageTexelBufferArrayNonUniformIndexing,
+            descriptorBindingUniformBufferUpdateAfterBind,
+            descriptorBindingSampledImageUpdateAfterBind,
+            descriptorBindingStorageImageUpdateAfterBind,
+            descriptorBindingStorageBufferUpdateAfterBind,
+            descriptorBindingUniformTexelBufferUpdateAfterBind,
+            descriptorBindingStorageTexelBufferUpdateAfterBind,
+            descriptorBindingUpdateUnusedWhilePending,
+            descriptorBindingPartiallyBound,
+            descriptorBindingVariableDescriptorCount,
+            runtimeDescriptorArray);
+
+        ADD_PHYSICAL_DEVICE_FEATURE(
+            VkPhysicalDeviceBufferDeviceAddressFeatures,
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES,
+            bufferDeviceAddress);
+
+        ADD_PHYSICAL_DEVICE_FEATURE(
+            VkPhysicalDeviceAccelerationStructureFeaturesKHR,
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR,
+            accelerationStructure,
+            descriptorBindingAccelerationStructureUpdateAfterBind);
+
+        ADD_PHYSICAL_DEVICE_FEATURE(
+            VkPhysicalDeviceRayTracingPipelineFeaturesKHR,
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR,
+            rayTracingPipeline,
+            rayTracingPipelineTraceRaysIndirect);
+
+        ADD_PHYSICAL_DEVICE_FEATURE(
+            VkPhysicalDeviceRayQueryFeaturesKHR,
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR,
+            rayQuery);
+
+        return ret;
+    }
+
+#undef PHYSICAL_DEVICE_FEATURE_BOOL_MEMBER
+#undef ADD_PHYSICAL_DEVICE_FEATURE
+
+    struct VkPhysicalDeviceFeatureHead
+    {
+        VkStructureType type;
+        void *pNext;
+    };
+
+    unsigned char *UpAlignPointerTo(unsigned char *ptr, size_t align)
+    {
+        static_assert(sizeof(unsigned char *) == sizeof(size_t));
+        size_t v = reinterpret_cast<size_t>(ptr);
+        v = UpAlignTo(v, align);
+        return reinterpret_cast<unsigned char *>(v);
+    }
+
+    bool CheckPhysicalDeviceFeatures(
+        VkPhysicalDevice device, Span<PhysicalDeviceFeature> features, std::string &unsupportedFeatureString)
+    {
+        if(features.IsEmpty())
+        {
+            return true;
+        }
+
+        size_t totalSize = 0;
+        for(const PhysicalDeviceFeature &feature : features)
+        {
+            totalSize = UpAlignTo(totalSize, feature.alignment);
+            totalSize += feature.size;
+        }
+
+        std::unique_ptr<unsigned char[]> storage(new unsigned char[totalSize]);
+        std::memset(storage.get(), 0, totalSize);
+        
+        unsigned char *current = storage.get(), *last = nullptr;
+        for(const PhysicalDeviceFeature &feature : features)
+        {
+            current = UpAlignPointerTo(current, feature.alignment);
+            *reinterpret_cast<VkPhysicalDeviceFeatureHead *>(current) = { feature.type, last };
+            last = current;
+            current += feature.size;
+        }
+
+        VkPhysicalDeviceFeatures2 feature2 = {};
+        feature2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        feature2.pNext = last;
+        vkGetPhysicalDeviceFeatures2(device, &feature2);
+
+        current = storage.get();
+        for(const PhysicalDeviceFeature &feature : features)
+        {
+            current = UpAlignPointerTo(current, feature.alignment);
+            for(auto &[boolOffset, name] : feature.boolOffsetAndNames)
+            {
+                const bool boolValue = *reinterpret_cast<const VkBool32 *>(current + boolOffset);
+                if(!boolValue)
+                {
+                    unsupportedFeatureString = fmt::format("{}.{}", feature.name, name);
+                    return false;
+                }
+            }
+            current += feature.size;
+        }
+
+        return true;
+    }
+
+    void *EnablePhysicalDeviceFeatures(Span<PhysicalDeviceFeature> features, std::unique_ptr<unsigned char[]> &storage)
+    {
+        if(features.IsEmpty())
+        {
+            return nullptr;
+        }
+
+        size_t totalSize = 0;
+        for(const PhysicalDeviceFeature &feature : features)
+        {
+            totalSize = UpAlignTo(totalSize, feature.alignment);
+            totalSize += feature.size;
+        }
+
+        storage.reset(new unsigned char[totalSize]);
+        std::memset(storage.get(), 0, totalSize);
+
+        unsigned char *current = storage.get(), *last = nullptr;
+        for(const PhysicalDeviceFeature &feature : features)
+        {
+            current = UpAlignPointerTo(current, feature.alignment);
+            *reinterpret_cast<VkPhysicalDeviceFeatureHead *>(current) = { feature.type, last };
+            last = current;
+            for(const size_t boolOffset : std::ranges::views::keys(feature.boolOffsetAndNames))
+            {
+                *reinterpret_cast<VkBool32 *>(current + boolOffset) = true;
+            }
+            current += feature.size;
+        }
+
+        return last;
+    }
+
+    bool IsSuitable(VkPhysicalDevice device, const DeviceDesc &desc, Span<PhysicalDeviceFeature> features)
     {
         // Api version
 
         VkPhysicalDeviceProperties properties;
         vkGetPhysicalDeviceProperties(device, &properties);
 
-        LogDebug("Check physical device: {}", properties.deviceName);
+        LogVerbose("Check physical device: {}", properties.deviceName);
         if(properties.apiVersion < RTRC_VULKAN_API_VERSION)
         {
-            LogDebug("    Required API version (Vulkan 1.3) is unsupported");
+            LogVerbose("\tRequired API version (Vulkan 1.3) is unsupported");
             return false;
         }
 
@@ -43,78 +241,21 @@ namespace VkPhysicalDeviceDetail
         {
             if(!supportedExtensionNames.contains(required))
             {
-                LogDebug("    Required extension {} is unsupported", required);
+                LogVerbose("\tRequired extension {} is unsupported", required);
                 return false;
             }
         }
 
         // Features
 
-        VkPhysicalDeviceCustomBorderColorFeaturesEXT customBorderColorFeatures = {
-            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_FEATURES_EXT
-        };
-        VkPhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeatures = {
-            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES,
-            .pNext = &customBorderColorFeatures
-        };
-        VkPhysicalDeviceSynchronization2Features sync2Features = {
-            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES,
-            .pNext = &dynamicRenderingFeatures
-        };
-        VkPhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures =
+        std::string unsupportedFeatureName;
+        if(!CheckPhysicalDeviceFeatures(device, features, unsupportedFeatureName))
         {
-            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES,
-            .pNext = &sync2Features,
-        };
-        VkPhysicalDeviceFeatures2 feature2 = {};
-        feature2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-        feature2.pNext = &descriptorIndexingFeatures;
-
-        vkGetPhysicalDeviceFeatures2(device, &feature2);
-
-        const bool customBorderColor = customBorderColorFeatures.customBorderColors &&
-                                       customBorderColorFeatures.customBorderColorWithoutFormat;
-
-        const bool bindless = descriptorIndexingFeatures.runtimeDescriptorArray &&
-                              descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing &&
-                              descriptorIndexingFeatures.shaderStorageImageArrayNonUniformIndexing &&
-                              descriptorIndexingFeatures.shaderStorageBufferArrayNonUniformIndexing &&
-                              descriptorIndexingFeatures.shaderUniformTexelBufferArrayNonUniformIndexing &&
-                              descriptorIndexingFeatures.shaderStorageTexelBufferArrayNonUniformIndexing &&
-                              descriptorIndexingFeatures.descriptorBindingPartiallyBound &&
-                              descriptorIndexingFeatures.descriptorBindingUpdateUnusedWhilePending &&
-                              descriptorIndexingFeatures.descriptorBindingVariableDescriptorCount &&
-                              descriptorIndexingFeatures.descriptorBindingSampledImageUpdateAfterBind &&
-                              descriptorIndexingFeatures.descriptorBindingStorageImageUpdateAfterBind &&
-                              descriptorIndexingFeatures.descriptorBindingStorageBufferUpdateAfterBind &&
-                              descriptorIndexingFeatures.descriptorBindingUniformTexelBufferUpdateAfterBind &&
-                              descriptorIndexingFeatures.descriptorBindingStorageTexelBufferUpdateAfterBind;
-
-        if(!customBorderColor)
-        {
-            LogDebug("    Custom border color is unsupported");
+            LogVerbose("\t{} is unsupported", unsupportedFeatureName);
             return false;
         }
 
-        if(!dynamicRenderingFeatures.dynamicRendering)
-        {
-            LogDebug("    Dynamic rendering is unsupported");
-            return false;
-        }
-
-        if(!sync2Features.synchronization2)
-        {
-            LogDebug("    Synchronization2 is unsupported");
-            return false;
-        }
-
-        if(!bindless)
-        {
-            LogDebug("    Bindless is unsupported");
-            return false;
-        }
-
-        LogDebug("    Found suitable physical device {}", properties.deviceName);
+        LogVerbose("\tFound suitable physical device {}", properties.deviceName);
         return true;
     }
 
@@ -132,7 +273,7 @@ namespace VkPhysicalDeviceDetail
             result += 2000;
         }
         result += properties.limits.maxImageDimension2D;
-        LogDebug("    Rate physical device: {}, score = {}", properties.deviceName, result);
+        LogVerbose("\tRate physical device: {}, score = {}", properties.deviceName, result);
         return result;
     }
 
@@ -154,11 +295,13 @@ VulkanPhysicalDevice VulkanPhysicalDevice::Select(VkInstance instance, const Dev
         vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data()),
         "Failed to get vulkan physical devices");
 
+    const auto physicalDeviceFeatures = VkPhysicalDeviceDetail::GetRequiredPhysicalDeviceFeatures();
+
     uint32_t bestDeviceIndex = (std::numeric_limits<uint32_t>::max)();
     uint32_t bestScore = 0;
     for(uint32_t i = 0; i < deviceCount; ++i)
     {
-        if(!VkPhysicalDeviceDetail::IsSuitable(devices[i], desc))
+        if(!IsSuitable(devices[i], desc, physicalDeviceFeatures))
             continue;
 
         const uint32_t newScore = VkPhysicalDeviceDetail::RatePhysicalDevice(devices[i]);
@@ -177,7 +320,13 @@ std::vector<const char*> VulkanPhysicalDevice::GetRequiredExtensions(const Devic
     std::vector<const char*> requiredExtensions =
     {
         VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME,
-        // The following three extensions has been promoted to core 1.2/1.3
+        VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
+        VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
+        VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
+        VK_KHR_RAY_QUERY_EXTENSION_NAME,
+
+        // The following extensions have been promoted to core 1.2/1.3
+        // VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
         // VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
         // VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME
         // VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME
@@ -189,51 +338,12 @@ std::vector<const char*> VulkanPhysicalDevice::GetRequiredExtensions(const Devic
     return requiredExtensions;
 }
 
-VkPhysicalDeviceFeatures2* VulkanPhysicalDevice::GetRequiredFeatures(ObjectReleaser &arena)
+VkPhysicalDeviceFeatures2 VulkanPhysicalDevice::GetRequiredFeatures(std::unique_ptr<unsigned char[]> &storage)
 {
-    auto customBorderColorFeature = arena.Create<VkPhysicalDeviceCustomBorderColorFeaturesEXT>();
-    customBorderColorFeature->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_FEATURES_EXT;
-    customBorderColorFeature->customBorderColors = true;
-    customBorderColorFeature->customBorderColorWithoutFormat = true;
-
-    auto dynamicRenderingFeature = arena.Create<VkPhysicalDeviceDynamicRenderingFeatures>();
-    dynamicRenderingFeature->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES;
-    dynamicRenderingFeature->dynamicRendering = true;
-
-    auto sync2Feature = arena.Create<VkPhysicalDeviceSynchronization2Features>();
-    sync2Feature->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES;
-    sync2Feature->synchronization2 = true;
-
-    auto bindlessFeature = arena.Create<VkPhysicalDeviceDescriptorIndexingFeatures>();
-    std::memset(bindlessFeature, 0, sizeof(VkPhysicalDeviceDescriptorIndexingFeatures));
-    bindlessFeature->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
-    bindlessFeature->runtimeDescriptorArray = true;
-    bindlessFeature->shaderSampledImageArrayNonUniformIndexing = true;
-    bindlessFeature->shaderStorageImageArrayNonUniformIndexing = true;
-    bindlessFeature->shaderStorageBufferArrayNonUniformIndexing = true;
-    bindlessFeature->shaderUniformTexelBufferArrayNonUniformIndexing = true;
-    bindlessFeature->shaderStorageTexelBufferArrayNonUniformIndexing = true;
-    bindlessFeature->descriptorBindingPartiallyBound = true;
-    bindlessFeature->descriptorBindingUpdateUnusedWhilePending = true;
-    bindlessFeature->descriptorBindingVariableDescriptorCount = true;
-    bindlessFeature->descriptorBindingUpdateUnusedWhilePending = true;
-    bindlessFeature->descriptorBindingSampledImageUpdateAfterBind = true;
-    bindlessFeature->descriptorBindingStorageImageUpdateAfterBind = true;
-    bindlessFeature->descriptorBindingStorageBufferUpdateAfterBind = true;
-    bindlessFeature->descriptorBindingUniformTexelBufferUpdateAfterBind = true;
-    bindlessFeature->descriptorBindingStorageTexelBufferUpdateAfterBind = true;
-
-    auto features2 = arena.Create<VkPhysicalDeviceFeatures2>();
-    std::memset(features2, 0, sizeof(VkPhysicalDeviceFeatures2));
-    features2->sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-
-    customBorderColorFeature->pNext = nullptr;
-    dynamicRenderingFeature ->pNext = customBorderColorFeature;
-    sync2Feature            ->pNext = dynamicRenderingFeature;
-    bindlessFeature         ->pNext = sync2Feature;
-    features2               ->pNext = bindlessFeature;
-
-    return features2;
+    VkPhysicalDeviceFeatures2 ret = {};
+    ret.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+    ret.pNext = EnablePhysicalDeviceFeatures(VkPhysicalDeviceDetail::GetRequiredPhysicalDeviceFeatures(), storage);
+    return ret;
 }
 
 std::optional<uint32_t> VulkanPhysicalDevice::GetGraphicsQueueFamily() const
