@@ -32,8 +32,9 @@ void Run()
     auto matInst = material->CreateInstance();
     auto matPassInst = matInst->GetPassInstance("Default");
 
-    auto inputTexture = device->GetCopyContext().LoadTexture2D(
-        "Asset/Sample/01.TexturedQuad/MainTexture.png", RHI::Format::B8G8R8A8_UNorm, RHI::TextureUsage::ShaderResource, false);
+    auto inputTexture = device->LoadTexture2D(
+        "Asset/Sample/01.TexturedQuad/MainTexture.png", RHI::Format::B8G8R8A8_UNorm, 
+        RHI::TextureUsage::ShaderResource, false, RHI::TextureLayout::ShaderTexture);
     auto inputTextureSrv = inputTexture->CreateSrv();
 
     auto outputTexture = StatefulTexture::FromTexture(device->CreateTexture(RHI::TextureDesc
@@ -69,7 +70,6 @@ void Run()
     device->ExecuteAndWait([&](CommandBuffer &cmd)
     {
         cmd.ExecuteBarriers(BarrierBatch()
-            (inputTexture, RHI::TextureLayout::CopyDst, RHI::TextureLayout::ShaderTexture)
             (outputTexture, RHI::TextureLayout::ShaderRWTexture, RHI::PipelineStage::None, RHI::ResourceAccess::None));
 
         cmd.BindComputePipeline(pipeline);

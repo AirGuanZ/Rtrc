@@ -1,4 +1,5 @@
 #include <Rtrc/Graphics/Device/Device.h>
+#include <Rtrc/Utility/GenerateMipmap.h>
 
 RTRC_BEGIN
 
@@ -136,11 +137,7 @@ RC<Texture> Device::CreateColorTexture2D(uint8_t r, uint8_t g, uint8_t b, uint8_
         tex->SetName(name);
     }
     const Vector4b color(b, g, r, a);
-    copyContext_->UploadTexture2D(tex, 0, 0, &color);
-    ExecuteBarrier(
-        tex,
-        RHI::TextureLayout::CopyDst, RHI::PipelineStage::None, RHI::ResourceAccess::None,
-        RHI::TextureLayout::ShaderTexture, RHI::PipelineStage::None, RHI::ResourceAccess::None);
+    copyContext_->UploadTexture2D(tex, 0, 0, &color, RHI::TextureLayout::ShaderTexture);
     return tex;
 }
 
@@ -162,7 +159,7 @@ void Device::InitializeInternal(RHI::DevicePtr device, bool isComputeOnly)
     pipelineManager_ = MakeBox<PipelineManager>(device_, *sync_);
     samplerManager_ = MakeBox<SamplerManager>(device_, *sync_);
 
-    copyContext_ = MakeBox<CopyContext>(device_, bufferManager_.get(), textureManager_.get());
+    copyContext_ = MakeBox<CopyContext>(device_);
 }
 
 void Device::RecreateSwapchain()
@@ -175,6 +172,116 @@ void Device::RecreateSwapchain()
         .imageCount = static_cast<uint32_t>(swapchainImageCount_),
         .vsync      = vsync_
     }, *window_);
+}
+
+void Device::UploadBuffer(const RC<Buffer> &buffer, const void *initData, size_t offset, size_t size)
+{
+    copyContext_->UploadBuffer(buffer, initData, offset, size);
+}
+
+void Device::UploadTexture2D(
+    const RC<Texture> &texture, uint32_t arrayLayer, uint32_t mipLevel,
+    const ImageDynamic &image, RHI::TextureLayout postLayout)
+{
+    copyContext_->UploadTexture2D(texture, arrayLayer, mipLevel, image, postLayout);
+}
+
+void Device::UploadTexture2D(
+    const RC<Texture> &texture, uint32_t arrayLayer, uint32_t mipLevel,
+    const void *data, RHI::TextureLayout postLayout)
+{
+    copyContext_->UploadTexture2D(texture, arrayLayer, mipLevel, data, postLayout);
+}
+
+RC<Buffer> Device::CreateAndUploadBuffer(
+    const RHI::BufferDesc    &_desc,
+    const void               *initData,
+    size_t                    initDataOffset,
+    size_t                    initDataSize)
+{
+    RHI::BufferDesc desc = _desc;
+    if(desc.hostAccessType == RHI::BufferHostAccessType::None)
+    {
+        desc.usage |= RHI::BufferUsage::TransferDst;
+    }
+    auto ret = CreateBuffer(desc);
+    copyContext_->UploadBuffer(ret, initData, initDataOffset, initDataSize);
+    return ret;
+}
+
+RC<Texture> Device::CreateAndUploadTexture2D(
+    const RHI::TextureDesc &_desc,
+    Span<const void *>      imageData,
+    RHI::TextureLayout      postLayout)
+{
+    RHI::TextureDesc desc = _desc;
+    desc.concurrentAccessMode = RHI::QueueConcurrentAccessMode::Concurrent;
+    desc.usage |= RHI::TextureUsage::TransferDst;
+    assert(imageData.size() == desc.mipLevels * desc.arraySize);
+    auto ret = CreateTexture(desc);
+    for(uint32_t a = 0, i = 0; a < desc.arraySize; ++a)
+    {
+        for(uint32_t m = 0; m < desc.mipLevels; ++m)
+        {
+            copyContext_->UploadTexture2D(ret, a, m, imageData[i++], postLayout);
+        }
+    }
+    return ret;
+}
+
+RC<Texture> Device::CreateAndUploadTexture2D(
+    const RHI::TextureDesc &_desc,
+    Span<ImageDynamic>      images,
+    RHI::TextureLayout      postLayout)
+{
+    RHI::TextureDesc desc = _desc;
+    desc.concurrentAccessMode = RHI::QueueConcurrentAccessMode::Concurrent;
+    desc.usage |= RHI::TextureUsage::TransferDst;
+    assert(images.size() == desc.mipLevels * desc.arraySize);
+    auto ret = CreateTexture(desc);
+    for(uint32_t a = 0, i = 0; a < desc.arraySize; ++a)
+    {
+        for(uint32_t m = 0; m < desc.mipLevels; ++m)
+        {
+            copyContext_->UploadTexture2D(ret, a, m, images[i++], postLayout);
+        }
+    }
+    return ret;
+}
+
+RC<Texture> Device::LoadTexture2D(
+    const std::string    &filename,
+    RHI::Format           format,
+    RHI::TextureUsageFlag usages,
+    bool                  generateMipLevels,
+    RHI::TextureLayout    postLayout)
+{
+    std::vector<ImageDynamic> images;
+    images.push_back(ImageDynamic::Load(filename));
+    uint32_t mipLevels = 1;
+    if(generateMipLevels)
+    {
+        mipLevels = ComputeFullMipmapChainSize(images[0].GetWidth(), images[0].GetHeight());
+        images.reserve(mipLevels);
+        for(uint32_t i = 1; i < mipLevels; ++i)
+        {
+            images.push_back(GenerateNextImageMipmapLevel(images.back()));
+        }
+    }
+    const RHI::TextureDesc desc =
+    {
+        .dim           = RHI::TextureDimension::Tex2D,
+        .format        = format,
+        .width         = images[0].GetWidth(),
+        .height        = images[0].GetHeight(),
+        .arraySize     = 1,
+        .mipLevels     = mipLevels,
+        .sampleCount   = 1,
+        .usage         = usages,
+        .initialLayout = RHI::TextureLayout::Undefined,
+        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Concurrent
+    };
+    return CreateAndUploadTexture2D(desc, images, postLayout);
 }
 
 RTRC_END

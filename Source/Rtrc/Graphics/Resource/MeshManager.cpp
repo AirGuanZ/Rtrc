@@ -82,7 +82,7 @@ Mesh MeshManager::Load(Device *device, const std::string &filename, const Option
         }
         meshBuilder.SetVertexCount(static_cast<uint32_t>(vertexData.size()));
 
-        auto vertexBuffer = device->GetCopyContext().CreateBuffer(
+        auto vertexBuffer = device->CreateAndUploadBuffer(
             RHI::BufferDesc{
                 sizeof(Vertex) * vertexData.size(),
                 RHI::BufferUsage::VertexBuffer,
@@ -114,7 +114,7 @@ Mesh MeshManager::Load(Device *device, const std::string &filename, const Option
         }
         meshBuilder.SetVertexCount(static_cast<uint32_t>(vertexData.size()));
         
-        auto vertexBuffer = device->GetCopyContext().CreateBuffer(
+        auto vertexBuffer = device->CreateAndUploadBuffer(
             RHI::BufferDesc{
                 sizeof(Vertex) * vertexData.size(),
                 RHI::BufferUsage::VertexBuffer,
@@ -145,7 +145,7 @@ Mesh MeshManager::Load(Device *device, const std::string &filename, const Option
             {
                 uint16IndexData[i] = static_cast<uint16_t>(meshData.indexData[i]);
             }
-            indexBuffer = device->GetCopyContext().CreateBuffer(
+            indexBuffer = device->CreateAndUploadBuffer(
                 RHI::BufferDesc{
                     sizeof(uint16_t) * uint16IndexData.size(),
                     RHI::BufferUsage::IndexBuffer,
@@ -155,7 +155,7 @@ Mesh MeshManager::Load(Device *device, const std::string &filename, const Option
         }
         else
         {
-            indexBuffer = device->GetCopyContext().CreateBuffer(
+            indexBuffer = device->CreateAndUploadBuffer(
                 RHI::BufferDesc{
                     sizeof(uint32_t) * meshData.indexData.size(),
                     RHI::BufferUsage::IndexBuffer,

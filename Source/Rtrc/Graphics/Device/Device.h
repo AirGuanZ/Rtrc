@@ -16,6 +16,8 @@ class Device : public Uncopyable
 {
 public:
 
+    // Creation & destructor
+
     static Box<Device> CreateComputeDevice(RHI::DevicePtr rhiDevice);
     static Box<Device> CreateComputeDevice(bool debugMode = RTRC_DEBUG);
 
@@ -34,11 +36,15 @@ public:
 
     ~Device();
 
+    // Context objects
+
     Queue &GetQueue();
     DeviceSynchronizer &GetSynchronizer();
 
     const RHI::SwapchainPtr &GetSwapchain() const;
     const RHI::TextureDesc &GetSwapchainImageDesc() const;
+
+    // Immediate execution
 
     void ExecuteAndWait(CommandBuffer commandBuffer);
     template<typename F> requires !std::is_same_v<std::remove_cvref_t<F>, CommandBuffer>
@@ -93,7 +99,7 @@ public:
         RHI::TextureLayout         prevLayout,
         RHI::TextureLayout         succLayout);
 
-    CopyContext &GetCopyContext();
+    // Frame synchronization
 
     void WaitIdle();
 
@@ -103,6 +109,60 @@ public:
 
     bool BeginFrame();
     const RHI::FencePtr &GetFrameFence();
+
+    // Resource creation & upload
+
+    RC<Buffer>         CreateBuffer(const RHI::BufferDesc &desc);
+    RC<StatefulBuffer> CreatePooledBuffer(const RHI::BufferDesc &desc);
+
+    RC<Texture>         CreateTexture(const RHI::TextureDesc &desc);
+    RC<StatefulTexture> CreatePooledTexture(const RHI::TextureDesc &desc);
+    RC<Texture>         CreateColorTexture2D(uint8_t r, uint8_t g, uint8_t b, uint8_t a, const std::string &name = {});
+
+    RC<DynamicBuffer> CreateDynamicBuffer();
+    RC<SubBuffer>     CreateConstantBuffer(const void *data, size_t bytes);
+    template<RtrcStruct T>
+    RC<SubBuffer>     CreateConstantBuffer(const T &data);
+    
+    void UploadBuffer(
+        const RC<Buffer> &buffer,
+        const void       *initData,
+        size_t            offset = 0,
+        size_t            size   = 0);
+    void UploadTexture2D(
+        const RC<Texture> &texture,
+        uint32_t           arrayLayer,
+        uint32_t           mipLevel,
+        const void        *data,
+        RHI::TextureLayout postLayout = RHI::TextureLayout::CopyDst);
+    void UploadTexture2D(
+        const RC<Texture> &texture,
+        uint32_t             arrayLayer,
+        uint32_t             mipLevel,
+        const ImageDynamic  &image,
+        RHI::TextureLayout   postLayout = RHI::TextureLayout::CopyDst);
+
+    RC<Buffer> CreateAndUploadBuffer(
+        const RHI::BufferDesc &desc,
+        const void            *initData,
+        size_t                 initDataOffset = 0,
+        size_t                 initDataSize = 0);
+    RC<Texture> CreateAndUploadTexture2D(
+        const RHI::TextureDesc &desc,
+        Span<const void *>      imageData,
+        RHI::TextureLayout      postLayout = RHI::TextureLayout::CopyDst);
+    RC<Texture> CreateAndUploadTexture2D(
+        const RHI::TextureDesc &desc,
+        Span<ImageDynamic>      images,
+        RHI::TextureLayout      postLayout = RHI::TextureLayout::CopyDst);
+    RC<Texture> LoadTexture2D(
+        const std::string    &filename,
+        RHI::Format           format,
+        RHI::TextureUsageFlag usages,
+        bool                  generateMipLevels,
+        RHI::TextureLayout    postLayout = RHI::TextureLayout::CopyDst);
+
+    // Pipeline object creation
 
     Box<RG::RenderGraph> CreateRenderGraph();
 
@@ -121,18 +181,6 @@ public:
 
     RC<BindingLayout> CreateBindingLayout(const BindingLayout::Desc &desc);
 
-    RC<Buffer>         CreateBuffer(const RHI::BufferDesc &desc);
-    RC<StatefulBuffer> CreatePooledBuffer(const RHI::BufferDesc &desc);
-
-    RC<Texture>         CreateTexture(const RHI::TextureDesc &desc);
-    RC<StatefulTexture> CreatePooledTexture(const RHI::TextureDesc &desc);
-    RC<Texture>         CreateColorTexture2D(uint8_t r, uint8_t g, uint8_t b, uint8_t a, const std::string &name = {});
-
-    RC<DynamicBuffer> CreateDynamicBuffer();
-    RC<SubBuffer>     CreateConstantBuffer(const void *data, size_t bytes);
-    template<RtrcStruct T>
-    RC<SubBuffer>     CreateConstantBuffer(const T &data);
-
     CommandBuffer CreateCommandBuffer();
 
     RC<GraphicsPipeline> CreateGraphicsPipeline(const GraphicsPipeline::Desc &desc);
@@ -140,6 +188,9 @@ public:
 
     RC<Sampler> CreateSampler(const RHI::SamplerDesc &desc);
 
+    // Internal helper classes
+
+    CopyContext          &GetCopyContext();
     BufferManager        &GetBufferManager();
     BindingGroupManager  &GetBindingGroupManager();
     const RHI::DevicePtr &GetRawDevice() const;
@@ -303,11 +354,6 @@ inline void Device::ExecuteBarrier(
     ExecuteBarrierImpl(texture, prevLayout, succLayout);
 }
 
-inline CopyContext &Device::GetCopyContext()
-{
-    return *copyContext_;
-}
-
 inline void Device::WaitIdle()
 {
     sync_->WaitIdle();
@@ -357,6 +403,44 @@ inline bool Device::BeginFrame()
 inline const RHI::FencePtr &Device::GetFrameFence()
 {
     return sync_->GetFrameFence();
+}
+
+inline RC<Buffer> Device::CreateBuffer(const RHI::BufferDesc &desc)
+{
+    return bufferManager_->Create(desc);
+}
+
+inline RC<StatefulBuffer> Device::CreatePooledBuffer(const RHI::BufferDesc &desc)
+{
+    return pooledBufferManager_->Create(desc);
+}
+
+inline RC<Texture> Device::CreateTexture(const RHI::TextureDesc &desc)
+{
+    return textureManager_->Create(desc);
+}
+
+inline RC<StatefulTexture> Device::CreatePooledTexture(const RHI::TextureDesc &desc)
+{
+    return pooledTextureManager_->Create(desc);
+}
+
+inline RC<DynamicBuffer> Device::CreateDynamicBuffer()
+{
+    return dynamicBufferManager_->Create();
+}
+
+inline RC<SubBuffer> Device::CreateConstantBuffer(const void *data, size_t bytes)
+{
+    return dynamicBufferManager_->CreateConstantBuffer(data, bytes);
+}
+
+template<RtrcStruct T>
+RC<SubBuffer> Device::CreateConstantBuffer(const T &data)
+{
+    auto ret = this->CreateDynamicBuffer();
+    ret->SetData(data);
+    return ret;
 }
 
 inline Box<RG::RenderGraph> Device::CreateRenderGraph()
@@ -412,44 +496,6 @@ RC<BindingGroup> Device::CreateBindingGroup(const T &value, const RC<BindingGrou
     return group;
 }
 
-inline RC<Buffer> Device::CreateBuffer(const RHI::BufferDesc &desc)
-{
-    return bufferManager_->Create(desc);
-}
-
-inline RC<StatefulBuffer> Device::CreatePooledBuffer(const RHI::BufferDesc &desc)
-{
-    return pooledBufferManager_->Create(desc);
-}
-
-inline RC<Texture> Device::CreateTexture(const RHI::TextureDesc &desc)
-{
-    return textureManager_->Create(desc);
-}
-
-inline RC<StatefulTexture> Device::CreatePooledTexture(const RHI::TextureDesc &desc)
-{
-    return pooledTextureManager_->Create(desc);
-}
-
-inline RC<DynamicBuffer> Device::CreateDynamicBuffer()
-{
-    return dynamicBufferManager_->Create();
-}
-
-inline RC<SubBuffer> Device::CreateConstantBuffer(const void *data, size_t bytes)
-{
-    return dynamicBufferManager_->CreateConstantBuffer(data, bytes);
-}
-
-template<RtrcStruct T>
-RC<SubBuffer> Device::CreateConstantBuffer(const T &data)
-{
-    auto ret = this->CreateDynamicBuffer();
-    ret->SetData(data);
-    return ret;
-}
-
 inline CommandBuffer Device::CreateCommandBuffer()
 {
     return commandBufferManager_->Create();
@@ -468,6 +514,11 @@ inline RC<ComputePipeline> Device::CreateComputePipeline(const RC<Shader> &shade
 inline RC<Sampler> Device::CreateSampler(const RHI::SamplerDesc &desc)
 {
     return samplerManager_->CreateSampler(desc);
+}
+
+inline CopyContext &Device::GetCopyContext()
+{
+    return *copyContext_;
 }
 
 inline BufferManager &Device::GetBufferManager()

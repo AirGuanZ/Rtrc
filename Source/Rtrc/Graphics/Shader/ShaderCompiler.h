@@ -53,8 +53,8 @@ private:
         std::string name;
         std::string valuePropertyDefinitions;
         std::vector<ParsedBinding> bindings;
-        std::vector<bool>          isRef;
-        RHI::ShaderStageFlag       defaultStages;
+        std::vector<bool> isRef;
+        RHI::ShaderStageFlag defaultStages;
     };
 
     struct Bindings

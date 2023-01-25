@@ -46,12 +46,11 @@ void Run()
 
     // Main texture
 
-    auto mainTex = device->GetCopyContext().LoadTexture2D(
+    auto mainTex = device->LoadTexture2D(
         "Asset/Sample/01.TexturedQuad/MainTexture.png",
         RHI::Format::B8G8R8A8_UNorm,
         RHI::TextureUsage::ShaderResource,
-        true);
-    device->ExecuteBarrier(mainTex, RHI::TextureLayout::CopyDst, RHI::TextureLayout::ShaderTexture);
+        true, RHI::TextureLayout::ShaderTexture);
     mainTex->SetName("MainTexture");
 
     // Main sampler

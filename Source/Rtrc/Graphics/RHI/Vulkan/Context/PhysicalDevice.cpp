@@ -1,5 +1,3 @@
-#include <span>
-
 #include <Rtrc/Graphics/RHI/Vulkan/Context/PhysicalDevice.h>
 
 RTRC_RHI_VK_BEGIN
@@ -13,8 +11,11 @@ namespace VkPhysicalDeviceDetail
 
         VkPhysicalDeviceProperties properties;
         vkGetPhysicalDeviceProperties(device, &properties);
+
+        LogDebug("Check physical device: {}", properties.deviceName);
         if(properties.apiVersion < RTRC_VULKAN_API_VERSION)
         {
+            LogDebug("    Required API version (Vulkan 1.3) is unsupported");
             return false;
         }
 
@@ -23,13 +24,13 @@ namespace VkPhysicalDeviceDetail
         uint32_t supportedExtensionCount = 0;
         RTRC_VK_FAIL_MSG(
             vkEnumerateDeviceExtensionProperties(device, nullptr, &supportedExtensionCount, nullptr),
-            "failed to get vulkan device extension property count");
+            "Failed to get device extension property count");
 
         std::vector<VkExtensionProperties> supportedExtensions(supportedExtensionCount);
         RTRC_VK_FAIL_MSG(
             vkEnumerateDeviceExtensionProperties(
                 device, nullptr, &supportedExtensionCount, supportedExtensions.data()),
-            "failed to get vulkan device extension properties");
+            "Failed to get device extension properties");
 
         std::set<std::string> supportedExtensionNames;
         for(auto &e : supportedExtensions)
@@ -42,6 +43,7 @@ namespace VkPhysicalDeviceDetail
         {
             if(!supportedExtensionNames.contains(required))
             {
+                LogDebug("    Required extension {} is unsupported", required);
                 return false;
             }
         }
@@ -82,21 +84,37 @@ namespace VkPhysicalDeviceDetail
                               descriptorIndexingFeatures.descriptorBindingPartiallyBound &&
                               descriptorIndexingFeatures.descriptorBindingUpdateUnusedWhilePending &&
                               descriptorIndexingFeatures.descriptorBindingVariableDescriptorCount &&
-                              descriptorIndexingFeatures.descriptorBindingUpdateUnusedWhilePending &&
                               descriptorIndexingFeatures.descriptorBindingSampledImageUpdateAfterBind &&
                               descriptorIndexingFeatures.descriptorBindingStorageImageUpdateAfterBind &&
                               descriptorIndexingFeatures.descriptorBindingStorageBufferUpdateAfterBind &&
                               descriptorIndexingFeatures.descriptorBindingUniformTexelBufferUpdateAfterBind &&
                               descriptorIndexingFeatures.descriptorBindingStorageTexelBufferUpdateAfterBind;
 
-        if(!customBorderColor ||
-           !dynamicRenderingFeatures.dynamicRendering ||
-           !sync2Features.synchronization2 ||
-           !bindless)
+        if(!customBorderColor)
         {
+            LogDebug("    Custom border color is unsupported");
             return false;
         }
 
+        if(!dynamicRenderingFeatures.dynamicRendering)
+        {
+            LogDebug("    Dynamic rendering is unsupported");
+            return false;
+        }
+
+        if(!sync2Features.synchronization2)
+        {
+            LogDebug("    Synchronization2 is unsupported");
+            return false;
+        }
+
+        if(!bindless)
+        {
+            LogDebug("    Bindless is unsupported");
+            return false;
+        }
+
+        LogDebug("    Found suitable physical device {}", properties.deviceName);
         return true;
     }
 
@@ -114,7 +132,7 @@ namespace VkPhysicalDeviceDetail
             result += 2000;
         }
         result += properties.limits.maxImageDimension2D;
-        LogDebug("Rate physical device: {}, score = {}", properties.deviceName, result);
+        LogDebug("    Rate physical device: {}, score = {}", properties.deviceName, result);
         return result;
     }
 
@@ -125,7 +143,7 @@ VulkanPhysicalDevice VulkanPhysicalDevice::Select(VkInstance instance, const Dev
     uint32_t deviceCount;
     RTRC_VK_FAIL_MSG(
         vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr),
-        "failed to get vulkan physical device count");
+        "Failed to get vulkan physical device count");
     if(!deviceCount)
     {
         return VulkanPhysicalDevice();
@@ -134,7 +152,7 @@ VulkanPhysicalDevice VulkanPhysicalDevice::Select(VkInstance instance, const Dev
     std::vector<VkPhysicalDevice> devices(deviceCount);
     RTRC_VK_FAIL_MSG(
         vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data()),
-        "failed to get vulkan physical devices");
+        "Failed to get vulkan physical devices");
 
     uint32_t bestDeviceIndex = (std::numeric_limits<uint32_t>::max)();
     uint32_t bestScore = 0;
@@ -158,6 +176,7 @@ std::vector<const char*> VulkanPhysicalDevice::GetRequiredExtensions(const Devic
 {
     std::vector<const char*> requiredExtensions =
     {
+        VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME,
         // The following three extensions has been promoted to core 1.2/1.3
         // VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
         // VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME

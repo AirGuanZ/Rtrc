@@ -590,8 +590,7 @@ void ImGuiInstance::RecreateFontTexture()
     unsigned char *data;
     int width, height;
     ImGui::GetIO().Fonts->GetTexDataAsRGBA32(&data, &width, &height);
-    data_->fontTexture = data_->device->GetCopyContext().CreateTexture2D(
-        RHI::TextureDesc
+    data_->fontTexture = data_->device->CreateAndUploadTexture2D(RHI::TextureDesc
         {
             .dim                  = RHI::TextureDimension::Tex2D,
             .format               = RHI::Format::R8G8B8A8_UNorm,
@@ -603,9 +602,7 @@ void ImGuiInstance::RecreateFontTexture()
             .usage                = RHI::TextureUsage::ShaderResource,
             .initialLayout        = RHI::TextureLayout::Undefined,
             .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Concurrent
-        }, data);
-    data_->device->ExecuteBarrier(
-        data_->fontTexture, RHI::TextureLayout::CopyDst, RHI::TextureLayout::ShaderTexture);
+        }, data, RHI::TextureLayout::ShaderTexture);
     data_->fontTextureBindingGroup = data_->passBindingGroupLayout->CreateBindingGroup();
     data_->fontTextureBindingGroup->Set(0, data_->fontTexture->CreateSrv());
     ImGui::GetIO().Fonts->SetTexID(data_->fontTexture.get());

@@ -1,9 +1,10 @@
+#include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/Graphics/Resource/ResourceManager.h>
 
 RTRC_BEGIN
 
 ResourceManager::ResourceManager(Device *device, bool debugMode)
-    : builtinResourceManager_(*device)
+    : device_(device), builtinResourceManager_(*device)
 {
     materialManager_.SetDevice(device);
     materialManager_.SetDebugMode(debugMode);
@@ -18,6 +19,11 @@ void ResourceManager::AddMaterialFiles(const std::set<std::filesystem::path> &fi
 void ResourceManager::AddShaderIncludeDirectory(std::string_view dir)
 {
     materialManager_.AddIncludeDirectory(dir);
+}
+
+const BuiltinResourceManager &ResourceManager::GetBuiltinResources() const
+{
+    return builtinResourceManager_;
 }
 
 RC<Material> ResourceManager::GetMaterial(const std::string &name)
@@ -35,19 +41,14 @@ RC<Shader> ResourceManager::GetShader(const std::string &name)
     return materialManager_.GetShader(name);
 }
 
-RC<MaterialInstance> ResourceManager::CreateMaterialInstance(const std::string &name)
-{
-    return materialManager_.CreateMaterialInstance(name);
-}
-
 RC<Mesh> ResourceManager::GetMesh(std::string_view name, const MeshManager::Options &options)
 {
     return meshManager_.GetMesh(name, options);
 }
 
-const BuiltinResourceManager &ResourceManager::GetBuiltinResources() const
+RC<MaterialInstance> ResourceManager::CreateMaterialInstance(const std::string &name)
 {
-    return builtinResourceManager_;
+    return materialManager_.CreateMaterialInstance(name);
 }
 
 RTRC_END

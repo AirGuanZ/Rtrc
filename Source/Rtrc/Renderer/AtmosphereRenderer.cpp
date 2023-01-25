@@ -99,7 +99,7 @@ AtmosphereDetail::MultiScatterLut::MultiScatterLut(
     RC<Buffer> poissonDiskSamples;
     {
         auto data = GeneratePoissonDiskSamples(DIR_SAMPLE_COUNT, 42);
-        poissonDiskSamples = device.GetCopyContext().CreateBuffer(
+        poissonDiskSamples = device.CreateAndUploadBuffer(
             RHI::BufferDesc
             {
                 .size = sizeof(Vector2f) * DIR_SAMPLE_COUNT,

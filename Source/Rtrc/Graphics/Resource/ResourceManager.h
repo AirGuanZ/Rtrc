@@ -13,21 +13,20 @@ public:
     explicit ResourceManager(Device *device, bool debugMode = RTRC_DEBUG);
     
     void AddMaterialFiles(const std::set<std::filesystem::path> &filenames);
-
     void AddShaderIncludeDirectory(std::string_view dir);
+
+    const BuiltinResourceManager &GetBuiltinResources() const;
 
     RC<Material>       GetMaterial      (const std::string &name);
     RC<ShaderTemplate> GetShaderTemplate(const std::string &name);
     RC<Shader>         GetShader        (const std::string &name); // Valid when no keyword is defined in corresponding shader template
+    RC<Mesh>           GetMesh          (std::string_view name, const MeshManager::Options &options = {});
 
     RC<MaterialInstance> CreateMaterialInstance(const std::string &name);
-
-    RC<Mesh> GetMesh(std::string_view name, const MeshManager::Options &options = {});
-
-    const BuiltinResourceManager &GetBuiltinResources() const;
-
+    
 private:
 
+    Device *device_;
     BuiltinResourceManager builtinResourceManager_;
     MaterialManager        materialManager_;
     MeshManager            meshManager_;

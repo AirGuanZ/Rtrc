@@ -10,6 +10,7 @@
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/BindingLayout.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/ComputePipeline.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/GraphicsPipeline.h>
+#include <Rtrc/Graphics/RHI/Vulkan/Pipeline/RayTracingLibrary.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/Shader.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/Fence.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/Queue.h>
@@ -642,14 +643,21 @@ Ptr<ComputePipeline> VulkanDevice::CreateComputePipeline(const ComputePipelineDe
 
 Ptr<RayTracingLibrary> VulkanDevice::CreateRayTracingLibrary(const RawShaderPtr &shader)
 {
+    std::vector<VkPipelineShaderStageCreateInfo> vkStages;
+    static_cast<const VulkanRawShader *>(shader.Get())->_internalGetStageCreateInfos(std::back_inserter(vkStages));
+
     const VkRayTracingPipelineCreateInfoKHR pipelineCreateInfo =
     {
-        .sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR,
-        .flags = VK_PIPELINE_CREATE_LIBRARY_BIT_KHR
+        .sType      = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR,
+        .flags      = VK_PIPELINE_CREATE_LIBRARY_BIT_KHR,
+        .stageCount = static_cast<uint32_t>(vkStages.size()),
+        .pStages    = vkStages.data()
     };
-
-    // TODO
-    return {};
+    VkPipeline library;
+    RTRC_VK_FAIL_MSG(
+        vkCreateRayTracingPipelinesKHR(device_, nullptr, nullptr, 1, &pipelineCreateInfo, RTRC_VK_ALLOC, &library),
+        "Failed to create vulkan pipeline library");
+    return MakePtr<VulkanRayTracingLibrary>(this, library);
 }
 
 Ptr<BindingGroupLayout> VulkanDevice::CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc)

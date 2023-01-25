@@ -37,10 +37,10 @@ void Run()
     for(int i = 0; i < 4; ++i)
     {
         const std::string filename = fmt::format("Asset/Sample/04.BindlessTexture/{}.png", i);
-        textures[i] = device->GetCopyContext().LoadTexture2D(
+        textures[i] = device->LoadTexture2D(
             filename, RHI::Format::R8G8B8A8_UNorm,
-            RHI::TextureUsage::TransferDst | RHI::TextureUsage::ShaderResource, false);
-        device->ExecuteBarrier(textures[i], RHI::TextureLayout::CopyDst, RHI::TextureLayout::ShaderTexture);
+            RHI::TextureUsage::TransferDst | RHI::TextureUsage::ShaderResource,
+            false, RHI::TextureLayout::ShaderTexture);
     }
 
     // Binding group
