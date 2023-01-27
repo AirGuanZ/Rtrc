@@ -3,8 +3,9 @@
 
 RTRC_RHI_VK_BEGIN
 
-VulkanRayTracingLibrary::VulkanRayTracingLibrary(VulkanDevice *device, VkPipeline pipeline)
-    : device_(device), pipeline_(pipeline)
+VulkanRayTracingLibrary::VulkanRayTracingLibrary(
+    VulkanDevice *device, VkPipeline pipeline, uint32_t maxPayloadSize, uint32_t maxHitAttribSize)
+    : device_(device), pipeline_(pipeline), maxPayloadSize_(maxPayloadSize), maxHitAttribSize_(maxHitAttribSize)
 {
     
 }
@@ -17,6 +18,16 @@ VulkanRayTracingLibrary::~VulkanRayTracingLibrary()
 VkPipeline VulkanRayTracingLibrary::_internalGetNativePipeline() const
 {
     return pipeline_;
+}
+
+uint32_t VulkanRayTracingLibrary::_internalGetMaxPayloadSize() const
+{
+    return maxPayloadSize_;
+}
+
+uint32_t VulkanRayTracingLibrary::_internalGetMaxHitAttributeSize() const
+{
+    return maxHitAttribSize_;
 }
 
 RTRC_RHI_VK_END

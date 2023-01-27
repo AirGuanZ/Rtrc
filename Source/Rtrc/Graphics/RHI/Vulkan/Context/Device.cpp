@@ -11,6 +11,7 @@
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/ComputePipeline.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/GraphicsPipeline.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/RayTracingLibrary.h>
+#include <Rtrc/Graphics/RHI/Vulkan/Pipeline/RayTracingPipeline.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/Shader.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/Fence.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/Queue.h>
@@ -171,6 +172,74 @@ namespace VkDeviceDetail
             .pQueueFamilyIndices   = ret.queueFamilyIndices.GetData()
         };
         return ret;
+    }
+
+    std::vector<VkRayTracingShaderGroupCreateInfoKHR> TranslateVulkanShaderGroups(Span<RayTracingShaderGroup> groups)
+    {
+        std::vector<VkRayTracingShaderGroupCreateInfoKHR> vkGroups;
+        vkGroups.reserve(groups.size());
+        for(const RayTracingShaderGroup &group : groups)
+        {
+            uint32_t generalIndex      = VK_SHADER_UNUSED_KHR;
+            uint32_t closestHitIndex   = VK_SHADER_UNUSED_KHR;
+            uint32_t anyHitIndex       = VK_SHADER_UNUSED_KHR;
+            uint32_t intersectionIndex = VK_SHADER_UNUSED_KHR;
+            VkRayTracingShaderGroupTypeKHR type = group.Match(
+                [&](const RayTracingTriangleHitShaderGroup &g)
+                {
+                    if(g.closestHitShaderIndex != RAY_TRACING_UNUSED_SHADER)
+                    {
+                        closestHitIndex = g.closestHitShaderIndex;
+                    }
+                    if(g.anyHitShaderIndex != RAY_TRACING_UNUSED_SHADER)
+                    {
+                        anyHitIndex = g.anyHitShaderIndex;
+                    }
+                    return VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR;
+                },
+                [&](const RayTracingHitShaderGroup &g)
+                {
+                    if(g.closestHitShaderIndex)
+                    {
+                        closestHitIndex = g.closestHitShaderIndex;
+                    }
+                    if(g.anyHitShaderIndex)
+                    {
+                        anyHitIndex = g.anyHitShaderIndex;
+                    }
+                    assert(g.intersectionShaderIndex != RAY_TRACING_UNUSED_SHADER);
+                    intersectionIndex = g.intersectionShaderIndex;
+                    return VK_RAY_TRACING_SHADER_GROUP_TYPE_PROCEDURAL_HIT_GROUP_KHR;
+                },
+                [&](const RayTracingRayGenShaderGroup &g)
+                {
+                    assert(g.rayGenShaderIndex != RAY_TRACING_UNUSED_SHADER);
+                    generalIndex = g.rayGenShaderIndex;
+                    return VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;
+                },
+                [&](const RayTracingMissShaderGroup &g)
+                {
+                    assert(g.missShaderIndex != RAY_TRACING_UNUSED_SHADER);
+                    generalIndex = g.missShaderIndex;
+                    return VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;
+                },
+                [&](const RayTracingCallableShaderGroup &g)
+                {
+                    assert(g.callableShaderIndex != RAY_TRACING_UNUSED_SHADER);
+                    generalIndex = g.callableShaderIndex;
+                    return VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;
+                });
+            vkGroups.push_back(VkRayTracingShaderGroupCreateInfoKHR
+            {
+                .sType              = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR,
+                .type               = type,
+                .generalShader      = generalIndex,
+                .closestHitShader   = closestHitIndex,
+                .anyHitShader       = anyHitIndex,
+                .intersectionShader = intersectionIndex
+            });
+        }
+        return vkGroups;
     }
 
 } // namespace VkDeviceDetail
@@ -641,23 +710,99 @@ Ptr<ComputePipeline> VulkanDevice::CreateComputePipeline(const ComputePipelineDe
     return MakePtr<VulkanComputePipeline>(desc.bindingLayout, device_, pipeline);
 }
 
-Ptr<RayTracingLibrary> VulkanDevice::CreateRayTracingLibrary(const RawShaderPtr &shader)
+Ptr<RayTracingPipeline> VulkanDevice::CreateRayTracingPipeline(const RayTracingPipelineDesc &desc)
 {
     std::vector<VkPipelineShaderStageCreateInfo> vkStages;
-    static_cast<const VulkanRawShader *>(shader.Get())->_internalGetStageCreateInfos(std::back_inserter(vkStages));
+    for(auto &rawShader : desc.rawShaders)
+    {
+        static_cast<const VulkanRawShader *>(rawShader.Get())->
+            _internalGetStageCreateInfos(std::back_inserter(vkStages));
+    }
+    auto vkGroups = VkDeviceDetail::TranslateVulkanShaderGroups(desc.shaderGroups);
+
+    std::vector<VkPipeline> vkLibraries;
+    vkLibraries.reserve(desc.libraries.size());
+    for(auto &l : desc.libraries)
+    {
+        vkLibraries.push_back(static_cast<VulkanRayTracingLibrary *>(l.Get())->_internalGetNativePipeline());
+    }
+    const VkPipelineLibraryCreateInfoKHR libraryCreateInfo =
+    {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_LIBRARY_CREATE_INFO_KHR,
+        .libraryCount = static_cast<uint32_t>(desc.libraries.size()),
+        .pLibraries = vkLibraries.data()
+    };
+    const VkRayTracingPipelineInterfaceCreateInfoKHR interfaceCreateInfo =
+    {
+        .sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_INTERFACE_CREATE_INFO_KHR,
+        .maxPipelineRayPayloadSize = desc.maxRayPayloadSize,
+        .maxPipelineRayHitAttributeSize = desc.maxRayHitAttributeSize
+    };
+
+    StaticVector<VkDynamicState, 1> dynamicStates;
+    if(desc.useCustomStackSize)
+    {
+        dynamicStates.PushBack(VK_DYNAMIC_STATE_RAY_TRACING_PIPELINE_STACK_SIZE_KHR);
+    }
+    const VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo =
+    {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        .dynamicStateCount = static_cast<uint32_t>(dynamicStates.GetSize()),
+        .pDynamicStates = dynamicStates.GetData()
+    };
+
+    auto pipelineLayout = static_cast<VulkanBindingLayout *>(desc.bindingLayout.Get())->_internalGetNativeLayout();
 
     const VkRayTracingPipelineCreateInfoKHR pipelineCreateInfo =
     {
-        .sType      = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR,
-        .flags      = VK_PIPELINE_CREATE_LIBRARY_BIT_KHR,
-        .stageCount = static_cast<uint32_t>(vkStages.size()),
-        .pStages    = vkStages.data()
+        .sType                        = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR,
+        .stageCount                   = static_cast<uint32_t>(vkStages.size()),
+        .pStages                      = vkStages.data(),
+        .groupCount                   = static_cast<uint32_t>(vkGroups.size()),
+        .pGroups                      = vkGroups.data(),
+        .maxPipelineRayRecursionDepth = desc.maxRecursiveDepth,
+        .pLibraryInfo                 = desc.libraries.empty() ? nullptr : &libraryCreateInfo,
+        .pLibraryInterface            = &interfaceCreateInfo,
+        .pDynamicState                = &dynamicStateCreateInfo,
+        .layout                       = pipelineLayout
+    };
+
+    VkPipeline pipeline;
+    RTRC_VK_FAIL_MSG(
+        vkCreateRayTracingPipelinesKHR(device_, nullptr, nullptr, 1, &pipelineCreateInfo, RTRC_VK_ALLOC, &pipeline),
+        "Failed to create Vulkan ray tracing pipeline");
+    RTRC_SCOPE_FAIL{ vkDestroyPipeline(device_, pipeline, RTRC_VK_ALLOC); };
+
+    return MakePtr<VulkanRayTracingPipeline>(desc.bindingLayout, this, pipeline);
+}
+
+Ptr<RayTracingLibrary> VulkanDevice::CreateRayTracingLibrary(const RayTracingLibraryDesc &desc)
+{
+    std::vector<VkPipelineShaderStageCreateInfo> vkStages;
+    static_cast<const VulkanRawShader *>(desc.rawShader.Get())->_internalGetStageCreateInfos(std::back_inserter(vkStages));
+    auto vkGroups = VkDeviceDetail::TranslateVulkanShaderGroups(desc.shaderGroups);
+
+    const VkRayTracingPipelineInterfaceCreateInfoKHR interfaceCreateInfo =
+    {
+        .sType                          = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_INTERFACE_CREATE_INFO_KHR,
+        .maxPipelineRayPayloadSize      = desc.maxRayPayloadSize,
+        .maxPipelineRayHitAttributeSize = desc.maxRayHitAttributeSize
+    };
+    const VkRayTracingPipelineCreateInfoKHR pipelineCreateInfo =
+    {
+        .sType             = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR,
+        .flags             = VK_PIPELINE_CREATE_LIBRARY_BIT_KHR,
+        .stageCount        = static_cast<uint32_t>(vkStages.size()),
+        .pStages           = vkStages.data(),
+        .groupCount        = static_cast<uint32_t>(vkGroups.size()),
+        .pGroups           = vkGroups.data(),
+        .pLibraryInterface = &interfaceCreateInfo
     };
     VkPipeline library;
     RTRC_VK_FAIL_MSG(
         vkCreateRayTracingPipelinesKHR(device_, nullptr, nullptr, 1, &pipelineCreateInfo, RTRC_VK_ALLOC, &library),
         "Failed to create vulkan pipeline library");
-    return MakePtr<VulkanRayTracingLibrary>(this, library);
+    return MakePtr<VulkanRayTracingLibrary>(this, library, desc.maxRayPayloadSize, desc.maxRayHitAttributeSize);
 }
 
 Ptr<BindingGroupLayout> VulkanDevice::CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc)

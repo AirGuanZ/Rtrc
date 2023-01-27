@@ -95,7 +95,7 @@ VkShaderStageFlagBits TranslateShaderStage(ShaderStage type)
     case RT_AnyHitShader:       return VK_SHADER_STAGE_ANY_HIT_BIT_KHR;
     case CallableShader:        return VK_SHADER_STAGE_CALLABLE_BIT_KHR;
     default:
-        throw Exception(fmt::format("Single shader stage expected. Actual: {0:x}", static_cast<uint32_t>(type)));
+        throw Exception(fmt::format("Single shader stage expected. Actual: {0:x}", std::to_underlying(type)));
     }
 }
 

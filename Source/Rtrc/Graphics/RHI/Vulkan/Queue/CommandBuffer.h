@@ -22,13 +22,17 @@ public:
         const RenderPassDepthStencilAttachment &depthStencilAttachment) RTRC_RHI_OVERRIDE;
     void EndRenderPass() RTRC_RHI_OVERRIDE;
 
-    void BindPipeline(const Ptr<GraphicsPipeline> &pipeline) RTRC_RHI_OVERRIDE;
-    void BindPipeline(const Ptr<ComputePipeline> &pipeline) RTRC_RHI_OVERRIDE;
+    void BindPipeline(const Ptr<GraphicsPipeline>   &pipeline) RTRC_RHI_OVERRIDE;
+    void BindPipeline(const Ptr<ComputePipeline>    &pipeline) RTRC_RHI_OVERRIDE;
+    void BindPipeline(const Ptr<RayTracingPipeline> &pipeline) RTRC_RHI_OVERRIDE;
     
-    void BindGroupsToGraphicsPipeline(int startIndex, Span<RC<BindingGroup>> groups) RTRC_RHI_OVERRIDE;
-    void BindGroupsToComputePipeline(int startIndex, Span<RC<BindingGroup>> groups) RTRC_RHI_OVERRIDE;
-    void BindGroupToGraphicsPipeline(int index, const Ptr<BindingGroup> &group) RTRC_RHI_OVERRIDE;
-    void BindGroupToComputePipeline(int index, const Ptr<BindingGroup> &group) RTRC_RHI_OVERRIDE;
+    void BindGroupsToGraphicsPipeline  (int startIndex, Span<RC<BindingGroup>> groups) RTRC_RHI_OVERRIDE;
+    void BindGroupsToComputePipeline   (int startIndex, Span<RC<BindingGroup>> groups) RTRC_RHI_OVERRIDE;
+    void BindGroupsToRayTracingPipeline(int startIndex, Span<RC<BindingGroup>> groups) RTRC_RHI_OVERRIDE;
+
+    void BindGroupToGraphicsPipeline  (int index, const Ptr<BindingGroup> &group) RTRC_RHI_OVERRIDE;
+    void BindGroupToComputePipeline   (int index, const Ptr<BindingGroup> &group) RTRC_RHI_OVERRIDE;
+    void BindGroupToRayTracingPipeline(int index, const Ptr<BindingGroup> &group) RTRC_RHI_OVERRIDE;
 
     void SetViewports(Span<Viewport> viewports) RTRC_RHI_OVERRIDE;
     void SetScissors(Span<Scissor> scissors) RTRC_RHI_OVERRIDE;
@@ -82,8 +86,9 @@ private:
     VkCommandPool   pool_;
     VkCommandBuffer commandBuffer_;
 
-    Ptr<GraphicsPipeline> currentGraphicsPipeline_;
-    Ptr<ComputePipeline>  currentComputePipeline_;
+    Ptr<GraphicsPipeline>   currentGraphicsPipeline_;
+    Ptr<ComputePipeline>    currentComputePipeline_;
+    Ptr<RayTracingPipeline> currentRayTracingPipeline_;
 };
 
 RTRC_RHI_VK_END

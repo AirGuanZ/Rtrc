@@ -3,6 +3,7 @@
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/BindingLayout.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/ComputePipeline.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/GraphicsPipeline.h>
+#include <Rtrc/Graphics/RHI/Vulkan/Pipeline/RayTracingPipeline.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/CommandBuffer.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Buffer.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Texture.h>
@@ -154,6 +155,19 @@ void VulkanCommandBuffer::BindPipeline(const Ptr<ComputePipeline> &pipeline)
     currentComputePipeline_ = DynamicCast<VulkanComputePipeline>(pipeline);
 }
 
+void VulkanCommandBuffer::BindPipeline(const Ptr<RayTracingPipeline> &pipeline)
+{
+    if(!pipeline)
+    {
+        vkCmdBindPipeline(commandBuffer_, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, VK_NULL_HANDLE);
+        currentRayTracingPipeline_ = nullptr;
+        return;
+    }
+    auto vkPipeline = static_cast<VulkanRayTracingPipeline *>(pipeline.Get());
+    vkCmdBindPipeline(commandBuffer_, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, vkPipeline->_internalGetNativePipeline());
+    currentRayTracingPipeline_ = DynamicCast<VulkanRayTracingPipeline>(pipeline);
+}
+
 void VulkanCommandBuffer::BindGroupsToGraphicsPipeline(int startIndex, Span<RC<BindingGroup>> groups)
 {
     auto layout = static_cast<const VulkanBindingLayout *>(currentGraphicsPipeline_->GetBindingLayout().Get());
@@ -182,6 +196,20 @@ void VulkanCommandBuffer::BindGroupsToComputePipeline(int startIndex, Span<RC<Bi
         static_cast<uint32_t>(sets.size()), sets.data(), 0, nullptr);
 }
 
+void VulkanCommandBuffer::BindGroupsToRayTracingPipeline(int startIndex, Span<RC<BindingGroup>> groups)
+{
+    auto layout = static_cast<const VulkanBindingLayout *>(currentRayTracingPipeline_->GetBindingLayout().Get());
+    std::vector<VkDescriptorSet> sets(groups.GetSize());
+    for(auto &&[i, g] : Enumerate(groups))
+    {
+        sets[i] = static_cast<VulkanBindingGroup *>(g.get())->_internalGetNativeSet();
+    }
+    vkCmdBindDescriptorSets(
+        commandBuffer_, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR,
+        layout->_internalGetNativeLayout(), startIndex,
+        static_cast<uint32_t>(sets.size()), sets.data(), 0, nullptr);
+}
+
 void VulkanCommandBuffer::BindGroupToGraphicsPipeline(int index, const Ptr<BindingGroup> &group)
 {
     auto layout = static_cast<const VulkanBindingLayout *>(currentGraphicsPipeline_->GetBindingLayout().Get());
@@ -197,6 +225,15 @@ void VulkanCommandBuffer::BindGroupToComputePipeline(int index, const Ptr<Bindin
     VkDescriptorSet set = static_cast<VulkanBindingGroup *>(group.Get())->_internalGetNativeSet();
     vkCmdBindDescriptorSets(
         commandBuffer_, VK_PIPELINE_BIND_POINT_COMPUTE,
+        layout->_internalGetNativeLayout(), index, 1, &set, 0, nullptr);
+}
+
+void VulkanCommandBuffer::BindGroupToRayTracingPipeline(int index, const Ptr<BindingGroup> &group)
+{
+    auto layout = static_cast<const VulkanBindingLayout *>(currentRayTracingPipeline_->GetBindingLayout().Get());
+    VkDescriptorSet set = static_cast<VulkanBindingGroup *>(group.Get())->_internalGetNativeSet();
+    vkCmdBindDescriptorSets(
+        commandBuffer_, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR,
         layout->_internalGetNativeLayout(), index, 1, &set, 0, nullptr);
 }
 

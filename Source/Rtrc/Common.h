@@ -106,12 +106,6 @@ constexpr bool AlwaysFalse = false;
 template<typename T> requires std::is_scoped_enum_v<T>
 constexpr auto EnumCount = std::underlying_type_t<T>(T::Count);
 
-template<typename T> requires std::is_enum_v<T>
-constexpr auto EnumToInt(T e)
-{
-    return static_cast<std::underlying_type_t<T>>(e);
-}
-
 class WithUniqueObjectID
 {
 public:

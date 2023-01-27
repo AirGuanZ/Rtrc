@@ -37,10 +37,11 @@ public:
 
     Ptr<RawShader> CreateShader(const void *data, size_t size, std::vector<RawShaderEntry> entries) RTRC_RHI_OVERRIDE;
 
-    Ptr<GraphicsPipeline> CreateGraphicsPipeline(const GraphicsPipelineDesc &desc) RTRC_RHI_OVERRIDE;
-    Ptr<ComputePipeline>  CreateComputePipeline(const ComputePipelineDesc &desc) RTRC_RHI_OVERRIDE;
+    Ptr<GraphicsPipeline>   CreateGraphicsPipeline  (const GraphicsPipelineDesc &desc) RTRC_RHI_OVERRIDE;
+    Ptr<ComputePipeline>    CreateComputePipeline   (const ComputePipelineDesc &desc) RTRC_RHI_OVERRIDE;
+    Ptr<RayTracingPipeline> CreateRayTracingPipeline(const RayTracingPipelineDesc &desc) RTRC_RHI_OVERRIDE;
 
-    Ptr<RayTracingLibrary> CreateRayTracingLibrary(const RawShaderPtr &shader) RTRC_RHI_OVERRIDE;
+    Ptr<RayTracingLibrary> CreateRayTracingLibrary(const RayTracingLibraryDesc &desc) RTRC_RHI_OVERRIDE;
 
     Ptr<BindingGroupLayout> CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc) RTRC_RHI_OVERRIDE;
     Ptr<BindingGroup> CreateBindingGroup(

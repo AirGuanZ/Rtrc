@@ -64,7 +64,7 @@ class Application : public Uncopyable
             mesh->SetMesh(cubeMesh);
             mesh->SetMaterial(matInst);
 
-            Vector4f albedo = { 0, 0, 255, 255 };
+            Vector4f albedo = { 0.2f, 0.2f, 1.0f, 1.0f };
             mesh->SetPushConstantData(albedo);
 
             mesh->UpdateWorldMatrixRecursively(true);

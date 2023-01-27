@@ -247,7 +247,7 @@ void Renderer::DoRenderGBuffersPass(RG::PassContext &passContext, const RenderGB
 
     // Dynamic states
 
-    cmd.SetStencilReferenceValue(EnumToInt(StencilMaskBit::Regular));
+    cmd.SetStencilReferenceValue(std::to_underlying(StencilMaskBit::Regular));
     cmd.SetViewports(gbufferA->GetViewport());
     cmd.SetScissors(gbufferA->GetScissor());
 
@@ -281,7 +281,7 @@ void Renderer::DoRenderGBuffersPass(RG::PassContext &passContext, const RenderGB
                     .depthCompareOp         = RHI::CompareOp::Less,
                     .enableStencilTest      = true,
                     .stencilReadMask        = 0xff,
-                    .stencilWriteMask       = EnumToInt(StencilMaskBit::Regular),
+                    .stencilWriteMask       = std::to_underlying(StencilMaskBit::Regular),
                     .frontStencil           = GraphicsPipeline::StencilOps
                     {
                         .depthFailOp = RHI::StencilOp::Keep,

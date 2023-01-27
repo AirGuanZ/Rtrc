@@ -8,7 +8,7 @@ RTRC_RHI_IMPLEMENT(VulkanBufferSrv, BufferSrv)
 {
 public:
 
-    VulkanBufferSrv(const VulkanBuffer * buffer, const BufferSrvDesc & desc, VkBufferView view);
+    VulkanBufferSrv(const VulkanBuffer *buffer, const BufferSrvDesc &desc, VkBufferView view);
 
     const BufferSrvDesc &GetDesc() const RTRC_RHI_OVERRIDE;
 
@@ -27,7 +27,7 @@ RTRC_RHI_IMPLEMENT(VulkanBufferUav, BufferUav)
 {
 public:
 
-    VulkanBufferUav(const VulkanBuffer * buffer, const BufferUavDesc & desc, VkBufferView view);
+    VulkanBufferUav(const VulkanBuffer *buffer, const BufferUavDesc &desc, VkBufferView view);
 
     const BufferUavDesc &GetDesc() const RTRC_RHI_OVERRIDE;
 

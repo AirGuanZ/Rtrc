@@ -701,7 +701,7 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
 
     auto SetBuiltinBindingGroupIndex = [&](Shader::BuiltinBindingGroup group, std::string_view name)
     {
-        shader->info_->builtinBindingGroupIndices_[EnumToInt(group)] = shader->GetBindingGroupIndexByName(name);
+        shader->info_->builtinBindingGroupIndices_[std::to_underlying(group)] = shader->GetBindingGroupIndexByName(name);
     };
     SetBuiltinBindingGroupIndex(Shader::BuiltinBindingGroup::Pass,     "Pass");
     SetBuiltinBindingGroupIndex(Shader::BuiltinBindingGroup::Material, "Material");

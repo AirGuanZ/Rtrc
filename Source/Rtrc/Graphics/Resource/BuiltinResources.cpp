@@ -28,17 +28,17 @@ Device &BuiltinResourceManager::GetDevice() const
 
 const RC<Mesh> &BuiltinResourceManager::GetBuiltinMesh(BuiltinMesh mesh) const
 {
-    return meshes_[EnumToInt(mesh)];
+    return meshes_[std::to_underlying(mesh)];
 }
 
 const RC<Texture> &BuiltinResourceManager::GetBuiltinTexture(BuiltinTexture texture) const
 {
-    return textures_[EnumToInt(texture)];
+    return textures_[std::to_underlying(texture)];
 }
 
 const RC<Material> &BuiltinResourceManager::GetBuiltinMaterial(BuiltinMaterial material) const
 {
-    return materials_[EnumToInt(material)];
+    return materials_[std::to_underlying(material)];
 }
 
 const Mesh &BuiltinResourceManager::GetFullscreenTriangleMesh() const
@@ -53,14 +53,14 @@ const Mesh &BuiltinResourceManager::GetFullscreenQuadMesh() const
 
 void BuiltinResourceManager::LoadBuiltinTextures()
 {
-    textures_[EnumToInt(BuiltinTexture::Black2D)] = device_.CreateColorTexture2D(0, 0, 0, 255, "BuiltinBlack2D");
-    textures_[EnumToInt(BuiltinTexture::White2D)] = device_.CreateColorTexture2D(255, 255, 255, 255, "BuiltinWhite2D");
+    textures_[std::to_underlying(BuiltinTexture::Black2D)] = device_.CreateColorTexture2D(0, 0, 0, 255, "BuiltinBlack2D");
+    textures_[std::to_underlying(BuiltinTexture::White2D)] = device_.CreateColorTexture2D(255, 255, 255, 255, "BuiltinWhite2D");
 }
 
 void BuiltinResourceManager::LoadBuiltinMeshes()
 {
 #define LOAD_BUILTIN_MESH(NAME) \
-    meshes_[EnumToInt(BuiltinMesh::NAME)] = ToRC(MeshManager::Load(&device_, "Asset/Builtin/Mesh/" #NAME ".obj", {}))
+    meshes_[std::to_underlying(BuiltinMesh::NAME)] = ToRC(MeshManager::Load(&device_, "Asset/Builtin/Mesh/" #NAME ".obj", {}))
     LOAD_BUILTIN_MESH(Cube);
 #undef LOAD_BUILTIN_MESH
 }
@@ -68,7 +68,7 @@ void BuiltinResourceManager::LoadBuiltinMeshes()
 void BuiltinResourceManager::LoadBuiltinMaterials()
 {
 #define LOAD_BUILTIN_MATERIAL(NAME) \
-    materials_[EnumToInt(BuiltinMaterial::NAME)] = materialManager_.GetMaterial("Builtin/" #NAME)
+    materials_[std::to_underlying(BuiltinMaterial::NAME)] = materialManager_.GetMaterial("Builtin/" #NAME)
     LOAD_BUILTIN_MATERIAL(DeferredLighting);
     LOAD_BUILTIN_MATERIAL(Atmosphere);
 #undef LOAD_BUILTIN_MATERIAL

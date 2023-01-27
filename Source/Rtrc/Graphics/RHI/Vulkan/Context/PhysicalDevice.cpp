@@ -284,7 +284,7 @@ VulkanPhysicalDevice VulkanPhysicalDevice::Select(VkInstance instance, const Dev
     uint32_t deviceCount;
     RTRC_VK_FAIL_MSG(
         vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr),
-        "Failed to get vulkan physical device count");
+        "Failed to get Vulkan physical device count");
     if(!deviceCount)
     {
         return VulkanPhysicalDevice();
@@ -293,7 +293,7 @@ VulkanPhysicalDevice VulkanPhysicalDevice::Select(VkInstance instance, const Dev
     std::vector<VkPhysicalDevice> devices(deviceCount);
     RTRC_VK_FAIL_MSG(
         vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data()),
-        "Failed to get vulkan physical devices");
+        "Failed to get Vulkan physical devices");
 
     const auto physicalDeviceFeatures = VkPhysicalDeviceDetail::GetRequiredPhysicalDeviceFeatures();
 
@@ -325,7 +325,7 @@ std::vector<const char*> VulkanPhysicalDevice::GetRequiredExtensions(const Devic
         VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
         VK_KHR_RAY_QUERY_EXTENSION_NAME,
 
-        // The following extensions have been promoted to core 1.2/1.3
+        // The following extensions have been promoted to core 1.2/1.3:
         // VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
         // VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
         // VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME

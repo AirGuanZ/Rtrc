@@ -13,6 +13,8 @@
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/BindingLayout.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/ComputePipeline.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/GraphicsPipeline.h>
+#include <Rtrc/Graphics/RHI/Vulkan/Pipeline/RayTracingLibrary.h>
+#include <Rtrc/Graphics/RHI/Vulkan/Pipeline/RayTracingPipeline.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/Shader.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/CommandBuffer.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/CommandPool.h>
@@ -20,8 +22,7 @@
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/Queue.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/Semaphore.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Buffer.h>
-#include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferSRV.h>
-#include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferUAV.h>
+#include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferView.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/MemoryBlock.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Sampler.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Texture.h>

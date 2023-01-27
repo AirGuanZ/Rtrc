@@ -214,7 +214,7 @@ inline int ShaderInfo::GetBindingGroupIndexForInlineSamplers() const
 
 inline int ShaderInfo::GetBuiltinBindingGroupIndex(BuiltinBindingGroup bindingGroup) const
 {
-    return builtinBindingGroupIndices_[EnumToInt(bindingGroup)];
+    return builtinBindingGroupIndices_[std::to_underlying(bindingGroup)];
 }
 
 inline const Vector3i &ShaderInfo::GetThreadGroupSize() const
