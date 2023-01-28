@@ -33,7 +33,7 @@ namespace VkPhysicalDeviceDetail
         return ret;                                                            \
     }())
 
-    std::vector<PhysicalDeviceFeature> GetRequiredPhysicalDeviceFeatures()
+    std::vector<PhysicalDeviceFeature> GetRequiredPhysicalDeviceFeatures(bool enableRayTracing)
     {
         std::vector<PhysicalDeviceFeature> ret;
 
@@ -77,27 +77,30 @@ namespace VkPhysicalDeviceDetail
             descriptorBindingVariableDescriptorCount,
             runtimeDescriptorArray);
 
-        ADD_PHYSICAL_DEVICE_FEATURE(
-            VkPhysicalDeviceBufferDeviceAddressFeatures,
-            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES,
-            bufferDeviceAddress);
+        if(enableRayTracing)
+        {
+            ADD_PHYSICAL_DEVICE_FEATURE(
+                VkPhysicalDeviceBufferDeviceAddressFeatures,
+                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES,
+                bufferDeviceAddress);
 
-        ADD_PHYSICAL_DEVICE_FEATURE(
-            VkPhysicalDeviceAccelerationStructureFeaturesKHR,
-            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR,
-            accelerationStructure,
-            descriptorBindingAccelerationStructureUpdateAfterBind);
+            ADD_PHYSICAL_DEVICE_FEATURE(
+                VkPhysicalDeviceAccelerationStructureFeaturesKHR,
+                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR,
+                accelerationStructure,
+                descriptorBindingAccelerationStructureUpdateAfterBind);
 
-        ADD_PHYSICAL_DEVICE_FEATURE(
-            VkPhysicalDeviceRayTracingPipelineFeaturesKHR,
-            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR,
-            rayTracingPipeline,
-            rayTracingPipelineTraceRaysIndirect);
+            ADD_PHYSICAL_DEVICE_FEATURE(
+                VkPhysicalDeviceRayTracingPipelineFeaturesKHR,
+                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR,
+                rayTracingPipeline,
+                rayTracingPipelineTraceRaysIndirect);
 
-        ADD_PHYSICAL_DEVICE_FEATURE(
-            VkPhysicalDeviceRayQueryFeaturesKHR,
-            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR,
-            rayQuery);
+            ADD_PHYSICAL_DEVICE_FEATURE(
+                VkPhysicalDeviceRayQueryFeaturesKHR,
+                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR,
+                rayQuery);
+        }
 
         return ret;
     }
@@ -295,7 +298,7 @@ VulkanPhysicalDevice VulkanPhysicalDevice::Select(VkInstance instance, const Dev
         vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data()),
         "Failed to get Vulkan physical devices");
 
-    const auto physicalDeviceFeatures = VkPhysicalDeviceDetail::GetRequiredPhysicalDeviceFeatures();
+    const auto physicalDeviceFeatures = VkPhysicalDeviceDetail::GetRequiredPhysicalDeviceFeatures(desc.enableRayTracing);
 
     uint32_t bestDeviceIndex = (std::numeric_limits<uint32_t>::max)();
     uint32_t bestScore = 0;
@@ -319,12 +322,6 @@ std::vector<const char*> VulkanPhysicalDevice::GetRequiredExtensions(const Devic
 {
     std::vector<const char*> requiredExtensions =
     {
-        VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME,
-        VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
-        VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
-        VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
-        VK_KHR_RAY_QUERY_EXTENSION_NAME,
-
         // The following extensions have been promoted to core 1.2/1.3:
         // VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
         // VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
@@ -335,14 +332,24 @@ std::vector<const char*> VulkanPhysicalDevice::GetRequiredExtensions(const Devic
     {
         requiredExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
     }
+    if(desc.enableRayTracing)
+    {
+        requiredExtensions.push_back(VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME);
+        requiredExtensions.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
+        requiredExtensions.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
+        requiredExtensions.push_back(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
+        requiredExtensions.push_back(VK_KHR_RAY_QUERY_EXTENSION_NAME);
+    }
     return requiredExtensions;
 }
 
-VkPhysicalDeviceFeatures2 VulkanPhysicalDevice::GetRequiredFeatures(std::unique_ptr<unsigned char[]> &storage)
+VkPhysicalDeviceFeatures2 VulkanPhysicalDevice::GetRequiredFeatures(
+    const DeviceDesc &desc, std::unique_ptr<unsigned char[]> &storage)
 {
     VkPhysicalDeviceFeatures2 ret = {};
     ret.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-    ret.pNext = EnablePhysicalDeviceFeatures(VkPhysicalDeviceDetail::GetRequiredPhysicalDeviceFeatures(), storage);
+    ret.pNext = EnablePhysicalDeviceFeatures(
+        VkPhysicalDeviceDetail::GetRequiredPhysicalDeviceFeatures(desc.enableRayTracing), storage);
     return ret;
 }
 
@@ -392,6 +399,7 @@ VulkanPhysicalDevice::VulkanPhysicalDevice(VkPhysicalDevice device)
         const bool graphics = (flag & VK_QUEUE_GRAPHICS_BIT) != 0;
         const bool compute = (flag & VK_QUEUE_COMPUTE_BIT) != 0;
         const bool transfer = (flag & VK_QUEUE_TRANSFER_BIT) != 0;
+        const bool opticalFlowNV = (flag & VK_QUEUE_OPTICAL_FLOW_BIT_NV);
 
         if(queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
         {
@@ -401,7 +409,7 @@ VulkanPhysicalDevice::VulkanPhysicalDevice(VkPhysicalDevice device)
         {
             computeQueueFamily_ = i;
         }
-        if((!transferQueueFamily_ && transfer) || (transfer && !compute))
+        if((!transferQueueFamily_ && transfer) || (transfer && !compute && !opticalFlowNV))
         {
             transferQueueFamily_ = i;
         }

@@ -56,20 +56,22 @@ Box<Device> Device::CreateGraphicsDevice(
     RHI::Format swapchainFormat,
     int         swapchainImageCount,
     bool        debugMode,
-    bool        vsync)
+    bool        vsync,
+    Flags       flags)
 {
     Box<Device> ret{ new Device };
     ret->instance_ = CreateVulkanInstance(RHI::VulkanInstanceDesc
     {
-            .extensions = Window::GetRequiredVulkanInstanceExtensions(),
-            .debugMode = debugMode
+        .extensions = Window::GetRequiredVulkanInstanceExtensions(),
+        .debugMode = debugMode
     });
     const RHI::DeviceDesc deviceDesc =
     {
         .graphicsQueue = true,
         .computeQueue = true,
         .transferQueue = true,
-        .supportSwapchain = true
+        .supportSwapchain = true,
+        .enableRayTracing = flags.contains(EnableRayTracing)
     };
     auto rhiDevice = ret->instance_->CreateDevice(deviceDesc);
     ret->InitializeInternal(rhiDevice, false);

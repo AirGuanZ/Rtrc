@@ -465,6 +465,7 @@ struct DeviceDesc
     bool computeQueue     = true;
     bool transferQueue    = true;
     bool supportSwapchain = true;
+    bool enableRayTracing = false;
 };
 
 struct SwapchainDesc
@@ -994,97 +995,6 @@ public:
 private:
 
     std::vector<Record> records_;
-};
-
-class GraphicsPipelineBuilder : GraphicsPipelineDesc
-{
-    friend class RTRC_RHI_IMPL_PREFIX(Device);
-
-public:
-
-    GraphicsPipelineBuilder &SetVertexShader(Ptr<RawShader> vertexShader);
-    GraphicsPipelineBuilder &SetFragmentShader(Ptr<RawShader> fragmentShader);
-
-    GraphicsPipelineBuilder &SetBindingLayout(Ptr<BindingLayout> layout);
-
-    GraphicsPipelineBuilder &SetViewports(const Viewports &viewports);
-    GraphicsPipelineBuilder &SetScissors (const Scissors &scissors);
-
-    GraphicsPipelineBuilder &AddVertexInputBuffers(Span<VertexInputBuffer> buffers);
-    GraphicsPipelineBuilder &AddVertexInputAttributes(Span<VertexInputAttribute> attributes);
-
-    // Default is trianglelist
-    GraphicsPipelineBuilder &SetPrimitiveTopology(PrimitiveTopology topology);
-
-    // Default is fill
-    GraphicsPipelineBuilder &SetFillMode(FillMode mode);
-
-    // Default is cullnone
-    GraphicsPipelineBuilder &SetCullMode(CullMode mode);
-
-    // Default is cw
-    GraphicsPipelineBuilder &SetFrontFace(FrontFaceMode mode);
-
-    // Default is 0
-    GraphicsPipelineBuilder &SetDepthBias(float constFactor, float slopeFactor, float clamp);
-
-    // Default is 1
-    GraphicsPipelineBuilder &SetMultisample(int sampleCount);
-
-    // Default is disabled
-    GraphicsPipelineBuilder &SetDepthTest(bool enableTest, bool enableWrite, CompareOp compareOp);
-
-    // Default is disabled
-    GraphicsPipelineBuilder &SetStencilTest(bool enableTest);
-
-    // Default is 0
-    GraphicsPipelineBuilder &SetStencilMask(uint8_t readMask, uint8_t writeMask);
-
-    // Default is keep, keep, keep, always, 0xff, 0xff
-    GraphicsPipelineBuilder &SetStencilFrontOp(
-        StencilOp depthFailOp,
-        StencilOp failOp,
-        StencilOp passOp,
-        CompareOp compareOp);
-
-    // Default is keep, keep, keep, always, 0xff, 0xff
-    GraphicsPipelineBuilder &SetStencilBackOp(
-        StencilOp depthFailOp,
-        StencilOp failOp,
-        StencilOp passOp,
-        CompareOp compareOp);
-
-    // Default is disabled
-    // src: from fragment shader
-    // dst: from render target
-    // out = srcFactor * src op dstFactor * dst
-    GraphicsPipelineBuilder &SetBlending(
-        bool        enableBlending,
-        BlendFactor srcColorFactor,
-        BlendFactor dstColorFactor,
-        BlendOp     colorOp,
-        BlendFactor srcAlphaFactor,
-        BlendFactor dstAlphaFactor,
-        BlendOp     alphaOp);
-
-    // Default is empty
-    GraphicsPipelineBuilder &AddColorAttachment(Format format);
-
-    // Default is undefined
-    GraphicsPipelineBuilder &SetDepthStencilAttachment(Format format);
-
-    Ptr<GraphicsPipeline> CreatePipeline(const DevicePtr &device) const;
-};
-
-class ComputePipelineBuilder : public RHIObject, ComputePipelineDesc
-{
-public:
-
-    ComputePipelineBuilder &SetComputeShader(Ptr<RawShader> shader);
-
-    ComputePipelineBuilder &SetBindingLayout(Ptr<BindingLayout> layout);
-
-    Ptr<ComputePipeline> CreatePipeline(const DevicePtr &device) const;
 };
 
 #define RTRC_RHI_QUEUE_COMMON               \

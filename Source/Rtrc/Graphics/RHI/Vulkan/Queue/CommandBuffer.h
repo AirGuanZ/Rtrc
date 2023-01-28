@@ -10,6 +10,10 @@ RTRC_RHI_IMPLEMENT(VulkanCommandBuffer, CommandBuffer)
 {
 public:
 
+#ifdef RTRC_STATIC_RHI
+    RTRC_RHI_COMMAND_BUFFER_COMMON_METHODS
+#endif
+
     VulkanCommandBuffer(VulkanDevice *device, VkCommandPool pool, VkCommandBuffer commandBuffer);
 
     ~VulkanCommandBuffer() override;
@@ -65,10 +69,6 @@ public:
 
     void BeginDebugEvent(const DebugLabel &label) RTRC_RHI_OVERRIDE;
     void EndDebugEvent() RTRC_RHI_OVERRIDE;
-
-#ifdef RTRC_STATIC_RHI
-    RTRC_RHI_COMMAND_BUFFER_COMMON_METHODS
-#endif
 
     VkCommandBuffer _internalGetNativeCommandBuffer() const;
 

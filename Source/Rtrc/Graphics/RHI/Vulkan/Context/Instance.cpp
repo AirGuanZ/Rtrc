@@ -191,7 +191,7 @@ Ptr<Device> VulkanInstance::CreateDevice(const DeviceDesc &desc)
     // Features & extensions
     
     std::unique_ptr<unsigned char[]> features2Storage;
-    VkPhysicalDeviceFeatures2 features2 = VulkanPhysicalDevice::GetRequiredFeatures(features2Storage);
+    VkPhysicalDeviceFeatures2 features2 = VulkanPhysicalDevice::GetRequiredFeatures(desc, features2Storage);
 
     const std::vector<const char *> extensions = VulkanPhysicalDevice::GetRequiredExtensions(desc);
 

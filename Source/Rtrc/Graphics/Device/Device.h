@@ -12,9 +12,27 @@
 
 RTRC_BEGIN
 
+namespace DeviceDetail
+{
+
+    enum class FlagBit : uint32_t
+    {
+        EnableRayTracing = 1 << 0
+    };
+
+    RTRC_DEFINE_ENUM_FLAGS(FlagBit)
+
+    using Flags = EnumFlags<FlagBit>;
+
+} // namespace DeviceDetail
+
 class Device : public Uncopyable
 {
 public:
+
+    using Flags = DeviceDetail::Flags;
+
+    using enum DeviceDetail::FlagBit;
 
     // Creation & destructor
 
@@ -32,7 +50,8 @@ public:
         RHI::Format swapchainFormat     = RHI::Format::B8G8R8A8_UNorm,
         int         swapchainImageCount = 3,
         bool        debugMode           = RTRC_DEBUG,
-        bool        vsync               = false);
+        bool        vsync               = false,
+        Flags       flags               = {});
 
     ~Device();
 
