@@ -62,8 +62,8 @@ Shader "Builtin/Surface/Diffuse"
 
 	Builtin::GBufferPixelOutput FSMain(Vs2Fs input)
 	{
-		//float3 albedo = Albedo.Sample(AlbedoSampler, input.uv);
-		float3 albedo = PushConstant.albedo.xyz;
+		float3 albedo = Albedo.Sample(AlbedoSampler, input.uv);
+		//float3 albedo = PushConstant.albedo.xyz;
 		return Builtin::EncodeGBufferPixel(normalize(input.worldNormal), albedo, 0, 1);
 	}
 

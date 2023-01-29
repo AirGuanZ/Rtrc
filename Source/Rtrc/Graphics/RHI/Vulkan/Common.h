@@ -64,6 +64,11 @@ VkAccessFlags2           TranslateAccessFlag            (ResourceAccessFlag flag
 VkImageLayout            TranslateImageLayout           (TextureLayout layout);
 VkImageSubresourceRange  TranslateImageSubresources     (Format format, const TextureSubresources &subresources);
 VkFormat                 TranslateInputAttributeType    (VertexAttributeType type);
+VkIndexType              TranslateIndexFormat           (IndexBufferFormat format);
+
+VkBuildAccelerationStructureFlagsKHR TranslateAccelerationStructureBuildFlags(RayTracingAccelerationStructureBuildFlag flags);
+VkGeometryTypeKHR                    TranslateGeometryType                   (RayTracingGeometryType type);
+VkFormat                             TranslateGeometryVertexFormat           (RayTracingVertexFormat format);
 
 bool HasColorAspect(Format format);
 bool HasDepthStencilAspect(Format format);

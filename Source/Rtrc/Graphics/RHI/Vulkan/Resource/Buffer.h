@@ -37,7 +37,11 @@ public:
 
     void FlushAfterWrite(size_t offset, size_t size) RTRC_RHI_OVERRIDE;
 
+    BufferDeviceAddress GetDeviceAddress() RTRC_RHI_OVERRIDE;
+
     VkBuffer _internalGetNativeBuffer() const;
+
+    VkDeviceAddress _internalGetDeviceAddress() const;
 
 private:
 
@@ -57,6 +61,7 @@ private:
     VkBuffer                                buffer_;
     VulkanMemoryAllocation                  alloc_;
     ResourceOwnership                       ownership_;
+    VkDeviceAddress                         deviceAddress_;
     mutable std::map<ViewKey, VkBufferView> views_;
     mutable tbb::spin_rw_mutex              viewsMutex_;
 };

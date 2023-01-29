@@ -21,6 +21,8 @@
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/Fence.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/Queue.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/Semaphore.h>
+#include <Rtrc/Graphics/RHI/Vulkan/RayTracing/Blas.h>
+#include <Rtrc/Graphics/RHI/Vulkan/RayTracing/BlasBuildInfo.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Buffer.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferView.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/MemoryBlock.h>

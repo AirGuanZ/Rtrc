@@ -13,9 +13,17 @@ VulkanBuffer::VulkanBuffer(
     VkBuffer               buffer,
     VulkanMemoryAllocation alloc,
     ResourceOwnership      ownership)
-    : desc_(desc), device_(device), buffer_(buffer), alloc_(alloc), ownership_(ownership)
+    : desc_(desc), device_(device), buffer_(buffer), alloc_(alloc), ownership_(ownership), deviceAddress_()
 {
-    
+    if(desc_.usage.contains(BufferUsage::DeviceAddress))
+    {
+        const VkBufferDeviceAddressInfo deviceAddressInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
+            .buffer = buffer_
+        };
+        deviceAddress_ = vkGetBufferDeviceAddress(device_->_internalGetNativeDevice(), &deviceAddressInfo);
+    }
 }
 
 VulkanBuffer::~VulkanBuffer()
@@ -115,9 +123,19 @@ void VulkanBuffer::FlushAfterWrite(size_t offset, size_t size)
         "failed to flush buffer memory");
 }
 
+BufferDeviceAddress VulkanBuffer::GetDeviceAddress()
+{
+    return { deviceAddress_ };
+}
+
 VkBuffer VulkanBuffer::_internalGetNativeBuffer() const
 {
     return buffer_;
+}
+
+VkDeviceAddress VulkanBuffer::_internalGetDeviceAddress() const
+{
+    return deviceAddress_;
 }
 
 VkBufferView VulkanBuffer::CreateBufferView(const ViewKey &key) const

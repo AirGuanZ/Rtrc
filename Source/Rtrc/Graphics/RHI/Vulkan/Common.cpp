@@ -303,6 +303,7 @@ VkBufferUsageFlags TranslateBufferUsageFlag(BufferUsageFlag flag)
     ADD_CASE(IndexBuffer,              VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
     ADD_CASE(VertexBuffer,             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
     ADD_CASE(IndirectBuffer,           VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT)
+    ADD_CASE(DeviceAddress,            VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT)
 #undef ADD_CASE
     return result;
 }
@@ -545,6 +546,62 @@ VkFormat TranslateInputAttributeType(VertexAttributeType type)
     case Float3: return VK_FORMAT_R32G32B32_SFLOAT;
     case Float4: return VK_FORMAT_R32G32B32A32_SFLOAT;
     case UChar4Norm: return VK_FORMAT_R8G8B8A8_UNORM;
+    }
+    Unreachable();
+}
+
+VkIndexType TranslateIndexFormat(IndexBufferFormat format)
+{
+    switch(format)
+    {
+    case IndexBufferFormat::UInt16: return VK_INDEX_TYPE_UINT16;
+    case IndexBufferFormat::UInt32: return VK_INDEX_TYPE_UINT32;
+    }
+    Unreachable();
+}
+
+VkBuildAccelerationStructureFlagsKHR TranslateAccelerationStructureBuildFlags(
+    RayTracingAccelerationStructureBuildFlag flags)
+{
+    VkBuildAccelerationStructureFlagsKHR ret = 0;
+    if(flags.contains(RayTracingAccelerationStructureBuildFlagBit::AllowUpdate))
+    {
+        ret |= VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR;
+    }
+    if(flags.contains(RayTracingAccelerationStructureBuildFlagBit::AllowCompaction))
+    {
+        ret |= VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR;
+    }
+    if(flags.contains(RayTracingAccelerationStructureBuildFlagBit::PreferFastBuild))
+    {
+        ret |= VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_KHR;
+    }
+    if(flags.contains(RayTracingAccelerationStructureBuildFlagBit::PreferFastTrace))
+    {
+        ret |= VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
+    }
+    if(flags.contains(RayTracingAccelerationStructureBuildFlagBit::PreferLowMemory))
+    {
+        ret |= VK_BUILD_ACCELERATION_STRUCTURE_LOW_MEMORY_BIT_KHR;
+    }
+    return ret;
+}
+
+VkGeometryTypeKHR TranslateGeometryType(RayTracingGeometryType type)
+{
+    if(type == RayTracingGeometryType::Triangles)
+    {
+        return VK_GEOMETRY_TYPE_TRIANGLES_KHR;
+    }
+    assert(type == RayTracingGeometryType::Precodural);
+    return VK_GEOMETRY_TYPE_AABBS_KHR;
+}
+
+VkFormat TranslateGeometryVertexFormat(RayTracingVertexFormat format)
+{
+    switch(format)
+    {
+    case RayTracingVertexFormat::Float3: return VK_FORMAT_R32G32B32_SFLOAT;
     }
     Unreachable();
 }

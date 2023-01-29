@@ -16,6 +16,8 @@
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/Fence.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/Queue.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/Semaphore.h>
+#include <Rtrc/Graphics/RHI/Vulkan/RayTracing/Blas.h>
+#include <Rtrc/Graphics/RHI/Vulkan/RayTracing/BlasBuildInfo.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Buffer.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferView.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/MemoryBlock.h>
@@ -280,7 +282,9 @@ VulkanDevice::VulkanDevice(
         .vkGetInstanceProcAddr = vkGetInstanceProcAddr,
         .vkGetDeviceProcAddr = vkGetDeviceProcAddr
     };
-    const VmaAllocatorCreateInfo vmaCreateInfo = {
+    const VmaAllocatorCreateInfo vmaCreateInfo =
+    {
+        .flags                = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT,
         .physicalDevice       = physicalDevice_.GetNativeHandle(),
         .device               = device_,
         .pAllocationCallbacks = RTRC_VK_ALLOC,
@@ -1202,6 +1206,33 @@ void VulkanDevice::WaitIdle()
     RTRC_VK_FAIL_MSG(
         vkDeviceWaitIdle(device_),
         "Failed to call vkDeviceWaitIdle");
+}
+
+BlasPtr VulkanDevice::CreateBlas(const BufferPtr &buffer, size_t offset, size_t size)
+{
+    auto vkBuffer = static_cast<VulkanBuffer *>(buffer.Get())->_internalGetNativeBuffer();
+    const VkAccelerationStructureCreateInfoKHR createInfo =
+    {
+        .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR,
+        .buffer = vkBuffer,
+        .offset = offset,
+        .size = size,
+        .type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR
+    };
+
+    VkAccelerationStructureKHR blas;
+    RTRC_VK_FAIL_MSG(
+        vkCreateAccelerationStructureKHR(device_, &createInfo, RTRC_VK_ALLOC, &blas),
+        "Failed to create vulkan blas");
+    RTRC_SCOPE_FAIL{ vkDestroyAccelerationStructureKHR(device_, blas, RTRC_VK_ALLOC); };
+
+    return MakePtr<VulkanBlas>(this, blas, buffer);
+}
+
+BlasBuildInfoPtr VulkanDevice::CreateBlasBuilder(
+    Span<RayTracingGeometryDesc> geometries, RayTracingAccelerationStructureBuildFlag flags)
+{
+    return MakePtr<VulkanBlasBuildInfo>(this, geometries, flags);
 }
 
 void VulkanDevice::_internalSetObjectName(VkObjectType objectType, uint64_t objectHandle, const char* name)

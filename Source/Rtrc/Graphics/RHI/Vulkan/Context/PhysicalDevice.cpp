@@ -77,13 +77,13 @@ namespace VkPhysicalDeviceDetail
             descriptorBindingVariableDescriptorCount,
             runtimeDescriptorArray);
 
+        ADD_PHYSICAL_DEVICE_FEATURE(
+            VkPhysicalDeviceBufferDeviceAddressFeatures,
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES,
+            bufferDeviceAddress);
+
         if(enableRayTracing)
         {
-            ADD_PHYSICAL_DEVICE_FEATURE(
-                VkPhysicalDeviceBufferDeviceAddressFeatures,
-                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES,
-                bufferDeviceAddress);
-
             ADD_PHYSICAL_DEVICE_FEATURE(
                 VkPhysicalDeviceAccelerationStructureFeaturesKHR,
                 VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR,

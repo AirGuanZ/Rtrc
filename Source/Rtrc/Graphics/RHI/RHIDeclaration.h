@@ -12,9 +12,11 @@
 #include <Rtrc/Utility/Variant.h>
 #include <Rtrc/Window/Window.h>
 
-RTRC_RHI_BEGIN
+#include "RHIDeclaration.h"
+#include "RHIDeclaration.h"
 
-template<typename T>
+RTRC_RHI_BEGIN
+    template<typename T>
 using Ptr = ReferenceCountedPtr<T>;
 
 template<typename T, typename...Args>
@@ -80,6 +82,8 @@ RTRC_RHI_FORWARD_DECL(RayTracingLibrary)
 RTRC_RHI_FORWARD_DECL(Sampler)
 RTRC_RHI_FORWARD_DECL(MemoryPropertyRequirements)
 RTRC_RHI_FORWARD_DECL(MemoryBlock)
+RTRC_RHI_FORWARD_DECL(BlasBuildInfo)
+RTRC_RHI_FORWARD_DECL(Blas)
 
 #undef RTRC_RHI_FORWARD_DECL
 
@@ -323,16 +327,17 @@ using TextureUsageFlag = EnumFlags<TextureUsage>;
 
 enum class BufferUsage : uint32_t
 {
-    TransferDst,
-    TransferSrc,
-    ShaderBuffer,
-    ShaderRWBuffer,
-    ShaderStructuredBuffer,
-    ShaderRWStructuredBuffer,
-    ShaderConstantBuffer,
-    IndexBuffer,
-    VertexBuffer,
-    IndirectBuffer
+    TransferDst              = 1 << 0,
+    TransferSrc              = 1 << 1,
+    ShaderBuffer             = 1 << 2,
+    ShaderRWBuffer           = 1 << 3,
+    ShaderStructuredBuffer   = 1 << 4,
+    ShaderRWStructuredBuffer = 1 << 5,
+    ShaderConstantBuffer     = 1 << 6,
+    IndexBuffer              = 1 << 7,
+    VertexBuffer             = 1 << 8,
+    IndirectBuffer           = 1 << 9,
+    DeviceAddress            = 1 << 10,
 };
 
 RTRC_DEFINE_ENUM_FLAGS(BufferUsage)
@@ -456,6 +461,32 @@ enum class TextureSrvFlagBit
 };
 
 using TextureSrvFlag = EnumFlags<TextureSrvFlagBit>;
+
+enum class RayTracingGeometryType
+{
+    Triangles,
+    Precodural
+};
+
+enum class RayTracingVertexFormat
+{
+    Float3,
+};
+
+enum class RayTracingAccelerationStructureBuildFlagBit : uint32_t
+{
+    AllowUpdate     = 1 << 0,
+    AllowCompaction = 1 << 1,
+    PreferFastBuild = 1 << 2,
+    PreferFastTrace = 1 << 3,
+    PreferLowMemory = 1 << 4,
+};
+
+RTRC_DEFINE_ENUM_FLAGS(RayTracingAccelerationStructureBuildFlagBit)
+
+using RayTracingAccelerationStructureBuildFlag = EnumFlags<RayTracingAccelerationStructureBuildFlagBit>;
+
+struct BufferDeviceAddress { uint64_t address; };
 
 // =============================== rhi descriptions ===============================
 
@@ -934,6 +965,36 @@ struct RayTracingPipelineDesc
     bool useCustomStackSize = false;
 };
 
+struct RayTracingGeometryDesc
+{
+    RayTracingGeometryType type;
+    uint32_t primitiveCount;
+
+    // For triangles
+
+    BufferDeviceAddress vertexData;
+    RayTracingVertexFormat vertexFormat;
+    uint32_t vertexStride;
+    uint32_t vertexCount;
+
+    BufferDeviceAddress indexData;
+    IndexBufferFormat indexFormat;
+    
+    BufferDeviceAddress transformData; // Optional 3x4 row major matrix(local->world)
+
+    // For aabbs
+
+    BufferDeviceAddress aabbData;
+    uint32_t aabbStride;
+};
+
+struct RayTracingAccelerationStructurePrebuildInfo
+{
+    uint64_t accelerationStructureSize;
+    uint64_t updateScratchSize;
+    uint64_t buildScratchSize;
+};
+
 // =============================== rhi interfaces ===============================
 
 class RHIObject : public ReferenceCounted, public Uncopyable
@@ -1141,6 +1202,10 @@ public:
     RTRC_RHI_API size_t GetConstantBufferAlignment() const RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void WaitIdle() RTRC_RHI_API_PURE;
+
+    RTRC_RHI_API BlasPtr CreateBlas(const BufferPtr &buffer, size_t offset, size_t size) RTRC_RHI_API_PURE;
+    RTRC_RHI_API BlasBuildInfoPtr CreateBlasBuilder(
+        Span<RayTracingGeometryDesc> geometries, RayTracingAccelerationStructureBuildFlag flags) RTRC_RHI_API_PURE;
 };
 
 class BackBufferSemaphore : public RHIObject
@@ -1241,6 +1306,8 @@ class CommandBuffer : public RHIObject
 {
 public:
 
+    RTRC_RHI_COMMAND_BUFFER_COMMON_METHODS
+
     RTRC_RHI_API void Begin() RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void End() RTRC_RHI_API_PURE;
@@ -1269,31 +1336,59 @@ public:
     RTRC_RHI_API void SetScissorsWithCount (Span<Scissor> scissors) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void SetVertexBuffer(int slot, Span<BufferPtr> buffers, Span<size_t> byteOffsets) RTRC_RHI_API_PURE;
-    RTRC_RHI_API void SetIndexBuffer(const BufferPtr &buffer, size_t byteOffset, IndexBufferFormat format) RTRC_RHI_API_PURE;
+    RTRC_RHI_API void SetIndexBuffer(
+        const BufferPtr  &buffer,
+        size_t            byteOffset,
+        IndexBufferFormat format) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void SetStencilReferenceValue(uint8_t value) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void SetPushConstants(
-        const BindingLayoutPtr &bindingLayout, ShaderStageFlag stages,
-        uint32_t offset, uint32_t size, const void *values) RTRC_RHI_API_PURE;
+        const BindingLayoutPtr &bindingLayout,
+        ShaderStageFlag         stages,
+        uint32_t                offset,
+        uint32_t                size,
+        const void             *values) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance) RTRC_RHI_API_PURE;
-    RTRC_RHI_API void DrawIndexed(int indexCount, int instanceCount, int firstIndex, int firstVertex, int firstInstance) RTRC_RHI_API_PURE;
+    RTRC_RHI_API void DrawIndexed(
+        int indexCount,
+        int instanceCount,
+        int firstIndex,
+        int firstVertex,
+        int firstInstance) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void Dispatch(int groupCountX, int groupCountY, int groupCountZ) RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API void CopyBuffer(Buffer *dst, size_t dstOffset, Buffer *src, size_t srcOffset, size_t range) RTRC_RHI_API_PURE;
+    RTRC_RHI_API void CopyBuffer(
+        Buffer *dst,
+        size_t  dstOffset,
+        Buffer *src,
+        size_t  srcOffset,
+        size_t  range) RTRC_RHI_API_PURE;
+
     RTRC_RHI_API void CopyBufferToColorTexture2D(
-        Texture *dst, uint32_t mipLevel, uint32_t arrayLayer, Buffer *src, size_t srcOffset) RTRC_RHI_API_PURE;
+        Texture *dst,
+        uint32_t mipLevel,
+        uint32_t arrayLayer,
+        Buffer  *src,
+        size_t   srcOffset) RTRC_RHI_API_PURE;
     RTRC_RHI_API void CopyColorTexture2DToBuffer(
-        Buffer *dst, size_t dstOffset, Texture *src, uint32_t mipLevel, uint32_t arrayLayer) RTRC_RHI_API_PURE;
+        Buffer  *dst,
+        size_t   dstOffset,
+        Texture *src,
+        uint32_t mipLevel,
+        uint32_t arrayLayer) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void ClearColorTexture2D(Texture *dst, const ColorClearValue &clearValue) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void BeginDebugEvent(const DebugLabel &label) RTRC_RHI_API_PURE;
     RTRC_RHI_API void EndDebugEvent() RTRC_RHI_API_PURE;
 
-    RTRC_RHI_COMMAND_BUFFER_COMMON_METHODS
+    RTRC_RHI_API void BuildBlas(
+        const BlasBuildInfoPtr &buildInfo,
+        const BlasPtr          &blas,
+        BufferDeviceAddress     scratchBufferAddress) RTRC_RHI_API_PURE;
 
 protected:
 
@@ -1387,9 +1482,11 @@ public:
     RTRC_RHI_API Ptr<BufferUav> CreateUav(const BufferUavDesc &desc) const RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void *Map(size_t offset, size_t size, bool invalidate = false) RTRC_RHI_API_PURE;
-    RTRC_RHI_API void Unmap(size_t offset, size_t size, bool flush = false) RTRC_RHI_API_PURE;
-    RTRC_RHI_API void InvalidateBeforeRead(size_t offset, size_t size) RTRC_RHI_API_PURE;
-    RTRC_RHI_API void FlushAfterWrite(size_t offset, size_t size) RTRC_RHI_API_PURE;
+    RTRC_RHI_API void Unmap(size_t offset, size_t size, bool flush = false)     RTRC_RHI_API_PURE;
+    RTRC_RHI_API void InvalidateBeforeRead(size_t offset, size_t size)          RTRC_RHI_API_PURE;
+    RTRC_RHI_API void FlushAfterWrite(size_t offset, size_t size)               RTRC_RHI_API_PURE;
+
+    RTRC_RHI_API BufferDeviceAddress GetDeviceAddress() RTRC_RHI_API_PURE;
 };
 
 class BufferSrv : public RHIObject
@@ -1430,6 +1527,18 @@ class MemoryBlock : public RHIObject
 public:
 
     RTRC_RHI_API const MemoryBlockDesc &GetDesc() const RTRC_RHI_API_PURE;
+};
+
+class BlasBuildInfo : public RHIObject
+{
+public:
+
+    RTRC_RHI_API RayTracingAccelerationStructurePrebuildInfo GetPrebuildInfo() const RTRC_RHI_API_PURE;
+};
+
+class Blas : public RHIObject
+{
+
 };
 
 #endif // #ifndef RTRC_STATIC_RHI

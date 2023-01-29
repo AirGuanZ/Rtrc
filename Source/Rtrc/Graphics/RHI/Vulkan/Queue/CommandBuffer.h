@@ -54,21 +54,39 @@ public:
         uint32_t offset, uint32_t size, const void *values) RTRC_RHI_OVERRIDE;
 
     void Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance) RTRC_RHI_OVERRIDE;
-    void DrawIndexed(int indexCount, int instanceCount, int firstIndex, int firstVertex, int firstInstance) RTRC_RHI_OVERRIDE;
+    void DrawIndexed(
+        int indexCount,
+        int instanceCount,
+        int firstIndex,
+        int firstVertex,
+        int firstInstance) RTRC_RHI_OVERRIDE;
 
     void Dispatch(int groupCountX, int groupCountY, int groupCountZ) RTRC_RHI_OVERRIDE;
 
     void CopyBuffer(Buffer *dst, size_t dstOffset, Buffer *src, size_t srcOffset, size_t range) RTRC_RHI_OVERRIDE;
 
     void CopyBufferToColorTexture2D(
-        Texture *dst, uint32_t mipLevel, uint32_t arrayLayer, Buffer *src, size_t srcOffset) RTRC_RHI_OVERRIDE;
+        Texture *dst,
+        uint32_t mipLevel,
+        uint32_t arrayLayer,
+        Buffer  *src,
+        size_t   srcOffset) RTRC_RHI_OVERRIDE;
     void CopyColorTexture2DToBuffer(
-        Buffer *dst, size_t dstOffset, Texture *src, uint32_t mipLevel, uint32_t arrayLayer) RTRC_RHI_OVERRIDE;
+        Buffer  *dst,
+        size_t   dstOffset,
+        Texture *src,
+        uint32_t mipLevel,
+        uint32_t arrayLayer) RTRC_RHI_OVERRIDE;
 
     void ClearColorTexture2D(Texture *dst, const ColorClearValue &clearValue) RTRC_RHI_OVERRIDE;
 
     void BeginDebugEvent(const DebugLabel &label) RTRC_RHI_OVERRIDE;
     void EndDebugEvent() RTRC_RHI_OVERRIDE;
+
+    void BuildBlas(
+        const BlasBuildInfoPtr &buildInfo,
+        const BlasPtr          &blas,
+        BufferDeviceAddress     scratchBufferAddress) RTRC_RHI_OVERRIDE;
 
     VkCommandBuffer _internalGetNativeCommandBuffer() const;
 

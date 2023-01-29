@@ -5,6 +5,7 @@
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/GraphicsPipeline.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/RayTracingPipeline.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/CommandBuffer.h>
+#include <Rtrc/Graphics/RHI/Vulkan/RayTracing/BlasBuildInfo.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Buffer.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Texture.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/TextureView.h>
@@ -291,7 +292,7 @@ void VulkanCommandBuffer::SetVertexBuffer(int slot, Span<BufferPtr> buffers, Spa
 void VulkanCommandBuffer::SetIndexBuffer(const BufferPtr &buffer, size_t byteOffset, IndexBufferFormat format)
 {
     VkBuffer vkBuffer = static_cast<const VulkanBuffer *>(buffer.Get())->_internalGetNativeBuffer();
-    const VkIndexType indexType = format == IndexBufferFormat::UInt16 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32;
+    const VkIndexType indexType = TranslateIndexFormat(format);
     vkCmdBindIndexBuffer(commandBuffer_, vkBuffer, byteOffset, indexType);
 }
 
@@ -441,6 +442,13 @@ void VulkanCommandBuffer::BeginDebugEvent(const DebugLabel &label)
 void VulkanCommandBuffer::EndDebugEvent()
 {
     vkCmdEndDebugUtilsLabelEXT(commandBuffer_);
+}
+
+void VulkanCommandBuffer::BuildBlas(
+    const BlasBuildInfoPtr &buildInfo, const BlasPtr &blas, BufferDeviceAddress scratchBufferAddress)
+{
+    static_cast<const VulkanBlasBuildInfo *>(buildInfo.Get())
+        ->_internalBuildBlas(this, blas, scratchBufferAddress);
 }
 
 VkCommandBuffer VulkanCommandBuffer::_internalGetNativeCommandBuffer() const
