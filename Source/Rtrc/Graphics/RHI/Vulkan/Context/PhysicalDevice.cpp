@@ -315,7 +315,11 @@ VulkanPhysicalDevice VulkanPhysicalDevice::Select(VkInstance instance, const Dev
         }
     }
 
-    return VulkanPhysicalDevice(bestDeviceIndex < deviceCount ? devices[bestDeviceIndex] : nullptr);
+    if(bestDeviceIndex >= deviceCount)
+    {
+        return VulkanPhysicalDevice();
+    }
+    return VulkanPhysicalDevice(devices[bestDeviceIndex], desc.enableRayTracing);
 }
 
 std::vector<const char*> VulkanPhysicalDevice::GetRequiredExtensions(const DeviceDesc &desc)
@@ -378,14 +382,22 @@ const VkPhysicalDeviceProperties &VulkanPhysicalDevice::GetNativeProperties() co
     return properties_;
 }
 
-VulkanPhysicalDevice::VulkanPhysicalDevice(VkPhysicalDevice device)
+const std::optional<VkPhysicalDeviceRayTracingPipelinePropertiesKHR> &
+    VulkanPhysicalDevice::_internalGetRtPipelineProperties() const
+{
+    return rtPipelineProperties_;
+}
+
+VulkanPhysicalDevice::VulkanPhysicalDevice()
+    : physicalDevice_(VK_NULL_HANDLE), properties_{}
+{
+    
+}
+
+VulkanPhysicalDevice::VulkanPhysicalDevice(VkPhysicalDevice device, bool enableRayTracing)
     : physicalDevice_(device), properties_{}
 {
-    if(!device)
-    {
-        return;
-    }
-
+    assert(physicalDevice_);
     vkGetPhysicalDeviceProperties(physicalDevice_, &properties_);
 
     uint32_t queueFamilyCount;
@@ -413,6 +425,21 @@ VulkanPhysicalDevice::VulkanPhysicalDevice(VkPhysicalDevice device)
         {
             transferQueueFamily_ = i;
         }
+    }
+
+    if(enableRayTracing)
+    {
+        VkPhysicalDeviceRayTracingPipelinePropertiesKHR rtPipelineProperties =
+        {
+            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR
+        };
+        VkPhysicalDeviceProperties2 properties =
+        {
+            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
+            .pNext = &rtPipelineProperties
+        };
+        vkGetPhysicalDeviceProperties2(physicalDevice_, &properties);
+        rtPipelineProperties_ = rtPipelineProperties;
     }
 }
 

@@ -340,6 +340,32 @@ void VulkanCommandBuffer::Dispatch(int groupCountX, int groupCountY, int groupCo
         static_cast<uint32_t>(groupCountZ));
 }
 
+void VulkanCommandBuffer::TraceRays(
+    int                             rayCountX,
+    int                             rayCountY,
+    int                             rayCountZ,
+    const ShaderBindingTableRegion &rayGenSbt,
+    const ShaderBindingTableRegion &missSbt,
+    const ShaderBindingTableRegion &hitSbt,
+    const ShaderBindingTableRegion &callableSbt)
+{
+    auto ConvertSbt = [](const ShaderBindingTableRegion &sbt)
+    {
+        return VkStridedDeviceAddressRegionKHR
+        {
+            .deviceAddress = sbt.deviceAddress.address,
+            .stride        = sbt.stride,
+            .size          = sbt.size
+        };
+    };
+    const VkStridedDeviceAddressRegionKHR vkRayGenSbt = ConvertSbt(rayGenSbt);
+    const VkStridedDeviceAddressRegionKHR vkMissSbt = ConvertSbt(missSbt);
+    const VkStridedDeviceAddressRegionKHR vkHitSbt = ConvertSbt(hitSbt);
+    const VkStridedDeviceAddressRegionKHR vkCallableSbt = ConvertSbt(callableSbt);
+    vkCmdTraceRaysKHR(
+        commandBuffer_, &vkRayGenSbt, &vkMissSbt, &vkHitSbt, &vkCallableSbt, rayCountX, rayCountY, rayCountZ);
+}
+
 void VulkanCommandBuffer::CopyBuffer(
     Buffer *dst, size_t dstOffset,
     Buffer *src, size_t srcOffset, size_t range)

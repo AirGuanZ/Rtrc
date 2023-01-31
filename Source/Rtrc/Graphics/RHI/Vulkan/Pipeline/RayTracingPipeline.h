@@ -14,6 +14,11 @@ public:
 
     const Ptr<BindingLayout> &GetBindingLayout() const RTRC_RHI_OVERRIDE;
 
+    void GetShaderGroupHandles(
+        uint32_t                   startGroupIndex,
+        uint32_t                   groupCount,
+        MutableSpan<unsigned char> outputData) const RTRC_RHI_OVERRIDE;
+
     VkPipeline _internalGetNativePipeline() const;
 
 private:

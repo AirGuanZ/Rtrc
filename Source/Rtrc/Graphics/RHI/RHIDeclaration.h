@@ -327,17 +327,22 @@ using TextureUsageFlag = EnumFlags<TextureUsage>;
 
 enum class BufferUsage : uint32_t
 {
-    TransferDst              = 1 << 0,
-    TransferSrc              = 1 << 1,
-    ShaderBuffer             = 1 << 2,
-    ShaderRWBuffer           = 1 << 3,
-    ShaderStructuredBuffer   = 1 << 4,
-    ShaderRWStructuredBuffer = 1 << 5,
-    ShaderConstantBuffer     = 1 << 6,
-    IndexBuffer              = 1 << 7,
-    VertexBuffer             = 1 << 8,
-    IndirectBuffer           = 1 << 9,
-    DeviceAddress            = 1 << 10,
+    TransferDst                     = 1 << 0,
+    TransferSrc                     = 1 << 1,
+    ShaderBuffer                    = 1 << 2,
+    ShaderRWBuffer                  = 1 << 3,
+    ShaderStructuredBuffer          = 1 << 4,
+    ShaderRWStructuredBuffer        = 1 << 5,
+    ShaderConstantBuffer            = 1 << 6,
+    IndexBuffer                     = 1 << 7,
+    VertexBuffer                    = 1 << 8,
+    IndirectBuffer                  = 1 << 9,
+    DeviceAddress                   = 1 << 10,
+    AccelerationStructureBuildInput = 1 << 11,
+    AccelerationStructure           = 1 << 12,
+    ShaderBindingTable              = 1 << 13,
+
+    AccelerationStructureScratch = ShaderRWBuffer | DeviceAddress,
 };
 
 RTRC_DEFINE_ENUM_FLAGS(BufferUsage)
@@ -382,6 +387,8 @@ enum class TextureLayout
     ClearDst,
     Present
 };
+
+// TODO: pipeline stage flag & resource access flag for ray tracing
 
 enum class PipelineStage : uint32_t
 {
@@ -1019,6 +1026,21 @@ struct RayTracingInstanceArrayDesc
     BufferDeviceAddress instanceData;
 };
 
+struct ShaderGroupRecordRequirements
+{
+    uint32_t shaderGroupHandleSize;
+    uint32_t shaderGroupHandleAlignment;
+    uint32_t shaderGroupBaseAlignment;
+    uint32_t maxShaderGroupStride;
+};
+
+struct ShaderBindingTableRegion
+{
+    BufferDeviceAddress deviceAddress = { 0 };
+    uint32_t stride = 0; // In bytes
+    uint32_t size   = 0; // In bytes
+};
+
 // =============================== rhi interfaces ===============================
 
 class RHIObject : public ReferenceCounted, public Uncopyable
@@ -1236,6 +1258,8 @@ public:
     RTRC_RHI_API TlasBuildInfoPtr CreateTlasBuildInfo(
         Span<RayTracingInstanceArrayDesc>        instanceArrays,
         RayTracingAccelerationStructureBuildFlag flags) RTRC_RHI_API_PURE;
+
+    RTRC_RHI_API const ShaderGroupRecordRequirements &GetShaderGroupRecordRequirements() RTRC_RHI_API_PURE;
 };
 
 class BackBufferSemaphore : public RHIObject
@@ -1339,8 +1363,9 @@ public:
     RTRC_RHI_COMMAND_BUFFER_COMMON_METHODS
 
     RTRC_RHI_API void Begin() RTRC_RHI_API_PURE;
+    RTRC_RHI_API void End()   RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API void End() RTRC_RHI_API_PURE;
+    // Pipeline states
     
     RTRC_RHI_API void BeginRenderPass(
         Span<RenderPassColorAttachment>         colorAttachments,
@@ -1360,10 +1385,10 @@ public:
     RTRC_RHI_API void BindGroupToRayTracingPipeline(int index, const Ptr<BindingGroup> &group) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void SetViewports(Span<Viewport> viewports) RTRC_RHI_API_PURE;
-    RTRC_RHI_API void SetScissors (Span<Scissor> scissor) RTRC_RHI_API_PURE;
+    RTRC_RHI_API void SetScissors (Span<Scissor> scissor)    RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void SetViewportsWithCount(Span<Viewport> viewports) RTRC_RHI_API_PURE;
-    RTRC_RHI_API void SetScissorsWithCount (Span<Scissor> scissors) RTRC_RHI_API_PURE;
+    RTRC_RHI_API void SetScissorsWithCount (Span<Scissor> scissors)   RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void SetVertexBuffer(int slot, Span<BufferPtr> buffers, Span<size_t> byteOffsets) RTRC_RHI_API_PURE;
     RTRC_RHI_API void SetIndexBuffer(
@@ -1380,6 +1405,8 @@ public:
         uint32_t                size,
         const void             *values) RTRC_RHI_API_PURE;
 
+    // Draw & dispatch & trace
+
     RTRC_RHI_API void Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance) RTRC_RHI_API_PURE;
     RTRC_RHI_API void DrawIndexed(
         int indexCount,
@@ -1389,6 +1416,17 @@ public:
         int firstInstance) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void Dispatch(int groupCountX, int groupCountY, int groupCountZ) RTRC_RHI_API_PURE;
+
+    RTRC_RHI_API void TraceRays(
+        int                             rayCountX,
+        int                             rayCountY,
+        int                             rayCountZ,
+        const ShaderBindingTableRegion &rayGenSbt,
+        const ShaderBindingTableRegion &missSbt,
+        const ShaderBindingTableRegion &hitSbt,
+        const ShaderBindingTableRegion &callableSbt) RTRC_RHI_API_PURE;
+
+    // Copy
 
     RTRC_RHI_API void CopyBuffer(
         Buffer *dst,
@@ -1410,11 +1448,17 @@ public:
         uint32_t mipLevel,
         uint32_t arrayLayer) RTRC_RHI_API_PURE;
 
+    // Clear
+
     RTRC_RHI_API void ClearColorTexture2D(Texture *dst, const ColorClearValue &clearValue) RTRC_RHI_API_PURE;
+
+    // Debug
 
     RTRC_RHI_API void BeginDebugEvent(const DebugLabel &label) RTRC_RHI_API_PURE;
     RTRC_RHI_API void EndDebugEvent() RTRC_RHI_API_PURE;
-    
+
+    // Acceleration structure
+
     RTRC_RHI_API void BuildBlas(
         const BlasBuildInfoPtr      &buildInfo,
         Span<RayTracingGeometryDesc> geometries,
@@ -1464,6 +1508,11 @@ class RayTracingPipeline : public RHIObject
 public:
 
     RTRC_RHI_API const Ptr<BindingLayout> &GetBindingLayout() const RTRC_RHI_API_PURE;
+
+    RTRC_RHI_API void GetShaderGroupHandles(
+        uint32_t                   startGroupIndex,
+        uint32_t                   groupCount,
+        MutableSpan<unsigned char> outputData) const RTRC_RHI_API_PURE;
 };
 
 class Texture : public RHIObject

@@ -297,6 +297,17 @@ VulkanDevice::VulkanDevice(
     RTRC_VK_FAIL_MSG(
         vmaCreateAllocator(&vmaCreateInfo, &allocator_),
         "Failed to create vulkan memory allocator");
+
+    if(auto &properties = physicalDevice_._internalGetRtPipelineProperties())
+    {
+        shaderGroupRecordRequirements_ = ShaderGroupRecordRequirements
+        {
+            .shaderGroupHandleSize      = properties->shaderGroupHandleSize,
+            .shaderGroupHandleAlignment = properties->shaderGroupHandleAlignment,
+            .shaderGroupBaseAlignment   = properties->shaderGroupBaseAlignment,
+            .maxShaderGroupStride       = properties->maxShaderGroupStride
+        };
+    }
 }
 
 VulkanDevice::~VulkanDevice()
@@ -1215,11 +1226,11 @@ BlasPtr VulkanDevice::CreateBlas(const BufferPtr &buffer, size_t offset, size_t 
     auto vkBuffer = static_cast<VulkanBuffer *>(buffer.Get())->_internalGetNativeBuffer();
     const VkAccelerationStructureCreateInfoKHR createInfo =
     {
-        .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR,
+        .sType  = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR,
         .buffer = vkBuffer,
         .offset = offset,
-        .size = size,
-        .type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR
+        .size   = size,
+        .type   = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR
     };
 
     VkAccelerationStructureKHR blas;
@@ -1231,22 +1242,16 @@ BlasPtr VulkanDevice::CreateBlas(const BufferPtr &buffer, size_t offset, size_t 
     return MakePtr<VulkanBlas>(this, blas, buffer);
 }
 
-BlasBuildInfoPtr VulkanDevice::CreateBlasBuildInfo(
-    Span<RayTracingGeometryDesc> geometries, RayTracingAccelerationStructureBuildFlag flags)
-{
-    return MakePtr<VulkanBlasBuildInfo>(this, geometries, flags);
-}
-
 TlasPtr VulkanDevice::CreateTlas(const BufferPtr &buffer, size_t offset, size_t size)
 {
     auto vkBuffer = static_cast<VulkanBuffer *>(buffer.Get())->_internalGetNativeBuffer();
     const VkAccelerationStructureCreateInfoKHR createInfo =
     {
-        .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR,
+        .sType  = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR,
         .buffer = vkBuffer,
         .offset = offset,
-        .size = size,
-        .type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR
+        .size   = size,
+        .type   = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR
     };
 
     VkAccelerationStructureKHR tlas;
@@ -1258,10 +1263,22 @@ TlasPtr VulkanDevice::CreateTlas(const BufferPtr &buffer, size_t offset, size_t 
     return MakePtr<VulkanTlas>(this, tlas, buffer);
 }
 
+BlasBuildInfoPtr VulkanDevice::CreateBlasBuildInfo(
+    Span<RayTracingGeometryDesc> geometries, RayTracingAccelerationStructureBuildFlag flags)
+{
+    return MakePtr<VulkanBlasBuildInfo>(this, geometries, flags);
+}
+
 TlasBuildInfoPtr VulkanDevice::CreateTlasBuildInfo(
     Span<RayTracingInstanceArrayDesc> instanceArrays, RayTracingAccelerationStructureBuildFlag flags)
 {
     return MakePtr<VulkanTlasBuildInfo>(this, instanceArrays, flags);
+}
+
+const ShaderGroupRecordRequirements &VulkanDevice::GetShaderGroupRecordRequirements()
+{
+    assert(shaderGroupRecordRequirements_.has_value());
+    return *shaderGroupRecordRequirements_;
 }
 
 void VulkanDevice::_internalSetObjectName(VkObjectType objectType, uint64_t objectHandle, const char* name)

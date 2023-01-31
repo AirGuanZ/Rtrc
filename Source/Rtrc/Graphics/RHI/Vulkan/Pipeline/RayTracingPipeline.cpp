@@ -22,6 +22,18 @@ const Ptr<BindingLayout> &VulkanRayTracingPipeline::GetBindingLayout() const
     return layout_;
 }
 
+void VulkanRayTracingPipeline::GetShaderGroupHandles(
+    uint32_t                   startGroupIndex,
+    uint32_t                   groupCount,
+    MutableSpan<unsigned char> outputData) const
+{
+    RTRC_VK_FAIL_MSG(
+        vkGetRayTracingShaderGroupHandlesKHR(
+            device_->_internalGetNativeDevice(), pipeline_,
+            startGroupIndex, groupCount, outputData.size(), outputData.GetData()),
+        "Failed to get Vulkan ray tracing shader group handles");
+}
+
 VkPipeline VulkanRayTracingPipeline::_internalGetNativePipeline() const
 {
     return pipeline_;

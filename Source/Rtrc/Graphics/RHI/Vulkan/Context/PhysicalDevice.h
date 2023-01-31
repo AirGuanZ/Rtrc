@@ -3,7 +3,6 @@
 #include <optional>
 
 #include <Rtrc/Graphics/RHI/Vulkan/Common.h>
-#include <Rtrc/Utility/Arena.h>
 
 RTRC_RHI_VK_BEGIN
 
@@ -18,7 +17,9 @@ public:
     static VkPhysicalDeviceFeatures2 GetRequiredFeatures(
         const DeviceDesc &desc, std::unique_ptr<unsigned char[]> &storage);
 
-    explicit VulkanPhysicalDevice(VkPhysicalDevice device = nullptr);
+    VulkanPhysicalDevice();
+
+    VulkanPhysicalDevice(VkPhysicalDevice device, bool enableRayTracing);
 
     std::optional<uint32_t> GetGraphicsQueueFamily() const;
     std::optional<uint32_t> GetComputeQueueFamily() const;
@@ -26,6 +27,8 @@ public:
 
     VkPhysicalDevice GetNativeHandle() const;
     const VkPhysicalDeviceProperties &GetNativeProperties() const;
+
+    const std::optional<VkPhysicalDeviceRayTracingPipelinePropertiesKHR> &_internalGetRtPipelineProperties() const;
 
 private:
 
@@ -35,6 +38,8 @@ private:
     std::optional<uint32_t> graphicsQueueFamily_;
     std::optional<uint32_t> computeQueueFamily_;
     std::optional<uint32_t> transferQueueFamily_;
+
+    std::optional<VkPhysicalDeviceRayTracingPipelinePropertiesKHR> rtPipelineProperties_;
 };
 
 RTRC_RHI_VK_END

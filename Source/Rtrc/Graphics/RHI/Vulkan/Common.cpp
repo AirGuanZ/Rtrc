@@ -293,17 +293,22 @@ VkBufferUsageFlags TranslateBufferUsageFlag(BufferUsageFlag flag)
 {
     VkBufferUsageFlags result = 0;
 #define ADD_CASE(FLAG, VAL) if(flag.contains(BufferUsage::FLAG)) { result |= (VAL); }
-    ADD_CASE(TransferDst,              VK_BUFFER_USAGE_TRANSFER_DST_BIT)
-    ADD_CASE(TransferSrc,              VK_BUFFER_USAGE_TRANSFER_SRC_BIT)
-    ADD_CASE(ShaderBuffer,             VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT)
-    ADD_CASE(ShaderRWBuffer,           VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT)
-    ADD_CASE(ShaderStructuredBuffer,   VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
-    ADD_CASE(ShaderRWStructuredBuffer, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
-    ADD_CASE(ShaderConstantBuffer,     VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
-    ADD_CASE(IndexBuffer,              VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
-    ADD_CASE(VertexBuffer,             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
-    ADD_CASE(IndirectBuffer,           VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT)
-    ADD_CASE(DeviceAddress,            VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT)
+    ADD_CASE(TransferDst,                     VK_BUFFER_USAGE_TRANSFER_DST_BIT)
+    ADD_CASE(TransferSrc,                     VK_BUFFER_USAGE_TRANSFER_SRC_BIT)
+    ADD_CASE(ShaderBuffer,                    VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT)
+    ADD_CASE(ShaderRWBuffer,                  VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT)
+    ADD_CASE(ShaderStructuredBuffer,          VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
+    ADD_CASE(ShaderRWStructuredBuffer,        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
+    ADD_CASE(ShaderConstantBuffer,            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
+    ADD_CASE(IndexBuffer,                     VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
+    ADD_CASE(VertexBuffer,                    VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
+    ADD_CASE(IndirectBuffer,                  VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT)
+    ADD_CASE(DeviceAddress,                   VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT)
+    ADD_CASE(AccelerationStructureBuildInput, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR)
+    ADD_CASE(AccelerationStructure,           VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR |
+                                              VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                                              VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT)
+    ADD_CASE(ShaderBindingTable,              VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR)
 #undef ADD_CASE
     return result;
 }

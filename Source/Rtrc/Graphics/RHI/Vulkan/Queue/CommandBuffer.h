@@ -50,8 +50,11 @@ public:
     void SetStencilReferenceValue(uint8_t value) RTRC_RHI_OVERRIDE;
 
     void SetPushConstants(
-        const BindingLayoutPtr &bindingLayout, ShaderStageFlag stages,
-        uint32_t offset, uint32_t size, const void *values) RTRC_RHI_OVERRIDE;
+        const BindingLayoutPtr &bindingLayout,
+        ShaderStageFlag         stages,
+        uint32_t                offset,
+        uint32_t                size,
+        const void             *values) RTRC_RHI_OVERRIDE;
 
     void Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance) RTRC_RHI_OVERRIDE;
     void DrawIndexed(
@@ -63,8 +66,16 @@ public:
 
     void Dispatch(int groupCountX, int groupCountY, int groupCountZ) RTRC_RHI_OVERRIDE;
 
-    void CopyBuffer(Buffer *dst, size_t dstOffset, Buffer *src, size_t srcOffset, size_t range) RTRC_RHI_OVERRIDE;
+    void TraceRays(
+        int                             rayCountX,
+        int                             rayCountY,
+        int                             rayCountZ,
+        const ShaderBindingTableRegion &rayGenSbt,
+        const ShaderBindingTableRegion &missSbt,
+        const ShaderBindingTableRegion &hitSbt,
+        const ShaderBindingTableRegion &callableSbt) RTRC_RHI_OVERRIDE;
 
+    void CopyBuffer(Buffer *dst, size_t dstOffset, Buffer *src, size_t srcOffset, size_t range) RTRC_RHI_OVERRIDE;
     void CopyBufferToColorTexture2D(
         Texture *dst,
         uint32_t mipLevel,

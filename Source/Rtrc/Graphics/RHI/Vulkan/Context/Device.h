@@ -45,7 +45,8 @@ public:
 
     Ptr<BindingGroupLayout> CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc) RTRC_RHI_OVERRIDE;
     Ptr<BindingGroup> CreateBindingGroup(
-        const Ptr<BindingGroupLayout> &bindingGroupLayout, uint32_t variableArraySize = 0) RTRC_RHI_OVERRIDE;
+        const Ptr<BindingGroupLayout> &bindingGroupLayout,
+        uint32_t                       variableArraySize = 0) RTRC_RHI_OVERRIDE;
     Ptr<BindingLayout> CreateBindingLayout(const BindingLayoutDesc &desc) RTRC_RHI_OVERRIDE;
 
     void UpdateBindingGroups(const BindingGroupUpdateBatch &batch) RTRC_RHI_OVERRIDE;
@@ -57,30 +58,40 @@ public:
     Ptr<Sampler> CreateSampler(const SamplerDesc &desc) RTRC_RHI_OVERRIDE;
 
     Ptr<MemoryPropertyRequirements> GetMemoryRequirements(
-        const BufferDesc &desc, size_t *size, size_t *alignment) const RTRC_RHI_OVERRIDE;
+        const BufferDesc &desc,
+        size_t           *size,
+        size_t           *alignment) const RTRC_RHI_OVERRIDE;
     Ptr<MemoryPropertyRequirements> GetMemoryRequirements(
-        const TextureDesc &desc, size_t *size, size_t *alignment) const RTRC_RHI_OVERRIDE;
+        const TextureDesc &desc,
+        size_t            *size,
+        size_t            *alignment) const RTRC_RHI_OVERRIDE;
 
     Ptr<MemoryBlock> CreateMemoryBlock(const MemoryBlockDesc &desc) RTRC_RHI_OVERRIDE;
 
     Ptr<Texture> CreatePlacedTexture(
-        const TextureDesc &desc, const Ptr<MemoryBlock> &memoryBlock, size_t offsetInMemoryBlock) RTRC_RHI_OVERRIDE;
+        const TextureDesc      &desc,
+        const Ptr<MemoryBlock> &memoryBlock,
+        size_t                  offsetInMemoryBlock) RTRC_RHI_OVERRIDE;
     Ptr<Buffer> CreatePlacedBuffer(
-        const BufferDesc &desc, const Ptr<MemoryBlock> &memoryBlock, size_t offsetInMemoryBlock) RTRC_RHI_OVERRIDE;
+        const BufferDesc       &desc,
+        const Ptr<MemoryBlock> &memoryBlock,
+        size_t                  offsetInMemoryBlock) RTRC_RHI_OVERRIDE;
 
     size_t GetConstantBufferAlignment() const RTRC_RHI_OVERRIDE;
 
     void WaitIdle() RTRC_RHI_OVERRIDE;
 
     BlasPtr CreateBlas(const BufferPtr &buffer, size_t offset, size_t size) RTRC_RHI_OVERRIDE;
+    TlasPtr CreateTlas(const BufferPtr &buffer, size_t offset, size_t size) RTRC_RHI_OVERRIDE;
+
     BlasBuildInfoPtr CreateBlasBuildInfo(
         Span<RayTracingGeometryDesc>             geometries,
         RayTracingAccelerationStructureBuildFlag flags) RTRC_RHI_OVERRIDE;
-
-    TlasPtr CreateTlas(const BufferPtr &buffer, size_t offset, size_t size) RTRC_RHI_OVERRIDE;
     TlasBuildInfoPtr CreateTlasBuildInfo(
         Span<RayTracingInstanceArrayDesc>        instanceArrays,
         RayTracingAccelerationStructureBuildFlag flags) RTRC_RHI_OVERRIDE;
+
+    const ShaderGroupRecordRequirements &GetShaderGroupRecordRequirements() RTRC_RHI_OVERRIDE;
 
     void _internalSetObjectName(VkObjectType objectType, uint64_t objectHandle, const char *name);
 
@@ -100,10 +111,11 @@ private:
     Ptr<VulkanQueue> computeQueue_;
     Ptr<VulkanQueue> transferQueue_;
     Ptr<VulkanQueue> presentQueue_;
-
     QueueFamilyInfo queueFamilies_;
 
     VmaAllocator allocator_;
+
+    std::optional<ShaderGroupRecordRequirements> shaderGroupRecordRequirements_;
 };
 
 RTRC_RHI_VK_END
