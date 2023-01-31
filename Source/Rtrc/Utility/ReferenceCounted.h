@@ -19,7 +19,7 @@ class ReferenceCounted
         ++counter_;
     }
 
-    // returns new counter value
+    // Returns new counter value
     uint32_t DecreaseCounter() const
     {
         return --counter_;

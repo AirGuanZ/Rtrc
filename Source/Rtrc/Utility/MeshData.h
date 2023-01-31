@@ -4,7 +4,6 @@
 
 #include <Rtrc/Math/Vector2.h>
 #include <Rtrc/Math/Vector3.h>
-#include <Rtrc/Utility/StaticVector.h>
 
 RTRC_BEGIN
 

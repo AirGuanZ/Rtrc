@@ -4,22 +4,22 @@
 
 RTRC_RHI_VK_BEGIN
 
-RTRC_RHI_IMPLEMENT(VulkanBlas, Blas)
+RTRC_RHI_IMPLEMENT(VulkanTlas, Tlas)
 {
 public:
 
-    VulkanBlas(VulkanDevice *device, VkAccelerationStructureKHR blas, BufferPtr buffer);
+    VulkanTlas(VulkanDevice *device, VkAccelerationStructureKHR tlas, BufferPtr buffer);
 
-    ~VulkanBlas() override;
+    ~VulkanTlas() override;
 
     BufferDeviceAddress GetDeviceAddress() const RTRC_RHI_OVERRIDE;
 
-    VkAccelerationStructureKHR _internalGetNativeBlas() const;
+    VkAccelerationStructureKHR _internalGetNativeTlas() const;
 
 private:
 
     VulkanDevice *device_;
-    VkAccelerationStructureKHR blas_;
+    VkAccelerationStructureKHR tlas_;
     BufferDeviceAddress deviceAddress_;
     BufferPtr buffer_;
 };

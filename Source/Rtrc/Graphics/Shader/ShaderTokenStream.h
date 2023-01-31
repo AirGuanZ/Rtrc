@@ -87,14 +87,14 @@ public:
 
     void Next()
     {
-        // skip empty chars
+        // Skip empty chars
 
         while(nextPos_ < source_.size() && std::isspace(source_[nextPos_]))
         {
             ++nextPos_;
         }
 
-        // early exit
+        // Early exit
 
         if(nextPos_ >= source_.size())
         {
@@ -102,7 +102,7 @@ public:
             return;
         }
 
-        // special tokens
+        // Special tokens
 
         const char ch = source_[nextPos_];
 
@@ -122,7 +122,7 @@ public:
             return;
         }
 
-        // number
+        // Number
 
         if(std::isdigit(ch))
         {
@@ -148,7 +148,7 @@ public:
             return;
         }
 
-        // identifier
+        // Identifier
 
         if(!std::isalpha(ch) && ch != '_')
         {

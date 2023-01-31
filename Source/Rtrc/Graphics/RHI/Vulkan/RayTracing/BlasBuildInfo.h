@@ -13,16 +13,27 @@ public:
     VulkanBlasBuildInfo(
         VulkanDevice *device, Span<RayTracingGeometryDesc> geometries, RayTracingAccelerationStructureBuildFlag flags);
 
-    RayTracingAccelerationStructurePrebuildInfo GetPrebuildInfo() const RTRC_RHI_OVERRIDE;
+    const RayTracingAccelerationStructurePrebuildInfo &GetPrebuildInfo() const RTRC_RHI_OVERRIDE;
+
+#if RTRC_DEBUG
+    bool _internalIsCompatiableWith(Span<RayTracingGeometryDesc> geometries) const;
+#endif
 
     void _internalBuildBlas(
-        VulkanCommandBuffer *commandBuffer, const BlasPtr &blas, BufferDeviceAddress scratchBuffer) const;
+        VulkanCommandBuffer         *commandBuffer,
+        Span<RayTracingGeometryDesc> geometries,
+        const BlasPtr               &blas,
+        BufferDeviceAddress          scratchBuffer);
 
 private:
 
+#if RTRC_DEBUG
+    std::vector<RayTracingGeometryDesc> geometries_;
+#endif
+
     VulkanDevice *device_;
     std::vector<VkAccelerationStructureGeometryKHR> vkGeometries_;
-    std::vector<uint32_t> vkPrimitiveCounts_;
+    RayTracingAccelerationStructurePrebuildInfo prebuildInfo_;
     std::vector<VkAccelerationStructureBuildRangeInfoKHR> rangeInfo_;
     VkAccelerationStructureBuildGeometryInfoKHR vkBuildGeometryInfo_;
 };

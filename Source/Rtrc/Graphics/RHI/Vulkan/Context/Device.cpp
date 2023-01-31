@@ -18,6 +18,8 @@
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/Semaphore.h>
 #include <Rtrc/Graphics/RHI/Vulkan/RayTracing/Blas.h>
 #include <Rtrc/Graphics/RHI/Vulkan/RayTracing/BlasBuildInfo.h>
+#include <Rtrc/Graphics/RHI/Vulkan/RayTracing/Tlas.h>
+#include <Rtrc/Graphics/RHI/Vulkan/RayTracing/TlasBuildInfo.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Buffer.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferView.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/MemoryBlock.h>
@@ -1229,10 +1231,37 @@ BlasPtr VulkanDevice::CreateBlas(const BufferPtr &buffer, size_t offset, size_t 
     return MakePtr<VulkanBlas>(this, blas, buffer);
 }
 
-BlasBuildInfoPtr VulkanDevice::CreateBlasBuilder(
+BlasBuildInfoPtr VulkanDevice::CreateBlasBuildInfo(
     Span<RayTracingGeometryDesc> geometries, RayTracingAccelerationStructureBuildFlag flags)
 {
     return MakePtr<VulkanBlasBuildInfo>(this, geometries, flags);
+}
+
+TlasPtr VulkanDevice::CreateTlas(const BufferPtr &buffer, size_t offset, size_t size)
+{
+    auto vkBuffer = static_cast<VulkanBuffer *>(buffer.Get())->_internalGetNativeBuffer();
+    const VkAccelerationStructureCreateInfoKHR createInfo =
+    {
+        .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR,
+        .buffer = vkBuffer,
+        .offset = offset,
+        .size = size,
+        .type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR
+    };
+
+    VkAccelerationStructureKHR tlas;
+    RTRC_VK_FAIL_MSG(
+        vkCreateAccelerationStructureKHR(device_, &createInfo, RTRC_VK_ALLOC, &tlas),
+        "Failed to create vulkan tlas");
+    RTRC_SCOPE_FAIL{ vkDestroyAccelerationStructureKHR(device_, tlas, RTRC_VK_ALLOC); };
+
+    return MakePtr<VulkanTlas>(this, tlas, buffer);
+}
+
+TlasBuildInfoPtr VulkanDevice::CreateTlasBuildInfo(
+    Span<RayTracingInstanceArrayDesc> instanceArrays, RayTracingAccelerationStructureBuildFlag flags)
+{
+    return MakePtr<VulkanTlasBuildInfo>(this, instanceArrays, flags);
 }
 
 void VulkanDevice::_internalSetObjectName(VkObjectType objectType, uint64_t objectHandle, const char* name)

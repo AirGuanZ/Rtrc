@@ -1,6 +1,7 @@
 #include <tiny_obj_loader.h>
 
 #include <Rtrc/Utility/MeshData.h>
+#include <Rtrc/Utility/StaticVector.h>
 
 RTRC_BEGIN
 

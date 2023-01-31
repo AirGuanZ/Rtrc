@@ -51,7 +51,7 @@ class SharedObjectPool :
 {
 public:
 
-    // returns nullptr if not found
+    // Returns nullptr if not found
     template<typename TKey>
     std::shared_ptr<Value> Get(const TKey &key) const
     {
@@ -159,8 +159,6 @@ private:
             return std::invoke(std::forward<Func>(func));
         }
     }
-
-    //KeyToValue keyToValue_;
 };
 
 RTRC_END

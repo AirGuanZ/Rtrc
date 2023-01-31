@@ -12,11 +12,9 @@
 #include <Rtrc/Utility/Variant.h>
 #include <Rtrc/Window/Window.h>
 
-#include "RHIDeclaration.h"
-#include "RHIDeclaration.h"
-
 RTRC_RHI_BEGIN
-    template<typename T>
+    
+template<typename T>
 using Ptr = ReferenceCountedPtr<T>;
 
 template<typename T, typename...Args>
@@ -83,7 +81,9 @@ RTRC_RHI_FORWARD_DECL(Sampler)
 RTRC_RHI_FORWARD_DECL(MemoryPropertyRequirements)
 RTRC_RHI_FORWARD_DECL(MemoryBlock)
 RTRC_RHI_FORWARD_DECL(BlasBuildInfo)
+RTRC_RHI_FORWARD_DECL(TlasBuildInfo)
 RTRC_RHI_FORWARD_DECL(Blas)
+RTRC_RHI_FORWARD_DECL(Tlas)
 
 #undef RTRC_RHI_FORWARD_DECL
 
@@ -965,27 +965,35 @@ struct RayTracingPipelineDesc
     bool useCustomStackSize = false;
 };
 
+struct RayTracingTrianglesGeometryData
+{
+    RayTracingVertexFormat vertexFormat;
+    uint32_t vertexStride;
+    uint32_t vertexCount;
+    IndexBufferFormat indexFormat;
+    bool hasTransform;
+
+    BufferDeviceAddress vertexData;
+    BufferDeviceAddress indexData;
+    BufferDeviceAddress transformData;
+};
+
+struct RayTracingProceduralGeometryData
+{
+    uint32_t aabbStride;
+
+    BufferDeviceAddress aabbData;
+};
+
 struct RayTracingGeometryDesc
 {
     RayTracingGeometryType type;
     uint32_t primitiveCount;
-
-    // For triangles
-
-    BufferDeviceAddress vertexData;
-    RayTracingVertexFormat vertexFormat;
-    uint32_t vertexStride;
-    uint32_t vertexCount;
-
-    BufferDeviceAddress indexData;
-    IndexBufferFormat indexFormat;
-    
-    BufferDeviceAddress transformData; // Optional 3x4 row major matrix(local->world)
-
-    // For aabbs
-
-    BufferDeviceAddress aabbData;
-    uint32_t aabbStride;
+    union
+    {
+        RayTracingTrianglesGeometryData trianglesData;
+        RayTracingProceduralGeometryData proceduralData;
+    };
 };
 
 struct RayTracingAccelerationStructurePrebuildInfo
@@ -993,6 +1001,22 @@ struct RayTracingAccelerationStructurePrebuildInfo
     uint64_t accelerationStructureSize;
     uint64_t updateScratchSize;
     uint64_t buildScratchSize;
+};
+
+struct RayTracingInstanceData
+{
+    float        transform3x4[3][4];
+    unsigned int instanceCustomIndex : 24;
+    unsigned int instanceMask        : 8;
+    unsigned int instanceSbtOffset   : 24;
+    unsigned int flags               : 8;
+    uint64_t     accelerationStructureAddress;
+};
+
+struct RayTracingInstanceArrayDesc
+{
+    uint32_t instanceCount;
+    BufferDeviceAddress instanceData;
 };
 
 // =============================== rhi interfaces ===============================
@@ -1204,8 +1228,14 @@ public:
     RTRC_RHI_API void WaitIdle() RTRC_RHI_API_PURE;
 
     RTRC_RHI_API BlasPtr CreateBlas(const BufferPtr &buffer, size_t offset, size_t size) RTRC_RHI_API_PURE;
-    RTRC_RHI_API BlasBuildInfoPtr CreateBlasBuilder(
-        Span<RayTracingGeometryDesc> geometries, RayTracingAccelerationStructureBuildFlag flags) RTRC_RHI_API_PURE;
+    RTRC_RHI_API TlasPtr CreateTlas(const BufferPtr &buffer, size_t offset, size_t size) RTRC_RHI_API_PURE;
+
+    RTRC_RHI_API BlasBuildInfoPtr CreateBlasBuildInfo(
+        Span<RayTracingGeometryDesc>             geometries,
+        RayTracingAccelerationStructureBuildFlag flags) RTRC_RHI_API_PURE;
+    RTRC_RHI_API TlasBuildInfoPtr CreateTlasBuildInfo(
+        Span<RayTracingInstanceArrayDesc>        instanceArrays,
+        RayTracingAccelerationStructureBuildFlag flags) RTRC_RHI_API_PURE;
 };
 
 class BackBufferSemaphore : public RHIObject
@@ -1384,11 +1414,17 @@ public:
 
     RTRC_RHI_API void BeginDebugEvent(const DebugLabel &label) RTRC_RHI_API_PURE;
     RTRC_RHI_API void EndDebugEvent() RTRC_RHI_API_PURE;
-
+    
     RTRC_RHI_API void BuildBlas(
-        const BlasBuildInfoPtr &buildInfo,
-        const BlasPtr          &blas,
-        BufferDeviceAddress     scratchBufferAddress) RTRC_RHI_API_PURE;
+        const BlasBuildInfoPtr      &buildInfo,
+        Span<RayTracingGeometryDesc> geometries,
+        const BlasPtr               &blas,
+        BufferDeviceAddress          scratchBufferAddress) RTRC_RHI_API_PURE;
+    RTRC_RHI_API void BuildTlas(
+        const TlasBuildInfoPtr           &buildInfo,
+        Span<RayTracingInstanceArrayDesc> instanceArrays,
+        const TlasPtr                    &tlas,
+        BufferDeviceAddress               scratchBufferAddress) RTRC_RHI_API_PURE;
 
 protected:
 
@@ -1533,12 +1569,28 @@ class BlasBuildInfo : public RHIObject
 {
 public:
 
-    RTRC_RHI_API RayTracingAccelerationStructurePrebuildInfo GetPrebuildInfo() const RTRC_RHI_API_PURE;
+    RTRC_RHI_API const RayTracingAccelerationStructurePrebuildInfo &GetPrebuildInfo() const RTRC_RHI_API_PURE;
+};
+
+class TlasBuildInfo : public RHIObject
+{
+public:
+
+    RTRC_RHI_API const RayTracingAccelerationStructurePrebuildInfo &GetPrebuildInfo() const RTRC_RHI_API_PURE;
 };
 
 class Blas : public RHIObject
 {
+public:
 
+    RTRC_RHI_API BufferDeviceAddress GetDeviceAddress() const RTRC_RHI_API_PURE;
+};
+
+class Tlas : public RHIObject
+{
+public:
+
+    RTRC_RHI_API BufferDeviceAddress GetDeviceAddress() const RTRC_RHI_API_PURE;
 };
 
 #endif // #ifndef RTRC_STATIC_RHI

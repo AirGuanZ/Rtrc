@@ -6,6 +6,7 @@
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/RayTracingPipeline.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/CommandBuffer.h>
 #include <Rtrc/Graphics/RHI/Vulkan/RayTracing/BlasBuildInfo.h>
+#include <Rtrc/Graphics/RHI/Vulkan/RayTracing/TlasBuildInfo.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Buffer.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Texture.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/TextureView.h>
@@ -445,10 +446,23 @@ void VulkanCommandBuffer::EndDebugEvent()
 }
 
 void VulkanCommandBuffer::BuildBlas(
-    const BlasBuildInfoPtr &buildInfo, const BlasPtr &blas, BufferDeviceAddress scratchBufferAddress)
+    const BlasBuildInfoPtr      &buildInfo,
+    Span<RayTracingGeometryDesc> geometries,
+    const BlasPtr               &blas,
+    BufferDeviceAddress          scratchBufferAddress)
 {
-    static_cast<const VulkanBlasBuildInfo *>(buildInfo.Get())
-        ->_internalBuildBlas(this, blas, scratchBufferAddress);
+    static_cast<VulkanBlasBuildInfo *>(buildInfo.Get())
+        ->_internalBuildBlas(this, geometries, blas, scratchBufferAddress);
+}
+
+void VulkanCommandBuffer::BuildTlas(
+    const TlasBuildInfoPtr           &buildInfo,
+    Span<RayTracingInstanceArrayDesc> instanceArrays,
+    const TlasPtr                    &tlas,
+    BufferDeviceAddress               scratchBufferAddress)
+{
+    static_cast<VulkanTlasBuildInfo *>(buildInfo.Get())
+        ->_internalBuildTlas(this, instanceArrays, tlas, scratchBufferAddress);
 }
 
 VkCommandBuffer VulkanCommandBuffer::_internalGetNativeCommandBuffer() const

@@ -73,8 +73,14 @@ public:
     void WaitIdle() RTRC_RHI_OVERRIDE;
 
     BlasPtr CreateBlas(const BufferPtr &buffer, size_t offset, size_t size) RTRC_RHI_OVERRIDE;
-    BlasBuildInfoPtr CreateBlasBuilder(
-        Span<RayTracingGeometryDesc> geometries, RayTracingAccelerationStructureBuildFlag flags) RTRC_RHI_OVERRIDE;
+    BlasBuildInfoPtr CreateBlasBuildInfo(
+        Span<RayTracingGeometryDesc>             geometries,
+        RayTracingAccelerationStructureBuildFlag flags) RTRC_RHI_OVERRIDE;
+
+    TlasPtr CreateTlas(const BufferPtr &buffer, size_t offset, size_t size) RTRC_RHI_OVERRIDE;
+    TlasBuildInfoPtr CreateTlasBuildInfo(
+        Span<RayTracingInstanceArrayDesc>        instanceArrays,
+        RayTracingAccelerationStructureBuildFlag flags) RTRC_RHI_OVERRIDE;
 
     void _internalSetObjectName(VkObjectType objectType, uint64_t objectHandle, const char *name);
 

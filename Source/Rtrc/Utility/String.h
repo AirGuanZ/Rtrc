@@ -31,7 +31,7 @@ inline std::string TrimLeft(std::string_view str);
 inline std::string TrimRight(std::string_view str);
 inline std::string Trim(std::string_view str);
 
-// begin and end are string iterators
+// Begin and end are string iterators
 template<typename TIt>
 std::string Join(char joiner, TIt begin, TIt end);
 template<typename TIt>
@@ -41,7 +41,7 @@ std::string Join(std::string_view joiner, TIt begin, TIt end);
 inline std::vector<std::string> Split(std::string_view src, char splitter, bool removeEmptyResult = true);
 inline std::vector<std::string> Split(std::string_view src, std::string_view splitter, bool removeEmptyResult = true);
 
-// returns number of output
+// Returns number of output
 template<typename TIt>
 size_t Split(std::string_view src, char splitter, TIt outIter, bool removeEmptyResult = true);
 template<typename TIt>
@@ -50,7 +50,7 @@ size_t Split(std::string_view src, std::string_view splitter, TIt outIter, bool 
 inline size_t Replace_(std::string &str, std::string_view oldSeg, std::string_view newSeg);
 inline std::string Replace(std::string_view str, std::string_view oldSeg, std::string_view newSeg);
 
-// support (unsigned) int, (unsigned) long, (unsigned) long long, float, double, long double
+// Support (unsigned) int, (unsigned) long, (unsigned) long long, float, double, long double
 template<typename T>
 T FromString(const std::string &str);
 
