@@ -388,21 +388,22 @@ enum class TextureLayout
     Present
 };
 
-// TODO: pipeline stage flag & resource access flag for ray tracing
-
 enum class PipelineStage : uint32_t
 {
-    None           = 0,
-    InputAssembler = 1 << 0,
-    VertexShader   = 1 << 1,
-    FragmentShader = 1 << 2,
-    ComputeShader  = 1 << 3,
-    DepthStencil   = 1 << 4,
-    RenderTarget   = 1 << 5,
-    Copy           = 1 << 6,
-    Clear          = 1 << 7,
-    Resolve        = 1 << 8,
-    All            = 1 << 9
+    None             = 0,
+    InputAssembler   = 1 << 0,
+    VertexShader     = 1 << 1,
+    FragmentShader   = 1 << 2,
+    ComputeShader    = 1 << 3,
+    RayTracingShader = 1 << 4,
+    DepthStencil     = 1 << 5,
+    RenderTarget     = 1 << 6,
+    Copy             = 1 << 7,
+    Clear            = 1 << 8,
+    Resolve          = 1 << 9,
+    BuildAS          = 1 << 10,
+    CopyAS           = 1 << 11,
+    All              = 1 << 12
 };
 
 RTRC_DEFINE_ENUM_FLAGS(PipelineStage)
@@ -432,7 +433,11 @@ enum class ResourceAccess : uint32_t
     ResolveRead             = 1 << 17,
     ResolveWrite            = 1 << 18,
     ClearWrite              = 1 << 19,
-    All                     = 1 << 20
+    ReadAS                  = 1 << 20,
+    WriteAS                 = 1 << 21,
+    ReadSBT                 = 1 << 22,
+    ReadForBuildAS          = 1 << 23,
+    All                     = 1 << 24
 };
 
 RTRC_DEFINE_ENUM_FLAGS(ResourceAccess)
@@ -1458,6 +1463,10 @@ public:
     RTRC_RHI_API void EndDebugEvent() RTRC_RHI_API_PURE;
 
     // Acceleration structure
+
+    // vertexData/inputData/transformData/aabbData will be accessed with [stage = BuildAS, access = ReadForBuildAS]
+    // scratch buffer will be accessed with [stage = BuildAS, access = ReadAS | WriteAS]
+    // tlas/blas will be accessed with [stage = BuildAS, access = WriteAS]
 
     RTRC_RHI_API void BuildBlas(
         const BlasBuildInfoPtr      &buildInfo,

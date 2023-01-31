@@ -59,7 +59,10 @@ bool IsReadOnly(ResourceAccessFlag access)
       | RWBufferRead
       | RWStructuredBufferRead
       | CopyRead
-      | ResolveRead;
+      | ResolveRead
+      | ReadAS
+      | ReadSBT
+      | ReadForBuildAS;
     return (access & READONLY_MASK) == access;
 }
 
@@ -74,7 +77,8 @@ bool IsWriteOnly(ResourceAccessFlag access)
       | RWStructuredBufferWrite
       | CopyWrite
       | ResolveWrite
-      | ClearWrite;
+      | ClearWrite
+      | WriteAS;
     return (access & WRITEONLY_MASK) == access;
 }
 
