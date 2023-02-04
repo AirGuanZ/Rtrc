@@ -3,6 +3,7 @@
 
 #include <Rtrc/Graphics/Mesh/Mesh.h>
 #include <Rtrc/Graphics/Device/Buffer/Buffer.h>
+#include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/Graphics/Device/Texture.h>
 #include <Rtrc/Graphics/Device/CommandBuffer.h>
 
@@ -86,6 +87,7 @@ BarrierBatch &BarrierBatch::operator()(
     RHI::PipelineStageFlag  succStages,
     RHI::ResourceAccessFlag succAccesses)
 {
+    assert(!DynamicCast<StatefulTexture>(texture));
     for(auto [m, a] : EnumerateSubTextures(texture->GetDesc()))
         operator()(texture, a, m, prevLayout, prevStages, prevAccesses, succLayout, succStages, succAccesses);
     return *this;
@@ -102,6 +104,7 @@ BarrierBatch &BarrierBatch::operator()(
     RHI::PipelineStageFlag  succStages,
     RHI::ResourceAccessFlag succAccesses)
 {
+    assert(!DynamicCast<StatefulTexture>(texture));
     TT_.push_back(RHI::TextureTransitionBarrier
     {
         .texture        = texture->GetRHIObject().Get(),
@@ -121,22 +124,15 @@ BarrierBatch &BarrierBatch::operator()(
     RHI::TextureLayout prevLayout,
     RHI::TextureLayout succLayout)
 {
+    assert(!DynamicCast<StatefulTexture>(texture));
     return operator()(
         texture,
         prevLayout, RHI::PipelineStage::All, RHI::ResourceAccess::All,
         succLayout, RHI::PipelineStage::All, RHI::ResourceAccess::All);
 }
 
-BarrierBatch &BarrierBatch::operator()(
-    const RC<StatefulTexture> &texture,
-    RHI::TextureLayout         prevLayout,
-    RHI::TextureLayout         succLayout)
-{
-    throw Exception("Invalid barrier operation on stateful texture");
-}
-
 CommandBuffer::CommandBuffer()
-    : manager_(nullptr), queueType_(RHI::QueueType::Graphics), pool_(nullptr)
+    : device_(nullptr), manager_(nullptr), queueType_(RHI::QueueType::Graphics), pool_(nullptr)
 {
     
 }
@@ -457,6 +453,98 @@ void CommandBuffer::Dispatch(const Vector3i &groupCount)
     this->Dispatch(groupCount.x, groupCount.y, groupCount.z);
 }
 
+void CommandBuffer::BuildBlas(
+    const RC<Blas>                               &blas,
+    Span<RHI::RayTracingGeometryDesc>             geometries,
+    RHI::RayTracingAccelerationStructureBuildFlag flags,
+    const RC<SubBuffer>                          &scratchBuffer)
+{
+    auto prebuildInfo = device_->CreateBlasPrebuildinfo(geometries, flags);
+    BuildBlas(blas, geometries, prebuildInfo, scratchBuffer);
+}
+
+void CommandBuffer::BuildBlas(
+    const RC<Blas>                   &blas,
+    Span<RHI::RayTracingGeometryDesc> geometries,
+    const BlasPrebuildInfo           &prebuildInfo,
+    const RC<SubBuffer>              &scratchBuffer)
+{
+    CheckThreadID();
+
+    if(!blas->GetBuffer())
+    {
+        auto newBuffer = device_->CreateBuffer(RHI::BufferDesc
+        {
+            .size           = prebuildInfo.GetAccelerationStructureBufferSize(),
+            .usage          = RHI::BufferUsage::AccelerationStructure,
+            .hostAccessType = RHI::BufferHostAccessType::None
+        });
+        blas->SetBuffer(std::move(newBuffer));
+    }
+
+    SubBuffer *actualScratchBuffer = scratchBuffer.get();
+    RC<SubBuffer> temporaryScratchBuffer;
+    if(!actualScratchBuffer)
+    {
+        temporaryScratchBuffer = device_->CreateBuffer(RHI::BufferDesc
+        {
+            .size           = prebuildInfo.GetAccelerationStructureBufferSize(),
+            .usage          = RHI::BufferUsage::AccelerationStructureScratch,
+            .hostAccessType = RHI::BufferHostAccessType::None
+        });
+        actualScratchBuffer = temporaryScratchBuffer.get();
+    }
+
+    rhiCommandBuffer_->BuildBlas(
+        prebuildInfo.GetRHIObject(), geometries, blas->GetRHIObject(), actualScratchBuffer->GetDeviceAddress());
+}
+
+void CommandBuffer::BuildTlas(
+    const RC<Tlas>                               &tlas,
+    Span<RHI::RayTracingInstanceArrayDesc>        instanceArrays,
+    RHI::RayTracingAccelerationStructureBuildFlag flags,
+    const RC<SubBuffer>                          &scratchBuffer)
+{
+    auto prebuildInfo = device_->CreateTlasPrebuildInfo(instanceArrays, flags);
+    return BuildTlas(tlas, instanceArrays, prebuildInfo, scratchBuffer);
+}
+
+void CommandBuffer::BuildTlas(
+    const RC<Tlas>                        &tlas,
+    Span<RHI::RayTracingInstanceArrayDesc> instanceArrays,
+    const TlasPrebuildInfo                &prebuildInfo,
+    const RC<SubBuffer>                   &scratchBuffer)
+{
+    CheckThreadID();
+
+    if(!tlas->GetBuffer())
+    {
+        auto newBuffer = device_->CreateBuffer(RHI::BufferDesc
+        {
+            .size           = prebuildInfo.GetAccelerationStructureBufferSize(),
+            .usage          = RHI::BufferUsage::AccelerationStructure,
+            .hostAccessType = RHI::BufferHostAccessType::None
+        });
+        tlas->SetBuffer(std::move(newBuffer));
+    }
+
+    SubBuffer *actualScratchBuffer = scratchBuffer.get();
+    RC<SubBuffer> temporaryScratchBuffer;
+    if(!actualScratchBuffer)
+    {
+        temporaryScratchBuffer = device_->CreateBuffer(RHI::BufferDesc
+        {
+            .size           = prebuildInfo.GetAccelerationStructureBufferSize(),
+            .usage          = RHI::BufferUsage::AccelerationStructureScratch,
+            .hostAccessType = RHI::BufferHostAccessType::None
+        });
+        actualScratchBuffer = temporaryScratchBuffer.get();
+    }
+
+    rhiCommandBuffer_->BuildTlas(
+        prebuildInfo.GetRHIObject(), instanceArrays, tlas->GetRHIObject(), actualScratchBuffer->GetDeviceAddress());
+}
+
 void CommandBuffer::ExecuteBarriers(const BarrierBatch &barriers)
 {
     CheckThreadID();
@@ -473,8 +561,8 @@ void CommandBuffer::CheckThreadID() const
 #endif
 }
 
-CommandBufferManager::CommandBufferManager(RHI::DevicePtr device, DeviceSynchronizer &sync)
-    : device_(std::move(device)), sync_(sync)
+CommandBufferManager::CommandBufferManager(Device *device, DeviceSynchronizer &sync)
+    : device_(device), sync_(sync)
 {
     
 }
@@ -494,6 +582,7 @@ CommandBufferManager::~CommandBufferManager()
 CommandBuffer CommandBufferManager::Create()
 {
     CommandBuffer ret;
+    ret.device_ = device_;
     ret.manager_ = this;
     ret.queueType_ = sync_.GetQueue()->GetType();
     return ret;
@@ -587,7 +676,7 @@ RHI::CommandPoolPtr CommandBufferManager::GetFreeCommandPool()
     RHI::CommandPoolPtr ret;
     if(!freePools_.try_pop(ret))
     {
-        ret = device_->CreateCommandPool(sync_.GetQueue());
+        ret = device_->GetRawDevice()->CreateCommandPool(sync_.GetQueue());
     }
     return ret;
 }

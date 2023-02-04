@@ -6,11 +6,11 @@ class VulkanCommandBuffer;
 
 RTRC_RHI_VK_BEGIN
 
-RTRC_RHI_IMPLEMENT(VulkanTlasBuildInfo, TlasBuildInfo)
+RTRC_RHI_IMPLEMENT(VulkanTlasPrebuildInfo, TlasPrebuildInfo)
 {
 public:
 
-    VulkanTlasBuildInfo(
+    VulkanTlasPrebuildInfo(
         VulkanDevice                            *device,
         Span<RayTracingInstanceArrayDesc>        instanceArrays,
         RayTracingAccelerationStructureBuildFlag flags);

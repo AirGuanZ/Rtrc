@@ -14,8 +14,14 @@ RTRC_BEGIN
 class Buffer;
 class CommandBuffer;
 class CommandBufferManager;
+class Device;
 class Mesh;
 class Texture;
+
+class Blas;
+class Tlas;
+class BlasPrebuildInfo;
+class TlasPrebuildInfo;
 
 using AttachmentLoadOp = RHI::AttachmentLoadOp;
 using AttachmentStoreOp = RHI::AttachmentStoreOp;
@@ -90,11 +96,6 @@ public:
         const RC<Texture> &texture,
         RHI::TextureLayout prevLayout,
         RHI::TextureLayout succLayout);
-
-    BarrierBatch &operator()(
-        const RC<StatefulTexture> &texture,
-        RHI::TextureLayout         prevLayout,
-        RHI::TextureLayout         succLayout);
 
 private:
 
@@ -178,6 +179,41 @@ public:
     void Dispatch(int groupCountX, int groupCountY, int groupCountZ);
     void Dispatch(const Vector3i &groupCount);
 
+    // if prebuildInfo is not presented
+    //   generate prebuildInfo
+    // else
+    //   assert prebuildInfo's compatibility
+    // if as.buffer is not presented
+    //   allocate buffer
+    // else
+    //   assert buffer is large enough
+    // if scratchBuffer is not presented
+    //   allocate scratchBuffer
+    // else
+    //   use given scratchBuffer
+
+    void BuildBlas(
+        const RC<Blas>                               &blas,
+        Span<RHI::RayTracingGeometryDesc>             geometries,
+        RHI::RayTracingAccelerationStructureBuildFlag flags,
+        const RC<SubBuffer>                          &scratchBuffer);
+    void BuildBlas(
+        const RC<Blas>                   &blas,
+        Span<RHI::RayTracingGeometryDesc> geometries,
+        const BlasPrebuildInfo           &prebuildInfo,
+        const RC<SubBuffer>              &scratchBuffer);
+
+    void BuildTlas(
+        const RC<Tlas>                               &tlas,
+        Span<RHI::RayTracingInstanceArrayDesc>        instanceArrays,
+        RHI::RayTracingAccelerationStructureBuildFlag flags,
+        const RC<SubBuffer>                          &scratchBuffer);
+    void BuildTlas(
+        const RC<Tlas>                        &tlas,
+        Span<RHI::RayTracingInstanceArrayDesc> instanceArrays,
+        const TlasPrebuildInfo                &prebuildInfo,
+        const RC<SubBuffer>                   &scratchBuffer);
+
     void ExecuteBarriers(const BarrierBatch &barriers);
     void ExecuteBarrier(
         const RC<StatefulBuffer> &buffer,
@@ -241,6 +277,7 @@ private:
 
     void CheckThreadID() const;
 
+    Device *device_;
     CommandBufferManager *manager_;
     RHI::QueueType queueType_;
     RHI::CommandBufferPtr rhiCommandBuffer_;
@@ -259,7 +296,7 @@ class CommandBufferManager : public Uncopyable
 {
 public:
 
-    CommandBufferManager(RHI::DevicePtr device, DeviceSynchronizer &sync);
+    CommandBufferManager(Device *device, DeviceSynchronizer &sync);
     ~CommandBufferManager();
 
     CommandBuffer Create();
@@ -282,7 +319,7 @@ private:
 
     RHI::CommandPoolPtr GetFreeCommandPool();
 
-    RHI::DevicePtr device_;
+    Device *device_;
     DeviceSynchronizer &sync_;
 
     std::map<std::thread::id, PerThreadPoolData> threadToActivePoolData_;

@@ -1,11 +1,11 @@
 #include <Rtrc/Graphics/RHI/Vulkan/Context/Device.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/CommandBuffer.h>
 #include <Rtrc/Graphics/RHI/Vulkan/RayTracing/Tlas.h>
-#include <Rtrc/Graphics/RHI/Vulkan/RayTracing/TlasBuildInfo.h>
+#include <Rtrc/Graphics/RHI/Vulkan/RayTracing/TlasPrebuildInfo.h>
 
 RTRC_RHI_VK_BEGIN
 
-VulkanTlasBuildInfo::VulkanTlasBuildInfo(
+VulkanTlasPrebuildInfo::VulkanTlasPrebuildInfo(
     VulkanDevice                            *device,
     Span<RayTracingInstanceArrayDesc>        instanceArrays,
     RayTracingAccelerationStructureBuildFlag flags)
@@ -70,14 +70,14 @@ VulkanTlasBuildInfo::VulkanTlasBuildInfo(
     };
 }
 
-const RayTracingAccelerationStructurePrebuildInfo &VulkanTlasBuildInfo::GetPrebuildInfo() const
+const RayTracingAccelerationStructurePrebuildInfo &VulkanTlasPrebuildInfo::GetPrebuildInfo() const
 {
     return prebuildInfo_;
 }
 
 #if RTRC_DEBUG
 
-bool VulkanTlasBuildInfo::_internalIsCompatiableWith(Span<RayTracingInstanceArrayDesc> instanceArrays) const
+bool VulkanTlasPrebuildInfo::_internalIsCompatiableWith(Span<RayTracingInstanceArrayDesc> instanceArrays) const
 {
     if(instanceArrays.size() != instanceArrays_.size())
     {
@@ -95,7 +95,7 @@ bool VulkanTlasBuildInfo::_internalIsCompatiableWith(Span<RayTracingInstanceArra
 
 #endif // #if RTRC_DEBUG
 
-void VulkanTlasBuildInfo::_internalBuildTlas(
+void VulkanTlasPrebuildInfo::_internalBuildTlas(
     VulkanCommandBuffer              *commandBuffer,
     Span<RayTracingInstanceArrayDesc> instanceArrays,
     const TlasPtr                    &tlas,

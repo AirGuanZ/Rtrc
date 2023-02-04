@@ -111,6 +111,7 @@ Device::~Device()
         sync_->PrepareDestruction();
     }
 
+    accelerationManager_.reset();
     bindingLayoutManager_.reset();
     copyContext_.reset();
     bufferManager_.reset();
@@ -162,11 +163,12 @@ void Device::InitializeInternal(RHI::DevicePtr device, bool isComputeOnly)
     pooledTextureManager_ = MakeBox<PooledTextureManager>(device_, *sync_);
 
     bindingLayoutManager_ = MakeBox<BindingGroupManager>(device_, *sync_, dynamicBufferManager_.get());
-    commandBufferManager_ = MakeBox<CommandBufferManager>(device_, *sync_);
+    commandBufferManager_ = MakeBox<CommandBufferManager>(this, *sync_);
     pipelineManager_ = MakeBox<PipelineManager>(device_, *sync_);
     samplerManager_ = MakeBox<SamplerManager>(device_, *sync_);
 
     copyContext_ = MakeBox<CopyContext>(device_);
+    accelerationManager_ = MakeBox<AccelerationStructureManager>(device_, *sync_);
 }
 
 void Device::RecreateSwapchain()

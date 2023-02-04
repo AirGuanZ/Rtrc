@@ -411,7 +411,7 @@ VulkanPhysicalDevice::VulkanPhysicalDevice(VkPhysicalDevice device, bool enableR
         const bool graphics = (flag & VK_QUEUE_GRAPHICS_BIT) != 0;
         const bool compute = (flag & VK_QUEUE_COMPUTE_BIT) != 0;
         const bool transfer = (flag & VK_QUEUE_TRANSFER_BIT) != 0;
-        const bool opticalFlowNV = (flag & VK_QUEUE_OPTICAL_FLOW_BIT_NV);
+        const bool opticalFlowNV = (flag & VK_QUEUE_OPTICAL_FLOW_BIT_NV) != 0;
 
         if(queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
         {

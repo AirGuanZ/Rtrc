@@ -3,7 +3,6 @@
 #include <ranges>
 
 #include <Rtrc/Graphics/Material/Material.h>
-#include <Rtrc/Graphics/Pipeline/PipelineStateCommands.h>
 #include <Rtrc/Utility/SignalSlot.h>
 
 RTRC_BEGIN

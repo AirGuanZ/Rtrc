@@ -19,7 +19,7 @@ public:
     ~VulkanCommandBuffer() override;
 
     void Begin() RTRC_RHI_OVERRIDE;
-    void End() RTRC_RHI_OVERRIDE;
+    void End()   RTRC_RHI_OVERRIDE;
 
     void BeginRenderPass(
         Span<RenderPassColorAttachment>         colorAttachments,
@@ -95,12 +95,12 @@ public:
     void EndDebugEvent() RTRC_RHI_OVERRIDE;
 
     void BuildBlas(
-        const BlasBuildInfoPtr      &buildInfo,
+        const BlasPrebuildInfoPtr   &buildInfo,
         Span<RayTracingGeometryDesc> geometries,
         const BlasPtr               &blas,
         BufferDeviceAddress          scratchBufferAddress) RTRC_RHI_OVERRIDE;
     void BuildTlas(
-        const TlasBuildInfoPtr           &buildInfo,
+        const TlasPrebuildInfoPtr        &buildInfo,
         Span<RayTracingInstanceArrayDesc> instanceArrays,
         const TlasPtr                    &tlas,
         BufferDeviceAddress               scratchBufferAddress) RTRC_RHI_OVERRIDE;

@@ -79,29 +79,29 @@ inline constexpr UseInfo CLEAR_DST =
 
 inline constexpr UseInfo PIXEL_SHADER_TEXTURE =
 {
-    .layout = RHI::TextureLayout::ShaderTexture,
-    .stages = RHI::PipelineStage::FragmentShader,
+    .layout   = RHI::TextureLayout::ShaderTexture,
+    .stages   = RHI::PipelineStage::FragmentShader,
     .accesses = RHI::ResourceAccess::TextureRead
 };
 
 inline constexpr UseInfo COMPUTE_SHADER_TEXTURE =
 {
-    .layout = RHI::TextureLayout::ShaderTexture,
-    .stages = RHI::PipelineStage::ComputeShader,
+    .layout   = RHI::TextureLayout::ShaderTexture,
+    .stages   = RHI::PipelineStage::ComputeShader,
     .accesses = RHI::ResourceAccess::TextureRead
 };
 
 inline constexpr UseInfo COMPUTE_SHADER_RWTEXTURE =
 {
-    .layout = RHI::TextureLayout::ShaderRWTexture,
-    .stages = RHI::PipelineStage::ComputeShader,
+    .layout   = RHI::TextureLayout::ShaderRWTexture,
+    .stages   = RHI::PipelineStage::ComputeShader,
     .accesses = RHI::ResourceAccess::RWTextureRead | RHI::ResourceAccess::RWTextureWrite
 };
 
 inline constexpr UseInfo COMPUTE_SHADER_RWTEXTURE_WRITEONLY =
 {
-    .layout = RHI::TextureLayout::ShaderRWTexture,
-    .stages = RHI::PipelineStage::ComputeShader,
+    .layout   = RHI::TextureLayout::ShaderRWTexture,
+    .stages   = RHI::PipelineStage::ComputeShader,
     .accesses = RHI::ResourceAccess::RWTextureWrite
 };
 

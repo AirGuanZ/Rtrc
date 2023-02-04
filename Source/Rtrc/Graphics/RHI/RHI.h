@@ -23,6 +23,8 @@
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/Semaphore.h>
 #include <Rtrc/Graphics/RHI/Vulkan/RayTracing/Blas.h>
 #include <Rtrc/Graphics/RHI/Vulkan/RayTracing/BlasBuildInfo.h>
+#include <Rtrc/Graphics/RHI/Vulkan/RayTracing/Tlas.h>
+#include <Rtrc/Graphics/RHI/Vulkan/RayTracing/TlasBuildInfo.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Buffer.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferView.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/MemoryBlock.h>

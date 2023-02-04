@@ -80,8 +80,8 @@ RTRC_RHI_FORWARD_DECL(RayTracingLibrary)
 RTRC_RHI_FORWARD_DECL(Sampler)
 RTRC_RHI_FORWARD_DECL(MemoryPropertyRequirements)
 RTRC_RHI_FORWARD_DECL(MemoryBlock)
-RTRC_RHI_FORWARD_DECL(BlasBuildInfo)
-RTRC_RHI_FORWARD_DECL(TlasBuildInfo)
+RTRC_RHI_FORWARD_DECL(BlasPrebuildInfo)
+RTRC_RHI_FORWARD_DECL(TlasPrebuildInfo)
 RTRC_RHI_FORWARD_DECL(Blas)
 RTRC_RHI_FORWARD_DECL(Tlas)
 
@@ -657,22 +657,22 @@ struct TextureRtvDesc
 
 struct TextureSrvDesc
 {
-    bool                 isArray        = false;
-    Format               format         = Format::Unknown;
-    uint32_t             baseMipLevel   = 0;
-    uint32_t             levelCount     = 0; // all levels
-    uint32_t             baseArrayLayer = 0;
-    uint32_t             layerCount     = 0; // 0 means all layers. only used when isArray == true
-    TextureSrvFlag       flags          = 0;
+    bool           isArray        = false;
+    Format         format         = Format::Unknown;
+    uint32_t       baseMipLevel   = 0;
+    uint32_t       levelCount     = 0; // all levels
+    uint32_t       baseArrayLayer = 0;
+    uint32_t       layerCount     = 0; // 0 means all layers. only used when isArray == true
+    TextureSrvFlag flags          = 0;
 };
 
 struct TextureUavDesc
 {
-    bool                 isArray        = false;
-    Format               format         = Format::Unknown;
-    uint32_t             mipLevel       = 0;
-    uint32_t             baseArrayLayer = 0;
-    uint32_t             layerCount     = 0; // 0 means all layers. only used when isArray == true
+    bool     isArray        = false;
+    Format   format         = Format::Unknown;
+    uint32_t mipLevel       = 0;
+    uint32_t baseArrayLayer = 0;
+    uint32_t layerCount     = 0; // 0 means all layers. only used when isArray == true
 };
 
 struct TextureDsvDesc
@@ -704,14 +704,14 @@ using BufferUavDesc = BufferSrvDesc;
 
 struct TextureTransitionBarrier
 {
-    Texture                *texture;
-    TextureSubresources     subresources;
-    PipelineStageFlag       beforeStages;
-    ResourceAccessFlag      beforeAccesses;
-    TextureLayout           beforeLayout;
-    PipelineStageFlag       afterStages;
-    ResourceAccessFlag      afterAccesses;
-    TextureLayout           afterLayout;
+    Texture            *texture;
+    TextureSubresources subresources;
+    PipelineStageFlag   beforeStages;
+    ResourceAccessFlag  beforeAccesses;
+    TextureLayout       beforeLayout;
+    PipelineStageFlag   afterStages;
+    ResourceAccessFlag  afterAccesses;
+    TextureLayout       afterLayout;
 };
 
 // For non-sharing resource, every cross-queue sync needs a release/acquire pair
@@ -752,8 +752,8 @@ struct Viewport
 {
     Vector2f lowerLeftCorner;
     Vector2f size;
-    float minDepth;
-    float maxDepth;
+    float    minDepth;
+    float    maxDepth;
 
     auto operator<=>(const Viewport &) const = default;
 
@@ -844,22 +844,22 @@ struct VertexInputBuffer
 
 struct VertexInputAttribute
 {
-    uint32_t location;
-    uint32_t inputBufferIndex;
-    uint32_t byteOffsetInBuffer;
+    uint32_t            location;
+    uint32_t            inputBufferIndex;
+    uint32_t            byteOffsetInBuffer;
     VertexAttributeType type;
 };
 
 struct MemoryBlockDesc
 {
-    size_t size;
-    size_t alignment;
+    size_t                          size;
+    size_t                          alignment;
     Ptr<MemoryPropertyRequirements> properties;
 };
 
 struct DebugLabel
 {
-    std::string name;
+    std::string             name;
     std::optional<Vector4f> color;
 };
 
@@ -927,7 +927,7 @@ struct GraphicsPipelineDesc
 
 struct ComputePipelineDesc
 {
-    Ptr<RawShader> computeShader;
+    Ptr<RawShader>     computeShader;
     Ptr<BindingLayout> bindingLayout;
 };
 
@@ -959,31 +959,31 @@ using RayTracingShaderGroup = Variant<
 
 struct RayTracingLibraryDesc
 {
-    RawShaderPtr rawShader;
+    RawShaderPtr                       rawShader;
     std::vector<RayTracingShaderGroup> shaderGroups;
-    uint32_t maxRayPayloadSize;
-    uint32_t maxRayHitAttributeSize;
+    uint32_t                           maxRayPayloadSize;
+    uint32_t                           maxRayHitAttributeSize;
 };
 
 struct RayTracingPipelineDesc
 {
-    std::vector<RawShaderPtr> rawShaders;
+    std::vector<RawShaderPtr>          rawShaders;
     std::vector<RayTracingShaderGroup> shaderGroups;
-    std::vector<RayTracingLibraryPtr> libraries;
-    Ptr<BindingLayout> bindingLayout;
-    uint32_t maxRayPayloadSize;
-    uint32_t maxRayHitAttributeSize;
-    uint32_t maxRecursiveDepth;
-    bool useCustomStackSize = false;
+    std::vector<RayTracingLibraryPtr>  libraries;
+    Ptr<BindingLayout>                 bindingLayout;
+    uint32_t                           maxRayPayloadSize;
+    uint32_t                           maxRayHitAttributeSize;
+    uint32_t                           maxRecursiveDepth;
+    bool                               useCustomStackSize = false;
 };
 
 struct RayTracingTrianglesGeometryData
 {
     RayTracingVertexFormat vertexFormat;
-    uint32_t vertexStride;
-    uint32_t vertexCount;
-    IndexBufferFormat indexFormat;
-    bool hasTransform;
+    uint32_t               vertexStride;
+    uint32_t               vertexCount;
+    IndexBufferFormat      indexFormat;
+    bool                   hasTransform;
 
     BufferDeviceAddress vertexData;
     BufferDeviceAddress indexData;
@@ -992,18 +992,17 @@ struct RayTracingTrianglesGeometryData
 
 struct RayTracingProceduralGeometryData
 {
-    uint32_t aabbStride;
-
+    uint32_t            aabbStride;
     BufferDeviceAddress aabbData;
 };
 
 struct RayTracingGeometryDesc
 {
     RayTracingGeometryType type;
-    uint32_t primitiveCount;
+    uint32_t               primitiveCount;
     union
     {
-        RayTracingTrianglesGeometryData trianglesData;
+        RayTracingTrianglesGeometryData  trianglesData;
         RayTracingProceduralGeometryData proceduralData;
     };
 };
@@ -1027,7 +1026,7 @@ struct RayTracingInstanceData
 
 struct RayTracingInstanceArrayDesc
 {
-    uint32_t instanceCount;
+    uint32_t            instanceCount;
     BufferDeviceAddress instanceData;
 };
 
@@ -1042,8 +1041,8 @@ struct ShaderGroupRecordRequirements
 struct ShaderBindingTableRegion
 {
     BufferDeviceAddress deviceAddress = { 0 };
-    uint32_t stride = 0; // In bytes
-    uint32_t size   = 0; // In bytes
+    uint32_t            stride = 0; // In bytes
+    uint32_t            size   = 0; // In bytes
 };
 
 // =============================== rhi interfaces ===============================
@@ -1257,10 +1256,10 @@ public:
     RTRC_RHI_API BlasPtr CreateBlas(const BufferPtr &buffer, size_t offset, size_t size) RTRC_RHI_API_PURE;
     RTRC_RHI_API TlasPtr CreateTlas(const BufferPtr &buffer, size_t offset, size_t size) RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API BlasBuildInfoPtr CreateBlasBuildInfo(
+    RTRC_RHI_API BlasPrebuildInfoPtr CreateBlasPrebuildInfo(
         Span<RayTracingGeometryDesc>             geometries,
         RayTracingAccelerationStructureBuildFlag flags) RTRC_RHI_API_PURE;
-    RTRC_RHI_API TlasBuildInfoPtr CreateTlasBuildInfo(
+    RTRC_RHI_API TlasPrebuildInfoPtr CreateTlasPrebuildInfo(
         Span<RayTracingInstanceArrayDesc>        instanceArrays,
         RayTracingAccelerationStructureBuildFlag flags) RTRC_RHI_API_PURE;
 
@@ -1460,7 +1459,7 @@ public:
     // Debug
 
     RTRC_RHI_API void BeginDebugEvent(const DebugLabel &label) RTRC_RHI_API_PURE;
-    RTRC_RHI_API void EndDebugEvent() RTRC_RHI_API_PURE;
+    RTRC_RHI_API void EndDebugEvent()                          RTRC_RHI_API_PURE;
 
     // Acceleration structure
 
@@ -1469,12 +1468,12 @@ public:
     // tlas/blas will be accessed with [stage = BuildAS, access = WriteAS]
 
     RTRC_RHI_API void BuildBlas(
-        const BlasBuildInfoPtr      &buildInfo,
+        const BlasPrebuildInfoPtr   &buildInfo,
         Span<RayTracingGeometryDesc> geometries,
         const BlasPtr               &blas,
         BufferDeviceAddress          scratchBufferAddress) RTRC_RHI_API_PURE;
     RTRC_RHI_API void BuildTlas(
-        const TlasBuildInfoPtr           &buildInfo,
+        const TlasPrebuildInfoPtr        &buildInfo,
         Span<RayTracingInstanceArrayDesc> instanceArrays,
         const TlasPtr                    &tlas,
         BufferDeviceAddress               scratchBufferAddress) RTRC_RHI_API_PURE;
@@ -1623,14 +1622,14 @@ public:
     RTRC_RHI_API const MemoryBlockDesc &GetDesc() const RTRC_RHI_API_PURE;
 };
 
-class BlasBuildInfo : public RHIObject
+class BlasPrebuildInfo : public RHIObject
 {
 public:
 
     RTRC_RHI_API const RayTracingAccelerationStructurePrebuildInfo &GetPrebuildInfo() const RTRC_RHI_API_PURE;
 };
 
-class TlasBuildInfo : public RHIObject
+class TlasPrebuildInfo : public RHIObject
 {
 public:
 

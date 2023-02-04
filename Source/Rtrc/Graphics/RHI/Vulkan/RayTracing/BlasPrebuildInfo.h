@@ -6,11 +6,11 @@ RTRC_RHI_VK_BEGIN
 
 class VulkanCommandBuffer;
 
-RTRC_RHI_IMPLEMENT(VulkanBlasBuildInfo, BlasBuildInfo)
+RTRC_RHI_IMPLEMENT(VulkanBlasPrebuildInfo, BlasPrebuildInfo)
 {
 public:
 
-    VulkanBlasBuildInfo(
+    VulkanBlasPrebuildInfo(
         VulkanDevice *device, Span<RayTracingGeometryDesc> geometries, RayTracingAccelerationStructureBuildFlag flags);
 
     const RayTracingAccelerationStructurePrebuildInfo &GetPrebuildInfo() const RTRC_RHI_OVERRIDE;

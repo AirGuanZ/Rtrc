@@ -1,11 +1,11 @@
 #include <Rtrc/Graphics/RHI/Vulkan/Context/Device.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/CommandBuffer.h>
 #include <Rtrc/Graphics/RHI/Vulkan/RayTracing/Blas.h>
-#include <Rtrc/Graphics/RHI/Vulkan/RayTracing/BlasBuildInfo.h>
+#include <Rtrc/Graphics/RHI/Vulkan/RayTracing/BlasPrebuildInfo.h>
 
 RTRC_RHI_VK_BEGIN
 
-VulkanBlasBuildInfo::VulkanBlasBuildInfo(
+VulkanBlasPrebuildInfo::VulkanBlasPrebuildInfo(
     VulkanDevice                            *device,
     Span<RayTracingGeometryDesc>             geometries,
     RayTracingAccelerationStructureBuildFlag flags)
@@ -87,14 +87,14 @@ VulkanBlasBuildInfo::VulkanBlasBuildInfo(
     };
 }
 
-const RayTracingAccelerationStructurePrebuildInfo &VulkanBlasBuildInfo::GetPrebuildInfo() const
+const RayTracingAccelerationStructurePrebuildInfo &VulkanBlasPrebuildInfo::GetPrebuildInfo() const
 {
     return prebuildInfo_;
 }
 
 #if RTRC_DEBUG
 
-bool VulkanBlasBuildInfo::_internalIsCompatiableWith(Span<RayTracingGeometryDesc> geometries) const
+bool VulkanBlasPrebuildInfo::_internalIsCompatiableWith(Span<RayTracingGeometryDesc> geometries) const
 {
     if(geometries.size() != geometries_.size())
     {
@@ -134,7 +134,7 @@ bool VulkanBlasBuildInfo::_internalIsCompatiableWith(Span<RayTracingGeometryDesc
 
 #endif // #if RTRC_DEBUG
 
-void VulkanBlasBuildInfo::_internalBuildBlas(
+void VulkanBlasPrebuildInfo::_internalBuildBlas(
     VulkanCommandBuffer         *commandBuffer,
     Span<RayTracingGeometryDesc> geometries,
     const BlasPtr               &blas,

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/Graphics/Pipeline/MaterialPassToGraphicsPipeline.h>
+#include <Rtrc/Graphics/Material/MaterialPassToGraphicsPipeline.h>
 #include <Rtrc/Graphics/RenderGraph/Graph.h>
 #include <Rtrc/Graphics/Resource/BuiltinResources.h>
 #include <Rtrc/Renderer/Camera/Camera.h>

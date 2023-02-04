@@ -49,6 +49,13 @@ namespace BufferDetail
 
 } // namespace BufferDetail
 
+RHI::BufferDeviceAddress SubBuffer::GetDeviceAddress()
+{
+    auto start = GetFullBuffer()->GetRHIObject()->GetDeviceAddress();
+    start.address += GetSubBufferOffset();
+    return start;
+}
+
 RC<SubBuffer> SubBuffer::GetSubRange(RC<Buffer> buffer, size_t offset, size_t size)
 {
     return MakeRC<BufferDetail::WrappedSubBuffer<Buffer>>(std::move(buffer), offset, size);

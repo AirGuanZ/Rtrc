@@ -84,10 +84,10 @@ public:
     BlasPtr CreateBlas(const BufferPtr &buffer, size_t offset, size_t size) RTRC_RHI_OVERRIDE;
     TlasPtr CreateTlas(const BufferPtr &buffer, size_t offset, size_t size) RTRC_RHI_OVERRIDE;
 
-    BlasBuildInfoPtr CreateBlasBuildInfo(
+    BlasPrebuildInfoPtr CreateBlasPrebuildInfo(
         Span<RayTracingGeometryDesc>             geometries,
         RayTracingAccelerationStructureBuildFlag flags) RTRC_RHI_OVERRIDE;
-    TlasBuildInfoPtr CreateTlasBuildInfo(
+    TlasPrebuildInfoPtr CreateTlasPrebuildInfo(
         Span<RayTracingInstanceArrayDesc>        instanceArrays,
         RayTracingAccelerationStructureBuildFlag flags) RTRC_RHI_OVERRIDE;
 

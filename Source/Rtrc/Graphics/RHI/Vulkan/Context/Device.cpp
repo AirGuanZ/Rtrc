@@ -17,9 +17,9 @@
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/Queue.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/Semaphore.h>
 #include <Rtrc/Graphics/RHI/Vulkan/RayTracing/Blas.h>
-#include <Rtrc/Graphics/RHI/Vulkan/RayTracing/BlasBuildInfo.h>
+#include <Rtrc/Graphics/RHI/Vulkan/RayTracing/BlasPrebuildInfo.h>
 #include <Rtrc/Graphics/RHI/Vulkan/RayTracing/Tlas.h>
-#include <Rtrc/Graphics/RHI/Vulkan/RayTracing/TlasBuildInfo.h>
+#include <Rtrc/Graphics/RHI/Vulkan/RayTracing/TlasPrebuildInfo.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Buffer.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferView.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/MemoryBlock.h>
@@ -1263,16 +1263,16 @@ TlasPtr VulkanDevice::CreateTlas(const BufferPtr &buffer, size_t offset, size_t 
     return MakePtr<VulkanTlas>(this, tlas, buffer);
 }
 
-BlasBuildInfoPtr VulkanDevice::CreateBlasBuildInfo(
+BlasPrebuildInfoPtr VulkanDevice::CreateBlasPrebuildInfo(
     Span<RayTracingGeometryDesc> geometries, RayTracingAccelerationStructureBuildFlag flags)
 {
-    return MakePtr<VulkanBlasBuildInfo>(this, geometries, flags);
+    return MakePtr<VulkanBlasPrebuildInfo>(this, geometries, flags);
 }
 
-TlasBuildInfoPtr VulkanDevice::CreateTlasBuildInfo(
+TlasPrebuildInfoPtr VulkanDevice::CreateTlasPrebuildInfo(
     Span<RayTracingInstanceArrayDesc> instanceArrays, RayTracingAccelerationStructureBuildFlag flags)
 {
-    return MakePtr<VulkanTlasBuildInfo>(this, instanceArrays, flags);
+    return MakePtr<VulkanTlasPrebuildInfo>(this, instanceArrays, flags);
 }
 
 const ShaderGroupRecordRequirements &VulkanDevice::GetShaderGroupRecordRequirements()

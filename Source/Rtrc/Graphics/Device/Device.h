@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Rtrc/Graphics/Device/AccelerationStructure.h>
 #include <Rtrc/Graphics/Device/BindingGroup.h>
 #include <Rtrc/Graphics/Device/BindingGroupDSL.h>
 #include <Rtrc/Graphics/Device/Buffer.h>
@@ -62,61 +63,6 @@ public:
 
     const RHI::SwapchainPtr &GetSwapchain() const;
     const RHI::TextureDesc &GetSwapchainImageDesc() const;
-
-    // Immediate execution
-
-    void ExecuteAndWait(CommandBuffer commandBuffer);
-    template<typename F> requires !std::is_same_v<std::remove_cvref_t<F>, CommandBuffer>
-    void ExecuteAndWait(F &&f);
-
-    void ExecuteBarrier(
-        const RC<StatefulBuffer> &buffer,
-        RHI::PipelineStageFlag    stages,
-        RHI::ResourceAccessFlag   accesses);
-    void ExecuteBarrier(
-        const RC<StatefulTexture> &texture,
-        RHI::TextureLayout         layout,
-        RHI::PipelineStageFlag     stages,
-        RHI::ResourceAccessFlag    accesses);
-    void ExecuteBarrier(
-        const RC<StatefulTexture> &texture,
-        uint32_t                   arrayLayer,
-        uint32_t                   mipLevel,
-        RHI::TextureLayout         layout,
-        RHI::PipelineStageFlag     stages,
-        RHI::ResourceAccessFlag    accesses);
-    void ExecuteBarrier(
-        const RC<Buffer>       &buffer,
-        RHI::PipelineStageFlag  prevStages,
-        RHI::ResourceAccessFlag prevAccesses,
-        RHI::PipelineStageFlag  succStages,
-        RHI::ResourceAccessFlag succAccesses);
-    void ExecuteBarrier(
-        const RC<Texture>      &texture,
-        RHI::TextureLayout      prevLayout,
-        RHI::PipelineStageFlag  prevStages,
-        RHI::ResourceAccessFlag prevAccesses,
-        RHI::TextureLayout      succLayout,
-        RHI::PipelineStageFlag  succStages,
-        RHI::ResourceAccessFlag succAccesses);
-    void ExecuteBarrier(
-        const RC<Texture>      &texture,
-        uint32_t                arrayLayer,
-        uint32_t                mipLevel,
-        RHI::TextureLayout      prevLayout,
-        RHI::PipelineStageFlag  prevStages,
-        RHI::ResourceAccessFlag prevAccesses,
-        RHI::TextureLayout      succLayout,
-        RHI::PipelineStageFlag  succStages,
-        RHI::ResourceAccessFlag succAccesses);
-    void ExecuteBarrier(
-        const RC<Texture> &texture,
-        RHI::TextureLayout prevLayout,
-        RHI::TextureLayout succLayout);
-    void ExecuteBarrier(
-        const RC<StatefulTexture> &texture,
-        RHI::TextureLayout         prevLayout,
-        RHI::TextureLayout         succLayout);
 
     // Frame synchronization
 
@@ -207,6 +153,73 @@ public:
 
     RC<Sampler> CreateSampler(const RHI::SamplerDesc &desc);
 
+    // Acceleration structure
+    
+    BlasPrebuildInfo CreateBlasPrebuildinfo(
+        Span<RHI::RayTracingGeometryDesc>             geometries,
+        RHI::RayTracingAccelerationStructureBuildFlag flags);
+    TlasPrebuildInfo CreateTlasPrebuildInfo(
+        Span<RHI::RayTracingInstanceArrayDesc>        instanceArrays,
+        RHI::RayTracingAccelerationStructureBuildFlag flags);
+
+    RC<Blas> CreateBlas(RC<SubBuffer> buffer = nullptr);
+    RC<Tlas> CreateTlas(RC<SubBuffer> buffer = nullptr);
+
+    // Immediate execution
+
+    void ExecuteAndWait(CommandBuffer commandBuffer);
+    template<typename F> requires !std::is_same_v<std::remove_cvref_t<F>, CommandBuffer>
+    void ExecuteAndWait(F &&f);
+
+    void ExecuteBarrier(
+        const RC<StatefulBuffer> &buffer,
+        RHI::PipelineStageFlag    stages,
+        RHI::ResourceAccessFlag   accesses);
+    void ExecuteBarrier(
+        const RC<StatefulTexture> &texture,
+        RHI::TextureLayout         layout,
+        RHI::PipelineStageFlag     stages,
+        RHI::ResourceAccessFlag    accesses);
+    void ExecuteBarrier(
+        const RC<StatefulTexture> &texture,
+        uint32_t                   arrayLayer,
+        uint32_t                   mipLevel,
+        RHI::TextureLayout         layout,
+        RHI::PipelineStageFlag     stages,
+        RHI::ResourceAccessFlag    accesses);
+    void ExecuteBarrier(
+        const RC<Buffer>       &buffer,
+        RHI::PipelineStageFlag  prevStages,
+        RHI::ResourceAccessFlag prevAccesses,
+        RHI::PipelineStageFlag  succStages,
+        RHI::ResourceAccessFlag succAccesses);
+    void ExecuteBarrier(
+        const RC<Texture>      &texture,
+        RHI::TextureLayout      prevLayout,
+        RHI::PipelineStageFlag  prevStages,
+        RHI::ResourceAccessFlag prevAccesses,
+        RHI::TextureLayout      succLayout,
+        RHI::PipelineStageFlag  succStages,
+        RHI::ResourceAccessFlag succAccesses);
+    void ExecuteBarrier(
+        const RC<Texture>      &texture,
+        uint32_t                arrayLayer,
+        uint32_t                mipLevel,
+        RHI::TextureLayout      prevLayout,
+        RHI::PipelineStageFlag  prevStages,
+        RHI::ResourceAccessFlag prevAccesses,
+        RHI::TextureLayout      succLayout,
+        RHI::PipelineStageFlag  succStages,
+        RHI::ResourceAccessFlag succAccesses);
+    void ExecuteBarrier(
+        const RC<Texture> &texture,
+        RHI::TextureLayout prevLayout,
+        RHI::TextureLayout succLayout);
+    void ExecuteBarrier(
+        const RC<StatefulTexture> &texture,
+        RHI::TextureLayout         prevLayout,
+        RHI::TextureLayout         succLayout);
+
     // Internal helper classes
 
     CopyContext          &GetCopyContext();
@@ -239,16 +252,17 @@ private:
 
     Box<DeviceSynchronizer> sync_;
 
-    Box<BindingGroupManager>  bindingLayoutManager_;
-    Box<BufferManager>        bufferManager_;
-    Box<PooledBufferManager>  pooledBufferManager_;
-    Box<CommandBufferManager> commandBufferManager_;
-    Box<DynamicBufferManager> dynamicBufferManager_;
-    Box<PipelineManager>      pipelineManager_;
-    Box<SamplerManager>       samplerManager_;
-    Box<TextureManager>       textureManager_;
-    Box<PooledTextureManager> pooledTextureManager_;
-    Box<CopyContext>          copyContext_;
+    Box<BindingGroupManager>          bindingLayoutManager_;
+    Box<BufferManager>                bufferManager_;
+    Box<PooledBufferManager>          pooledBufferManager_;
+    Box<CommandBufferManager>         commandBufferManager_;
+    Box<DynamicBufferManager>         dynamicBufferManager_;
+    Box<PipelineManager>              pipelineManager_;
+    Box<SamplerManager>               samplerManager_;
+    Box<TextureManager>               textureManager_;
+    Box<PooledTextureManager>         pooledTextureManager_;
+    Box<CopyContext>                  copyContext_;
+    Box<AccelerationStructureManager> accelerationManager_;
 };
 
 inline Queue &Device::GetQueue()
@@ -269,108 +283,6 @@ inline const RHI::SwapchainPtr &Device::GetSwapchain() const
 inline const RHI::TextureDesc &Device::GetSwapchainImageDesc() const
 {
     return swapchain_->GetRenderTargetDesc();
-}
-
-inline void Device::ExecuteAndWait(CommandBuffer commandBuffer)
-{
-    {
-        auto c = std::move(commandBuffer);
-        mainQueue_.Submit(c);
-    }
-    WaitIdle();
-}
-
-template<typename F> requires !std::is_same_v<std::remove_cvref_t<F>, CommandBuffer>
-void Device::ExecuteAndWait(F &&f)
-{
-    auto c = commandBufferManager_->Create();
-    c.Begin();
-    std::invoke(std::forward<F>(f), c);
-    c.End();
-    ExecuteAndWait(std::move(c));
-}
-
-inline void Device::ExecuteBarrier(
-    const RC<StatefulBuffer> &buffer,
-    RHI::PipelineStageFlag    stages,
-    RHI::ResourceAccessFlag   accesses)
-{
-    ExecuteBarrierImpl(buffer, stages, accesses);
-}
-
-inline void Device::ExecuteBarrier(
-    const RC<StatefulTexture> &texture,
-    RHI::TextureLayout         layout,
-    RHI::PipelineStageFlag     stages,
-    RHI::ResourceAccessFlag    accesses)
-{
-    ExecuteBarrierImpl(texture, layout, stages, accesses);
-}
-
-inline void Device::ExecuteBarrier(
-    const RC<StatefulTexture> &texture,
-    uint32_t                   arrayLayer,
-    uint32_t                   mipLevel,
-    RHI::TextureLayout         layout,
-    RHI::PipelineStageFlag     stages,
-    RHI::ResourceAccessFlag    accesses)
-{
-    ExecuteBarrierImpl(texture, arrayLayer, mipLevel, layout, stages, accesses);
-}
-
-inline void Device::ExecuteBarrier(
-    const RC<Buffer>       &buffer,
-    RHI::PipelineStageFlag  prevStages,
-    RHI::ResourceAccessFlag prevAccesses,
-    RHI::PipelineStageFlag  succStages,
-    RHI::ResourceAccessFlag succAccesses)
-{
-    ExecuteBarrierImpl(buffer, prevStages, prevAccesses, succStages, succAccesses);
-}
-
-inline void Device::ExecuteBarrier(
-    const RC<Texture>      &texture,
-    RHI::TextureLayout      prevLayout,
-    RHI::PipelineStageFlag  prevStages,
-    RHI::ResourceAccessFlag prevAccesses,
-    RHI::TextureLayout      succLayout,
-    RHI::PipelineStageFlag  succStages,
-    RHI::ResourceAccessFlag succAccesses)
-{
-    ExecuteBarrierImpl(
-        texture, prevLayout, prevStages, prevAccesses, succLayout, succStages, succAccesses);
-}
-
-inline void Device::ExecuteBarrier(
-    const RC<Texture>      &texture,
-    uint32_t                arrayLayer,
-    uint32_t                mipLevel,
-    RHI::TextureLayout      prevLayout,
-    RHI::PipelineStageFlag  prevStages,
-    RHI::ResourceAccessFlag prevAccesses,
-    RHI::TextureLayout      succLayout,
-    RHI::PipelineStageFlag  succStages,
-    RHI::ResourceAccessFlag succAccesses)
-{
-    ExecuteBarrierImpl(
-        texture, arrayLayer, mipLevel,
-        prevLayout, prevStages, prevAccesses, succLayout, succStages, succAccesses);
-}
-
-inline void Device::ExecuteBarrier(
-    const RC<Texture> &texture,
-    RHI::TextureLayout prevLayout,
-    RHI::TextureLayout succLayout)
-{
-    ExecuteBarrierImpl(texture, prevLayout, succLayout);
-}
-
-inline void Device::ExecuteBarrier(
-    const RC<StatefulTexture> &texture,
-    RHI::TextureLayout         prevLayout,
-    RHI::TextureLayout         succLayout)
-{
-    ExecuteBarrierImpl(texture, prevLayout, succLayout);
 }
 
 inline void Device::WaitIdle()
@@ -533,6 +445,132 @@ inline RC<ComputePipeline> Device::CreateComputePipeline(const RC<Shader> &shade
 inline RC<Sampler> Device::CreateSampler(const RHI::SamplerDesc &desc)
 {
     return samplerManager_->CreateSampler(desc);
+}
+
+inline BlasPrebuildInfo Device::CreateBlasPrebuildinfo(
+    Span<RHI::RayTracingGeometryDesc>             geometries,
+    RHI::RayTracingAccelerationStructureBuildFlag flags)
+{
+    return accelerationManager_->CreateBlasPrebuildinfo(geometries, flags);
+}
+
+inline TlasPrebuildInfo Device::CreateTlasPrebuildInfo(
+    Span<RHI::RayTracingInstanceArrayDesc>        instanceArrays,
+    RHI::RayTracingAccelerationStructureBuildFlag flags)
+{
+    return accelerationManager_->CreateTlasPrebuildInfo(instanceArrays, flags);
+}
+
+inline RC<Blas> Device::CreateBlas(RC<SubBuffer> buffer)
+{
+    return accelerationManager_->CreateBlas(std::move(buffer));
+}
+
+inline RC<Tlas> Device::CreateTlas(RC<SubBuffer> buffer)
+{
+    return accelerationManager_->CreateTlas(std::move(buffer));
+}
+
+inline void Device::ExecuteAndWait(CommandBuffer commandBuffer)
+{
+    {
+        auto c = std::move(commandBuffer);
+        mainQueue_.Submit(c);
+    }
+    WaitIdle();
+}
+
+template<typename F> requires !std::is_same_v<std::remove_cvref_t<F>, CommandBuffer>
+void Device::ExecuteAndWait(F &&f)
+{
+    auto c = commandBufferManager_->Create();
+    c.Begin();
+    std::invoke(std::forward<F>(f), c);
+    c.End();
+    ExecuteAndWait(std::move(c));
+}
+
+inline void Device::ExecuteBarrier(
+    const RC<StatefulBuffer> &buffer,
+    RHI::PipelineStageFlag    stages,
+    RHI::ResourceAccessFlag   accesses)
+{
+    ExecuteBarrierImpl(buffer, stages, accesses);
+}
+
+inline void Device::ExecuteBarrier(
+    const RC<StatefulTexture> &texture,
+    RHI::TextureLayout         layout,
+    RHI::PipelineStageFlag     stages,
+    RHI::ResourceAccessFlag    accesses)
+{
+    ExecuteBarrierImpl(texture, layout, stages, accesses);
+}
+
+inline void Device::ExecuteBarrier(
+    const RC<StatefulTexture> &texture,
+    uint32_t                   arrayLayer,
+    uint32_t                   mipLevel,
+    RHI::TextureLayout         layout,
+    RHI::PipelineStageFlag     stages,
+    RHI::ResourceAccessFlag    accesses)
+{
+    ExecuteBarrierImpl(texture, arrayLayer, mipLevel, layout, stages, accesses);
+}
+
+inline void Device::ExecuteBarrier(
+    const RC<Buffer>       &buffer,
+    RHI::PipelineStageFlag  prevStages,
+    RHI::ResourceAccessFlag prevAccesses,
+    RHI::PipelineStageFlag  succStages,
+    RHI::ResourceAccessFlag succAccesses)
+{
+    ExecuteBarrierImpl(buffer, prevStages, prevAccesses, succStages, succAccesses);
+}
+
+inline void Device::ExecuteBarrier(
+    const RC<Texture>      &texture,
+    RHI::TextureLayout      prevLayout,
+    RHI::PipelineStageFlag  prevStages,
+    RHI::ResourceAccessFlag prevAccesses,
+    RHI::TextureLayout      succLayout,
+    RHI::PipelineStageFlag  succStages,
+    RHI::ResourceAccessFlag succAccesses)
+{
+    ExecuteBarrierImpl(
+        texture, prevLayout, prevStages, prevAccesses, succLayout, succStages, succAccesses);
+}
+
+inline void Device::ExecuteBarrier(
+    const RC<Texture>      &texture,
+    uint32_t                arrayLayer,
+    uint32_t                mipLevel,
+    RHI::TextureLayout      prevLayout,
+    RHI::PipelineStageFlag  prevStages,
+    RHI::ResourceAccessFlag prevAccesses,
+    RHI::TextureLayout      succLayout,
+    RHI::PipelineStageFlag  succStages,
+    RHI::ResourceAccessFlag succAccesses)
+{
+    ExecuteBarrierImpl(
+        texture, arrayLayer, mipLevel,
+        prevLayout, prevStages, prevAccesses, succLayout, succStages, succAccesses);
+}
+
+inline void Device::ExecuteBarrier(
+    const RC<Texture> &texture,
+    RHI::TextureLayout prevLayout,
+    RHI::TextureLayout succLayout)
+{
+    ExecuteBarrierImpl(texture, prevLayout, succLayout);
+}
+
+inline void Device::ExecuteBarrier(
+    const RC<StatefulTexture> &texture,
+    RHI::TextureLayout         prevLayout,
+    RHI::TextureLayout         succLayout)
+{
+    ExecuteBarrierImpl(texture, prevLayout, succLayout);
 }
 
 inline CopyContext &Device::GetCopyContext()
