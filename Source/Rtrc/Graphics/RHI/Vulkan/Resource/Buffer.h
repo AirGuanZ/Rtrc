@@ -41,8 +41,6 @@ public:
 
     VkBuffer _internalGetNativeBuffer() const;
 
-    VkDeviceAddress _internalGetDeviceAddress() const;
-
 private:
 
     struct ViewKey

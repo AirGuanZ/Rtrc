@@ -37,12 +37,7 @@ public:
     template<typename RHIObjectPtr>
     void _internalRelease(GeneralGPUObject<RHIObjectPtr> &object);
 
-private:
-
-    struct ReleaseRecord
-    {
-        RHI::RHIObjectPtr object;
-    };
+protected:
     
     DeviceSynchronizer &sync_;
 };

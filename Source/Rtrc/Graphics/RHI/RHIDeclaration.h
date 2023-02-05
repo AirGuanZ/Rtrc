@@ -148,7 +148,7 @@ inline bool HasStencilAspect(Format format)
     return format == Format::D24S8 || format == Format::D32S8;
 }
 
-enum class IndexBufferFormat
+enum class IndexFormat
 {
     UInt16,
     UInt32
@@ -342,7 +342,7 @@ enum class BufferUsage : uint32_t
     AccelerationStructure           = 1 << 12,
     ShaderBindingTable              = 1 << 13,
 
-    AccelerationStructureScratch = ShaderRWBuffer | DeviceAddress,
+    AccelerationStructureScratch = ShaderRWStructuredBuffer | DeviceAddress,
 };
 
 RTRC_DEFINE_ENUM_FLAGS(BufferUsage)
@@ -483,6 +483,13 @@ enum class RayTracingGeometryType
 enum class RayTracingVertexFormat
 {
     Float3,
+};
+
+enum class RayTracingIndexFormat
+{
+    None,
+    UInt16,
+    UInt32,
 };
 
 enum class RayTracingAccelerationStructureBuildFlagBit : uint32_t
@@ -982,18 +989,18 @@ struct RayTracingTrianglesGeometryData
     RayTracingVertexFormat vertexFormat;
     uint32_t               vertexStride;
     uint32_t               vertexCount;
-    IndexBufferFormat      indexFormat;
+    RayTracingIndexFormat  indexFormat;
     bool                   hasTransform;
 
-    BufferDeviceAddress vertexData;
-    BufferDeviceAddress indexData;
-    BufferDeviceAddress transformData;
+    BufferDeviceAddress vertexData    = {};
+    BufferDeviceAddress indexData     = {};
+    BufferDeviceAddress transformData = {};
 };
 
 struct RayTracingProceduralGeometryData
 {
     uint32_t            aabbStride;
-    BufferDeviceAddress aabbData;
+    BufferDeviceAddress aabbData = {};
 };
 
 struct RayTracingGeometryDesc
@@ -1398,7 +1405,7 @@ public:
     RTRC_RHI_API void SetIndexBuffer(
         const BufferPtr  &buffer,
         size_t            byteOffset,
-        IndexBufferFormat format) RTRC_RHI_API_PURE;
+        IndexFormat format) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void SetStencilReferenceValue(uint8_t value) RTRC_RHI_API_PURE;
 

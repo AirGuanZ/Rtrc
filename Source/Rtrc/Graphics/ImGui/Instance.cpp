@@ -114,6 +114,9 @@ namespace ImGuiDetail
     }
 
     const char *SHADER_SOURCE = R"___(
+#vert VSMain
+#frag FSMain
+
 rtrc_group(CBuffer)
 {
     rtrc_uniform(float4x4, Matrix)
@@ -233,8 +236,8 @@ ImGuiInstance::ImGuiInstance(Device &device, Window &window)
     const ShaderCompiler::ShaderSource source =
     {
         .source = ImGuiDetail::SHADER_SOURCE,
-        .vertexEntry = "VSMain",
-        .fragmentEntry = "FSMain"
+        //.vertexEntry = "VSMain",
+        //.fragmentEntry = "FSMain"
     };
     data_->shader = shaderCompiler.Compile(source, {}, RTRC_DEBUG);
     data_->cbufferBindingGroupLayout = data_->shader->GetBindingGroupLayoutByName("CBuffer");
@@ -475,11 +478,11 @@ void ImGuiInstance::RenderImmediately(const TextureRtv &rtv, CommandBuffer &comm
         static_assert(sizeof(ImDrawIdx) == sizeof(uint16_t) || sizeof(ImDrawIdx) == sizeof(uint32_t));
         if constexpr(sizeof(ImDrawIdx) == sizeof(uint32_t))
         {
-            commandBuffer.SetIndexBuffer(indexBuffer, RHI::IndexBufferFormat::UInt32);
+            commandBuffer.SetIndexBuffer(indexBuffer, RHI::IndexFormat::UInt32);
         }
         else
         {
-            commandBuffer.SetIndexBuffer(indexBuffer, RHI::IndexBufferFormat::UInt16);
+            commandBuffer.SetIndexBuffer(indexBuffer, RHI::IndexFormat::UInt16);
         }
     }
     

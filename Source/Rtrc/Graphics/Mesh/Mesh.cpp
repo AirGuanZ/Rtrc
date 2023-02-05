@@ -8,7 +8,7 @@ void Mesh::Bind(CommandBuffer &commandBuffer) const
     commandBuffer.SetVertexBuffers(0, vertexBuffers_, vertexBufferByteOffsets_);
     if(indexBuffer_)
     {
-        commandBuffer.SetIndexBuffer(indexBuffer_, indexBufferFormat_, indexBufferByteOffset_);
+        commandBuffer.SetIndexBuffer(indexBuffer_, indexFormat_, indexBufferByteOffset_);
     }
 }
 

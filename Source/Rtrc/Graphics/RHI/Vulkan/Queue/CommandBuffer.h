@@ -45,7 +45,7 @@ public:
     void SetScissorsWithCount(Span<Scissor> scissors) RTRC_RHI_OVERRIDE;
 
     void SetVertexBuffer(int slot, Span<BufferPtr> buffers, Span<size_t> byteOffsets) RTRC_RHI_OVERRIDE;
-    void SetIndexBuffer(const BufferPtr &buffer, size_t byteOffset, IndexBufferFormat format) RTRC_RHI_OVERRIDE;
+    void SetIndexBuffer(const BufferPtr &buffer, size_t byteOffset, IndexFormat format) RTRC_RHI_OVERRIDE;
 
     void SetStencilReferenceValue(uint8_t value) RTRC_RHI_OVERRIDE;
 

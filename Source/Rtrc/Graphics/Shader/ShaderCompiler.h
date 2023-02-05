@@ -18,10 +18,10 @@ public:
         std::string filename;
         std::string source;
 
-        std::string vertexEntry;
+        /*std::string vertexEntry;
         std::string fragmentEntry;
         std::string computeEntry;
-        bool isRayTracingShader = false;
+        bool isRayTracingShader = false;*/
     };
 
     void SetDevice(Device *device);
@@ -33,6 +33,25 @@ public:
         bool                debug = RTRC_DEBUG) const;
 
 private:
+
+    struct ParsedRayGenShaderGroup { std::string entry; };
+    struct ParsedMissShaderGroup { std::string entry; };
+    struct ParsedHitShaderGroup
+    {
+        std::string closestHitEntry;
+        std::string anyHitEntry;
+        std::string intersectionEntry;
+    };
+    
+    struct ParsedShaderEntry
+    {
+        std::string vertexEntry;
+        std::string fragmentEntry;
+        std::string computeEntry;
+
+        bool isRayTracingShader = false;
+        std::vector<std::vector<std::string>> shaderGroups;
+    };
 
     struct ParsedBinding
     {
@@ -69,8 +88,8 @@ private:
 
         // Inline samplers
 
-        std::vector<RHI::SamplerDesc>   inlineSamplerDescs;
-        std::map<std::string, int>      inlineSamplerNameToDescIndex;
+        std::vector<RHI::SamplerDesc> inlineSamplerDescs;
+        std::map<std::string, int>    inlineSamplerNameToDescIndex;
 
         // Push constants
 
@@ -85,6 +104,8 @@ private:
         Bindless,
         BindlessWithVariableSize
     };
+
+    ParsedShaderEntry ParseShaderEntry(std::string &source) const;
 
     template<bool AllowStageSpecifier, BindingCategory Category>
     ParsedBinding ParseBinding(ShaderTokenStream &tokens, RHI::ShaderStageFlag groupDefaultStages) const;

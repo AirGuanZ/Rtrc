@@ -290,7 +290,7 @@ void VulkanCommandBuffer::SetVertexBuffer(int slot, Span<BufferPtr> buffers, Spa
         commandBuffer_, static_cast<uint32_t>(slot), buffers.GetSize(), vkBuffers.data(), byteOffsets.GetData());
 }
 
-void VulkanCommandBuffer::SetIndexBuffer(const BufferPtr &buffer, size_t byteOffset, IndexBufferFormat format)
+void VulkanCommandBuffer::SetIndexBuffer(const BufferPtr &buffer, size_t byteOffset, IndexFormat format)
 {
     VkBuffer vkBuffer = static_cast<const VulkanBuffer *>(buffer.Get())->_internalGetNativeBuffer();
     const VkIndexType indexType = TranslateIndexFormat(format);

@@ -5,6 +5,8 @@ RTRC_BEGIN
 void Blas::SetBuffer(RC<SubBuffer> buffer)
 {
     buffer_ = std::move(buffer);
+    assert(manager_);
+    static_cast<AccelerationStructureManager *>(manager_)->_internalCreate(*this);
 }
 
 const RC<SubBuffer> &Blas::GetBuffer() const
@@ -15,6 +17,8 @@ const RC<SubBuffer> &Blas::GetBuffer() const
 void Tlas::SetBuffer(RC<SubBuffer> buffer)
 {
     buffer_ = std::move(buffer);
+    assert(manager_);
+    static_cast<AccelerationStructureManager *>(manager_)->_internalCreate(*this);
 }
 
 const RC<SubBuffer> &Tlas::GetBuffer() const
@@ -49,17 +53,57 @@ TlasPrebuildInfo AccelerationStructureManager::CreateTlasPrebuildInfo(
 RC<Blas> AccelerationStructureManager::CreateBlas(RC<SubBuffer> buffer)
 {
     auto blas = new Blas;
-    blas->SetBuffer(std::move(buffer));
     blas->manager_ = this;
+    blas->SetBuffer(std::move(buffer));
     return RC<Blas>(blas);
 }
 
 RC<Tlas> AccelerationStructureManager::CreateTlas(RC<SubBuffer> buffer)
 {
     auto tlas = new Tlas;
-    tlas->SetBuffer(std::move(buffer));
     tlas->manager_ = this;
+    tlas->SetBuffer(std::move(buffer));
     return RC<Tlas>(tlas);
+}
+
+void AccelerationStructureManager::_internalCreate(Blas &blas)
+{
+    if(blas.rhiObject_)
+    {
+        sync_.OnFrameComplete([o = std::move(blas.rhiObject_)] {});
+    }
+
+    if(blas.buffer_)
+    {
+        blas.rhiObject_ = rhiDevice_->CreateBlas(
+            blas.buffer_->GetFullBuffer()->GetRHIObject(),
+            blas.buffer_->GetSubBufferOffset(),
+            blas.buffer_->GetSubBufferSize());
+    }
+    else
+    {
+        blas.rhiObject_ = {};
+    }
+}
+
+void AccelerationStructureManager::_internalCreate(Tlas &tlas)
+{
+    if(tlas.rhiObject_)
+    {
+        sync_.OnFrameComplete([o = std::move(tlas.rhiObject_)] {});
+    }
+
+    if(tlas.buffer_)
+    {
+        tlas.rhiObject_ = rhiDevice_->CreateTlas(
+            tlas.buffer_->GetFullBuffer()->GetRHIObject(),
+            tlas.buffer_->GetSubBufferOffset(),
+            tlas.buffer_->GetSubBufferSize());
+    }
+    else
+    {
+        tlas.rhiObject_ = {};
+    }
 }
 
 RTRC_END

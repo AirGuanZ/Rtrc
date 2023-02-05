@@ -167,6 +167,53 @@ namespace ShaderCompilerDetail
         return stages;
     }
 
+    // Parse '#entryName args...'
+    bool ParseAndErasePragma(std::string &source, std::string_view entryName, std::vector<std::string> &args)
+    {
+        args.clear();
+        
+        size_t beginPos = 0;
+        while(true)
+        {
+            const size_t pos = source.find(entryName, beginPos);
+            if(pos == std::string::npos)
+            {
+                return false;
+            }
+
+            const size_t findLen = entryName.size();
+            if(!ShaderTokenStream::IsNonIdentifierChar(source[pos + findLen]))
+            {
+                beginPos = pos + findLen;
+                continue;
+            }
+
+            size_t endPos = source.find('\n', pos + findLen);
+            if(endPos == std::string::npos)
+            {
+                endPos = source.size();
+            }
+
+            // Args
+
+            ShaderTokenStream tokens(source.substr(pos + findLen, endPos - (pos + findLen)), 0);
+            while(!tokens.IsFinished())
+            {
+                args.push_back(tokens.GetCurrentToken());
+                tokens.Next();
+            }
+
+            // Erase
+
+            for(size_t i = pos; i < endPos; ++i)
+            {
+                source[i] = ' ';
+            }
+
+            return true;
+        }
+    }
+
 } // namespace ShaderCompilerDetail
 
 void ShaderCompiler::SetDevice(Device *device)
@@ -181,18 +228,18 @@ void ShaderCompiler::AddIncludeDirectory(std::string_view dir)
 
 RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &macros, bool debug) const
 {
-    std::string sourceFromFile;
-    const std::string *pSource;
+    std::string actualSource;
     if(source.source.empty())
     {
         assert(!source.filename.empty());
-        sourceFromFile = File::ReadTextFile(source.filename);
-        pSource = &sourceFromFile;
+        actualSource = File::ReadTextFile(source.filename);
     }
     else
     {
-        pSource = &source.source;
+        actualSource = source.source;
     }
+
+    const ParsedShaderEntry shaderEntry = ParseShaderEntry(actualSource);
 
     std::vector<std::string> includeDirs;
     for(auto &d : includeDirs_)
@@ -208,7 +255,7 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     DXC dxc;
     DXC::ShaderInfo shaderInfo =
     {
-        .source = *pSource,
+        .source = std::move(actualSource),
         .sourceFilename = source.filename.empty() ? "anonymous.hlsl" : source.filename,
         .includeDirs = std::move(includeDirs),
         .macros = macros
@@ -226,10 +273,10 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
 
     // Shader category
 
-    const bool hasVS = !source.vertexEntry.empty();
-    const bool hasFS = !source.fragmentEntry.empty();
-    const bool hasCS = !source.computeEntry.empty();
-    const bool hasRT = source.isRayTracingShader;
+    const bool hasVS = !shaderEntry.vertexEntry.empty();
+    const bool hasFS = !shaderEntry.fragmentEntry.empty();
+    const bool hasCS = !shaderEntry.computeEntry.empty();
+    const bool hasRT = shaderEntry.isRayTracingShader;
 
     Shader::Category category;
     if(hasVS && hasFS && !hasCS && !hasRT)
@@ -261,21 +308,21 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
 
     if(!hasParsedBindings && hasVS)
     {
-        shaderInfo.entryPoint = source.vertexEntry;
+        shaderInfo.entryPoint = shaderEntry.vertexEntry;
         std::string preprocessed;
         dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_VS_6_0, debug, &preprocessed);
         GetBindings(preprocessed);
     }
     if(!hasParsedBindings && hasFS)
     {
-        shaderInfo.entryPoint = source.fragmentEntry;
+        shaderInfo.entryPoint = shaderEntry.fragmentEntry;
         std::string preprocessed;
         dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_FS_6_0, debug, &preprocessed);
         GetBindings(preprocessed);
     }
     if(!hasParsedBindings && hasCS)
     {
-        shaderInfo.entryPoint = source.computeEntry;
+        shaderInfo.entryPoint = shaderEntry.computeEntry;
         std::string preprocessed;
         dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_CS_6_0, debug, &preprocessed);
         GetBindings(preprocessed);
@@ -559,21 +606,21 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     Box<SPIRVReflection> vsRefl, fsRefl, csRefl, rtRefl;
     if(hasVS)
     {
-        shaderInfo.entryPoint = source.vertexEntry;
+        shaderInfo.entryPoint = shaderEntry.vertexEntry;
         vsData = dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_VS_6_0, debug, nullptr);
-        vsRefl = MakeBox<SPIRVReflection>(vsData, source.vertexEntry);
+        vsRefl = MakeBox<SPIRVReflection>(vsData, shaderEntry.vertexEntry);
     }
     if(hasFS)
     {
-        shaderInfo.entryPoint = source.fragmentEntry;
+        shaderInfo.entryPoint = shaderEntry.fragmentEntry;
         fsData = dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_FS_6_0, debug, nullptr);
-        fsRefl = MakeBox<SPIRVReflection>(fsData, source.fragmentEntry);
+        fsRefl = MakeBox<SPIRVReflection>(fsData, shaderEntry.fragmentEntry);
     }
     if(hasCS)
     {
-        shaderInfo.entryPoint = source.computeEntry;
+        shaderInfo.entryPoint = shaderEntry.computeEntry;
         csData = dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_CS_6_0, debug, nullptr);
-        csRefl = MakeBox<SPIRVReflection>(csData, source.computeEntry);
+        csRefl = MakeBox<SPIRVReflection>(csData, shaderEntry.computeEntry);
     }
     if(hasRT)
     {
@@ -610,22 +657,114 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     if(hasVS)
     {
         shader->rawShaders_[Shader::VS_INDEX] = device_->GetRawDevice()->CreateShader(
-            vsData.data(), vsData.size(), { { RHI::ShaderStage::VertexShader, source.vertexEntry } });
+            vsData.data(), vsData.size(), { { RHI::ShaderStage::VertexShader, shaderEntry.vertexEntry } });
         shader->info_->VSInput_ = vsRefl->GetInputVariables();
     }
     if(hasFS)
     {
         shader->rawShaders_[Shader::FS_INDEX] = device_->GetRawDevice()->CreateShader(
-            fsData.data(), fsData.size(), { { RHI::ShaderStage::FragmentShader, source.fragmentEntry } });
+            fsData.data(), fsData.size(), { { RHI::ShaderStage::FragmentShader, shaderEntry.fragmentEntry } });
     }
     if(hasCS)
     {
         shader->rawShaders_[Shader::CS_INDEX] = device_->GetRawDevice()->CreateShader(
-            csData.data(), csData.size(), { { RHI::ShaderStage::ComputeShader, source.computeEntry } });
+            csData.data(), csData.size(), { { RHI::ShaderStage::ComputeShader, shaderEntry.computeEntry } });
     }
     if(hasRT)
     {
         std::vector<RHI::RawShaderEntry> rayTracingEntries = rtRefl->GetEntries();
+
+        auto FindEntryIndex = [&](std::string_view name)
+        {
+            for(size_t i = 0; i < rayTracingEntries.size(); ++i)
+            {
+                if(rayTracingEntries[i].name == name)
+                {
+                    return static_cast<uint32_t>(i);
+                }
+            }
+            throw Exception(fmt::format(
+            "Ray tracing entry {} is required by a shader group but not defined", name));
+        };
+
+        auto shaderGroups = MakeRC<ShaderGroupInfo>();
+        for(const std::vector<std::string> &rawGroup : shaderEntry.shaderGroups)
+        {
+            assert(!rawGroup.empty());
+            const uint32_t firstEntryIndex = FindEntryIndex(rawGroup[0]);
+            if(rayTracingEntries[firstEntryIndex].stage == RHI::ShaderStage::RT_RayGenShader)
+            {
+                if(rawGroup.size() != 1)
+                {
+                    throw Exception("RayGen shader group must contains no more than one shader");
+                }
+                shaderGroups->rayGenShaderGroups_.push_back({ firstEntryIndex });
+            }
+            else if(rayTracingEntries[firstEntryIndex].stage == RHI::ShaderStage::RT_MissShader)
+            {
+                if(rawGroup.size() != 1)
+                {
+                    throw Exception("Miss shader group must contains no more than one shader");
+                }
+                shaderGroups->missShaderGroups_.push_back({ firstEntryIndex });
+            }
+            else
+            {
+                ShaderGroupInfo::HitShaderGroup group;
+                group.closestHitEntry   = ShaderGroupInfo::UNUSED_SHADER;
+                group.anyHitEntry       = ShaderGroupInfo::UNUSED_SHADER;
+                group.intersectionEntry = ShaderGroupInfo::UNUSED_SHADER;
+
+                auto HandleEntryIndex = [&](uint32_t index)
+                {
+                    const RHI::ShaderStage stage = rayTracingEntries[index].stage;
+                    if(stage == RHI::ShaderStage::RT_ClosestHitShader)
+                    {
+                        if(group.closestHitEntry != ShaderGroupInfo::UNUSED_SHADER)
+                        {
+                            throw Exception("Closest hit entry is already specified ");
+                        }
+                        group.closestHitEntry = index;
+                    }
+                    else if(stage == RHI::ShaderStage::RT_AnyHitShader)
+                    {
+                        if(group.anyHitEntry != ShaderGroupInfo::UNUSED_SHADER)
+                        {
+                            throw Exception("Any hit entry is already specified ");
+                        }
+                        group.anyHitEntry = index;
+                    }
+                    else if(stage == RHI::ShaderStage::RT_IntersectionShader)
+                    {
+                        if(group.intersectionEntry != ShaderGroupInfo::UNUSED_SHADER)
+                        {
+                            throw Exception("Intersection entry is already specified ");
+                        }
+                        group.intersectionEntry = index;
+                    }
+                    else
+                    {
+                        throw Exception(fmt::format(
+                            "Unsupported shader stage in ray tracing shader group: {}", std::to_underlying(stage)));
+                    }
+                };
+
+                HandleEntryIndex(firstEntryIndex);
+                for(size_t i = 1; i < rawGroup.size(); ++i)
+                {
+                    const int entryIndex = FindEntryIndex(rawGroup[i]);
+                    HandleEntryIndex(entryIndex);
+                }
+
+                if(!group.closestHitEntry)
+                {
+                    throw Exception("One must raygen/miss/closesthit shader must be on a shader group");
+                }
+                shaderGroups->hitShaderGroups_.push_back(group);
+            }
+        }
+
+        shader->info_->shaderGroupInfo_ = std::move(shaderGroups);
         shader->rawShaders_[Shader::RT_INDEX] = device_->GetRawDevice()->CreateShader(
             rtData.data(), rtData.size(), std::move(rayTracingEntries));
     }
@@ -730,6 +869,64 @@ std::string ShaderCompiler::ParsedBinding::GetArraySpeficier() const
         return fmt::format("[{}]", arraySize.value());
     }
     return {};
+}
+
+ShaderCompiler::ParsedShaderEntry ShaderCompiler::ParseShaderEntry(std::string &source) const
+{
+    ParsedShaderEntry ret;
+
+    auto ParseEntry = [&](std::string_view pragma, std::string &output)
+    {
+        std::vector<std::string> args;
+        if(!ShaderCompilerDetail::ParseAndErasePragma(source, pragma, args))
+        {
+            return;
+        }
+        if(args.size() != 1)
+        {
+            throw Exception(fmt::format("#pragma {} expects 1 argument", pragma));
+        }
+        if(!ShaderTokenStream::IsIdentifier(args[0]))
+        {
+            throw Exception(fmt::format("Invalid shader entry name {}", args[0]));
+        }
+        if(!output.empty())
+        {
+            throw Exception(fmt::format("Shader entry of {} is specified again ({})", pragma, args[0]));
+        }
+        output = args[0];
+    };
+
+    ParseEntry("#vertex",   ret.vertexEntry);
+    ParseEntry("#vert",     ret.vertexEntry);
+    ParseEntry("#fragment", ret.fragmentEntry);
+    ParseEntry("#frag",     ret.fragmentEntry);
+    ParseEntry("#pixel",    ret.fragmentEntry);
+    ParseEntry("#compute",  ret.computeEntry);
+    ParseEntry("#comp",     ret.computeEntry);
+
+    std::vector<std::string> args;
+    if(ShaderCompilerDetail::ParseAndErasePragma(source, "#raytracing", args) ||
+       ShaderCompilerDetail::ParseAndErasePragma(source, "#rt", args))
+    {
+        if(!args.empty())
+        {
+            throw Exception("#raytracing/rt shouldn't have any argument");
+        }
+        ret.isRayTracingShader = true;
+    }
+
+    while(ShaderCompilerDetail::ParseAndErasePragma(source, "#group", args))
+    {
+        if(args.empty() || args.size() > 3)
+        {
+            throw Exception(fmt::format("Invalid #group argument count: {}", args.size()));
+        }
+        auto &group = ret.shaderGroups.emplace_back();
+        group = std::move(args);
+    }
+
+    return ret;
 }
 
 template<bool AllowStageSpecifier, ShaderCompiler::BindingCategory Category>

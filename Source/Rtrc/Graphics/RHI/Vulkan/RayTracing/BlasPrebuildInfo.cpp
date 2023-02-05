@@ -32,7 +32,7 @@ VulkanBlasPrebuildInfo::VulkanBlasPrebuildInfo(
                 .vertexFormat  = TranslateGeometryVertexFormat(geometry.trianglesData.vertexFormat),
                 .vertexStride  = geometry.trianglesData.vertexStride,
                 .maxVertex     = geometry.trianglesData.vertexCount,
-                .indexType     = TranslateIndexFormat(geometry.trianglesData.indexFormat)
+                .indexType     = TranslateRayTracingIndexType(geometry.trianglesData.indexFormat)
             };
             // Dummy address for null-checking
             data.triangles.transformData.deviceAddress = geometry.trianglesData.hasTransform ? 1 : 0;
@@ -73,7 +73,11 @@ VulkanBlasPrebuildInfo::VulkanBlasPrebuildInfo(
         rangeInfo_[i].transformOffset = 0;
     }
 
-    VkAccelerationStructureBuildSizesInfoKHR sizes;
+    VkAccelerationStructureBuildSizesInfoKHR sizes =
+    {
+        .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR
+    };
+
     vkGetAccelerationStructureBuildSizesKHR(
         device_->_internalGetNativeDevice(),
         VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,

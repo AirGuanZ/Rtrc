@@ -164,7 +164,7 @@ Mesh MeshManager::Load(Device *device, const std::string &filename, const Option
                 meshData.indexData.data());
         }
 
-        meshBuilder.SetIndexBuffer(std::move(indexBuffer), RHI::IndexBufferFormat::UInt16);
+        meshBuilder.SetIndexBuffer(std::move(indexBuffer), RHI::IndexFormat::UInt16);
         meshBuilder.SetIndexCount(static_cast<uint32_t>(meshData.indexData.size()));
     }
 

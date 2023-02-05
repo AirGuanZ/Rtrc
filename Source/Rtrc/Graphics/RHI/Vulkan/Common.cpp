@@ -292,6 +292,7 @@ VkImageUsageFlags TranslateTextureUsageFlag(TextureUsageFlag flags)
 VkBufferUsageFlags TranslateBufferUsageFlag(BufferUsageFlag flag)
 {
     VkBufferUsageFlags result = 0;
+    assert(!flag.contains(BufferUsage::AccelerationStructureBuildInput) || flag.contains(BufferUsage::DeviceAddress));
 #define ADD_CASE(FLAG, VAL) if(flag.contains(BufferUsage::FLAG)) { result |= (VAL); }
     ADD_CASE(TransferDst,                     VK_BUFFER_USAGE_TRANSFER_DST_BIT)
     ADD_CASE(TransferSrc,                     VK_BUFFER_USAGE_TRANSFER_SRC_BIT)
@@ -562,12 +563,12 @@ VkFormat TranslateInputAttributeType(VertexAttributeType type)
     Unreachable();
 }
 
-VkIndexType TranslateIndexFormat(IndexBufferFormat format)
+VkIndexType TranslateIndexFormat(IndexFormat format)
 {
     switch(format)
     {
-    case IndexBufferFormat::UInt16: return VK_INDEX_TYPE_UINT16;
-    case IndexBufferFormat::UInt32: return VK_INDEX_TYPE_UINT32;
+    case IndexFormat::UInt16: return VK_INDEX_TYPE_UINT16;
+    case IndexFormat::UInt32: return VK_INDEX_TYPE_UINT32;
     }
     Unreachable();
 }
@@ -614,6 +615,17 @@ VkFormat TranslateGeometryVertexFormat(RayTracingVertexFormat format)
     switch(format)
     {
     case RayTracingVertexFormat::Float3: return VK_FORMAT_R32G32B32_SFLOAT;
+    }
+    Unreachable();
+}
+
+VkIndexType TranslateRayTracingIndexType(RayTracingIndexFormat format)
+{
+    switch(format)
+    {
+    case RayTracingIndexFormat::None:   return VK_INDEX_TYPE_NONE_KHR;
+    case RayTracingIndexFormat::UInt16: return VK_INDEX_TYPE_UINT16;
+    case RayTracingIndexFormat::UInt32: return VK_INDEX_TYPE_UINT32;
     }
     Unreachable();
 }

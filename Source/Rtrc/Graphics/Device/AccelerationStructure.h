@@ -89,6 +89,9 @@ public:
     RC<Blas> CreateBlas(RC<SubBuffer> buffer = nullptr);
     RC<Tlas> CreateTlas(RC<SubBuffer> buffer = nullptr);
 
+    void _internalCreate(Blas &blas);
+    void _internalCreate(Tlas &tlas);
+
 private:
 
     RHI::DevicePtr rhiDevice_;

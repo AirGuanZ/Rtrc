@@ -30,7 +30,7 @@ public:
 
     const RC<Buffer> &GetIndexBuffer() const;
     size_t GetIndexBufferByteOffset() const;
-    RHI::IndexBufferFormat GetIndexBufferFormat() const;
+    RHI::IndexFormat GetIndexBufferFormat() const;
 
     void Bind(CommandBuffer &commandBuffer) const;
 
@@ -46,7 +46,7 @@ private:
     std::vector<RC<Buffer>> vertexBuffers_;
     std::vector<size_t> vertexBufferByteOffsets_;
 
-    RHI::IndexBufferFormat indexBufferFormat_ = RHI::IndexBufferFormat::UInt16;
+    RHI::IndexFormat indexFormat_ = RHI::IndexFormat::UInt16;
     RC<Buffer> indexBuffer_;
     size_t indexBufferByteOffset_ = 0;
 };
@@ -58,7 +58,7 @@ public:
     MeshBuilder &SetLayout(const MeshLayout *layout);
     
     MeshBuilder &SetVertexBuffer(int index, const RC<SubBuffer> &buffer);
-    MeshBuilder &SetIndexBuffer(const RC<SubBuffer> &buffer, RHI::IndexBufferFormat format);
+    MeshBuilder &SetIndexBuffer(const RC<SubBuffer> &buffer, RHI::IndexFormat format);
 
     MeshBuilder &SetVertexCount(uint32_t count);
     MeshBuilder &SetIndexCount(uint32_t count);
@@ -75,7 +75,7 @@ private:
     std::vector<RC<Buffer>> vertexBuffers_;
     std::vector<size_t> vertexBufferByteOffsets_;
 
-    RHI::IndexBufferFormat indexBufferFormat_ = RHI::IndexBufferFormat::UInt16;
+    RHI::IndexFormat indexBufferFormat_ = RHI::IndexFormat::UInt16;
     RC<Buffer> indexBuffer_;
     size_t indexBufferByteOffset_ = 0;
 };
@@ -97,7 +97,7 @@ inline void Mesh::Swap(Mesh &other) noexcept
     RTRC_SWAP_MEMBERS(
         *this, other,
         vertexCount_, indexCount_, layout_, vertexBuffers_, vertexBufferByteOffsets_,
-        indexBufferFormat_, indexBuffer_, indexBufferByteOffset_);
+        indexFormat_, indexBuffer_, indexBufferByteOffset_);
 }
 
 inline const MeshLayout *Mesh::GetLayout() const
@@ -125,9 +125,9 @@ inline size_t Mesh::GetIndexBufferByteOffset() const
     return indexBufferByteOffset_;
 }
 
-inline RHI::IndexBufferFormat Mesh::GetIndexBufferFormat() const
+inline RHI::IndexFormat Mesh::GetIndexBufferFormat() const
 {
-    return indexBufferFormat_;
+    return indexFormat_;
 }
 
 inline MeshBuilder &MeshBuilder::SetLayout(const MeshLayout *layout)
@@ -146,7 +146,7 @@ inline MeshBuilder &MeshBuilder::SetVertexBuffer(int index, const RC<SubBuffer> 
     return *this;
 }
 
-inline MeshBuilder &MeshBuilder::SetIndexBuffer(const RC<SubBuffer> &buffer, RHI::IndexBufferFormat format)
+inline MeshBuilder &MeshBuilder::SetIndexBuffer(const RC<SubBuffer> &buffer, RHI::IndexFormat format)
 {
     indexBuffer_ = buffer->GetFullBuffer();
     indexBufferByteOffset_ = buffer->GetSubBufferOffset();
@@ -172,7 +172,7 @@ inline Mesh MeshBuilder::CreateMesh()
     ret.layout_ = layout_;
     ret.vertexBuffers_ = std::move(vertexBuffers_);
     ret.vertexBufferByteOffsets_ = std::move(vertexBufferByteOffsets_);
-    ret.indexBufferFormat_ = indexBufferFormat_;
+    ret.indexFormat_ = indexBufferFormat_;
     ret.indexBuffer_ = std::move(indexBuffer_);
     ret.indexBufferByteOffset_ = indexBufferByteOffset_;
     ret.vertexCount_ = vertexCount_;

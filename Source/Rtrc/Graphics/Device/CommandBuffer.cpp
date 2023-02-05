@@ -311,7 +311,7 @@ void CommandBuffer::SetVertexBuffers(int slot, Span<RC<Buffer>> buffers, Span<si
         slot, rhiBuffers, byteOffsets.IsEmpty() ? Span(EMPTY_BYTE_OFFSETS.data(), buffers.GetSize()) : byteOffsets);
 }
 
-void CommandBuffer::SetIndexBuffer(const RC<Buffer> &buffer, RHI::IndexBufferFormat format, size_t byteOffset)
+void CommandBuffer::SetIndexBuffer(const RC<Buffer> &buffer, RHI::IndexFormat format, size_t byteOffset)
 {
     CheckThreadID();
     rhiCommandBuffer_->SetIndexBuffer(buffer->GetRHIObject(), byteOffset, format);
@@ -488,7 +488,7 @@ void CommandBuffer::BuildBlas(
     {
         temporaryScratchBuffer = device_->CreateBuffer(RHI::BufferDesc
         {
-            .size           = prebuildInfo.GetAccelerationStructureBufferSize(),
+            .size           = prebuildInfo.GetBuildScratchBufferSize(),
             .usage          = RHI::BufferUsage::AccelerationStructureScratch,
             .hostAccessType = RHI::BufferHostAccessType::None
         });
@@ -534,7 +534,7 @@ void CommandBuffer::BuildTlas(
     {
         temporaryScratchBuffer = device_->CreateBuffer(RHI::BufferDesc
         {
-            .size           = prebuildInfo.GetAccelerationStructureBufferSize(),
+            .size           = prebuildInfo.GetBuildScratchBufferSize(),
             .usage          = RHI::BufferUsage::AccelerationStructureScratch,
             .hostAccessType = RHI::BufferHostAccessType::None
         });

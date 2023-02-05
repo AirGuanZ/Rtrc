@@ -125,17 +125,13 @@ void VulkanBuffer::FlushAfterWrite(size_t offset, size_t size)
 
 BufferDeviceAddress VulkanBuffer::GetDeviceAddress()
 {
+    assert(deviceAddress_);
     return { deviceAddress_ };
 }
 
 VkBuffer VulkanBuffer::_internalGetNativeBuffer() const
 {
     return buffer_;
-}
-
-VkDeviceAddress VulkanBuffer::_internalGetDeviceAddress() const
-{
-    return deviceAddress_;
 }
 
 VkBufferView VulkanBuffer::CreateBufferView(const ViewKey &key) const
