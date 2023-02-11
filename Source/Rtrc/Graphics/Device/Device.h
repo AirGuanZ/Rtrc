@@ -149,7 +149,10 @@ public:
     CommandBuffer CreateCommandBuffer();
 
     RC<GraphicsPipeline> CreateGraphicsPipeline(const GraphicsPipeline::Desc &desc);
-    RC<ComputePipeline>  CreateComputePipeline(const RC<Shader> &shader);
+    RC<ComputePipeline> CreateComputePipeline(const RC<Shader> &shader);
+
+    RC<RayTracingLibrary> CreateRayTracingLibrary(const RayTracingLibrary::Desc &desc);
+    RC<RayTracingPipeline> CreateRayTracingPipeline(const RayTracingPipeline::Desc &desc);
 
     RC<Sampler> CreateSampler(const RHI::SamplerDesc &desc);
 
@@ -440,6 +443,16 @@ inline RC<GraphicsPipeline> Device::CreateGraphicsPipeline(const GraphicsPipelin
 inline RC<ComputePipeline> Device::CreateComputePipeline(const RC<Shader> &shader)
 {
     return pipelineManager_->CreateComputePipeline(shader);
+}
+
+inline RC<RayTracingLibrary> Device::CreateRayTracingLibrary(const RayTracingLibrary::Desc &desc)
+{
+    return pipelineManager_->CreateRayTracingLibrary(desc);
+}
+
+inline RC<RayTracingPipeline> Device::CreateRayTracingPipeline(const RayTracingPipeline::Desc &desc)
+{
+    return pipelineManager_->CreateRayTracingPipeline(desc);
 }
 
 inline RC<Sampler> Device::CreateSampler(const RHI::SamplerDesc &desc)

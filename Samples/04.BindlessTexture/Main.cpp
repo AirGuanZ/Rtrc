@@ -88,9 +88,9 @@ void Run()
             commandBuffer.BeginRenderPass(ColorAttachment
             {
                 .renderTargetView = rt->CreateRtv(),
-                .loadOp = AttachmentLoadOp::Clear,
-                .storeOp = AttachmentStoreOp::Store,
-                .clearValue = ColorClearValue(0, 0, 0, 0)
+                .loadOp           = AttachmentLoadOp::Clear,
+                .storeOp          = AttachmentStoreOp::Store,
+                .clearValue       = ColorClearValue(0, 0, 0, 0)
             });
             RTRC_SCOPE_EXIT{ commandBuffer.EndRenderPass(); };
 

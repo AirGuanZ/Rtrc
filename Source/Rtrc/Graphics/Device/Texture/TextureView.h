@@ -79,13 +79,13 @@ TTextureView<T>::TTextureView(
     {
         const RHI::TextureSrvDesc desc =
         {
-            .isArray = isArrayView,
-            .format = RHI::Format::Unknown,
-            .baseMipLevel = mipLevel,
-            .levelCount = levelCount,
+            .isArray        = isArrayView,
+            .format         = RHI::Format::Unknown,
+            .baseMipLevel   = mipLevel,
+            .levelCount     = levelCount,
             .baseArrayLayer = arrayLayer,
-            .layerCount = layerCount,
-            .flags = srvFlags
+            .layerCount     = layerCount,
+            .flags          = srvFlags
         };
         view_ = texture_->GetRHIObject()->CreateSrv(desc);
     }
@@ -94,11 +94,11 @@ TTextureView<T>::TTextureView(
         assert(levelCount == 1);
         const RHI::TextureUavDesc desc =
         {
-            .isArray = isArrayView,
-            .format = RHI::Format::Unknown,
-            .mipLevel = mipLevel,
+            .isArray        = isArrayView,
+            .format         = RHI::Format::Unknown,
+            .mipLevel       = mipLevel,
             .baseArrayLayer = arrayLayer,
-            .layerCount = layerCount
+            .layerCount     = layerCount
         };
         view_ = texture_->GetRHIObject()->CreateUav(desc);
     }
@@ -107,8 +107,8 @@ TTextureView<T>::TTextureView(
         assert(levelCount == 1 && layerCount == 1 && !isArrayView);
         const RHI::TextureRtvDesc desc =
         {
-            .format = RHI::Format::Unknown,
-            .mipLevel = mipLevel,
+            .format     = RHI::Format::Unknown,
+            .mipLevel   = mipLevel,
             .arrayLayer = arrayLayer
         };
         view_ = texture_->GetRHIObject()->CreateRtv(desc);
@@ -119,8 +119,8 @@ TTextureView<T>::TTextureView(
         assert(levelCount == 1 && layerCount == 1 && !isArrayView);
         const RHI::TextureDsvDesc desc =
         {
-            .format = RHI::Format::Unknown,
-            .mipLevel = mipLevel,
+            .format     = RHI::Format::Unknown,
+            .mipLevel   = mipLevel,
             .arrayLayer = arrayLayer
         };
         view_ = texture_->GetRHIObject()->CreateDsv(desc);

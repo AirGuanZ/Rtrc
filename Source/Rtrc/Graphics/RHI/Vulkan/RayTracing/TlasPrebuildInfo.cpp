@@ -55,7 +55,10 @@ VulkanTlasPrebuildInfo::VulkanTlasPrebuildInfo(
         rangeInfo_[i].transformOffset = 0;
     }
 
-    VkAccelerationStructureBuildSizesInfoKHR sizes;
+    VkAccelerationStructureBuildSizesInfoKHR sizes =
+    {
+        .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR
+    };
     vkGetAccelerationStructureBuildSizesKHR(
         device_->_internalGetNativeDevice(),
         VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,

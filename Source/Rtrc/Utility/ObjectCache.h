@@ -62,7 +62,7 @@ class InObjectCache : public Uncopyable
 
 public:
 
-    ~InObjectCache()
+    virtual ~InObjectCache()
     {
         if(cache_)
         {

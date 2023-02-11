@@ -77,12 +77,12 @@ VulkanBlasPrebuildInfo::VulkanBlasPrebuildInfo(
     {
         .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR
     };
-
     vkGetAccelerationStructureBuildSizesKHR(
         device_->_internalGetNativeDevice(),
         VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
         &vkBuildGeometryInfo_, vkPrimitiveCounts.data(),
         &sizes);
+
     prebuildInfo_ = RayTracingAccelerationStructurePrebuildInfo
     {
         .accelerationStructureSize = sizes.accelerationStructureSize,

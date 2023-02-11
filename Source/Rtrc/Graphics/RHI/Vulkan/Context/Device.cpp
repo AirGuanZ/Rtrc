@@ -305,7 +305,9 @@ VulkanDevice::VulkanDevice(
             .shaderGroupHandleSize      = properties->shaderGroupHandleSize,
             .shaderGroupHandleAlignment = properties->shaderGroupHandleAlignment,
             .shaderGroupBaseAlignment   = properties->shaderGroupBaseAlignment,
-            .maxShaderGroupStride       = properties->maxShaderGroupStride
+            .maxShaderGroupStride       = properties->maxShaderGroupStride,
+            .shaderDataAlignment        = 4,
+            .shaderDataUnit             = 4
         };
     }
 }
@@ -779,7 +781,7 @@ Ptr<RayTracingPipeline> VulkanDevice::CreateRayTracingPipeline(const RayTracingP
         .pGroups                      = vkGroups.data(),
         .maxPipelineRayRecursionDepth = desc.maxRecursiveDepth,
         .pLibraryInfo                 = desc.libraries.empty() ? nullptr : &libraryCreateInfo,
-        .pLibraryInterface            = &interfaceCreateInfo,
+        .pLibraryInterface            = desc.libraries.empty() ? nullptr : &interfaceCreateInfo,
         .pDynamicState                = &dynamicStateCreateInfo,
         .layout                       = pipelineLayout
     };
@@ -807,13 +809,14 @@ Ptr<RayTracingLibrary> VulkanDevice::CreateRayTracingLibrary(const RayTracingLib
     };
     const VkRayTracingPipelineCreateInfoKHR pipelineCreateInfo =
     {
-        .sType             = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR,
-        .flags             = VK_PIPELINE_CREATE_LIBRARY_BIT_KHR,
-        .stageCount        = static_cast<uint32_t>(vkStages.size()),
-        .pStages           = vkStages.data(),
-        .groupCount        = static_cast<uint32_t>(vkGroups.size()),
-        .pGroups           = vkGroups.data(),
-        .pLibraryInterface = &interfaceCreateInfo
+        .sType                        = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR,
+        .flags                        = VK_PIPELINE_CREATE_LIBRARY_BIT_KHR,
+        .stageCount                   = static_cast<uint32_t>(vkStages.size()),
+        .pStages                      = vkStages.data(),
+        .groupCount                   = static_cast<uint32_t>(vkGroups.size()),
+        .pGroups                      = vkGroups.data(),
+        .maxPipelineRayRecursionDepth = desc.maxRecursiveDepth,
+        .pLibraryInterface            = &interfaceCreateInfo
     };
     VkPipeline library;
     RTRC_VK_FAIL_MSG(

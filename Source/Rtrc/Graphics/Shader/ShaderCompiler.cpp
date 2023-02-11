@@ -710,37 +710,33 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
             }
             else
             {
-                ShaderGroupInfo::HitShaderGroup group;
-                group.closestHitEntry   = ShaderGroupInfo::UNUSED_SHADER;
-                group.anyHitEntry       = ShaderGroupInfo::UNUSED_SHADER;
-                group.intersectionEntry = ShaderGroupInfo::UNUSED_SHADER;
-
+                RHI::RayTracingHitShaderGroup group;
                 auto HandleEntryIndex = [&](uint32_t index)
                 {
                     const RHI::ShaderStage stage = rayTracingEntries[index].stage;
                     if(stage == RHI::ShaderStage::RT_ClosestHitShader)
                     {
-                        if(group.closestHitEntry != ShaderGroupInfo::UNUSED_SHADER)
+                        if(group.closestHitShaderIndex != RHI::RAY_TRACING_UNUSED_SHADER)
                         {
                             throw Exception("Closest hit entry is already specified ");
                         }
-                        group.closestHitEntry = index;
+                        group.closestHitShaderIndex = index;
                     }
                     else if(stage == RHI::ShaderStage::RT_AnyHitShader)
                     {
-                        if(group.anyHitEntry != ShaderGroupInfo::UNUSED_SHADER)
+                        if(group.anyHitShaderIndex != RHI::RAY_TRACING_UNUSED_SHADER)
                         {
                             throw Exception("Any hit entry is already specified ");
                         }
-                        group.anyHitEntry = index;
+                        group.anyHitShaderIndex = index;
                     }
                     else if(stage == RHI::ShaderStage::RT_IntersectionShader)
                     {
-                        if(group.intersectionEntry != ShaderGroupInfo::UNUSED_SHADER)
+                        if(group.intersectionShaderIndex != RHI::RAY_TRACING_UNUSED_SHADER)
                         {
                             throw Exception("Intersection entry is already specified ");
                         }
-                        group.intersectionEntry = index;
+                        group.intersectionShaderIndex = index;
                     }
                     else
                     {
@@ -752,11 +748,11 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
                 HandleEntryIndex(firstEntryIndex);
                 for(size_t i = 1; i < rawGroup.size(); ++i)
                 {
-                    const int entryIndex = FindEntryIndex(rawGroup[i]);
+                    const uint32_t entryIndex = FindEntryIndex(rawGroup[i]);
                     HandleEntryIndex(entryIndex);
                 }
 
-                if(!group.closestHitEntry)
+                if(!group.closestHitShaderIndex)
                 {
                     throw Exception("One must raygen/miss/closesthit shader must be on a shader group");
                 }

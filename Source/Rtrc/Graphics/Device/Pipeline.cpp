@@ -145,13 +145,63 @@ PipelineManager::PipelineManager(RHI::DevicePtr device, DeviceSynchronizer &sync
     
 }
 
+RC<RayTracingLibrary> PipelineManager::CreateRayTracingLibrary(const RayTracingLibrary::Desc &desc)
+{
+    const RHI::RayTracingLibraryDesc rhiDesc =
+    {
+        .rawShader              = desc.shader->GetRawShader(RHI::ShaderType::RayTracingShader),
+        .shaderGroups           = desc.shaderGroups,
+        .maxRayPayloadSize      = desc.maxRayPayloadSize,
+        .maxRayHitAttributeSize = desc.maxRayHitAttributeSize,
+        .maxRecursiveDepth      = desc.maxRecursiveDepth
+    };
+    auto ret = MakeRC<RayTracingLibrary>();
+    ret->library_ = device_->CreateRayTracingLibrary(rhiDesc);
+    return ret;
+}
+
+RC<RayTracingPipeline> PipelineManager::CreateRayTracingPipeline(const RayTracingPipeline::Desc &desc)
+{
+    std::vector<RHI::RawShaderPtr> rhiShaders;
+    rhiShaders.reserve(desc.shaders.size());
+    for(auto &rawShader : desc.shaders)
+    {
+        rhiShaders.push_back(rawShader->GetRawShader(RHI::ShaderType::RayTracingShader));
+    }
+
+    std::vector<RHI::RayTracingLibraryPtr> rhiLibraries;
+    rhiLibraries.reserve(desc.libraries.size());
+    for(auto &library : desc.libraries)
+    {
+        rhiLibraries.push_back(library->library_);
+    }
+
+    const RHI::RayTracingPipelineDesc rhiDesc =
+    {
+        .rawShaders             = std::move(rhiShaders),
+        .shaderGroups           = desc.shaderGroups,
+        .libraries              = std::move(rhiLibraries),
+        .bindingLayout          = desc.bindingLayout->GetRHIObject(),
+        .maxRayPayloadSize      = desc.maxRayPayloadSize,
+        .maxRayHitAttributeSize = desc.maxRayHitAttributeSize,
+        .maxRecursiveDepth      = desc.maxRecursiveDepth,
+        .useCustomStackSize     = desc.useCustomStackSize
+    };
+    auto rhiPipeline = device_->CreateRayTracingPipeline(rhiDesc);
+
+    auto ret = MakeRC<RayTracingPipeline>();
+    ret->rhiObject_ = std::move(rhiPipeline);
+    ret->manager_ = this;
+    return ret;
+}
+
 RC<GraphicsPipeline> PipelineManager::CreateGraphicsPipeline(const GraphicsPipeline::Desc &desc)
 {
 #if RTRC_DEBUG
     desc.Validate();
 #endif
     const auto key = desc.AsKey();
-    return graphicsPipelineCache_.GetOrCreate(key, [&]
+    /*return graphicsPipelineCache_.GetOrCreate(key, [&]*/
     {
         RHI::GraphicsPipelineDesc rhiDesc;
 
@@ -271,12 +321,12 @@ RC<GraphicsPipeline> PipelineManager::CreateGraphicsPipeline(const GraphicsPipel
         ret->desc_.shader = {}; // Don't store shader object
         ret->shaderInfo_ = desc.shader->GetInfo();
         return ret;
-    });
+    }/*);*/
 }
 
 RC<ComputePipeline> PipelineManager::CreateComputePipeline(const RC<Shader> &shader)
 {
-    return computePipelineCache_.GetOrCreate(shader->GetUniqueID(), [&]
+    /*return computePipelineCache_.GetOrCreate(shader->GetUniqueID(), [&]*/
     {
         RHI::ComputePipelineDesc rhiDesc;
         rhiDesc.computeShader = shader->GetRawShader(RHI::ShaderType::ComputeShader);
@@ -291,7 +341,7 @@ RC<ComputePipeline> PipelineManager::CreateComputePipeline(const RC<Shader> &sha
         ret->manager_ = this;
         ret->shaderInfo_ = shader->GetInfo();
         return ret;
-    });
+    }/*);*/
 }
 
 RTRC_END

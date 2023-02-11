@@ -942,20 +942,20 @@ static constexpr uint32_t RAY_TRACING_UNUSED_SHADER = (std::numeric_limits<uint3
 
 struct RayTracingTriangleHitShaderGroup
 {
-    uint32_t closestHitShaderIndex;
-    uint32_t anyHitShaderIndex;
+    uint32_t closestHitShaderIndex = RAY_TRACING_UNUSED_SHADER;
+    uint32_t anyHitShaderIndex     = RAY_TRACING_UNUSED_SHADER;
 };
 
 struct RayTracingHitShaderGroup
 {
-    uint32_t closestHitShaderIndex;
-    uint32_t anyHitShaderIndex;
-    uint32_t intersectionShaderIndex;
+    uint32_t closestHitShaderIndex   = RAY_TRACING_UNUSED_SHADER;
+    uint32_t anyHitShaderIndex       = RAY_TRACING_UNUSED_SHADER;
+    uint32_t intersectionShaderIndex = RAY_TRACING_UNUSED_SHADER;
 };
 
-struct RayTracingRayGenShaderGroup   { uint32_t rayGenShaderIndex;   };
-struct RayTracingMissShaderGroup     { uint32_t missShaderIndex;     };
-struct RayTracingCallableShaderGroup { uint32_t callableShaderIndex; };
+struct RayTracingRayGenShaderGroup   { uint32_t rayGenShaderIndex = RAY_TRACING_UNUSED_SHADER;   };
+struct RayTracingMissShaderGroup     { uint32_t missShaderIndex = RAY_TRACING_UNUSED_SHADER;     };
+struct RayTracingCallableShaderGroup { uint32_t callableShaderIndex = RAY_TRACING_UNUSED_SHADER; };
 
 using RayTracingShaderGroup = Variant<
     RayTracingTriangleHitShaderGroup,
@@ -970,6 +970,7 @@ struct RayTracingLibraryDesc
     std::vector<RayTracingShaderGroup> shaderGroups;
     uint32_t                           maxRayPayloadSize;
     uint32_t                           maxRayHitAttributeSize;
+    uint32_t                           maxRecursiveDepth;
 };
 
 struct RayTracingPipelineDesc
@@ -978,8 +979,8 @@ struct RayTracingPipelineDesc
     std::vector<RayTracingShaderGroup> shaderGroups;
     std::vector<RayTracingLibraryPtr>  libraries;
     Ptr<BindingLayout>                 bindingLayout;
-    uint32_t                           maxRayPayloadSize;
-    uint32_t                           maxRayHitAttributeSize;
+    uint32_t                           maxRayPayloadSize;      // Required when libraries is not empty
+    uint32_t                           maxRayHitAttributeSize; // Required when libraries is not empty
     uint32_t                           maxRecursiveDepth;
     bool                               useCustomStackSize = false;
 };
@@ -1043,6 +1044,8 @@ struct ShaderGroupRecordRequirements
     uint32_t shaderGroupHandleAlignment;
     uint32_t shaderGroupBaseAlignment;
     uint32_t maxShaderGroupStride;
+    uint32_t shaderDataAlignment;
+    uint32_t shaderDataUnit;
 };
 
 struct ShaderBindingTableRegion
@@ -1236,7 +1239,8 @@ public:
 
     RTRC_RHI_API Ptr<BindingGroupLayout> CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc) RTRC_RHI_API_PURE;
     RTRC_RHI_API Ptr<BindingGroup> CreateBindingGroup(
-        const Ptr<BindingGroupLayout> &bindingGroupLayout, uint32_t variableArraySize = 0) RTRC_RHI_API_PURE;
+        const Ptr<BindingGroupLayout> &bindingGroupLayout,
+        uint32_t                       variableArraySize = 0) RTRC_RHI_API_PURE;
     RTRC_RHI_API Ptr<BindingLayout> CreateBindingLayout(const BindingLayoutDesc &desc) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void UpdateBindingGroups(const BindingGroupUpdateBatch &batch) RTRC_RHI_API_PURE;
@@ -1252,9 +1256,13 @@ public:
     RTRC_RHI_API Ptr<MemoryBlock> CreateMemoryBlock(const MemoryBlockDesc &desc) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API Ptr<Texture> CreatePlacedTexture(
-        const TextureDesc &desc, const Ptr<MemoryBlock> &memoryBlock, size_t offsetInMemoryBlock) RTRC_RHI_API_PURE;
+        const TextureDesc      &desc,
+        const Ptr<MemoryBlock> &memoryBlock,
+        size_t                  offsetInMemoryBlock) RTRC_RHI_API_PURE;
     RTRC_RHI_API Ptr<Buffer> CreatePlacedBuffer(
-        const BufferDesc &desc, const Ptr<MemoryBlock> &memoryBlock, size_t offsetInMemoryBlock) RTRC_RHI_API_PURE;
+        const BufferDesc       &desc,
+        const Ptr<MemoryBlock> &memoryBlock,
+        size_t                  offsetInMemoryBlock) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API size_t GetConstantBufferAlignment() const RTRC_RHI_API_PURE;
 

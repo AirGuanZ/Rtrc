@@ -2,6 +2,7 @@
 
 #include <fmt/format.h>
 
+#include <cstddef>
 #include <memory>
 #include <stdexcept>
 
@@ -98,6 +99,20 @@ template<typename T>
 constexpr T UpAlignTo(T v, T align)
 {
     return (v + (align - 1)) / align * align;
+}
+
+template<typename T>
+T *AddToPointer(T *pointer, std::ptrdiff_t offsetInBytes)
+{
+    static_assert(sizeof(size_t) == sizeof(T *));
+    return reinterpret_cast<T *>(reinterpret_cast<size_t>(pointer) + offsetInBytes);
+}
+
+template<typename T>
+T *AddToPointer(T *pointer, size_t offsetInBytes)
+{
+    static_assert(sizeof(size_t) == sizeof(T *));
+    return reinterpret_cast<T *>(reinterpret_cast<size_t>(pointer) + offsetInBytes);
 }
 
 template<typename T>

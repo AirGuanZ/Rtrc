@@ -19,36 +19,17 @@ class ShaderGroupInfo
 {
 public:
 
-    static constexpr uint32_t UNUSED_SHADER = RHI::RAY_TRACING_UNUSED_SHADER;
-
-    struct RayGenShaderGroup
-    {
-        uint32_t entry;
-    };
-
-    struct MissShaderGroup
-    {
-        uint32_t entry;
-    };
-
-    struct HitShaderGroup
-    {
-        uint32_t closestHitEntry;
-        uint32_t anyHitEntry;
-        uint32_t intersectionEntry;
-    };
-
-    Span<RayGenShaderGroup> GetRayGenShaderGroups() const;
-    Span<MissShaderGroup>   GetMissShaderGroups()   const;
-    Span<HitShaderGroup>    GetHitShaderGroups()    const;
+    Span<RHI::RayTracingRayGenShaderGroup> GetRayGenShaderGroups() const;
+    Span<RHI::RayTracingMissShaderGroup>   GetMissShaderGroups()   const;
+    Span<RHI::RayTracingHitShaderGroup>    GetHitShaderGroups()    const;
 
 private:
 
     friend class ShaderCompiler;
 
-    std::vector<RayGenShaderGroup> rayGenShaderGroups_;
-    std::vector<MissShaderGroup>   missShaderGroups_;
-    std::vector<HitShaderGroup>    hitShaderGroups_;
+    std::vector<RHI::RayTracingRayGenShaderGroup> rayGenShaderGroups_;
+    std::vector<RHI::RayTracingMissShaderGroup>   missShaderGroups_;
+    std::vector<RHI::RayTracingHitShaderGroup>    hitShaderGroups_;
 };
 
 class ShaderInfo : public Uncopyable
@@ -146,13 +127,7 @@ public:
     using Category            = ShaderInfo::Category;
     using BuiltinBindingGroup = ShaderInfo::BuiltinBindingGroup;
     using PushConstantRange   = ShaderInfo::PushConstantRange;
-
-    using RayGenShaderGroup = ShaderGroupInfo::RayGenShaderGroup;
-    using MissShaderGroup   = ShaderGroupInfo::MissShaderGroup;
-    using HitShaderGroup    = ShaderGroupInfo::HitShaderGroup;
-
-    static constexpr uint32_t UNUSED_SHADER = ShaderGroupInfo::UNUSED_SHADER;
-
+    
     Category GetCategory() const;
     const RHI::RawShaderPtr &GetRawShader(RHI::ShaderType type) const;
 
@@ -188,9 +163,9 @@ public:
 
     Span<ShaderInfo::PushConstantRange> GetPushConstantRanges() const;
 
-    Span<RayGenShaderGroup> GetRayGenShaderGroups() const;
-    Span<MissShaderGroup>   GetMissShaderGroups()   const;
-    Span<HitShaderGroup>    GetHitShaderGroups()    const;
+    Span<RHI::RayTracingRayGenShaderGroup> GetRayGenShaderGroups() const;
+    Span<RHI::RayTracingMissShaderGroup>   GetMissShaderGroups()   const;
+    Span<RHI::RayTracingHitShaderGroup>    GetHitShaderGroups()    const;
 
 private:
     
@@ -206,6 +181,21 @@ private:
     RC<ShaderInfo> info_;
     RC<ComputePipeline> computePipeline_;
 };
+
+inline Span<RHI::RayTracingRayGenShaderGroup> ShaderGroupInfo::GetRayGenShaderGroups() const
+{
+    return rayGenShaderGroups_;
+}
+
+inline Span<RHI::RayTracingMissShaderGroup> ShaderGroupInfo::GetMissShaderGroups() const
+{
+    return missShaderGroups_;
+}
+
+inline Span<RHI::RayTracingHitShaderGroup> ShaderGroupInfo::GetHitShaderGroups() const
+{
+    return hitShaderGroups_;
+}
 
 inline ShaderInfo::Category ShaderInfo::GetCategory() const
 {
@@ -421,17 +411,17 @@ inline Span<ShaderInfo::PushConstantRange> Shader::GetPushConstantRanges() const
     return info_->GetPushConstantRanges();
 }
 
-inline Span<Shader::RayGenShaderGroup> Shader::GetRayGenShaderGroups() const
+inline Span<RHI::RayTracingRayGenShaderGroup> Shader::GetRayGenShaderGroups() const
 {
     return info_->GetShaderGroupInfo().GetRayGenShaderGroups();
 }
 
-inline Span<Shader::MissShaderGroup> Shader::GetMissShaderGroups() const
+inline Span<RHI::RayTracingMissShaderGroup> Shader::GetMissShaderGroups() const
 {
     return info_->GetShaderGroupInfo().GetMissShaderGroups();
 }
 
-inline Span<Shader::HitShaderGroup> Shader::GetHitShaderGroups() const
+inline Span<RHI::RayTracingHitShaderGroup> Shader::GetHitShaderGroups() const
 {
     return info_->GetShaderGroupInfo().GetHitShaderGroups();
 }

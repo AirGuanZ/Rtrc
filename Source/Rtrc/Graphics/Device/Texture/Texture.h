@@ -51,7 +51,7 @@ public:
 
     static RC<Texture> FromRHIObject(RHI::TexturePtr rhiTexture);
 
-    virtual ~Texture();
+    ~Texture() override;
 
     void SetName(std::string name);
 

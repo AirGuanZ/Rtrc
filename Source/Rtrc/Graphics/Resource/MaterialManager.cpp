@@ -580,37 +580,6 @@ RC<ShaderTemplate> MaterialManager::CreateShaderTemplate(std::string_view name)
         }
     }
     source = source.substr(0, fileRef.endPos);
-    
-    /*std::string VSEntry, FSEntry, CSEntry; bool isRT = false;
-    for(auto s : { "vertex", "vert" })
-    {
-        if(MaterialDetail::ParseEntryPragma(source, s, VSEntry))
-        {
-            break;
-        }
-    }
-    for(auto &s : { "fragment", "frag", "pixel" })
-    {
-        if(MaterialDetail::ParseEntryPragma(source, s, FSEntry))
-        {
-            break;
-        }
-    }
-    for(auto &s : { "compute", "comp" })
-    {
-        if(MaterialDetail::ParseEntryPragma(source, s, CSEntry))
-        {
-            break;
-        }
-    }
-    for(auto &s : { "rt", "raytracing" })
-    {
-        if(MaterialDetail::HasPragma(source, s))
-        {
-            isRT = true;
-            break;
-        }
-    }*/
 
     std::vector<std::string> keywordStrings;
     KeywordSet keywordSet;
@@ -622,15 +591,11 @@ RC<ShaderTemplate> MaterialManager::CreateShaderTemplate(std::string_view name)
     const int totalKeywordBitCount = keywordSet.GetTotalBitCount();
 
     auto shaderTemplate = MakeRC<ShaderTemplate>();
-    shaderTemplate->debug_                     = debug_;
-    shaderTemplate->keywordSet_                = std::move(keywordSet);
-    shaderTemplate->source_.source             = std::move(source);
-    shaderTemplate->source_.filename           = filenames_[fileRef.filenameIndex];
-    //shaderTemplate->source_.vertexEntry        = std::move(VSEntry);
-    //shaderTemplate->source_.fragmentEntry      = std::move(FSEntry);
-    //shaderTemplate->source_.computeEntry       = std::move(CSEntry);
-    //shaderTemplate->source_.isRayTracingShader = isRT;
-    shaderTemplate->shaderCompiler_            = &shaderCompiler_;
+    shaderTemplate->debug_           = debug_;
+    shaderTemplate->keywordSet_      = std::move(keywordSet);
+    shaderTemplate->source_.source   = std::move(source);
+    shaderTemplate->source_.filename = filenames_[fileRef.filenameIndex];
+    shaderTemplate->shaderCompiler_  = &shaderCompiler_;
     shaderTemplate->compiledShaders_.resize(1 << totalKeywordBitCount);
 
     return shaderTemplate;

@@ -2,13 +2,13 @@
 
 #include <Rtrc/Graphics/Device/GeneralGPUObject.h>
 #include <Rtrc/Graphics/Shader/Shader.h>
-#include <Rtrc/Utility/ObjectCache.h>
+/*#include <Rtrc/Utility/ObjectCache.h>*/
 
 RTRC_BEGIN
 
 class MeshLayout;
 
-class GraphicsPipeline : public GeneralGPUObject<RHI::GraphicsPipelinePtr>, public InObjectCache
+class GraphicsPipeline : public GeneralGPUObject<RHI::GraphicsPipelinePtr>/*, public InObjectCache*/
 {
 public:
     
@@ -137,7 +137,7 @@ private:
     RC<const ShaderInfo> shaderInfo_;
 };
 
-class ComputePipeline : public GeneralGPUObject<RHI::ComputePipelinePtr>, public InObjectCache
+class ComputePipeline : public GeneralGPUObject<RHI::ComputePipelinePtr>/*, public InObjectCache*/
 {
 public:
 
@@ -150,21 +150,66 @@ private:
     RC<const ShaderInfo> shaderInfo_;
 };
 
+class RayTracingLibrary : public Uncopyable
+{
+public:
+
+    struct Desc
+    {
+        RC<Shader>                              shader;
+        std::vector<RHI::RayTracingShaderGroup> shaderGroups;
+        uint32_t                                maxRayPayloadSize;
+        uint32_t                                maxRayHitAttributeSize;
+        uint32_t                                maxRecursiveDepth;
+    };
+
+private:
+
+    friend class PipelineManager;
+
+    RHI::RayTracingLibraryPtr library_;
+};
+
+class RayTracingPipeline : public GeneralGPUObject<RHI::RayTracingPipelinePtr>
+{
+public:
+
+    struct Desc
+    {
+        std::vector<RC<Shader>>                 shaders;
+        std::vector<RHI::RayTracingShaderGroup> shaderGroups;
+        std::vector<RC<RayTracingLibrary>>      libraries;
+
+        RC<BindingLayout> bindingLayout;
+
+        uint32_t maxRayPayloadSize;      // Required when libraries is not empty
+        uint32_t maxRayHitAttributeSize; // Required when libraries is not empty
+        uint32_t maxRecursiveDepth;
+        bool     useCustomStackSize = false;
+    };
+
+private:
+
+    friend class PipelineManager;
+};
+
 class PipelineManager : public GeneralGPUObjectManager
 {
 public:
 
     PipelineManager(RHI::DevicePtr device, DeviceSynchronizer &sync);
 
-    RC<GraphicsPipeline> CreateGraphicsPipeline(const GraphicsPipeline::Desc &desc);
+    RC<RayTracingLibrary> CreateRayTracingLibrary(const RayTracingLibrary::Desc &desc);
 
-    RC<ComputePipeline> CreateComputePipeline(const RC<Shader> &shader);
+    RC<GraphicsPipeline>   CreateGraphicsPipeline  (const GraphicsPipeline::Desc &desc);
+    RC<ComputePipeline>    CreateComputePipeline   (const RC<Shader> &shader);
+    RC<RayTracingPipeline> CreateRayTracingPipeline(const RayTracingPipeline::Desc &desc);
 
 private:
 
     RHI::DevicePtr device_;
-    ObjectCache<GraphicsPipeline::DescKey, GraphicsPipeline, true, true> graphicsPipelineCache_;
-    ObjectCache<Shader::UniqueID, ComputePipeline, true, true> computePipelineCache_;
+    //ObjectCache<GraphicsPipeline::DescKey, GraphicsPipeline, true, true> graphicsPipelineCache_;
+    //ObjectCache<Shader::UniqueID, ComputePipeline, true, true> computePipelineCache_;
 };
 
 inline const RC<const ShaderInfo> &GraphicsPipeline::GetShaderInfo() const
