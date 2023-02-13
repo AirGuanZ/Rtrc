@@ -163,11 +163,15 @@ public:
         uint32_t                                maxRecursiveDepth;
     };
 
+    uint32_t GetShaderGroupCount() const;
+
 private:
 
     friend class PipelineManager;
 
-    RHI::RayTracingLibraryPtr library_;
+    RC<ShaderBindingLayoutInfo> bindingLayoutInfo_;
+    uint32_t                    shaderGroupCount_ = 0;
+    RHI::RayTracingLibraryPtr   library_;
 };
 
 class RayTracingPipeline : public GeneralGPUObject<RHI::RayTracingPipelinePtr>
@@ -187,10 +191,23 @@ public:
         uint32_t maxRecursiveDepth;
         bool     useCustomStackSize = false;
     };
+    
+    void GetShaderGroupHandles(
+        uint32_t                   startGroupIndex,
+        uint32_t                   groupCount,
+        MutableSpan<unsigned char> outputData) const;
+
+    uint32_t GetShaderGroupCount() const;
+    uint32_t GetShaderGroupHandleSize() const;
+    
+    const ShaderBindingLayoutInfo &GetBindingLayoutInfo() const;
 
 private:
 
     friend class PipelineManager;
+
+    RC<ShaderBindingLayoutInfo> bindingLayoutInfo_;
+    uint32_t                    shaderGroupCount_ = 0;
 };
 
 class PipelineManager : public GeneralGPUObjectManager
@@ -204,6 +221,8 @@ public:
     RC<GraphicsPipeline>   CreateGraphicsPipeline  (const GraphicsPipeline::Desc &desc);
     RC<ComputePipeline>    CreateComputePipeline   (const RC<Shader> &shader);
     RC<RayTracingPipeline> CreateRayTracingPipeline(const RayTracingPipeline::Desc &desc);
+
+    const RHI::DevicePtr &_internalGetRHIDevice() const;
 
 private:
 
@@ -220,6 +239,11 @@ inline const RC<const ShaderInfo> &GraphicsPipeline::GetShaderInfo() const
 inline const RC<const ShaderInfo> &ComputePipeline::GetShaderInfo() const
 {
     return shaderInfo_;
+}
+
+inline uint32_t RayTracingLibrary::GetShaderGroupCount() const
+{
+    return shaderGroupCount_;
 }
 
 RTRC_END

@@ -33,7 +33,8 @@ public:
     void Set(std::string_view name, const RC<Texture> &tex);
     void Set(std::string_view name, const TextureSrv &srv);
     void Set(std::string_view name, const BufferSrv &srv);
-    void Set(std::string_view name, RC<Sampler> sampler);
+    void Set(std::string_view name, const RC<Sampler> &sampler);
+    void Set(std::string_view name, const RC<Tlas> &tlas);
 
     const unsigned char *GetValueBuffer() const { return valueBuffer_.data(); }
     Span<MaterialResource> GetResources() const { return resources_; }

@@ -255,6 +255,8 @@ VkDescriptorType TranslateBindingType(BindingType type)
         return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     case BindingType::Sampler:
         return VK_DESCRIPTOR_TYPE_SAMPLER;
+    case BindingType::AccelerationStructure:
+        return VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
     }
     Unreachable();
 }

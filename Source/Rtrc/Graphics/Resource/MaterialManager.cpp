@@ -463,21 +463,22 @@ RC<Material> MaterialManager::CreateMaterial(std::string_view name)
     using enum MaterialProperty::Type;
     static const std::map<std::string, MaterialProperty::Type, std::less<>> NAME_TO_PROPERTY_TYPE =
     {
-        { "float",        Float     },
-        { "float2",       Float2    },
-        { "float3",       Float3    },
-        { "float4",       Float4    },
-        { "uint",         UInt      },
-        { "uint2",        UInt2     },
-        { "uint3",        UInt3     },
-        { "uint4",        UInt4     },
-        { "int",          Int       },
-        { "int2",         Int2      },
-        { "int3",         Int3      },
-        { "int4",         Int4      },
-        { "Buffer",       Buffer    },
-        { "Texture2D",    Texture2D },
-        { "SamplerState", Sampler   }
+        { "float",                 Float                 },
+        { "float2",                Float2                },
+        { "float3",                Float3                },
+        { "float4",                Float4                },
+        { "uint",                  UInt                  },
+        { "uint2",                 UInt2                 },
+        { "uint3",                 UInt3                 },
+        { "uint4",                 UInt4                 },
+        { "int",                   Int                   },
+        { "int2",                  Int2                  },
+        { "int3",                  Int3                  },
+        { "int4",                  Int4                  },
+        { "Buffer",                Buffer                },
+        { "Texture2D",             Texture2D             },
+        { "SamplerState",          Sampler               },
+        { "AccelerationStructure", AccelerationStructure }
     };
 
     while(true)

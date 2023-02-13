@@ -3,6 +3,7 @@
 #include <any>
 #include <map>
 
+#include <Rtrc/Graphics/Device/AccelerationStructure.h>
 #include <Rtrc/Graphics/Device/DeviceSynchronizer.h>
 #include <Rtrc/Graphics/Device/Buffer.h>
 #include <Rtrc/Graphics/Device/Sampler.h>
@@ -16,6 +17,7 @@ class BindingGroup;
 class BindingLayout;
 class Sampler;
 class SubBuffer;
+class Tlas;
 
 class BindingGroup : public Uncopyable
 {
@@ -28,10 +30,12 @@ public:
     void Set(int slot, RC<Buffer>    cbuffer, size_t offset, size_t size);
     void Set(int slot, RC<SubBuffer> cbuffer);
     void Set(int slot, RC<Sampler>   sampler);
+    void Set(int slot, RC<Tlas>      tlas);
 
     void Set(int slot, int arrElem, RC<Buffer>    cbuffer, size_t offset, size_t size);
     void Set(int slot, int arrElem, RC<SubBuffer> cbuffer);
     void Set(int slot, int arrElem, RC<Sampler>   sampler);
+    void Set(int slot, int arrElem, RC<Tlas>      tlas);
 
     template<typename T>
         requires TypeList<BufferSrv, BufferUav, TextureSrv, TextureUav, RC<Texture>>::Contains<std::remove_cvref_t<T>>
@@ -176,6 +180,11 @@ inline void BindingGroup::Set(int slot, RC<Sampler> sampler)
     Set(slot, 0, std::move(sampler));
 }
 
+inline void BindingGroup::Set(int slot, RC<Tlas> tlas)
+{
+    Set(slot, 0, std::move(tlas));
+}
+
 inline void BindingGroup::Set(int slot, int arrElem, RC<Buffer> cbuffer, size_t offset, size_t size)
 {
     rhiGroup_->ModifyMember(slot, arrElem, RHI::ConstantBufferUpdate{ cbuffer->GetRHIObject().Get(), offset, size });
@@ -195,6 +204,11 @@ inline void BindingGroup::Set(int slot, int arrElem, RC<SubBuffer> cbuffer)
 inline void BindingGroup::Set(int slot, int arrElem, RC<Sampler> sampler)
 {
     rhiGroup_->ModifyMember(slot, arrElem, sampler->GetRHIObject());
+}
+
+inline void BindingGroup::Set(int slot, int arrElem, RC<Tlas> tlas)
+{
+    rhiGroup_->ModifyMember(slot, arrElem, tlas->GetRHIObject());
 }
 
 template<typename T>

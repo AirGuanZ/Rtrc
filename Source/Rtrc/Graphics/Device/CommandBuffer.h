@@ -139,12 +139,15 @@ public:
 
     void BindGraphicsPipeline(const RC<GraphicsPipeline> &graphicsPipeline);
     void BindComputePipeline(const RC<ComputePipeline> &computePipeline);
+    void BindRayTracingPipeline(const RC<RayTracingPipeline> &rayTracingPipeline);
 
     const GraphicsPipeline *GetCurrentGraphicsPipeline() const;
     const ComputePipeline *GetCurrentComputePipeline() const;
+    const RayTracingPipeline *GetCurrentRayTracingPipeline() const;
 
     void BindGraphicsGroup(int index, const RC<BindingGroup> &group);
     void BindComputeGroup(int index, const RC<BindingGroup> &group);
+    void BindRayTracingGroup(int index, const RC<BindingGroup> &group);
     
     void SetViewports(Span<Viewport> viewports);
     void SetScissors(Span<Scissor> scissors);
@@ -157,15 +160,19 @@ public:
 
     void SetGraphicsPushConstantRange(RHI::ShaderStageFlag stages, uint32_t offset, uint32_t size, const void *data);
     void SetComputePushConstantRange(RHI::ShaderStageFlag stages, uint32_t offset, uint32_t size, const void *data);
+    void SetRayTracingPushConstantRange(RHI::ShaderStageFlag stages, uint32_t offset, uint32_t size, const void *data);
 
     void SetGraphicsPushConstantRange(uint32_t rangeIndex, const void *data);
     void SetComputePushConstantRange(uint32_t rangeIndex, const void *data);
+    void SetRayTracingPushConstantRange(uint32_t rangeIndex, const void *data);
 
     void SetGraphicsPushConstants(const void *data, uint32_t size);
     void SetComputePushConstants(const void *data, uint32_t size);
+    void SetRayTracingPushConstants(const void *data, uint32_t size);
 
     void SetGraphicsPushConstants(Span<unsigned char> data);
     void SetComputePushConstants(Span<unsigned char> data);
+    void SetRayTracingPushConstants(Span<unsigned char> data);
 
     template<typename T> requires std::is_trivially_copyable_v<T>
     void SetGraphicsPushConstants(const T &data);
@@ -178,6 +185,14 @@ public:
     void DrawIndexed(int indexCount, int instanceCount, int firstIndex, int firstVertex, int firstInstance);
     void Dispatch(int groupCountX, int groupCountY, int groupCountZ);
     void Dispatch(const Vector3i &groupCount);
+    void Trace(
+        int                                  rayCountX,
+        int                                  rayCountY,
+        int                                  rayCountZ,
+        const RHI::ShaderBindingTableRegion &raygenSbt,
+        const RHI::ShaderBindingTableRegion &missSbt,
+        const RHI::ShaderBindingTableRegion &hitSbt,
+        const RHI::ShaderBindingTableRegion &callableSbt);
 
     // if prebuildInfo is not presented
     //   generate prebuildInfo
@@ -290,6 +305,7 @@ private:
 
     RC<GraphicsPipeline> currentGraphicsPipeline_;
     RC<ComputePipeline> currentComputePipeline_;
+    RC<RayTracingPipeline> currentRayTracingPipeline_;
 };
 
 class CommandBufferManager : public Uncopyable

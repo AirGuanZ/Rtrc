@@ -231,6 +231,18 @@ namespace BindingGroupDSL
         }
     };
 
+    struct MemberProxy_AccelerationStructure
+    {
+        static constexpr RHI::BindingType BindingType = RHI::BindingType::AccelerationStructure;
+        RC<Tlas> _rtrcObj;
+
+        auto &operator=(RC<Tlas> value)
+        {
+            _rtrcObj = std::move(value);
+            return *this;
+        }
+    };
+
     template<typename T>
     struct MemberProxyTrait
     {

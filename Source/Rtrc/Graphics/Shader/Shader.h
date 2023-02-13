@@ -32,16 +32,9 @@ private:
     std::vector<RHI::RayTracingHitShaderGroup>    hitShaderGroups_;
 };
 
-class ShaderInfo : public Uncopyable
+class ShaderBindingLayoutInfo : public Uncopyable
 {
 public:
-
-    enum class Category
-    {
-        Graphics,
-        Compute,
-        RayTracing
-    };
 
     enum class BuiltinBindingGroup
     {
@@ -53,7 +46,65 @@ public:
 
     using PushConstantRange = RHI::PushConstantRange;
 
+    // Binding Layout
+
+    const RC<BindingLayout> &GetBindingLayout() const;
+
+    int GetBindingGroupCount() const;
+
+    const std::string &GetBindingGroupNameByIndex(int index) const;
+    int GetBindingGroupIndexByName(std::string_view name) const; // return -1 if not found
+
+    const RC<BindingGroupLayout> &GetBindingGroupLayoutByName(std::string_view name) const; // returns -1 if not found
+    const RC<BindingGroupLayout> &GetBindingGroupLayoutByIndex(int index) const;
+
+    int GetBuiltinBindingGroupIndex(BuiltinBindingGroup bindingGroup) const;
+
+    const ShaderBindingNameMap &GetBindingNameMap() const;
+
+    // Inline samplers
+
+    const RC<BindingGroup> &GetBindingGroupForInlineSamplers() const;
+    int GetBindingGroupIndexForInlineSamplers() const;
+
+    // Push constant
+
+    Span<PushConstantRange> GetPushConstantRanges() const;
+
+private:
+
+    friend class ShaderCompiler;
+
+    std::map<std::string, int, std::less<>> nameToBindingGroupLayoutIndex_;
+    std::vector<RC<BindingGroupLayout>>     bindingGroupLayouts_;
+    std::vector<std::string>                bindingGroupNames_;
+    RC<BindingLayout>                       bindingLayout_;
+    ShaderBindingNameMap                    bindingNameMap_;
+    int                                     builtinBindingGroupIndices_[EnumCount<BuiltinBindingGroup>] = {};
+
+    // Should be the last group, if present
+    RC<BindingGroup> bindingGroupForInlineSamplers_;
+
+    std::vector<PushConstantRange> pushConstantRanges_;
+};
+
+class ShaderInfo : public Uncopyable
+{
+public:
+
+    enum class Category
+    {
+        Graphics,
+        Compute,
+        RayTracing
+    };
+
+    using BuiltinBindingGroup = ShaderBindingLayoutInfo::BuiltinBindingGroup;
+    using PushConstantRange = ShaderBindingLayoutInfo::PushConstantRange;
+
     virtual ~ShaderInfo() = default;
+
+    const RC<ShaderBindingLayoutInfo> &GetBindingLayoutInfo() const;
 
     Category GetCategory() const;
 
@@ -103,21 +154,9 @@ private:
     std::vector<ShaderIOVar>          VSInput_;
     std::vector<ShaderConstantBuffer> constantBuffers_;
 
-    std::map<std::string, int, std::less<>> nameToBindingGroupLayoutIndex_;
-    std::vector<RC<BindingGroupLayout>>     bindingGroupLayouts_;
-    std::vector<std::string>                bindingGroupNames_;
-    RC<BindingLayout>                       bindingLayout_;
-    ShaderBindingNameMap                    bindingNameMap_;
-    int                                     builtinBindingGroupIndices_[EnumCount<BuiltinBindingGroup>] = {};
-
-    // Should be the last group, if present
-    RC<BindingGroup> bindingGroupForInlineSamplers_;
-
     Vector3i computeShaderThreadGroupSize_;
-
-    std::vector<PushConstantRange> pushConstantRanges_;
-
-    RC<const ShaderGroupInfo> shaderGroupInfo_;
+    RC<ShaderGroupInfo> shaderGroupInfo_;
+    RC<ShaderBindingLayoutInfo> shaderBindingLayoutInfo_;
 };
 
 class Shader : public Uncopyable, public WithUniqueObjectID
@@ -197,14 +236,77 @@ inline Span<RHI::RayTracingHitShaderGroup> ShaderGroupInfo::GetHitShaderGroups()
     return hitShaderGroups_;
 }
 
-inline ShaderInfo::Category ShaderInfo::GetCategory() const
+inline const RC<BindingLayout> &ShaderBindingLayoutInfo::GetBindingLayout() const
 {
-    return category_;
+    return bindingLayout_;
+}
+
+inline int ShaderBindingLayoutInfo::GetBindingGroupCount() const
+{
+    return static_cast<int>(bindingGroupLayouts_.size());
+}
+
+inline const std::string &ShaderBindingLayoutInfo::GetBindingGroupNameByIndex(int index) const
+{
+    return bindingGroupNames_[index];
+}
+
+inline const RC<BindingGroupLayout> &ShaderBindingLayoutInfo::GetBindingGroupLayoutByName(std::string_view name) const
+{
+    static const RC<BindingGroupLayout> nil;
+    const auto it = nameToBindingGroupLayoutIndex_.find(name);
+    return it != nameToBindingGroupLayoutIndex_.end() ? GetBindingGroupLayoutByIndex(it->second) : nil;
+}
+
+inline const RC<BindingGroupLayout> &ShaderBindingLayoutInfo::GetBindingGroupLayoutByIndex(int index) const
+{
+    return bindingGroupLayouts_[index];
+}
+
+inline int ShaderBindingLayoutInfo::GetBindingGroupIndexByName(std::string_view name) const
+{
+    const auto it = nameToBindingGroupLayoutIndex_.find(name);
+    return it != nameToBindingGroupLayoutIndex_.end() ? it->second : -1;
+}
+
+inline const RC<BindingGroup> &ShaderBindingLayoutInfo::GetBindingGroupForInlineSamplers() const
+{
+    return bindingGroupForInlineSamplers_;
+}
+
+inline int ShaderBindingLayoutInfo::GetBindingGroupIndexForInlineSamplers() const
+{
+    return bindingGroupForInlineSamplers_ ? (static_cast<int>(bindingGroupLayouts_.size()) - 1) : -1;
+}
+
+inline int ShaderBindingLayoutInfo::GetBuiltinBindingGroupIndex(BuiltinBindingGroup bindingGroup) const
+{
+    return builtinBindingGroupIndices_[std::to_underlying(bindingGroup)];
+}
+
+inline Span<ShaderBindingLayoutInfo::PushConstantRange> ShaderBindingLayoutInfo::GetPushConstantRanges() const
+{
+    return pushConstantRanges_;
+}
+
+inline const ShaderBindingNameMap &ShaderBindingLayoutInfo::GetBindingNameMap() const
+{
+    return bindingNameMap_;
 }
 
 inline const RC<BindingLayout> &ShaderInfo::GetBindingLayout() const
 {
-    return bindingLayout_;
+    return shaderBindingLayoutInfo_->GetBindingLayout();
+}
+
+inline const RC<ShaderBindingLayoutInfo> &ShaderInfo::GetBindingLayoutInfo() const
+{
+    return shaderBindingLayoutInfo_;
+}
+
+inline ShaderInfo::Category ShaderInfo::GetCategory() const
+{
+    return category_;
 }
 
 inline Span<ShaderIOVar> ShaderInfo::GetInputVariables() const
@@ -219,45 +321,42 @@ inline Span<ShaderConstantBuffer> ShaderInfo::GetConstantBuffers() const
 
 inline int ShaderInfo::GetBindingGroupCount() const
 {
-    return static_cast<int>(bindingGroupLayouts_.size());
+    return shaderBindingLayoutInfo_->GetBindingGroupCount();
 }
 
 inline const std::string &ShaderInfo::GetBindingGroupNameByIndex(int index) const
 {
-    return bindingGroupNames_[index];
+    return shaderBindingLayoutInfo_->GetBindingGroupNameByIndex(index);
 }
 
 inline const RC<BindingGroupLayout> &ShaderInfo::GetBindingGroupLayoutByName(std::string_view name) const
 {
-    static const RC<BindingGroupLayout> nil;
-    const auto it = nameToBindingGroupLayoutIndex_.find(name);
-    return it != nameToBindingGroupLayoutIndex_.end() ? GetBindingGroupLayoutByIndex(it->second) : nil;
+    return shaderBindingLayoutInfo_->GetBindingGroupLayoutByName(name);
 }
 
 inline const RC<BindingGroupLayout> &ShaderInfo::GetBindingGroupLayoutByIndex(int index) const
 {
-    return bindingGroupLayouts_[index];
+    return shaderBindingLayoutInfo_->GetBindingGroupLayoutByIndex(index);
 }
 
 inline int ShaderInfo::GetBindingGroupIndexByName(std::string_view name) const
 {
-    const auto it = nameToBindingGroupLayoutIndex_.find(name);
-    return it != nameToBindingGroupLayoutIndex_.end() ? it->second : -1;
+    return shaderBindingLayoutInfo_->GetBindingGroupIndexByName(name);
 }
 
 inline const RC<BindingGroup> &ShaderInfo::GetBindingGroupForInlineSamplers() const
 {
-    return bindingGroupForInlineSamplers_;
+    return shaderBindingLayoutInfo_->GetBindingGroupForInlineSamplers();
 }
 
 inline int ShaderInfo::GetBindingGroupIndexForInlineSamplers() const
 {
-    return bindingGroupForInlineSamplers_ ? (static_cast<int>(bindingGroupLayouts_.size()) - 1) : -1;
+    return shaderBindingLayoutInfo_->GetBindingGroupIndexForInlineSamplers();
 }
 
 inline int ShaderInfo::GetBuiltinBindingGroupIndex(BuiltinBindingGroup bindingGroup) const
 {
-    return builtinBindingGroupIndices_[std::to_underlying(bindingGroup)];
+    return shaderBindingLayoutInfo_->GetBuiltinBindingGroupIndex(bindingGroup);
 }
 
 inline const Vector3i &ShaderInfo::GetThreadGroupSize() const
@@ -276,7 +375,7 @@ inline Vector3i ShaderInfo::ComputeThreadGroupCount(const Vector3i &threadCount)
 
 inline Span<ShaderInfo::PushConstantRange> ShaderInfo::GetPushConstantRanges() const
 {
-    return pushConstantRanges_;
+    return shaderBindingLayoutInfo_->GetPushConstantRanges();
 }
 
 inline const ShaderGroupInfo &ShaderInfo::GetShaderGroupInfo() const
@@ -287,7 +386,7 @@ inline const ShaderGroupInfo &ShaderInfo::GetShaderGroupInfo() const
 
 inline const ShaderBindingNameMap &ShaderInfo::GetBindingNameMap() const
 {
-    return bindingNameMap_;
+    return shaderBindingLayoutInfo_->GetBindingNameMap();
 }
 
 inline Shader::Category Shader::GetCategory() const

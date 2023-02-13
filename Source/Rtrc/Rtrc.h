@@ -1,8 +1,9 @@
 #pragma once
 
+#include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/Graphics/ImGui/Instance.h>
 #include <Rtrc/Graphics/Material/MaterialInstance.h>
-#include <Rtrc/Graphics/Device/Device.h>
+#include <Rtrc/Graphics/Misc/ShaderBindingTableBuilder.h>
 #include <Rtrc/Graphics/RenderGraph/Executable.h>
 #include <Rtrc/Graphics/Resource/ResourceManager.h>
 #include <Rtrc/Renderer/AtmosphereRenderer.h>

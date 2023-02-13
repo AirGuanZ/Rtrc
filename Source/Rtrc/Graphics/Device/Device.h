@@ -56,6 +56,10 @@ public:
 
     ~Device();
 
+    // Query
+
+    const RHI::ShaderGroupRecordRequirements &GetShaderGroupRecordRequirements() const;
+
     // Context objects
 
     Queue &GetQueue();
@@ -267,6 +271,11 @@ private:
     Box<CopyContext>                  copyContext_;
     Box<AccelerationStructureManager> accelerationManager_;
 };
+
+inline const RHI::ShaderGroupRecordRequirements &Device::GetShaderGroupRecordRequirements() const
+{
+    return GetRawDevice()->GetShaderGroupRecordRequirements();
+}
 
 inline Queue &Device::GetQueue()
 {

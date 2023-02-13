@@ -30,6 +30,7 @@ namespace ShaderCompilerDetail
             "RWStructuredBuffer",
             "ConstantBuffer",
             "SamplerState",
+            "AccelerationStructure"
         };
         assert(static_cast<int>(type) < GetArraySize<int>(NAMES));
         return NAMES[static_cast<int>(type)];
@@ -72,20 +73,21 @@ namespace ShaderCompilerDetail
 
     const std::map<std::string, RHI::BindingType, std::less<>> RESOURCE_PROPERTIES =
     {
-        { "Texture2DArray",     RHI::BindingType::Texture2DArray },
-        { "Texture2D",          RHI::BindingType::Texture2D },
-        { "RWTexture2DArray",   RHI::BindingType::RWTexture2DArray },
-        { "RWTexture2D",        RHI::BindingType::RWTexture2D },
-        { "Texture3DArray",     RHI::BindingType::Texture3DArray },
-        { "Texture3D",          RHI::BindingType::Texture3D },
-        { "RWTexture3DArray",   RHI::BindingType::RWTexture3DArray },
-        { "RWTexture3D",        RHI::BindingType::RWTexture3D },
-        { "Buffer",             RHI::BindingType::Buffer },
-        { "RWBuffer",           RHI::BindingType::RWBuffer },
-        { "StructuredBuffer",   RHI::BindingType::StructuredBuffer },
-        { "RWStructuredBuffer", RHI::BindingType::RWStructuredBuffer },
-        { "ConstantBuffer",     RHI::BindingType::ConstantBuffer },
-        { "SamplerState",       RHI::BindingType::Sampler }
+        { "Texture2DArray",        RHI::BindingType::Texture2DArray },
+        { "Texture2D",             RHI::BindingType::Texture2D },
+        { "RWTexture2DArray",      RHI::BindingType::RWTexture2DArray },
+        { "RWTexture2D",           RHI::BindingType::RWTexture2D },
+        { "Texture3DArray",        RHI::BindingType::Texture3DArray },
+        { "Texture3D",             RHI::BindingType::Texture3D },
+        { "RWTexture3DArray",      RHI::BindingType::RWTexture3DArray },
+        { "RWTexture3D",           RHI::BindingType::RWTexture3D },
+        { "Buffer",                RHI::BindingType::Buffer },
+        { "RWBuffer",              RHI::BindingType::RWBuffer },
+        { "StructuredBuffer",      RHI::BindingType::StructuredBuffer },
+        { "RWStructuredBuffer",    RHI::BindingType::RWStructuredBuffer },
+        { "ConstantBuffer",        RHI::BindingType::ConstantBuffer },
+        { "SamplerState",          RHI::BindingType::Sampler },
+        { "AccelerationStructure", RHI::BindingType::AccelerationStructure }
     };
 
     RHI::ShaderStageFlag ParseStages(ShaderTokenStream &tokens)
@@ -653,6 +655,7 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
 
     auto shader = MakeRC<Shader>();
     shader->info_ = MakeRC<ShaderInfo>();
+    shader->info_->shaderBindingLayoutInfo_ = MakeRC<ShaderBindingLayoutInfo>();
     shader->info_->category_ = category;
     if(hasVS)
     {
@@ -805,7 +808,7 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     }
     std::ranges::copy(std::ranges::views::values(slotToCBuffer), std::back_inserter(shader->info_->constantBuffers_));
 
-    auto &bindingNameMap = shader->info_->bindingNameMap_;
+    auto &bindingNameMap = shader->info_->shaderBindingLayoutInfo_->bindingNameMap_;
     bindingNameMap.allBindingNames_.resize(groupLayouts.size());
     for(size_t i = 0; i < groupLayouts.size(); ++i)
     {
@@ -817,26 +820,28 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
         bindingNameMap.allBindingNames_[pair.second.first][pair.second.second] = pair.first;
     }
 
-    shader->info_->nameToBindingGroupLayoutIndex_ = std::move(bindings.nameToGroupIndex);
-    shader->info_->bindingGroupLayouts_ = std::move(groupLayouts);
-    shader->info_->bindingGroupNames_ = std::move(bindings.groupNames);
+    shader->info_->shaderBindingLayoutInfo_->nameToBindingGroupLayoutIndex_ = std::move(bindings.nameToGroupIndex);
+    shader->info_->shaderBindingLayoutInfo_->bindingGroupLayouts_ = std::move(groupLayouts);
+    shader->info_->shaderBindingLayoutInfo_->bindingGroupNames_ = std::move(bindings.groupNames);
     
     BindingLayout::Desc bindingLayoutDesc;
-    for(auto &group : shader->info_->bindingGroupLayouts_)
+    for(auto &group : shader->info_->shaderBindingLayoutInfo_->bindingGroupLayouts_)
     {
         bindingLayoutDesc.groupLayouts.push_back(group);
     }
     bindingLayoutDesc.pushConstantRanges = bindings.pushConstantRanges;
-    shader->info_->bindingLayout_ = device_->CreateBindingLayout(bindingLayoutDesc);
+    shader->info_->shaderBindingLayoutInfo_->bindingLayout_ = device_->CreateBindingLayout(bindingLayoutDesc);
 
     if(inlineSamplerGroupIndex >= 0)
     {
-        shader->info_->bindingGroupForInlineSamplers_ = shader->info_->bindingGroupLayouts_.back()->CreateBindingGroup();
+        shader->info_->shaderBindingLayoutInfo_->bindingGroupForInlineSamplers_ =
+            shader->info_->shaderBindingLayoutInfo_->bindingGroupLayouts_.back()->CreateBindingGroup();
     }
 
     auto SetBuiltinBindingGroupIndex = [&](Shader::BuiltinBindingGroup group, std::string_view name)
     {
-        shader->info_->builtinBindingGroupIndices_[std::to_underlying(group)] = shader->GetBindingGroupIndexByName(name);
+        shader->info_->shaderBindingLayoutInfo_->builtinBindingGroupIndices_[std::to_underlying(group)] =
+            shader->GetBindingGroupIndexByName(name);
     };
     SetBuiltinBindingGroupIndex(Shader::BuiltinBindingGroup::Pass,     "Pass");
     SetBuiltinBindingGroupIndex(Shader::BuiltinBindingGroup::Material, "Material");
@@ -848,7 +853,7 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
         shader->computePipeline_ = device_->CreateComputePipeline(shader);
     }
 
-    shader->info_->pushConstantRanges_ = std::move(bindings.pushConstantRanges);
+    shader->info_->shaderBindingLayoutInfo_->pushConstantRanges_ = std::move(bindings.pushConstantRanges);
 
     return shader;
 }
@@ -942,7 +947,7 @@ ShaderCompiler::ParsedBinding ShaderCompiler::ParseBinding(
     const RHI::BindingType bindingType = it->second;
 
     std::string templateParam;
-    if(bindingType != RHI::BindingType::Sampler)
+    if(bindingType != RHI::BindingType::Sampler && bindingType != RHI::BindingType::AccelerationStructure)
     {
         tokens.ConsumeOrThrow("<");
         templateParam = tokens.GetCurrentToken();

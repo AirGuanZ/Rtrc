@@ -46,7 +46,8 @@ struct MaterialProperty
         Int4,
         Buffer,
         Texture2D, // including Texture2D and Texture2DArray
-        Sampler
+        Sampler,
+        AccelerationStructure,
     };
 
     static constexpr bool IsValue(Type type);
@@ -113,7 +114,7 @@ public:
         size_t indexInBindingGroup;
     };
 
-    using MaterialResource = Variant<BufferSrv, TextureSrv, RC<Texture>, RC<Sampler>>;
+    using MaterialResource = Variant<BufferSrv, TextureSrv, RC<Texture>, RC<Sampler>, RC<Tlas>>;
 
     MaterialPassPropertyLayout(const MaterialPropertyHostLayout &materialPropertyLayout, const Shader &shader);
 

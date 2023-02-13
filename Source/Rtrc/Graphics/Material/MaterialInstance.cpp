@@ -59,9 +59,10 @@ RTRC_IMPL_SET(const Vector3i &, Int3)
 RTRC_IMPL_SET(const Vector4i &, Int4)
 
 RTRC_IMPL_SET(const RC<Texture> &, Texture2D)
-RTRC_IMPL_SET(const TextureSrv &,  Texture2D)
-RTRC_IMPL_SET(const BufferSrv  &,  Buffer)
-RTRC_IMPL_SET(RC<Sampler>,         Sampler)
+RTRC_IMPL_SET(const TextureSrv  &, Texture2D)
+RTRC_IMPL_SET(const BufferSrv   &, Buffer)
+RTRC_IMPL_SET(const RC<Sampler> &, Sampler)
+RTRC_IMPL_SET(const RC<Tlas>    &, AccelerationStructure)
 
 #undef RTRC_IMPL_SET
 

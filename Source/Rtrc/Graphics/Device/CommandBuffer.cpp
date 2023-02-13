@@ -190,6 +190,7 @@ void CommandBuffer::End()
 
     currentGraphicsPipeline_ = {};
     currentComputePipeline_ = {};
+    currentRayTracingPipeline_ = {};
 }
 
 void CommandBuffer::BeginDebugEvent(std::string name, const std::optional<Vector4f> &color)
@@ -264,6 +265,19 @@ void CommandBuffer::BindComputePipeline(const RC<ComputePipeline> &computePipeli
     currentComputePipeline_ = computePipeline;
 }
 
+void CommandBuffer::BindRayTracingPipeline(const RC<RayTracingPipeline> &rayTracingPipeline)
+{
+    auto &bindingLayoutInfo = rayTracingPipeline->GetBindingLayoutInfo();
+
+    CheckThreadID();
+    rhiCommandBuffer_->BindPipeline(rayTracingPipeline->GetRHIObject());
+    if(int index = bindingLayoutInfo.GetBindingGroupIndexForInlineSamplers(); index >= 0)
+    {
+        BindRayTracingGroup(index, bindingLayoutInfo.GetBindingGroupForInlineSamplers());
+    }
+    currentRayTracingPipeline_ = rayTracingPipeline;
+}
+
 const GraphicsPipeline *CommandBuffer::GetCurrentGraphicsPipeline() const
 {
     return currentGraphicsPipeline_.get();
@@ -272,6 +286,11 @@ const GraphicsPipeline *CommandBuffer::GetCurrentGraphicsPipeline() const
 const ComputePipeline *CommandBuffer::GetCurrentComputePipeline() const
 {
     return currentComputePipeline_.get();
+}
+
+const RayTracingPipeline *CommandBuffer::GetCurrentRayTracingPipeline() const
+{
+    return currentRayTracingPipeline_.get();
 }
 
 void CommandBuffer::BindGraphicsGroup(int index, const RC<BindingGroup> &group)
@@ -284,6 +303,12 @@ void CommandBuffer::BindComputeGroup(int index, const RC<BindingGroup> &group)
 {
     CheckThreadID();
     rhiCommandBuffer_->BindGroupToComputePipeline(index, group->GetRHIObject());
+}
+
+void CommandBuffer::BindRayTracingGroup(int index, const RC<BindingGroup> &group)
+{
+    CheckThreadID();
+    rhiCommandBuffer_->BindGroupToRayTracingPipeline(index, group->GetRHIObject());
 }
 
 void CommandBuffer::SetViewports(Span<Viewport> viewports)
@@ -347,6 +372,15 @@ void CommandBuffer::SetComputePushConstantRange(
         currentComputePipeline_->GetRHIObject()->GetBindingLayout(), stages, offset, size, data);
 }
 
+void CommandBuffer::SetRayTracingPushConstantRange(
+    RHI::ShaderStageFlag stages, uint32_t offset, uint32_t size, const void *data)
+{
+    CheckThreadID();
+    assert(currentRayTracingPipeline_);
+    rhiCommandBuffer_->SetPushConstants(
+        currentRayTracingPipeline_->GetRHIObject()->GetBindingLayout(), stages, offset, size, data);
+}
+
 void CommandBuffer::SetGraphicsPushConstantRange(uint32_t rangeIndex, const void *data)
 {
     assert(
@@ -363,6 +397,16 @@ void CommandBuffer::SetComputePushConstantRange(uint32_t rangeIndex, const void 
         rangeIndex < currentComputePipeline_->GetShaderInfo()->GetPushConstantRanges().GetSize());
     const RHI::PushConstantRange &range = currentComputePipeline_->GetShaderInfo()->GetPushConstantRanges()[rangeIndex];
     SetComputePushConstantRange(range.stages, range.offset, range.size, data);
+}
+
+void CommandBuffer::SetRayTracingPushConstantRange(uint32_t rangeIndex, const void *data)
+{
+    assert(
+        currentRayTracingPipeline_ &&
+        rangeIndex < currentRayTracingPipeline_->GetBindingLayoutInfo().GetPushConstantRanges().GetSize());
+    const RHI::PushConstantRange &range =
+        currentRayTracingPipeline_->GetBindingLayoutInfo().GetPushConstantRanges()[rangeIndex];
+    SetRayTracingPushConstantRange(range.stages, range.offset, range.size, data);
 }
 
 void CommandBuffer::SetGraphicsPushConstants(const void *data, uint32_t size)
@@ -407,6 +451,27 @@ void CommandBuffer::SetComputePushConstants(const void *data, uint32_t size)
     }
 }
 
+void CommandBuffer::SetRayTracingPushConstants(const void *data, uint32_t size)
+{
+    const RayTracingPipeline *pipeline = GetCurrentRayTracingPipeline();
+    assert(pipeline);
+    const Span<Shader::PushConstantRange> pushConstantRanges = pipeline->GetBindingLayoutInfo().GetPushConstantRanges();
+    for(const Shader::PushConstantRange &range : pushConstantRanges)
+    {
+        const uint32_t clampedEnd = std::min(range.offset + range.size, size);
+        const uint32_t actualSize = clampedEnd - range.offset;
+        if(actualSize > 0)
+        {
+            SetRayTracingPushConstantRange(
+                range.stages, range.offset, range.size, static_cast<const unsigned char *>(data) + range.offset);
+        }
+        else
+        {
+            break;
+        }
+    }
+}
+
 void CommandBuffer::SetGraphicsPushConstants(Span<unsigned char> data)
 {
     if(!data.IsEmpty())
@@ -420,6 +485,14 @@ void CommandBuffer::SetComputePushConstants(Span<unsigned char> data)
     if(!data.IsEmpty())
     {
         SetComputePushConstants(data.GetData(), data.GetSize());
+    }
+}
+
+void CommandBuffer::SetRayTracingPushConstants(Span<unsigned char> data)
+{
+    if(!data.IsEmpty())
+    {
+        SetRayTracingPushConstants(data.GetData(), data.GetSize());
     }
 }
 
@@ -451,6 +524,19 @@ void CommandBuffer::Dispatch(int groupCountX, int groupCountY, int groupCountZ)
 void CommandBuffer::Dispatch(const Vector3i &groupCount)
 {
     this->Dispatch(groupCount.x, groupCount.y, groupCount.z);
+}
+
+void CommandBuffer::Trace(
+    int                                  rayCountX,
+    int                                  rayCountY,
+    int                                  rayCountZ,
+    const RHI::ShaderBindingTableRegion &raygenSbt,
+    const RHI::ShaderBindingTableRegion &missSbt,
+    const RHI::ShaderBindingTableRegion &hitSbt,
+    const RHI::ShaderBindingTableRegion &callableSbt)
+{
+    CheckThreadID();
+    rhiCommandBuffer_->TraceRays(rayCountX, rayCountY, rayCountZ, raygenSbt, missSbt, hitSbt, callableSbt);
 }
 
 void CommandBuffer::BuildBlas(

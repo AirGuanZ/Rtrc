@@ -162,6 +162,9 @@ MaterialPassPropertyLayout::MaterialPassPropertyLayout(const MaterialPropertyHos
             case RHI::BindingType::Sampler:
                 propType = MaterialProperty::Type::Sampler;
                 break;
+            case RHI::BindingType::AccelerationStructure:
+                propType = MaterialProperty::Type::AccelerationStructure;
+                break;
             default:
                 throw Exception(fmt::format(
                     "Unsupported binding type in 'Material' group: {} {}",
@@ -230,6 +233,9 @@ void MaterialPassPropertyLayout::FillBindingGroup(
             break;
         case MaterialProperty::Type::Sampler:
             bindingGroup.Set(ref.indexInBindingGroup, resource.As<RC<Sampler>>());
+            break;
+        case MaterialProperty::Type::AccelerationStructure:
+            bindingGroup.Set(ref.indexInBindingGroup, resource.As<RC<Tlas>>());
             break;
         default:
             Unreachable();

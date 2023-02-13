@@ -139,6 +139,32 @@ GraphicsPipeline::DescKey GraphicsPipeline::Desc::AsKey() const
     return key;
 }
 
+void RayTracingPipeline::GetShaderGroupHandles(
+    uint32_t                   startGroupIndex,
+    uint32_t                   groupCount,
+    MutableSpan<unsigned char> outputData) const
+{
+    assert(rhiObject_);
+    rhiObject_->GetShaderGroupHandles(startGroupIndex, groupCount, outputData);
+}
+
+uint32_t RayTracingPipeline::GetShaderGroupCount() const
+{
+    return shaderGroupCount_;
+}
+
+uint32_t RayTracingPipeline::GetShaderGroupHandleSize() const
+{
+    assert(manager_);
+    auto &device = static_cast<PipelineManager *>(manager_)->_internalGetRHIDevice();
+    return device->GetShaderGroupRecordRequirements().shaderGroupHandleSize;
+}
+
+const ShaderBindingLayoutInfo &RayTracingPipeline::GetBindingLayoutInfo() const
+{
+    return *bindingLayoutInfo_;
+}
+
 PipelineManager::PipelineManager(RHI::DevicePtr device, DeviceSynchronizer &sync)
     : GeneralGPUObjectManager(sync), device_(std::move(device))
 {
@@ -157,11 +183,20 @@ RC<RayTracingLibrary> PipelineManager::CreateRayTracingLibrary(const RayTracingL
     };
     auto ret = MakeRC<RayTracingLibrary>();
     ret->library_ = device_->CreateRayTracingLibrary(rhiDesc);
+    ret->shaderGroupCount_ = static_cast<uint32_t>(desc.shaderGroups.size());
+    ret->bindingLayoutInfo_ = desc.shader->GetInfo()->GetBindingLayoutInfo();
     return ret;
 }
 
 RC<RayTracingPipeline> PipelineManager::CreateRayTracingPipeline(const RayTracingPipeline::Desc &desc)
 {
+    uint32_t shaderGroupCount = 0;
+    shaderGroupCount += static_cast<uint32_t>(desc.shaderGroups.size());
+    for(auto &library : desc.libraries)
+    {
+        shaderGroupCount += library->GetShaderGroupCount();
+    }
+
     std::vector<RHI::RawShaderPtr> rhiShaders;
     rhiShaders.reserve(desc.shaders.size());
     for(auto &rawShader : desc.shaders)
@@ -192,6 +227,26 @@ RC<RayTracingPipeline> PipelineManager::CreateRayTracingPipeline(const RayTracin
     auto ret = MakeRC<RayTracingPipeline>();
     ret->rhiObject_ = std::move(rhiPipeline);
     ret->manager_ = this;
+    ret->shaderGroupCount_ = shaderGroupCount;
+    
+    if(!desc.shaders.empty())
+    {
+        ret->bindingLayoutInfo_ = desc.shaders.front()->GetInfo()->GetBindingLayoutInfo();
+    }
+    else
+    {
+        assert(!desc.libraries.empty());
+        ret->bindingLayoutInfo_ = desc.libraries.front()->bindingLayoutInfo_;;
+    }
+    for(auto &shader : desc.shaders)
+    {
+        assert(ret->bindingLayoutInfo_->GetBindingLayout() == shader->GetBindingLayout());
+    }
+    for(auto &library : desc.libraries)
+    {
+        assert(ret->bindingLayoutInfo_->GetBindingLayout() == library->bindingLayoutInfo_->GetBindingLayout());
+    }
+
     return ret;
 }
 
@@ -342,6 +397,11 @@ RC<ComputePipeline> PipelineManager::CreateComputePipeline(const RC<Shader> &sha
         ret->shaderInfo_ = shader->GetInfo();
         return ret;
     }/*);*/
+}
+
+const RHI::DevicePtr &PipelineManager::_internalGetRHIDevice() const
+{
+    return device_;
 }
 
 RTRC_END

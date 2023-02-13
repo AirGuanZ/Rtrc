@@ -1,80 +1,116 @@
 #include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/Graphics/Misc/ShaderBindingTableBuilder.h>
+#include <Rtrc/Utility/Enumerate.h>
 
 RTRC_BEGIN
 
-ShaderBindingTableBuilder::ShaderBindingTableBuilder()
-    : device_(nullptr), recordSize_(0), dataOffsetInRecord_(0), handleSize_(0), entryCount_(0)
+ShaderBindingTable::operator bool() const
+{
+    return buffer_ != nullptr;
+}
+
+RHI::ShaderBindingTableRegion ShaderBindingTable::GetSubtable(uint32_t subtableIndex) const
+{
+    return subtables_[subtableIndex];
+}
+
+ShaderBindingTableBuilder::SubtableBuilder::SubtableBuilder()
+    : recordSize_(0), shaderGroupHandleSize_(0), entryCount_(0)
 {
     
 }
 
-ShaderBindingTableBuilder::ShaderBindingTableBuilder(
-    Device *device, uint32_t maxShaderDataSizeInBytes, uint32_t entryCount)
-    : device_(device), entryCount_(0)
-{
-    auto &rhiDevice = device_->GetRawDevice();
-    const RHI::ShaderGroupRecordRequirements &shaderGroupReqs = rhiDevice->GetShaderGroupRecordRequirements();
-
-    assert(shaderGroupReqs.shaderGroupHandleSize % shaderGroupReqs.shaderDataUnit == 0);
-    dataOffsetInRecord_ = shaderGroupReqs.shaderGroupHandleSize;
-    recordSize_ = dataOffsetInRecord_ + UpAlignTo(maxShaderDataSizeInBytes, shaderGroupReqs.shaderDataUnit);
-    recordSize_ = UpAlignTo(recordSize_, shaderGroupReqs.shaderGroupHandleAlignment);
-    recordSize_ = UpAlignTo(recordSize_, shaderGroupReqs.shaderGroupBaseAlignment);
-    handleSize_ = shaderGroupReqs.shaderGroupHandleSize;
-
-    if(entryCount)
-    {
-        Resize(entryCount);
-    }
-}
-
-void ShaderBindingTableBuilder::Resize(uint32_t entryCount)
+void ShaderBindingTableBuilder::SubtableBuilder::Resize(uint32_t entryCount)
 {
     entryCount_ = entryCount;
-    data_.resize(recordSize_ * entryCount, 0);
+    storage_.resize(entryCount * recordSize_);
 }
 
-void ShaderBindingTableBuilder::SetEntry(
-    uint32_t index, ShaderGroupHandle shaderGroup, const void *shaderData, uint32_t shaderDataSizeInBytes)
+void ShaderBindingTableBuilder::SubtableBuilder::SetEntry(
+    uint32_t entryIndex, ShaderGroupHandle shaderGroupHandle, const void *shaderData, uint32_t shaderDataSizeInBytes)
 {
-    assert(index < entryCount_);
-    assert(dataOffsetInRecord_ + shaderDataSizeInBytes <= recordSize_);
-    unsigned char *record = data_.data() + recordSize_ * index;
-    if(shaderGroup)
+    assert(entryIndex < entryCount_);
+    assert(shaderGroupHandleSize_ + shaderDataSizeInBytes <= recordSize_);
+    unsigned char *data = storage_.data() + entryIndex * recordSize_;
+    std::memset(data, 0, recordSize_);
+    if(shaderGroupHandle)
     {
-        std::memcpy(record, shaderGroup.storage_, handleSize_);
-        std::memcpy(record + dataOffsetInRecord_, shaderData, shaderDataSizeInBytes);
+        std::memcpy(data, shaderGroupHandle.storage_, shaderGroupHandleSize_);
+        assert((shaderData != nullptr) == (shaderDataSizeInBytes != 0));
+        if(shaderData)
+        {
+            std::memcpy(data + shaderGroupHandleSize_, shaderData, shaderDataSizeInBytes);
+        }
     }
-    else
+}
+
+ShaderBindingTableBuilder::ShaderBindingTableBuilder(Device *device)
+    : device_(device)
+{
+    const RHI::ShaderGroupRecordRequirements &reqs = device->GetRawDevice()->GetShaderGroupRecordRequirements();
+    assert(reqs.shaderGroupHandleSize % reqs.shaderDataUnit == 0);
+    handleSize_      = reqs.shaderGroupHandleSize;
+    recordAlignment_ = reqs.shaderGroupHandleAlignment;
+    dataUnit_        = reqs.shaderDataUnit;
+}
+
+ShaderBindingTableBuilder::SubtableBuilder *ShaderBindingTableBuilder::AddSubtable(uint32_t shaderDataSizeInBytes)
+{
+    auto builder = MakeBox<SubtableBuilder>();
+    builder->recordSize_ = UpAlignTo(handleSize_ + UpAlignTo(shaderDataSizeInBytes, dataUnit_), recordAlignment_);
+    builder->shaderGroupHandleSize_ = handleSize_;
+    subTableBuilders_.push_back(std::move(builder));
+    return subTableBuilders_.back().get();
+}
+
+ShaderBindingTable ShaderBindingTableBuilder::CreateShaderBindingTable(bool useCopyCommand) const
+{
+    const RHI::DevicePtr &device = device_->GetRawDevice();
+    const uint32_t subtableAlignment = device->GetShaderGroupRecordRequirements().shaderGroupBaseAlignment;
+
+    size_t bufferSize = 0;
+    for(auto &builder : subTableBuilders_)
     {
-        std::memset(record, 0, recordSize_);
+        assert(builder->entryCount_ > 0 && "Empty subtable in shader binding table builder");
+        assert(builder->recordSize_ * builder->entryCount_ == builder->storage_.size());
+        bufferSize = UpAlignTo<size_t>(bufferSize, subtableAlignment);
+        bufferSize += builder->storage_.size();
     }
-}
 
-size_t ShaderBindingTableBuilder::GetRecordSizeInBytes() const
-{
-    return recordSize_;
-}
-
-uint32_t ShaderBindingTableBuilder::GetEntryCount() const
-{
-    return entryCount_;
-}
-
-Span<unsigned char> ShaderBindingTableBuilder::GetTableStorage() const
-{
-    return data_;
-}
-
-RC<Buffer> ShaderBindingTableBuilder::CreateTableBuffer(bool useCopyCommand) const
-{
-    return device_->CreateAndUploadBuffer(RHI::BufferDesc
+    std::vector<unsigned char> storage(bufferSize);
+    size_t bufferOffset = 0;
+    for(auto &builder : subTableBuilders_)
     {
-        .size           = data_.size(),
+        bufferOffset = UpAlignTo<size_t>(bufferOffset, subtableAlignment);
+        std::memcpy(storage.data() + bufferOffset, builder->storage_.data(), builder->storage_.size());
+        bufferOffset += builder->storage_.size();
+    }
+
+    auto buffer = device_->CreateAndUploadBuffer(RHI::BufferDesc
+    {
+        .size           = bufferSize,
         .usage          = RHI::BufferUsage::ShaderBindingTable | RHI::BufferUsage::DeviceAddress,
         .hostAccessType = useCopyCommand ? RHI::BufferHostAccessType::None : RHI::BufferHostAccessType::SequentialWrite
-    }, data_.data());
+    }, storage.data());
+
+    ShaderBindingTable ret;
+    ret.buffer_ = std::move(buffer);
+    ret.subtables_.resize(subTableBuilders_.size());
+
+    uint32_t deviceAddressOffset = 0;
+    for(auto &&[i, builder] : Enumerate(subTableBuilders_))
+    {
+        deviceAddressOffset = UpAlignTo(deviceAddressOffset, subtableAlignment);
+        ret.subtables_[i] = RHI::ShaderBindingTableRegion
+        {
+            .deviceAddress = ret.buffer_->GetDeviceAddress() + deviceAddressOffset,
+            .stride        = builder->recordSize_,
+            .size          = static_cast<uint32_t>(builder->storage_.size())
+        };
+        bufferOffset += static_cast<uint32_t>(builder->storage_.size());
+    }
+
+    return ret;
 }
 
 RTRC_END

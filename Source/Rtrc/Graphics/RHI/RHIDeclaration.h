@@ -280,6 +280,7 @@ enum class BindingType
     RWStructuredBuffer,
     ConstantBuffer,
     Sampler,
+    AccelerationStructure,
 };
 
 inline const char *GetBindingTypeName(BindingType type)
@@ -300,6 +301,7 @@ inline const char *GetBindingTypeName(BindingType type)
         "RWStructuredBuffer",
         "ConstantBuffer",
         "Sampler",
+        "AccelerationStructure"
     };
     assert(static_cast<int>(type) < GetArraySize<int>(NAMES));
     return NAMES[static_cast<int>(type)];
@@ -506,6 +508,16 @@ RTRC_DEFINE_ENUM_FLAGS(RayTracingAccelerationStructureBuildFlagBit)
 using RayTracingAccelerationStructureBuildFlag = EnumFlags<RayTracingAccelerationStructureBuildFlagBit>;
 
 struct BufferDeviceAddress { uint64_t address; };
+
+inline BufferDeviceAddress operator+(const BufferDeviceAddress &lhs, std::ptrdiff_t rhs)
+{
+    return { lhs.address + rhs };
+}
+
+inline BufferDeviceAddress operator+(std::ptrdiff_t lhs, const BufferDeviceAddress &rhs)
+{
+    return rhs + lhs;
+}
 
 // =============================== rhi descriptions ===============================
 
@@ -1329,6 +1341,7 @@ public:
     RTRC_RHI_API void ModifyMember(int index, int arrayElem, TextureUav                 *textureUav) RTRC_RHI_API_PURE;
     RTRC_RHI_API void ModifyMember(int index, int arrayElem, Sampler                    *sampler)    RTRC_RHI_API_PURE;
     RTRC_RHI_API void ModifyMember(int index, int arrayElem, const ConstantBufferUpdate &cbuffer)    RTRC_RHI_API_PURE;
+    RTRC_RHI_API void ModifyMember(int index, int arrayElem, Tlas                       *tlas)       RTRC_RHI_API_PURE;
 };
 
 class BindingLayout : public RHIObject

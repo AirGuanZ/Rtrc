@@ -1,4 +1,5 @@
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/BindingGroup.h>
+#include <Rtrc/Graphics/RHI/Vulkan/RayTracing/Tlas.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferView.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Sampler.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/TextureView.h>
@@ -194,6 +195,28 @@ void VulkanBindingGroup::ModifyMember(int index, int arrayElem, const ConstantBu
         .descriptorCount = 1,
         .descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
         .pBufferInfo     = &bufferInfo
+    };
+    vkUpdateDescriptorSets(device_, 1, &write, 0, nullptr);
+}
+
+void VulkanBindingGroup::ModifyMember(int index, int arrayElem, Tlas *tlas)
+{
+    VkAccelerationStructureKHR vkTlas = static_cast<VulkanTlas *>(tlas)->_internalGetNativeTlas();
+    const VkWriteDescriptorSetAccelerationStructureKHR tlasWrite =
+    {
+        .sType                      = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,
+        .accelerationStructureCount = 1,
+        .pAccelerationStructures    = &vkTlas
+    };
+    const VkWriteDescriptorSet write =
+    {
+        .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+        .pNext           = &tlasWrite,
+        .dstSet          = set_,
+        .dstBinding      = static_cast<uint32_t>(index),
+        .dstArrayElement = static_cast<uint32_t>(arrayElem),
+        .descriptorCount = 1,
+        .descriptorType  = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR
     };
     vkUpdateDescriptorSets(device_, 1, &write, 0, nullptr);
 }

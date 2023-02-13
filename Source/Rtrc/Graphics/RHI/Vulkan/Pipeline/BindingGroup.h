@@ -11,6 +11,7 @@ class VulkanTextureSrv;
 class VulkanTextureUav;
 class VulkanSampler;
 class VulkanBuffer;
+class VulkanTlas;
 
 RTRC_RHI_IMPLEMENT(VulkanBindingGroup, BindingGroup)
 {
@@ -26,12 +27,13 @@ public:
 
     const BindingGroupLayout *GetLayout() const RTRC_RHI_OVERRIDE;
 
-    void ModifyMember(int index, int arrayElem, BufferSrv  *bufferSrv) RTRC_RHI_OVERRIDE;
-    void ModifyMember(int index, int arrayElem, BufferUav  *bufferUav) RTRC_RHI_OVERRIDE;
-    void ModifyMember(int index, int arrayElem, TextureSrv *textureSrv) RTRC_RHI_OVERRIDE;
-    void ModifyMember(int index, int arrayElem, TextureUav *textureUav) RTRC_RHI_OVERRIDE;
-    void ModifyMember(int index, int arrayElem, Sampler    *sampler) RTRC_RHI_OVERRIDE;
-    void ModifyMember(int index, int arrayElem, const ConstantBufferUpdate &cbuffer) RTRC_RHI_OVERRIDE;
+    void ModifyMember(int index, int arrayElem, BufferSrv                  *bufferSrv)  RTRC_RHI_OVERRIDE;
+    void ModifyMember(int index, int arrayElem, BufferUav                  *bufferUav)  RTRC_RHI_OVERRIDE;
+    void ModifyMember(int index, int arrayElem, TextureSrv                 *textureSrv) RTRC_RHI_OVERRIDE;
+    void ModifyMember(int index, int arrayElem, TextureUav                 *textureUav) RTRC_RHI_OVERRIDE;
+    void ModifyMember(int index, int arrayElem, Sampler                    *sampler)    RTRC_RHI_OVERRIDE;
+    void ModifyMember(int index, int arrayElem, const ConstantBufferUpdate &cbuffer)    RTRC_RHI_OVERRIDE;
+    void ModifyMember(int index, int arrayElem, Tlas                       *tlas)       RTRC_RHI_OVERRIDE;
 
     VkDescriptorSet _internalGetNativeSet() const;
 
@@ -53,6 +55,9 @@ public:
     void _internalTranslate(
         LinearAllocator &arena, int index, int arrayElem,
         const VulkanBuffer *cbuffer, size_t offset, size_t range, VkWriteDescriptorSet &write) const;
+    void _internalTranslate(
+        LinearAllocator &arena, int index, int arrayElem,
+        const VulkanTlas *tlas, VkWriteDescriptorSet &write) const;
 
 private:
 

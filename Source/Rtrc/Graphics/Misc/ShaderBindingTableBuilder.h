@@ -1,16 +1,30 @@
 #pragma once
 
-#include <Rtrc/Graphics/RHI/RHI.h>
+#include <Rtrc/Graphics/Device/Pipeline.h>
 
 RTRC_BEGIN
 
 class Buffer;
 class Device;
-class ShaderBindingTableBuilder;
+class ShaderBindingTableBuilder2;
 
 class ShaderGroupHandle
 {
 public:
+
+    static ShaderGroupHandle FromPipeline(const RC<RayTracingPipeline> &pipeline)
+    {
+        const uint32_t stride = pipeline->GetShaderGroupHandleSize();
+        const uint32_t count = pipeline->GetShaderGroupCount();
+        auto storageBuffer = MakeRC<std::vector<unsigned char>>(stride * count);
+        pipeline->GetShaderGroupHandles(0, count, *storageBuffer);
+
+        ShaderGroupHandle ret;
+        ret.storage_       = storageBuffer->data();
+        ret.stride_        = stride;
+        ret.storageBuffer_ = std::move(storageBuffer);
+        return ret;
+    }
 
     ShaderGroupHandle()
         : storage_(nullptr), stride_(0)
@@ -29,9 +43,13 @@ public:
         return storage_ != nullptr;
     }
 
-    ShaderGroupHandle operator+(size_t index) const
+    ShaderGroupHandle Offset(size_t index) const
     {
-        return { AddToPointer(storage_, stride_ * index), stride_ };
+        ShaderGroupHandle ret;
+        ret.storage_       = AddToPointer(storage_, stride_ * index);
+        ret.stride_        = stride_;
+        ret.storageBuffer_ = storageBuffer_;
+        return ret;
     }
 
 private:
@@ -40,39 +58,70 @@ private:
 
     const void *storage_;
     size_t      stride_;
+
+    RC<std::vector<unsigned char>> storageBuffer_;
+};
+
+class ShaderBindingTable
+{
+public:
+
+    ShaderBindingTable() = default;
+
+    operator bool() const;
+
+    RHI::ShaderBindingTableRegion GetSubtable(uint32_t subtableIndex) const;
+
+private:
+
+    friend class ShaderBindingTableBuilder;
+    
+    RC<Buffer> buffer_;
+    std::vector<RHI::ShaderBindingTableRegion> subtables_;
 };
 
 class ShaderBindingTableBuilder
 {
 public:
 
-    ShaderBindingTableBuilder();
+    class SubtableBuilder
+    {
+    public:
 
-    ShaderBindingTableBuilder(Device *device, uint32_t maxShaderDataSizeInBytes, uint32_t entryCount = 0);
+        SubtableBuilder();
 
-    void Resize(uint32_t entryCount);
+        void Resize(uint32_t entryCount);
 
-    void SetEntry(uint32_t index, ShaderGroupHandle shaderGroup, const void *shaderData, uint32_t shaderDataSizeInBytes);
+        void SetEntry(
+            uint32_t          entryIndex,
+            ShaderGroupHandle shaderGroupHandle,
+            const void       *shaderData,
+            uint32_t          shaderDataSizeInBytes);
 
-    // Byte size for single entry
-    size_t GetRecordSizeInBytes() const;
-    uint32_t GetEntryCount() const;
-    Span<unsigned char> GetTableStorage() const;
+    private:
 
-    RC<Buffer> CreateTableBuffer(bool useCopyCommand = false) const;
+        friend class ShaderBindingTableBuilder;
 
-    RHI::ShaderBindingTableRegion GetRegion(uint32_t entryOffset, uint32_t entryCount = 1) const;
+        uint32_t recordSize_;
+        uint32_t shaderGroupHandleSize_;
+        uint32_t entryCount_;
+        std::vector<unsigned char> storage_;
+    };
+
+    explicit ShaderBindingTableBuilder(Device *device = nullptr);
+
+    SubtableBuilder *AddSubtable(uint32_t shaderDataSizeInBytes);
+
+    ShaderBindingTable CreateShaderBindingTable(bool useCopyCommand = false) const;
 
 private:
 
-    Device *device_;
-
-    uint32_t recordSize_;
-    uint32_t dataOffsetInRecord_;
+    Device  *device_;
     uint32_t handleSize_;
+    uint32_t recordAlignment_;
+    uint32_t dataUnit_;
 
-    uint32_t                   entryCount_;
-    std::vector<unsigned char> data_;
+    std::vector<Box<SubtableBuilder>> subTableBuilders_;
 };
 
 RTRC_END
