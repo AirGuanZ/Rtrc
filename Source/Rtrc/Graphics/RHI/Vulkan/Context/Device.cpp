@@ -419,6 +419,12 @@ Ptr<Swapchain> VulkanDevice::CreateSwapchain(const SwapchainDesc &desc, Window &
 
     // swapchain
 
+    VkImageUsageFlags usageFlags = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    if(desc.allowUav)
+    {
+        usageFlags |= VK_IMAGE_USAGE_STORAGE_BIT;
+    }
+
     const VkSwapchainCreateInfoKHR swapchainCreateInfo = {
         .sType                 = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
         .surface               = surface->_internalGetSurface(),
@@ -427,7 +433,7 @@ Ptr<Swapchain> VulkanDevice::CreateSwapchain(const SwapchainDesc &desc, Window &
         .imageColorSpace       = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
         .imageExtent           = extent,
         .imageArrayLayers      = 1,
-        .imageUsage            = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
+        .imageUsage            = usageFlags,
         .imageSharingMode      = VK_SHARING_MODE_EXCLUSIVE,
         .queueFamilyIndexCount = 0,
         .pQueueFamilyIndices   = nullptr,

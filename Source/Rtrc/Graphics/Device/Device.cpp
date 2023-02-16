@@ -31,7 +31,8 @@ Box<Device> Device::CreateGraphicsDevice(
     Window        &window,
     RHI::Format    swapchainFormat,
     int            swapchainImageCount,
-    bool           vsync)
+    bool           vsync,
+    Flags          flags)
 {
     Box<Device> ret{ new Device };
     ret->InitializeInternal(std::move(rhiDevice), false);
@@ -39,6 +40,7 @@ Box<Device> Device::CreateGraphicsDevice(
     ret->swapchainFormat_ = swapchainFormat;
     ret->swapchainImageCount_ = swapchainImageCount;
     ret->vsync_ = vsync;
+    ret->swapchainUav_ = flags.contains(EnableSwapchainUav);
     ret->RecreateSwapchain();
     ret->window_->Attach([d = ret.get()](const WindowResizeEvent &e)
     {
@@ -79,6 +81,7 @@ Box<Device> Device::CreateGraphicsDevice(
     ret->swapchainFormat_ = swapchainFormat;
     ret->swapchainImageCount_ = swapchainImageCount;
     ret->vsync_ = vsync;
+    ret->swapchainUav_ = flags.contains(EnableSwapchainUav);
     ret->RecreateSwapchain();
     ret->window_->Attach([d = ret.get()](const WindowResizeEvent &e)
     {
@@ -179,7 +182,8 @@ void Device::RecreateSwapchain()
     {
         .format     = swapchainFormat_,
         .imageCount = static_cast<uint32_t>(swapchainImageCount_),
-        .vsync      = vsync_
+        .vsync      = vsync_,
+        .allowUav   = swapchainUav_
     }, *window_);
 }
 

@@ -18,7 +18,8 @@ namespace DeviceDetail
 
     enum class FlagBit : uint32_t
     {
-        EnableRayTracing = 1 << 0
+        EnableRayTracing   = 1 << 0,
+        EnableSwapchainUav = 1 << 1,
     };
 
     RTRC_DEFINE_ENUM_FLAGS(FlagBit)
@@ -45,7 +46,8 @@ public:
         Window        &window,
         RHI::Format    swapchainFormat     = RHI::Format::B8G8R8A8_UNorm,
         int            swapchainImageCount = 3,
-        bool           vsync               = false);
+        bool           vsync               = false,
+        Flags          flags               = {});
     static Box<Device> CreateGraphicsDevice(
         Window     &window,
         RHI::Format swapchainFormat     = RHI::Format::B8G8R8A8_UNorm,
@@ -255,6 +257,7 @@ private:
     RHI::Format       swapchainFormat_     = RHI::Format::Unknown;
     int               swapchainImageCount_ = 0;
     bool              vsync_               = true;
+    bool              swapchainUav_        = false;
     RHI::SwapchainPtr swapchain_;
 
     Box<DeviceSynchronizer> sync_;

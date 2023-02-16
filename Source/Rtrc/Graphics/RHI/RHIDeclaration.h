@@ -535,6 +535,7 @@ struct SwapchainDesc
     Format format = Format::B8G8R8A8_UNorm;
     uint32_t imageCount = 2;
     bool vsync = true;
+    bool allowUav = false;
 };
 
 struct RawShaderEntry

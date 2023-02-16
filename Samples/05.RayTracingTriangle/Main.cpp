@@ -16,7 +16,8 @@ void Run()
         .Create();
 
     Box<Device> device = Device::CreateGraphicsDevice(
-        window, RHI::Format::B8G8R8A8_UNorm, 3, RTRC_DEBUG, false, Device::EnableRayTracing);
+        window, RHI::Format::B8G8R8A8_UNorm, 3,
+        RTRC_DEBUG, false, Device::EnableRayTracing | Device::EnableSwapchainUav);
 
     ResourceManager resourceManager(device.get());
     resourceManager.AddMaterialFiles($rtrc_get_files("Asset/Sample/05.RayTracingTriangle/*.*"));
