@@ -121,7 +121,7 @@ private:
     uint32_t recordAlignment_;
     uint32_t dataUnit_;
 
-    std::vector<Box<SubtableBuilder>> subTableBuilders_;
+    std::vector<Box<SubtableBuilder>> subtableBuilders_;
 };
 
 RTRC_END

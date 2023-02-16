@@ -407,4 +407,28 @@ void VulkanBindingGroup::_internalTranslate(
     };
 }
 
+void VulkanBindingGroup::_internalTranslate(
+    LinearAllocator &arena, int index, int arrayElem, const VulkanTlas *tlas, VkWriteDescriptorSet &write) const
+{
+    auto vkTlas = arena.Create<VkAccelerationStructureKHR>();
+    *vkTlas = tlas->_internalGetNativeTlas();
+    auto tlasWrite = arena.Create<VkWriteDescriptorSetAccelerationStructureKHR >();
+    *tlasWrite =
+    {
+        .sType                      = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,
+        .accelerationStructureCount = 1,
+        .pAccelerationStructures    = vkTlas
+    };
+    write =
+    {
+        .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+        .pNext           = tlasWrite,
+        .dstSet          = set_,
+        .dstBinding      = static_cast<uint32_t>(index),
+        .dstArrayElement = static_cast<uint32_t>(arrayElem),
+        .descriptorCount = 1,
+        .descriptorType  = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR
+    };
+}
+
 RTRC_RHI_VK_END

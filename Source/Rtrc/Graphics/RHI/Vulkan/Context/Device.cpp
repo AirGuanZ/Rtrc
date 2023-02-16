@@ -189,18 +189,6 @@ namespace VkDeviceDetail
             uint32_t anyHitIndex       = VK_SHADER_UNUSED_KHR;
             uint32_t intersectionIndex = VK_SHADER_UNUSED_KHR;
             VkRayTracingShaderGroupTypeKHR type = group.Match(
-                [&](const RayTracingTriangleHitShaderGroup &g)
-                {
-                    if(g.closestHitShaderIndex != RAY_TRACING_UNUSED_SHADER)
-                    {
-                        closestHitIndex = g.closestHitShaderIndex;
-                    }
-                    if(g.anyHitShaderIndex != RAY_TRACING_UNUSED_SHADER)
-                    {
-                        anyHitIndex = g.anyHitShaderIndex;
-                    }
-                    return VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR;
-                },
                 [&](const RayTracingHitShaderGroup &g)
                 {
                     if(g.closestHitShaderIndex)
@@ -211,9 +199,12 @@ namespace VkDeviceDetail
                     {
                         anyHitIndex = g.anyHitShaderIndex;
                     }
-                    assert(g.intersectionShaderIndex != RAY_TRACING_UNUSED_SHADER);
-                    intersectionIndex = g.intersectionShaderIndex;
-                    return VK_RAY_TRACING_SHADER_GROUP_TYPE_PROCEDURAL_HIT_GROUP_KHR;
+                    if(g.intersectionShaderIndex != RAY_TRACING_UNUSED_SHADER)
+                    {
+                        intersectionIndex = g.intersectionShaderIndex;
+                        return VK_RAY_TRACING_SHADER_GROUP_TYPE_PROCEDURAL_HIT_GROUP_KHR;
+                    }
+                    return VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR;
                 },
                 [&](const RayTracingRayGenShaderGroup &g)
                 {
@@ -436,7 +427,7 @@ Ptr<Swapchain> VulkanDevice::CreateSwapchain(const SwapchainDesc &desc, Window &
         .imageColorSpace       = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
         .imageExtent           = extent,
         .imageArrayLayers      = 1,
-        .imageUsage            = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+        .imageUsage            = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
         .imageSharingMode      = VK_SHARING_MODE_EXCLUSIVE,
         .queueFamilyIndexCount = 0,
         .pQueueFamilyIndices   = nullptr,
@@ -1006,6 +997,12 @@ void VulkanDevice::UpdateBindingGroups(const BindingGroupUpdateBatch &batch)
                 auto vkSampler = static_cast<const VulkanSampler *>(sampler);
                 group->_internalTranslate(
                     arena, record.index, record.arrayElem, vkSampler, writes[i]);
+            },
+            [&](const Tlas *tlas)
+            {
+                auto vkTlas = static_cast<const VulkanTlas *>(tlas);
+                group->_internalTranslate(
+                    arena, record.index, record.arrayElem, vkTlas, writes[i]);
             });
     }
     vkUpdateDescriptorSets(device_, records.GetSize(), writes.data(), 0, nullptr);

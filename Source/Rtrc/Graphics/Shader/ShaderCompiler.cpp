@@ -30,7 +30,7 @@ namespace ShaderCompilerDetail
             "RWStructuredBuffer",
             "ConstantBuffer",
             "SamplerState",
-            "AccelerationStructure"
+            "RaytracingAccelerationStructure"
         };
         assert(static_cast<int>(type) < GetArraySize<int>(NAMES));
         return NAMES[static_cast<int>(type)];
@@ -73,21 +73,21 @@ namespace ShaderCompilerDetail
 
     const std::map<std::string, RHI::BindingType, std::less<>> RESOURCE_PROPERTIES =
     {
-        { "Texture2DArray",        RHI::BindingType::Texture2DArray },
-        { "Texture2D",             RHI::BindingType::Texture2D },
-        { "RWTexture2DArray",      RHI::BindingType::RWTexture2DArray },
-        { "RWTexture2D",           RHI::BindingType::RWTexture2D },
-        { "Texture3DArray",        RHI::BindingType::Texture3DArray },
-        { "Texture3D",             RHI::BindingType::Texture3D },
-        { "RWTexture3DArray",      RHI::BindingType::RWTexture3DArray },
-        { "RWTexture3D",           RHI::BindingType::RWTexture3D },
-        { "Buffer",                RHI::BindingType::Buffer },
-        { "RWBuffer",              RHI::BindingType::RWBuffer },
-        { "StructuredBuffer",      RHI::BindingType::StructuredBuffer },
-        { "RWStructuredBuffer",    RHI::BindingType::RWStructuredBuffer },
-        { "ConstantBuffer",        RHI::BindingType::ConstantBuffer },
-        { "SamplerState",          RHI::BindingType::Sampler },
-        { "AccelerationStructure", RHI::BindingType::AccelerationStructure }
+        { "Texture2DArray",                  RHI::BindingType::Texture2DArray },
+        { "Texture2D",                       RHI::BindingType::Texture2D },
+        { "RWTexture2DArray",                RHI::BindingType::RWTexture2DArray },
+        { "RWTexture2D",                     RHI::BindingType::RWTexture2D },
+        { "Texture3DArray",                  RHI::BindingType::Texture3DArray },
+        { "Texture3D",                       RHI::BindingType::Texture3D },
+        { "RWTexture3DArray",                RHI::BindingType::RWTexture3DArray },
+        { "RWTexture3D",                     RHI::BindingType::RWTexture3D },
+        { "Buffer",                          RHI::BindingType::Buffer },
+        { "RWBuffer",                        RHI::BindingType::RWBuffer },
+        { "StructuredBuffer",                RHI::BindingType::StructuredBuffer },
+        { "RWStructuredBuffer",              RHI::BindingType::RWStructuredBuffer },
+        { "ConstantBuffer",                  RHI::BindingType::ConstantBuffer },
+        { "SamplerState",                    RHI::BindingType::Sampler },
+        { "RaytracingAccelerationStructure", RHI::BindingType::AccelerationStructure }
     };
 
     RHI::ShaderStageFlag ParseStages(ShaderTokenStream &tokens)
@@ -332,7 +332,7 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     if(!hasParsedBindings && hasRT)
     {
         std::string preprocessed;
-        dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_RT_6_0, debug, &preprocessed);
+        dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_RT_6_4, debug, &preprocessed);
         GetBindings(preprocessed);
     }
 
@@ -626,7 +626,7 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     }
     if(hasRT)
     {
-        rtData = dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_RT_6_0, debug, nullptr);
+        rtData = dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_RT_6_4, debug, nullptr);
         rtRefl = MakeBox<SPIRVReflection>(rtData, std::string{});
     }
 

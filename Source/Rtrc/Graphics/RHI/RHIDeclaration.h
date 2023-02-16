@@ -952,12 +952,6 @@ struct ComputePipelineDesc
 
 static constexpr uint32_t RAY_TRACING_UNUSED_SHADER = (std::numeric_limits<uint32_t>::max)();
 
-struct RayTracingTriangleHitShaderGroup
-{
-    uint32_t closestHitShaderIndex = RAY_TRACING_UNUSED_SHADER;
-    uint32_t anyHitShaderIndex     = RAY_TRACING_UNUSED_SHADER;
-};
-
 struct RayTracingHitShaderGroup
 {
     uint32_t closestHitShaderIndex   = RAY_TRACING_UNUSED_SHADER;
@@ -970,7 +964,6 @@ struct RayTracingMissShaderGroup     { uint32_t missShaderIndex = RAY_TRACING_UN
 struct RayTracingCallableShaderGroup { uint32_t callableShaderIndex = RAY_TRACING_UNUSED_SHADER; };
 
 using RayTracingShaderGroup = Variant<
-    RayTracingTriangleHitShaderGroup,
     RayTracingHitShaderGroup,
     RayTracingRayGenShaderGroup,
     RayTracingMissShaderGroup,
@@ -1099,7 +1092,8 @@ public:
         const TextureSrv *,
         const TextureUav *,
         const Sampler *,
-        ConstantBufferUpdate>;
+        ConstantBufferUpdate,
+        const Tlas *>;
 
     struct Record
     {
@@ -1109,19 +1103,21 @@ public:
         UpdateData data;
     };
 
-    void Append(BindingGroup &group, int index, const BufferSrv *bufferSrv);
-    void Append(BindingGroup &group, int index, const BufferUav *bufferUav);
-    void Append(BindingGroup &group, int index, const TextureSrv *textureSrv);
-    void Append(BindingGroup &group, int index, const TextureUav *textureUav);
-    void Append(BindingGroup &group, int index, const Sampler *sampler);
+    void Append(BindingGroup &group, int index, const BufferSrv            *bufferSrv);
+    void Append(BindingGroup &group, int index, const BufferUav            *bufferUav);
+    void Append(BindingGroup &group, int index, const TextureSrv           *textureSrv);
+    void Append(BindingGroup &group, int index, const TextureUav           *textureUav);
+    void Append(BindingGroup &group, int index, const Sampler              *sampler);
     void Append(BindingGroup &group, int index, const ConstantBufferUpdate &cbuffer);
+    void Append(BindingGroup &group, int index, const Tlas                 *tlas);
 
-    void Append(BindingGroup &group, int index, int arrayElem, const BufferSrv *bufferSrv);
-    void Append(BindingGroup &group, int index, int arrayElem, const BufferUav *bufferUav);
-    void Append(BindingGroup &group, int index, int arrayElem, const TextureSrv *textureSrv);
-    void Append(BindingGroup &group, int index, int arrayElem, const TextureUav *textureUav);
-    void Append(BindingGroup &group, int index, int arrayElem, const Sampler *sampler);
+    void Append(BindingGroup &group, int index, int arrayElem, const BufferSrv            *bufferSrv);
+    void Append(BindingGroup &group, int index, int arrayElem, const BufferUav            *bufferUav);
+    void Append(BindingGroup &group, int index, int arrayElem, const TextureSrv           *textureSrv);
+    void Append(BindingGroup &group, int index, int arrayElem, const TextureUav           *textureUav);
+    void Append(BindingGroup &group, int index, int arrayElem, const Sampler              *sampler);
     void Append(BindingGroup &group, int index, int arrayElem, const ConstantBufferUpdate &cbuffer);
+    void Append(BindingGroup &group, int index, int arrayElem, const Tlas *tlas);
 
     Span<Record> GetRecords() const { return records_; }
 
@@ -1212,7 +1208,8 @@ private:
     void ModifyMember(int index, TextureSrv *textureSrv)              { this->ModifyMember(index, 0, textureSrv); } \
     void ModifyMember(int index, TextureUav *textureUav)              { this->ModifyMember(index, 0, textureUav); } \
     void ModifyMember(int index, Sampler *sampler)                    { this->ModifyMember(index, 0, sampler);    } \
-    void ModifyMember(int index, const ConstantBufferUpdate &cbuffer) { this->ModifyMember(index, 0, cbuffer);    }
+    void ModifyMember(int index, const ConstantBufferUpdate &cbuffer) { this->ModifyMember(index, 0, cbuffer);    } \
+    void ModifyMember(int index, Tlas *tlas)                          { this->ModifyMember(index, 0, tlas);       }
 
 #ifndef RTRC_STATIC_RHI
 

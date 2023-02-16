@@ -59,8 +59,8 @@ ShaderBindingTableBuilder::SubtableBuilder *ShaderBindingTableBuilder::AddSubtab
     auto builder = MakeBox<SubtableBuilder>();
     builder->recordSize_ = UpAlignTo(handleSize_ + UpAlignTo(shaderDataSizeInBytes, dataUnit_), recordAlignment_);
     builder->shaderGroupHandleSize_ = handleSize_;
-    subTableBuilders_.push_back(std::move(builder));
-    return subTableBuilders_.back().get();
+    subtableBuilders_.push_back(std::move(builder));
+    return subtableBuilders_.back().get();
 }
 
 ShaderBindingTable ShaderBindingTableBuilder::CreateShaderBindingTable(bool useCopyCommand) const
@@ -69,7 +69,7 @@ ShaderBindingTable ShaderBindingTableBuilder::CreateShaderBindingTable(bool useC
     const uint32_t subtableAlignment = device->GetShaderGroupRecordRequirements().shaderGroupBaseAlignment;
 
     size_t bufferSize = 0;
-    for(auto &builder : subTableBuilders_)
+    for(auto &builder : subtableBuilders_)
     {
         assert(builder->entryCount_ > 0 && "Empty subtable in shader binding table builder");
         assert(builder->recordSize_ * builder->entryCount_ == builder->storage_.size());
@@ -79,7 +79,7 @@ ShaderBindingTable ShaderBindingTableBuilder::CreateShaderBindingTable(bool useC
 
     std::vector<unsigned char> storage(bufferSize);
     size_t bufferOffset = 0;
-    for(auto &builder : subTableBuilders_)
+    for(auto &builder : subtableBuilders_)
     {
         bufferOffset = UpAlignTo<size_t>(bufferOffset, subtableAlignment);
         std::memcpy(storage.data() + bufferOffset, builder->storage_.data(), builder->storage_.size());
@@ -95,10 +95,10 @@ ShaderBindingTable ShaderBindingTableBuilder::CreateShaderBindingTable(bool useC
 
     ShaderBindingTable ret;
     ret.buffer_ = std::move(buffer);
-    ret.subtables_.resize(subTableBuilders_.size());
+    ret.subtables_.resize(subtableBuilders_.size());
 
     uint32_t deviceAddressOffset = 0;
-    for(auto &&[i, builder] : Enumerate(subTableBuilders_))
+    for(auto &&[i, builder] : Enumerate(subtableBuilders_))
     {
         deviceAddressOffset = UpAlignTo(deviceAddressOffset, subtableAlignment);
         ret.subtables_[i] = RHI::ShaderBindingTableRegion
@@ -107,7 +107,7 @@ ShaderBindingTable ShaderBindingTableBuilder::CreateShaderBindingTable(bool useC
             .stride        = builder->recordSize_,
             .size          = static_cast<uint32_t>(builder->storage_.size())
         };
-        bufferOffset += static_cast<uint32_t>(builder->storage_.size());
+        deviceAddressOffset += static_cast<uint32_t>(builder->storage_.size());
     }
 
     return ret;

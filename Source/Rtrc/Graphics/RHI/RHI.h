@@ -77,6 +77,11 @@ inline void BindingGroupUpdateBatch::Append(BindingGroup &group, int index, cons
     records_.push_back({ &group, index, 0, textureUav });
 }
 
+inline void BindingGroupUpdateBatch::Append(BindingGroup &group, int index, const Tlas *tlas)
+{
+    records_.push_back({ &group, index, 0, tlas });
+}
+
 inline void BindingGroupUpdateBatch::Append(
     BindingGroup &group, int index, int arrayElem, const ConstantBufferUpdate &cbuffer)
 {
@@ -111,6 +116,12 @@ inline void BindingGroupUpdateBatch::Append(
     BindingGroup &group, int index, int arrayElem, const TextureUav *textureUav)
 {
     records_.push_back({ &group, index, arrayElem, textureUav });
+}
+
+inline void BindingGroupUpdateBatch::Append(
+    BindingGroup &group, int index, int arrayElem, const Tlas *tlas)
+{
+    records_.push_back({ &group, index, arrayElem, tlas });
 }
 
 RTRC_RHI_END

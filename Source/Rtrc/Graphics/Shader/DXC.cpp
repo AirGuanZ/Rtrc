@@ -75,7 +75,7 @@ std::vector<unsigned char> DXC::Compile(
     if(FAILED(impl_->utils->CreateBlob(
         shaderInfo.source.data(), static_cast<uint32_t>(shaderInfo.source.size()), CP_UTF8, sourceBlob.GetAddressOf())))
     {
-        throw Exception("failed to create shader source blob");
+        throw Exception("Failed to create shader source blob");
     }
 
     std::vector<LPCWSTR> arguments;
@@ -100,7 +100,7 @@ std::vector<unsigned char> DXC::Compile(
     }
 
     std::wstring entryPoint;
-    if(target != Target::Vulkan_1_3_RT_6_0)
+    if(target != Target::Vulkan_1_3_RT_6_4)
     {
         entryPoint = DXCDetail::ToWString(shaderInfo.entryPoint);
         arguments.push_back(L"-E");
@@ -113,10 +113,15 @@ std::vector<unsigned char> DXC::Compile(
     case Target::Vulkan_1_3_VS_6_0: targetProfile = L"vs_6_0";  break;
     case Target::Vulkan_1_3_FS_6_0: targetProfile = L"ps_6_0";  break;
     case Target::Vulkan_1_3_CS_6_0: targetProfile = L"cs_6_0";  break;
-    case Target::Vulkan_1_3_RT_6_0: targetProfile = L"lib_6_0"; break;
+    case Target::Vulkan_1_3_RT_6_4: targetProfile = L"lib_6_4"; break;
     }
     arguments.push_back(L"-T");
     arguments.push_back(targetProfile.c_str());
+
+    if(target == Target::Vulkan_1_3_RT_6_4)
+    {
+        arguments.push_back(L"-Vd");
+    }
 
     std::vector<std::wstring> macros;
     macros.reserve(shaderInfo.macros.size());
@@ -136,7 +141,7 @@ std::vector<unsigned char> DXC::Compile(
     arguments.push_back(L"-fvk-stage-io-order=alpha");
     arguments.push_back(L"-Zpr");
 
-    if(debugMode)
+    if(debugMode && target != Target::Vulkan_1_3_RT_6_4) // DXC crashes when enabling debug info for ray tracing shader
     {
         arguments.push_back(L"-O0");
         arguments.push_back(L"-fspv-extension=SPV_KHR_non_semantic_info");
@@ -155,6 +160,7 @@ std::vector<unsigned char> DXC::Compile(
     if(preprocessOutput)
     {
         arguments.push_back(L"-P");
+        arguments.push_back(L"-Fi");
         arguments.push_back(L"~");
     }
 

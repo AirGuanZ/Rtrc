@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Rtrc/Graphics/Device/AccelerationStructure.h>
 #include <Rtrc/Graphics/Device/BindingGroup.h>
 #include <Rtrc/Graphics/Device/Buffer/Buffer.h>
 #include <Rtrc/Graphics/Device/Buffer/DynamicBuffer.h>
@@ -231,7 +232,7 @@ namespace BindingGroupDSL
         }
     };
 
-    struct MemberProxy_AccelerationStructure
+    struct MemberProxy_RaytracingAccelerationStructure
     {
         static constexpr RHI::BindingType BindingType = RHI::BindingType::AccelerationStructure;
         RC<Tlas> _rtrcObj;
@@ -547,9 +548,9 @@ void ApplyBindingGroup(RHI::Device *device, ConstantBufferManagerInterface *cbMg
                 {
                     auto cbuffer = accessor(&value)->_rtrcObj;
                     batch.Append(*group.GetRHIObject(), index++, RHI::ConstantBufferUpdate{
-                    cbuffer->GetFullBuffer()->GetRHIObject().Get(),
-                    cbuffer->GetSubBufferOffset(),
-                    cbuffer->GetSubBufferSize()
+                        cbuffer->GetFullBuffer()->GetRHIObject().Get(),
+                        cbuffer->GetSubBufferOffset(),
+                        cbuffer->GetSubBufferSize()
                     });
                 }
                 else
@@ -563,11 +564,15 @@ void ApplyBindingGroup(RHI::Device *device, ConstantBufferManagerInterface *cbMg
                     }
                     auto cbuffer = cbMgr->CreateConstantBuffer(static_cast<const CBufferStruct &>(*accessor(&value)));
                     batch.Append(*group.GetRHIObject(), index++, RHI::ConstantBufferUpdate{
-                    cbuffer->GetFullBuffer()->GetRHIObject().Get(),
-                    cbuffer->GetSubBufferOffset(),
-                    cbuffer->GetSubBufferSize()
+                        cbuffer->GetFullBuffer()->GetRHIObject().Get(),
+                        cbuffer->GetSubBufferOffset(),
+                        cbuffer->GetSubBufferSize()
                     });
                 }
+            }
+            else if constexpr(IsRC<std::remove_cvref_t<decltype(accessor(&value)->_rtrcObj)>>)
+            {
+                batch.Append(*group.GetRHIObject(), index++, accessor(&value)->_rtrcObj->GetRHIObject().Get());
             }
             else
             {

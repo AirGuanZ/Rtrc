@@ -213,4 +213,13 @@ void LogError(const T &msg)
     Rtrc::LogError("{}", msg);
 }
 
+template<typename T>
+struct IsRCImpl : std::false_type { };
+
+template<typename T>
+struct IsRCImpl<RC<T>> : std::true_type { };
+
+template<typename T>
+constexpr bool IsRC = IsRCImpl<T>::value;
+
 RTRC_END

@@ -17,14 +17,14 @@ public:
         Vulkan_1_3_VS_6_0,
         Vulkan_1_3_FS_6_0,
         Vulkan_1_3_CS_6_0,
-        Vulkan_1_3_RT_6_0
+        Vulkan_1_3_RT_6_4
     };
 
     struct ShaderInfo
     {
         std::string source;
         std::string sourceFilename;
-        std::string entryPoint; // Ignored when target is Vulkan_1_3_RT_6_0
+        std::string entryPoint; // Ignored when target is Vulkan_1_3_RT_6_4
         std::vector<std::string> includeDirs;
         std::map<std::string, std::string> macros;
         bool bindless = false; // Enable spv extension for bindless descriptors
