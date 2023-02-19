@@ -137,7 +137,8 @@ void Run()
     // Scene
 
     std::vector<SurfaceMaterial> materialData;
-    materialData.push_back({ Vector3f(0.7f, 0.7f, 0.7f) });
+    materialData.push_back({ { 0.7f, 0.7f, 0.7f } });
+    materialData.push_back({ { 1.0f, 0.1f, 0.1f } });
     auto materialBuffer = device->CreateAndUploadBuffer(RHI::BufferDesc
     {
         .size           = sizeof(SurfaceMaterial) * materialData.size(),
@@ -147,6 +148,7 @@ void Run()
     materialBuffer->SetDefaultStructStride(sizeof(SurfaceMaterial));
 
     auto room = LoadObject(*device, "Asset/Sample/06.PathTracing/Room.obj");
+    auto torus = LoadObject(*device, "Asset/Sample/06.PathTracing/Torus.obj");
 
     const std::vector instanceData =
     {
@@ -158,7 +160,16 @@ void Run()
             .instanceSbtOffset            = 0,
             .flags                        = 0,
             .accelerationStructureAddress = room.blas->GetRHIObject()->GetDeviceAddress().address
-        }
+        },
+        RHI::RayTracingInstanceData
+        {
+            .transform3x4                 = { { 1, 0, 0, 0 }, { 0, 1, 0, 0 }, { 0, 0, 1, 0 } },
+            .instanceCustomIndex          = 0,
+            .instanceMask                 = 0xff,
+            .instanceSbtOffset            = 0,
+            .flags                        = 0,
+            .accelerationStructureAddress = torus.blas->GetRHIObject()->GetDeviceAddress().address
+        },
     };
     auto instanceDataBuffer = device->CreateAndUploadBuffer(RHI::BufferDesc
     {
@@ -315,6 +326,7 @@ void Run()
             bindingGroupData.RngTexture        = rgRngTexture->Get();
             bindingGroupData.Scene             = tlas;
             bindingGroupData.Geometries[0]     = room.primitives;
+            bindingGroupData.Geometries[1]     = torus.primitives;
             bindingGroupData.Materials         = materialBuffer;
             bindingGroupData.EyePosition       = camera.GetPosition();
             bindingGroupData.FrustumA          = camera.GetConstantBufferData().worldRays[0];

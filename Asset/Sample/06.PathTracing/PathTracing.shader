@@ -91,24 +91,22 @@ float3 ComputePixelColor(uint2 tid, inout uint rngState)
     ray.Origin    = Pass.EyePosition;
     ray.Direction = normalize(lerp(frustumAB, frustumCD, uv.y));
     ray.TMin      = 0;
-    ray.TMax      = 100;
+    ray.TMax      = 9999;
 
-    Intersection intersection;
-    if(!FindClosestIntersection(ray, intersection))
-        return GetSkyColor(ray.Direction);
+    float3 beta = 1;
+    for(int i = 0; i < 4; ++i)
+    {
+        Intersection intersection;
+        if(!FindClosestIntersection(ray, intersection))
+            return beta * GetSkyColor(ray.Direction);
+        float u1 = PcgNextFloat(rngState);
+        float u2 = PcgNextFloat(rngState);
+        ray.Origin = intersection.position + 0.01 * intersection.normal;
+        ray.Direction = normalize(intersection.normal + 0.999 * UniformOnUnitSphere(float2(u1, u2)));
+        beta *= intersection.color;
+    }
 
-    float u1 = PcgNextFloat(rngState);
-    float u2 = PcgNextFloat(rngState);
-
-    ray.Origin    = intersection.position + 0.01 * intersection.normal;
-    ray.Direction = normalize(intersection.normal + 0.999 * UniformOnUnitSphere(float2(u1, u2)));
-    ray.TMin      = 0;
-    ray.TMax      = 100;
-    if(HasIntersection(ray))
-        return 0;
-
-    // TODO: multi-bounce tracing
-    return intersection.color * GetSkyColor(ray.Direction);
+    return 0;
 }
 
 [numthreads(8, 8, 1)]
