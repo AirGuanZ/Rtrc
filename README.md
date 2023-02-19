@@ -13,3 +13,4 @@ Real-time rendering playground
 - [ ] Remove reference counting in RHI layer
 
 ![](./Gallery/00.png)
+![](./Gallery/01.png)

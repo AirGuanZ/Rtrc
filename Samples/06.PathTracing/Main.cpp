@@ -49,7 +49,7 @@ struct Object
 
 struct SurfaceMaterial
 {
-    Vector3f color; // albedo / pi
+    Vector3f color;
 };
 
 Object LoadObject(Device &device, const std::string &filename)
@@ -304,9 +304,9 @@ void Run()
         }
 
         auto ptPass = graph->CreatePass("Trace");
-        ptPass->Use(rgSwapchain, RG::COMPUTE_SHADER_RWTEXTURE_WRITEONLY);
+        ptPass->Use(rgSwapchain,         RG::COMPUTE_SHADER_RWTEXTURE_WRITEONLY);
         ptPass->Use(rgAccumulateTexture, RG::COMPUTE_SHADER_RWTEXTURE);
-        ptPass->Use(rgRngTexture, RG::COMPUTE_SHADER_RWTEXTURE);
+        ptPass->Use(rgRngTexture,        RG::COMPUTE_SHADER_RWTEXTURE);
         ptPass->SetCallback([&](RG::PassContext &context)
         {
             TracePass bindingGroupData;
@@ -327,7 +327,6 @@ void Run()
             auto &commandBuffer = context.GetCommandBuffer();
             commandBuffer.BindComputePipeline(tracePipeline);
             commandBuffer.BindComputeGroup(0, bindingGroup);
-            
             commandBuffer.DispatchWithThreadCount(rgSwapchain->GetWidth(), rgSwapchain->GetHeight(), 1);
         });
 
