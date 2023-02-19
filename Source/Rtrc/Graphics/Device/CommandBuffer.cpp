@@ -526,6 +526,13 @@ void CommandBuffer::Dispatch(const Vector3i &groupCount)
     this->Dispatch(groupCount.x, groupCount.y, groupCount.z);
 }
 
+void CommandBuffer::DispatchWithThreadCount(int countX, int countY, int countZ)
+{
+    const Vector3i groupCount = currentComputePipeline_->GetShaderInfo()
+        ->ComputeThreadGroupCount({ countX, countY, countZ });
+    Dispatch(groupCount);
+}
+
 void CommandBuffer::Trace(
     int                                  rayCountX,
     int                                  rayCountY,

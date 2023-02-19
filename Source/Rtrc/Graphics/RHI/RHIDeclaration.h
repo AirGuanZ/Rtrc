@@ -111,6 +111,7 @@ enum class Format : uint32_t
     A2R10G10B10_UNorm,
     A2B10G10R10_UNorm,
     R11G11B10_UFloat,
+    R32_UInt,
 
     D24S8,
     D32S8,
@@ -1014,6 +1015,8 @@ struct RayTracingGeometryDesc
 {
     RayTracingGeometryType type;
     uint32_t               primitiveCount;
+    bool                   opaque = false;
+    bool                   noDuplicateAnyHitInvocation = false;
     union
     {
         RayTracingTrianglesGeometryData  trianglesData;
@@ -1042,6 +1045,8 @@ struct RayTracingInstanceArrayDesc
 {
     uint32_t            instanceCount;
     BufferDeviceAddress instanceData;
+    bool                opaque = false;
+    bool                noDuplicateAnyHitInvocation = false;
 };
 
 struct ShaderGroupRecordRequirements

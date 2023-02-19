@@ -48,6 +48,7 @@ public:
     // (rotAlongX, rotAlongY, rotAlongZ):
     //     Z -> X -> Y
     void SetRotation(const Vector3f &rotation);
+    void SetLookAt(const Vector3f &up, const Vector3f &destination);
     void SetPosition(const Vector3f &position);
     void SetProjection(float fovYRad, float wOverH, float nearPlane, float farPlane);
     void CalculateDerivedData();

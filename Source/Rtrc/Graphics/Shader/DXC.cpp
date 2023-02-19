@@ -141,7 +141,10 @@ std::vector<unsigned char> DXC::Compile(
     arguments.push_back(L"-fvk-stage-io-order=alpha");
     arguments.push_back(L"-Zpr");
 
-    if(debugMode && target != Target::Vulkan_1_3_RT_6_4) // DXC crashes when enabling debug info for ray tracing shader
+    const bool enableDebugInfo = debugMode
+                              && target != Target::Vulkan_1_3_RT_6_4
+                              && !shaderInfo.rayQuery; // DXC crashes when enabling debug info for ray tracing shader
+    if(enableDebugInfo)
     {
         arguments.push_back(L"-O0");
         arguments.push_back(L"-fspv-extension=SPV_KHR_non_semantic_info");
@@ -155,6 +158,11 @@ std::vector<unsigned char> DXC::Compile(
     if(shaderInfo.bindless)
     {
         arguments.push_back(L"-fspv-extension=SPV_EXT_descriptor_indexing");
+    }
+
+    if(shaderInfo.rayQuery)
+    {
+        arguments.push_back(L"-fspv-extension=SPV_KHR_ray_query");
     }
 
     if(preprocessOutput)

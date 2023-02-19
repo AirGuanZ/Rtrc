@@ -16,6 +16,7 @@ const char *GetFormatName(Format format)
     ADD_CASE(A2R10G10B10_UNorm)
     ADD_CASE(A2B10G10R10_UNorm)
     ADD_CASE(R11G11B10_UFloat)
+    ADD_CASE(R32_UInt)
     ADD_CASE(D24S8)
     ADD_CASE(D32S8)
     ADD_CASE(D32)
@@ -36,6 +37,7 @@ size_t GetTexelSize(Format format)
     case Format::A2R10G10B10_UNorm:  return 4;
     case Format::A2B10G10R10_UNorm:  return 4;
     case Format::R11G11B10_UFloat:   return 4;
+    case Format::R32_UInt:           return 4;
     case Format::D24S8:
     case Format::D32S8:
     case Format::D32:

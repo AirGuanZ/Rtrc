@@ -82,6 +82,12 @@ namespace VkPhysicalDeviceDetail
             VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES,
             bufferDeviceAddress);
 
+        // Allow StructuredBuffer<struct { float3 }>
+        ADD_PHYSICAL_DEVICE_FEATURE(
+            VkPhysicalDeviceScalarBlockLayoutFeatures,
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES,
+            scalarBlockLayout);
+
         if(enableRayTracing)
         {
             ADD_PHYSICAL_DEVICE_FEATURE(

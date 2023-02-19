@@ -185,6 +185,7 @@ public:
     void DrawIndexed(int indexCount, int instanceCount, int firstIndex, int firstVertex, int firstInstance);
     void Dispatch(int groupCountX, int groupCountY, int groupCountZ);
     void Dispatch(const Vector3i &groupCount);
+    void DispatchWithThreadCount(int countX, int countY, int countZ);
     void Trace(
         int                                  rayCountX,
         int                                  rayCountY,

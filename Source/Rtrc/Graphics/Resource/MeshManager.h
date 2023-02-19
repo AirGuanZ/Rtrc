@@ -14,7 +14,7 @@ public:
     struct Options
     {
         bool generateTangentIfNotPresent = false;
-        bool noIndexBuffer = false;
+        bool noIndexBuffer               = false;
 
         auto operator<=>(const Options &) const = default;
         size_t Hash() const;

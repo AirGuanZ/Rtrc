@@ -32,8 +32,8 @@ void RayGen()
 
     RayDesc ray;
     ray.Origin    = float3(2 * (2 * uv.x - 1), 2 * (1 - 2 * uv.y), -1);
-    ray.TMin      = 0;
     ray.Direction = float3(0, 0, 1);
+    ray.TMin      = 0;
     ray.TMax      = 100;
 
     Payload payload = { float3(0, 0, 0) };

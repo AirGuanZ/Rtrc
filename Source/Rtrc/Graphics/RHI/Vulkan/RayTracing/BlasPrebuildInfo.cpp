@@ -45,12 +45,24 @@ VulkanBlasPrebuildInfo::VulkanBlasPrebuildInfo(
                 .stride = geometry.proceduralData.aabbStride
             };
         }
+
+        VkGeometryFlagsKHR geometryFlags = {};
+        if(geometry.opaque)
+        {
+            geometryFlags |= VK_GEOMETRY_OPAQUE_BIT_KHR;
+        }
+        if(geometry.noDuplicateAnyHitInvocation)
+        {
+            geometryFlags |= VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR;
+        }
+
         const VkGeometryTypeKHR type = TranslateGeometryType(geometry.type);
         vkGeometries_.push_back(VkAccelerationStructureGeometryKHR
         {
             .sType        = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR,
             .geometryType = type,
-            .geometry     = data
+            .geometry     = data,
+            .flags        = geometryFlags
         });
     }
 

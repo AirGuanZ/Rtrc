@@ -28,6 +28,7 @@ public:
         std::vector<std::string> includeDirs;
         std::map<std::string, std::string> macros;
         bool bindless = false; // Enable spv extension for bindless descriptors
+        bool rayQuery = false;
     };
 
     DXC();

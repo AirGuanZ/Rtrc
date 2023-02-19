@@ -21,6 +21,16 @@ VulkanTlasPrebuildInfo::VulkanTlasPrebuildInfo(
     vkPrimitiveCounts.reserve(instanceArrays.size());
     for(const RayTracingInstanceArrayDesc &arr : instanceArrays)
     {
+        VkGeometryFlagsKHR geometryFlags = {};
+        if(arr.opaque)
+        {
+            geometryFlags |= VK_GEOMETRY_OPAQUE_BIT_KHR;
+        }
+        if(arr.noDuplicateAnyHitInvocation)
+        {
+            geometryFlags |= VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR;
+        }
+
         vkPrimitiveCounts.push_back(arr.instanceCount);
         vkGeometries_.push_back(VkAccelerationStructureGeometryKHR
         {
@@ -32,7 +42,8 @@ VulkanTlasPrebuildInfo::VulkanTlasPrebuildInfo(
                 {
                     .sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR
                 }
-            }
+            },
+            .flags = geometryFlags
         });
     }
 

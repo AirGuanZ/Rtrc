@@ -199,7 +199,7 @@ public:
     const RC<ComputePipeline> &GetComputePipeline() const;
     const Vector3i &GetThreadGroupSize() const; // Compute shader only
     Vector3i ComputeThreadGroupCount(const Vector3i &threadCount) const;
-
+    
     Span<ShaderInfo::PushConstantRange> GetPushConstantRanges() const;
 
     Span<RHI::RayTracingRayGenShaderGroup> GetRayGenShaderGroups() const;

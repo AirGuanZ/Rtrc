@@ -170,6 +170,11 @@ namespace BindingGroupDSL
             _rtrcObj = std::move(value);
             return *this;
         }
+
+        auto &operator=(const RC<Buffer> &buffer)
+        {
+            return *this = buffer->GetSrv();
+        }
     };
     
     struct MemberProxy_RWStructuredBuffer
@@ -525,7 +530,7 @@ void ApplyBindingGroup(RHI::Device *device, ConstantBufferManagerInterface *cbMg
         [&]<bool IsUniform, typename M, typename A>
         (const char *name, RHI::ShaderStageFlag stages, const A &accessor, BindingGroupDSL::BindingFlags flags)
     {
-        assert(!flags.contains(BindingGroupDSL::BindingFlagBit::Bindless));
+        //assert(!flags.contains(BindingGroupDSL::BindingFlagBit::Bindless));
         assert(!flags.contains(BindingGroupDSL::BindingFlagBit::VariableArraySize));
         if constexpr(!IsUniform)
         {
@@ -538,7 +543,8 @@ void ApplyBindingGroup(RHI::Device *device, ConstantBufferManagerInterface *cbMg
             {
                 for(size_t i = 0; i < arraySize; ++i)
                 {
-                    batch.Append(*group.GetRHIObject(), index, i, (*accessor(&value))[i]._rtrcObj.GetRHIObject().Get());
+                    if(auto &rhiObj = (*accessor(&value))[i]._rtrcObj.GetRHIObject())
+                        batch.Append(*group.GetRHIObject(), index, i, rhiObj.Get());
                 }
                 index++;
             }
@@ -572,11 +578,13 @@ void ApplyBindingGroup(RHI::Device *device, ConstantBufferManagerInterface *cbMg
             }
             else if constexpr(IsRC<std::remove_cvref_t<decltype(accessor(&value)->_rtrcObj)>>)
             {
-                batch.Append(*group.GetRHIObject(), index++, accessor(&value)->_rtrcObj->GetRHIObject().Get());
+                if(auto &obj = accessor(&value)->_rtrcObj)
+                    batch.Append(*group.GetRHIObject(), index++, obj->GetRHIObject().Get());
             }
             else
             {
-                batch.Append(*group.GetRHIObject(), index++, accessor(&value)->_rtrcObj.GetRHIObject().Get());
+                if(auto &rhiObj = accessor(&value)->_rtrcObj.GetRHIObject())
+                    batch.Append(*group.GetRHIObject(), index++, rhiObj.Get());
             }
         }
     });

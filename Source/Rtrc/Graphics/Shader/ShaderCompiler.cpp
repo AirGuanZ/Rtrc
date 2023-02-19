@@ -604,6 +604,29 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     shaderInfo.source   = "_rtrc_generated_shader_prefix" + shaderInfo.source;
     shaderInfo.bindless = hasBindless;
 
+    if(hasRT)
+    {
+        shaderInfo.rayQuery = true;
+    }
+    else
+    {
+        auto HasASBinding = [&]
+        {
+            for(auto &group : bindings.groups)
+            {
+                for(auto &binding : group.bindings)
+                {
+                    if(binding.type == RHI::BindingType::AccelerationStructure)
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        };
+        shaderInfo.rayQuery = HasASBinding();
+    }
+
     std::vector<uint8_t> vsData, fsData, csData, rtData;
     Box<SPIRVReflection> vsRefl, fsRefl, csRefl, rtRefl;
     if(hasVS)
