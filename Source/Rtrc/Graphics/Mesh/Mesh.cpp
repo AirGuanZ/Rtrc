@@ -3,12 +3,12 @@
 
 RTRC_BEGIN
 
-void Mesh::Bind(CommandBuffer &commandBuffer) const
+void Mesh::SharedRenderingData::Bind(CommandBuffer &commandBuffer) const
 {
-    commandBuffer.SetVertexBuffers(0, vertexBuffers_, vertexBufferByteOffsets_);
+    commandBuffer.SetVertexBuffers(0, vertexBuffers_);
     if(indexBuffer_)
     {
-        commandBuffer.SetIndexBuffer(indexBuffer_, indexFormat_, indexBufferByteOffset_);
+        commandBuffer.SetIndexBuffer(indexBuffer_, indexFormat_);
     }
 }
 

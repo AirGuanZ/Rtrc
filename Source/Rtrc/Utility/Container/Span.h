@@ -3,7 +3,7 @@
 #include <cassert>
 #include <vector>
 
-#include <Rtrc/Utility/StaticVector.h>
+#include <Rtrc/Utility/Container/StaticVector.h>
 
 RTRC_BEGIN
 

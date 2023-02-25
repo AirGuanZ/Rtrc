@@ -6,7 +6,7 @@
 #include <stb_image_write.h>
 #include <tinyexr.h>
 
-#include <Rtrc/Utility/Image.h>
+#include <Rtrc/Utility/Resource/Image.h>
 #include <Rtrc/Utility/ScopeGuard.h>
 #include <Rtrc/Utility/String.h>
 

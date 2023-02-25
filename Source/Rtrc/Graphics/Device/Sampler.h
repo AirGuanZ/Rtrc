@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Rtrc/Graphics/Device/GeneralGPUObject.h>
-#include <Rtrc/Utility/ObjectCache.h>
+#include <Rtrc/Utility/Container/ObjectCache.h>
 
 RTRC_BEGIN
 

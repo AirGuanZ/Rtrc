@@ -7,7 +7,7 @@
 
 #include <Rtrc/Graphics/Device/Buffer/Buffer.h>
 #include <Rtrc/Graphics/Device/Buffer/ConstantBufferStruct.h>
-#include <Rtrc/Utility/SlotVector.h>
+#include <Rtrc/Utility/Container/SlotVector.h>
 #include <Rtrc/Utility/Struct.h>
 #include <Rtrc/Utility/Swap.h>
 

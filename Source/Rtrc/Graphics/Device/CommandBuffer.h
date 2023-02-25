@@ -152,8 +152,9 @@ public:
     void SetViewports(Span<Viewport> viewports);
     void SetScissors(Span<Scissor> scissors);
 
-    void SetVertexBuffers(int slot, Span<RC<Buffer>> buffers, Span<size_t> byteOffsets = {});
-    void SetIndexBuffer(const RC<Buffer> &buffer, RHI::IndexFormat format, size_t byteOffset = 0);
+    void SetVertexBuffers(int slot, const RC<SubBuffer> &buffer);
+    void SetVertexBuffers(int slot, Span<RC<SubBuffer>> buffers);
+    void SetIndexBuffer(const RC<SubBuffer> &buffer, RHI::IndexFormat format);
     void BindMesh(const Mesh &mesh);
 
     void SetStencilReferenceValue(uint8_t value);

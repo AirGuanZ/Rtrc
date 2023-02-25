@@ -1,7 +1,8 @@
 #pragma once
 
-#include <Rtrc/Renderer/Scene/SceneObject.h>
-#include <Rtrc/Utility/Variant.h>
+#include <Rtrc/Graphics/Device/BindingGroupDSL.h>
+#include <Rtrc/Renderer/Scene/Hierarchy/SceneObject.h>
+#include <Rtrc/Utility/SmartPointer/CopyOnWritePtr.h>
 
 RTRC_BEGIN
 
@@ -13,6 +14,8 @@ rtrc_struct(DirectionalLightConstantBuffer)
     rtrc_var(float,  intensity) = 1;
 };
 
+class LightManager;
+
 class Light : public SceneObject
 {
 public:
@@ -22,82 +25,121 @@ public:
         Directional
     };
 
-    struct DirectionalData
+    class SharedRenderingData : public ReferenceCounted
     {
-        Vector3f direction = { 0, -1, 0 };
+        friend class Light;
+
+        Type     type_      = Type::Directional;
+        Vector3f color_     = { 1, 1, 1 };
+        float    intensity_ = 1;
+        Vector3f direction_ = { 0, -1, 0 };
+
+    public:
+
+        Type            GetType() const { return type_; }
+        const Vector3f &GetColor() const { return color_; }
+        float           GetIntensity() const { return intensity_; }
+        const Vector3f &GetDirection() const { assert(type_ == Type::Directional); return direction_; }
     };
 
-    Light();
+    ~Light() override;
 
-    Type GetType() const;
+    Type            GetType() const { return data_->GetType(); }
+    const Vector3f &GetColor() const { return data_->GetColor(); }
+    float           GetIntensity() const { return data_->GetIntensity(); }
+    const Vector3f &GetDirection() const { return data_->GetDirection(); }
+
     void SetType(Type type);
-
-    const Vector3f &GetColor() const;
     void SetColor(const Vector3f &color);
-
-    float GetIntensity() const;
     void SetIntensity(float intensity);
+    void SetDirection(const Vector3f &direction);
 
-    const DirectionalData &GetDirectionalData() const;
-          DirectionalData &GetDirectionalData();
+    const ReferenceCountedPtr<SharedRenderingData> &GetRenderingData() const { return data_; }
+    SharedRenderingData                            *GetMutableRenderingData() { return data_.Unshare(); }
 
 private:
 
-    Vector3f color_;
-    float intensity_;
-    Variant<DirectionalData> data_;
+    friend class LightManager;
+
+    Light();
+
+    LightManager                *manager_;
+    std::list<Light *>::iterator iterator_;
+
+    CopyOnWritePtr<SharedRenderingData> data_;
 };
 
-inline Light::Light()
-    : color_(1, 1, 1), intensity_(1), data_{ DirectionalData{ } }
+class LightManager : public Uncopyable
 {
-    
-}
+public:
 
-inline Light::Type Light::GetType() const
+    Box<Light> CreateLight();
+
+    template<typename F>
+    void ForEachLight(const F &func) const;
+
+    void _internalRelease(Light *light);
+
+private:
+
+    std::list<Light *> lights_;
+};
+
+inline Light::~Light()
 {
-    return data_.Match(
-        [](const DirectionalData &) { return Type::Directional; });
+    assert(manager_);
+    manager_->_internalRelease(this);
 }
 
 inline void Light::SetType(Type type)
 {
-    switch(type)
-    {
-    case Type::Directional:
-        data_ = DirectionalData{};
-        break;
-    }
-}
-
-inline const Vector3f &Light::GetColor() const
-{
-    return color_;
+    data_.Unshare()->type_ = type;
 }
 
 inline void Light::SetColor(const Vector3f &color)
 {
-    color_ = color;
-}
-
-inline float Light::GetIntensity() const
-{
-    return intensity_;
+    data_.Unshare()->color_ = color;
 }
 
 inline void Light::SetIntensity(float intensity)
 {
-    intensity_ = intensity;
+    data_.Unshare()->intensity_ = intensity;
 }
 
-inline const Light::DirectionalData &Light::GetDirectionalData() const
+inline void Light::SetDirection(const Vector3f &direction)
 {
-    return data_.As<DirectionalData>();
+    assert(GetType() == Type::Directional);
+    data_.Unshare()->direction_ = direction;
 }
 
-inline Light::DirectionalData &Light::GetDirectionalData()
+inline Light::Light()
+    : manager_(nullptr)
 {
-    return data_.As<DirectionalData>();
+    data_.Reset(new SharedRenderingData);
+}
+
+inline Box<Light> LightManager::CreateLight()
+{
+    auto light = Box<Light>(new Light);
+    lights_.push_front(light.get());
+    light->manager_ = this;
+    light->iterator_ = lights_.begin();
+    return light;
+}
+
+template<typename F>
+void LightManager::ForEachLight(const F &func) const
+{
+    for(Light *light : lights_)
+    {
+        func(light);
+    }
+}
+
+inline void LightManager::_internalRelease(Light *light)
+{
+    assert(light && light->manager_ == this);
+    lights_.erase(light->iterator_);
 }
 
 RTRC_END

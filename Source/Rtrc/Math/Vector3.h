@@ -69,6 +69,11 @@ template<typename T>
 Vector3<T> Normalize(const Vector3<T> &v);
 
 template<typename T>
+Vector3<T> Min(const Vector3<T> &lhs, const Vector3<T> &rhs);
+template<typename T>
+Vector3<T> Max(const Vector3<T> &lhs, const Vector3<T> &rhs);
+
+template<typename T>
 Vector3<T>::Vector3()
     : Vector3(T{})
 {
@@ -205,6 +210,24 @@ Vector3<T> Normalize(const Vector3<T> &v)
     static_assert(std::is_floating_point_v<T>);
     const T invLen = 1 / Length(v);
     return Vector3<T>(invLen * v.x, invLen * v.y, invLen * v.z);
+}
+
+template<typename T>
+Vector3<T> Min(const Vector3<T> &lhs, const Vector3<T> &rhs)
+{
+    return Vector3<T>(
+        (std::min)(lhs.x, rhs.x),
+        (std::min)(lhs.y, rhs.y),
+        (std::min)(lhs.z, rhs.z));
+}
+
+template<typename T>
+Vector3<T> Max(const Vector3<T> &lhs, const Vector3<T> &rhs)
+{
+    return Vector3<T>(
+        (std::max)(lhs.x, rhs.x),
+        (std::max)(lhs.y, rhs.y),
+        (std::max)(lhs.z, rhs.z));
 }
 
 RTRC_END

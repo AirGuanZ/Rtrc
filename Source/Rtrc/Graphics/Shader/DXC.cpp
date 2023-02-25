@@ -165,6 +165,11 @@ std::vector<unsigned char> DXC::Compile(
         arguments.push_back(L"-fspv-extension=SPV_KHR_ray_query");
     }
 
+    if(shaderInfo.rayTracing)
+    {
+        arguments.push_back(L"-fspv-extension=SPV_KHR_ray_tracing");
+    }
+
     if(preprocessOutput)
     {
         arguments.push_back(L"-P");

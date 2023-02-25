@@ -27,7 +27,7 @@
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Texture.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/TextureView.h>
 #include <Rtrc/Utility/Enumerate.h>
-#include <Rtrc/Utility/StaticVector.h>
+#include <Rtrc/Utility/Container/StaticVector.h>
 #include <Rtrc/Utility/Unreachable.h>
 
 #ifdef RTRC_STATIC_RHI

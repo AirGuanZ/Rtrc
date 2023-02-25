@@ -5,8 +5,8 @@
 #include <Rtrc/Graphics/Device/Buffer/Buffer.h>
 #include <Rtrc/Graphics/Device/Buffer/DynamicBuffer.h>
 #include <Rtrc/Graphics/Device/Texture/Texture.h>
+#include <Rtrc/Utility/Macro/MacroOverloading.h>
 #include <Rtrc/Utility/Struct.h>
-#include <Rtrc/Utility/MacroOverloading.h>
 
 RTRC_BEGIN
 
@@ -544,7 +544,9 @@ void ApplyBindingGroup(RHI::Device *device, ConstantBufferManagerInterface *cbMg
                 for(size_t i = 0; i < arraySize; ++i)
                 {
                     if(auto &rhiObj = (*accessor(&value))[i]._rtrcObj.GetRHIObject())
+                    {
                         batch.Append(*group.GetRHIObject(), index, i, rhiObj.Get());
+                    }
                 }
                 index++;
             }
@@ -579,12 +581,16 @@ void ApplyBindingGroup(RHI::Device *device, ConstantBufferManagerInterface *cbMg
             else if constexpr(IsRC<std::remove_cvref_t<decltype(accessor(&value)->_rtrcObj)>>)
             {
                 if(auto &obj = accessor(&value)->_rtrcObj)
+                {
                     batch.Append(*group.GetRHIObject(), index++, obj->GetRHIObject().Get());
+                }
             }
             else
             {
                 if(auto &rhiObj = accessor(&value)->_rtrcObj.GetRHIObject())
+                {
                     batch.Append(*group.GetRHIObject(), index++, rhiObj.Get());
+                }
             }
         }
     });

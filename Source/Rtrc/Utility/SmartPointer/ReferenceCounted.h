@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include <cstddef>
 
 #include <Rtrc/Common.h>
@@ -9,10 +10,36 @@ RTRC_BEGIN
 template<typename T>
 class ReferenceCountedPtr;
 
+template<typename T>
+class CopyOnWritePtr;
+
 class ReferenceCounted
 {
     template<typename T>
     friend class ReferenceCountedPtr;
+
+    template<typename T>
+    friend class CopyOnWritePtr;
+
+protected:
+
+    mutable std::atomic<uint32_t> counter_ = 0;
+
+public:
+
+    ReferenceCounted() = default;
+    ~ReferenceCounted() = default;
+
+    ReferenceCounted(const ReferenceCounted &other)
+        : ReferenceCounted()
+    {
+
+    }
+
+    ReferenceCounted &operator=(const ReferenceCounted &other)
+    {
+        return *this;
+    }
 
     void IncreaseCounter() const
     {
@@ -29,8 +56,6 @@ class ReferenceCounted
     {
         return counter_;
     }
-
-    mutable std::atomic<uint32_t> counter_ = 0;
 };
 
 template<typename T>
@@ -142,6 +167,7 @@ public:
 
     uint32_t GetCounter() const
     {
+        assert(ptr_);
         return ptr_->ReferenceCounted::GetCounter();
     }
 

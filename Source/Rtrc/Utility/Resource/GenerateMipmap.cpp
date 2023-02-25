@@ -1,6 +1,6 @@
 #include <avir.h>
 
-#include <Rtrc/Utility/GenerateMipmap.h>
+#include <Rtrc/Utility/Resource/GenerateMipmap.h>
 
 RTRC_BEGIN
 

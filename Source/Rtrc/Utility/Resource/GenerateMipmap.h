@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/Utility/Image.h>
+#include <Rtrc/Utility/Resource/Image.h>
 
 RTRC_BEGIN
 

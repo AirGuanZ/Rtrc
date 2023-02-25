@@ -3,8 +3,7 @@
 #include <filesystem>
 #include <set>
 
-#include <Rtrc/Utility/Span.h>
-#include <Rtrc/Utility/MacroForEach.h>
+#include <Rtrc/Utility/Container/Span.h>
 #include <Rtrc/Utility/Variant.h>
 
 RTRC_BEGIN

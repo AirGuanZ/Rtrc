@@ -22,7 +22,7 @@ namespace RendererDetail
 
 } // namespace RendererDetail
 
-class Renderer : public Uncopyable
+class DeferredRenderer : public Uncopyable
 {
 public:
 
@@ -40,13 +40,13 @@ public:
         RG::TextureResource *skyLut;
     };
 
-    Renderer(Device &device, const BuiltinResourceManager &builtinResources);
+    DeferredRenderer(Device &device, const BuiltinResourceManager &builtinResources);
 
     RenderGraphInterface AddToRenderGraph(
         const Parameters    &parameters,
         RG::RenderGraph     *renderGraph,
         RG::TextureResource *renderTarget,
-        const Scene         &scene,
+        const SceneProxy    &scene,
         const Camera        &camera);
 
 private:
@@ -86,8 +86,8 @@ private:
 
     // Per-frame
 
-    const Scene  *scene_  = nullptr;
-    const Camera *camera_ = nullptr;
+    const SceneProxy *scene_  = nullptr;
+    const Camera     *camera_ = nullptr;
 
     Mesh fullscreenTriangleWithRays_;
     Mesh fullscreenQuadWithRays_;

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/BindingGroupLayout.h>
-#include <Rtrc/Utility/Arena.h>
+#include <Rtrc/Utility/Memory/Arena.h>
 
 RTRC_RHI_VK_BEGIN
 

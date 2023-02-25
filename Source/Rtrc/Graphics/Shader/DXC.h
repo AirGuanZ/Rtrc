@@ -29,6 +29,7 @@ public:
         std::map<std::string, std::string> macros;
         bool bindless = false; // Enable spv extension for bindless descriptors
         bool rayQuery = false;
+        bool rayTracing = false;
     };
 
     DXC();

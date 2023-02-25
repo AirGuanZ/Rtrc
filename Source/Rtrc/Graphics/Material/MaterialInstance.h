@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Rtrc/Graphics/Material/Material.h>
+#include <Rtrc/Utility/SmartPointer/CopyOnWritePtr.h>
 
 RTRC_BEGIN
 
@@ -14,6 +15,8 @@ public:
     using MaterialResource = MaterialPassPropertyLayout::MaterialResource;
 
     explicit MaterialPropertySheet(RC<MaterialPropertyHostLayout> layout);
+
+    void CopyFrom(const MaterialPropertySheet &other);
 
     void Set(std::string_view name, float value);
     void Set(std::string_view name, const Vector2f &value);
@@ -66,7 +69,7 @@ public:
     RC<Shader> GetShader(const KeywordValueContext &keywordValues);
     RC<Shader> GetShader(KeywordSet::ValueMask keywordMask);
 
-    const RC<MaterialPass> &GetPass() const;
+    const MaterialPass *GetPass() const;
 
     void BindGraphicsProperties(const KeywordValueContext &keywordValues, const CommandBuffer &commandBuffer) const;
     void BindGraphicsProperties(KeywordSet::ValueMask mask, const CommandBuffer &commandBuffer) const;
@@ -80,9 +83,9 @@ private:
 
     struct Record
     {
-        mutable RC<BindingGroup> bindingGroup;
-        mutable RC<DynamicBuffer> constantBuffer;
-        mutable bool isConstantBufferDirty = true;
+        mutable RC<BindingGroup>   bindingGroup;
+        mutable RC<DynamicBuffer>  constantBuffer;
+        mutable bool               isConstantBufferDirty = true;
         mutable tbb::spin_rw_mutex mutex;
     };
 
@@ -90,12 +93,12 @@ private:
     template<bool Graphics>
     void BindPropertiesImpl(KeywordSet::ValueMask mask, const RHI::CommandBufferPtr &commandBuffer) const;
 
-    Device *device_ = nullptr;
-    const MaterialInstance *parentMaterialInstance_ = nullptr;
-    RC<MaterialPass> pass_;
+    Device                 *device_ = nullptr;
+    const MaterialInstance *materialInstance_ = nullptr;
+    MaterialPass           *pass_;
 
+    int                       recordCount_;
     std::unique_ptr<Record[]> keywordMaskToRecord_;
-    int recordCount_;
 };
 
 void BindMaterialProperties(
@@ -108,22 +111,39 @@ class MaterialInstance
 {
 public:
 
+    class SharedRenderingData : public ReferenceCounted, public Uncopyable
+    {
+    public:
+
+        SharedRenderingData(RC<const Material> material, const MaterialInstance *materialInstance, Device *device);
+
+        SharedRenderingData *Clone() const;
+
+        const RC<const Material> &GetMaterial() const { return material_; }
+        const MaterialPropertySheet &GetPropertySheet() const { return propertySheet_; }
+
+        MaterialPassInstance *GetPassInstance(std::string_view tag) const;
+        MaterialPassInstance *GetPassInstance(size_t index) const;
+
+    private:
+
+        friend class MaterialInstance;
+
+        Device                                *device_;
+        RC<const Material>                     material_;
+        MaterialPropertySheet                  propertySheet_;
+        std::vector<Box<MaterialPassInstance>> passInstances_;
+    };
+
     MaterialInstance(RC<const Material> material, Device *device);
 
-    template<typename T>
-    void Set(std::string_view name, const T &value)
-    {
-        properties_.Set(name, value);
-    }
-
-    const RC<const Material> &GetMaterial() const { return parentMaterial_; }
+    const RC<const Material> &GetMaterial() const { return data_->GetMaterial(); }
+    const MaterialPropertySheet &GetPropertySheet() const { return data_->GetPropertySheet(); }
 
     // return nullptr when not found
-    MaterialPassInstance *GetPassInstance(std::string_view tag);
-    MaterialPassInstance *GetPassInstance(size_t index);
-
-    const MaterialPropertySheet &GetPropertySheet() const { return properties_; }
-
+    MaterialPassInstance *GetPassInstance(std::string_view tag) const { return data_->GetPassInstance(tag); }
+    MaterialPassInstance *GetPassInstance(size_t index) const { return data_->GetPassInstance(index); }
+    
     void SetFloat(std::string_view name, float value)      { SetPropertyImpl<true>(name, value); }
     void Set(std::string_view name, const Vector2f &value) { SetPropertyImpl<true>(name, value); }
     void Set(std::string_view name, const Vector3f &value) { SetPropertyImpl<true>(name, value); }
@@ -139,16 +159,25 @@ public:
     void Set(std::string_view name, const Vector3i &value) { SetPropertyImpl<true>(name, value); }
     void Set(std::string_view name, const Vector4i &value) { SetPropertyImpl<true>(name, value); }
 
-    void Set(std::string_view name, const TextureSrv &srv) { SetPropertyImpl<false>(name, srv); }
-    void Set(std::string_view name, const BufferSrv &srv)  { SetPropertyImpl<false>(name, srv); }
+    void Set(std::string_view name, const TextureSrv &srv) { SetPropertyImpl<false>(name, srv);     }
+    void Set(std::string_view name, const BufferSrv &srv)  { SetPropertyImpl<false>(name, srv);     }
     void Set(std::string_view name, RC<Sampler> sampler)   { SetPropertyImpl<false>(name, sampler); }
+
+    template<typename T>
+    void Set(std::string_view name, const T &value)
+    {
+        data_.Unshare()->propertySheet_.Set(name, value);
+    }
+
+    const ReferenceCountedPtr<SharedRenderingData> &GetRenderingData() const { return data_; }
+    SharedRenderingData                            *GetMutableRenderingData() { return data_.Unshare(); }
 
 private:
 
     template<bool CBuffer, typename T>
     void SetPropertyImpl(std::string_view name, const T &value)
     {
-        properties_.Set(name, value);
+        data_.Unshare()->propertySheet_.Set(name, value);
         if constexpr(CBuffer)
         {
             InvalidateConstantBuffers();
@@ -162,9 +191,7 @@ private:
     void InvalidateConstantBuffers();
     void InvalidateBindingGroups();
 
-    RC<const Material> parentMaterial_;
-    MaterialPropertySheet properties_;
-    std::vector<Box<MaterialPassInstance>> materialPassInstances_;
+    CopyOnWritePtr<SharedRenderingData> data_;
 };
 
 RTRC_END

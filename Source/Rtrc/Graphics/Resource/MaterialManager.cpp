@@ -1,7 +1,7 @@
 #include <Rtrc/Graphics/Resource/MaterialManager.h>
 #include <Rtrc/Graphics/Shader/ShaderTokenStream.h>
 #include <Rtrc/Utility/Enumerate.h>
-#include <Rtrc/Utility/File.h>
+#include <Rtrc/Utility/Filesystem/File.h>
 #include <Rtrc/Utility/String.h>
 
 RTRC_BEGIN
@@ -220,7 +220,7 @@ namespace MaterialDetail
             if(ShaderTokenStream::IsIdentifier(tokens.GetCurrentToken()))
             {
                 keywords.push_back(tokens.GetCurrentToken());
-                for(size_t i = 0; i < tokens.GetCurrentPosition(); ++i)
+                for(size_t i = pos; i < tokens.GetCurrentPosition(); ++i)
                 {
                     if(source[i] != '\n')
                     {

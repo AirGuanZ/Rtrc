@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Rtrc/Graphics/Device/Buffer/StatefulBuffer.h>
-#include <Rtrc/Utility/ObjectPool.h>
+#include <Rtrc/Utility/Container/ObjectPool.h>
 
 RTRC_BEGIN
 

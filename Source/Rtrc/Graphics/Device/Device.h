@@ -435,7 +435,8 @@ RC<BindingGroup> Device::CreateBindingGroup(const T &value, int variableBindingC
 }
 
 template<BindingGroupDSL::RtrcGroupStruct T>
-RC<BindingGroup> Device::CreateBindingGroup(const T &value, const RC<BindingGroupLayout> &layoutHint, int variableBindingCount)
+RC<BindingGroup> Device::CreateBindingGroup(
+    const T &value, const RC<BindingGroupLayout> &layoutHint, int variableBindingCount)
 {
     auto group = this->CreateBindingGroup<T>(layoutHint, variableBindingCount);
     Rtrc::ApplyBindingGroup(device_.Get(), dynamicBufferManager_.get(), group, value);

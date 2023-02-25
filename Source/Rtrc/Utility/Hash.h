@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include <Rtrc/Common.h>
 
 RTRC_BEGIN

@@ -2,7 +2,8 @@
 
 #include <Rtrc/Graphics/Mesh/MeshLayout.h>
 #include <Rtrc/Graphics/Device/Buffer.h>
-#include <Rtrc/Utility/ObjectCache.h>
+#include <Rtrc/Utility/Container/ObjectCache.h>
+#include <Rtrc/Utility/SmartPointer/CopyOnWritePtr.h>
 
 RTRC_BEGIN
 
@@ -13,6 +14,36 @@ class Mesh : public InObjectCache
 {
 public:
 
+    class SharedRenderingData : public ReferenceCounted
+    {
+    public:
+
+        const MeshLayout *GetLayout() const { return layout_; }
+
+        uint32_t             GetVertexCount() const                      { return vertexCount_; }
+        const RC<SubBuffer> &GetVertexBuffer(int index) const { return vertexBuffers_[index]; }
+
+        uint32_t             GetIndexCount() const        { return indexCount_; }
+        const RC<SubBuffer> &GetIndexBuffer() const       { return indexBuffer_; }
+        RHI::IndexFormat     GetIndexBufferFormat() const { return indexFormat_; }
+        
+        void Bind(CommandBuffer &commandBuffer) const;
+
+    private:
+
+        friend class Mesh;
+        friend class MeshBuilder;
+
+        const MeshLayout *layout_ = nullptr;
+
+        uint32_t                   vertexCount_ = 0;
+        std::vector<RC<SubBuffer>> vertexBuffers_;
+
+        uint32_t                indexCount_ = 0;
+        RHI::IndexFormat        indexFormat_ = RHI::IndexFormat::UInt16;
+        RC<SubBuffer>           indexBuffer_;
+    };
+
     Mesh() = default;
 
     Mesh(Mesh &&other) noexcept;
@@ -20,35 +51,21 @@ public:
 
     void Swap(Mesh &other) noexcept;
 
-    const MeshLayout *GetLayout() const;
-    const RC<Buffer> &GetVertexBuffer(int index) const;
-    size_t GetVertexBufferByteOffset(int index) const;
+    const MeshLayout *GetLayout() const { return sharedData_->GetLayout(); }
 
-    bool HasIndexBuffer() const { return indexBuffer_ != nullptr; }
-    uint32_t GetIndexCount() const { return indexCount_; }
-    uint32_t GetVertexCount() const { return vertexCount_; }
+    uint32_t             GetVertexCount() const           { return sharedData_->GetVertexCount(); }
+    const RC<SubBuffer> &GetVertexBuffer(int index) const { return sharedData_->GetVertexBuffer(index); }
+    
+    uint32_t             GetIndexCount() const        { return sharedData_->GetIndexCount(); }
+    const RC<SubBuffer> &GetIndexBuffer() const       { return sharedData_->indexBuffer_; }
+    RHI::IndexFormat     GetIndexBufferFormat() const { return sharedData_->indexFormat_; }
 
-    const RC<Buffer> &GetIndexBuffer() const;
-    size_t GetIndexBufferByteOffset() const;
-    RHI::IndexFormat GetIndexBufferFormat() const;
-
-    void Bind(CommandBuffer &commandBuffer) const;
+    const ReferenceCountedPtr<SharedRenderingData> &GetRenderingData() const  { return sharedData_; }
+    SharedRenderingData                            *GetMutableRenderingData() { return sharedData_.Unshare(); }
 
 private:
 
-    friend class MeshBuilder;
-
-    uint32_t vertexCount_ = 0;
-    uint32_t indexCount_ = 0;
-
-    const MeshLayout *layout_ = nullptr;
-
-    std::vector<RC<Buffer>> vertexBuffers_;
-    std::vector<size_t> vertexBufferByteOffsets_;
-
-    RHI::IndexFormat indexFormat_ = RHI::IndexFormat::UInt16;
-    RC<Buffer> indexBuffer_;
-    size_t indexBufferByteOffset_ = 0;
+    CopyOnWritePtr<SharedRenderingData> sharedData_ = MakeReferenceCountedPtr<SharedRenderingData>();
 };
 
 class MeshBuilder
@@ -67,17 +84,14 @@ public:
 
 private:
 
-    uint32_t vertexCount_ = 0;
-    uint32_t indexCount_ = 0;
-
     const MeshLayout *layout_ = nullptr;
 
-    std::vector<RC<Buffer>> vertexBuffers_;
-    std::vector<size_t> vertexBufferByteOffsets_;
+    uint32_t                   vertexCount_ = 0;
+    std::vector<RC<SubBuffer>> vertexBuffers_;
 
+    uint32_t         indexCount_ = 0;
     RHI::IndexFormat indexBufferFormat_ = RHI::IndexFormat::UInt16;
-    RC<Buffer> indexBuffer_;
-    size_t indexBufferByteOffset_ = 0;
+    RC<SubBuffer>    indexBuffer_;
 };
 
 inline Mesh::Mesh(Mesh &&other) noexcept
@@ -94,62 +108,26 @@ inline Mesh &Mesh::operator=(Mesh &&other) noexcept
 
 inline void Mesh::Swap(Mesh &other) noexcept
 {
-    RTRC_SWAP_MEMBERS(
-        *this, other,
-        vertexCount_, indexCount_, layout_, vertexBuffers_, vertexBufferByteOffsets_,
-        indexFormat_, indexBuffer_, indexBufferByteOffset_);
-}
-
-inline const MeshLayout *Mesh::GetLayout() const
-{
-    return layout_;
-}
-
-inline const RC<Buffer> &Mesh::GetVertexBuffer(int index) const
-{
-    return vertexBuffers_[index];
-}
-
-inline size_t Mesh::GetVertexBufferByteOffset(int index) const
-{
-    return vertexBufferByteOffsets_[index];
-}
-
-inline const RC<Buffer> &Mesh::GetIndexBuffer() const
-{
-    return indexBuffer_;
-}
-
-inline size_t Mesh::GetIndexBufferByteOffset() const
-{
-    return indexBufferByteOffset_;
-}
-
-inline RHI::IndexFormat Mesh::GetIndexBufferFormat() const
-{
-    return indexFormat_;
+    RTRC_SWAP_MEMBERS(*this, other, sharedData_);
 }
 
 inline MeshBuilder &MeshBuilder::SetLayout(const MeshLayout *layout)
 {
     layout_ = layout;
     vertexBuffers_.resize(layout_->GetVertexBufferLayouts().size());
-    vertexBufferByteOffsets_.resize(vertexBuffers_.size());
     return *this;
 }
 
 inline MeshBuilder &MeshBuilder::SetVertexBuffer(int index, const RC<SubBuffer> &buffer)
 {
     assert(layout_);
-    vertexBuffers_[index] = buffer->GetFullBuffer();
-    vertexBufferByteOffsets_[index] = buffer->GetSubBufferOffset();
+    vertexBuffers_[index] = buffer;
     return *this;
 }
 
 inline MeshBuilder &MeshBuilder::SetIndexBuffer(const RC<SubBuffer> &buffer, RHI::IndexFormat format)
 {
-    indexBuffer_ = buffer->GetFullBuffer();
-    indexBufferByteOffset_ = buffer->GetSubBufferOffset();
+    indexBuffer_ = buffer;
     indexBufferFormat_ = format;
     return *this;
 }
@@ -169,15 +147,13 @@ inline MeshBuilder &MeshBuilder::SetIndexCount(uint32_t count)
 inline Mesh MeshBuilder::CreateMesh()
 {
     Mesh ret;
-    ret.layout_ = layout_;
-    ret.vertexBuffers_ = std::move(vertexBuffers_);
-    ret.vertexBufferByteOffsets_ = std::move(vertexBufferByteOffsets_);
-    ret.indexFormat_ = indexBufferFormat_;
-    ret.indexBuffer_ = std::move(indexBuffer_);
-    ret.indexBufferByteOffset_ = indexBufferByteOffset_;
-    ret.vertexCount_ = vertexCount_;
-    ret.indexCount_ = indexCount_;
-    *this = MeshBuilder();
+    Mesh::SharedRenderingData &data = *ret.GetMutableRenderingData();
+    data.layout_        = layout_;
+    data.vertexBuffers_ = std::move(vertexBuffers_);
+    data.indexFormat_   = indexBufferFormat_;
+    data.indexBuffer_   = std::move(indexBuffer_);
+    data.vertexCount_   = vertexCount_;
+    data.indexCount_    = indexCount_;
     return ret;
 }
 

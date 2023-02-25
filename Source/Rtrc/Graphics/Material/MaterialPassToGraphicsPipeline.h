@@ -15,10 +15,10 @@ public:
 
     template<typename CreateFunc>
     RC<GraphicsPipeline> GetOrCreate(
-        const RC<MaterialPass> &pass,
-        const RC<Shader>       &shader,
-        const MeshLayout       *meshLayout,
-        CreateFunc            &&createFunc);
+        const MaterialPass *pass,
+        const RC<Shader>   &shader,
+        const MeshLayout   *meshLayout,
+        CreateFunc        &&createFunc);
 
 private:
 
@@ -63,7 +63,7 @@ inline MaterialPassToGraphicsPipeline::~MaterialPassToGraphicsPipeline()
 
 template<typename CreateFunc>
 RC<GraphicsPipeline> MaterialPassToGraphicsPipeline::GetOrCreate(
-    const RC<MaterialPass> &pass, const RC<Shader> &shader, const MeshLayout *meshLayout, CreateFunc &&createFunc)
+    const MaterialPass *pass, const RC<Shader> &shader, const MeshLayout *meshLayout, CreateFunc &&createFunc)
 {
     PipelineKey key;
     key.materialID = pass->GetUniqueID();

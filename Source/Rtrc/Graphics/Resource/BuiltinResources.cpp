@@ -1,7 +1,7 @@
 #include <Rtrc/Graphics/Resource/BuiltinResources.h>
 #include <Rtrc/Graphics/Resource/MeshManager.h>
 #include <Rtrc/Renderer/Utility/FullscreenPrimitive.h>
-#include <Rtrc/Utility/DirectoryFilter.h>
+#include <Rtrc/Utility/Filesystem/DirectoryFilter.h>
 
 RTRC_BEGIN
 

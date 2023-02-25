@@ -1,5 +1,4 @@
-#include <Rtrc/Graphics/Material/ShaderBindingContext.h>
-#include <Rtrc/Renderer/Renderer.h>
+#include <Rtrc/Renderer/DeferredRenderer.h>
 #include <Rtrc/Renderer/Utility/FullscreenPrimitive.h>
 #include <Rtrc/Renderer/Utility/ScopedGPUDebugEvent.h>
 #include <Rtrc/Utility/Enumerate.h>
@@ -29,7 +28,7 @@ namespace DeferredRendererDetail
 
 } // namespace DeferredRendererDetail
 
-Renderer::Renderer(Device &device, const BuiltinResourceManager &builtinResources)
+DeferredRenderer::DeferredRenderer(Device &device, const BuiltinResourceManager &builtinResources)
     : device_(device)
     , builtinResources_(builtinResources)
     , staticMeshConstantBufferBatch_(
@@ -38,11 +37,11 @@ Renderer::Renderer(Device &device, const BuiltinResourceManager &builtinResource
 
 }
 
-Renderer::RenderGraphInterface Renderer::AddToRenderGraph(
+DeferredRenderer::RenderGraphInterface DeferredRenderer::AddToRenderGraph(
     const Parameters    &parameters,
     RG::RenderGraph     *renderGraph,
     RG::TextureResource *renderTarget,
-    const Scene         &scene,
+    const SceneProxy    &scene,
     const Camera        &camera)
 {
     staticMeshConstantBufferBatch_.NewBatch();
@@ -170,7 +169,7 @@ Renderer::RenderGraphInterface Renderer::AddToRenderGraph(
     return ret;
 }
 
-void Renderer::DoRenderGBuffersPass(RG::PassContext &passContext, const RenderGBuffersPassData &passData)
+void DeferredRenderer::DoRenderGBuffersPass(RG::PassContext &passContext, const RenderGBuffersPassData &passData)
 {
     CommandBuffer &cmd = passContext.GetCommandBuffer();
 
@@ -232,13 +231,22 @@ void Renderer::DoRenderGBuffersPass(RG::PassContext &passContext, const RenderGB
 
     // Upload constant buffers for static meshes
 
+    std::vector<const StaticMeshRendererProxy *> staticMeshRendererProxies;
+    for(const RendererProxy *proxy : scene_->GetRenderers())
+    {
+        if(proxy->type == RendererProxy::Type::StaticMesh)
+        {
+            staticMeshRendererProxies.push_back(static_cast<const StaticMeshRendererProxy *>(proxy));
+        }
+    }
+
     std::vector<RC<BindingGroup>> staticMeshBindingGroups;
-    staticMeshBindingGroups.reserve(scene_->GetAllStaticMeshes().size());
-    for(auto &staticMesh : scene_->GetAllStaticMeshes())
+    staticMeshBindingGroups.reserve(staticMeshRendererProxies.size());
+    for(const StaticMeshRendererProxy *staticMesh : staticMeshRendererProxies)
     {
         StaticMeshCBuffer cbuffer;
-        cbuffer.localToWorld = staticMesh->GetLocalToWorld();
-        cbuffer.worldToLocal = staticMesh->GetWorldToLocal();
+        cbuffer.localToWorld = staticMesh->localToWorld;
+        cbuffer.worldToLocal = staticMesh->worldToLocal;
         cbuffer.localToCamera = cbuffer.localToWorld * camera_->GetWorldToCameraMatrix();
         cbuffer.localToClip = cbuffer.localToWorld * camera_->GetWorldToClipMatrix();
         staticMeshBindingGroups.push_back(staticMeshConstantBufferBatch_.NewRecord(cbuffer).bindingGroup);
@@ -254,10 +262,10 @@ void Renderer::DoRenderGBuffersPass(RG::PassContext &passContext, const RenderGB
     // Render static meshes
 
     RC<GraphicsPipeline> lastPipeline;
-    for(auto &&[staticMeshIndex, staticMesh] : Enumerate(scene_->GetAllStaticMeshes()))
+    for(auto &&[staticMeshIndex, staticMesh] : Enumerate(staticMeshRendererProxies))
     {
-        auto &mesh = staticMesh->GetMesh();
-        auto &matInst = staticMesh->GetMaterial();
+        auto &mesh = staticMesh->meshRenderingData;
+        auto &matInst = staticMesh->materialRenderingData;
 
         auto matPassInst = matInst->GetPassInstance("GBuffer");
         if(!matPassInst)
@@ -314,14 +322,9 @@ void Renderer::DoRenderGBuffersPass(RG::PassContext &passContext, const RenderGB
         {
             cmd.BindGraphicsGroup(index, staticMeshBindingGroups[staticMeshIndex]);
         }
-        cmd.BindMesh(*mesh);
+        mesh->Bind(cmd);
 
-        if(auto pushConstantData = staticMesh->GetPushConstantData(); !pushConstantData.IsEmpty())
-        {
-            cmd.SetGraphicsPushConstants(pushConstantData);
-        }
-
-        if(mesh->HasIndexBuffer())
+        if(mesh->GetIndexCount() > 0)
         {
             cmd.DrawIndexed(mesh->GetIndexCount(), 1, 0, 0, 0);
         }
@@ -332,7 +335,7 @@ void Renderer::DoRenderGBuffersPass(RG::PassContext &passContext, const RenderGB
     }
 }
 
-void Renderer::DoDeferredLightingPass(RG::PassContext &passContext, const DeferredLightingPassData &passData)
+void DeferredRenderer::DoDeferredLightingPass(RG::PassContext &passContext, const DeferredLightingPassData &passData)
 {
     CommandBuffer &cmd = passContext.GetCommandBuffer();
 
@@ -374,12 +377,21 @@ void Renderer::DoDeferredLightingPass(RG::PassContext &passContext, const Deferr
         perPassGroupData.camera = camera_->GetConstantBufferData();
         perPassGroupData.gbufferSize =
             Vector4f(image->GetWidth(), image->GetHeight(), 1.0f / image->GetWidth(), 1.0f / image->GetHeight());
-        if(auto &dl = scene_->GetDirectionalLight())
+
+        const Light::SharedRenderingData *directionalLight = nullptr;
+        for(const Light::SharedRenderingData *light : scene_->GetLights())
         {
-            const Light::DirectionalData &data = dl->GetDirectionalData();
-            perPassGroupData.directionalLight.direction = data.direction;
-            perPassGroupData.directionalLight.color = dl->GetColor();
-            perPassGroupData.directionalLight.intensity = dl->GetIntensity();
+            if(light->GetType() == Light::Type::Directional)
+            {
+                directionalLight = light;
+                break;
+            }
+        }
+        if(directionalLight)
+        {
+            perPassGroupData.directionalLight.direction = directionalLight->GetDirection();
+            perPassGroupData.directionalLight.color = directionalLight->GetColor();
+            perPassGroupData.directionalLight.intensity = directionalLight->GetIntensity();
         }
         else
         {

@@ -3,8 +3,8 @@
 #include <Rtrc/Graphics/Material/ShaderTemplate.h>
 #include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/Math/Vector3.h>
-#include <Rtrc/Utility/ObjectCache.h>
-#include <Rtrc/Utility/SharedObjectPool.h>
+#include <Rtrc/Utility/Container/ObjectCache.h>
+#include <Rtrc/Utility/Container/SharedObjectPool.h>
 #include <Rtrc/Utility/SignalSlot.h>
 
 /* Material
@@ -89,10 +89,10 @@ public:
 private:
 
     // value0, value1, ..., resource0, resource1, ...
-    std::vector<MaterialProperty> sortedProperties_;
+    std::vector<MaterialProperty>           sortedProperties_;
     std::map<std::string, int, std::less<>> nameToIndex_;
-    size_t valueBufferSize_;
-    std::vector<size_t> valueIndexToOffset_;
+    size_t                                  valueBufferSize_;
+    std::vector<size_t>                     valueIndexToOffset_;
 };
 
 // Describe how to create constantBuffer/bindingGroup for a material pass instance
@@ -161,7 +161,7 @@ public:
     auto &GetShaderTemplate() const;
 
     template<typename...Args>
-    Connection OnDestroy(Args&&...args) { return onDestroyCallbacks_.Connect(std::forward<Args>(args)...); }
+    Connection OnDestroy(Args&&...args) const { return onDestroyCallbacks_.Connect(std::forward<Args>(args)...); }
 
 private:
 
@@ -175,7 +175,7 @@ private:
 
     tbb::spin_rw_mutex propertyLayoutsMutex_;
 
-    Signal<SignalThreadPolicy::SpinLock> onDestroyCallbacks_;
+    mutable Signal<SignalThreadPolicy::SpinLock> onDestroyCallbacks_;
 };
 
 class Material : public std::enable_shared_from_this<Material>, public InObjectCache

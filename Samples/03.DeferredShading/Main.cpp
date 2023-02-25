@@ -10,13 +10,15 @@ class Application : public Uncopyable
     Box<Device>       device_;
     Box<RG::Executer> executer_;
 
-    Box<ImGuiInstance>   imgui_;
-    Box<ResourceManager> resources_;
-    Box<Renderer>        renderer_;
+    Box<ImGuiInstance>    imgui_;
+    Box<ResourceManager>  resources_;
+    Box<DeferredRenderer> renderer_;
 
-    RC<Light> mainLight_;
-    Box<Scene> scene_;
-    Box<Camera> camera_;
+    Box<Scene>                           scene_;
+    std::vector<Box<StaticMeshRenderer>> staticMeshRenderers_;
+    Box<Light>                           mainLight_;
+
+    Box<Camera>          camera_;
     FreeCameraController cameraController_;
 
     Box<AtmosphereRenderer> atmosphere_;
@@ -43,7 +45,7 @@ class Application : public Uncopyable
         resources_->AddMaterialFiles($rtrc_get_files("Asset/Builtin/*/*.*"));
         resources_->AddShaderIncludeDirectory("Asset");
         
-        renderer_ = MakeBox<Renderer>(*device_, resources_->GetBuiltinResources());
+        renderer_ = MakeBox<DeferredRenderer>(*device_, resources_->GetBuiltinResources());
 
         scene_ = MakeBox<Scene>();
         camera_ = MakeBox<Camera>();
@@ -59,25 +61,21 @@ class Application : public Uncopyable
             auto cubeMesh = resources_->GetBuiltinResources().GetBuiltinMesh(BuiltinMesh::Cube);
             auto matInst = resources_->CreateMaterialInstance("Builtin/Surface/Diffuse");
             matInst->Set("Albedo", device_->CreateColorTexture2D(0, 255, 255, 255));
-            
-            auto mesh = MakeRC<StaticMesh>();
-            mesh->SetMesh(cubeMesh);
-            mesh->SetMaterial(matInst);
 
-            Vector4f albedo = { 0.2f, 0.2f, 1.0f, 1.0f };
-            mesh->SetPushConstantData(albedo);
-
-            mesh->UpdateWorldMatrixRecursively(true);
-            scene_->AddMesh(std::move(mesh));
+            auto staticMeshRenderer = scene_->CreateStaticMeshRenderer();
+            staticMeshRenderer->SetMesh(cubeMesh);
+            staticMeshRenderer->SetMaterial(matInst);
+            staticMeshRenderer->UpdateWorldMatrixRecursively(true);
+            staticMeshRenderers_.push_back(std::move(staticMeshRenderer));
         }
 
         {
-            mainLight_ = MakeRC<Light>();
-            mainLight_->SetType(Light::Type::Directional);
-            mainLight_->GetDirectionalData().direction = Normalize(Vector3f(0.4, -1, 0.2));
-            mainLight_->SetColor(Vector3f(1));
-            mainLight_->SetIntensity(1);
-            scene_->AddLight(mainLight_);
+            auto mainLight = scene_->CreateLight();
+            mainLight->SetType(Light::Type::Directional);
+            mainLight->SetDirection(Normalize(Vector3f(0.4, -1, 0.2)));
+            mainLight->SetColor(Vector3f(1));
+            mainLight->SetIntensity(1);
+            mainLight_ = std::move(mainLight);
         }
 
         input_->LockCursor(true);
@@ -138,16 +136,18 @@ class Application : public Uncopyable
         {
             const Vector3f direction = -Vector3f(std::cos(sunAngle_), std::sin(sunAngle_), 0);
             atmosphere_->SetSunDirection(direction);
-            mainLight_->GetDirectionalData().direction = direction;
+            mainLight_->SetDirection(direction);
         }
         const auto atmosphereRGData = atmosphere_->AddToRenderGraph(*rg, *camera_, timer_.GetDeltaSecondsF());
 
         // Deferred rendering
 
-        Renderer::Parameters renderParameters;
+        Box<SceneProxy> sceneProxy = scene_->CreateSceneProxy();
+
+        DeferredRenderer::Parameters renderParameters;
         renderParameters.skyLut = atmosphereRGData.skyLut;
         const auto deferredRendererRGData = renderer_->AddToRenderGraph(
-            renderParameters, rg.get(), renderTarget, *scene_, *camera_);
+            renderParameters, rg.get(), renderTarget, *sceneProxy, *camera_);
 
         // ImGui
 

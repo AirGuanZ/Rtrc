@@ -4,7 +4,7 @@
 #include <Rtrc/Graphics/Shader/ShaderCompiler.h>
 #include <Rtrc/Graphics/Shader/ShaderTokenStream.h>
 #include <Rtrc/Utility/Enumerate.h>
-#include <Rtrc/Utility/File.h>
+#include <Rtrc/Utility/Filesystem/File.h>
 #include <Rtrc/Utility/String.h>
 
 RTRC_BEGIN
@@ -240,7 +240,7 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     {
         actualSource = source.source;
     }
-
+    
     const ParsedShaderEntry shaderEntry = ParseShaderEntry(actualSource);
 
     std::vector<std::string> includeDirs;
@@ -606,6 +606,7 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
 
     if(hasRT)
     {
+        shaderInfo.rayTracing = true;
         shaderInfo.rayQuery = true;
     }
     else

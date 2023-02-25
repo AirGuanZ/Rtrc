@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Rtrc/Common.h>
-#include <Rtrc/Utility/MacroForEach.h>
+#include <Rtrc/Utility/Macro/MacroForEach.h>
 
 RTRC_BEGIN
 

@@ -37,6 +37,13 @@ MaterialPropertySheet::MaterialPropertySheet(RC<MaterialPropertyHostLayout> layo
     resources_.resize(layout_->GetResourcePropertyCount());
 }
 
+void MaterialPropertySheet::CopyFrom(const MaterialPropertySheet &other)
+{
+    assert(layout_ == other.layout_);
+    valueBuffer_ = other.valueBuffer_;
+    resources_ = other.resources_;
+}
+
 #define RTRC_IMPL_SET(VALUE_TYPE, TYPE)                                      \
     void MaterialPropertySheet::Set(std::string_view name, VALUE_TYPE value) \
     {                                                                        \
@@ -76,7 +83,7 @@ RC<Shader> MaterialPassInstance::GetShader(KeywordSet::ValueMask keywordMask)
     return pass_->GetShader(keywordMask);
 }
 
-const RC<MaterialPass> &MaterialPassInstance::GetPass() const
+const MaterialPass *MaterialPassInstance::GetPass() const
 {
     return pass_;
 }
@@ -149,7 +156,7 @@ void MaterialPassInstance::BindPropertiesImpl(
             record.constantBuffer = device_->CreateDynamicBuffer();
         }
 
-        auto &properties = parentMaterialInstance_->GetPropertySheet();
+        auto &properties = materialInstance_->GetPropertySheet();
         if(cbSize && record.isConstantBufferDirty)
         {
             std::vector<unsigned char> data(cbSize);
@@ -181,38 +188,57 @@ void BindMaterialProperties(
     }
 }
 
-MaterialInstance::MaterialInstance(RC<const Material> material, Device *device)
-    : parentMaterial_(std::move(material)), properties_(parentMaterial_->GetPropertyLayout())
+MaterialInstance::SharedRenderingData::SharedRenderingData(
+    RC<const Material>      material,
+    const MaterialInstance *materialInstance,
+    Device                 *device)
+    : device_(device)
+    , material_(std::move(material))
+    , propertySheet_(material_->GetPropertyLayout())
 {
-    auto passes = parentMaterial_->GetPasses();
-    materialPassInstances_.resize(passes.size());
+    auto passes = material_->GetPasses();
+    passInstances_.resize(passes.size());
     for(size_t i = 0; i < passes.size(); ++i)
     {
         auto &pass = passes[i];
         auto matPassInst = MakeBox<MaterialPassInstance>();
-        matPassInst->device_ = device;
-        matPassInst->parentMaterialInstance_ = this;
-        matPassInst->pass_ = pass;
-        matPassInst->recordCount_ = 1 << pass->GetShaderTemplate()->GetKeywordSet().GetTotalBitCount();
+        matPassInst->device_              = device;
+        matPassInst->materialInstance_    = materialInstance;
+        matPassInst->pass_                = pass.get();
+        matPassInst->recordCount_         = 1 << pass->GetShaderTemplate()->GetKeywordSet().GetTotalBitCount();
         matPassInst->keywordMaskToRecord_ = std::make_unique<MaterialPassInstance::Record[]>(matPassInst->recordCount_);
-        materialPassInstances_[i] = std::move(matPassInst);
+        passInstances_[i] = std::move(matPassInst);
     }
 }
 
-MaterialPassInstance *MaterialInstance::GetPassInstance(std::string_view tag)
+MaterialInstance::SharedRenderingData *MaterialInstance::SharedRenderingData::Clone() const
 {
-    const int index = parentMaterial_->GetPassIndexByTag(tag);
-    return index >= 0 ? materialPassInstances_[index].get() : nullptr;
+    assert(material_ && device_);
+    auto ret = new SharedRenderingData(material_, passInstances_[0]->materialInstance_, device_);
+    ret->propertySheet_.CopyFrom(propertySheet_);
+    return ret;
 }
 
-MaterialPassInstance *MaterialInstance::GetPassInstance(size_t index)
+MaterialPassInstance *MaterialInstance::SharedRenderingData::GetPassInstance(std::string_view tag) const
 {
-    return materialPassInstances_[index].get();
+    const int index = material_->GetPassIndexByTag(tag);
+    return index >= 0 ? passInstances_[index].get() : nullptr;
+}
+
+MaterialPassInstance *MaterialInstance::SharedRenderingData::GetPassInstance(size_t index) const
+{
+    return passInstances_[index].get();
+}
+
+MaterialInstance::MaterialInstance(RC<const Material> material, Device *device)
+{
+    data_.Reset(new SharedRenderingData(std::move(material), this, device));
 }
 
 void MaterialInstance::InvalidateBindingGroups()
 {
-    for(auto &inst : materialPassInstances_)
+    assert(data_.IsUnique());
+    for(auto &inst : data_->passInstances_)
     {
         for(int i = 0; i < inst->recordCount_; ++i)
         {
@@ -224,7 +250,8 @@ void MaterialInstance::InvalidateBindingGroups()
 
 void MaterialInstance::InvalidateConstantBuffers()
 {
-    for(auto &inst : materialPassInstances_)
+    assert(data_.IsUnique());
+    for(auto &inst : data_->passInstances_)
     {
         for(int i = 0; i < inst->recordCount_; ++i)
         {

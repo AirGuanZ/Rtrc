@@ -5,9 +5,9 @@
 #include <vector>
 
 #include <Rtrc/Math/Vector4.h>
+#include <Rtrc/Utility/Container/Span.h>
 #include <Rtrc/Utility/EnumFlags.h>
-#include <Rtrc/Utility/ReferenceCounted.h>
-#include <Rtrc/Utility/Span.h>
+#include <Rtrc/Utility/SmartPointer/ReferenceCounted.h>
 #include <Rtrc/Utility/Uncopyable.h>
 #include <Rtrc/Utility/Variant.h>
 #include <Rtrc/Window/Window.h>

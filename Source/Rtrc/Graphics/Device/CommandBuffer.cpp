@@ -323,29 +323,34 @@ void CommandBuffer::SetScissors(Span<Scissor> scissors)
     rhiCommandBuffer_->SetScissors(scissors);
 }
 
-void CommandBuffer::SetVertexBuffers(int slot, Span<RC<Buffer>> buffers, Span<size_t> byteOffsets)
+void CommandBuffer::SetVertexBuffers(int slot, const RC<SubBuffer> &buffer)
 {
-    CheckThreadID();
-    static constexpr std::array<size_t, 128> EMPTY_BYTE_OFFSETS = {};
-    std::vector<RHI::BufferPtr> rhiBuffers(buffers.size());
-    for(size_t i = 0; i < buffers.size(); ++i)
-    {
-        rhiBuffers[i] = buffers[i]->GetRHIObject();
-    }
-    rhiCommandBuffer_->SetVertexBuffer(
-        slot, rhiBuffers, byteOffsets.IsEmpty() ? Span(EMPTY_BYTE_OFFSETS.data(), buffers.GetSize()) : byteOffsets);
+    SetVertexBuffers(slot, Span(buffer));
 }
 
-void CommandBuffer::SetIndexBuffer(const RC<Buffer> &buffer, RHI::IndexFormat format, size_t byteOffset)
+void CommandBuffer::SetVertexBuffers(int slot, Span<RC<SubBuffer>> buffers)
 {
     CheckThreadID();
-    rhiCommandBuffer_->SetIndexBuffer(buffer->GetRHIObject(), byteOffset, format);
+    std::vector<RHI::BufferPtr> rhiBuffers(buffers.size());
+    std::vector<size_t> rhiByteOffsets(buffers.size());
+    for(size_t i = 0; i < buffers.size(); ++i)
+    {
+        rhiBuffers[i] = buffers[i]->GetFullBuffer()->GetRHIObject();
+        rhiByteOffsets[i] = buffers[i]->GetSubBufferOffset();
+    }
+    rhiCommandBuffer_->SetVertexBuffer(slot, rhiBuffers, rhiByteOffsets);
+}
+
+void CommandBuffer::SetIndexBuffer(const RC<SubBuffer> &buffer, RHI::IndexFormat format)
+{
+    CheckThreadID();
+    rhiCommandBuffer_->SetIndexBuffer(buffer->GetFullBuffer()->GetRHIObject(), buffer->GetSubBufferOffset(), format);
 }
 
 void CommandBuffer::BindMesh(const Mesh &mesh)
 {
     CheckThreadID();
-    mesh.Bind(*this);
+    mesh.GetRenderingData()->Bind(*this);
 }
 
 void CommandBuffer::SetStencilReferenceValue(uint8_t value)

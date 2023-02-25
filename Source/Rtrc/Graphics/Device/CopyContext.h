@@ -3,7 +3,7 @@
 #include <Rtrc/Graphics/Device/Buffer.h>
 #include <Rtrc/Graphics/Device/CommandBuffer.h>
 #include <Rtrc/Graphics/Device/Texture.h>
-#include <Rtrc/Utility/Image.h>
+#include <Rtrc/Utility/Resource/Image.h>
 
 RTRC_BEGIN
 
