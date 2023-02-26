@@ -372,6 +372,18 @@ Vector2i Window::GetFramebufferSize() const
     return { w, h };
 }
 
+float Window::GetWindowWOverH() const
+{
+    const Vector2i size = GetWindowSize();
+    return static_cast<float>(size.x) / size.y;
+}
+
+float Window::GetFramebufferWOverH() const
+{
+    const Vector2i size = GetFramebufferSize();
+    return static_cast<float>(size.x) / size.y;
+}
+
 bool Window::HasFocus() const
 {
     return impl_->hasFocus;

@@ -1,8 +1,8 @@
-#include <Rtrc/Renderer/Utility/PerObjectConstantBufferUtility.h>
+#include <Rtrc/Renderer/Utility/TransientConstantBufferBindingGroupPool.h>
 
 RTRC_BEGIN
 
-PerObjectConstantBufferBatch::PerObjectConstantBufferBatch(
+TransientConstantBufferBindingGroupPool::TransientConstantBufferBindingGroupPool(
     size_t               elementSize,
     std::string          bindingName,
     RHI::ShaderStageFlag bindingShaderStages,
@@ -41,7 +41,7 @@ PerObjectConstantBufferBatch::PerObjectConstantBufferBatch(
     unflushedOffset_ = 0;
 }
 
-void PerObjectConstantBufferBatch::NewBatch()
+void TransientConstantBufferBindingGroupPool::NewBatch()
 {
     Box<Batch> newBatch;
     if(!sharedData_->freeBatches.empty())
@@ -77,7 +77,7 @@ void PerObjectConstantBufferBatch::NewBatch()
     unflushedOffset_ = 0;
 }
 
-PerObjectConstantBufferBatch::Record PerObjectConstantBufferBatch::NewRecord(const void *cbufferData)
+TransientConstantBufferBindingGroupPool::Record TransientConstantBufferBindingGroupPool::NewRecord(const void *cbufferData)
 {
     if(!activeBatch_ || nextOffset_ >= chunkSize_)
     {
@@ -103,7 +103,7 @@ PerObjectConstantBufferBatch::Record PerObjectConstantBufferBatch::NewRecord(con
     return ret;
 }
 
-void PerObjectConstantBufferBatch::Flush()
+void TransientConstantBufferBindingGroupPool::Flush()
 {
     if(unflushedOffset_ < nextOffset_)
     {
@@ -112,7 +112,7 @@ void PerObjectConstantBufferBatch::Flush()
     }
 }
 
-PerObjectConstantBufferBatch::Batch::~Batch()
+TransientConstantBufferBindingGroupPool::Batch::~Batch()
 {
     if(mappedBuffer)
     {

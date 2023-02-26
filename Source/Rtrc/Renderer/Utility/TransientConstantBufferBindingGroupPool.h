@@ -4,7 +4,7 @@
 
 RTRC_BEGIN
 
-class PerObjectConstantBufferBatch
+class TransientConstantBufferBindingGroupPool
 {
 public:
 
@@ -14,7 +14,7 @@ public:
         RC<BindingGroup> bindingGroup;
     };
 
-    PerObjectConstantBufferBatch(
+    TransientConstantBufferBindingGroupPool(
         size_t               elementSize,
         std::string          bindingName,
         RHI::ShaderStageFlag bindingShaderStages,
@@ -66,7 +66,7 @@ private:
 };
 
 template<RtrcStruct T>
-PerObjectConstantBufferBatch::Record PerObjectConstantBufferBatch::NewRecord(const T &cbufferData)
+TransientConstantBufferBindingGroupPool::Record TransientConstantBufferBindingGroupPool::NewRecord(const T &cbufferData)
 {
     constexpr size_t deviceSize = ConstantBufferDetail::GetConstantBufferDWordCount<T>() * 4;
     assert(size_ == deviceSize);

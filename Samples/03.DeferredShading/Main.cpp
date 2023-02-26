@@ -20,12 +20,11 @@ class Application : public Uncopyable
 
     Box<Camera>          camera_;
     FreeCameraController cameraController_;
-
-    Box<AtmosphereRenderer> atmosphere_;
+    
     float sunAngle_ = Deg2Rad(179);
 
     Timer timer_;
-    int fps_ = 0;
+    int lastFps_ = 0;
 
     void Initialize()
     {
@@ -54,8 +53,7 @@ class Application : public Uncopyable
         camera_->CalculateDerivedData();
         cameraController_.SetCamera(*camera_);
 
-        atmosphere_ = MakeBox<AtmosphereRenderer>(resources_->GetBuiltinResources());
-        atmosphere_->SetYOffset(2 * 1000);
+        renderer_->GetAtmosphereRenderer().SetYOffset(2 * 1000);
 
         {
             auto cubeMesh = resources_->GetBuiltinResources().GetBuiltinMesh(BuiltinMesh::Cube);
@@ -89,9 +87,9 @@ class Application : public Uncopyable
     {
         // Input
         
-        if(timer_.GetFps() != fps_)
+        if(timer_.GetFps() != lastFps_)
         {
-            fps_ = timer_.GetFps();
+            lastFps_ = timer_.GetFps();
             window_.SetTitle(std::format("Rtrc Renderer. FPS: {}", timer_.GetFps()));
         }
 
@@ -118,50 +116,48 @@ class Application : public Uncopyable
 
         // Camera
 
-        const float wOverH = static_cast<float>(window_.GetFramebufferSize().x) / window_.GetFramebufferSize().y;
-        camera_->SetProjection(Deg2Rad(60), wOverH, 0.1f, 100.0f);
-        if(input_->IsCursorLocked())
         {
-            cameraController_.UpdateCamera(*input_, timer_);
+            const float wOverH = window_.GetFramebufferWOverH();
+            camera_->SetProjection(Deg2Rad(60), wOverH, 0.1f, 100.0f);
+            if(input_->IsCursorLocked())
+            {
+                cameraController_.UpdateCamera(*input_, timer_);
+            }
+            camera_->CalculateDerivedData();
         }
-        camera_->CalculateDerivedData();
-
-        // Render graph
-
-        Box<RG::RenderGraph> rg = device_->CreateRenderGraph();
-        RG::TextureResource *renderTarget = rg->RegisterSwapchainTexture(device_->GetSwapchain());
 
         // Atmosphere
 
         {
             const Vector3f direction = -Vector3f(std::cos(sunAngle_), std::sin(sunAngle_), 0);
-            atmosphere_->SetSunDirection(direction);
+            renderer_->GetAtmosphereRenderer().SetSunDirection(direction);
             mainLight_->SetDirection(direction);
         }
-        const auto atmosphereRGData = atmosphere_->AddToRenderGraph(*rg, *camera_, timer_.GetDeltaSecondsF());
 
+        // Render graph
+
+        Box<RG::RenderGraph> graph = device_->CreateRenderGraph();
+        RG::TextureResource *renderTarget = graph->RegisterSwapchainTexture(device_->GetSwapchain());
+        
         // Deferred rendering
 
         Box<SceneProxy> sceneProxy = scene_->CreateSceneProxy();
-
-        DeferredRenderer::Parameters renderParameters;
-        renderParameters.skyLut = atmosphereRGData.skyLut;
+        
         const auto deferredRendererRGData = renderer_->AddToRenderGraph(
-            renderParameters, rg.get(), renderTarget, *sceneProxy, *camera_);
+            *graph, renderTarget, *sceneProxy, *camera_, timer_.GetDeltaSecondsF());
 
         // ImGui
 
-        auto imguiPass = imgui_->AddToRenderGraph(renderTarget, rg.get());
+        auto imguiPass = imgui_->AddToRenderGraph(renderTarget, graph.get());
 
         // Dependencies
-
-        Connect(atmosphereRGData.outPass, deferredRendererRGData.inPass);
-        Connect(deferredRendererRGData.outPass, imguiPass);
+        
+        Connect(deferredRendererRGData.passOut, imguiPass);
         imguiPass->SetSignalFence(device_->GetFrameFence());
 
         // Execute render graph & present
 
-        executer_->Execute(rg);
+        executer_->Execute(graph);
         device_->Present();
     }
 

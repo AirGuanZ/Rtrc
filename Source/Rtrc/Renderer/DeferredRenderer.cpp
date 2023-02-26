@@ -34,15 +34,20 @@ DeferredRenderer::DeferredRenderer(Device &device, const BuiltinResourceManager 
     , staticMeshConstantBufferBatch_(
           ConstantBufferSize<StaticMeshCBuffer>, "Object", RHI::ShaderStage::All, device)
 {
+    atmosphereRenderer_ = MakeBox<AtmosphereRenderer>(builtinResources);
+}
 
+AtmosphereRenderer &DeferredRenderer::GetAtmosphereRenderer()
+{
+    return *atmosphereRenderer_;
 }
 
 DeferredRenderer::RenderGraphInterface DeferredRenderer::AddToRenderGraph(
-    const Parameters    &parameters,
-    RG::RenderGraph     *renderGraph,
+    RG::RenderGraph     &renderGraph,
     RG::TextureResource *renderTarget,
     const SceneProxy    &scene,
-    const Camera        &camera)
+    const Camera        &camera,
+    float                deltaTime)
 {
     staticMeshConstantBufferBatch_.NewBatch();
 
@@ -59,7 +64,7 @@ DeferredRenderer::RenderGraphInterface DeferredRenderer::AddToRenderGraph(
     // gbufferB: albedo, metallic
     // gbufferC: roughness
 
-    const auto gbufferA = renderGraph->CreateTexture(RHI::TextureDesc
+    const auto gbufferA = renderGraph.CreateTexture(RHI::TextureDesc
     {
         .dim                  = RHI::TextureDimension::Tex2D,
         .format               = RHI::Format::A2R10G10B10_UNorm,
@@ -72,7 +77,7 @@ DeferredRenderer::RenderGraphInterface DeferredRenderer::AddToRenderGraph(
         .initialLayout        = RHI::TextureLayout::Undefined,
         .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
     }, "GBufferA");
-    const auto gbufferB = renderGraph->CreateTexture(RHI::TextureDesc
+    const auto gbufferB = renderGraph.CreateTexture(RHI::TextureDesc
     {
         .dim                  = RHI::TextureDimension::Tex2D,
         .format               = RHI::Format::R8G8B8A8_UNorm,
@@ -85,7 +90,7 @@ DeferredRenderer::RenderGraphInterface DeferredRenderer::AddToRenderGraph(
         .initialLayout        = RHI::TextureLayout::Undefined,
         .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
     }, "GBufferB");
-    const auto gbufferC = renderGraph->CreateTexture(RHI::TextureDesc
+    const auto gbufferC = renderGraph.CreateTexture(RHI::TextureDesc
     {
         .dim                  = RHI::TextureDimension::Tex2D,
         .format               = RHI::Format::R8G8B8A8_UNorm,
@@ -98,7 +103,7 @@ DeferredRenderer::RenderGraphInterface DeferredRenderer::AddToRenderGraph(
         .initialLayout        = RHI::TextureLayout::Undefined,
         .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
     }, "GBufferC");
-    const auto gbufferDepth = renderGraph->CreateTexture(RHI::TextureDesc
+    const auto gbufferDepth = renderGraph.CreateTexture(RHI::TextureDesc
     {
         .dim                  = RHI::TextureDimension::Tex2D,
         .format               = RHI::Format::D24S8,
@@ -112,9 +117,9 @@ DeferredRenderer::RenderGraphInterface DeferredRenderer::AddToRenderGraph(
         .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
     }, "GBufferDepth");
 
-    const auto image = renderTarget;
+    auto rgAtmosphere = atmosphereRenderer_->AddToRenderGraph(renderGraph, camera, deltaTime);
 
-    RG::Pass *gbufferPass = renderGraph->CreatePass("Render GBuffers");
+    RG::Pass *gbufferPass = renderGraph.CreatePass("Render GBuffers");
     {
         gbufferPass->Use(gbufferA, RG::COLOR_ATTACHMENT_WRITEONLY);
         gbufferPass->Use(gbufferB, RG::COLOR_ATTACHMENT_WRITEONLY);
@@ -133,7 +138,7 @@ DeferredRenderer::RenderGraphInterface DeferredRenderer::AddToRenderGraph(
         });
     }
 
-    RG::Pass *lightingPass = renderGraph->CreatePass("Deferred Lighting");
+    RG::Pass *lightingPass = renderGraph.CreatePass("Deferred Lighting");
     {
         lightingPass->Use(gbufferA, RG::PIXEL_SHADER_TEXTURE);
         lightingPass->Use(gbufferB, RG::PIXEL_SHADER_TEXTURE);
@@ -144,16 +149,16 @@ DeferredRenderer::RenderGraphInterface DeferredRenderer::AddToRenderGraph(
             .stages = RHI::PipelineStage::FragmentShader | RHI::PipelineStage::DepthStencil,
             .accesses = RHI::ResourceAccess::TextureRead | RHI::ResourceAccess::DepthStencilRead
         });
-        lightingPass->Use(image, RG::COLOR_ATTACHMENT_WRITEONLY);
-        lightingPass->Use(parameters.skyLut, RG::PIXEL_SHADER_TEXTURE);
+        lightingPass->Use(renderTarget, RG::COLOR_ATTACHMENT_WRITEONLY);
+        lightingPass->Use(rgAtmosphere.skyLut, RG::PIXEL_SHADER_TEXTURE);
 
         DeferredLightingPassData passData;
         passData.gbufferA     = gbufferA;
         passData.gbufferB     = gbufferB;
         passData.gbufferC     = gbufferC;
         passData.gbufferDepth = gbufferDepth;
-        passData.image        = image;
-        passData.skyLut       = parameters.skyLut;
+        passData.image        = renderTarget;
+        passData.skyLut       = rgAtmosphere.skyLut;
 
         lightingPass->SetCallback([this, passData](RG::PassContext &passContext)
         {
@@ -161,11 +166,12 @@ DeferredRenderer::RenderGraphInterface DeferredRenderer::AddToRenderGraph(
         });
     }
 
+    Connect(rgAtmosphere.passOut, lightingPass);
     Connect(gbufferPass, lightingPass);
 
     RenderGraphInterface ret;
-    ret.inPass = gbufferPass;
-    ret.outPass = lightingPass;
+    ret.passIn = gbufferPass;
+    ret.passOut = lightingPass;
     return ret;
 }
 

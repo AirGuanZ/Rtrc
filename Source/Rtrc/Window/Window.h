@@ -55,6 +55,9 @@ public:
     Vector2i GetWindowSize() const;
     Vector2i GetFramebufferSize() const;
 
+    float GetWindowWOverH() const;
+    float GetFramebufferWOverH() const;
+
     bool HasFocus() const;
 
     void SetFocus();

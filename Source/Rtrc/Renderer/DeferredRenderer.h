@@ -3,9 +3,10 @@
 #include <Rtrc/Graphics/Material/MaterialPassToGraphicsPipeline.h>
 #include <Rtrc/Graphics/RenderGraph/Graph.h>
 #include <Rtrc/Graphics/Resource/BuiltinResources.h>
+#include <Rtrc/Renderer/AtmosphereRenderer.h>
 #include <Rtrc/Renderer/Camera/Camera.h>
 #include <Rtrc/Renderer/Scene/Scene.h>
-#include <Rtrc/Renderer/Utility/PerObjectConstantBufferUtility.h>
+#include <Rtrc/Renderer/Utility/TransientConstantBufferBindingGroupPool.h>
 
 RTRC_BEGIN
 
@@ -27,27 +28,24 @@ class DeferredRenderer : public Uncopyable
 public:
 
     using StencilMaskBit = RendererDetail::StencilMaskBit;
-    using StencilMask = EnumFlags<StencilMaskBit>;
+    using StencilMask    = EnumFlags<StencilMaskBit>;
 
     struct RenderGraphInterface
     {
-        RG::Pass *inPass = nullptr;
-        RG::Pass *outPass = nullptr;
-    };
-
-    struct Parameters
-    {
-        RG::TextureResource *skyLut;
+        RG::Pass *passIn = nullptr;
+        RG::Pass *passOut = nullptr;
     };
 
     DeferredRenderer(Device &device, const BuiltinResourceManager &builtinResources);
 
+    AtmosphereRenderer &GetAtmosphereRenderer();
+
     RenderGraphInterface AddToRenderGraph(
-        const Parameters    &parameters,
-        RG::RenderGraph     *renderGraph,
+        RG::RenderGraph     &renderGraph,
         RG::TextureResource *renderTarget,
         const SceneProxy    &scene,
-        const Camera        &camera);
+        const Camera        &camera,
+        float                deltaTime);
 
 private:
 
@@ -82,7 +80,9 @@ private:
     
     RC<GraphicsPipeline> deferredLightingPipeline_;
 
-    PerObjectConstantBufferBatch staticMeshConstantBufferBatch_;
+    TransientConstantBufferBindingGroupPool staticMeshConstantBufferBatch_;
+
+    Box<AtmosphereRenderer> atmosphereRenderer_;
 
     // Per-frame
 

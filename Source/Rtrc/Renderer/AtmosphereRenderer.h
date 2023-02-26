@@ -98,6 +98,16 @@ namespace AtmosphereDetail
             RG::TextureResource *skyLut = nullptr;
         };
 
+        struct Context
+        {
+            RC<StatefulTexture> prevSkyLut;
+            RC<StatefulTexture> currSkyLut;
+
+            RG::TextureResource *rgSkyLut  = nullptr;
+            RG::Pass            *rgPassIn  = nullptr;
+            RG::Pass            *rgPassOut = nullptr;
+        };
+
         explicit SkyLut(const BuiltinResourceManager &builtinResources);
 
         void SetRayMarchingStepCount(int stepCount);
@@ -109,12 +119,20 @@ namespace AtmosphereDetail
             RG::RenderGraph                 *renderGraph,
             const TransmittanceLut          &transmittanceLut,
             const MultiScatterLut           &multiScatterLut);
+        
+        // 'parameters' must be valid until renderGraph is executed
+        void AddToRenderGraph(
+            Context                         &context,
+            const AtmosphereFrameParameters *parameters,
+            RG::RenderGraph                 *renderGraph,
+            const TransmittanceLut          &transmittanceLut,
+            const MultiScatterLut           &multiScatterLut);
 
     private:
 
         struct PrepareLutRGInterface
         {
-            RG::Pass *clearPass;
+            RG::Pass            *clearPass;
             RG::TextureResource *lut;
         };
 
@@ -137,9 +155,9 @@ namespace AtmosphereDetail
         
         struct RenderGraphInterface
         {
-            RG::Pass *inPass = nullptr;
-            RG::Pass *outPass = nullptr;
-            RG::TextureResource *skyLut = nullptr;
+            RG::Pass            *passIn  = nullptr;
+            RG::Pass            *passOut = nullptr;
+            RG::TextureResource *skyLut  = nullptr;
         };
 
         explicit AtmosphereRenderer(const BuiltinResourceManager &builtinResources);
@@ -159,11 +177,11 @@ namespace AtmosphereDetail
 
     private:
 
-        Device &device_;
+        Device                       &device_;
         const BuiltinResourceManager &builtinResources_;
 
         AtmosphereFrameParameters frameParameters_;
-        float yOffset_;
+        float                     yOffset_;
 
         Vector2i transLutRes_;
         Vector2i msLutRes_;
