@@ -222,4 +222,16 @@ struct IsRCImpl<RC<T>> : std::true_type { };
 template<typename T>
 constexpr bool IsRC = IsRCImpl<T>::value;
 
+template<typename T>
+constexpr size_t GetContainerSize(const T &container)
+{
+    return container.size();
+}
+
+template<typename T, size_t N>
+constexpr size_t GetContainerSize(const T(&arr)[N])
+{
+    return N;
+}
+
 RTRC_END

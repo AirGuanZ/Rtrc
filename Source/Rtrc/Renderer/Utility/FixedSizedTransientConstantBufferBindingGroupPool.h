@@ -4,7 +4,7 @@
 
 RTRC_BEGIN
 
-class TransientConstantBufferBindingGroupPool
+class FixedSizedTransientConstantBufferBindingGroupPool : public Uncopyable
 {
 public:
 
@@ -14,7 +14,7 @@ public:
         RC<BindingGroup> bindingGroup;
     };
 
-    TransientConstantBufferBindingGroupPool(
+    FixedSizedTransientConstantBufferBindingGroupPool(
         size_t               elementSize,
         std::string          bindingName,
         RHI::ShaderStageFlag bindingShaderStages,
@@ -22,7 +22,7 @@ public:
 
     void NewBatch();
 
-    Record NewRecord(const void *cbufferData);
+    Record NewRecord(const void *cbufferData, size_t bytes = 0);
 
     template<RtrcStruct T>
     Record NewRecord(const T &cbufferData);
@@ -66,18 +66,14 @@ private:
 };
 
 template<RtrcStruct T>
-TransientConstantBufferBindingGroupPool::Record TransientConstantBufferBindingGroupPool::NewRecord(const T &cbufferData)
+FixedSizedTransientConstantBufferBindingGroupPool::Record
+    FixedSizedTransientConstantBufferBindingGroupPool::NewRecord(const T &cbufferData)
 {
-    constexpr size_t deviceSize = ConstantBufferDetail::GetConstantBufferDWordCount<T>() * 4;
-    assert(size_ == deviceSize);
-    std::vector<unsigned char> deviceData(deviceSize);
-    ConstantBufferDetail::ForEachFlattenMember<T>([&]<typename M>(const char *, size_t hostOffset, size_t deviceOffset)
+    return Rtrc::FlattenConstantBufferStruct(cbufferData, [&](const void *flattenData, size_t deviceSize)
     {
-        auto dst = deviceData.data() + deviceOffset;
-        auto src = reinterpret_cast<const unsigned char *>(&cbufferData) + hostOffset;
-        std::memcpy(dst, src, sizeof(M));
+        assert(deviceSize <= size_);
+        return NewRecord(flattenData, deviceSize);
     });
-    return NewRecord(deviceData.data());
 }
 
 RTRC_END

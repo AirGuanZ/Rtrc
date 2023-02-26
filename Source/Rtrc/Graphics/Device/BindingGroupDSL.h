@@ -196,9 +196,9 @@ namespace BindingGroupDSL
     {
         static constexpr RHI::BindingType BindingType = RHI::BindingType::ConstantBuffer;
         using Struct = T;
-        RC<DynamicBuffer> _rtrcObj;
+        RC<SubBuffer> _rtrcObj;
 
-        auto &operator=(RC<DynamicBuffer> value)
+        auto &operator=(RC<SubBuffer> value)
         {
             _rtrcObj = std::move(value);
             return *this;
@@ -216,9 +216,9 @@ namespace BindingGroupDSL
     {
         static constexpr RHI::BindingType BindingType = RHI::BindingType::ConstantBuffer;
 
-        RC<DynamicBuffer> _rtrcObj;
+        RC<SubBuffer> _rtrcObj;
 
-        auto &operator=(RC<DynamicBuffer> value)
+        auto &operator=(RC<SubBuffer> value)
         {
             _rtrcObj = std::move(value);
             return *this;

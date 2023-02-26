@@ -1,8 +1,8 @@
-#include <Rtrc/Renderer/Utility/TransientConstantBufferBindingGroupPool.h>
+#include <Rtrc/Renderer/Utility/FixedSizedTransientConstantBufferBindingGroupPool.h>
 
 RTRC_BEGIN
 
-TransientConstantBufferBindingGroupPool::TransientConstantBufferBindingGroupPool(
+FixedSizedTransientConstantBufferBindingGroupPool::FixedSizedTransientConstantBufferBindingGroupPool(
     size_t               elementSize,
     std::string          bindingName,
     RHI::ShaderStageFlag bindingShaderStages,
@@ -41,7 +41,7 @@ TransientConstantBufferBindingGroupPool::TransientConstantBufferBindingGroupPool
     unflushedOffset_ = 0;
 }
 
-void TransientConstantBufferBindingGroupPool::NewBatch()
+void FixedSizedTransientConstantBufferBindingGroupPool::NewBatch()
 {
     Box<Batch> newBatch;
     if(!sharedData_->freeBatches.empty())
@@ -71,13 +71,13 @@ void TransientConstantBufferBindingGroupPool::NewBatch()
     Flush();
     assert(unflushedOffset_ == nextOffset_);
 
-    activeBatch_ = rawNewBatch;
-    nextOffset_ = 0;
-    nextIndex_ = 0;
+    activeBatch_     = rawNewBatch;
+    nextOffset_      = 0;
+    nextIndex_       = 0;
     unflushedOffset_ = 0;
 }
 
-TransientConstantBufferBindingGroupPool::Record TransientConstantBufferBindingGroupPool::NewRecord(const void *cbufferData)
+FixedSizedTransientConstantBufferBindingGroupPool::Record FixedSizedTransientConstantBufferBindingGroupPool::NewRecord(const void *cbufferData, size_t bytes)
 {
     if(!activeBatch_ || nextOffset_ >= chunkSize_)
     {
@@ -91,7 +91,17 @@ TransientConstantBufferBindingGroupPool::Record TransientConstantBufferBindingGr
     }
 
     auto cbuffer = SubBuffer::GetSubRange(activeBatch_->buffer, nextOffset_, size_);
-    std::memcpy(activeBatch_->mappedBuffer + nextOffset_, cbufferData, size_);
+
+    assert(bytes <= size_);
+    if(!bytes)
+    {
+        bytes = size_;
+    }
+    std::memcpy(activeBatch_->mappedBuffer + nextOffset_, cbufferData, bytes);
+    if(bytes < size_)
+    {
+        std::memset(activeBatch_->mappedBuffer + nextOffset_ + bytes, 0, size_ - bytes);
+    }
 
     Record ret;
     ret.cbuffer = std::move(cbuffer);
@@ -103,7 +113,7 @@ TransientConstantBufferBindingGroupPool::Record TransientConstantBufferBindingGr
     return ret;
 }
 
-void TransientConstantBufferBindingGroupPool::Flush()
+void FixedSizedTransientConstantBufferBindingGroupPool::Flush()
 {
     if(unflushedOffset_ < nextOffset_)
     {
@@ -112,7 +122,7 @@ void TransientConstantBufferBindingGroupPool::Flush()
     }
 }
 
-TransientConstantBufferBindingGroupPool::Batch::~Batch()
+FixedSizedTransientConstantBufferBindingGroupPool::Batch::~Batch()
 {
     if(mappedBuffer)
     {

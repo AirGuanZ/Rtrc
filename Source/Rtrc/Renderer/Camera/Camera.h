@@ -1,23 +1,9 @@
 #pragma once
 
-#include <Rtrc/Graphics/Device/Buffer/DynamicBuffer.h>
 #include <Rtrc/Math/Angle.h>
 #include <Rtrc/Math/Matrix4x4.h>
 
 RTRC_BEGIN
-
-// See Asset/Builtin/Material/Common/Scene.hlsl
-rtrc_struct(CameraConstantBuffer)
-{
-    rtrc_var(float4x4,  worldToCameraMatrix);
-    rtrc_var(float4x4,  cameraToWorldMatrix);
-    rtrc_var(float4x4,  cameraToClipMatrix);
-    rtrc_var(float4x4,  clipToCameraMatrix);
-    rtrc_var(float4x4,  worldToClipMatrix);
-    rtrc_var(float4x4,  clipToWorldMatrix);
-    rtrc_var(float3[4], cameraRays);
-    rtrc_var(float3[4], worldRays);
-};
 
 struct PerspectiveProjectionParameters
 {
@@ -53,13 +39,16 @@ public:
     void SetProjection(float fovYRad, float wOverH, float nearPlane, float farPlane);
     void CalculateDerivedData();
 
-    const CameraConstantBuffer &GetConstantBufferData() const;
     const Matrix4x4f &GetWorldToCameraMatrix() const;
     const Matrix4x4f &GetCameraToWorldMatrix() const;
     const Matrix4x4f &GetCameraToClipMatrix() const;
     const Matrix4x4f &GetClipToCameraMatrix() const;
     const Matrix4x4f &GetWorldToClipMatrix() const;
     const Matrix4x4f &GetClipToWorldMatrix() const;
+
+    using CornerRays = Vector3f[4];
+    const CornerRays &GetWorldRays() const;
+    const CornerRays &GetCameraRays() const;
 
 private:
 
@@ -75,7 +64,15 @@ private:
     Vector3f left_;
     Vector3f up_;
 
-    CameraConstantBuffer constantBufferData_;
+    Matrix4x4f worldToCamera_;
+    Matrix4x4f cameraToWorld_;
+    Matrix4x4f cameraToClip_;
+    Matrix4x4f clipToCamera_;
+    Matrix4x4f worldToClip_;
+    Matrix4x4f clipToWorld_;
+
+    Vector3f cameraRays_[4];
+    Vector3f worldRays_[4];
 };
 
 inline Camera::Camera()
@@ -128,39 +125,44 @@ inline void Camera::SetProjection(float fovYRad, float wOverH, float nearPlane, 
     projParams_ = { fovYRad, wOverH, nearPlane, farPlane };
 }
 
-inline const CameraConstantBuffer &Camera::GetConstantBufferData() const
-{
-    return constantBufferData_;
-}
-
 inline const Matrix4x4f &Camera::GetWorldToCameraMatrix() const
 {
-    return constantBufferData_.worldToCameraMatrix;
+    return worldToCamera_;
 }
 
 inline const Matrix4x4f &Camera::GetCameraToWorldMatrix() const
 {
-    return constantBufferData_.cameraToWorldMatrix;
+    return cameraToWorld_;
 }
 
 inline const Matrix4x4f &Camera::GetCameraToClipMatrix() const
 {
-    return constantBufferData_.cameraToClipMatrix;
+    return cameraToClip_;
 }
 
 inline const Matrix4x4f &Camera::GetClipToCameraMatrix() const
 {
-    return constantBufferData_.clipToCameraMatrix;
+    return clipToCamera_;
 }
 
 inline const Matrix4x4f &Camera::GetWorldToClipMatrix() const
 {
-    return constantBufferData_.worldToClipMatrix;
+    return worldToClip_;
 }
 
 inline const Matrix4x4f &Camera::GetClipToWorldMatrix() const
 {
-    return constantBufferData_.clipToWorldMatrix;
+    return clipToWorld_;
+}
+
+inline const Camera::CornerRays &Camera::GetWorldRays() const
+{
+    return worldRays_;
+}
+
+inline const Camera::CornerRays &Camera::GetCameraRays() const
+{
+    return cameraRays_;
 }
 
 RTRC_END

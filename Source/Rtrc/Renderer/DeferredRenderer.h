@@ -6,7 +6,7 @@
 #include <Rtrc/Renderer/AtmosphereRenderer.h>
 #include <Rtrc/Renderer/Camera/Camera.h>
 #include <Rtrc/Renderer/Scene/Scene.h>
-#include <Rtrc/Renderer/Utility/TransientConstantBufferBindingGroupPool.h>
+#include <Rtrc/Renderer/Utility/TransientConstantBufferAllocator.h>
 
 RTRC_BEGIN
 
@@ -73,16 +73,15 @@ private:
 
     // Persistent
 
-    Device &device_;
+    Device                       &device_;
     const BuiltinResourceManager &builtinResources_;
 
-    MaterialPassToGraphicsPipeline renderGBuffersPipelines_;
-    
-    RC<GraphicsPipeline> deferredLightingPipeline_;
-
-    TransientConstantBufferBindingGroupPool staticMeshConstantBufferBatch_;
-
     Box<AtmosphereRenderer> atmosphereRenderer_;
+
+    MaterialPassToGraphicsPipeline renderGBuffersPipelines_;
+    RC<GraphicsPipeline>           deferredLightingPipeline_;
+
+    TransientConstantBufferAllocator transientConstantBufferAllocator_;
 
     // Per-frame
 

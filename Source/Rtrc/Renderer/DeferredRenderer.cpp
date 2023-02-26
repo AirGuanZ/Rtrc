@@ -8,6 +8,47 @@ RTRC_BEGIN
 namespace DeferredRendererDetail
 {
 
+    // See Asset/Builtin/Material/Common/Scene.hlsl
+    rtrc_struct(DirectionalLightConstantBuffer)
+    {
+        rtrc_var(float3, direction) = Vector3f(0, -1, 0);
+        rtrc_var(float3, color) = Vector3f(1, 1, 1);
+        rtrc_var(float, intensity) = 1;
+    };
+
+    // See Asset/Builtin/Material/Common/Scene.hlsl
+    rtrc_struct(CameraConstantBuffer)
+    {
+        static CameraConstantBuffer FromCamera(const Camera &camera)
+        {
+            CameraConstantBuffer ret;
+            ret.worldToCameraMatrix = camera.GetWorldToCameraMatrix();
+            ret.cameraToWorldMatrix = camera.GetCameraToWorldMatrix();
+            ret.cameraToClipMatrix = camera.GetCameraToClipMatrix();
+            ret.clipToCameraMatrix = camera.GetClipToCameraMatrix();
+            ret.worldToClipMatrix = camera.GetWorldToClipMatrix();
+            ret.clipToWorldMatrix = camera.GetClipToWorldMatrix();
+            ret.worldRays[0] = camera.GetWorldRays()[0];
+            ret.worldRays[1] = camera.GetWorldRays()[1];
+            ret.worldRays[2] = camera.GetWorldRays()[2];
+            ret.worldRays[3] = camera.GetWorldRays()[3];
+            ret.cameraRays[0] = camera.GetCameraRays()[0];
+            ret.cameraRays[1] = camera.GetCameraRays()[1];
+            ret.cameraRays[2] = camera.GetCameraRays()[2];
+            ret.cameraRays[3] = camera.GetCameraRays()[3];
+            return ret;
+        }
+
+        rtrc_var(float4x4, worldToCameraMatrix);
+        rtrc_var(float4x4, cameraToWorldMatrix);
+        rtrc_var(float4x4, cameraToClipMatrix);
+        rtrc_var(float4x4, clipToCameraMatrix);
+        rtrc_var(float4x4, worldToClipMatrix);
+        rtrc_var(float4x4, clipToWorldMatrix);
+        rtrc_var(float3[4], cameraRays);
+        rtrc_var(float3[4], worldRays);
+    };
+
     rtrc_group(GBuffer_Pass)
     {
         rtrc_uniform(CameraConstantBuffer, Camera);
@@ -31,8 +72,7 @@ namespace DeferredRendererDetail
 DeferredRenderer::DeferredRenderer(Device &device, const BuiltinResourceManager &builtinResources)
     : device_(device)
     , builtinResources_(builtinResources)
-    , staticMeshConstantBufferBatch_(
-          ConstantBufferSize<StaticMeshCBuffer>, "Object", RHI::ShaderStage::All, device)
+    , transientConstantBufferAllocator_(device)
 {
     atmosphereRenderer_ = MakeBox<AtmosphereRenderer>(builtinResources);
 }
@@ -49,7 +89,7 @@ DeferredRenderer::RenderGraphInterface DeferredRenderer::AddToRenderGraph(
     const Camera        &camera,
     float                deltaTime)
 {
-    staticMeshConstantBufferBatch_.NewBatch();
+    transientConstantBufferAllocator_.NewBatch();
 
     scene_ = &scene;
     camera_ = &camera;
@@ -231,7 +271,7 @@ void DeferredRenderer::DoRenderGBuffersPass(RG::PassContext &passContext, const 
     RC<BindingGroup> perPassGroup;
     {
         DeferredRendererDetail::GBuffer_Pass perPassGroupData;
-        perPassGroupData.Camera = camera_->GetConstantBufferData();
+        perPassGroupData.Camera = DeferredRendererDetail::CameraConstantBuffer::FromCamera(*camera_);
         perPassGroup = device_.CreateBindingGroup(perPassGroupData);
     }
 
@@ -251,13 +291,15 @@ void DeferredRenderer::DoRenderGBuffersPass(RG::PassContext &passContext, const 
     for(const StaticMeshRendererProxy *staticMesh : staticMeshRendererProxies)
     {
         StaticMeshCBuffer cbuffer;
-        cbuffer.localToWorld = staticMesh->localToWorld;
-        cbuffer.worldToLocal = staticMesh->worldToLocal;
+        cbuffer.localToWorld  = staticMesh->localToWorld;
+        cbuffer.worldToLocal  = staticMesh->worldToLocal;
         cbuffer.localToCamera = cbuffer.localToWorld * camera_->GetWorldToCameraMatrix();
-        cbuffer.localToClip = cbuffer.localToWorld * camera_->GetWorldToClipMatrix();
-        staticMeshBindingGroups.push_back(staticMeshConstantBufferBatch_.NewRecord(cbuffer).bindingGroup);
+        cbuffer.localToClip   = cbuffer.localToWorld * camera_->GetWorldToClipMatrix();
+
+        auto bindingGroup = transientConstantBufferAllocator_.CreateConstantBufferBindingGroup(cbuffer);
+        staticMeshBindingGroups.push_back(std::move(bindingGroup));
     }
-    staticMeshConstantBufferBatch_.Flush();
+    transientConstantBufferAllocator_.Flush();
 
     // Dynamic states
 
@@ -380,9 +422,10 @@ void DeferredRenderer::DoDeferredLightingPass(RG::PassContext &passContext, cons
         perPassGroupData.gbufferDepth = gbufferDepth->CreateSrv(
             RHI::TextureSrvFlagBit::SpecialLayout_DepthSrv_StencilAttachmentReadOnly);
         perPassGroupData.skyLut = skyLut;
-        perPassGroupData.camera = camera_->GetConstantBufferData();
-        perPassGroupData.gbufferSize =
-            Vector4f(image->GetWidth(), image->GetHeight(), 1.0f / image->GetWidth(), 1.0f / image->GetHeight());
+        perPassGroupData.camera = DeferredRendererDetail::CameraConstantBuffer::FromCamera(*camera_);
+        perPassGroupData.gbufferSize = Vector4f(
+            image->GetWidth(), image->GetHeight(),
+            1.0f / image->GetWidth(), 1.0f / image->GetHeight());
 
         const Light::SharedRenderingData *directionalLight = nullptr;
         for(const Light::SharedRenderingData *light : scene_->GetLights())

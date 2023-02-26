@@ -12,7 +12,7 @@ class Enumerate
 {
     struct iterator
     {
-        using iter_type = decltype(std::declval<T>().begin());
+        using iter_type = decltype(std::begin(std::declval<T>()));
 
     private:
 
@@ -63,12 +63,12 @@ public:
 
     auto begin()
     {
-        return iterator{ 0, container_.begin() };
+        return iterator{ 0, std::begin(container_) };
     }
 
     auto end()
     {
-        return iterator{ container_.size(), container_.end() };
+        return iterator{ Rtrc::GetContainerSize(container_), std::end(container_) };
     }
 
 private:

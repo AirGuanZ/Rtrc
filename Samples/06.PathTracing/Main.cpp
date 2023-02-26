@@ -329,10 +329,10 @@ void Run()
             bindingGroupData.Geometries[1]     = torus.primitives;
             bindingGroupData.Materials         = materialBuffer;
             bindingGroupData.EyePosition       = camera.GetPosition();
-            bindingGroupData.FrustumA          = camera.GetConstantBufferData().worldRays[0];
-            bindingGroupData.FrustumB          = camera.GetConstantBufferData().worldRays[1];
-            bindingGroupData.FrustumC          = camera.GetConstantBufferData().worldRays[2];
-            bindingGroupData.FrustumD          = camera.GetConstantBufferData().worldRays[3];
+            bindingGroupData.FrustumA          = camera.GetWorldRays()[0];
+            bindingGroupData.FrustumB          = camera.GetWorldRays()[1];
+            bindingGroupData.FrustumC          = camera.GetWorldRays()[2];
+            bindingGroupData.FrustumD          = camera.GetWorldRays()[3];
             bindingGroupData.Resolution        = { rgAccumulateTexture->GetWidth(), rgAccumulateTexture->GetHeight() };
             auto bindingGroup = device->CreateBindingGroup(bindingGroupData);
 
