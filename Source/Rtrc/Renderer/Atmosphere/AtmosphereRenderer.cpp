@@ -1,5 +1,5 @@
 #include <Rtrc/Math/LowDiscrepancy.h>
-#include <Rtrc/Renderer/AtmosphereRenderer.h>
+#include <Rtrc/Renderer/Atmosphere/AtmosphereRenderer.h>
 
 RTRC_BEGIN
 

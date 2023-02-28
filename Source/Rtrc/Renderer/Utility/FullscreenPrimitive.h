@@ -2,7 +2,7 @@
 
 #include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/Graphics/Mesh/Mesh.h>
-#include <Rtrc/Renderer/Camera/Camera.h>
+#include <Rtrc/Renderer/Scene/Camera/Camera.h>
 
 RTRC_BEGIN
 

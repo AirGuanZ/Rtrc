@@ -60,20 +60,18 @@ class Application : public Uncopyable
             auto matInst = resources_->CreateMaterialInstance("Builtin/Surface/Diffuse");
             matInst->Set("Albedo", device_->CreateColorTexture2D(0, 255, 255, 255));
 
-            auto staticMeshRenderer = scene_->CreateStaticMeshRenderer();
+            auto staticMeshRenderer = staticMeshRenderers_.emplace_back(scene_->CreateStaticMeshRenderer()).get();
             staticMeshRenderer->SetMesh(cubeMesh);
             staticMeshRenderer->SetMaterial(matInst);
             staticMeshRenderer->UpdateWorldMatrixRecursively(true);
-            staticMeshRenderers_.push_back(std::move(staticMeshRenderer));
         }
 
         {
-            auto mainLight = scene_->CreateLight();
-            mainLight->SetType(Light::Type::Directional);
-            mainLight->SetDirection(Normalize(Vector3f(0.4, -1, 0.2)));
-            mainLight->SetColor(Vector3f(1));
-            mainLight->SetIntensity(1);
-            mainLight_ = std::move(mainLight);
+            mainLight_ = scene_->CreateLight();
+            mainLight_->SetType(Light::Type::Directional);
+            mainLight_->SetDirection(Normalize(Vector3f(0.4, -1, 0.2)));
+            mainLight_->SetColor(Vector3f(1));
+            mainLight_->SetIntensity(1);
         }
 
         input_->LockCursor(true);

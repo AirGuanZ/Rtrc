@@ -1,4 +1,4 @@
-#include <Rtrc/Renderer/Camera/Camera.h>
+#include <Rtrc/Renderer/Scene/Camera/Camera.h>
 
 RTRC_BEGIN
 
