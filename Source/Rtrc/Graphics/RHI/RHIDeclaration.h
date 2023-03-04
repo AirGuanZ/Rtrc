@@ -1260,6 +1260,11 @@ public:
 
     RTRC_RHI_API void UpdateBindingGroups(const BindingGroupUpdateBatch &batch) RTRC_RHI_API_PURE;
 
+    RTRC_RHI_API void CopyBindingGroup(
+        const BindingGroupPtr &dstGroup, uint32_t dstIndex, uint32_t dstArrayOffset,
+        const BindingGroupPtr &srcGroup, uint32_t srcIndex, uint32_t srcArrayOffset,
+        uint32_t count) RTRC_RHI_API_PURE;
+
     RTRC_RHI_API Ptr<Texture> CreateTexture(const TextureDesc &desc) RTRC_RHI_API_PURE;
     RTRC_RHI_API Ptr<Buffer>  CreateBuffer(const BufferDesc &desc) RTRC_RHI_API_PURE;
     RTRC_RHI_API Ptr<Sampler> CreateSampler(const SamplerDesc &desc) RTRC_RHI_API_PURE;

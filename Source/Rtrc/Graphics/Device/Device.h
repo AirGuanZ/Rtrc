@@ -150,6 +150,11 @@ public:
     template<BindingGroupDSL::RtrcGroupStruct T>
     RC<BindingGroup> CreateBindingGroup(const T &value, const RC<BindingGroupLayout> &layoutHint, int variableBindingCount = 0);
 
+    void CopyBindings(
+        const RC<BindingGroup> &dst, uint32_t dstSlot, uint32_t dstArrElem,
+        const RC<BindingGroup> &src, uint32_t srcSlot, uint32_t srcArrElem,
+        uint32_t count);
+
     RC<BindingLayout> CreateBindingLayout(const BindingLayout::Desc &desc);
 
     CommandBuffer CreateCommandBuffer();
@@ -441,6 +446,14 @@ RC<BindingGroup> Device::CreateBindingGroup(
     auto group = this->CreateBindingGroup<T>(layoutHint, variableBindingCount);
     Rtrc::ApplyBindingGroup(device_.Get(), dynamicBufferManager_.get(), group, value);
     return group;
+}
+
+inline void Device::CopyBindings(
+    const RC<BindingGroup> &dst, uint32_t dstSlot, uint32_t dstArrElem,
+    const RC<BindingGroup> &src, uint32_t srcSlot, uint32_t srcArrElem,
+    uint32_t count)
+{
+    bindingLayoutManager_->CopyBindings(dst, dstSlot, dstArrElem, src, srcSlot, srcArrElem, count);
 }
 
 inline CommandBuffer Device::CreateCommandBuffer()

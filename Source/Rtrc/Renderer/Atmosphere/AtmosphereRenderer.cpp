@@ -228,62 +228,6 @@ AtmosphereDetail::SkyLut::RenderGraphInterface AtmosphereDetail::SkyLut::AddToRe
     return ret;
 }
 
-void AtmosphereDetail::SkyLut::AddToRenderGraph(
-    Context                         &context,
-    const AtmosphereFrameParameters *parameters,
-    RG::RenderGraph                 *renderGraph,
-    const TransmittanceLut          &transmittanceLut,
-    const MultiScatterLut           &multiScatterLut)
-{
-    std::swap(context.prevSkyLut, context.currSkyLut);
-
-    auto prevLutRG = PrepareLut(renderGraph, context.prevSkyLut);
-    auto currLutRG = PrepareLut(renderGraph, context.currSkyLut);
-
-    auto prevLut = prevLutRG.lut;
-    auto currLut = currLutRG.lut;
-    
-    auto skyPass = renderGraph->CreatePass("Generate Sky Lut");
-    skyPass->Use(currLut, RG::COMPUTE_SHADER_RWTEXTURE_WRITEONLY);
-    skyPass->Use(prevLut, RG::COMPUTE_SHADER_TEXTURE);
-    skyPass->SetCallback(
-        [this, currLut, prevLut, parameters, &transmittanceLut, &multiScatterLut](RG::PassContext &passCtx)
-    {
-        float lerpFactor = 1.0f - std::pow(0.03f, 0.4f * parameters->dt);
-        lerpFactor = std::clamp(lerpFactor, 0.001f, 0.05f);
-
-        SkyLutPass passGroupData;
-        passGroupData.SkyLutTextureRW         = currLut->Get();
-        passGroupData.SkyHistoryLutTexture    = prevLut->Get();
-        passGroupData.TransmittanceLutTexture = transmittanceLut.GetLut();
-        passGroupData.MultiScatterLutTexture  = multiScatterLut.GetLut();
-        passGroupData.atmosphere              = parameters->atmosphere;
-        passGroupData.outputResolution        = lutRes_;
-        passGroupData.rayMarchStepCount       = stepCount_;
-        passGroupData.frameRandom01           = std::uniform_real_distribution<float>(0, 1)(randomEngine_);
-        passGroupData.eyePos                  = parameters->eyePosition;
-        passGroupData.lerpFactor              = lerpFactor;
-        passGroupData.sunDirection            = parameters->sunDirection;
-        passGroupData.sunIntensity            = parameters->sunIntensity * parameters->sunColor;
-        auto passGroup = device_.CreateBindingGroup(passGroupData);
-
-        auto &cmd = passCtx.GetCommandBuffer();
-        cmd.BindComputePipeline(shader_->GetComputePipeline());
-        cmd.BindComputeGroup(0, passGroup);
-        cmd.Dispatch(shader_->ComputeThreadGroupCount(Vector3i(lutRes_, 1)));
-    });
-    
-    auto entryPass = renderGraph->CreateDummyPass("Begin Sky Lut Generation");
-    Connect(entryPass, prevLutRG.clearPass);
-    Connect(entryPass, currLutRG.clearPass);
-    Connect(prevLutRG.clearPass, skyPass);
-    Connect(currLutRG.clearPass, skyPass);
-
-    context.rgPassIn  = entryPass;
-    context.rgPassOut = skyPass;
-    context.rgSkyLut  = currLut;
-}
-
 AtmosphereDetail::SkyLut::PrepareLutRGInterface AtmosphereDetail::SkyLut::PrepareLut(
     RG::RenderGraph *renderGraph, RC<StatefulTexture> &lut)
 {

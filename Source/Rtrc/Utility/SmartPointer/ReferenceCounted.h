@@ -28,7 +28,6 @@ protected:
 public:
 
     ReferenceCounted() = default;
-    ~ReferenceCounted() = default;
 
     ReferenceCounted(const ReferenceCounted &other)
         : ReferenceCounted()

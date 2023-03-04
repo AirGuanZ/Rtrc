@@ -10,6 +10,20 @@ RTRC_BEGIN
 class Scene;
 class StaticMeshRendererManager;
 
+// ========================= Ray tracing flag =========================
+
+enum class StaticMeshRendererRayTracingFlagBit : uint32_t
+{
+    None         = 0,
+    InOpaqueTlas = 1 << 0
+};
+
+RTRC_DEFINE_ENUM_FLAGS(StaticMeshRendererRayTracingFlagBit)
+
+using StaticMeshRendererRayTracingFlags = EnumFlags<StaticMeshRendererRayTracingFlagBit>;
+
+// ========================= Per-object constant buffer struct =========================
+
 rtrc_struct(StaticMeshCBuffer)
 {
     rtrc_var(float4x4, localToWorld);
@@ -18,17 +32,27 @@ rtrc_struct(StaticMeshCBuffer)
     rtrc_var(float4x4, localToClip);
 };
 
+// ========================= Renderer proxy =========================
+
 class StaticMeshRendererProxy : public RendererProxy
 {
 public:
+
+    using RayTracingFlagBit = StaticMeshRendererRayTracingFlagBit;
+    using RayTracingFlags   = StaticMeshRendererRayTracingFlags;
 
     ReferenceCountedPtr<const Mesh::SharedRenderingData>             meshRenderingData;
     ReferenceCountedPtr<const MaterialInstance::SharedRenderingData> materialRenderingData;
 };
 
+// ========================= Renderer =========================
+
 class StaticMeshRenderer : public Renderer
 {
 public:
+
+    using RayTracingFlagBit = StaticMeshRendererRayTracingFlagBit;
+    using RayTracingFlags   = StaticMeshRendererRayTracingFlags;
 
     StaticMeshRenderer() = default;
     ~StaticMeshRenderer() override;
@@ -52,6 +76,8 @@ private:
     RC<MaterialInstance> matInst_;
 };
 
+// ========================= Renderer manager =========================
+
 class StaticMeshRendererManager : public Uncopyable
 {
 public:
@@ -65,7 +91,7 @@ public:
 
 private:
 
-    // TODO: use intrusive list
+    // IMPROVE: use intrusive list
     std::list<StaticMeshRenderer*> renderers_;
 };
 

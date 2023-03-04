@@ -12,15 +12,15 @@ public:
     ~SceneProxy();
 
     Span<const Light::SharedRenderingData *> GetLights() const { return lights_; }
-    Span<const RendererProxy *>              GetRenderers() const { return rendererProxies_; }
+    Span<const RendererProxy *> GetRenderers() const { return renderers_; }
 
 private:
 
     friend class Scene;
 
     LinearAllocator arena_;
-    std::vector<const Light::SharedRenderingData*> lights_;
-    std::vector<const RendererProxy *> rendererProxies_;
+    std::vector<const Light::SharedRenderingData *> lights_;
+    std::vector<const RendererProxy *> renderers_;
 };
 
 class Scene

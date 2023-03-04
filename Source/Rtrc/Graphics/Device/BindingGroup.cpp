@@ -66,6 +66,15 @@ RC<BindingLayout> BindingGroupManager::CreateBindingLayout(const BindingLayout::
         });
 }
 
+void BindingGroupManager::CopyBindings(
+    const RC<BindingGroup> &dst, uint32_t dstSlot, uint32_t dstArrElem,
+    const RC<BindingGroup> &src, uint32_t srcSlot, uint32_t srcArrElem,
+    uint32_t count)
+{
+    device_->CopyBindingGroup(
+        dst->GetRHIObject(), dstSlot, dstArrElem, src->GetRHIObject(), srcSlot, srcArrElem, count);
+}
+
 void BindingGroupManager::_internalRelease(BindingGroup &group)
 {
     sync_.OnFrameComplete([group = std::move(group.rhiGroup_)] {});

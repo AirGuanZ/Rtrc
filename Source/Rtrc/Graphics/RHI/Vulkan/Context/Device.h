@@ -50,6 +50,10 @@ public:
     Ptr<BindingLayout> CreateBindingLayout(const BindingLayoutDesc &desc) RTRC_RHI_OVERRIDE;
 
     void UpdateBindingGroups(const BindingGroupUpdateBatch &batch) RTRC_RHI_OVERRIDE;
+    void CopyBindingGroup(
+        const BindingGroupPtr &dstGroup, uint32_t dstIndex, uint32_t dstArrayOffset,
+        const BindingGroupPtr &srcGroup, uint32_t srcIndex, uint32_t srcArrayOffset,
+        uint32_t count) RTRC_RHI_OVERRIDE;
 
     Ptr<Texture> CreateTexture(const TextureDesc &desc) RTRC_RHI_OVERRIDE;
 

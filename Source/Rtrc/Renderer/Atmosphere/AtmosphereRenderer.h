@@ -44,11 +44,11 @@ namespace AtmosphereDetail
     struct AtmosphereFrameParameters
     {
         AtmosphereProperties atmosphere;
-        Vector3f eyePosition;
-        Vector3f sunDirection;
-        Vector3f sunColor;
-        float sunIntensity;
-        float dt;
+        Vector3f             eyePosition;
+        Vector3f             sunDirection;
+        Vector3f             sunColor;
+        float                sunIntensity;
+        float                dt;
     };
 
     class TransmittanceLut
@@ -98,16 +98,6 @@ namespace AtmosphereDetail
             RG::TextureResource *skyLut = nullptr;
         };
 
-        struct Context
-        {
-            RC<StatefulTexture> prevSkyLut;
-            RC<StatefulTexture> currSkyLut;
-
-            RG::TextureResource *rgSkyLut  = nullptr;
-            RG::Pass            *rgPassIn  = nullptr;
-            RG::Pass            *rgPassOut = nullptr;
-        };
-
         explicit SkyLut(const BuiltinResourceManager &builtinResources);
 
         void SetRayMarchingStepCount(int stepCount);
@@ -120,14 +110,6 @@ namespace AtmosphereDetail
             const TransmittanceLut          &transmittanceLut,
             const MultiScatterLut           &multiScatterLut);
         
-        // 'parameters' must be valid until renderGraph is executed
-        void AddToRenderGraph(
-            Context                         &context,
-            const AtmosphereFrameParameters *parameters,
-            RG::RenderGraph                 *renderGraph,
-            const TransmittanceLut          &transmittanceLut,
-            const MultiScatterLut           &multiScatterLut);
-
     private:
 
         struct PrepareLutRGInterface

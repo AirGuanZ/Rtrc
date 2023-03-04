@@ -20,12 +20,12 @@ public:
 
         const MeshLayout *GetLayout() const { return layout_; }
 
-        uint32_t             GetVertexCount() const                      { return vertexCount_; }
+        uint32_t             GetVertexCount() const           { return vertexCount_; }
         const RC<SubBuffer> &GetVertexBuffer(int index) const { return vertexBuffers_[index]; }
 
-        uint32_t             GetIndexCount() const        { return indexCount_; }
-        const RC<SubBuffer> &GetIndexBuffer() const       { return indexBuffer_; }
-        RHI::IndexFormat     GetIndexBufferFormat() const { return indexFormat_; }
+        uint32_t             GetIndexCount() const  { return indexCount_; }
+        const RC<SubBuffer> &GetIndexBuffer() const { return indexBuffer_; }
+        RHI::IndexFormat     GetIndexFormat() const { return indexFormat_; }
         
         void Bind(CommandBuffer &commandBuffer) const;
 
@@ -56,9 +56,9 @@ public:
     uint32_t             GetVertexCount() const           { return sharedData_->GetVertexCount(); }
     const RC<SubBuffer> &GetVertexBuffer(int index) const { return sharedData_->GetVertexBuffer(index); }
     
-    uint32_t             GetIndexCount() const        { return sharedData_->GetIndexCount(); }
-    const RC<SubBuffer> &GetIndexBuffer() const       { return sharedData_->indexBuffer_; }
-    RHI::IndexFormat     GetIndexBufferFormat() const { return sharedData_->indexFormat_; }
+    uint32_t             GetIndexCount() const  { return sharedData_->GetIndexCount(); }
+    const RC<SubBuffer> &GetIndexBuffer() const { return sharedData_->GetIndexBuffer(); }
+    RHI::IndexFormat     GetIndexFormat() const { return sharedData_->GetIndexFormat(); }
 
     const ReferenceCountedPtr<SharedRenderingData> &GetRenderingData() const  { return sharedData_; }
     SharedRenderingData                            *GetMutableRenderingData() { return sharedData_.Unshare(); }
@@ -90,7 +90,7 @@ private:
     std::vector<RC<SubBuffer>> vertexBuffers_;
 
     uint32_t         indexCount_ = 0;
-    RHI::IndexFormat indexBufferFormat_ = RHI::IndexFormat::UInt16;
+    RHI::IndexFormat indexFormat_ = RHI::IndexFormat::UInt16;
     RC<SubBuffer>    indexBuffer_;
 };
 
@@ -128,7 +128,7 @@ inline MeshBuilder &MeshBuilder::SetVertexBuffer(int index, const RC<SubBuffer> 
 inline MeshBuilder &MeshBuilder::SetIndexBuffer(const RC<SubBuffer> &buffer, RHI::IndexFormat format)
 {
     indexBuffer_ = buffer;
-    indexBufferFormat_ = format;
+    indexFormat_ = format;
     return *this;
 }
 
@@ -150,7 +150,7 @@ inline Mesh MeshBuilder::CreateMesh()
     Mesh::SharedRenderingData &data = *ret.GetMutableRenderingData();
     data.layout_        = layout_;
     data.vertexBuffers_ = std::move(vertexBuffers_);
-    data.indexFormat_   = indexBufferFormat_;
+    data.indexFormat_   = indexFormat_;
     data.indexBuffer_   = std::move(indexBuffer_);
     data.vertexCount_   = vertexCount_;
     data.indexCount_    = indexCount_;

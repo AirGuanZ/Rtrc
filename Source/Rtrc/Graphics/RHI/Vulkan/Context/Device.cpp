@@ -1014,6 +1014,27 @@ void VulkanDevice::UpdateBindingGroups(const BindingGroupUpdateBatch &batch)
     vkUpdateDescriptorSets(device_, records.GetSize(), writes.data(), 0, nullptr);
 }
 
+void VulkanDevice::CopyBindingGroup(
+    const BindingGroupPtr &dstGroup, uint32_t dstIndex, uint32_t dstArrayOffset,
+    const BindingGroupPtr &srcGroup, uint32_t srcIndex, uint32_t srcArrayOffset,
+    uint32_t count)
+{
+    const VkDescriptorSet vkDstSet = static_cast<VulkanBindingGroup *>(dstGroup.Get())->_internalGetNativeSet();
+    const VkDescriptorSet vkSrcSet = static_cast<VulkanBindingGroup *>(srcGroup.Get())->_internalGetNativeSet();
+    const VkCopyDescriptorSet vkCopy =
+    {
+        .sType           = VK_STRUCTURE_TYPE_COPY_DESCRIPTOR_SET,
+        .srcSet          = vkSrcSet,
+        .srcBinding      = srcIndex,
+        .srcArrayElement = srcArrayOffset,
+        .dstSet          = vkDstSet,
+        .dstBinding      = dstIndex,
+        .dstArrayElement = dstArrayOffset,
+        .descriptorCount = count
+    };
+    vkUpdateDescriptorSets(device_, 0, nullptr, 1, &vkCopy);
+}
+
 Ptr<Texture> VulkanDevice::CreateTexture(const TextureDesc &desc)
 {
     const auto imageCreateInfo = VkDeviceDetail::TranslateImageCreateInfo(desc, queueFamilies_);

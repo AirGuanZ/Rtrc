@@ -17,7 +17,7 @@ Box<SceneProxy> Scene::CreateSceneProxy() const
     {
         if(const RendererProxy *proxy = renderer->CreateProxy(ret->arena_))
         {
-            ret->rendererProxies_.push_back(proxy);
+            ret->renderers_.push_back(proxy);
         }
     });
     lightManager_.ForEachLight([&](const Light *light)

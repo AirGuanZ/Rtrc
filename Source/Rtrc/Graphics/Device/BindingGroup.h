@@ -135,6 +135,11 @@ public:
     RC<BindingGroup>       CreateBindingGroup(RC<const BindingGroupLayout> groupLayout, int variableBindingCount = 0);
     RC<BindingLayout>      CreateBindingLayout(const BindingLayout::Desc &desc);
 
+    void CopyBindings(
+        const RC<BindingGroup> &dst, uint32_t dstSlot, uint32_t dstArrElem,
+        const RC<BindingGroup> &src, uint32_t srcSlot, uint32_t srcArrElem,
+        uint32_t count);
+
     void _internalRelease(BindingGroup &group);
     void _internalRelease(BindingGroupLayout &layout);
     void _internalRelease(BindingLayout &layout);
