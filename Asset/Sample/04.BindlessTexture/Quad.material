@@ -13,6 +13,7 @@ Shader "Quad"
 
 	rtrc_group(Pass)
 	{
+        rtrc_uniform(float, alpha)
 		rtrc_bindless_varsize(Texture2D<float3>[2048], Textures)	
 	};
 
@@ -57,7 +58,7 @@ Shader "Quad"
         float yf = frac(2 * input.texCoord.y);
         int textureIndex = PushConstant.slots[yi * 2 + xi];
         output.color.rgb = Textures[NonUniformResourceIndex(textureIndex)].SampleLevel(Sampler, float2(xf, yf), 0);
-        output.color.a = 1;
+        output.color.a = Pass.alpha;
         return output;
     }
 }

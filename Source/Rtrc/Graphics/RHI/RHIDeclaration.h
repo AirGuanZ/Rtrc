@@ -1342,6 +1342,7 @@ public:
     RTRC_RHI_BINDING_GROUP_COMMON
 
     RTRC_RHI_API const BindingGroupLayout *GetLayout() const RTRC_RHI_API_PURE;
+    RTRC_RHI_API uint32_t GetVariableArraySize() const RTRC_RHI_API_PURE;
     
     RTRC_RHI_API void ModifyMember(int index, int arrayElem, BufferSrv                  *bufferSrv)  RTRC_RHI_API_PURE;
     RTRC_RHI_API void ModifyMember(int index, int arrayElem, BufferUav                  *bufferUav)  RTRC_RHI_API_PURE;

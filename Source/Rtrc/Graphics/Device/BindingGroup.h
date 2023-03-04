@@ -26,6 +26,7 @@ public:
     ~BindingGroup();
 
     const RC<const BindingGroupLayout> &GetLayout() const;
+    uint32_t GetVariableArraySize() const;
 
     void Set(int slot, RC<Buffer>    cbuffer, size_t offset, size_t size);
     void Set(int slot, RC<SubBuffer> cbuffer);
@@ -168,6 +169,11 @@ inline BindingGroup::~BindingGroup()
 inline const RC<const BindingGroupLayout> &BindingGroup::GetLayout() const
 {
     return layout_;
+}
+
+inline uint32_t BindingGroup::GetVariableArraySize() const
+{
+    return rhiGroup_->GetVariableArraySize();
 }
 
 inline void BindingGroup::Set(int slot, RC<Buffer> cbuffer, size_t offset, size_t size)

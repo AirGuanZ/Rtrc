@@ -361,13 +361,6 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
                         "Binding {} has variable array size but is not the last one in binding group {}",
                         binding.name, group.name));
                 }
-                if(!group.valuePropertyDefinitions.empty())
-                {
-                    throw Exception(fmt::format(
-                        "Binding {} has variable array size, "
-                        "which is not compatible with rtrc_uniform in binding group {}",
-                        binding.name, group.name));
-                }
                 rhiGroupLayoutDesc.variableArraySize = true;
             }
         }
@@ -385,6 +378,16 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
         for(auto &&[slotIndex, binding] : Enumerate(group.bindings))
         {
             bindingNameToSlots[binding.name] = { static_cast<int>(groupIndex), static_cast<int>(slotIndex) };
+        }
+
+        // Binding with variable array size must be the last one in group
+        // In that case, swap the slots of variable-sized binding and uniform-variable binding
+        if(!group.valuePropertyDefinitions.empty() && !group.bindings.empty() && group.bindings.back().variableArraySize)
+        {
+            const size_t a = rhiGroupLayoutDesc.bindings.size() - 2;
+            const size_t b = rhiGroupLayoutDesc.bindings.size() - 1;
+            std::swap(rhiGroupLayoutDesc.bindings[a], rhiGroupLayoutDesc.bindings[b]);
+            std::swap(bindingNameToSlots[group.name], bindingNameToSlots[group.bindings.back().name]);
         }
 
         groupLayouts.push_back(device_->CreateBindingGroupLayout(rhiGroupLayoutDesc));
@@ -536,11 +539,12 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
 
         if(!group.valuePropertyDefinitions.empty())
         {
+            const auto [set, slot] = bindingNameToSlots.at(group.name);
             groupRight += fmt::format(
                 "struct _rtrc_generated_cbuffer_struct_{} {{ {} }}; "
                 "[[vk::binding({}, {})]] ConstantBuffer<_rtrc_generated_cbuffer_struct_{}> {};",
-                group.name, group.valuePropertyDefinitions, group.bindings.size(),
-                bindings.nameToGroupIndex.at(group.name), group.name, group.name);
+                group.name, group.valuePropertyDefinitions,
+                slot, set, group.name, group.name);
         }
 
         groupRight += fmt::format("struct group_dummy_struct_{}", group.name);

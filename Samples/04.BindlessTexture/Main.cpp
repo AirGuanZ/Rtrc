@@ -2,6 +2,12 @@
 
 using namespace Rtrc;
 
+rtrc_group(Pass)
+{
+    rtrc_uniform(float, alpha);
+    rtrc_bindless_variable_size(Texture2D[2048], Textures);
+};
+
 void Run()
 {
     auto window = WindowBuilder()
@@ -48,14 +54,15 @@ void Run()
     constexpr int BINDING_GROUP_SIZE = 1024;
     RangeSet bindingSlotAllocator(BINDING_GROUP_SIZE);
 
-    auto bindingGroupLayout = shader->GetBindingGroupLayoutByIndex(0);
-    auto bindingGroup = bindingGroupLayout->CreateBindingGroup(BINDING_GROUP_SIZE);
+    Pass bindingGroupData;
+    bindingGroupData.alpha = 1;
+    auto bindingGroup = device->CreateBindingGroup(bindingGroupData, BINDING_GROUP_SIZE);
 
     RangeSet::Index slots[4];
     for(int i = 0; i < 4; ++i)
     {
         slots[i] = bindingSlotAllocator.Allocate(1);
-        bindingGroup->Set(0, slots[i], textures[i]->CreateSrv());
+        bindingGroup->Set(1, slots[i], textures[i]->CreateSrv());
     }
 
     RG::Executer renderGraphExecuter(device.get());

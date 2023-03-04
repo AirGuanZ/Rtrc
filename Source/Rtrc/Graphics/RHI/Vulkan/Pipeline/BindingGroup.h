@@ -22,10 +22,15 @@ public:
 #endif
 
     VulkanBindingGroup(
-        VkDevice device, const VulkanBindingGroupLayout *layout, VkDescriptorPool pool, VkDescriptorSet set);
+        VkDevice                        device,
+        const VulkanBindingGroupLayout *layout,
+        uint32_t                        variableArraySize,
+        VkDescriptorPool                pool,
+        VkDescriptorSet                 set);
     ~VulkanBindingGroup() override;
 
     const BindingGroupLayout *GetLayout() const RTRC_RHI_OVERRIDE;
+    uint32_t GetVariableArraySize() const RTRC_RHI_OVERRIDE;
 
     void ModifyMember(int index, int arrayElem, BufferSrv                  *bufferSrv)  RTRC_RHI_OVERRIDE;
     void ModifyMember(int index, int arrayElem, BufferUav                  *bufferUav)  RTRC_RHI_OVERRIDE;
@@ -63,6 +68,7 @@ private:
 
     VkDevice device_;
     const VulkanBindingGroupLayout *layout_;
+    uint32_t variableArraySize_;
     VkDescriptorPool pool_;
     VkDescriptorSet set_;
 };

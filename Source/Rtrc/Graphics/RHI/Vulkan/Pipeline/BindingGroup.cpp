@@ -7,8 +7,12 @@
 RTRC_RHI_VK_BEGIN
 
 VulkanBindingGroup::VulkanBindingGroup(
-    VkDevice device, const VulkanBindingGroupLayout *layout, VkDescriptorPool pool, VkDescriptorSet set)
-    : device_(device), layout_(layout), pool_(pool), set_(set)
+    VkDevice                        device,
+    const VulkanBindingGroupLayout *layout,
+    uint32_t                        variableArraySize,
+    VkDescriptorPool                pool,
+    VkDescriptorSet                 set)
+    : device_(device), layout_(layout), variableArraySize_(variableArraySize), pool_(pool), set_(set)
 {
     
 }
@@ -21,6 +25,11 @@ VulkanBindingGroup::~VulkanBindingGroup()
 const BindingGroupLayout *VulkanBindingGroup::GetLayout() const
 {
     return layout_;
+}
+
+uint32_t VulkanBindingGroup::GetVariableArraySize() const
+{
+    return variableArraySize_;
 }
 
 void VulkanBindingGroup::ModifyMember(int index, int arrayElem, BufferSrv *bufferSrv)

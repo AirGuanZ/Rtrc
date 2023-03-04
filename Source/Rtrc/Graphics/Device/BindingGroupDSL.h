@@ -360,6 +360,11 @@ namespace BindingGroupDSL
                 binding.stages = T::_rtrcGroupDefaultStages;
                 desc.bindings.push_back(binding);
             }
+            if(desc.variableArraySize && GetUniformDWordCount<T>() > 0)
+            {
+                assert(desc.bindings[desc.bindings.size() - 2].bindless);
+                std::swap(desc.bindings[desc.bindings.size() - 2], desc.bindings[desc.bindings.size() - 1]);
+            }
             return desc;
         }();
         return ret;
@@ -462,11 +467,10 @@ namespace BindingGroupDSL
 #define rtrc_bindless3(TYPE, NAME, STAGES) RTRC_DEFINE_IMPL(TYPE, NAME, RTRC_INLINE_STAGE_DECLERATION(STAGES), true, false)
 #define rtrc_bindless(...)                 RTRC_MACRO_OVERLOADING(rtrc_bindless, __VA_ARGS__)
 
-#define rtrc_bindless_variable_size_2(TYPE, NAME) \
+#define rtrc_bindless_variable_size2(TYPE, NAME) \
     RTRC_DEFINE_IMPL(TYPE, NAME, _rtrcGroupDefaultStages, true, true)
-#define rtrc_bindless_variable_size_3(TYPE, NAME, STAGES) \
+#define rtrc_bindless_variable_size3(TYPE, NAME, STAGES) \
     RTRC_DEFINE_IMPL(TYPE, NAME, RTRC_INLINE_STAGE_DECLERATION(STAGES), true, true)
-// Can't be together with rtrc_uniform since binding with variable array size must be the last one in binding group
 #define rtrc_bindless_variable_size(...) RTRC_MACRO_OVERLOADING(rtrc_bindless_variable_size, __VA_ARGS__)
 
 #define rtrc_uniform(TYPE, NAME)                                        \
@@ -506,32 +510,17 @@ const BindingGroupLayout::Desc &GetBindingGroupLayoutDesc()
 }
 
 template<BindingGroupDSL::RtrcGroupStruct T>
-void ApplyBindingGroup(BindingGroup &group, const T &value)
-{
-    int index = 0;
-    T::ForEachFlattenMember(
-        [&]<bool IsUniform, typename M, typename A>
-        (const char *name, RHI::ShaderStageFlag stages, const A &accessor, BindingGroupDSL::BindingFlags flags)
-    {
-        static_assert(!IsUniform);
-        using MemberElement = typename BindingGroupDSL::MemberProxyTrait<M>::MemberProxyElement;
-        constexpr size_t arraySize = BindingGroupDSL::MemberProxyTrait<M>::ArraySize;
-        static_assert(arraySize == 0, "ApplyBindingGroup: array is not implemented");
-        group.Set(index++, accessor(&value)->_rtrcObj);
-    });
-}
-
-template<BindingGroupDSL::RtrcGroupStruct T>
 void ApplyBindingGroup(RHI::Device *device, ConstantBufferManagerInterface *cbMgr, BindingGroup &group, const T &value)
 {
     RHI::BindingGroupUpdateBatch batch;
     int index = 0;
+    bool swapUniformAndVariableSizedArray = false;
     T::ForEachFlattenMember(
         [&]<bool IsUniform, typename M, typename A>
         (const char *name, RHI::ShaderStageFlag stages, const A &accessor, BindingGroupDSL::BindingFlags flags)
     {
         //assert(!flags.contains(BindingGroupDSL::BindingFlagBit::Bindless));
-        assert(!flags.contains(BindingGroupDSL::BindingFlagBit::VariableArraySize));
+        //assert(!flags.contains(BindingGroupDSL::BindingFlagBit::VariableArraySize));
         if constexpr(!IsUniform)
         {
             using MemberElement = typename BindingGroupDSL::MemberProxyTrait<M>::MemberProxyElement;
@@ -541,14 +530,34 @@ void ApplyBindingGroup(RHI::Device *device, ConstantBufferManagerInterface *cbMg
                 "ConstantBuffer array hasn't been supported");
             if constexpr(arraySize > 0)
             {
-                for(size_t i = 0; i < arraySize; ++i)
+                auto ApplyArrayElements = [&, as = arraySize](int actualIndex)
                 {
-                    if(auto &rhiObj = (*accessor(&value))[i]._rtrcObj.GetRHIObject())
+                    for(size_t i = 0; i < as; ++i)
                     {
-                        batch.Append(*group.GetRHIObject(), index, i, rhiObj.Get());
+                        if constexpr(IsRC<std::remove_cvref_t<decltype((*accessor(&value))[i]._rtrcObj)>>)
+                        {
+                            if(auto &obj = (*accessor(&value))[i]._rtrcObj)
+                            {
+                                batch.Append(*group.GetRHIObject(), actualIndex, i, obj->GetRHIObject().Get());
+                            }
+                        }
+                        else
+                        {
+                            if(auto &rhiObj = (*accessor(&value))[i]._rtrcObj.GetRHIObject())
+                            {
+                                batch.Append(*group.GetRHIObject(), actualIndex, i, rhiObj.Get());
+                            }
+                        }
                     }
-                }
-                index++;
+                };
+
+                assert(!swapUniformAndVariableSizedArray);
+                swapUniformAndVariableSizedArray =
+                    BindingGroupDSL::GetUniformDWordCount<T>() > 0 &&
+                    flags.contains(BindingGroupDSL::BindingFlagBit::VariableArraySize);
+
+                ApplyArrayElements(swapUniformAndVariableSizedArray ? (index + 1) : index);
+                ++index;
             }
             else if constexpr(MemberElement::BindingType == RHI::BindingType::ConstantBuffer)
             {
@@ -603,8 +612,9 @@ void ApplyBindingGroup(RHI::Device *device, ConstantBufferManagerInterface *cbMg
             std::memcpy(deviceData.data() + deviceOffset, reinterpret_cast<const char *>(&value) + hostOffset, sizeof(M));
         });
 
+        const int actualIndex = swapUniformAndVariableSizedArray ? (index - 1) : index;
         auto cbuffer = cbMgr->CreateConstantBuffer(deviceData.data(), deviceData.size());
-        batch.Append(*group.GetRHIObject(), index++, RHI::ConstantBufferUpdate{
+        batch.Append(*group.GetRHIObject(), actualIndex, RHI::ConstantBufferUpdate{
             cbuffer->GetFullBuffer()->GetRHIObject().Get(),
             cbuffer->GetSubBufferOffset(),
             cbuffer->GetSubBufferSize()
@@ -612,12 +622,6 @@ void ApplyBindingGroup(RHI::Device *device, ConstantBufferManagerInterface *cbMg
     }
 
     device->UpdateBindingGroups(batch);
-}
-
-template<BindingGroupDSL::RtrcGroupStruct T>
-void ApplyBindingGroup(const RC<BindingGroup> &group, const T &value)
-{
-    Rtrc::ApplyBindingGroup(*group, value);
 }
 
 template<BindingGroupDSL::RtrcGroupStruct T>

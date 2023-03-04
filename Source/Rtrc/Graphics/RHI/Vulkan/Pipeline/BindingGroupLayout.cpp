@@ -145,7 +145,7 @@ Ptr<BindingGroup> VulkanBindingGroupLayout::_internalCreateBindingGroupImpl(uint
         }
         auto set = freeSets_.back();
         freeSets_.pop_back();
-        return MakePtr<VulkanBindingGroup>(device_, this, nullptr, set);
+        return MakePtr<VulkanBindingGroup>(device_, this, 0, nullptr, set);
     }
 
     std::vector<VkDescriptorPoolSize> poolSizes;
@@ -197,7 +197,7 @@ Ptr<BindingGroup> VulkanBindingGroupLayout::_internalCreateBindingGroupImpl(uint
         vkAllocateDescriptorSets(device_, &allocInfo, &set),
         "Failed to allocate vulkan descriptor set with variable descriptor count");
 
-    return MakePtr<VulkanBindingGroup>(device_, this, pool, set);
+    return MakePtr<VulkanBindingGroup>(device_, this, variableArraySize, pool, set);
 }
 
 void VulkanBindingGroupLayout::TransferNode(
