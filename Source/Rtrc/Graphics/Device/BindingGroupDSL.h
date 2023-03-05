@@ -26,7 +26,7 @@ namespace BindingGroupDSL
 
     struct MemberProxy_Texture2D
     {
-        static constexpr RHI::BindingType BindingType = RHI::BindingType::Texture2D;
+        static constexpr RHI::BindingType BindingType = RHI::BindingType::Texture;
         TextureSrv _rtrcObj;
 
         auto &operator=(TextureSrv value)
@@ -44,7 +44,7 @@ namespace BindingGroupDSL
     
     struct MemberProxy_RWTexture2D
     {
-        static constexpr RHI::BindingType BindingType = RHI::BindingType::RWTexture2D;
+        static constexpr RHI::BindingType BindingType = RHI::BindingType::RWTexture;
         TextureUav _rtrcObj;
 
         auto &operator=(TextureUav value)
@@ -59,78 +59,15 @@ namespace BindingGroupDSL
             return *this;
         }
     };
-    
-    struct MemberProxy_Texture3D
-    {
-        static constexpr RHI::BindingType BindingType = RHI::BindingType::Texture3D;
-        TextureSrv _rtrcObj;
 
-        auto &operator=(TextureSrv value)
-        {
-            _rtrcObj = std::move(value);
-            return *this;
-        }
-    };
-    
-    struct MemberProxy_RWTexture3D
-    {
-        static constexpr RHI::BindingType BindingType = RHI::BindingType::RWTexture3D;
-        TextureUav _rtrcObj;
+    using MemberProxy_Texture3D = MemberProxy_Texture2D;
+    using MemberProxy_RWTexture3D = MemberProxy_Texture2D;
 
-        auto &operator=(TextureUav value)
-        {
-            _rtrcObj = std::move(value);
-            return *this;
-        }
-    };
-    
-    struct MemberProxy_Texture2DArray
-    {
-        static constexpr RHI::BindingType BindingType = RHI::BindingType::Texture2DArray;
-        TextureSrv _rtrcObj;
+    using MemberProxy_Texture2DArray = MemberProxy_Texture2D;
+    using MemberProxy_RWTexture2DArray = MemberProxy_Texture2D;
 
-        auto &operator=(TextureSrv value)
-        {
-            _rtrcObj = std::move(value);
-            return *this;
-        }
-    };
-    
-    struct MemberProxy_RWTexture2DArray
-    {
-        static constexpr RHI::BindingType BindingType = RHI::BindingType::RWTexture2DArray;
-        TextureUav _rtrcObj;
-
-        auto &operator=(TextureUav value)
-        {
-            _rtrcObj = std::move(value);
-            return *this;
-        }
-    };
-    
-    struct MemberProxy_Texture3DArray
-    {
-        static constexpr RHI::BindingType BindingType = RHI::BindingType::Texture3DArray;
-        TextureSrv _rtrcObj;
-
-        auto &operator=(TextureSrv value)
-        {
-            _rtrcObj = std::move(value);
-            return *this;
-        }
-    };
-    
-    struct MemberProxy_RWTexture3DArray
-    {
-        static constexpr RHI::BindingType BindingType = RHI::BindingType::RWTexture3DArray;
-        TextureUav _rtrcObj;
-
-        auto &operator=(TextureUav value)
-        {
-            _rtrcObj = std::move(value);
-            return *this;
-        }
-    };
+    using MemberProxy_Texture3DArray = MemberProxy_Texture2D;
+    using MemberProxy_RWTexture3DArray = MemberProxy_Texture2D;
     
     struct MemberProxy_Buffer
     {

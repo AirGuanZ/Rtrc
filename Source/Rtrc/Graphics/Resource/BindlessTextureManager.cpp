@@ -1,38 +1,6 @@
-#include <Rtrc/Renderer/BindlessResourceManager/BindlessTextureManager.h>
+#include <Rtrc/Graphics/Resource/BindlessTextureManager.h>
 
 RTRC_BEGIN
-
-void BindlessTextureEntry::Set(RC<Texture> texture)
-{
-    Set(0, std::move(texture));
-}
-
-void BindlessTextureEntry::Set(uint32_t index, RC<Texture> texture)
-{
-    assert(index < count_);
-    manager_->_internalSet(offset_ + index, std::move(texture));
-}
-
-void BindlessTextureEntry::Clear(uint32_t index)
-{
-    assert(index < count_);
-    manager_->_internalClear(offset_ + index);
-}
-
-uint32_t BindlessTextureEntry::GetOffset() const
-{
-    return offset_;
-}
-
-uint32_t BindlessTextureEntry::GetCount() const
-{
-    return count_;
-}
-
-BindlessTextureEntry::operator bool() const
-{
-    return count_ > 0;
-}
 
 BindlessTextureManager::BindlessTextureManager(Device &device, uint32_t initialArraySize)
     : device_(device)
@@ -40,7 +8,7 @@ BindlessTextureManager::BindlessTextureManager(Device &device, uint32_t initialA
     BindingGroupLayout::Desc layoutDesc;
     layoutDesc.variableArraySize = true;
     BindingGroupLayout::BindingDesc &bindingDesc = layoutDesc.bindings.emplace_back();
-    bindingDesc.type     = RHI::BindingType::Texture2D;
+    bindingDesc.type     = RHI::BindingType::Texture;
     bindingDesc.stages   = RHI::ShaderStage::All;
     bindingDesc.bindless = true;
     bindingGroupLayout_ = device.CreateBindingGroupLayout(layoutDesc);
@@ -63,18 +31,12 @@ BindlessTextureEntry BindlessTextureManager::Allocate(uint32_t count)
             continue;
         }
         BindlessTextureEntry entry;
-        entry.manager_ = this;
-        entry.offset_ = offset;
-        entry.count_ = count;
+        entry.impl_ = MakeReferenceCountedPtr<BindlessTextureEntry::Impl>();
+        entry.impl_->manager = this;
+        entry.impl_->offset = offset;
+        entry.impl_->count = count;
         return entry;
     }
-}
-
-void BindlessTextureManager::Free(BindlessTextureEntry handle)
-{
-    assert(handle.manager_ == this);
-    std::lock_guard lock(mutex_);
-    freeRanges_.Free(handle.offset_, handle.offset_ + handle.count_);
 }
 
 void BindlessTextureManager::_internalSet(uint32_t index, RC<Texture> texture)
@@ -86,6 +48,21 @@ void BindlessTextureManager::_internalSet(uint32_t index, RC<Texture> texture)
 void BindlessTextureManager::_internalClear(uint32_t index)
 {
     boundTextures_[index].reset();
+}
+
+void BindlessTextureManager::_internalFree(BindlessTextureEntry::Impl *entry)
+{
+    assert(entry && entry->manager == this);
+    device_.GetSynchronizer().OnFrameComplete([offset = entry->offset, count = entry->count, this]
+    {
+        std::lock_guard lock(mutex_);
+        freeRanges_.Free(offset, offset + count);
+    });
+    std::lock_guard lock(mutex_);
+    for(uint32_t i = entry->offset; i < entry->offset + entry->count; ++i)
+    {
+        boundTextures_[i].reset();
+    }
 }
 
 void BindlessTextureManager::Expand()

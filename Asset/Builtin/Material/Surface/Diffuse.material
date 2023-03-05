@@ -1,6 +1,6 @@
 Material "Builtin/Surface/Diffuse"
 {
-	Texture2D Albedo;
+	Texture Albedo;
 
 	Pass
 	{

@@ -476,7 +476,7 @@ RC<Material> MaterialManager::CreateMaterial(std::string_view name)
         { "int3",                  Int3                  },
         { "int4",                  Int4                  },
         { "Buffer",                Buffer                },
-        { "Texture2D",             Texture2D             },
+        { "Texture",               Texture               },
         { "SamplerState",          Sampler               },
         { "AccelerationStructure", AccelerationStructure }
     };

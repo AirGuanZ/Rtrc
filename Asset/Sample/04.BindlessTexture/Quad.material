@@ -23,7 +23,7 @@ Shader "Quad"
 	};
     
     rtrc_sampler(Sampler, filter = linear, address_u = repeat, address_v = clamp)
-	
+
     struct VSInput
     {
         float3 position : POSITION;

@@ -45,9 +45,9 @@ struct MaterialProperty
         Int3,
         Int4,
         Buffer,
-        Texture2D, // including Texture2D and Texture2DArray
+        Texture,
         Sampler,
-        AccelerationStructure,
+        AccelerationStructure
     };
 
     static constexpr bool IsValue(Type type);

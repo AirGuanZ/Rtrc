@@ -235,15 +235,9 @@ VkDescriptorType TranslateBindingType(BindingType type)
 {
     switch(type)
     {
-    case BindingType::Texture2D:
-    case BindingType::Texture3D:
-    case BindingType::Texture2DArray:
-    case BindingType::Texture3DArray:
+    case BindingType::Texture:
         return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-    case BindingType::RWTexture2D:
-    case BindingType::RWTexture3D:
-    case BindingType::RWTexture2DArray:
-    case BindingType::RWTexture3DArray:
+    case BindingType::RWTexture:
         return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
     case BindingType::Buffer:
         return VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;

@@ -152,7 +152,7 @@ public:
 
         if(!std::isalpha(ch) && ch != '_')
         {
-            Throw(fmt::format("unknown token starting with '{}'", ch));
+            Throw(fmt::format("Unknown token starting with '{}'", ch));
         }
 
         size_t endPos = nextPos_ + 1;
@@ -234,7 +234,7 @@ private:
                 ++line;
             }
         }
-        throw Exception(fmt::format("parsing error at {}. {}", line, msg));
+        throw Exception(fmt::format("Parsing error at line {}. {}", line, msg));
     }
 
     size_t FindEndOfNumber(size_t start) const

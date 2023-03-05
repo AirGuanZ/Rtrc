@@ -119,8 +119,7 @@ void VulkanBindingGroup::ModifyMember(int index, int arrayElem, BufferUav *buffe
 void VulkanBindingGroup::ModifyMember(int index, int arrayElem, TextureSrv *textureSrv)
 {
     auto rawTexSrv = static_cast<VulkanTextureSrv *>(textureSrv);
-    assert(layout_->_internalIsSlotTexture2D(index) || layout_->_internalIsSlotTexture3D(index) ||
-           layout_->_internalIsSlotTexture2DArray(index) || layout_->_internalIsSlotTexture3DArray(index));
+    assert(layout_->_internalIsSlotTexture(index));
     VkImageLayout imageLayout;
     if(textureSrv->GetDesc().flags.contains(TextureSrvFlagBit::SpecialLayout_DepthSrv_StencilAttachment))
     {
@@ -153,8 +152,7 @@ void VulkanBindingGroup::ModifyMember(int index, int arrayElem, TextureSrv *text
 void VulkanBindingGroup::ModifyMember(int index, int arrayElem, TextureUav *textureUav)
 {
     auto rawTexUav = static_cast<VulkanTextureUav *>(textureUav);
-    assert(layout_->_internalIsSlotRWTexture2D(index) || layout_->_internalIsSlotRWTexture3D(index) ||
-           layout_->_internalIsSlotRWTexture2DArray(index) || layout_->_internalIsSlotRWTexture3DArray(index));
+    assert(layout_->_internalIsSlotRWTexture(index));
     const VkDescriptorImageInfo imageInfo = {
         .imageView   = rawTexUav->_internalGetNativeImageView(),
         .imageLayout = VK_IMAGE_LAYOUT_GENERAL
@@ -322,8 +320,7 @@ void VulkanBindingGroup::_internalTranslate(
     LinearAllocator &arena, int index, int arrayElem,
     const VulkanTextureSrv *textureSrv, VkWriteDescriptorSet &write) const
 {
-    assert(layout_->_internalIsSlotTexture2D(index) || layout_->_internalIsSlotTexture3D(index) ||
-           layout_->_internalIsSlotTexture2DArray(index) || layout_->_internalIsSlotTexture3DArray(index));
+    assert(layout_->_internalIsSlotTexture(index));
     VkImageLayout imageLayout;
     if(textureSrv->GetDesc().flags.contains(TextureSrvFlagBit::SpecialLayout_DepthSrv_StencilAttachment))
     {
@@ -357,8 +354,7 @@ void VulkanBindingGroup::_internalTranslate(
     LinearAllocator &arena, int index, int arrayElem,
     const VulkanTextureUav *textureUav, VkWriteDescriptorSet &write) const
 {
-    assert(layout_->_internalIsSlotRWTexture2D(index) || layout_->_internalIsSlotRWTexture3D(index) ||
-           layout_->_internalIsSlotRWTexture2DArray(index) || layout_->_internalIsSlotRWTexture3DArray(index));
+    assert(layout_->_internalIsSlotRWTexture(index));
     auto imageInfo = arena.Create<VkDescriptorImageInfo>();
     *imageInfo = {
         .imageView   = textureUav->_internalGetNativeImageView(),

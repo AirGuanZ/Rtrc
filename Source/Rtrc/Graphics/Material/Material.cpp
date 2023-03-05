@@ -149,11 +149,8 @@ MaterialPassPropertyLayout::MaterialPassPropertyLayout(const MaterialPropertyHos
             MaterialProperty::Type propType;
             switch(binding.type)
             {
-            case RHI::BindingType::Texture2D:
-            case RHI::BindingType::Texture3D:
-            case RHI::BindingType::Texture2DArray:
-            case RHI::BindingType::RWTexture3DArray:
-                propType = MaterialProperty::Type::Texture2D;
+            case RHI::BindingType::Texture:
+                propType = MaterialProperty::Type::Texture;
                 break;
             case RHI::BindingType::Buffer:
             case RHI::BindingType::StructuredBuffer:
@@ -221,7 +218,7 @@ void MaterialPassPropertyLayout::FillBindingGroup(
         case MaterialProperty::Type::Buffer:
             bindingGroup.Set(ref.indexInBindingGroup, resource.As<BufferSrv>());
             break;
-        case MaterialProperty::Type::Texture2D:
+        case MaterialProperty::Type::Texture:
             if(auto srv = resource.AsIf<TextureSrv>())
             {
                 bindingGroup.Set(ref.indexInBindingGroup, *srv);

@@ -42,17 +42,8 @@ public:
     bool _internalIsSlotStructuredBuffer(int index) const;
     bool _internalIsSlotRWStructuredBuffer(int index) const;
 
-    bool _internalIsSlotTexture2D(int index) const;
-    bool _internalIsSlotRWTexture2D(int index) const;
-
-    bool _internalIsSlotTexture3D(int index) const;
-    bool _internalIsSlotRWTexture3D(int index) const;
-
-    bool _internalIsSlotTexture2DArray(int index) const;
-    bool _internalIsSlotRWTexture2DArray(int index) const;
-
-    bool _internalIsSlotTexture3DArray(int index) const;
-    bool _internalIsSlotRWTexture3DArray(int index) const;
+    bool _internalIsSlotTexture(int index) const;
+    bool _internalIsSlotRWTexture(int index) const;
 
     Ptr<BindingGroup> _internalCreateBindingGroupImpl(uint32_t variableArraySize) const;
 

@@ -17,11 +17,6 @@ public:
     {
         std::string filename;
         std::string source;
-
-        /*std::string vertexEntry;
-        std::string fragmentEntry;
-        std::string computeEntry;
-        bool isRayTracingShader = false;*/
     };
 
     void SetDevice(Device *device);
@@ -42,7 +37,7 @@ private:
         std::string anyHitEntry;
         std::string intersectionEntry;
     };
-    
+
     struct ParsedShaderEntry
     {
         std::string vertexEntry;
@@ -53,10 +48,22 @@ private:
         std::vector<std::vector<std::string>> shaderGroups;
     };
 
+    struct ParsedBindingAlias
+    {
+        std::string      name;
+        std::string      aliasedName;
+        //std::string      namespaceChain;
+        RHI::BindingType type;
+        std::string      rawTypename;
+        std::string      templateParam;
+    };
+
     struct ParsedBinding
     {
         std::string             name;
+        //std::string             namespaceChain;
         RHI::BindingType        type = {};
+        std::string             rawTypename;
         std::optional<uint32_t> arraySize;
         RHI::ShaderStageFlag    stages = {};
         std::string             templateParam;
@@ -67,13 +74,19 @@ private:
         std::string GetArraySpeficier() const;
     };
 
+    struct ParsedUniformDefinition
+    {
+        std::string type;
+        std::string name;
+    };
+
     struct ParsedBindingGroup
     {
-        std::string name;
-        std::string valuePropertyDefinitions;
-        std::vector<ParsedBinding> bindings;
-        std::vector<bool> isRef;
-        RHI::ShaderStageFlag defaultStages;
+        std::string                          name;
+        std::vector<ParsedUniformDefinition> uniformPropertyDefinitions;
+        std::vector<ParsedBinding>           bindings;
+        std::vector<bool>                    isRef;
+        RHI::ShaderStageFlag                 defaultStages;
     };
 
     struct Bindings
@@ -85,6 +98,10 @@ private:
         std::vector<ParsedBinding>              ungroupedBindings;
         std::map<std::string, int, std::less<>> ungroupedBindingNameToSlot;
         std::map<std::string, int, std::less<>> nameToGroupIndex;
+
+        // Aliases
+
+        std::vector<ParsedBindingAlias> aliases;
 
         // Inline samplers
 
@@ -110,6 +127,8 @@ private:
     template<bool AllowStageSpecifier, BindingCategory Category>
     ParsedBinding ParseBinding(ShaderTokenStream &tokens, RHI::ShaderStageFlag groupDefaultStages) const;
 
+    ParsedBindingAlias ParseBindingAlias(ShaderTokenStream &tokens) const;
+
     void ParseInlineSampler(ShaderTokenStream &tokens, std::string &name, RHI::SamplerDesc &desc) const;
 
     void ParsePushConstantRange(
@@ -117,6 +136,8 @@ private:
         Shader::PushConstantRange &range, uint32_t &nextOffset, Shader::Category category) const;
 
     Bindings CollectBindings(const std::string &source, Shader::Category category) const;
+
+    static std::string GetNamespaceChain(const std::string &source, size_t endPos);
     
     Device *device_ = nullptr;
     std::filesystem::path rootDir_;

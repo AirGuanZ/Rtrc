@@ -8,7 +8,7 @@ RTRC_BEGIN
 class CommandBuffer;
 class MaterialInstance;
 
-class MaterialPropertySheet
+class MaterialPropertySheet : public Uncopyable
 {
 public:
 
@@ -18,26 +18,26 @@ public:
 
     void CopyFrom(const MaterialPropertySheet &other);
 
-    void Set(std::string_view name, float value);
+    void Set(std::string_view name, float           value);
     void Set(std::string_view name, const Vector2f &value);
     void Set(std::string_view name, const Vector3f &value);
     void Set(std::string_view name, const Vector4f &value);
 
-    void Set(std::string_view name, uint32_t value);
+    void Set(std::string_view name, uint32_t        value);
     void Set(std::string_view name, const Vector2u &value);
     void Set(std::string_view name, const Vector3u &value);
     void Set(std::string_view name, const Vector4u &value);
 
-    void Set(std::string_view name, int32_t value);
+    void Set(std::string_view name, int32_t         value);
     void Set(std::string_view name, const Vector2i &value);
     void Set(std::string_view name, const Vector3i &value);
     void Set(std::string_view name, const Vector4i &value);
 
     void Set(std::string_view name, const RC<Texture> &tex);
-    void Set(std::string_view name, const TextureSrv &srv);
-    void Set(std::string_view name, const BufferSrv &srv);
+    void Set(std::string_view name, const TextureSrv  &srv);
+    void Set(std::string_view name, const BufferSrv   &srv);
     void Set(std::string_view name, const RC<Sampler> &sampler);
-    void Set(std::string_view name, const RC<Tlas> &tlas);
+    void Set(std::string_view name, const RC<Tlas>    &tlas);
 
     const unsigned char *GetValueBuffer() const { return valueBuffer_.data(); }
     Span<MaterialResource> GetResources() const { return resources_; }

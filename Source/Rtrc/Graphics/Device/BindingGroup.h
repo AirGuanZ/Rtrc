@@ -237,21 +237,11 @@ void BindingGroup::Set(int slot, int arrElem, T &&object)
     {
         switch(const RHI::BindingType type = layout_->GetRHIObject()->GetDesc().bindings[slot].type)
         {
-        case RHI::BindingType::Texture2D:
-        case RHI::BindingType::Texture3D:
+        case RHI::BindingType::Texture:
             this->Set(slot, arrElem, object->CreateSrv(0, 0, 0));
             break;
-        case RHI::BindingType::Texture2DArray:
-        case RHI::BindingType::Texture3DArray:
-            this->Set(slot, arrElem, object->CreateSrv(0, 0, 0, 0));
-            break;
-        case RHI::BindingType::RWTexture2D:
-        case RHI::BindingType::RWTexture3D:
+        case RHI::BindingType::RWTexture:
             this->Set(slot, arrElem, object->CreateUav(0, 0));
-            break;
-        case RHI::BindingType::RWTexture2DArray:
-        case RHI::BindingType::RWTexture3DArray:
-            this->Set(slot, arrElem, object->CreateUav(0, 0, 0));
             break;
         default:
             throw Exception(fmt::format(

@@ -267,14 +267,8 @@ enum class BlendOp
 
 enum class BindingType
 {
-    Texture2D,
-    RWTexture2D,
-    Texture3D,
-    RWTexture3D,
-    Texture2DArray,
-    RWTexture2DArray,
-    Texture3DArray,
-    RWTexture3DArray,
+    Texture,
+    RWTexture,
     Buffer,
     StructuredBuffer,
     RWBuffer,
@@ -288,14 +282,8 @@ inline const char *GetBindingTypeName(BindingType type)
 {
     static const char *NAMES[] =
     {
-        "Texture2D",
-        "RWTexture2D",
-        "Texture3D",
-        "RWTexture3D",
-        "Texture2DArray",
-        "RWTexture2DArray",
-        "Texture3DArray",
-        "RWTexture3DArray",
+        "Texture",
+        "RWTexture",
         "Buffer",
         "StructuredBuffer",
         "RWBuffer",
