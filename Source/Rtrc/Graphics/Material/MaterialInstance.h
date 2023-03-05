@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Rtrc/Graphics/Material/Material.h>
+#include <Rtrc/Graphics/Resource/BindlessTextureManager.h>
 #include <Rtrc/Utility/SmartPointer/CopyOnWritePtr.h>
 
 RTRC_BEGIN
@@ -39,6 +40,8 @@ public:
     void Set(std::string_view name, const RC<Sampler> &sampler);
     void Set(std::string_view name, const RC<Tlas>    &tlas);
 
+    void Set(std::string_view name, const BindlessTextureEntry &entry);
+
     const unsigned char *GetValueBuffer() const { return valueBuffer_.data(); }
     Span<MaterialResource> GetResources() const { return resources_; }
 
@@ -47,9 +50,10 @@ private:
     template<MaterialProperty::Type Type, typename T>
     void SetImpl(std::string_view name, const T &value);
 
-    RC<MaterialPropertyHostLayout> layout_;
-    std::vector<unsigned char> valueBuffer_;
-    std::vector<MaterialResource> resources_;
+    RC<MaterialPropertyHostLayout>    layout_;
+    std::vector<unsigned char>        valueBuffer_;
+    std::vector<MaterialResource>     resources_;
+    std::vector<BindlessTextureEntry> bindlessEntries_; // size == valueProperties.size
 };
 
 /*

@@ -55,9 +55,9 @@ private:
     friend class BindingGroupManager;
     friend class BindingGroupLayout;
 
-    BindingGroupManager *manager_ = nullptr;
+    BindingGroupManager         *manager_ = nullptr;
     RC<const BindingGroupLayout> layout_;
-    RHI::BindingGroupPtr rhiGroup_;
+    RHI::BindingGroupPtr         rhiGroup_;
 };
 
 class BindingGroupLayout : public InObjectCache, public std::enable_shared_from_this<BindingGroupLayout>

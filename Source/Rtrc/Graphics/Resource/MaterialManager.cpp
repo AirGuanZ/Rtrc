@@ -9,6 +9,31 @@ RTRC_BEGIN
 namespace MaterialDetail
 {
 
+    bool IsIdentifierChar(char c)
+    {
+        return std::isalnum(c) || c == '_';
+    }
+
+    size_t FindKeyword(const std::string &source, std::string_view keyword, size_t begPos)
+    {
+        while(true)
+        {
+            const size_t pos = source.find(keyword, begPos);
+            if(pos == std::string::npos)
+            {
+                return std::string::npos;
+            }
+
+            if((pos > 0 && IsIdentifierChar(source[pos - 1])) || IsIdentifierChar(source[pos + keyword.size()]))
+            {
+                begPos = pos + keyword.size();
+                continue;
+            }
+
+            return pos;
+        }
+    }
+
     // Parse "keyword { ... }"
     bool FindSection(
         std::string_view   keyword,
@@ -18,52 +43,37 @@ namespace MaterialDetail
         size_t            &outBegPos,
         size_t            &outEndPos)
     {
-        while (true)
+        while(true)
         {
-            const size_t matKeywordPos = source.find(keyword, begPos);
-            if (matKeywordPos == std::string::npos)
+            const size_t matKeywordPos = FindKeyword(source, keyword, begPos);
+            if(matKeywordPos == std::string::npos)
             {
                 return false;
             }
-
-            // Check for non-identifier char
-
-            auto IsIdentifierChar = [](char c)
-            {
-                return std::isalnum(c) || c == '_';
-            };
-
-            if ((matKeywordPos > 0 && IsIdentifierChar(source[matKeywordPos - 1])) ||
-                IsIdentifierChar(source[matKeywordPos + keyword.size()]))
-            {
-                begPos = matKeywordPos + keyword.size();
-                continue;
-            }
-
+            
             // Skip whitespaces
 
             size_t nameBegPos = matKeywordPos + keyword.size();
-            while (std::isspace(source[nameBegPos]))
+            while(std::isspace(source[nameBegPos]))
             {
                 ++nameBegPos;
             }
 
             // Get name
 
-            if (source[nameBegPos] != '"' && source[nameBegPos != '\''])
+            if(source[nameBegPos] != '"' && source[nameBegPos != '\''])
             {
                 begPos = matKeywordPos + keyword.size();
                 continue;
-                //throw Exception(fmt::format("{} name expected after '{}'", keyword, keyword));
             }
             const char delimiter = source[nameBegPos++];
             size_t nameEndPos = nameBegPos;
 
-            while (nameEndPos < source.size() && source[nameEndPos] != '\n' && source[nameEndPos] != delimiter)
+            while(nameEndPos < source.size() && source[nameEndPos] != '\n' && source[nameEndPos] != delimiter)
             {
                 ++nameEndPos;
             }
-            if (source[nameEndPos] != delimiter)
+            if(source[nameEndPos] != delimiter)
             {
                 throw Exception(fmt::format("Unclosed {} name string", keyword));
             }
@@ -72,14 +82,14 @@ namespace MaterialDetail
             // Skip whitespaces
 
             size_t leftBracePos = nameEndPos + 1;
-            while (std::isspace(source[leftBracePos]))
+            while(std::isspace(source[leftBracePos]))
             {
                 ++leftBracePos;
             }
 
             // Check '{'
 
-            if (source[leftBracePos] != '{')
+            if(source[leftBracePos] != '{')
             {
                 throw Exception("'{' expected");
             }
@@ -87,18 +97,18 @@ namespace MaterialDetail
             // Find enclosing '}'
 
             size_t nestedCount = 1, rightBracePos = leftBracePos;
-            while (true)
+            while(true)
             {
                 ++rightBracePos;
-                if (rightBracePos >= source.size())
+                if(rightBracePos >= source.size())
                 {
                     throw Exception("Enclosing '}' not found");
                 }
-                if (source[rightBracePos] == '{')
+                if(source[rightBracePos] == '{')
                 {
                     ++nestedCount;
                 }
-                else if (source[rightBracePos] == '}' && !--nestedCount)
+                else if(source[rightBracePos] == '}' && !--nestedCount)
                 {
                     break;
                 }
@@ -236,6 +246,7 @@ namespace MaterialDetail
         }
     }
 
+    // Replace comments with spaces without changing character positions
     void RemoveComments(std::string &source)
     {
         for(char &c : source)
@@ -402,20 +413,48 @@ void MaterialManager::ProcessShaderFile(int filenameIndex, const std::string &fi
     std::string source = File::ReadTextFile(filename);
     MaterialDetail::RemoveComments(source);
 
+    if(const size_t pos = MaterialDetail::FindKeyword(source, "ShaderName", 0); pos != std::string::npos)
+    {
+        size_t nameBegPos = pos + std::string_view("ShaderName").size();
+
+        while(std::isspace(source[nameBegPos]))
+        {
+            ++nameBegPos;
+        }
+
+        if(source[nameBegPos] != '"' && source[nameBegPos != '\''])
+        {
+            throw Exception("Shader name expected after 'ShaderName'");
+        }
+        const char delimiter = source[nameBegPos++];
+        size_t nameEndPos = nameBegPos;
+        while(nameEndPos < source.size() && source[nameEndPos] != '\n' && source[nameEndPos] != delimiter)
+        {
+            ++nameEndPos;
+        }
+        if(source[nameEndPos] != delimiter)
+        {
+            throw Exception("Unclosed ShaderName name string");
+        }
+        std::string name = source.substr(nameBegPos, nameEndPos - nameBegPos);
+
+        shaderNameToFilename_.insert({ std::move(name), FileReference{ filenameIndex, nameEndPos + 1, source.size() } });
+        return;
+    }
+
     size_t begPos = 0;
-    while (true)
+    while(true)
     {
         std::string name; size_t shaderBeg, shaderEnd;
-        if (!MaterialDetail::FindSection("Shader", source, begPos, name, shaderBeg, shaderEnd))
+        if(!MaterialDetail::FindSection("Shader", source, begPos, name, shaderBeg, shaderEnd))
         {
             break;
         }
-        if (shaderNameToFilename_.contains(name))
+        if(shaderNameToFilename_.contains(name))
         {
             throw Exception("Repeated shader name: " + name);
         }
-        shaderNameToFilename_.insert(
-            { std::move(name), FileReference{ filenameIndex, shaderBeg, shaderEnd } });
+        shaderNameToFilename_.insert({ std::move(name), FileReference{ filenameIndex, shaderBeg, shaderEnd } });
         begPos = shaderEnd + 1;
     }
 }

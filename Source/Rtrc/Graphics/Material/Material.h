@@ -32,6 +32,8 @@ struct MaterialProperty
 {
     enum class Type
     {
+        // Uniform
+
         Float,
         Float2,
         Float3,
@@ -44,10 +46,13 @@ struct MaterialProperty
         Int2,
         Int3,
         Int4,
+
+        // Resource
+
         Buffer,
         Texture,
         Sampler,
-        AccelerationStructure
+        AccelerationStructure,
     };
 
     static constexpr bool IsValue(Type type);
@@ -58,7 +63,7 @@ struct MaterialProperty
     static const char *GetTypeName(Type type);
     const char *GetTypeName() const;
 
-    Type type;
+    Type        type;
     std::string name;
 };
 
@@ -100,6 +105,7 @@ class MaterialPassPropertyLayout
 {
 public:
 
+    // Uniform values in 'Material' binding group
     struct ValueReference
     {
         size_t offsetInValueBuffer;
@@ -107,11 +113,12 @@ public:
         size_t sizeInConstantBuffer;
     };
 
+    // Resources in 'Material' binding group
     struct ResourceReference
     {
         MaterialProperty::Type type;
-        size_t indexInProperties;
-        size_t indexInBindingGroup;
+        size_t                 indexInProperties;
+        size_t                 indexInBindingGroup;
     };
 
     using MaterialResource = Variant<BufferSrv, TextureSrv, RC<Texture>, RC<Sampler>, RC<Tlas>>;
@@ -127,7 +134,7 @@ public:
     void FillBindingGroup(
         BindingGroup          &bindingGroup,
         Span<MaterialResource> materialResources,
-        RC<DynamicBuffer>     cbuffer) const;
+        RC<DynamicBuffer>      cbuffer) const;
 
 private:
 

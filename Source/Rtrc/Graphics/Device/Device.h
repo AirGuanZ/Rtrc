@@ -180,6 +180,7 @@ public:
     RC<Tlas> CreateTlas(RC<SubBuffer> buffer = nullptr);
 
     // Immediate execution
+    // Don't use them in render loop
 
     void ExecuteAndWait(CommandBuffer commandBuffer);
     template<typename F> requires !std::is_same_v<std::remove_cvref_t<F>, CommandBuffer>

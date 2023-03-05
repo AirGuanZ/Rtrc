@@ -23,6 +23,7 @@ void MaterialPropertySheet::SetImpl(std::string_view name, const T &value)
     {
         const size_t offset = layout_->GetValueOffset(index);
         std::memcpy(valueBuffer_.data() + offset, &value, sizeof(value));
+        bindlessEntries_[index] = {};
     }
     else
     {
@@ -35,6 +36,7 @@ MaterialPropertySheet::MaterialPropertySheet(RC<MaterialPropertyHostLayout> layo
 {
     valueBuffer_.resize(layout_->GetValueBufferSize());
     resources_.resize(layout_->GetResourcePropertyCount());
+    bindlessEntries_.resize(layout_->GetValuePropertyCount());
 }
 
 void MaterialPropertySheet::CopyFrom(const MaterialPropertySheet &other)
@@ -42,6 +44,43 @@ void MaterialPropertySheet::CopyFrom(const MaterialPropertySheet &other)
     assert(layout_ == other.layout_);
     valueBuffer_ = other.valueBuffer_;
     resources_ = other.resources_;
+}
+
+void MaterialPropertySheet::Set(std::string_view name, const BindlessTextureEntry &entry)
+{
+    const int index = layout_->GetPropertyIndexByName(name);
+    if(index < 0)
+    {
+        throw Exception(fmt::format("Unknown material property: {}", name));
+    }
+
+    auto &prop = layout_->GetProperties()[index];
+    if(prop.type == MaterialProperty::Type::UInt)
+    {
+        if(entry.GetCount() > 1)
+        {
+            throw Exception(fmt::format(
+                "Material property {} can bind only one bindless texture index, "
+                "which multiple indices are provided", name));
+        }
+        const size_t offset = layout_->GetValueOffset(index);
+        const uint32_t value = entry.GetOffset();
+        std::memcpy(valueBuffer_.data() + offset, &value, sizeof(value));
+    }
+    else if(prop.type == MaterialProperty::Type::UInt2)
+    {
+        const size_t offset = layout_->GetValueOffset(index);
+        const Vector2u value = { entry.GetOffset(), entry.GetCount() };
+        std::memcpy(valueBuffer_.data() + offset, &value, sizeof(value));
+    }
+    else
+    {
+        throw Exception(fmt::format(
+            "Material property {} cannot be bound with bindless texture entry. Type must be "
+            "UInt (offset) or UInt2 (offset & count).", name));
+    }
+
+    bindlessEntries_[index] = entry;
 }
 
 #define RTRC_IMPL_SET(VALUE_TYPE, TYPE)                                      \

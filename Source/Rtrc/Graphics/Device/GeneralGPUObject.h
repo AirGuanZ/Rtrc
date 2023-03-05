@@ -25,9 +25,7 @@ protected:
     RHIObjectPtr rhiObject_;
 };
 
-/*
-    Simple delayed rhi object releasing
-*/
+// Simple delayed rhi object releasing
 class GeneralGPUObjectManager
 {
 public:

@@ -53,8 +53,10 @@ const Mesh &BuiltinResourceManager::GetFullscreenQuadMesh() const
 
 void BuiltinResourceManager::LoadBuiltinTextures()
 {
-    textures_[std::to_underlying(BuiltinTexture::Black2D)] = device_.CreateColorTexture2D(0, 0, 0, 255, "BuiltinBlack2D");
-    textures_[std::to_underlying(BuiltinTexture::White2D)] = device_.CreateColorTexture2D(255, 255, 255, 255, "BuiltinWhite2D");
+    textures_[std::to_underlying(BuiltinTexture::Black2D)] =
+        device_.CreateColorTexture2D(0, 0, 0, 255, "BuiltinBlack2D");
+    textures_[std::to_underlying(BuiltinTexture::White2D)] =
+        device_.CreateColorTexture2D(255, 255, 255, 255, "BuiltinWhite2D");
 }
 
 void BuiltinResourceManager::LoadBuiltinMeshes()

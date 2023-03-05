@@ -1,6 +1,5 @@
-Shader "RayTracingTriangle"
-{
-    
+ShaderName "RayTracingTriangle"
+
 #raytracing
 
 #group RayGen
@@ -53,5 +52,3 @@ void Hit(inout Payload payload, in Attribute attrib)
 {
     payload.value = float3(1, 0, 0) + attrib.bary.x * float3(-1, 1, 0) + attrib.bary.y * float3(-1, 0, 1);
 }
-
-} // Shader "RayTracingTriangle"

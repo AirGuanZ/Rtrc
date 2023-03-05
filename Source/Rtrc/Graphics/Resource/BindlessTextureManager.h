@@ -6,6 +6,9 @@
 
 RTRC_BEGIN
 
+class Texture;
+class Device;
+
 class BindlessTextureManager;
 
 // Currently, only texture srv is supported
