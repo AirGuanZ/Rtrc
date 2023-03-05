@@ -18,9 +18,9 @@ private:
 
     friend class Scene;
 
-    LinearAllocator arena_;
+    LinearAllocator                                 arena_;
     std::vector<const Light::SharedRenderingData *> lights_;
-    std::vector<const RendererProxy *> renderers_;
+    std::vector<const RendererProxy *>              renderers_;
 };
 
 class Scene
@@ -35,7 +35,7 @@ public:
 
 private:
     
-    LightManager lightManager_;
+    LightManager              lightManager_;
     StaticMeshRendererManager staticRendererManager_;
 };
 

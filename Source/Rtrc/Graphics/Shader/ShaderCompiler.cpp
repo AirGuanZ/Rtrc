@@ -1622,7 +1622,7 @@ std::string ShaderCompiler::GetNamespaceChain(const std::string &source, size_t 
         const size_t nextNamespacePos = ShaderCompilerDetail::FindKeyword(source, "namespace", currentPos);
         const size_t nextLeftBracePos = source.find('{', currentPos);
         const size_t nextRightBracePos = source.find('}', currentPos);
-        const size_t nextPos = std::min(nextNamespacePos, std::min(nextLeftBracePos, nextRightBracePos));
+        const size_t nextPos = (std::min)(nextNamespacePos, (std::min)(nextLeftBracePos, nextRightBracePos));
         if(nextPos == std::string::npos)
         {
             break;

@@ -223,7 +223,7 @@ T *LinearAllocator::Create(Args &&... args)
         else
         {
             ret = static_cast<T *>(mi_aligned_alloc(alignof(T), sizeof(T)));
-        };
+        }
         ret = new(ret) T(std::forward<Args>(args)...);
         destructor = new(destructor) LargeDestructor<T>(ret);
         destructor->next = destructorEntry_;

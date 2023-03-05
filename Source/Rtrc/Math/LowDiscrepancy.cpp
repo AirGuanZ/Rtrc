@@ -1,7 +1,12 @@
 #include <random>
 
+// cy library defines 'restrict' as an macro, which conflicts with mimalloc's declaration when unity build is enabled
+#ifdef restrict
+#error "restrict macro defined before including cy headers"
+#endif
 #include <cyVector.h>
 #include <cySampleElim.h>
+#undef restrict
 
 #include <Rtrc/Math/LowDiscrepancy.h>
 
