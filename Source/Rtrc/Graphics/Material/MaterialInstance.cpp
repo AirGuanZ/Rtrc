@@ -10,14 +10,19 @@ void MaterialPropertySheet::SetImpl(std::string_view name, const T &value)
     {
         throw Exception(fmt::format("Unknown material property: {}", name));
     }
+    MaterialPropertySheet::SetImpl<Type>(index, value);
+}
 
+template<MaterialProperty::Type Type, typename T>
+void MaterialPropertySheet::SetImpl(int index, const T &value)
+{
     auto &prop = layout_->GetProperties()[index];
     if(prop.type != Type)
     {
         throw Exception(fmt::format(
-            "MaterialPropertySheet::Set: type of property {} is unmatched. Given: {}, actual: {}",
-            name, MaterialProperty::GetTypeName(Type), MaterialProperty::GetTypeName(prop.type)));
-    }              
+            "MaterialPropertySheet::Set: type of property {} (index {}) is unmatched. Given: {}, actual: {}",
+            prop.name, index, MaterialProperty::GetTypeName(Type), MaterialProperty::GetTypeName(prop.type)));
+    }
 
     if constexpr(MaterialProperty::IsValue(Type))
     {
@@ -53,15 +58,19 @@ void MaterialPropertySheet::Set(std::string_view name, const BindlessTextureEntr
     {
         throw Exception(fmt::format("Unknown material property: {}", name));
     }
+    Set(index, entry);
+}
 
+void MaterialPropertySheet::Set(int index, const BindlessTextureEntry &entry)
+{
     auto &prop = layout_->GetProperties()[index];
     if(prop.type == MaterialProperty::Type::UInt)
     {
         if(entry.GetCount() > 1)
         {
             throw Exception(fmt::format(
-                "Material property {} can bind only one bindless texture index, "
-                "which multiple indices are provided", name));
+                "Material property {} (index {}) can bind only one bindless texture index, "
+                "which multiple indices are provided", prop.name, index));
         }
         const size_t offset = layout_->GetValueOffset(index);
         const uint32_t value = entry.GetOffset();
@@ -76,8 +85,8 @@ void MaterialPropertySheet::Set(std::string_view name, const BindlessTextureEntr
     else
     {
         throw Exception(fmt::format(
-            "Material property {} cannot be bound with bindless texture entry. Type must be "
-            "UInt (offset) or UInt2 (offset & count).", name));
+            "Material property {} (index {}) cannot be bound with bindless texture entry. Type must be "
+            "UInt (offset) or UInt2 (offset & count).", prop.name, index));
     }
 
     bindlessEntries_[index] = entry;
@@ -87,6 +96,10 @@ void MaterialPropertySheet::Set(std::string_view name, const BindlessTextureEntr
     void MaterialPropertySheet::Set(std::string_view name, VALUE_TYPE value) \
     {                                                                        \
         this->SetImpl<MaterialProperty::Type::TYPE>(name, value);            \
+    }                                                                        \
+    void MaterialPropertySheet::Set(int index, VALUE_TYPE value)             \
+    {                                                                        \
+        this->SetImpl<MaterialProperty::Type::TYPE>(index, value);           \
     }
 
 RTRC_IMPL_SET(float,            Float)
@@ -111,6 +124,21 @@ RTRC_IMPL_SET(const RC<Sampler> &, Sampler)
 RTRC_IMPL_SET(const RC<Tlas>    &, AccelerationStructure)
 
 #undef RTRC_IMPL_SET
+
+const unsigned char *MaterialPropertySheet::GetValue(std::string_view name) const
+{
+    const int index = layout_->GetPropertyIndexByName(name);
+    if(index < 0)
+    {
+        throw Exception(fmt::format("Unknown material property: {}", name));
+    }
+    return GetValue(index);
+}
+
+const unsigned char *MaterialPropertySheet::GetValue(int index) const
+{
+    return GetValueBuffer() + layout_->GetValueOffset(index);
+}
 
 RC<Shader> MaterialPassInstance::GetShader(const KeywordValueContext &keywordValues)
 {

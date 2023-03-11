@@ -18,8 +18,9 @@ namespace DeviceDetail
 
     enum class FlagBit : uint32_t
     {
-        EnableRayTracing   = 1 << 0,
-        EnableSwapchainUav = 1 << 1,
+        EnableRayTracing             = 1 << 0,
+        EnableSwapchainUav           = 1 << 1,
+        DisableAutoSwapchainRecreate = 1 << 2,
     };
 
     RTRC_DEFINE_ENUM_FLAGS(FlagBit)
@@ -64,6 +65,8 @@ public:
 
     // Context objects
 
+    void RecreateSwapchain();
+
     Queue &GetQueue();
     DeviceSynchronizer &GetSynchronizer();
 
@@ -76,9 +79,9 @@ public:
 
     void BeginRenderLoop();
     void EndRenderLoop();
-    void Present();
+    bool Present();
 
-    bool BeginFrame();
+    bool BeginFrame(bool processWindowEvents = true);
     const RHI::FencePtr &GetFrameFence();
 
     // Resource creation & upload
@@ -250,8 +253,6 @@ private:
     
     void InitializeInternal(RHI::DevicePtr device, bool isComputeOnly);
 
-    void RecreateSwapchain();
-
     template<typename...Args>
     void ExecuteBarrierImpl(Args&&...args);
 
@@ -284,6 +285,19 @@ private:
 inline const RHI::ShaderGroupRecordRequirements &Device::GetShaderGroupRecordRequirements() const
 {
     return GetRawDevice()->GetShaderGroupRecordRequirements();
+}
+
+inline void Device::RecreateSwapchain()
+{
+    assert(window_);
+    swapchain_.Reset();
+    swapchain_ = device_->CreateSwapchain(RHI::SwapchainDesc
+    {
+        .format     = swapchainFormat_,
+        .imageCount = static_cast<uint32_t>(swapchainImageCount_),
+        .vsync      = vsync_,
+        .allowUav   = swapchainUav_
+    }, *window_);
 }
 
 inline Queue &Device::GetQueue()
@@ -321,14 +335,14 @@ inline void Device::EndRenderLoop()
     sync_->EndRenderLoop();
 }
 
-inline void Device::Present()
+inline bool Device::Present()
 {
-    swapchain_->Present();
+    return swapchain_->Present();
 }
 
-inline bool Device::BeginFrame()
+inline bool Device::BeginFrame(bool processWindowEvents)
 {
-    if(window_)
+    if(processWindowEvents && window_)
     {
         Window::DoEvents();
         if(!window_->HasFocus() || window_->GetFramebufferSize().x <= 0 || window_->GetFramebufferSize().y <= 0)

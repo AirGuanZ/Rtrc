@@ -63,7 +63,9 @@ public:
     void SetMaterial(RC<MaterialInstance> material) { matInst_.swap(material); }
     const RC<MaterialInstance> &GetMaterial() const { return matInst_; }
 
-    RendererProxy *CreateProxy(LinearAllocator &proxyAllocator) const override;
+    RendererProxy *CreateProxy(LinearAllocator &proxyAllocator) const override { return CreateProxyRaw(proxyAllocator); }
+
+    StaticMeshRendererProxy *CreateProxyRaw(LinearAllocator &proxyAllocator) const;
 
 private:
 

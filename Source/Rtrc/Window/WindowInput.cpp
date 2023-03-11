@@ -3,11 +3,11 @@
 #endif
 #include <GLFW/glfw3.h>
 
-#include <Rtrc/Window/Input.h>
+#include <Rtrc/Window/WindowInput.h>
 
 RTRC_BEGIN
 
-Input::~Input()
+WindowInput::~WindowInput()
 {
     if(lock_)
     {
@@ -15,7 +15,7 @@ Input::~Input()
     }
 }
 
-void Input::Clear()
+void WindowInput::Clear()
 {
     lastKeys_.reset();
     currKeys_.reset();
@@ -24,42 +24,42 @@ void Input::Clear()
     LockCursor(false);
 }
 
-bool Input::IsKeyPressed(KeyCode key) const
+bool WindowInput::IsKeyPressed(KeyCode key) const
 {
     return currKeys_[static_cast<int>(key)];
 }
 
-bool Input::IsKeyDown(KeyCode key) const
+bool WindowInput::IsKeyDown(KeyCode key) const
 {
     return !lastKeys_[static_cast<int>(key)] && currKeys_[static_cast<int>(key)];
 }
 
-bool Input::IsKeyUp(KeyCode key) const
+bool WindowInput::IsKeyUp(KeyCode key) const
 {
     return lastKeys_[static_cast<int>(key)] && !currKeys_[static_cast<int>(key)];
 }
 
-float Input::GetCursorAbsolutePositionX() const
+float WindowInput::GetCursorAbsolutePositionX() const
 {
     return absoluteX_;
 }
 
-float Input::GetCursorAbsolutePositionY() const
+float WindowInput::GetCursorAbsolutePositionY() const
 {
     return absoluteY_;
 }
 
-float Input::GetCursorRelativePositionX() const
+float WindowInput::GetCursorRelativePositionX() const
 {
     return relativeX_;
 }
 
-float Input::GetCursorRelativePositionY() const
+float WindowInput::GetCursorRelativePositionY() const
 {
     return relativeY_;
 }
 
-void Input::LockCursor(bool lock)
+void WindowInput::LockCursor(bool lock)
 {
     if(lock_ != lock)
     {
@@ -71,18 +71,18 @@ void Input::LockCursor(bool lock)
     }
 }
 
-bool Input::IsCursorLocked() const
+bool WindowInput::IsCursorLocked() const
 {
     return lock_;
 }
 
-RTRC_DEFINE_EVENT_SENDER(Input, sender_, CursorMoveEvent)
-RTRC_DEFINE_EVENT_SENDER(Input, sender_, WheelScrollEvent)
-RTRC_DEFINE_EVENT_SENDER(Input, sender_, KeyDownEvent)
-RTRC_DEFINE_EVENT_SENDER(Input, sender_, KeyUpEvent)
-RTRC_DEFINE_EVENT_SENDER(Input, sender_, CharInputEvent)
+RTRC_DEFINE_EVENT_SENDER(WindowInput, sender_, CursorMoveEvent)
+RTRC_DEFINE_EVENT_SENDER(WindowInput, sender_, WheelScrollEvent)
+RTRC_DEFINE_EVENT_SENDER(WindowInput, sender_, KeyDownEvent)
+RTRC_DEFINE_EVENT_SENDER(WindowInput, sender_, KeyUpEvent)
+RTRC_DEFINE_EVENT_SENDER(WindowInput, sender_, CharInputEvent)
 
-void Input::_internalUpdate()
+void WindowInput::_internalUpdate()
 {
     auto [newX, newY] = QueryCursorPosition();
     relativeX_ = newX - absoluteX_;
@@ -103,29 +103,29 @@ void Input::_internalUpdate()
     lastKeys_ = currKeys_;
 }
 
-void Input::_internalTriggerWheelScroll(int offset)
+void WindowInput::_internalTriggerWheelScroll(int offset)
 {
     sender_.Send(WheelScrollEvent{ offset });
 }
 
-void Input::_internalTriggerKeyDown(KeyCode key)
+void WindowInput::_internalTriggerKeyDown(KeyCode key)
 {
     currKeys_[static_cast<int>(key)] = true;
     sender_.Send(KeyDownEvent{ key });
 }
 
-void Input::_internalTriggerKeyUp(KeyCode key)
+void WindowInput::_internalTriggerKeyUp(KeyCode key)
 {
     currKeys_[static_cast<int>(key)] = false;
     sender_.Send(KeyUpEvent{ key });
 }
 
-void Input::_internalTriggerCharInput(uint32_t ch)
+void WindowInput::_internalTriggerCharInput(uint32_t ch)
 {
     sender_.Send(CharInputEvent{ ch });
 }
 
-Input::Input(void *glfwWindow)
+WindowInput::WindowInput(void *glfwWindow)
 {
     assert(glfwWindow);
     glfwWindow_ = glfwWindow;
@@ -143,7 +143,7 @@ Input::Input(void *glfwWindow)
     currKeys_.reset();
 }
 
-std::pair<float, float> Input::QueryCursorPosition() const
+std::pair<float, float> WindowInput::QueryCursorPosition() const
 {
     auto window = static_cast<GLFWwindow *>(glfwWindow_);
     double newXD, newYD;

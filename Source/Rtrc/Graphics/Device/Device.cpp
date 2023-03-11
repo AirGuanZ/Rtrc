@@ -16,9 +16,9 @@ Box<Device> Device::CreateComputeDevice(bool debugMode)
     ret->instance_ = RHI::CreateVulkanInstance({ .debugMode = debugMode });
     const RHI::DeviceDesc deviceDesc =
     {
-        .graphicsQueue = false,
-        .computeQueue = true,
-        .transferQueue = true,
+        .graphicsQueue    = false,
+        .computeQueue     = true,
+        .transferQueue    = true,
         .supportSwapchain = false
     };
     auto rhiDevice = ret->instance_->CreateDevice(deviceDesc);
@@ -36,20 +36,23 @@ Box<Device> Device::CreateGraphicsDevice(
 {
     Box<Device> ret{ new Device };
     ret->InitializeInternal(std::move(rhiDevice), false);
-    ret->window_ = &window;
-    ret->swapchainFormat_ = swapchainFormat;
+    ret->window_              = &window;
+    ret->swapchainFormat_     = swapchainFormat;
     ret->swapchainImageCount_ = swapchainImageCount;
-    ret->vsync_ = vsync;
-    ret->swapchainUav_ = flags.contains(EnableSwapchainUav);
+    ret->vsync_               = vsync;
+    ret->swapchainUav_        = flags.contains(EnableSwapchainUav);
     ret->RecreateSwapchain();
-    ret->window_->Attach([d = ret.get()](const WindowResizeEvent &e)
+    if(!flags.contains(DisableAutoSwapchainRecreate))
     {
-        if(e.width > 0 && e.height > 0)
+        ret->window_->Attach([d = ret.get()](const WindowResizeEvent &e)
         {
-            d->device_->WaitIdle();
-            d->RecreateSwapchain();
-        }
-    });
+            if(e.width > 0 && e.height > 0)
+            {
+                d->device_->WaitIdle();
+                d->RecreateSwapchain();
+            }
+        });
+    }
     return ret;
 }
 
@@ -65,32 +68,35 @@ Box<Device> Device::CreateGraphicsDevice(
     ret->instance_ = CreateVulkanInstance(RHI::VulkanInstanceDesc
     {
         .extensions = Window::GetRequiredVulkanInstanceExtensions(),
-        .debugMode = debugMode
+        .debugMode  = debugMode
     });
     const RHI::DeviceDesc deviceDesc =
     {
-        .graphicsQueue = true,
-        .computeQueue = true,
-        .transferQueue = true,
+        .graphicsQueue    = true,
+        .computeQueue     = true,
+        .transferQueue    = true,
         .supportSwapchain = true,
         .enableRayTracing = flags.contains(EnableRayTracing)
     };
     auto rhiDevice = ret->instance_->CreateDevice(deviceDesc);
     ret->InitializeInternal(rhiDevice, false);
-    ret->window_ = &window;
-    ret->swapchainFormat_ = swapchainFormat;
+    ret->window_              = &window;
+    ret->swapchainFormat_     = swapchainFormat;
     ret->swapchainImageCount_ = swapchainImageCount;
-    ret->vsync_ = vsync;
-    ret->swapchainUav_ = flags.contains(EnableSwapchainUav);
+    ret->vsync_               = vsync;
+    ret->swapchainUav_        = flags.contains(EnableSwapchainUav);
     ret->RecreateSwapchain();
-    ret->window_->Attach([d = ret.get()](const WindowResizeEvent &e)
+    if(!flags.contains(DisableAutoSwapchainRecreate))
     {
-        if(e.width > 0 && e.height > 0)
+        ret->window_->Attach([d = ret.get()](const WindowResizeEvent &e)
         {
-            d->device_->WaitIdle();
-            d->RecreateSwapchain();
-        }
-    });
+            if(e.width > 0 && e.height > 0)
+            {
+                d->device_->WaitIdle();
+                d->RecreateSwapchain();
+            }
+        });
+    }
     return ret;
 }
 
@@ -172,19 +178,6 @@ void Device::InitializeInternal(RHI::DevicePtr device, bool isComputeOnly)
 
     copyContext_ = MakeBox<CopyContext>(device_);
     accelerationManager_ = MakeBox<AccelerationStructureManager>(device_, *sync_);
-}
-
-void Device::RecreateSwapchain()
-{
-    assert(window_);
-    swapchain_.Reset();
-    swapchain_ = device_->CreateSwapchain(RHI::SwapchainDesc
-    {
-        .format     = swapchainFormat_,
-        .imageCount = static_cast<uint32_t>(swapchainImageCount_),
-        .vsync      = vsync_,
-        .allowUav   = swapchainUav_
-    }, *window_);
 }
 
 void Device::UploadBuffer(const RC<Buffer> &buffer, const void *initData, size_t offset, size_t size)

@@ -157,14 +157,11 @@ void GBufferRenderer::DoRenderGBufferPass(
 
     // Filter & sort static mesh renderers
 
-    std::vector<const StaticMeshRendererProxy *> staticMeshRendererProxies;
-    for(const RendererProxy *proxy : frameContext.scene->GetRenderers())
+    std::vector<const StaticMeshRendererProxy *> staticMeshRendererProxies =
     {
-        if(proxy->type == RendererProxy::Type::StaticMesh)
-        {
-            staticMeshRendererProxies.push_back(static_cast<const StaticMeshRendererProxy *>(proxy));
-        }
-    }
+        frameContext.scene->GetStaticMeshRenderers().begin(),
+        frameContext.scene->GetStaticMeshRenderers().end(),
+    };
     std::ranges::sort(staticMeshRendererProxies,
         [](const StaticMeshRendererProxy *lhs, const StaticMeshRendererProxy *rhs)
     {

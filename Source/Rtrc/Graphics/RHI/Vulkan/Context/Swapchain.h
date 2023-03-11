@@ -26,7 +26,7 @@ public:
 
     Ptr<BackBufferSemaphore> GetPresentSemaphore() RTRC_RHI_OVERRIDE;
 
-    void Present() RTRC_RHI_OVERRIDE;
+    bool Present() RTRC_RHI_OVERRIDE;
 
     int GetRenderTargetCount() const RTRC_RHI_OVERRIDE;
 

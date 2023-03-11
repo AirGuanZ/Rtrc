@@ -209,11 +209,17 @@ void Run()
     camera.SetPosition({ 1.2f, 1.5f, -3 });
     camera.SetLookAt({ 0, 1, 0 }, { 0, 0, 0 });
 
+    FreeCameraController cameraController;
+    cameraController.SetCamera(camera);
+
     // Render loop
 
     RG::Executer executer(device.get());
 
     window.SetFocus();
+    window.GetInput().LockCursor(true);
+    RTRC_SCOPE_EXIT{ window.GetInput().LockCursor(false); };
+
     device->BeginRenderLoop();
     RTRC_SCOPE_EXIT{ device->EndRenderLoop(); };
 
@@ -241,13 +247,17 @@ void Run()
 
         const float wOverH = static_cast<float>(window.GetFramebufferSize().x) / window.GetFramebufferSize().y;
         camera.SetProjection(Deg2Rad(60), wOverH, 0.1f, 1000.0f);
+        bool needClear = false;
+        if(window.GetInput().IsCursorLocked())
+        {
+            needClear = cameraController.UpdateCamera(window.GetInput(), timer);
+        }
         camera.CalculateDerivedData();
 
         auto graph = device->CreateRenderGraph();
         auto rgSwapchain = graph->RegisterSwapchainTexture(device->GetSwapchain());
 
-        if(accumulateTexture && (accumulateTexture->GetWidth() != rgSwapchain->GetWidth() ||
-                                 accumulateTexture->GetHeight() != rgSwapchain->GetHeight()))
+        if(accumulateTexture && (accumulateTexture->GetSize() != rgSwapchain->GetSize() || needClear))
         {
             accumulateTexture = nullptr;
         }
@@ -300,7 +310,7 @@ void Run()
 
                 InitRngPass bindingGroupData;
                 bindingGroupData.RngTexture = rgRngTexture->Get();
-                bindingGroupData.Resolution = { rgRngTexture->GetWidth(), rgRngTexture->GetHeight() };
+                bindingGroupData.Resolution = rgRngTexture->GetSize();
                 auto bindingGroup = device->CreateBindingGroup(bindingGroupData);
 
                 commandBuffer.BindComputePipeline(initRngPipeline);
@@ -333,7 +343,7 @@ void Run()
             bindingGroupData.FrustumB          = camera.GetWorldRays()[1];
             bindingGroupData.FrustumC          = camera.GetWorldRays()[2];
             bindingGroupData.FrustumD          = camera.GetWorldRays()[3];
-            bindingGroupData.Resolution        = { rgAccumulateTexture->GetWidth(), rgAccumulateTexture->GetHeight() };
+            bindingGroupData.Resolution        = rgAccumulateTexture->GetSize();
             auto bindingGroup = device->CreateBindingGroup(bindingGroupData);
 
             auto &commandBuffer = context.GetCommandBuffer();

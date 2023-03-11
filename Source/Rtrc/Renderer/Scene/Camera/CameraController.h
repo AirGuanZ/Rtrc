@@ -2,7 +2,7 @@
 
 #include <Rtrc/Renderer/Scene/Camera/Camera.h>
 #include <Rtrc/Utility/Timer.h>
-#include <Rtrc/Window/Input.h>
+#include <Rtrc/Window/WindowInput.h>
 
 RTRC_BEGIN
 
@@ -14,7 +14,8 @@ public:
     void SetMoveSpeed(float speed);
     void SetRotateSpeed(float speed);
 
-    void UpdateCamera(const Input &input, const Timer &timer) const;
+    // Returns true when actually updated
+    bool UpdateCamera(const WindowInput &input, const Timer &timer) const;
 
 private:
 

@@ -18,7 +18,7 @@ RTRC_BEGIN
 struct Window::Impl
 {
     GLFWwindow *glfwWindow = nullptr;
-    std::unique_ptr<Input> input;
+    std::unique_ptr<WindowInput> input;
     Sender<WindowCloseEvent, WindowResizeEvent, WindowFocusEvent> sender;
     bool hasFocus = true;
 };
@@ -133,7 +133,7 @@ namespace WindowDetail
 
     GLFWDestroyer glfwDestroyer;
 
-    std::set<Input *> windowInputs;
+    std::set<WindowInput *> windowInputs;
 
     void InitGLFW()
     {
@@ -352,7 +352,7 @@ void Window::SetCloseFlag(bool flag)
     glfwSetWindowShouldClose(impl_->glfwWindow, flag ? 1 : 0);
 }
 
-Input &Window::GetInput() const
+WindowInput &Window::GetInput() const
 {
     assert(impl_);
     return *impl_->input;
@@ -480,7 +480,7 @@ Window WindowBuilder::Create() const
 
     // input manager
 
-    impl->input = std::unique_ptr<Input>(new Input(glfwWindow));
+    impl->input = std::unique_ptr<WindowInput>(new WindowInput(glfwWindow));
     windowInputs.insert(impl->input.get());
 
     return Window(std::move(impl));

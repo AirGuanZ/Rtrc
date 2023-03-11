@@ -31,9 +31,9 @@ public:
 
 private:
 
-    Vector3f translate_;
+    Vector3f   translate_;
     Quaternion rotate_;
-    Vector3f scale_;
+    Vector3f   scale_;
 };
 
 Transform Inverse(const Transform &t);

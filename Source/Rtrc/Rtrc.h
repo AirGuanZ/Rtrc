@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Rtrc/Application/Application.h>
 #include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/Graphics/ImGui/Instance.h>
 #include <Rtrc/Graphics/Material/MaterialInstance.h>
@@ -15,5 +16,5 @@
 #include <Rtrc/Utility/Memory/Malloc.h>
 #include <Rtrc/Utility/Resource/Image.h>
 #include <Rtrc/Utility/Resource/MeshData.h>
-#include <Rtrc/Window/Input.h>
+#include <Rtrc/Window/WindowInput.h>
 #include <Rtrc/Window/Window.h>

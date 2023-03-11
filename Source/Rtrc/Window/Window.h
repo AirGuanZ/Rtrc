@@ -5,7 +5,7 @@
 
 #include <Rtrc/Math/Vector2.h>
 #include <Rtrc/Utility/SmartPointer/ReferenceCounted.h>
-#include <Rtrc/Window/Input.h>
+#include <Rtrc/Window/WindowInput.h>
 
 RTRC_RHI_BEGIN
 
@@ -50,7 +50,7 @@ public:
 
     void SetCloseFlag(bool flag);
 
-    Input &GetInput() const;
+    WindowInput &GetInput() const;
 
     Vector2i GetWindowSize() const;
     Vector2i GetFramebufferSize() const;
@@ -91,10 +91,10 @@ public:
 
 private:
 
-    int width_ = 640;
-    int height_ = 480;
-    bool maximized_ = false;
-    std::string title_ = "Rtrc";
+    int         width_     = 640;
+    int         height_    = 480;
+    bool        maximized_ = false;
+    std::string title_     = "Rtrc";
 };
 
 RTRC_END

@@ -17,12 +17,14 @@ void FreeCameraController::SetRotateSpeed(float speed)
     rotateSpeed_ = speed;
 }
 
-void FreeCameraController::UpdateCamera(const Input &input, const Timer &timer) const
+bool FreeCameraController::UpdateCamera(const WindowInput &input, const Timer &timer) const
 {
     if(!camera_)
     {
-        return;
+        return false;
     }
+
+    bool ret = false;
 
     // Move
 
@@ -45,6 +47,7 @@ void FreeCameraController::UpdateCamera(const Input &input, const Timer &timer) 
     if(moveDirection != Vector3f(0, 0, 0))
     {
         moveDirection = Normalize(moveDirection);
+        ret = true;
     }
 
     camera_->SetPosition(camera_->GetPosition() + moveSpeed_ * moveDirection * timer.GetDeltaSecondsF());
@@ -52,10 +55,8 @@ void FreeCameraController::UpdateCamera(const Input &input, const Timer &timer) 
     // Rotate
 
     auto [radX, radY, radZ] = camera_->GetRotation();
-
     radX += rotateSpeed_ * input.GetCursorRelativePositionY();
     radX = std::clamp(radX, -PI / 2 + 0.01f, PI / 2 - 0.01f);
-
     radY -= rotateSpeed_ * input.GetCursorRelativePositionX();
     while(radY > 2 * PI)
     {
@@ -65,8 +66,10 @@ void FreeCameraController::UpdateCamera(const Input &input, const Timer &timer) 
     {
         radY += 2 * PI;
     }
-
     camera_->SetRotation(Vector3f(radX, radY, radZ));
+
+    ret |= (input.GetCursorRelativePositionY() != 0 || input.GetCursorRelativePositionX() != 0);
+    return ret;
 }
 
 RTRC_END

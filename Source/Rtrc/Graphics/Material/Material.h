@@ -61,7 +61,7 @@ struct MaterialProperty
     size_t GetValueSize() const;
 
     static const char *GetTypeName(Type type);
-    const char *GetTypeName() const;
+    const char        *GetTypeName() const;
 
     Type        type;
     std::string name;

@@ -13,11 +13,11 @@ struct KeyDownEvent     { KeyCode key; };
 struct KeyUpEvent       { KeyCode key; };
 struct CharInputEvent   { uint32_t charCode; };
 
-class Input : public Uncopyable
+class WindowInput : public Uncopyable
 {
 public:
 
-    ~Input();
+    ~WindowInput();
 
     void Clear();
 
@@ -53,7 +53,7 @@ private:
 
     friend class WindowBuilder;
 
-    explicit Input(void *glfwWindow);
+    explicit WindowInput(void *glfwWindow);
 
     std::pair<float, float> QueryCursorPosition() const;
 

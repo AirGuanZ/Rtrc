@@ -90,7 +90,7 @@ bool VulkanSwapchain::Acquire()
         return true;
     }
 
-    throw Exception("failed to acquire vulkan swapchain image");
+    throw Exception("Failed to acquire vulkan swapchain image");
 }
 
 Ptr<BackBufferSemaphore> VulkanSwapchain::GetAcquireSemaphore()
@@ -103,7 +103,7 @@ Ptr<BackBufferSemaphore> VulkanSwapchain::GetPresentSemaphore()
     return imagePresentSemaphores_[frameIndex_];
 }
 
-void VulkanSwapchain::Present()
+bool VulkanSwapchain::Present()
 {
     const auto presentSemaphore = imagePresentSemaphores_[frameIndex_]->_internalGetBinarySemaphore();
     const VkPresentInfoKHR presentInfo = {
@@ -114,7 +114,7 @@ void VulkanSwapchain::Present()
         .pSwapchains        = &swapchain_,
         .pImageIndices      = &imageIndex_
     };
-    (void)vkQueuePresentKHR(presentQueue_->_internalGetNativeQueue(), &presentInfo);
+    return vkQueuePresentKHR(presentQueue_->_internalGetNativeQueue(), &presentInfo) == VK_SUCCESS;
 }
 
 int VulkanSwapchain::GetRenderTargetCount() const

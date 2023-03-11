@@ -1306,7 +1306,7 @@ class Swapchain : public RHIObject
 public:
 
     RTRC_RHI_API bool Acquire() RTRC_RHI_API_PURE;
-    RTRC_RHI_API void Present() RTRC_RHI_API_PURE;
+    RTRC_RHI_API bool Present() RTRC_RHI_API_PURE;
 
     RTRC_RHI_API Ptr<BackBufferSemaphore> GetAcquireSemaphore() RTRC_RHI_API_PURE;
     RTRC_RHI_API Ptr<BackBufferSemaphore> GetPresentSemaphore() RTRC_RHI_API_PURE;

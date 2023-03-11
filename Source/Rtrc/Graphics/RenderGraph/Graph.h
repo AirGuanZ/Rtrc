@@ -149,6 +149,7 @@ public:
     RHI::Format           GetFormat()    const { return GetDesc().format; }
     uint32_t              GetWidth()     const { return GetDesc().width; }
     uint32_t              GetHeight()    const { return GetDesc().height; }
+    Vector2u              GetSize()      const { return { GetWidth(), GetHeight() }; }
     uint32_t              GetDepth()     const { return GetDesc().depth; }
     uint32_t              GetMipLevels() const { return GetDesc().mipLevels; }
     uint32_t              GetArraySize() const { return GetDesc().arraySize; }

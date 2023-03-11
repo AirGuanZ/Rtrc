@@ -19,36 +19,51 @@ public:
 
     void CopyFrom(const MaterialPropertySheet &other);
 
-    void Set(std::string_view name, float           value);
-    void Set(std::string_view name, const Vector2f &value);
-    void Set(std::string_view name, const Vector3f &value);
-    void Set(std::string_view name, const Vector4f &value);
+#define RTRC_DECL_SET(TYPE) \
+    void Set(std::string_view name, TYPE value); \
+    void Set(int index, TYPE value);
 
-    void Set(std::string_view name, uint32_t        value);
-    void Set(std::string_view name, const Vector2u &value);
-    void Set(std::string_view name, const Vector3u &value);
-    void Set(std::string_view name, const Vector4u &value);
+    RTRC_DECL_SET(float           )
+    RTRC_DECL_SET(const Vector2f &)
+    RTRC_DECL_SET(const Vector3f &)
+    RTRC_DECL_SET(const Vector4f &)
+    
+    RTRC_DECL_SET(uint32_t        )
+    RTRC_DECL_SET(const Vector2u &)
+    RTRC_DECL_SET(const Vector3u &)
+    RTRC_DECL_SET(const Vector4u &)
+    
+    RTRC_DECL_SET(int32_t         )
+    RTRC_DECL_SET(const Vector2i &)
+    RTRC_DECL_SET(const Vector3i &)
+    RTRC_DECL_SET(const Vector4i &)
 
-    void Set(std::string_view name, int32_t         value);
-    void Set(std::string_view name, const Vector2i &value);
-    void Set(std::string_view name, const Vector3i &value);
-    void Set(std::string_view name, const Vector4i &value);
+    RTRC_DECL_SET(const RC<Texture> &)
+    RTRC_DECL_SET(const TextureSrv  &)
+    RTRC_DECL_SET(const BufferSrv   &)
+    RTRC_DECL_SET(const RC<Sampler> &)
+    RTRC_DECL_SET(const RC<Tlas>    &)
 
-    void Set(std::string_view name, const RC<Texture> &tex);
-    void Set(std::string_view name, const TextureSrv  &srv);
-    void Set(std::string_view name, const BufferSrv   &srv);
-    void Set(std::string_view name, const RC<Sampler> &sampler);
-    void Set(std::string_view name, const RC<Tlas>    &tlas);
+#undef RTRC_DECL_SET
 
     void Set(std::string_view name, const BindlessTextureEntry &entry);
+    void Set(int index,             const BindlessTextureEntry &entry);
 
     const unsigned char *GetValueBuffer() const { return valueBuffer_.data(); }
     Span<MaterialResource> GetResources() const { return resources_; }
+
+    const RC<MaterialPropertyHostLayout> &GetHostLayout() const { return layout_; }
+
+    const unsigned char *GetValue(std::string_view name) const;
+    const unsigned char *GetValue(int index) const;
 
 private:
 
     template<MaterialProperty::Type Type, typename T>
     void SetImpl(std::string_view name, const T &value);
+
+    template<MaterialProperty::Type Type, typename T>
+    void SetImpl(int index, const T &value);
 
     RC<MaterialPropertyHostLayout>    layout_;
     std::vector<unsigned char>        valueBuffer_;

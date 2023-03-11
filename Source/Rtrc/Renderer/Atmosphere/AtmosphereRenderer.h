@@ -93,9 +93,9 @@ namespace AtmosphereDetail
 
         struct RenderGraphInterface
         {
-            RG::Pass *inPass = nullptr;
-            RG::Pass *outPass = nullptr;
-            RG::TextureResource *skyLut = nullptr;
+            RG::Pass            *inPass  = nullptr;
+            RG::Pass            *outPass = nullptr;
+            RG::TextureResource *skyLut  = nullptr;
         };
 
         explicit SkyLut(const BuiltinResourceManager &builtinResources);
@@ -120,12 +120,12 @@ namespace AtmosphereDetail
 
         PrepareLutRGInterface PrepareLut(RG::RenderGraph *renderGraph, RC<StatefulTexture> &lut);
 
-        Device &device_;
+        Device    &device_;
         RC<Shader> shader_;
 
         std::default_random_engine randomEngine_;
-        int stepCount_;
-        Vector2i lutRes_;
+        int                        stepCount_;
+        Vector2i                   lutRes_;
 
         RC<StatefulTexture> prevLut_;
         RC<StatefulTexture> currLut_;

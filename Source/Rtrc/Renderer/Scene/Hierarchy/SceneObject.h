@@ -23,7 +23,7 @@ public:
     // Transform
 
     const Transform &GetTransform() const;
-    Transform &GetMutableTransform();
+          Transform &GetMutableTransform();
 
     void UpdateWorldMatrixRecursively(bool forceUpdate);
 
@@ -98,7 +98,6 @@ inline void SceneObject::UpdateWorldMatrixRecursively(bool forceUpdate)
     {
         child->UpdateWorldMatrixRecursively(forceUpdate);
     }
-
     if(forceUpdate || isWorldBoundDirty_)
     {
         UpdateWorldBound();

@@ -8,7 +8,7 @@ StaticMeshRenderer::~StaticMeshRenderer()
     manager_->_internalRelease(this);
 }
 
-RendererProxy *StaticMeshRenderer::CreateProxy(LinearAllocator &proxyAllocator) const
+StaticMeshRendererProxy *StaticMeshRenderer::CreateProxyRaw(LinearAllocator &proxyAllocator) const
 {
     if(!mesh_ || !matInst_)
     {

@@ -5,7 +5,7 @@ using namespace Rtrc;
 class Application : public Uncopyable
 {
     Window window_;
-    Input *input_ = nullptr;
+    WindowInput *input_ = nullptr;
     
     Box<Device>       device_;
     Box<RG::Executer> executer_;
@@ -119,7 +119,7 @@ class Application : public Uncopyable
             camera_->SetProjection(Deg2Rad(60), wOverH, 0.1f, 100.0f);
             if(input_->IsCursorLocked())
             {
-                cameraController_.UpdateCamera(*input_, timer_);
+                (void)cameraController_.UpdateCamera(*input_, timer_);
             }
             camera_->CalculateDerivedData();
         }

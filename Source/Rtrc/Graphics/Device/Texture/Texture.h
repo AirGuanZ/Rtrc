@@ -61,6 +61,7 @@ public:
     RHI::TextureDimension GetDimension() const;
     uint32_t GetWidth() const;
     uint32_t GetHeight() const;
+    Vector2u GetSize() const;
     uint32_t GetDepth() const;
     uint32_t GetArraySize() const;
     uint32_t GetMipmapLevelCount() const;
@@ -156,6 +157,11 @@ inline uint32_t Texture::GetWidth() const
 inline uint32_t Texture::GetHeight() const
 {
     return desc_.height;
+}
+
+inline Vector2u Texture::GetSize() const
+{
+    return { desc_.width, desc_.height };
 }
 
 inline uint32_t Texture::GetDepth() const
