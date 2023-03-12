@@ -58,7 +58,7 @@ bool FindClosestIntersection(RayDesc ray, out Intersection intersection)
     int instanceIndex = rayQuery.CommittedInstanceIndex();
     int primitiveIndex = rayQuery.CommittedPrimitiveIndex();
     intersection.position = ray.Origin + ray.Direction * rayQuery.CommittedRayT();
-    intersection.normal = Geometries[instanceIndex][primitiveIndex].normal;
+    intersection.normal = Geometries[NonUniformResourceIndex(instanceIndex)][primitiveIndex].normal;
     intersection.color = Materials[instanceIndex].color;
     if(dot(ray.Direction, intersection.normal) > 0)
         intersection.normal = -intersection.normal;

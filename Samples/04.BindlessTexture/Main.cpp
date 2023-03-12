@@ -130,6 +130,10 @@ int main()
     {
         Run();
     }
+    catch(const Exception &e)
+    {
+        LogError("{}\n{}", e.what(), e.stacktrace());
+    }
     catch(const std::exception &e)
     {
         LogError(e.what());

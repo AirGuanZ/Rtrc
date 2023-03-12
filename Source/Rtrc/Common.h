@@ -4,6 +4,7 @@
 
 #include <cstddef>
 #include <memory>
+#include <stacktrace>
 #include <stdexcept>
 
 #define RTRC_BEGIN namespace Rtrc {
@@ -30,9 +31,30 @@ RTRC_BEGIN
 
 class Exception : public std::runtime_error
 {
+    std::string stacktrace_;
+
 public:
 
-    using runtime_error::runtime_error;
+    explicit Exception(const char *msg)
+        : runtime_error(msg)
+    {
+        stacktrace_ = std::to_string(std::stacktrace::current());
+    }
+
+    explicit Exception(const std::string &msg)
+        : runtime_error(msg)
+    {
+        stacktrace_ = std::to_string(std::stacktrace::current());
+    }
+
+    template<typename T, typename...Ts>
+    Exception(fmt::format_string<Ts...> fmt, T &&arg, Ts&&...args)
+        : Exception(fmt::format(fmt, std::forward<T>(arg), std::forward<Ts>(args)...))
+    {
+
+    }
+
+    const std::string &stacktrace() const { return stacktrace_; }
 };
 
 template<typename T>
