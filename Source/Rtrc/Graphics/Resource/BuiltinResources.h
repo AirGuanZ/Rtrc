@@ -3,6 +3,7 @@
 #include <Rtrc/Graphics/Mesh/Mesh.h>
 #include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/Graphics/Resource/MaterialManager.h>
+#include <Rtrc/Utility/SmartPointer/ObserverPtr.h>
 
 RTRC_BEGIN
 
@@ -30,9 +31,9 @@ class BuiltinResourceManager : public Uncopyable
 {
 public:
 
-    explicit BuiltinResourceManager(Device &device);
+    explicit BuiltinResourceManager(ObserverPtr<Device> device);
 
-    Device &GetDevice() const;
+    ObserverPtr<Device> GetDevice() const;
     
     const RC<Mesh>     &GetBuiltinMesh    (BuiltinMesh     mesh)     const;
     const RC<Texture>  &GetBuiltinTexture (BuiltinTexture  texture)  const;
@@ -47,7 +48,7 @@ private:
     void LoadBuiltinMeshes();
     void LoadBuiltinMaterials();
 
-    Device &device_;
+    ObserverPtr<Device> device_;
     MaterialManager materialManager_;
 
     std::array<RC<Texture>,  EnumCount<BuiltinTexture>>  textures_;

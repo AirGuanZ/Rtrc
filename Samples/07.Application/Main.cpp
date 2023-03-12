@@ -4,6 +4,12 @@ using namespace Rtrc;
 
 int main()
 {
-    Application app;
-    app.Run({});
+    try
+    {
+        Application().Run(Application::Config{ .maximized = true });
+    }
+    catch(const std::exception &e)
+    {
+        LogError(e.what());
+    }
 }

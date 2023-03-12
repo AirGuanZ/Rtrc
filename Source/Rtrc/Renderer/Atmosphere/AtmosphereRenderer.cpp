@@ -48,7 +48,7 @@ AtmosphereDetail::TransmittanceLut::TransmittanceLut(
     const AtmosphereProperties   &atmosphere,
     const Vector2i               &resolution)
 {
-    Device &device = builtinResources.GetDevice();
+    Device &device = *builtinResources.GetDevice();
 
     RC<Texture> lut = device.CreateTexture(RHI::TextureDesc
     {
@@ -94,7 +94,7 @@ AtmosphereDetail::MultiScatterLut::MultiScatterLut(
     const AtmosphereProperties   &properties,
     const Vector2i               &resolution)
 {
-    Device &device = builtinResources.GetDevice();
+    Device &device = *builtinResources.GetDevice();
 
     RC<Buffer> poissonDiskSamples;
     {
@@ -206,7 +206,7 @@ AtmosphereDetail::SkyLut::RenderGraphInterface AtmosphereDetail::SkyLut::AddToRe
         passGroupData.lerpFactor              = lerpFactor;
         passGroupData.sunDirection            = parameters->sunDirection;
         passGroupData.sunIntensity            = parameters->sunIntensity * parameters->sunColor;
-        auto passGroup = device_.CreateBindingGroup(passGroupData);
+        auto passGroup = device_->CreateBindingGroup(passGroupData);
 
         auto &cmd = passCtx.GetCommandBuffer();
         cmd.BindComputePipeline(shader_->GetComputePipeline());
@@ -239,7 +239,7 @@ AtmosphereDetail::SkyLut::PrepareLutRGInterface AtmosphereDetail::SkyLut::Prepar
         return ret;
     }
 
-    lut = device_.CreatePooledTexture(RHI::TextureDesc
+    lut = device_->CreatePooledTexture(RHI::TextureDesc
     {
         .dim                  = RHI::TextureDimension::Tex2D,
         .format               = RHI::Format::R32G32B32A32_Float,

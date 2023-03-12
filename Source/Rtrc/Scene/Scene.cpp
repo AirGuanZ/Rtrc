@@ -1,4 +1,4 @@
-#include <Rtrc/Renderer/Scene/Scene.h>
+#include <Rtrc/Scene/Scene.h>
 
 RTRC_BEGIN
 

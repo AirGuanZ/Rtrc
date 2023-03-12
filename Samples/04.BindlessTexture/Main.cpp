@@ -17,7 +17,7 @@ void Run()
 
     auto device = Device::CreateGraphicsDevice(window);
 
-    ResourceManager resourceManager(device.get());
+    ResourceManager resourceManager(device);
     resourceManager.AddMaterialFiles($rtrc_get_files("Asset/Sample/04.BindlessTexture/*.*"));
 
     // Mesh
@@ -69,7 +69,7 @@ void Run()
         bindingGroup->Set(1, slots[i], textures[i]->CreateSrv());
     }
 
-    RG::Executer renderGraphExecuter(device.get());
+    RG::Executer renderGraphExecuter(device);
 
     window.SetFocus();
     device->BeginRenderLoop();

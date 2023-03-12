@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Rtrc/Graphics/Device/BindingGroupDSL.h>
-#include <Rtrc/Renderer/Scene/Hierarchy/SceneObject.h>
+#include <Rtrc/Scene/Hierarchy/SceneObject.h>
 #include <Rtrc/Utility/SmartPointer/CopyOnWritePtr.h>
 
 RTRC_BEGIN

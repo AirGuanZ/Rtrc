@@ -3,7 +3,7 @@
 #include <set>
 
 #include <Rtrc/Math/AABB.h>
-#include <Rtrc/Renderer/Scene/Hierarchy/Transform.h>
+#include <Rtrc/Scene/Hierarchy/Transform.h>
 #include <Rtrc/Utility/Uncopyable.h>
 
 RTRC_BEGIN

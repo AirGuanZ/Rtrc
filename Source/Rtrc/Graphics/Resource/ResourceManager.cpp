@@ -3,8 +3,8 @@
 
 RTRC_BEGIN
 
-ResourceManager::ResourceManager(Device *device, bool debugMode)
-    : device_(device), builtinResourceManager_(*device)
+ResourceManager::ResourceManager(ObserverPtr<Device> device, bool debugMode)
+    : device_(device), builtinResourceManager_(device)
 {
     materialManager_.SetDevice(device);
     materialManager_.SetDebugMode(debugMode);

@@ -3,16 +3,72 @@
 #include <imgui.h>
 
 #include <Rtrc/Graphics/Device/Device.h>
+#include <Rtrc/Graphics/Resource/BuiltinResources.h>
 #include <Rtrc/Window/WindowInput.h>
 
 RTRC_BEGIN
+
+struct ImGuiDrawData
+{
+    struct DrawList
+    {
+        std::vector<ImDrawCmd>  commandBuffer;
+        std::vector<ImDrawIdx>  indexBuffer;
+        std::vector<ImDrawVert> vertexBuffer;
+        ImDrawListFlags         flags;
+    };
+    
+    void BuildFromImDrawData(const ImDrawData *src);
+    
+    int totalIndexCount = 0;
+    int totalVertexCount = 0;
+    std::vector<DrawList> drawLists;
+
+    Vector2f displayPos;
+    Vector2f displaySize;
+    Vector2f framebufferScale;
+
+    Vector2i         framebufferSize;
+    RC<Texture>      fontTexture;
+    RC<BindingGroup> fontTextureBindingGroup;
+};
+
+class ImGuiRenderer : public Uncopyable
+{
+public:
+
+    explicit ImGuiRenderer(ObserverPtr<Device> device);
+    
+    RG::Pass *AddToRenderGraph(
+        const ImGuiDrawData *drawData,
+        RG::TextureResource *renderTarget,
+        RG::RenderGraph     *renderGraph);
+
+    // rt must be externally synchronized
+    // assert(rtv.size == frameBufferSize)
+    void RenderImmediately(
+        const ImGuiDrawData *drawData,
+        const TextureRtv    &rtv,
+        CommandBuffer       &commandBuffer,
+        bool                 renderPassMark = true);
+
+private:
+
+    RC<GraphicsPipeline> GetOrCreatePipeline(RHI::Format format);
+
+    ObserverPtr<Device>                         device_;
+    RC<Shader>                                  shader_;
+    RC<BindingGroupLayout>                      cbufferBindingGroupLayout_;
+    RC<BindingGroupLayout>                      passBindingGroupLayout_;
+    std::map<RHI::Format, RC<GraphicsPipeline>> rtFormatToPipeline_;
+};
 
 class ImGuiInstance : public Uncopyable
 {
 public:
 
     ImGuiInstance() = default;
-    ImGuiInstance(Device &device, Window &window);
+    ImGuiInstance(ObserverPtr<Device> device, ObserverPtr<Window> window);
     ~ImGuiInstance();
 
     ImGuiInstance(ImGuiInstance &&other) noexcept;
@@ -25,19 +81,12 @@ public:
 
     // =========== Frame event ===========
 
-    // frame buffer size is queried from window by default
+    // Framebuffer size is queried from window by default
     void BeginFrame(const Vector2i &framebufferSize = {});
 
-    RG::Pass *AddToRenderGraph(RG::TextureResource *renderTarget, RG::RenderGraph *renderGraph);
-
-    // rt must be externally synchronized
-    // assert(rtv.size == frameBufferSize)
-    void RenderImmediately(const TextureRtv &rtv, CommandBuffer &commandBuffer, bool renderPassMark = true);
-
+    Box<ImGuiDrawData> Render();
+    
     // =========== GUI ===========
-
-    template<typename F>
-    void Do(F &&f); // Call f with thread local ImGui context bounded
 
     bool Begin(const char *label, bool *open = nullptr, ImGuiWindowFlags flags = 0);
     void End();
@@ -126,8 +175,9 @@ public:
 
 private:
 
-    RC<GraphicsPipeline> GetOrCreatePipeline(RHI::Format format);
-
+    template<typename F>
+    void Do(F &&f); // Call f with thread local ImGui context bounded
+    
     void RecreateFontTexture();
 
     ImGuiContext *GetImGuiContext();
@@ -161,6 +211,12 @@ private:
     Box<Data> data_;
 };
 
+template<typename... Args>
+void ImGuiInstance::Text(fmt::format_string<Args...> fmt, Args &&... args)
+{
+    this->TextUnformatted(fmt::format(fmt, std::forward<Args>(args)...));
+}
+
 template<typename F>
 void ImGuiInstance::Do(F &&f)
 {
@@ -168,12 +224,6 @@ void ImGuiInstance::Do(F &&f)
     ImGui::SetCurrentContext(GetImGuiContext());
     RTRC_SCOPE_EXIT{ ImGui::SetCurrentContext(oldContext); };
     std::invoke(std::forward<F>(f));
-}
-
-template<typename... Args>
-void ImGuiInstance::Text(fmt::format_string<Args...> fmt, Args &&... args)
-{
-    this->TextUnformatted(fmt::format(fmt, std::forward<Args>(args)...));
 }
 
 RTRC_END

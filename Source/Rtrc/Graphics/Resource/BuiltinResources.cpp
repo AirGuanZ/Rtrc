@@ -5,11 +5,11 @@
 
 RTRC_BEGIN
 
-BuiltinResourceManager::BuiltinResourceManager(Device &device)
+BuiltinResourceManager::BuiltinResourceManager(ObserverPtr<Device> device)
     : device_(device)
 {
     materialManager_.SetDebugMode(RTRC_DEBUG);
-    materialManager_.SetDevice(&device_);
+    materialManager_.SetDevice(device_);
     materialManager_.AddFiles($rtrc_get_files("Asset/Builtin/Material/*.*"));
     materialManager_.AddIncludeDirectory("Asset/Builtin/Material");
 
@@ -17,11 +17,11 @@ BuiltinResourceManager::BuiltinResourceManager(Device &device)
     LoadBuiltinMeshes();
     LoadBuiltinMaterials();
 
-    fullscreenTriangle_ = GetFullscreenTriangle(device_);
-    fullscreenQuad_ = GetFullscreenQuad(device_);
+    fullscreenTriangle_ = GetFullscreenTriangle(*device_);
+    fullscreenQuad_ = GetFullscreenQuad(*device_);
 }
 
-Device &BuiltinResourceManager::GetDevice() const
+ObserverPtr<Device> BuiltinResourceManager::GetDevice() const
 {
     return device_;
 }
@@ -54,15 +54,15 @@ const Mesh &BuiltinResourceManager::GetFullscreenQuadMesh() const
 void BuiltinResourceManager::LoadBuiltinTextures()
 {
     textures_[std::to_underlying(BuiltinTexture::Black2D)] =
-        device_.CreateColorTexture2D(0, 0, 0, 255, "BuiltinBlack2D");
+        device_->CreateColorTexture2D(0, 0, 0, 255, "BuiltinBlack2D");
     textures_[std::to_underlying(BuiltinTexture::White2D)] =
-        device_.CreateColorTexture2D(255, 255, 255, 255, "BuiltinWhite2D");
+        device_->CreateColorTexture2D(255, 255, 255, 255, "BuiltinWhite2D");
 }
 
 void BuiltinResourceManager::LoadBuiltinMeshes()
 {
 #define LOAD_BUILTIN_MESH(NAME) \
-    meshes_[std::to_underlying(BuiltinMesh::NAME)] = ToRC(MeshManager::Load(&device_, "Asset/Builtin/Mesh/" #NAME ".obj", {}))
+    meshes_[std::to_underlying(BuiltinMesh::NAME)] = ToRC(MeshManager::Load(device_, "Asset/Builtin/Mesh/" #NAME ".obj", {}))
     LOAD_BUILTIN_MESH(Cube);
 #undef LOAD_BUILTIN_MESH
 }

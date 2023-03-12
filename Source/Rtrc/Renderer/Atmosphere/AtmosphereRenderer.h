@@ -4,7 +4,7 @@
 
 #include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/Graphics/Resource/BuiltinResources.h>
-#include <Rtrc/Renderer/Scene/Camera/Camera.h>
+#include <Rtrc/Scene/Camera/Camera.h>
 
 RTRC_BEGIN
 
@@ -120,8 +120,8 @@ namespace AtmosphereDetail
 
         PrepareLutRGInterface PrepareLut(RG::RenderGraph *renderGraph, RC<StatefulTexture> &lut);
 
-        Device    &device_;
-        RC<Shader> shader_;
+        ObserverPtr<Device> device_;
+        RC<Shader>          shader_;
 
         std::default_random_engine randomEngine_;
         int                        stepCount_;
@@ -159,7 +159,7 @@ namespace AtmosphereDetail
 
     private:
 
-        Device                       &device_;
+        ObserverPtr<Device>           device_;
         const BuiltinResourceManager &builtinResources_;
 
         AtmosphereFrameParameters frameParameters_;

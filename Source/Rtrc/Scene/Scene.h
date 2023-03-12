@@ -1,7 +1,7 @@
 #pragma once
 
-#include <Rtrc/Renderer/Scene/Light.h>
-#include <Rtrc/Renderer/Scene/Renderer/StaticMeshRenderer.h>
+#include <Rtrc/Scene/Light.h>
+#include <Rtrc/Scene/Renderer/StaticMeshRenderer.h>
 
 RTRC_BEGIN
 
@@ -45,7 +45,7 @@ private:
     //SceneVersion version_;
 };
 
-class Scene : public Uncopyable
+class Scene : public Uncopyable, public WithUniqueObjectID
 {
 public:
 

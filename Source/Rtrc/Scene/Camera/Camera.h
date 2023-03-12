@@ -13,7 +13,7 @@ struct PerspectiveProjectionParameters
     float farPlane  = 100.0f;
 };
 
-class Camera
+class Camera : public WithUniqueObjectID
 {
 public:
 

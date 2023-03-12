@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/Renderer/Scene/Camera/Camera.h>
+#include <Rtrc/Scene/Camera/Camera.h>
 #include <Rtrc/Utility/Timer.h>
 #include <Rtrc/Window/WindowInput.h>
 

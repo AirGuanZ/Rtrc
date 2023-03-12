@@ -22,7 +22,7 @@ void Run()
 
     auto device = Device::CreateGraphicsDevice(window);
 
-    ResourceManager resourceManager(device.get());
+    ResourceManager resourceManager(device);
     resourceManager.AddMaterialFiles($rtrc_get_files("Asset/Sample/01.TexturedQuad/*.*"));
 
     // Mesh
@@ -79,7 +79,7 @@ void Run()
 
     // Render loop
 
-    RG::Executer executer(device.get());
+    RG::Executer executer(device);
 
     device->BeginRenderLoop();
     while(!window.ShouldClose())

@@ -3,7 +3,7 @@
 
 RTRC_RG_BEGIN
 
-Executer::Executer(Device *device)
+Executer::Executer(ObserverPtr<Device> device)
     : device_(device)
 {
     
@@ -12,7 +12,7 @@ Executer::Executer(Device *device)
 void Executer::Execute(const RenderGraph &graph)
 {
     ExecutableGraph compiledResult;
-    Compiler(*device_).Compile(graph, compiledResult);
+    Compiler(device_).Compile(graph, compiledResult);
     graph.executableResource_ = &compiledResult.resources;
     Execute(compiledResult);
     graph.executableResource_ = nullptr;

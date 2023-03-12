@@ -37,7 +37,7 @@ namespace CompilerDetail
 
 } // namespace CompilerDetail
 
-Compiler::Compiler(Device &device)
+Compiler::Compiler(ObserverPtr<Device> device)
     : device_(device)
     , graph_(nullptr)
 {
@@ -331,7 +331,7 @@ void Compiler::AllocateInternalResources(ExecutableResources &output)
 
         if(desc.hostAccessType == RHI::BufferHostAccessType::None)
         {
-            output.indexToBuffer[resourceIndex].buffer = device_.CreatePooledBuffer(RHI::BufferDesc
+            output.indexToBuffer[resourceIndex].buffer = device_->CreatePooledBuffer(RHI::BufferDesc
                 {
                     .size = desc.size,
                     .usage = desc.usage,
@@ -340,7 +340,7 @@ void Compiler::AllocateInternalResources(ExecutableResources &output)
         }
         else
         {
-            auto buffer = device_.CreateBuffer(desc);
+            auto buffer = device_->CreateBuffer(desc);
             output.indexToBuffer[resourceIndex].buffer = MakeRC<WrappedStatefulBuffer>(std::move(buffer), BufferState{});
             output.indexToBuffer[resourceIndex].buffer->SetName(std::move(intRsc->name));
         }
@@ -378,7 +378,7 @@ void Compiler::AllocateInternalResources(ExecutableResources &output)
             finalStates(subrsc.mipLevel, subrsc.arrayLayer) = TextureSubrscState(layout, stages, accesses);
         }
 
-        output.indexToTexture[resourceIndex].texture = device_.CreatePooledTexture(desc);
+        output.indexToTexture[resourceIndex].texture = device_->CreatePooledTexture(desc);
         output.indexToTexture[resourceIndex].texture->SetLayoutToUndefined();
         output.indexToTexture[resourceIndex].texture->SetName(std::move(intTex->name));
     }

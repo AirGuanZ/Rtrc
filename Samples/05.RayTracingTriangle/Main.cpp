@@ -19,7 +19,7 @@ void Run()
         window, RHI::Format::B8G8R8A8_UNorm, 3,
         RTRC_DEBUG, false, Device::EnableRayTracing | Device::EnableSwapchainUav);
 
-    ResourceManager resourceManager(device.get());
+    ResourceManager resourceManager(device);
     resourceManager.AddMaterialFiles($rtrc_get_files("Asset/Sample/05.RayTracingTriangle/*.*"));
 
     // Blas
@@ -145,7 +145,7 @@ void Run()
 
     // Render loop
 
-    RG::Executer executer(device.get());
+    RG::Executer executer(device);
 
     window.SetFocus();
     device->BeginRenderLoop();

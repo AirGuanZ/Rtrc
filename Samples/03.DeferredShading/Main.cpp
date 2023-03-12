@@ -2,7 +2,7 @@
 
 using namespace Rtrc;
 
-class Application : public Uncopyable
+class DeferredRendererApplication : public Uncopyable
 {
     Window window_;
     WindowInput *input_ = nullptr;
@@ -11,6 +11,7 @@ class Application : public Uncopyable
     Box<RG::Executer> executer_;
 
     Box<ImGuiInstance>    imgui_;
+    Box<ImGuiRenderer>    imguiRenderer_;
     Box<ResourceManager>  resources_;
     Box<DeferredRenderer> renderer_;
 
@@ -36,11 +37,12 @@ class Application : public Uncopyable
         input_ = &window_.GetInput();
 
         device_ = Device::CreateGraphicsDevice(window_, RHI::Format::B8G8R8A8_UNorm, 3, RTRC_DEBUG, false);
-        executer_ = MakeBox<RG::Executer>(device_.get());
+        executer_ = MakeBox<RG::Executer>(device_);
 
-        imgui_ = MakeBox<ImGuiInstance>(*device_, window_);
+        imgui_ = MakeBox<ImGuiInstance>(device_, window_);
+        imguiRenderer_ = MakeBox<ImGuiRenderer>(*device_);
 
-        resources_ = MakeBox<ResourceManager>(device_.get());
+        resources_ = MakeBox<ResourceManager>(device_);
         resources_->AddMaterialFiles($rtrc_get_files("Asset/Builtin/*/*.*"));
         resources_->AddShaderIncludeDirectory("Asset");
         
@@ -146,7 +148,10 @@ class Application : public Uncopyable
 
         // ImGui
 
-        auto imguiPass = imgui_->AddToRenderGraph(renderTarget, graph.get());
+        auto imguiRenderData = imgui_->Render();
+        auto imguiPass = imguiRenderer_->AddToRenderGraph(imguiRenderData.get(), renderTarget, graph.get());
+
+        //auto imguiPass = imgui_->AddToRenderGraph(renderTarget, graph.get());
 
         // Dependencies
         
@@ -161,7 +166,7 @@ class Application : public Uncopyable
 
 public:
 
-    ~Application()
+    ~DeferredRendererApplication()
     {
         if(input_)
         {
@@ -192,7 +197,7 @@ int main()
     EnableMemoryLeakReporter();
     try
     {
-        Application().Run();
+        DeferredRendererApplication().Run();
     }
     catch(const std::exception &e)
     {

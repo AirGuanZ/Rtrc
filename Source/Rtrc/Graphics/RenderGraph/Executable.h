@@ -2,6 +2,7 @@
 
 #include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/Graphics/RenderGraph/Graph.h>
+#include <Rtrc/Utility/SmartPointer/ObserverPtr.h>
 
 RTRC_RG_BEGIN
 
@@ -57,7 +58,7 @@ class Executer
 {
 public:
 
-    Executer(Device *device);
+    explicit Executer(ObserverPtr<Device> device);
 
     void Execute(const RenderGraph &graph);
     
@@ -69,7 +70,7 @@ private:
 
     void Execute(const ExecutableGraph &graph);
 
-    Device *device_;
+    ObserverPtr<Device> device_;
 };
 
 RTRC_RG_END

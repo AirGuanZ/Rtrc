@@ -3,8 +3,8 @@
 #include <Rtrc/Graphics/Material/MaterialPassToGraphicsPipeline.h>
 #include <Rtrc/Graphics/RenderGraph/Graph.h>
 #include <Rtrc/Renderer/DeferredRenderer/Common.h>
-#include <Rtrc/Renderer/Scene/Camera/Camera.h>
-#include <Rtrc/Renderer/Scene/Scene.h>
+#include <Rtrc/Scene/Camera/Camera.h>
+#include <Rtrc/Scene/Scene.h>
 
 RTRC_BEGIN
 

@@ -1,4 +1,4 @@
-#include <Rtrc/Renderer/Scene/Renderer/StaticMeshRenderer.h>
+#include <Rtrc/Scene/Renderer/StaticMeshRenderer.h>
 
 RTRC_BEGIN
 

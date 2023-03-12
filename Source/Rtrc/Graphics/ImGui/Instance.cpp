@@ -1,5 +1,3 @@
-#include <imgui.h>
-
 #include <Rtrc/Graphics/ImGui/Instance.h>
 #include <Rtrc/Graphics/Mesh/MeshLayout.h>
 #include <Rtrc/Graphics/Shader/ShaderCompiler.h>
@@ -188,21 +186,20 @@ float4 FSMain(VsToFs input) : SV_TARGET
 
 struct ImGuiInstance::Data
 {
-    Device *device = nullptr;
-    Window *window = nullptr;
+    ObserverPtr<Device> device = nullptr;
+    ObserverPtr<Window> window = nullptr;
     ImGuiContext *context = nullptr;
     Timer timer;
 
     bool enableInput = true;
     Box<EventReceiver> eventReceiver;
-
-    RC<Shader>                                  shader;
-    RC<BindingGroupLayout>                      cbufferBindingGroupLayout;
-    RC<BindingGroupLayout>                      passBindingGroupLayout;
-    std::map<RHI::Format, RC<GraphicsPipeline>> rtFormatToPipeline;
+    
+    RC<BindingGroupLayout> passBindingGroupLayout;
 
     RC<Texture> fontTexture;
     RC<BindingGroup> fontTextureBindingGroup;
+
+    Vector2i framebufferSize;
     
     void WindowFocus(bool focused);
     void CursorMove(float x, float y);
@@ -212,11 +209,264 @@ struct ImGuiInstance::Data
     void Char(unsigned int ch);
 };
 
-ImGuiInstance::ImGuiInstance(Device &device, Window &window)
+void ImGuiDrawData::BuildFromImDrawData(const ImDrawData *src)
+{
+    totalVertexCount = src->TotalVtxCount;
+    totalIndexCount = src->TotalIdxCount;
+    drawLists.clear();
+    drawLists.reserve(src->CmdListsCount);
+    for(int i = 0; i < src->CmdListsCount; ++i)
+    {
+        ImDrawList &in = *src->CmdLists[i];
+        DrawList &out = drawLists.emplace_back();
+        std::ranges::copy(in.CmdBuffer, std::back_inserter(out.commandBuffer));
+        std::ranges::copy(in.IdxBuffer, std::back_inserter(out.indexBuffer));
+        std::ranges::copy(in.VtxBuffer, std::back_inserter(out.vertexBuffer));
+        out.flags = in.Flags;
+    }
+    displayPos = { src->DisplayPos.x, src->DisplayPos.y };
+    displaySize = { src->DisplaySize.x, src->DisplaySize.y };
+    framebufferScale = { src->FramebufferScale.x, src->FramebufferScale.y };
+}
+
+ImGuiRenderer::ImGuiRenderer(ObserverPtr<Device> device)
+    : device_(device)
+{
+    ShaderCompiler shaderCompiler;
+    shaderCompiler.SetDevice(device_);
+
+    const ShaderCompiler::ShaderSource source =
+    {
+        .source = ImGuiDetail::SHADER_SOURCE
+    };
+    shader_ = shaderCompiler.Compile(source, {}, RTRC_DEBUG);
+    cbufferBindingGroupLayout_ = shader_->GetBindingGroupLayoutByName("CBuffer");
+    passBindingGroupLayout_ = shader_->GetBindingGroupLayoutByName("Pass");
+}
+
+RG::Pass *ImGuiRenderer::AddToRenderGraph(
+    const ImGuiDrawData *drawData,
+    RG::TextureResource *renderTarget,
+    RG::RenderGraph     *renderGraph)
+{
+    auto pass = renderGraph->CreatePass("Render ImGui");
+    pass->Use(renderTarget, RG::COLOR_ATTACHMENT);
+    pass->SetCallback([this, drawData, renderTarget](RG::PassContext &ctx)
+    {
+        RenderImmediately(drawData, renderTarget->Get()->CreateRtv(), ctx.GetCommandBuffer(), false);
+    });
+    return pass;
+}
+
+void ImGuiRenderer::RenderImmediately(
+    const ImGuiDrawData *drawData,
+    const TextureRtv    &rtv,
+    CommandBuffer       &commandBuffer,
+    bool                 renderPassMark)
+{
+    if(drawData->drawLists.empty())
+    {
+        return;
+    }
+
+    const Vector2u rtSize = rtv.GetTexture()->GetSize();
+    if(rtSize.x != drawData->framebufferSize.x || rtSize.y != drawData->framebufferSize.y)
+    {
+        return;
+    }
+
+    // Upload vertex/index data
+
+    RC<Buffer> vertexBuffer, indexBuffer;
+    if(drawData->totalVertexCount > 0)
+    {
+        vertexBuffer = device_->CreateBuffer(RHI::BufferDesc
+            {
+                .size = drawData->totalVertexCount * sizeof(ImDrawVert),
+                .usage = RHI::BufferUsage::VertexBuffer,
+                .hostAccessType = RHI::BufferHostAccessType::SequentialWrite
+            });
+        auto vertexData = static_cast<ImDrawVert *>(vertexBuffer->GetRHIObject()->Map(0, vertexBuffer->GetSize()));
+        size_t vertexOffset = 0;
+        for(const ImGuiDrawData::DrawList &drawList : drawData->drawLists)
+        {
+            std::memcpy(vertexData + vertexOffset, drawList.vertexBuffer.data(), drawList.vertexBuffer.size() * sizeof(ImDrawVert));
+            vertexOffset += drawList.vertexBuffer.size();
+        }
+        vertexBuffer->GetRHIObject()->Unmap(0, vertexBuffer->GetSize(), true);
+    }
+    if(drawData->totalIndexCount > 0)
+    {
+        indexBuffer = device_->CreateBuffer(RHI::BufferDesc
+            {
+                .size = drawData->totalIndexCount * sizeof(ImDrawIdx),
+                .usage = RHI::BufferUsage::IndexBuffer,
+                .hostAccessType = RHI::BufferHostAccessType::SequentialWrite
+            });
+        auto indexData = static_cast<ImDrawIdx *>(indexBuffer->GetRHIObject()->Map(0, indexBuffer->GetSize()));
+        size_t indexOffset = 0;
+        for(const ImGuiDrawData::DrawList &drawList : drawData->drawLists)
+        {
+            std::memcpy(indexData + indexOffset, drawList.indexBuffer.data(), drawList.indexBuffer.size() * sizeof(ImDrawIdx));
+            indexOffset += drawList.indexBuffer.size();
+        }
+        indexBuffer->GetRHIObject()->Unmap(0, indexBuffer->GetSize(), true);
+    }
+
+    // Render
+
+    if(renderPassMark)
+    {
+        commandBuffer.BeginDebugEvent("Render ImGui");
+    }
+    RTRC_SCOPE_EXIT
+    {
+        if(renderPassMark)
+        {
+            commandBuffer.EndDebugEvent();
+        }
+    };
+
+    const RHI::Format format = rtv.GetRHIObject()->GetDesc().format;
+    RC<GraphicsPipeline> pipeline = GetOrCreatePipeline(format);
+
+    commandBuffer.BeginRenderPass(ColorAttachment
+    {
+        .renderTargetView = rtv,
+        .loadOp = AttachmentLoadOp::Load,
+        .storeOp = AttachmentStoreOp::Store
+    });
+    RTRC_SCOPE_EXIT{ commandBuffer.EndRenderPass(); };
+
+    commandBuffer.BindGraphicsPipeline(pipeline);
+    commandBuffer.SetViewports(rtv.GetTexture()->GetViewport());
+
+    // Vertex & Index buffer
+
+    if(vertexBuffer)
+    {
+        commandBuffer.SetVertexBuffers(0, vertexBuffer);
+    }
+
+    if(indexBuffer)
+    {
+        static_assert(sizeof(ImDrawIdx) == sizeof(uint16_t) || sizeof(ImDrawIdx) == sizeof(uint32_t));
+        if constexpr(sizeof(ImDrawIdx) == sizeof(uint32_t))
+        {
+            commandBuffer.SetIndexBuffer(indexBuffer, RHI::IndexFormat::UInt32);
+        }
+        else
+        {
+            commandBuffer.SetIndexBuffer(indexBuffer, RHI::IndexFormat::UInt16);
+        }
+    }
+    
+    // Constant buffer
+
+    {
+        const float L = drawData->displayPos.x;
+        const float R = drawData->displayPos.x + drawData->displaySize.x;
+        const float T = drawData->displayPos.y;
+        const float B = drawData->displayPos.y + drawData->displaySize.y;
+
+        ImGuiDetail::CBuffer cbufferData;
+        cbufferData.Matrix = Matrix4x4f(
+            2.0f / (R - L), 0.0f,           0.0f, (R + L) / (L - R),
+            0.0f,           2.0f / (T - B), 0.0f, (T + B) / (B - T),
+            0.0f,           0.0f,           0.5f, 0.5f,
+            0.0f,           0.0f,           0.0f, 1.0f);
+        auto cbuffer = device_->CreateConstantBuffer(cbufferData);
+        auto cbufferGroup = cbufferBindingGroupLayout_->CreateBindingGroup();
+        cbufferGroup->Set(0, cbuffer);
+        commandBuffer.BindGraphicsGroup(0, cbufferGroup);
+    }
+    
+    uint32_t vertexOffset = 0, indexOffset = 0;
+    for(const ImGuiDrawData::DrawList &drawList : drawData->drawLists)
+    {
+        for(const ImDrawCmd &drawCmd : drawList.commandBuffer)
+        {
+            if(drawCmd.UserCallback)
+            {
+                //drawCmd.UserCallback(&drawList, &drawCmd);
+                LogError("User callback is not supported");
+                continue;
+            }
+
+            // Scissor
+
+            ImVec2 clipMin(drawCmd.ClipRect.x - drawData->displayPos.x, drawCmd.ClipRect.y - drawData->displayPos.y);
+            ImVec2 clipMax(drawCmd.ClipRect.z - drawData->displayPos.x, drawCmd.ClipRect.w - drawData->displayPos.y);
+            if(clipMax.x <= clipMin.x || clipMax.y <= clipMin.y)
+            {
+                continue;
+            }
+            commandBuffer.SetScissors(Scissor{
+                { static_cast<int>(clipMin.x), static_cast<int>(clipMin.y) },
+                { static_cast<int>(clipMax.x - clipMin.x), static_cast<int>(clipMax.y - clipMin.y) }
+            });
+
+            // Texture
+
+            if(drawCmd.GetTexID() == drawData->fontTexture.get())
+            {
+                commandBuffer.BindGraphicsGroup(1, drawData->fontTextureBindingGroup);
+            }
+            else
+            {
+                auto texture = static_cast<Texture *>(drawCmd.GetTexID());
+                auto group = passBindingGroupLayout_->CreateBindingGroup();
+                group->Set(0, texture->CreateSrv());
+                commandBuffer.BindGraphicsGroup(1, group);
+            }
+
+            // Draw
+
+            commandBuffer.DrawIndexed(
+                static_cast<int>(drawCmd.ElemCount), 1,
+                static_cast<int>(indexOffset + drawCmd.IdxOffset),
+                static_cast<int>(vertexOffset + drawCmd.VtxOffset), 0);
+        }
+        vertexOffset += drawList.vertexBuffer.size();
+        indexOffset += drawList.indexBuffer.size();
+    }
+}
+
+RC<GraphicsPipeline> ImGuiRenderer::GetOrCreatePipeline(RHI::Format format)
+{
+    static const MeshLayout *meshLayout = RTRC_MESH_LAYOUT(Buffer(
+        Attribute("POSITION", Float2),
+        Attribute("UV",       Float2),
+        Attribute("COLOR",    UChar4UNorm)));
+    if(auto it = rtFormatToPipeline_.find(format); it != rtFormatToPipeline_.end())
+    {
+        return it->second;
+    }
+    auto pipeline = device_->CreateGraphicsPipeline(GraphicsPipeline::Desc
+    {
+        .shader                 = shader_,
+        .meshLayout             = meshLayout,
+        .primitiveTopology      = RHI::PrimitiveTopology::TriangleList,
+        .fillMode               = RHI::FillMode::Fill,
+        .cullMode               = RHI::CullMode::DontCull,
+        .enableBlending         = true,
+        .blendingSrcColorFactor = RHI::BlendFactor::SrcAlpha,
+        .blendingDstColorFactor = RHI::BlendFactor::OneMinusSrcAlpha,
+        .blendingColorOp        = RHI::BlendOp::Add,
+        .blendingSrcAlphaFactor = RHI::BlendFactor::One,
+        .blendingDstAlphaFactor = RHI::BlendFactor::OneMinusSrcAlpha,
+        .blendingAlphaOp        = RHI::BlendOp::Add,
+        .colorAttachmentFormats = { format }
+    });
+    rtFormatToPipeline_.insert({ format, pipeline });
+    return pipeline;
+}
+
+ImGuiInstance::ImGuiInstance(ObserverPtr<Device> device, ObserverPtr<Window> window)
 {
     data_ = MakeBox<Data>();
-    data_->device = &device;
-    data_->window = &window;
+    data_->device = device;
+    data_->window = window;
     data_->context = ImGui::CreateContext();
     Do([&]
     {
@@ -224,24 +474,19 @@ ImGuiInstance::ImGuiInstance(Device &device, Window &window)
     });
 
     data_->enableInput = true;
-    data_->eventReceiver = MakeBox<EventReceiver>(data_.get(), &window);
+    data_->eventReceiver = MakeBox<EventReceiver>(data_.get(), window);
     Do([&]
     {
         ImGui::GetIO().AddFocusEvent(data_->window->HasFocus());
     });
     
-    ShaderCompiler shaderCompiler;
-    shaderCompiler.SetDevice(&device);
-
-    const ShaderCompiler::ShaderSource source =
+    BindingGroupLayout::Desc bindingGroupLayoutDesc;
+    bindingGroupLayoutDesc.bindings.push_back(BindingGroupLayout::BindingDesc
     {
-        .source = ImGuiDetail::SHADER_SOURCE,
-        //.vertexEntry = "VSMain",
-        //.fragmentEntry = "FSMain"
-    };
-    data_->shader = shaderCompiler.Compile(source, {}, RTRC_DEBUG);
-    data_->cbufferBindingGroupLayout = data_->shader->GetBindingGroupLayoutByName("CBuffer");
-    data_->passBindingGroupLayout = data_->shader->GetBindingGroupLayoutByName("Pass");
+        .type = RHI::BindingType::Texture,
+        .stages = RHI::ShaderStage::FS,
+    });
+    data_->passBindingGroupLayout = device->CreateBindingGroupLayout(bindingGroupLayoutDesc);
 
     RecreateFontTexture();
 }
@@ -362,6 +607,7 @@ void ImGuiInstance::BeginFrame(const Vector2i &framebufferSize)
     ImGui::GetIO().DeltaTime = data_->timer.GetDeltaSecondsF();
     const Vector2i windowSize = data_->window->GetWindowSize();
     const Vector2i tFramebufferSize = framebufferSize.x > 0 && framebufferSize.y > 0 ? framebufferSize : data_->window->GetFramebufferSize();
+    data_->framebufferSize = tFramebufferSize;
     ImGui::GetIO().DisplaySize = ImVec2(static_cast<float>(windowSize.x), static_cast<float>(windowSize.y));
     ImGui::GetIO().DisplayFramebufferScale = ImVec2(
         static_cast<float>(tFramebufferSize.x) / static_cast<float>(windowSize.x),
@@ -369,222 +615,16 @@ void ImGuiInstance::BeginFrame(const Vector2i &framebufferSize)
     ImGui::NewFrame();
 }
 
-RG::Pass *ImGuiInstance::AddToRenderGraph(RG::TextureResource *renderTarget, RG::RenderGraph *renderGraph)
-{
-    auto pass = renderGraph->CreatePass("Render ImGui");
-    pass->Use(renderTarget, RG::COLOR_ATTACHMENT);
-    pass->SetCallback([this, renderTarget](RG::PassContext &ctx)
-    {
-        RenderImmediately(renderTarget->Get()->CreateRtv(), ctx.GetCommandBuffer(), false);
-    });
-    return pass;
-}
-
-void ImGuiInstance::RenderImmediately(const TextureRtv &rtv, CommandBuffer &commandBuffer, bool renderPassMark)
+Box<ImGuiDrawData> ImGuiInstance::Render()
 {
     IMGUI_CONTEXT;
-
-    // ImGui Render
-    
     ImGui::Render();
-    const ImDrawData *drawData = ImGui::GetDrawData();
-    if(!drawData)
-    {
-        return;
-    }
-
-    if(drawData->CmdListsCount == 0)
-    {
-        return;
-    }
-
-    // Upload vertex/index data
-
-    RC<Buffer> vertexBuffer, indexBuffer;
-    if(drawData->TotalVtxCount > 0)
-    {
-        vertexBuffer = data_->device->CreateBuffer(RHI::BufferDesc
-            {
-                .size = drawData->TotalVtxCount * sizeof(ImDrawVert),
-                .usage = RHI::BufferUsage::VertexBuffer,
-                .hostAccessType = RHI::BufferHostAccessType::SequentialWrite
-            });
-        auto vertexData = static_cast<ImDrawVert *>(vertexBuffer->GetRHIObject()->Map(0, vertexBuffer->GetSize()));
-        size_t vertexOffset = 0;
-        for(int cmdListIdx = 0; cmdListIdx < drawData->CmdListsCount; ++cmdListIdx)
-        {
-            const ImDrawList *drawList = drawData->CmdLists[cmdListIdx];
-            std::memcpy(vertexData + vertexOffset, drawList->VtxBuffer.Data, drawList->VtxBuffer.size_in_bytes());
-            vertexOffset += drawList->VtxBuffer.size();
-        }
-        vertexBuffer->GetRHIObject()->Unmap(0, vertexBuffer->GetSize(), true);
-    }
-    if(drawData->TotalIdxCount > 0)
-    {
-        indexBuffer = data_->device->CreateBuffer(RHI::BufferDesc
-            {
-                .size = drawData->TotalIdxCount * sizeof(ImDrawIdx),
-                .usage = RHI::BufferUsage::IndexBuffer,
-                .hostAccessType = RHI::BufferHostAccessType::SequentialWrite
-            });
-        auto indexData = static_cast<ImDrawIdx *>(indexBuffer->GetRHIObject()->Map(0, indexBuffer->GetSize()));
-        size_t indexOffset = 0;
-        for(int cmdListIdx = 0; cmdListIdx < drawData->CmdListsCount; ++cmdListIdx)
-        {
-            const ImDrawList *drawList = drawData->CmdLists[cmdListIdx];
-            std::memcpy(indexData + indexOffset, drawList->IdxBuffer.Data, drawList->IdxBuffer.size_in_bytes());
-            indexOffset += drawList->IdxBuffer.size();
-        }
-        indexBuffer->GetRHIObject()->Unmap(0, indexBuffer->GetSize(), true);
-    }
-
-    // Render
-
-    if(renderPassMark)
-    {
-        commandBuffer.BeginDebugEvent("Render ImGui");
-    }
-    RTRC_SCOPE_EXIT
-    {
-        if(renderPassMark)
-        {
-            commandBuffer.EndDebugEvent();
-        }
-    };
-
-    const RHI::Format format = rtv.GetRHIObject()->GetDesc().format;
-    RC<GraphicsPipeline> pipeline = GetOrCreatePipeline(format);
-
-    commandBuffer.BeginRenderPass(ColorAttachment
-    {
-        .renderTargetView = rtv,
-        .loadOp = AttachmentLoadOp::Load,
-        .storeOp = AttachmentStoreOp::Store
-    });
-    RTRC_SCOPE_EXIT{ commandBuffer.EndRenderPass(); };
-
-    commandBuffer.BindGraphicsPipeline(pipeline);
-    commandBuffer.SetViewports(rtv.GetTexture()->GetViewport());
-
-    // Vertex & Index buffer
-
-    if(vertexBuffer)
-    {
-        commandBuffer.SetVertexBuffers(0, vertexBuffer);
-    }
-
-    if(indexBuffer)
-    {
-        static_assert(sizeof(ImDrawIdx) == sizeof(uint16_t) || sizeof(ImDrawIdx) == sizeof(uint32_t));
-        if constexpr(sizeof(ImDrawIdx) == sizeof(uint32_t))
-        {
-            commandBuffer.SetIndexBuffer(indexBuffer, RHI::IndexFormat::UInt32);
-        }
-        else
-        {
-            commandBuffer.SetIndexBuffer(indexBuffer, RHI::IndexFormat::UInt16);
-        }
-    }
-    
-    // Constant buffer
-
-    {
-        const float L = drawData->DisplayPos.x;
-        const float R = drawData->DisplayPos.x + drawData->DisplaySize.x;
-        const float T = drawData->DisplayPos.y;
-        const float B = drawData->DisplayPos.y + drawData->DisplaySize.y;
-
-        ImGuiDetail::CBuffer cbufferData;
-        cbufferData.Matrix = Matrix4x4f(
-            2.0f / (R - L), 0.0f,           0.0f, (R + L) / (L - R),
-            0.0f,           2.0f / (T - B), 0.0f, (T + B) / (B - T),
-            0.0f,           0.0f,           0.5f, 0.5f,
-            0.0f,           0.0f,           0.0f, 1.0f);
-        auto cbuffer = data_->device->CreateConstantBuffer(cbufferData);
-        auto cbufferGroup = data_->cbufferBindingGroupLayout->CreateBindingGroup();
-        cbufferGroup->Set(0, cbuffer);
-        commandBuffer.BindGraphicsGroup(0, cbufferGroup);
-    }
-    
-    uint32_t vertexOffset = 0, indexOffset = 0;
-    for(int i = 0; i < drawData->CmdListsCount; ++i)
-    {
-        const ImDrawList *drawList = drawData->CmdLists[i];
-        for(const ImDrawCmd &drawCmd : drawList->CmdBuffer)
-        {
-            if(drawCmd.UserCallback)
-            {
-                drawCmd.UserCallback(drawList, &drawCmd);
-                continue;
-            }
-
-            // Scissor
-
-            ImVec2 clipMin(drawCmd.ClipRect.x - drawData->DisplayPos.x, drawCmd.ClipRect.y - drawData->DisplayPos.y);
-            ImVec2 clipMax(drawCmd.ClipRect.z - drawData->DisplayPos.x, drawCmd.ClipRect.w - drawData->DisplayPos.y);
-            if(clipMax.x <= clipMin.x || clipMax.y <= clipMin.y)
-            {
-                continue;
-            }
-            commandBuffer.SetScissors(Scissor{
-                { static_cast<int>(clipMin.x), static_cast<int>(clipMin.y) },
-                { static_cast<int>(clipMax.x - clipMin.x), static_cast<int>(clipMax.y - clipMin.y) }
-            });
-
-            // Texture
-
-            if(drawCmd.GetTexID() == data_->fontTexture.get())
-            {
-                commandBuffer.BindGraphicsGroup(1, data_->fontTextureBindingGroup);
-            }
-            else
-            {
-                auto texture = static_cast<Texture *>(drawCmd.GetTexID());
-                auto group = data_->passBindingGroupLayout->CreateBindingGroup();
-                group->Set(0, texture->CreateSrv());
-                commandBuffer.BindGraphicsGroup(1, group);
-            }
-
-            // Draw
-
-            commandBuffer.DrawIndexed(
-                static_cast<int>(drawCmd.ElemCount), 1,
-                static_cast<int>(indexOffset + drawCmd.IdxOffset),
-                static_cast<int>(vertexOffset + drawCmd.VtxOffset), 0);
-        }
-        vertexOffset += drawList->VtxBuffer.size();
-        indexOffset += drawList->IdxBuffer.size();
-    }
-}
-
-RC<GraphicsPipeline> ImGuiInstance::GetOrCreatePipeline(RHI::Format format)
-{
-    static const MeshLayout *meshLayout = RTRC_MESH_LAYOUT(Buffer(
-        Attribute("POSITION", Float2),
-        Attribute("UV",       Float2),
-        Attribute("COLOR",    UChar4UNorm)));
-    if(auto it = data_->rtFormatToPipeline.find(format); it != data_->rtFormatToPipeline.end())
-    {
-        return it->second;
-    }
-    auto pipeline = data_->device->CreateGraphicsPipeline(GraphicsPipeline::Desc
-    {
-        .shader                 = data_->shader,
-        .meshLayout             = meshLayout,
-        .primitiveTopology      = RHI::PrimitiveTopology::TriangleList,
-        .fillMode               = RHI::FillMode::Fill,
-        .cullMode               = RHI::CullMode::DontCull,
-        .enableBlending         = true,
-        .blendingSrcColorFactor = RHI::BlendFactor::SrcAlpha,
-        .blendingDstColorFactor = RHI::BlendFactor::OneMinusSrcAlpha,
-        .blendingColorOp        = RHI::BlendOp::Add,
-        .blendingSrcAlphaFactor = RHI::BlendFactor::One,
-        .blendingDstAlphaFactor = RHI::BlendFactor::OneMinusSrcAlpha,
-        .blendingAlphaOp        = RHI::BlendOp::Add,
-        .colorAttachmentFormats = { format }
-    });
-    data_->rtFormatToPipeline.insert({ format, pipeline });
-    return pipeline;
+    auto ret = MakeBox<ImGuiDrawData>();
+    ret->BuildFromImDrawData(ImGui::GetDrawData());
+    ret->framebufferSize = data_->framebufferSize;
+    ret->fontTexture = data_->fontTexture;
+    ret->fontTextureBindingGroup = data_->fontTextureBindingGroup;
+    return ret;
 }
 
 void ImGuiInstance::RecreateFontTexture()

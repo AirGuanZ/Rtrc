@@ -1,7 +1,7 @@
 #pragma once
 
-#include <Rtrc/Renderer/Scene/Camera/Camera.h>
-#include <Rtrc/Renderer/Scene/Scene.h>
+#include <Rtrc/Scene/Camera/Camera.h>
+#include <Rtrc/Scene/Scene.h>
 #include <Rtrc/Renderer/Utility/TransientConstantBufferAllocator.h>
 
 RTRC_BEGIN
