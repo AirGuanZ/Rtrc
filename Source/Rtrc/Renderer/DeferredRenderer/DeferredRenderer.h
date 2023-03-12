@@ -21,9 +21,8 @@ namespace RendererDetail
 class DeferredRenderer : public Uncopyable
 {
 public:
-
-    using StencilMaskBit = RendererDetail::StencilMaskBit;
-    using StencilMask    = EnumFlags<StencilMaskBit>;
+    
+    using StencilMask = RendererDetail::EnumFlagsStencilMaskBit;
 
     struct RenderGraphInterface
     {

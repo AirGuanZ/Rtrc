@@ -55,6 +55,8 @@ private:
     std::jthread                   renderThread_;
     tbb::concurrent_queue<Command> renderCommandQueue_;
 
+    RC<Tlas> basicTlas_;
+
     Timer frameTimer_;
 };
 

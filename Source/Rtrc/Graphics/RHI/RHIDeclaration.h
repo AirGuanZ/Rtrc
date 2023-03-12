@@ -191,10 +191,8 @@ enum class ShaderStage : uint32_t
     AllRT       = AllRTCommon | AllRTHit | CallableShader,
     All         = AllGraphics | AllRT | CS
 };
-
 RTRC_DEFINE_ENUM_FLAGS(ShaderStage)
-
-using ShaderStageFlag = EnumFlags<ShaderStage>;
+using ShaderStageFlags = EnumFlagsShaderStage;
 
 enum class PrimitiveTopology
 {
@@ -311,10 +309,8 @@ enum class TextureUsage : uint32_t
     RenderTarget   = 1 << 4,
     DepthStencil   = 1 << 5
 };
-
 RTRC_DEFINE_ENUM_FLAGS(TextureUsage)
-
-using TextureUsageFlag = EnumFlags<TextureUsage>;
+using TextureUsageFlags = EnumFlagsTextureUsage;
 
 enum class BufferUsage : uint32_t
 {
@@ -335,10 +331,8 @@ enum class BufferUsage : uint32_t
 
     AccelerationStructureScratch = ShaderRWStructuredBuffer | DeviceAddress,
 };
-
 RTRC_DEFINE_ENUM_FLAGS(BufferUsage)
-
-using BufferUsageFlag = EnumFlags<BufferUsage>;
+using BufferUsageFlag = EnumFlagsBufferUsage;
 
 enum class BufferHostAccessType
 {
@@ -396,10 +390,8 @@ enum class PipelineStage : uint32_t
     CopyAS           = 1 << 11,
     All              = 1 << 12
 };
-
 RTRC_DEFINE_ENUM_FLAGS(PipelineStage)
-
-using PipelineStageFlag = EnumFlags<PipelineStage>;
+using PipelineStageFlag = EnumFlagsPipelineStage;
 
 enum class ResourceAccess : uint32_t
 {
@@ -430,10 +422,8 @@ enum class ResourceAccess : uint32_t
     ReadForBuildAS          = 1 << 23,
     All                     = 1 << 24
 };
-
 RTRC_DEFINE_ENUM_FLAGS(ResourceAccess)
-
-using ResourceAccessFlag = EnumFlags<ResourceAccess>;
+using ResourceAccessFlag = EnumFlagsResourceAccess;
 
 bool IsReadOnly(ResourceAccessFlag access);
 bool IsWriteOnly(ResourceAccessFlag access);
@@ -462,8 +452,8 @@ enum class TextureSrvFlagBit
     SpecialLayout_DepthSrv_StencilAttachment         = 1 << 0,
     SpecialLayout_DepthSrv_StencilAttachmentReadOnly = 1 << 1,
 };
-
-using TextureSrvFlag = EnumFlags<TextureSrvFlagBit>;
+RTRC_DEFINE_ENUM_FLAGS(TextureSrvFlagBit)
+using TextureSrvFlag = EnumFlagsTextureSrvFlagBit;
 
 enum class RayTracingGeometryType
 {
@@ -491,10 +481,8 @@ enum class RayTracingAccelerationStructureBuildFlagBit : uint32_t
     PreferFastTrace = 1 << 3,
     PreferLowMemory = 1 << 4,
 };
-
 RTRC_DEFINE_ENUM_FLAGS(RayTracingAccelerationStructureBuildFlagBit)
-
-using RayTracingAccelerationStructureBuildFlag = EnumFlags<RayTracingAccelerationStructureBuildFlagBit>;
+using RayTracingAccelerationStructureBuildFlag = EnumFlagsRayTracingAccelerationStructureBuildFlagBit;
 
 struct BufferDeviceAddress { uint64_t address; };
 
@@ -536,7 +524,7 @@ struct RawShaderEntry
 struct BindingDesc
 {
     BindingType              type;
-    ShaderStageFlag          shaderStages = ShaderStage::All;
+    ShaderStageFlags          shaderStages = ShaderStage::All;
     std::optional<uint32_t>  arraySize;
     std::vector<SamplerPtr>  immutableSamplers;
     bool                     bindless = false;
@@ -560,7 +548,7 @@ struct PushConstantRange
 {
     uint32_t offset;
     uint32_t size;
-    ShaderStageFlag stages;
+    ShaderStageFlags stages;
 
     auto operator<=>(const PushConstantRange &) const = default;
     bool operator==(const PushConstantRange &) const = default;
@@ -631,7 +619,7 @@ struct TextureDesc
     };
     uint32_t                  mipLevels;
     uint32_t                  sampleCount;
-    TextureUsageFlag          usage;
+    TextureUsageFlags         usage;
     TextureLayout             initialLayout;
     QueueConcurrentAccessMode concurrentAccessMode;
 
@@ -1429,7 +1417,7 @@ public:
 
     RTRC_RHI_API void SetPushConstants(
         const BindingLayoutPtr &bindingLayout,
-        ShaderStageFlag         stages,
+        ShaderStageFlags         stages,
         uint32_t                offset,
         uint32_t                size,
         const void             *values) RTRC_RHI_API_PURE;

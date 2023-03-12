@@ -360,7 +360,7 @@ void CommandBuffer::SetStencilReferenceValue(uint8_t value)
 }
 
 void CommandBuffer::SetGraphicsPushConstantRange(
-    RHI::ShaderStageFlag stages, uint32_t offset, uint32_t size, const void *data)
+    RHI::ShaderStageFlags stages, uint32_t offset, uint32_t size, const void *data)
 {
     CheckThreadID();
     assert(currentGraphicsPipeline_);
@@ -369,7 +369,7 @@ void CommandBuffer::SetGraphicsPushConstantRange(
 }
 
 void CommandBuffer::SetComputePushConstantRange(
-    RHI::ShaderStageFlag stages, uint32_t offset, uint32_t size, const void *data)
+    RHI::ShaderStageFlags stages, uint32_t offset, uint32_t size, const void *data)
 {
     CheckThreadID();
     assert(currentComputePipeline_);
@@ -378,7 +378,7 @@ void CommandBuffer::SetComputePushConstantRange(
 }
 
 void CommandBuffer::SetRayTracingPushConstantRange(
-    RHI::ShaderStageFlag stages, uint32_t offset, uint32_t size, const void *data)
+    RHI::ShaderStageFlags stages, uint32_t offset, uint32_t size, const void *data)
 {
     CheckThreadID();
     assert(currentRayTracingPipeline_);

@@ -67,7 +67,7 @@ public:
     struct BindingDesc
     {
         RHI::BindingType         type;
-        RHI::ShaderStageFlag     stages;
+        RHI::ShaderStageFlags     stages;
         std::optional<uint32_t>  arraySize;
         std::vector<RC<Sampler>> immutableSamplers;
         bool                     bindless = false;

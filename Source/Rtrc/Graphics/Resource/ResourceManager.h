@@ -10,6 +10,8 @@ RTRC_BEGIN
 class ResourceManager : public Uncopyable
 {
 public:
+    
+    using MeshFlags = MeshManager::Flags;
 
     explicit ResourceManager(ObserverPtr<Device> device, bool debugMode = RTRC_DEBUG);
     
@@ -21,7 +23,7 @@ public:
     RC<Material>       GetMaterial      (const std::string &name);
     RC<ShaderTemplate> GetShaderTemplate(const std::string &name);
     RC<Shader>         GetShader        (const std::string &name); // Valid when no keyword is defined in corresponding shader template
-    RC<Mesh>           GetMesh          (std::string_view name, const MeshManager::Options &options = {});
+    RC<Mesh>           GetMesh          (std::string_view name, MeshFlags flags = MeshFlags::None);
 
     RC<MaterialInstance> CreateMaterialInstance(const std::string &name);
     

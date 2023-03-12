@@ -17,10 +17,8 @@ enum class StaticMeshRendererRayTracingFlagBit : uint32_t
     None         = 0,
     InOpaqueTlas = 1 << 0
 };
-
 RTRC_DEFINE_ENUM_FLAGS(StaticMeshRendererRayTracingFlagBit)
-
-using StaticMeshRendererRayTracingFlags = EnumFlags<StaticMeshRendererRayTracingFlagBit>;
+using StaticMeshRendererRayTracingFlags = EnumFlagsStaticMeshRendererRayTracingFlagBit;
 
 // ========================= Per-object constant buffer struct =========================
 

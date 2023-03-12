@@ -7,26 +7,34 @@ RTRC_BEGIN
 
 class Device;
 
+namespace MeshManagerDetail
+{
+
+    enum class LoadMeshFlagBit : uint32_t
+    {
+        None                        = 0,
+        GenerateTangentIfNotPresent = 1 << 0,
+        RemoveIndexBuffer           = 1 << 1,
+        GenerateBlas                = 1 << 2,
+    };
+    RTRC_DEFINE_ENUM_FLAGS(LoadMeshFlagBit)
+    using LoadMeshFlags = EnumFlagsLoadMeshFlagBit;
+
+} // namespace MeshManagerDetail
+
 class MeshManager : public Uncopyable
 {
 public:
+    
+    using Flags = MeshManagerDetail::LoadMeshFlags;
 
-    struct Options
-    {
-        bool generateTangentIfNotPresent = false;
-        bool noIndexBuffer               = false;
-
-        auto operator<=>(const Options &) const = default;
-        size_t Hash() const;
-    };
-
-    static Mesh Load(Device *device, const std::string &filename, const Options &options);
+    static Mesh Load(Device *device, const std::string &filename, Flags flags = Flags::None);
 
     MeshManager();
 
     void SetDevice(Device *device);
     
-    RC<Mesh> GetMesh(std::string_view name, const Options &options = {});
+    RC<Mesh> GetMesh(std::string_view name, Flags flags = Flags::None);
 
 private:
 
@@ -37,7 +45,7 @@ private:
 
     Device *device_;
     
-    ObjectCache<std::pair<std::string, Options>, Mesh, true, true> meshCache_;
+    ObjectCache<std::pair<std::string, Flags>, Mesh, true, true> meshCache_;
 };
 
 RTRC_END

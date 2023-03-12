@@ -5,7 +5,7 @@ RTRC_BEGIN
 FixedSizedTransientConstantBufferBindingGroupPool::FixedSizedTransientConstantBufferBindingGroupPool(
     size_t               elementSize,
     std::string          bindingName,
-    RHI::ShaderStageFlag bindingShaderStages,
+    RHI::ShaderStageFlags bindingShaderStages,
     Device              &device)
     : device_(device)
 {

@@ -258,7 +258,7 @@ RC<Texture> Device::CreateAndUploadTexture2D(
 RC<Texture> Device::LoadTexture2D(
     const std::string    &filename,
     RHI::Format           format,
-    RHI::TextureUsageFlag usages,
+    RHI::TextureUsageFlags usages,
     bool                  generateMipLevels,
     RHI::TextureLayout    postLayout)
 {

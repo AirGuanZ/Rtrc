@@ -6,25 +6,22 @@
 
 RTRC_BEGIN
 
-size_t MeshManager::Options::Hash() const
-{
-    return (generateTangentIfNotPresent ? 1 : 0) | (noIndexBuffer ? 2 : 0);
-}
-
-Mesh MeshManager::Load(Device *device, const std::string &filename, const Options &options)
+Mesh MeshManager::Load(Device *device, const std::string &filename, Flags flags)
 {
     MeshData meshData = MeshData::LoadFromObjFile(filename);
 
     // Remove index data when tangent vectors are required. Theoretically we only need to do this when
     // tangents of different faces don't match at the same vertex.
     // TODO: Optimize this
-    if((options.noIndexBuffer || options.generateTangentIfNotPresent) && !meshData.indexData.empty())
+    const bool noIndexBuffer = flags.contains(Flags::RemoveIndexBuffer) ||
+                               flags.contains(Flags::GenerateTangentIfNotPresent);
+    if(noIndexBuffer && !meshData.indexData.empty())
     {
         meshData = meshData.RemoveIndexData();
     }
 
     std::vector<Vector3f> tangentData;
-    if(options.generateTangentIfNotPresent)
+    if(flags.contains(Flags::GenerateTangentIfNotPresent))
     {
         assert(meshData.positionData.size() % 3 == 0);
         tangentData.resize(meshData.positionData.size());
@@ -50,7 +47,7 @@ Mesh MeshManager::Load(Device *device, const std::string &filename, const Option
     auto FillVertexData = [&]<typename Vertex>(Vertex &vertex, size_t i)
     {
         vertex.position = meshData.positionData[i];
-        vertex.normal = meshData.normalData[i];
+        vertex.normal   = meshData.normalData[i];
         vertex.texCoord = meshData.texCoordData[i];
         if constexpr(requires{ typename Vertex::tangent; })
         {
@@ -65,7 +62,7 @@ Mesh MeshManager::Load(Device *device, const std::string &filename, const Option
     {
         meshBuilder.SetLayout(RTRC_MESH_LAYOUT(Buffer(
             Attribute("POSITION", Float3),
-            Attribute("NORMAL", Float3),
+            Attribute("NORMAL",   Float3),
             Attribute("TEXCOORD", Float2))));
 
         struct Vertex
@@ -95,9 +92,9 @@ Mesh MeshManager::Load(Device *device, const std::string &filename, const Option
     {
         meshBuilder.SetLayout(RTRC_MESH_LAYOUT(Buffer(
             Attribute("POSITION", Float3),
-            Attribute("NORMAL", Float3),
+            Attribute("NORMAL",   Float3),
             Attribute("TEXCOORD", Float2),
-            Attribute("TANGENT", Float3))));
+            Attribute("TANGENT",  Float3))));
 
         struct Vertex
         {
@@ -182,12 +179,12 @@ void MeshManager::SetDevice(Device *device)
     device_ = device;
 }
 
-RC<Mesh> MeshManager::GetMesh(std::string_view name, const Options &options)
+RC<Mesh> MeshManager::GetMesh(std::string_view name, Flags flags)
 {
     const std::string filename = absolute(std::filesystem::path(name)).lexically_normal().string();
-    return meshCache_.GetOrCreate(std::make_pair(filename, options), [&]
+    return meshCache_.GetOrCreate(std::make_pair(filename, flags), [&]
     {
-        return Load(device_, filename, options);
+        return Load(device_, filename, flags);
     });
 }
 

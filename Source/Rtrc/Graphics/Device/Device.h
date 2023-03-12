@@ -22,10 +22,8 @@ namespace DeviceDetail
         EnableSwapchainUav           = 1 << 1,
         DisableAutoSwapchainRecreate = 1 << 2,
     };
-
     RTRC_DEFINE_ENUM_FLAGS(FlagBit)
-
-    using Flags = EnumFlags<FlagBit>;
+    using Flags = EnumFlagsFlagBit;
 
 } // namespace DeviceDetail
 
@@ -132,7 +130,7 @@ public:
     RC<Texture> LoadTexture2D(
         const std::string    &filename,
         RHI::Format           format,
-        RHI::TextureUsageFlag usages,
+        RHI::TextureUsageFlags usages,
         bool                  generateMipLevels,
         RHI::TextureLayout    postLayout = RHI::TextureLayout::CopyDst);
 

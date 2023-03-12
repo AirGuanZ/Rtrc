@@ -62,7 +62,8 @@ void BuiltinResourceManager::LoadBuiltinTextures()
 void BuiltinResourceManager::LoadBuiltinMeshes()
 {
 #define LOAD_BUILTIN_MESH(NAME) \
-    meshes_[std::to_underlying(BuiltinMesh::NAME)] = ToRC(MeshManager::Load(device_, "Asset/Builtin/Mesh/" #NAME ".obj", {}))
+    meshes_[std::to_underlying(BuiltinMesh::NAME)] = \
+        ToRC(MeshManager::Load(device_, "Asset/Builtin/Mesh/" #NAME ".obj", {}))
     LOAD_BUILTIN_MESH(Cube);
 #undef LOAD_BUILTIN_MESH
 }

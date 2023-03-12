@@ -41,9 +41,9 @@ RC<Shader> ResourceManager::GetShader(const std::string &name)
     return materialManager_.GetShader(name);
 }
 
-RC<Mesh> ResourceManager::GetMesh(std::string_view name, const MeshManager::Options &options)
+RC<Mesh> ResourceManager::GetMesh(std::string_view name, MeshFlags flags)
 {
-    return meshManager_.GetMesh(name, options);
+    return meshManager_.GetMesh(name, flags);
 }
 
 RC<MaterialInstance> ResourceManager::CreateMaterialInstance(const std::string &name)

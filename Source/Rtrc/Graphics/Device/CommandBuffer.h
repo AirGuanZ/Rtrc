@@ -159,9 +159,9 @@ public:
 
     void SetStencilReferenceValue(uint8_t value);
 
-    void SetGraphicsPushConstantRange(RHI::ShaderStageFlag stages, uint32_t offset, uint32_t size, const void *data);
-    void SetComputePushConstantRange(RHI::ShaderStageFlag stages, uint32_t offset, uint32_t size, const void *data);
-    void SetRayTracingPushConstantRange(RHI::ShaderStageFlag stages, uint32_t offset, uint32_t size, const void *data);
+    void SetGraphicsPushConstantRange(RHI::ShaderStageFlags stages, uint32_t offset, uint32_t size, const void *data);
+    void SetComputePushConstantRange(RHI::ShaderStageFlags stages, uint32_t offset, uint32_t size, const void *data);
+    void SetRayTracingPushConstantRange(RHI::ShaderStageFlags stages, uint32_t offset, uint32_t size, const void *data);
 
     void SetGraphicsPushConstantRange(uint32_t rangeIndex, const void *data);
     void SetComputePushConstantRange(uint32_t rangeIndex, const void *data);

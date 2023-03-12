@@ -65,7 +65,7 @@ private:
         RHI::BindingType        type = {};
         std::string             rawTypename;
         std::optional<uint32_t> arraySize;
-        RHI::ShaderStageFlag    stages = {};
+        RHI::ShaderStageFlags    stages = {};
         std::string             templateParam;
         bool                    bindless = false;
         bool                    variableArraySize = false;
@@ -86,7 +86,7 @@ private:
         std::vector<ParsedUniformDefinition> uniformPropertyDefinitions;
         std::vector<ParsedBinding>           bindings;
         std::vector<bool>                    isRef;
-        RHI::ShaderStageFlag                 defaultStages;
+        RHI::ShaderStageFlags                 defaultStages;
     };
 
     struct Bindings
@@ -125,7 +125,7 @@ private:
     ParsedShaderEntry ParseShaderEntry(std::string &source) const;
 
     template<bool AllowStageSpecifier, BindingCategory Category>
-    ParsedBinding ParseBinding(ShaderTokenStream &tokens, RHI::ShaderStageFlag groupDefaultStages) const;
+    ParsedBinding ParseBinding(ShaderTokenStream &tokens, RHI::ShaderStageFlags groupDefaultStages) const;
 
     ParsedBindingAlias ParseBindingAlias(ShaderTokenStream &tokens) const;
 

@@ -22,7 +22,7 @@ namespace BindingGroupDSL
         VariableArraySize = 1 << 1,
     };
     RTRC_DEFINE_ENUM_FLAGS(BindingFlagBit)
-    using BindingFlags = EnumFlags<BindingFlagBit>;
+    using BindingFlags = EnumFlagsBindingFlagBit;
 
     struct MemberProxy_Texture2D
     {
@@ -209,7 +209,7 @@ namespace BindingGroupDSL
         size_t dwordCount = 0;
         T::ForEachFlattenMember(
             [&dwordCount]<bool IsUniform, typename M, typename A>
-            (const char *name, RHI::ShaderStageFlag stages, const A &accessor, BindingFlags flags)
+            (const char *name, RHI::ShaderStageFlags stages, const A &accessor, BindingFlags flags)
         {
             if constexpr(IsUniform)
             {
@@ -239,7 +239,7 @@ namespace BindingGroupDSL
         size_t deviceDWordOffset = 0;
         T::ForEachFlattenMember(
             [&deviceDWordOffset, &f]<bool IsUniform, typename M, typename A>
-            (const char *name, RHI::ShaderStageFlag stages, const A &accessor, BindingFlags flags)
+            (const char *name, RHI::ShaderStageFlags stages, const A &accessor, BindingFlags flags)
         {
             if constexpr(IsUniform)
             {
@@ -275,7 +275,7 @@ namespace BindingGroupDSL
             BindingGroupLayout::Desc desc;
             T::ForEachFlattenMember(
                 [&desc]<bool IsUniform, typename M, typename A>
-                (const char *name, RHI::ShaderStageFlag stages, const A &accessor, BindingFlags flags)
+                (const char *name, RHI::ShaderStageFlags stages, const A &accessor, BindingFlags flags)
             {
                 if constexpr(!IsUniform)
                 {
@@ -342,11 +342,11 @@ namespace BindingGroupDSL
         template<typename F, typename A = std::identity>                                                    \
         static constexpr void ForEachFlattenMember(                                                         \
             const F &f,                                                                                     \
-            ::Rtrc::RHI::ShaderStageFlag stageMask = ::Rtrc::RHI::ShaderStage::All,                         \
+            ::Rtrc::RHI::ShaderStageFlags stageMask = ::Rtrc::RHI::ShaderStage::All,                         \
             const std::identity &accessor = {})                                                             \
         {                                                                                                   \
             ::Rtrc::StructDetail::ForEachMember<_rtrcSelf>([&]<bool IsUniform, typename M>                  \
-            (M _rtrcSelf::* ptr, const char *name, ::Rtrc::RHI::ShaderStageFlag stages,                     \
+            (M _rtrcSelf::* ptr, const char *name, ::Rtrc::RHI::ShaderStageFlags stages,                     \
              ::Rtrc::BindingGroupDSL::BindingFlags flags)                                                   \
             {                                                                                               \
                 auto newAccessor = [&]<typename P>(P p) constexpr -> decltype(auto)                         \
@@ -454,7 +454,7 @@ void ApplyBindingGroup(RHI::Device *device, ConstantBufferManagerInterface *cbMg
     bool swapUniformAndVariableSizedArray = false;
     T::ForEachFlattenMember(
         [&]<bool IsUniform, typename M, typename A>
-        (const char *name, RHI::ShaderStageFlag stages, const A &accessor, BindingGroupDSL::BindingFlags flags)
+        (const char *name, RHI::ShaderStageFlags stages, const A &accessor, BindingGroupDSL::BindingFlags flags)
     {
         //assert(!flags.contains(BindingGroupDSL::BindingFlagBit::Bindless));
         //assert(!flags.contains(BindingGroupDSL::BindingFlagBit::VariableArraySize));

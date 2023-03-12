@@ -51,7 +51,7 @@ public:
 
     void SetPushConstants(
         const BindingLayoutPtr &bindingLayout,
-        ShaderStageFlag         stages,
+        ShaderStageFlags         stages,
         uint32_t                offset,
         uint32_t                size,
         const void             *values) RTRC_RHI_OVERRIDE;

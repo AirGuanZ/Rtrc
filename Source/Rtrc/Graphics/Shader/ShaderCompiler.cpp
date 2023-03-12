@@ -85,9 +85,9 @@ namespace ShaderCompilerDetail
         { "RaytracingAccelerationStructure", RHI::BindingType::AccelerationStructure }
     };
 
-    RHI::ShaderStageFlag ParseStages(ShaderTokenStream &tokens)
+    RHI::ShaderStageFlags ParseStages(ShaderTokenStream &tokens)
     {
-        RHI::ShaderStageFlag stages;
+        RHI::ShaderStageFlags stages;
         while(true)
         {
             if(tokens.GetCurrentToken() == "VS")
@@ -152,9 +152,9 @@ namespace ShaderCompilerDetail
         return stages;
     }
 
-    RHI::ShaderStageFlag ShaderCategoryToStages(Shader::Category category)
+    RHI::ShaderStageFlags ShaderCategoryToStages(Shader::Category category)
     {
-        RHI::ShaderStageFlag stages = RHI::ShaderStage::All;
+        RHI::ShaderStageFlags stages = RHI::ShaderStage::All;
         switch(category)
         {
         case Shader::Category::Graphics:   stages = RHI::ShaderStage::AllGraphics; break;
@@ -998,7 +998,7 @@ ShaderCompiler::ParsedShaderEntry ShaderCompiler::ParseShaderEntry(std::string &
 
 template<bool AllowStageSpecifier, ShaderCompiler::BindingCategory Category>
 ShaderCompiler::ParsedBinding ShaderCompiler::ParseBinding(
-    ShaderTokenStream &tokens, RHI::ShaderStageFlag groupDefaultStages) const
+    ShaderTokenStream &tokens, RHI::ShaderStageFlags groupDefaultStages) const
 {
     using namespace ShaderCompilerDetail;
 
@@ -1074,7 +1074,7 @@ ShaderCompiler::ParsedBinding ShaderCompiler::ParseBinding(
     }
     tokens.Next();
 
-    RHI::ShaderStageFlag stages = groupDefaultStages;
+    RHI::ShaderStageFlags stages = groupDefaultStages;
     if(tokens.GetCurrentToken() == ",")
     {
         tokens.Next();
@@ -1461,7 +1461,7 @@ ShaderCompiler::Bindings ShaderCompiler::CollectBindings(const std::string &sour
             tokens.Throw("Group name expected");
         }
         tokens.Next();
-        RHI::ShaderStageFlag groupDefaultStages = RHI::ShaderStage::All;
+        RHI::ShaderStageFlags groupDefaultStages = RHI::ShaderStage::All;
         if(tokens.GetCurrentToken() == ",")
         {
             tokens.Next();

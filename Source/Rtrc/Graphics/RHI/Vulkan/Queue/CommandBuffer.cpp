@@ -303,7 +303,7 @@ void VulkanCommandBuffer::SetStencilReferenceValue(uint8_t value)
 }
 
 void VulkanCommandBuffer::SetPushConstants(
-    const BindingLayoutPtr &bindingLayout, ShaderStageFlag stages, uint32_t offset, uint32_t size, const void *values)
+    const BindingLayoutPtr &bindingLayout, ShaderStageFlags stages, uint32_t offset, uint32_t size, const void *values)
 {
     auto vulkanBindingLayout = static_cast<const VulkanBindingLayout *>(bindingLayout.Get())->_internalGetNativeLayout();
     vkCmdPushConstants(commandBuffer_, vulkanBindingLayout, TranslateShaderStageFlag(stages), offset, size, values);

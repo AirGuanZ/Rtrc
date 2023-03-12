@@ -100,7 +100,7 @@ VkShaderStageFlagBits TranslateShaderStage(ShaderStage type)
     }
 }
 
-VkShaderStageFlags TranslateShaderStageFlag(EnumFlags<ShaderStage> flags)
+VkShaderStageFlags TranslateShaderStageFlag(ShaderStageFlags flags)
 {
     VkShaderStageFlags result = 0;
     result |= flags.contains(ShaderStage::VertexShader)          ? VK_SHADER_STAGE_VERTEX_BIT           : 0;
@@ -256,7 +256,7 @@ VkDescriptorType TranslateBindingType(BindingType type)
     Unreachable();
 }
 
-VkImageUsageFlags TranslateTextureUsageFlag(TextureUsageFlag flags)
+VkImageUsageFlags TranslateTextureUsageFlag(TextureUsageFlags flags)
 {
     VkImageUsageFlags result = 0;
     if(flags.contains(TextureUsage::TransferDst))

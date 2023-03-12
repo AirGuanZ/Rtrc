@@ -17,7 +17,7 @@ public:
     FixedSizedTransientConstantBufferBindingGroupPool(
         size_t               elementSize,
         std::string          bindingName,
-        RHI::ShaderStageFlag bindingShaderStages,
+        RHI::ShaderStageFlags bindingShaderStages,
         Device              &device);
 
     void NewBatch();
@@ -48,7 +48,7 @@ private:
     Device &device_;
 
     std::string          bindingName_;
-    RHI::ShaderStageFlag shaderStages_;
+    RHI::ShaderStageFlags shaderStages_;
 
     RC<BindingGroupLayout> bindingGroupLayout_;
     RC<SharedData>         sharedData_;
