@@ -154,17 +154,6 @@ private:
     std::vector<Record> records_;
 };
 
-template<TemplateStringParameter KeywordString>
-const Keyword &GetKeyword()
-{
-    static Keyword ret(KeywordString.GetString());
-    return ret;
-}
-
-#if defined(__INTELLISENSE__) || defined(__RSCPP_VERSION)
-#define RTRC_KEYWORD(X) ([]() -> const ::Rtrc::Keyword& { static ::Rtrc::Keyword ret(#X); return ret; }())
-#else
-#define RTRC_KEYWORD(X) (::Rtrc::GetKeyword<::Rtrc::TemplateStringParameter(#X)>())
-#endif
+#define RTRC_KEYWORD(X) RTRC_POOLED_STRING(::Rtrc::Keyword, X)
 
 RTRC_END

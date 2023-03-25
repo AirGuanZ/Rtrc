@@ -3,7 +3,7 @@
 #include <Rtrc/Renderer/Atmosphere/AtmosphereRenderer.h>
 #include <Rtrc/Renderer/DeferredRenderer/GBufferRenderer.h>
 
-RTRC_BEGIN
+RTRC_RENDERER_BEGIN
 
 namespace RendererDetail
 {
@@ -67,4 +67,4 @@ private:
     Mesh fullscreenQuadWithRays_;
 };
 
-RTRC_END
+RTRC_RENDERER_END

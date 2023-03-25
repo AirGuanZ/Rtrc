@@ -10,9 +10,11 @@ class TBufferView
 public:
 
     TBufferView() = default;
-    TBufferView(RC<Buffer> buffer, RHI::Format format);
-    TBufferView(RC<Buffer> buffer, size_t structStride);
-    TBufferView(RC<Buffer> buffer, RHI::Format format, size_t structStride);
+    TBufferView(RC<Buffer> buffer, size_t byteOffset, RHI::Format format);
+    TBufferView(RC<Buffer> buffer, size_t byteOffset, size_t structStride);
+    TBufferView(RC<Buffer> buffer, size_t byteOffset, RHI::Format format, size_t structStride);
+
+    const RC<Buffer> &GetBuffer() const;
 
     const T &GetRHIObject() const;
 
@@ -25,28 +27,28 @@ private:
 };
 
 template<typename T>
-TBufferView<T>::TBufferView(RC<Buffer> buffer, RHI::Format format)
-    : TBufferView(std::move(buffer), format, 0)
+TBufferView<T>::TBufferView(RC<Buffer> buffer, size_t byteOffset, RHI::Format format)
+    : TBufferView(std::move(buffer), 0, format, 0)
 {
     
 }
 
 template<typename T>
-TBufferView<T>::TBufferView(RC<Buffer> buffer, size_t structStride)
-    : TBufferView(std::move(buffer), RHI::Format::Unknown, structStride)
+TBufferView<T>::TBufferView(RC<Buffer> buffer, size_t byteOffset, size_t structStride)
+    : TBufferView(std::move(buffer), 0, RHI::Format::Unknown, structStride)
 {
     
 }
 
 template<typename T>
-TBufferView<T>::TBufferView(RC<Buffer> buffer, RHI::Format format, size_t structStride)
+TBufferView<T>::TBufferView(RC<Buffer> buffer, size_t byteOffset, RHI::Format format, size_t structStride)
     : buffer_(std::move(buffer))
 {
     assert(format != RHI::Format::Unknown || structStride != 0);
     const RHI::BufferSrvDesc desc =
     {
         .format = format,
-        .offset = 0,
+        .offset = static_cast<uint32_t>(byteOffset),
         .range = static_cast<uint32_t>(buffer_->GetSize()),
         .stride = static_cast<uint32_t>(structStride)
     };
@@ -66,34 +68,98 @@ const T &TBufferView<T>::GetRHIObject() const
     return view_;
 }
 
-inline BufferSrv Buffer::GetSrv()
+template<typename T>
+const RC<Buffer> &TBufferView<T>::GetBuffer() const
 {
-    return BufferSrv(shared_from_this(), defaultViewTexelFormat_, defaultViewStructStride_);
+    return buffer_;
 }
 
-inline TBufferView<RHI::BufferSrvPtr> Buffer::GetSrv(RHI::Format texelFormat)
+inline BufferSrv SubBuffer::GetStructuredSrv()
 {
-    return BufferSrv(shared_from_this(), texelFormat);
+    auto fullBuffer = GetFullBuffer();
+    const size_t offset = GetSubBufferOffset();
+    const size_t stride = fullBuffer->GetDefaultStructStride();
+    assert(stride > 0);
+    return BufferSrv(std::move(fullBuffer), offset, stride);
 }
 
-inline TBufferView<RHI::BufferSrvPtr> Buffer::GetSrv(size_t structStride)
+inline BufferSrv SubBuffer::GetStructuredSrv(size_t structStride)
 {
-    return BufferSrv(shared_from_this(), structStride);
+    auto fullBuffer = GetFullBuffer();
+    const size_t offset = GetSubBufferOffset();
+    return BufferSrv(std::move(fullBuffer), offset, structStride);
 }
 
-inline BufferUav Buffer::GetUav()
+inline BufferSrv SubBuffer::GetStructuredSrv(size_t byteOffset, size_t structStride)
 {
-    return BufferUav(shared_from_this(), defaultViewTexelFormat_, defaultViewStructStride_);
+    auto fullBuffer = GetFullBuffer();
+    return BufferSrv(std::move(fullBuffer), GetSubBufferOffset() + byteOffset, structStride);
 }
 
-inline TBufferView<RHI::BufferUavPtr> Buffer::GetUav(RHI::Format texelFormat)
+inline BufferSrv SubBuffer::GetTexelSrv()
 {
-    return BufferUav(shared_from_this(), texelFormat);
+    auto fullbuffer = GetFullBuffer();
+    const size_t offset = GetSubBufferOffset();
+    const RHI::Format format = fullbuffer->GetDefaultTexelFormat();
+    assert(format != RHI::Format::Unknown);
+    return BufferSrv(std::move(fullbuffer), offset, format);
 }
 
-inline TBufferView<RHI::BufferUavPtr> Buffer::GetUav(size_t structStride)
+inline BufferSrv SubBuffer::GetTexelSrv(RHI::Format texelFormat)
 {
-    return BufferUav(shared_from_this(), structStride);
+    auto fullbuffer = GetFullBuffer();
+    const size_t offset = GetSubBufferOffset();
+    return BufferSrv(std::move(fullbuffer), offset, texelFormat);
+}
+
+inline BufferSrv SubBuffer::GetTexelSrv(size_t byteOffset, RHI::Format texelFormat)
+{
+    auto fullbuffer = GetFullBuffer();
+    return BufferSrv(std::move(fullbuffer), GetSubBufferOffset() + byteOffset, texelFormat);
+}
+
+inline BufferUav SubBuffer::GetStructuredUav()
+{
+    auto fullBuffer = GetFullBuffer();
+    const size_t offset = GetSubBufferOffset();
+    const size_t stride = fullBuffer->GetDefaultStructStride();
+    assert(stride > 0);
+    return BufferUav(std::move(fullBuffer), offset, stride);
+}
+
+inline BufferUav SubBuffer::GetStructuredUav(size_t structStride)
+{
+    auto fullBuffer = GetFullBuffer();
+    const size_t offset = GetSubBufferOffset();
+    return BufferUav(std::move(fullBuffer), offset, structStride);
+}
+
+inline BufferUav SubBuffer::GetStructuredUav(size_t byteOffset, size_t structStride)
+{
+    auto fullBuffer = GetFullBuffer();
+    return BufferUav(std::move(fullBuffer), GetSubBufferOffset() + byteOffset, structStride);
+}
+
+inline BufferUav SubBuffer::GetTexelUav()
+{
+    auto fullbuffer = GetFullBuffer();
+    const size_t offset = GetSubBufferOffset();
+    const RHI::Format format = fullbuffer->GetDefaultTexelFormat();
+    assert(format != RHI::Format::Unknown);
+    return BufferUav(std::move(fullbuffer), offset, format);
+}
+
+inline BufferUav SubBuffer::GetTexelUav(RHI::Format texelFormat)
+{
+    auto fullbuffer = GetFullBuffer();
+    const size_t offset = GetSubBufferOffset();
+    return BufferUav(std::move(fullbuffer), offset, texelFormat);
+}
+
+inline BufferUav SubBuffer::GetTexelUav(size_t byteOffset, RHI::Format texelFormat)
+{
+    auto fullbuffer = GetFullBuffer();
+    return BufferUav(std::move(fullbuffer), GetSubBufferOffset() + byteOffset, texelFormat);
 }
 
 RTRC_END

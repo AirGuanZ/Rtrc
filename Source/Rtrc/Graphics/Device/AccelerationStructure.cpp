@@ -33,8 +33,8 @@ AccelerationStructureManager::AccelerationStructureManager(RHI::DevicePtr device
 }
 
 BlasPrebuildInfo AccelerationStructureManager::CreateBlasPrebuildinfo(
-    Span<RHI::RayTracingGeometryDesc>             geometries,
-    RHI::RayTracingAccelerationStructureBuildFlag flags)
+    Span<RHI::RayTracingGeometryDesc>              geometries,
+    RHI::RayTracingAccelerationStructureBuildFlags flags)
 {
     BlasPrebuildInfo info;
     info.info_ = rhiDevice_->CreateBlasPrebuildInfo(geometries, flags);
@@ -42,8 +42,8 @@ BlasPrebuildInfo AccelerationStructureManager::CreateBlasPrebuildinfo(
 }
 
 TlasPrebuildInfo AccelerationStructureManager::CreateTlasPrebuildInfo(
-    Span<RHI::RayTracingInstanceArrayDesc>        instanceArrays,
-    RHI::RayTracingAccelerationStructureBuildFlag flags)
+    Span<RHI::RayTracingInstanceArrayDesc>         instanceArrays,
+    RHI::RayTracingAccelerationStructureBuildFlags flags)
 {
     TlasPrebuildInfo info;
     info.info_ = rhiDevice_->CreateTlasPrebuildInfo(instanceArrays, flags);
@@ -76,7 +76,7 @@ void AccelerationStructureManager::_internalCreate(Blas &blas)
     if(blas.buffer_)
     {
         blas.rhiObject_ = rhiDevice_->CreateBlas(
-            blas.buffer_->GetFullBuffer()->GetRHIObject(),
+            blas.buffer_->GetFullBufferRHIObject(),
             blas.buffer_->GetSubBufferOffset(),
             blas.buffer_->GetSubBufferSize());
     }
@@ -96,7 +96,7 @@ void AccelerationStructureManager::_internalCreate(Tlas &tlas)
     if(tlas.buffer_)
     {
         tlas.rhiObject_ = rhiDevice_->CreateTlas(
-            tlas.buffer_->GetFullBuffer()->GetRHIObject(),
+            tlas.buffer_->GetFullBufferRHIObject(),
             tlas.buffer_->GetSubBufferOffset(),
             tlas.buffer_->GetSubBufferSize());
     }

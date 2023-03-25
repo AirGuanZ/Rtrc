@@ -4,17 +4,42 @@
 #include <Rtrc/Graphics/Device/Buffer.h>
 #include <Rtrc/Utility/Container/ObjectCache.h>
 #include <Rtrc/Utility/SmartPointer/CopyOnWritePtr.h>
+#include <Rtrc/Utility/Thread.h>
 
 RTRC_BEGIN
 
 class CommandBuffer;
+class Blas;
 class DynamicBuffer;
 
 class Mesh : public InObjectCache
 {
 public:
 
-    class SharedRenderingData : public ReferenceCounted
+    struct BuiltinVertexStruct_Default
+    {
+        Vector3f position;
+        Vector3f normal;
+        Vector2f texCoord;
+        Vector3f tangent;
+    };
+
+    struct BuiltinVertexStruct_Simplified
+    {
+        Vector3f position;
+        Vector3f normal;
+        Vector2f texCoord;
+    };
+
+    struct BuiltinVertexBufferLayout
+    {
+        static const VertexBufferLayout *Default;
+        static const VertexBufferLayout *Simplified;
+    };
+
+    // Acquired SharedRenderingData will never be modified by original Mesh,
+    // and can be safely used/modified in render thread
+    class SharedRenderingData : public ReferenceCounted, public WithUniqueObjectID
     {
     public:
 
@@ -23,12 +48,14 @@ public:
         uint32_t             GetVertexCount() const           { return vertexCount_; }
         const RC<SubBuffer> &GetVertexBuffer(int index) const { return vertexBuffers_[index]; }
 
-        uint32_t             GetIndexCount() const  { return indexCount_; }
+        uint32_t             GetIndexCount() const  { return indexCount_ ; }
         const RC<SubBuffer> &GetIndexBuffer() const { return indexBuffer_; }
         RHI::IndexFormat     GetIndexFormat() const { return indexFormat_; }
-        
-        void Bind(CommandBuffer &commandBuffer) const;
 
+        uint32_t GetPrimitiveCount() const { return (indexCount_ ? indexCount_ : vertexCount_) / 3; }
+        
+        void BindVertexAndIndexBuffers(CommandBuffer &commandBuffer) const;
+        
     private:
 
         friend class Mesh;
@@ -39,9 +66,9 @@ public:
         uint32_t                   vertexCount_ = 0;
         std::vector<RC<SubBuffer>> vertexBuffers_;
 
-        uint32_t                indexCount_ = 0;
-        RHI::IndexFormat        indexFormat_ = RHI::IndexFormat::UInt16;
-        RC<SubBuffer>           indexBuffer_;
+        uint32_t         indexCount_ = 0;
+        RHI::IndexFormat indexFormat_ = RHI::IndexFormat::UInt16;
+        RC<SubBuffer>    indexBuffer_;
     };
 
     Mesh() = default;
@@ -56,9 +83,11 @@ public:
     uint32_t             GetVertexCount() const           { return sharedData_->GetVertexCount(); }
     const RC<SubBuffer> &GetVertexBuffer(int index) const { return sharedData_->GetVertexBuffer(index); }
     
-    uint32_t             GetIndexCount() const  { return sharedData_->GetIndexCount(); }
+    uint32_t             GetIndexCount()  const { return sharedData_->GetIndexCount();  }
     const RC<SubBuffer> &GetIndexBuffer() const { return sharedData_->GetIndexBuffer(); }
     RHI::IndexFormat     GetIndexFormat() const { return sharedData_->GetIndexFormat(); }
+
+    uint32_t GetPrimitiveCount() const { return sharedData_->GetPrimitiveCount(); }
 
     const ReferenceCountedPtr<SharedRenderingData> &GetRenderingData() const  { return sharedData_; }
     SharedRenderingData                            *GetMutableRenderingData() { return sharedData_.Unshare(); }

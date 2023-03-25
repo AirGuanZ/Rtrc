@@ -571,7 +571,7 @@ VkIndexType TranslateIndexFormat(IndexFormat format)
 }
 
 VkBuildAccelerationStructureFlagsKHR TranslateAccelerationStructureBuildFlags(
-    RayTracingAccelerationStructureBuildFlag flags)
+    RayTracingAccelerationStructureBuildFlags flags)
 {
     VkBuildAccelerationStructureFlagsKHR ret = 0;
     if(flags.contains(RayTracingAccelerationStructureBuildFlagBit::AllowUpdate))

@@ -19,7 +19,7 @@ public:
 
     Vector4(const Vector3<T> &xyz, T w);
 
-    T operator[](size_t i) const;
+    const T &operator[](size_t i) const;
 
     T &operator[](size_t i);
 
@@ -85,7 +85,7 @@ Vector4<T>::Vector4(const Vector3<T> &xyz, T w)
 }
 
 template<typename T>
-T Vector4<T>::operator[](size_t i) const
+const T &Vector4<T>::operator[](size_t i) const
 {
     return *(&x + i);
 }

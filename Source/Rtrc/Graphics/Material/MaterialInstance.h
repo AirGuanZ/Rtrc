@@ -1,8 +1,9 @@
 #pragma once
 
 #include <Rtrc/Graphics/Material/Material.h>
-#include <Rtrc/Graphics/Resource/BindlessTextureManager.h>
+#include <Rtrc/Graphics/Resource/BindlessResourceManager.h>
 #include <Rtrc/Utility/SmartPointer/CopyOnWritePtr.h>
+#include <Rtrc/Utility/Thread.h>
 
 RTRC_BEGIN
 
@@ -20,7 +21,7 @@ public:
     void CopyFrom(const MaterialPropertySheet &other);
 
 #define RTRC_DECL_SET(TYPE) \
-    void Set(std::string_view name, TYPE value); \
+    void Set(MaterialPropertyName name, TYPE value); \
     void Set(int index, TYPE value);
 
     RTRC_DECL_SET(float           )
@@ -46,21 +47,24 @@ public:
 
 #undef RTRC_DECL_SET
 
-    void Set(std::string_view name, const BindlessTextureEntry &entry);
-    void Set(int index,             const BindlessTextureEntry &entry);
+    void Set(MaterialPropertyName, const BindlessTextureEntry &entry);
+    void Set(int index,            const BindlessTextureEntry &entry);
 
     const unsigned char *GetValueBuffer() const { return valueBuffer_.data(); }
     Span<MaterialResource> GetResources() const { return resources_; }
 
     const RC<MaterialPropertyHostLayout> &GetHostLayout() const { return layout_; }
 
-    const unsigned char *GetValue(std::string_view name) const;
+    const unsigned char *GetValue(MaterialPropertyName name) const;
     const unsigned char *GetValue(int index) const;
+
+    const BindlessTextureEntry *GetBindlessTextureEntry(MaterialPropertyName name) const;
+    const BindlessTextureEntry *GetBindlessTextureEntry(int index) const;
 
 private:
 
     template<MaterialProperty::Type Type, typename T>
-    void SetImpl(std::string_view name, const T &value);
+    void SetImpl(MaterialPropertyName name, const T &value);
 
     template<MaterialProperty::Type Type, typename T>
     void SetImpl(int index, const T &value);
@@ -126,11 +130,11 @@ void BindMaterialProperties(
     const CommandBuffer        &commandBuffer,
     bool                        graphics);
 
-class MaterialInstance
+class MaterialInstance : public WithUniqueObjectID, public Uncopyable
 {
 public:
 
-    class SharedRenderingData : public ReferenceCounted, public Uncopyable
+    class SharedRenderingData : public ReferenceCounted, public Uncopyable, public WithUniqueObjectID
     {
     public:
 
@@ -163,27 +167,27 @@ public:
     MaterialPassInstance *GetPassInstance(std::string_view tag) const { return data_->GetPassInstance(tag); }
     MaterialPassInstance *GetPassInstance(size_t index) const { return data_->GetPassInstance(index); }
     
-    void SetFloat(std::string_view name, float value)      { SetPropertyImpl<true>(name, value); }
-    void Set(std::string_view name, const Vector2f &value) { SetPropertyImpl<true>(name, value); }
-    void Set(std::string_view name, const Vector3f &value) { SetPropertyImpl<true>(name, value); }
-    void Set(std::string_view name, const Vector4f &value) { SetPropertyImpl<true>(name, value); }
+    void SetFloat(MaterialPropertyName name, float value)      { SetPropertyImpl<true>(name, value); }
+    void Set(MaterialPropertyName name, const Vector2f &value) { SetPropertyImpl<true>(name, value); }
+    void Set(MaterialPropertyName name, const Vector3f &value) { SetPropertyImpl<true>(name, value); }
+    void Set(MaterialPropertyName name, const Vector4f &value) { SetPropertyImpl<true>(name, value); }
 
-    void SetUInt(std::string_view name, uint32_t value)    { SetPropertyImpl<true>(name, value); }
-    void Set(std::string_view name, const Vector2u &value) { SetPropertyImpl<true>(name, value); }
-    void Set(std::string_view name, const Vector3u &value) { SetPropertyImpl<true>(name, value); }
-    void Set(std::string_view name, const Vector4u &value) { SetPropertyImpl<true>(name, value); }
+    void SetUInt(MaterialPropertyName name, uint32_t value)    { SetPropertyImpl<true>(name, value); }
+    void Set(MaterialPropertyName name, const Vector2u &value) { SetPropertyImpl<true>(name, value); }
+    void Set(MaterialPropertyName name, const Vector3u &value) { SetPropertyImpl<true>(name, value); }
+    void Set(MaterialPropertyName name, const Vector4u &value) { SetPropertyImpl<true>(name, value); }
 
-    void SetInt(std::string_view name, int32_t value)      { SetPropertyImpl<true>(name, value); }
-    void Set(std::string_view name, const Vector2i &value) { SetPropertyImpl<true>(name, value); }
-    void Set(std::string_view name, const Vector3i &value) { SetPropertyImpl<true>(name, value); }
-    void Set(std::string_view name, const Vector4i &value) { SetPropertyImpl<true>(name, value); }
+    void SetInt(MaterialPropertyName name, int32_t value)      { SetPropertyImpl<true>(name, value); }
+    void Set(MaterialPropertyName name, const Vector2i &value) { SetPropertyImpl<true>(name, value); }
+    void Set(MaterialPropertyName name, const Vector3i &value) { SetPropertyImpl<true>(name, value); }
+    void Set(MaterialPropertyName name, const Vector4i &value) { SetPropertyImpl<true>(name, value); }
 
-    void Set(std::string_view name, const TextureSrv &srv) { SetPropertyImpl<false>(name, srv);     }
-    void Set(std::string_view name, const BufferSrv &srv)  { SetPropertyImpl<false>(name, srv);     }
-    void Set(std::string_view name, RC<Sampler> sampler)   { SetPropertyImpl<false>(name, sampler); }
+    void Set(MaterialPropertyName name, const TextureSrv &srv) { SetPropertyImpl<false>(name, srv); }
+    void Set(MaterialPropertyName name, const BufferSrv &srv)  { SetPropertyImpl<false>(name, srv); }
+    void Set(MaterialPropertyName name, RC<Sampler> sampler)   { SetPropertyImpl<false>(name, sampler); }
 
     template<typename T>
-    void Set(std::string_view name, const T &value)
+    void Set(MaterialPropertyName name, const T &value)
     {
         data_.Unshare()->propertySheet_.Set(name, value);
     }
@@ -194,8 +198,9 @@ public:
 private:
 
     template<bool CBuffer, typename T>
-    void SetPropertyImpl(std::string_view name, const T &value)
+    void SetPropertyImpl(MaterialPropertyName name, const T &value)
     {
+        AssertIsMainThread();
         data_.Unshare()->propertySheet_.Set(name, value);
         if constexpr(CBuffer)
         {

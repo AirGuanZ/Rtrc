@@ -205,7 +205,7 @@ inline void BindingGroup::Set(int slot, int arrElem, RC<SubBuffer> cbuffer)
 {
     const RHI::ConstantBufferUpdate update =
     {
-        cbuffer->GetFullBuffer()->GetRHIObject().Get(),
+        cbuffer->GetFullBufferRHIObject().Get(),
         cbuffer->GetSubBufferOffset(),
         cbuffer->GetSubBufferSize()
     };

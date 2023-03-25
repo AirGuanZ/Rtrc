@@ -13,10 +13,10 @@ class DeferredRendererApplication : public Uncopyable
     Box<ImGuiInstance>    imgui_;
     Box<ImGuiRenderer>    imguiRenderer_;
     Box<ResourceManager>  resources_;
-    Box<DeferredRenderer> renderer_;
+    Box<Renderer::DeferredRenderer> renderer_;
 
     Box<Scene>                           scene_;
-    std::vector<Box<StaticMeshRenderer>> staticMeshRenderers_;
+    std::vector<Box<StaticMeshRenderObject>> staticMeshRenderers_;
     Box<Light>                           mainLight_;
 
     Box<Camera>          camera_;
@@ -46,7 +46,7 @@ class DeferredRendererApplication : public Uncopyable
         resources_->AddMaterialFiles($rtrc_get_files("Asset/Builtin/*/*.*"));
         resources_->AddShaderIncludeDirectory("Asset");
         
-        renderer_ = MakeBox<DeferredRenderer>(*device_, resources_->GetBuiltinResources());
+        renderer_ = MakeBox<Renderer::DeferredRenderer>(*device_, resources_->GetBuiltinResources());
 
         scene_ = MakeBox<Scene>();
         camera_ = MakeBox<Camera>();

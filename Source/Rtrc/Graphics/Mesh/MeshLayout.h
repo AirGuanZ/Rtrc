@@ -3,8 +3,15 @@
 #include <map>
 
 #include <Rtrc/Graphics/RHI/RHI.h>
+#include <Rtrc/Utility/StringPool.h>
+#include <Rtrc/Utility/TemplateStringParameter.h>
 
 RTRC_BEGIN
+
+struct VertexSemanticTag { };
+using VertexSemantic = PooledString<VertexSemanticTag, uint32_t>;
+
+#define RTRC_VERTEX_SEMANTIC(X) RTRC_POOLED_STRING(::Rtrc::VertexSemantic, X)
 
 namespace MeshLayoutDSL
 {
@@ -28,14 +35,14 @@ namespace MeshLayoutDSL
 
     struct Attribute
     {
-        Attribute(std::string semantic, RHI::VertexAttributeType type)
-            : semantic(std::move(semantic)), type(type)
+        Attribute(VertexSemantic semantic, RHI::VertexAttributeType type)
+            : semantic(semantic), type(type)
         {
             
         }
         auto operator<=>(const Attribute &) const = default;
 
-        std::string semantic;
+        VertexSemantic semantic;
         RHI::VertexAttributeType type;
     };
 
@@ -98,9 +105,9 @@ public:
 
     struct VertexAttribute
     {
-        std::string semantic;
+        VertexSemantic           semantic;
         RHI::VertexAttributeType type;
-        int byteOffsetInBuffer;
+        int                      byteOffsetInBuffer;
     };
 
     static const VertexBufferLayout *Create(const MeshLayoutDSL::Buffer &desc);
@@ -110,17 +117,17 @@ public:
     Span<VertexAttribute> GetAttributes() const;
 
     // return nullptr when semantic is not found
-    const VertexAttribute *GetAttributeBySemantic(std::string_view semantic) const;
+    const VertexAttribute *GetAttributeBySemantic(VertexSemantic semantic) const;
 
     // return -1 when semantic is not found
-    int GetAttributeIndexBySemantic(std::string_view semantic) const;
+    int GetAttributeIndexBySemantic(VertexSemantic semantic) const;
 
 private:
 
     bool perInstance_ = false;
     int stride_ = 0;
     std::vector<VertexAttribute> attribs_;
-    std::map<std::string, int, std::less<>> semanticToAttribIndex_;
+    std::map<VertexSemantic, int, std::less<>> semanticToAttribIndex_;
 };
 
 class MeshLayout : public Uncopyable
@@ -132,16 +139,25 @@ public:
     Span<const VertexBufferLayout*> GetVertexBufferLayouts() const;
 
     // return nullptr when semantic is not found
-    const VertexBufferLayout *GetVertexBufferLayoutBySemantic(std::string_view semantic) const;
+    const VertexBufferLayout *GetVertexBufferLayoutBySemantic(VertexSemantic semantic) const;
 
     // return -1 when semantic is not found
-    int GetVertexBufferIndexBySemantic(std::string_view semantic) const;
+    int GetVertexBufferIndexBySemantic(VertexSemantic semantic) const;
 
 private:
 
     std::vector<const VertexBufferLayout *> vertexBuffers_;
-    std::map<std::string, int, std::less<>> semanticToBufferIndex_;
+    std::map<VertexSemantic, int, std::less<>> semanticToBufferIndex_;
 };
+
+#define RTRC_VERTEX_BUFFER_LAYOUT(...)          \
+    (::Rtrc::VertexBufferLayout::Create([&]     \
+    {                                           \
+        using namespace ::Rtrc::MeshLayoutDSL;  \
+        using ::Rtrc::MeshLayoutDSL::Buffer;    \
+        using ::Rtrc::MeshLayoutDSL::Attribute; \
+        return Buffer(__VA_ARGS__);             \
+    }()))
 
 #define RTRC_MESH_LAYOUT(...)                   \
     (::Rtrc::MeshLayout::Create([&]             \

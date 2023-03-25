@@ -19,8 +19,9 @@ namespace DeviceDetail
     enum class FlagBit : uint32_t
     {
         EnableRayTracing             = 1 << 0,
-        EnableSwapchainUav           = 1 << 1,
-        DisableAutoSwapchainRecreate = 1 << 2,
+        EnableSwapchainUav           = 1 << 1, // Allow swapchain images to be bound as UAVs
+        DisableAutoSwapchainRecreate = 1 << 2, // Don't recreate swapchain when window size changes
+                                               // Usually required when render thread differs from window event thread
     };
     RTRC_DEFINE_ENUM_FLAGS(FlagBit)
     using Flags = EnumFlagsFlagBit;
@@ -32,7 +33,6 @@ class Device : public Uncopyable
 public:
 
     using Flags = DeviceDetail::Flags;
-
     using enum DeviceDetail::FlagBit;
 
     // Creation & destructor
@@ -171,11 +171,11 @@ public:
     // Acceleration structure
     
     BlasPrebuildInfo CreateBlasPrebuildinfo(
-        Span<RHI::RayTracingGeometryDesc>             geometries,
-        RHI::RayTracingAccelerationStructureBuildFlag flags);
+        Span<RHI::RayTracingGeometryDesc>              geometries,
+        RHI::RayTracingAccelerationStructureBuildFlags flags);
     TlasPrebuildInfo CreateTlasPrebuildInfo(
-        Span<RHI::RayTracingInstanceArrayDesc>        instanceArrays,
-        RHI::RayTracingAccelerationStructureBuildFlag flags);
+        Span<RHI::RayTracingInstanceArrayDesc>         instanceArrays,
+        RHI::RayTracingAccelerationStructureBuildFlags flags);
 
     RC<Blas> CreateBlas(RC<SubBuffer> buffer = nullptr);
     RC<Tlas> CreateTlas(RC<SubBuffer> buffer = nullptr);
@@ -500,15 +500,15 @@ inline RC<Sampler> Device::CreateSampler(const RHI::SamplerDesc &desc)
 }
 
 inline BlasPrebuildInfo Device::CreateBlasPrebuildinfo(
-    Span<RHI::RayTracingGeometryDesc>             geometries,
-    RHI::RayTracingAccelerationStructureBuildFlag flags)
+    Span<RHI::RayTracingGeometryDesc>              geometries,
+    RHI::RayTracingAccelerationStructureBuildFlags flags)
 {
     return accelerationManager_->CreateBlasPrebuildinfo(geometries, flags);
 }
 
 inline TlasPrebuildInfo Device::CreateTlasPrebuildInfo(
-    Span<RHI::RayTracingInstanceArrayDesc>        instanceArrays,
-    RHI::RayTracingAccelerationStructureBuildFlag flags)
+    Span<RHI::RayTracingInstanceArrayDesc>         instanceArrays,
+    RHI::RayTracingAccelerationStructureBuildFlags flags)
 {
     return accelerationManager_->CreateTlasPrebuildInfo(instanceArrays, flags);
 }

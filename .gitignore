@@ -2,5 +2,6 @@
 build/
 Build/
 BuildCMake/
+External/abseil
 .xmake/
 vsxmake2022/

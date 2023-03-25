@@ -89,11 +89,11 @@ public:
     TlasPtr CreateTlas(const BufferPtr &buffer, size_t offset, size_t size) RTRC_RHI_OVERRIDE;
 
     BlasPrebuildInfoPtr CreateBlasPrebuildInfo(
-        Span<RayTracingGeometryDesc>             geometries,
-        RayTracingAccelerationStructureBuildFlag flags) RTRC_RHI_OVERRIDE;
+        Span<RayTracingGeometryDesc>              geometries,
+        RayTracingAccelerationStructureBuildFlags flags) RTRC_RHI_OVERRIDE;
     TlasPrebuildInfoPtr CreateTlasPrebuildInfo(
-        Span<RayTracingInstanceArrayDesc>        instanceArrays,
-        RayTracingAccelerationStructureBuildFlag flags) RTRC_RHI_OVERRIDE;
+        Span<RayTracingInstanceArrayDesc>         instanceArrays,
+        RayTracingAccelerationStructureBuildFlags flags) RTRC_RHI_OVERRIDE;
 
     const ShaderGroupRecordRequirements &GetShaderGroupRecordRequirements() RTRC_RHI_OVERRIDE;
 

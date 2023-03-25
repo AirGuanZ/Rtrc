@@ -4,7 +4,7 @@
 #include <mutex>
 #include <limits>
 
-#include <Rtrc/Common.h>
+#include <Rtrc/Utility/TemplateStringParameter.h>
 
 RTRC_BEGIN
 
@@ -65,6 +65,23 @@ class StringPool
     std::mutex mutex_;
 };
 
+struct GeneralPooledStringTag { };
+using GeneralPooledString = PooledString<GeneralPooledStringTag, uint32_t>;
+#define RTRC_GENERAL_POOLED_STRING(X) RTRC_POOLED_STRING(::Rtrc::GeneralPooledString, X)
+
+template<typename PooledStringInstance, TemplateStringParameter String>
+const PooledStringInstance &GetPooledStringInstance()
+{
+    static PooledStringInstance ret(String.GetString());
+    return ret;
+}
+
+#if defined(__INTELLISENSE__) || defined(__RSCPP_VERSION)
+#define RTRC_POOLED_STRING(TYPE, X) ([]() -> const TYPE& { static TYPE ret(#X); return ret; }())
+#else
+#define RTRC_POOLED_STRING(TYPE, X) (::Rtrc::GetPooledStringInstance<TYPE, ::Rtrc::TemplateStringParameter(#X)>())
+#endif
+
 template <typename Tag, typename Index>
 PooledString<Tag, Index>::PooledString()
     : index_(INVALID_INDEX)
@@ -113,5 +130,21 @@ struct std::hash<Rtrc::PooledString<Tag, Index>>
     size_t operator()(const Rtrc::PooledString<Tag, Index> &s) const noexcept
     {
         return std::hash<Index>{}(s.GetIndex());
+    }
+};
+
+template<typename Tag, typename Index>
+struct fmt::formatter<Rtrc::PooledString<Tag, Index>>
+{
+    template<typename ParseContext>
+    constexpr auto parse(ParseContext &ctx)
+    {
+        return ctx.begin();
+    }
+
+    template<typename FormatContext>
+    auto format(const Rtrc::PooledString<Tag, Index> &value, FormatContext &ctx)
+    {
+        return fmt::format_to(ctx.out(), "{}", value.GetString());
     }
 };

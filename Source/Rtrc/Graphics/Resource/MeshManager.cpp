@@ -57,7 +57,19 @@ Mesh MeshManager::Load(Device *device, const std::string &filename, Flags flags)
     };
 
     MeshBuilder meshBuilder;
-    
+
+    RHI::BufferUsageFlag vertexUsageFlags = RHI::BufferUsage::VertexBuffer;
+    RHI::BufferUsageFlag indexUsageFlags = RHI::BufferUsage::IndexBuffer;
+    if(flags.contains(Flags::AllowBlas))
+    {
+        vertexUsageFlags |= RHI::BufferUsage::AccelerationStructureBuildInput |
+                            RHI::BufferUsage::DeviceAddress |
+                            RHI::BufferUsage::ShaderStructuredBuffer;
+        indexUsageFlags |= RHI::BufferUsage::AccelerationStructureBuildInput |
+                           RHI::BufferUsage::DeviceAddress |
+                           RHI::BufferUsage::ShaderStructuredBuffer;
+    }
+
     if(tangentData.empty())
     {
         meshBuilder.SetLayout(RTRC_MESH_LAYOUT(Buffer(
@@ -82,7 +94,7 @@ Mesh MeshManager::Load(Device *device, const std::string &filename, Flags flags)
         auto vertexBuffer = device->CreateAndUploadBuffer(
             RHI::BufferDesc{
                 sizeof(Vertex) * vertexData.size(),
-                RHI::BufferUsage::VertexBuffer,
+                vertexUsageFlags,
                 RHI::BufferHostAccessType::None
             },
             vertexData.data());
@@ -114,7 +126,7 @@ Mesh MeshManager::Load(Device *device, const std::string &filename, Flags flags)
         auto vertexBuffer = device->CreateAndUploadBuffer(
             RHI::BufferDesc{
                 sizeof(Vertex) * vertexData.size(),
-                RHI::BufferUsage::VertexBuffer,
+                vertexUsageFlags,
                 RHI::BufferHostAccessType::None
             },
             vertexData.data());
@@ -145,7 +157,7 @@ Mesh MeshManager::Load(Device *device, const std::string &filename, Flags flags)
             indexBuffer = device->CreateAndUploadBuffer(
                 RHI::BufferDesc{
                     sizeof(uint16_t) * uint16IndexData.size(),
-                    RHI::BufferUsage::IndexBuffer,
+                    indexUsageFlags,
                     RHI::BufferHostAccessType::None
                 },
                 uint16IndexData.data());
@@ -153,9 +165,9 @@ Mesh MeshManager::Load(Device *device, const std::string &filename, Flags flags)
         else
         {
             indexBuffer = device->CreateAndUploadBuffer(
-                RHI::BufferDesc{
+                RHI::BufferDesc{   
                     sizeof(uint32_t) * meshData.indexData.size(),
-                    RHI::BufferUsage::IndexBuffer,
+                    indexUsageFlags,
                     RHI::BufferHostAccessType::None
                 },
                 meshData.indexData.data());
@@ -189,7 +201,11 @@ RC<Mesh> MeshManager::GetMesh(std::string_view name, Flags flags)
 }
 
 Vector3f MeshManager::ComputeTangent(
-    const Vector3f &B_A, const Vector3f &C_A, const Vector2f &b_a, const Vector2f &c_a, const Vector3f &nor)
+    const Vector3f &B_A,
+    const Vector3f &C_A,
+    const Vector2f &b_a,
+    const Vector2f &c_a,
+    const Vector3f &nor)
 {
     const float m00 = b_a.x, m01 = b_a.y;
     const float m10 = c_a.x, m11 = c_a.y;

@@ -49,6 +49,11 @@ namespace BufferDetail
 
 } // namespace BufferDetail
 
+const RHI::BufferPtr &SubBuffer::GetFullBufferRHIObject()
+{
+    return GetFullBuffer()->GetRHIObject();
+}
+
 RHI::BufferDeviceAddress SubBuffer::GetDeviceAddress()
 {
     auto start = GetFullBuffer()->GetRHIObject()->GetDeviceAddress();

@@ -7,7 +7,7 @@
 
 RTRC_BEGIN
 
-class RendererProxy
+class RenderProxy
 {
 public:
 
@@ -24,11 +24,11 @@ public:
     AABB3f     worldBound;
 };
 
-class Renderer : public SceneObject
+class RenderObject : public SceneObject
 {
 public:
 
-    virtual RendererProxy *CreateProxy(LinearAllocator &proxyAllocator) const = 0;
+    virtual RenderProxy *CreateProxy(LinearAllocator &proxyAllocator) const = 0;
 };
 
 RTRC_END

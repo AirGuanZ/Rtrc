@@ -5,7 +5,7 @@
 #include <Rtrc/Renderer/Utility/ScopedGPUDebugEvent.h>
 #include <Rtrc/Utility/Enumerate.h>
 
-RTRC_BEGIN
+RTRC_RENDERER_BEGIN
 
 DeferredRenderer::DeferredRenderer(Device &device, const BuiltinResourceManager &builtinResources)
     : device_(device)
@@ -163,4 +163,4 @@ void DeferredRenderer::DoDeferredLightingPass(RG::PassContext &passContext, cons
     }
 }
 
-RTRC_END
+RTRC_RENDERER_END

@@ -1,20 +1,9 @@
 #pragma once
 
 #include <Rtrc/Scene/Light.h>
-#include <Rtrc/Scene/Renderer/StaticMeshRenderer.h>
+#include <Rtrc/Scene/Renderer/StaticMeshRenderObject.h>
 
 RTRC_BEGIN
-
-struct SceneVersion
-{
-    enum Type
-    {
-        UpdateStaticMeshTransform,
-        AddOrRemoveStaticMesh,
-        TypeCount
-    };
-    uint32_t versions[TypeCount] = {};
-};
 
 class SceneProxy
 {
@@ -23,8 +12,7 @@ public:
     ~SceneProxy();
 
     Span<const Light::SharedRenderingData *> GetLights()              const { return lights_; }
-    Span<const RendererProxy *>              GetRenderers()           const { return renderers_; }
-    Span<const StaticMeshRendererProxy*>     GetStaticMeshRenderers() const { return staticMeshRendererProxies_; }
+    Span<const StaticMeshRenderProxy*>     GetStaticMeshRenderers() const { return staticMeshRendererProxies_; }
 
 private:
 
@@ -39,10 +27,7 @@ private:
 
     LinearAllocator                                 arena_;
     std::vector<const Light::SharedRenderingData *> lights_;
-    std::vector<const RendererProxy *>              renderers_;
-    std::vector<const StaticMeshRendererProxy *>    staticMeshRendererProxies_;
-
-    //SceneVersion version_;
+    std::vector<const StaticMeshRenderProxy *>    staticMeshRendererProxies_;
 };
 
 class Scene : public Uncopyable, public WithUniqueObjectID
@@ -51,7 +36,7 @@ public:
 
     Scene();
     
-    Box<StaticMeshRenderer> CreateStaticMeshRenderer();
+    Box<StaticMeshRenderObject> CreateStaticMeshRenderer();
 
     Box<Light> CreateLight();
 
@@ -60,8 +45,7 @@ public:
     Box<SceneProxy> CreateSceneProxy() const;
 
 private:
-
-    //SceneVersion version_;
+    
     SceneObject rootNode_;
 
     LightManager              lightManager_;

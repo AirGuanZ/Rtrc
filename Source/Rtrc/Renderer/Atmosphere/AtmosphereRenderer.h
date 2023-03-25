@@ -6,7 +6,7 @@
 #include <Rtrc/Graphics/Resource/BuiltinResources.h>
 #include <Rtrc/Scene/Camera/Camera.h>
 
-RTRC_BEGIN
+RTRC_RENDERER_BEGIN
 
 namespace AtmosphereDetail
 {
@@ -177,4 +177,4 @@ namespace AtmosphereDetail
 
 using AtmosphereRenderer = AtmosphereDetail::AtmosphereRenderer;
 
-RTRC_END
+RTRC_RENDERER_END

@@ -11,9 +11,9 @@ RTRC_RHI_IMPLEMENT(VulkanTlasPrebuildInfo, TlasPrebuildInfo)
 public:
 
     VulkanTlasPrebuildInfo(
-        VulkanDevice                            *device,
-        Span<RayTracingInstanceArrayDesc>        instanceArrays,
-        RayTracingAccelerationStructureBuildFlag flags);
+        VulkanDevice                             *device,
+        Span<RayTracingInstanceArrayDesc>         instanceArrays,
+        RayTracingAccelerationStructureBuildFlags flags);
 
     const RayTracingAccelerationStructurePrebuildInfo &GetPrebuildInfo() const RTRC_RHI_OVERRIDE;
 

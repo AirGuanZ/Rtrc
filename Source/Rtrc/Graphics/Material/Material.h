@@ -6,6 +6,7 @@
 #include <Rtrc/Utility/Container/ObjectCache.h>
 #include <Rtrc/Utility/Container/SharedObjectPool.h>
 #include <Rtrc/Utility/SignalSlot.h>
+#include <Rtrc/Utility/StringPool.h>
 
 /* Material
     Material:
@@ -26,6 +27,9 @@ RTRC_BEGIN
 
 class MaterialInstance;
 class ShaderTokenStream;
+
+using MaterialPropertyName = GeneralPooledString;
+#define RTRC_MATERIAL_PROPERTY_NAME(X) RTRC_GENERAL_POOLED_STRING(X)
 
 // Property declared at material scope
 struct MaterialProperty
@@ -63,8 +67,8 @@ struct MaterialProperty
     static const char *GetTypeName(Type type);
     const char        *GetTypeName() const;
 
-    Type        type;
-    std::string name;
+    Type                 type;
+    MaterialPropertyName name;
 };
 
 // Describe how properties are stored in a material instance
@@ -85,19 +89,19 @@ public:
 
     size_t GetValueBufferSize() const;
     size_t GetValueOffset(int index) const;
-    size_t GetValueOffset(std::string_view name) const;
+    size_t GetValueOffset(MaterialPropertyName name) const;
 
     // return -1 when not found
-    int GetPropertyIndexByName(std::string_view name) const;
-    const MaterialProperty &GetPropertyByName(std::string_view name) const;
+    int GetPropertyIndexByName(MaterialPropertyName name) const;
+    const MaterialProperty &GetPropertyByName(MaterialPropertyName name) const;
 
 private:
 
     // value0, value1, ..., resource0, resource1, ...
-    std::vector<MaterialProperty>           sortedProperties_;
-    std::map<std::string, int, std::less<>> nameToIndex_;
-    size_t                                  valueBufferSize_;
-    std::vector<size_t>                     valueIndexToOffset_;
+    std::vector<MaterialProperty>                    sortedProperties_;
+    std::map<MaterialPropertyName, int, std::less<>> nameToIndex_;
+    size_t                                           valueBufferSize_;
+    std::vector<size_t>                              valueIndexToOffset_;
 };
 
 // Describe how to create constantBuffer/bindingGroup for a material pass instance
@@ -185,7 +189,7 @@ private:
     mutable Signal<SignalThreadPolicy::SpinLock> onDestroyCallbacks_;
 };
 
-class Material : public std::enable_shared_from_this<Material>, public InObjectCache
+class Material : public std::enable_shared_from_this<Material>, public InObjectCache, public WithUniqueObjectID
 {
 public:
 
@@ -296,7 +300,7 @@ inline size_t MaterialPropertyHostLayout::GetValueOffset(int index) const
     return valueIndexToOffset_[index];
 }
 
-inline size_t MaterialPropertyHostLayout::GetValueOffset(std::string_view name) const
+inline size_t MaterialPropertyHostLayout::GetValueOffset(MaterialPropertyName name) const
 {
     auto it = nameToIndex_.find(name);
     if(it == nameToIndex_.end())
@@ -307,13 +311,13 @@ inline size_t MaterialPropertyHostLayout::GetValueOffset(std::string_view name) 
 }
 
 // return -1 when not found
-inline int MaterialPropertyHostLayout::GetPropertyIndexByName(std::string_view name) const
+inline int MaterialPropertyHostLayout::GetPropertyIndexByName(MaterialPropertyName name) const
 {
     auto it = nameToIndex_.find(name);
     return it != nameToIndex_.end() ? it->second : -1;
 }
 
-inline const MaterialProperty &MaterialPropertyHostLayout::GetPropertyByName(std::string_view name) const
+inline const MaterialProperty &MaterialPropertyHostLayout::GetPropertyByName(MaterialPropertyName name) const
 {
     const int index = GetPropertyIndexByName(name);
     if(index < 0)

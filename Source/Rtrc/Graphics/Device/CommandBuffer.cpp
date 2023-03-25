@@ -131,6 +131,44 @@ BarrierBatch &BarrierBatch::operator()(
         succLayout, RHI::PipelineStage::All, RHI::ResourceAccess::All);
 }
 
+BarrierBatch &BarrierBatch::Add(std::vector<RHI::BufferTransitionBarrier> &&bufferBarriers)
+{
+    if(BT_.empty())
+    {
+        BT_ = std::move(bufferBarriers);
+    }
+    else
+    {
+        std::ranges::copy(bufferBarriers, std::back_inserter(BT_));
+    }
+    return *this;
+}
+
+BarrierBatch &BarrierBatch::Add(std::vector<RHI::TextureTransitionBarrier> &&textureBarriers)
+{
+    if(TT_.empty())
+    {
+        TT_ = std::move(textureBarriers);
+    }
+    else
+    {
+        std::ranges::copy(textureBarriers, std::back_inserter(TT_));
+    }
+    return *this;
+}
+
+BarrierBatch &BarrierBatch::Add(const std::vector<RHI::BufferTransitionBarrier> &bufferBarriers)
+{
+    std::ranges::copy(bufferBarriers, std::back_inserter(BT_));
+    return *this;
+}
+
+BarrierBatch &BarrierBatch::Add(const std::vector<RHI::TextureTransitionBarrier> &textureBarriers)
+{
+    std::ranges::copy(textureBarriers, std::back_inserter(TT_));
+    return *this;
+}
+
 CommandBuffer::CommandBuffer()
     : device_(nullptr), manager_(nullptr), queueType_(RHI::QueueType::Graphics), pool_(nullptr)
 {
@@ -335,7 +373,7 @@ void CommandBuffer::SetVertexBuffers(int slot, Span<RC<SubBuffer>> buffers)
     std::vector<size_t> rhiByteOffsets(buffers.size());
     for(size_t i = 0; i < buffers.size(); ++i)
     {
-        rhiBuffers[i] = buffers[i]->GetFullBuffer()->GetRHIObject();
+        rhiBuffers[i] = buffers[i]->GetFullBufferRHIObject();
         rhiByteOffsets[i] = buffers[i]->GetSubBufferOffset();
     }
     rhiCommandBuffer_->SetVertexBuffer(slot, rhiBuffers, rhiByteOffsets);
@@ -344,13 +382,13 @@ void CommandBuffer::SetVertexBuffers(int slot, Span<RC<SubBuffer>> buffers)
 void CommandBuffer::SetIndexBuffer(const RC<SubBuffer> &buffer, RHI::IndexFormat format)
 {
     CheckThreadID();
-    rhiCommandBuffer_->SetIndexBuffer(buffer->GetFullBuffer()->GetRHIObject(), buffer->GetSubBufferOffset(), format);
+    rhiCommandBuffer_->SetIndexBuffer(buffer->GetFullBufferRHIObject(), buffer->GetSubBufferOffset(), format);
 }
 
 void CommandBuffer::BindMesh(const Mesh &mesh)
 {
     CheckThreadID();
-    mesh.GetRenderingData()->Bind(*this);
+    mesh.GetRenderingData()->BindVertexAndIndexBuffers(*this);
 }
 
 void CommandBuffer::SetStencilReferenceValue(uint8_t value)
@@ -552,10 +590,10 @@ void CommandBuffer::Trace(
 }
 
 void CommandBuffer::BuildBlas(
-    const RC<Blas>                               &blas,
-    Span<RHI::RayTracingGeometryDesc>             geometries,
-    RHI::RayTracingAccelerationStructureBuildFlag flags,
-    const RC<SubBuffer>                          &scratchBuffer)
+    const RC<Blas>                                &blas,
+    Span<RHI::RayTracingGeometryDesc>              geometries,
+    RHI::RayTracingAccelerationStructureBuildFlags flags,
+    const RC<SubBuffer>                           &scratchBuffer)
 {
     auto prebuildInfo = device_->CreateBlasPrebuildinfo(geometries, flags);
     BuildBlas(blas, geometries, prebuildInfo, scratchBuffer);
@@ -598,10 +636,10 @@ void CommandBuffer::BuildBlas(
 }
 
 void CommandBuffer::BuildTlas(
-    const RC<Tlas>                               &tlas,
-    Span<RHI::RayTracingInstanceArrayDesc>        instanceArrays,
-    RHI::RayTracingAccelerationStructureBuildFlag flags,
-    const RC<SubBuffer>                          &scratchBuffer)
+    const RC<Tlas>                                &tlas,
+    Span<RHI::RayTracingInstanceArrayDesc>         instanceArrays,
+    RHI::RayTracingAccelerationStructureBuildFlags flags,
+    const RC<SubBuffer>                           &scratchBuffer)
 {
     auto prebuildInfo = device_->CreateTlasPrebuildInfo(instanceArrays, flags);
     return BuildTlas(tlas, instanceArrays, prebuildInfo, scratchBuffer);

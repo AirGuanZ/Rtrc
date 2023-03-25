@@ -6,9 +6,9 @@
 RTRC_RHI_VK_BEGIN
 
 VulkanBlasPrebuildInfo::VulkanBlasPrebuildInfo(
-    VulkanDevice                            *device,
-    Span<RayTracingGeometryDesc>             geometries,
-    RayTracingAccelerationStructureBuildFlag flags)
+    VulkanDevice                             *device,
+    Span<RayTracingGeometryDesc>              geometries,
+    RayTracingAccelerationStructureBuildFlags flags)
     : device_(device), prebuildInfo_{}, vkBuildGeometryInfo_ {}
 {
 #if RTRC_DEBUG

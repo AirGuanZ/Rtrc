@@ -4,7 +4,7 @@
 #include <Rtrc/Scene/Scene.h>
 #include <Rtrc/Renderer/Utility/TransientConstantBufferAllocator.h>
 
-RTRC_BEGIN
+RTRC_RENDERER_BEGIN
 
 namespace DeferredRendererCommon
 {
@@ -84,4 +84,4 @@ namespace DeferredRendererCommon
 
 } // namespace DeferredRendererCommon
 
-RTRC_END
+RTRC_RENDERER_END

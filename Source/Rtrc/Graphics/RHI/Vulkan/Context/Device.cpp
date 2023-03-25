@@ -1291,13 +1291,13 @@ TlasPtr VulkanDevice::CreateTlas(const BufferPtr &buffer, size_t offset, size_t 
 }
 
 BlasPrebuildInfoPtr VulkanDevice::CreateBlasPrebuildInfo(
-    Span<RayTracingGeometryDesc> geometries, RayTracingAccelerationStructureBuildFlag flags)
+    Span<RayTracingGeometryDesc> geometries, RayTracingAccelerationStructureBuildFlags flags)
 {
     return MakePtr<VulkanBlasPrebuildInfo>(this, geometries, flags);
 }
 
 TlasPrebuildInfoPtr VulkanDevice::CreateTlasPrebuildInfo(
-    Span<RayTracingInstanceArrayDesc> instanceArrays, RayTracingAccelerationStructureBuildFlag flags)
+    Span<RayTracingInstanceArrayDesc> instanceArrays, RayTracingAccelerationStructureBuildFlags flags)
 {
     return MakePtr<VulkanTlasPrebuildInfo>(this, instanceArrays, flags);
 }

@@ -88,7 +88,7 @@ MaterialPassPropertyLayout::MaterialPassPropertyLayout(const MaterialPropertyHos
                     { Int,   Scalar, 0 }, { Int,   Vector, 2 }, { Int,   Vector, 3 }, { Int,   Vector, 4 },
                 };
 
-                const int propIndex = materialPropertyLayout.GetPropertyIndexByName(member.name);
+                const int propIndex = materialPropertyLayout.GetPropertyIndexByName(member.pooledName);
                 if(propIndex == -1)
                 {
                     throw Exception(fmt::format("Value property {} is not found in 'Material' cbuffer", member.name));
@@ -133,12 +133,13 @@ MaterialPassPropertyLayout::MaterialPassPropertyLayout(const MaterialPropertyHos
         auto &desc = bindingGroupLayout_->GetRHIObject()->GetDesc();
         for(auto &&[bindingIndex, binding] : Enumerate(desc.bindings))
         {
-            const std::string &bindingName = shader.GetBindingNameMap().GetBindingName(bindingGroupIndex_, bindingIndex);
-
+            const GeneralPooledString &bindingName =
+                shader.GetBindingNameMap().GetPooledBindingName(bindingGroupIndex_, bindingIndex);
+            
             if(binding.type == RHI::BindingType::ConstantBuffer)
             {
 #if RTRC_DEBUG
-                if(bindingName != "Material")
+                if(bindingName != RTRC_GENERAL_POOLED_STRING(Material))
                 {
                     throw Exception("Constant buffer in 'Material' binding group must have name 'Material'");
                 }

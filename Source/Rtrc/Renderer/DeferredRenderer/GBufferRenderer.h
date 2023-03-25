@@ -6,7 +6,7 @@
 #include <Rtrc/Scene/Camera/Camera.h>
 #include <Rtrc/Scene/Scene.h>
 
-RTRC_BEGIN
+RTRC_RENDERER_BEGIN
 
 class GBufferRenderer : public Uncopyable
 {
@@ -51,4 +51,4 @@ private:
     MaterialPassToGraphicsPipeline renderGBuffersPipelines_;
 };
 
-RTRC_END
+RTRC_RENDERER_END

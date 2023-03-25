@@ -66,7 +66,7 @@ VkImageSubresourceRange  TranslateImageSubresources     (Format format, const Te
 VkFormat                 TranslateInputAttributeType    (VertexAttributeType type);
 VkIndexType              TranslateIndexFormat           (IndexFormat format);
 
-VkBuildAccelerationStructureFlagsKHR TranslateAccelerationStructureBuildFlags(RayTracingAccelerationStructureBuildFlag flags);
+VkBuildAccelerationStructureFlagsKHR TranslateAccelerationStructureBuildFlags(RayTracingAccelerationStructureBuildFlags flags);
 VkGeometryTypeKHR                    TranslateGeometryType                   (RayTracingGeometryType type);
 VkFormat                             TranslateGeometryVertexFormat           (RayTracingVertexFormat format);
 VkIndexType                          TranslateRayTracingIndexType            (RayTracingIndexFormat format);

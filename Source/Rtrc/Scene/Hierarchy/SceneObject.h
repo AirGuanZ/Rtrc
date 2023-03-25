@@ -8,7 +8,7 @@
 
 RTRC_BEGIN
 
-class RendererProxy;
+class RenderProxy;
 
 class SceneObject : public Uncopyable
 {

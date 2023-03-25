@@ -1,40 +1,41 @@
-#include <Rtrc/Scene/Renderer/StaticMeshRenderer.h>
+#include <Rtrc/Scene/Renderer/StaticMeshRenderObject.h>
 
 RTRC_BEGIN
 
-StaticMeshRenderer::~StaticMeshRenderer()
+StaticMeshRenderObject::~StaticMeshRenderObject()
 {
     assert(manager_);
     manager_->_internalRelease(this);
 }
 
-StaticMeshRendererProxy *StaticMeshRenderer::CreateProxyRaw(LinearAllocator &proxyAllocator) const
+StaticMeshRenderProxy *StaticMeshRenderObject::CreateProxyRaw(LinearAllocator &proxyAllocator) const
 {
     if(!mesh_ || !matInst_)
     {
         return nullptr;
     }
-    auto proxy = proxyAllocator.Create<StaticMeshRendererProxy>();
-    proxy->type = RendererProxy::Type::StaticMesh;
+    auto proxy = proxyAllocator.Create<StaticMeshRenderProxy>();
+    proxy->type = RenderProxy::Type::StaticMesh;
     proxy->localToWorld = GetLocalToWorld();
     proxy->worldToLocal = GetWorldToLocal();
     proxy->localBound = GetLocalBound();
     proxy->worldBound = GetWorldBound();
+    proxy->rayTracingFlags = rayTracingFlags_;
     proxy->meshRenderingData = mesh_->GetRenderingData();
     proxy->materialRenderingData = matInst_->GetRenderingData();
     return proxy;
 }
 
-Box<StaticMeshRenderer> StaticMeshRendererManager::CreateStaticMeshRenderer()
+Box<StaticMeshRenderObject> StaticMeshRendererManager::CreateStaticMeshRenderer()
 {
-    auto ret = MakeBox<StaticMeshRenderer>();
+    auto ret = MakeBox<StaticMeshRenderObject>();
     renderers_.push_front(ret.get());
     ret->manager_ = this;
     ret->iterator_ = renderers_.begin();
     return ret;
 }
 
-void StaticMeshRendererManager::_internalRelease(StaticMeshRenderer *renderer)
+void StaticMeshRendererManager::_internalRelease(StaticMeshRenderObject *renderer)
 {
     assert(renderer && renderer->manager_ == this);
     renderers_.erase(renderer->iterator_);

@@ -80,6 +80,11 @@ namespace BindingGroupDSL
             _rtrcObj = std::move(value);
             return *this;
         }
+
+        auto &operator=(const RC<SubBuffer> &buffer)
+        {
+            return *this = buffer->GetTexelSrv();
+        }
     };
     
     struct MemberProxy_RWBuffer
@@ -92,6 +97,11 @@ namespace BindingGroupDSL
             assert(value.GetRHIObject()->GetDesc().format != RHI::Format::Unknown);
             _rtrcObj = std::move(value);
             return *this;
+        }
+
+        auto &operator=(const RC<SubBuffer> &buffer)
+        {
+            return *this = buffer->GetTexelUav();
         }
     };
     
@@ -108,9 +118,9 @@ namespace BindingGroupDSL
             return *this;
         }
 
-        auto &operator=(const RC<Buffer> &buffer)
+        auto &operator=(const RC<SubBuffer> &buffer)
         {
-            return *this = buffer->GetSrv();
+            return *this = buffer->GetStructuredSrv();
         }
     };
     
@@ -125,6 +135,11 @@ namespace BindingGroupDSL
             assert(value.GetRHIObject()->GetDesc().stride);
             _rtrcObj = std::move(value);
             return *this;
+        }
+
+        auto &operator=(const RC<SubBuffer> &buffer)
+        {
+            return *this = buffer->GetStructuredUav();
         }
     };
 
@@ -502,7 +517,7 @@ void ApplyBindingGroup(RHI::Device *device, ConstantBufferManagerInterface *cbMg
                 {
                     auto cbuffer = accessor(&value)->_rtrcObj;
                     batch.Append(*group.GetRHIObject(), index++, RHI::ConstantBufferUpdate{
-                        cbuffer->GetFullBuffer()->GetRHIObject().Get(),
+                        cbuffer->GetFullBufferRHIObject().Get(),
                         cbuffer->GetSubBufferOffset(),
                         cbuffer->GetSubBufferSize()
                     });
@@ -518,7 +533,7 @@ void ApplyBindingGroup(RHI::Device *device, ConstantBufferManagerInterface *cbMg
                     }
                     auto cbuffer = cbMgr->CreateConstantBuffer(static_cast<const CBufferStruct &>(*accessor(&value)));
                     batch.Append(*group.GetRHIObject(), index++, RHI::ConstantBufferUpdate{
-                        cbuffer->GetFullBuffer()->GetRHIObject().Get(),
+                        cbuffer->GetFullBufferRHIObject().Get(),
                         cbuffer->GetSubBufferOffset(),
                         cbuffer->GetSubBufferSize()
                     });
@@ -552,7 +567,7 @@ void ApplyBindingGroup(RHI::Device *device, ConstantBufferManagerInterface *cbMg
         const int actualIndex = swapUniformAndVariableSizedArray ? (index - 1) : index;
         auto cbuffer = cbMgr->CreateConstantBuffer(deviceData.data(), deviceData.size());
         batch.Append(*group.GetRHIObject(), actualIndex, RHI::ConstantBufferUpdate{
-            cbuffer->GetFullBuffer()->GetRHIObject().Get(),
+            cbuffer->GetFullBufferRHIObject().Get(),
             cbuffer->GetSubBufferOffset(),
             cbuffer->GetSubBufferSize()
         });

@@ -1,10 +1,13 @@
 #include <Rtrc/Application/Application.h>
 #include <Rtrc/Graphics/RenderGraph/Executable.h>
+#include <Rtrc/Utility/Thread.h>
 
 RTRC_BEGIN
 
 void Application::Run(const Config &config)
 {
+    SetThreadMode(ThreadUtility::ThreadMode::Standard);
+
     window_ = WindowBuilder()
         .SetTitle(config.title)
         .SetSize(config.width, config.height)
@@ -23,23 +26,21 @@ void Application::Run(const Config &config)
     window_.SetFocus();
     RTRC_SCOPE_EXIT{ window_.GetInput().LockCursor(false); };
 
-    imgui_ = MakeBox<ImGuiInstance>(*device_, window_);
+    imgui_                 = MakeBox<ImGuiInstance>(device_, window_);
+    resourceManager_       = MakeBox<ResourceManager>(device_);
+    bindlessTextureManager = MakeBox<BindlessTextureManager>(device_);
 
-    renderLoop_ = MakeBox<RenderLoop>(*device_);
-    
-    try
-    {
-        UpdateLoop();
-    }
-    catch(...)
-    {
-        throw;
-    }
+    activeScene_ = MakeBox<Scene>();
+
+    renderLoop_ = MakeBox<RenderLoop>(device_, resourceManager_->GetBuiltinResources(), bindlessTextureManager);
+    RTRC_SCOPE_EXIT{ renderLoop_->AddCommand(Renderer::RenderCommand_Exit{}); };
+
+    UpdateLoop();
 }
 
 void Application::UpdateLoop()
 {
-    RTRC_SCOPE_EXIT{ renderLoop_->AddCommand(RenderLoop::Command_Exit{}); };
+    SetThreadIndentifier(ThreadUtility::ThreadIdentifier::Main);
 
     std::binary_semaphore framebufferResizeSemaphore(0);
     std::binary_semaphore finishRenderSemaphore(1);
@@ -53,10 +54,12 @@ void Application::UpdateLoop()
             window_.SetCloseFlag(true);
         }
 
+        // Handle window resize
+
         if(framebufferSize != window_.GetFramebufferSize())
         {
             framebufferSize = window_.GetFramebufferSize();
-            renderLoop_->AddCommand(RenderLoop::Command_ResizeFramebuffer
+            renderLoop_->AddCommand(Renderer::RenderCommand_ResizeFramebuffer
             {
                 .width           = static_cast<uint32_t>(framebufferSize.x),
                 .height          = static_cast<uint32_t>(framebufferSize.y),
@@ -65,9 +68,11 @@ void Application::UpdateLoop()
             framebufferResizeSemaphore.acquire();
         }
 
+        // ImGui
+
         imgui_->BeginFrame();
 
-        if(imgui_->Begin("Test", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+        if(imgui_->Begin("Test"))
         {
             if(imgui_->Button("Exit"))
             {
@@ -76,13 +81,20 @@ void Application::UpdateLoop()
         }
         imgui_->End();
 
-        RenderLoop::Command_RenderFrame renderFrame;
-        renderFrame.cameraProxy = {};
-        renderFrame.sceneProxy = {};
-        renderFrame.imguiDrawData = imgui_->Render();
-        renderFrame.finishSemaphore = &finishRenderSemaphore;
-        finishRenderSemaphore.acquire();
-        renderLoop_->AddCommand(std::move(renderFrame));
+        // Send render command
+
+        {
+            activeScene_->PrepareRendering();
+            auto activeSceneProxy = activeScene_->CreateSceneProxy();
+
+            Renderer::RenderCommand_RenderStandaloneFrame frame;
+            frame.scene = std::move(activeSceneProxy);
+            frame.camera = activeCamera_;
+            frame.imguiDrawData = imgui_->Render();
+            frame.finishSemaphore = &finishRenderSemaphore;
+            finishRenderSemaphore.acquire();
+            renderLoop_->AddCommand(std::move(frame));
+        }
     }
 }
 

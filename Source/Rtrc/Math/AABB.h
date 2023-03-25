@@ -24,6 +24,8 @@ public:
     T ComputeSurfaceArea() const;
     T ComputeVolume() const;
 
+    Vector3<T> ComputeCenter() const;
+
     bool Contains(const Vector3<T> &point) const;
     AABB3 Contains(const AABB3 &box) const;
 
@@ -113,6 +115,13 @@ bool AABB3<T>::Contains(const Vector3<T> &point) const
            upper.x >= point.x &&
            upper.y >= point.y &&
            upper.z >= point.z;
+}
+
+template<typename T>
+Vector3<T> AABB3<T>::ComputeCenter() const
+{
+    static_assert(std::is_floating_point_v<T>);
+    return static_cast<float>(0.5) * (lower + upper);
 }
 
 template<typename T>

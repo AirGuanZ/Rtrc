@@ -1,7 +1,7 @@
 #include <Rtrc/Renderer/DeferredRenderer/GBufferRenderer.h>
 #include <Rtrc/Utility/Enumerate.h>
 
-RTRC_BEGIN
+RTRC_RENDERER_BEGIN
 
 GBufferRenderer::GBufferRenderer(Device &device)
     : device_(device)
@@ -116,31 +116,31 @@ void GBufferRenderer::DoRenderGBufferPass(
         ColorAttachment
         {
             .renderTargetView = gbufferA->CreateRtv(),
-            .loadOp = AttachmentLoadOp::Clear,
-            .storeOp = AttachmentStoreOp::Store,
-            .clearValue = { 0, 0, 0, 0 }
+            .loadOp           = AttachmentLoadOp::Clear,
+            .storeOp          = AttachmentStoreOp::Store,
+            .clearValue       = { 0, 0, 0, 0 }
         },
         ColorAttachment
         {
             .renderTargetView = gbufferB->CreateRtv(),
-            .loadOp = AttachmentLoadOp::Clear,
-            .storeOp = AttachmentStoreOp::Store,
-            .clearValue = { 0, 0, 0, 0 }
+            .loadOp           = AttachmentLoadOp::Clear,
+            .storeOp          = AttachmentStoreOp::Store,
+            .clearValue       = { 0, 0, 0, 0 }
         },
         ColorAttachment
         {
             .renderTargetView = gbufferC->CreateRtv(),
-            .loadOp = AttachmentLoadOp::Clear,
-            .storeOp = AttachmentStoreOp::Store,
-            .clearValue = { 0, 0, 0, 0 }
+            .loadOp           = AttachmentLoadOp::Clear,
+            .storeOp          = AttachmentStoreOp::Store,
+            .clearValue       = { 0, 0, 0, 0 }
         }
     },
     DepthStencilAttachment
     {
         .depthStencilView = gbufferDepth->CreateDsv(),
-        .loadOp = AttachmentLoadOp::Clear,
-        .storeOp = AttachmentStoreOp::Store,
-        .clearValue = DepthStencilClearValue{ 1, 0 }
+        .loadOp           = AttachmentLoadOp::Clear,
+        .storeOp          = AttachmentStoreOp::Store,
+        .clearValue       = DepthStencilClearValue{ 1, 0 }
     });
     RTRC_SCOPE_EXIT{ cmd.EndRenderPass(); };
 
@@ -157,13 +157,13 @@ void GBufferRenderer::DoRenderGBufferPass(
 
     // Filter & sort static mesh renderers
 
-    std::vector<const StaticMeshRendererProxy *> staticMeshRendererProxies =
+    std::vector<const StaticMeshRenderProxy *> staticMeshRendererProxies =
     {
         frameContext.scene->GetStaticMeshRenderers().begin(),
         frameContext.scene->GetStaticMeshRenderers().end(),
     };
     std::ranges::sort(staticMeshRendererProxies,
-        [](const StaticMeshRendererProxy *lhs, const StaticMeshRendererProxy *rhs)
+        [](const StaticMeshRenderProxy *lhs, const StaticMeshRenderProxy *rhs)
     {
         return std::make_tuple(lhs->materialRenderingData.Get(), lhs->meshRenderingData.Get()) <
                std::make_tuple(rhs->materialRenderingData.Get(), rhs->meshRenderingData.Get());
@@ -173,7 +173,7 @@ void GBufferRenderer::DoRenderGBufferPass(
 
     std::vector<RC<BindingGroup>> staticMeshBindingGroups;
     staticMeshBindingGroups.reserve(staticMeshRendererProxies.size());
-    for(const StaticMeshRendererProxy *staticMesh : staticMeshRendererProxies)
+    for(const StaticMeshRenderProxy *staticMesh : staticMeshRendererProxies)
     {
         StaticMeshCBuffer cbuffer;
         cbuffer.localToWorld  = staticMesh->localToWorld;
@@ -263,7 +263,7 @@ void GBufferRenderer::DoRenderGBufferPass(
 
         if(mesh.Get() != lastMesh)
         {
-            mesh->Bind(cmd);
+            mesh->BindVertexAndIndexBuffers(cmd);
             lastMesh = mesh.Get();
         }
 
@@ -278,4 +278,4 @@ void GBufferRenderer::DoRenderGBufferPass(
     }
 }
 
-RTRC_END
+RTRC_RENDERER_END

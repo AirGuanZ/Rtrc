@@ -103,13 +103,13 @@ Span<VertexBufferLayout::VertexAttribute> VertexBufferLayout::GetAttributes() co
     return attribs_;
 }
 
-const VertexBufferLayout::VertexAttribute *VertexBufferLayout::GetAttributeBySemantic(std::string_view semantic) const
+const VertexBufferLayout::VertexAttribute *VertexBufferLayout::GetAttributeBySemantic(VertexSemantic semantic) const
 {
     const int index = GetAttributeIndexBySemantic(semantic);
     return index >= 0 ? &attribs_[index] : nullptr;
 }
 
-int VertexBufferLayout::GetAttributeIndexBySemantic(std::string_view semantic) const
+int VertexBufferLayout::GetAttributeIndexBySemantic(VertexSemantic semantic) const
 {
     auto it = semanticToAttribIndex_.find(semantic);
     return it != semanticToAttribIndex_.end() ? it->second : -1;
@@ -162,13 +162,13 @@ Span<const VertexBufferLayout *> MeshLayout::GetVertexBufferLayouts() const
     return vertexBuffers_;
 }
 
-const VertexBufferLayout *MeshLayout::GetVertexBufferLayoutBySemantic(std::string_view semantic) const
+const VertexBufferLayout *MeshLayout::GetVertexBufferLayoutBySemantic(VertexSemantic semantic) const
 {
     const int index = GetVertexBufferIndexBySemantic(semantic);
     return index >= 0 ? vertexBuffers_[index] : nullptr;
 }
 
-int MeshLayout::GetVertexBufferIndexBySemantic(std::string_view semantic) const
+int MeshLayout::GetVertexBufferIndexBySemantic(VertexSemantic semantic) const
 {
     auto it = semanticToBufferIndex_.find(semantic);
     return it != semanticToBufferIndex_.end() ? it->second : -1;

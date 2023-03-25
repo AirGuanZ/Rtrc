@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Rtrc/Graphics/RHI/RHI.h>
+#include <Rtrc/Graphics/Mesh/MeshLayout.h>
 
 struct SpvReflectShaderModule;
 
@@ -8,7 +9,7 @@ RTRC_BEGIN
 
 struct ShaderIOVar
 {
-    std::string semantic;
+    VertexSemantic semantic;
     RHI::VertexAttributeType type;
     bool isBuiltin;
     int location;
@@ -34,7 +35,10 @@ struct ShaderStruct
 
         ElementType elementType = ElementType::Float;
         MatrixType matrixType = MatrixType::Scalar;
+
         std::string name;
+        GeneralPooledString pooledName;
+
         int rowSize = 0; // valid when matrixType == Vector/Matrix
         int colSize = 0; // valid when matrixType == Matrix
         StaticVector<int, 16> arraySizes;
@@ -42,7 +46,7 @@ struct ShaderStruct
 
         bool operator==(const Member &rhs) const
         {
-            if(std::tie(elementType, name, arraySizes) == std::tie(rhs.elementType, rhs.name, rhs.arraySizes))
+            if(std::tie(elementType, pooledName, arraySizes) == std::tie(rhs.elementType, rhs.pooledName, rhs.arraySizes))
             {
                 assert(!structInfo == !rhs.structInfo);
                 return structInfo ? *structInfo == *rhs.structInfo : true;

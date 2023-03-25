@@ -97,6 +97,12 @@ public:
         RHI::TextureLayout prevLayout,
         RHI::TextureLayout succLayout);
 
+    BarrierBatch &Add(std::vector<RHI::BufferTransitionBarrier> &&bufferBarriers);
+    BarrierBatch &Add(std::vector<RHI::TextureTransitionBarrier> &&textureBarriers);
+
+    BarrierBatch &Add(const std::vector<RHI::BufferTransitionBarrier> &bufferBarriers);
+    BarrierBatch &Add(const std::vector<RHI::TextureTransitionBarrier> &textureBarriers);
+
 private:
 
     friend class CommandBuffer;
@@ -210,10 +216,10 @@ public:
     //   use given scratchBuffer
 
     void BuildBlas(
-        const RC<Blas>                               &blas,
-        Span<RHI::RayTracingGeometryDesc>             geometries,
-        RHI::RayTracingAccelerationStructureBuildFlag flags,
-        const RC<SubBuffer>                          &scratchBuffer);
+        const RC<Blas>                                &blas,
+        Span<RHI::RayTracingGeometryDesc>              geometries,
+        RHI::RayTracingAccelerationStructureBuildFlags flags,
+        const RC<SubBuffer>                           &scratchBuffer);
     void BuildBlas(
         const RC<Blas>                   &blas,
         Span<RHI::RayTracingGeometryDesc> geometries,
@@ -221,10 +227,10 @@ public:
         const RC<SubBuffer>              &scratchBuffer);
 
     void BuildTlas(
-        const RC<Tlas>                               &tlas,
-        Span<RHI::RayTracingInstanceArrayDesc>        instanceArrays,
-        RHI::RayTracingAccelerationStructureBuildFlag flags,
-        const RC<SubBuffer>                          &scratchBuffer);
+        const RC<Tlas>                                &tlas,
+        Span<RHI::RayTracingInstanceArrayDesc>         instanceArrays,
+        RHI::RayTracingAccelerationStructureBuildFlags flags,
+        const RC<SubBuffer>                           &scratchBuffer);
     void BuildTlas(
         const RC<Tlas>                        &tlas,
         Span<RHI::RayTracingInstanceArrayDesc> instanceArrays,

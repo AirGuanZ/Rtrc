@@ -15,7 +15,7 @@ namespace MeshManagerDetail
         None                        = 0,
         GenerateTangentIfNotPresent = 1 << 0,
         RemoveIndexBuffer           = 1 << 1,
-        GenerateBlas                = 1 << 2,
+        AllowBlas                   = 1 << 2,
     };
     RTRC_DEFINE_ENUM_FLAGS(LoadMeshFlagBit)
     using LoadMeshFlags = EnumFlagsLoadMeshFlagBit;

@@ -53,10 +53,27 @@ public:
     virtual size_t GetSubBufferOffset() const = 0;
     virtual size_t GetSubBufferSize() const = 0;
 
+    virtual const RHI::BufferPtr &GetFullBufferRHIObject();
     RHI::BufferDeviceAddress GetDeviceAddress();
 
     static RC<SubBuffer> GetSubRange(RC<SubBuffer> buffer, size_t offset, size_t size);
     static RC<SubBuffer> GetSubRange(RC<Buffer> buffer, size_t offset, size_t size);
+
+    BufferSrv GetStructuredSrv();
+    BufferSrv GetStructuredSrv(size_t structStride);
+    BufferSrv GetStructuredSrv(size_t byteOffset, size_t structStride);
+
+    BufferSrv GetTexelSrv();
+    BufferSrv GetTexelSrv(RHI::Format texelFormat);
+    BufferSrv GetTexelSrv(size_t byteOffset, RHI::Format texelFormat);
+
+    BufferUav GetStructuredUav();
+    BufferUav GetStructuredUav(size_t structStride);
+    BufferUav GetStructuredUav(size_t byteOffset, size_t structStride);
+
+    BufferUav GetTexelUav();
+    BufferUav GetTexelUav(RHI::Format texelFormat);
+    BufferUav GetTexelUav(size_t byteOffset, RHI::Format texelFormat);
 };
 
 class Buffer : protected BufferImpl::BufferData, public SubBuffer, public std::enable_shared_from_this<Buffer>
@@ -75,19 +92,16 @@ public:
     size_t GetSubBufferOffset() const override;
     size_t GetSubBufferSize() const override;
 
+    const RHI::BufferPtr &GetFullBufferRHIObject() override;
+
     void SetDefaultTexelFormat(RHI::Format format);
     void SetDefaultStructStride(size_t stride);
 
+    RHI::Format GetDefaultTexelFormat() const;
+    size_t GetDefaultStructStride() const;
+
     void Upload(const void *data, size_t offset, size_t size);
     void Download(void *data, size_t offset, size_t size);
-
-    BufferSrv GetSrv();
-    BufferSrv GetSrv(RHI::Format texelFormat);
-    BufferSrv GetSrv(size_t structStride);
-
-    BufferUav GetUav();
-    BufferUav GetUav(RHI::Format texelFormat);
-    BufferUav GetUav(size_t structStride);
 
 private:
 
@@ -158,6 +172,11 @@ inline size_t Buffer::GetSubBufferSize() const
     return size_;
 }
 
+inline const RHI::BufferPtr &Buffer::GetFullBufferRHIObject()
+{
+    return rhiBuffer_;
+}
+
 inline void Buffer::SetDefaultTexelFormat(RHI::Format format)
 {
     defaultViewTexelFormat_ = format;
@@ -166,6 +185,16 @@ inline void Buffer::SetDefaultTexelFormat(RHI::Format format)
 inline void Buffer::SetDefaultStructStride(size_t stride)
 {
     defaultViewStructStride_ = static_cast<uint32_t>(stride);
+}
+
+inline RHI::Format Buffer::GetDefaultTexelFormat() const
+{
+    return defaultViewTexelFormat_;
+}
+
+inline size_t Buffer::GetDefaultStructStride() const
+{
+    return defaultViewStructStride_;
 }
 
 inline void Buffer::Upload(const void *data, size_t offset, size_t size)

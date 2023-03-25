@@ -1,7 +1,7 @@
 #include <Rtrc/Math/LowDiscrepancy.h>
 #include <Rtrc/Renderer/Atmosphere/AtmosphereRenderer.h>
 
-RTRC_BEGIN
+RTRC_RENDERER_BEGIN
 
 namespace AtmosphereDetail
 {
@@ -109,7 +109,7 @@ AtmosphereDetail::MultiScatterLut::MultiScatterLut(
     }
     poissonDiskSamples->SetName("PoissonDiskSamples");
     poissonDiskSamples->SetDefaultStructStride(sizeof(Vector2f));
-    auto poissonDiskSamplesSrv = poissonDiskSamples->GetSrv();
+    auto poissonDiskSamplesSrv = poissonDiskSamples->GetStructuredSrv();
 
     auto lut = device.CreateTexture(RHI::TextureDesc
     {
@@ -355,4 +355,4 @@ AtmosphereRenderer::RenderGraphInterface AtmosphereDetail::AtmosphereRenderer::A
     return ret;
 }
 
-RTRC_END
+RTRC_RENDERER_END

@@ -482,9 +482,12 @@ enum class RayTracingAccelerationStructureBuildFlagBit : uint32_t
     PreferLowMemory = 1 << 4,
 };
 RTRC_DEFINE_ENUM_FLAGS(RayTracingAccelerationStructureBuildFlagBit)
-using RayTracingAccelerationStructureBuildFlag = EnumFlagsRayTracingAccelerationStructureBuildFlagBit;
+using RayTracingAccelerationStructureBuildFlags = EnumFlagsRayTracingAccelerationStructureBuildFlagBit;
 
-struct BufferDeviceAddress { uint64_t address; };
+struct BufferDeviceAddress
+{
+    uint64_t address = 0;
+};
 
 inline BufferDeviceAddress operator+(const BufferDeviceAddress &lhs, std::ptrdiff_t rhs)
 {
@@ -1268,11 +1271,11 @@ public:
     RTRC_RHI_API TlasPtr CreateTlas(const BufferPtr &buffer, size_t offset, size_t size) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API BlasPrebuildInfoPtr CreateBlasPrebuildInfo(
-        Span<RayTracingGeometryDesc>             geometries,
-        RayTracingAccelerationStructureBuildFlag flags) RTRC_RHI_API_PURE;
+        Span<RayTracingGeometryDesc>              geometries,
+        RayTracingAccelerationStructureBuildFlags flags) RTRC_RHI_API_PURE;
     RTRC_RHI_API TlasPrebuildInfoPtr CreateTlasPrebuildInfo(
-        Span<RayTracingInstanceArrayDesc>        instanceArrays,
-        RayTracingAccelerationStructureBuildFlag flags) RTRC_RHI_API_PURE;
+        Span<RayTracingInstanceArrayDesc>         instanceArrays,
+        RayTracingAccelerationStructureBuildFlags flags) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API const ShaderGroupRecordRequirements &GetShaderGroupRecordRequirements() RTRC_RHI_API_PURE;
 };

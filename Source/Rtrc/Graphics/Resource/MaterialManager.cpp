@@ -785,7 +785,7 @@ MaterialProperty MaterialManager::ParseProperty(MaterialProperty::Type propertyT
 
     MaterialProperty prop;
     prop.type = propertyType;
-    prop.name = std::move(propertyName);
+    prop.name = MaterialPropertyName(propertyName);
     return prop;
 }
 

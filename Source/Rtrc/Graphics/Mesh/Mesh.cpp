@@ -3,7 +3,18 @@
 
 RTRC_BEGIN
 
-void Mesh::SharedRenderingData::Bind(CommandBuffer &commandBuffer) const
+const VertexBufferLayout *Mesh::BuiltinVertexBufferLayout::Default = RTRC_VERTEX_BUFFER_LAYOUT(
+    Attribute("POSITION", Float3),
+    Attribute("NORMAL",   Float3),
+    Attribute("TEXCOORD", Float2),
+    Attribute("TANGENT",  Float3));
+
+const VertexBufferLayout *Mesh::BuiltinVertexBufferLayout::Simplified = RTRC_VERTEX_BUFFER_LAYOUT(
+    Attribute("POSITION", Float3),
+    Attribute("NORMAL",   Float3),
+    Attribute("TEXCOORD", Float2));
+
+void Mesh::SharedRenderingData::BindVertexAndIndexBuffers(CommandBuffer &commandBuffer) const
 {
     commandBuffer.SetVertexBuffers(0, vertexBuffers_);
     if(indexBuffer_)

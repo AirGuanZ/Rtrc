@@ -886,6 +886,16 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
         bindingNameMap.allBindingNames_[pair.second.first][pair.second.second] = pair.first;
     }
 
+    bindingNameMap.allPooledBindingNames_.resize(bindingNameMap.allBindingNames_.size());
+    for(size_t i = 0; i < bindingNameMap.allBindingNames_.size(); ++i)
+    {
+        std::transform(
+            bindingNameMap.allBindingNames_[i].begin(),
+            bindingNameMap.allBindingNames_[i].end(),
+            std::back_inserter(bindingNameMap.allPooledBindingNames_[i]),
+            [](const std::string &name) { return GeneralPooledString(name); });
+    }
+
     shader->info_->shaderBindingLayoutInfo_->nameToBindingGroupLayoutIndex_ = std::move(bindings.nameToGroupIndex);
     shader->info_->shaderBindingLayoutInfo_->bindingGroupLayouts_ = std::move(groupLayouts);
     shader->info_->shaderBindingLayoutInfo_->bindingGroupNames_ = std::move(bindings.groupNames);

@@ -19,6 +19,9 @@
 #define RTRC_RDG_BEGIN RTRC_BEGIN namespace RDG {
 #define RTRC_RDG_END } RTRC_END
 
+#define RTRC_RENDERER_BEGIN RTRC_BEGIN namespace Renderer {
+#define RTRC_RENDERER_END   } RTRC_END
+
 #if defined(DEBUG) || defined(_DEBUG)
 #define RTRC_DEBUG 1
 #else
@@ -141,7 +144,7 @@ template<typename T>
 constexpr bool AlwaysFalse = false;
 
 template<typename T> requires std::is_scoped_enum_v<T>
-constexpr auto EnumCount = std::underlying_type_t<T>(T::Count);
+constexpr auto EnumCount = std::to_underlying(T::Count);
 
 class WithUniqueObjectID
 {

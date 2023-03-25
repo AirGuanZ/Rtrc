@@ -2,6 +2,7 @@
 
 #include <Rtrc/Renderer/RenderLoop.h>
 #include <Rtrc/Graphics/ImGui/Instance.h>
+#include <Rtrc/Graphics/Resource/ResourceManager.h>
 #include <Rtrc/Renderer/DeferredRenderer/DeferredRenderer.h>
 #include <Rtrc/Utility/Timer.h>
 
@@ -27,10 +28,15 @@ private:
     
     void UpdateLoop();
     
-    Window             window_;
-    Box<Device>        device_;
-    Box<ImGuiInstance> imgui_;
-    Box<RenderLoop>    renderLoop_;
+    Window                      window_;
+    Box<Device>                 device_;
+    Box<ImGuiInstance>          imgui_;
+    Box<ResourceManager>        resourceManager_;
+    Box<BindlessTextureManager> bindlessTextureManager;
+    Box<RenderLoop>             renderLoop_;
+
+    Box<Scene> activeScene_;
+    Camera     activeCamera_;
 };
 
 RTRC_END

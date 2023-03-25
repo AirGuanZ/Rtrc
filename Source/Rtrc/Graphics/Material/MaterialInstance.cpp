@@ -3,8 +3,9 @@
 RTRC_BEGIN
 
 template <MaterialProperty::Type Type, typename T>
-void MaterialPropertySheet::SetImpl(std::string_view name, const T &value)
+void MaterialPropertySheet::SetImpl(MaterialPropertyName name, const T &value)
 {
+    AssertIsMainThread();
     const int index = layout_->GetPropertyIndexByName(name);
     if(index < 0)
     {
@@ -16,6 +17,7 @@ void MaterialPropertySheet::SetImpl(std::string_view name, const T &value)
 template<MaterialProperty::Type Type, typename T>
 void MaterialPropertySheet::SetImpl(int index, const T &value)
 {
+    AssertIsMainThread();
     auto &prop = layout_->GetProperties()[index];
     if(prop.type != Type)
     {
@@ -46,13 +48,15 @@ MaterialPropertySheet::MaterialPropertySheet(RC<MaterialPropertyHostLayout> layo
 
 void MaterialPropertySheet::CopyFrom(const MaterialPropertySheet &other)
 {
+    AssertIsMainThread();
     assert(layout_ == other.layout_);
     valueBuffer_ = other.valueBuffer_;
     resources_ = other.resources_;
 }
 
-void MaterialPropertySheet::Set(std::string_view name, const BindlessTextureEntry &entry)
+void MaterialPropertySheet::Set(MaterialPropertyName name, const BindlessTextureEntry &entry)
 {
+    AssertIsMainThread();
     const int index = layout_->GetPropertyIndexByName(name);
     if(index < 0)
     {
@@ -63,6 +67,7 @@ void MaterialPropertySheet::Set(std::string_view name, const BindlessTextureEntr
 
 void MaterialPropertySheet::Set(int index, const BindlessTextureEntry &entry)
 {
+    AssertIsMainThread();
     auto &prop = layout_->GetProperties()[index];
     if(prop.type == MaterialProperty::Type::UInt)
     {
@@ -92,14 +97,14 @@ void MaterialPropertySheet::Set(int index, const BindlessTextureEntry &entry)
     bindlessEntries_[index] = entry;
 }
 
-#define RTRC_IMPL_SET(VALUE_TYPE, TYPE)                                      \
-    void MaterialPropertySheet::Set(std::string_view name, VALUE_TYPE value) \
-    {                                                                        \
-        this->SetImpl<MaterialProperty::Type::TYPE>(name, value);            \
-    }                                                                        \
-    void MaterialPropertySheet::Set(int index, VALUE_TYPE value)             \
-    {                                                                        \
-        this->SetImpl<MaterialProperty::Type::TYPE>(index, value);           \
+#define RTRC_IMPL_SET(VALUE_TYPE, TYPE)                                          \
+    void MaterialPropertySheet::Set(MaterialPropertyName name, VALUE_TYPE value) \
+    {                                                                            \
+        this->SetImpl<MaterialProperty::Type::TYPE>(name, value);                \
+    }                                                                            \
+    void MaterialPropertySheet::Set(int index, VALUE_TYPE value)                 \
+    {                                                                            \
+        this->SetImpl<MaterialProperty::Type::TYPE>(index, value);               \
     }
 
 RTRC_IMPL_SET(float,            Float)
@@ -125,7 +130,7 @@ RTRC_IMPL_SET(const RC<Tlas>    &, AccelerationStructure)
 
 #undef RTRC_IMPL_SET
 
-const unsigned char *MaterialPropertySheet::GetValue(std::string_view name) const
+const unsigned char *MaterialPropertySheet::GetValue(MaterialPropertyName name) const
 {
     const int index = layout_->GetPropertyIndexByName(name);
     if(index < 0)
@@ -138,6 +143,21 @@ const unsigned char *MaterialPropertySheet::GetValue(std::string_view name) cons
 const unsigned char *MaterialPropertySheet::GetValue(int index) const
 {
     return GetValueBuffer() + layout_->GetValueOffset(index);
+}
+
+const BindlessTextureEntry *MaterialPropertySheet::GetBindlessTextureEntry(MaterialPropertyName name) const
+{
+    const int index = layout_->GetPropertyIndexByName(name);
+    if(index < 0)
+    {
+        throw Exception(fmt::format("Unknown material property: {}", name));
+    }
+    return GetBindlessTextureEntry(index);
+}
+
+const BindlessTextureEntry *MaterialPropertySheet::GetBindlessTextureEntry(int index) const
+{
+    return bindlessEntries_[index] ? &bindlessEntries_[index] : nullptr;
 }
 
 RC<Shader> MaterialPassInstance::GetShader(const KeywordValueContext &keywordValues)

@@ -80,11 +80,11 @@ public:
     AccelerationStructureManager(RHI::DevicePtr device, DeviceSynchronizer &sync);
 
     BlasPrebuildInfo CreateBlasPrebuildinfo(
-        Span<RHI::RayTracingGeometryDesc>             geometries,
-        RHI::RayTracingAccelerationStructureBuildFlag flags);
+        Span<RHI::RayTracingGeometryDesc>              geometries,
+        RHI::RayTracingAccelerationStructureBuildFlags flags);
     TlasPrebuildInfo CreateTlasPrebuildInfo(
-        Span<RHI::RayTracingInstanceArrayDesc>        instanceArrays,
-        RHI::RayTracingAccelerationStructureBuildFlag flags);
+        Span<RHI::RayTracingInstanceArrayDesc>         instanceArrays,
+        RHI::RayTracingAccelerationStructureBuildFlags flags);
 
     RC<Blas> CreateBlas(RC<SubBuffer> buffer = nullptr);
     RC<Tlas> CreateTlas(RC<SubBuffer> buffer = nullptr);

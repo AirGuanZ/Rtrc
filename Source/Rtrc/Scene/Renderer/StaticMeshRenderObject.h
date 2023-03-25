@@ -2,7 +2,7 @@
 
 #include <Rtrc/Graphics/Material/MaterialInstance.h>
 #include <Rtrc/Graphics/Mesh/Mesh.h>
-#include <Rtrc/Scene/Renderer/Renderer.h>
+#include <Rtrc/Scene/Renderer/RenderObject.h>
 #include <Rtrc/Utility/Memory/Arena.h>
 
 RTRC_BEGIN
@@ -30,30 +30,34 @@ rtrc_struct(StaticMeshCBuffer)
     rtrc_var(float4x4, localToClip);
 };
 
-// ========================= Renderer proxy =========================
+// ========================= RenderObject proxy =========================
 
-class StaticMeshRendererProxy : public RendererProxy
+class StaticMeshRenderProxy : public RenderProxy
 {
 public:
 
     using RayTracingFlagBit = StaticMeshRendererRayTracingFlagBit;
     using RayTracingFlags   = StaticMeshRendererRayTracingFlags;
 
-    ReferenceCountedPtr<const Mesh::SharedRenderingData>             meshRenderingData;
-    ReferenceCountedPtr<const MaterialInstance::SharedRenderingData> materialRenderingData;
+    RayTracingFlags                                            rayTracingFlags;
+    ReferenceCountedPtr<Mesh::SharedRenderingData>             meshRenderingData;
+    ReferenceCountedPtr<MaterialInstance::SharedRenderingData> materialRenderingData;
 };
 
-// ========================= Renderer =========================
+// ========================= RenderObject =========================
 
-class StaticMeshRenderer : public Renderer
+class StaticMeshRenderObject : public RenderObject
 {
 public:
 
     using RayTracingFlagBit = StaticMeshRendererRayTracingFlagBit;
     using RayTracingFlags   = StaticMeshRendererRayTracingFlags;
 
-    StaticMeshRenderer() = default;
-    ~StaticMeshRenderer() override;
+    StaticMeshRenderObject() = default;
+    ~StaticMeshRenderObject() override;
+
+    void SetRayTracingFlags(RayTracingFlags flags) { rayTracingFlags_ = flags; }
+    RayTracingFlags GetRayTracingFlags() const { return rayTracingFlags_; }
 
     void SetMesh(RC<Mesh> mesh) { mesh_.swap(mesh); }
     const RC<Mesh> &GetMesh() const { return mesh_; }
@@ -61,44 +65,45 @@ public:
     void SetMaterial(RC<MaterialInstance> material) { matInst_.swap(material); }
     const RC<MaterialInstance> &GetMaterial() const { return matInst_; }
 
-    RendererProxy *CreateProxy(LinearAllocator &proxyAllocator) const override { return CreateProxyRaw(proxyAllocator); }
+    RenderProxy *CreateProxy(LinearAllocator &proxyAllocator) const override { return CreateProxyRaw(proxyAllocator); }
 
-    StaticMeshRendererProxy *CreateProxyRaw(LinearAllocator &proxyAllocator) const;
+    StaticMeshRenderProxy *CreateProxyRaw(LinearAllocator &proxyAllocator) const;
 
 private:
 
     friend class StaticMeshRendererManager;
 
     StaticMeshRendererManager               *manager_ = nullptr;
-    std::list<StaticMeshRenderer*>::iterator iterator_;
+    std::list<StaticMeshRenderObject*>::iterator iterator_;
 
+    RayTracingFlags      rayTracingFlags_;
     RC<Mesh>             mesh_;
     RC<MaterialInstance> matInst_;
 };
 
-// ========================= Renderer manager =========================
+// ========================= RenderObject manager =========================
 
 class StaticMeshRendererManager : public Uncopyable
 {
 public:
 
-    Box<StaticMeshRenderer> CreateStaticMeshRenderer();
+    Box<StaticMeshRenderObject> CreateStaticMeshRenderer();
 
     template<typename F>
     void ForEachRenderer(const F &func) const;
 
-    void _internalRelease(StaticMeshRenderer *renderer);
+    void _internalRelease(StaticMeshRenderObject *renderer);
 
 private:
 
     // IMPROVE: use intrusive list
-    std::list<StaticMeshRenderer*> renderers_;
+    std::list<StaticMeshRenderObject*> renderers_;
 };
 
 template<typename F>
 void StaticMeshRendererManager::ForEachRenderer(const F &func) const
 {
-    for(StaticMeshRenderer *renderer : renderers_)
+    for(StaticMeshRenderObject *renderer : renderers_)
     {
         func(renderer);
     }

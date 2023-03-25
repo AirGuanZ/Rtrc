@@ -79,7 +79,7 @@ namespace ShaderReflDetail
         {
             auto &in = *inputVars[i];
             auto &out = result.emplace_back();
-            out.semantic = ParseInputVarName(in.name ? in.name : "");
+            out.semantic = VertexSemantic(ParseInputVarName(in.name ? in.name : ""));
             out.location = static_cast<int>(in.location);
             out.isBuiltin = (in.decoration_flags & SPV_REFLECT_DECORATION_BUILT_IN) != 0;
             switch(in.format)
@@ -112,6 +112,7 @@ namespace ShaderReflDetail
             auto &newMember = ret->members.emplace_back();
 
             newMember.name = memberDesc->struct_member_name;
+            newMember.pooledName = GeneralPooledString(newMember.name);
 
             if(memberDesc->type_flags & SPV_REFLECT_TYPE_FLAG_ARRAY)
             {

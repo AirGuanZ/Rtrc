@@ -2,6 +2,7 @@
 
 #include <map>
 
+#include <Rtrc/Utility/StringPool.h>
 #include <Rtrc/Utility/Uncopyable.h>
 
 RTRC_BEGIN
@@ -17,6 +18,7 @@ public:
     int GetIndexInBindingGroup(std::string_view bindingName) const;
 
     const std::string &GetBindingName(int groupIndex, int indexInGroup) const;
+    const GeneralPooledString &GetPooledBindingName(int groupIndex, int indexInGroup) const;
 
 private:
 
@@ -31,7 +33,8 @@ private:
     // binding name -> (binding group index, index in group)
     std::map<std::string, BindingIndexInfo, std::less<>> nameToSetAndSlot_;
 
-    std::vector<std::vector<std::string>> allBindingNames_;
+    std::vector<std::vector<std::string>>         allBindingNames_;
+    std::vector<std::vector<GeneralPooledString>> allPooledBindingNames_;
 };
 
 inline int ShaderBindingNameMap::GetContainedBindingGroupIndex(std::string_view bindingName) const
@@ -49,6 +52,11 @@ inline int ShaderBindingNameMap::GetIndexInBindingGroup(std::string_view binding
 inline const std::string &ShaderBindingNameMap::GetBindingName(int groupIndex, int indexInGroup) const
 {
     return allBindingNames_[groupIndex][indexInGroup];
+}
+
+inline const GeneralPooledString &ShaderBindingNameMap::GetPooledBindingName(int groupIndex, int indexInGroup) const
+{
+    return allPooledBindingNames_[groupIndex][indexInGroup];
 }
 
 RTRC_END
