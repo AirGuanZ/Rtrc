@@ -40,7 +40,7 @@ Box<SceneProxy> Scene::CreateSceneProxy() const
     {
         if(const StaticMeshRenderProxy *proxy = renderer->CreateProxyRaw(ret->arena_))
         {
-            ret->staticMeshRendererProxies_.push_back(proxy);
+            ret->staticMeshRenderObjects_.push_back(proxy);
         }
     });
     

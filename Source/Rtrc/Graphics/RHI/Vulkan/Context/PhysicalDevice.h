@@ -28,6 +28,7 @@ public:
     VkPhysicalDevice GetNativeHandle() const;
     const VkPhysicalDeviceProperties &GetNativeProperties() const;
 
+    const std::optional<VkPhysicalDeviceAccelerationStructurePropertiesKHR> &_internalGetASProperties() const;
     const std::optional<VkPhysicalDeviceRayTracingPipelinePropertiesKHR> &_internalGetRtPipelineProperties() const;
 
 private:
@@ -39,7 +40,8 @@ private:
     std::optional<uint32_t> computeQueueFamily_;
     std::optional<uint32_t> transferQueueFamily_;
 
-    std::optional<VkPhysicalDeviceRayTracingPipelinePropertiesKHR> rtPipelineProperties_;
+    std::optional<VkPhysicalDeviceAccelerationStructurePropertiesKHR> asProperties_;
+    std::optional<VkPhysicalDeviceRayTracingPipelinePropertiesKHR>    rtPipelineProperties_;
 };
 
 RTRC_RHI_VK_END

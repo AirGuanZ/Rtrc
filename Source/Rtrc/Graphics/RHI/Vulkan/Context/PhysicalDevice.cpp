@@ -388,6 +388,12 @@ const VkPhysicalDeviceProperties &VulkanPhysicalDevice::GetNativeProperties() co
     return properties_;
 }
 
+const std::optional<VkPhysicalDeviceAccelerationStructurePropertiesKHR> &
+    VulkanPhysicalDevice::_internalGetASProperties() const
+{
+    return asProperties_;
+}
+
 const std::optional<VkPhysicalDeviceRayTracingPipelinePropertiesKHR> &
     VulkanPhysicalDevice::_internalGetRtPipelineProperties() const
 {
@@ -435,9 +441,14 @@ VulkanPhysicalDevice::VulkanPhysicalDevice(VkPhysicalDevice device, bool enableR
 
     if(enableRayTracing)
     {
+        VkPhysicalDeviceAccelerationStructurePropertiesKHR asProperties =
+        {
+            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR
+        };
         VkPhysicalDeviceRayTracingPipelinePropertiesKHR rtPipelineProperties =
         {
-            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR
+            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR,
+            .pNext = &asProperties
         };
         VkPhysicalDeviceProperties2 properties =
         {
@@ -445,6 +456,7 @@ VulkanPhysicalDevice::VulkanPhysicalDevice(VkPhysicalDevice device, bool enableR
             .pNext = &rtPipelineProperties
         };
         vkGetPhysicalDeviceProperties2(physicalDevice_, &properties);
+        asProperties_ = asProperties;
         rtPipelineProperties_ = rtPipelineProperties;
     }
 }

@@ -467,31 +467,33 @@ VkAccessFlags2 TranslateAccessFlag(ResourceAccessFlag flag)
 {
     static constexpr VkAccessFlags2 bitToFlag[] =
     {
-        VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT,
-        VK_ACCESS_2_INDEX_READ_BIT,
-        VK_ACCESS_2_UNIFORM_READ_BIT,
-        VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT,
-        VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-        VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
-        VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-        VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-        VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
-        VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
-        VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
-        VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
-        VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
-        VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
-        VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,
-        VK_ACCESS_2_TRANSFER_READ_BIT,
-        VK_ACCESS_2_TRANSFER_WRITE_BIT,
-        VK_ACCESS_2_TRANSFER_READ_BIT,
-        VK_ACCESS_2_TRANSFER_WRITE_BIT,
-        VK_ACCESS_2_TRANSFER_WRITE_BIT,
-        VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR,
+        VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT,                          // VertexBufferRead
+        VK_ACCESS_2_INDEX_READ_BIT,                                     // IndexBufferRead
+        VK_ACCESS_2_UNIFORM_READ_BIT,                                   // ConstantBufferRead
+        VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT,                          // RenderTargetRead
+        VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,                         // RenderTargetWrite
+        VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT,                  // DepthStencilRead
+        VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,                 // DepthStencilWrite
+        VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,                            // TextureRead
+        VK_ACCESS_2_SHADER_STORAGE_READ_BIT,                            // RWTextureRead
+        VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,                           // RWTextureWrite
+        VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,                            // BufferRead
+        VK_ACCESS_2_SHADER_STORAGE_READ_BIT,                            // RWBufferRead
+        VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,                           // RWBufferWrite
+        VK_ACCESS_2_SHADER_STORAGE_READ_BIT,                            // RWStructuredBufferRead
+        VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,                           // RWStructuredBufferWrite
+        VK_ACCESS_2_TRANSFER_READ_BIT,                                  // CopyRead
+        VK_ACCESS_2_TRANSFER_WRITE_BIT,                                 // CopyWrite
+        VK_ACCESS_2_TRANSFER_READ_BIT,                                  // ResolveRead
+        VK_ACCESS_2_TRANSFER_WRITE_BIT,                                 // ResolveWrite
+        VK_ACCESS_2_TRANSFER_WRITE_BIT,                                 // ClearWrite
+        VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR,                // ReadAS
+        VK_ACCESS_2_ACCELERATION_STRUCTURE_WRITE_BIT_KHR,               // WriteAS
+        VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR |               // BuildASScratch
         VK_ACCESS_2_ACCELERATION_STRUCTURE_WRITE_BIT_KHR,
-        VK_ACCESS_2_SHADER_BINDING_TABLE_READ_BIT_KHR,
-        VK_ACCESS_2_SHADER_READ_BIT,
-        VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT
+        VK_ACCESS_2_SHADER_BINDING_TABLE_READ_BIT_KHR,                  // ReadSBT
+        VK_ACCESS_2_SHADER_READ_BIT,                                    // ReadForBuildAS
+        VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT      // All
     };
     VkAccessFlags2 result = 0;
     for(size_t i = 0; i < GetArraySize(bitToFlag); ++i)

@@ -418,9 +418,10 @@ enum class ResourceAccess : uint32_t
     ClearWrite              = 1 << 19,
     ReadAS                  = 1 << 20,
     WriteAS                 = 1 << 21,
-    ReadSBT                 = 1 << 22,
-    ReadForBuildAS          = 1 << 23,
-    All                     = 1 << 24
+    BuildASScratch          = 1 << 22,
+    ReadSBT                 = 1 << 23,
+    ReadForBuildAS          = 1 << 24,
+    All                     = 1 << 25
 };
 RTRC_DEFINE_ENUM_FLAGS(ResourceAccess)
 using ResourceAccessFlag = EnumFlagsResourceAccess;
@@ -1264,6 +1265,7 @@ public:
         size_t                  offsetInMemoryBlock) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API size_t GetConstantBufferAlignment() const RTRC_RHI_API_PURE;
+    RTRC_RHI_API size_t GetAccelerationStructureScratchBufferAlignment() const RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void WaitIdle() RTRC_RHI_API_PURE;
 

@@ -1,8 +1,8 @@
-#include <Rtrc/Renderer/RenderLoopScene/RenderLoopMaterialManager.h>
+#include <Rtrc/Renderer/RenderLoopScene/CachedMaterialManager.h>
 
 RTRC_RENDERER_BEGIN
 
-void RenderLoopMaterialManager::UpdateCachedMaterialData(const RenderCommand_RenderStandaloneFrame &frame)
+void CachedMaterialManager::UpdateCachedMaterialData(const RenderCommand_RenderStandaloneFrame &frame)
 {
     struct MaterialRecord
     {
@@ -13,7 +13,7 @@ void RenderLoopMaterialManager::UpdateCachedMaterialData(const RenderCommand_Ren
     };
 
     std::vector<MaterialRecord> materialRecords;
-    for(const StaticMeshRenderProxy *proxy : frame.scene->GetStaticMeshRenderers())
+    for(const StaticMeshRenderProxy *proxy : frame.scene->GetStaticMeshRenderObjects())
     {
         auto material = proxy->materialRenderingData.Get();
         materialRecords.push_back({ material, {} });
@@ -53,7 +53,7 @@ void RenderLoopMaterialManager::UpdateCachedMaterialData(const RenderCommand_Ren
         [](const Box<CachedMaterial> &box) { return box.get(); });
 }
 
-const RenderLoopMaterialManager::CachedMaterial *RenderLoopMaterialManager::FindCachedMaterial(
+const CachedMaterialManager::CachedMaterial *CachedMaterialManager::FindCachedMaterial(
     MaterialInstance::SharedRenderingData::UniqueID materialId) const
 {
     size_t beg = 0, end = linearCachedMaterials_.size();

@@ -256,16 +256,24 @@ void Compiler::FillExternalResources(ExecutableResources &output)
             const int index = ext->GetResourceIndex();
             output.indexToBuffer[index].buffer = ext->buffer;
 
-            auto &users = bufferUsers_.at(ext);
-            RHI::PipelineStageFlag stages = users.back().usage.stages;
-            RHI::ResourceAccessFlag accesses = users.back().usage.accesses;
-            for(int j = static_cast<int>(users.size()) - 1;
-                j >= 0 && DontNeedBarrier(users[j].usage, users.back().usage); --j)
+            auto usersIt = bufferUsers_.find(ext);
+            if(usersIt != bufferUsers_.end())
             {
-                stages |= users[j].usage.stages;
-                accesses |= users[j].usage.accesses;
+                auto &users = usersIt->second;
+                RHI::PipelineStageFlag stages = users.back().usage.stages;
+                RHI::ResourceAccessFlag accesses = users.back().usage.accesses;
+                for(int j = static_cast<int>(users.size()) - 1;
+                    j >= 0 && DontNeedBarrier(users[j].usage, users.back().usage); --j)
+                {
+                    stages |= users[j].usage.stages;
+                    accesses |= users[j].usage.accesses;
+                }
+                output.indexToBuffer[index].finalState = BufferState(stages, accesses);
             }
-            output.indexToBuffer[index].finalState = BufferState(stages, accesses);
+            else
+            {
+                output.indexToBuffer[index].finalState = ext->buffer->GetState();
+            }
         }
     }
 
@@ -287,18 +295,26 @@ void Compiler::FillExternalResources(ExecutableResources &output)
             {
                 for(auto subrsc : EnumerateSubTextures(ext->GetMipLevels(), ext->GetArraySize()))
                 {
-                    auto &users = subTexUsers_.at({ ext, subrsc });
-                    const RHI::TextureLayout layout = users.back().usage.layout;
-                    RHI::PipelineStageFlag stages = users.back().usage.stages;
-                    RHI::ResourceAccessFlag accesses = users.back().usage.accesses;
-                    for(int j = static_cast<int>(users.size()) - 1;
-                        j >= 0 && DontNeedBarrier(users[j].usage, users.back().usage); --j)
+                    auto usersIt = subTexUsers_.find({ ext, subrsc });
+                    if(usersIt != subTexUsers_.end())
                     {
-                        stages |= users[j].usage.stages;
-                        accesses |= users[j].usage.accesses;
+                        auto &users = usersIt->second;
+                        const RHI::TextureLayout layout = users.back().usage.layout;
+                        RHI::PipelineStageFlag stages = users.back().usage.stages;
+                        RHI::ResourceAccessFlag accesses = users.back().usage.accesses;
+                        for(int j = static_cast<int>(users.size()) - 1;
+                            j >= 0 && DontNeedBarrier(users[j].usage, users.back().usage); --j)
+                        {
+                            stages |= users[j].usage.stages;
+                            accesses |= users[j].usage.accesses;
+                        }
+                        finalStates(subrsc.mipLevel, subrsc.arrayLayer) = TextureSubrscState(layout, stages, accesses);
                     }
-                    finalStates(subrsc.mipLevel, subrsc.arrayLayer) =
-                        TextureSubrscState(layout, stages, accesses);
+                    else
+                    {
+                        finalStates(subrsc.mipLevel, subrsc.arrayLayer) =
+                            ext->texture->GetState(subrsc.mipLevel, subrsc.arrayLayer);
+                    }
                 }
             }
         }
@@ -318,25 +334,33 @@ void Compiler::AllocateInternalResources(ExecutableResources &output)
         const RHI::BufferDesc &desc = intRsc->rhiDesc;
         const int resourceIndex = intRsc->GetResourceIndex();
 
-        auto &users = bufferUsers_.at(intRsc);
-        RHI::PipelineStageFlag stages = users.back().usage.stages;
-        RHI::ResourceAccessFlag accesses = users.back().usage.accesses;
-        for(int j = static_cast<int>(users.size()) - 1;
-            j >= 0 && DontNeedBarrier(users[j].usage, users.back().usage); --j)
+        auto usersIt = bufferUsers_.find(intRsc);
+        if(usersIt != bufferUsers_.end())
         {
-            stages |= users[j].usage.stages;
-            accesses |= users[j].usage.accesses;
+            auto &users = usersIt->second;
+            RHI::PipelineStageFlag stages = users.back().usage.stages;
+            RHI::ResourceAccessFlag accesses = users.back().usage.accesses;
+            for(int j = static_cast<int>(users.size()) - 1;
+                j >= 0 && DontNeedBarrier(users[j].usage, users.back().usage); --j)
+            {
+                stages |= users[j].usage.stages;
+                accesses |= users[j].usage.accesses;
+            }
+            output.indexToBuffer[resourceIndex].finalState = BufferState(stages, accesses);
         }
-        output.indexToBuffer[resourceIndex].finalState = BufferState(stages, accesses);
+        else
+        {
+            output.indexToBuffer[resourceIndex].finalState = BufferState{};
+        }
 
         if(desc.hostAccessType == RHI::BufferHostAccessType::None)
         {
             output.indexToBuffer[resourceIndex].buffer = device_->CreatePooledBuffer(RHI::BufferDesc
-                {
-                    .size = desc.size,
-                    .usage = desc.usage,
-                    .hostAccessType = desc.hostAccessType
-                });
+            {
+                .size = desc.size,
+                .usage = desc.usage,
+                .hostAccessType = desc.hostAccessType
+            });
         }
         else
         {
@@ -365,17 +389,25 @@ void Compiler::AllocateInternalResources(ExecutableResources &output)
             intTex->GetMipLevels(), intTex->GetArraySize());
         for(auto subrsc : EnumerateSubTextures(intRsc->GetMipLevels(), intRsc->GetArraySize()))
         {
-            auto &users = subTexUsers_.at({ intRsc, subrsc });
-            const RHI::TextureLayout layout = users.back().usage.layout;
-            RHI::PipelineStageFlag stages = users.back().usage.stages;
-            RHI::ResourceAccessFlag accesses = users.back().usage.accesses;
-            for(int j = static_cast<int>(users.size()) - 1;
-                j >= 0 && DontNeedBarrier(users[j].usage, users.back().usage); --j)
+            auto usersIt = subTexUsers_.find({ intRsc, subrsc });
+            if(usersIt != subTexUsers_.end())
             {
-                stages |= users[j].usage.stages;
-                accesses |= users[j].usage.accesses;
+                auto &users = subTexUsers_.at({ intRsc, subrsc });
+                const RHI::TextureLayout layout = users.back().usage.layout;
+                RHI::PipelineStageFlag stages = users.back().usage.stages;
+                RHI::ResourceAccessFlag accesses = users.back().usage.accesses;
+                for(int j = static_cast<int>(users.size()) - 1;
+                    j >= 0 && DontNeedBarrier(users[j].usage, users.back().usage); --j)
+                {
+                    stages |= users[j].usage.stages;
+                    accesses |= users[j].usage.accesses;
+                }
+                finalStates(subrsc.mipLevel, subrsc.arrayLayer) = TextureSubrscState(layout, stages, accesses);
             }
-            finalStates(subrsc.mipLevel, subrsc.arrayLayer) = TextureSubrscState(layout, stages, accesses);
+            else
+            {
+                finalStates(subrsc.mipLevel, subrsc.arrayLayer) = TextureSubrscState{};
+            }
         }
 
         output.indexToTexture[resourceIndex].texture = device_->CreatePooledTexture(desc);

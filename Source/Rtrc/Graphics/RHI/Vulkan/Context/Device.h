@@ -82,6 +82,7 @@ public:
         size_t                  offsetInMemoryBlock) RTRC_RHI_OVERRIDE;
 
     size_t GetConstantBufferAlignment() const RTRC_RHI_OVERRIDE;
+    size_t GetAccelerationStructureScratchBufferAlignment() const RTRC_RHI_OVERRIDE;
 
     void WaitIdle() RTRC_RHI_OVERRIDE;
 

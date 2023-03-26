@@ -618,21 +618,26 @@ void CommandBuffer::BuildBlas(
         blas->SetBuffer(std::move(newBuffer));
     }
 
+    const uint64_t scratchAlignement = device_->GetAccelerationStructureScratchBufferAlignment();
+
     SubBuffer *actualScratchBuffer = scratchBuffer.get();
     RC<SubBuffer> temporaryScratchBuffer;
     if(!actualScratchBuffer)
     {
         temporaryScratchBuffer = device_->CreateBuffer(RHI::BufferDesc
         {
-            .size           = prebuildInfo.GetBuildScratchBufferSize(),
+            .size           = prebuildInfo.GetBuildScratchBufferSize() + scratchAlignement,
             .usage          = RHI::BufferUsage::AccelerationStructureScratch,
             .hostAccessType = RHI::BufferHostAccessType::None
         });
         actualScratchBuffer = temporaryScratchBuffer.get();
     }
 
+    auto scratchDeviceAddress = actualScratchBuffer->GetDeviceAddress();
+    scratchDeviceAddress.address = UpAlignTo(scratchDeviceAddress.address, scratchAlignement);
+
     rhiCommandBuffer_->BuildBlas(
-        prebuildInfo.GetRHIObject(), geometries, blas->GetRHIObject(), actualScratchBuffer->GetDeviceAddress());
+        prebuildInfo.GetRHIObject(), geometries, blas->GetRHIObject(), scratchDeviceAddress);
 }
 
 void CommandBuffer::BuildTlas(
@@ -664,21 +669,26 @@ void CommandBuffer::BuildTlas(
         tlas->SetBuffer(std::move(newBuffer));
     }
 
+    const uint64_t scratchAlignement = device_->GetAccelerationStructureScratchBufferAlignment();
+
     SubBuffer *actualScratchBuffer = scratchBuffer.get();
     RC<SubBuffer> temporaryScratchBuffer;
     if(!actualScratchBuffer)
     {
         temporaryScratchBuffer = device_->CreateBuffer(RHI::BufferDesc
         {
-            .size           = prebuildInfo.GetBuildScratchBufferSize(),
+            .size           = prebuildInfo.GetBuildScratchBufferSize() + scratchAlignement,
             .usage          = RHI::BufferUsage::AccelerationStructureScratch,
             .hostAccessType = RHI::BufferHostAccessType::None
         });
         actualScratchBuffer = temporaryScratchBuffer.get();
     }
 
+    auto scratchDeviceAddress = actualScratchBuffer->GetDeviceAddress();
+    scratchDeviceAddress.address = UpAlignTo(scratchDeviceAddress.address, scratchAlignement);
+
     rhiCommandBuffer_->BuildTlas(
-        prebuildInfo.GetRHIObject(), instanceArrays, tlas->GetRHIObject(), actualScratchBuffer->GetDeviceAddress());
+        prebuildInfo.GetRHIObject(), instanceArrays, tlas->GetRHIObject(), scratchDeviceAddress);
 }
 
 void CommandBuffer::ExecuteBarriers(const BarrierBatch &barriers)

@@ -1,15 +1,15 @@
-#include <Rtrc/Renderer/RenderLoopScene/RenderLoopMeshManager.h>
+#include <Rtrc/Renderer/RenderLoopScene/CachedMeshManager.h>
 #include <Rtrc/Utility/Enumerate.h>
 
 RTRC_RENDERER_BEGIN
 
-RenderLoopMeshManager::RenderLoopMeshManager(ObserverPtr<Device> device)
+CachedMeshManager::CachedMeshManager(ObserverPtr<Device> device)
     : device_(device), blasBuilder_(device)
 {
     bindlessBufferManager_ = MakeBox<BindlessBufferManager>(device);
 }
 
-void RenderLoopMeshManager::UpdateCachedMeshData(const RenderCommand_RenderStandaloneFrame &frame)
+void CachedMeshManager::UpdateCachedMeshData(const RenderCommand_RenderStandaloneFrame &frame)
 {
     struct MeshRecord
     {
@@ -22,7 +22,7 @@ void RenderLoopMeshManager::UpdateCachedMeshData(const RenderCommand_RenderStand
         const Vector3f eye = frame.camera.GetPosition();
         const SceneProxy &scene = *frame.scene;
         std::ranges::transform(
-            scene.GetStaticMeshRenderers(), std::back_inserter(meshRecords),
+            scene.GetStaticMeshRenderObjects(), std::back_inserter(meshRecords),
             [&eye](const StaticMeshRenderProxy *staticMeshRenderer)
         {
             const float blasSortKey = ComputeBuildBlasSortKey(eye, staticMeshRenderer);
@@ -87,7 +87,7 @@ void RenderLoopMeshManager::UpdateCachedMeshData(const RenderCommand_RenderStand
         [](const Box<CachedMesh> &data) { return data.get(); });
 }
 
-RenderLoopMeshManager::CachedMesh *RenderLoopMeshManager::FindCachedMesh(Mesh::SharedRenderingData::UniqueID meshId)
+CachedMeshManager::CachedMesh *CachedMeshManager::FindCachedMesh(Mesh::SharedRenderingData::UniqueID meshId)
 {
     size_t beg = 0, end = linearCachedMeshes_.size();
     while(beg < end)
@@ -110,7 +110,30 @@ RenderLoopMeshManager::CachedMesh *RenderLoopMeshManager::FindCachedMesh(Mesh::S
     return nullptr;
 }
 
-RG::Pass *RenderLoopMeshManager::BuildBlasForMeshes(
+const CachedMeshManager::CachedMesh *CachedMeshManager::FindCachedMesh(Mesh::SharedRenderingData::UniqueID meshId) const
+{
+    size_t beg = 0, end = linearCachedMeshes_.size();
+    while(beg < end)
+    {
+        const size_t mid = (beg + end) / 2;
+        CachedMesh *data = linearCachedMeshes_[mid];
+        if(data->meshId == meshId)
+        {
+            return linearCachedMeshes_[mid];
+        }
+        if(data->meshId < meshId)
+        {
+            beg = mid;
+        }
+        else
+        {
+            end = mid;
+        }
+    }
+    return nullptr;
+}
+
+RG::Pass *CachedMeshManager::BuildBlasForMeshes(
     RG::RenderGraph &renderGraph, int maxBuildCount, int maxPrimitiveCount)
 {
     std::vector<CachedMesh *> meshesNeedBlas;
@@ -174,7 +197,7 @@ RG::Pass *RenderLoopMeshManager::BuildBlasForMeshes(
     return pass;
 }
 
-float RenderLoopMeshManager::ComputeBuildBlasSortKey(const Vector3f &eye, const StaticMeshRenderProxy *renderer)
+float CachedMeshManager::ComputeBuildBlasSortKey(const Vector3f &eye, const StaticMeshRenderProxy *renderer)
 {
     if(renderer->rayTracingFlags == StaticMeshRendererRayTracingFlagBit::None)
     {

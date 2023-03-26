@@ -11,8 +11,8 @@ public:
 
     ~SceneProxy();
 
-    Span<const Light::SharedRenderingData *> GetLights()              const { return lights_; }
-    Span<const StaticMeshRenderProxy*>     GetStaticMeshRenderers() const { return staticMeshRendererProxies_; }
+    Span<const Light::SharedRenderingData *> GetLights() const { return lights_; }
+    Span<const StaticMeshRenderProxy*> GetStaticMeshRenderObjects() const { return staticMeshRenderObjects_; }
 
 private:
 
@@ -27,7 +27,7 @@ private:
 
     LinearAllocator                                 arena_;
     std::vector<const Light::SharedRenderingData *> lights_;
-    std::vector<const StaticMeshRenderProxy *>    staticMeshRendererProxies_;
+    std::vector<const StaticMeshRenderProxy *>      staticMeshRenderObjects_;
 };
 
 class Scene : public Uncopyable, public WithUniqueObjectID

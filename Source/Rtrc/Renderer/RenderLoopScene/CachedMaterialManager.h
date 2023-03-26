@@ -4,7 +4,7 @@
 
 RTRC_RENDERER_BEGIN
 
-class RenderLoopMaterialManager : public Uncopyable
+class CachedMaterialManager : public Uncopyable
 {
 public:
 

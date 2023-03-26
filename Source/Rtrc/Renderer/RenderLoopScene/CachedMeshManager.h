@@ -5,7 +5,7 @@
 
 RTRC_RENDERER_BEGIN
 
-class RenderLoopMeshManager : public Uncopyable
+class CachedMeshManager : public Uncopyable
 {
 public:
 
@@ -19,11 +19,12 @@ public:
         BindlessBufferEntry geometryBufferEntry;
     };
 
-    explicit RenderLoopMeshManager(ObserverPtr<Device> device);
+    explicit CachedMeshManager(ObserverPtr<Device> device);
 
     void UpdateCachedMeshData(const RenderCommand_RenderStandaloneFrame &frame);
 
-    CachedMesh *FindCachedMesh(Mesh::SharedRenderingData::UniqueID meshId);
+          CachedMesh *FindCachedMesh(Mesh::SharedRenderingData::UniqueID meshId);
+    const CachedMesh *FindCachedMesh(Mesh::SharedRenderingData::UniqueID meshId) const;
 
     RG::Pass *BuildBlasForMeshes(RG::RenderGraph &renderGraph, int maxBuildCount, int maxPrimitiveCount);
 

@@ -159,8 +159,8 @@ void GBufferRenderer::DoRenderGBufferPass(
 
     std::vector<const StaticMeshRenderProxy *> staticMeshRendererProxies =
     {
-        frameContext.scene->GetStaticMeshRenderers().begin(),
-        frameContext.scene->GetStaticMeshRenderers().end(),
+        frameContext.scene->GetStaticMeshRenderObjects().begin(),
+        frameContext.scene->GetStaticMeshRenderObjects().end(),
     };
     std::ranges::sort(staticMeshRendererProxies,
         [](const StaticMeshRenderProxy *lhs, const StaticMeshRenderProxy *rhs)

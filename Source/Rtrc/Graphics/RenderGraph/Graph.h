@@ -105,6 +105,27 @@ inline constexpr UseInfo COMPUTE_SHADER_RWTEXTURE_WRITEONLY =
     .accesses = RHI::ResourceAccess::RWTextureWrite
 };
 
+inline constexpr UseInfo COPY_DST =
+{
+    .layout   = RHI::TextureLayout::CopyDst,
+    .stages   = RHI::PipelineStage::Copy,
+    .accesses = RHI::ResourceAccess::CopyWrite
+};
+
+inline constexpr UseInfo BUILD_ACCELERATION_STRUCTURE_OUTPUT =
+{
+    .layout   = RHI::TextureLayout::Undefined,
+    .stages   = RHI::PipelineStage::BuildAS,
+    .accesses = RHI::ResourceAccess::WriteAS
+};
+
+inline constexpr UseInfo BUUILD_ACCELERATION_STRUCTURE_SCRATCH =
+{
+    .layout   = RHI::TextureLayout::Undefined,
+    .stages   = RHI::PipelineStage::BuildAS,
+    .accesses = RHI::ResourceAccess::BuildASScratch
+};
+
 class Resource : public Uncopyable
 {
     int index_;

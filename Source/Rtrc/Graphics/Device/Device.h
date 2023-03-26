@@ -61,6 +61,8 @@ public:
 
     const RHI::ShaderGroupRecordRequirements &GetShaderGroupRecordRequirements() const;
 
+    size_t GetAccelerationStructureScratchBufferAlignment() const;
+
     // Context objects
 
     void RecreateSwapchain();
@@ -283,6 +285,11 @@ private:
 inline const RHI::ShaderGroupRecordRequirements &Device::GetShaderGroupRecordRequirements() const
 {
     return GetRawDevice()->GetShaderGroupRecordRequirements();
+}
+
+inline size_t Device::GetAccelerationStructureScratchBufferAlignment() const
+{
+    return GetRawDevice()->GetAccelerationStructureScratchBufferAlignment();
 }
 
 inline void Device::RecreateSwapchain()

@@ -1241,6 +1241,11 @@ size_t VulkanDevice::GetConstantBufferAlignment() const
     return physicalDevice_.GetNativeProperties().limits.minUniformBufferOffsetAlignment;
 }
 
+size_t VulkanDevice::GetAccelerationStructureScratchBufferAlignment() const
+{
+    return physicalDevice_._internalGetASProperties()->minAccelerationStructureScratchOffsetAlignment;
+}
+
 void VulkanDevice::WaitIdle()
 {
     RTRC_VK_FAIL_MSG(
