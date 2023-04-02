@@ -170,7 +170,7 @@ void Run()
         trianglePass->Use(renderTarget, RG::COMPUTE_SHADER_RWTEXTURE_WRITEONLY);
         trianglePass->SetCallback([&](RG::PassContext &context)
         {
-            auto rt = renderTarget->Get();
+            auto rt = renderTarget->Get(context);
             auto &commandBuffer = context.GetCommandBuffer();
 
             commandBuffer.BindRayTracingPipeline(pipeline);

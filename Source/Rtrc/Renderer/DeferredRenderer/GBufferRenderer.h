@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/Graphics/Material/MaterialPassToGraphicsPipeline.h>
+#include <Rtrc/Graphics/Material/GraphicsPipelineCache.h>
 #include <Rtrc/Graphics/RenderGraph/Graph.h>
 #include <Rtrc/Renderer/DeferredRenderer/Common.h>
 #include <Rtrc/Scene/Camera/Camera.h>
@@ -48,7 +48,7 @@ private:
 
     Device &device_;
 
-    MaterialPassToGraphicsPipeline renderGBuffersPipelines_;
+    GraphicsPipelineCache renderGBuffersPipelines_;
 };
 
 RTRC_RENDERER_END

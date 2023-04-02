@@ -57,6 +57,16 @@ namespace FullscreenPrimitiveDetail
 
 } // namespace FullscreenPrimitiveDetail
 
+const MeshLayout *GetFullscreenPrimitiveMeshLayout()
+{
+    return FullscreenPrimitiveDetail::Vertex::GetLayout();
+}
+
+const MeshLayout *GetFullscreenPrimitiveMeshLayoutWithWorldRay()
+{
+    return FullscreenPrimitiveDetail::VertexWithRay::GetLayout();
+}
+
 Mesh GetFullscreenTriangle(DynamicBufferManager &bufferManager)
 {
     using namespace FullscreenPrimitiveDetail;
@@ -74,7 +84,7 @@ Mesh GetFullscreenTriangle(DynamicBufferManager &bufferManager)
     return builder.CreateMesh();
 }
 
-Mesh GetFullscreenTriangle(DynamicBufferManager &bufferManager, const Camera &camera)
+Mesh GetFullscreenTriangle(DynamicBufferManager &bufferManager, const RenderCamera &camera)
 {
     using namespace FullscreenPrimitiveDetail;
 
@@ -82,18 +92,18 @@ Mesh GetFullscreenTriangle(DynamicBufferManager &bufferManager, const Camera &ca
     FillTrianglePositionAndUV(vertexData);
 
     {
-        const Vector3f &c0 = camera.GetCameraRays()[0];
-        const Vector3f &c1 = camera.GetCameraRays()[1];
-        const Vector3f &c2 = camera.GetCameraRays()[2];
+        const Vector3f &c0 = camera.cameraRays[0];
+        const Vector3f &c1 = camera.cameraRays[1];
+        const Vector3f &c2 = camera.cameraRays[2];
         vertexData[0].cameraRay = 2.0f * c2 - c0;
         vertexData[1].cameraRay = c0;
         vertexData[2].cameraRay = 2.0f * c1 - c0;
     }
 
     {
-        const Vector3f &c0 = camera.GetWorldRays()[0];
-        const Vector3f &c1 = camera.GetWorldRays()[1];
-        const Vector3f &c2 = camera.GetWorldRays()[2];
+        const Vector3f &c0 = camera.worldRays[0];
+        const Vector3f &c1 = camera.worldRays[1];
+        const Vector3f &c2 = camera.worldRays[2];
         vertexData[0].worldRay = 2.0f * c2 - c0;
         vertexData[1].worldRay = c0;
         vertexData[2].worldRay = 2.0f * c1 - c0;
@@ -107,6 +117,11 @@ Mesh GetFullscreenTriangle(DynamicBufferManager &bufferManager, const Camera &ca
     builder.SetVertexBuffer(0, vertexBuffer);
     builder.SetVertexCount(3);
     return builder.CreateMesh();
+}
+
+Mesh GetFullscreenTriangle(DynamicBufferManager &bufferManager, const Camera &camera)
+{
+    return GetFullscreenTriangle(bufferManager, camera.GetRenderCamera());
 }
 
 Mesh GetFullscreenQuad(DynamicBufferManager &bufferManager)
@@ -126,26 +141,26 @@ Mesh GetFullscreenQuad(DynamicBufferManager &bufferManager)
     return builder.CreateMesh();
 }
 
-Mesh GetFullscreenQuad(DynamicBufferManager &bufferManager, const Camera &camera)
+Mesh GetFullscreenQuad(DynamicBufferManager &bufferManager, const RenderCamera &camera)
 {
     using namespace FullscreenPrimitiveDetail;
 
     std::array<VertexWithRay, 6> vertexData;
     FillQuadPositionAndUV(vertexData);
 
-    vertexData[0].cameraRay = camera.GetCameraRays()[2];
-    vertexData[1].cameraRay = camera.GetCameraRays()[0];
-    vertexData[2].cameraRay = camera.GetCameraRays()[1];
-    vertexData[3].cameraRay = camera.GetCameraRays()[2];
-    vertexData[4].cameraRay = camera.GetCameraRays()[1];
-    vertexData[5].cameraRay = camera.GetCameraRays()[3];
+    vertexData[0].cameraRay = camera.cameraRays[2];
+    vertexData[1].cameraRay = camera.cameraRays[0];
+    vertexData[2].cameraRay = camera.cameraRays[1];
+    vertexData[3].cameraRay = camera.cameraRays[2];
+    vertexData[4].cameraRay = camera.cameraRays[1];
+    vertexData[5].cameraRay = camera.cameraRays[3];
     
-    vertexData[0].worldRay = camera.GetWorldRays()[2];
-    vertexData[1].worldRay = camera.GetWorldRays()[0];
-    vertexData[2].worldRay = camera.GetWorldRays()[1];
-    vertexData[3].worldRay = camera.GetWorldRays()[2];
-    vertexData[4].worldRay = camera.GetWorldRays()[1];
-    vertexData[5].worldRay = camera.GetWorldRays()[3];
+    vertexData[0].worldRay = camera.worldRays[2];
+    vertexData[1].worldRay = camera.worldRays[0];
+    vertexData[2].worldRay = camera.worldRays[1];
+    vertexData[3].worldRay = camera.worldRays[2];
+    vertexData[4].worldRay = camera.worldRays[1];
+    vertexData[5].worldRay = camera.worldRays[3];
 
     auto vertexBuffer = bufferManager.Create();
     vertexBuffer->SetData(vertexData.data(), sizeof(VertexWithRay) * vertexData.size(), false);
@@ -155,6 +170,11 @@ Mesh GetFullscreenQuad(DynamicBufferManager &bufferManager, const Camera &camera
     builder.SetVertexBuffer(0, vertexBuffer);
     builder.SetVertexCount(6);
     return builder.CreateMesh();
+}
+
+Mesh GetFullscreenQuad(DynamicBufferManager &bufferManager, const Camera &camera)
+{
+    return GetFullscreenQuad(bufferManager, camera.GetRenderCamera());
 }
 
 RTRC_END

@@ -160,7 +160,7 @@ const BindlessTextureEntry *MaterialPropertySheet::GetBindlessTextureEntry(int i
     return bindlessEntries_[index] ? &bindlessEntries_[index] : nullptr;
 }
 
-RC<Shader> MaterialPassInstance::GetShader(const KeywordValueContext &keywordValues)
+RC<Shader> MaterialPassInstance::GetShader(const KeywordContext &keywordValues)
 {
     return pass_->GetShader(keywordValues);
 }
@@ -176,7 +176,7 @@ const MaterialPass *MaterialPassInstance::GetPass() const
 }
 
 void MaterialPassInstance::BindGraphicsProperties(
-    const KeywordValueContext &keywordValues, const CommandBuffer &commandBuffer) const
+    const KeywordContext &keywordValues, const CommandBuffer &commandBuffer) const
 {
     KeywordSet::ValueMask mask = pass_->ExtractKeywordValueMask(keywordValues);
     BindGraphicsProperties(mask, commandBuffer);
@@ -189,7 +189,7 @@ void MaterialPassInstance::BindGraphicsProperties(
 }
 
 void MaterialPassInstance::BindComputeProperties(
-    const KeywordValueContext &keywordValues, const CommandBuffer &commandBuffer) const
+    const KeywordContext &keywordValues, const CommandBuffer &commandBuffer) const
 {
     KeywordSet::ValueMask mask = pass_->ExtractKeywordValueMask(keywordValues);
     BindComputeProperties(mask, commandBuffer);
@@ -261,7 +261,7 @@ void MaterialPassInstance::BindPropertiesImpl(
 
 void BindMaterialProperties(
     const MaterialPassInstance &instance,
-    const KeywordValueContext  &keywords,
+    const KeywordContext  &keywords,
     const CommandBuffer        &commandBuffer,
     bool                        graphics)
 {

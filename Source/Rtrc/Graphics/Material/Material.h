@@ -160,14 +160,14 @@ public:
 
     const std::set<std::string> &GetTags() const;
 
-    KeywordSet::ValueMask ExtractKeywordValueMask(const KeywordValueContext &keywordValues) const;
+    KeywordSet::ValueMask ExtractKeywordValueMask(const KeywordContext &keywordValues) const;
 
     RC<Shader> GetShader(KeywordSet::ValueMask mask);
-    RC<Shader> GetShader(const KeywordValueContext &keywordValues);
+    RC<Shader> GetShader(const KeywordContext &keywordValues);
     RC<Shader> GetShader();
 
     const MaterialPassPropertyLayout *GetPropertyLayout(KeywordSet::ValueMask mask);
-    const MaterialPassPropertyLayout *GetPropertyLayout(const KeywordValueContext &keywordValues);
+    const MaterialPassPropertyLayout *GetPropertyLayout(const KeywordContext &keywordValues);
 
     auto &GetShaderTemplate() const;
 
@@ -193,14 +193,26 @@ class Material : public std::enable_shared_from_this<Material>, public InObjectC
 {
 public:
 
+    enum class BuiltinPass
+    {
+        GBuffer,
+        Count
+    };
+
+    static const char *BuiltinPassName[EnumCount<BuiltinPass>];
+
     const std::string &GetName() const;
-    Span<MaterialProperty> GetProperties() const;
-    auto &GetPropertyLayout() const;
+
+    Span<MaterialProperty>                GetProperties() const;
+    const RC<MaterialPropertyHostLayout> &GetPropertyLayout() const;
 
     // return -1 when not found
-    int GetPassIndexByTag(std::string_view tag) const;
+    int              GetPassIndexByTag(std::string_view tag) const;
     RC<MaterialPass> GetPassByIndex(int index);
     RC<MaterialPass> GetPassByTag(std::string_view tag);
+
+    int GetBuiltinPassIndex(BuiltinPass pass) const;
+
     Span<RC<MaterialPass>> GetPasses() const;
 
     RC<MaterialInstance> CreateInstance() const;
@@ -211,11 +223,12 @@ private:
 
     Device *device_ = nullptr;
 
-    std::string name_;
-    std::vector<RC<MaterialPass>> passes_;
+    std::string                             name_;
+    std::vector<RC<MaterialPass>>           passes_;
     std::map<std::string, int, std::less<>> tagToIndex_;
+    RC<MaterialPropertyHostLayout>          propertyLayout_;
 
-    RC<MaterialPropertyHostLayout> propertyLayout_;
+    std::array<int, EnumCount<BuiltinPass>> builtinPassIndices_;
 };
 
 constexpr bool MaterialProperty::IsValue(Type type)
@@ -352,7 +365,7 @@ inline const std::set<std::string> &MaterialPass::GetTags() const
     return tags_;
 }
 
-inline KeywordSet::ValueMask MaterialPass::ExtractKeywordValueMask(const KeywordValueContext &keywordValues) const
+inline KeywordSet::ValueMask MaterialPass::ExtractKeywordValueMask(const KeywordContext &keywordValues) const
 {
     return shaderTemplate_->GetKeywordValueMask(keywordValues);
 }
@@ -362,7 +375,7 @@ inline RC<Shader> MaterialPass::GetShader(KeywordSet::ValueMask mask)
     return shaderTemplate_->GetShader(mask);
 }
 
-inline RC<Shader> MaterialPass::GetShader(const KeywordValueContext &keywordValues)
+inline RC<Shader> MaterialPass::GetShader(const KeywordContext &keywordValues)
 {
     return GetShader(shaderTemplate_->GetKeywordValueMask(keywordValues));
 }
@@ -391,7 +404,7 @@ inline const MaterialPassPropertyLayout *MaterialPass::GetPropertyLayout(Keyword
     return materialPassPropertyLayouts_[mask].get();
 }
 
-inline const MaterialPassPropertyLayout *MaterialPass::GetPropertyLayout(const KeywordValueContext &keywordValues)
+inline const MaterialPassPropertyLayout *MaterialPass::GetPropertyLayout(const KeywordContext &keywordValues)
 {
     return GetPropertyLayout(shaderTemplate_->GetKeywordValueMask(keywordValues));
 }
@@ -433,9 +446,14 @@ inline int Material::GetPassIndexByTag(std::string_view tag) const
     return it != tagToIndex_.end() ? it->second : -1;
 }
 
-inline auto &Material::GetPropertyLayout() const
+inline const RC<MaterialPropertyHostLayout> &Material::GetPropertyLayout() const
 {
     return propertyLayout_;
+}
+
+inline int Material::GetBuiltinPassIndex(BuiltinPass pass) const
+{
+    return builtinPassIndices_[std::to_underlying(pass)];
 }
 
 inline Span<RC<MaterialPass>> Material::GetPasses() const

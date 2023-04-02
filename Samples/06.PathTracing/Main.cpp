@@ -306,10 +306,10 @@ void Run()
                 (RG::PassContext &context)
             {
                 auto &commandBuffer = context.GetCommandBuffer();
-                commandBuffer.ClearColorTexture2D(rgAccumulateTexture->Get(), { 0, 0, 0, 0 });
+                commandBuffer.ClearColorTexture2D(rgAccumulateTexture->Get(context), { 0, 0, 0, 0 });
 
                 InitRngPass bindingGroupData;
-                bindingGroupData.RngTexture = rgRngTexture->Get();
+                bindingGroupData.RngTexture = rgRngTexture->Get(context);
                 bindingGroupData.Resolution = rgRngTexture->GetSize();
                 auto bindingGroup = device->CreateBindingGroup(bindingGroupData);
 
@@ -331,9 +331,9 @@ void Run()
         ptPass->SetCallback([&](RG::PassContext &context)
         {
             TracePass bindingGroupData;
-            bindingGroupData.AccumulateTexture = rgAccumulateTexture->Get();
-            bindingGroupData.OutputTexture     = rgSwapchain->Get();
-            bindingGroupData.RngTexture        = rgRngTexture->Get();
+            bindingGroupData.AccumulateTexture = rgAccumulateTexture->Get(context);
+            bindingGroupData.OutputTexture     = rgSwapchain->Get(context);
+            bindingGroupData.RngTexture        = rgRngTexture->Get(context);
             bindingGroupData.Scene             = tlas;
             bindingGroupData.Geometries[0]     = room.primitives;
             bindingGroupData.Geometries[1]     = torus.primitives;

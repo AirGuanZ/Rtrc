@@ -241,6 +241,11 @@ void MaterialPassPropertyLayout::FillBindingGroup(
     }
 }
 
+const char *Material::BuiltinPassName[EnumCount<BuiltinPass>] =
+{
+    "GBuffer"
+};
+
 RC<MaterialInstance> Material::CreateInstance() const
 {
     return MakeRC<MaterialInstance>(shared_from_this(), device_);

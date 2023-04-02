@@ -593,10 +593,15 @@ RC<Material> MaterialManager::CreateMaterial(std::string_view name)
             material->tagToIndex_.insert({ tag, static_cast<int>(index) });
         }
     }
-    material->device_ = device_;
-    material->name_ = name;
-    material->passes_ = std::move(passes);
+    material->device_         = device_;
+    material->name_           = name;
+    material->passes_         = std::move(passes);
     material->propertyLayout_ = std::move(propertyLayout);
+
+    for(int i = 0; i < EnumCount<Material::BuiltinPass>; ++i)
+    {
+        material->builtinPassIndices_[i] = material->GetPassIndexByTag(Material::BuiltinPassName[i]);
+    }
 
     return material;
 }

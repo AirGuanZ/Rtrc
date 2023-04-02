@@ -253,7 +253,7 @@ RG::Pass *ImGuiRenderer::AddToRenderGraph(
     pass->Use(renderTarget, RG::COLOR_ATTACHMENT);
     pass->SetCallback([this, drawData, renderTarget](RG::PassContext &ctx)
     {
-        RenderImmediately(drawData, renderTarget->Get()->CreateRtv(), ctx.GetCommandBuffer(), false);
+        RenderImmediately(drawData, renderTarget->Get(ctx)->CreateRtv(), ctx.GetCommandBuffer(), false);
     });
     return pass;
 }

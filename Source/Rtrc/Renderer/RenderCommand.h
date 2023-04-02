@@ -18,7 +18,7 @@ struct RenderCommand_ResizeFramebuffer
 struct RenderCommand_RenderStandaloneFrame
 {
     Box<SceneProxy>        scene;
-    Camera                 camera;
+    RenderCamera           camera;
     Box<ImGuiDrawData>     imguiDrawData;
     std::binary_semaphore *finishSemaphore;
 };

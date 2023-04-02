@@ -1,6 +1,7 @@
 #pragma once
 
-// See Source/Rtrc/Renderer/Camera.h
+// See Rtrc/Renderer/Common.h
+
 struct CameraConstantBuffer
 {
     float4x4 worldToCameraMatrix;
@@ -13,10 +14,15 @@ struct CameraConstantBuffer
     float3   worldRays[4];
 };
 
-// See Source/Rtrc/Renderer/Scene/Light.h
-struct DirectionalLightConstantBuffer
+struct PointLightShadingData
+{
+    float3 position;
+    float3 color;
+    float  range;
+};
+
+struct DirectionalLightShadingData
 {
     float3 direction;
     float3 color;
-    float  intensity;
 };

@@ -22,7 +22,7 @@ void Run()
     ResourceManager resourceManager(device);
     resourceManager.AddMaterialFiles($rtrc_get_files("Asset/Sample/02.ComputeShader/*.*"));
     
-    KeywordValueContext keywords;
+    KeywordContext keywords;
 
     auto material = resourceManager.GetMaterial("ScaleImage");
     auto matPass = material->GetPassByTag("Default");

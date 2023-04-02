@@ -16,7 +16,7 @@ public:
         std::map<std::string, std::string> macros;
     };
 
-    RC<Shader> GetShader(const KeywordValueContext &keywordValueContext)
+    RC<Shader> GetShader(const KeywordContext &keywordValueContext)
     {
         const KeywordSet::ValueMask mask = keywordSet_.ExtractValueMask(keywordValueContext);
         return GetShader(mask);
@@ -47,7 +47,7 @@ public:
     }
 
     const KeywordSet &GetKeywordSet() const { return keywordSet_; }
-    KeywordSet::ValueMask GetKeywordValueMask(const KeywordValueContext &keywordValueContext) const
+    KeywordSet::ValueMask GetKeywordValueMask(const KeywordContext &keywordValueContext) const
     {
         return keywordSet_.ExtractValueMask(keywordValueContext);
     }

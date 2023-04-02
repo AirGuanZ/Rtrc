@@ -99,15 +99,10 @@ void GBufferRenderer::DoRenderGBufferPass(
 
     CommandBuffer &cmd = passContext.GetCommandBuffer();
 
-    auto gbufferA = gbuffers.a->Get();
-    auto gbufferB = gbuffers.b->Get();
-    auto gbufferC = gbuffers.c->Get();
-    auto gbufferDepth = gbuffers.depth->Get();
-
-    gbufferA->SetName("GBufferA");
-    gbufferB->SetName("GBufferB");
-    gbufferC->SetName("GBufferC");
-    gbufferDepth->SetName("GBufferDepth");
+    auto gbufferA = gbuffers.a->Get(passContext);
+    auto gbufferB = gbuffers.b->Get(passContext);
+    auto gbufferC = gbuffers.c->Get(passContext);
+    auto gbufferDepth = gbuffers.depth->Get(passContext);
     
     // Render pass
 
@@ -144,7 +139,7 @@ void GBufferRenderer::DoRenderGBufferPass(
     });
     RTRC_SCOPE_EXIT{ cmd.EndRenderPass(); };
 
-    KeywordValueContext keywords;
+    KeywordContext keywords;
 
     // Per pass binding groups
 
@@ -211,7 +206,7 @@ void GBufferRenderer::DoRenderGBufferPass(
         auto pass = matPassInst->GetPass();
         auto shader = matPassInst->GetShader(keywords);
         auto pipeline = renderGBuffersPipelines_.GetOrCreate(
-            pass, shader, mesh->GetLayout(), [&]
+            pass, shader->GetUniqueID(), mesh->GetLayout(), [&]
             {
                 return device_.CreateGraphicsPipeline(
                 {

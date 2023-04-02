@@ -32,57 +32,11 @@ public:
     using BlendOp     = RHI::BlendOp;
 
     using Format = RHI::Format;
-
-    struct DescKey
-    {
-        Shader::UniqueID shader;
-        
-        Viewports viewports = 1;
-        Scissors  scissors  = 1;
-
-        const MeshLayout *meshLayout = nullptr;
-
-        PrimitiveTopology primitiveTopology = PrimitiveTopology::TriangleList;
-        FillMode          fillMode          = FillMode::Fill;
-        CullMode          cullMode          = CullMode::DontCull;
-        FrontFaceMode     frontFaceMode     = FrontFaceMode::Clockwise;
-
-        bool  enableDepthBias      = false;
-        float depthBiasConstFactor = 0.0f;
-        float depthBiasSlopeFactor = 0.0f;
-        float depthBiasClampValue  = 0.0f;
-
-        int multisampleCount = 1;
-
-        bool      enableDepthTest  = false;
-        bool      enableDepthWrite = false;
-        CompareOp depthCompareOp   = CompareOp::Always;
-
-        bool       enableStencilTest = false;
-        uint8_t    stencilReadMask   = 0xff;
-        uint8_t    stencilWriteMask  = 0xff;
-        StencilOps frontStencil;
-        StencilOps backStencil;
-
-        bool        enableBlending = false;
-        BlendFactor blendingSrcColorFactor = BlendFactor::One;
-        BlendFactor blendingDstColorFactor = BlendFactor::Zero;
-        BlendOp     blendingColorOp        = BlendOp::Add;
-        BlendFactor blendingSrcAlphaFactor = BlendFactor::One;
-        BlendFactor blendingDstAlphaFactor = BlendFactor::Zero;
-        BlendOp     blendingAlphaOp        = BlendOp::Add;
-
-        StaticVector<Format, 8> colorAttachmentFormats;
-        Format                  depthStencilFormat = RHI::Format::Unknown;
-
-        size_t Hash() const;
-
-        bool operator==(const DescKey &other) const noexcept = default;
-    };
-
+    
     struct Desc
     {
-        RC<Shader> shader;
+        RC<Shader>       shader;
+        Shader::UniqueId shaderId; // Reserved for caching. Don't use it.
 
         Viewports viewports = 1;
         Scissors  scissors  = 1;
@@ -124,7 +78,9 @@ public:
 
         void Validate() const;
 
-        DescKey AsKey() const;
+        size_t Hash() const;
+
+        bool operator==(const Desc &) const = default;
     };
 
     const RC<const ShaderInfo> &GetShaderInfo() const;
@@ -227,8 +183,6 @@ public:
 private:
 
     RHI::DevicePtr device_;
-    //ObjectCache<GraphicsPipeline::DescKey, GraphicsPipeline, true, true> graphicsPipelineCache_;
-    //ObjectCache<Shader::UniqueID, ComputePipeline, true, true> computePipelineCache_;
 };
 
 inline const RC<const ShaderInfo> &GraphicsPipeline::GetShaderInfo() const

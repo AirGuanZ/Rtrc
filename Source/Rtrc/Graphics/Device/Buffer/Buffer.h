@@ -199,6 +199,10 @@ inline size_t Buffer::GetDefaultStructStride() const
 
 inline void Buffer::Upload(const void *data, size_t offset, size_t size)
 {
+    if(!size)
+    {
+        return;
+    }
     assert(offset + size <= size_);
     void *ptr = rhiBuffer_->Map(offset, size, false);
     std::memcpy(ptr, data, size);
@@ -207,6 +211,10 @@ inline void Buffer::Upload(const void *data, size_t offset, size_t size)
 
 inline void Buffer::Download(void *data, size_t offset, size_t size)
 {
+    if(!size)
+    {
+        return;
+    }
     assert(offset + size <= size_);
     const void *ptr = rhiBuffer_->Map(offset, size, true);
     std::memcpy(data, ptr, size);

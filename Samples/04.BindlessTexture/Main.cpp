@@ -93,7 +93,7 @@ void Run()
         quadPass->Use(renderTarget, RG::COLOR_ATTACHMENT);
         quadPass->SetCallback([&](RG::PassContext &context)
         {
-            auto rt = renderTarget->Get();
+            auto rt = renderTarget->Get(context);
             auto &commandBuffer = context.GetCommandBuffer();
 
             commandBuffer.BeginRenderPass(ColorAttachment

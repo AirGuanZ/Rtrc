@@ -123,6 +123,9 @@ private:
     RC<SubBuffer>    indexBuffer_;
 };
 
+void BindMesh(CommandBuffer &commandBuffer, const Mesh::SharedRenderingData &mesh);
+void BindMesh(CommandBuffer &commandBuffer, const Mesh &mesh);
+
 inline Mesh::Mesh(Mesh &&other) noexcept
     : Mesh()
 {
@@ -184,6 +187,16 @@ inline Mesh MeshBuilder::CreateMesh()
     data.vertexCount_   = vertexCount_;
     data.indexCount_    = indexCount_;
     return ret;
+}
+
+inline void BindMesh(CommandBuffer &commandBuffer, const Mesh::SharedRenderingData &mesh)
+{
+    mesh.BindVertexAndIndexBuffers(commandBuffer);
+}
+
+inline void BindMesh(CommandBuffer &commandBuffer, const Mesh &mesh)
+{
+    BindMesh(commandBuffer, *mesh.GetRenderingData());
 }
 
 RTRC_END

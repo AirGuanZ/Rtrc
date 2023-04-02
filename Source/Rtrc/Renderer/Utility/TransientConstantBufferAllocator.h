@@ -15,6 +15,8 @@ public:
     void NewBatch();
     void Flush();
 
+    template<RtrcStruct T>
+    RC<SubBuffer> CreateConstantBuffer(const T &data);
     RC<SubBuffer> CreateConstantBuffer(const void *data, size_t size) override;
 
     template<RtrcStruct T>
@@ -31,6 +33,12 @@ private:
 
     LinearTransientConstantBufferAllocator linearConstantBufferAllocator_;
 };
+
+template<RtrcStruct T>
+RC<SubBuffer> TransientConstantBufferAllocator::CreateConstantBuffer(const T &data)
+{
+    return ConstantBufferManagerInterface::CreateConstantBuffer(data);
+}
 
 template<RtrcStruct T>
 RC<BindingGroup> TransientConstantBufferAllocator::CreateConstantBufferBindingGroup(const T &data)

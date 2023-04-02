@@ -59,6 +59,7 @@ public:
     const RHI::TextureDesc &GetDesc() const;
 
     RHI::TextureDimension GetDimension() const;
+    RHI::Format GetFormat() const;
     uint32_t GetWidth() const;
     uint32_t GetHeight() const;
     Vector2u GetSize() const;
@@ -147,6 +148,11 @@ inline const RHI::TextureDesc &Texture::GetDesc() const
 inline RHI::TextureDimension Texture::GetDimension() const
 {
     return desc_.dim;
+}
+
+inline RHI::Format Texture::GetFormat() const
+{
+    return desc_.format;
 }
 
 inline uint32_t Texture::GetWidth() const

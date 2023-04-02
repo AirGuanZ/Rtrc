@@ -13,7 +13,31 @@ struct PerspectiveProjectionParameters
     float farPlane  = 100.0f;
 };
 
-class Camera : public WithUniqueObjectID
+struct RenderCamera
+{
+    Vector3f position;
+    Vector3f rotation;
+
+    PerspectiveProjectionParameters projParams;
+
+    Vector3f forward;
+    Vector3f left;
+    Vector3f up;
+
+    Matrix4x4f worldToCamera;
+    Matrix4x4f cameraToWorld;
+    Matrix4x4f cameraToClip;
+    Matrix4x4f clipToCamera;
+    Matrix4x4f worldToClip;
+    Matrix4x4f clipToWorld;
+
+    Vector3f cameraRays[4];
+    Vector3f worldRays[4];
+
+    UniqueId originalId;
+};
+
+class Camera : public WithUniqueObjectID, RenderCamera
 {
 public:
 
@@ -50,119 +74,103 @@ public:
     const CornerRays &GetWorldRays() const;
     const CornerRays &GetCameraRays() const;
 
-private:
-
-    // Basic data
-
-    Vector3f position_;
-    Vector3f rotation_;
-    PerspectiveProjectionParameters projParams_;
-
-    // Derived data
-
-    Vector3f forward_;
-    Vector3f left_;
-    Vector3f up_;
-
-    Matrix4x4f worldToCamera_;
-    Matrix4x4f cameraToWorld_;
-    Matrix4x4f cameraToClip_;
-    Matrix4x4f clipToCamera_;
-    Matrix4x4f worldToClip_;
-    Matrix4x4f clipToWorld_;
-
-    Vector3f cameraRays_[4];
-    Vector3f worldRays_[4];
+    const RenderCamera &GetRenderCamera() const;
 };
 
 inline Camera::Camera()
 {
     CalculateDerivedData();
+    originalId = GetUniqueID();
 }
 
 inline const Vector3f &Camera::GetRotation() const
 {
-    return rotation_;
+    return rotation;
 }
 
 inline const Vector3f &Camera::GetPosition() const
 {
-    return position_;
+    return position;
 }
 
 inline const PerspectiveProjectionParameters &Camera::GetProjection() const
 {
-    return projParams_;
+    return projParams;
 }
 
 inline const Vector3f &Camera::GetLeft() const
 {
-    return left_;
+    return left;
 }
 
 inline const Vector3f &Camera::GetForward() const
 {
-    return forward_;
+    return forward;
 }
 
 inline const Vector3f &Camera::GetUp() const
 {
-    return up_;
+    return up;
 }
 
-inline void Camera::SetRotation(const Vector3f &rotation)
+inline void Camera::SetRotation(const Vector3f &_rotation)
 {
-    rotation_ = rotation;
+    rotation = _rotation;
 }
 
-inline void Camera::SetPosition(const Vector3f &position)
+inline void Camera::SetPosition(const Vector3f &_position)
 {
-    position_ = position;
+    position = _position;
 }
 
 inline void Camera::SetProjection(float fovYRad, float wOverH, float nearPlane, float farPlane)
 {
-    projParams_ = { fovYRad, wOverH, nearPlane, farPlane };
+    projParams = { fovYRad, wOverH, nearPlane, farPlane };
 }
 
 inline const Matrix4x4f &Camera::GetWorldToCameraMatrix() const
 {
-    return worldToCamera_;
+    return worldToCamera;
 }
 
 inline const Matrix4x4f &Camera::GetCameraToWorldMatrix() const
 {
-    return cameraToWorld_;
+    return cameraToWorld;
 }
 
 inline const Matrix4x4f &Camera::GetCameraToClipMatrix() const
 {
-    return cameraToClip_;
+    return cameraToClip;
 }
 
 inline const Matrix4x4f &Camera::GetClipToCameraMatrix() const
 {
-    return clipToCamera_;
+    return clipToCamera;
 }
 
 inline const Matrix4x4f &Camera::GetWorldToClipMatrix() const
 {
-    return worldToClip_;
+    return worldToClip;
 }
 
 inline const Matrix4x4f &Camera::GetClipToWorldMatrix() const
 {
-    return clipToWorld_;
+    return clipToWorld;
 }
 
 inline const Camera::CornerRays &Camera::GetWorldRays() const
 {
-    return worldRays_;
+    return worldRays;
 }
 
 inline const Camera::CornerRays &Camera::GetCameraRays() const
 {
-    return cameraRays_;
+    return cameraRays;
+}
+
+inline const RenderCamera &Camera::GetRenderCamera() const
+{
+    return *this;
 }
 
 RTRC_END

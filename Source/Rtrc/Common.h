@@ -150,11 +150,11 @@ class WithUniqueObjectID
 {
 public:
 
-    struct UniqueID
+    struct UniqueId
     {
         uint64_t data = 0;
 
-        auto operator<=>(const UniqueID &) const = default;
+        auto operator<=>(const UniqueId &) const = default;
 
         size_t Hash() const noexcept { return std::hash<uint64_t>{}(data); }
     };
@@ -169,12 +169,14 @@ public:
 
     WithUniqueObjectID &operator=(const WithUniqueObjectID &) { return *this; }
 
-    const UniqueID &GetUniqueID() const { return uniqueID_; }
+    const UniqueId &GetUniqueID() const { return uniqueID_; }
 
 private:
 
-    UniqueID uniqueID_;
+    UniqueId uniqueID_;
 };
+
+using UniqueId = WithUniqueObjectID::UniqueId;
 
 enum class LogLevel
 {

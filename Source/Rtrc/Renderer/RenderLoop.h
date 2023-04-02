@@ -6,8 +6,9 @@
 
 #include <Rtrc/Graphics/ImGui/Instance.h>
 #include <Rtrc/Graphics/RenderGraph/Executable.h>
+#include <Rtrc/Renderer/Passes/GBufferPass.h>
 #include <Rtrc/Renderer/RenderCommand.h>
-#include <Rtrc/Renderer/RenderLoopScene/CachedScene.h>
+#include <Rtrc/Renderer/Scene/CachedScene.h>
 #include <Rtrc/Utility/Timer.h>
 
 RTRC_RENDERER_BEGIN
@@ -39,16 +40,19 @@ private:
     
     void RenderThreadEntry();
 
-    void RenderSingleFrame(const RenderCommand_RenderStandaloneFrame &frame);
+    void RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame &frame);
     
     ObserverPtr<Device>                       device_;
     ObserverPtr<const BuiltinResourceManager> builtinResources_;
     ObserverPtr<BindlessTextureManager>       bindlessTextures_;
 
-    Box<BindlessBufferManager> bindlessStructuredBuffersForBlas_;
+    int32_t frameIndex_;
+    Timer   frameTimer_;
 
-    Box<ImGuiRenderer> imguiRenderer_;
-    Box<RG::Executer>  renderGraphExecuter_;
+    Box<ImGuiRenderer>                    imguiRenderer_;
+    Box<RG::Executer>                     renderGraphExecuter_;
+    Box<BindlessBufferManager>            bindlessStructuredBuffersForBlas_;
+    Box<TransientConstantBufferAllocator> transientConstantBufferAllocator_;
 
     std::jthread                         renderThread_;
     tbb::concurrent_queue<RenderCommand> renderCommandQueue_;
@@ -56,12 +60,9 @@ private:
     CachedMeshManager     meshManager_;
     CachedMaterialManager materialManager_;
     
-    int32_t frameIndex_;
-    Timer   frameTimer_;
-
-    // Transient context
-
     CachedScene cachedScene_;
+
+    Box<GBufferPass> gbufferPass_;
 };
 
 RTRC_RENDERER_END

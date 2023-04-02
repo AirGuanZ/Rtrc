@@ -5,11 +5,14 @@
 #include <Rtrc/Graphics/Shader/ParsedBindingGroup.h>
 #include <Rtrc/Graphics/Shader/ShaderBindingNameMap.h>
 #include <Rtrc/Graphics/Shader/ShaderReflection.h>
+#include <Rtrc/Utility/SignalSlot.h>
 #include <Rtrc/Utility/Unreachable.h>
+
 
 RTRC_BEGIN
 
 class BindingLayout;
+class BindingGroup;
 class BindingGroupLayout;
 class ComputePipeline;
 class ShaderCompiler;
@@ -166,6 +169,8 @@ public:
     using Category            = ShaderInfo::Category;
     using BuiltinBindingGroup = ShaderInfo::BuiltinBindingGroup;
     using PushConstantRange   = ShaderInfo::PushConstantRange;
+
+    ~Shader();
     
     Category GetCategory() const;
     const RHI::RawShaderPtr &GetRawShader(RHI::ShaderType type) const;
@@ -206,6 +211,9 @@ public:
     Span<RHI::RayTracingMissShaderGroup>   GetMissShaderGroups()   const;
     Span<RHI::RayTracingHitShaderGroup>    GetHitShaderGroups()    const;
 
+    template<typename...Args>
+    Connection OnDestroy(Args&&...args) const { return onDestroyCallbacks_.Connect(std::forward<Args>(args)...); }
+
 private:
     
     friend class ShaderCompiler;
@@ -217,8 +225,10 @@ private:
 
     RHI::RawShaderPtr rawShaders_[2];
     
-    RC<ShaderInfo> info_;
+    RC<ShaderInfo>      info_;
     RC<ComputePipeline> computePipeline_;
+
+    mutable Signal<SignalThreadPolicy::SpinLock> onDestroyCallbacks_;
 };
 
 inline Span<RHI::RayTracingRayGenShaderGroup> ShaderGroupInfo::GetRayGenShaderGroups() const
@@ -387,6 +397,11 @@ inline const ShaderGroupInfo &ShaderInfo::GetShaderGroupInfo() const
 inline const ShaderBindingNameMap &ShaderInfo::GetBindingNameMap() const
 {
     return shaderBindingLayoutInfo_->GetBindingNameMap();
+}
+
+inline Shader::~Shader()
+{
+    onDestroyCallbacks_.Emit();
 }
 
 inline Shader::Category Shader::GetCategory() const

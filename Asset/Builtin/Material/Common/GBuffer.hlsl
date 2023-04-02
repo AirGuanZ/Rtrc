@@ -20,6 +20,12 @@ namespace Builtin
     rtrc_ref(_internalGBufferC,     FS) \
     rtrc_ref(_internalGBufferDepth, FS)
 
+#define REFERENCE_BUILTIN_GBUFFERS(STAGES)  \
+    rtrc_ref(_internalGBufferA,     STAGES) \
+    rtrc_ref(_internalGBufferB,     STAGES) \
+    rtrc_ref(_internalGBufferC,     STAGES) \
+    rtrc_ref(_internalGBufferDepth, STAGES)
+
     struct GBufferPixelOutput
     {
         float4 gbufferA : SV_TARGET0;
@@ -69,11 +75,11 @@ namespace Builtin
         float depth = _internalGBufferDepth.SampleLevel(_internalGBufferSampler, uv, 0);
 
         GBufferPixelValue ret;
-        ret.normal = 2 * a.rgb - 1;
-        ret.albedo = b.rgb;
-        ret.metallic = b.a;
+        ret.normal    = 2 * a.rgb - 1;
+        ret.albedo    = b.rgb;
+        ret.metallic  = b.a;
         ret.roughness = c.r;
-        ret.depth = depth;
+        ret.depth     = depth;
         return ret;
     }
 

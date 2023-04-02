@@ -41,8 +41,8 @@ end
 
 -- External dependencies
 
---includes("External/abseil")
---add_requires("abseil", { configs = { shared = false } })
+includes("External/abseil")
+add_requires("abseil", { configs = { shared = false } })
 
 includes("External/glfw")
 add_requires("glfw", { configs = { glfw_include = "vulkan" } })
@@ -112,7 +112,7 @@ target("Rtrc")
     end
     -- Dependencies
     add_packages("mydxc", "glfw", "stb", "tinyexr")
-    add_packages("spdlog", "fmt", "mimalloc", "mytbb", --[["abseil",--]] { public = true })
+    add_packages("spdlog", "fmt", "mimalloc", "mytbb", "abseil", { public = true })
     add_deps("tinyobjloader", "sigslot", "imgui", "avir", "cy")
 target_end()
 

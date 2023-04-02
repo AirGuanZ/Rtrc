@@ -19,6 +19,7 @@ struct ExecutableResources;
 class RenderGraph;
 class Executer;
 class Pass;
+class PassContext;
 class Compiler;
 
 struct UseInfo
@@ -132,15 +133,11 @@ class Resource : public Uncopyable
 
 public:
 
-    Resource(const RenderGraph *graph, int resourceIndex) : index_(resourceIndex), graph_(graph) { }
+    explicit Resource(int resourceIndex) : index_(resourceIndex) { }
 
     virtual ~Resource() = default;
 
     int GetResourceIndex() const { return index_; }
-
-protected:
-
-    const RenderGraph *graph_;
 };
 
 template<typename T>
@@ -155,7 +152,7 @@ public:
 
     using Resource::Resource;
 
-    RC<Buffer> Get() const;
+    RC<Buffer> Get(PassContext &passContext) const;
 };
 
 class TextureResource : public Resource
@@ -175,7 +172,7 @@ public:
     uint32_t              GetMipLevels() const { return GetDesc().mipLevels; }
     uint32_t              GetArraySize() const { return GetDesc().arraySize; }
 
-    RC<Texture> Get() const;
+    RC<Texture> Get(PassContext &passContext) const;
 };
 
 class PassContext : public Uncopyable
@@ -184,8 +181,8 @@ public:
 
     CommandBuffer &GetCommandBuffer();
 
-    RC<Buffer> GetBuffer(const BufferResource *resource);
-    RC<Texture> GetTexture2D(const TextureResource *resource);
+    RC<Buffer> Get(const BufferResource *resource);
+    RC<Texture> Get(const TextureResource *resource);
 
 private:
 

@@ -2,44 +2,72 @@
 
 RTRC_BEGIN
 
-UploadBufferPool::UploadBufferPool(ObserverPtr<Device> device, RHI::BufferUsageFlag usages, uint32_t maxPoolSize)
-    : device_(device), usages_(usages), maxPoolSize_(maxPoolSize)
+template<UploadBufferPoolPolicy Policy>
+UploadBufferPool<Policy>::UploadBufferPool(ObserverPtr<Device> device, RHI::BufferUsageFlag usages)
+    : device_(device), usages_(usages)
 {
     sharedData_ = MakeRC<SharedData>();
 }
 
-RC<Buffer> UploadBufferPool::Acquire(size_t leastSize)
+template<UploadBufferPoolPolicy Policy>
+RC<Buffer> UploadBufferPool<Policy>::Acquire(size_t leastSize)
 {
     auto it = sharedData_->freeBuffers.lower_bound(leastSize);
     if(it != sharedData_->freeBuffers.end())
     {
-        auto buffer = it->second;
+        RC<Buffer> buffer = it->second;
         sharedData_->freeBuffers.erase(it);
         RegisterReleaseCallback(buffer);
         return buffer;
     }
-    auto buffer = device_->CreateBuffer(RHI::BufferDesc
+    
+    RC<Buffer> buffer = device_->CreateBuffer(RHI::BufferDesc
     {
         .size           = leastSize,
         .usage          = usages_,
         .hostAccessType = RHI::BufferHostAccessType::SequentialWrite
     });
+
     RegisterReleaseCallback(buffer);
+    if constexpr(Policy == UploadBufferPoolPolicy::ReplaceSmallestBuffer)
+    {
+        if(!sharedData_->freeBuffers.empty())
+        {
+            sharedData_->freeBuffers.erase(sharedData_->freeBuffers.begin());
+        }
+    }
+
     return buffer;
 }
 
-void UploadBufferPool::RegisterReleaseCallback(RC<Buffer> buffer)
+template<UploadBufferPoolPolicy Policy>
+void UploadBufferPool<Policy>::RegisterReleaseCallback(RC<Buffer> buffer)
 {
-    device_->GetSynchronizer().OnFrameComplete(
-        [b = std::move(buffer), s = sharedData_, c = maxPoolSize_]
-        {
-            const size_t size = b->GetSize();
-            s->freeBuffers.insert({ size, std::move(b) });
-            while(s->freeBuffers.size() > c)
+    if constexpr(Policy == UploadBufferPoolPolicy::LimitPoolSize)
+    {
+        device_->GetSynchronizer().OnFrameComplete(
+            [b = std::move(buffer), s = sharedData_, c = this->maxPoolSize_]
             {
-                s->freeBuffers.erase(s->freeBuffers.begin());
-            }
-        });
+                const size_t size = b->GetSize();
+                s->freeBuffers.insert({ size, std::move(b) });
+                while(s->freeBuffers.size() > c)
+                {
+                    s->freeBuffers.erase(s->freeBuffers.begin());
+                }
+            });
+    }
+    else
+    {
+        device_->GetSynchronizer().OnFrameComplete(
+            [b = std::move(buffer), s = sharedData_]
+            {
+                const size_t size = b->GetSize();
+                s->freeBuffers.insert({ size, std::move(b) });
+            });
+    }
 }
+
+template class UploadBufferPool<UploadBufferPoolPolicy::LimitPoolSize>;
+template class UploadBufferPool<UploadBufferPoolPolicy::ReplaceSmallestBuffer>;
 
 RTRC_END

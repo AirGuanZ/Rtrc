@@ -17,6 +17,14 @@ Shader "Builtin/DeferredLighting"
     #include "Common/Color.hlsl"
     #include "Common/GBuffer.hlsl"
     #include "Common/Scene.hlsl"
+    
+    // See Source/Rtrc/Renderer/Scene/Light.h
+    struct DirectionalLightConstantBuffer
+    {
+        float3 direction;
+        float3 color;
+        float  intensity;
+    };
 
     rtrc_group(Pass, FS)
     {

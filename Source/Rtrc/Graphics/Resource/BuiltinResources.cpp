@@ -64,16 +64,22 @@ void BuiltinResourceManager::LoadBuiltinMeshes()
 #define LOAD_BUILTIN_MESH(NAME) \
     meshes_[std::to_underlying(BuiltinMesh::NAME)] = \
         ToRC(MeshManager::Load(device_, "Asset/Builtin/Mesh/" #NAME ".obj", {}))
+
     LOAD_BUILTIN_MESH(Cube);
+
 #undef LOAD_BUILTIN_MESH
 }
 
 void BuiltinResourceManager::LoadBuiltinMaterials()
 {
 #define LOAD_BUILTIN_MATERIAL(NAME) \
-    materials_[std::to_underlying(BuiltinMaterial::NAME)] = materialManager_.GetMaterial("Builtin/" #NAME)
+    materials_[std::to_underlying(BuiltinMaterial::NAME)] = \
+        materialManager_.GetMaterial("Builtin/" #NAME)
+
     LOAD_BUILTIN_MATERIAL(DeferredLighting);
+    LOAD_BUILTIN_MATERIAL(DeferredLighting2);
     LOAD_BUILTIN_MATERIAL(Atmosphere);
+
 #undef LOAD_BUILTIN_MATERIAL
 }
 

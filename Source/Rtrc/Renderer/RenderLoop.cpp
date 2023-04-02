@@ -17,10 +17,14 @@ RenderLoop::RenderLoop(
 {
     imguiRenderer_       = MakeBox<ImGuiRenderer>(device_);
     renderGraphExecuter_ = MakeBox<RG::Executer>(device_);
-    renderThread_        = std::jthread(&RenderLoop::RenderThreadEntry, this);
 
     bindlessStructuredBuffersForBlas_ = MakeBox<BindlessBufferManager>(
         device_, 64, MAX_COUNT_BINDLESS_STRUCTURE_BUFFER_FOR_BLAS);
+    transientConstantBufferAllocator_ = MakeBox<TransientConstantBufferAllocator>(*device);
+
+    renderThread_ = std::jthread(&RenderLoop::RenderThreadEntry, this);
+
+    gbufferPass_ = MakeBox<GBufferPass>(device_);
 }
 
 RenderLoop::~RenderLoop()
@@ -98,7 +102,7 @@ void RenderLoop::RenderThreadEntry()
                         return;
                     }
                     frameTimer_.BeginFrame();
-                    RenderSingleFrame(frame);
+                    RenderStandaloneFrame(frame);
                     if(!device_->Present())
                     {
                         isSwapchainInvalid = true;
@@ -112,10 +116,15 @@ void RenderLoop::RenderThreadEntry()
     }
 }
 
-void RenderLoop::RenderSingleFrame(const RenderCommand_RenderStandaloneFrame &frame)
+void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame &frame)
 {
+    LinearAllocator linearAllocator;
+    transientConstantBufferAllocator_->NewBatch();
+
     auto renderGraph = device_->CreateRenderGraph();
     auto framebuffer = renderGraph->RegisterSwapchainTexture(device_->GetSwapchain());
+
+    // Update meshes
 
     meshManager_.UpdateCachedMeshData(frame);
     constexpr int MAX_BLAS_BUILD_COUNT = 5;
@@ -123,8 +132,24 @@ void RenderLoop::RenderSingleFrame(const RenderCommand_RenderStandaloneFrame &fr
     auto buildBlasPass = meshManager_.BuildBlasForMeshes(
         *renderGraph, MAX_BLAS_BUILD_COUNT, MAX_BLAS_BUILD_PRIMITIVE_COUNT);
 
+    // Update materials
+
     materialManager_.UpdateCachedMaterialData(frame);
-    auto rgScene = cachedScene_.Update(frame, meshManager_, materialManager_, *renderGraph);
+
+    // Update scene
+
+    auto rgScene = cachedScene_.Update(
+        frame, *transientConstantBufferAllocator_,
+        meshManager_, materialManager_, *renderGraph, linearAllocator);
+    const CachedScenePerCamera *cachedScenePerCamera = cachedScene_.GetCachedScenePerCamera(frame.camera.originalId);
+    assert(cachedScenePerCamera);
+
+    // GBuffers
+
+    const GBufferPass::RenderGraphInterface rgGBuffers = gbufferPass_->RenderGBuffers(
+        *cachedScenePerCamera, *renderGraph, framebuffer->GetSize());
+
+    // Clear frame buffer
 
     auto clearPass = renderGraph->CreatePass("Clear Framebuffer");
     clearPass->Use(framebuffer, RG::COLOR_ATTACHMENT_WRITEONLY);
@@ -133,7 +158,7 @@ void RenderLoop::RenderSingleFrame(const RenderCommand_RenderStandaloneFrame &fr
         CommandBuffer &commandBuffer = context.GetCommandBuffer();
         commandBuffer.BeginRenderPass(ColorAttachment
         {
-            .renderTargetView = framebuffer->Get()->CreateRtv(),
+            .renderTargetView = framebuffer->Get(context)->CreateRtv(),
             .loadOp           = AttachmentLoadOp::Clear,
             .storeOp          = AttachmentStoreOp::Store,
             .clearValue       = ColorClearValue{ 0, 1, 1, 1 }
@@ -141,11 +166,18 @@ void RenderLoop::RenderSingleFrame(const RenderCommand_RenderStandaloneFrame &fr
         commandBuffer.EndRenderPass();
     });
 
+    // Imgui
+
     auto imguiPass = imguiRenderer_->AddToRenderGraph(frame.imguiDrawData.get(), framebuffer, renderGraph.get());
 
+    // Dependencies & execution
+
     Connect(buildBlasPass, rgScene.buildTlasPass);
+    Connect(rgGBuffers.gbufferPass, imguiPass);
     Connect(clearPass, imguiPass);
     imguiPass->SetSignalFence(device_->GetFrameFence());
+
+    transientConstantBufferAllocator_->Flush();
     renderGraphExecuter_->Execute(renderGraph);
 }
 

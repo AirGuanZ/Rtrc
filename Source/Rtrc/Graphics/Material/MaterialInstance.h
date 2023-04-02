@@ -89,15 +89,15 @@ class MaterialPassInstance
 {
 public:
 
-    RC<Shader> GetShader(const KeywordValueContext &keywordValues);
+    RC<Shader> GetShader(const KeywordContext &keywordValues);
     RC<Shader> GetShader(KeywordSet::ValueMask keywordMask);
 
     const MaterialPass *GetPass() const;
 
-    void BindGraphicsProperties(const KeywordValueContext &keywordValues, const CommandBuffer &commandBuffer) const;
+    void BindGraphicsProperties(const KeywordContext &keywordValues, const CommandBuffer &commandBuffer) const;
     void BindGraphicsProperties(KeywordSet::ValueMask mask, const CommandBuffer &commandBuffer) const;
 
-    void BindComputeProperties(const KeywordValueContext &keywordValues, const CommandBuffer &commandBuffer) const;
+    void BindComputeProperties(const KeywordContext &keywordValues, const CommandBuffer &commandBuffer) const;
     void BindComputeProperties(KeywordSet::ValueMask mask, const CommandBuffer &commandBuffer) const;
 
 private:
@@ -126,7 +126,7 @@ private:
 
 void BindMaterialProperties(
     const MaterialPassInstance &instance,
-    const KeywordValueContext  &keywords,
+    const KeywordContext  &keywords,
     const CommandBuffer        &commandBuffer,
     bool                        graphics);
 

@@ -89,7 +89,7 @@ void Application::UpdateLoop()
 
             Renderer::RenderCommand_RenderStandaloneFrame frame;
             frame.scene = std::move(activeSceneProxy);
-            frame.camera = activeCamera_;
+            frame.camera = activeCamera_.GetRenderCamera();
             frame.imguiDrawData = imgui_->Render();
             frame.finishSemaphore = &finishRenderSemaphore;
             finishRenderSemaphore.acquire();

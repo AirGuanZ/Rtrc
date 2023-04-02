@@ -194,8 +194,8 @@ AtmosphereDetail::SkyLut::RenderGraphInterface AtmosphereDetail::SkyLut::AddToRe
         lerpFactor = std::clamp(lerpFactor, 0.001f, 0.05f);
 
         SkyLutPass passGroupData;
-        passGroupData.SkyLutTextureRW         = currLut->Get();
-        passGroupData.SkyHistoryLutTexture    = prevLut->Get();
+        passGroupData.SkyLutTextureRW         = currLut->Get(passCtx);
+        passGroupData.SkyHistoryLutTexture    = prevLut->Get(passCtx);
         passGroupData.TransmittanceLutTexture = transmittanceLut.GetLut();
         passGroupData.MultiScatterLutTexture  = multiScatterLut.GetLut();
         passGroupData.atmosphere              = parameters->atmosphere;

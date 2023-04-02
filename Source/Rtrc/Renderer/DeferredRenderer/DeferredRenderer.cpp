@@ -101,12 +101,12 @@ void DeferredRenderer::DoDeferredLightingPass(RG::PassContext &passContext, cons
         });
     }
 
-    auto gbufferA = passData.gbuffers.a->Get();
-    auto gbufferB = passData.gbuffers.b->Get();
-    auto gbufferC = passData.gbuffers.c->Get();
-    auto gbufferDepth = passData.gbuffers.depth->Get();
-    auto image = passData.image->Get();
-    auto skyLut = passData.skyLut->Get();
+    auto gbufferA = passData.gbuffers.a->Get(passContext);
+    auto gbufferB = passData.gbuffers.b->Get(passContext);
+    auto gbufferC = passData.gbuffers.c->Get(passContext);
+    auto gbufferDepth = passData.gbuffers.depth->Get(passContext);
+    auto image = passData.image->Get(passContext);
+    auto skyLut = passData.skyLut->Get(passContext);
 
     {
         cmd.BeginRenderPass(ColorAttachment

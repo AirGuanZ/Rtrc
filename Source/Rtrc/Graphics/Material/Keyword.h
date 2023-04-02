@@ -14,7 +14,7 @@ using Keyword = PooledString<PooledStringTagForKeyword, uint32_t>;
 class KeywordSet;
 class KeywordSetPartialValue;
 
-class KeywordValueContext
+class KeywordContext
 {
 public:
 
@@ -67,7 +67,7 @@ public:
         assert(totalBitCount_ <= MAX_TOTAL_VALUE_BIT_COUNT && "number of keyword value bits exceeds max limit (32)");
     }
 
-    ValueMask ExtractValueMask(const KeywordValueContext &valueContext) const
+    ValueMask ExtractValueMask(const KeywordContext &valueContext) const
     {
         ValueMask mask = 0;
         int bitOffset = 0;
@@ -83,7 +83,7 @@ public:
         return mask;
     }
 
-    PartialValueMask GeneratePartialValue(const KeywordValueContext &valueContext) const
+    PartialValueMask GeneratePartialValue(const KeywordContext &valueContext) const
     {
         ValueMask mask = 0, value = 0;
         int bitOffset = 0;

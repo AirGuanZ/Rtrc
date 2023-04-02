@@ -3,22 +3,14 @@
 
 RTRC_RG_BEGIN
 
-RC<Buffer> BufferResource::Get() const
+RC<Buffer> BufferResource::Get(PassContext &passContext) const
 {
-    if(!graph_->executableResource_)
-    {
-        throw Exception("BufferResource::GetRHI can not be called during graph execution");
-    }
-    return graph_->executableResource_->indexToBuffer[GetResourceIndex()].buffer;
+    return passContext.Get(this);
 }
 
-RC<Texture> TextureResource::Get() const
+RC<Texture> TextureResource::Get(PassContext &passContext) const
 {
-    if(!graph_->executableResource_)
-    {
-        throw Exception("TextureResource::GetRHI can not be called during graph execution");
-    }
-    return graph_->executableResource_->indexToTexture[GetResourceIndex()].texture;
+    return passContext.Get(this);
 }
 
 CommandBuffer &PassContext::GetCommandBuffer()
@@ -26,14 +18,14 @@ CommandBuffer &PassContext::GetCommandBuffer()
     return commandBuffer_;
 }
 
-RC<Buffer> PassContext::GetBuffer(const BufferResource *resource)
+RC<Buffer> PassContext::Get(const BufferResource *resource)
 {
     auto &result = resources_.indexToBuffer[resource->GetResourceIndex()].buffer;
     assert(result);
     return result;
 }
 
-RC<Texture> PassContext::GetTexture2D(const TextureResource *resource)
+RC<Texture> PassContext::Get(const TextureResource *resource)
 {
     auto &result = resources_.indexToTexture[resource->GetResourceIndex()].texture;
     assert(result);
@@ -144,7 +136,7 @@ void RenderGraph::SetQueue(Queue queue)
 BufferResource *RenderGraph::CreateBuffer(const RHI::BufferDesc &desc, std::string name)
 {
     const int index = static_cast<int>(buffers_.size());
-    auto resource = MakeBox<InternalBufferResource>(this, index);
+    auto resource = MakeBox<InternalBufferResource>(index);
     resource->rhiDesc = desc;
     resource->name = std::move(name);
     buffers_.push_back(std::move(resource));
@@ -155,7 +147,7 @@ BufferResource *RenderGraph::CreateBuffer(const RHI::BufferDesc &desc, std::stri
 TextureResource *RenderGraph::CreateTexture(const RHI::TextureDesc &desc, std::string name)
 {
     const int index = static_cast<int>(textures_.size());
-    auto resource = MakeBox<InternalTextureResource>(this, index);
+    auto resource = MakeBox<InternalTextureResource>(index);
     resource->rhiDesc = desc;
     resource->name = std::move(name);
     textures_.push_back(std::move(resource));
@@ -166,7 +158,7 @@ TextureResource *RenderGraph::CreateTexture(const RHI::TextureDesc &desc, std::s
 BufferResource *RenderGraph::RegisterBuffer(RC<StatefulBuffer> buffer)
 {
     const int index = static_cast<int>(buffers_.size());
-    auto resource = MakeBox<ExternalBufferResource>(this, index);
+    auto resource = MakeBox<ExternalBufferResource>(index);
     resource->buffer = std::move(buffer);
     buffers_.push_back(std::move(resource));
     textures_.push_back(nullptr);
@@ -176,7 +168,7 @@ BufferResource *RenderGraph::RegisterBuffer(RC<StatefulBuffer> buffer)
 TextureResource *RenderGraph::RegisterTexture(RC<StatefulTexture> texture)
 {
     const int index = static_cast<int>(textures_.size());
-    auto resource = MakeBox<ExternalTextureResource>(this, index);
+    auto resource = MakeBox<ExternalTextureResource>(index);
     resource->texture = std::move(texture);
     textures_.push_back(std::move(resource));
     buffers_.push_back(nullptr);
@@ -190,7 +182,7 @@ TextureResource *RenderGraph::RegisterSwapchainTexture(
 {
     assert(!swapchainTexture_);
     const int index = static_cast<int>(textures_.size());
-    auto resource = MakeBox<SwapchainTexture>(this, index);
+    auto resource = MakeBox<SwapchainTexture>(index);
     resource->texture = MakeRC<WrappedStatefulTexture>(
         Texture::FromRHIObject(std::move(rhiTexture)), TextureSubrscState{});
     resource->acquireSemaphore = std::move(acquireSemaphore);
@@ -221,7 +213,7 @@ Pass *RenderGraph::CreateClearTexture2DPass(std::string name, TextureResource *t
     pass->Use(tex2D, CLEAR_DST);
     pass->SetCallback([tex2D, clearValue](PassContext &context)
     {
-        context.GetCommandBuffer().ClearColorTexture2D(tex2D->Get(), clearValue);
+        context.GetCommandBuffer().ClearColorTexture2D(context.Get(tex2D), clearValue);
     });
     return pass;
 }

@@ -31,7 +31,7 @@ void Run()
 
     // Pipeline
 
-    KeywordValueContext keywords;
+    KeywordContext keywords;
     keywords.Set(RTRC_KEYWORD(DADADA), 1);
 
     auto material = resourceManager.GetMaterial("Quad");
@@ -102,7 +102,7 @@ void Run()
         quadPass->Use(renderTarget, RG::COLOR_ATTACHMENT);
         quadPass->SetCallback([&](RG::PassContext &context)
         {
-            auto rt = renderTarget->Get();
+            auto rt = renderTarget->Get(context);
             auto &commandBuffer = context.GetCommandBuffer();
             commandBuffer.BeginRenderPass(ColorAttachment
             {
