@@ -7,7 +7,7 @@ RTRC_RENDERER_BEGIN
 namespace DeferredLightingPassDetail
 {
 
-    rtrc_group(BindingGroup_DeferredLightingPass)
+    rtrc_group(BindingGroup_DeferredLightingPass, FS)
     {
         rtrc_define(Texture2D, gbufferA);
         rtrc_define(Texture2D, gbufferB);
@@ -25,7 +25,8 @@ namespace DeferredLightingPassDetail
 
 } // namespace DeferredLightingPassDetail
 
-DeferredLightingPass::DeferredLightingPass(ObserverPtr<Device> device, ObserverPtr<BuiltinResourceManager> builtinResources)
+DeferredLightingPass::DeferredLightingPass(
+    ObserverPtr<Device> device, ObserverPtr<const BuiltinResourceManager> builtinResources)
     : device_(device)
     , builtinResources_(builtinResources)
     , pipelineCache_(device)
@@ -34,8 +35,9 @@ DeferredLightingPass::DeferredLightingPass(ObserverPtr<Device> device, ObserverP
     perPassBindingGroupLayout_ =
         device_->CreateBindingGroupLayout<DeferredLightingPassDetail::BindingGroup_DeferredLightingPass>();
 
-    shaderTemplate_ = builtinResources_->GetBuiltinMaterial(BuiltinMaterial::DeferredLighting2)
-                                       ->GetPassByIndex(0)->GetShaderTemplate();
+    auto lightingMaterial = builtinResources_->GetBuiltinMaterial(BuiltinMaterial::DeferredLighting2);
+    regularShaderTemplate_ = lightingMaterial->GetPassByIndex(0)->GetShaderTemplate();
+    skyShaderTemplate_     = lightingMaterial->GetPassByIndex(1)->GetShaderTemplate();
 
     pipelineTemplate_ = GraphicsPipeline::Desc
     {
@@ -87,6 +89,8 @@ void DeferredLightingPass::DoDeferredLighting(
 {
     using namespace DeferredLightingPassDetail;
 
+    KeywordContext keywords;
+
     // Collect lights
 
     std::vector<PointLightShadingData>       pointLightData;
@@ -123,40 +127,6 @@ void DeferredLightingPass::DoDeferredLighting(
         sizeof(DirectionalLightShadingData) * std::max<size_t>(directionalLightData.size(), 1));
     directionalLightBuffer->Upload(
         directionalLightData.data(), 0, sizeof(DirectionalLightShadingData) * directionalLightData.size());
-    
-    // Render Pass
-
-    RC<Texture> renderTarget = rgInput.outRenderTarget->Get(context);
-
-    CommandBuffer &commandBuffer = context.GetCommandBuffer();
-    commandBuffer.BeginRenderPass(ColorAttachment
-    {
-        .renderTargetView = renderTarget->CreateRtv(),
-        .loadOp           = AttachmentLoadOp::DontCare,
-        .storeOp          = AttachmentStoreOp::Store
-    });
-    RTRC_SCOPE_EXIT{ commandBuffer.EndRenderPass(); };
-
-    // Pipeline
-
-    KeywordContext keywords;
-
-    GraphicsPipeline::Desc pipelineDesc = pipelineTemplate_;
-    RC<Shader> shader = shaderTemplate_->GetShader(keywords);
-    pipelineDesc.shader = shader;
-    pipelineDesc.colorAttachmentFormats = { rgInput.outRenderTarget->GetFormat() };
-    pipelineDesc.depthStencilFormat = rgInput.inGBuffers.depth->GetFormat();
-
-    RC<GraphicsPipeline> pipeline = pipelineCache_.GetGraphicsPipeline(pipelineDesc);
-    commandBuffer.BindGraphicsPipeline(pipeline);
-
-    pipelineCache_.CommitChanges();
-
-    // Dynamic states
-
-    commandBuffer.SetStencilReferenceValue(std::to_underlying(StencilBit::None));
-    commandBuffer.SetViewports(renderTarget->GetViewport());
-    commandBuffer.SetScissors(renderTarget->GetScissor());
 
     // Per-pass binding group
 
@@ -164,25 +134,101 @@ void DeferredLightingPass::DoDeferredLighting(
     passData.gbufferA               = rgInput.inGBuffers.a->Get(context);
     passData.gbufferB               = rgInput.inGBuffers.b->Get(context);
     passData.gbufferC               = rgInput.inGBuffers.c->Get(context);
-    passData.gbufferDepth           = rgInput.inGBuffers.depth->Get(context);
+    passData.gbufferDepth           = rgInput.inGBuffers.depth->Get(context)->CreateSrv(
+                                        RHI::TextureViewFlagBit::DepthSrv_StencilAttachmentReadOnly);
     passData.camera                 = scene.GetCameraCBuffer();
     passData.pointLightBuffer       = pointLightBuffer->GetStructuredSrv(sizeof(PointLightShadingData));
     passData.pointLightCount        = static_cast<uint32_t>(pointLightData.size());
     passData.directionalLightBuffer = directionalLightBuffer->GetStructuredSrv(sizeof(DirectionalLightShadingData));
     passData.directionalLightCount  = static_cast<uint32_t>(directionalLightData.size());
     auto passBindingGroup = device_->CreateBindingGroup(passData, perPassBindingGroupLayout_);
+    
+    // Render Pass
 
-    commandBuffer.BindGraphicsGroup(
-        shader->GetBuiltinBindingGroupIndex(ShaderBindingLayoutInfo::BuiltinBindingGroup::Pass), passBindingGroup);
+    RC<Texture> renderTarget = rgInput.outRenderTarget->Get(context);
+
+    CommandBuffer &commandBuffer = context.GetCommandBuffer();
+    commandBuffer.BeginRenderPass(
+        ColorAttachment
+        {
+            .renderTargetView = renderTarget->CreateRtv(),
+            .loadOp           = AttachmentLoadOp::DontCare,
+            .storeOp          = AttachmentStoreOp::Store
+        },
+        DepthStencilAttachment
+        {
+            .depthStencilView = rgInput.inGBuffers.depth->Get(context)->CreateDsv(
+                                    RHI::TextureViewFlagBit::DepthSrv_StencilAttachmentReadOnly),
+            .loadOp           = AttachmentLoadOp::Load,
+            .storeOp          = AttachmentStoreOp::Store
+        });
+    RTRC_SCOPE_EXIT{ commandBuffer.EndRenderPass(); };
 
     // Mesh
 
     const Mesh mesh = GetFullscreenTriangle(*device_, scene.GetCamera());
     BindMesh(commandBuffer, mesh);
 
-    // Render
+    // Regular pass
 
-    commandBuffer.Draw(mesh.GetVertexCount(), 1, 0, 0);
+    {
+        // Pipeline
+
+        GraphicsPipeline::Desc pipelineDesc = pipelineTemplate_;
+        RC<Shader> shader = regularShaderTemplate_->GetShader(keywords);
+        pipelineDesc.shader                 = shader;
+        pipelineDesc.colorAttachmentFormats = { rgInput.outRenderTarget->GetFormat() };
+        pipelineDesc.depthStencilFormat     = rgInput.inGBuffers.depth->GetFormat();
+
+        RC<GraphicsPipeline> pipeline = pipelineCache_.GetGraphicsPipeline(pipelineDesc);
+        commandBuffer.BindGraphicsPipeline(pipeline);
+
+        // Dynamic states
+
+        commandBuffer.SetStencilReferenceValue(std::to_underlying(StencilBit::None));
+        commandBuffer.SetViewports(renderTarget->GetViewport());
+        commandBuffer.SetScissors(renderTarget->GetScissor());
+
+        commandBuffer.BindGraphicsGroup(
+            shader->GetBuiltinBindingGroupIndex(ShaderBindingLayoutInfo::BuiltinBindingGroup::Pass),
+            passBindingGroup);
+
+        // Render
+
+        commandBuffer.Draw(mesh.GetVertexCount(), 1, 0, 0);
+    }
+
+    // Sky pass
+
+    {
+        // Pipeline
+
+        GraphicsPipeline::Desc pipelineDesc = pipelineTemplate_;
+        RC<Shader> shader = skyShaderTemplate_->GetShader(keywords);
+        pipelineDesc.shader                 = shader;
+        pipelineDesc.frontStencil.compareOp = RHI::CompareOp::Equal;
+        pipelineDesc.colorAttachmentFormats = { rgInput.outRenderTarget->GetFormat() };
+        pipelineDesc.depthStencilFormat     = rgInput.inGBuffers.depth->GetFormat();
+
+        RC<GraphicsPipeline> pipeline = pipelineCache_.GetGraphicsPipeline(pipelineDesc);
+        commandBuffer.BindGraphicsPipeline(pipeline);
+
+        // Dynamic states
+
+        commandBuffer.SetStencilReferenceValue(std::to_underlying(StencilBit::None));
+        commandBuffer.SetViewports(renderTarget->GetViewport());
+        commandBuffer.SetScissors(renderTarget->GetScissor());
+
+        commandBuffer.BindGraphicsGroup(
+            shader->GetBuiltinBindingGroupIndex(ShaderBindingLayoutInfo::BuiltinBindingGroup::Pass),
+            passBindingGroup);
+
+        // Render
+
+        commandBuffer.Draw(mesh.GetVertexCount(), 1, 0, 0);
+    }
+
+    pipelineCache_.CommitChanges();
 }
 
 RTRC_RENDERER_END

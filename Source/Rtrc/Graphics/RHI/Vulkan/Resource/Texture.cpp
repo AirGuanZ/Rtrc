@@ -86,8 +86,11 @@ Ptr<TextureUav> VulkanTexture::CreateUav(const TextureUavDesc &desc) const
 
 Ptr<TextureDsv> VulkanTexture::CreateDsv(const TextureDsvDesc &desc) const
 {
+    const bool disableDepthAspect =
+        desc.flags.contains(TextureViewFlagBit::DepthSrv_StencilAttachment) ||
+        desc.flags.contains(TextureViewFlagBit::DepthSrv_StencilAttachmentReadOnly);
     const VkImageAspectFlags aspect =
-        (HasDepthAspect(desc_.format) ? VK_IMAGE_ASPECT_DEPTH_BIT : 0) |
+        (!disableDepthAspect && HasDepthAspect(desc_.format) ? VK_IMAGE_ASPECT_DEPTH_BIT : 0) |
         (HasStencilAspect(desc_.format) ? VK_IMAGE_ASPECT_STENCIL_BIT : 0);
     auto imageView = CreateImageView(ViewKey
     {

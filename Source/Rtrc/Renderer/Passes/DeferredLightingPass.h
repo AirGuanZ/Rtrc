@@ -21,7 +21,7 @@ public:
         RG::Pass *lightingPass = nullptr;
     };
 
-    DeferredLightingPass(ObserverPtr<Device> device, ObserverPtr<BuiltinResourceManager> builtinResources);
+    DeferredLightingPass(ObserverPtr<Device> device, ObserverPtr<const BuiltinResourceManager> builtinResources);
 
     RenderGraphOutput RenderDeferredLighting(
         const CachedScenePerCamera &scene,
@@ -35,11 +35,12 @@ private:
         const RenderGraphInput     &rgInput,
         RG::PassContext            &context);
 
-    ObserverPtr<Device>                 device_;
-    ObserverPtr<BuiltinResourceManager> builtinResources_;
+    ObserverPtr<Device>                       device_;
+    ObserverPtr<const BuiltinResourceManager> builtinResources_;
 
     RC<BindingGroupLayout> perPassBindingGroupLayout_;
-    RC<ShaderTemplate>     shaderTemplate_;
+    RC<ShaderTemplate>     regularShaderTemplate_;
+    RC<ShaderTemplate>     skyShaderTemplate_;
 
     GraphicsPipeline::Desc pipelineTemplate_;
     PipelineCache          pipelineCache_;

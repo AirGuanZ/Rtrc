@@ -21,7 +21,7 @@ public:
         RG::TextureResource *depth = nullptr;
     };
 
-    struct RenderGraphInterface
+    struct RenderGraphOutput
     {
         GBuffers gbuffers;
         RG::Pass *gbufferPass = nullptr;
@@ -29,7 +29,7 @@ public:
 
     explicit GBufferPass(ObserverPtr<Device> device);
 
-    RenderGraphInterface RenderGBuffers(
+    RenderGraphOutput RenderGBuffers(
         const CachedScenePerCamera &scene,
         RG::RenderGraph            &renderGraph,
         const Vector2u             &rtSize);

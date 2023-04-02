@@ -121,11 +121,11 @@ void VulkanBindingGroup::ModifyMember(int index, int arrayElem, TextureSrv *text
     auto rawTexSrv = static_cast<VulkanTextureSrv *>(textureSrv);
     assert(layout_->_internalIsSlotTexture(index));
     VkImageLayout imageLayout;
-    if(textureSrv->GetDesc().flags.contains(TextureSrvFlagBit::SpecialLayout_DepthSrv_StencilAttachment))
+    if(textureSrv->GetDesc().flags.contains(TextureViewFlagBit::DepthSrv_StencilAttachment))
     {
         imageLayout = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL;
     }
-    else if(textureSrv->GetDesc().flags.contains(TextureSrvFlagBit::SpecialLayout_DepthSrv_StencilAttachmentReadOnly))
+    else if(textureSrv->GetDesc().flags.contains(TextureViewFlagBit::DepthSrv_StencilAttachmentReadOnly))
     {
         imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
     }
@@ -322,11 +322,11 @@ void VulkanBindingGroup::_internalTranslate(
 {
     assert(layout_->_internalIsSlotTexture(index));
     VkImageLayout imageLayout;
-    if(textureSrv->GetDesc().flags.contains(TextureSrvFlagBit::SpecialLayout_DepthSrv_StencilAttachment))
+    if(textureSrv->GetDesc().flags.contains(TextureViewFlagBit::DepthSrv_StencilAttachment))
     {
         imageLayout = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL;
     }
-    else if(textureSrv->GetDesc().flags.contains(TextureSrvFlagBit::SpecialLayout_DepthSrv_StencilAttachmentReadOnly))
+    else if(textureSrv->GetDesc().flags.contains(TextureViewFlagBit::DepthSrv_StencilAttachmentReadOnly))
     {
         imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
     }

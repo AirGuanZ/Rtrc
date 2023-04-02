@@ -33,7 +33,7 @@ namespace FullscreenPrimitive
 
 FullscreenPrimitive::VsToFs FullscreenVsToFs(FullscreenPrimitive::VsInput input)
 {
-    FullscreenInput::VsToFs output;
+    FullscreenPrimitive::VsToFs output;
     output.position = float4(input.position, 1, 1);
     output.uv       = input.uv;
     return output;
@@ -41,7 +41,7 @@ FullscreenPrimitive::VsToFs FullscreenVsToFs(FullscreenPrimitive::VsInput input)
 
 FullscreenPrimitive::VsToFsWithWorldRay FullscreenVsToFsWithWorldRay(FullscreenPrimitive::VsInputWithWorldRay input)
 {
-    FullscreenInput::VsToFsWithWorldRay output;
+    FullscreenPrimitive::VsToFsWithWorldRay output;
     output.position = float4(input.position, 1, 1);
     output.uv       = input.uv;
     output.ray      = input.ray;

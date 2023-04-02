@@ -24,7 +24,8 @@ RenderLoop::RenderLoop(
 
     renderThread_ = std::jthread(&RenderLoop::RenderThreadEntry, this);
 
-    gbufferPass_ = MakeBox<GBufferPass>(device_);
+    gbufferPass_          = MakeBox<GBufferPass>(device_);
+    deferredLightingPass_ = MakeBox<DeferredLightingPass>(device_, builtinResources_);
 }
 
 RenderLoop::~RenderLoop()
@@ -146,7 +147,7 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
 
     // GBuffers
 
-    const GBufferPass::RenderGraphInterface rgGBuffers = gbufferPass_->RenderGBuffers(
+    const GBufferPass::RenderGraphOutput rgGBuffers = gbufferPass_->RenderGBuffers(
         *cachedScenePerCamera, *renderGraph, framebuffer->GetSize());
 
     // Clear frame buffer
@@ -161,10 +162,18 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
             .renderTargetView = framebuffer->Get(context)->CreateRtv(),
             .loadOp           = AttachmentLoadOp::Clear,
             .storeOp          = AttachmentStoreOp::Store,
-            .clearValue       = ColorClearValue{ 0, 1, 1, 1 }
+            .clearValue       = ColorClearValue{ 0, 0, 0, 1 }
         });
         commandBuffer.EndRenderPass();
     });
+
+    // Deferred lighting
+
+    DeferredLightingPass::RenderGraphInput rgDeferredLightingInput;
+    rgDeferredLightingInput.inGBuffers      = rgGBuffers.gbuffers;
+    rgDeferredLightingInput.outRenderTarget = framebuffer;
+    const DeferredLightingPass::RenderGraphOutput rgDeferredLighting = deferredLightingPass_->RenderDeferredLighting(
+        *cachedScenePerCamera, *renderGraph, rgDeferredLightingInput);
 
     // Imgui
 
@@ -173,8 +182,9 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
     // Dependencies & execution
 
     Connect(buildBlasPass, rgScene.buildTlasPass);
-    Connect(rgGBuffers.gbufferPass, imguiPass);
-    Connect(clearPass, imguiPass);
+    Connect(rgGBuffers.gbufferPass, rgDeferredLighting.lightingPass);
+    Connect(clearPass, rgDeferredLighting.lightingPass);
+    Connect(rgDeferredLighting.lightingPass, imguiPass);
     imguiPass->SetSignalFence(device_->GetFrameFence());
 
     transientConstantBufferAllocator_->Flush();

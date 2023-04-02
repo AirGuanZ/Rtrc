@@ -20,12 +20,12 @@ GBufferPass::GBufferPass(ObserverPtr<Device> device)
     perPassBindingGroupLayout_ = device_->CreateBindingGroupLayout<GBufferPassDetail::BindingGroup_GBufferPass>();
 }
 
-GBufferPass::RenderGraphInterface GBufferPass::RenderGBuffers(
+GBufferPass::RenderGraphOutput GBufferPass::RenderGBuffers(
     const CachedScenePerCamera &scene,
     RG::RenderGraph            &renderGraph,
     const Vector2u             &rtSize)
 {
-    RenderGraphInterface ret;
+    RenderGraphOutput ret;
     ret.gbuffers = AllocateGBuffers(renderGraph, rtSize);
     ret.gbufferPass = renderGraph.CreatePass("Render GBuffers");
     ret.gbufferPass->Use(ret.gbuffers.a, RG::COLOR_ATTACHMENT_WRITEONLY);

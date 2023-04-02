@@ -17,13 +17,13 @@ rtrc_group(Pass, FS)
     rtrc_uniform(uint, directionalLightCount)
 };
 
-float4 FSMainDefault(FullscreenPrimitive::VsToFsWithWorldRay input)
+float4 FSMainDefault(FullscreenPrimitive::VsToFsWithWorldRay input) : SV_TARGET
 {
     Builtin::GBufferPixelValue gbuffer = Builtin::LoadGBufferPixel(input.uv);
     return float4(0.5 + 0.5 * gbuffer.normal, 1);
 }
 
-float4 FSMainSky(FullscreenPrimitive::VsToFsWithWorldRay input)
+float4 FSMainSky(FullscreenPrimitive::VsToFsWithWorldRay input) : SV_TARGET
 {
-    return float4(0, 1, 1, 0);
+    return float4(input.uv.x, 0, 0, 0) + float4(0, 1, 1, 0);
 }

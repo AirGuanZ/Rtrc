@@ -448,13 +448,13 @@ enum class QueueConcurrentAccessMode
     Concurrent // Concurrently accessed by graphics/compute queues
 };
 
-enum class TextureSrvFlagBit
+enum class TextureViewFlagBit
 {
-    SpecialLayout_DepthSrv_StencilAttachment         = 1 << 0,
-    SpecialLayout_DepthSrv_StencilAttachmentReadOnly = 1 << 1,
+    DepthSrv_StencilAttachment         = 1 << 0,
+    DepthSrv_StencilAttachmentReadOnly = 1 << 1,
 };
-RTRC_DEFINE_ENUM_FLAGS(TextureSrvFlagBit)
-using TextureSrvFlag = EnumFlagsTextureSrvFlagBit;
+RTRC_DEFINE_ENUM_FLAGS(TextureViewFlagBit)
+using TextureViewFlag = EnumFlagsTextureViewFlagBit;
 
 enum class RayTracingGeometryType
 {
@@ -658,13 +658,13 @@ struct TextureRtvDesc
 
 struct TextureSrvDesc
 {
-    bool           isArray        = false;
-    Format         format         = Format::Unknown;
-    uint32_t       baseMipLevel   = 0;
-    uint32_t       levelCount     = 0; // all levels
-    uint32_t       baseArrayLayer = 0;
-    uint32_t       layerCount     = 0; // 0 means all layers. only used when isArray == true
-    TextureSrvFlag flags          = 0;
+    bool            isArray        = false;
+    Format          format         = Format::Unknown;
+    uint32_t        baseMipLevel   = 0;
+    uint32_t        levelCount     = 0; // all levels
+    uint32_t        baseArrayLayer = 0;
+    uint32_t        layerCount     = 0; // 0 means all layers. only used when isArray == true
+    TextureViewFlag flags          = 0;
 };
 
 struct TextureUavDesc
@@ -678,9 +678,10 @@ struct TextureUavDesc
 
 struct TextureDsvDesc
 {
-    Format   format     = Format::Unknown;
-    uint32_t mipLevel   = 0;
-    uint32_t arrayLayer = 0;
+    Format          format       = Format::Unknown;
+    uint32_t        mipLevel     = 0;
+    uint32_t        arrayLayer   = 0;
+    TextureViewFlag flags        = 0;
 };
 
 struct BufferDesc

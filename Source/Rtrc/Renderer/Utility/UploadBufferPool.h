@@ -7,10 +7,10 @@ RTRC_BEGIN
 
 enum class UploadBufferPoolPolicy
 {
-    LimitPoolSize, // The pool will never grow beyond the specified max size. Smallest buffers will be released first.
-                   // Default pool size is 1.
-    ReplaceSmallestBuffer // The pool will never release buffers unless all free buffers are smaller than the required size.
-                          // In that case, the smallest buffer will be replaced by a newly allocated one to satisfy the request.
+    LimitPoolSize,        // The pool will never grow beyond the specified max size. Smallest buffers are released first.
+                          // Default pool size is 1.
+    ReplaceSmallestBuffer // The pool never release buffers unless all free buffers are smaller than the required size.
+                          // In that case, the smallest buffer will be replaced by a new one to satisfy the request.
 };
 
 namespace UploadBufferPoolDetail

@@ -122,7 +122,7 @@ void DeferredRenderer::DoDeferredLightingPass(RG::PassContext &passContext, cons
         perPassGroupData.gbufferB = gbufferB;
         perPassGroupData.gbufferC = gbufferC;
         perPassGroupData.gbufferDepth = gbufferDepth->CreateSrv(
-            RHI::TextureSrvFlagBit::SpecialLayout_DepthSrv_StencilAttachmentReadOnly);
+            RHI::TextureViewFlagBit::DepthSrv_StencilAttachmentReadOnly);
         perPassGroupData.skyLut = skyLut;
         perPassGroupData.camera = DeferredRendererCommon::CameraConstantBuffer::FromCamera(*frameContext_.camera);
         perPassGroupData.gbufferSize = Vector4f(
