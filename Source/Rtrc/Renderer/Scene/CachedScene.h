@@ -14,6 +14,11 @@ class CachedScene : public Uncopyable
 {
 public:
 
+    struct Config
+    {
+        bool rayTracing = false;
+    };
+
     struct StaticMeshRecord
     {
         const StaticMeshRenderProxy                 *proxy          = nullptr;
@@ -28,14 +33,14 @@ public:
 
     struct RenderGraphInterface
     {
-        RG::Pass *buildTlasPass               = nullptr;
-        RG::Pass *prepareTlasMaterialDataPass = nullptr;
+        RG::Pass *buildTlasPass               = nullptr; // Optional[RayTracing]
+        RG::Pass *prepareTlasMaterialDataPass = nullptr; // Optional[RayTracing]
 
-        RG::BufferResource *tlasMaterialDataBuffer = nullptr;
-        RG::BufferResource *tlasBuffer             = nullptr;
+        RG::BufferResource *tlasMaterialDataBuffer = nullptr; // Optional[RayTracing]
+        RG::BufferResource *tlasBuffer             = nullptr; // Optional[RayTracing]
     };
 
-    explicit CachedScene(ObserverPtr<Device> device);
+    CachedScene(const Config &config, ObserverPtr<Device> device);
 
     RenderGraphInterface Update(
         const RenderCommand_RenderStandaloneFrame &frame,
@@ -52,6 +57,8 @@ public:
     Span<const Light::SharedRenderingData*> GetLights() const { return scene_->GetLights(); }
     
 private:
+
+    Config config_;
     
     ObserverPtr<Device> device_;
 

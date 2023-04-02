@@ -14,13 +14,19 @@ void Application::Run(const Config &config)
         .SetMaximized(config.maximized)
         .Create();
 
+    Device::Flags deviceFlags = Device::EnableSwapchainUav | Device::DisableAutoSwapchainRecreate;
+    if(config.rayTracing)
+    {
+        deviceFlags |= Device::EnableRayTracing;
+    }
+
     device_ = Device::CreateGraphicsDevice(
         window_,
         RHI::Format::B8G8R8A8_UNorm,
         2,
         config.debug,
         config.vsync,
-        Device::EnableRayTracing | Device::EnableSwapchainUav | Device::DisableAutoSwapchainRecreate);
+        deviceFlags);
     RTRC_SCOPE_EXIT{ device_->WaitIdle(); };
 
     window_.SetFocus();
@@ -31,11 +37,66 @@ void Application::Run(const Config &config)
     bindlessTextureManager = MakeBox<BindlessTextureManager>(device_);
 
     activeScene_ = MakeBox<Scene>();
+    
+    const ApplicationInitializeContext initContext =
+    {
+        .activeScene  = activeScene_.get(),
+        .activeCamera = &activeCamera_
+    };
+    Initialize(initContext);
 
-    renderLoop_ = MakeBox<RenderLoop>(device_, resourceManager_->GetBuiltinResources(), bindlessTextureManager);
+    RenderLoop::Config renderLoopConfig;
+    renderLoopConfig.rayTracing = config.rayTracing;
+    renderLoop_ = MakeBox<RenderLoop>(
+        renderLoopConfig, device_, resourceManager_->GetBuiltinResources(), bindlessTextureManager);
+
     RTRC_SCOPE_EXIT{ renderLoop_->AddCommand(Renderer::RenderCommand_Exit{}); };
-
     UpdateLoop();
+}
+
+void Application::Initialize(const ApplicationInitializeContext &context)
+{
+    // Do nothing
+}
+
+void Application::Update(const ApplicationUpdateContext &context)
+{
+    SetExitFlag(false);
+    if(GetWindowInput().IsKeyDown(KeyCode::Escape))
+    {
+        SetExitFlag(true);
+    }
+
+    auto &imgui = *context.imgui;
+    imgui.SetNextWindowSize({ 200, 200 }, ImGuiCond_Once);
+    if(imgui.Begin("Rtrc Application"))
+    {
+        if(imgui.Button("Exit"))
+        {
+            SetExitFlag(true);
+        }
+    }
+    imgui.End();
+}
+
+bool Application::GetExitFlag() const
+{
+    return window_.ShouldClose();
+}
+
+void Application::SetExitFlag(bool shouldExit)
+{
+    window_.SetCloseFlag(shouldExit);
+}
+
+Window &Application::GetWindow()
+{
+    return window_;
+}
+
+WindowInput &Application::GetWindowInput()
+{
+    return window_.GetInput();
 }
 
 void Application::UpdateLoop()
@@ -43,22 +104,34 @@ void Application::UpdateLoop()
     SetThreadIndentifier(ThreadUtility::ThreadIdentifier::Main);
 
     std::binary_semaphore framebufferResizeSemaphore(0);
+
     std::binary_semaphore finishRenderSemaphore(1);
+    bool shouldWaitFinishRenderSemaphore = false;
+
+    auto BeforeAddNextCommand = [&]
+    {
+        if(shouldWaitFinishRenderSemaphore)
+        {
+            finishRenderSemaphore.acquire();
+            shouldWaitFinishRenderSemaphore = false;
+        }
+        if(renderLoop_->HasException())
+        {
+            std::rethrow_exception(renderLoop_->GetExceptionPointer());
+        }
+    };
 
     Vector2i framebufferSize = window_.GetFramebufferSize();
     while(!window_.ShouldClose())
     {
         Window::DoEvents();
-        if(window_.GetInput().IsKeyDown(KeyCode::Escape))
-        {
-            window_.SetCloseFlag(true);
-        }
 
         // Handle window resize
 
         if(framebufferSize != window_.GetFramebufferSize())
         {
             framebufferSize = window_.GetFramebufferSize();
+            BeforeAddNextCommand();
             renderLoop_->AddCommand(Renderer::RenderCommand_ResizeFramebuffer
             {
                 .width           = static_cast<uint32_t>(framebufferSize.x),
@@ -72,29 +145,30 @@ void Application::UpdateLoop()
 
         imgui_->BeginFrame();
 
-        if(imgui_->Begin("Test"))
+        // Update
+
+        const ApplicationUpdateContext updateContext =
         {
-            if(imgui_->Button("Exit"))
-            {
-                window_.SetCloseFlag(true);
-            }
-        }
-        imgui_->End();
+            .activeScene  = activeScene_.get(),
+            .activeCamera = &activeCamera_,
+            .imgui        = imgui_.get()
+        };
+        Update(updateContext);
 
         // Send render command
 
-        {
-            activeScene_->PrepareRendering();
-            auto activeSceneProxy = activeScene_->CreateSceneProxy();
+        activeScene_->PrepareRendering();
+        auto activeSceneProxy = activeScene_->CreateSceneProxy();
 
-            Renderer::RenderCommand_RenderStandaloneFrame frame;
-            frame.scene = std::move(activeSceneProxy);
-            frame.camera = activeCamera_.GetRenderCamera();
-            frame.imguiDrawData = imgui_->Render();
-            frame.finishSemaphore = &finishRenderSemaphore;
-            finishRenderSemaphore.acquire();
-            renderLoop_->AddCommand(std::move(frame));
-        }
+        Renderer::RenderCommand_RenderStandaloneFrame frame;
+        frame.scene           = std::move(activeSceneProxy);
+        frame.camera          = activeCamera_.GetRenderCamera();
+        frame.imguiDrawData   = imgui_->Render();
+        frame.finishSemaphore = &finishRenderSemaphore;
+
+        BeforeAddNextCommand();
+        renderLoop_->AddCommand(std::move(frame));
+        shouldWaitFinishRenderSemaphore = true;
     }
 }
 

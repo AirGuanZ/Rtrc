@@ -27,11 +27,12 @@ void Executer::Execute(const ExecutableGraph &graph)
 
         for(auto &pass : section.passes)
         {
-            if(!pass.beforeBufferBarriers.empty() || !pass.beforeTextureBarriers.empty())
+            if(!pass.preBufferBarriers.empty() || !pass.preTextureBarriers.empty())
             {
-                commandBuffer.GetRHIObject()->ExecuteBarriers(pass.beforeTextureBarriers, pass.beforeBufferBarriers);
+                commandBuffer.GetRHIObject()->ExecuteBarriers(pass.preTextureBarriers, pass.preBufferBarriers);
             }
-            if(pass.name)
+            const bool emitDebugLabel = pass.name && pass.callback;
+            if(emitDebugLabel)
             {
                 commandBuffer.GetRHIObject()->BeginDebugEvent(RHI::DebugLabel{ .name = *pass.name });
             }
@@ -40,15 +41,15 @@ void Executer::Execute(const ExecutableGraph &graph)
                 PassContext passContext(graph.resources, commandBuffer);
                 (*pass.callback)(passContext);
             }
-            if(pass.name)
+            if(emitDebugLabel)
             {
                 commandBuffer.GetRHIObject()->EndDebugEvent();
             }
         }
 
-        if(!section.afterTextureBarriers.IsEmpty())
+        if(!section.postTextureBarriers.IsEmpty())
         {
-            commandBuffer.GetRHIObject()->ExecuteBarriers(section.afterTextureBarriers);
+            commandBuffer.GetRHIObject()->ExecuteBarriers(section.postTextureBarriers);
         }
 
         commandBuffer.End();

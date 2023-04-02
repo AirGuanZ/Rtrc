@@ -17,14 +17,24 @@ RTRC_RENDERER_BEGIN
 class RenderLoop : public Uncopyable
 {
 public:
+
+    struct Config
+    {
+        bool rayTracing = false;
+    };
     
     RenderLoop(
+        const Config                             &config,
         ObserverPtr<Device>                       device,
         ObserverPtr<const BuiltinResourceManager> builtinResources,
         ObserverPtr<BindlessTextureManager>       bindlessTextures);
     ~RenderLoop();
 
     void AddCommand(RenderCommand command);
+
+    bool HasException() const { return hasException_; }
+
+    const std::exception_ptr &GetExceptionPointer() const { return exceptionPtr_; }
 
 private:
 
@@ -42,7 +52,12 @@ private:
     void RenderThreadEntry();
 
     void RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame &frame);
-    
+
+    Config config_;
+
+    std::atomic<bool>  hasException_;
+    std::exception_ptr exceptionPtr_;
+
     ObserverPtr<Device>                       device_;
     ObserverPtr<const BuiltinResourceManager> builtinResources_;
     ObserverPtr<BindlessTextureManager>       bindlessTextures_;

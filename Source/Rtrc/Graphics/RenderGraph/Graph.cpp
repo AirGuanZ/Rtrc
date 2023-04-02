@@ -223,6 +223,14 @@ Pass *RenderGraph::CreateDummyPass(std::string name)
     return CreatePass(std::move(name));
 }
 
+void RenderGraph::MakeDummyPassIfNull(Pass *&pass, std::string_view name)
+{
+    if(!pass)
+    {
+        pass = CreateDummyPass(std::string(name));
+    }
+}
+
 const RHI::TextureDesc &RenderGraph::ExternalTextureResource::GetDesc() const
 {
     return texture->GetDesc();

@@ -3,8 +3,8 @@
 
 RTRC_RENDERER_BEGIN
 
-CachedMeshManager::CachedMeshManager(ObserverPtr<Device> device)
-    : device_(device), blasBuilder_(device)
+CachedMeshManager::CachedMeshManager(const Config &config, ObserverPtr<Device> device)
+    : config_(config), device_(device), blasBuilder_(device)
 {
     bindlessBufferManager_ = MakeBox<BindlessBufferManager>(device);
 }
@@ -21,13 +21,26 @@ void CachedMeshManager::UpdateCachedMeshData(const RenderCommand_RenderStandalon
     {
         const Vector3f eye = frame.camera.position;
         const SceneProxy &scene = *frame.scene;
-        std::ranges::transform(
-            scene.GetStaticMeshRenderObjects(), std::back_inserter(meshRecords),
-            [&eye](const StaticMeshRenderProxy *staticMeshRenderer)
+
+        if(config_.rayTracing)
         {
-            const float blasSortKey = ComputeBuildBlasSortKey(eye, staticMeshRenderer);
-            return MeshRecord{ staticMeshRenderer->meshRenderingData.Get(), blasSortKey };
-        });
+            std::ranges::transform(
+                scene.GetStaticMeshRenderObjects(), std::back_inserter(meshRecords),
+                [&eye](const StaticMeshRenderProxy *staticMeshRenderer)
+                {
+                    const float blasSortKey = ComputeBuildBlasSortKey(eye, staticMeshRenderer);
+                    return MeshRecord{ staticMeshRenderer->meshRenderingData.Get(), blasSortKey };
+                });
+        }
+        else
+        {
+            std::ranges::transform(
+                scene.GetStaticMeshRenderObjects(), std::back_inserter(meshRecords),
+                [&eye](const StaticMeshRenderProxy *staticMeshRenderer)
+                {
+                    return MeshRecord{ staticMeshRenderer->meshRenderingData.Get(), -1 };
+                });
+        }
 
         std::ranges::sort(meshRecords, [](const MeshRecord &a, const MeshRecord &b)
         {
@@ -133,9 +146,14 @@ const CachedMeshManager::CachedMesh *CachedMeshManager::FindCachedMesh(UniqueId 
     return nullptr;
 }
 
-RG::Pass *CachedMeshManager::BuildBlasForMeshes(
+CachedMeshManager::RenderGraphOutput CachedMeshManager::BuildBlasForMeshes(
     RG::RenderGraph &renderGraph, int maxBuildCount, int maxPrimitiveCount)
 {
+    if(!config_.rayTracing)
+    {
+        return {};
+    }
+
     std::vector<CachedMesh *> meshesNeedBlas;
     for(auto &meshData : cachedMeshes_)
     {
@@ -194,7 +212,7 @@ RG::Pass *CachedMeshManager::BuildBlasForMeshes(
         });
     }
 
-    return pass;
+    return { pass };
 }
 
 float CachedMeshManager::ComputeBuildBlasSortKey(const Vector3f &eye, const StaticMeshRenderProxy *renderer)

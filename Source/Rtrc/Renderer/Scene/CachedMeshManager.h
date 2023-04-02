@@ -9,6 +9,11 @@ class CachedMeshManager : public Uncopyable
 {
 public:
 
+    struct Config
+    {
+        bool rayTracing = false;
+    };
+
     struct CachedMesh
     {
         UniqueId                         meshId = {};
@@ -19,18 +24,25 @@ public:
         BindlessBufferEntry geometryBufferEntry;
     };
 
-    explicit CachedMeshManager(ObserverPtr<Device> device);
+    struct RenderGraphOutput
+    {
+        RG::Pass *buildBlasPass = nullptr; // Optional[RayTracing]
+    };
+
+    CachedMeshManager(const Config &config, ObserverPtr<Device> device);
 
     void UpdateCachedMeshData(const RenderCommand_RenderStandaloneFrame &frame);
 
           CachedMesh *FindCachedMesh(UniqueId meshId);
     const CachedMesh *FindCachedMesh(UniqueId meshId) const;
 
-    RG::Pass *BuildBlasForMeshes(RG::RenderGraph &renderGraph, int maxBuildCount, int maxPrimitiveCount);
+    RenderGraphOutput BuildBlasForMeshes(RG::RenderGraph &renderGraph, int maxBuildCount, int maxPrimitiveCount);
 
 private:
 
     static float ComputeBuildBlasSortKey(const Vector3f &eye, const StaticMeshRenderProxy *renderer);
+
+    Config config_;
 
     ObserverPtr<Device>        device_;
     Box<BindlessBufferManager> bindlessBufferManager_;

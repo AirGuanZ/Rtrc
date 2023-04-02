@@ -26,8 +26,8 @@ struct ExecutableResources
 
 struct ExecutablePass
 {
-    std::vector<RHI::TextureTransitionBarrier> beforeTextureBarriers;
-    std::vector<RHI::BufferTransitionBarrier>  beforeBufferBarriers;
+    std::vector<RHI::TextureTransitionBarrier> preTextureBarriers;
+    std::vector<RHI::BufferTransitionBarrier>  preBufferBarriers;
     const Pass::Callback *callback;
     const std::string *name;
 };
@@ -39,7 +39,7 @@ struct ExecutableSection
 
     std::vector<ExecutablePass> passes;
 
-    StaticVector<RHI::TextureTransitionBarrier, 1> afterTextureBarriers;
+    StaticVector<RHI::TextureTransitionBarrier, 1> postTextureBarriers;
 
     RHI::BackBufferSemaphorePtr signalPresentSemaphore;
     RHI::PipelineStageFlag      signalPresentSemaphoreStages;

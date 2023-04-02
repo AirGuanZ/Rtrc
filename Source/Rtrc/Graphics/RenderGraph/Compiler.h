@@ -45,8 +45,8 @@ private:
 
     struct CompilePass
     {
-        std::vector<RHI::TextureTransitionBarrier> beforeTextureTransitions;
-        std::vector<RHI::BufferTransitionBarrier> beforeBufferTransitions;
+        std::vector<RHI::TextureTransitionBarrier> preTextureTransitions;
+        std::vector<RHI::BufferTransitionBarrier>  preBufferTransitions;
     };
 
     static bool DontNeedBarrier(const Pass::BufferUsage &a, const Pass::BufferUsage &b);

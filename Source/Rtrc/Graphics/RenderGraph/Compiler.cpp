@@ -77,7 +77,23 @@ bool Compiler::DontNeedBarrier(const Pass::BufferUsage &a, const Pass::BufferUsa
 
 bool Compiler::DontNeedBarrier(const Pass::SubTexUsage &a, const Pass::SubTexUsage &b)
 {
-    return a.layout == b.layout && IsReadOnly(a.accesses) && IsReadOnly(b.accesses);
+    if(a.layout != b.layout)
+    {
+        return false;
+    }
+
+    // Render target access order are handled by ROP
+
+    constexpr RHI::ResourceAccessFlag RENDER_TARGET_RW_MASK = RHI::ResourceAccess::RenderTargetWrite |
+                                                              RHI::ResourceAccess::RenderTargetRead;
+    if(RENDER_TARGET_RW_MASK.contains(a.accesses) && RENDER_TARGET_RW_MASK.contains(b.accesses))
+    {
+        return true;
+    }
+
+    // Readonly accesses
+
+    return IsReadOnly(a.accesses) && IsReadOnly(b.accesses);
 }
 
 bool Compiler::IsInSection(int passIndex, const CompileSection *section) const
@@ -450,8 +466,8 @@ void Compiler::GenerateBarriers(const ExecutableResources &resources)
             int barrierPass = users[userIndex].passIndex;
             for(int i = maxBarrierPass - 1; i >= minBarrierPass; --i)
             {
-                const bool hasBarrier = !sortedCompilePasses_[i]->beforeBufferTransitions.empty()
-                                     || !sortedCompilePasses_[i]->beforeTextureTransitions.empty();
+                const bool hasBarrier = !sortedCompilePasses_[i]->preBufferTransitions.empty()
+                                     || !sortedCompilePasses_[i]->preTextureTransitions.empty();
                 if(hasBarrier)
                 {
                     barrierPass = i;
@@ -459,7 +475,7 @@ void Compiler::GenerateBarriers(const ExecutableResources &resources)
                 }
             }
 
-            sortedCompilePasses_[barrierPass]->beforeBufferTransitions.push_back(RHI::BufferTransitionBarrier
+            sortedCompilePasses_[barrierPass]->preBufferTransitions.push_back(RHI::BufferTransitionBarrier
             {
                 .buffer         = resources.indexToBuffer[buffer->GetResourceIndex()].buffer->GetRHIObject(),
                 .beforeStages   = lastState.stages,
@@ -514,8 +530,8 @@ void Compiler::GenerateBarriers(const ExecutableResources &resources)
             int barrierPass = users[userIndex].passIndex;
             for(int i = maxBarrierPass - 1; i >= minBarrierPass; --i)
             {
-                const bool hasBarrier = !sortedCompilePasses_[i]->beforeBufferTransitions.empty()
-                                     || !sortedCompilePasses_[i]->beforeTextureTransitions.empty();
+                const bool hasBarrier = !sortedCompilePasses_[i]->preBufferTransitions.empty()
+                                     || !sortedCompilePasses_[i]->preTextureTransitions.empty();
                 if(hasBarrier)
                 {
                     barrierPass = i;
@@ -527,7 +543,7 @@ void Compiler::GenerateBarriers(const ExecutableResources &resources)
             {
                 assert(lastState.accesses == RHI::ResourceAccess::None);
                 assert(lastState.layout == RHI::TextureLayout::Undefined);
-                sortedCompilePasses_[barrierPass]->beforeTextureTransitions.push_back(RHI::TextureTransitionBarrier
+                sortedCompilePasses_[barrierPass]->preTextureTransitions.push_back(RHI::TextureTransitionBarrier
                 {
                     .texture      = resources.indexToTexture[tex->GetResourceIndex()].texture->GetRHIObject(),
                     .subresources = RHI::TextureSubresources
@@ -547,7 +563,7 @@ void Compiler::GenerateBarriers(const ExecutableResources &resources)
             }
             else
             {
-                sortedCompilePasses_[barrierPass]->beforeTextureTransitions.push_back(RHI::TextureTransitionBarrier
+                sortedCompilePasses_[barrierPass]->preTextureTransitions.push_back(RHI::TextureTransitionBarrier
                 {
                     .texture      = resources.indexToTexture[tex->GetResourceIndex()].texture->GetRHIObject(),
                     .subresources = RHI::TextureSubresources
@@ -615,7 +631,7 @@ void Compiler::FillSections(ExecutableGraph &output)
 
         if(compileSection->swapchainPresentBarrier)
         {
-            section.afterTextureBarriers.PushBack(compileSection->swapchainPresentBarrier.value());
+            section.postTextureBarriers.PushBack(compileSection->swapchainPresentBarrier.value());
         }
 
         section.signalFence = compileSection->signalFence;
@@ -627,14 +643,14 @@ void Compiler::FillSections(ExecutableGraph &output)
             auto &compilePass = sortedCompilePasses_[compilePassIndex];
             auto &pass = section.passes.emplace_back();
 
-            pass.beforeBufferBarriers = std::move(compilePass->beforeBufferTransitions);
-            for(auto &b : pass.beforeBufferBarriers)
+            pass.preBufferBarriers = std::move(compilePass->preBufferTransitions);
+            for(auto &b : pass.preBufferBarriers)
             {
                 CompilerDetail::RemoveUnnecessaryBufferAccessMask(b.beforeAccesses, b.afterAccesses);
             }
 
-            pass.beforeTextureBarriers = std::move(compilePass->beforeTextureTransitions);
-            for(auto &b : pass.beforeTextureBarriers)
+            pass.preTextureBarriers = std::move(compilePass->preTextureTransitions);
+            for(auto &b : pass.preTextureBarriers)
             {
                 CompilerDetail::RemoveUnnecessaryTextureAccessMask(
                     b.beforeLayout, b.afterLayout, b.beforeAccesses, b.afterAccesses);

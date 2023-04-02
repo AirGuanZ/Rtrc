@@ -279,6 +279,8 @@ public:
     Pass *CreateClearTexture2DPass(std::string name, TextureResource *tex2D, const Vector4f &clearValue);
     Pass *CreateDummyPass(std::string name);
 
+    void MakeDummyPassIfNull(Pass *&pass, std::string_view name);
+
 private:
 
     friend class Compiler;

@@ -10,9 +10,15 @@ class TTextureView
 public:
 
     TTextureView() = default;
+
     TTextureView(
-        RC<Texture> texture, uint32_t mipLevel, uint32_t arrayLayer, bool isArrayView, RHI::TextureViewFlag flags = 0);
-    // for levelCount/layerCount, 0 means all
+        RC<Texture>          texture,
+        uint32_t             mipLevel,
+        uint32_t             arrayLayer,
+        bool                 isArrayView,
+        RHI::TextureViewFlag flags = 0);
+
+    // For levelCount/layerCount, 0 means all
     TTextureView(
         RC<Texture>          texture,
         uint32_t             mipLevel,
@@ -42,7 +48,11 @@ private:
 
 template<typename T>
 TTextureView<T>::TTextureView(
-    RC<Texture> texture, uint32_t mipLevel, uint32_t arrayLayer, bool isArrayView, RHI::TextureViewFlag flags)
+    RC<Texture>          texture,
+    uint32_t             mipLevel,
+    uint32_t             arrayLayer,
+    bool                 isArrayView,
+    RHI::TextureViewFlag flags)
     : TTextureView(std::move(texture), mipLevel, arrayLayer, 0, isArrayView ? 0 : 1, isArrayView, flags)
 {
     
@@ -68,8 +78,7 @@ TTextureView<T>::TTextureView(
         layerCount = texture_->GetDesc().arraySize;
     }
     assert(isArrayView || layerCount == 1);
-    assert((std::is_same_v<T, RHI::TextureSrvPtr> || std::is_same_v<T, RHI::TextureDsvPtr>) || flags.GetInteger() == 0);
-
+    
     if constexpr(std::is_same_v<T, RHI::TextureSrvPtr>)
     {
         const RHI::TextureSrvDesc desc =
@@ -87,6 +96,7 @@ TTextureView<T>::TTextureView(
     else if constexpr(std::is_same_v<T, RHI::TextureUavPtr>)
     {
         assert(levelCount == 1);
+        assert(!flags);
         const RHI::TextureUavDesc desc =
         {
             .isArray        = isArrayView,
@@ -100,6 +110,7 @@ TTextureView<T>::TTextureView(
     else if constexpr(std::is_same_v<T, RHI::TextureRtvPtr>)
     {
         assert(levelCount == 1 && layerCount == 1 && !isArrayView);
+        assert(!flags);
         const RHI::TextureRtvDesc desc =
         {
             .format     = RHI::Format::Unknown,

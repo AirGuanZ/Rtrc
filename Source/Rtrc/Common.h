@@ -28,26 +28,34 @@
 #define RTRC_DEBUG 0
 #endif
 
+#define RTRC_ENABLE_EXCEPTION_STACKTRACE RTRC_DEBUG
+
 #define RTRC_MAYBE_UNUSED(X) ((void)(X))
 
 RTRC_BEGIN
 
 class Exception : public std::runtime_error
 {
+#if RTRC_ENABLE_EXCEPTION_STACKTRACE
     std::string stacktrace_;
+#endif
 
 public:
 
     explicit Exception(const char *msg)
         : runtime_error(msg)
     {
+#if RTRC_ENABLE_EXCEPTION_STACKTRACE
         stacktrace_ = std::to_string(std::stacktrace::current());
+#endif
     }
 
     explicit Exception(const std::string &msg)
         : runtime_error(msg)
     {
+#if RTRC_ENABLE_EXCEPTION_STACKTRACE
         stacktrace_ = std::to_string(std::stacktrace::current());
+#endif
     }
 
     template<typename T, typename...Ts>
@@ -57,7 +65,11 @@ public:
 
     }
 
+#if RTRC_ENABLE_EXCEPTION_STACKTRACE
     const std::string &stacktrace() const { return stacktrace_; }
+#else
+    const std::string &stacktrace() const { static std::string ret; return ret; }
+#endif
 };
 
 template<typename T>
@@ -181,7 +193,7 @@ using UniqueId = WithUniqueObjectID::UniqueId;
 enum class LogLevel
 {
     Debug = 0,
-    Release,
+    Release = 1,
     Default = RTRC_DEBUG ? Debug : Release
 };
 

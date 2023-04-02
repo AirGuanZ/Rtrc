@@ -5,15 +5,18 @@
 RTRC_RENDERER_BEGIN
 
 RenderLoop::RenderLoop(
+    const Config                             &config,
     ObserverPtr<Device>                       device,
     ObserverPtr<const BuiltinResourceManager> builtinResources,
     ObserverPtr<BindlessTextureManager>       bindlessTextures)
-    : device_          (device)
+    : config_          (config)
+    , hasException_    (false)
+    , device_          (device)
     , builtinResources_(builtinResources)
     , bindlessTextures_(bindlessTextures)
-    , meshManager_     (device)
     , frameIndex_      (1)
-    , cachedScene_     (device)
+    , meshManager_     ({ config.rayTracing }, device)
+    , cachedScene_     ({ config.rayTracing }, device)
 {
     imguiRenderer_       = MakeBox<ImGuiRenderer>(device_);
     renderGraphExecuter_ = MakeBox<RG::Executer>(device_);
@@ -72,6 +75,20 @@ void RenderLoop::RenderThreadEntry()
     device_->BeginRenderLoop();
     RTRC_SCOPE_EXIT{ device_->EndRenderLoop(); };
 
+    auto DoWithExceptionHandling = [&]<typename F>(const F & f)
+    {
+        try
+        {
+            f();
+        }
+        catch(...)
+        {
+            hasException_ = true;
+            exceptionPtr_ = std::current_exception();
+            continueRenderLoop = false;
+        }
+    };
+
     frameTimer_.Restart();
     while(continueRenderLoop)
     {
@@ -82,32 +99,35 @@ void RenderLoop::RenderThreadEntry()
                 [&](const RenderCommand_ResizeFramebuffer &resize)
                 {
                     RTRC_SCOPE_EXIT{ resize.finishSemaphore->release(); };
-                    device_->GetRawDevice()->WaitIdle();
-                    device_->RecreateSwapchain();
-                    isSwapchainInvalid = false;
+                    DoWithExceptionHandling([&]
+                    {
+                        device_->GetRawDevice()->WaitIdle();
+                        device_->RecreateSwapchain();
+                        isSwapchainInvalid = false;
+                    });
                 },
                 [&](const RenderCommand_RenderStandaloneFrame &frame)
                 {
-                    RTRC_SCOPE_EXIT
+                    RTRC_SCOPE_EXIT{ frame.finishSemaphore->release(); };
+                    DoWithExceptionHandling([&]
                     {
-                        frame.finishSemaphore->release();
+                        if(isSwapchainInvalid)
+                        {
+                            return;
+                        }
+                        if(!device_->BeginFrame(false))
+                        {
+                            isSwapchainInvalid = true;
+                            return;
+                        }
                         ++frameIndex_;
-                    };
-                    if(isSwapchainInvalid)
-                    {
-                        return;
-                    }
-                    if(!device_->BeginFrame(false))
-                    {
-                        isSwapchainInvalid = true;
-                        return;
-                    }
-                    frameTimer_.BeginFrame();
-                    RenderStandaloneFrame(frame);
-                    if(!device_->Present())
-                    {
-                        isSwapchainInvalid = true;
-                    }
+                        frameTimer_.BeginFrame();
+                        RenderStandaloneFrame(frame);
+                        if(!device_->Present())
+                        {
+                            isSwapchainInvalid = true;
+                        }
+                    });
                 },
                 [&](const RenderCommand_Exit &)
                 {
@@ -124,13 +144,13 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
 
     auto renderGraph = device_->CreateRenderGraph();
     auto framebuffer = renderGraph->RegisterSwapchainTexture(device_->GetSwapchain());
-
+    
     // Update meshes
 
     meshManager_.UpdateCachedMeshData(frame);
     constexpr int MAX_BLAS_BUILD_COUNT = 5;
     constexpr int MAX_BLAS_BUILD_PRIMITIVE_COUNT = 1e5;
-    auto buildBlasPass = meshManager_.BuildBlasForMeshes(
+    auto rgMesh = meshManager_.BuildBlasForMeshes(
         *renderGraph, MAX_BLAS_BUILD_COUNT, MAX_BLAS_BUILD_PRIMITIVE_COUNT);
 
     // Update materials
@@ -142,6 +162,7 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
     auto rgScene = cachedScene_.Update(
         frame, *transientConstantBufferAllocator_,
         meshManager_, materialManager_, *renderGraph, linearAllocator);
+
     const CachedScenePerCamera *cachedScenePerCamera = cachedScene_.GetCachedScenePerCamera(frame.camera.originalId);
     assert(cachedScenePerCamera);
 
@@ -150,30 +171,10 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
     const GBufferPass::RenderGraphOutput rgGBuffers = gbufferPass_->RenderGBuffers(
         *cachedScenePerCamera, *renderGraph, framebuffer->GetSize());
 
-    // Clear frame buffer
-
-    auto clearPass = renderGraph->CreatePass("Clear Framebuffer");
-    clearPass->Use(framebuffer, RG::COLOR_ATTACHMENT_WRITEONLY);
-    clearPass->SetCallback([&](RG::PassContext &context)
-    {
-        CommandBuffer &commandBuffer = context.GetCommandBuffer();
-        commandBuffer.BeginRenderPass(ColorAttachment
-        {
-            .renderTargetView = framebuffer->Get(context)->CreateRtv(),
-            .loadOp           = AttachmentLoadOp::Clear,
-            .storeOp          = AttachmentStoreOp::Store,
-            .clearValue       = ColorClearValue{ 0, 0, 0, 1 }
-        });
-        commandBuffer.EndRenderPass();
-    });
-
     // Deferred lighting
-
-    DeferredLightingPass::RenderGraphInput rgDeferredLightingInput;
-    rgDeferredLightingInput.inGBuffers      = rgGBuffers.gbuffers;
-    rgDeferredLightingInput.outRenderTarget = framebuffer;
+    
     const DeferredLightingPass::RenderGraphOutput rgDeferredLighting = deferredLightingPass_->RenderDeferredLighting(
-        *cachedScenePerCamera, *renderGraph, rgDeferredLightingInput);
+        *cachedScenePerCamera, *renderGraph, rgGBuffers.gbuffers, framebuffer);
 
     // Imgui
 
@@ -181,9 +182,12 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
 
     // Dependencies & execution
 
-    Connect(buildBlasPass, rgScene.buildTlasPass);
+    renderGraph->MakeDummyPassIfNull(rgMesh.buildBlasPass, "BuildMeshBlas");
+    renderGraph->MakeDummyPassIfNull(rgScene.prepareTlasMaterialDataPass, "PrepareTlasMaterialData");
+    renderGraph->MakeDummyPassIfNull(rgScene.buildTlasPass, "BuildTlas");
+
+    Connect(rgMesh.buildBlasPass, rgScene.buildTlasPass);
     Connect(rgGBuffers.gbufferPass, rgDeferredLighting.lightingPass);
-    Connect(clearPass, rgDeferredLighting.lightingPass);
     Connect(rgDeferredLighting.lightingPass, imguiPass);
     imguiPass->SetSignalFence(device_->GetFrameFence());
 

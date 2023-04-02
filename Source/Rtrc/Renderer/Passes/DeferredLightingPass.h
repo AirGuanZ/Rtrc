@@ -10,12 +10,6 @@ public:
 
     using GBuffers = GBufferPass::GBuffers;
 
-    struct RenderGraphInput
-    {
-        GBuffers             inGBuffers;
-        RG::TextureResource *outRenderTarget;
-    };
-
     struct RenderGraphOutput
     {
         RG::Pass *lightingPass = nullptr;
@@ -26,13 +20,21 @@ public:
     RenderGraphOutput RenderDeferredLighting(
         const CachedScenePerCamera &scene,
         RG::RenderGraph            &renderGraph,
-        const RenderGraphInput     &rgInput);
+        const GBuffers             &gbuffers,
+        RG::TextureResource        *renderTarget);
 
 private:
 
+    enum class LightingPass
+    {
+        Regular,
+        Sky
+    };
+
     void DoDeferredLighting(
         const CachedScenePerCamera &scene,
-        const RenderGraphInput     &rgInput,
+        const GBuffers             &rgGBuffers,
+        RG::TextureResource        *renderTarget,
         RG::PassContext            &context);
 
     ObserverPtr<Device>                       device_;

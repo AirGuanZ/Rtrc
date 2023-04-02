@@ -711,6 +711,18 @@ void ImGuiInstance::EventReceiver::Handle(const CharInputEvent &e)
     data_->Char(e.charCode);
 }
 
+void ImGuiInstance::SetNextWindowPos(const Vector2f &position, ImGuiCond cond)
+{
+    IMGUI_CONTEXT;
+    ImGui::SetNextWindowPos({ position.x, position.y }, cond);
+}
+
+void ImGuiInstance::SetNextWindowSize(const Vector2f &size, ImGuiCond cond)
+{
+    IMGUI_CONTEXT;
+    ImGui::SetNextWindowSize({ size.x, size.y }, cond);
+}
+
 bool ImGuiInstance::Begin(const char *label, bool *open, ImGuiWindowFlags flags)
 {
     IMGUI_CONTEXT;
