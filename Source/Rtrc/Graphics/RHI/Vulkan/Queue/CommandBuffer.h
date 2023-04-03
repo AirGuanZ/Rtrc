@@ -110,6 +110,7 @@ public:
 protected:
 
     void ExecuteBarriersInternal(
+        Span<GlobalMemoryBarrier>      globalMemoryBarriers,
         Span<TextureTransitionBarrier> textureTransitions,
         Span<BufferTransitionBarrier>  bufferTransitions,
         Span<TextureReleaseBarrier>    textureReleaseBarriers,

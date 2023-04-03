@@ -497,11 +497,28 @@ VkCommandBuffer VulkanCommandBuffer::_internalGetNativeCommandBuffer() const
 }
 
 void VulkanCommandBuffer::ExecuteBarriersInternal(
+    Span<GlobalMemoryBarrier>      globalMemoryBarriers,
     Span<TextureTransitionBarrier> textureTransitions,
     Span<BufferTransitionBarrier>  bufferTransitions,
     Span<TextureReleaseBarrier>    textureReleaseBarriers,
     Span<TextureAcquireBarrier>    textureAcquireBarriers)
 {
+    // global barriers
+
+    std::vector<VkMemoryBarrier2> globalBarriers;
+    globalBarriers.reserve(globalMemoryBarriers.size());
+    for(auto &b : globalMemoryBarriers)
+    {
+        globalBarriers.push_back(VkMemoryBarrier2
+        {
+            .sType         = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
+            .srcStageMask  = TranslatePipelineStageFlag(b.beforeStages),
+            .srcAccessMask = TranslateAccessFlag(b.beforeAccesses),
+            .dstStageMask  = TranslatePipelineStageFlag(b.afterStages),
+            .dstAccessMask = TranslateAccessFlag(b.afterAccesses)
+        });
+    }
+
     // texture barriers
 
     std::vector<VkImageMemoryBarrier2> imageBarriers;
@@ -672,6 +689,8 @@ void VulkanCommandBuffer::ExecuteBarriersInternal(
     {
         const VkDependencyInfo dependencyInfo = {
             .sType                    = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+            .memoryBarrierCount       = static_cast<uint32_t>(globalBarriers.size()),
+            .pMemoryBarriers          = globalBarriers.data(),
             .bufferMemoryBarrierCount = static_cast<uint32_t>(bufferBarriers.size()),
             .pBufferMemoryBarriers    = bufferBarriers.data(),
             .imageMemoryBarrierCount  = static_cast<uint32_t>(imageBarriers.size()),

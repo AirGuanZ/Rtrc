@@ -216,9 +216,9 @@ Shader "Builtin/Atmosphere/GenerateSkyLut"
         rtrc_uniform(int2,                   outputResolution)
         rtrc_uniform(int,                    rayMarchStepCount)
         rtrc_uniform(float,                  frameRandom01)
-        rtrc_uniform(float3,                 eyePos)
-        rtrc_uniform(float,                  lerpFactor)
+        rtrc_uniform(float,                  eyePosY)
         rtrc_uniform(float3,                 sunDirection)
+        rtrc_uniform(float,                  lerpFactor)
         rtrc_uniform(float3,                 sunIntensity)
     };
 
@@ -227,10 +227,10 @@ Shader "Builtin/Atmosphere/GenerateSkyLut"
     static float PI = 3.14159265;
 
     void RayMarchStep(
-        float phaseU, float3 ori, float3 dir, float t, float dt,
+        float phaseU, float oriY, float3 dir, float t, float dt,
         inout float3 sumSigmaT, inout float3 inScatter)
     {
-        float3 posR = float3(0, ori.y + Pass.atmosphere.planetRadius, 0) + dir * t;
+        float3 posR = float3(0, oriY + Pass.atmosphere.planetRadius, 0) + dir * t;
         float h = length(posR) - Pass.atmosphere.planetRadius;
 
         float3 sigmaS, sigmaT;
@@ -269,9 +269,9 @@ Shader "Builtin/Atmosphere/GenerateSkyLut"
         float theta = sign(vm) * (PI / 2) * vm * vm;
         float sinTheta = sin(theta), cosTheta = cos(theta);
 
-        float3 ori = Pass.eyePos;
+        float oriY = Pass.eyePosY;
         float3 dir = float3(cos(phi) * cosTheta, sinTheta, sin(phi) * cosTheta);
-        float2 planetOri = float2(0, ori.y + Pass.atmosphere.planetRadius);
+        float2 planetOri = float2(0, oriY + Pass.atmosphere.planetRadius);
         float2 planetDir = float2(cosTheta, sinTheta);
 
         float begT = 0, endT = 0;
@@ -303,7 +303,7 @@ Shader "Builtin/Atmosphere/GenerateSkyLut"
         float t = begT + Pass.frameRandom01 * dt;
         for(int i = 0; i < Pass.rayMarchStepCount; ++i)
         {
-            RayMarchStep(phaseU, ori, dir, t, dt, sumSigmaT, inScatter);
+            RayMarchStep(phaseU, oriY, dir, t, dt, sumSigmaT, inScatter);
             t += dt;
         }
 

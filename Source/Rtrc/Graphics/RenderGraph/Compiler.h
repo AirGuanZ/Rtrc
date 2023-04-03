@@ -4,11 +4,25 @@
 
 RTRC_RG_BEGIN
 
+namespace CompilerDetail
+{
+
+    enum class OptionBit : uint32_t
+    {
+        PreferGlobalMemoryBarrier = 1 << 0,
+    };
+    RTRC_DEFINE_ENUM_FLAGS(OptionBit)
+    using Options = EnumFlagsOptionBit;
+
+} // namespace CompilerDetail
+
 class Compiler : public Uncopyable
 {
 public:
 
-    explicit Compiler(ObserverPtr<Device> device);
+    using Options = CompilerDetail::Options;
+
+    Compiler(ObserverPtr<Device> device, Options options = Options::PreferGlobalMemoryBarrier);
 
     void Compile(const RenderGraph &graph, ExecutableGraph &result);
 
@@ -69,6 +83,10 @@ private:
     void GenerateBarriers(const ExecutableResources &resources);
 
     void FillSections(ExecutableGraph &output);
+
+    static void GenerateGlobalMemoryBarriers(ExecutablePass &pass);
+
+    Options options_;
 
     ObserverPtr<Device> device_;
     const RenderGraph  *graph_;

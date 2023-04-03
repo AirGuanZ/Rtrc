@@ -26,10 +26,11 @@ struct ExecutableResources
 
 struct ExecutablePass
 {
+    std::optional<RHI::GlobalMemoryBarrier>    preGlobalBarrier;
     std::vector<RHI::TextureTransitionBarrier> preTextureBarriers;
     std::vector<RHI::BufferTransitionBarrier>  preBufferBarriers;
-    const Pass::Callback *callback;
-    const std::string *name;
+    const Pass::Callback                      *callback;
+    const std::string                         *name;
 };
 
 struct ExecutableSection

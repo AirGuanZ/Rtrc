@@ -37,8 +37,9 @@ namespace CompilerDetail
 
 } // namespace CompilerDetail
 
-Compiler::Compiler(ObserverPtr<Device> device)
-    : device_(device)
+Compiler::Compiler(ObserverPtr<Device> device, Options options)
+    : options_(options)
+    , device_(device)
     , graph_(nullptr)
 {
     
@@ -436,7 +437,7 @@ void Compiler::GenerateBarriers(const ExecutableResources &resources)
 {
     for(auto &[buffer, users] : bufferUsers_)
     {
-        auto lastState = resources.indexToBuffer[buffer->GetResourceIndex()].buffer->GetState();
+        BufferState lastState = resources.indexToBuffer[buffer->GetResourceIndex()].buffer->GetState();
 
         size_t userIndex = 0;
         while(userIndex < users.size())
@@ -490,8 +491,8 @@ void Compiler::GenerateBarriers(const ExecutableResources &resources)
     {
         auto [tex, subrsc] = subTexKey;
         const bool isSwapchainTex = TryCastResource<RenderGraph::SwapchainTexture>(tex);
-        auto lastState = resources.indexToTexture[tex->GetResourceIndex()].texture
-                                    ->GetState(subrsc.mipLevel, subrsc.arrayLayer);
+        TextureSubrscState lastState = resources.indexToTexture[tex->GetResourceIndex()].texture
+                                            ->GetState(subrsc.mipLevel, subrsc.arrayLayer);
 
         size_t userIndex = 0;
         while(userIndex < users.size())
@@ -603,9 +604,9 @@ void Compiler::FillSections(ExecutableGraph &output)
 {
     output.sections.clear();
     output.sections.reserve(sections_.size());
-    for(auto &compileSection : sections_)
+    for(const auto &compileSection : sections_)
     {
-        auto &section = output.sections.emplace_back();
+        ExecutableSection &section = output.sections.emplace_back();
 
         if(compileSection->waitBackbufferSemaphore)
         {
@@ -639,21 +640,26 @@ void Compiler::FillSections(ExecutableGraph &output)
         section.passes.reserve(compileSection->passes.size());
         for(int compilePassIndex : compileSection->passes)
         {
-            auto &rawPass = sortedPasses_[compilePassIndex];
-            auto &compilePass = sortedCompilePasses_[compilePassIndex];
-            auto &pass = section.passes.emplace_back();
+            const Pass    *&rawPass     = sortedPasses_[compilePassIndex];
+            CompilePass    &compilePass = *sortedCompilePasses_[compilePassIndex];
+            ExecutablePass &pass        = section.passes.emplace_back();
 
-            pass.preBufferBarriers = std::move(compilePass->preBufferTransitions);
-            for(auto &b : pass.preBufferBarriers)
+            pass.preBufferBarriers = std::move(compilePass.preBufferTransitions);
+            for(RHI::BufferTransitionBarrier &b : pass.preBufferBarriers)
             {
                 CompilerDetail::RemoveUnnecessaryBufferAccessMask(b.beforeAccesses, b.afterAccesses);
             }
 
-            pass.preTextureBarriers = std::move(compilePass->preTextureTransitions);
-            for(auto &b : pass.preTextureBarriers)
+            pass.preTextureBarriers = std::move(compilePass.preTextureTransitions);
+            for(RHI::TextureTransitionBarrier &b : pass.preTextureBarriers)
             {
                 CompilerDetail::RemoveUnnecessaryTextureAccessMask(
                     b.beforeLayout, b.afterLayout, b.beforeAccesses, b.afterAccesses);
+            }
+
+            if(options_.contains(Options::PreferGlobalMemoryBarrier))
+            {
+                GenerateGlobalMemoryBarriers(pass);
             }
 
             if(rawPass->name_.empty())
@@ -673,6 +679,50 @@ void Compiler::FillSections(ExecutableGraph &output)
                 pass.callback = nullptr;
             }
         }
+    }
+}
+
+void Compiler::GenerateGlobalMemoryBarriers(ExecutablePass &pass)
+{
+    RHI::GlobalMemoryBarrier globalMemoryBarrier =
+    {
+        .beforeStages   = RHI::PipelineStage::None,
+        .beforeAccesses = RHI::ResourceAccess::None,
+        .afterStages    = RHI::PipelineStage::None,
+        .afterAccesses  = RHI::ResourceAccess::None
+    };
+
+    for(const RHI::BufferTransitionBarrier &b : pass.preBufferBarriers)
+    {
+        globalMemoryBarrier.beforeStages   |= b.beforeStages;
+        globalMemoryBarrier.beforeAccesses |= b.beforeAccesses;
+        globalMemoryBarrier.afterStages    |= b.afterStages;
+        globalMemoryBarrier.afterAccesses  |= b.afterAccesses;
+    }
+
+    std::vector<RHI::TextureTransitionBarrier> newTextureBarriers;
+    for(const RHI::TextureTransitionBarrier &b : pass.preTextureBarriers)
+    {
+        if(b.beforeLayout == b.afterLayout)
+        {
+            globalMemoryBarrier.beforeStages   |= b.beforeStages;
+            globalMemoryBarrier.beforeAccesses |= b.beforeAccesses;
+            globalMemoryBarrier.afterStages    |= b.afterStages;
+            globalMemoryBarrier.afterAccesses  |= b.afterAccesses;
+        }
+        else
+        {
+            newTextureBarriers.push_back(b);
+        }
+    }
+
+    const size_t reducedBarrierCount = pass.preBufferBarriers.size()
+                                     + (pass.preTextureBarriers.size() - newTextureBarriers.size());
+    if(reducedBarrierCount >= 2)
+    {
+        pass.preGlobalBarrier = globalMemoryBarrier;
+        pass.preBufferBarriers.clear();
+        pass.preTextureBarriers = std::move(newTextureBarriers);
     }
 }
 

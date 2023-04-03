@@ -162,9 +162,8 @@ public:
 
     KeywordSet::ValueMask ExtractKeywordValueMask(const KeywordContext &keywordValues) const;
 
-    RC<Shader> GetShader(KeywordSet::ValueMask mask);
+    RC<Shader> GetShader(KeywordSet::ValueMask mask = 0);
     RC<Shader> GetShader(const KeywordContext &keywordValues);
-    RC<Shader> GetShader();
 
     const MaterialPassPropertyLayout *GetPropertyLayout(KeywordSet::ValueMask mask);
     const MaterialPassPropertyLayout *GetPropertyLayout(const KeywordContext &keywordValues);
@@ -378,11 +377,6 @@ inline RC<Shader> MaterialPass::GetShader(KeywordSet::ValueMask mask)
 inline RC<Shader> MaterialPass::GetShader(const KeywordContext &keywordValues)
 {
     return GetShader(shaderTemplate_->GetKeywordValueMask(keywordValues));
-}
-
-inline RC<Shader> MaterialPass::GetShader()
-{
-    return shaderTemplate_->GetShader(0);
 }
 
 inline const MaterialPassPropertyLayout *MaterialPass::GetPropertyLayout(KeywordSet::ValueMask mask)

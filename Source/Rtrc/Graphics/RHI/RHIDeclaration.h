@@ -704,6 +704,14 @@ struct BufferSrvDesc
 
 using BufferUavDesc = BufferSrvDesc;
 
+struct GlobalMemoryBarrier
+{
+    PipelineStageFlag  beforeStages;
+    ResourceAccessFlag beforeAccesses;
+    PipelineStageFlag  afterStages;
+    ResourceAccessFlag afterAccesses;
+};
+
 struct TextureTransitionBarrier
 {
     Texture            *texture;
@@ -1132,11 +1140,11 @@ private:
     {                                                                                       \
         /* TODO: avoid unnecessary memory allocations */                                    \
                                                                                             \
+        std::vector<GlobalMemoryBarrier>      globals;                                      \
         std::vector<TextureTransitionBarrier> textureTs;                                    \
         std::vector<TextureAcquireBarrier>    textureAs;                                    \
         std::vector<TextureReleaseBarrier>    textureRs;                                    \
-                                                                                            \
-        std::vector<BufferTransitionBarrier> bufferTs;                                      \
+        std::vector<BufferTransitionBarrier>  bufferTs;                                     \
                                                                                             \
         auto process = [&]<typename T>(const T & t)                                         \
         {                                                                                   \
@@ -1144,7 +1152,11 @@ private:
             auto span = Span<ET>(t);                                                        \
             for(auto &s : span)                                                             \
             {                                                                               \
-                if constexpr(std::is_same_v<ET, TextureTransitionBarrier>)                  \
+                if constexpr(std::is_same_v<ET, GlobalMemoryBarrier>)                       \
+                {                                                                           \
+                    globals.push_back(s);                                                   \
+                }                                                                           \
+                else if constexpr(std::is_same_v<ET, TextureTransitionBarrier>)             \
                 {                                                                           \
                     if(s.texture)                                                           \
                     {                                                                       \
@@ -1176,7 +1188,7 @@ private:
             }                                                                               \
         };                                                                                  \
         (process(ts), ...);                                                                 \
-        this->ExecuteBarriersInternal(textureTs, bufferTs, textureRs, textureAs);           \
+        this->ExecuteBarriersInternal(globals, textureTs, bufferTs, textureRs, textureAs);  \
     }
 
 #define RTRC_RHI_TEXTURE_COMMON                                                                          \
@@ -1500,6 +1512,7 @@ public:
 protected:
 
     RTRC_RHI_API void ExecuteBarriersInternal(
+        Span<GlobalMemoryBarrier>      globalMemoryBarriers,
         Span<TextureTransitionBarrier> textureTransitions,
         Span<BufferTransitionBarrier>  bufferTransitions,
         Span<TextureReleaseBarrier>    textureReleaseBarriers,

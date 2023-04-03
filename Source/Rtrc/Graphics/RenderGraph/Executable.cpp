@@ -27,9 +27,17 @@ void Executer::Execute(const ExecutableGraph &graph)
 
         for(auto &pass : section.passes)
         {
-            if(!pass.preBufferBarriers.empty() || !pass.preTextureBarriers.empty())
+            if(pass.preGlobalBarrier || !pass.preBufferBarriers.empty() || !pass.preTextureBarriers.empty())
             {
-                commandBuffer.GetRHIObject()->ExecuteBarriers(pass.preTextureBarriers, pass.preBufferBarriers);
+                if(pass.preGlobalBarrier)
+                {
+                    commandBuffer.GetRHIObject()->ExecuteBarriers(
+                        *pass.preGlobalBarrier, pass.preTextureBarriers, pass.preBufferBarriers);
+                }
+                else
+                {
+                    commandBuffer.GetRHIObject()->ExecuteBarriers(pass.preTextureBarriers, pass.preBufferBarriers);
+                }
             }
             const bool emitDebugLabel = pass.name && pass.callback;
             if(emitDebugLabel)

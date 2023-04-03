@@ -35,9 +35,9 @@ namespace AtmosphereDetail
         rtrc_uniform(int2,                 outputResolution);
         rtrc_uniform(int,                  rayMarchStepCount);
         rtrc_uniform(float,                frameRandom01);
-        rtrc_uniform(float3,               eyePos);
-        rtrc_uniform(float,                lerpFactor);
+        rtrc_uniform(float,                eyePosY);
         rtrc_uniform(float3,               sunDirection);
+        rtrc_uniform(float,                lerpFactor);
         rtrc_uniform(float3,               sunIntensity);
     };
 
@@ -202,7 +202,7 @@ AtmosphereDetail::SkyLut::RenderGraphInterface AtmosphereDetail::SkyLut::AddToRe
         passGroupData.outputResolution        = lutRes_;
         passGroupData.rayMarchStepCount       = stepCount_;
         passGroupData.frameRandom01           = std::uniform_real_distribution<float>(0, 1)(randomEngine_);
-        passGroupData.eyePos                  = parameters->eyePosition;
+        passGroupData.eyePosY                 = parameters->eyePosition.y;
         passGroupData.lerpFactor              = lerpFactor;
         passGroupData.sunDirection            = parameters->sunDirection;
         passGroupData.sunIntensity            = parameters->sunIntensity * parameters->sunColor;
