@@ -157,21 +157,33 @@ TextureResource *RenderGraph::CreateTexture(const RHI::TextureDesc &desc, std::s
 
 BufferResource *RenderGraph::RegisterBuffer(RC<StatefulBuffer> buffer)
 {
+    const void *rhiPtr = buffer->GetRHIObject().Get();
+    if(auto it = externalResourceMap_.find(rhiPtr); it != externalResourceMap_.end())
+    {
+        return buffers_[it->second].get();
+    }
     const int index = static_cast<int>(buffers_.size());
     auto resource = MakeBox<ExternalBufferResource>(index);
     resource->buffer = std::move(buffer);
     buffers_.push_back(std::move(resource));
     textures_.push_back(nullptr);
+    externalResourceMap_.insert({ rhiPtr, index });
     return buffers_.back().get();
 }
 
 TextureResource *RenderGraph::RegisterTexture(RC<StatefulTexture> texture)
 {
+    const void *rhiPtr = texture->GetRHIObject().Get();
+    if(auto it = externalResourceMap_.find(rhiPtr); it != externalResourceMap_.end())
+    {
+        return textures_[it->second].get();
+    }
     const int index = static_cast<int>(textures_.size());
     auto resource = MakeBox<ExternalTextureResource>(index);
     resource->texture = std::move(texture);
     textures_.push_back(std::move(resource));
     buffers_.push_back(nullptr);
+    externalResourceMap_.insert({ rhiPtr, index });
     return textures_.back().get();
 }
 

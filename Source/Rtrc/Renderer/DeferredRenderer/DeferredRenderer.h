@@ -24,17 +24,11 @@ public:
     
     using StencilMask = RendererDetail::EnumFlagsStencilMaskBit;
 
-    struct RenderGraphInterface
-    {
-        RG::Pass *passIn = nullptr;
-        RG::Pass *passOut = nullptr;
-    };
-
     DeferredRenderer(Device &device, const BuiltinResourceManager &builtinResources);
 
     AtmosphereRenderer &GetAtmosphereRenderer();
 
-    RenderGraphInterface AddToRenderGraph(
+    void AddToRenderGraph(
         RG::RenderGraph     &renderGraph,
         RG::TextureResource *renderTarget,
         const SceneProxy    &scene,

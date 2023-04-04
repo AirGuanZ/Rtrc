@@ -351,11 +351,9 @@ void Run()
             commandBuffer.BindComputeGroup(0, bindingGroup);
             commandBuffer.DispatchWithThreadCount(rgSwapchain->GetWidth(), rgSwapchain->GetHeight(), 1);
         });
-
         ptPass->SetSignalFence(device->GetFrameFence());
-        Connect(initializePass, ptPass);
-        executer.Execute(graph);
 
+        executer.Execute(graph);
         device->Present();
     }
 }

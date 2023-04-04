@@ -215,15 +215,6 @@ AtmosphereDetail::SkyLut::RenderGraphInterface AtmosphereDetail::SkyLut::AddToRe
     });
 
     RenderGraphInterface ret;
-
-    auto entryPass = renderGraph->CreateDummyPass("Begin Sky Lut Generation");
-    Connect(entryPass, prevLutRG.clearPass);
-    Connect(entryPass, currLutRG.clearPass);
-    Connect(prevLutRG.clearPass, pass);
-    Connect(currLutRG.clearPass, pass);
-
-    ret.inPass = entryPass;
-    ret.outPass = pass;
     ret.skyLut = currLut;
     return ret;
 }
@@ -349,8 +340,6 @@ AtmosphereRenderer::RenderGraphInterface AtmosphereDetail::AtmosphereRenderer::A
     auto skyRGData = skyLut_->AddToRenderGraph(&frameParameters_, &graph, *transLut_, *msLut_);
 
     RenderGraphInterface ret;
-    ret.passIn = skyRGData.inPass;
-    ret.passOut = skyRGData.outPass;
     ret.skyLut = skyRGData.skyLut;
     return ret;
 }

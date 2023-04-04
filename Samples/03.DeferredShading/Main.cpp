@@ -143,19 +143,16 @@ class DeferredRendererApplication : public Uncopyable
 
         Box<SceneProxy> sceneProxy = scene_->CreateSceneProxy();
         
-        const auto deferredRendererRGData = renderer_->AddToRenderGraph(
+        renderer_->AddToRenderGraph(
             *graph, renderTarget, *sceneProxy, *camera_, timer_.GetDeltaSecondsF());
 
         // ImGui
 
         auto imguiRenderData = imgui_->Render();
         auto imguiPass = imguiRenderer_->AddToRenderGraph(imguiRenderData.get(), renderTarget, graph.get());
-
-        //auto imguiPass = imgui_->AddToRenderGraph(renderTarget, graph.get());
-
+        
         // Dependencies
         
-        Connect(deferredRendererRGData.passOut, imguiPass);
         imguiPass->SetSignalFence(device_->GetFrameFence());
 
         // Execute render graph & present

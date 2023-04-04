@@ -9,7 +9,8 @@ namespace CompilerDetail
 
     enum class OptionBit : uint32_t
     {
-        PreferGlobalMemoryBarrier = 1 << 0,
+        ConnectPassesByDefinitionOrder = 1 << 0,
+        PreferGlobalMemoryBarrier      = 1 << 1,
     };
     RTRC_DEFINE_ENUM_FLAGS(OptionBit)
     using Options = EnumFlagsOptionBit;
@@ -22,7 +23,9 @@ public:
 
     using Options = CompilerDetail::Options;
 
-    Compiler(ObserverPtr<Device> device, Options options = Options::PreferGlobalMemoryBarrier);
+    explicit Compiler(
+        ObserverPtr<Device> device,
+        Options             options = Options::ConnectPassesByDefinitionOrder | Options::PreferGlobalMemoryBarrier);
 
     void Compile(const RenderGraph &graph, ExecutableGraph &result);
 
@@ -66,6 +69,13 @@ private:
     static bool DontNeedBarrier(const Pass::BufferUsage &a, const Pass::BufferUsage &b);
     static bool DontNeedBarrier(const Pass::SubTexUsage &a, const Pass::SubTexUsage &b);
 
+    static void GenerateGlobalMemoryBarriers(ExecutablePass &pass);
+
+    static void GenerateConnectionsByDefinitionOrder(
+        Span<Box<Pass>> passes,
+        std::vector<std::set<Pass *>> &outPrevs,
+        std::vector<std::set<Pass *>> &outSuccs);
+
     bool IsInSection(int passIndex, const CompileSection *section) const;
 
     void TopologySortPasses();
@@ -83,8 +93,6 @@ private:
     void GenerateBarriers(const ExecutableResources &resources);
 
     void FillSections(ExecutableGraph &output);
-
-    static void GenerateGlobalMemoryBarriers(ExecutablePass &pass);
 
     Options options_;
 

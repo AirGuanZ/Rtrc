@@ -97,6 +97,103 @@ bool Compiler::DontNeedBarrier(const Pass::SubTexUsage &a, const Pass::SubTexUsa
     return IsReadOnly(a.accesses) && IsReadOnly(b.accesses);
 }
 
+void Compiler::GenerateGlobalMemoryBarriers(ExecutablePass &pass)
+{
+    RHI::GlobalMemoryBarrier globalMemoryBarrier =
+    {
+        .beforeStages   = RHI::PipelineStage::None,
+        .beforeAccesses = RHI::ResourceAccess::None,
+        .afterStages    = RHI::PipelineStage::None,
+        .afterAccesses  = RHI::ResourceAccess::None
+    };
+
+    for(const RHI::BufferTransitionBarrier &b : pass.preBufferBarriers)
+    {
+        globalMemoryBarrier.beforeStages   |= b.beforeStages;
+        globalMemoryBarrier.beforeAccesses |= b.beforeAccesses;
+        globalMemoryBarrier.afterStages    |= b.afterStages;
+        globalMemoryBarrier.afterAccesses  |= b.afterAccesses;
+    }
+
+    std::vector<RHI::TextureTransitionBarrier> newTextureBarriers;
+    for(const RHI::TextureTransitionBarrier &b : pass.preTextureBarriers)
+    {
+        if(b.beforeLayout == b.afterLayout)
+        {
+            globalMemoryBarrier.beforeStages   |= b.beforeStages;
+            globalMemoryBarrier.beforeAccesses |= b.beforeAccesses;
+            globalMemoryBarrier.afterStages    |= b.afterStages;
+            globalMemoryBarrier.afterAccesses  |= b.afterAccesses;
+        }
+        else
+        {
+            newTextureBarriers.push_back(b);
+        }
+    }
+
+    const size_t reducedBarrierCount = pass.preBufferBarriers.size()
+                                     + (pass.preTextureBarriers.size() - newTextureBarriers.size());
+    if(reducedBarrierCount >= 2)
+    {
+        pass.preGlobalBarrier = globalMemoryBarrier;
+        pass.preBufferBarriers.clear();
+        pass.preTextureBarriers = std::move(newTextureBarriers);
+    }
+}
+
+void Compiler::GenerateConnectionsByDefinitionOrder(
+    Span<Box<Pass>>               passes,
+    std::vector<std::set<Pass*>> &outPrevs,
+    std::vector<std::set<Pass*>> &outSuccs)
+{
+    std::map<uint64_t, Pass *> resourceIndexToLastUser;
+    for(const Box<Pass> &pass : passes)
+    {
+        Pass *curr = pass.get();
+
+        for(auto &buffer : std::ranges::views::keys(pass->bufferUsages_))
+        {
+            auto it = resourceIndexToLastUser.find(buffer->GetResourceIndex());
+            if(it != resourceIndexToLastUser.end())
+            {
+                Pass *prev = it->second;
+                outSuccs[prev->index_].insert(curr);
+                outPrevs[curr->index_].insert(prev);
+                it->second = curr;
+            }
+            else
+            {
+                resourceIndexToLastUser.insert({ buffer->GetResourceIndex(), curr });
+            }
+        }
+        
+        for(auto &[tex, usage] : pass->textureUsages_)
+        {
+            uint64_t subrscIndex = 0;
+            for(auto &subrscUsage : usage)
+            {
+                if(subrscUsage.has_value())
+                {
+                    const uint64_t key = tex->GetResourceIndex() | (subrscIndex << 32);
+                    auto it = resourceIndexToLastUser.find(key);
+                    if(it != resourceIndexToLastUser.end())
+                    {
+                        Pass *prev = it->second;
+                        outSuccs[prev->index_].insert(curr);
+                        outPrevs[curr->index_].insert(prev);
+                        it->second = curr;
+                    }
+                    else
+                    {
+                        resourceIndexToLastUser.insert({ key, curr });
+                    }
+                }
+                ++subrscIndex;
+            }
+        }
+    }
+}
+
 bool Compiler::IsInSection(int passIndex, const CompileSection *section) const
 {
     return passToSection_.at(passIndex) == section;
@@ -104,16 +201,26 @@ bool Compiler::IsInSection(int passIndex, const CompileSection *section) const
 
 void Compiler::TopologySortPasses()
 {
-    // TODO: optimize for section generation
-
     assert(graph_);
     const std::vector<Box<Pass>> &passes = graph_->passes_;
+
+    std::vector<std::set<Pass *>> prevs(passes.size()), succs(passes.size());
+    for(size_t i = 0; i < passes.size(); ++i)
+    {
+        prevs[i] = passes[i]->prevs_;
+        succs[i] = passes[i]->succs_;
+    }
+
+    if(options_.contains(Options::ConnectPassesByDefinitionOrder))
+    {
+        GenerateConnectionsByDefinitionOrder(passes, prevs, succs);
+    }
 
     std::queue<int> availablePasses;
     std::vector<int> passToUnprocessedPrevCount(passes.size());
     for(size_t i = 0; i < passes.size(); ++i)
     {
-        passToUnprocessedPrevCount[i] = static_cast<int>(passes[i]->prevs_.size());
+        passToUnprocessedPrevCount[i] = static_cast<int>(prevs[i].size());
         if(!passToUnprocessedPrevCount[i])
         {
             availablePasses.push(static_cast<int>(i));
@@ -127,7 +234,7 @@ void Compiler::TopologySortPasses()
         const int passIndex = availablePasses.front();
         availablePasses.pop();
         sortedPassIndices.push_back(passIndex);
-        for(Pass *succ : passes[passIndex]->succs_)
+        for(Pass *succ : succs[passIndex])
         {
             const int succIndex = succ->index_;
             assert(passToUnprocessedPrevCount[succIndex]);
@@ -139,7 +246,7 @@ void Compiler::TopologySortPasses()
     }
     if(sortedPassIndices.size() != passes.size())
     {
-        throw Exception("cycle detected in pass dependency graph");
+        throw Exception("Cycle detected in pass dependency graph");
     }
 
     sortedPasses_.resize(passes.size());
@@ -224,7 +331,6 @@ void Compiler::GenerateSections()
         if(swapchainTexUsers)
         {
             needNewSection |= passIndex == swapchainTexUsers->back().passIndex;
-            //needNewSection |= passIndex + 1 == swapchainTexUsers->front().passIndex;
         }
     }
 }
@@ -638,7 +744,7 @@ void Compiler::FillSections(ExecutableGraph &output)
         section.signalFence = compileSection->signalFence;
 
         section.passes.reserve(compileSection->passes.size());
-        for(int compilePassIndex : compileSection->passes)
+        for(const int compilePassIndex : compileSection->passes)
         {
             const Pass    *&rawPass     = sortedPasses_[compilePassIndex];
             CompilePass    &compilePass = *sortedCompilePasses_[compilePassIndex];
@@ -679,50 +785,6 @@ void Compiler::FillSections(ExecutableGraph &output)
                 pass.callback = nullptr;
             }
         }
-    }
-}
-
-void Compiler::GenerateGlobalMemoryBarriers(ExecutablePass &pass)
-{
-    RHI::GlobalMemoryBarrier globalMemoryBarrier =
-    {
-        .beforeStages   = RHI::PipelineStage::None,
-        .beforeAccesses = RHI::ResourceAccess::None,
-        .afterStages    = RHI::PipelineStage::None,
-        .afterAccesses  = RHI::ResourceAccess::None
-    };
-
-    for(const RHI::BufferTransitionBarrier &b : pass.preBufferBarriers)
-    {
-        globalMemoryBarrier.beforeStages   |= b.beforeStages;
-        globalMemoryBarrier.beforeAccesses |= b.beforeAccesses;
-        globalMemoryBarrier.afterStages    |= b.afterStages;
-        globalMemoryBarrier.afterAccesses  |= b.afterAccesses;
-    }
-
-    std::vector<RHI::TextureTransitionBarrier> newTextureBarriers;
-    for(const RHI::TextureTransitionBarrier &b : pass.preTextureBarriers)
-    {
-        if(b.beforeLayout == b.afterLayout)
-        {
-            globalMemoryBarrier.beforeStages   |= b.beforeStages;
-            globalMemoryBarrier.beforeAccesses |= b.beforeAccesses;
-            globalMemoryBarrier.afterStages    |= b.afterStages;
-            globalMemoryBarrier.afterAccesses  |= b.afterAccesses;
-        }
-        else
-        {
-            newTextureBarriers.push_back(b);
-        }
-    }
-
-    const size_t reducedBarrierCount = pass.preBufferBarriers.size()
-                                     + (pass.preTextureBarriers.size() - newTextureBarriers.size());
-    if(reducedBarrierCount >= 2)
-    {
-        pass.preGlobalBarrier = globalMemoryBarrier;
-        pass.preBufferBarriers.clear();
-        pass.preTextureBarriers = std::move(newTextureBarriers);
     }
 }
 

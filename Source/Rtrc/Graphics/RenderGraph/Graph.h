@@ -342,6 +342,7 @@ private:
 
     Queue queue_;
 
+    std::map<const void *, int>       externalResourceMap_; // RHI object pointer to resource index
     std::vector<Box<BufferResource>>  buffers_;
     std::vector<Box<TextureResource>> textures_;
     SwapchainTexture                 *swapchainTexture_;

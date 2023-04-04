@@ -145,7 +145,7 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
     auto renderGraph = device_->CreateRenderGraph();
     auto framebuffer = renderGraph->RegisterSwapchainTexture(device_->GetSwapchain());
     
-    // Update meshes
+    // ============= Update meshes =============
 
     meshManager_.UpdateCachedMeshData(frame);
     constexpr int MAX_BLAS_BUILD_COUNT = 5;
@@ -153,11 +153,11 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
     auto rgMesh = meshManager_.BuildBlasForMeshes(
         *renderGraph, MAX_BLAS_BUILD_COUNT, MAX_BLAS_BUILD_PRIMITIVE_COUNT);
 
-    // Update materials
+    // ============= Update materials =============
 
     materialManager_.UpdateCachedMaterialData(frame);
 
-    // Update scene
+    // ============= Update scene =============
 
     auto rgScene = cachedScene_.Update(
         frame, *transientConstantBufferAllocator_,
@@ -166,30 +166,28 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
     const CachedScenePerCamera *cachedScenePerCamera = cachedScene_.GetCachedScenePerCamera(frame.camera.originalId);
     assert(cachedScenePerCamera);
 
-    // GBuffers
-
-    const GBufferPass::RenderGraphOutput rgGBuffers = gbufferPass_->RenderGBuffers(
-        *cachedScenePerCamera, *renderGraph, framebuffer->GetSize());
-
-    // Deferred lighting
-    
-    const DeferredLightingPass::RenderGraphOutput rgDeferredLighting = deferredLightingPass_->RenderDeferredLighting(
-        *cachedScenePerCamera, *renderGraph, rgGBuffers.gbuffers, framebuffer);
-
-    // Imgui
-
-    auto imguiPass = imguiRenderer_->AddToRenderGraph(frame.imguiDrawData.get(), framebuffer, renderGraph.get());
-
-    // Dependencies & execution
-
+    // Blas building cannot be tracked by render graph. So we need to manually add dependency here.
     renderGraph->MakeDummyPassIfNull(rgMesh.buildBlasPass, "BuildMeshBlas");
-    renderGraph->MakeDummyPassIfNull(rgScene.prepareTlasMaterialDataPass, "PrepareTlasMaterialData");
     renderGraph->MakeDummyPassIfNull(rgScene.buildTlasPass, "BuildTlas");
-
     Connect(rgMesh.buildBlasPass, rgScene.buildTlasPass);
-    Connect(rgGBuffers.gbufferPass, rgDeferredLighting.lightingPass);
-    Connect(rgDeferredLighting.lightingPass, imguiPass);
+
+    // ============= GBuffers =============
+
+    auto gbuffers = gbufferPass_->RenderGBuffers(
+        *cachedScenePerCamera, *renderGraph, framebuffer->GetSize()).gbuffers;
+
+    // ============= Deferred lighting =============
+    
+    deferredLightingPass_->RenderDeferredLighting(
+        *cachedScenePerCamera, *renderGraph, gbuffers, framebuffer);
+
+    // ============= ImGui =============
+
+    auto imguiPass = imguiRenderer_->AddToRenderGraph(
+        frame.imguiDrawData.get(), framebuffer, renderGraph.get());
     imguiPass->SetSignalFence(device_->GetFrameFence());
+
+    // ============= Execution =============
 
     transientConstantBufferAllocator_->Flush();
     renderGraphExecuter_->Execute(renderGraph);

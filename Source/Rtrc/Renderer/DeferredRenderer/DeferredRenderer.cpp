@@ -21,7 +21,7 @@ AtmosphereRenderer &DeferredRenderer::GetAtmosphereRenderer()
     return *atmosphereRenderer_;
 }
 
-DeferredRenderer::RenderGraphInterface DeferredRenderer::AddToRenderGraph(
+void DeferredRenderer::AddToRenderGraph(
     RG::RenderGraph     &renderGraph,
     RG::TextureResource *renderTarget,
     const SceneProxy    &scene,
@@ -75,14 +75,6 @@ DeferredRenderer::RenderGraphInterface DeferredRenderer::AddToRenderGraph(
             DoDeferredLightingPass(passContext, passData);
         });
     }
-
-    Connect(rgAtmosphere.passOut, lightingPass);
-    Connect(gbufferPass, lightingPass);
-
-    RenderGraphInterface ret;
-    ret.passIn = gbufferPass;
-    ret.passOut = lightingPass;
-    return ret;
 }
 
 void DeferredRenderer::DoDeferredLightingPass(RG::PassContext &passContext, const DeferredLightingPassData &passData)

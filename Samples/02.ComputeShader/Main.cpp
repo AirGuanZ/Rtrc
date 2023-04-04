@@ -69,8 +69,11 @@ void Run()
 
     device->ExecuteAndWait([&](CommandBuffer &cmd)
     {
-        cmd.ExecuteBarriers(BarrierBatch()
-            (outputTexture, RHI::TextureLayout::ShaderRWTexture, RHI::PipelineStage::None, RHI::ResourceAccess::None));
+        cmd.ExecuteBarrier(
+            outputTexture,
+            RHI::TextureLayout::ShaderRWTexture,
+            RHI::PipelineStage::ComputeShader,
+            RHI::ResourceAccess::RWTextureWrite);
 
         cmd.BindComputePipeline(pipeline);
         matPassInst->BindGraphicsProperties(keywords, cmd);
@@ -83,7 +86,11 @@ void Run()
         };
         cmd.Dispatch(groupCount.x, groupCount.y, 1);
 
-        cmd.ExecuteBarrier(outputTexture, RHI::TextureLayout::CopySrc, RHI::PipelineStage::Copy, RHI::ResourceAccess::CopyRead);
+        cmd.ExecuteBarrier(
+            outputTexture,
+            RHI::TextureLayout::CopySrc,
+            RHI::PipelineStage::Copy, 
+            RHI::ResourceAccess::CopyRead);
         cmd.CopyColorTexture2DToBuffer(*readbackBuffer, 0, *outputTexture, 0, 0);
     });
     

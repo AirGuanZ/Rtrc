@@ -93,8 +93,6 @@ namespace AtmosphereDetail
 
         struct RenderGraphInterface
         {
-            RG::Pass            *inPass  = nullptr;
-            RG::Pass            *outPass = nullptr;
             RG::TextureResource *skyLut  = nullptr;
         };
 
@@ -137,8 +135,6 @@ namespace AtmosphereDetail
         
         struct RenderGraphInterface
         {
-            RG::Pass            *passIn  = nullptr;
-            RG::Pass            *passOut = nullptr;
             RG::TextureResource *skyLut  = nullptr;
         };
 
