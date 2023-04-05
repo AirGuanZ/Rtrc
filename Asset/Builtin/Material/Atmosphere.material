@@ -31,12 +31,12 @@ Shader "Builtin/Atmosphere/GenerateTransmittanceLut"
     rtrc_group(Pass)
     {
         rtrc_define(RWTexture2D<float4>,     TransmittanceTextureRW)
-        rtrc_uniform(int2,                   outputResolution)
+        rtrc_uniform(uint2,                  outputResolution)
         rtrc_uniform(Atmosphere::Properties, atmosphere)
     };
 
     [numthreads(16, 16, 1)]
-    void CSMain(int2 tid : SV_DispatchThreadID)
+    void CSMain(uint2 tid : SV_DispatchThreadID)
     {
         if(any(tid >= Pass.outputResolution))
             return;
@@ -80,7 +80,7 @@ Shader "Builtin/Atmosphere/GenerateMultiScatterLut"
         rtrc_define(RWTexture2D<float4>,      MultiScatterTextureRW)
         rtrc_define(StructuredBuffer<float2>, RawDirSamples)
         rtrc_define(Texture2D<float3>,        TransmittanceLutTexture)
-        rtrc_uniform(int2,                    outputResolution)
+        rtrc_uniform(uint2,                   outputResolution)
         rtrc_uniform(int,                     dirSampleCount)
         rtrc_uniform(int,                     rayMarchStepCount)
         rtrc_uniform(Atmosphere::Properties,  atmosphere)
@@ -184,7 +184,7 @@ Shader "Builtin/Atmosphere/GenerateMultiScatterLut"
     }
 
     [numthreads(16, 16, 1)]
-    void CSMain(int2 tid : SV_DispatchThreadID)
+    void CSMain(uint2 tid : SV_DispatchThreadID)
     {
         if(any(tid >= Pass.outputResolution))
             return;
@@ -209,11 +209,10 @@ Shader "Builtin/Atmosphere/GenerateSkyLut"
     rtrc_group(Pass)
     {
         rtrc_define(RWTexture2D<float4>,     SkyLutTextureRW)
-        rtrc_define(Texture2D<float3>,       SkyHistoryLutTexture)
         rtrc_define(Texture2D<float3>,       TransmittanceLutTexture)
         rtrc_define(Texture2D<float3>,       MultiScatterLutTexture)
         rtrc_uniform(Atmosphere::Properties, atmosphere)
-        rtrc_uniform(int2,                   outputResolution)
+        rtrc_uniform(uint2,                  outputResolution)
         rtrc_uniform(int,                    rayMarchStepCount)
         rtrc_uniform(float,                  frameRandom01)
         rtrc_uniform(float,                  eyePosY)
@@ -259,7 +258,7 @@ Shader "Builtin/Atmosphere/GenerateSkyLut"
     }
 
     [numthreads(16, 16, 1)]
-    void CSMain(int2 tid : SV_DispatchThreadID)
+    void CSMain(uint2 tid : SV_DispatchThreadID)
     {
         if(any(tid >= Pass.outputResolution))
             return;
@@ -308,7 +307,7 @@ Shader "Builtin/Atmosphere/GenerateSkyLut"
         }
 
         float3 curr = inScatter * Pass.sunIntensity;
-        float3 prev = SkyHistoryLutTexture[tid];
+        float3 prev = SkyLutTextureRW[tid].xyz;
         SkyLutTextureRW[tid] = float4(lerp(prev, curr, Pass.lerpFactor), 1);
     }
 

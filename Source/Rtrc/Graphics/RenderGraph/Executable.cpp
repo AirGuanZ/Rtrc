@@ -62,6 +62,12 @@ void Executer::Execute(const ExecutableGraph &graph)
 
         commandBuffer.End();
 
+        RHI::FencePtr fence = section.signalFence;
+        if(!fence && &section == &graph.sections.back() && graph.completeFence)
+        {
+            fence = graph.completeFence;
+        }
+
         graph.queue->Submit(
             RHI::Queue::BackBufferSemaphoreDependency
             {
@@ -76,7 +82,12 @@ void Executer::Execute(const ExecutableGraph &graph)
                 .stages = section.signalPresentSemaphoreStages
             },
             {},
-            section.signalFence);
+            fence);
+    }
+
+    if(graph.completeFence && (graph.sections.empty() || graph.sections.back().signalFence))
+    {
+        graph.queue->Submit({}, {}, {}, {}, {}, graph.completeFence);
     }
 
     for(auto &record : graph.resources.indexToBuffer)

@@ -281,6 +281,8 @@ public:
 
     void MakeDummyPassIfNull(Pass *&pass, std::string_view name);
 
+    void SetCompleteFence(RHI::FencePtr fence);
+
 private:
 
     friend class Compiler;
@@ -349,6 +351,8 @@ private:
     mutable ExecutableResources      *executableResource_;
 
     std::vector<Box<Pass>> passes_;
+
+    RHI::FencePtr completeFence_;
 };
 
 RTRC_RG_END

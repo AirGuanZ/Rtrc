@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Rtrc/Renderer/Passes/AtmospherePass.h>
 #include <Rtrc/Renderer/Scene/CachedMaterialManager.h>
 #include <Rtrc/Renderer/Scene/CachedMeshManager.h>
 #include <Rtrc/Renderer/Utility/TransientConstantBufferAllocator.h>
@@ -50,7 +51,7 @@ public:
         RG::RenderGraph                           &renderGraph,
         LinearAllocator                           &linearAllocator);
 
-    const CachedScenePerCamera *GetCachedScenePerCamera(UniqueId cameraId) const;
+    CachedScenePerCamera *GetCachedScenePerCamera(UniqueId cameraId);
 
     Span<StaticMeshRecord *> GetStaticMeshes() const { return objects_; }
 
@@ -97,6 +98,8 @@ public:
     Span<StaticMeshRecord *> GetStaticMeshes() const { return objects_; }
     Span<const Light::SharedRenderingData*> GetLights() const { return scene_.GetLights(); }
 
+    PhysicalAtmospherePass::CachedData &GetCachedAtmosphereData() { return atmosphereData_; }
+
     void Update(
         const RenderCamera               &camera,
         TransientConstantBufferAllocator &transientConstantBufferAllocator,
@@ -109,6 +112,8 @@ private:
 
     RC<SubBuffer>                   cameraCBuffer_;
     std::vector<StaticMeshRecord *> objects_;
+
+    PhysicalAtmospherePass::CachedData atmosphereData_;
 };
 
 RTRC_RENDERER_END

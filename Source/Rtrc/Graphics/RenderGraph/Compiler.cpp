@@ -69,6 +69,8 @@ void Compiler::Compile(const RenderGraph &graph, ExecutableGraph &result)
 
     result.queue = graph.queue_.GetRHIObject();
     FillSections(result);
+
+    result.completeFence = graph.completeFence_;
 }
 
 bool Compiler::DontNeedBarrier(const Pass::BufferUsage &a, const Pass::BufferUsage &b)

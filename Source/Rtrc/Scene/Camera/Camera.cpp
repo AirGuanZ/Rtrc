@@ -97,10 +97,14 @@ void Camera::CalculateDerivedData()
         clipToWorld * Vector4f(-1.0f, -1.0f, 1.0f, 1.0f),
         clipToWorld * Vector4f(+1.0f, -1.0f, 1.0f, 1.0f)
     };
-    worldRays[0] = Normalize(worldSpaceRays[0].xyz() / worldSpaceRays[0].w - position);
-    worldRays[1] = Normalize(worldSpaceRays[1].xyz() / worldSpaceRays[0].w - position);
-    worldRays[2] = Normalize(worldSpaceRays[2].xyz() / worldSpaceRays[0].w - position);
-    worldRays[3] = Normalize(worldSpaceRays[3].xyz() / worldSpaceRays[0].w - position);
+    worldRays[0] = worldSpaceRays[0].xyz() / worldSpaceRays[0].w - position;
+    worldRays[1] = worldSpaceRays[1].xyz() / worldSpaceRays[0].w - position;
+    worldRays[2] = worldSpaceRays[2].xyz() / worldSpaceRays[0].w - position;
+    worldRays[3] = worldSpaceRays[3].xyz() / worldSpaceRays[0].w - position;
+    worldRays[0] = 1.0f / Dot(worldRays[0], forward) * worldRays[0];
+    worldRays[1] = 1.0f / Dot(worldRays[1], forward) * worldRays[1];
+    worldRays[2] = 1.0f / Dot(worldRays[2], forward) * worldRays[2];
+    worldRays[3] = 1.0f / Dot(worldRays[3], forward) * worldRays[3];
 }
 
 RTRC_END

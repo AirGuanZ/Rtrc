@@ -124,8 +124,7 @@ namespace AtmosphereDetail
         std::default_random_engine randomEngine_;
         int                        stepCount_;
         Vector2i                   lutRes_;
-
-        RC<StatefulTexture> prevLut_;
+        
         RC<StatefulTexture> currLut_;
     };
 

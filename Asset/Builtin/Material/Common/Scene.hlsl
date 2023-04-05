@@ -26,3 +26,15 @@ struct DirectionalLightShadingData
     float3 direction;
     float3 color;
 };
+
+namespace CameraUtils
+{
+
+    float DeviceZToViewZ(float4x4 cameraToClip, float deviceZ)
+    {
+        // Let P(row, col) = perspective projection matrix
+        // deviceZ = P(2, 2) + P(2, 3) / viewZ
+        return (deviceZ - cameraToClip._22) / cameraToClip._23;
+    }
+
+} // namespace namespace CameraUtils

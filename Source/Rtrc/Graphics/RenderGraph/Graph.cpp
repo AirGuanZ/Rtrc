@@ -243,6 +243,11 @@ void RenderGraph::MakeDummyPassIfNull(Pass *&pass, std::string_view name)
     }
 }
 
+void RenderGraph::SetCompleteFence(RHI::FencePtr fence)
+{
+    completeFence_.Swap(fence);
+}
+
 const RHI::TextureDesc &RenderGraph::ExternalTextureResource::GetDesc() const
 {
     return texture->GetDesc();

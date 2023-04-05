@@ -53,6 +53,7 @@ struct ExecutableGraph
     RHI::QueuePtr                  queue;
     ExecutableResources            resources;
     std::vector<ExecutableSection> sections;
+    RHI::FencePtr                  completeFence;
 };
 
 class Executer

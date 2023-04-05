@@ -6,6 +6,7 @@
 
 #include <Rtrc/Graphics/ImGui/Instance.h>
 #include <Rtrc/Graphics/RenderGraph/Executable.h>
+#include <Rtrc/Renderer/Passes/AtmospherePass.h>
 #include <Rtrc/Renderer/Passes/DeferredLightingPass.h>
 #include <Rtrc/Renderer/Passes/GBufferPass.h>
 #include <Rtrc/Renderer/RenderCommand.h>
@@ -78,8 +79,9 @@ private:
     
     CachedScene cachedScene_;
 
-    Box<GBufferPass>          gbufferPass_;
-    Box<DeferredLightingPass> deferredLightingPass_;
+    Box<PhysicalAtmospherePass> atmospherePass_;
+    Box<GBufferPass>            gbufferPass_;
+    Box<DeferredLightingPass>   deferredLightingPass_;
 };
 
 RTRC_RENDERER_END

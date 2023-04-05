@@ -28,7 +28,6 @@ namespace AtmosphereDetail
     rtrc_group(SkyLutPass)
     {
         rtrc_define(RWTexture2D,           SkyLutTextureRW);
-        rtrc_define(Texture2D,             SkyHistoryLutTexture);
         rtrc_define(Texture2D,             TransmittanceLutTexture);
         rtrc_define(Texture2D,             MultiScatterLutTexture);
         rtrc_uniform(AtmosphereProperties, atmosphere);
@@ -176,26 +175,19 @@ AtmosphereDetail::SkyLut::RenderGraphInterface AtmosphereDetail::SkyLut::AddToRe
     const TransmittanceLut          &transmittanceLut,
     const MultiScatterLut           &multiScatterLut)
 {
-    std::swap(prevLut_, currLut_);
-
-    auto prevLutRG = PrepareLut(renderGraph, prevLut_);
     auto currLutRG = PrepareLut(renderGraph, currLut_);
-
-    auto prevLut = prevLutRG.lut;
     auto currLut = currLutRG.lut;
     
     auto pass = renderGraph->CreatePass("Generate Sky Lut");
-    pass->Use(currLut, RG::COMPUTE_SHADER_RWTEXTURE_WRITEONLY);
-    pass->Use(prevLut, RG::COMPUTE_SHADER_TEXTURE);
+    pass->Use(currLut, RG::COMPUTE_SHADER_RWTEXTURE);
     pass->SetCallback(
-        [this, currLut, prevLut, parameters, &transmittanceLut, &multiScatterLut](RG::PassContext &passCtx)
+        [this, currLut, parameters, &transmittanceLut, &multiScatterLut](RG::PassContext &passCtx)
     {
         float lerpFactor = 1.0f - std::pow(0.03f, 0.4f * parameters->dt);
         lerpFactor = std::clamp(lerpFactor, 0.001f, 0.05f);
 
         SkyLutPass passGroupData;
         passGroupData.SkyLutTextureRW         = currLut->Get(passCtx);
-        passGroupData.SkyHistoryLutTexture    = prevLut->Get(passCtx);
         passGroupData.TransmittanceLutTexture = transmittanceLut.GetLut();
         passGroupData.MultiScatterLutTexture  = multiScatterLut.GetLut();
         passGroupData.atmosphere              = parameters->atmosphere;

@@ -196,7 +196,7 @@ CachedScene::RenderGraphInterface CachedScene::Update(
     return ret;
 }
 
-const CachedScenePerCamera *CachedScene::GetCachedScenePerCamera(UniqueId cameraId) const
+CachedScenePerCamera *CachedScene::GetCachedScenePerCamera(UniqueId cameraId)
 {
     size_t beg = 0, end = cachedScenesPerCamera_.size();
     while(beg < end)

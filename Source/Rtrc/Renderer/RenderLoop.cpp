@@ -27,6 +27,7 @@ RenderLoop::RenderLoop(
 
     renderThread_ = std::jthread(&RenderLoop::RenderThreadEntry, this);
 
+    atmospherePass_       = MakeBox<PhysicalAtmospherePass>(device_, builtinResources_);
     gbufferPass_          = MakeBox<GBufferPass>(device_);
     deferredLightingPass_ = MakeBox<DeferredLightingPass>(device_, builtinResources_);
 }
@@ -163,7 +164,7 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
         frame, *transientConstantBufferAllocator_,
         meshManager_, materialManager_, *renderGraph, linearAllocator);
 
-    const CachedScenePerCamera *cachedScenePerCamera = cachedScene_.GetCachedScenePerCamera(frame.camera.originalId);
+    CachedScenePerCamera *cachedScenePerCamera = cachedScene_.GetCachedScenePerCamera(frame.camera.originalId);
     assert(cachedScenePerCamera);
 
     // Blas building cannot be tracked by render graph. So we need to manually add dependency here.
@@ -176,6 +177,16 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
     auto gbuffers = gbufferPass_->RenderGBuffers(
         *cachedScenePerCamera, *renderGraph, framebuffer->GetSize()).gbuffers;
 
+    // ============= Atmosphere =============
+
+    atmospherePass_->RenderAtmosphere(
+        *renderGraph, 
+        { 0, -1, 0 }, 
+        10.0f * Vector3f(1),
+        1000.0f,
+        frameTimer_.GetDeltaSecondsF(),
+        cachedScenePerCamera->GetCachedAtmosphereData());
+
     // ============= Deferred lighting =============
     
     deferredLightingPass_->RenderDeferredLighting(
@@ -183,13 +194,14 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
 
     // ============= ImGui =============
 
-    auto imguiPass = imguiRenderer_->AddToRenderGraph(
+    imguiRenderer_->AddToRenderGraph(
         frame.imguiDrawData.get(), framebuffer, renderGraph.get());
-    imguiPass->SetSignalFence(device_->GetFrameFence());
-
+    
     // ============= Execution =============
 
     transientConstantBufferAllocator_->Flush();
+
+    renderGraph->SetCompleteFence(device_->GetFrameFence());
     renderGraphExecuter_->Execute(renderGraph);
 }
 
