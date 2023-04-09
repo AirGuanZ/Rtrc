@@ -7,6 +7,7 @@ RTRC_BEGIN
 void Application::Run(const Config &config)
 {
     SetThreadMode(ThreadUtility::ThreadMode::Standard);
+    SetThreadIndentifier(ThreadUtility::ThreadIdentifier::Main);
 
     window_ = WindowBuilder()
         .SetTitle(config.title)
@@ -40,13 +41,17 @@ void Application::Run(const Config &config)
     
     const ApplicationInitializeContext initContext =
     {
-        .activeScene  = activeScene_.get(),
-        .activeCamera = &activeCamera_
+        .device                 = device_.get(),
+        .resourceManager        = resourceManager_.get(),
+        .bindlessTextureManager = bindlessTextureManager.get(),
+        .activeScene            = activeScene_.get(),
+        .activeCamera           = &activeCamera_
     };
     Initialize(initContext);
 
     RenderLoop::Config renderLoopConfig;
     renderLoopConfig.rayTracing = config.rayTracing;
+    renderLoopConfig.handleCrossThreadException = config.handleCrossThreadException;
     renderLoop_ = MakeBox<RenderLoop>(
         renderLoopConfig, device_, resourceManager_->GetBuiltinResources(), bindlessTextureManager);
 
@@ -79,6 +84,11 @@ void Application::Update(const ApplicationUpdateContext &context)
     imgui.End();
 }
 
+void Application::Destroy()
+{
+    // Do nothing
+}
+
 bool Application::GetExitFlag() const
 {
     return window_.ShouldClose();
@@ -101,8 +111,6 @@ WindowInput &Application::GetWindowInput()
 
 void Application::UpdateLoop()
 {
-    SetThreadIndentifier(ThreadUtility::ThreadIdentifier::Main);
-
     std::binary_semaphore framebufferResizeSemaphore(0);
 
     std::binary_semaphore finishRenderSemaphore(1);
@@ -122,6 +130,7 @@ void Application::UpdateLoop()
     };
 
     Vector2i framebufferSize = window_.GetFramebufferSize();
+    Timer timer;
     while(!window_.ShouldClose())
     {
         Window::DoEvents();
@@ -147,11 +156,13 @@ void Application::UpdateLoop()
 
         // Update
 
+        timer.BeginFrame();
         const ApplicationUpdateContext updateContext =
         {
             .activeScene  = activeScene_.get(),
             .activeCamera = &activeCamera_,
-            .imgui        = imgui_.get()
+            .imgui        = imgui_.get(),
+            .frameTimer   = &timer,
         };
         Update(updateContext);
 

@@ -36,7 +36,7 @@ void CachedMeshManager::UpdateCachedMeshData(const RenderCommand_RenderStandalon
         {
             std::ranges::transform(
                 scene.GetStaticMeshRenderObjects(), std::back_inserter(meshRecords),
-                [&eye](const StaticMeshRenderProxy *staticMeshRenderer)
+                [](const StaticMeshRenderProxy *staticMeshRenderer)
                 {
                     return MeshRecord{ staticMeshRenderer->meshRenderingData.Get(), -1 };
                 });
@@ -51,7 +51,7 @@ void CachedMeshManager::UpdateCachedMeshData(const RenderCommand_RenderStandalon
         uniqueMeshes.reserve(meshRecords.size());
         for(const MeshRecord &mesh : meshRecords)
         {
-            if(uniqueMeshes.back().mesh == mesh.mesh)
+            if(!uniqueMeshes.empty() && uniqueMeshes.back().mesh == mesh.mesh)
             {
                 uniqueMeshes.back().buildBlasSortKey = (std::max)(
                     uniqueMeshes.back().buildBlasSortKey, mesh.buildBlasSortKey);
@@ -70,12 +70,12 @@ void CachedMeshManager::UpdateCachedMeshData(const RenderCommand_RenderStandalon
         {
             auto &data = *cachedMeshes_.emplace(it, MakeBox<CachedMesh>());
             data->buildBlasSortKey = meshRecord.buildBlasSortKey;
-            data->mesh             = meshRecord.mesh;
+            data->meshRenderingData             = meshRecord.mesh;
             data->meshId           = meshRecord.mesh->GetUniqueID();
             if(data->buildBlasSortKey > 0)
             {
-                assert(data->mesh->GetLayout()->GetVertexBufferLayouts()[0] == Mesh::BuiltinVertexBufferLayout::Default);
-                auto &buffer = data->mesh->GetVertexBuffer(0);
+                assert(data->meshRenderingData->GetLayout()->GetVertexBufferLayouts()[0] == Mesh::BuiltinVertexBufferLayout::Default);
+                auto &buffer = data->meshRenderingData->GetVertexBuffer(0);
                 data->geometryBufferEntry = bindlessBufferManager_->Allocate();
                 data->geometryBufferEntry.Set(buffer->GetStructuredSrv(sizeof(Mesh::BuiltinVertexStruct_Default)));
             }
@@ -174,7 +174,7 @@ CachedMeshManager::RenderGraphOutput CachedMeshManager::BuildBlasForMeshes(
         while(buildCount < maxBuildCount && buildPrimitiveCount < maxPrimitiveCount && it != meshesNeedBlas.end())
         {
             auto mesh = *it;
-            const int newPrimitiveCount = buildPrimitiveCount + mesh->mesh->GetPrimitiveCount();
+            const int newPrimitiveCount = buildPrimitiveCount + mesh->meshRenderingData->GetPrimitiveCount();
             if(newPrimitiveCount > buildPrimitiveCount)
             {
                 if(meshesToBuildBlas.empty())
@@ -204,9 +204,8 @@ CachedMeshManager::RenderGraphOutput CachedMeshManager::BuildBlasForMeshes(
             for(auto mesh : meshes)
             {
                 blasBuilder_.Build(
-                    context.GetCommandBuffer(), *mesh->mesh,
-                    RHI::RayTracingAccelerationStructureBuildFlagBit::PreferFastTrace,
-                    RHI::PipelineStage::All, mesh->blas);
+                    context.GetCommandBuffer(), *mesh->meshRenderingData,
+                    RHI::RayTracingAccelerationStructureBuildFlagBit::PreferFastTrace, mesh->blas);
             }
             blasBuilder_.Finalize(context.GetCommandBuffer());
         });

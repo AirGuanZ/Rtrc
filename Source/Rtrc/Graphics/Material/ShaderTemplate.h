@@ -16,6 +16,11 @@ public:
         std::map<std::string, std::string> macros;
     };
 
+    bool HasBuiltinKeyword(BuiltinKeyword keyword) const
+    {
+        return builtinKeywordMask_.test(std::to_underlying(keyword));
+    }
+
     RC<Shader> GetShader(const KeywordContext &keywordValueContext)
     {
         const KeywordSet::ValueMask mask = keywordSet_.ExtractValueMask(keywordValueContext);
@@ -56,10 +61,12 @@ private:
 
     friend class MaterialManager;
 
+    std::bitset<EnumCount<BuiltinKeyword>> builtinKeywordMask_;
+
     // Necessary info for compilation
 
-    bool debug_ = RTRC_DEBUG;
-    KeywordSet keywordSet_;
+    bool                         debug_ = RTRC_DEBUG;
+    KeywordSet                   keywordSet_;
     ShaderCompiler::ShaderSource source_;
     RC<SharedCompileEnvironment> sharedEnvir_;
 

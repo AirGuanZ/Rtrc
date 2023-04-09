@@ -11,6 +11,9 @@ SceneProxy::~SceneProxy()
 }
 
 Scene::Scene()
+    : sunDirection_(0, -1, 0)
+    , sunColor_(1, 1, 1)
+    , sunIntensity_(10)
 {
     rootNode_.UpdateWorldMatrixRecursively(true);
 }
@@ -27,6 +30,16 @@ Box<Light> Scene::CreateLight()
     return lightManager_.CreateLight();
 }
 
+PhysicalAtmosphereProperties &Scene::GetAtmosphere()
+{
+    return atmosphere_;
+}
+
+const PhysicalAtmosphereProperties &Scene::GetAtmosphere() const
+{
+    return atmosphere_;
+}
+
 void Scene::PrepareRendering()
 {
     rootNode_.UpdateWorldMatrixRecursively(false);
@@ -35,6 +48,11 @@ void Scene::PrepareRendering()
 Box<SceneProxy> Scene::CreateSceneProxy() const
 {
     auto ret = MakeBox<SceneProxy>();
+
+    ret->atmosphere_   = atmosphere_;
+    ret->sunDirection_ = Normalize(sunDirection_);
+    ret->sunColor_     = sunColor_;
+    ret->sunIntensity_ = sunIntensity_;
 
     staticRendererManager_.ForEachRenderer([&](const StaticMeshRenderObject *renderer)
     {

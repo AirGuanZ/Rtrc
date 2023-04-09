@@ -72,7 +72,7 @@ private:
     static void GenerateGlobalMemoryBarriers(ExecutablePass &pass);
 
     static void GenerateConnectionsByDefinitionOrder(
-        Span<Box<Pass>> passes,
+        Span<Box<Pass>>                passes,
         std::vector<std::set<Pass *>> &outPrevs,
         std::vector<std::set<Pass *>> &outSuccs);
 

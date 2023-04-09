@@ -148,11 +148,7 @@ const unsigned char *MaterialPropertySheet::GetValue(int index) const
 const BindlessTextureEntry *MaterialPropertySheet::GetBindlessTextureEntry(MaterialPropertyName name) const
 {
     const int index = layout_->GetPropertyIndexByName(name);
-    if(index < 0)
-    {
-        throw Exception(fmt::format("Unknown material property: {}", name));
-    }
-    return GetBindlessTextureEntry(index);
+    return index >= 0 ? GetBindlessTextureEntry(index) : nullptr;
 }
 
 const BindlessTextureEntry *MaterialPropertySheet::GetBindlessTextureEntry(int index) const

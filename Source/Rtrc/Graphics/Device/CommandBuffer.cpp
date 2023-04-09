@@ -10,6 +10,28 @@
 RTRC_BEGIN
 
 BarrierBatch &BarrierBatch::operator()(
+    RHI::PipelineStageFlag  prevStages,
+    RHI::ResourceAccessFlag prevAccesses,
+    RHI::PipelineStageFlag  succStages,
+    RHI::ResourceAccessFlag succAccesses)
+{
+    if(!G_)
+    {
+        G_ = RHI::GlobalMemoryBarrier{
+            .beforeStages   = RHI::PipelineStage::None,
+            .beforeAccesses = RHI::ResourceAccess::None,
+            .afterStages    = RHI::PipelineStage::None,
+            .afterAccesses  = RHI::ResourceAccess::None
+        };
+    }
+    G_->beforeStages   |= prevStages;
+    G_->beforeAccesses |= prevAccesses;
+    G_->afterStages    |= succStages;
+    G_->afterAccesses  |= succAccesses;
+    return *this;
+}
+
+BarrierBatch &BarrierBatch::operator()(
     const RC<StatefulBuffer> &buffer,
     RHI::PipelineStageFlag    stages,
     RHI::ResourceAccessFlag   accesses)
@@ -694,9 +716,16 @@ void CommandBuffer::BuildTlas(
 void CommandBuffer::ExecuteBarriers(const BarrierBatch &barriers)
 {
     CheckThreadID();
-    if(!barriers.BT_.empty() || !barriers.TT_.empty())
+    if(barriers.G_ || !barriers.BT_.empty() || !barriers.TT_.empty())
     {
-        rhiCommandBuffer_->ExecuteBarriers(barriers.BT_, barriers.TT_);
+        if(barriers.G_)
+        {
+            rhiCommandBuffer_->ExecuteBarriers(*barriers.G_, barriers.BT_, barriers.TT_);
+        }
+        else
+        {
+            rhiCommandBuffer_->ExecuteBarriers(barriers.BT_, barriers.TT_);
+        }
     }
 }
 

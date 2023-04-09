@@ -21,6 +21,8 @@ namespace DeferredLightingPassDetail
 
         rtrc_define(StructuredBuffer, directionalLightBuffer);
         rtrc_uniform(uint,            directionalLightCount);
+
+        rtrc_define(Texture2D, SkyLut);
     };
 
 } // namespace DeferredLightingPassDetail
@@ -35,7 +37,7 @@ DeferredLightingPass::DeferredLightingPass(
     perPassBindingGroupLayout_ =
         device_->CreateBindingGroupLayout<DeferredLightingPassDetail::BindingGroup_DeferredLightingPass>();
 
-    auto lightingMaterial = builtinResources_->GetBuiltinMaterial(BuiltinMaterial::DeferredLighting2);
+    auto lightingMaterial = builtinResources_->GetBuiltinMaterial(BuiltinMaterial::DeferredLighting);
     regularShaderTemplate_ = lightingMaterial->GetPassByIndex(0)->GetShaderTemplate();
     skyShaderTemplate_     = lightingMaterial->GetPassByIndex(1)->GetShaderTemplate();
 
@@ -58,11 +60,12 @@ DeferredLightingPass::RenderGraphOutput DeferredLightingPass::RenderDeferredLigh
     const CachedScenePerCamera &scene,
     RG::RenderGraph            &renderGraph,
     const GBuffers             &gbuffers,
+    RG::TextureResource        *skyLut,
     RG::TextureResource        *renderTarget)
 {
     RenderGraphOutput ret;
 
-    ret.lightingPass = renderGraph.CreatePass("Deferred Lighting");
+    ret.lightingPass = renderGraph.CreatePass("DeferredLighting");
 
     ret.lightingPass->Use(gbuffers.a, RG::PIXEL_SHADER_TEXTURE);
     ret.lightingPass->Use(gbuffers.b, RG::PIXEL_SHADER_TEXTURE);
@@ -74,10 +77,14 @@ DeferredLightingPass::RenderGraphOutput DeferredLightingPass::RenderDeferredLigh
         .accesses = RHI::ResourceAccess::TextureRead | RHI::ResourceAccess::DepthStencilRead
     });
     ret.lightingPass->Use(renderTarget, RG::COLOR_ATTACHMENT_WRITEONLY);
-
-    ret.lightingPass->SetCallback([this, gbuffers, renderTarget, &scene](RG::PassContext &context)
+    if(skyLut)
     {
-        DoDeferredLighting(scene, gbuffers, renderTarget, context);
+        ret.lightingPass->Use(skyLut, RG::PIXEL_SHADER_TEXTURE);
+    }
+
+    ret.lightingPass->SetCallback([this, gbuffers, skyLut, renderTarget, &scene](RG::PassContext &context)
+    {
+        DoDeferredLighting(scene, gbuffers, skyLut, renderTarget, context);
     });
 
     return ret;
@@ -86,6 +93,7 @@ DeferredLightingPass::RenderGraphOutput DeferredLightingPass::RenderDeferredLigh
 void DeferredLightingPass::DoDeferredLighting(
     const CachedScenePerCamera &scene,
     const GBuffers             &rgGBuffers,
+    RG::TextureResource        *skyLut,
     RG::TextureResource        *rgRenderTarget,
     RG::PassContext            &context)
 {
@@ -148,6 +156,16 @@ void DeferredLightingPass::DoDeferredLighting(
     passData.pointLightCount        = static_cast<uint32_t>(pointLightData.size());
     passData.directionalLightBuffer = directionalLightBuffer->GetStructuredSrv(sizeof(DirectionalLightShadingData));
     passData.directionalLightCount  = static_cast<uint32_t>(directionalLightData.size());
+
+    if(skyLut)
+    {
+        passData.SkyLut = skyLut->Get(context);
+    }
+    else
+    {
+        passData.SkyLut = builtinResources_->GetBuiltinTexture(BuiltinTexture::Black2D);
+    }
+
     auto passBindingGroup = device_->CreateBindingGroup(passData, perPassBindingGroupLayout_);
     
     // Render Pass

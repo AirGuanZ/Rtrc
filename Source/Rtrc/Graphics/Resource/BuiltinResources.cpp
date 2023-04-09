@@ -75,9 +75,8 @@ void BuiltinResourceManager::LoadBuiltinMaterials()
 #define LOAD_BUILTIN_MATERIAL(NAME) \
     materials_[std::to_underlying(BuiltinMaterial::NAME)] = \
         materialManager_.GetMaterial("Builtin/" #NAME)
-
+    
     LOAD_BUILTIN_MATERIAL(DeferredLighting);
-    LOAD_BUILTIN_MATERIAL(DeferredLighting2);
     LOAD_BUILTIN_MATERIAL(Atmosphere);
 
 #undef LOAD_BUILTIN_MATERIAL

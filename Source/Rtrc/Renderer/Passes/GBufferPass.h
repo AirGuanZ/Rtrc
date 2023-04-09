@@ -36,7 +36,31 @@ public:
 
 private:
 
+    struct MeshGroup
+    {
+        const Mesh::SharedRenderingData *meshRenderingData = nullptr;
+        uint32_t                         objectDataOffset  = 0;
+        uint32_t                         objectCount       = 0;
+    };
+
+    struct MaterialInstanceGroup
+    {
+        const MaterialInstance::SharedRenderingData *materialRenderingData = nullptr;
+        std::vector<MeshGroup>                       meshGroups;
+    };
+
+    struct MaterialGroup
+    {
+        const Material                    *material          = nullptr;
+        ShaderTemplate                    *shaderTemplate    = nullptr;
+        bool                               supportInstancing = false;
+        int                                gbufferPassIndex  = 0;
+        std::vector<MaterialInstanceGroup> materialInstanceGroups;
+    };
+
     GBuffers AllocateGBuffers(RG::RenderGraph &renderGraph, const Vector2u &rtSize);
+
+    std::vector<MaterialGroup> CollectPipelineGroups(const CachedScenePerCamera &scene) const;
 
     void DoRenderGBuffers(RG::PassContext &passContext, const CachedScenePerCamera &scene, const GBuffers &gbuffers);
 

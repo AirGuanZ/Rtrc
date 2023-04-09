@@ -14,6 +14,30 @@ using Keyword = PooledString<PooledStringTagForKeyword, uint32_t>;
 class KeywordSet;
 class KeywordSetPartialValue;
 
+enum class BuiltinKeyword
+{
+    EnableInstance, // ENABLE_INSTANCE
+    Count
+};
+
+inline const Keyword &GetBuiltinKeyword(BuiltinKeyword k)
+{
+    static const Keyword KEYWORDS[] =
+    {
+        Keyword("ENABLE_INSTANCE")
+    };
+    return KEYWORDS[std::to_underlying(k)];
+}
+
+inline std::string_view GetBuiltinKeywordString(BuiltinKeyword k)
+{
+    static constexpr std::string_view STRINGS[] =
+    {
+        "ENABLE_INSTANCE"
+    };
+    return STRINGS[std::to_underlying(k)];
+}
+
 class KeywordContext
 {
 public:
@@ -40,7 +64,7 @@ class KeywordSet
 public:
 
     using ValueMask = uint32_t;
-    static constexpr int MAX_TOTAL_VALUE_BIT_COUNT = 32;
+    static constexpr int MAX_TOTAL_VALUE_BIT_COUNT = sizeof(ValueMask) * CHAR_BIT;
 
     class PartialValueMask
     {
@@ -64,7 +88,7 @@ public:
         assert(bitCount <= 8);
         records_.push_back({ keyword, bitCount });
         totalBitCount_ += bitCount;
-        assert(totalBitCount_ <= MAX_TOTAL_VALUE_BIT_COUNT && "number of keyword value bits exceeds max limit (32)");
+        assert(totalBitCount_ <= MAX_TOTAL_VALUE_BIT_COUNT && "Number of keyword value bits exceeds max limit (32)");
     }
 
     ValueMask ExtractValueMask(const KeywordContext &valueContext) const

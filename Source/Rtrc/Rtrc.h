@@ -7,8 +7,6 @@
 #include <Rtrc/Graphics/Misc/ShaderBindingTableBuilder.h>
 #include <Rtrc/Graphics/RenderGraph/Executable.h>
 #include <Rtrc/Graphics/Resource/ResourceManager.h>
-#include <Rtrc/Renderer/Atmosphere/AtmosphereRenderer.h>
-#include <Rtrc/Renderer/DeferredRenderer/DeferredRenderer.h>
 #include <Rtrc/Scene/Camera/CameraController.h>
 #include <Rtrc/Utility/Container/RangeSet.h>
 #include <Rtrc/Utility/Filesystem/DirectoryFilter.h>

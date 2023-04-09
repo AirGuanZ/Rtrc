@@ -18,11 +18,11 @@ void Run()
     auto device = Device::CreateGraphicsDevice(window);
 
     ResourceManager resourceManager(device);
-    resourceManager.AddMaterialFiles($rtrc_get_files("Asset/Sample/04.BindlessTexture/*.*"));
+    resourceManager.AddMaterialFiles($rtrc_get_files("Asset/Sample/03.BindlessTexture/*.*"));
 
     // Mesh
 
-    auto mesh = resourceManager.GetMesh("Asset/Sample/04.BindlessTexture/Quad.obj");
+    auto mesh = resourceManager.GetMesh("Asset/Sample/03.BindlessTexture/Quad.obj");
 
     // Pipeline
 
@@ -42,7 +42,7 @@ void Run()
     RC<Texture> textures[4];
     for(int i = 0; i < 3; ++i)
     {
-        const std::string filename = fmt::format("Asset/Sample/04.BindlessTexture/{}.png", i);
+        const std::string filename = fmt::format("Asset/Sample/03.BindlessTexture/{}.png", i);
         textures[i] = device->LoadTexture2D(
             filename, RHI::Format::R8G8B8A8_UNorm,
             RHI::TextureUsage::TransferDst | RHI::TextureUsage::ShaderResource,

@@ -78,15 +78,22 @@ void RenderLoop::RenderThreadEntry()
 
     auto DoWithExceptionHandling = [&]<typename F>(const F & f)
     {
-        try
+        if(config_.handleCrossThreadException)
+        {
+            try
+            {
+                f();
+            }
+            catch(...)
+            {
+                hasException_ = true;
+                exceptionPtr_ = std::current_exception();
+                continueRenderLoop = false;
+            }
+        }
+        else
         {
             f();
-        }
-        catch(...)
-        {
-            hasException_ = true;
-            exceptionPtr_ = std::current_exception();
-            continueRenderLoop = false;
         }
     };
 
@@ -167,7 +174,7 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
     CachedScenePerCamera *cachedScenePerCamera = cachedScene_.GetCachedScenePerCamera(frame.camera.originalId);
     assert(cachedScenePerCamera);
 
-    // Blas building cannot be tracked by render graph. So we need to manually add dependency here.
+    // Blas buffers are not tracked by render graph, so we need to manually add dependency.
     renderGraph->MakeDummyPassIfNull(rgMesh.buildBlasPass, "BuildMeshBlas");
     renderGraph->MakeDummyPassIfNull(rgScene.buildTlasPass, "BuildTlas");
     Connect(rgMesh.buildBlasPass, rgScene.buildTlasPass);
@@ -179,10 +186,11 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
 
     // ============= Atmosphere =============
 
-    atmospherePass_->RenderAtmosphere(
+    atmospherePass_->SetProperties(frame.scene->GetAtmosphere());
+    auto rgAtmosphere = atmospherePass_->RenderAtmosphere(
         *renderGraph, 
-        { 0, -1, 0 }, 
-        10.0f * Vector3f(1),
+        frame.scene->GetSunDirection(), 
+        frame.scene->GetSunColor() * frame.scene->GetSunIntensity(),
         1000.0f,
         frameTimer_.GetDeltaSecondsF(),
         cachedScenePerCamera->GetCachedAtmosphereData());
@@ -190,7 +198,7 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
     // ============= Deferred lighting =============
     
     deferredLightingPass_->RenderDeferredLighting(
-        *cachedScenePerCamera, *renderGraph, gbuffers, framebuffer);
+        *cachedScenePerCamera, *renderGraph, gbuffers, rgAtmosphere.skyLut, framebuffer);
 
     // ============= ImGui =============
 
@@ -200,7 +208,7 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
     // ============= Execution =============
 
     transientConstantBufferAllocator_->Flush();
-
+    
     renderGraph->SetCompleteFence(device_->GetFrameFence());
     renderGraphExecuter_->Execute(renderGraph);
 }

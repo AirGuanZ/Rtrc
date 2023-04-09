@@ -1,9 +1,13 @@
 #pragma once
 
+#include "Atmosphere.hlsl"
 #include "Common/Fullscreen.hlsl"
 #include "Common/GBuffer.hlsl"
 #include "Common/Scene.hlsl"
 #include "Common/Color.hlsl"
+
+#define LIGHTING_MODE_REGULAR 0
+#define LIGHTING_MODE_SKY     1
 
 rtrc_group(Pass, FS)
 {
@@ -16,29 +20,37 @@ rtrc_group(Pass, FS)
     
     rtrc_define(StructuredBuffer<DirectionalLightShadingData>, DirectionalLightBuffer)
     rtrc_uniform(uint, directionalLightCount)
+
+    rtrc_define(Texture2D<float3>, SkyLut)
 };
 
-float3 ComputePointLighting(PointLightShadingData light, float3 worldPos, float3 worldNormal)
+rtrc_sampler(SkyLutSampler, filter = linear, address_u = repeat, address_v = clamp)
+
+float3 ComputePointLighting(Builtin::GBufferPixelValue gpixel, float3 worldPos, PointLightShadingData light)
 {
     float3 surfaceToLight = light.position - worldPos;
-    float3 L = normalize(surfaceToLight);
-    float diffuseFactor = max(0.0, dot(L, worldNormal));
-    float3 diffuse = diffuseFactor * light.color;
-    return diffuse;
+    float distance = length(surfaceToLight);
+    float3 L = surfaceToLight / max(distance, 1e-5);
+    float diffuseFactor = max(0.0, dot(L, gpixel.normal));
+    float distanceFactor = saturate(1 - distance / light.range);
+    distanceFactor *= distanceFactor;
+    return gpixel.albedo * diffuseFactor * distanceFactor * light.color;
 }
 
-float4 FSMainDefault(FullscreenPrimitive::VsToFsWithWorldRay input) : SV_TARGET
+#if LIGHTING_MODE == LIGHTING_MODE_REGULAR
+
+float4 FSMain(FullscreenPrimitive::VsToFsWithWorldRay input) : SV_TARGET
 {
-    Builtin::GBufferPixelValue gbuffer = Builtin::LoadGBufferPixel(input.uv);
+    Builtin::GBufferPixelValue gpixel = Builtin::LoadGBufferPixel(input.uv);
     float3 worldRay = input.ray;
-    float viewSpaceZ = CameraUtils::DeviceZToViewZ(Camera.cameraToClipMatrix, gbuffer.depth);
-    float3 worldPos = viewSpaceZ * worldRay;
+    float viewSpaceZ = CameraUtils::DeviceZToViewZ(Camera.cameraToClipMatrix, gpixel.depth);
+    float3 worldPos = viewSpaceZ * worldRay + Camera.worldPosition;
     
     float3 color = 0;
     for(int i = 0; i < Pass.pointLightCount; ++i)
     {
         PointLightShadingData light = PointLightBuffer[i];
-        color += ComputePointLighting(light, worldPos, gbuffer.normal);
+        color += ComputePointLighting(gpixel, worldPos, light);
     }
     
     color = Tonemap(color);
@@ -46,7 +58,17 @@ float4 FSMainDefault(FullscreenPrimitive::VsToFsWithWorldRay input) : SV_TARGET
     return float4(color, 1);
 }
 
-float4 FSMainSky(FullscreenPrimitive::VsToFsWithWorldRay input) : SV_TARGET
+#elif LIGHTING_MODE == LIGHTING_MODE_SKY
+
+float4 FSMain(FullscreenPrimitive::VsToFsWithWorldRay input) : SV_TARGET
 {
-    return float4(input.uv.x, 0, 0, 0) + float4(0, 1, 1, 0);
+    float3 dir = normalize(input.ray);
+    float2 uv = Atmosphere::ComputeSkyLutTexCoord(dir);
+    float3 color = SkyLut.SampleLevel(SkyLutSampler, uv, 0);
+    color = Tonemap(color);
+    color = pow(color, 1.0 / 2.2);
+    color = Dither01(color, input.uv);
+    return float4(color, 1);
 }
+
+#endif // #if LIGHTING_MODE == ...

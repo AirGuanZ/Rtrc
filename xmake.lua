@@ -83,9 +83,9 @@ target("Rtrc")
     set_kind("static")
     -- Source files
     add_includedirs("Source", { public = true })
-    add_headerfiles("Source/**.h|Rtrc/Graphics/RHI/**.h", "Source/Rtrc/Graphics/RHI/*.h")
+    add_headerfiles("Source/Rtrc/**.h|Graphics/RHI/**.h", "Source/Rtrc/Graphics/RHI/*.h")
     add_headerfiles()
-    add_files("Source/**.cpp|Rtrc/Graphics/RHI/**.cpp", "Source/Rtrc/Graphics/RHI/*.cpp")
+    add_files("Source/Rtrc/**.cpp|Graphics/RHI/**.cpp", "Source/Rtrc/Graphics/RHI/*.cpp")
     -- Source group
     add_filegroups("Rtrc", { rootdir = "Source/Rtrc" })
     -- Vulkan RHI
@@ -116,6 +116,19 @@ target("Rtrc")
     add_deps("tinyobjloader", "sigslot", "imgui", "avir", "cy")
 target_end()
 
+-- Standalone renderer
+
+target("Standalone")
+    set_kind("binary")
+    set_rundir(".")
+    add_headerfiles("Source/Standalone/**.h")
+    add_files("Source/Standalone/**.cpp")
+    add_filegroups("Standalone", { rootdir = "Source/Standalone" })
+    add_deps("Rtrc")
+target_end()
+
+-- Tests
+
 target("Test")
     set_kind("binary")
     set_rundir(".")
@@ -123,6 +136,8 @@ target("Test")
     add_packages("catch2")
     add_deps("Rtrc")
 target_end()
+
+-- Samples
 
 function add_sample(name)
     target(name)
@@ -138,8 +153,6 @@ end
 
 add_sample("01.TexturedQuad")
 add_sample("02.ComputeShader")
-add_sample("03.DeferredShading")
-add_sample("04.BindlessTexture")
-add_sample("05.RayTracingTriangle")
-add_sample("06.PathTracing")
-add_sample("07.Application")
+add_sample("03.BindlessTexture")
+add_sample("04.RayTracingTriangle")
+add_sample("05.PathTracing")

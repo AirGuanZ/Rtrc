@@ -21,7 +21,8 @@ public:
 
     struct Config
     {
-        bool rayTracing = false;
+        bool rayTracing                 = false;
+        bool handleCrossThreadException = true;
     };
     
     RenderLoop(

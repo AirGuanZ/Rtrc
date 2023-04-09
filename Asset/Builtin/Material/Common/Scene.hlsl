@@ -4,6 +4,10 @@
 
 struct CameraConstantBuffer
 {
+    float3   worldPosition;
+    float3   worldFront;
+    float3   worldLeft;
+    float3   worldUp;
     float4x4 worldToCameraMatrix;
     float4x4 cameraToWorldMatrix;
     float4x4 cameraToClipMatrix;
@@ -34,7 +38,7 @@ namespace CameraUtils
     {
         // Let P(row, col) = perspective projection matrix
         // deviceZ = P(2, 2) + P(2, 3) / viewZ
-        return (deviceZ - cameraToClip._22) / cameraToClip._23;
+        return cameraToClip._34 / (deviceZ - cameraToClip._33);
     }
 
 } // namespace namespace CameraUtils

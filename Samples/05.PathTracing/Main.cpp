@@ -132,7 +132,7 @@ void Run()
         false, Device::EnableRayTracing | Device::EnableSwapchainUav);
 
     ResourceManager resourceManager(device);
-    resourceManager.AddMaterialFiles($rtrc_get_files("Asset/Sample/06.PathTracing/*.*"));
+    resourceManager.AddMaterialFiles($rtrc_get_files("Asset/Sample/05.PathTracing/*.*"));
 
     // Scene
 
@@ -147,8 +147,8 @@ void Run()
     }, materialData.data());
     materialBuffer->SetDefaultStructStride(sizeof(SurfaceMaterial));
 
-    auto room = LoadObject(*device, "Asset/Sample/06.PathTracing/Room.obj");
-    auto torus = LoadObject(*device, "Asset/Sample/06.PathTracing/Torus.obj");
+    auto room = LoadObject(*device, "Asset/Sample/05.PathTracing/Room.obj");
+    auto torus = LoadObject(*device, "Asset/Sample/05.PathTracing/Torus.obj");
 
     const std::vector instanceData =
     {

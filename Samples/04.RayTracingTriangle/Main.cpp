@@ -20,7 +20,7 @@ void Run()
         RTRC_DEBUG, false, Device::EnableRayTracing | Device::EnableSwapchainUav);
 
     ResourceManager resourceManager(device);
-    resourceManager.AddMaterialFiles($rtrc_get_files("Asset/Sample/05.RayTracingTriangle/*.*"));
+    resourceManager.AddMaterialFiles($rtrc_get_files("Asset/Sample/04.RayTracingTriangle/*.*"));
 
     // Blas
 

@@ -4,7 +4,7 @@
 RTRC_RENDERER_BEGIN
 
 BlasBuilder::BlasBuilder(ObserverPtr<Device> device)
-    : device_(std::move(device))
+    : device_(std::move(device)), needBarrier_(false)
 {
     
 }
@@ -13,7 +13,6 @@ void BlasBuilder::Build(
     CommandBuffer                                 &commandBuffer,
     const Mesh::SharedRenderingData               &renderingData,
     RHI::RayTracingAccelerationStructureBuildFlags flags,
-    RHI::PipelineStageFlag                         nextStages,
     RC<Blas>                                      &blas)
 {
     assert(!blas);
@@ -47,17 +46,7 @@ void BlasBuilder::Build(
     blas = device_->CreateBlas();
     commandBuffer.BuildBlas(blas, geometryDesc, prebuildInfo, nullptr);
     
-    if(nextStages != RHI::PipelineStage::None)
-    {
-        bufferBarriers_.push_back(RHI::BufferTransitionBarrier
-        {
-            .buffer         = blas->GetBuffer()->GetFullBufferRHIObject(),
-            .beforeStages   = RHI::PipelineStage::BuildAS,
-            .beforeAccesses = RHI::ResourceAccess::WriteAS,
-            .afterStages    = nextStages,
-            .afterAccesses  = RHI::ResourceAccess::ReadAS
-        });
-    }
+    needBarrier_ = true;
 }
 
 void BlasBuilder::ExtractVertexProperties(
@@ -123,10 +112,14 @@ void BlasBuilder::ExtractVertexProperties(
 
 void BlasBuilder::Finalize(CommandBuffer &commandBuffer)
 {
-    if(!bufferBarriers_.empty())
+    if(needBarrier_)
     {
-        commandBuffer.ExecuteBarriers(BarrierBatch().Add(std::move(bufferBarriers_)));
-        bufferBarriers_.clear();
+        commandBuffer.ExecuteBarrier(
+            RHI::PipelineStage::BuildAS, 
+            RHI::ResourceAccess::WriteAS,
+            RHI::PipelineStage::All,
+            RHI::ResourceAccess::ReadAS | RHI::ResourceAccess::ReadForBuildAS);
+        needBarrier_ = false;
     }
 }
 

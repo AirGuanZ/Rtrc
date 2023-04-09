@@ -10,8 +10,11 @@ public:
 
     struct CachedMaterial
     {
-        UniqueId                                     materialId = {};
-        const MaterialInstance::SharedRenderingData *material = nullptr;
+        UniqueId        materialId = {};
+        const Material *material   = nullptr;
+
+        UniqueId                                     materialRenderingDataId = {};
+        const MaterialInstance::SharedRenderingData *materialRenderingData   = nullptr;
         
         const BindlessTextureEntry *albedoTextureEntry;
     };

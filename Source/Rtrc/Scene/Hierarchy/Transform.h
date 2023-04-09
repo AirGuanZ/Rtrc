@@ -12,13 +12,13 @@ public:
     Transform();
     explicit Transform(const Matrix4x4f &m);
 
-    void SetTranslation(const Vector3f &position);
+    Transform &SetTranslation(const Vector3f &position);
     const Vector3f &GetTranslation() const;
 
-    void SetRotation(const Quaternion &rotation);
+    Transform &SetRotation(const Quaternion &rotation);
     const Quaternion &GetRotation() const;
 
-    void SetScale(const Vector3f &scale);
+    Transform &SetScale(const Vector3f &scale);
     const Vector3f &GetScale() const;
 
     Matrix4x4f ToMatrix() const;
@@ -58,9 +58,10 @@ inline Transform::Transform(const Matrix4x4f &m)
     rotate_ = Quaternion::FromMatrix(Matrix3x3f::FromCols(ex / scale_.x, ey / scale_.y, ez / scale_.z));
 }
 
-inline void Transform::SetTranslation(const Vector3f &position)
+inline Transform &Transform::SetTranslation(const Vector3f &position)
 {
     translate_ = position;
+    return *this;
 }
 
 inline const Vector3f &Transform::GetTranslation() const
@@ -68,9 +69,10 @@ inline const Vector3f &Transform::GetTranslation() const
     return translate_;
 }
 
-inline void Transform::SetRotation(const Quaternion &rotation)
+inline Transform &Transform::SetRotation(const Quaternion &rotation)
 {
     rotate_ = rotation;
+    return *this;
 }
 
 inline const Quaternion &Transform::GetRotation() const
@@ -78,9 +80,10 @@ inline const Quaternion &Transform::GetRotation() const
     return rotate_;
 }
 
-inline void Transform::SetScale(const Vector3f &scale)
+inline Transform &Transform::SetScale(const Vector3f &scale)
 {
     scale_ = scale;
+    return *this;
 }
 
 inline const Vector3f &Transform::GetScale() const

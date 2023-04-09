@@ -17,7 +17,7 @@ void FreeCameraController::SetRotateSpeed(float speed)
     rotateSpeed_ = speed;
 }
 
-bool FreeCameraController::UpdateCamera(const WindowInput &input, const Timer &timer) const
+bool FreeCameraController::UpdateCamera(const WindowInput &input, const Timer &timer)
 {
     if(!camera_)
     {

@@ -6,7 +6,7 @@ void CachedMaterialManager::UpdateCachedMaterialData(const RenderCommand_RenderS
 {
     struct MaterialRecord
     {
-        const MaterialInstance::SharedRenderingData *material = nullptr;
+        const MaterialInstance::SharedRenderingData *materialRenderingData = nullptr;
         const BindlessTextureEntry *albedoTextureIndex = nullptr;
 
         auto operator<=>(const MaterialRecord &rhs) const = default;
@@ -26,24 +26,27 @@ void CachedMaterialManager::UpdateCachedMaterialData(const RenderCommand_RenderS
     auto it = cachedMaterials_.begin();
     for(const MaterialRecord &materialRecord : materialRecords)
     {
-        if(it == cachedMaterials_.end() || it->get()->materialId > materialRecord.material->GetUniqueID())
+        if(it == cachedMaterials_.end() ||
+           it->get()->materialRenderingDataId > materialRecord.materialRenderingData->GetUniqueID())
         {
             auto &data = *cachedMaterials_.emplace(it, MakeBox<CachedMaterial>());
-            data->materialId = materialRecord.material->GetUniqueID();
-            data->material = materialRecord.material;
-            data->albedoTextureEntry = materialRecord.material->GetPropertySheet().GetBindlessTextureEntry(
-                RTRC_MATERIAL_PROPERTY_NAME(AlbedoTextureIndex));
+            data->material                = materialRecord.materialRenderingData->GetMaterial().get();
+            data->materialId              = data->material->GetUniqueID();
+            data->materialRenderingDataId = materialRecord.materialRenderingData->GetUniqueID();
+            data->materialRenderingData   = materialRecord.materialRenderingData;
+            data->albedoTextureEntry      = materialRecord.materialRenderingData->GetPropertySheet()
+                                              .GetBindlessTextureEntry(RTRC_MATERIAL_PROPERTY_NAME(AlbedoTextureIndex));
             it = cachedMaterials_.end();
             continue;
         }
 
-        if(it->get()->materialId == materialRecord.material->GetUniqueID())
+        if(it->get()->materialRenderingDataId == materialRecord.materialRenderingData->GetUniqueID())
         {
             ++it;
             continue;
         }
 
-        assert(it->get()->materialId < materialRecord.material->GetUniqueID());
+        assert(it->get()->materialRenderingDataId < materialRecord.materialRenderingData->GetUniqueID());
         it = cachedMaterials_.erase(it);
     }
 
@@ -60,11 +63,11 @@ const CachedMaterialManager::CachedMaterial *CachedMaterialManager::FindCachedMa
     {
         const size_t mid = (beg + end) / 2;
         CachedMaterial *data = linearCachedMaterials_[mid];
-        if(data->materialId == materialId)
+        if(data->materialRenderingDataId == materialId)
         {
             return linearCachedMaterials_[mid];
         }
-        if(data->materialId < materialId)
+        if(data->materialRenderingDataId < materialId)
         {
             beg = mid;
         }

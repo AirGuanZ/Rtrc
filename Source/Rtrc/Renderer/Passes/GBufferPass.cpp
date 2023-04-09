@@ -1,3 +1,5 @@
+#include <ranges>
+
 #include <Rtrc/Renderer/Common.h>
 #include <Rtrc/Renderer/Passes/GBufferPass.h>
 #include <Rtrc/Utility/Enumerate.h>
@@ -9,7 +11,8 @@ namespace GBufferPassDetail
 
     rtrc_group(BindingGroup_GBufferPass)
     {
-        rtrc_define(ConstantBuffer<CameraConstantBuffer>, camera);
+        rtrc_define(ConstantBuffer<CameraConstantBuffer>, Camera);
+        rtrc_define(StructuredBuffer,                     PerObjectDataBuffer);
     };
 
 } // namespace GBufferPassDetail
@@ -97,6 +100,62 @@ GBufferPass::GBuffers GBufferPass::AllocateGBuffers(RG::RenderGraph &renderGraph
     return ret;
 }
 
+std::vector<GBufferPass::MaterialGroup> GBufferPass::CollectPipelineGroups(const CachedScenePerCamera &scene) const
+{
+    std::vector<MaterialGroup> materialGroups;
+
+    const Material                              *lastMaterial              = nullptr;
+    const MaterialInstance::SharedRenderingData *lastMaterialRenderingData = nullptr;
+    const Mesh::SharedRenderingData             *lastMeshRenderingData     = nullptr;
+
+    for(auto &&[recordIndex, record] : Enumerate(scene.GetStaticMeshes()))
+    {
+        if(record->gbufferPassIndex < 0)
+            continue;
+
+        if(record->cachedMaterial->material != lastMaterial)
+        {
+            auto &group = materialGroups.emplace_back();
+            group.material          = record->cachedMaterial->material;
+            group.shaderTemplate    = group.material->GetPasses()[record->gbufferPassIndex]->GetShaderTemplate().get();
+            group.supportInstancing = group.shaderTemplate->HasBuiltinKeyword(BuiltinKeyword::EnableInstance);
+            group.gbufferPassIndex  = record->gbufferPassIndex;
+            lastMaterial = group.material;
+            lastMaterialRenderingData = nullptr;
+        }
+
+        MaterialGroup &materialGroup = materialGroups.back();
+        assert(materialGroup.material == record->cachedMaterial->material);
+
+        if(record->cachedMaterial->materialRenderingData != lastMaterialRenderingData)
+        {
+            auto &group = materialGroup.materialInstanceGroups.emplace_back();
+            group.materialRenderingData = record->cachedMaterial->materialRenderingData;
+            lastMaterialRenderingData = group.materialRenderingData;
+            lastMeshRenderingData = nullptr;
+        }
+
+        MaterialInstanceGroup &materialInstanceGroup = materialGroup.materialInstanceGroups.back();
+        assert(materialInstanceGroup.materialRenderingData == record->cachedMaterial->materialRenderingData);
+
+        if(record->cachedMesh->meshRenderingData != lastMeshRenderingData)
+        {
+            auto &group = materialInstanceGroup.meshGroups.emplace_back();
+            group.meshRenderingData = record->cachedMesh->meshRenderingData;
+            group.objectDataOffset  = static_cast<uint32_t>(recordIndex);
+            group.objectCount       = 0;
+            lastMeshRenderingData = group.meshRenderingData;
+        }
+
+        MeshGroup &meshGroup = materialInstanceGroup.meshGroups.back();
+        assert(meshGroup.meshRenderingData == record->cachedMesh->meshRenderingData);
+        assert(meshGroup.objectDataOffset + meshGroup.objectCount == recordIndex);
+        ++meshGroup.objectCount;
+    }
+
+    return materialGroups;
+}
+
 void GBufferPass::DoRenderGBuffers(
     RG::PassContext            &passContext,
     const CachedScenePerCamera &scene,
@@ -142,91 +201,36 @@ void GBufferPass::DoRenderGBuffers(
             .clearValue       = { 1, 0 }
         });
     RTRC_SCOPE_EXIT{ commandBuffer.EndRenderPass(); };
-    
-    // Per-pass binding group
-
-    RC<BindingGroup> perPassBindingGroup;
-    {
-        GBufferPassDetail::BindingGroup_GBufferPass passData;
-        passData.camera = scene.GetCameraCBuffer();
-        perPassBindingGroup = device_->CreateBindingGroup(passData, perPassBindingGroupLayout_);
-    }
 
     // Sort static meshes by material
 
-    std::vector<const CachedScenePerCamera::StaticMeshRecord *> meshes;
-    std::ranges::copy_if(
-        scene.GetStaticMeshes(), std::back_inserter(meshes),
-        [](const CachedScenePerCamera::StaticMeshRecord *mesh)
-        {
-            return mesh->gbufferPassIndex >= 0;
-        });
-    std::ranges::sort(meshes, [](const auto &a, const auto &b)
+    struct MeshRecord
     {
-        return std::make_tuple(a->cachedMaterial, a->cachedMesh) < std::make_tuple(a->cachedMaterial, b->cachedMesh);
-    });
-
-    // Keywords
-
-    KeywordContext keywords;
-
-    // Collect pipeline objects
-
-    struct RenderOperation
-    {
-        RC<GraphicsPipeline>  pipeline;
-        MaterialPassInstance *materialPassInstance;
-        const Shader         *shader;
+        const CachedScenePerCamera::StaticMeshRecord *mesh;
+        uint32_t perObjectDataOffset;
     };
 
-    std::vector<RenderOperation> operations(meshes.size());
+    std::vector<MeshRecord> meshes;
+    for(auto &&[index, record] : Enumerate(scene.GetStaticMeshes()))
     {
-        const MaterialInstance::SharedRenderingData *lastMaterial = nullptr;
-        for(auto &&[index, record] : Enumerate(meshes))
+        if(record->gbufferPassIndex >= 0)
         {
-            const MaterialInstance::SharedRenderingData *materialInst = record->cachedMaterial->material;
-            MaterialPassInstance *matPassInst = materialInst->GetPassInstance(record->gbufferPassIndex);
-            operations[index].materialPassInstance = matPassInst;
-            operations[index].shader = matPassInst->GetShader(keywords).get();
-            if(materialInst != lastMaterial)
-            {
-                const RC<Shader> shader = matPassInst->GetShader(keywords);
-                RC<GraphicsPipeline> pipeline = gbufferPipelineCache_.GetGraphicsPipeline(
-                {
-                    .shader            = shader,
-                    .meshLayout        = record->cachedMesh->mesh->GetLayout(),
-                    .primitiveTopology = RHI::PrimitiveTopology::TriangleList,
-                    .fillMode          = RHI::FillMode::Fill,
-                    .cullMode          = RHI::CullMode::CullBack,
-                    .frontFaceMode     = RHI::FrontFaceMode::CounterClockwise,
-                    .enableDepthTest   = true,
-                    .enableDepthWrite  = true,
-                    .depthCompareOp    = RHI::CompareOp::Less,
-                    .enableStencilTest = true,
-                    .stencilReadMask   = 0xff,
-                    .stencilWriteMask  = std::to_underlying(StencilBit::Regular),
-                    .frontStencil      = GraphicsPipeline::StencilOps
-                    {
-                        .depthFailOp = RHI::StencilOp::Keep,
-                        .failOp      = RHI::StencilOp::Keep,
-                        .passOp      = RHI::StencilOp::Replace,
-                        .compareOp   = RHI::CompareOp::Always
-                    },
-                    .colorAttachmentFormats =
-                    {
-                        gbufferA->GetFormat(),
-                        gbufferB->GetFormat(),
-                        gbufferC->GetFormat()
-                    },
-                    .depthStencilFormat = gbuffers.depth->GetFormat()
-                });
-
-                operations[index].pipeline = std::move(pipeline);
-                lastMaterial = materialInst;
-            }
+            meshes.push_back({ record, static_cast<uint32_t>(index) });
         }
     }
-    gbufferPipelineCache_.CommitChanges();
+    assert(std::ranges::is_sorted(meshes, [](const MeshRecord &lhs, const MeshRecord &rhs)
+    {
+        return std::make_tuple(
+                    lhs.mesh->cachedMaterial->materialId,
+                    lhs.mesh->cachedMaterial,
+                    lhs.mesh->cachedMesh->meshRenderingData->GetLayout(),
+                    lhs.mesh->cachedMesh) <
+               std::make_tuple(
+                    rhs.mesh->cachedMaterial->materialId,
+                    rhs.mesh->cachedMaterial,
+                    rhs.mesh->cachedMesh->meshRenderingData->GetLayout(),
+                    rhs.mesh->cachedMesh);
+    }));
 
     // Dynamic pipeline states
 
@@ -234,54 +238,142 @@ void GBufferPass::DoRenderGBuffers(
     commandBuffer.SetViewports(gbufferA->GetViewport());
     commandBuffer.SetScissors(gbufferA->GetScissor());
 
-    // Render
-    
-    const Mesh::SharedRenderingData *lastMesh = nullptr;
-    for(auto &&[recordIndex, record] : Enumerate(meshes))
+    // Per-pass binding group
+
+    RC<BindingGroup> perPassBindingGroup;
     {
-        // Pipeline
+        GBufferPassDetail::BindingGroup_GBufferPass passData;
+        passData.Camera = scene.GetCameraCBuffer();
+        passData.PerObjectDataBuffer = scene.GetStaticMeshPerObjectData();
+        perPassBindingGroup = device_->CreateBindingGroup(passData, perPassBindingGroupLayout_);
+    }
+    
+    // Render
 
-        if(operations[recordIndex].pipeline)
+    KeywordContext keywords;
+
+    const std::vector<MaterialGroup> materialGroups = CollectPipelineGroups(scene);
+
+    RC<GraphicsPipeline> lastPipeline;
+    for(const MaterialGroup &materialGroup : materialGroups)
+    {
+        RC<GraphicsPipeline> pipelineInstanceOn, pipelineInstanceOff;
+        const MeshLayout *lastMeshLayout = nullptr;
+
+        for(const MaterialInstanceGroup &materialInstanceGroup : materialGroup.materialInstanceGroups)
         {
-            commandBuffer.BindGraphicsPipeline(operations[recordIndex].pipeline);
-            lastMesh = nullptr;
-        }
+            auto materialRenderingData = materialInstanceGroup.materialRenderingData;
+            auto materialPassInstance = materialRenderingData->GetPassInstance(materialGroup.gbufferPassIndex);
+            bool shouldBindMaterialProperties = true;
 
-        // Material
+            for(const MeshGroup &meshGroup : materialInstanceGroup.meshGroups)
+            {
+                BindMesh(commandBuffer, *meshGroup.meshRenderingData);
 
-        MaterialPassInstance *matPassInst = operations[recordIndex].materialPassInstance;
-        BindMaterialProperties(*matPassInst, keywords, commandBuffer, true);
+                const MeshLayout *meshLayout = meshGroup.meshRenderingData->GetLayout();
+                if(meshLayout != lastMeshLayout)
+                {
+                    pipelineInstanceOn = {};
+                    pipelineInstanceOff = {};
+                    lastMeshLayout = meshLayout;
+                }
 
-        // Per-pass/object
+                const bool enableInstancing = materialGroup.supportInstancing && meshGroup.objectCount > 0;
+                keywords.Set(GetBuiltinKeyword(BuiltinKeyword::EnableInstance), enableInstancing ? 1 : 0);
+                RC<Shader> shader = materialGroup.shaderTemplate->GetShader(keywords);
+                RC<GraphicsPipeline> &pipeline = enableInstancing ? pipelineInstanceOn : pipelineInstanceOff;
 
-        const Shader *shader = operations[recordIndex].shader;
-        if(int index = shader->GetBuiltinBindingGroupIndex(ShaderInfo::BuiltinBindingGroup::Pass); index >= 0)
-        {
-            commandBuffer.BindGraphicsGroup(index, perPassBindingGroup);
-        }
-        if(int index = shader->GetBuiltinBindingGroupIndex(ShaderInfo::BuiltinBindingGroup::Object); index >= 0)
-        {
-            commandBuffer.BindGraphicsGroup(index, record->perObjectBindingGroup);
-        }
+                if(!pipeline)
+                {
+                    pipeline = gbufferPipelineCache_.GetGraphicsPipeline(
+            {
+                        .shader            = shader,
+                        .meshLayout        = meshLayout,
+                        .primitiveTopology = RHI::PrimitiveTopology::TriangleList,
+                        .fillMode          = RHI::FillMode::Fill,
+                        .cullMode          = RHI::CullMode::CullBack,
+                        .frontFaceMode     = RHI::FrontFaceMode::CounterClockwise,
+                        .enableDepthTest   = true,
+                        .enableDepthWrite  = true,
+                        .depthCompareOp    = RHI::CompareOp::Less,
+                        .enableStencilTest = true,
+                        .stencilReadMask   = 0xff,
+                        .stencilWriteMask  = std::to_underlying(StencilBit::Regular),
+                        .frontStencil      = GraphicsPipeline::StencilOps
+                        {
+                            .depthFailOp = RHI::StencilOp::Keep,
+                            .failOp      = RHI::StencilOp::Keep,
+                            .passOp      = RHI::StencilOp::Replace,
+                            .compareOp   = RHI::CompareOp::Always
+                        },
+                        .colorAttachmentFormats =
+                        {
+                            gbufferA->GetFormat(),
+                            gbufferB->GetFormat(),
+                            gbufferC->GetFormat()
+                        },
+                        .depthStencilFormat = gbuffers.depth->GetFormat()
+                    });
+                }
 
-        // Mesh
+                if(pipeline != lastPipeline)
+                {
+                    lastPipeline = pipeline;
+                    shouldBindMaterialProperties = true;
+                    commandBuffer.BindGraphicsPipeline(pipeline);
 
-        const Mesh::SharedRenderingData *mesh = record->cachedMesh->mesh;
-        if(mesh != lastMesh)
-        {
-            BindMesh(commandBuffer, *mesh);
-            lastMesh = mesh;
-        }
+                    const int passBindingGroupIndex = shader->GetBuiltinBindingGroupIndex(
+                        ShaderBindingLayoutInfo::BuiltinBindingGroup::Pass);
+                    if(passBindingGroupIndex >= 0)
+                    {
+                        commandBuffer.BindGraphicsGroup(passBindingGroupIndex, perPassBindingGroup);
+                    }
+                }
 
-        // Draw
+                if(shouldBindMaterialProperties)
+                {
+                    BindMaterialProperties(*materialPassInstance, keywords, commandBuffer, true);
+                }
 
-        if(mesh->GetIndexCount() > 0)
-        {
-            commandBuffer.DrawIndexed(mesh->GetIndexCount(), 1, 0, 0, 0);
-        }
-        else
-        {
-            commandBuffer.Draw(mesh->GetVertexCount(), 1, 0, 0);
+                if(enableInstancing)
+                {
+                    const uint32_t perObjectDataOffset = meshGroup.objectDataOffset;
+                    commandBuffer.SetGraphicsPushConstants(perObjectDataOffset);
+                    if(meshGroup.meshRenderingData->GetIndexCount() > 0)
+                    {
+                        commandBuffer.DrawIndexed(
+                            meshGroup.meshRenderingData->GetIndexCount(), meshGroup.objectCount, 0, 0, 0);
+                    }
+                    else
+                    {
+                        commandBuffer.Draw(
+                            meshGroup.meshRenderingData->GetVertexCount(), meshGroup.objectCount, 0, 0);
+                    }
+                }
+                else
+                {
+                    if(meshGroup.meshRenderingData->GetIndexCount() > 0)
+                    {
+                        for(uint32_t i = 0; i < meshGroup.objectCount; ++i)
+                        {
+                            const uint32_t perObjectDataOffset = meshGroup.objectDataOffset + i;
+                            commandBuffer.SetGraphicsPushConstants(perObjectDataOffset);
+                            commandBuffer.DrawIndexed(
+                                meshGroup.meshRenderingData->GetIndexCount(), 1, 0, 0, 0);
+                        }
+                    }
+                    else
+                    {
+                        for(uint32_t i = 0; i < meshGroup.objectCount; ++i)
+                        {
+                            const uint32_t perObjectDataOffset = meshGroup.objectDataOffset + i;
+                            commandBuffer.SetGraphicsPushConstants(perObjectDataOffset);
+                            commandBuffer.Draw(
+                                meshGroup.meshRenderingData->GetVertexCount(), 1, 0, 0);
+                        }
+                    }
+                }
+            }
         }
     }
 }

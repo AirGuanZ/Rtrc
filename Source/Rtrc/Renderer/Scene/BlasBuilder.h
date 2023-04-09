@@ -21,7 +21,6 @@ public:
         CommandBuffer                                 &commandBuffer,
         const Mesh::SharedRenderingData               &renderingData,
         RHI::RayTracingAccelerationStructureBuildFlags flags,
-        RHI::PipelineStageFlag                         nextStages,
         RC<Blas>                                      &blas);
 
     void Finalize(CommandBuffer &commandBuffer);
@@ -36,8 +35,8 @@ private:
         RHI::BufferDeviceAddress        *indexData,
         uint32_t                        *vertexStride);
 
-    ObserverPtr<Device>                       device_;
-    std::vector<RHI::BufferTransitionBarrier> bufferBarriers_;
+    ObserverPtr<Device> device_;
+    bool                needBarrier_;
 };
 
 RTRC_RENDERER_END

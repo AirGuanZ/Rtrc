@@ -47,6 +47,12 @@ public:
     }
 
     BarrierBatch &operator()(
+        RHI::PipelineStageFlag  prevStages,
+        RHI::ResourceAccessFlag prevAccesses,
+        RHI::PipelineStageFlag  succStages,
+        RHI::ResourceAccessFlag succAccesses);
+
+    BarrierBatch &operator()(
         const RC<StatefulBuffer> &buffer,
         RHI::PipelineStageFlag    stages,
         RHI::ResourceAccessFlag   accesses);
@@ -107,7 +113,8 @@ private:
 
     friend class CommandBuffer;
 
-    std::vector<RHI::BufferTransitionBarrier> BT_;
+    std::optional<RHI::GlobalMemoryBarrier>    G_;
+    std::vector<RHI::BufferTransitionBarrier>  BT_;
     std::vector<RHI::TextureTransitionBarrier> TT_;
 };
 
@@ -238,6 +245,12 @@ public:
         const RC<SubBuffer>                   &scratchBuffer);
 
     void ExecuteBarriers(const BarrierBatch &barriers);
+
+    void ExecuteBarrier(
+        RHI::PipelineStageFlag  prevStages,
+        RHI::ResourceAccessFlag prevAccesses,
+        RHI::PipelineStageFlag  succStages,
+        RHI::ResourceAccessFlag succAccesses);
     void ExecuteBarrier(
         const RC<StatefulBuffer> &buffer,
         RHI::PipelineStageFlag    stages,
@@ -362,6 +375,15 @@ template<typename T> requires std::is_trivially_copyable_v<T>
 void CommandBuffer::SetComputePushConstants(const T &data)
 {
     this->SetComputePushConstants(&data, sizeof(data));
+}
+
+inline void CommandBuffer::ExecuteBarrier(
+    RHI::PipelineStageFlag  prevStages,
+    RHI::ResourceAccessFlag prevAccesses,
+    RHI::PipelineStageFlag  succStages,
+    RHI::ResourceAccessFlag succAccesses)
+{
+    this->ExecuteBarriers(BarrierBatch(prevStages, prevAccesses, succStages, succAccesses));
 }
 
 inline void CommandBuffer::ExecuteBarrier(

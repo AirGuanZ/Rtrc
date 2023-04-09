@@ -23,7 +23,6 @@ enum class BuiltinMesh
 enum class BuiltinMaterial
 {
     DeferredLighting,
-    DeferredLighting2,
     Atmosphere,
     Count
 };

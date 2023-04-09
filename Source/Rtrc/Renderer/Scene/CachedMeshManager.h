@@ -17,7 +17,7 @@ public:
     struct CachedMesh
     {
         UniqueId                         meshId = {};
-        const Mesh::SharedRenderingData *mesh = nullptr;
+        const Mesh::SharedRenderingData *meshRenderingData = nullptr;
 
         float               buildBlasSortKey = -1;
         RC<Blas>            blas;

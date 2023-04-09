@@ -45,7 +45,7 @@ MaterialPassPropertyLayout::MaterialPassPropertyLayout(const MaterialPropertyHos
         }
     }
 
-    bindingGroupIndex_ = shader.GetBindingGroupIndexByName("Material");
+    bindingGroupIndex_ = shader.GetBuiltinBindingGroupIndex(ShaderBindingLayoutInfo::BuiltinBindingGroup::Material);
     if(bindingGroupIndex_ >= 0)
     {
         bindingGroupLayout_ = shader.GetBindingGroupLayoutByIndex(bindingGroupIndex_);

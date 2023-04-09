@@ -15,7 +15,7 @@ public:
     void SetRotateSpeed(float speed);
 
     // Returns true when actually updated
-    bool UpdateCamera(const WindowInput &input, const Timer &timer) const;
+    bool UpdateCamera(const WindowInput &input, const Timer &timer);
 
 private:
 

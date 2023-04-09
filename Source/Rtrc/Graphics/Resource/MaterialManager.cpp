@@ -206,7 +206,7 @@ namespace MaterialDetail
         return true;
     }
 
-    void ParseKeywords(std::string &source, std::vector<std::string> &keywords)
+    void ParseKeywords(std::string &source, std::set<std::string, std::less<>> &keywords)
     {
         assert(keywords.empty());
         size_t beginPos = 0;
@@ -229,7 +229,7 @@ namespace MaterialDetail
             ShaderTokenStream tokens(s, pos + KEYWORD.size());
             if(ShaderTokenStream::IsIdentifier(tokens.GetCurrentToken()))
             {
-                keywords.push_back(tokens.GetCurrentToken());
+                keywords.insert(tokens.GetCurrentToken());
                 for(size_t i = pos; i < tokens.GetCurrentPosition(); ++i)
                 {
                     if(source[i] != '\n')
@@ -626,7 +626,7 @@ RC<ShaderTemplate> MaterialManager::CreateShaderTemplate(std::string_view name)
     }
     source = source.substr(0, fileRef.endPos);
 
-    std::vector<std::string> keywordStrings;
+    std::set<std::string, std::less<>> keywordStrings;
     KeywordSet keywordSet;
     MaterialDetail::ParseKeywords(source, keywordStrings);
     for(auto &s : keywordStrings)
@@ -635,12 +635,20 @@ RC<ShaderTemplate> MaterialManager::CreateShaderTemplate(std::string_view name)
     }
     const int totalKeywordBitCount = keywordSet.GetTotalBitCount();
 
+    std::bitset<EnumCount<BuiltinKeyword>> builtinKeywordMask;
+    for(std::underlying_type_t<BuiltinKeyword> i = 0; i < EnumCount<BuiltinKeyword>; ++i)
+    {
+        if(keywordStrings.contains(GetBuiltinKeywordString(static_cast<BuiltinKeyword>(i))))
+            builtinKeywordMask.set(i);
+    }
+
     auto shaderTemplate = MakeRC<ShaderTemplate>();
-    shaderTemplate->debug_           = debug_;
-    shaderTemplate->keywordSet_      = std::move(keywordSet);
-    shaderTemplate->source_.source   = std::move(source);
-    shaderTemplate->source_.filename = filenames_[fileRef.filenameIndex];
-    shaderTemplate->shaderCompiler_  = &shaderCompiler_;
+    shaderTemplate->builtinKeywordMask_ = builtinKeywordMask;
+    shaderTemplate->debug_              = debug_;
+    shaderTemplate->keywordSet_         = std::move(keywordSet);
+    shaderTemplate->source_.source      = std::move(source);
+    shaderTemplate->source_.filename    = filenames_[fileRef.filenameIndex];
+    shaderTemplate->shaderCompiler_     = &shaderCompiler_;
     shaderTemplate->compiledShaders_.resize(1 << totalKeywordBitCount);
 
     return shaderTemplate;
