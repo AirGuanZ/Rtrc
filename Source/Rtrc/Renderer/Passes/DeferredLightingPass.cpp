@@ -113,7 +113,12 @@ void DeferredLightingPass::DoDeferredLighting(
             auto &data = pointLightData.emplace_back();
             data.position = light->GetPosition();
             data.color = light->GetIntensity() * light->GetColor();
-            data.range = light->GetRange();
+
+            // distFade = saturate((distEnd - dist) / (distEnd - distBegin))
+            //          = saturate(-dist/(distEnd-distBegin) + distEnd/(distEnd-distBegin))
+            const float deltaDist = std::max(light->GetDistanceFadeEnd() - light->GetDistanceFadeBegin(), 1e-5f);
+            data.distFadeScale = -1.0f / deltaDist;
+            data.distFadeBias = light->GetDistanceFadeEnd() / deltaDist;
         }
         else if(light->GetType() == Light::Type::Directional)
         {
@@ -123,8 +128,9 @@ void DeferredLightingPass::DoDeferredLighting(
         }
         else
         {
-            LogWarningUnformatted(
-                "DeferredLightPass: unknown light type. Only point/directional lights are supported");
+            LogWarning(
+                "DeferredLightPass: unsupported light type ({}). Only point/directional lights are supported",
+                std::to_underlying(light->GetType()));
         }
     }
 

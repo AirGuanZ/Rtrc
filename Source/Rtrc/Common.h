@@ -217,7 +217,7 @@ void LogInfo(fmt::format_string<Args...> fmtStr, Args&&...args)
 }
 
 template<typename...Args>
-void LogWarn(fmt::format_string<Args...> fmtStr, Args&&...args)
+void LogWarning(fmt::format_string<Args...> fmtStr, Args&&...args)
 {
     Rtrc::LogWarningUnformatted(fmt::format(fmtStr, std::forward<Args>(args)...));
 }
@@ -243,7 +243,7 @@ void LogInfo(const T &msg)
 template<typename T>
 void LogWarn(const T &msg)
 {
-    Rtrc::LogWarn("{}", msg);
+    Rtrc::LogWarning("{}", msg);
 }
 
 template<typename T>

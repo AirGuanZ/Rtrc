@@ -33,9 +33,9 @@ void Application::Run(const Config &config)
     window_.SetFocus();
     RTRC_SCOPE_EXIT{ window_.GetInput().LockCursor(false); };
 
-    imgui_                 = MakeBox<ImGuiInstance>(device_, window_);
-    resourceManager_       = MakeBox<ResourceManager>(device_);
-    bindlessTextureManager = MakeBox<BindlessTextureManager>(device_);
+    imgui_                  = MakeBox<ImGuiInstance>(device_, window_);
+    resourceManager_        = MakeBox<ResourceManager>(device_);
+    bindlessTextureManager_ = MakeBox<BindlessTextureManager>(device_);
 
     activeScene_ = MakeBox<Scene>();
     
@@ -43,7 +43,7 @@ void Application::Run(const Config &config)
     {
         .device                 = device_.get(),
         .resourceManager        = resourceManager_.get(),
-        .bindlessTextureManager = bindlessTextureManager.get(),
+        .bindlessTextureManager = bindlessTextureManager_.get(),
         .activeScene            = activeScene_.get(),
         .activeCamera           = &activeCamera_
     };
@@ -53,7 +53,7 @@ void Application::Run(const Config &config)
     renderLoopConfig.rayTracing = config.rayTracing;
     renderLoopConfig.handleCrossThreadException = config.handleCrossThreadException;
     renderLoop_ = MakeBox<RenderLoop>(
-        renderLoopConfig, device_, resourceManager_->GetBuiltinResources(), bindlessTextureManager);
+        renderLoopConfig, device_, resourceManager_->GetBuiltinResources(), bindlessTextureManager_);
 
     RTRC_SCOPE_EXIT{ renderLoop_->AddCommand(Renderer::RenderCommand_Exit{}); };
     UpdateLoop();
@@ -99,6 +99,11 @@ void Application::SetExitFlag(bool shouldExit)
     window_.SetCloseFlag(shouldExit);
 }
 
+BindlessTextureManager &Application::GetBindlessTextureManager()
+{
+    return *bindlessTextureManager_;
+}
+
 Window &Application::GetWindow()
 {
     return window_;
@@ -114,7 +119,7 @@ void Application::UpdateLoop()
     std::binary_semaphore framebufferResizeSemaphore(0);
 
     std::binary_semaphore finishRenderSemaphore(1);
-    bool shouldWaitFinishRenderSemaphore = false;
+    bool shouldWaitFinishRenderSemaphore = true;
 
     auto BeforeAddNextCommand = [&]
     {
@@ -172,15 +177,18 @@ void Application::UpdateLoop()
         auto activeSceneProxy = activeScene_->CreateSceneProxy();
 
         Renderer::RenderCommand_RenderStandaloneFrame frame;
-        frame.scene           = std::move(activeSceneProxy);
-        frame.camera          = activeCamera_.GetRenderCamera();
-        frame.imguiDrawData   = imgui_->Render();
-        frame.finishSemaphore = &finishRenderSemaphore;
+        frame.scene                = std::move(activeSceneProxy);
+        frame.camera               = activeCamera_.GetRenderCamera();
+        frame.imguiDrawData        = imgui_->Render();
+        frame.bindlessTextureGroup = bindlessTextureManager_->GetBindingGroup();
+        frame.finishSemaphore      = &finishRenderSemaphore;
 
         BeforeAddNextCommand();
         renderLoop_->AddCommand(std::move(frame));
         shouldWaitFinishRenderSemaphore = true;
     }
+
+    BeforeAddNextCommand();
 }
 
 RTRC_END

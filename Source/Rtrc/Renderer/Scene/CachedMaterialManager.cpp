@@ -35,7 +35,7 @@ void CachedMaterialManager::UpdateCachedMaterialData(const RenderCommand_RenderS
             data->materialRenderingDataId = materialRecord.materialRenderingData->GetUniqueID();
             data->materialRenderingData   = materialRecord.materialRenderingData;
             data->albedoTextureEntry      = materialRecord.materialRenderingData->GetPropertySheet()
-                                              .GetBindlessTextureEntry(RTRC_MATERIAL_PROPERTY_NAME(AlbedoTextureIndex));
+                                              .GetBindlessTextureEntry(RTRC_MATERIAL_PROPERTY_NAME(albedoTextureIndex));
             it = cachedMaterials_.end();
             continue;
         }

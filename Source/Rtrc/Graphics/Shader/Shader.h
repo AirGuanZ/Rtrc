@@ -44,6 +44,7 @@ public:
         Pass,
         Material,
         Object,
+        BindlessTexture,
         Count
     };
 

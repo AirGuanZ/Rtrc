@@ -21,8 +21,9 @@ struct CameraConstantBuffer
 struct PointLightShadingData
 {
     float3 position;
+    float  distFadeBias;
     float3 color;
-    float  range;
+    float  distFadeScale;
 };
 
 struct DirectionalLightShadingData

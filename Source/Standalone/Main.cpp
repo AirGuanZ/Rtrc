@@ -13,7 +13,7 @@ int main()
                 .maximized                  = true,
                 .vsync                      = true,
                 .debug                      = RTRC_DEBUG,
-                .rayTracing                 = false,
+                .rayTracing                 = true,
                 .handleCrossThreadException = true
             });
     }

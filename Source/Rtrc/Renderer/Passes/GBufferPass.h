@@ -31,6 +31,7 @@ public:
 
     RenderGraphOutput RenderGBuffers(
         const CachedScenePerCamera &scene,
+        const RC<BindingGroup>     &bindlessTextureGroup,
         RG::RenderGraph            &renderGraph,
         const Vector2u             &rtSize);
 
@@ -62,7 +63,11 @@ private:
 
     std::vector<MaterialGroup> CollectPipelineGroups(const CachedScenePerCamera &scene) const;
 
-    void DoRenderGBuffers(RG::PassContext &passContext, const CachedScenePerCamera &scene, const GBuffers &gbuffers);
+    void DoRenderGBuffers(
+        RG::PassContext            &passContext,
+        const CachedScenePerCamera &scene,
+        const RC<BindingGroup>     &bindlessTextureGroup,
+        const GBuffers             &gbuffers);
 
     ObserverPtr<Device>    device_;
     PipelineCache          gbufferPipelineCache_;

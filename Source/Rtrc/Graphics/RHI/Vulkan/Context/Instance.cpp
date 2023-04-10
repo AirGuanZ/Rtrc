@@ -37,7 +37,7 @@ namespace VkInstanceDetail
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
             LogInfo("[{}] {}", type, pCallbackData->pMessage);  break;
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-            LogWarn("[{}] {}", type, pCallbackData->pMessage);  break;
+            LogWarning("[{}] {}", type, pCallbackData->pMessage);  break;
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
             LogError("[{}] {}", type, pCallbackData->pMessage); break;
         default:

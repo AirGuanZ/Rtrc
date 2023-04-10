@@ -18,6 +18,7 @@ namespace DeviceDetail
 
     enum class FlagBit : uint32_t
     {
+        None                         = 0,
         EnableRayTracing             = 1 << 0,
         EnableSwapchainUav           = 1 << 1, // Allow swapchain images to be bound as UAVs
         DisableAutoSwapchainRecreate = 1 << 2, // Don't recreate swapchain when window size changes
@@ -58,6 +59,8 @@ public:
     ~Device();
 
     // Query
+
+    bool IsRayTracingEnabled() const { return flags_.contains(EnableRayTracing); }
 
     const RHI::ShaderGroupRecordRequirements &GetShaderGroupRecordRequirements() const;
 
@@ -251,14 +254,16 @@ private:
 
     Device() = default;
     
-    void InitializeInternal(RHI::DevicePtr device, bool isComputeOnly);
+    void InitializeInternal(Flags flags, RHI::DevicePtr device, bool isComputeOnly);
 
     template<typename...Args>
     void ExecuteBarrierImpl(Args&&...args);
 
+    Flags flags_;
+
     RHI::InstancePtr instance_;
-    RHI::DevicePtr device_;
-    Queue mainQueue_;
+    RHI::DevicePtr   device_;
+    Queue            mainQueue_;
 
     Window           *window_              = nullptr;
     RHI::Format       swapchainFormat_     = RHI::Format::Unknown;

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/Graphics/Mesh/Mesh.h>
 #include <Rtrc/Utility/SmartPointer/ObserverPtr.h>
 
@@ -15,13 +16,23 @@ class BlasBuilder : public Uncopyable
 {
 public:
 
+    struct BuildInfo
+    {
+        RC<Blas>                    blas;
+        BlasPrebuildInfo            prebuildInfo;
+        RHI::RayTracingGeometryDesc geometryDesc;
+    };
+
     explicit BlasBuilder(ObserverPtr<Device> device);
 
-    void Build(
-        CommandBuffer                                 &commandBuffer,
+    BuildInfo Prepare(
         const Mesh::SharedRenderingData               &renderingData,
         RHI::RayTracingAccelerationStructureBuildFlags flags,
-        RC<Blas>                                      &blas);
+        const RC<Blas>                                &blas);
+
+    void Build(
+        CommandBuffer   &commandBuffer,
+        const BuildInfo &buildInfo);
 
     void Finalize(CommandBuffer &commandBuffer);
 

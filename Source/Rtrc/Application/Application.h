@@ -38,7 +38,7 @@ public:
         bool        vsync                      = true;
         bool        debug                      = RTRC_DEBUG;
         bool        rayTracing                 = false;
-        bool        handleCrossThreadException = true;
+        bool        handleCrossThreadException = false;
     };
 
     virtual ~Application() = default;
@@ -54,6 +54,8 @@ protected:
     bool GetExitFlag() const;
     void SetExitFlag(bool shouldExit);
 
+    BindlessTextureManager &GetBindlessTextureManager();
+
     Window      &GetWindow();
     WindowInput &GetWindowInput();
 
@@ -65,7 +67,7 @@ private:
     Box<Device>                 device_;
     Box<ImGuiInstance>          imgui_;
     Box<ResourceManager>        resourceManager_;
-    Box<BindlessTextureManager> bindlessTextureManager;
+    Box<BindlessTextureManager> bindlessTextureManager_;
     Box<RenderLoop>             renderLoop_;
 
     Box<Scene> activeScene_;

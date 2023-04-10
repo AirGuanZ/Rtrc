@@ -25,6 +25,7 @@ GBufferPass::GBufferPass(ObserverPtr<Device> device)
 
 GBufferPass::RenderGraphOutput GBufferPass::RenderGBuffers(
     const CachedScenePerCamera &scene,
+    const RC<BindingGroup>     &bindlessTextureGroup,
     RG::RenderGraph            &renderGraph,
     const Vector2u             &rtSize)
 {
@@ -35,9 +36,9 @@ GBufferPass::RenderGraphOutput GBufferPass::RenderGBuffers(
     ret.gbufferPass->Use(ret.gbuffers.b, RG::COLOR_ATTACHMENT_WRITEONLY);
     ret.gbufferPass->Use(ret.gbuffers.c, RG::COLOR_ATTACHMENT_WRITEONLY);
     ret.gbufferPass->Use(ret.gbuffers.depth, RG::DEPTH_STENCIL_ATTACHMENT);
-    ret.gbufferPass->SetCallback([this, gbuffers = ret.gbuffers, &scene](RG::PassContext &context)
+    ret.gbufferPass->SetCallback([this, gbuffers = ret.gbuffers, &scene, bindlessTextureGroup](RG::PassContext &context)
     {
-        DoRenderGBuffers(context, scene, gbuffers);
+        DoRenderGBuffers(context, scene, bindlessTextureGroup, gbuffers);
     });
     return ret;
 }
@@ -159,6 +160,7 @@ std::vector<GBufferPass::MaterialGroup> GBufferPass::CollectPipelineGroups(const
 void GBufferPass::DoRenderGBuffers(
     RG::PassContext            &passContext,
     const CachedScenePerCamera &scene,
+    const RC<BindingGroup>     &bindlessTextureGroup,
     const GBuffers             &gbuffers)
 {
     auto gbufferA = gbuffers.a->Get(passContext);
@@ -323,10 +325,17 @@ void GBufferPass::DoRenderGBuffers(
                     commandBuffer.BindGraphicsPipeline(pipeline);
 
                     const int passBindingGroupIndex = shader->GetBuiltinBindingGroupIndex(
-                        ShaderBindingLayoutInfo::BuiltinBindingGroup::Pass);
+                        Shader::BuiltinBindingGroup::Pass);
                     if(passBindingGroupIndex >= 0)
                     {
                         commandBuffer.BindGraphicsGroup(passBindingGroupIndex, perPassBindingGroup);
+                    }
+
+                    const int bindlessTextureGroupIndex = shader->GetBuiltinBindingGroupIndex(
+                        Shader::BuiltinBindingGroup::BindlessTexture);
+                    if(bindlessTextureGroupIndex >= 0)
+                    {
+                        commandBuffer.BindGraphicsGroup(bindlessTextureGroupIndex, bindlessTextureGroup);
                     }
                 }
 

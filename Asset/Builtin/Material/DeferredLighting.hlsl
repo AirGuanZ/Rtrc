@@ -31,10 +31,17 @@ float3 ComputePointLighting(Builtin::GBufferPixelValue gpixel, float3 worldPos, 
     float3 surfaceToLight = light.position - worldPos;
     float distance = length(surfaceToLight);
     float3 L = surfaceToLight / max(distance, 1e-5);
-    float diffuseFactor = max(0.0, dot(L, gpixel.normal));
-    float distanceFactor = saturate(1 - distance / light.range);
-    distanceFactor *= distanceFactor;
-    return gpixel.albedo * diffuseFactor * distanceFactor * light.color;
+    float cosFactor = max(0.0, dot(L, gpixel.normal));
+    float distFactor = saturate(distance * light.distFadeScale + light.distFadeBias);
+    distFactor *= distFactor;
+    return gpixel.albedo * cosFactor * distFactor * light.color;
+}
+
+float3 ComputeDirectionalLight(Builtin::GBufferPixelValue gpixel, DirectionalLightShadingData light)
+{
+    float3 L = -light.direction;
+    float cosFactor = max(0.0, dot(L, gpixel.normal));
+    return gpixel.albedo * cosFactor * light.color;
 }
 
 #if LIGHTING_MODE == LIGHTING_MODE_REGULAR
@@ -52,9 +59,15 @@ float4 FSMain(FullscreenPrimitive::VsToFsWithWorldRay input) : SV_TARGET
         PointLightShadingData light = PointLightBuffer[i];
         color += ComputePointLighting(gpixel, worldPos, light);
     }
+    for(int j = 0; j < Pass.directionalLightCount; ++j)
+    {
+        DirectionalLightShadingData light = DirectionalLightBuffer[j];
+        color += ComputeDirectionalLight(gpixel, light);
+    }
     
     color = Tonemap(color);
     color = pow(color, 1.0 / 2.2);
+    color = Dither01(color, input.uv);
     return float4(color, 1);
 }
 

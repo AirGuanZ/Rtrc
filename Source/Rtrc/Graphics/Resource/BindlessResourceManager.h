@@ -75,7 +75,8 @@ public:
     using Resource = typename Entry::Resource;
     using ResourceSrv = typename Entry::ResourceSrv;
 
-    BindlessResourceManager(ObserverPtr<Device> device, uint32_t initialArraySize = 64, uint32_t maxArraySize = 4096);
+    explicit BindlessResourceManager(
+        ObserverPtr<Device> device, uint32_t initialArraySize = 64, uint32_t maxArraySize = 4096);
 
     Entry Allocate(uint32_t count = 1);
 
@@ -90,6 +91,12 @@ private:
 
     friend struct Entry::Impl;
 
+    struct SharedData
+    {
+        std::shared_mutex mutex;
+        RangeSet freeRanges;
+    };
+
     void _internalFree(typename Entry::Impl *entry);
 
     void Expand();
@@ -98,8 +105,7 @@ private:
     RC<BindingGroupLayout> bindingGroupLayout_;
 
     // TODO: thread-local allocator
-    mutable std::shared_mutex  mutex_;
-    RangeSet                   freeRanges_;
+    RC<SharedData>             sharedData_;
     std::vector<RC<Resource>>  boundResources_;
     RC<BindingGroup>           bindingGroup_;
     uint32_t                   currentArraySize_;
@@ -194,7 +200,7 @@ const RC<BindingGroupLayout> &BindlessResourceManager<ResourceType>::GetBindingG
 template<BindlessResourceType ResourceType>
 RC<BindingGroup> BindlessResourceManager<ResourceType>::GetBindingGroup() const
 {
-    std::shared_lock lock(mutex_);
+    std::shared_lock lock(sharedData_->mutex);
     return bindingGroup_;
 }
 
@@ -203,16 +209,25 @@ BindlessResourceManager<ResourceType>::BindlessResourceManager(
     ObserverPtr<Device> device, uint32_t initialArraySize, uint32_t maxArraySize)
     : device_(device)
 {
+    sharedData_ = MakeRC<SharedData>();
+
     BindingGroupLayout::Desc layoutDesc;
     layoutDesc.variableArraySize = true;
     BindingGroupLayout::BindingDesc &bindingDesc = layoutDesc.bindings.emplace_back();
-    bindingDesc.type      = RHI::BindingType::Texture;
+    if constexpr(ResourceType == BindlessResourceType::Texture)
+    {
+        bindingDesc.type = RHI::BindingType::Texture;
+    }
+    else
+    {
+        bindingDesc.type = RHI::BindingType::StructuredBuffer;
+    }
     bindingDesc.stages    = RHI::ShaderStage::All;
     bindingDesc.arraySize = maxArraySize;
     bindingDesc.bindless  = true;
     bindingGroupLayout_ = device_->CreateBindingGroupLayout(layoutDesc);
 
-    freeRanges_ = RangeSet(initialArraySize);
+    sharedData_->freeRanges = RangeSet(initialArraySize);
     boundResources_.resize(initialArraySize);
     bindingGroup_ = bindingGroupLayout_->CreateBindingGroup(static_cast<int>(initialArraySize));
     currentArraySize_ = initialArraySize;
@@ -222,10 +237,10 @@ BindlessResourceManager<ResourceType>::BindlessResourceManager(
 template<BindlessResourceType ResourceType>
 BindlessResourceEntry<ResourceType> BindlessResourceManager<ResourceType>::Allocate(uint32_t count)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard lock(sharedData_->mutex);
     while(true)
     {
-        const RangeSet::Index offset = freeRanges_.Allocate(count);
+        const RangeSet::Index offset = sharedData_->freeRanges.Allocate(count);
         if(offset == RangeSet::NIL)
         {
             Expand();
@@ -284,12 +299,12 @@ template<BindlessResourceType ResourceType>
 void BindlessResourceManager<ResourceType>::_internalFree(typename Entry::Impl *entry)
 {
     assert(entry && entry->manager == this);
-    device_->GetSynchronizer().OnFrameComplete([offset = entry->offset, count = entry->count, this]
+    device_->GetSynchronizer().OnFrameComplete([offset = entry->offset, count = entry->count, s = sharedData_]
     {
-        std::lock_guard lock(mutex_);
-        freeRanges_.Free(offset, offset + count);
+        std::lock_guard lock(s->mutex);
+        s->freeRanges.Free(offset, offset + count);
     });
-    std::lock_guard lock(mutex_);
+    std::lock_guard lock(sharedData_->mutex);
     for(uint32_t i = entry->offset; i < entry->offset + entry->count; ++i)
     {
         boundResources_[i].reset();
@@ -306,7 +321,7 @@ void BindlessResourceManager<ResourceType>::Expand()
     }
     RC<BindingGroup> newBindingGroup = bindingGroupLayout_->CreateBindingGroup(static_cast<int>(newArraySize));
     device_->CopyBindings(newBindingGroup, 0, 0, bindingGroup_, 0, 0, currentArraySize_);
-    freeRanges_.Free(currentArraySize_, newArraySize);
+    sharedData_->freeRanges.Free(currentArraySize_, newArraySize);
     boundResources_.resize(newArraySize);
     bindingGroup_ = std::move(newBindingGroup);
     currentArraySize_ = newArraySize;

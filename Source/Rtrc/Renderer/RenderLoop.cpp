@@ -43,24 +43,6 @@ void RenderLoop::AddCommand(RenderCommand command)
     renderCommandQueue_.push(std::move(command));
 }
 
-float RenderLoop::ComputeBuildBlasSortKey(const Vector3f &eye, const StaticMeshRenderProxy *renderer)
-{
-    if(renderer->rayTracingFlags == StaticMeshRendererRayTracingFlagBit::None)
-    {
-        return -1;
-    }
-    if(renderer->meshRenderingData->GetLayout()->GetVertexBufferLayouts()[0] != Mesh::BuiltinVertexBufferLayout::Default)
-    {
-        throw Exception(
-            "Static mesh render object with ray tracing flag enabled must have a mesh "
-            "using default builtin vertex buffer layout as the first vertex buffer layout");
-    }
-    const Vector3f nearestPointToEye = Max(renderer->worldBound.lower, Min(eye, renderer->worldBound.upper));
-    const float distanceSquare = LengthSquare(nearestPointToEye - eye);
-    const float radiusSquare = LengthSquare(renderer->worldBound.ComputeExtent());
-    return radiusSquare / (std::max)(distanceSquare, 1e-5f);
-}
-
 const BindlessTextureEntry *RenderLoop::ExtractAlbedoTextureEntry(const MaterialInstance::SharedRenderingData *material)
 {
     return material->GetPropertySheet().GetBindlessTextureEntry(RTRC_MATERIAL_PROPERTY_NAME(AlbedoTextureIndex));
@@ -116,7 +98,9 @@ void RenderLoop::RenderThreadEntry()
                 },
                 [&](const RenderCommand_RenderStandaloneFrame &frame)
                 {
-                    RTRC_SCOPE_EXIT{ frame.finishSemaphore->release(); };
+                    RTRC_SCOPE_EXIT{
+                        frame.finishSemaphore->release();
+                    };
                     DoWithExceptionHandling([&]
                     {
                         if(isSwapchainInvalid)
@@ -182,7 +166,7 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
     // ============= GBuffers =============
 
     auto gbuffers = gbufferPass_->RenderGBuffers(
-        *cachedScenePerCamera, *renderGraph, framebuffer->GetSize()).gbuffers;
+        *cachedScenePerCamera, frame.bindlessTextureGroup, *renderGraph, framebuffer->GetSize()).gbuffers;
 
     // ============= Atmosphere =============
 

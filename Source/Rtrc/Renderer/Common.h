@@ -55,8 +55,9 @@ enum class StencilBit : uint8_t
 struct PointLightShadingData
 {
     Vector3f position;
+    float    distFadeBias; // distFade = distFadeBias + distFadeScale * dist
     Vector3f color;
-    float    range;
+    float    distFadeScale;
 };
 
 struct DirectionalLightShadingData

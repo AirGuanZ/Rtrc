@@ -61,6 +61,7 @@ void CachedMeshManager::UpdateCachedMeshData(const RenderCommand_RenderStandalon
                 uniqueMeshes.push_back(mesh);
             }
         }
+        meshRecords.swap(uniqueMeshes);
     }
 
     auto it = cachedMeshes_.begin();
@@ -69,9 +70,9 @@ void CachedMeshManager::UpdateCachedMeshData(const RenderCommand_RenderStandalon
         if(it == cachedMeshes_.end() || it->get()->meshId > meshRecord.mesh->GetUniqueID())
         {
             auto &data = *cachedMeshes_.emplace(it, MakeBox<CachedMesh>());
-            data->buildBlasSortKey = meshRecord.buildBlasSortKey;
-            data->meshRenderingData             = meshRecord.mesh;
-            data->meshId           = meshRecord.mesh->GetUniqueID();
+            data->buildBlasSortKey  = meshRecord.buildBlasSortKey;
+            data->meshRenderingData = meshRecord.mesh;
+            data->meshId            = meshRecord.mesh->GetUniqueID();
             if(data->buildBlasSortKey > 0)
             {
                 assert(data->meshRenderingData->GetLayout()->GetVertexBufferLayouts()[0] == Mesh::BuiltinVertexBufferLayout::Default);
@@ -194,18 +195,27 @@ CachedMeshManager::RenderGraphOutput CachedMeshManager::BuildBlasForMeshes(
     auto pass = renderGraph.CreatePass("Build blas for meshes");
     if(!meshesToBuildBlas.empty())
     {
+        std::vector<BlasBuilder::BuildInfo> blasBuildInfo;
         for(auto mesh : meshesToBuildBlas)
         {
             assert(!mesh->blas);
             mesh->blas = device_->CreateBlas();
-        }
-        pass->SetCallback([meshes = std::move(meshesToBuildBlas), this](RG::PassContext &context)
-        {
-            for(auto mesh : meshes)
+            blasBuildInfo.push_back(blasBuilder_.Prepare(
+                *mesh->meshRenderingData, 
+                RHI::RayTracingAccelerationStructureBuildFlags::PreferFastTrace,
+                mesh->blas));
+            mesh->blas->SetBuffer(device_->CreateBuffer(RHI::BufferDesc
             {
-                blasBuilder_.Build(
-                    context.GetCommandBuffer(), *mesh->meshRenderingData,
-                    RHI::RayTracingAccelerationStructureBuildFlagBit::PreferFastTrace, mesh->blas);
+                .size           = blasBuildInfo.back().prebuildInfo.GetAccelerationStructureBufferSize(),
+                .usage          = RHI::BufferUsage::AccelerationStructure,
+                .hostAccessType = RHI::BufferHostAccessType::None
+            }));
+        }
+        pass->SetCallback([builds = std::move(blasBuildInfo), this](RG::PassContext &context)
+        {
+            for(const BlasBuilder::BuildInfo &build : builds)
+            {
+                blasBuilder_.Build(context.GetCommandBuffer(), build);
             }
             blasBuilder_.Finalize(context.GetCommandBuffer());
         });
@@ -220,7 +230,7 @@ float CachedMeshManager::ComputeBuildBlasSortKey(const Vector3f &eye, const Stat
     {
         return -1;
     }
-
+    return 1;// TODO
     const MeshLayout *meshLayout = renderer->meshRenderingData->GetLayout();
     const VertexBufferLayout *firstVertexBufferLayout = meshLayout->GetVertexBufferLayouts()[0];
     if(firstVertexBufferLayout != Mesh::BuiltinVertexBufferLayout::Default)

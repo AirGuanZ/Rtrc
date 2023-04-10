@@ -315,7 +315,7 @@ MaterialPassInstance *MaterialInstance::SharedRenderingData::GetPassInstance(siz
 
 MaterialInstance::MaterialInstance(RC<const Material> material, Device *device)
 {
-    data_.Reset(new SharedRenderingData(std::move(material), this, device));
+    data_ = MakeReferenceCountedPtr<SharedRenderingData>(std::move(material), this, device);
 }
 
 void MaterialInstance::InvalidateBindingGroups()

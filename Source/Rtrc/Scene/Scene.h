@@ -6,7 +6,7 @@
 
 RTRC_BEGIN
 
-class SceneProxy
+class SceneProxy : public Uncopyable
 {
 public:
 
@@ -37,7 +37,7 @@ private:
     Vector3f                     sunDirection_;
     Vector3f                     sunColor_;
     float                        sunIntensity_;
-
+    
     std::vector<const Light::SharedRenderingData *> lights_;
     std::vector<const StaticMeshRenderProxy *>      staticMeshRenderObjects_;
 };

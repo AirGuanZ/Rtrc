@@ -9,21 +9,18 @@ BlasBuilder::BlasBuilder(ObserverPtr<Device> device)
     
 }
 
-void BlasBuilder::Build(
-    CommandBuffer                                 &commandBuffer,
+BlasBuilder::BuildInfo BlasBuilder::Prepare(
     const Mesh::SharedRenderingData               &renderingData,
     RHI::RayTracingAccelerationStructureBuildFlags flags,
-    RC<Blas>                                      &blas)
+    const RC<Blas>                                &blas)
 {
-    assert(!blas);
-
     RHI::RayTracingVertexFormat vertexFormat;
     RHI::RayTracingIndexFormat indexFormat;
     RHI::BufferDeviceAddress vertexData, indexData;
     uint32_t vertexStride;
     ExtractVertexProperties(
         renderingData, &vertexFormat, &indexFormat, &vertexData, &indexData, &vertexStride);
-
+    
     const RHI::RayTracingGeometryDesc geometryDesc =
     {
         .type                        = RHI::RayTracingGeometryType::Triangles,
@@ -42,10 +39,20 @@ void BlasBuilder::Build(
             .transformData = { }
         }
     };
+
     auto prebuildInfo = device_->CreateBlasPrebuildinfo(geometryDesc, flags);
-    blas = device_->CreateBlas();
-    commandBuffer.BuildBlas(blas, geometryDesc, prebuildInfo, nullptr);
-    
+
+    return BuildInfo
+    {
+        .blas         = blas,
+        .prebuildInfo = std::move(prebuildInfo),
+        .geometryDesc = geometryDesc
+    };
+}
+
+void BlasBuilder::Build(CommandBuffer &commandBuffer, const BuildInfo &buildInfo)
+{
+    commandBuffer.BuildBlas(buildInfo.blas, buildInfo.geometryDesc, buildInfo.prebuildInfo, nullptr);
     needBarrier_ = true;
 }
 

@@ -6,7 +6,7 @@ RTRC_BEGIN
 Box<Device> Device::CreateComputeDevice(RHI::DevicePtr rhiDevice)
 {
     Box<Device> ret{ new Device };
-    ret->InitializeInternal(std::move(rhiDevice), true);
+    ret->InitializeInternal(None, std::move(rhiDevice), true);
     return ret;
 }
 
@@ -22,7 +22,7 @@ Box<Device> Device::CreateComputeDevice(bool debugMode)
         .supportSwapchain = false
     };
     auto rhiDevice = ret->instance_->CreateDevice(deviceDesc);
-    ret->InitializeInternal(rhiDevice, true);
+    ret->InitializeInternal(None, rhiDevice, true);
     return ret;
 }
 
@@ -35,7 +35,7 @@ Box<Device> Device::CreateGraphicsDevice(
     Flags          flags)
 {
     Box<Device> ret{ new Device };
-    ret->InitializeInternal(std::move(rhiDevice), false);
+    ret->InitializeInternal(flags, std::move(rhiDevice), false);
     ret->window_              = &window;
     ret->swapchainFormat_     = swapchainFormat;
     ret->swapchainImageCount_ = swapchainImageCount;
@@ -79,7 +79,7 @@ Box<Device> Device::CreateGraphicsDevice(
         .enableRayTracing = flags.contains(EnableRayTracing)
     };
     auto rhiDevice = ret->instance_->CreateDevice(deviceDesc);
-    ret->InitializeInternal(rhiDevice, false);
+    ret->InitializeInternal(flags, rhiDevice, false);
     ret->window_              = &window;
     ret->swapchainFormat_     = swapchainFormat;
     ret->swapchainImageCount_ = swapchainImageCount;
@@ -158,8 +158,10 @@ RC<Texture> Device::CreateColorTexture2D(uint8_t r, uint8_t g, uint8_t b, uint8_
     return tex;
 }
 
-void Device::InitializeInternal(RHI::DevicePtr device, bool isComputeOnly)
+void Device::InitializeInternal(Flags flags, RHI::DevicePtr device, bool isComputeOnly)
 {
+    flags_ = flags;
+
     device_ = std::move(device);
     mainQueue_ = Queue(device_->GetQueue(isComputeOnly ? RHI::QueueType::Compute : RHI::QueueType::Graphics));
     sync_ = MakeBox<DeviceSynchronizer>(device_, mainQueue_.GetRHIObject());

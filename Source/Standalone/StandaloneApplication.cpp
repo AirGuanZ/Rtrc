@@ -15,18 +15,22 @@ void StandaloneApplication::Initialize(const Rtrc::ApplicationInitializeContext 
     {
         auto cubeMesh = resources.GetBuiltinResources().GetBuiltinMesh(Rtrc::BuiltinMesh::Cube);
         auto matInst = resources.CreateMaterialInstance("Builtin/Diffuse");
+
         auto skyBlue = context.device->CreateColorTexture2D(0, 255, 255, 255, "SkyBlue");
-        matInst->Set("Albedo", skyBlue);
+        auto skyBlueHandle = GetBindlessTextureManager().Allocate();
+        skyBlueHandle.Set(skyBlue);
+
+        matInst->Set("albedoTextureIndex", skyBlueHandle);
 
         cubeObjects_[0] = context.activeScene->CreateStaticMeshRenderer();
         cubeObjects_[0]->SetMesh(cubeMesh);
         cubeObjects_[0]->SetMaterial(matInst);
-        cubeObjects_[0]->SetRayTracingFlags(Rtrc::StaticMeshRenderObject::RayTracingFlags::None);
+        cubeObjects_[0]->SetRayTracingFlags(Rtrc::StaticMeshRenderObject::RayTracingFlags::InOpaqueTlas);
 
         cubeObjects_[1] = context.activeScene->CreateStaticMeshRenderer();
         cubeObjects_[1]->SetMesh(cubeMesh);
         cubeObjects_[1]->SetMaterial(matInst);
-        cubeObjects_[1]->SetRayTracingFlags(Rtrc::StaticMeshRenderObject::RayTracingFlags::None);
+        cubeObjects_[1]->SetRayTracingFlags(Rtrc::StaticMeshRenderObject::RayTracingFlags::InOpaqueTlas);
         cubeObjects_[1]->GetMutableTransform().SetTranslation({ 0, 1.3f, 0 }).SetScale({ 0.3f, 0.3f, 0.3f });
     }
 
@@ -36,7 +40,8 @@ void StandaloneApplication::Initialize(const Rtrc::ApplicationInitializeContext 
         pointLight_->SetPosition({ 0, 2, -2 });
         pointLight_->SetColor({ 1, 1, 1 });
         pointLight_->SetIntensity(1);
-        pointLight_->SetRange(3.0f);
+        pointLight_->SetDistanceFadeBegin(1.0f);
+        pointLight_->SetDistanceFadeEnd(3.0f);
     }
 }
 

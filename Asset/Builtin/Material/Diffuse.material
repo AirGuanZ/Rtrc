@@ -1,8 +1,8 @@
 Material "Builtin/Diffuse"
 {
 
-    Texture Albedo;
-
+    uint albedoTextureIndex;
+    
     Pass
     {
         Tag "GBuffer"
@@ -18,12 +18,14 @@ Shader "Builtin/Diffuse"
 #vert VSMain
 #frag FSMain
 
+#include "Common/Bindless.hlsl"
 #include "Common/GBuffer.hlsl"
 #include "Common/GBufferPassCommon.hlsl"
 
 rtrc_group(Material)
 {
-    rtrc_define(Texture2D<float3>, Albedo)
+    rtrc_uniform(uint, albedoTextureIndex)
+    //rtrc_define(Texture2D<float3>, Albedo)
 };
 
 struct VsInput
@@ -59,7 +61,8 @@ VsToFs VSMain(VsInput input)
 
 Builtin::GBufferPixelOutput FSMain(VsToFs input)
 {
-    float3 albedo = Albedo.Sample(AlbedoSampler, input.uv);
+    Texture2D<float4> AlbedoTexture = BindlessTextures[Material.albedoTextureIndex];
+    float3 albedo = AlbedoTexture.Sample(AlbedoSampler, input.uv).xyz;
     return Builtin::EncodeGBufferPixel(normalize(input.worldNormal), albedo, 0, 1);
 }
 

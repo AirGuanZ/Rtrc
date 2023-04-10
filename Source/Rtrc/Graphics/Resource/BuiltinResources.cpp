@@ -61,9 +61,15 @@ void BuiltinResourceManager::LoadBuiltinTextures()
 
 void BuiltinResourceManager::LoadBuiltinMeshes()
 {
+    MeshManager::Flags flags = MeshManagerDetail::LoadMeshFlagBit::GenerateTangentIfNotPresent;
+    if(device_->IsRayTracingEnabled())
+    {
+        flags |= MeshManagerDetail::LoadMeshFlagBit::AllowBlas;
+    }
+
 #define LOAD_BUILTIN_MESH(NAME) \
     meshes_[std::to_underlying(BuiltinMesh::NAME)] = \
-        ToRC(MeshManager::Load(device_, "Asset/Builtin/Mesh/" #NAME ".obj", {}))
+        ToRC(MeshManager::Load(device_, "Asset/Builtin/Mesh/" #NAME ".obj", flags))
 
     LOAD_BUILTIN_MESH(Cube);
 

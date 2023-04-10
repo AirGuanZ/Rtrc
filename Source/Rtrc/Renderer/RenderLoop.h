@@ -47,8 +47,6 @@ private:
         uint32_t albedoTextureIndex = 0;
     };
     
-    static float ComputeBuildBlasSortKey(const Vector3f &eye, const StaticMeshRenderProxy *renderer);
-
     static const BindlessTextureEntry *ExtractAlbedoTextureEntry(const MaterialInstance::SharedRenderingData *material);
     
     void RenderThreadEntry();

@@ -27,35 +27,39 @@ public:
         Vector3f color_     = { 1, 1, 1 };
         float    intensity_ = 1;
 
-        Vector3f position_  = { 0, 0, 0 };         // Valid for point light
-        Vector3f direction_ = { 0, -1, 0 }; // Valid for directional light
-        float    range_     = 1;                   // Valid for point light
+        Vector3f position_         = { 0, 0, 0 };  // Valid for point light
+        Vector3f direction_        = { 0, -1, 0 }; // Valid for directional light
+        float    distanceFadeBegin = 1; // Valid for point light
+        float    distanceFadeEnd   = 2;
 
     public:
 
-        Type            GetType()      const { return type_; }
-        const Vector3f &GetColor()     const { return color_; }
-        float           GetIntensity() const { return intensity_; }
-        const Vector3f &GetPosition()  const { assert(type_ == Type::Point); return position_; }
-        const Vector3f &GetDirection() const { assert(type_ == Type::Directional); return direction_; }
-        float           GetRange()     const { assert(type_ == Type::Point); return range_; }
+        Type            GetType()              const { return type_; }
+        const Vector3f &GetColor()             const { return color_; }
+        float           GetIntensity()         const { return intensity_; }
+        const Vector3f &GetPosition()          const { assert(type_ == Type::Point); return position_; }
+        const Vector3f &GetDirection()         const { assert(type_ == Type::Directional); return direction_; }
+        float           GetDistanceFadeBegin() const { assert(type_ == Type::Point); return distanceFadeBegin; }
+        float           GetDistanceFadeEnd()   const { assert(type_ == Type::Point); return distanceFadeEnd; }
     };
 
     ~Light() override;
 
-    Type            GetType()      const { return data_->GetType(); }
-    const Vector3f &GetColor()     const { return data_->GetColor(); }
-    float           GetIntensity() const { return data_->GetIntensity(); }
-    const Vector3f &GetPosition()  const { return data_->GetPosition(); }
-    const Vector3f &GetDirection() const { return data_->GetDirection(); }
-    float           GetRange()     const { return data_->GetRange(); }
+    Type            GetType()              const { return data_->GetType(); }
+    const Vector3f &GetColor()             const { return data_->GetColor(); }
+    float           GetIntensity()         const { return data_->GetIntensity(); }
+    const Vector3f &GetPosition()          const { return data_->GetPosition(); }
+    const Vector3f &GetDirection()         const { return data_->GetDirection(); }
+    float           GetDistanceFadeBegin() const { return data_->GetDistanceFadeBegin(); }
+    float           GetDistanceFadeEnd()   const { return data_->GetDistanceFadeEnd(); }
 
     void SetType(Type type);
     void SetColor(const Vector3f &color);
     void SetIntensity(float intensity);
     void SetPosition(const Vector3f &position);
     void SetDirection(const Vector3f &direction);
-    void SetRange(float range);
+    void SetDistanceFadeBegin(float dist);
+    void SetDistanceFadeEnd(float dist);
 
     const ReferenceCountedPtr<SharedRenderingData> &GetRenderingData() const { return data_; }
     SharedRenderingData                            *GetMutableRenderingData() { return data_.Unshare(); }
@@ -118,19 +122,25 @@ inline void Light::SetPosition(const Vector3f &position)
 inline void Light::SetDirection(const Vector3f &direction)
 {
     assert(GetType() == Type::Directional);
-    data_.Unshare()->direction_ = direction;
+    data_.Unshare()->direction_ = Normalize(direction);
 }
 
-inline void Light::SetRange(float range)
+inline void Light::SetDistanceFadeBegin(float dist)
 {
     assert(GetType() == Type::Point);
-    data_.Unshare()->range_ = range;
+    data_.Unshare()->distanceFadeBegin = dist;
+}
+
+inline void Light::SetDistanceFadeEnd(float dist)
+{
+    assert(GetType() == Type::Point);
+    data_.Unshare()->distanceFadeEnd = dist;
 }
 
 inline Light::Light()
     : manager_(nullptr)
 {
-    data_.Reset(new SharedRenderingData);
+    data_ = MakeReferenceCountedPtr<SharedRenderingData>();
 }
 
 inline Box<Light> LightManager::CreateLight()

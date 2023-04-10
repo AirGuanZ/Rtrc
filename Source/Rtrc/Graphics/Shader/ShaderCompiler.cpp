@@ -919,9 +919,10 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
         shader->info_->shaderBindingLayoutInfo_->builtinBindingGroupIndices_[std::to_underlying(group)] =
             shader->GetBindingGroupIndexByName(name);
     };
-    SetBuiltinBindingGroupIndex(Shader::BuiltinBindingGroup::Pass,     "Pass");
-    SetBuiltinBindingGroupIndex(Shader::BuiltinBindingGroup::Material, "Material");
-    SetBuiltinBindingGroupIndex(Shader::BuiltinBindingGroup::Object,   "Object");
+    SetBuiltinBindingGroupIndex(Shader::BuiltinBindingGroup::Pass,            "Pass");
+    SetBuiltinBindingGroupIndex(Shader::BuiltinBindingGroup::Material,        "Material");
+    SetBuiltinBindingGroupIndex(Shader::BuiltinBindingGroup::Object,          "Object");
+    SetBuiltinBindingGroupIndex(Shader::BuiltinBindingGroup::BindlessTexture, "GlobalBindlessTextureGroup");
 
     if(hasCS)
     {
