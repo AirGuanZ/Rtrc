@@ -9,6 +9,7 @@
 #include <Rtrc/Renderer/Passes/AtmospherePass.h>
 #include <Rtrc/Renderer/Passes/DeferredLightingPass.h>
 #include <Rtrc/Renderer/Passes/GBufferPass.h>
+#include <Rtrc/Renderer/Passes/ShadowMaskPass.h>
 #include <Rtrc/Renderer/RenderCommand.h>
 #include <Rtrc/Renderer/Scene/CachedScene.h>
 #include <Rtrc/Utility/Timer.h>
@@ -81,6 +82,7 @@ private:
     Box<PhysicalAtmospherePass> atmospherePass_;
     Box<GBufferPass>            gbufferPass_;
     Box<DeferredLightingPass>   deferredLightingPass_;
+    Box<ShadowMaskPass>         shadowMaskPass_;
 };
 
 RTRC_RENDERER_END

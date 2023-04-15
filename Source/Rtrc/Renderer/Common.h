@@ -78,7 +78,13 @@ struct RGScene
 {
     RG::BufferResource *opaqueTlasMaterialDataBuffer = nullptr;
     RG::BufferResource *opaqueTlasBuffer             = nullptr;
+
     GBuffers gbuffers;
+
+    int                  shadowMaskLightIndex = -1;
+    RG::TextureResource *shadowMask           = nullptr;
+
+    RG::TextureResource *skyLut = nullptr;
 };
 
 RTRC_RENDERER_END

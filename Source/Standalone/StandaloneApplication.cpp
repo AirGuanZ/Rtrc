@@ -42,6 +42,7 @@ void StandaloneApplication::Initialize(const Rtrc::ApplicationInitializeContext 
         pointLight_->SetIntensity(1);
         pointLight_->SetDistanceFadeBegin(1.0f);
         pointLight_->SetDistanceFadeEnd(3.0f);
+        pointLight_->SetFlags(Rtrc::Light::Flags::EnableRayTracedShadow);
     }
 }
 

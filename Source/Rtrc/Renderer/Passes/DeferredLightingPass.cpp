@@ -1,6 +1,7 @@
 #include <Rtrc/Renderer/GBufferBinding.h>
 #include <Rtrc/Renderer/Passes/DeferredLightingPass.h>
 #include <Rtrc/Renderer/Utility/FullscreenPrimitive.h>
+#include <Rtrc/Utility/Enumerate.h>
 
 RTRC_RENDERER_BEGIN
 
@@ -20,6 +21,10 @@ namespace DeferredLightingPassDetail
         rtrc_uniform(uint,            directionalLightCount);
 
         rtrc_define(Texture2D, SkyLut);
+
+        rtrc_define(Texture2D, ShadowMask);
+        rtrc_uniform(uint,     shadowMaskLightType); // 0: none; 1: point; 2: directional
+                                                     // If >= 1, should be applied to the first of the specified type
     };
 
 } // namespace DeferredLightingPassDetail
@@ -55,25 +60,31 @@ DeferredLightingPass::DeferredLightingPass(
 
 DeferredLightingPass::RenderGraphOutput DeferredLightingPass::RenderDeferredLighting(
     const CachedScenePerCamera &scene,
+    const RGScene              &rgScene,
     RG::RenderGraph            &renderGraph,
-    const GBuffers             &gbuffers,
-    RG::TextureResource        *skyLut,
     RG::TextureResource        *renderTarget)
 {
-    RenderGraphOutput ret;
+    const GBuffers &gbuffers = rgScene.gbuffers;
 
+    RenderGraphOutput ret;
     ret.lightingPass = renderGraph.CreatePass("DeferredLighting");
     DeclareGBufferUses<true, DeferredLightingPassDetail::BindingGroup_DeferredLightingPass>(
         ret.lightingPass, gbuffers, RHI::PipelineStage::FragmentShader);
     ret.lightingPass->Use(renderTarget, RG::COLOR_ATTACHMENT_WRITEONLY);
-    if(skyLut)
+    if(rgScene.skyLut)
     {
-        ret.lightingPass->Use(skyLut, RG::PIXEL_SHADER_TEXTURE);
+        ret.lightingPass->Use(rgScene.skyLut, RG::PIXEL_SHADER_TEXTURE);
+    }
+    if(rgScene.shadowMask)
+    {
+        ret.lightingPass->Use(rgScene.shadowMask, RG::PIXEL_SHADER_TEXTURE);
     }
 
-    ret.lightingPass->SetCallback([this, gbuffers, skyLut, renderTarget, &scene](RG::PassContext &context)
+    ret.lightingPass->SetCallback(
+        [this, &rgScene, renderTarget, &scene]
+        (RG::PassContext &context)
     {
-        DoDeferredLighting(scene, gbuffers, skyLut, renderTarget, context);
+        DoDeferredLighting(scene, rgScene, renderTarget, context);
     });
 
     return ret;
@@ -81,8 +92,7 @@ DeferredLightingPass::RenderGraphOutput DeferredLightingPass::RenderDeferredLigh
 
 void DeferredLightingPass::DoDeferredLighting(
     const CachedScenePerCamera &scene,
-    const GBuffers             &rgGBuffers,
-    RG::TextureResource        *skyLut,
+    const RGScene              &rgScene,
     RG::TextureResource        *rgRenderTarget,
     RG::PassContext            &context)
 {
@@ -93,7 +103,8 @@ void DeferredLightingPass::DoDeferredLighting(
     std::vector<PointLightShadingData>       pointLightData;
     std::vector<DirectionalLightShadingData> directionalLightData;
 
-    for(const Light::SharedRenderingData *light : scene.GetLights())
+    int shadowMaskLightType = 0;
+    for(auto &&[lightIndex, light] : Enumerate(scene.GetLights()))
     {
         if(light->GetType() == Light::Type::Point)
         {
@@ -119,6 +130,24 @@ void DeferredLightingPass::DoDeferredLighting(
                 "DeferredLightPass: unsupported light type ({}). Only point/directional lights are supported",
                 std::to_underlying(light->GetType()));
         }
+
+        if(static_cast<int>(lightIndex) == rgScene.shadowMaskLightIndex)
+        {
+            if(light->GetType() == Light::Type::Point)
+            {
+                std::swap(pointLightData[0], pointLightData.back());
+                shadowMaskLightType = 1;
+            }
+            else if(light->GetType() == Light::Type::Directional)
+            {
+                std::swap(directionalLightData[0], directionalLightData.back());
+                shadowMaskLightType = 2;
+            }
+            else
+            {
+                // Do not apply shadow mask for unsupported light type
+            }
+        }
     }
 
     auto pointLightBuffer = lightBufferPool_.Acquire(
@@ -133,22 +162,26 @@ void DeferredLightingPass::DoDeferredLighting(
 
     // Per-pass binding group
 
-    RC<Texture> gbufferA = rgGBuffers.normal->Get(context);
-    RC<Texture> gbufferB = rgGBuffers.albedoMetallic->Get(context);
-    RC<Texture> gbufferC = rgGBuffers.roughness->Get(context);
-    RC<Texture> gbufferDepth = rgGBuffers.depth->Get(context);
-
     BindingGroup_DeferredLightingPass passData;
-    FillBindingGroupGBuffers<true>(passData, rgGBuffers, context);
+    FillBindingGroupGBuffers<true>(passData, rgScene.gbuffers, context);
     passData.camera                 = scene.GetCameraCBuffer();
     passData.pointLightBuffer       = pointLightBuffer->GetStructuredSrv(sizeof(PointLightShadingData));
     passData.pointLightCount        = static_cast<uint32_t>(pointLightData.size());
     passData.directionalLightBuffer = directionalLightBuffer->GetStructuredSrv(sizeof(DirectionalLightShadingData));
     passData.directionalLightCount  = static_cast<uint32_t>(directionalLightData.size());
-
-    if(skyLut)
+    passData.shadowMaskLightType    = shadowMaskLightType;
+    if(rgScene.shadowMask)
     {
-        passData.SkyLut = skyLut->Get(context);
+        passData.ShadowMask = rgScene.shadowMask->Get(context);
+    }
+    else
+    {
+        passData.ShadowMask = builtinResources_->GetBuiltinTexture(BuiltinTexture::White2D);
+    }
+
+    if(rgScene.skyLut)
+    {
+        passData.SkyLut = rgScene.skyLut->Get(context);
     }
     else
     {
@@ -160,6 +193,7 @@ void DeferredLightingPass::DoDeferredLighting(
     // Render Pass
 
     RC<Texture> renderTarget = rgRenderTarget->Get(context);
+    RC<Texture> gbufferDepth = rgScene.gbuffers.depth->Get(context);
 
     CommandBuffer &commandBuffer = context.GetCommandBuffer();
     commandBuffer.BeginRenderPass(
@@ -203,7 +237,7 @@ void DeferredLightingPass::DoDeferredLighting(
         regularShaderTemplate_->GetShader();
         pipelineDesc.shader = shader;
         pipelineDesc.colorAttachmentFormats = { renderTarget->GetFormat() };
-        pipelineDesc.depthStencilFormat = rgGBuffers.depth->GetFormat();
+        pipelineDesc.depthStencilFormat = rgScene.gbuffers.depth->GetFormat();
 
         RC<GraphicsPipeline> pipeline = pipelineCache_.GetGraphicsPipeline(pipelineDesc);
         commandBuffer.BindGraphicsPipeline(pipeline);

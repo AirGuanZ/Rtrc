@@ -24,9 +24,14 @@ rtrc_group(Pass, FS)
     rtrc_uniform(uint, directionalLightCount)
 
     rtrc_define(Texture2D<float3>, SkyLut)
+
+    rtrc_define(Texture2D<float>, ShadowMask)
+    rtrc_uniform(uint, shadowMaskLightType) // 0: none; 1: pointlight; 2: directionalLight
+                                            // If >= 1, should be applied to the first of the specified type
 };
 
 rtrc_sampler(SkyLutSampler, filter = linear, address_u = repeat, address_v = clamp)
+rtrc_sampler(ShadowMaskSampler, filter = point, address_u = clamp, address_v = clamp)
 
 float3 ComputePointLighting(GBufferPixel gpixel, float3 worldPos, PointLightShadingData light)
 {
@@ -56,12 +61,30 @@ float4 FSMain(FullscreenPrimitive::VsToFsWithWorldRay input) : SV_TARGET
     float3 worldPos = viewSpaceZ * worldRay + Camera.worldPosition;
     
     float3 color = 0;
-    for(int i = 0; i < Pass.pointLightCount; ++i)
+
+    float3 mainLightResult = 0;
+    if(Pass.shadowMaskLightType == 1)
+    {
+        PointLightShadingData light = PointLightBuffer[0];
+        mainLightResult = ComputePointLighting(gpixel, worldPos, light);
+    }
+    else if(Pass.shadowMaskLightType == 2)
+    {
+        DirectionalLightShadingData light = DirectionalLightBuffer[0];
+        mainLightResult = ComputeDirectionalLight(gpixel, light);
+    }
+    float shadow = 1;
+    if(any(mainLightResult > 0))
+        shadow = ShadowMask.SampleLevel(ShadowMaskSampler, input.uv, 0);
+    color += shadow * mainLightResult;
+
+    for(int i = Pass.shadowMaskLightType == 1 ? 1 : 0; i < Pass.pointLightCount; ++i)
     {
         PointLightShadingData light = PointLightBuffer[i];
         color += ComputePointLighting(gpixel, worldPos, light);
     }
-    for(int j = 0; j < Pass.directionalLightCount; ++j)
+
+    for(int j = Pass.shadowMaskLightType == 2 ? 1 : 0; j < Pass.directionalLightCount; ++j)
     {
         DirectionalLightShadingData light = DirectionalLightBuffer[j];
         color += ComputeDirectionalLight(gpixel, light);

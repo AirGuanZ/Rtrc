@@ -27,9 +27,7 @@ public:
         RG::RenderGraph            &renderGraph);
 
 private:
-
-    RenderGraphOutput CreateDummyPass(RG::RenderGraph &renderGraph);
-
+    
     ObserverPtr<Device>                       device_;
     ObserverPtr<const BuiltinResourceManager> builtinResources_;
 

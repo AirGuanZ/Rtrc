@@ -30,6 +30,7 @@ RenderLoop::RenderLoop(
     atmospherePass_       = MakeBox<PhysicalAtmospherePass>(device_, builtinResources_);
     gbufferPass_          = MakeBox<GBufferPass>(device_);
     deferredLightingPass_ = MakeBox<DeferredLightingPass>(device_, builtinResources_);
+    shadowMaskPass_       = MakeBox<ShadowMaskPass>(device_, builtinResources_);
 }
 
 RenderLoop::~RenderLoop()
@@ -182,11 +183,34 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
         1000.0f,
         frameTimer_.GetDeltaSecondsF(),
         cachedScenePerCamera->GetCachedAtmosphereData());
+    rgScene.skyLut = rgAtmosphere.skyLut;
+
+    // ============= Shadow mask =============
+
+    int shadowMaskLightIndex = -1;
+    for(auto &&[i, light] : Enumerate(cachedScenePerCamera->GetLights()))
+    {
+        if(light->GetFlags().Contains(LightDetail::FlagBit::EnableRayTracedShadow))
+        {
+            if(shadowMaskLightIndex < 0)
+            {
+                shadowMaskLightIndex = static_cast<int>(i);
+            }
+            else
+            {
+                throw Exception("Only one light can enable ray traced shadow mask");
+            }
+        }
+    }
+    auto rgShadowMask = shadowMaskPass_->RenderShadowMask(
+        *cachedScenePerCamera, shadowMaskLightIndex, rgScene, *renderGraph);
+    rgScene.shadowMaskLightIndex = shadowMaskLightIndex;
+    rgScene.shadowMask = rgShadowMask.shadowMask;
 
     // ============= Deferred lighting =============
     
     deferredLightingPass_->RenderDeferredLighting(
-        *cachedScenePerCamera, *renderGraph, rgScene.gbuffers, rgAtmosphere.skyLut, framebuffer);
+        *cachedScenePerCamera, rgScene , *renderGraph, framebuffer);
 
     // ============= ImGui =============
 

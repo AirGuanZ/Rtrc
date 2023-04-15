@@ -16,7 +16,7 @@ rtrc_group(Pass, CS)
 
     rtrc_uniform(uint2,  outputResolution)
     rtrc_uniform(float2, rcpOutputResolution)
-    rtrc_uniform(uint,   lightType)       // 0: point; 1: directional
+    rtrc_uniform(uint,   lightType)     // 0: point; 1: directional
     rtrc_uniform(float3, lightGeometry) // position or normalized direction
 };
 
@@ -32,16 +32,16 @@ float3 GetWorldRay(float2 uv)
 }
 
 [numthreads(8, 8, 1)]
-void CSMain(uint tid : SV_DispatchThreadID)
+void CSMain(uint2 tid : SV_DispatchThreadID)
 {
     if(any(tid >= Pass.outputResolution))
         return;
 
-    GBufferPixel gpixel = LoadGBufferPixel(input.uv);
+    float2 uv = (tid + 0.5) * Pass.rcpOutputResolution;
+    GBufferPixel gpixel = LoadGBufferPixel(uv);
     if(gpixel.depth >= 1)
         return;
 
-    float2 uv = (tid + 0.5) * Pass.rcpOutputResolution;
     float3 worldRay = GetWorldRay(uv);
     float viewZ = CameraUtils::DeviceZToViewZ(Camera.cameraToClipMatrix, gpixel.depth);
     float3 worldPosition = viewZ * worldRay + Camera.worldPosition;
@@ -52,14 +52,13 @@ void CSMain(uint tid : SV_DispatchThreadID)
 
     RayDesc ray;
     ray.Origin    = origin;
-    ray.Durection = direction;
+    ray.Direction = direction;
     ray.TMin      = 0;
-    ray.TMax      = 1e5;
+    ray.TMax      = 10000;
 
     RayQuery<RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH> rayQuery;
     rayQuery.TraceRayInline(Scene, RAY_FLAG_NONE, 0xff, ray);
     rayQuery.Proceed();
     bool isInShadow = rayQuery.CommittedStatus() == COMMITTED_TRIANGLE_HIT;
-
     OutputTextureRW[tid] = isInShadow ? 0.0 : 1.0;
 }

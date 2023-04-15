@@ -6,7 +6,7 @@ RTRC_RENDERER_BEGIN
 namespace ShadowMaskPassDetail
 {
 
-    rtrc_group(BindingGroup_ShadowMaskPass)
+    rtrc_group(BindingGroup_ShadowMaskPass, CS)
     {
         rtrc_inline(GBufferBindings_NormalDepth, gbuffers);
 
@@ -39,15 +39,15 @@ ShadowMaskPass::RenderGraphOutput ShadowMaskPass::RenderShadowMask(
     const RGScene              &rgScene,
     RG::RenderGraph            &renderGraph)
 {
-    if(!device_->IsRayTracingEnabled() || lightIndex <= 0)
+    if(!device_->IsRayTracingEnabled() || lightIndex < 0)
     {
-        return CreateDummyPass(renderGraph);
+        return {};
     }
 
     const Light::SharedRenderingData *light = scene.GetLights()[lightIndex];
     if(!light->GetFlags().Contains(Light::Flags::EnableRayTracedShadow))
     {
-        return CreateDummyPass(renderGraph);
+        return {};
     }
 
     const Vector2u outputSize = rgScene.gbuffers.normal->GetSize();
@@ -99,14 +99,6 @@ ShadowMaskPass::RenderGraphOutput ShadowMaskPass::RenderShadowMask(
     RenderGraphOutput ret;
     ret.shadowMask = shadowMask;
     ret.shadowMaskPass = pass;
-    return ret;
-}
-
-ShadowMaskPass::RenderGraphOutput ShadowMaskPass::CreateDummyPass(RG::RenderGraph &renderGraph)
-{
-    RenderGraphOutput ret;
-    ret.shadowMask = renderGraph.RegisterReadOnlyTexture(builtinResources_->GetBuiltinTexture(BuiltinTexture::White2D));
-    ret.shadowMaskPass = renderGraph.CreateDummyPass("DummyShadowMaskPass");
     return ret;
 }
 

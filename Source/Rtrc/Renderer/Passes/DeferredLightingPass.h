@@ -17,9 +17,8 @@ public:
 
     RenderGraphOutput RenderDeferredLighting(
         const CachedScenePerCamera &scene,
+        const RGScene              &rgScene,
         RG::RenderGraph            &renderGraph,
-        const GBuffers             &gbuffers,
-        RG::TextureResource        *skyLut,
         RG::TextureResource        *renderTarget);
 
 private:
@@ -32,8 +31,7 @@ private:
 
     void DoDeferredLighting(
         const CachedScenePerCamera &scene,
-        const GBuffers             &rgGBuffers,
-        RG::TextureResource        *skyLut,
+        const RGScene              &rgScene,
         RG::TextureResource        *renderTarget,
         RG::PassContext            &context);
 
