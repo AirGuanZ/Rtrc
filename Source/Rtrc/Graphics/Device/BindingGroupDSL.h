@@ -357,11 +357,11 @@ namespace BindingGroupDSL
         template<typename F, typename A = std::identity>                                                    \
         static constexpr void ForEachFlattenMember(                                                         \
             const F &f,                                                                                     \
-            ::Rtrc::RHI::ShaderStageFlags stageMask = ::Rtrc::RHI::ShaderStage::All,                         \
-            const std::identity &accessor = {})                                                             \
+            ::Rtrc::RHI::ShaderStageFlags stageMask = ::Rtrc::RHI::ShaderStage::All,                        \
+            const A &accessor = {})                                                                         \
         {                                                                                                   \
             ::Rtrc::StructDetail::ForEachMember<_rtrcSelf>([&]<bool IsUniform, typename M>                  \
-            (M _rtrcSelf::* ptr, const char *name, ::Rtrc::RHI::ShaderStageFlags stages,                     \
+            (M _rtrcSelf::* ptr, const char *name, ::Rtrc::RHI::ShaderStageFlags stages,                    \
              ::Rtrc::BindingGroupDSL::BindingFlags flags)                                                   \
             {                                                                                               \
                 auto newAccessor = [&]<typename P>(P p) constexpr -> decltype(auto)                         \
@@ -543,15 +543,17 @@ void ApplyBindingGroup(RHI::Device *device, ConstantBufferManagerInterface *cbMg
             {
                 if(auto &obj = accessor(&value)->_rtrcObj)
                 {
-                    batch.Append(*group.GetRHIObject(), index++, obj->GetRHIObject().Get());
+                    batch.Append(*group.GetRHIObject(), index, obj->GetRHIObject().Get());
                 }
+                ++index;
             }
             else
             {
                 if(auto &rhiObj = accessor(&value)->_rtrcObj.GetRHIObject())
                 {
-                    batch.Append(*group.GetRHIObject(), index++, rhiObj.Get());
+                    batch.Append(*group.GetRHIObject(), index, rhiObj.Get());
                 }
+                ++index;
             }
         }
     });

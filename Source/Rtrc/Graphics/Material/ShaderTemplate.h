@@ -27,7 +27,7 @@ public:
         return GetShader(mask);
     }
 
-    RC<Shader> GetShader(KeywordSet::ValueMask keywordValueMask)
+    RC<Shader> GetShader(KeywordSet::ValueMask keywordValueMask = 0)
     {
         std::lock_guard lock(compiledShadersMutex_); // TODO: optimize for parallel reads
         assert(compiledShaders_.size() > keywordValueMask);

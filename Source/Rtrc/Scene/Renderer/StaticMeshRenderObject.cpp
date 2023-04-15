@@ -8,6 +8,20 @@ StaticMeshRenderObject::~StaticMeshRenderObject()
     manager_->_internalRelease(this);
 }
 
+void StaticMeshRenderObject::SetMesh(RC<Mesh> mesh)
+{
+    mesh_.swap(mesh);
+    if(mesh_)
+    {
+        assert(mesh_->GetBoundingBox().IsValid());
+        SetLocalBound(mesh_->GetBoundingBox());
+    }
+    else
+    {
+        SetLocalBound(AABB3f());
+    }
+}
+
 StaticMeshRenderProxy *StaticMeshRenderObject::CreateProxyRaw(LinearAllocator &proxyAllocator) const
 {
     if(!mesh_ || !matInst_)

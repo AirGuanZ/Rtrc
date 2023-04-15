@@ -12,21 +12,21 @@ public:
     TTextureView() = default;
 
     TTextureView(
-        RC<Texture>          texture,
-        uint32_t             mipLevel,
-        uint32_t             arrayLayer,
-        bool                 isArrayView,
-        RHI::TextureViewFlag flags = 0);
+        RC<Texture>           texture,
+        uint32_t              mipLevel,
+        uint32_t              arrayLayer,
+        bool                  isArrayView,
+        RHI::TextureViewFlags flags = 0);
 
     // For levelCount/layerCount, 0 means all
     TTextureView(
-        RC<Texture>          texture,
-        uint32_t             mipLevel,
-        uint32_t             levelCount,
-        uint32_t             arrayLayer,
-        uint32_t             layerCount,
-        bool                 isArrayView,
-        RHI::TextureViewFlag flags = 0);
+        RC<Texture>           texture,
+        uint32_t              mipLevel,
+        uint32_t              levelCount,
+        uint32_t              arrayLayer,
+        uint32_t              layerCount,
+        bool                  isArrayView,
+        RHI::TextureViewFlags flags = 0);
 
     const T &GetRHIObject() const;
 
@@ -48,11 +48,11 @@ private:
 
 template<typename T>
 TTextureView<T>::TTextureView(
-    RC<Texture>          texture,
-    uint32_t             mipLevel,
-    uint32_t             arrayLayer,
-    bool                 isArrayView,
-    RHI::TextureViewFlag flags)
+    RC<Texture>           texture,
+    uint32_t              mipLevel,
+    uint32_t              arrayLayer,
+    bool                  isArrayView,
+    RHI::TextureViewFlags flags)
     : TTextureView(std::move(texture), mipLevel, arrayLayer, 0, isArrayView ? 0 : 1, isArrayView, flags)
 {
     
@@ -60,13 +60,13 @@ TTextureView<T>::TTextureView(
 
 template<typename T>
 TTextureView<T>::TTextureView(
-    RC<Texture>          texture,
-    uint32_t             mipLevel,
-    uint32_t             levelCount,
-    uint32_t             arrayLayer,
-    uint32_t             layerCount,
-    bool                 isArrayView,
-    RHI::TextureViewFlag flags)
+    RC<Texture>           texture,
+    uint32_t              mipLevel,
+    uint32_t              levelCount,
+    uint32_t              arrayLayer,
+    uint32_t              layerCount,
+    bool                  isArrayView,
+    RHI::TextureViewFlags flags)
     : texture_(std::move(texture))
 {
     if(levelCount == 0)
@@ -146,7 +146,7 @@ TTextureView<T>::operator typename T::ElementType *() const
     return view_.Get();
 }
 
-inline TextureSrv Texture::CreateSrv(RHI::TextureViewFlag flags)
+inline TextureSrv Texture::CreateSrv(RHI::TextureViewFlags flags)
 {
     if(GetDesc().arraySize > 1)
     {
@@ -156,13 +156,13 @@ inline TextureSrv Texture::CreateSrv(RHI::TextureViewFlag flags)
 }
 
 inline TextureSrv Texture::CreateSrv(
-    uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, RHI::TextureViewFlag flags)
+    uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, RHI::TextureViewFlags flags)
 {
     return TextureSrv(shared_from_this(), mipLevel, levelCount, arrayLayer, 1, false, flags);
 }
 
 inline TextureSrv Texture::CreateSrv(
-    uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, uint32_t layerCount, RHI::TextureViewFlag flags)
+    uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, uint32_t layerCount, RHI::TextureViewFlags flags)
 {
     return TextureSrv(shared_from_this(), mipLevel, levelCount, arrayLayer, layerCount, true, flags);
 }
@@ -191,12 +191,12 @@ inline TextureRtv Texture::CreateRtv(uint32_t mipLevel, uint32_t arrayLayer)
     return TextureRtv(shared_from_this(), mipLevel, arrayLayer, false);
 }
 
-inline TextureDsv Texture::CreateDsv(RHI::TextureViewFlag flags)
+inline TextureDsv Texture::CreateDsv(RHI::TextureViewFlags flags)
 {
     return CreateDsv(0, 0, flags);
 }
 
-inline TextureDsv Texture::CreateDsv(uint32_t mipLevel, uint32_t arrayLayer, RHI::TextureViewFlag flags)
+inline TextureDsv Texture::CreateDsv(uint32_t mipLevel, uint32_t arrayLayer, RHI::TextureViewFlags flags)
 {
     return TextureDsv(shared_from_this(), mipLevel, arrayLayer, false, flags);
 }

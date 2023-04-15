@@ -151,7 +151,7 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
 
     // ============= Update scene =============
 
-    auto rgScene = cachedScene_.Update(
+    auto rgCachedScene = cachedScene_.Update(
         frame, *transientConstantBufferAllocator_,
         meshManager_, materialManager_, *renderGraph, linearAllocator);
 
@@ -160,12 +160,16 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
 
     // Blas buffers are not tracked by render graph, so we need to manually add dependency.
     renderGraph->MakeDummyPassIfNull(rgMesh.buildBlasPass, "BuildMeshBlas");
-    renderGraph->MakeDummyPassIfNull(rgScene.buildTlasPass, "BuildTlas");
-    Connect(rgMesh.buildBlasPass, rgScene.buildTlasPass);
+    renderGraph->MakeDummyPassIfNull(rgCachedScene.buildTlasPass, "BuildTlas");
+    Connect(rgMesh.buildBlasPass, rgCachedScene.buildTlasPass);
+
+    RGScene rgScene;
+    rgScene.opaqueTlasMaterialDataBuffer = rgCachedScene.tlasMaterialDataBuffer;
+    rgScene.opaqueTlasBuffer             = rgCachedScene.tlasBuffer;
 
     // ============= GBuffers =============
 
-    auto gbuffers = gbufferPass_->RenderGBuffers(
+    rgScene.gbuffers = gbufferPass_->RenderGBuffers(
         *cachedScenePerCamera, frame.bindlessTextureGroup, *renderGraph, framebuffer->GetSize()).gbuffers;
 
     // ============= Atmosphere =============
@@ -182,7 +186,7 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
     // ============= Deferred lighting =============
     
     deferredLightingPass_->RenderDeferredLighting(
-        *cachedScenePerCamera, *renderGraph, gbuffers, rgAtmosphere.skyLut, framebuffer);
+        *cachedScenePerCamera, *renderGraph, rgScene.gbuffers, rgAtmosphere.skyLut, framebuffer);
 
     // ============= ImGui =============
 

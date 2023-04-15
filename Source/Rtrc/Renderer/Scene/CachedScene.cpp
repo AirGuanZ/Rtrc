@@ -25,7 +25,7 @@ CachedScene::RenderGraphInterface CachedScene::Update(
     scene_ = frame.scene.get();
     objects_.clear();
     tlasObjects_.clear();
-
+    
     RenderGraphInterface ret;
 
     // Collect objects

@@ -7,9 +7,7 @@ RTRC_RENDERER_BEGIN
 class DeferredLightingPass : public Uncopyable
 {
 public:
-
-    using GBuffers = GBufferPass::GBuffers;
-
+    
     struct RenderGraphOutput
     {
         RG::Pass *lightingPass = nullptr;

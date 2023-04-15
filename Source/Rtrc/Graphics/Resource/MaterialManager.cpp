@@ -205,8 +205,8 @@ namespace MaterialDetail
         result = args[0];
         return true;
     }
-
-    void ParseKeywords(std::string &source, std::set<std::string, std::less<>> &keywords)
+    
+    void ParseKeywords(std::string &source, std::map<std::string, int, std::less<>> &keywords)
     {
         assert(keywords.empty());
         size_t beginPos = 0;
@@ -229,15 +229,43 @@ namespace MaterialDetail
             ShaderTokenStream tokens(s, pos + KEYWORD.size());
             if(ShaderTokenStream::IsIdentifier(tokens.GetCurrentToken()))
             {
-                keywords.insert(tokens.GetCurrentToken());
-                for(size_t i = pos; i < tokens.GetCurrentPosition(); ++i)
+                std::string keywordName = tokens.GetCurrentToken();
+                size_t nextBeginPos = tokens.GetCurrentPosition();
+                tokens.Next();
+
+                if(tokens.GetCurrentToken() == ":")
+                {
+                    tokens.Next();
+                    int bitCount;
+                    try
+                    {
+                        bitCount = std::stoul(tokens.GetCurrentToken());
+                    }
+                    catch(...)
+                    {
+                        tokens.Throw("Bit count integer expected. Actual token: " + tokens.GetCurrentToken());
+                    }
+                    if(bitCount <= 0)
+                    {
+                        tokens.Throw("Bit count of keyword " + keywordName + " must be positive");
+                    }
+                    nextBeginPos = tokens.GetCurrentPosition();
+                    tokens.Next();
+                    keywords.insert({ std::move(keywordName), bitCount });
+                }
+                else
+                {
+                    keywords.insert({ std::move(keywordName), 1 });
+                }
+
+                for(size_t i = pos; i < nextBeginPos; ++i)
                 {
                     if(source[i] != '\n')
                     {
                         source[i] = ' ';
                     }
                 }
-                beginPos = tokens.GetCurrentPosition();
+                beginPos = nextBeginPos;
             }
             else
             {
@@ -626,20 +654,34 @@ RC<ShaderTemplate> MaterialManager::CreateShaderTemplate(std::string_view name)
     }
     source = source.substr(0, fileRef.endPos);
 
-    std::set<std::string, std::less<>> keywordStrings;
+    std::map<std::string, int, std::less<>> keywordStringToBitCount;
     KeywordSet keywordSet;
-    MaterialDetail::ParseKeywords(source, keywordStrings);
-    for(auto &s : keywordStrings)
+    MaterialDetail::ParseKeywords(source, keywordStringToBitCount);
+    for(auto &[str, bitCount] : keywordStringToBitCount)
     {
-        keywordSet.AddKeyword(Keyword(s), 1);
+        keywordSet.AddKeyword(Keyword(str), bitCount);
     }
     const int totalKeywordBitCount = keywordSet.GetTotalBitCount();
 
     std::bitset<EnumCount<BuiltinKeyword>> builtinKeywordMask;
     for(std::underlying_type_t<BuiltinKeyword> i = 0; i < EnumCount<BuiltinKeyword>; ++i)
     {
-        if(keywordStrings.contains(GetBuiltinKeywordString(static_cast<BuiltinKeyword>(i))))
+        auto jt = keywordStringToBitCount.find(GetBuiltinKeywordString(static_cast<BuiltinKeyword>(i)));
+        if(jt == keywordStringToBitCount.end())
+        {
+            continue;
+        }
+        const int expected = GetBuiltinKeywordBitCount(static_cast<BuiltinKeyword>(i));
+        if(jt->second != expected)
+        {
+            throw Exception(fmt::format(
+                "Builtin keyword {} must have bit count {} (actual value is {})",
+                jt->first, expected, jt->second));
+        }
+        if(keywordStringToBitCount.contains(GetBuiltinKeywordString(static_cast<BuiltinKeyword>(i))))
+        {
             builtinKeywordMask.set(i);
+        }
     }
 
     auto shaderTemplate = MakeRC<ShaderTemplate>();

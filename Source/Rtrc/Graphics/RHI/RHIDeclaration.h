@@ -112,6 +112,7 @@ enum class Format : uint32_t
     A2B10G10R10_UNorm,
     R11G11B10_UFloat,
     R32_UInt,
+    R8_UNorm,
 
     D24S8,
     D32S8,
@@ -450,11 +451,12 @@ enum class QueueConcurrentAccessMode
 
 enum class TextureViewFlagBit
 {
+    None                               = 0,
     DepthSrv_StencilAttachment         = 1 << 0,
     DepthSrv_StencilAttachmentReadOnly = 1 << 1,
 };
 RTRC_DEFINE_ENUM_FLAGS(TextureViewFlagBit)
-using TextureViewFlag = EnumFlagsTextureViewFlagBit;
+using TextureViewFlags = EnumFlagsTextureViewFlagBit;
 
 enum class RayTracingGeometryType
 {
@@ -664,7 +666,7 @@ struct TextureSrvDesc
     uint32_t        levelCount     = 0; // all levels
     uint32_t        baseArrayLayer = 0;
     uint32_t        layerCount     = 0; // 0 means all layers. only used when isArray == true
-    TextureViewFlag flags          = 0;
+    TextureViewFlags flags          = 0;
 };
 
 struct TextureUavDesc
@@ -681,7 +683,7 @@ struct TextureDsvDesc
     Format          format       = Format::Unknown;
     uint32_t        mipLevel     = 0;
     uint32_t        arrayLayer   = 0;
-    TextureViewFlag flags        = 0;
+    TextureViewFlags flags        = 0;
 };
 
 struct BufferDesc

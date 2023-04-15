@@ -2,16 +2,18 @@
 
 #include "Atmosphere.hlsl"
 #include "Common/Fullscreen.hlsl"
-#include "Common/GBuffer.hlsl"
 #include "Common/Scene.hlsl"
 #include "Common/Color.hlsl"
+
+#define GBUFFER_MODE GBUFFER_MODE_ALL
+#include "Common/GBufferRead.hlsl"
 
 #define LIGHTING_MODE_REGULAR 0
 #define LIGHTING_MODE_SKY     1
 
 rtrc_group(Pass, FS)
 {
-    REFERENCE_BUILTIN_GBUFFERS(FS)
+    REF_GBUFFERS(FS)
 
     rtrc_define(ConstantBuffer<CameraConstantBuffer>, Camera)
     
@@ -26,7 +28,7 @@ rtrc_group(Pass, FS)
 
 rtrc_sampler(SkyLutSampler, filter = linear, address_u = repeat, address_v = clamp)
 
-float3 ComputePointLighting(Builtin::GBufferPixelValue gpixel, float3 worldPos, PointLightShadingData light)
+float3 ComputePointLighting(GBufferPixel gpixel, float3 worldPos, PointLightShadingData light)
 {
     float3 surfaceToLight = light.position - worldPos;
     float distance = length(surfaceToLight);
@@ -37,7 +39,7 @@ float3 ComputePointLighting(Builtin::GBufferPixelValue gpixel, float3 worldPos, 
     return gpixel.albedo * cosFactor * distFactor * light.color;
 }
 
-float3 ComputeDirectionalLight(Builtin::GBufferPixelValue gpixel, DirectionalLightShadingData light)
+float3 ComputeDirectionalLight(GBufferPixel gpixel, DirectionalLightShadingData light)
 {
     float3 L = -light.direction;
     float cosFactor = max(0.0, dot(L, gpixel.normal));
@@ -48,7 +50,7 @@ float3 ComputeDirectionalLight(Builtin::GBufferPixelValue gpixel, DirectionalLig
 
 float4 FSMain(FullscreenPrimitive::VsToFsWithWorldRay input) : SV_TARGET
 {
-    Builtin::GBufferPixelValue gpixel = Builtin::LoadGBufferPixel(input.uv);
+    GBufferPixel gpixel = LoadGBufferPixel(input.uv);
     float3 worldRay = input.ray;
     float viewSpaceZ = CameraUtils::DeviceZToViewZ(Camera.cameraToClipMatrix, gpixel.depth);
     float3 worldPos = viewSpaceZ * worldRay + Camera.worldPosition;

@@ -34,13 +34,13 @@ private:
     void ProcessShaderFile(int filenameIndex, const std::string &filename);
     void ProcessMaterialFile(int filenameIndex, const std::string &filename);
 
-    RC<Material> CreateMaterial(std::string_view name);
+    RC<Material>       CreateMaterial(std::string_view name);
     RC<ShaderTemplate> CreateShaderTemplate(std::string_view name);
 
     RC<MaterialPass> ParsePass(ShaderTokenStream &tokens);
     MaterialProperty ParseProperty(MaterialProperty::Type propertyType, ShaderTokenStream &tokens);
 
-    Device *device_ = nullptr;
+    Device        *device_ = nullptr;
     ShaderCompiler shaderCompiler_;
 
     bool debug_ = RTRC_DEBUG;
@@ -48,7 +48,7 @@ private:
     ObjectCache<std::string, Material, true, true>       materialPool_;
     ObjectCache<std::string, ShaderTemplate, true, true> shaderPool_;
 
-    std::vector<std::string> filenames_;
+    std::vector<std::string>                          filenames_;
     std::map<std::string, FileReference, std::less<>> materialNameToFilename_;
     std::map<std::string, FileReference, std::less<>> shaderNameToFilename_;
 };

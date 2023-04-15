@@ -32,9 +32,9 @@ GBufferPass::RenderGraphOutput GBufferPass::RenderGBuffers(
     RenderGraphOutput ret;
     ret.gbuffers = AllocateGBuffers(renderGraph, rtSize);
     ret.gbufferPass = renderGraph.CreatePass("Render GBuffers");
-    ret.gbufferPass->Use(ret.gbuffers.a, RG::COLOR_ATTACHMENT_WRITEONLY);
-    ret.gbufferPass->Use(ret.gbuffers.b, RG::COLOR_ATTACHMENT_WRITEONLY);
-    ret.gbufferPass->Use(ret.gbuffers.c, RG::COLOR_ATTACHMENT_WRITEONLY);
+    ret.gbufferPass->Use(ret.gbuffers.normal, RG::COLOR_ATTACHMENT_WRITEONLY);
+    ret.gbufferPass->Use(ret.gbuffers.albedoMetallic, RG::COLOR_ATTACHMENT_WRITEONLY);
+    ret.gbufferPass->Use(ret.gbuffers.roughness, RG::COLOR_ATTACHMENT_WRITEONLY);
     ret.gbufferPass->Use(ret.gbuffers.depth, RG::DEPTH_STENCIL_ATTACHMENT);
     ret.gbufferPass->SetCallback([this, gbuffers = ret.gbuffers, &scene, bindlessTextureGroup](RG::PassContext &context)
     {
@@ -43,10 +43,10 @@ GBufferPass::RenderGraphOutput GBufferPass::RenderGBuffers(
     return ret;
 }
 
-GBufferPass::GBuffers GBufferPass::AllocateGBuffers(RG::RenderGraph &renderGraph, const Vector2u &rtSize)
+GBuffers GBufferPass::AllocateGBuffers(RG::RenderGraph &renderGraph, const Vector2u &rtSize)
 {
     GBuffers ret;
-    ret.a = renderGraph.CreateTexture(RHI::TextureDesc
+    ret.normal = renderGraph.CreateTexture(RHI::TextureDesc
     {
         .dim                  = RHI::TextureDimension::Tex2D,
         .format               = RHI::Format::A2R10G10B10_UNorm,
@@ -59,7 +59,7 @@ GBufferPass::GBuffers GBufferPass::AllocateGBuffers(RG::RenderGraph &renderGraph
         .initialLayout        = RHI::TextureLayout::Undefined,
         .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
     }, "GBufferA");
-    ret.b = renderGraph.CreateTexture(RHI::TextureDesc
+    ret.albedoMetallic = renderGraph.CreateTexture(RHI::TextureDesc
     {
         .dim                  = RHI::TextureDimension::Tex2D,
         .format               = RHI::Format::R8G8B8A8_UNorm,
@@ -72,7 +72,7 @@ GBufferPass::GBuffers GBufferPass::AllocateGBuffers(RG::RenderGraph &renderGraph
         .initialLayout        = RHI::TextureLayout::Undefined,
         .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
     }, "GBufferB");
-    ret.c = renderGraph.CreateTexture(RHI::TextureDesc
+    ret.roughness = renderGraph.CreateTexture(RHI::TextureDesc
     {
         .dim                  = RHI::TextureDimension::Tex2D,
         .format               = RHI::Format::R8G8B8A8_UNorm,
@@ -163,9 +163,9 @@ void GBufferPass::DoRenderGBuffers(
     const RC<BindingGroup>     &bindlessTextureGroup,
     const GBuffers             &gbuffers)
 {
-    auto gbufferA = gbuffers.a->Get(passContext);
-    auto gbufferB = gbuffers.b->Get(passContext);
-    auto gbufferC = gbuffers.c->Get(passContext);
+    auto gbufferA = gbuffers.normal->Get(passContext);
+    auto gbufferB = gbuffers.albedoMetallic->Get(passContext);
+    auto gbufferC = gbuffers.roughness->Get(passContext);
     auto gbufferDepth = gbuffers.depth->Get(passContext);
 
     // Render Pass

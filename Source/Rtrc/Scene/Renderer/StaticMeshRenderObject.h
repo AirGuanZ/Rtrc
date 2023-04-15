@@ -59,7 +59,7 @@ public:
     void SetRayTracingFlags(RayTracingFlags flags) { rayTracingFlags_ = flags; }
     RayTracingFlags GetRayTracingFlags() const { return rayTracingFlags_; }
 
-    void SetMesh(RC<Mesh> mesh) { mesh_.swap(mesh); }
+    void SetMesh(RC<Mesh> mesh);
     const RC<Mesh> &GetMesh() const { return mesh_; }
 
     void SetMaterial(RC<MaterialInstance> material) { matInst_.swap(material); }

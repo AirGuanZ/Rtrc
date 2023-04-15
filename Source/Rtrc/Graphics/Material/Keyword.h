@@ -38,6 +38,15 @@ inline std::string_view GetBuiltinKeywordString(BuiltinKeyword k)
     return STRINGS[std::to_underlying(k)];
 }
 
+inline int GetBuiltinKeywordBitCount(BuiltinKeyword k)
+{
+    static constexpr int COUNTS[] =
+    {
+        1
+    };
+    return COUNTS[std::to_underlying(k)];
+}
+
 class KeywordContext
 {
 public:
@@ -174,7 +183,7 @@ private:
         Keyword keyword;
         uint8_t bitCountInMask;
     };
-    int totalBitCount_ = 0;
+    int                 totalBitCount_ = 0;
     std::vector<Record> records_;
 };
 

@@ -19,7 +19,6 @@ Shader "Builtin/Diffuse"
 #frag FSMain
 
 #include "Common/Bindless.hlsl"
-#include "Common/GBuffer.hlsl"
 #include "Common/GBufferPassCommon.hlsl"
 
 rtrc_group(Material)
@@ -59,11 +58,11 @@ VsToFs VSMain(VsInput input)
 	return output;
 }
 
-Builtin::GBufferPixelOutput FSMain(VsToFs input)
+GBufferPixelOutput FSMain(VsToFs input)
 {
     Texture2D<float4> AlbedoTexture = BindlessTextures[Material.albedoTextureIndex];
     float3 albedo = AlbedoTexture.Sample(AlbedoSampler, input.uv).xyz;
-    return Builtin::EncodeGBufferPixel(normalize(input.worldNormal), albedo, 0, 1);
+    return EncodeGBufferPixel(normalize(input.worldNormal), albedo, 0, 1);
 }
 
 }

@@ -1,4 +1,4 @@
-#include <Rtrc/Renderer/Common.h>
+#include <Rtrc/Renderer/GBufferBinding.h>
 #include <Rtrc/Renderer/Passes/DeferredLightingPass.h>
 #include <Rtrc/Renderer/Utility/FullscreenPrimitive.h>
 
@@ -6,13 +6,10 @@ RTRC_RENDERER_BEGIN
 
 namespace DeferredLightingPassDetail
 {
-
+    
     rtrc_group(BindingGroup_DeferredLightingPass, FS)
     {
-        rtrc_define(Texture2D, gbufferA);
-        rtrc_define(Texture2D, gbufferB);
-        rtrc_define(Texture2D, gbufferC);
-        rtrc_define(Texture2D, gbufferDepth);
+        rtrc_inline(GBufferBindings_All, gbuffers);
 
         rtrc_define(ConstantBuffer<CameraConstantBuffer>, camera);
 
@@ -66,16 +63,8 @@ DeferredLightingPass::RenderGraphOutput DeferredLightingPass::RenderDeferredLigh
     RenderGraphOutput ret;
 
     ret.lightingPass = renderGraph.CreatePass("DeferredLighting");
-
-    ret.lightingPass->Use(gbuffers.a, RG::PIXEL_SHADER_TEXTURE);
-    ret.lightingPass->Use(gbuffers.b, RG::PIXEL_SHADER_TEXTURE);
-    ret.lightingPass->Use(gbuffers.c, RG::PIXEL_SHADER_TEXTURE);
-    ret.lightingPass->Use(gbuffers.depth, RG::UseInfo
-    {
-        .layout   = RHI::TextureLayout::DepthShaderTexture_StencilReadOnlyAttachment,
-        .stages   = RHI::PipelineStage::FragmentShader | RHI::PipelineStage::DepthStencil,
-        .accesses = RHI::ResourceAccess::TextureRead | RHI::ResourceAccess::DepthStencilRead
-    });
+    DeclareGBufferUses<true, DeferredLightingPassDetail::BindingGroup_DeferredLightingPass>(
+        ret.lightingPass, gbuffers, RHI::PipelineStage::FragmentShader);
     ret.lightingPass->Use(renderTarget, RG::COLOR_ATTACHMENT_WRITEONLY);
     if(skyLut)
     {
@@ -98,8 +87,6 @@ void DeferredLightingPass::DoDeferredLighting(
     RG::PassContext            &context)
 {
     using namespace DeferredLightingPassDetail;
-
-    KeywordContext keywords;
 
     // Collect lights
 
@@ -146,17 +133,13 @@ void DeferredLightingPass::DoDeferredLighting(
 
     // Per-pass binding group
 
-    RC<Texture> gbufferA = rgGBuffers.a->Get(context);
-    RC<Texture> gbufferB = rgGBuffers.b->Get(context);
-    RC<Texture> gbufferC = rgGBuffers.c->Get(context);
+    RC<Texture> gbufferA = rgGBuffers.normal->Get(context);
+    RC<Texture> gbufferB = rgGBuffers.albedoMetallic->Get(context);
+    RC<Texture> gbufferC = rgGBuffers.roughness->Get(context);
     RC<Texture> gbufferDepth = rgGBuffers.depth->Get(context);
 
     BindingGroup_DeferredLightingPass passData;
-    passData.gbufferA               = gbufferA;
-    passData.gbufferB               = gbufferB;
-    passData.gbufferC               = gbufferC;
-    passData.gbufferDepth           = gbufferDepth->CreateSrv(
-                                        RHI::TextureViewFlagBit::DepthSrv_StencilAttachmentReadOnly);
+    FillBindingGroupGBuffers<true>(passData, rgGBuffers, context);
     passData.camera                 = scene.GetCameraCBuffer();
     passData.pointLightBuffer       = pointLightBuffer->GetStructuredSrv(sizeof(PointLightShadingData));
     passData.pointLightCount        = static_cast<uint32_t>(pointLightData.size());
@@ -208,19 +191,19 @@ void DeferredLightingPass::DoDeferredLighting(
         RC<Shader> shader;
         if(lightingPass == LightingPass::Regular)
         {
-            shader = regularShaderTemplate_->GetShader(keywords);
+            shader = regularShaderTemplate_->GetShader();
         }
         else
         {
             assert(lightingPass == LightingPass::Sky);
-            shader = skyShaderTemplate_->GetShader(keywords);
+            shader = skyShaderTemplate_->GetShader();
             pipelineDesc.frontStencil.compareOp = RHI::CompareOp::Equal;
         }
 
-        regularShaderTemplate_->GetShader(keywords);
+        regularShaderTemplate_->GetShader();
         pipelineDesc.shader = shader;
         pipelineDesc.colorAttachmentFormats = { renderTarget->GetFormat() };
-        pipelineDesc.depthStencilFormat = gbufferDepth->GetFormat();
+        pipelineDesc.depthStencilFormat = rgGBuffers.depth->GetFormat();
 
         RC<GraphicsPipeline> pipeline = pipelineCache_.GetGraphicsPipeline(pipelineDesc);
         commandBuffer.BindGraphicsPipeline(pipeline);

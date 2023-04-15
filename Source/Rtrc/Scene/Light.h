@@ -9,9 +9,24 @@ RTRC_BEGIN
 
 class LightManager;
 
+namespace LightDetail
+{
+
+    enum class FlagBit
+    {
+        None                  = 0,
+        EnableRayTracedShadow = 1 << 0
+    };
+    RTRC_DEFINE_ENUM_FLAGS(FlagBit)
+    using Flags = EnumFlagsFlagBit;
+
+} // namespace LightDetail
+
 class Light : public SceneObject
 {
 public:
+
+    using Flags = LightDetail::Flags;
 
     enum class Type
     {
@@ -32,6 +47,8 @@ public:
         float    distanceFadeBegin = 1; // Valid for point light
         float    distanceFadeEnd   = 2;
 
+        Flags flags_ = Flags::None;
+
     public:
 
         Type            GetType()              const { return type_; }
@@ -41,6 +58,7 @@ public:
         const Vector3f &GetDirection()         const { assert(type_ == Type::Directional); return direction_; }
         float           GetDistanceFadeBegin() const { assert(type_ == Type::Point); return distanceFadeBegin; }
         float           GetDistanceFadeEnd()   const { assert(type_ == Type::Point); return distanceFadeEnd; }
+        Flags           GetFlags()             const { return flags_; }
     };
 
     ~Light() override;
@@ -52,6 +70,7 @@ public:
     const Vector3f &GetDirection()         const { return data_->GetDirection(); }
     float           GetDistanceFadeBegin() const { return data_->GetDistanceFadeBegin(); }
     float           GetDistanceFadeEnd()   const { return data_->GetDistanceFadeEnd(); }
+    bool            GetFlags()             const { return data_->GetFlags(); }
 
     void SetType(Type type);
     void SetColor(const Vector3f &color);
@@ -60,6 +79,7 @@ public:
     void SetDirection(const Vector3f &direction);
     void SetDistanceFadeBegin(float dist);
     void SetDistanceFadeEnd(float dist);
+    void SetFlags(Flags flags);
 
     const ReferenceCountedPtr<SharedRenderingData> &GetRenderingData() const { return data_; }
     SharedRenderingData                            *GetMutableRenderingData() { return data_.Unshare(); }
@@ -135,6 +155,11 @@ inline void Light::SetDistanceFadeEnd(float dist)
 {
     assert(GetType() == Type::Point);
     data_.Unshare()->distanceFadeEnd = dist;
+}
+
+inline void Light::SetFlags(Flags flags)
+{
+    data_.Unshare()->flags_ = flags;
 }
 
 inline Light::Light()

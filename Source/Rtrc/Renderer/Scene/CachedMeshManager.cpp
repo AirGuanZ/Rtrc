@@ -230,7 +230,6 @@ float CachedMeshManager::ComputeBuildBlasSortKey(const Vector3f &eye, const Stat
     {
         return -1;
     }
-    return 1;// TODO
     const MeshLayout *meshLayout = renderer->meshRenderingData->GetLayout();
     const VertexBufferLayout *firstVertexBufferLayout = meshLayout->GetVertexBufferLayouts()[0];
     if(firstVertexBufferLayout != Mesh::BuiltinVertexBufferLayout::Default)

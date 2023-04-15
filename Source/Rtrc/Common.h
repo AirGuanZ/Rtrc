@@ -58,13 +58,6 @@ public:
 #endif
     }
 
-    template<typename T, typename...Ts>
-    Exception(fmt::format_string<Ts...> fmt, T &&arg, Ts&&...args)
-        : Exception(fmt::format(fmt, std::forward<T>(arg), std::forward<Ts>(args)...))
-    {
-
-    }
-
 #if RTRC_ENABLE_EXCEPTION_STACKTRACE
     const std::string &stacktrace() const { return stacktrace_; }
 #else
@@ -152,11 +145,17 @@ T *AddToPointer(T *pointer, size_t offsetInBytes)
     return reinterpret_cast<T *>(reinterpret_cast<size_t>(pointer) + offsetInBytes);
 }
 
+template<typename T> requires std::is_scoped_enum_v<T>
+constexpr auto EnumCount = std::to_underlying(T::Count);
+
 template<typename T>
 constexpr bool AlwaysFalse = false;
 
-template<typename T> requires std::is_scoped_enum_v<T>
-constexpr auto EnumCount = std::to_underlying(T::Count);
+// Note that this is different from std::declval: there is no std::add_rvalue_reference_t around the result type
+template<typename T>
+T DeclVal() { static_assert(AlwaysFalse<T>); std::terminate(); }
+
+#define RTRC_TYPE_IDENTITY(...) decltype(DeclVal<__VA_ARGS__>())
 
 class WithUniqueObjectID
 {

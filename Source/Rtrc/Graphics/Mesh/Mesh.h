@@ -2,6 +2,7 @@
 
 #include <Rtrc/Graphics/Mesh/MeshLayout.h>
 #include <Rtrc/Graphics/Device/Buffer.h>
+#include <Rtrc/Math/AABB.h>
 #include <Rtrc/Utility/Container/ObjectCache.h>
 #include <Rtrc/Utility/SmartPointer/CopyOnWritePtr.h>
 #include <Rtrc/Utility/Thread.h>
@@ -53,6 +54,8 @@ public:
         RHI::IndexFormat     GetIndexFormat() const { return indexFormat_; }
 
         uint32_t GetPrimitiveCount() const { return (indexCount_ ? indexCount_ : vertexCount_) / 3; }
+
+        const AABB3f &GetBoundingBox() const { return bound_; }
         
         void BindVertexAndIndexBuffers(CommandBuffer &commandBuffer) const;
         
@@ -69,6 +72,8 @@ public:
         uint32_t         indexCount_ = 0;
         RHI::IndexFormat indexFormat_ = RHI::IndexFormat::UInt16;
         RC<SubBuffer>    indexBuffer_;
+
+        AABB3f bound_;
     };
 
     Mesh() = default;
@@ -88,6 +93,8 @@ public:
     RHI::IndexFormat     GetIndexFormat() const { return sharedData_->GetIndexFormat(); }
 
     uint32_t GetPrimitiveCount() const { return sharedData_->GetPrimitiveCount(); }
+
+    AABB3f GetBoundingBox() const { return sharedData_->GetBoundingBox(); }
 
     const ReferenceCountedPtr<SharedRenderingData> &GetRenderingData() const  { return sharedData_; }
     SharedRenderingData                            *GetMutableRenderingData() { return sharedData_.Unshare(); }
@@ -109,6 +116,8 @@ public:
     MeshBuilder &SetVertexCount(uint32_t count);
     MeshBuilder &SetIndexCount(uint32_t count);
 
+    MeshBuilder &SetBoundingBox(const AABB3f &bound);
+
     Mesh CreateMesh();
 
 private:
@@ -121,6 +130,8 @@ private:
     uint32_t         indexCount_ = 0;
     RHI::IndexFormat indexFormat_ = RHI::IndexFormat::UInt16;
     RC<SubBuffer>    indexBuffer_;
+
+    AABB3f bound_;
 };
 
 void BindMesh(CommandBuffer &commandBuffer, const Mesh::SharedRenderingData &mesh);
@@ -176,6 +187,12 @@ inline MeshBuilder &MeshBuilder::SetIndexCount(uint32_t count)
     return *this;
 }
 
+inline MeshBuilder &MeshBuilder::SetBoundingBox(const AABB3f &bound)
+{
+    bound_ = bound;
+    return *this;
+}
+
 inline Mesh MeshBuilder::CreateMesh()
 {
     Mesh ret;
@@ -186,6 +203,7 @@ inline Mesh MeshBuilder::CreateMesh()
     data.indexBuffer_   = std::move(indexBuffer_);
     data.vertexCount_   = vertexCount_;
     data.indexCount_    = indexCount_;
+    data.bound_         = bound_;
     return ret;
 }
 

@@ -66,4 +66,19 @@ struct DirectionalLightShadingData
     Vector3f color;
 };
 
+struct GBuffers
+{
+    RG::TextureResource *normal         = nullptr;
+    RG::TextureResource *albedoMetallic = nullptr;
+    RG::TextureResource *roughness      = nullptr;
+    RG::TextureResource *depth          = nullptr;
+};
+
+struct RGScene
+{
+    RG::BufferResource *opaqueTlasMaterialDataBuffer = nullptr;
+    RG::BufferResource *opaqueTlasBuffer             = nullptr;
+    GBuffers gbuffers;
+};
+
 RTRC_RENDERER_END

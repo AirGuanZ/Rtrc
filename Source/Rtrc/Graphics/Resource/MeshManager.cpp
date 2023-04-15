@@ -44,6 +44,12 @@ Mesh MeshManager::Load(Device *device, const std::string &filename, Flags flags)
         }
     }
 
+    AABB3f bound;
+    for(const Vector3f &p : meshData.positionData)
+    {
+        bound |= p;
+    }
+
     auto FillVertexData = [&]<typename Vertex>(Vertex &vertex, size_t i)
     {
         vertex.position = meshData.positionData[i];
@@ -177,6 +183,7 @@ Mesh MeshManager::Load(Device *device, const std::string &filename, Flags flags)
         meshBuilder.SetIndexCount(static_cast<uint32_t>(meshData.indexData.size()));
     }
 
+    meshBuilder.SetBoundingBox(bound);
     return meshBuilder.CreateMesh();
 }
 
