@@ -267,6 +267,7 @@ public:
 
     BufferResource  *RegisterBuffer(RC<StatefulBuffer> buffer);
     TextureResource *RegisterTexture(RC<StatefulTexture> texture);
+    TextureResource *RegisterReadOnlyTexture(RC<Texture> texture);
 
     TextureResource *RegisterSwapchainTexture(
         RHI::TexturePtr             rhiTexture,
@@ -307,6 +308,7 @@ private:
 
         const RHI::TextureDesc &GetDesc() const override;
 
+        bool isReadOnlySampledTexture = false;
         RC<StatefulTexture> texture;
     };
 

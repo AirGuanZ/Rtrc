@@ -24,6 +24,7 @@ enum class BuiltinMaterial
 {
     DeferredLighting,
     Atmosphere,
+    ShadowMask,
     Count
 };
 

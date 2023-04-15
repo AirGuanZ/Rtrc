@@ -13,15 +13,15 @@ Mesh MeshManager::Load(Device *device, const std::string &filename, Flags flags)
     // Remove index data when tangent vectors are required. Theoretically we only need to do this when
     // tangents of different faces don't match at the same vertex.
     // TODO: Optimize this
-    const bool noIndexBuffer = flags.contains(Flags::RemoveIndexBuffer) ||
-                               flags.contains(Flags::GenerateTangentIfNotPresent);
+    const bool noIndexBuffer = flags.Contains(Flags::RemoveIndexBuffer) ||
+                               flags.Contains(Flags::GenerateTangentIfNotPresent);
     if(noIndexBuffer && !meshData.indexData.empty())
     {
         meshData = meshData.RemoveIndexData();
     }
 
     std::vector<Vector3f> tangentData;
-    if(flags.contains(Flags::GenerateTangentIfNotPresent))
+    if(flags.Contains(Flags::GenerateTangentIfNotPresent))
     {
         assert(meshData.positionData.size() % 3 == 0);
         tangentData.resize(meshData.positionData.size());
@@ -66,7 +66,7 @@ Mesh MeshManager::Load(Device *device, const std::string &filename, Flags flags)
 
     RHI::BufferUsageFlag vertexUsageFlags = RHI::BufferUsage::VertexBuffer;
     RHI::BufferUsageFlag indexUsageFlags = RHI::BufferUsage::IndexBuffer;
-    if(flags.contains(Flags::AllowBlas))
+    if(flags.Contains(Flags::AllowBlas))
     {
         vertexUsageFlags |= RHI::BufferUsage::AccelerationStructureBuildInput |
                             RHI::BufferUsage::DeviceAddress |

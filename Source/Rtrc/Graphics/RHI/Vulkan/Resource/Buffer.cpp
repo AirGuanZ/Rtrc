@@ -15,7 +15,7 @@ VulkanBuffer::VulkanBuffer(
     ResourceOwnership      ownership)
     : desc_(desc), device_(device), buffer_(buffer), alloc_(alloc), ownership_(ownership), deviceAddress_()
 {
-    if(desc_.usage.contains(BufferUsage::DeviceAddress))
+    if(desc_.usage.Contains(BufferUsage::DeviceAddress))
     {
         const VkBufferDeviceAddressInfo deviceAddressInfo =
         {

@@ -29,7 +29,7 @@ void CopyContext::UploadBuffer(
         return;
     }
 
-    assert(bufferDesc.usage.contains(RHI::BufferUsage::TransferDst));
+    assert(bufferDesc.usage.Contains(RHI::BufferUsage::TransferDst));
     auto stagingBuffer = device_->CreateBuffer(RHI::BufferDesc
     {
         .size = size,

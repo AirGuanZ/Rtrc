@@ -49,7 +49,7 @@ CachedScene::RenderGraphInterface CachedScene::Update(
         if(config_.rayTracing)
         {
             const bool inOpaqueTlas =
-                staticMeshProxy->rayTracingFlags.contains(StaticMeshRendererRayTracingFlags::InOpaqueTlas);
+                staticMeshProxy->rayTracingFlags.Contains(StaticMeshRendererRayTracingFlags::InOpaqueTlas);
             if(inOpaqueTlas && mesh->blas && material->albedoTextureEntry)
             {
                 tlasObjects_.push_back(record);

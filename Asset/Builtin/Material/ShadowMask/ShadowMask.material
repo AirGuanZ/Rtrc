@@ -1,0 +1,12 @@
+Material "Builtin/ShadowMask"
+{
+	Pass
+	{
+		Tag "BruteForce"
+		Shader "Builtin/ShadowMask/BruteForce"
+		{
+			#compute CSMain
+			#include "BruteForce.hlsl"
+		}
+	}
+}

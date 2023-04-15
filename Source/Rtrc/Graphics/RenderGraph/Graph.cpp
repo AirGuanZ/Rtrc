@@ -187,6 +187,30 @@ TextureResource *RenderGraph::RegisterTexture(RC<StatefulTexture> texture)
     return textures_.back().get();
 }
 
+TextureResource *RenderGraph::RegisterReadOnlyTexture(RC<Texture> texture)
+{
+    const void *rhiPtr = texture->GetRHIObject().Get();
+    if(auto it = externalResourceMap_.find(rhiPtr); it != externalResourceMap_.end())
+    {
+        auto extRsc = static_cast<ExternalTextureResource *>(textures_[it->second].get());
+        if(!extRsc->isReadOnlySampledTexture)
+        {
+            throw Exception(
+                "RenderGraph::RegisterReadOnlyTexture: "
+                "given texture is already registered as non-read-only external texture");
+        }
+        return extRsc;
+    }
+
+    const int index = static_cast<int>(textures_.size());
+    auto resource = MakeBox<ExternalTextureResource>(index);
+    resource->texture = StatefulTexture::FromTexture(std::move(texture));
+    textures_.push_back(std::move(resource));
+    buffers_.push_back(nullptr);
+    externalResourceMap_.insert({ rhiPtr, index });
+    return textures_.back().get();
+}
+
 TextureResource *RenderGraph::RegisterSwapchainTexture(
     RHI::TexturePtr             rhiTexture,
     RHI::BackBufferSemaphorePtr acquireSemaphore,

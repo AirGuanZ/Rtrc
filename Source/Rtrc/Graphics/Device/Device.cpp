@@ -40,9 +40,9 @@ Box<Device> Device::CreateGraphicsDevice(
     ret->swapchainFormat_     = swapchainFormat;
     ret->swapchainImageCount_ = swapchainImageCount;
     ret->vsync_               = vsync;
-    ret->swapchainUav_        = flags.contains(EnableSwapchainUav);
+    ret->swapchainUav_        = flags.Contains(EnableSwapchainUav);
     ret->RecreateSwapchain();
-    if(!flags.contains(DisableAutoSwapchainRecreate))
+    if(!flags.Contains(DisableAutoSwapchainRecreate))
     {
         ret->window_->Attach([d = ret.get()](const WindowResizeEvent &e)
         {
@@ -76,7 +76,7 @@ Box<Device> Device::CreateGraphicsDevice(
         .computeQueue     = true,
         .transferQueue    = true,
         .supportSwapchain = true,
-        .enableRayTracing = flags.contains(EnableRayTracing)
+        .enableRayTracing = flags.Contains(EnableRayTracing)
     };
     auto rhiDevice = ret->instance_->CreateDevice(deviceDesc);
     ret->InitializeInternal(flags, rhiDevice, false);
@@ -84,9 +84,9 @@ Box<Device> Device::CreateGraphicsDevice(
     ret->swapchainFormat_     = swapchainFormat;
     ret->swapchainImageCount_ = swapchainImageCount;
     ret->vsync_               = vsync;
-    ret->swapchainUav_        = flags.contains(EnableSwapchainUav);
+    ret->swapchainUav_        = flags.Contains(EnableSwapchainUav);
     ret->RecreateSwapchain();
-    if(!flags.contains(DisableAutoSwapchainRecreate))
+    if(!flags.Contains(DisableAutoSwapchainRecreate))
     {
         ret->window_->Attach([d = ret.get()](const WindowResizeEvent &e)
         {

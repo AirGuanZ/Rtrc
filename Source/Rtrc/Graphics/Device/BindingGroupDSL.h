@@ -300,9 +300,9 @@ namespace BindingGroupDSL
                     binding.type = MemberElement::BindingType;
                     binding.stages = stages;
                     binding.arraySize = arraySize ? std::make_optional(static_cast<uint32_t>(arraySize)) : std::nullopt;
-                    binding.bindless = flags.contains(BindingFlagBit::Bindless);
+                    binding.bindless = flags.Contains(BindingFlagBit::Bindless);
                     desc.bindings.push_back(binding);
-                    desc.variableArraySize |= flags.contains(BindingFlagBit::VariableArraySize);
+                    desc.variableArraySize |= flags.Contains(BindingFlagBit::VariableArraySize);
                 }
             });
             if constexpr(GetUniformDWordCount<T>() > 0)
@@ -471,8 +471,6 @@ void ApplyBindingGroup(RHI::Device *device, ConstantBufferManagerInterface *cbMg
         [&]<bool IsUniform, typename M, typename A>
         (const char *name, RHI::ShaderStageFlags stages, const A &accessor, BindingGroupDSL::BindingFlags flags)
     {
-        //assert(!flags.contains(BindingGroupDSL::BindingFlagBit::Bindless));
-        //assert(!flags.contains(BindingGroupDSL::BindingFlagBit::VariableArraySize));
         if constexpr(!IsUniform)
         {
             using MemberElement = typename BindingGroupDSL::MemberProxyTrait<M>::MemberProxyElement;
@@ -506,7 +504,7 @@ void ApplyBindingGroup(RHI::Device *device, ConstantBufferManagerInterface *cbMg
                 assert(!swapUniformAndVariableSizedArray);
                 swapUniformAndVariableSizedArray =
                     BindingGroupDSL::GetUniformDWordCount<T>() > 0 &&
-                    flags.contains(BindingGroupDSL::BindingFlagBit::VariableArraySize);
+                    flags.Contains(BindingGroupDSL::BindingFlagBit::VariableArraySize);
 
                 ApplyArrayElements(swapUniformAndVariableSizedArray ? (index + 1) : index);
                 ++index;

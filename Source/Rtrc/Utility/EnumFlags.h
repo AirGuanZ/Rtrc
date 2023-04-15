@@ -16,7 +16,7 @@ RTRC_BEGIN
         using Integer = std::underlying_type_t<Enum>;                                                                       \
         constexpr EnumFlags##Enum(Enum value = static_cast<Enum>(0)) : value(std::to_underlying(value)) { }                 \
         constexpr EnumFlags##Enum(Integer value) : value(value) { }                                                         \
-        constexpr bool contains(EnumFlags##Enum val) const { return (this->value & val.GetInteger()) == val.GetInteger(); } \
+        constexpr bool Contains(EnumFlags##Enum val) const { return (this->value & val.GetInteger()) == val.GetInteger(); } \
         constexpr operator bool() const { return value != 0; }                                                              \
         constexpr operator Integer() const { return value; }                                                                \
         constexpr Integer GetInteger() const { return value; }                                                              \

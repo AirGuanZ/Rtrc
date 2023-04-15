@@ -89,7 +89,7 @@ bool Compiler::DontNeedBarrier(const Pass::SubTexUsage &a, const Pass::SubTexUsa
 
     constexpr RHI::ResourceAccessFlag RENDER_TARGET_RW_MASK = RHI::ResourceAccess::RenderTargetWrite |
                                                               RHI::ResourceAccess::RenderTargetRead;
-    if(RENDER_TARGET_RW_MASK.contains(a.accesses) && RENDER_TARGET_RW_MASK.contains(b.accesses))
+    if(RENDER_TARGET_RW_MASK.Contains(a.accesses) && RENDER_TARGET_RW_MASK.Contains(b.accesses))
     {
         return true;
     }
@@ -213,7 +213,7 @@ void Compiler::TopologySortPasses()
         succs[i] = passes[i]->succs_;
     }
 
-    if(options_.contains(Options::ConnectPassesByDefinitionOrder))
+    if(options_.Contains(Options::ConnectPassesByDefinitionOrder))
     {
         GenerateConnectionsByDefinitionOrder(passes, prevs, succs);
     }
@@ -292,6 +292,25 @@ void Compiler::CollectResourceUsers()
                         .usage = subTexUsage
                     });
             }
+
+#if RTRC_DEBUG
+            if(const auto extRsc = dynamic_cast<RenderGraph::ExternalTextureResource *>(textureResource);
+               extRsc && extRsc->isReadOnlySampledTexture)
+            {
+                for(auto [mipLevel, arrayLayer] : EnumerateSubTextures(extRsc->GetMipLevels(), extRsc->GetArraySize()))
+                {
+                    if(!textureUsage(mipLevel, arrayLayer).has_value())
+                    {
+                        continue;
+                    }
+                    const Pass::SubTexUsage &subTexUsage = textureUsage(mipLevel, arrayLayer).value();
+                    if(subTexUsage.layout != RHI::TextureLayout::ShaderTexture)
+                    {
+                        throw Exception("External readonly texture is used in non ShaderTexture layout");
+                    }
+                }
+            }
+#endif
         }
     }
 }
@@ -765,7 +784,7 @@ void Compiler::FillSections(ExecutableGraph &output)
                     b.beforeLayout, b.afterLayout, b.beforeAccesses, b.afterAccesses);
             }
 
-            if(options_.contains(Options::PreferGlobalMemoryBarrier))
+            if(options_.Contains(Options::PreferGlobalMemoryBarrier))
             {
                 GenerateGlobalMemoryBarriers(pass);
             }

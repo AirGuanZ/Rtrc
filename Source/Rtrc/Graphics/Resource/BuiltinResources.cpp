@@ -10,7 +10,7 @@ BuiltinResourceManager::BuiltinResourceManager(ObserverPtr<Device> device)
 {
     materialManager_.SetDebugMode(RTRC_DEBUG);
     materialManager_.SetDevice(device_);
-    materialManager_.AddFiles($rtrc_get_files("Asset/Builtin/Material/*.*"));
+    materialManager_.AddFiles($rtrc_get_files("Asset/Builtin/Material/*/*.*"));
     materialManager_.AddIncludeDirectory("Asset/Builtin/Material");
 
     LoadBuiltinTextures();
@@ -84,6 +84,7 @@ void BuiltinResourceManager::LoadBuiltinMaterials()
     
     LOAD_BUILTIN_MATERIAL(DeferredLighting);
     LOAD_BUILTIN_MATERIAL(Atmosphere);
+    LOAD_BUILTIN_MATERIAL(ShadowMask);
 
 #undef LOAD_BUILTIN_MATERIAL
 }

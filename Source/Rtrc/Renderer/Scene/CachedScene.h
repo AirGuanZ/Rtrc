@@ -56,6 +56,8 @@ public:
     Span<StaticMeshRecord *> GetStaticMeshes() const { return objects_; }
 
     Span<const Light::SharedRenderingData*> GetLights() const { return scene_->GetLights(); }
+
+    const RC<Tlas> &GetOpaqueTlas() const { return opaqueTlas_; }
     
 private:
 
@@ -97,6 +99,8 @@ public:
     const RenderCamera &GetCamera() const { return renderCamera_; }
     const RC<SubBuffer> &GetCameraCBuffer() const { return cameraCBuffer_; }
 
+    const CachedScene &GetCachedScene() const { return scene_; }
+
     Span<StaticMeshRecord *> GetStaticMeshes() const { return objects_; }
     const RC<Buffer> &GetStaticMeshPerObjectData() const { return perObjectDataBuffer_; }
 
@@ -110,8 +114,7 @@ public:
         LinearAllocator                  &linearAllocator);
 
 private:
-
-
+    
     const CachedScene  &scene_;
     RenderCamera        renderCamera_;
 

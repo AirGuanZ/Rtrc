@@ -104,15 +104,15 @@ VkShaderStageFlagBits TranslateShaderStage(ShaderStage type)
 VkShaderStageFlags TranslateShaderStageFlag(ShaderStageFlags flags)
 {
     VkShaderStageFlags result = 0;
-    result |= flags.contains(ShaderStage::VertexShader)          ? VK_SHADER_STAGE_VERTEX_BIT           : 0;
-    result |= flags.contains(ShaderStage::FragmentShader)        ? VK_SHADER_STAGE_FRAGMENT_BIT         : 0;
-    result |= flags.contains(ShaderStage::ComputeShader)         ? VK_SHADER_STAGE_COMPUTE_BIT          : 0;
-    result |= flags.contains(ShaderStage::RT_RayGenShader)       ? VK_SHADER_STAGE_RAYGEN_BIT_KHR       : 0;
-    result |= flags.contains(ShaderStage::RT_ClosestHitShader)   ? VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR  : 0;
-    result |= flags.contains(ShaderStage::RT_MissShader)         ? VK_SHADER_STAGE_MISS_BIT_KHR         : 0;
-    result |= flags.contains(ShaderStage::RT_IntersectionShader) ? VK_SHADER_STAGE_INTERSECTION_BIT_KHR : 0;
-    result |= flags.contains(ShaderStage::RT_AnyHitShader)       ? VK_SHADER_STAGE_ANY_HIT_BIT_KHR      : 0;
-    result |= flags.contains(ShaderStage::CallableShader)        ? VK_SHADER_STAGE_CALLABLE_BIT_KHR     : 0;
+    result |= flags.Contains(ShaderStage::VertexShader)          ? VK_SHADER_STAGE_VERTEX_BIT           : 0;
+    result |= flags.Contains(ShaderStage::FragmentShader)        ? VK_SHADER_STAGE_FRAGMENT_BIT         : 0;
+    result |= flags.Contains(ShaderStage::ComputeShader)         ? VK_SHADER_STAGE_COMPUTE_BIT          : 0;
+    result |= flags.Contains(ShaderStage::RT_RayGenShader)       ? VK_SHADER_STAGE_RAYGEN_BIT_KHR       : 0;
+    result |= flags.Contains(ShaderStage::RT_ClosestHitShader)   ? VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR  : 0;
+    result |= flags.Contains(ShaderStage::RT_MissShader)         ? VK_SHADER_STAGE_MISS_BIT_KHR         : 0;
+    result |= flags.Contains(ShaderStage::RT_IntersectionShader) ? VK_SHADER_STAGE_INTERSECTION_BIT_KHR : 0;
+    result |= flags.Contains(ShaderStage::RT_AnyHitShader)       ? VK_SHADER_STAGE_ANY_HIT_BIT_KHR      : 0;
+    result |= flags.Contains(ShaderStage::CallableShader)        ? VK_SHADER_STAGE_CALLABLE_BIT_KHR     : 0;
     return result;
 }
 
@@ -260,27 +260,27 @@ VkDescriptorType TranslateBindingType(BindingType type)
 VkImageUsageFlags TranslateTextureUsageFlag(TextureUsageFlags flags)
 {
     VkImageUsageFlags result = 0;
-    if(flags.contains(TextureUsage::TransferDst))
+    if(flags.Contains(TextureUsage::TransferDst))
     {
         result |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
     }
-    if(flags.contains(TextureUsage::TransferSrc))
+    if(flags.Contains(TextureUsage::TransferSrc))
     {
         result |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
     }
-    if(flags.contains(TextureUsage::ShaderResource))
+    if(flags.Contains(TextureUsage::ShaderResource))
     {
         result |= VK_IMAGE_USAGE_SAMPLED_BIT;
     }
-    if(flags.contains(TextureUsage::UnorderAccess))
+    if(flags.Contains(TextureUsage::UnorderAccess))
     {
         result |= VK_IMAGE_USAGE_STORAGE_BIT;
     }
-    if(flags.contains(TextureUsage::RenderTarget))
+    if(flags.Contains(TextureUsage::RenderTarget))
     {
         result |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
     }
-    if(flags.contains(TextureUsage::DepthStencil))
+    if(flags.Contains(TextureUsage::DepthStencil))
     {
         result |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
     }
@@ -290,8 +290,8 @@ VkImageUsageFlags TranslateTextureUsageFlag(TextureUsageFlags flags)
 VkBufferUsageFlags TranslateBufferUsageFlag(BufferUsageFlag flag)
 {
     VkBufferUsageFlags result = 0;
-    assert(!flag.contains(BufferUsage::AccelerationStructureBuildInput) || flag.contains(BufferUsage::DeviceAddress));
-#define ADD_CASE(FLAG, VAL) if(flag.contains(BufferUsage::FLAG)) { result |= (VAL); }
+    assert(!flag.Contains(BufferUsage::AccelerationStructureBuildInput) || flag.Contains(BufferUsage::DeviceAddress));
+#define ADD_CASE(FLAG, VAL) if(flag.Contains(BufferUsage::FLAG)) { result |= (VAL); }
     ADD_CASE(TransferDst,                     VK_BUFFER_USAGE_TRANSFER_DST_BIT)
     ADD_CASE(TransferSrc,                     VK_BUFFER_USAGE_TRANSFER_SRC_BIT)
     ADD_CASE(ShaderBuffer,                    VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT)
@@ -456,7 +456,7 @@ VkPipelineStageFlags2 TranslatePipelineStageFlag(PipelineStageFlag flag)
     VkPipelineStageFlags2 result = 0;
     for(size_t i = 0; i < GetArraySize(bitToFlag); ++i)
     {
-        if(flag.contains(1 << i))
+        if(flag.Contains(1 << i))
         {
             result |= bitToFlag[i];
         }
@@ -499,7 +499,7 @@ VkAccessFlags2 TranslateAccessFlag(ResourceAccessFlag flag)
     VkAccessFlags2 result = 0;
     for(size_t i = 0; i < GetArraySize(bitToFlag); ++i)
     {
-        if(flag.contains(1 << i))
+        if(flag.Contains(1 << i))
         {
             result |= bitToFlag[i];
         }
@@ -577,23 +577,23 @@ VkBuildAccelerationStructureFlagsKHR TranslateAccelerationStructureBuildFlags(
     RayTracingAccelerationStructureBuildFlags flags)
 {
     VkBuildAccelerationStructureFlagsKHR ret = 0;
-    if(flags.contains(RayTracingAccelerationStructureBuildFlagBit::AllowUpdate))
+    if(flags.Contains(RayTracingAccelerationStructureBuildFlagBit::AllowUpdate))
     {
         ret |= VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR;
     }
-    if(flags.contains(RayTracingAccelerationStructureBuildFlagBit::AllowCompaction))
+    if(flags.Contains(RayTracingAccelerationStructureBuildFlagBit::AllowCompaction))
     {
         ret |= VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR;
     }
-    if(flags.contains(RayTracingAccelerationStructureBuildFlagBit::PreferFastBuild))
+    if(flags.Contains(RayTracingAccelerationStructureBuildFlagBit::PreferFastBuild))
     {
         ret |= VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_BUILD_BIT_KHR;
     }
-    if(flags.contains(RayTracingAccelerationStructureBuildFlagBit::PreferFastTrace))
+    if(flags.Contains(RayTracingAccelerationStructureBuildFlagBit::PreferFastTrace))
     {
         ret |= VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
     }
-    if(flags.contains(RayTracingAccelerationStructureBuildFlagBit::PreferLowMemory))
+    if(flags.Contains(RayTracingAccelerationStructureBuildFlagBit::PreferLowMemory))
     {
         ret |= VK_BUILD_ACCELERATION_STRUCTURE_LOW_MEMORY_BIT_KHR;
     }

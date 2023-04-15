@@ -60,7 +60,7 @@ public:
 
     // Query
 
-    bool IsRayTracingEnabled() const { return flags_.contains(EnableRayTracing); }
+    bool IsRayTracingEnabled() const { return flags_.Contains(EnableRayTracing); }
 
     const RHI::ShaderGroupRecordRequirements &GetShaderGroupRecordRequirements() const;
 
