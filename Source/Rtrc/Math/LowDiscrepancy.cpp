@@ -9,34 +9,83 @@
 #undef restrict
 
 #include <Rtrc/Math/LowDiscrepancy.h>
+#include <Rtrc/Math/Vector2.h>
+#include <Rtrc/Math/Vector3.h>
+#include <Rtrc/Math/Vector4.h>
 
 RTRC_BEGIN
 
-std::vector<Vector2f> GeneratePoissonDiskSamples(int count, int seed)
+namespace LowDiscrepancyDetail
 {
-    std::default_random_engine rng(seed);
-    std::uniform_real_distribution<float> dis(0, 1);
-
-    std::vector<cy::Vec2f> rawPoints(16 * count);
-    for(size_t i = 0; i < rawPoints.size(); ++i)
+    
+    template<typename RtrcType, typename CyType, int Channels>
+    std::vector<RtrcType> GeneratePoissonDiskSamples(int count, int seed)
     {
-        const float u = dis(rng);
-        const float v = dis(rng);
-        rawPoints[i] = { u, v };
+        std::default_random_engine rng(seed);
+        std::uniform_real_distribution<float> dis(0, 1);
+
+        std::vector<CyType> rawPoints(std::max(16 * count, 2048));
+        for(auto &out : rawPoints)
+        {
+            for(int i = 0; i < Channels; ++i)
+            {
+                out[i] = dis(rng);
+            }
+        }
+
+        std::vector<CyType> outputPoints(count);
+        cy::WeightedSampleElimination<CyType, float, Channels> wse;
+        wse.SetTiling(true);
+        wse.Eliminate(rawPoints.data(), rawPoints.size(), outputPoints.data(), outputPoints.size(), true);
+
+        std::vector<RtrcType> result(count);
+        for(int i = 0; i < count; ++i)
+        {
+            for(int j = 0; j < Channels; ++j)
+            {
+                result[i][j] = outputPoints[i][j];
+            }
+        }
+
+        return result;
     }
 
-    std::vector<cy::Vec2f> outputPoints(count);
-    cy::WeightedSampleElimination<cy::Vec2f, float, 2> wse;
-    wse.SetTiling(true);
-    wse.Eliminate(rawPoints.data(), rawPoints.size(), outputPoints.data(), outputPoints.size());
+    template<typename T>
+    struct CyTypeTrait { };
 
-    std::vector<Vector2f> result(count);
-    for(int i = 0; i < count; ++i)
+    template<>
+    struct CyTypeTrait<Vector2f>
     {
-        result[i].x = outputPoints[i].x;
-        result[i].y = outputPoints[i].y;
-    }
-    return result;
+        using Type = cy::Vec2f;
+        static constexpr int Channels = 2;
+    };
+
+    template<>
+    struct CyTypeTrait<Vector3f>
+    {
+        using Type = cy::Vec3f;
+        static constexpr int Channels = 3;
+    };
+
+    template<>
+    struct CyTypeTrait<Vector4f>
+    {
+        using Type = cy::Vec4f;
+        static constexpr int Channels = 4;
+    };
+
+} // namespace LowDiscrepancyDetail
+
+template<typename T>
+std::vector<T> GeneratePoissonDiskSamples(int count, int seed)
+{
+    using CyTypeTrait = LowDiscrepancyDetail::CyTypeTrait<T>;
+    return LowDiscrepancyDetail::GeneratePoissonDiskSamples
+                <T, typename CyTypeTrait::Type, CyTypeTrait::Channels>(count, seed);
 }
+
+template std::vector<Vector2f> GeneratePoissonDiskSamples<Vector2f>(int count, int seed);
+template std::vector<Vector3f> GeneratePoissonDiskSamples<Vector3f>(int count, int seed);
+template std::vector<Vector4f> GeneratePoissonDiskSamples<Vector4f>(int count, int seed);
 
 RTRC_END

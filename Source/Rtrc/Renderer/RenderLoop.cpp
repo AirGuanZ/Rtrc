@@ -21,16 +21,15 @@ RenderLoop::RenderLoop(
     imguiRenderer_       = MakeBox<ImGuiRenderer>(device_);
     renderGraphExecuter_ = MakeBox<RG::Executer>(device_);
 
-    bindlessStructuredBuffersForBlas_ = MakeBox<BindlessBufferManager>(
-        device_, 64, MAX_COUNT_BINDLESS_STRUCTURE_BUFFER_FOR_BLAS);
+    bindlessStructuredBuffersForBlas_ = MakeBox<BindlessBufferManager>(device_, 64, MAX_BLAS_BINDLESS_BUFFER_COUNT);
     transientConstantBufferAllocator_ = MakeBox<TransientConstantBufferAllocator>(*device);
-
-    renderThread_ = std::jthread(&RenderLoop::RenderThreadEntry, this);
 
     atmospherePass_       = MakeBox<PhysicalAtmospherePass>(device_, builtinResources_);
     gbufferPass_          = MakeBox<GBufferPass>(device_);
     deferredLightingPass_ = MakeBox<DeferredLightingPass>(device_, builtinResources_);
     shadowMaskPass_       = MakeBox<ShadowMaskPass>(device_, builtinResources_);
+
+    renderThread_ = std::jthread(&RenderLoop::RenderThreadEntry, this);
 }
 
 RenderLoop::~RenderLoop()
@@ -59,7 +58,7 @@ void RenderLoop::RenderThreadEntry()
     device_->BeginRenderLoop();
     RTRC_SCOPE_EXIT{ device_->EndRenderLoop(); };
 
-    auto DoWithExceptionHandling = [&]<typename F>(const F & f)
+    auto DoWithExceptionHandling = [&]<typename F>(const F &f)
     {
         if(config_.handleCrossThreadException)
         {
@@ -90,18 +89,19 @@ void RenderLoop::RenderThreadEntry()
                 [&](const RenderCommand_ResizeFramebuffer &resize)
                 {
                     RTRC_SCOPE_EXIT{ resize.finishSemaphore->release(); };
-                    DoWithExceptionHandling([&]
+                    if(resize.width > 0 && resize.height > 0)
                     {
-                        device_->GetRawDevice()->WaitIdle();
-                        device_->RecreateSwapchain();
-                        isSwapchainInvalid = false;
-                    });
+                        DoWithExceptionHandling([&]
+                        {
+                            device_->GetRawDevice()->WaitIdle();
+                            device_->RecreateSwapchain();
+                            isSwapchainInvalid = false;
+                        });
+                    }
                 },
                 [&](const RenderCommand_RenderStandaloneFrame &frame)
                 {
-                    RTRC_SCOPE_EXIT{
-                        frame.finishSemaphore->release();
-                    };
+                    RTRC_SCOPE_EXIT{ frame.finishSemaphore->release(); };
                     DoWithExceptionHandling([&]
                     {
                         if(isSwapchainInvalid)
@@ -156,8 +156,8 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
         frame, *transientConstantBufferAllocator_,
         meshManager_, materialManager_, *renderGraph, linearAllocator);
 
-    CachedScenePerCamera *cachedScenePerCamera = cachedScene_.GetCachedScenePerCamera(frame.camera.originalId);
-    assert(cachedScenePerCamera);
+    CachedCamera *cachedCamera = cachedScene_.GetCachedCamera(frame.camera.originalId);
+    assert(cachedCamera);
 
     // Blas buffers are not tracked by render graph, so we need to manually add dependency.
     renderGraph->MakeDummyPassIfNull(rgMesh.buildBlasPass, "BuildMeshBlas");
@@ -171,24 +171,24 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
     // ============= GBuffers =============
 
     rgScene.gbuffers = gbufferPass_->RenderGBuffers(
-        *cachedScenePerCamera, frame.bindlessTextureGroup, *renderGraph, framebuffer->GetSize()).gbuffers;
+        *cachedCamera, frame.bindlessTextureGroup, *renderGraph, framebuffer->GetSize()).gbuffers;
 
     // ============= Atmosphere =============
 
     atmospherePass_->SetProperties(frame.scene->GetAtmosphere());
-    auto rgAtmosphere = atmospherePass_->RenderAtmosphere(
+    auto rgAtmosphere = atmospherePass_->Render(
         *renderGraph, 
         frame.scene->GetSunDirection(), 
         frame.scene->GetSunColor() * frame.scene->GetSunIntensity(),
         1000.0f,
         frameTimer_.GetDeltaSecondsF(),
-        cachedScenePerCamera->GetCachedAtmosphereData());
+        cachedCamera->GetCachedAtmosphereData());
     rgScene.skyLut = rgAtmosphere.skyLut;
 
     // ============= Shadow mask =============
 
     int shadowMaskLightIndex = -1;
-    for(auto &&[i, light] : Enumerate(cachedScenePerCamera->GetLights()))
+    for(auto &&[i, light] : Enumerate(cachedCamera->GetLights()))
     {
         if(light->GetFlags().Contains(LightDetail::FlagBit::EnableRayTracedShadow))
         {
@@ -202,15 +202,18 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
             }
         }
     }
-    auto rgShadowMask = shadowMaskPass_->RenderShadowMask(
-        *cachedScenePerCamera, shadowMaskLightIndex, rgScene, *renderGraph);
+    auto rgShadowMask = shadowMaskPass_->Render(
+        *cachedCamera,
+        shadowMaskLightIndex,
+        frame.renderSettings.enableSoftShadowMaskLowResOptimization,
+        rgScene,
+        *renderGraph);
     rgScene.shadowMaskLightIndex = shadowMaskLightIndex;
     rgScene.shadowMask = rgShadowMask.shadowMask;
 
     // ============= Deferred lighting =============
     
-    deferredLightingPass_->RenderDeferredLighting(
-        *cachedScenePerCamera, rgScene , *renderGraph, framebuffer);
+    deferredLightingPass_->RenderDeferredLighting(*cachedCamera, rgScene , *renderGraph, framebuffer);
 
     // ============= ImGui =============
 

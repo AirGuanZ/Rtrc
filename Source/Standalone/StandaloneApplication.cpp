@@ -37,11 +37,11 @@ void StandaloneApplication::Initialize(const Rtrc::ApplicationInitializeContext 
     {
         pointLight_ = context.activeScene->CreateLight();
         pointLight_->SetType(Rtrc::Light::Type::Point);
-        pointLight_->SetPosition({ 0, 2, -2 });
+        pointLight_->SetPosition({ 0, 2, -3 });
         pointLight_->SetColor({ 1, 1, 1 });
         pointLight_->SetIntensity(1);
         pointLight_->SetDistanceFadeBegin(1.0f);
-        pointLight_->SetDistanceFadeEnd(3.0f);
+        pointLight_->SetDistanceFadeEnd(5.0f);
         pointLight_->SetFlags(Rtrc::Light::Flags::EnableRayTracedShadow);
     }
 }
@@ -73,6 +73,15 @@ void StandaloneApplication::Update(const Rtrc::ApplicationUpdateContext &context
         imgui.Text("Press F1 to show/hide cursor");
         imgui.SliderAngle("Sun Direction", &sunAngle_, 1, 179);
         sunAngle_ = std::clamp(sunAngle_, Rtrc::Deg2Rad(1), Rtrc::Deg2Rad(179));
+
+        float shadowSoftness = pointLight_->GetShadowSoftness();
+        if(imgui.SliderFloat("Shadow Softness", &shadowSoftness, 0.0f, 0.999f))
+        {
+            pointLight_->SetShadowSoftness(shadowSoftness);
+        }
+
+        imgui.CheckBox(
+            "Low-res optimization for soft shadow", &GetRenderSettings().enableSoftShadowMaskLowResOptimization);
     }
     imgui.End();
 

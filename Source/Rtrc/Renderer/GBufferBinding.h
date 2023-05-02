@@ -21,6 +21,11 @@ namespace GBufferBindingDetail
         rtrc_define(Texture2D, _internalGBuffer_Depth);
     };
 
+    rtrc_group(GBuffers_Depth)
+    {
+        rtrc_define(Texture2D, _internalGBuffer_Depth);
+    };
+
     template<bool Normal, bool Albedo, bool Metallic, bool Roughness, bool Depth>
     struct GBufferBindingTrait
     {
@@ -37,6 +42,12 @@ namespace GBufferBindingDetail
     struct GBufferBindingTrait<true, false, false, false, true>
     {
         using Bindings = GBuffers_NormalDepth;
+    };
+
+    template<>
+    struct GBufferBindingTrait<false, false, false, false, true>
+    {
+        using Bindings = GBuffers_Depth;
     };
 
     template<typename T> concept NeedNormal         = requires(T & t) { t._internalGBuffer_Normal;         };
@@ -93,7 +104,9 @@ namespace GBufferBindingDetail
     }
 
     template<typename T>
-    concept IsGBufferBindings = std::is_same_v<T, GBuffers_All> || std::is_same_v<T, GBuffers_NormalDepth>;
+    concept IsGBufferBindings = std::is_same_v<T, GBuffers_All>
+                             || std::is_same_v<T, GBuffers_NormalDepth>
+                             || std::is_same_v<T, GBuffers_Depth>;
 
     template<IsGBufferBindings T, bool EnableStencilRead>
     void DeclarePassUses(RG::Pass *pass, const GBuffers &gbuffers, RHI::PipelineStageFlag stages)
@@ -137,6 +150,7 @@ using GBufferBindings = typename GBufferBindingDetail::GBufferBindingTrait<
 
 using GBufferBindings_All         = GBufferBindings<true, true, true, true, true>;
 using GBufferBindings_NormalDepth = GBufferBindings<true, false, false, false, true>;
+using GBufferBindings_Depth       = GBufferBindings<false, false, false, false, true>;
 
 template<bool EnableStencilRead, typename T>
 void DeclareGBufferUses(RG::Pass *pass, const GBuffers &gbuffers, RHI::PipelineStageFlag stages)

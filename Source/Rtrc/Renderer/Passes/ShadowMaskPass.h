@@ -12,27 +12,39 @@ public:
 
     struct RenderGraphOutput
     {
-        RG::Pass            *shadowMaskPass = nullptr;
         RG::TextureResource *shadowMask = nullptr;
     };
 
     ShadowMaskPass(
         ObserverPtr<Device>                       device,
         ObserverPtr<const BuiltinResourceManager> builtinResources);
-
-    RenderGraphOutput RenderShadowMask(
-        const CachedScenePerCamera &scene,
-        int                         lightIndex,
-        const RGScene              &rgScene,
-        RG::RenderGraph            &renderGraph);
+    
+    RenderGraphOutput Render(
+        const CachedCamera &sceneCamera,
+        int                 lightIndex,
+        bool                enableLowResOptimization,
+        const RGScene      &rgScene,
+        RG::RenderGraph    &renderGraph);
 
 private:
+
+    void InitializeShaders();
     
     ObserverPtr<Device>                       device_;
     ObserverPtr<const BuiltinResourceManager> builtinResources_;
+    
+    RC<Shader>             collectLowResShadowMaskShader_;
+    RC<BindingGroupLayout> collectLowResShadowMaskBindingGroupLayout_;
 
-    RC<Shader>             shader_;
-    RC<BindingGroupLayout> passBindingGroupLayout_;
+    RC<Shader>             blurLowResXShader_;
+    RC<Shader>             blurLowResYShader_;
+    RC<BindingGroupLayout> blurLowResShadowMaskBindingGroupLayout_;
+    
+    RC<BindingGroupLayout> shadowMaskPassBindingGroupLayout_;
+
+    RC<Shader>             blurXShader_;
+    RC<Shader>             blurYShader_;
+    RC<BindingGroupLayout> blurPassBindingGroupLayout_;
 };
 
 RTRC_RENDERER_END

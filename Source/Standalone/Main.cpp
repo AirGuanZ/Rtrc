@@ -14,7 +14,7 @@ int main()
                 .vsync                      = true,
                 .debug                      = RTRC_DEBUG,
                 .rayTracing                 = true,
-                .handleCrossThreadException = true
+                .handleCrossThreadException = false
             });
     }
     catch(const Rtrc::Exception &e)

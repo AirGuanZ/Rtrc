@@ -114,6 +114,7 @@ target("Rtrc")
     add_packages("mydxc", "glfw", "stb", "tinyexr")
     add_packages("spdlog", "fmt", "mimalloc", "mytbb", "abseil", { public = true })
     add_deps("tinyobjloader", "sigslot", "imgui", "avir", "cy")
+	add_includedirs("External/half/include", { public = true })
 target_end()
 
 -- Standalone renderer

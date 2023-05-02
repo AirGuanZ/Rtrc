@@ -41,7 +41,7 @@ public:
 
 private:
 
-    static constexpr int MAX_COUNT_BINDLESS_STRUCTURE_BUFFER_FOR_BLAS = 4096;
+    static constexpr int MAX_BLAS_BINDLESS_BUFFER_COUNT = 4096;
 
     struct MaterialDataPerInstanceInOpaqueTlas
     {

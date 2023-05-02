@@ -59,6 +59,9 @@ protected:
     Window      &GetWindow();
     WindowInput &GetWindowInput();
 
+          Renderer::RenderSettings &GetRenderSettings()       { return activeRenderSettings_; }
+    const Renderer::RenderSettings &GetRenderSettings() const { return activeRenderSettings_; }
+
 private:
     
     void UpdateLoop();
@@ -70,8 +73,9 @@ private:
     Box<BindlessTextureManager> bindlessTextureManager_;
     Box<RenderLoop>             renderLoop_;
 
-    Box<Scene> activeScene_;
-    Camera     activeCamera_;
+    Box<Scene>               activeScene_;
+    Camera                   activeCamera_;
+    Renderer::RenderSettings activeRenderSettings_;
 };
 
 RTRC_END

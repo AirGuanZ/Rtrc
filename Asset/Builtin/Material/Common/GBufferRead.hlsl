@@ -2,6 +2,7 @@
 
 #define GBUFFER_MODE_ALL          1
 #define GBUFFER_MODE_NORMAL_DEPTH 2
+#define GBUFFER_MODE_DEPTH        3
 
 #if GBUFFER_MODE == GBUFFER_MODE_ALL
 #define GBUFFER_ENABLE_NORMAL    1
@@ -12,8 +13,10 @@
 #elif GBUFFER_MODE == GBUFFER_MODE_NORMAL_DEPTH
 #define GBUFFER_ENABLE_NORMAL 1
 #define GBUFFER_ENABLE_DEPTH  1
+#elif GBUFFER_MODE == GBUFFER_MODE_DEPTH
+#define GBUFFER_ENABLE_DEPTH 1
 #else
-#error "GBUFFER_MODE must be defined as GBUFFER_MODE_ALL or GBUFFER_MODE_NORMAL_DEPTH before including GBuffer.hlsl"
+#error "GBUFFER_MODE must be properly defined before including GBuffer.hlsl"
 #endif
 
 #if GBUFFER_ENABLE_NORMAL
@@ -86,6 +89,10 @@ float LoadGBufferDepth(float2 uv)
 {
     return _internalGBuffer_Depth.SampleLevel(_internalGBufferSampler, uv, 0);
 }
+float LoadGBufferDepth(uint2 pixel)
+{
+    return _internalGBuffer_Depth[pixel];
+}
 #endif
 
 struct GBufferPixel
@@ -127,6 +134,23 @@ GBufferPixel LoadGBufferPixel(float2 uv)
 #endif
 #if GBUFFER_ENABLE_DEPTH
     ret.depth = LoadGBufferDepth(uv);
+#endif
+    return ret;
+}
+
+uint2 GetGBufferResolution()
+{
+    uint2 ret;
+#if GBUFFER_ENABLE_NORMAL
+    _internalGBuffer_Normal.GetDimensions(ret.x, ret.y);
+#elif GBUFFER_ENABLE_ALBEDO || GBUFFER_ENABLE_METALLIC
+    _internalGBuffer_AlbedoMetallic.GetDimensions(ret.x, ret.y);
+#elif GBUFFER_ENABLE_ROUGHNESS
+    _internalGBuffer_Roughness.GetDimensions(ret.x, ret.y);
+#elif GBUFFER_ENABLE_DEPTH
+    _internalGBuffer_Depth.GetDimensions(ret.x, ret.y);
+#else
+    #error "Cannot call GetGBufferResolution when no gbuffer is enabled"
 #endif
     return ret;
 }

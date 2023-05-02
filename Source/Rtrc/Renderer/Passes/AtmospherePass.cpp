@@ -112,7 +112,7 @@ void PhysicalAtmospherePass::SetRayMarchingStepCount(int stepCount)
     }
 }
 
-PhysicalAtmospherePass::RenderGraphOutput PhysicalAtmospherePass::RenderAtmosphere(
+PhysicalAtmospherePass::RenderGraphOutput PhysicalAtmospherePass::Render(
     RG::RenderGraph    &graph,
     const Vector3f     &sunDirection,
     const Vector3f     &sunColor,
@@ -216,7 +216,7 @@ RG::TextureResource *PhysicalAtmospherePass::GetMultiScatteringLut(RG::RenderGra
 
     RC<Buffer> poissonDiskSamples;
     {
-        auto data = GeneratePoissonDiskSamples(MS_DIR_SAMPLE_COUNT, 42);
+        auto data = GeneratePoissonDiskSamples<Vector2f>(MS_DIR_SAMPLE_COUNT, 42);
         poissonDiskSamples = device_->CreateAndUploadBuffer(RHI::BufferDesc
         {
             .size           = sizeof(Vector2f) * MS_DIR_SAMPLE_COUNT,

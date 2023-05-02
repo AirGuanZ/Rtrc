@@ -3,14 +3,16 @@
 #include <Rtrc/Graphics/Mesh/Mesh.h>
 #include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/Graphics/Resource/MaterialManager.h>
+#include <Rtrc/Utility/Resource/Image.h>
 #include <Rtrc/Utility/SmartPointer/ObserverPtr.h>
 
 RTRC_BEGIN
 
 enum class BuiltinTexture
 {
-    Black2D, // R8G8B8A8_UNorm, RGB = 0, A = 1
-    White2D, // R8G8B8A8_UNorm, RGB = 1, A = 1
+    Black2D,          // R8G8B8A8_UNorm, RGB = 0, A = 1
+    White2D,          // R8G8B8A8_UNorm, RGB = 1, A = 1
+    BlueNoiseRGBA256, // R8G8B8A8_UNorm, 256 * 256
     Count
 };
 
@@ -43,6 +45,8 @@ public:
     const Mesh &GetFullscreenTriangleMesh() const;
     const Mesh &GetFullscreenQuadMesh()     const;
 
+    const Image<Vector4b> &GetBlueNoiseRGBA256() const;
+
 private:
 
     void LoadBuiltinTextures();
@@ -55,6 +59,8 @@ private:
     std::array<RC<Texture>,  EnumCount<BuiltinTexture>>  textures_;
     std::array<RC<Mesh>,     EnumCount<BuiltinMesh>>     meshes_;
     std::array<RC<Material>, EnumCount<BuiltinMaterial>> materials_;
+
+    Image<Vector4b> blueNoise256_;
 
     Mesh fullscreenTriangle_;
     Mesh fullscreenQuad_;

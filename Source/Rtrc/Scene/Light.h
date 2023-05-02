@@ -44,10 +44,13 @@ public:
 
         Vector3f position_         = { 0, 0, 0 };  // Valid for point light
         Vector3f direction_        = { 0, -1, 0 }; // Valid for directional light
+
         float    distanceFadeBegin = 1; // Valid for point light
         float    distanceFadeEnd   = 2;
+        
+        float shadowSoftness_ = 0.0f;
 
-        Flags flags_ = Flags::None;
+        Flags flags_    = Flags::None;
 
     public:
 
@@ -59,6 +62,7 @@ public:
         float           GetDistanceFadeBegin() const { assert(type_ == Type::Point); return distanceFadeBegin; }
         float           GetDistanceFadeEnd()   const { assert(type_ == Type::Point); return distanceFadeEnd; }
         Flags           GetFlags()             const { return flags_; }
+        float           GetShadowSoftness()    const { return shadowSoftness_; }
     };
 
     ~Light() override;
@@ -71,6 +75,7 @@ public:
     float           GetDistanceFadeBegin() const { return data_->GetDistanceFadeBegin(); }
     float           GetDistanceFadeEnd()   const { return data_->GetDistanceFadeEnd(); }
     bool            GetFlags()             const { return data_->GetFlags(); }
+    float           GetShadowSoftness()    const { return data_->GetShadowSoftness(); }
 
     void SetType(Type type);
     void SetColor(const Vector3f &color);
@@ -80,6 +85,7 @@ public:
     void SetDistanceFadeBegin(float dist);
     void SetDistanceFadeEnd(float dist);
     void SetFlags(Flags flags);
+    void SetShadowSoftness(float softness);
 
     const ReferenceCountedPtr<SharedRenderingData> &GetRenderingData() const { return data_; }
     SharedRenderingData                            *GetMutableRenderingData() { return data_.Unshare(); }
@@ -160,6 +166,11 @@ inline void Light::SetDistanceFadeEnd(float dist)
 inline void Light::SetFlags(Flags flags)
 {
     data_.Unshare()->flags_ = flags;
+}
+
+inline void Light::SetShadowSoftness(float softness)
+{
+       data_.Unshare()->shadowSoftness_ = softness;
 }
 
 inline Light::Light()

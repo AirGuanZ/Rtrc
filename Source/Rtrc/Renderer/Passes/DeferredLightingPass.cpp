@@ -59,7 +59,7 @@ DeferredLightingPass::DeferredLightingPass(
 }
 
 DeferredLightingPass::RenderGraphOutput DeferredLightingPass::RenderDeferredLighting(
-    const CachedScenePerCamera &scene,
+    const CachedCamera &scene,
     const RGScene              &rgScene,
     RG::RenderGraph            &renderGraph,
     RG::TextureResource        *renderTarget)
@@ -91,10 +91,10 @@ DeferredLightingPass::RenderGraphOutput DeferredLightingPass::RenderDeferredLigh
 }
 
 void DeferredLightingPass::DoDeferredLighting(
-    const CachedScenePerCamera &scene,
-    const RGScene              &rgScene,
-    RG::TextureResource        *rgRenderTarget,
-    RG::PassContext            &context)
+    const CachedCamera  &sceneCamera,
+    const RGScene       &rgScene,
+    RG::TextureResource *rgRenderTarget,
+    RG::PassContext     &context)
 {
     using namespace DeferredLightingPassDetail;
 
@@ -104,7 +104,7 @@ void DeferredLightingPass::DoDeferredLighting(
     std::vector<DirectionalLightShadingData> directionalLightData;
 
     int shadowMaskLightType = 0;
-    for(auto &&[lightIndex, light] : Enumerate(scene.GetLights()))
+    for(auto &&[lightIndex, light] : Enumerate(sceneCamera.GetLights()))
     {
         if(light->GetType() == Light::Type::Point)
         {
@@ -164,7 +164,7 @@ void DeferredLightingPass::DoDeferredLighting(
 
     BindingGroup_DeferredLightingPass passData;
     FillBindingGroupGBuffers<true>(passData, rgScene.gbuffers, context);
-    passData.camera                 = scene.GetCameraCBuffer();
+    passData.camera                 = sceneCamera.GetCameraCBuffer();
     passData.pointLightBuffer       = pointLightBuffer->GetStructuredSrv(sizeof(PointLightShadingData));
     passData.pointLightCount        = static_cast<uint32_t>(pointLightData.size());
     passData.directionalLightBuffer = directionalLightBuffer->GetStructuredSrv(sizeof(DirectionalLightShadingData));
@@ -214,7 +214,7 @@ void DeferredLightingPass::DoDeferredLighting(
 
     // Mesh
 
-    const Mesh mesh = GetFullscreenTriangle(*device_, scene.GetCamera());
+    const Mesh mesh = GetFullscreenTriangle(*device_, sceneCamera.GetCamera());
     BindMesh(commandBuffer, mesh);
 
     for(const LightingPass lightingPass : { LightingPass::Regular, LightingPass::Sky })

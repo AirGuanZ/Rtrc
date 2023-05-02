@@ -40,7 +40,7 @@ public:
     void SetSkyLutResolution(const Vector2u &res);
     void SetRayMarchingStepCount(int stepCount);
 
-    RenderGraphOutput RenderAtmosphere(
+    RenderGraphOutput Render(
         RG::RenderGraph    &graph,
         const Vector3f     &sunDirection,
         const Vector3f     &sunColor,

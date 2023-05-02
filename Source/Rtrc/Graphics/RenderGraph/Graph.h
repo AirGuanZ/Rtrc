@@ -120,11 +120,18 @@ inline constexpr UseInfo BUILD_ACCELERATION_STRUCTURE_OUTPUT =
     .accesses = RHI::ResourceAccess::WriteAS
 };
 
-inline constexpr UseInfo BUUILD_ACCELERATION_STRUCTURE_SCRATCH =
+inline constexpr UseInfo BUILD_ACCELERATION_STRUCTURE_SCRATCH =
 {
     .layout   = RHI::TextureLayout::Undefined,
     .stages   = RHI::PipelineStage::BuildAS,
     .accesses = RHI::ResourceAccess::BuildASScratch
+};
+
+inline constexpr UseInfo COMPUTE_SHADER_READ_ACCELERATION_STRUCTURE =
+{
+    .layout   = RHI::TextureLayout::Undefined,
+    .stages   = RHI::PipelineStage::ComputeShader,
+    .accesses = RHI::ResourceAccess::ReadAS
 };
 
 class Resource : public Uncopyable

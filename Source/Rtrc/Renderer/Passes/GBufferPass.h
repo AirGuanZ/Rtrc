@@ -18,10 +18,10 @@ public:
     explicit GBufferPass(ObserverPtr<Device> device);
 
     RenderGraphOutput RenderGBuffers(
-        const CachedScenePerCamera &scene,
-        const RC<BindingGroup>     &bindlessTextureGroup,
-        RG::RenderGraph            &renderGraph,
-        const Vector2u             &rtSize);
+        const CachedCamera     &sceneCamera,
+        const RC<BindingGroup> &bindlessTextureGroup,
+        RG::RenderGraph        &renderGraph,
+        const Vector2u         &rtSize);
 
 private:
 
@@ -49,13 +49,13 @@ private:
 
     GBuffers AllocateGBuffers(RG::RenderGraph &renderGraph, const Vector2u &rtSize);
 
-    std::vector<MaterialGroup> CollectPipelineGroups(const CachedScenePerCamera &scene) const;
+    std::vector<MaterialGroup> CollectPipelineGroups(const CachedCamera &scene) const;
 
     void DoRenderGBuffers(
-        RG::PassContext            &passContext,
-        const CachedScenePerCamera &scene,
-        const RC<BindingGroup>     &bindlessTextureGroup,
-        const GBuffers             &gbuffers);
+        RG::PassContext        &passContext,
+        const CachedCamera     &scene,
+        const RC<BindingGroup> &bindlessTextureGroup,
+        const GBuffers         &gbuffers);
 
     ObserverPtr<Device>    device_;
     PipelineCache          gbufferPipelineCache_;

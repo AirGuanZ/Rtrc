@@ -9,7 +9,7 @@
 
 RTRC_RENDERER_BEGIN
 
-class CachedScenePerCamera;
+class CachedCamera;
 
 class CachedScene : public Uncopyable
 {
@@ -51,7 +51,7 @@ public:
         RG::RenderGraph                           &renderGraph,
         LinearAllocator                           &linearAllocator);
 
-    CachedScenePerCamera *GetCachedScenePerCamera(UniqueId cameraId);
+    CachedCamera *GetCachedCamera(UniqueId cameraId);
 
     Span<StaticMeshRecord *> GetStaticMeshes() const { return objects_; }
 
@@ -80,10 +80,10 @@ private:
     RC<StatefulBuffer> opaqueTlasBuffer_;
     RC<Tlas>           opaqueTlas_;
 
-    std::vector<Box<CachedScenePerCamera>> cachedScenesPerCamera_;
+    std::vector<Box<CachedCamera>> cachedCameras_;
 };
 
-class CachedScenePerCamera
+class CachedCamera
 {
 public:
 
@@ -94,15 +94,15 @@ public:
         bool             supportInstancing = false;
     };
 
-    CachedScenePerCamera(ObserverPtr<Device> device, const CachedScene &scene, UniqueId cameraId);
+    CachedCamera(ObserverPtr<Device> device, const CachedScene &scene, UniqueId cameraId);
     
-    const RenderCamera &GetCamera() const { return renderCamera_; }
+    const RenderCamera  &GetCamera() const { return renderCamera_; }
     const RC<SubBuffer> &GetCameraCBuffer() const { return cameraCBuffer_; }
 
     const CachedScene &GetCachedScene() const { return scene_; }
 
     Span<StaticMeshRecord *> GetStaticMeshes() const { return objects_; }
-    const RC<Buffer> &GetStaticMeshPerObjectData() const { return perObjectDataBuffer_; }
+    const RC<Buffer>        &GetStaticMeshPerObjectData() const { return perObjectDataBuffer_; }
 
     Span<const Light::SharedRenderingData*> GetLights() const { return scene_.GetLights(); }
 

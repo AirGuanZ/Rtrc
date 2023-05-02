@@ -2,10 +2,11 @@
 
 #include <vector>
 
-#include <Rtrc/Math/Vector2.h>
+#include <Rtrc/Common.h>
 
 RTRC_BEGIN
 
-std::vector<Vector2f> GeneratePoissonDiskSamples(int count, int seed);
+template<typename T>
+std::vector<T> GeneratePoissonDiskSamples(int count, int seed);
 
 RTRC_END

@@ -55,7 +55,11 @@ void Application::Run(const Config &config)
     renderLoop_ = MakeBox<RenderLoop>(
         renderLoopConfig, device_, resourceManager_->GetBuiltinResources(), bindlessTextureManager_);
 
-    RTRC_SCOPE_EXIT{ renderLoop_->AddCommand(Renderer::RenderCommand_Exit{}); };
+    RTRC_SCOPE_EXIT
+    {
+        renderLoop_->AddCommand(Renderer::RenderCommand_Exit{});
+        renderLoop_.reset();
+    };
     UpdateLoop();
 }
 
@@ -116,17 +120,14 @@ WindowInput &Application::GetWindowInput()
 
 void Application::UpdateLoop()
 {
-    std::binary_semaphore framebufferResizeSemaphore(0);
-
     std::binary_semaphore finishRenderSemaphore(1);
-    bool shouldWaitFinishRenderSemaphore = true;
-
+    bool shouldWaitForFinishRenderSemaphore = true;
     auto BeforeAddNextCommand = [&]
     {
-        if(shouldWaitFinishRenderSemaphore)
+        if(shouldWaitForFinishRenderSemaphore)
         {
             finishRenderSemaphore.acquire();
-            shouldWaitFinishRenderSemaphore = false;
+            shouldWaitForFinishRenderSemaphore = false;
         }
         if(renderLoop_->HasException())
         {
@@ -134,7 +135,9 @@ void Application::UpdateLoop()
         }
     };
 
+    std::binary_semaphore framebufferResizeSemaphore(0);
     Vector2i framebufferSize = window_.GetFramebufferSize();
+
     Timer timer;
     while(!window_.ShouldClose())
     {
@@ -142,7 +145,7 @@ void Application::UpdateLoop()
 
         // Handle window resize
 
-        if(framebufferSize != window_.GetFramebufferSize())
+        if(framebufferSize != window_.GetFramebufferSize() || framebufferSize.x == 0 || framebufferSize.y == 0)
         {
             framebufferSize = window_.GetFramebufferSize();
             BeforeAddNextCommand();
@@ -177,6 +180,7 @@ void Application::UpdateLoop()
         auto activeSceneProxy = activeScene_->CreateSceneProxy();
 
         Renderer::RenderCommand_RenderStandaloneFrame frame;
+        frame.renderSettings       = activeRenderSettings_;
         frame.scene                = std::move(activeSceneProxy);
         frame.camera               = activeCamera_.GetRenderCamera();
         frame.imguiDrawData        = imgui_->Render();
@@ -185,7 +189,7 @@ void Application::UpdateLoop()
 
         BeforeAddNextCommand();
         renderLoop_->AddCommand(std::move(frame));
-        shouldWaitFinishRenderSemaphore = true;
+        shouldWaitForFinishRenderSemaphore = true;
     }
 
     BeforeAddNextCommand();

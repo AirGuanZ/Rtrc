@@ -59,8 +59,8 @@ CachedScene::RenderGraphInterface CachedScene::Update(
 
     // Update per-camera scene data
 
-    std::vector<Box<CachedScenePerCamera>> newCachedScenesPerCamera;
-    for(Box<CachedScenePerCamera> &camera : cachedScenesPerCamera_)
+    std::vector<Box<CachedCamera>> newCachedScenesPerCamera;
+    for(Box<CachedCamera> &camera : cachedCameras_)
     {
         if(camera->GetCamera().originalId == frame.camera.originalId)
         {
@@ -70,10 +70,10 @@ CachedScene::RenderGraphInterface CachedScene::Update(
     }
     if(newCachedScenesPerCamera.empty())
     {
-        newCachedScenesPerCamera.push_back(MakeBox<CachedScenePerCamera>(device_, *this, frame.camera.originalId));
+        newCachedScenesPerCamera.push_back(MakeBox<CachedCamera>(device_, *this, frame.camera.originalId));
     }
     newCachedScenesPerCamera.back()->Update(frame.camera, transientConstantBufferAllocator, linearAllocator);
-    cachedScenesPerCamera_.swap(newCachedScenesPerCamera);
+    cachedCameras_.swap(newCachedScenesPerCamera);
 
     // Tlas
 
@@ -184,7 +184,7 @@ CachedScene::RenderGraphInterface CachedScene::Update(
         
         ret.buildTlasPass = renderGraph.CreatePass("Build Tlas");
         ret.buildTlasPass->Use(ret.tlasBuffer, RG::BUILD_ACCELERATION_STRUCTURE_OUTPUT);
-        ret.buildTlasPass->Use(rgTlasScratchBuffer, RG::BUUILD_ACCELERATION_STRUCTURE_SCRATCH);
+        ret.buildTlasPass->Use(rgTlasScratchBuffer, RG::BUILD_ACCELERATION_STRUCTURE_SCRATCH);
         ret.buildTlasPass->SetCallback([
             info = std::move(prebuildInfo), instanceArrayDesc, tlas = opaqueTlas_, scratch = opaqueTlasScratchBuffer_]
             (RG::PassContext &context)
@@ -196,17 +196,17 @@ CachedScene::RenderGraphInterface CachedScene::Update(
     return ret;
 }
 
-CachedScenePerCamera *CachedScene::GetCachedScenePerCamera(UniqueId cameraId)
+CachedCamera *CachedScene::GetCachedCamera(UniqueId cameraId)
 {
-    size_t beg = 0, end = cachedScenesPerCamera_.size();
+    size_t beg = 0, end = cachedCameras_.size();
     while(beg < end)
     {
         const size_t mid = (beg + end) / 2;
-        if(cachedScenesPerCamera_[mid]->GetCamera().originalId == cameraId)
+        if(cachedCameras_[mid]->GetCamera().originalId == cameraId)
         {
-            return cachedScenesPerCamera_[mid].get();
+            return cachedCameras_[mid].get();
         }
-        if(cachedScenesPerCamera_[mid]->GetCamera().originalId < cameraId)
+        if(cachedCameras_[mid]->GetCamera().originalId < cameraId)
         {
             beg = mid;
         }
@@ -218,13 +218,13 @@ CachedScenePerCamera *CachedScene::GetCachedScenePerCamera(UniqueId cameraId)
     return nullptr;
 }
 
-CachedScenePerCamera::CachedScenePerCamera(ObserverPtr<Device> device, const CachedScene &scene, UniqueId cameraId)
+CachedCamera::CachedCamera(ObserverPtr<Device> device, const CachedScene &scene, UniqueId cameraId)
     : scene_(scene), perObjectDataBufferPool_(device, RHI::BufferUsage::ShaderStructuredBuffer)
 {
     renderCamera_.originalId = cameraId;
 }
 
-void CachedScenePerCamera::Update(
+void CachedCamera::Update(
     const RenderCamera               &camera,
     TransientConstantBufferAllocator &transientConstantBufferAllocator,
     LinearAllocator                  &linearAllocator)

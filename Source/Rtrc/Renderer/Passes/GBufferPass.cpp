@@ -24,10 +24,10 @@ GBufferPass::GBufferPass(ObserverPtr<Device> device)
 }
 
 GBufferPass::RenderGraphOutput GBufferPass::RenderGBuffers(
-    const CachedScenePerCamera &scene,
-    const RC<BindingGroup>     &bindlessTextureGroup,
-    RG::RenderGraph            &renderGraph,
-    const Vector2u             &rtSize)
+    const CachedCamera     &sceneCamera,
+    const RC<BindingGroup> &bindlessTextureGroup,
+    RG::RenderGraph        &renderGraph,
+    const Vector2u         &rtSize)
 {
     RenderGraphOutput ret;
     ret.gbuffers = AllocateGBuffers(renderGraph, rtSize);
@@ -36,9 +36,9 @@ GBufferPass::RenderGraphOutput GBufferPass::RenderGBuffers(
     ret.gbufferPass->Use(ret.gbuffers.albedoMetallic, RG::COLOR_ATTACHMENT_WRITEONLY);
     ret.gbufferPass->Use(ret.gbuffers.roughness, RG::COLOR_ATTACHMENT_WRITEONLY);
     ret.gbufferPass->Use(ret.gbuffers.depth, RG::DEPTH_STENCIL_ATTACHMENT);
-    ret.gbufferPass->SetCallback([this, gbuffers = ret.gbuffers, &scene, bindlessTextureGroup](RG::PassContext &context)
+    ret.gbufferPass->SetCallback([this, gbuffers = ret.gbuffers, &sceneCamera, bindlessTextureGroup](RG::PassContext &context)
     {
-        DoRenderGBuffers(context, scene, bindlessTextureGroup, gbuffers);
+        DoRenderGBuffers(context, sceneCamera, bindlessTextureGroup, gbuffers);
     });
     return ret;
 }
@@ -101,7 +101,7 @@ GBuffers GBufferPass::AllocateGBuffers(RG::RenderGraph &renderGraph, const Vecto
     return ret;
 }
 
-std::vector<GBufferPass::MaterialGroup> GBufferPass::CollectPipelineGroups(const CachedScenePerCamera &scene) const
+std::vector<GBufferPass::MaterialGroup> GBufferPass::CollectPipelineGroups(const CachedCamera &scene) const
 {
     std::vector<MaterialGroup> materialGroups;
 
@@ -159,7 +159,7 @@ std::vector<GBufferPass::MaterialGroup> GBufferPass::CollectPipelineGroups(const
 
 void GBufferPass::DoRenderGBuffers(
     RG::PassContext            &passContext,
-    const CachedScenePerCamera &scene,
+    const CachedCamera &scene,
     const RC<BindingGroup>     &bindlessTextureGroup,
     const GBuffers             &gbuffers)
 {
@@ -208,7 +208,7 @@ void GBufferPass::DoRenderGBuffers(
 
     struct MeshRecord
     {
-        const CachedScenePerCamera::StaticMeshRecord *mesh;
+        const CachedCamera::StaticMeshRecord *mesh;
         uint32_t perObjectDataOffset;
     };
 

@@ -55,6 +55,7 @@ VkFormat TranslateTexelFormat(Format format)
     case Format::Unknown:            return VK_FORMAT_UNDEFINED;
     case Format::B8G8R8A8_UNorm:     return VK_FORMAT_B8G8R8A8_UNORM;
     case Format::R8G8B8A8_UNorm:     return VK_FORMAT_R8G8B8A8_UNORM;
+    case Format::R32_Float:          return VK_FORMAT_R32_SFLOAT;
     case Format::R32G32_Float:       return VK_FORMAT_R32G32_SFLOAT;
     case Format::R32G32B32A32_Float: return VK_FORMAT_R32G32B32A32_SFLOAT;
     case Format::A2R10G10B10_UNorm:  return VK_FORMAT_A2R10G10B10_UNORM_PACK32;
@@ -62,6 +63,7 @@ VkFormat TranslateTexelFormat(Format format)
     case Format::R11G11B10_UFloat:   return VK_FORMAT_B10G11R11_UFLOAT_PACK32;
     case Format::R32_UInt:           return VK_FORMAT_R32_UINT;
     case Format::R8_UNorm:           return VK_FORMAT_R8_UNORM;
+    case Format::R16G16_Float:       return VK_FORMAT_R16G16_SFLOAT;
     case Format::D24S8:              return VK_FORMAT_D24_UNORM_S8_UINT;
     case Format::D32S8:              return VK_FORMAT_D32_SFLOAT_S8_UINT;
     case Format::D32:                return VK_FORMAT_D32_SFLOAT;

@@ -3,6 +3,7 @@
 #include <semaphore>
 
 #include <Rtrc/Graphics/ImGui/Instance.h>
+#include <Rtrc/Renderer/RenderSettings.h>
 #include <Rtrc/Scene/Camera/Camera.h>
 #include <Rtrc/Scene/Scene.h>
 
@@ -17,6 +18,7 @@ struct RenderCommand_ResizeFramebuffer
 
 struct RenderCommand_RenderStandaloneFrame
 {
+    RenderSettings         renderSettings;
     Box<SceneProxy>        scene;
     RenderCamera           camera;
     Box<ImGuiDrawData>     imguiDrawData;
