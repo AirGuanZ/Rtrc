@@ -207,7 +207,8 @@ ShadowMaskPass::RenderGraphOutput ShadowMaskPass::Render(
         keywords.Set(RTRC_KEYWORD(ENABLE_SHADOW_SOFTNESS), light->GetShadowSoftness() > 0);
         keywords.Set(RTRC_KEYWORD(ENABLE_LOW_RES_MASK), light->GetShadowSoftness() > 0 && enableLowResOptimization);
         shadowMaskShader = builtinResources_->GetBuiltinMaterial(BuiltinMaterial::ShadowMask)
-                                            ->GetPassByTag("BruteForce")->GetShaderTemplate()->GetShader(keywords);
+                                            ->GetPassByTag(RTRC_MATERIAL_PASS_TAG(BruteForce))
+                                            ->GetShaderTemplate()->GetShader(keywords);
     }
 
     auto generateRawMaskPass = renderGraph.CreatePass("ShadowMask");
@@ -310,13 +311,13 @@ void ShadowMaskPass::InitializeShaders()
     Material *material = builtinResources_->GetBuiltinMaterial(BuiltinMaterial::ShadowMask).get();
 
     {
-        collectLowResShadowMaskShader_ = material->GetPassByTag("Collect")->GetShader();
+        collectLowResShadowMaskShader_ = material->GetPassByTag(RTRC_MATERIAL_PASS_TAG(Collect))->GetShader();
         collectLowResShadowMaskBindingGroupLayout_ =
             device_->CreateBindingGroupLayout<ShadowMaskPassDetail::BindingGroup_CollectLowResShadowMaskPass>();
     }
 
     {
-        auto shaderTemplate = material->GetPassByTag("CollectBlur")->GetShaderTemplate();
+        auto shaderTemplate = material->GetPassByTag(RTRC_MATERIAL_PASS_TAG(CollectBlur))->GetShaderTemplate();
 
         KeywordContext keywords;
         keywords.Set(RTRC_KEYWORD(IS_BLUR_DIRECTION_Y), 0);
@@ -332,7 +333,7 @@ void ShadowMaskPass::InitializeShaders()
         device_->CreateBindingGroupLayout<ShadowMaskPassDetail::BindingGroup_ShadowMaskPass>();
 
     {
-        auto blurShaderTemplate = material->GetPassByTag("Blur")->GetShaderTemplate();
+        auto blurShaderTemplate = material->GetPassByTag(RTRC_MATERIAL_PASS_TAG(Blur))->GetShaderTemplate();
 
         KeywordContext keywords;
         keywords.Set(RTRC_KEYWORD(IS_BLUR_DIRECTION_Y), 0);

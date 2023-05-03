@@ -246,6 +246,11 @@ const char *Material::BuiltinPassName[EnumCount<BuiltinPass>] =
     "GBuffer"
 };
 
+const MaterialPassTag Material::BuiltinPooledPassName[EnumCount<BuiltinPass>] =
+{
+    RTRC_MATERIAL_PASS_TAG(GBuffer)
+};
+
 RC<MaterialInstance> Material::CreateInstance() const
 {
     return MakeRC<MaterialInstance>(shared_from_this(), device_);

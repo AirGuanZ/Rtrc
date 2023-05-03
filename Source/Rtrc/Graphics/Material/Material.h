@@ -31,6 +31,9 @@ class ShaderTokenStream;
 using MaterialPropertyName = GeneralPooledString;
 #define RTRC_MATERIAL_PROPERTY_NAME(X) RTRC_GENERAL_POOLED_STRING(X)
 
+using MaterialPassTag = GeneralPooledString;
+#define RTRC_MATERIAL_PASS_TAG(X) RTRC_GENERAL_POOLED_STRING(X)
+
 // Property declared at material scope
 struct MaterialProperty
 {
@@ -158,7 +161,8 @@ public:
     MaterialPass() = default;
     ~MaterialPass();
 
-    const std::set<std::string> &GetTags() const;
+    const std::vector<std::string>     &GetTags() const;
+    const std::vector<MaterialPassTag> &GetPooledTags() const;
 
     KeywordSet::ValueMask ExtractKeywordValueMask(const KeywordContext &keywordValues) const;
 
@@ -177,7 +181,9 @@ private:
 
     friend class MaterialManager;
 
-    std::set<std::string> tags_;
+    std::vector<std::string>     tags_;
+    std::vector<MaterialPassTag> pooledTags_;
+
     RC<ShaderTemplate> shaderTemplate_;
 
     const MaterialPropertyHostLayout *parentPropertyLayout_ = nullptr;
@@ -199,6 +205,7 @@ public:
     };
 
     static const char *BuiltinPassName[EnumCount<BuiltinPass>];
+    static const MaterialPassTag BuiltinPooledPassName[EnumCount<BuiltinPass>];
 
     const std::string &GetName() const;
 
@@ -206,9 +213,9 @@ public:
     const RC<MaterialPropertyHostLayout> &GetPropertyLayout() const;
 
     // return -1 when not found
-    int              GetPassIndexByTag(std::string_view tag) const;
+    int              GetPassIndexByTag(MaterialPassTag tag) const;
     RC<MaterialPass> GetPassByIndex(int index);
-    RC<MaterialPass> GetPassByTag(std::string_view tag);
+    RC<MaterialPass> GetPassByTag(MaterialPassTag tag);
 
     int GetBuiltinPassIndex(BuiltinPass pass) const;
 
@@ -222,10 +229,10 @@ private:
 
     Device *device_ = nullptr;
 
-    std::string                             name_;
-    std::vector<RC<MaterialPass>>           passes_;
-    std::map<std::string, int, std::less<>> tagToIndex_;
-    RC<MaterialPropertyHostLayout>          propertyLayout_;
+    std::string                                 name_;
+    std::vector<RC<MaterialPass>>               passes_;
+    std::map<MaterialPassTag, int, std::less<>> tagToIndex_;
+    RC<MaterialPropertyHostLayout>              propertyLayout_;
 
     std::array<int, EnumCount<BuiltinPass>> builtinPassIndices_;
 };
@@ -359,9 +366,14 @@ inline MaterialPass::~MaterialPass()
     onDestroyCallbacks_.Emit();
 }
 
-inline const std::set<std::string> &MaterialPass::GetTags() const
+inline const std::vector<std::string> &MaterialPass::GetTags() const
 {
     return tags_;
+}
+
+inline const std::vector<MaterialPassTag> &MaterialPass::GetPooledTags() const
+{
+    return pooledTags_;
 }
 
 inline KeywordSet::ValueMask MaterialPass::ExtractKeywordValueMask(const KeywordContext &keywordValues) const
@@ -423,7 +435,7 @@ inline RC<MaterialPass> Material::GetPassByIndex(int index)
     return passes_[index];
 }
 
-inline RC<MaterialPass> Material::GetPassByTag(std::string_view tag)
+inline RC<MaterialPass> Material::GetPassByTag(MaterialPassTag tag)
 {
     const int index = GetPassIndexByTag(tag);
     if(index < 0)
@@ -434,7 +446,7 @@ inline RC<MaterialPass> Material::GetPassByTag(std::string_view tag)
 }
 
 // return -1 when not found
-inline int Material::GetPassIndexByTag(std::string_view tag) const
+inline int Material::GetPassIndexByTag(MaterialPassTag tag) const
 {
     auto it = tagToIndex_.find(tag);
     return it != tagToIndex_.end() ? it->second : -1;

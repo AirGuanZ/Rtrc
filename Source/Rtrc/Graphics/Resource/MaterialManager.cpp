@@ -612,7 +612,7 @@ RC<Material> MaterialManager::CreateMaterial(std::string_view name)
     auto material = MakeRC<Material>();
     for(auto &&[index, pass] : Enumerate(passes))
     {
-        for(auto &tag : pass->GetTags())
+        for(auto &tag : pass->GetPooledTags())
         {
             if(material->tagToIndex_.contains(tag))
             {
@@ -813,10 +813,13 @@ RC<MaterialPass> MaterialManager::ParsePass(ShaderTokenStream &tokens)
     }
 
     auto pass = MakeRC<MaterialPass>();
-    pass->tags_ = std::move(passTags);
+    pass->tags_ = { passTags.begin(), passTags.end() };
+    std::ranges::transform(passTags, std::back_inserter(pass->pooledTags_), [](const std::string &tag)
+    {
+        return MaterialPassTag(tag);
+    });
     pass->shaderTemplate_ = std::move(shaderTemplate);
-    pass->materialPassPropertyLayouts_.resize(
-        1 << pass->shaderTemplate_->GetKeywordSet().GetTotalBitCount());
+    pass->materialPassPropertyLayouts_.resize(1 << pass->shaderTemplate_->GetKeywordSet().GetTotalBitCount());
     return pass;
 }
 

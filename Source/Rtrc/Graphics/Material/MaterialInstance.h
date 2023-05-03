@@ -145,7 +145,7 @@ public:
         const RC<const Material> &GetMaterial() const { return material_; }
         const MaterialPropertySheet &GetPropertySheet() const { return propertySheet_; }
 
-        MaterialPassInstance *GetPassInstance(std::string_view tag) const;
+        MaterialPassInstance *GetPassInstance(MaterialPassTag tag) const;
         MaterialPassInstance *GetPassInstance(size_t index) const;
 
     private:
@@ -164,7 +164,7 @@ public:
     const MaterialPropertySheet &GetPropertySheet() const { return data_->GetPropertySheet(); }
 
     // return nullptr when not found
-    MaterialPassInstance *GetPassInstance(std::string_view tag) const { return data_->GetPassInstance(tag); }
+    MaterialPassInstance *GetPassInstance(MaterialPassTag tag) const { return data_->GetPassInstance(tag); }
     MaterialPassInstance *GetPassInstance(size_t index) const { return data_->GetPassInstance(index); }
     
     void SetFloat(MaterialPropertyName name, float value)      { SetPropertyImpl<true>(name, value); }

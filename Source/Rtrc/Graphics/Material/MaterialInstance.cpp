@@ -302,7 +302,7 @@ MaterialInstance::SharedRenderingData *MaterialInstance::SharedRenderingData::Cl
     return ret;
 }
 
-MaterialPassInstance *MaterialInstance::SharedRenderingData::GetPassInstance(std::string_view tag) const
+MaterialPassInstance *MaterialInstance::SharedRenderingData::GetPassInstance(MaterialPassTag tag) const
 {
     const int index = material_->GetPassIndexByTag(tag);
     return index >= 0 ? passInstances_[index].get() : nullptr;

@@ -25,12 +25,12 @@ void Run()
     KeywordContext keywords;
 
     auto material = resourceManager.GetMaterial("ScaleImage");
-    auto matPass = material->GetPassByTag("Default");
+    auto matPass = material->GetPassByTag(RTRC_MATERIAL_PASS_TAG(Default));
     auto shader = matPass->GetShader(keywords);
     auto pipeline = shader->GetComputePipeline();
 
     auto matInst = material->CreateInstance();
-    auto matPassInst = matInst->GetPassInstance("Default");
+    auto matPassInst = matInst->GetPassInstance(RTRC_MATERIAL_PASS_TAG(Default));
 
     auto inputTexture = device->LoadTexture2D(
         "Asset/Sample/01.TexturedQuad/MainTexture.png", RHI::Format::B8G8R8A8_UNorm, 

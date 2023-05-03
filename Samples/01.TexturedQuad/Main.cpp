@@ -35,7 +35,7 @@ void Run()
     keywords.Set(RTRC_KEYWORD(DADADA), 1);
 
     auto material = resourceManager.GetMaterial("Quad");
-    auto matPass = material->GetPassByTag("Default");
+    auto matPass = material->GetPassByTag(RTRC_MATERIAL_PASS_TAG(Default));
     auto shader = matPass->GetShader(keywords);
 
     auto pipeline = device->CreateGraphicsPipeline({
