@@ -29,6 +29,16 @@ namespace StructDetail
     template<typename T, int I>
     using MemberDesc = std::remove_pointer_t<decltype(T::_rtrcMemberIndexToDesc(static_cast<Int2Type<I> *>(nullptr)))>;
 
+    template<typename U>
+    struct TemplateProcessProvider
+    {
+        template<typename F>
+        static constexpr void Process(const F &f)
+        {
+            U{}.template operator()<F>(f);
+        }
+    };
+
     template<typename T, typename F, int I>
     constexpr void CallForMember(const F &f)
     {
@@ -68,22 +78,21 @@ namespace StructDetail
     };
 
 #define RTRC_META_STRUCT_PRE_MEMBER(NAME)                                           \
-    static constexpr int _rtrcMemberCounter##NAME =                                 \
+    enum { _rtrcMemberCounter##NAME =                                               \
         sizeof(_rtrcMemberCounter((::Rtrc::StructDetail::Int<                       \
-            ::Rtrc::StructDetail::STRUCT_MAX_MEMBER_COUNT >*)nullptr)) - 1;         \
-    static ::Rtrc::StructDetail::Sizer<_rtrcMemberCounter##NAME + 2>                \
-        _rtrcMemberCounter(::Rtrc::StructDetail::Int<_rtrcMemberCounter##NAME>*);   \
-    struct _rtrcMemberDesc##NAME                                                    \
-    {                                                                               \
-        template<typename F>                                                        \
-        static constexpr void Process(const F &f)                                   \
-        {                                                                           \
+            ::Rtrc::StructDetail::STRUCT_MAX_MEMBER_COUNT >*)nullptr)) - 1 };       \
+    static ::Rtrc::StructDetail::Sizer<(_rtrcMemberCounter##NAME) + 2>              \
+        _rtrcMemberCounter(::Rtrc::StructDetail::Int<(_rtrcMemberCounter##NAME)>*); \
+    using _rtrcU##NAME = decltype([]<typename F>(const F &f) constexpr {
 
-#define RTRC_META_STRUCT_POST_MEMBER(NAME)                          \
-        }                                                           \
-    };                                                              \
-    static _rtrcMemberDesc##NAME *_rtrcMemberIndexToDesc(           \
-        ::Rtrc::StructDetail::Int2Type<_rtrcMemberCounter##NAME>*);
+#define RTRC_META_STRUCT_POST_MEMBER(NAME)                                                     \
+    });                                                                                        \
+    struct _rtrcMemberDesc##NAME : ::Rtrc::StructDetail::TemplateProcessProvider<_rtrcU##NAME> \
+    {                                                                                          \
+        using Rtrc::StructDetail::TemplateProcessProvider<_rtrcU##NAME>::Process;              \
+    };                                                                                         \
+    static _rtrcMemberDesc##NAME *_rtrcMemberIndexToDesc(                                      \
+        ::Rtrc::StructDetail::Int2Type<(_rtrcMemberCounter##NAME)>*);
 
 template<typename T>
 concept RtrcStruct = requires { typename T::_rtrcStructTypeFlag; };
@@ -112,10 +121,10 @@ concept RtrcStruct = requires { typename T::_rtrcStructTypeFlag; };
     struct NAME : _rtrcCBufferBase##NAME
 
 #define rtrc_var(TYPE, NAME)                            \
+    using _rtrcMemberType##NAME = TYPE;                 \
+    _rtrcMemberType##NAME NAME;                         \
     RTRC_META_STRUCT_PRE_MEMBER(NAME)                   \
         f.template operator()(&_rtrcSelf::NAME, #NAME); \
-    RTRC_META_STRUCT_POST_MEMBER(NAME)                  \
-    using _rtrcMemberType##NAME = TYPE;                 \
-    _rtrcMemberType##NAME NAME
+    RTRC_META_STRUCT_POST_MEMBER(NAME) using _requireComma##NAME = int
 
 RTRC_END

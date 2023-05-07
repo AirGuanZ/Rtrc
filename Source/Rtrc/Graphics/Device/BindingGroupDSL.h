@@ -367,10 +367,11 @@ namespace BindingGroupDSL
     struct NAME;                                                                                            \
     struct _rtrcGroupBase##NAME                                                                             \
     {                                                                                                       \
+        using _rtrcBase = _rtrcGroupBase##NAME;                                                             \
         using _rtrcSelf = NAME;                                                                             \
         struct _rtrcGroupTypeFlag{};                                                                        \
         static ::Rtrc::StructDetail::Sizer<1> _rtrcMemberCounter(...);                                      \
-        static constexpr auto _rtrcGroupDefaultStages = (DEFAULT_STAGES);                                   \
+        enum : uint32_t { _rtrcGroupDefaultStages = (DEFAULT_STAGES) };                                     \
         using float2   = ::Rtrc::Vector2f;                                                                  \
         using float3   = ::Rtrc::Vector3f;                                                                  \
         using float4   = ::Rtrc::Vector4f;                                                                  \
@@ -406,49 +407,49 @@ namespace BindingGroupDSL
         return (STAGES);                                                    \
     }())
 
-#define rtrc_define2(TYPE, NAME)         RTRC_DEFINE_IMPL(TYPE, NAME, _rtrcGroupDefaultStages, false, false)
+#define rtrc_define2(TYPE, NAME)         RTRC_DEFINE_IMPL(TYPE, NAME, _rtrcBase::_rtrcGroupDefaultStages, false, false)
 #define rtrc_define3(TYPE, NAME, STAGES) RTRC_DEFINE_IMPL(TYPE, NAME, RTRC_INLINE_STAGE_DECLERATION(STAGES), false, false)
 #define rtrc_define(...)                 RTRC_MACRO_OVERLOADING(rtrc_define, __VA_ARGS__)
 
-#define rtrc_bindless2(TYPE, NAME)         RTRC_DEFINE_IMPL(TYPE, NAME, _rtrcGroupDefaultStages, true, false)
+#define rtrc_bindless2(TYPE, NAME)         RTRC_DEFINE_IMPL(TYPE, NAME, _rtrcBase::_rtrcGroupDefaultStages, true, false)
 #define rtrc_bindless3(TYPE, NAME, STAGES) RTRC_DEFINE_IMPL(TYPE, NAME, RTRC_INLINE_STAGE_DECLERATION(STAGES), true, false)
 #define rtrc_bindless(...)                 RTRC_MACRO_OVERLOADING(rtrc_bindless, __VA_ARGS__)
 
 #define rtrc_bindless_variable_size2(TYPE, NAME) \
-    RTRC_DEFINE_IMPL(TYPE, NAME, _rtrcGroupDefaultStages, true, true)
+    RTRC_DEFINE_IMPL(TYPE, NAME, _rtrcBase::_rtrcGroupDefaultStages, true, true)
 #define rtrc_bindless_variable_size3(TYPE, NAME, STAGES) \
     RTRC_DEFINE_IMPL(TYPE, NAME, RTRC_INLINE_STAGE_DECLERATION(STAGES), true, true)
 #define rtrc_bindless_variable_size(...) RTRC_MACRO_OVERLOADING(rtrc_bindless_variable_size, __VA_ARGS__)
 
-#define rtrc_uniform(TYPE, NAME)                                        \
-    RTRC_META_STRUCT_PRE_MEMBER(NAME)                                   \
-        f.template operator()<true>(                                    \
-            &_rtrcSelf::NAME, #NAME, _rtrcGroupDefaultStages,           \
-            ::Rtrc::BindingGroupDSL::CreateBindingFlags(false, false)); \
-    RTRC_META_STRUCT_POST_MEMBER(NAME)                                  \
-    using _rtrcMemberType##NAME = TYPE;                                 \
-    _rtrcMemberType##NAME NAME
+#define rtrc_uniform(TYPE, NAME)                                         \
+    using _rtrcMemberType##NAME = TYPE;                                  \
+    _rtrcMemberType##NAME NAME;                                          \
+    RTRC_META_STRUCT_PRE_MEMBER(NAME)                                    \
+        f.template operator()<true>(                                     \
+            &_rtrcSelf::NAME, #NAME, _rtrcBase::_rtrcGroupDefaultStages, \
+            ::Rtrc::BindingGroupDSL::CreateBindingFlags(false, false));  \
+    RTRC_META_STRUCT_POST_MEMBER(NAME) using _requireComma##NAME = int
 
 #define RTRC_DEFINE_IMPL(TYPE, NAME, STAGES, IS_BINDLESS, VARIABLE_ARRAY_SIZE)              \
+    using _rtrcMemberType##NAME = ::Rtrc::BindingGroupDSL::MemberProxy_##TYPE;              \
+    _rtrcMemberType##NAME NAME;                                                             \
     RTRC_META_STRUCT_PRE_MEMBER(NAME)                                                       \
         f.template operator()<false>(                                                       \
             &_rtrcSelf::NAME, #NAME, STAGES,                                                \
             ::Rtrc::BindingGroupDSL::CreateBindingFlags(IS_BINDLESS, VARIABLE_ARRAY_SIZE)); \
-    RTRC_META_STRUCT_POST_MEMBER(NAME)                                                      \
-    using _rtrcMemberType##NAME = ::Rtrc::BindingGroupDSL::MemberProxy_##TYPE;              \
-    _rtrcMemberType##NAME NAME
+    RTRC_META_STRUCT_POST_MEMBER(NAME) using _requireComma##NAME = int
 
-#define rtrc_inline2(TYPE, NAME) RTRC_INLINE_IMPL(TYPE, NAME, _rtrcGroupDefaultStages)
+#define rtrc_inline2(TYPE, NAME) RTRC_INLINE_IMPL(TYPE, NAME, _rtrcBase::_rtrcGroupDefaultStages)
 #define rtrc_inline3(TYPE, NAME, STAGES) RTRC_INLINE_IMPL(TYPE, NAME, RTRC_INLINE_STAGE_DECLERATION(STAGES))
 #define rtrc_inline(...) RTRC_MACRO_OVERLOADING(rtrc_inline, __VA_ARGS__)
 
 #define RTRC_INLINE_IMPL(TYPE, NAME, STAGES)                            \
+    TYPE NAME;                                                          \
     RTRC_META_STRUCT_PRE_MEMBER(NAME)                                   \
         f.template operator()<false>(                                   \
             &_rtrcSelf::NAME, #NAME, STAGES,                            \
             ::Rtrc::BindingGroupDSL::CreateBindingFlags(false, false)); \
-    RTRC_META_STRUCT_POST_MEMBER(NAME)                                  \
-    TYPE NAME
+    RTRC_META_STRUCT_POST_MEMBER(NAME) using _requireComma##NAME = int
 
 template<BindingGroupDSL::RtrcGroupStruct T>
 const BindingGroupLayout::Desc &GetBindingGroupLayoutDesc()

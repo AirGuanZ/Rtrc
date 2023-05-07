@@ -4,7 +4,7 @@ using namespace Rtrc;
 
 rtrc_group(MainGroup)
 {
-    rtrc_define(RWTexture2D, OutputTexture);
+    rtrc_define(RWTexture2D,                     OutputTexture);
     rtrc_define(RaytracingAccelerationStructure, Scene);
 };
 

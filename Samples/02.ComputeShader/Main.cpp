@@ -8,7 +8,7 @@ rtrc_group(MainGroup)
 {
     rtrc_struct(ScaleSetting)
     {
-        rtrc_var(float, scale) = 0;
+        rtrc_var(float, scale);
     };
     rtrc_define(Texture2D,                    InputTexture);
     rtrc_define(RWTexture2D,                  OutputTexture);
