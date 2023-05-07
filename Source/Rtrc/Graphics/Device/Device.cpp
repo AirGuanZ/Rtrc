@@ -1,4 +1,5 @@
 #include <Rtrc/Graphics/Device/Device.h>
+#include <Rtrc/Graphics/Device/ClearBufferUtils.h>
 #include <Rtrc/Utility/Resource/GenerateMipmap.h>
 
 RTRC_BEGIN
@@ -120,6 +121,7 @@ Device::~Device()
         sync_->PrepareDestruction();
     }
 
+    clearBufferUtils_.reset();
     accelerationManager_.reset();
     bindingLayoutManager_.reset();
     copyContext_.reset();
@@ -180,6 +182,8 @@ void Device::InitializeInternal(Flags flags, RHI::DevicePtr device, bool isCompu
 
     copyContext_ = MakeBox<CopyContext>(device_);
     accelerationManager_ = MakeBox<AccelerationStructureManager>(device_, *sync_);
+
+    clearBufferUtils_ = MakeBox<ClearBufferUtils>(this);
 }
 
 void Device::UploadBuffer(const RC<Buffer> &buffer, const void *initData, size_t offset, size_t size)

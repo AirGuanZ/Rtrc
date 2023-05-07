@@ -7,7 +7,9 @@
 #include <Rtrc/Math/Vector4.h>
 #include <Rtrc/Utility/Container/Span.h>
 #include <Rtrc/Utility/EnumFlags.h>
+#include <Rtrc/Utility/Hash.h>
 #include <Rtrc/Utility/SmartPointer/ReferenceCounted.h>
+#include <Rtrc/Utility/String.h>
 #include <Rtrc/Utility/Uncopyable.h>
 #include <Rtrc/Utility/Variant.h>
 #include <Rtrc/Window/Window.h>
@@ -196,6 +198,8 @@ enum class ShaderStage : uint32_t
 };
 RTRC_DEFINE_ENUM_FLAGS(ShaderStage)
 using ShaderStageFlags = EnumFlagsShaderStage;
+
+std::string GetShaderStageFlagsName(ShaderStageFlags flags);
 
 enum class PrimitiveTopology
 {
@@ -391,7 +395,8 @@ enum class PipelineStage : uint32_t
     Resolve          = 1 << 9,
     BuildAS          = 1 << 10,
     CopyAS           = 1 << 11,
-    All              = 1 << 12
+    IndirectCommand  = 1 << 12,
+    All              = 1 << 13
 };
 RTRC_DEFINE_ENUM_FLAGS(PipelineStage)
 using PipelineStageFlag = EnumFlagsPipelineStage;
@@ -410,21 +415,23 @@ enum class ResourceAccess : uint32_t
     RWTextureRead           = 1 << 8,
     RWTextureWrite          = 1 << 9,
     BufferRead              = 1 << 10,
-    RWBufferRead            = 1 << 11,
-    RWBufferWrite           = 1 << 12,
-    RWStructuredBufferRead  = 1 << 13,
-    RWStructuredBufferWrite = 1 << 14,
-    CopyRead                = 1 << 15,
-    CopyWrite               = 1 << 16,
-    ResolveRead             = 1 << 17,
-    ResolveWrite            = 1 << 18,
-    ClearWrite              = 1 << 19,
-    ReadAS                  = 1 << 20,
-    WriteAS                 = 1 << 21,
-    BuildASScratch          = 1 << 22,
-    ReadSBT                 = 1 << 23,
-    ReadForBuildAS          = 1 << 24,
-    All                     = 1 << 25
+    StructuredBufferRead    = 1 << 11,
+    RWBufferRead            = 1 << 12,
+    RWBufferWrite           = 1 << 13,
+    RWStructuredBufferRead  = 1 << 14,
+    RWStructuredBufferWrite = 1 << 15,
+    CopyRead                = 1 << 16,
+    CopyWrite               = 1 << 17,
+    ResolveRead             = 1 << 18,
+    ResolveWrite            = 1 << 19,
+    ClearWrite              = 1 << 20,
+    ReadAS                  = 1 << 21,
+    WriteAS                 = 1 << 22,
+    BuildASScratch          = 1 << 23,
+    ReadSBT                 = 1 << 24,
+    ReadForBuildAS          = 1 << 25,
+    IndirectCommandRead     = 1 << 26,
+    All                     = 1 << 27
 };
 RTRC_DEFINE_ENUM_FLAGS(ResourceAccess)
 using ResourceAccessFlag = EnumFlagsResourceAccess;
@@ -532,7 +539,7 @@ struct RawShaderEntry
 struct BindingDesc
 {
     BindingType              type;
-    ShaderStageFlags          shaderStages = ShaderStage::All;
+    ShaderStageFlags         shaderStages = ShaderStage::All;
     std::optional<uint32_t>  arraySize;
     std::vector<SamplerPtr>  immutableSamplers;
     bool                     bindless = false;
@@ -595,6 +602,17 @@ struct SamplerDesc
 
     auto operator<=>(const SamplerDesc &) const = default;
     bool operator==(const SamplerDesc &) const = default;
+
+    size_t Hash() const
+    {
+        return Rtrc::Hash(
+            magFilter, minFilter, mipFilter,
+            addressModeU, addressModeV, addressModeW,
+            mipLODBias, minLOD, maxLOD,
+            enableAnisotropy, maxAnisotropy,
+            enableComparision, compareOp,
+            borderColor[0], borderColor[1], borderColor[2], borderColor[3]);
+    }
 };
 
 struct TextureSubresource
@@ -1464,6 +1482,10 @@ public:
         const ShaderBindingTableRegion &missSbt,
         const ShaderBindingTableRegion &hitSbt,
         const ShaderBindingTableRegion &callableSbt) RTRC_RHI_API_PURE;
+
+    // Indirect draw
+
+    RTRC_RHI_API void DispatchIndirect(const BufferPtr &buffer, size_t byteOffset) RTRC_RHI_API_PURE;
 
     // Copy
 

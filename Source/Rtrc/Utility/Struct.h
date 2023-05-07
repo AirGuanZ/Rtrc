@@ -96,11 +96,6 @@ concept RtrcStruct = requires { typename T::_rtrcStructTypeFlag; };
         struct _rtrcStructTypeFlag{};                                     \
         static constexpr std::string_view _rtrcSelfName = #NAME;          \
         static ::Rtrc::StructDetail::Sizer<1> _rtrcMemberCounter(...);    \
-        template<typename F>                                              \
-        static constexpr void ForEachMember(const F &f)                   \
-        {                                                                 \
-            ::Rtrc::StructDetail::ForEachMember<_rtrcSelf>(f);            \
-        }                                                                 \
         auto operator<=>(const _rtrcCBufferBase##NAME &) const = default; \
         using float2   = ::Rtrc::Vector2f;                                \
         using float3   = ::Rtrc::Vector3f;                                \

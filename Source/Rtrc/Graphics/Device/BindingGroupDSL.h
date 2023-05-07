@@ -217,12 +217,34 @@ namespace BindingGroupDSL
 
     template<typename T>
     concept RtrcGroupStruct = requires { typename T::_rtrcGroupTypeFlag; };
+    
+    template<RtrcGroupStruct T, typename F, typename A = std::identity>                                 
+    static constexpr void ForEachFlattenMember(
+        const F &f, RHI::ShaderStageFlags stageMask = RHI::ShaderStage::All, const A &accessor = {})
+    {
+        StructDetail::ForEachMember<T>([&]<bool IsUniform, typename M>
+            (M T:: * ptr, const char *name, RHI::ShaderStageFlags stages, BindingFlags flags)
+        {
+            auto newAccessor = [&]<typename P>(P p) constexpr -> decltype(auto)
+            {
+                static_assert(std::is_pointer_v<P>); return &(accessor(p)->*ptr);
+            };
+            if constexpr(::Rtrc::BindingGroupDSL::RtrcGroupStruct<M>)
+            {
+                BindingGroupDSL::ForEachFlattenMember<M>(f, stageMask &stages, newAccessor);
+            }
+            else
+            {
+                f.template operator() < IsUniform, M > (name, stageMask & stages, newAccessor, flags);
+            }
+        });
+    }
 
     template<RtrcGroupStruct T>
     consteval size_t GetUniformDWordCount()
     {
         size_t dwordCount = 0;
-        T::ForEachFlattenMember(
+        BindingGroupDSL::ForEachFlattenMember<T>(
             [&dwordCount]<bool IsUniform, typename M, typename A>
             (const char *name, RHI::ShaderStageFlags stages, const A &accessor, BindingFlags flags)
         {
@@ -252,7 +274,7 @@ namespace BindingGroupDSL
     void ForEachFlattenUniform(const F &f)
     {
         size_t deviceDWordOffset = 0;
-        T::ForEachFlattenMember(
+        BindingGroupDSL::ForEachFlattenMember<T>(
             [&deviceDWordOffset, &f]<bool IsUniform, typename M, typename A>
             (const char *name, RHI::ShaderStageFlags stages, const A &accessor, BindingFlags flags)
         {
@@ -288,7 +310,7 @@ namespace BindingGroupDSL
         static BindingGroupLayout::Desc ret = []
         {
             BindingGroupLayout::Desc desc;
-            T::ForEachFlattenMember(
+            BindingGroupDSL::ForEachFlattenMember<T>(
                 [&desc]<bool IsUniform, typename M, typename A>
                 (const char *name, RHI::ShaderStageFlags stages, const A &accessor, BindingFlags flags)
             {
@@ -349,33 +371,6 @@ namespace BindingGroupDSL
         struct _rtrcGroupTypeFlag{};                                                                        \
         static ::Rtrc::StructDetail::Sizer<1> _rtrcMemberCounter(...);                                      \
         static constexpr auto _rtrcGroupDefaultStages = (DEFAULT_STAGES);                                   \
-        template<typename F>                                                                                \
-        static constexpr void ForEachMember(const F &f)                                                     \
-        {                                                                                                   \
-            ::Rtrc::StructDetail::ForEachMember<_rtrcSelf>(f);                                              \
-        }                                                                                                   \
-        template<typename F, typename A = std::identity>                                                    \
-        static constexpr void ForEachFlattenMember(                                                         \
-            const F &f,                                                                                     \
-            ::Rtrc::RHI::ShaderStageFlags stageMask = ::Rtrc::RHI::ShaderStage::All,                        \
-            const A &accessor = {})                                                                         \
-        {                                                                                                   \
-            ::Rtrc::StructDetail::ForEachMember<_rtrcSelf>([&]<bool IsUniform, typename M>                  \
-            (M _rtrcSelf::* ptr, const char *name, ::Rtrc::RHI::ShaderStageFlags stages,                    \
-             ::Rtrc::BindingGroupDSL::BindingFlags flags)                                                   \
-            {                                                                                               \
-                auto newAccessor = [&]<typename P>(P p) constexpr -> decltype(auto)                         \
-                    { static_assert(std::is_pointer_v<P>); return &(accessor(p)->*ptr); };                  \
-                if constexpr(::Rtrc::BindingGroupDSL::RtrcGroupStruct<M>)                                   \
-                {                                                                                           \
-                    M::ForEachFlattenMember(f, stageMask & stages, newAccessor);                            \
-                }                                                                                           \
-                else                                                                                        \
-                {                                                                                           \
-                    f.template operator()<IsUniform, M>(name, stageMask & stages, newAccessor, flags);      \
-                }                                                                                           \
-            });                                                                                             \
-        }                                                                                                   \
         using float2   = ::Rtrc::Vector2f;                                                                  \
         using float3   = ::Rtrc::Vector3f;                                                                  \
         using float4   = ::Rtrc::Vector4f;                                                                  \
@@ -467,7 +462,7 @@ void ApplyBindingGroup(RHI::Device *device, ConstantBufferManagerInterface *cbMg
     RHI::BindingGroupUpdateBatch batch;
     int index = 0;
     bool swapUniformAndVariableSizedArray = false;
-    T::ForEachFlattenMember(
+    BindingGroupDSL::ForEachFlattenMember<T>(
         [&]<bool IsUniform, typename M, typename A>
         (const char *name, RHI::ShaderStageFlags stages, const A &accessor, BindingGroupDSL::BindingFlags flags)
     {

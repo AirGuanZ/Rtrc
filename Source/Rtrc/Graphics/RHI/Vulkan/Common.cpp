@@ -453,6 +453,7 @@ VkPipelineStageFlags2 TranslatePipelineStageFlag(PipelineStageFlag flag)
         VK_PIPELINE_STAGE_2_RESOLVE_BIT,
         VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
         VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_COPY_BIT_KHR,
+        VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,
         VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT
     };
     VkPipelineStageFlags2 result = 0;
@@ -481,6 +482,7 @@ VkAccessFlags2 TranslateAccessFlag(ResourceAccessFlag flag)
         VK_ACCESS_2_SHADER_STORAGE_READ_BIT,                            // RWTextureRead
         VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,                           // RWTextureWrite
         VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,                            // BufferRead
+        VK_ACCESS_2_SHADER_STORAGE_READ_BIT,                            // StructuredBufferRead
         VK_ACCESS_2_SHADER_STORAGE_READ_BIT,                            // RWBufferRead
         VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,                           // RWBufferWrite
         VK_ACCESS_2_SHADER_STORAGE_READ_BIT,                            // RWStructuredBufferRead
@@ -496,6 +498,7 @@ VkAccessFlags2 TranslateAccessFlag(ResourceAccessFlag flag)
         VK_ACCESS_2_ACCELERATION_STRUCTURE_WRITE_BIT_KHR,
         VK_ACCESS_2_SHADER_BINDING_TABLE_READ_BIT_KHR,                  // ReadSBT
         VK_ACCESS_2_SHADER_READ_BIT,                                    // ReadForBuildAS
+        VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,                          // IndirectCommandRead
         VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT      // All
     };
     VkAccessFlags2 result = 0;

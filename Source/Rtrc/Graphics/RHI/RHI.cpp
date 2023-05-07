@@ -52,6 +52,51 @@ size_t GetTexelSize(Format format)
     throw Exception("Unknown format: " + std::to_string(static_cast<int>(format)));
 }
 
+std::string GetShaderStageFlagsName(ShaderStageFlags flags)
+{
+#define ADD_COMPOSED_STAGES(STAGE)         \
+    if(flags.Contains(ShaderStage::STAGE)) \
+    {                                      \
+        names.push_back(#STAGE);           \
+    }                                      \
+    else
+#define ADD_ATOMIC_STAGE(STAGE) ADD_COMPOSED_STAGES(STAGE) { }
+
+    std::vector<std::string> names;
+    ADD_COMPOSED_STAGES(All)
+    {
+        ADD_COMPOSED_STAGES(AllGraphics)
+        {
+            ADD_ATOMIC_STAGE(VS)
+            ADD_ATOMIC_STAGE(FS)
+        }
+
+        ADD_COMPOSED_STAGES(AllRT)
+        {
+            ADD_COMPOSED_STAGES(AllRTHit)
+            {
+                ADD_ATOMIC_STAGE(RT_CHS)
+                ADD_ATOMIC_STAGE(RT_IS)
+                ADD_ATOMIC_STAGE(RT_AHS)
+            }
+
+            ADD_COMPOSED_STAGES(AllRTCommon)
+            {
+                ADD_ATOMIC_STAGE(RT_RGS)
+                ADD_ATOMIC_STAGE(RT_MS)
+            }
+
+            ADD_ATOMIC_STAGE(CallableShader)
+        }
+
+        ADD_ATOMIC_STAGE(CS)
+    }
+    return Join('|', names.begin(), names.end());
+
+#undef ADD_COMPOSED_STAGES
+#undef ADD_ATOMIC_STAGE
+}
+
 bool IsReadOnly(ResourceAccessFlag access)
 {
     using enum ResourceAccess;

@@ -4,6 +4,7 @@
 #include <Rtrc/Graphics/Device/BindingGroup.h>
 #include <Rtrc/Graphics/Device/BindingGroupDSL.h>
 #include <Rtrc/Graphics/Device/Buffer.h>
+#include <Rtrc/Graphics/Device/ClearBufferUtils.h>
 #include <Rtrc/Graphics/Device/CopyContext.h>
 #include <Rtrc/Graphics/Device/Queue.h>
 #include <Rtrc/Graphics/Device/Pipeline.h>
@@ -248,6 +249,8 @@ public:
     BindingGroupManager  &GetBindingGroupManager();
     const RHI::DevicePtr &GetRawDevice() const;
 
+    ClearBufferUtils &GetClearBufferUtils() { return *clearBufferUtils_; }
+
     operator DynamicBufferManager &();
 
 private:
@@ -285,6 +288,7 @@ private:
     Box<PooledTextureManager>         pooledTextureManager_;
     Box<CopyContext>                  copyContext_;
     Box<AccelerationStructureManager> accelerationManager_;
+    Box<ClearBufferUtils>             clearBufferUtils_;
 };
 
 inline const RHI::ShaderGroupRecordRequirements &Device::GetShaderGroupRecordRequirements() const
@@ -421,9 +425,7 @@ RC<SubBuffer> Device::CreateConstantBuffer(const T &data)
 
 inline Box<RG::RenderGraph> Device::CreateRenderGraph()
 {
-    auto rg = MakeBox<RG::RenderGraph>();
-    rg->SetQueue(mainQueue_);
-    return rg;
+    return MakeBox<RG::RenderGraph>(this, mainQueue_);
 }
 
 template<BindingGroupDSL::RtrcGroupStruct T>
@@ -452,7 +454,18 @@ RC<BindingGroup> Device::CreateBindingGroup(int variableBindingCount)
 template<BindingGroupDSL::RtrcGroupStruct T>
 RC<BindingGroup> Device::CreateBindingGroup(const RC<BindingGroupLayout> &layoutHint, int variableBindingCount)
 {
-    assert(layoutHint == this->CreateBindingGroupLayout<T>());
+#if RTRC_DEBUG
+    auto layout = this->CreateBindingGroupLayout<T>();
+    if(layout != layoutHint)
+    {
+        LogError("Device::CreateBindingGroup: Unmatched binding group layout");
+        LogError("Layout hint is");
+        DumpBindingGroupLayoutDesc(layoutHint->GetRHIObject()->GetDesc());
+        LogError("Layout created from type is");
+        DumpBindingGroupLayoutDesc(layout->GetRHIObject()->GetDesc());
+        std::terminate();
+    }
+#endif
     return layoutHint->CreateBindingGroup(variableBindingCount);
 }
 

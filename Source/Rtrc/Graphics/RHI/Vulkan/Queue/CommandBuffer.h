@@ -75,6 +75,8 @@ public:
         const ShaderBindingTableRegion &hitSbt,
         const ShaderBindingTableRegion &callableSbt) RTRC_RHI_OVERRIDE;
 
+    void DispatchIndirect(const BufferPtr &buffer, size_t byteOffset) RTRC_RHI_OVERRIDE;
+
     void CopyBuffer(Buffer *dst, size_t dstOffset, Buffer *src, size_t srcOffset, size_t range) RTRC_RHI_OVERRIDE;
     void CopyBufferToColorTexture2D(
         Texture *dst,

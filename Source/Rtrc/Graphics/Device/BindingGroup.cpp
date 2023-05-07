@@ -2,6 +2,44 @@
 
 RTRC_BEGIN
 
+void DumpBindingGroupLayoutDesc(const RHI::BindingGroupLayoutDesc &desc)
+{
+    LogError("{{");
+    for(size_t i = 0; i < desc.bindings.size(); ++i)
+    {
+        auto &binding = desc.bindings[i];
+        if(!binding.immutableSamplers.empty())
+        {
+            LogError("    Immutable samplers");
+            LogError("    {{");
+            for(const RHI::SamplerPtr &sampler : binding.immutableSamplers)
+            {
+                const RHI::SamplerDesc &samplerDesc = sampler->GetDesc();
+                LogError("        Hash = {}", samplerDesc.Hash());
+            }
+            LogError("    }}");
+            continue;
+        }
+
+        std::string line = fmt::format(
+            "[{}] {}", GetShaderStageFlagsName(binding.shaderStages), GetBindingTypeName(binding.type));
+        if(binding.arraySize)
+        {
+            line += fmt::format(" [{}]", *binding.arraySize);
+        }
+        if(binding.bindless)
+        {
+            line += " bindless";
+        }
+        if(i + 1 == desc.bindings.size() && desc.variableArraySize)
+        {
+            line += " varSize";
+        }
+        LogError("    {}", line);
+    }
+    LogError("}}");
+}
+
 BindingGroupManager::BindingGroupManager(
     RHI::DevicePtr device, DeviceSynchronizer &sync, ConstantBufferManagerInterface *defaultConstantBufferManager)
     : device_(std::move(device)), sync_(sync), defaultConstantBufferManager_(defaultConstantBufferManager)

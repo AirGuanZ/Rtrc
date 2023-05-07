@@ -19,6 +19,8 @@ class Sampler;
 class SubBuffer;
 class Tlas;
 
+void DumpBindingGroupLayoutDesc(const RHI::BindingGroupLayoutDesc &desc);
+
 class BindingGroup : public Uncopyable
 {
 public:
@@ -67,7 +69,7 @@ public:
     struct BindingDesc
     {
         RHI::BindingType         type;
-        RHI::ShaderStageFlags     stages;
+        RHI::ShaderStageFlags    stages;
         std::optional<uint32_t>  arraySize;
         std::vector<RC<Sampler>> immutableSamplers;
         bool                     bindless = false;

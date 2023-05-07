@@ -154,8 +154,8 @@ public:
     void BindComputePipeline(const RC<ComputePipeline> &computePipeline);
     void BindRayTracingPipeline(const RC<RayTracingPipeline> &rayTracingPipeline);
 
-    const GraphicsPipeline *GetCurrentGraphicsPipeline() const;
-    const ComputePipeline *GetCurrentComputePipeline() const;
+    const GraphicsPipeline   *GetCurrentGraphicsPipeline() const;
+    const ComputePipeline    *GetCurrentComputePipeline() const;
     const RayTracingPipeline *GetCurrentRayTracingPipeline() const;
 
     void BindGraphicsGroup(int index, const RC<BindingGroup> &group);
@@ -208,6 +208,8 @@ public:
         const RHI::ShaderBindingTableRegion &missSbt,
         const RHI::ShaderBindingTableRegion &hitSbt,
         const RHI::ShaderBindingTableRegion &callableSbt);
+    
+    void DispatchIndirect(const RC<SubBuffer> &buffer, size_t byteOffset);
 
     // if prebuildInfo is not presented
     //   generate prebuildInfo

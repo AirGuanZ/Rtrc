@@ -40,7 +40,7 @@ namespace ConstantBufferDetail
         else if constexpr(RtrcStruct<T>)
         {
             size_t result = 0;
-            T::ForEachMember([&result]<typename M>(const M T::*, const char *) constexpr
+            StructDetail::ForEachMember<T>([&result]<typename M>(const M T::*, const char *) constexpr
             {
                 constexpr size_t memSize = GetConstantBufferDWordCount<M>();
                 bool needNewLine;
@@ -93,7 +93,7 @@ namespace ConstantBufferDetail
         else if constexpr(RtrcStruct<T>)
         {
             // assert(deviceDWordOffset % 4 == 0)
-            T::ForEachMember([&deviceDWordOffset, &hostDWordOffset, &f]<typename M>(
+            StructDetail::ForEachMember<T>([&deviceDWordOffset, &hostDWordOffset, &f]<typename M>(
                 const M T::*, const char *memberName) constexpr
             {
                 const size_t memberSize = GetConstantBufferDWordCount<M>();

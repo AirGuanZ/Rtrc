@@ -307,22 +307,22 @@ void CommandBuffer::BindGraphicsPipeline(const RC<GraphicsPipeline> &graphicsPip
 {
     CheckThreadID();
     rhiCommandBuffer_->BindPipeline(graphicsPipeline->GetRHIObject());
+    currentGraphicsPipeline_ = graphicsPipeline;
     if(int index = graphicsPipeline->GetShaderInfo()->GetBindingGroupIndexForInlineSamplers(); index >= 0)
     {
         BindGraphicsGroup(index, graphicsPipeline->GetShaderInfo()->GetBindingGroupForInlineSamplers());
     }
-    currentGraphicsPipeline_ = graphicsPipeline;
 }
 
 void CommandBuffer::BindComputePipeline(const RC<ComputePipeline> &computePipeline)
 {
     CheckThreadID();
     rhiCommandBuffer_->BindPipeline(computePipeline->GetRHIObject());
+    currentComputePipeline_ = computePipeline;
     if(int index = computePipeline->GetShaderInfo()->GetBindingGroupIndexForInlineSamplers(); index >= 0)
     {
         BindComputeGroup(index, computePipeline->GetShaderInfo()->GetBindingGroupForInlineSamplers());
     }
-    currentComputePipeline_ = computePipeline;
 }
 
 void CommandBuffer::BindRayTracingPipeline(const RC<RayTracingPipeline> &rayTracingPipeline)
@@ -331,11 +331,11 @@ void CommandBuffer::BindRayTracingPipeline(const RC<RayTracingPipeline> &rayTrac
 
     CheckThreadID();
     rhiCommandBuffer_->BindPipeline(rayTracingPipeline->GetRHIObject());
+    currentRayTracingPipeline_ = rayTracingPipeline;
     if(int index = bindingLayoutInfo.GetBindingGroupIndexForInlineSamplers(); index >= 0)
     {
         BindRayTracingGroup(index, bindingLayoutInfo.GetBindingGroupForInlineSamplers());
     }
-    currentRayTracingPipeline_ = rayTracingPipeline;
 }
 
 const GraphicsPipeline *CommandBuffer::GetCurrentGraphicsPipeline() const
@@ -356,18 +356,54 @@ const RayTracingPipeline *CommandBuffer::GetCurrentRayTracingPipeline() const
 void CommandBuffer::BindGraphicsGroup(int index, const RC<BindingGroup> &group)
 {
     CheckThreadID();
+#if RTRC_DEBUG
+    auto bindingGroupLayoutInShader = currentGraphicsPipeline_->GetShaderInfo()->GetBindingGroupLayoutByIndex(index);
+    if(bindingGroupLayoutInShader != group->GetLayout())
+    {
+        LogError("Unmatched binding group layout for graphics pipeline!");
+        LogError("Binding group defined in shader is");
+        DumpBindingGroupLayoutDesc(bindingGroupLayoutInShader->GetRHIObject()->GetDesc());
+        LogError("Binding group being bound is");
+        DumpBindingGroupLayoutDesc(group->GetLayout()->GetRHIObject()->GetDesc());
+        std::terminate();
+    }
+#endif
     rhiCommandBuffer_->BindGroupToGraphicsPipeline(index, group->GetRHIObject());
 }
 
 void CommandBuffer::BindComputeGroup(int index, const RC<BindingGroup> &group)
 {
     CheckThreadID();
+#if RTRC_DEBUG
+    auto bindingGroupLayoutInShader = currentComputePipeline_->GetShaderInfo()->GetBindingGroupLayoutByIndex(index);
+    if(bindingGroupLayoutInShader != group->GetLayout())
+    {
+        LogError("Unmatched binding group layout for compute pipeline!");
+        LogError("Binding group defined in shader is");
+        DumpBindingGroupLayoutDesc(bindingGroupLayoutInShader->GetRHIObject()->GetDesc());
+        LogError("Binding group being bound is");
+        DumpBindingGroupLayoutDesc(group->GetLayout()->GetRHIObject()->GetDesc());
+        std::terminate();
+    }
+#endif
     rhiCommandBuffer_->BindGroupToComputePipeline(index, group->GetRHIObject());
 }
 
 void CommandBuffer::BindRayTracingGroup(int index, const RC<BindingGroup> &group)
 {
     CheckThreadID();
+#if RTRC_DEBUG
+    auto bindingGroupLayoutInShader = currentRayTracingPipeline_->GetBindingLayoutInfo().GetBindingGroupLayoutByIndex(index);
+    if(bindingGroupLayoutInShader != group->GetLayout())
+    {
+        LogError("Unmatched binding group layout for ray tracing pipeline!");
+        LogError("Binding group defined in shader is");
+        DumpBindingGroupLayoutDesc(bindingGroupLayoutInShader->GetRHIObject()->GetDesc());
+        LogError("Binding group being bound is");
+        DumpBindingGroupLayoutDesc(group->GetLayout()->GetRHIObject()->GetDesc());
+        std::terminate();
+    }
+#endif
     rhiCommandBuffer_->BindGroupToRayTracingPipeline(index, group->GetRHIObject());
 }
 
@@ -609,6 +645,14 @@ void CommandBuffer::Trace(
 {
     CheckThreadID();
     rhiCommandBuffer_->TraceRays(rayCountX, rayCountY, rayCountZ, raygenSbt, missSbt, hitSbt, callableSbt);
+}
+
+void CommandBuffer::DispatchIndirect(const RC<SubBuffer> &buffer, size_t byteOffset)
+{
+    CheckThreadID();
+    byteOffset += buffer->GetSubBufferOffset();
+    auto &rhiBuffer = buffer->GetFullBufferRHIObject();
+    rhiCommandBuffer_->DispatchIndirect(rhiBuffer, byteOffset);
 }
 
 void CommandBuffer::BuildBlas(

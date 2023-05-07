@@ -106,6 +106,48 @@ inline constexpr UseInfo COMPUTE_SHADER_RWTEXTURE_WRITEONLY =
     .accesses = RHI::ResourceAccess::RWTextureWrite
 };
 
+inline constexpr UseInfo COMPUTE_SHADER_BUFFER =
+{
+    .layout   = RHI::TextureLayout::Undefined,
+    .stages   = RHI::PipelineStage::ComputeShader,
+    .accesses = RHI::ResourceAccess::BufferRead
+};
+
+inline constexpr UseInfo COMPUTE_SHADER_RWBUFFER =
+{
+    .layout   = RHI::TextureLayout::Undefined,
+    .stages   = RHI::PipelineStage::ComputeShader,
+    .accesses = RHI::ResourceAccess::RWBufferRead | RHI::ResourceAccess::RWBufferWrite
+};
+
+inline constexpr UseInfo COMPUTE_SHADER_RWBUFFER_WRITEONLY =
+{
+    .layout   = RHI::TextureLayout::Undefined,
+    .stages   = RHI::PipelineStage::ComputeShader,
+    .accesses = RHI::ResourceAccess::RWBufferWrite
+};
+
+inline constexpr UseInfo COMPUTE_SHADER_STRUCTURED_BUFFER =
+{
+    .layout   = RHI::TextureLayout::Undefined,
+    .stages   = RHI::PipelineStage::ComputeShader,
+    .accesses = RHI::ResourceAccess::StructuredBufferRead
+};
+
+inline constexpr UseInfo COMPUTE_SHADER_RWSTRUCTURED_BUFFER =
+{
+    .layout   = RHI::TextureLayout::Undefined,
+    .stages   = RHI::PipelineStage::ComputeShader,
+    .accesses = RHI::ResourceAccess::RWStructuredBufferRead | RHI::ResourceAccess::RWStructuredBufferWrite
+};
+
+inline constexpr UseInfo COMPUTE_SHADER_RWSTRUCTURED_BUFFER_WRITEONLY =
+{
+    .layout   = RHI::TextureLayout::Undefined,
+    .stages   = RHI::PipelineStage::ComputeShader,
+    .accesses = RHI::ResourceAccess::RWStructuredBufferWrite
+};
+
 inline constexpr UseInfo COPY_DST =
 {
     .layout   = RHI::TextureLayout::CopyDst,
@@ -265,7 +307,7 @@ class RenderGraph : public Uncopyable
 {
 public:
 
-    explicit RenderGraph(Queue queue = Queue(nullptr));
+    explicit RenderGraph(ObserverPtr<Device> device, Queue queue = Queue(nullptr));
 
     void SetQueue(Queue queue);
 
@@ -287,6 +329,9 @@ public:
     Pass *CreateClearTexture2DPass(std::string name, TextureResource *tex2D, const Vector4f &clearValue);
     Pass *CreateDummyPass(std::string name);
 
+    Pass *CreateClearRWBufferPass(std::string name, BufferResource *buffer, uint32_t value);
+    Pass *CreateClearRWStructuredBufferPass(std::string name, BufferResource *buffer, uint32_t value);
+    
     void MakeDummyPassIfNull(Pass *&pass, std::string_view name);
 
     void SetCompleteFence(RHI::FencePtr fence);
@@ -351,7 +396,8 @@ private:
         RHI::BackBufferSemaphorePtr presentSemaphore;
     };
 
-    Queue queue_;
+    ObserverPtr<Device> device_;
+    Queue               queue_;
 
     std::map<const void *, int>       externalResourceMap_; // RHI object pointer to resource index
     std::vector<Box<BufferResource>>  buffers_;

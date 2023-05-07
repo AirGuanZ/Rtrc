@@ -366,6 +366,12 @@ void VulkanCommandBuffer::TraceRays(
         commandBuffer_, &vkRayGenSbt, &vkMissSbt, &vkHitSbt, &vkCallableSbt, rayCountX, rayCountY, rayCountZ);
 }
 
+void VulkanCommandBuffer::DispatchIndirect(const BufferPtr &buffer, size_t byteOffset)
+{
+    auto vkBuffer = static_cast<VulkanBuffer *>(buffer.Get())->_internalGetNativeBuffer();
+    vkCmdDispatchIndirect(commandBuffer_, vkBuffer, byteOffset);
+}
+
 void VulkanCommandBuffer::CopyBuffer(
     Buffer *dst, size_t dstOffset,
     Buffer *src, size_t srcOffset, size_t range)

@@ -1,3 +1,4 @@
+#include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/Graphics/RenderGraph/Executable.h>
 #include <Rtrc/Graphics/RenderGraph/Graph.h>
 
@@ -122,8 +123,8 @@ Pass::Pass(int index, std::string name)
     
 }
 
-RenderGraph::RenderGraph(Queue queue)
-    : queue_(std::move(queue)), swapchainTexture_(nullptr), executableResource_(nullptr)
+RenderGraph::RenderGraph(ObserverPtr<Device> device, Queue queue)
+    : device_(device), queue_(std::move(queue)), swapchainTexture_(nullptr), executableResource_(nullptr)
 {
     
 }
@@ -257,6 +258,28 @@ Pass *RenderGraph::CreateClearTexture2DPass(std::string name, TextureResource *t
 Pass *RenderGraph::CreateDummyPass(std::string name)
 {
     return CreatePass(std::move(name));
+}
+
+Pass *RenderGraph::CreateClearRWBufferPass(std::string name, BufferResource *buffer, uint32_t value)
+{
+    auto pass = CreatePass(std::move(name));
+    pass->Use(buffer, COMPUTE_SHADER_RWBUFFER_WRITEONLY);
+    pass->SetCallback([buffer, value, this](PassContext &context)
+    {
+        device_->GetClearBufferUtils().ClearRWBuffer(context.GetCommandBuffer(), context.Get(buffer), value);
+    });
+    return pass;
+}
+
+Pass *RenderGraph::CreateClearRWStructuredBufferPass(std::string name, BufferResource *buffer, uint32_t value)
+{
+    auto pass = CreatePass(std::move(name));
+    pass->Use(buffer, COMPUTE_SHADER_RWSTRUCTURED_BUFFER_WRITEONLY);
+    pass->SetCallback([buffer, value, this](PassContext &context)
+    {
+        device_->GetClearBufferUtils().ClearRWStructuredBuffer(context.GetCommandBuffer(), context.Get(buffer), value);
+    });
+    return pass;
 }
 
 void RenderGraph::MakeDummyPassIfNull(Pass *&pass, std::string_view name)
