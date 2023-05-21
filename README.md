@@ -9,7 +9,7 @@ Real-time rendering playground
 
 ## TODO
 
-- [ ] DirectX12 RHI (Waiting for driver implementation of [enhanced barriers](https://microsoft.github.io/DirectX-Specs/d3d/D3D12EnhancedBarriers.html))
+- [ ] DirectX12 RHI (WIP)
 - [ ] Remove reference counting in RHI layer
 
 ![](./Gallery/00.png)
