@@ -23,6 +23,13 @@ RC<Buffer> PassContext::Get(const BufferResource *resource)
 {
     auto &result = resources_.indexToBuffer[resource->GetResourceIndex()].buffer;
     assert(result);
+#if RTRC_RG_DEBUG
+    if(!declaredResources_->contains(resource))
+    {
+        throw Exception(fmt::format(
+            "Cannot use rg buffer resource {} without declaring usage", result->GetRHIObject()->GetName()));
+    }
+#endif
     return result;
 }
 
@@ -30,6 +37,13 @@ RC<Texture> PassContext::Get(const TextureResource *resource)
 {
     auto &result = resources_.indexToTexture[resource->GetResourceIndex()].texture;
     assert(result);
+#if RTRC_RG_DEBUG
+    if(!declaredResources_->contains(resource))
+    {
+        throw Exception(fmt::format(
+            "Cannot use rg texture resource {} without declaring usage", result->GetRHIObject()->GetName()));
+    }
+#endif
     return result;
 }
 
@@ -47,8 +61,9 @@ void Connect(Pass *head, Pass *tail)
 
 Pass *Pass::Use(BufferResource *buffer, RHI::PipelineStageFlag stages, RHI::ResourceAccessFlag accesses)
 {
-    assert(!bufferUsages_.contains(buffer));
-    bufferUsages_.insert({ buffer, BufferUsage{ stages, accesses } });
+    auto &usage = bufferUsages_[buffer];
+    usage.stages |= stages;
+    usage.accesses |= accesses;
     return this;
 }
 
@@ -236,18 +251,31 @@ TextureResource *RenderGraph::RegisterSwapchainTexture(const RHI::SwapchainPtr &
         swapchain->GetRenderTarget(), swapchain->GetAcquireSemaphore(), swapchain->GetPresentSemaphore());
 }
 
-Pass *RenderGraph::CreatePass(std::string name)
+void RenderGraph::PushPassGroup(std::string_view name)
+{
+    passNamePrefixLengths_.push(passNamePrefix_.size());
+    passNamePrefix_.append(passNamePrefix_.empty() ? name : ("." + std::string(name)));
+}
+
+void RenderGraph::PopPassGroup()
+{
+    passNamePrefix_.resize(passNamePrefixLengths_.top());
+    passNamePrefixLengths_.pop();
+}
+
+Pass *RenderGraph::CreatePass(std::string_view name)
 {
     const int index = static_cast<int>(passes_.size());
-    auto pass = Box<Pass>(new Pass(index, std::move(name)));
+    auto pass = Box<Pass>(new Pass(
+        index, passNamePrefix_.empty() ? std::string(name) : passNamePrefix_ + "." + std::string(name)));
     passes_.push_back(std::move(pass));
     return passes_.back().get();
 }
 
-Pass *RenderGraph::CreateClearTexture2DPass(std::string name, TextureResource *tex2D, const Vector4f &clearValue)
+Pass *RenderGraph::CreateClearTexture2DPass(std::string_view name, TextureResource *tex2D, const Vector4f &clearValue)
 {
-    auto pass = CreatePass(std::move(name));
-    pass->Use(tex2D, CLEAR_DST);
+    auto pass = CreatePass(name);
+    pass->Use(tex2D, ClearDst);
     pass->SetCallback([tex2D, clearValue](PassContext &context)
     {
         context.GetCommandBuffer().ClearColorTexture2D(context.Get(tex2D), clearValue);
@@ -255,15 +283,15 @@ Pass *RenderGraph::CreateClearTexture2DPass(std::string name, TextureResource *t
     return pass;
 }
 
-Pass *RenderGraph::CreateDummyPass(std::string name)
+Pass *RenderGraph::CreateDummyPass(std::string_view name)
 {
-    return CreatePass(std::move(name));
+    return CreatePass(name);
 }
 
-Pass *RenderGraph::CreateClearRWBufferPass(std::string name, BufferResource *buffer, uint32_t value)
+Pass *RenderGraph::CreateClearRWBufferPass(std::string_view name, BufferResource *buffer, uint32_t value)
 {
-    auto pass = CreatePass(std::move(name));
-    pass->Use(buffer, COMPUTE_SHADER_RWBUFFER_WRITEONLY);
+    auto pass = CreatePass(name);
+    pass->Use(buffer, CS_RWBuffer_WriteOnly);
     pass->SetCallback([buffer, value, this](PassContext &context)
     {
         device_->GetClearBufferUtils().ClearRWBuffer(context.GetCommandBuffer(), context.Get(buffer), value);
@@ -271,10 +299,10 @@ Pass *RenderGraph::CreateClearRWBufferPass(std::string name, BufferResource *buf
     return pass;
 }
 
-Pass *RenderGraph::CreateClearRWStructuredBufferPass(std::string name, BufferResource *buffer, uint32_t value)
+Pass *RenderGraph::CreateClearRWStructuredBufferPass(std::string_view name, BufferResource *buffer, uint32_t value)
 {
-    auto pass = CreatePass(std::move(name));
-    pass->Use(buffer, COMPUTE_SHADER_RWSTRUCTURED_BUFFER_WRITEONLY);
+    auto pass = CreatePass(name);
+    pass->Use(buffer, CS_RWStructuredBuffer_WriteOnly);
     pass->SetCallback([buffer, value, this](PassContext &context)
     {
         device_->GetClearBufferUtils().ClearRWStructuredBuffer(context.GetCommandBuffer(), context.Get(buffer), value);

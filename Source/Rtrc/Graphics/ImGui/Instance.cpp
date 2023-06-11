@@ -250,7 +250,7 @@ RG::Pass *ImGuiRenderer::AddToRenderGraph(
     RG::RenderGraph     *renderGraph)
 {
     auto pass = renderGraph->CreatePass("Render ImGui");
-    pass->Use(renderTarget, RG::COLOR_ATTACHMENT);
+    pass->Use(renderTarget, RG::ColorAttachment);
     pass->SetCallback([this, drawData, renderTarget](RG::PassContext &ctx)
     {
         RenderImmediately(drawData, renderTarget->Get(ctx)->CreateRtv(), ctx.GetCommandBuffer(), false);
@@ -284,9 +284,9 @@ void ImGuiRenderer::RenderImmediately(
             {
                 .size = drawData->totalVertexCount * sizeof(ImDrawVert),
                 .usage = RHI::BufferUsage::VertexBuffer,
-                .hostAccessType = RHI::BufferHostAccessType::SequentialWrite
+                .hostAccessType = RHI::BufferHostAccessType::Upload
             });
-        auto vertexData = static_cast<ImDrawVert *>(vertexBuffer->GetRHIObject()->Map(0, vertexBuffer->GetSize()));
+        auto vertexData = static_cast<ImDrawVert *>(vertexBuffer->GetRHIObject()->Map(0, vertexBuffer->GetSize(), {}));
         size_t vertexOffset = 0;
         for(const ImGuiDrawData::DrawList &drawList : drawData->drawLists)
         {
@@ -301,9 +301,9 @@ void ImGuiRenderer::RenderImmediately(
             {
                 .size = drawData->totalIndexCount * sizeof(ImDrawIdx),
                 .usage = RHI::BufferUsage::IndexBuffer,
-                .hostAccessType = RHI::BufferHostAccessType::SequentialWrite
+                .hostAccessType = RHI::BufferHostAccessType::Upload
             });
-        auto indexData = static_cast<ImDrawIdx *>(indexBuffer->GetRHIObject()->Map(0, indexBuffer->GetSize()));
+        auto indexData = static_cast<ImDrawIdx *>(indexBuffer->GetRHIObject()->Map(0, indexBuffer->GetSize(), {}));
         size_t indexOffset = 0;
         for(const ImGuiDrawData::DrawList &drawList : drawData->drawLists)
         {
@@ -435,9 +435,9 @@ void ImGuiRenderer::RenderImmediately(
 RC<GraphicsPipeline> ImGuiRenderer::GetOrCreatePipeline(RHI::Format format)
 {
     static const MeshLayout *meshLayout = RTRC_MESH_LAYOUT(Buffer(
-        Attribute("POSITION", Float2),
-        Attribute("UV",       Float2),
-        Attribute("COLOR",    UChar4UNorm)));
+        Attribute("POSITION", 0, Float2),
+        Attribute("UV",       0, Float2),
+        Attribute("COLOR",    0, UChar4UNorm)));
     if(auto it = rtFormatToPipeline_.find(format); it != rtFormatToPipeline_.end())
     {
         return it->second;

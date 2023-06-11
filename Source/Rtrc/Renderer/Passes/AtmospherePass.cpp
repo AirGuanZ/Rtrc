@@ -120,15 +120,17 @@ PhysicalAtmospherePass::RenderGraphOutput PhysicalAtmospherePass::Render(
     float               dt,
     CachedData &perSceneData)
 {
+    RTRC_RG_SCOPED_PASS_GROUP(graph, "Atmosphere");
+
     RG::TextureResource *T = GetTransmittanceLut(graph);
     RG::TextureResource *M = GetMultiScatteringLut(graph, T);
     
     RG::TextureResource *S = InitializeSkyLut(graph, perSceneData.skyLut, true);
 
     RG::Pass *passS = graph.CreatePass("GenerateSkyLut");
-    passS->Use(S, RG::COMPUTE_SHADER_RWTEXTURE);
-    passS->Use(T, RG::COMPUTE_SHADER_TEXTURE);
-    passS->Use(M, RG::COMPUTE_SHADER_TEXTURE);
+    passS->Use(S, RG::CS_RWTexture);
+    passS->Use(T, RG::CS_Texture);
+    passS->Use(M, RG::CS_Texture);
     passS->SetCallback(
         [this, S, T, M, dt, eyeAltitude, sunDirection, sunColor]
     (RG::PassContext &context)
@@ -188,7 +190,7 @@ RG::TextureResource *PhysicalAtmospherePass::GetTransmittanceLut(RG::RenderGraph
     RG::TextureResource *T = graph.RegisterTexture(transmittanceLut_);
 
     auto passT = graph.CreatePass("GenerateTransmittanceLut");
-    passT->Use(T, RG::COMPUTE_SHADER_RWTEXTURE_WRITEONLY);
+    passT->Use(T, RG::CS_RWTexture_WriteOnly);
     passT->SetCallback([this, T](RG::PassContext &context)
     {
         PhysicalAtmospherePassDetail::TransmittanceLutPass passData;
@@ -221,7 +223,7 @@ RG::TextureResource *PhysicalAtmospherePass::GetMultiScatteringLut(RG::RenderGra
         {
             .size           = sizeof(Vector2f) * MS_DIR_SAMPLE_COUNT,
             .usage          = RHI::BufferUsage::ShaderStructuredBuffer,
-            .hostAccessType = RHI::BufferHostAccessType::SequentialWrite
+            .hostAccessType = RHI::BufferHostAccessType::Upload
         }, data.data());
     }
     poissonDiskSamples->SetName("PoissonDiskSamples");
@@ -244,8 +246,8 @@ RG::TextureResource *PhysicalAtmospherePass::GetMultiScatteringLut(RG::RenderGra
     RG::TextureResource *M = graph.RegisterTexture(multiScatteringLut_);
 
     auto passM = graph.CreatePass("GenerateMultiScatteringLut");
-    passM->Use(T, RG::COMPUTE_SHADER_TEXTURE);
-    passM->Use(M, RG::COMPUTE_SHADER_RWTEXTURE_WRITEONLY);
+    passM->Use(T, RG::CS_Texture);
+    passM->Use(M, RG::CS_RWTexture_WriteOnly);
     passM->SetCallback([this, M, T, poissonDiskSamples](RG::PassContext &context)
     {
         PhysicalAtmospherePassDetail::MultiScatterLutPass passData;

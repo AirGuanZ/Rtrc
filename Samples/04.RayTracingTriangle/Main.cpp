@@ -167,7 +167,7 @@ void Run()
         auto renderTarget = graph->RegisterSwapchainTexture(device->GetSwapchain());
 
         auto trianglePass = graph->CreatePass("DrawTriangle");
-        trianglePass->Use(renderTarget, RG::COMPUTE_SHADER_RWTEXTURE_WRITEONLY);
+        trianglePass->Use(renderTarget, RG::CS_RWTexture_WriteOnly);
         trianglePass->SetCallback([&](RG::PassContext &context)
         {
             auto rt = renderTarget->Get(context);

@@ -29,8 +29,13 @@
 #endif
 
 #define RTRC_ENABLE_EXCEPTION_STACKTRACE RTRC_DEBUG
-
 #define RTRC_MAYBE_UNUSED(X) ((void)(X))
+
+#if defined(WIN32) || defined(_WIN32)
+#define RTRC_IS_WIN32 1
+#else
+#define RTRC_IS_WIN32 0
+#endif
 
 RTRC_BEGIN
 

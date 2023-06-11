@@ -19,7 +19,7 @@ rtrc_group(Pass, CS)
     rtrc_define(RaytracingAccelerationStructure, Scene)
     rtrc_define(ConstantBuffer<CameraConstantBuffer>, Camera)
 
-    rtrc_define(RWTexture2D<float>, OutputTextureRW)
+    rtrc_define(RWTexture2D<unorm float>, OutputTextureRW)
 
     rtrc_define(Texture2D<float>, BlueNoise256)
     rtrc_define(Texture2D<float>, LowResMask)
@@ -95,7 +95,7 @@ void CSMain(uint2 tid : SV_DispatchThreadID)
     float viewZ = CameraUtils::DeviceZToViewZ(Camera.cameraToClipMatrix, gpixel.depth);
     float3 worldPosition = viewZ * worldRay + Camera.worldPosition;
     float3 worldNormal = gpixel.normal;
-    float3 origin = worldPosition + 1e-3 * worldNormal;
+    float3 origin = worldPosition + 1e-4 * worldNormal;
  
 #if ENABLE_LOW_RES_MASK
     float lowResMaskValue = LowResMask.SampleLevel(LowResMaskSampler, uv, 0);
@@ -153,16 +153,17 @@ void CSMain(uint2 tid : SV_DispatchThreadID)
 
 #if ENABLE_SHADOW_SOFTNESS
     float blueNoise = BlueNoise256[tid % 256];
-    float diskRotRad = 2 * 3.1415926 * blueNoise;
+    float diskRotRad = 2 * 3.1415926535 * blueNoise;
     float rotSin, rotCos;
     sincos(diskRotRad, rotSin, rotCos);
     float2x2 diskRot = float2x2(rotCos, -rotSin, rotSin, rotCos);
 #endif
 
     float shadowFactor = 0;
+    [branch]
     if(Pass.lightType == LIGHT_TYPE_POINT)
     {
-        float t = 1.0 - 1e-3;
+        float t = 1.0;
 #if !ENABLE_SHADOW_SOFTNESS
         float3 direction = Pass.lightGeometry - origin;
         shadowFactor = EvaluateShadowFactor(origin, direction, t);
@@ -172,7 +173,7 @@ void CSMain(uint2 tid : SV_DispatchThreadID)
         for(int i = 0; i < RAY_COUNT; ++i)
         {
             float2 u = poissonDisk[i];
-            u = mul(diskRot, u);
+            u = mul(u, diskRot);
             float3 direction = Pass.lightGeometry - origin + Pass.shadowSoftness * (u.x * localX + u.y * localY);
             shadowFactor += EvaluateShadowFactor(origin, direction, t);
         }

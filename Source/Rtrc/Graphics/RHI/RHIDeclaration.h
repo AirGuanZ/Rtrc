@@ -9,7 +9,6 @@
 #include <Rtrc/Utility/EnumFlags.h>
 #include <Rtrc/Utility/Hash.h>
 #include <Rtrc/Utility/SmartPointer/ReferenceCounted.h>
-#include <Rtrc/Utility/String.h>
 #include <Rtrc/Utility/Uncopyable.h>
 #include <Rtrc/Utility/Variant.h>
 #include <Rtrc/Window/Window.h>
@@ -95,6 +94,12 @@ class BindingGroupUpdateBatch;
 
 // =============================== rhi enums ===============================
 
+enum class BackendType
+{
+    DirectX12,
+    Vulkan
+};
+
 enum class QueueType : uint8_t
 {
     Graphics,
@@ -112,14 +117,11 @@ enum class Format : uint32_t
     R32G32_Float,
     R32G32B32A32_Float,
     A2R10G10B10_UNorm,
-    A2B10G10R10_UNorm,
-    R11G11B10_UFloat,
     R32_UInt,
     R8_UNorm,
     R16G16_Float,
 
     D24S8,
-    D32S8,
     D32
 };
 
@@ -146,12 +148,12 @@ size_t GetTexelSize(Format format);
 
 inline bool HasDepthAspect(Format format)
 {
-    return format == Format::D24S8 || format == Format::D32 || format == Format::D32S8;
+    return format == Format::D24S8 || format == Format::D32;
 }
 
 inline bool HasStencilAspect(Format format)
 {
-    return format == Format::D24S8 || format == Format::D32S8;
+    return format == Format::D24S8;
 }
 
 enum class IndexFormat
@@ -210,8 +212,7 @@ enum class CullMode
 {
     DontCull,
     CullFront,
-    CullBack,
-    CullAll
+    CullBack
 };
 
 enum class FrontFaceMode
@@ -223,8 +224,7 @@ enum class FrontFaceMode
 enum class FillMode
 {
     Fill,
-    Line,
-    Point
+    Line
 };
 
 enum class CompareOp
@@ -309,6 +309,7 @@ enum class TextureDimension
 
 enum class TextureUsage : uint32_t
 {
+    None           = 0,
     TransferDst    = 1 << 0,
     TransferSrc    = 1 << 1,
     ShaderResource = 1 << 2,
@@ -336,6 +337,7 @@ enum class BufferUsage : uint32_t
     AccelerationStructure           = 1 << 12,
     ShaderBindingTable              = 1 << 13,
 
+    ComputeBuffer = ShaderStructuredBuffer | ShaderRWStructuredBuffer,
     AccelerationStructureScratch = ShaderRWStructuredBuffer | DeviceAddress,
 };
 RTRC_DEFINE_ENUM_FLAGS(BufferUsage)
@@ -344,8 +346,8 @@ using BufferUsageFlag = EnumFlagsBufferUsage;
 enum class BufferHostAccessType
 {
     None,
-    SequentialWrite,
-    Random
+    Upload,
+    Readback
 };
 
 enum class FilterMode
@@ -368,8 +370,6 @@ enum class TextureLayout
     ColorAttachment,
     DepthStencilAttachment,                       // Depth stencil attachment
     DepthStencilReadOnlyAttachment,               // Depth stencil readonly attachment
-    DepthShaderTexture_StencilAttachment,         // Read depth in shader, read/write stencil as attachment
-    DepthShaderTexture_StencilReadOnlyAttachment, // Read depth in shader, read stencil as attachment
     ShaderTexture,                                // Read in shader (Texture<...>)
     ShaderRWTexture,                              // Read in shader (RWTexture<...>)
     CopySrc,
@@ -383,20 +383,21 @@ enum class TextureLayout
 enum class PipelineStage : uint32_t
 {
     None             = 0,
-    InputAssembler   = 1 << 0,
-    VertexShader     = 1 << 1,
-    FragmentShader   = 1 << 2,
-    ComputeShader    = 1 << 3,
-    RayTracingShader = 1 << 4,
-    DepthStencil     = 1 << 5,
-    RenderTarget     = 1 << 6,
-    Copy             = 1 << 7,
-    Clear            = 1 << 8,
-    Resolve          = 1 << 9,
-    BuildAS          = 1 << 10,
-    CopyAS           = 1 << 11,
-    IndirectCommand  = 1 << 12,
-    All              = 1 << 13
+    VertexInput      = 1 << 0,
+    IndexInput       = 1 << 1,
+    VertexShader     = 1 << 2,
+    FragmentShader   = 1 << 3,
+    ComputeShader    = 1 << 4,
+    RayTracingShader = 1 << 5,
+    DepthStencil     = 1 << 6,
+    RenderTarget     = 1 << 7,
+    Copy             = 1 << 8,
+    Clear            = 1 << 9,
+    Resolve          = 1 << 10,
+    BuildAS          = 1 << 11,
+    CopyAS           = 1 << 12,
+    IndirectCommand  = 1 << 13,
+    All              = 1 << 14
 };
 RTRC_DEFINE_ENUM_FLAGS(PipelineStage)
 using PipelineStageFlag = EnumFlagsPipelineStage;
@@ -460,9 +461,11 @@ enum class QueueConcurrentAccessMode
 
 enum class TextureViewFlagBit
 {
-    None                               = 0,
-    DepthSrv_StencilAttachment         = 1 << 0,
-    DepthSrv_StencilAttachmentReadOnly = 1 << 1,
+    None = 0,
+
+    // Removed because d3d12 backend doesn't support these usages
+    // DepthSrv_StencilAttachment         = 1 << 0,
+    // DepthSrv_StencilAttachmentReadOnly = 1 << 1,
 };
 RTRC_DEFINE_ENUM_FLAGS(TextureViewFlagBit)
 using TextureViewFlags = EnumFlagsTextureViewFlagBit;
@@ -538,11 +541,11 @@ struct RawShaderEntry
 
 struct BindingDesc
 {
-    BindingType              type;
-    ShaderStageFlags         shaderStages = ShaderStage::All;
-    std::optional<uint32_t>  arraySize;
-    std::vector<SamplerPtr>  immutableSamplers;
-    bool                     bindless = false;
+    BindingType             type;
+    ShaderStageFlags        shaderStages = ShaderStage::All;
+    std::optional<uint32_t> arraySize;
+    std::vector<SamplerPtr> immutableSamplers;
+    bool                    bindless = false;
 
     auto operator<=>(const BindingDesc &other) const = default;
     bool operator==(const BindingDesc &) const = default;
@@ -561,9 +564,9 @@ constexpr uint32_t STANDARD_PUSH_CONSTANT_BLOCK_SIZE = 256;
 
 struct PushConstantRange
 {
-    uint32_t offset;
-    uint32_t size;
-    ShaderStageFlags stages;
+    uint32_t         offset = 0;
+    uint32_t         size   = 0;
+    ShaderStageFlags stages = {};
 
     auto operator<=>(const PushConstantRange &) const = default;
     bool operator==(const PushConstantRange &) const = default;
@@ -676,17 +679,21 @@ struct TextureRtvDesc
     Format   format     = Format::Unknown;
     uint32_t mipLevel   = 0;
     uint32_t arrayLayer = 0;
+
+    auto operator<=>(const TextureRtvDesc &) const = default;
 };
 
 struct TextureSrvDesc
 {
-    bool            isArray        = false;
-    Format          format         = Format::Unknown;
-    uint32_t        baseMipLevel   = 0;
-    uint32_t        levelCount     = 0; // all levels
-    uint32_t        baseArrayLayer = 0;
-    uint32_t        layerCount     = 0; // 0 means all layers. only used when isArray == true
+    bool             isArray        = false;
+    Format           format         = Format::Unknown;
+    uint32_t         baseMipLevel   = 0;
+    uint32_t         levelCount     = 0; // 0 means all levels
+    uint32_t         baseArrayLayer = 0;
+    uint32_t         layerCount     = 0; // 0 means all layers. only used when isArray == true
     TextureViewFlags flags          = 0;
+
+    auto operator<=>(const TextureSrvDesc &) const = default;
 };
 
 struct TextureUavDesc
@@ -696,21 +703,25 @@ struct TextureUavDesc
     uint32_t mipLevel       = 0;
     uint32_t baseArrayLayer = 0;
     uint32_t layerCount     = 0; // 0 means all layers. only used when isArray == true
+
+    auto operator<=>(const TextureUavDesc &) const = default;
 };
 
 struct TextureDsvDesc
 {
-    Format          format       = Format::Unknown;
-    uint32_t        mipLevel     = 0;
-    uint32_t        arrayLayer   = 0;
+    Format           format       = Format::Unknown;
+    uint32_t         mipLevel     = 0;
+    uint32_t         arrayLayer   = 0;
     TextureViewFlags flags        = 0;
+
+    auto operator<=>(const TextureDsvDesc &) const = default;
 };
 
 struct BufferDesc
 {
     size_t               size;
     BufferUsageFlag      usage;
-    BufferHostAccessType hostAccessType;
+    BufferHostAccessType hostAccessType = BufferHostAccessType::None;
 
     auto operator<=>(const BufferDesc &) const = default;
     auto Hash() const { return Rtrc::Hash(size, usage, hostAccessType); }
@@ -782,19 +793,19 @@ struct BufferTransitionBarrier
 
 struct Viewport
 {
-    Vector2f lowerLeftCorner;
+    Vector2f topLeftCorner;
     Vector2f size;
     float    minDepth;
     float    maxDepth;
 
     auto operator<=>(const Viewport &) const = default;
 
-    size_t Hash() const { return ::Rtrc::Hash(lowerLeftCorner, size, minDepth, maxDepth); }
+    size_t Hash() const { return ::Rtrc::Hash(topLeftCorner, size, minDepth, maxDepth); }
 
     static Viewport Create(const TextureDesc &desc, float minDepth = 0, float maxDepth = 1)
     {
         return Viewport{
-            .lowerLeftCorner = { 0, 0 },
+            .topLeftCorner   = { 0, 0 },
             .size            = { static_cast<float>(desc.width), static_cast<float>(desc.height) },
             .minDepth        = minDepth,
             .maxDepth        = maxDepth
@@ -806,12 +817,12 @@ struct Viewport
 
 struct Scissor
 {
-    Vector2i lowerLeftCorner;
+    Vector2i topLeftCorner;
     Vector2i size;
 
     auto operator<=>(const Scissor &) const = default;
 
-    size_t Hash() const { return ::Rtrc::Hash(lowerLeftCorner, size); }
+    size_t Hash() const { return ::Rtrc::Hash(topLeftCorner, size); }
 
     static Scissor Create(const TextureDesc &desc)
     {
@@ -880,6 +891,8 @@ struct VertexInputAttribute
     uint32_t            inputBufferIndex;
     uint32_t            byteOffsetInBuffer;
     VertexAttributeType type;
+    std::string         semanticName;
+    uint32_t            semanticIndex;
 };
 
 struct MemoryBlockDesc
@@ -1089,7 +1102,7 @@ public:
 
     virtual void SetName(std::string name) { RHIObjectName_ = std::move(name); }
 
-    virtual const std::string &GetName() { return RHIObjectName_; }
+    virtual const std::string &GetName() const { return RHIObjectName_; }
 };
 
 struct ConstantBufferUpdate
@@ -1115,9 +1128,9 @@ public:
     struct Record
     {
         BindingGroup *group;
-        int index;
-        int arrayElem;
-        UpdateData data;
+        int           index;
+        int           arrayElem;
+        UpdateData    data;
     };
 
     void Append(BindingGroup &group, int index, const BufferSrv            *bufferSrv);
@@ -1249,6 +1262,8 @@ public:
 class Device : public RHIObject
 {
 public:
+
+    RTRC_RHI_API BackendType GetBackendType() const RTRC_RHI_API_PURE;
     
     RTRC_RHI_API Ptr<Queue> GetQueue(QueueType type) RTRC_RHI_API_PURE;
 
@@ -1257,7 +1272,7 @@ public:
     RTRC_RHI_API Ptr<Swapchain> CreateSwapchain(const SwapchainDesc &desc, Window &window) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API Ptr<Fence>     CreateFence(bool signaled) RTRC_RHI_API_PURE;
-    RTRC_RHI_API Ptr<Semaphore> CreateSemaphore(uint64_t initialValue) RTRC_RHI_API_PURE;
+    RTRC_RHI_API Ptr<Semaphore> CreateTimelineSemaphore(uint64_t initialValue) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API Ptr<RawShader> CreateShader(const void *data, size_t size, std::vector<RawShaderEntry> entries) RTRC_RHI_API_PURE;
 
@@ -1300,7 +1315,9 @@ public:
         size_t                  offsetInMemoryBlock) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API size_t GetConstantBufferAlignment() const RTRC_RHI_API_PURE;
+    RTRC_RHI_API size_t GetConstantBufferSizeAlignment() const RTRC_RHI_API_PURE;
     RTRC_RHI_API size_t GetAccelerationStructureScratchBufferAlignment() const RTRC_RHI_API_PURE;
+    RTRC_RHI_API size_t GetTextureBufferCopyRowPitchAlignment(Format texelFormat) const RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void WaitIdle() RTRC_RHI_API_PURE;
 
@@ -1360,13 +1377,13 @@ public:
     RTRC_RHI_API const BindingGroupLayout *GetLayout() const RTRC_RHI_API_PURE;
     RTRC_RHI_API uint32_t GetVariableArraySize() const RTRC_RHI_API_PURE;
     
-    RTRC_RHI_API void ModifyMember(int index, int arrayElem, BufferSrv                  *bufferSrv)  RTRC_RHI_API_PURE;
-    RTRC_RHI_API void ModifyMember(int index, int arrayElem, BufferUav                  *bufferUav)  RTRC_RHI_API_PURE;
-    RTRC_RHI_API void ModifyMember(int index, int arrayElem, TextureSrv                 *textureSrv) RTRC_RHI_API_PURE;
-    RTRC_RHI_API void ModifyMember(int index, int arrayElem, TextureUav                 *textureUav) RTRC_RHI_API_PURE;
-    RTRC_RHI_API void ModifyMember(int index, int arrayElem, Sampler                    *sampler)    RTRC_RHI_API_PURE;
+    RTRC_RHI_API void ModifyMember(int index, int arrayElem, const BufferSrv            *bufferSrv)  RTRC_RHI_API_PURE;
+    RTRC_RHI_API void ModifyMember(int index, int arrayElem, const BufferUav            *bufferUav)  RTRC_RHI_API_PURE;
+    RTRC_RHI_API void ModifyMember(int index, int arrayElem, const TextureSrv           *textureSrv) RTRC_RHI_API_PURE;
+    RTRC_RHI_API void ModifyMember(int index, int arrayElem, const TextureUav           *textureUav) RTRC_RHI_API_PURE;
+    RTRC_RHI_API void ModifyMember(int index, int arrayElem, const Sampler              *sampler)    RTRC_RHI_API_PURE;
     RTRC_RHI_API void ModifyMember(int index, int arrayElem, const ConstantBufferUpdate &cbuffer)    RTRC_RHI_API_PURE;
-    RTRC_RHI_API void ModifyMember(int index, int arrayElem, Tlas                       *tlas)       RTRC_RHI_API_PURE;
+    RTRC_RHI_API void ModifyMember(int index, int arrayElem, const Tlas                 *tlas)       RTRC_RHI_API_PURE;
 };
 
 class BindingLayout : public RHIObject
@@ -1433,9 +1450,9 @@ public:
     RTRC_RHI_API void BindPipeline(const Ptr<ComputePipeline>    &pipeline) RTRC_RHI_API_PURE;
     RTRC_RHI_API void BindPipeline(const Ptr<RayTracingPipeline> &pipeline) RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API void BindGroupsToGraphicsPipeline  (int startIndex, Span<RC<BindingGroup>> groups) RTRC_RHI_API_PURE;
-    RTRC_RHI_API void BindGroupsToComputePipeline   (int startIndex, Span<RC<BindingGroup>> groups) RTRC_RHI_API_PURE;
-    RTRC_RHI_API void BindGroupsToRayTracingPipeline(int startIndex, Span<RC<BindingGroup>> groups) RTRC_RHI_API_PURE;
+    RTRC_RHI_API void BindGroupsToGraphicsPipeline  (int startIndex, Span<Ptr<BindingGroup>> groups) RTRC_RHI_API_PURE;
+    RTRC_RHI_API void BindGroupsToComputePipeline   (int startIndex, Span<Ptr<BindingGroup>> groups) RTRC_RHI_API_PURE;
+    RTRC_RHI_API void BindGroupsToRayTracingPipeline(int startIndex, Span<Ptr<BindingGroup>> groups) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void BindGroupToGraphicsPipeline  (int index, const Ptr<BindingGroup> &group) RTRC_RHI_API_PURE;
     RTRC_RHI_API void BindGroupToComputePipeline   (int index, const Ptr<BindingGroup> &group) RTRC_RHI_API_PURE;
@@ -1454,13 +1471,17 @@ public:
         IndexFormat format) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void SetStencilReferenceValue(uint8_t value) RTRC_RHI_API_PURE;
-
-    RTRC_RHI_API void SetPushConstants(
-        const BindingLayoutPtr &bindingLayout,
-        ShaderStageFlags         stages,
-        uint32_t                offset,
-        uint32_t                size,
-        const void             *values) RTRC_RHI_API_PURE;
+    
+    RTRC_RHI_API void SetGraphicsPushConstants(
+        uint32_t    rangeIndex,
+        uint32_t    offsetInRange,
+        uint32_t    size,
+        const void *data) RTRC_RHI_API_PURE;
+    RTRC_RHI_API void SetComputePushConstants(
+        uint32_t    rangeIndex,
+        uint32_t    offsetInRange,
+        uint32_t    size,
+        const void *data) RTRC_RHI_API_PURE;
 
     // Draw & dispatch & trace
 
@@ -1501,10 +1522,12 @@ public:
         uint32_t mipLevel,
         uint32_t arrayLayer,
         Buffer  *src,
-        size_t   srcOffset) RTRC_RHI_API_PURE;
+        size_t   srcOffset,
+        size_t   srcRowBytes) RTRC_RHI_API_PURE;
     RTRC_RHI_API void CopyColorTexture2DToBuffer(
         Buffer  *dst,
         size_t   dstOffset,
+        size_t   dstRowBytes,
         Texture *src,
         uint32_t mipLevel,
         uint32_t arrayLayer) RTRC_RHI_API_PURE;
@@ -1520,9 +1543,9 @@ public:
 
     // Acceleration structure
 
-    // vertexData/inputData/transformData/aabbData will be accessed with [stage = BuildAS, access = ReadForBuildAS]
-    // scratch buffer will be accessed with [stage = BuildAS, access = ReadAS | WriteAS]
-    // tlas/blas will be accessed with [stage = BuildAS, access = WriteAS]
+    // VertexData/inputData/transformData/aabbData will be accessed with [stage = BuildAS, access = ReadForBuildAS].
+    // Scratch buffer will be accessed with [stage = BuildAS, access = ReadAS | WriteAS].
+    // Tlas/blas will be accessed with [stage = BuildAS, access = WriteAS].
 
     RTRC_RHI_API void BuildBlas(
         const BlasPrebuildInfoPtr   &buildInfo,
@@ -1537,6 +1560,7 @@ public:
 
 protected:
 
+    // Release/acquire barriers for buffers are not needed since all buffers are assumed to be simultaneous-accessible
     RTRC_RHI_API void ExecuteBarriersInternal(
         Span<GlobalMemoryBarrier>      globalMemoryBarriers,
         Span<TextureTransitionBarrier> textureTransitions,
@@ -1623,6 +1647,16 @@ public:
     RTRC_RHI_API const TextureDsvDesc &GetDesc() const RTRC_RHI_API_PURE;
 };
 
+struct BufferReadRange
+{
+    size_t offset = 0;
+    size_t size = 0;
+
+    bool operator==(const BufferReadRange &) const = default;
+};
+
+static constexpr BufferReadRange READ_WHOLE_BUFFER = { 0, (std::numeric_limits<size_t>::max)() };
+
 class Buffer : public RHIObject
 {
 public:
@@ -1632,12 +1666,12 @@ public:
     RTRC_RHI_API Ptr<BufferSrv> CreateSrv(const BufferSrvDesc &desc) const RTRC_RHI_API_PURE;
     RTRC_RHI_API Ptr<BufferUav> CreateUav(const BufferUavDesc &desc) const RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API void *Map(size_t offset, size_t size, bool invalidate = false) RTRC_RHI_API_PURE;
+    RTRC_RHI_API void *Map(size_t offset, size_t size, const BufferReadRange &readRange, bool invalidate = false) RTRC_RHI_API_PURE;
     RTRC_RHI_API void Unmap(size_t offset, size_t size, bool flush = false)     RTRC_RHI_API_PURE;
     RTRC_RHI_API void InvalidateBeforeRead(size_t offset, size_t size)          RTRC_RHI_API_PURE;
     RTRC_RHI_API void FlushAfterWrite(size_t offset, size_t size)               RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API BufferDeviceAddress GetDeviceAddress() RTRC_RHI_API_PURE;
+    RTRC_RHI_API BufferDeviceAddress GetDeviceAddress() const RTRC_RHI_API_PURE;
 };
 
 class BufferSrv : public RHIObject
@@ -1735,8 +1769,8 @@ void InitializeDirectX12Backend();
 
 struct DirectX12InstanceDesc
 {
-    bool debugMode = false;
-    bool gpuValidation = false;
+    bool debugMode = RTRC_DEBUG;
+    bool gpuValidation = RTRC_DEBUG;
 };
 
 Ptr<Instance> CreateDirectX12Instance(const DirectX12InstanceDesc &desc);

@@ -55,6 +55,7 @@ private:
 
     size_t size_;
     size_t alignment_;
+    size_t sizeAlignment_;
     size_t alignedSize_;
     size_t chunkSize_;
     size_t batchSize_;

@@ -2,6 +2,7 @@
 #define _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING
 #endif
 
+#include <cassert>
 #include <codecvt>
 #include <filesystem>
 #include <locale>
@@ -66,10 +67,11 @@ DXC::~DXC()
 }
 
 std::vector<unsigned char> DXC::Compile(
-    const ShaderInfo     &shaderInfo,
-    Target                target,
-    bool                  debugMode,
-    std::string          *preprocessOutput) const
+    const ShaderInfo       &shaderInfo,
+    Target                  target,
+    bool                    debugMode,
+    std::string            *preprocessOutput,
+    std::vector<std::byte> *reflectionData) const
 {
     ComPtr<IDxcBlobEncoding> sourceBlob;
     if(FAILED(impl_->utils->CreateBlob(
@@ -110,10 +112,21 @@ std::vector<unsigned char> DXC::Compile(
     std::wstring targetProfile;
     switch(target)
     {
-    case Target::Vulkan_1_3_VS_6_0: targetProfile = L"vs_6_0";  break;
-    case Target::Vulkan_1_3_FS_6_0: targetProfile = L"ps_6_0";  break;
-    case Target::Vulkan_1_3_CS_6_0: targetProfile = L"cs_6_0";  break;
-    case Target::Vulkan_1_3_RT_6_4: targetProfile = L"lib_6_4"; break;
+    case Target::Vulkan_1_3_VS_6_0:
+    case Target::DirectX12_VS_6_0:
+        targetProfile = L"vs_6_0";
+        break;
+    case Target::Vulkan_1_3_FS_6_0:
+    case Target::DirectX12_FS_6_0:
+        targetProfile = L"ps_6_0";
+        break;
+    case Target::Vulkan_1_3_CS_6_0:
+    case Target::DirectX12_CS_6_0:
+        targetProfile = L"cs_6_0";
+        break;
+    case Target::Vulkan_1_3_RT_6_4:
+        targetProfile = L"lib_6_4";
+        break;
     }
     arguments.push_back(L"-T");
     arguments.push_back(targetProfile.c_str());
@@ -134,40 +147,54 @@ std::vector<unsigned char> DXC::Compile(
         arguments.push_back(m.c_str());
     }
 
-    arguments.push_back(L"-spirv");
-    arguments.push_back(L"-fvk-use-dx-layout");
-    arguments.push_back(L"-fvk-use-dx-position-w");
-    arguments.push_back(L"-fspv-target-env=vulkan1.3");
-    arguments.push_back(L"-fvk-stage-io-order=alpha");
     arguments.push_back(L"-Zpr");
+
+    const bool isVulkan = std::to_underlying(target) < std::to_underlying(Target::DirectX12_VS_6_0);
+    if(isVulkan)
+    {
+        arguments.push_back(L"-spirv");
+        arguments.push_back(L"-fvk-use-dx-layout");
+        arguments.push_back(L"-fvk-use-dx-position-w");
+        arguments.push_back(L"-fspv-target-env=vulkan1.3");
+        arguments.push_back(L"-fvk-stage-io-order=alpha");
+    }
 
     const bool enableDebugInfo = debugMode
                               && target != Target::Vulkan_1_3_RT_6_4
                               && !shaderInfo.rayQuery; // DXC crashes when enabling debug info for ray tracing shader
     if(enableDebugInfo)
     {
-        arguments.push_back(L"-O0");
-        arguments.push_back(L"-fspv-extension=SPV_KHR_non_semantic_info");
-        arguments.push_back(L"-fspv-debug=vulkan-with-source");
+        if(isVulkan)
+        {
+            arguments.push_back(L"-O0");
+            arguments.push_back(L"-fspv-extension=SPV_KHR_non_semantic_info");
+            arguments.push_back(L"-fspv-debug=vulkan-with-source");
+        }
+        else
+        {
+            arguments.push_back(L"-Zi");
+            arguments.push_back(L"-Od");
+        }
     }
     else
     {
         arguments.push_back(L"-O3");
     }
 
-    if(shaderInfo.bindless)
+    if(isVulkan)
     {
-        arguments.push_back(L"-fspv-extension=SPV_EXT_descriptor_indexing");
-    }
-
-    if(shaderInfo.rayQuery)
-    {
-        arguments.push_back(L"-fspv-extension=SPV_KHR_ray_query");
-    }
-
-    if(shaderInfo.rayTracing)
-    {
-        arguments.push_back(L"-fspv-extension=SPV_KHR_ray_tracing");
+        if(shaderInfo.bindless)
+        {
+            arguments.push_back(L"-fspv-extension=SPV_EXT_descriptor_indexing");
+        }
+        if(shaderInfo.rayQuery)
+        {
+            arguments.push_back(L"-fspv-extension=SPV_KHR_ray_query");
+        }
+        if(shaderInfo.rayTracing)
+        {
+            arguments.push_back(L"-fspv-extension=SPV_KHR_ray_tracing");
+        }
     }
 
     if(preprocessOutput)
@@ -177,10 +204,7 @@ std::vector<unsigned char> DXC::Compile(
         arguments.push_back(L"~");
     }
 
-    const DxcBuffer sourceBuffer = {
-        .Ptr = sourceBlob->GetBufferPointer(),
-        .Size = sourceBlob->GetBufferSize()
-    };
+    const DxcBuffer sourceBuffer = { sourceBlob->GetBufferPointer(), sourceBlob->GetBufferSize() };
     ComPtr<IDxcResult> compileResult;
     if(FAILED(impl_->compiler->Compile(
         &sourceBuffer, arguments.data(), static_cast<uint32_t>(arguments.size()),
@@ -232,9 +256,28 @@ std::vector<unsigned char> DXC::Compile(
         return {};
     }
 
+    if(reflectionData)
+    {
+        assert(!preprocessOutput);
+        assert(std::to_underlying(target) >= std::to_underlying(Target::DirectX12_VS_6_0));
+        ComPtr<IDxcBlob> reflectionBlob;
+        if(FAILED(compileResult->GetOutput(
+            DXC_OUT_REFLECTION, IID_PPV_ARGS(reflectionBlob.GetAddressOf()), nullptr)))
+        {
+            throw Exception("Fail to get dxc reflection result");
+        }
+        reflectionData->resize(reflectionBlob->GetBufferSize());
+        std::memcpy(reflectionData->data(), reflectionBlob->GetBufferPointer(), reflectionBlob->GetBufferSize());
+    }
+
     std::vector<unsigned char> ret(result->GetBufferSize());
     std::memcpy(ret.data(), result->GetBufferPointer(), result->GetBufferSize());
     return ret;
+}
+
+IDxcUtils *DXC::GetDxcUtils()
+{
+    return impl_->utils.Get();
 }
 
 RTRC_END

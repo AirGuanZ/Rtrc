@@ -237,7 +237,8 @@ RC<GraphicsPipeline> PipelineManager::CreateGraphicsPipeline(const GraphicsPipel
             if(indexInMeshLayout < 0)
             {
                 throw Exception(fmt::format(
-                    "Input variable with semantic '{}' is not provided by given mesh layout", var.semantic));
+                    "Input variable with semantic '{}' is not provided by given mesh layout",
+                    var.semantic.ToString()));
             }
             auto vertexBufferLayout = desc.meshLayout->GetVertexBufferLayouts()[indexInMeshLayout];
     
@@ -262,7 +263,8 @@ RC<GraphicsPipeline> PipelineManager::CreateGraphicsPipeline(const GraphicsPipel
             if(!PipelineDetail::IsCompatible(attrib->type, var.type))
             {
                 throw Exception(fmt::format(
-                    "Type of semantic '{}' in mesh layout doesn't match shader input attribute", var.semantic));
+                    "Type of semantic '{}' in mesh layout doesn't match shader input attribute",
+                    var.semantic.ToString()));
             }
     
             vertexAttributes.push_back(RHI::VertexInputAttribute
@@ -270,7 +272,9 @@ RC<GraphicsPipeline> PipelineManager::CreateGraphicsPipeline(const GraphicsPipel
                 .location           = static_cast<uint32_t>(var.location),
                 .inputBufferIndex   = static_cast<uint32_t>(RHIVertexBufferIndex),
                 .byteOffsetInBuffer = static_cast<uint32_t>(attrib->byteOffsetInBuffer),
-                .type               = attrib->type
+                .type               = attrib->type,
+                .semanticName       = attrib->semantic.GetName(),
+                .semanticIndex      = attrib->semantic.GetIndex()
             });
         }
     }

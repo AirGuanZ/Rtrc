@@ -170,13 +170,13 @@ void VulkanCommandBuffer::BindPipeline(const Ptr<RayTracingPipeline> &pipeline)
     currentRayTracingPipeline_ = DynamicCast<VulkanRayTracingPipeline>(pipeline);
 }
 
-void VulkanCommandBuffer::BindGroupsToGraphicsPipeline(int startIndex, Span<RC<BindingGroup>> groups)
+void VulkanCommandBuffer::BindGroupsToGraphicsPipeline(int startIndex, Span<Ptr<BindingGroup>> groups)
 {
     auto layout = static_cast<const VulkanBindingLayout *>(currentGraphicsPipeline_->GetBindingLayout().Get());
     std::vector<VkDescriptorSet> sets(groups.GetSize());
     for(auto &&[i, g] : Enumerate(groups))
     {
-        sets[i] = static_cast<VulkanBindingGroup *>(g.get())->_internalGetNativeSet();
+        sets[i] = static_cast<VulkanBindingGroup *>(g.Get())->_internalGetNativeSet();
     }
     vkCmdBindDescriptorSets(
         commandBuffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -184,13 +184,13 @@ void VulkanCommandBuffer::BindGroupsToGraphicsPipeline(int startIndex, Span<RC<B
         static_cast<uint32_t>(sets.size()), sets.data(), 0, nullptr);
 }
 
-void VulkanCommandBuffer::BindGroupsToComputePipeline(int startIndex, Span<RC<BindingGroup>> groups)
+void VulkanCommandBuffer::BindGroupsToComputePipeline(int startIndex, Span<Ptr<BindingGroup>> groups)
 {
     auto layout = static_cast<const VulkanBindingLayout *>(currentComputePipeline_->GetBindingLayout().Get());
     std::vector<VkDescriptorSet> sets(groups.GetSize());
     for(auto &&[i, g] : Enumerate(groups))
     {
-        sets[i] = static_cast<VulkanBindingGroup *>(g.get())->_internalGetNativeSet();
+        sets[i] = static_cast<VulkanBindingGroup *>(g.Get())->_internalGetNativeSet();
     }
     vkCmdBindDescriptorSets(
         commandBuffer_, VK_PIPELINE_BIND_POINT_COMPUTE,
@@ -198,13 +198,13 @@ void VulkanCommandBuffer::BindGroupsToComputePipeline(int startIndex, Span<RC<Bi
         static_cast<uint32_t>(sets.size()), sets.data(), 0, nullptr);
 }
 
-void VulkanCommandBuffer::BindGroupsToRayTracingPipeline(int startIndex, Span<RC<BindingGroup>> groups)
+void VulkanCommandBuffer::BindGroupsToRayTracingPipeline(int startIndex, Span<Ptr<BindingGroup>> groups)
 {
     auto layout = static_cast<const VulkanBindingLayout *>(currentRayTracingPipeline_->GetBindingLayout().Get());
     std::vector<VkDescriptorSet> sets(groups.GetSize());
     for(auto &&[i, g] : Enumerate(groups))
     {
-        sets[i] = static_cast<VulkanBindingGroup *>(g.get())->_internalGetNativeSet();
+        sets[i] = static_cast<VulkanBindingGroup *>(g.Get())->_internalGetNativeSet();
     }
     vkCmdBindDescriptorSets(
         commandBuffer_, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR,
@@ -302,11 +302,28 @@ void VulkanCommandBuffer::SetStencilReferenceValue(uint8_t value)
     vkCmdSetStencilReference(commandBuffer_, VK_STENCIL_FACE_FRONT_AND_BACK, value);
 }
 
-void VulkanCommandBuffer::SetPushConstants(
-    const BindingLayoutPtr &bindingLayout, ShaderStageFlags stages, uint32_t offset, uint32_t size, const void *values)
+void VulkanCommandBuffer::SetGraphicsPushConstants(
+    uint32_t rangeIndex, uint32_t offsetInRange, uint32_t size, const void *data)
 {
-    auto vulkanBindingLayout = static_cast<const VulkanBindingLayout *>(bindingLayout.Get())->_internalGetNativeLayout();
-    vkCmdPushConstants(commandBuffer_, vulkanBindingLayout, TranslateShaderStageFlag(stages), offset, size, values);
+    auto vkBindingLayout = static_cast<const VulkanBindingLayout *>(currentGraphicsPipeline_->GetBindingLayout().Get());
+    auto &bindingLayoutDesc = vkBindingLayout->_internalGetDesc();
+    auto &range = bindingLayoutDesc.pushConstantRanges[rangeIndex];
+    const size_t offset = range.offset + offsetInRange;
+    vkCmdPushConstants(
+        commandBuffer_, vkBindingLayout->_internalGetNativeLayout(),
+        TranslateShaderStageFlag(range.stages), static_cast<uint32_t>(offset), size, data);
+}
+
+void VulkanCommandBuffer::SetComputePushConstants(
+    uint32_t rangeIndex, uint32_t offsetInRange, uint32_t size, const void *data)
+{
+    auto vkBindingLayout = static_cast<const VulkanBindingLayout *>(currentComputePipeline_->GetBindingLayout().Get());
+    auto &bindingLayoutDesc = vkBindingLayout->_internalGetDesc();
+    auto &range = bindingLayoutDesc.pushConstantRanges[rangeIndex];
+    const size_t offset = range.offset + offsetInRange;
+    vkCmdPushConstants(
+        commandBuffer_, vkBindingLayout->_internalGetNativeLayout(), 
+        TranslateShaderStageFlag(range.stages), static_cast<uint32_t>(offset), size, data);
 }
 
 void VulkanCommandBuffer::Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance)
@@ -387,12 +404,13 @@ void VulkanCommandBuffer::CopyBuffer(
 }
 
 void VulkanCommandBuffer::CopyBufferToColorTexture2D(
-    Texture *dst, uint32_t mipLevel, uint32_t arrayLayer, Buffer *src, size_t srcOffset)
+    Texture *dst, uint32_t mipLevel, uint32_t arrayLayer, Buffer *src, size_t srcOffset, size_t srcRowBytes)
 {
+    assert(srcRowBytes % GetTexelSize(dst->GetFormat()) == 0);
     auto &texDesc = dst->GetDesc();
     const VkBufferImageCopy copy = {
         .bufferOffset      = srcOffset,
-        .bufferRowLength   = 0,
+        .bufferRowLength   = static_cast<uint32_t>(srcRowBytes / GetTexelSize(dst->GetFormat())),
         .bufferImageHeight = 0,
         .imageSubresource  = VkImageSubresourceLayers{
             .aspectMask     = GetAllAspects(texDesc.format),
@@ -409,12 +427,13 @@ void VulkanCommandBuffer::CopyBufferToColorTexture2D(
 }
 
 void VulkanCommandBuffer::CopyColorTexture2DToBuffer(
-    Buffer *dst, size_t dstOffset, Texture *src, uint32_t mipLevel, uint32_t arrayLayer)
+    Buffer *dst, size_t dstOffset, size_t dstRowBytes, Texture *src, uint32_t mipLevel, uint32_t arrayLayer)
 {
+    assert(dstRowBytes % GetTexelSize(src->GetFormat()) == 0);
     auto &texDesc = src->GetDesc();
     const VkBufferImageCopy copy = {
         .bufferOffset      = dstOffset,
-        .bufferRowLength   = 0,
+        .bufferRowLength   = static_cast<uint32_t>(dstRowBytes / GetTexelSize(src->GetFormat())),
         .bufferImageHeight = 0,
         .imageSubresource  = VkImageSubresourceLayers{
             .aspectMask     = GetAllAspects(texDesc.format),

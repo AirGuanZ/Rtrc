@@ -125,7 +125,7 @@ CachedScene::RenderGraphInterface CachedScene::Update(
         ret.prepareTlasMaterialDataPass = renderGraph.CreatePass("Prepare Tlas Material Data Buffer");
         if(!materialData.empty())
         {
-            ret.prepareTlasMaterialDataPass->Use(ret.tlasMaterialDataBuffer, RG::COPY_DST);
+            ret.prepareTlasMaterialDataPass->Use(ret.tlasMaterialDataBuffer, RG::CopyDst);
             ret.prepareTlasMaterialDataPass->SetCallback([
                 src = materialDataUploadBuffer,
                 dst = ret.tlasMaterialDataBuffer,
@@ -183,8 +183,8 @@ CachedScene::RenderGraphInterface CachedScene::Update(
         RG::BufferResource *rgTlasScratchBuffer = renderGraph.RegisterBuffer(opaqueTlasScratchBuffer_);
         
         ret.buildTlasPass = renderGraph.CreatePass("Build Tlas");
-        ret.buildTlasPass->Use(ret.tlasBuffer, RG::BUILD_ACCELERATION_STRUCTURE_OUTPUT);
-        ret.buildTlasPass->Use(rgTlasScratchBuffer, RG::BUILD_ACCELERATION_STRUCTURE_SCRATCH);
+        ret.buildTlasPass->Use(ret.tlasBuffer, RG::BuildAS_Output);
+        ret.buildTlasPass->Use(rgTlasScratchBuffer, RG::BuildAS_Scratch);
         ret.buildTlasPass->SetCallback([
             info = std::move(prebuildInfo), instanceArrayDesc, tlas = opaqueTlas_, scratch = opaqueTlasScratchBuffer_]
             (RG::PassContext &context)

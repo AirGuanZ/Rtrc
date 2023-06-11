@@ -10,9 +10,9 @@ RTRC_BEGIN
 
 enum class BuiltinTexture
 {
-    Black2D,          // R8G8B8A8_UNorm, RGB = 0, A = 1
-    White2D,          // R8G8B8A8_UNorm, RGB = 1, A = 1
-    BlueNoiseRGBA256, // R8G8B8A8_UNorm, 256 * 256
+    Black2D,      // R8G8B8A8_UNorm, RGB = 0, A = 1
+    White2D,      // R8G8B8A8_UNorm, RGB = 1, A = 1
+    BlueNoise256, // R8_UNorm, 256 * 256
     Count
 };
 
@@ -27,6 +27,7 @@ enum class BuiltinMaterial
     DeferredLighting,
     Atmosphere,
     ShadowMask,
+    SurfelGI,
     Count
 };
 
@@ -45,7 +46,7 @@ public:
     const Mesh &GetFullscreenTriangleMesh() const;
     const Mesh &GetFullscreenQuadMesh()     const;
 
-    const Image<Vector4b> &GetBlueNoiseRGBA256() const;
+    const Image<uint8_t> &GetBlueNoise256() const;
 
 private:
 
@@ -54,13 +55,13 @@ private:
     void LoadBuiltinMaterials();
 
     ObserverPtr<Device> device_;
-    MaterialManager materialManager_;
+    MaterialManager     materialManager_;
 
     std::array<RC<Texture>,  EnumCount<BuiltinTexture>>  textures_;
     std::array<RC<Mesh>,     EnumCount<BuiltinMesh>>     meshes_;
     std::array<RC<Material>, EnumCount<BuiltinMaterial>> materials_;
 
-    Image<Vector4b> blueNoise256_;
+    Image<uint8_t> blueNoise256_;
 
     Mesh fullscreenTriangle_;
     Mesh fullscreenQuad_;

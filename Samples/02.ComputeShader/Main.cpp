@@ -52,11 +52,15 @@ void Run()
         }));
     auto outputTextureUav = outputTexture->CreateUav();
 
+    const size_t rowDataSize = outputTexture->GetDesc().width * GetTexelSize(outputTexture->GetFormat());
+    const size_t rowDataAlignment = device->GetTextureBufferCopyRowPitchAlignment(outputTexture->GetFormat());
+    const size_t alignedRowSize = UpAlignTo(rowDataSize, rowDataAlignment);
+    const size_t readbackBufferSize = alignedRowSize * outputTexture->GetDesc().height;
     auto readbackBuffer = device->CreateBuffer(RHI::BufferDesc
         {
-            .size = inputTexture->GetDesc().width * inputTexture->GetDesc().height * 4,
+            .size = readbackBufferSize,
             .usage = RHI::BufferUsage::TransferDst,
-            .hostAccessType = RHI::BufferHostAccessType::Random
+            .hostAccessType = RHI::BufferHostAccessType::Readback
         });
 
     const int bindingGroupIndex = shader->GetBindingGroupIndexByName("MainGroup");
@@ -91,11 +95,14 @@ void Run()
             RHI::TextureLayout::CopySrc,
             RHI::PipelineStage::Copy, 
             RHI::ResourceAccess::CopyRead);
-        cmd.CopyColorTexture2DToBuffer(*readbackBuffer, 0, *outputTexture, 0, 0);
+        cmd.CopyColorTexture2DToBuffer(*readbackBuffer, 0, alignedRowSize, *outputTexture, 0, 0);
     });
-    
-    Image<Vector4b> outputImageData(inputTexture->GetDesc().width, inputTexture->GetDesc().height);
-    readbackBuffer->Download(outputImageData.GetData(), 0, readbackBuffer->GetSize());
+
+    std::vector<unsigned char> readbackData(readbackBufferSize);
+    readbackBuffer->Download(readbackData.data(), 0, readbackData.size());
+
+    auto outputImageData = Image<Vector4b>::FromRawData(
+        readbackData.data(), outputTexture->GetWidth(), outputTexture->GetHeight(), alignedRowSize);
     for(uint32_t y = 0; y < outputImageData.GetHeight(); ++y)
     {
         for(uint32_t x = 0; x < outputImageData.GetWidth(); ++x)

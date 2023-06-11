@@ -6,6 +6,7 @@ LinearTransientConstantBufferAllocator::LinearTransientConstantBufferAllocator(D
     : device_(device), batchBufferSize_(batchBufferSize)
 {
     constantBufferAlignment_ = device_.GetRawDevice()->GetConstantBufferAlignment();
+    constantBufferSizeAlignment_ = device.GetRawDevice()->GetConstantBufferSizeAlignment();
 
     activeBatch_     = nullptr;
     nextOffset_      = 0;
@@ -29,10 +30,10 @@ void LinearTransientConstantBufferAllocator::NewBatch()
         {
             .size           = batchBufferSize_,
             .usage          = RHI::BufferUsage::ShaderConstantBuffer,
-            .hostAccessType = RHI::BufferHostAccessType::SequentialWrite
+            .hostAccessType = RHI::BufferHostAccessType::Upload
         });
         newBatch->mappedBuffer = static_cast<unsigned char *>(
-            newBatch->buffer->GetRHIObject()->Map(0, batchBufferSize_));
+            newBatch->buffer->GetRHIObject()->Map(0, batchBufferSize_, {}));
     }
 
     Batch *rawNewBatch = newBatch.get();
@@ -72,7 +73,8 @@ RC<SubBuffer> LinearTransientConstantBufferAllocator::CreateConstantBuffer(const
         NewBatch();
     }
 
-    const size_t alignedOffset = UpAlignTo(nextOffset_, constantBufferAlignment_);
+    const size_t alignedOffset = UpAlignTo(
+        nextOffset_, (std::max)(constantBufferAlignment_, constantBufferSizeAlignment_));
     if(alignedOffset + size > batchBufferSize_)
     {
         NewBatch();

@@ -116,6 +116,7 @@ private:
 
     size_t chunkSize_;
     size_t cbufferAlignment_;
+    size_t cbufferSizeAlignment_;
 
     SlotVector<Chunk> chunks_;
     tbb::spin_rw_mutex chunkMutex_;

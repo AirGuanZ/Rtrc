@@ -34,9 +34,9 @@ void CopyContext::UploadBuffer(
     {
         .size = size,
         .usage = RHI::BufferUsage::TransferSrc,
-        .hostAccessType = RHI::BufferHostAccessType::SequentialWrite
+        .hostAccessType = RHI::BufferHostAccessType::Upload
     });
-    auto mappedStagingBuffer = stagingBuffer->Map(0, size);
+    auto mappedStagingBuffer = stagingBuffer->Map(0, size, {});
     std::memcpy(mappedStagingBuffer, initData, size);
     stagingBuffer->Unmap(0, size, true);
 
@@ -54,10 +54,10 @@ void CopyContext::UploadBuffer(
 
 void CopyContext::UploadTexture2D(
     const RC<Texture> &texture,
-    uint32_t             arrayLayer,
-    uint32_t             mipLevel,
-    const void          *data,
-    RHI::TextureLayout   postLayout)
+    uint32_t           arrayLayer,
+    uint32_t           mipLevel,
+    const void        *data,
+    RHI::TextureLayout postLayout)
 {
     auto &texDesc = texture->GetDesc();
 
@@ -69,16 +69,31 @@ void CopyContext::UploadTexture2D(
     const uint32_t width = texDesc.width >> mipLevel;
     const uint32_t height = texDesc.height >> mipLevel;
 
-    const size_t rowSize = GetTexelSize(texDesc.format) * width;
-    const size_t stagingBufferSize = rowSize * height;
-
+    std::vector<unsigned char> alignedRowData;
+    const size_t rowAlignment = device_->GetTextureBufferCopyRowPitchAlignment(texture->GetFormat());
+    size_t dataRowBytes = width * GetTexelSize(texture->GetFormat());
+    if((dataRowBytes % rowAlignment) != 0 && height > 1)
+    {
+        const size_t alignedDataRowBytes = UpAlignTo(dataRowBytes, rowAlignment);
+        alignedRowData.resize(alignedDataRowBytes * height);
+        for(uint32_t y = 0; y < height; ++y)
+        {
+            auto src = static_cast<const unsigned char *>(data) + y * dataRowBytes;
+            auto dst = alignedRowData.data() + y * alignedDataRowBytes;
+            std::memcpy(dst, src, dataRowBytes);
+        }
+        dataRowBytes = alignedDataRowBytes;
+        data = alignedRowData.data();
+    }
+    
+    const size_t stagingBufferSize = dataRowBytes * height;
     auto stagingBuffer = device_->CreateBuffer(RHI::BufferDesc
     {
         .size = stagingBufferSize,
         .usage = RHI::BufferUsage::TransferSrc,
-        .hostAccessType = RHI::BufferHostAccessType::SequentialWrite
+        .hostAccessType = RHI::BufferHostAccessType::Upload
     });
-    auto mappedStagingBuffer = stagingBuffer->Map(0, stagingBufferSize);
+    auto mappedStagingBuffer = stagingBuffer->Map(0, stagingBufferSize, {});
     std::memcpy(mappedStagingBuffer, data, stagingBufferSize);
     stagingBuffer->Unmap(0, stagingBufferSize);
 
@@ -99,7 +114,8 @@ void CopyContext::UploadTexture2D(
         .afterAccesses  = RHI::ResourceAccess::CopyWrite,
         .afterLayout    = RHI::TextureLayout::CopyDst
     });
-    commandBuffer->CopyBufferToColorTexture2D(texture->GetRHIObject(), mipLevel, arrayLayer, stagingBuffer, 0);
+    commandBuffer->CopyBufferToColorTexture2D(
+        texture->GetRHIObject(), mipLevel, arrayLayer, stagingBuffer, 0, dataRowBytes);
     if(postLayout != RHI::TextureLayout::CopyDst)
     {
         commandBuffer->ExecuteBarriers(RHI::TextureTransitionBarrier
@@ -120,7 +136,7 @@ void CopyContext::UploadTexture2D(
 }
 
 void CopyContext::UploadTexture2D(
-    const RC<Texture> &texture,
+    const RC<Texture>  &texture,
     uint32_t            arrayLayer,
     uint32_t            mipLevel,
     const ImageDynamic &image,
@@ -131,7 +147,7 @@ void CopyContext::UploadTexture2D(
     {
         auto tdata = image.To(ImageDynamic::U8x4);
         auto &data = tdata.As<Image<Vector4b>>();
-        for(auto &v : data)
+        for(auto& v : data)
         {
             v = Vector4b(v.z, v.y, v.x, v.w);
         }

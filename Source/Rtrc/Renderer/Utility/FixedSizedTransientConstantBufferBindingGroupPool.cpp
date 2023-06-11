@@ -3,10 +3,10 @@
 RTRC_BEGIN
 
 FixedSizedTransientConstantBufferBindingGroupPool::FixedSizedTransientConstantBufferBindingGroupPool(
-    size_t               elementSize,
-    std::string          bindingName,
+    size_t                elementSize,
+    std::string           bindingName,
     RHI::ShaderStageFlags bindingShaderStages,
-    Device              &device)
+    Device               &device)
     : device_(device)
 {
     bindingName_ = std::move(bindingName);
@@ -26,7 +26,8 @@ FixedSizedTransientConstantBufferBindingGroupPool::FixedSizedTransientConstantBu
 
     size_ = elementSize;
     alignment_ = device.GetRawDevice()->GetConstantBufferAlignment();
-    alignedSize_ = UpAlignTo(size_, alignment_);
+    sizeAlignment_ = device.GetRawDevice()->GetConstantBufferSizeAlignment();
+    alignedSize_ = UpAlignTo(size_, (std::max)(alignment_, sizeAlignment_));
     if(alignedSize_ > 4 * 1024 * 1024)
     {
         throw Exception(fmt::format(
@@ -56,9 +57,9 @@ void FixedSizedTransientConstantBufferBindingGroupPool::NewBatch()
             {
                 .size = chunkSize_,
                 .usage = RHI::BufferUsage::ShaderConstantBuffer,
-                .hostAccessType = RHI::BufferHostAccessType::SequentialWrite
+                .hostAccessType = RHI::BufferHostAccessType::Upload
             });
-        newBatch->mappedBuffer = static_cast<unsigned char *>(newBatch->buffer->GetRHIObject()->Map(0, chunkSize_));
+        newBatch->mappedBuffer = static_cast<unsigned char *>(newBatch->buffer->GetRHIObject()->Map(0, chunkSize_, {}));
         newBatch->bindingGroups.resize(batchSize_);
     }
 
@@ -77,7 +78,8 @@ void FixedSizedTransientConstantBufferBindingGroupPool::NewBatch()
     unflushedOffset_ = 0;
 }
 
-FixedSizedTransientConstantBufferBindingGroupPool::Record FixedSizedTransientConstantBufferBindingGroupPool::NewRecord(const void *cbufferData, size_t bytes)
+FixedSizedTransientConstantBufferBindingGroupPool::Record
+    FixedSizedTransientConstantBufferBindingGroupPool::NewRecord(const void *cbufferData, size_t bytes)
 {
     if(!activeBatch_ || nextOffset_ >= chunkSize_)
     {

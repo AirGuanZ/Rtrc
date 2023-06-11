@@ -39,12 +39,9 @@ private:
     ObserverPtr<const BuiltinResourceManager> builtinResources_;
 
     RC<BindingGroupLayout> perPassBindingGroupLayout_;
-    RC<ShaderTemplate>     regularShaderTemplate_;
-    RC<ShaderTemplate>     skyShaderTemplate_;
-
-    GraphicsPipeline::Desc pipelineTemplate_;
-    PipelineCache          pipelineCache_;
-
+    RC<Shader> regularShader_;
+    RC<Shader> skyShader_;
+    
     UploadBufferPool<> lightBufferPool_;
 };
 

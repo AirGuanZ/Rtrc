@@ -33,6 +33,7 @@ private:
     Device &device_;
     size_t batchBufferSize_;
     size_t constantBufferAlignment_;
+    size_t constantBufferSizeAlignment_;
 
     RC<SharedData> sharedData_;
 

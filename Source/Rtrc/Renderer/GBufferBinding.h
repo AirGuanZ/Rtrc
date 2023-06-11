@@ -55,7 +55,7 @@ namespace GBufferBindingDetail
     template<typename T> concept NeedRoughness      = requires(T & t) { t._internalGBuffer_Roughness;      };
     template<typename T> concept NeedDepth          = requires(T & t) { t._internalGBuffer_Depth;          };
 
-    template<bool Normal, bool Albedo, bool Metallic, bool Roughness, bool Depth, bool EnableStencilRead>
+    template<bool Normal, bool Albedo, bool Metallic, bool Roughness, bool Depth>
     void DeclarePassUses(RG::Pass *pass, const GBuffers &gbuffers, RHI::PipelineStageFlag stages)
     {
         const RG::UseInfo use =
@@ -78,28 +78,7 @@ namespace GBufferBindingDetail
         }
         if constexpr(Depth)
         {
-            if constexpr(EnableStencilRead)
-            {
-                pass->Use(gbuffers.depth, RG::UseInfo
-                {
-                    .layout = RHI::TextureLayout::DepthShaderTexture_StencilReadOnlyAttachment,
-                    .stages = stages | RHI::PipelineStage::DepthStencil,
-                    .accesses = RHI::ResourceAccess::TextureRead | RHI::ResourceAccess::DepthStencilRead
-                });
-            }
-            else
-            {
-                pass->Use(gbuffers.depth, use);
-            }
-        }
-        else if constexpr(EnableStencilRead)
-        {
-            pass->Use(gbuffers.depth, RG::UseInfo
-            {
-                .layout   = RHI::TextureLayout::DepthStencilReadOnlyAttachment,
-                .stages   = RHI::PipelineStage::DepthStencil,
-                .accesses = RHI::ResourceAccess::DepthStencilRead
-            });
+            pass->Use(gbuffers.depth, use);
         }
     }
 
@@ -108,7 +87,7 @@ namespace GBufferBindingDetail
                              || std::is_same_v<T, GBuffers_NormalDepth>
                              || std::is_same_v<T, GBuffers_Depth>;
 
-    template<IsGBufferBindings T, bool EnableStencilRead>
+    template<IsGBufferBindings T>
     void DeclarePassUses(RG::Pass *pass, const GBuffers &gbuffers, RHI::PipelineStageFlag stages)
     {
         constexpr bool Normal    = NeedNormal<T>;
@@ -116,10 +95,10 @@ namespace GBufferBindingDetail
         constexpr bool Metallic  = NeedAlbedoMetallic<T>;
         constexpr bool Roughness = NeedRoughness<T>;
         constexpr bool Depth     = NeedDepth<T>;
-        DeclarePassUses<Normal, Albedo, Metallic, Roughness, Depth, EnableStencilRead>(pass, gbuffers, stages);
+        DeclarePassUses<Normal, Albedo, Metallic, Roughness, Depth>(pass, gbuffers, stages);
     }
 
-    template<IsGBufferBindings T, bool EnableStencilRead>
+    template<IsGBufferBindings T>
     void FillBindingGroupData(T &data, const GBuffers &gbuffers, RG::PassContext &context)
     {
         if constexpr(NeedNormal<T>)
@@ -136,9 +115,7 @@ namespace GBufferBindingDetail
         }
         if constexpr(NeedDepth<T>)
         {
-            constexpr auto SrvFlags = EnableStencilRead ? RHI::TextureViewFlags::DepthSrv_StencilAttachmentReadOnly
-                                                        : RHI::TextureViewFlags::None;
-            data._internalGBuffer_Depth = gbuffers.depth->Get(context)->CreateSrv(SrvFlags);
+            data._internalGBuffer_Depth = gbuffers.depth->Get(context)->CreateSrv(RHI::TextureViewFlags::None);
         }
     }
 
@@ -152,31 +129,31 @@ using GBufferBindings_All         = GBufferBindings<true, true, true, true, true
 using GBufferBindings_NormalDepth = GBufferBindings<true, false, false, false, true>;
 using GBufferBindings_Depth       = GBufferBindings<false, false, false, false, true>;
 
-template<bool EnableStencilRead, typename T>
+template<typename T>
 void DeclareGBufferUses(RG::Pass *pass, const GBuffers &gbuffers, RHI::PipelineStageFlag stages)
 {
     if constexpr(GBufferBindingDetail::IsGBufferBindings<T>)
     {
-        GBufferBindingDetail::DeclarePassUses<T, EnableStencilRead>(pass, gbuffers, stages);
+        GBufferBindingDetail::DeclarePassUses<T>(pass, gbuffers, stages);
     }
     else
     {
         using TT = std::remove_reference_t<decltype(std::declval<T&>().gbuffers)>;
-        GBufferBindingDetail::DeclarePassUses<TT, EnableStencilRead>(pass, gbuffers, stages);
+        GBufferBindingDetail::DeclarePassUses<TT>(pass, gbuffers, stages);
     }
 }
 
-template<bool EnableStencilRead, typename T>
+template<typename T>
 void FillBindingGroupGBuffers(T &data, const GBuffers &gbuffers, RG::PassContext &context)
 {
     if constexpr(GBufferBindingDetail::IsGBufferBindings<T>)
     {
-        GBufferBindingDetail::FillBindingGroupData<T, EnableStencilRead>(data, gbuffers, context);
+        GBufferBindingDetail::FillBindingGroupData<T>(data, gbuffers, context);
     }
     else
     {
         using TT = std::remove_reference_t<decltype(std::declval<T &>().gbuffers)>;
-        GBufferBindingDetail::FillBindingGroupData<TT, EnableStencilRead>(data.gbuffers, gbuffers, context);
+        GBufferBindingDetail::FillBindingGroupData<TT>(data.gbuffers, gbuffers, context);
     }
 }
 

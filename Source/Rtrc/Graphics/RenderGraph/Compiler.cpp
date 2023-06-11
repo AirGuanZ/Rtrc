@@ -683,7 +683,7 @@ void Compiler::GenerateBarriers(const ExecutableResources &resources)
                     },
                     .beforeStages   = currState.stages,
                     .beforeAccesses = lastState.accesses,
-                    .beforeLayout   = lastState.layout,
+                    .beforeLayout   = RHI::TextureLayout::Present,
                     .afterStages    = currState.stages,
                     .afterAccesses  = currState.accesses,
                     .afterLayout    = currState.layout
@@ -805,6 +805,17 @@ void Compiler::FillSections(ExecutableGraph &output)
             {
                 pass.callback = nullptr;
             }
+
+#if RTRC_RG_DEBUG
+            for(auto &r : rawPass->bufferUsages_)
+            {
+                pass.declaredResources.insert(r.first);
+            }
+            for(auto &t : rawPass->textureUsages_)
+            {
+                pass.declaredResources.insert(t.first);
+            }
+#endif
         }
     }
 }

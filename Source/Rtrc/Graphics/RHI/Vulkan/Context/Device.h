@@ -25,6 +25,8 @@ public:
 
     ~VulkanDevice() override;
 
+    BackendType GetBackendType() const RTRC_RHI_OVERRIDE { return BackendType::Vulkan; }
+
     Ptr<Queue> GetQueue(QueueType type) RTRC_RHI_OVERRIDE;
 
     Ptr<CommandPool> CreateCommandPool(const Ptr<Queue> &queue) RTRC_RHI_OVERRIDE;
@@ -33,7 +35,7 @@ public:
 
     Ptr<Swapchain> CreateSwapchain(const SwapchainDesc &desc, Window &window) RTRC_RHI_OVERRIDE;
 
-    Ptr<Semaphore> CreateSemaphore(uint64_t initialValue) RTRC_RHI_OVERRIDE;
+    Ptr<Semaphore> CreateTimelineSemaphore(uint64_t initialValue) RTRC_RHI_OVERRIDE;
 
     Ptr<RawShader> CreateShader(const void *data, size_t size, std::vector<RawShaderEntry> entries) RTRC_RHI_OVERRIDE;
 
@@ -82,7 +84,9 @@ public:
         size_t                  offsetInMemoryBlock) RTRC_RHI_OVERRIDE;
 
     size_t GetConstantBufferAlignment() const RTRC_RHI_OVERRIDE;
+    size_t GetConstantBufferSizeAlignment() const RTRC_RHI_OVERRIDE;
     size_t GetAccelerationStructureScratchBufferAlignment() const RTRC_RHI_OVERRIDE;
+    size_t GetTextureBufferCopyRowPitchAlignment(Format texelFormat) const RTRC_RHI_OVERRIDE;
 
     void WaitIdle() RTRC_RHI_OVERRIDE;
 

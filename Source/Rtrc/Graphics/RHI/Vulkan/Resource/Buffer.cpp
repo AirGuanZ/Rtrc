@@ -84,7 +84,7 @@ Ptr<BufferUav> VulkanBuffer::CreateUav(const BufferUavDesc &desc) const
     return MakePtr<VulkanBufferUav>(this, desc, view);
 }
 
-void *VulkanBuffer::Map(size_t offset, size_t size, bool invalidate)
+void *VulkanBuffer::Map(size_t offset, size_t size, const BufferReadRange &readRange, bool invalidate)
 {
     assert(ownership_ == ResourceOwnership::Allocation);
     assert(alloc_.allocator && alloc_.allocation);
@@ -94,7 +94,17 @@ void *VulkanBuffer::Map(size_t offset, size_t size, bool invalidate)
         "failed to map vulkan buffer memory");
     if(invalidate)
     {
-        InvalidateBeforeRead(offset, size);
+        size_t invalidateOffset = offset, invalidateEnd = offset + size;
+        if(readRange != READ_WHOLE_BUFFER && readRange.size > 0)
+        {
+            invalidateOffset = std::max(invalidateOffset, readRange.offset);
+            invalidateEnd = std::min(invalidateEnd, readRange.offset + readRange.size);
+        }
+
+        if(invalidateEnd > invalidateOffset)
+        {
+            InvalidateBeforeRead(invalidateOffset, invalidateEnd - invalidateOffset);
+        }
     }
     return result;
 }
@@ -123,7 +133,7 @@ void VulkanBuffer::FlushAfterWrite(size_t offset, size_t size)
         "failed to flush buffer memory");
 }
 
-BufferDeviceAddress VulkanBuffer::GetDeviceAddress()
+BufferDeviceAddress VulkanBuffer::GetDeviceAddress() const
 {
     assert(deviceAddress_);
     return { deviceAddress_ };

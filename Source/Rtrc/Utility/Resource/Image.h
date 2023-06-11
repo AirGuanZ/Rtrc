@@ -29,15 +29,11 @@ public:
     using Texel = T;
 
     Image();
-
     Image(uint32_t width, uint32_t height);
-
     Image(const Image &other);
-
     Image(Image &&other) noexcept;
 
     Image &operator=(const Image &other);
-
     Image &operator=(Image &&other) noexcept;
 
     ~Image() = default;
@@ -47,18 +43,15 @@ public:
     operator bool() const;
 
     uint32_t GetWidth() const;
-
     uint32_t GetHeight() const;
 
-    Texel &operator()(uint32_t x, uint32_t y);
-
+          Texel &operator()(uint32_t x, uint32_t y);
     const Texel &operator()(uint32_t x, uint32_t y) const;
 
     template<typename U>
     Image<U> To() const;
 
     void Pow_(float v);
-
     Image Pow(float v) const;
 
     auto begin() { return data_.begin(); }
@@ -71,8 +64,10 @@ public:
     auto GetData() const { return data_.data(); }
 
     void Save(const std::string &filename, ImageFormat format = ImageFormat::Auto) const;
-
     static Image Load(const std::string &filename, ImageFormat format = ImageFormat::Auto);
+
+    std::vector<unsigned char> GetRowAlignedData(size_t rowAlignment) const;
+    static Image FromRawData(const void *data, uint32_t width, uint32_t height, size_t rowSize);
 
 private:
 
@@ -575,6 +570,34 @@ Image<T> Image<T>::Load(const std::string &filename, ImageFormat format)
         {
             return image.template To<T>();
         });
+}
+
+template<typename T>
+std::vector<unsigned char> Image<T>::GetRowAlignedData(size_t rowAlignment) const
+{
+    const size_t rowSize = width_ * sizeof(T);
+    const size_t alignedRowSize = UpAlignTo(rowSize, rowAlignment);
+    std::vector<unsigned char> ret(alignedRowSize * height_);
+    for(uint32_t y = 0;y < height_; ++y)
+    {
+        auto src = &data_[y * width_];
+        auto dst = ret.data() + y * alignedRowSize;
+        std::memcpy(dst, src, rowSize);
+    }
+    return ret;
+}
+
+template<typename T>
+Image<T> Image<T>::FromRawData(const void *data, uint32_t width, uint32_t height, size_t rowSize)
+{
+    Image ret(width, height);
+    for(uint32_t y = 0; y < height; ++y)
+    {
+        auto src = static_cast<const unsigned char *>(data) + y * rowSize;
+        auto dst = &ret(0, y);
+        std::memcpy(dst, src, width * sizeof(T));
+    }
+    return ret;
 }
 
 template<typename T>

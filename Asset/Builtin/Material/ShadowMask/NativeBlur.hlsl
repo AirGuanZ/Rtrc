@@ -3,7 +3,7 @@
 rtrc_group(Pass, CS)
 {
     rtrc_define(Texture2D<float>, In)
-    rtrc_define(RWTexture2D<float>, Out)
+    rtrc_define(RWTexture2D<unorm float>, Out)
     rtrc_uniform(int2, resolution)
 };
 

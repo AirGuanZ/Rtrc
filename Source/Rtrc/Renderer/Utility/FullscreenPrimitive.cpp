@@ -12,7 +12,7 @@ namespace FullscreenPrimitiveDetail
 
         static const MeshLayout *GetLayout()
         {
-            return RTRC_MESH_LAYOUT(Buffer(Attribute("POSITION", Float2), Attribute("UV", Float2)));
+            return RTRC_MESH_LAYOUT(Buffer(Attribute("POSITION", 0, Float2), Attribute("UV", 0, Float2)));
         }
     };
 
@@ -26,10 +26,10 @@ namespace FullscreenPrimitiveDetail
         static const MeshLayout *GetLayout()
         {
             return RTRC_MESH_LAYOUT(Buffer(
-                Attribute("POSITION", Float2),
-                Attribute("UV", Float2),
-                Attribute("WORLD_RAY", Float3),
-                Attribute("CAMERA_RAY", Float3)));
+                Attribute("POSITION",   0, Float2),
+                Attribute("UV",         0, Float2),
+                Attribute("WORLD_RAY",  0, Float3),
+                Attribute("CAMERA_RAY", 0, Float3)));
         }
     };
 

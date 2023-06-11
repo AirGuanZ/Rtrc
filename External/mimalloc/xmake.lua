@@ -22,10 +22,10 @@ package("mimalloc")
         table.insert(configs, "-DMI_BUILD_TESTS=OFF")
         table.insert(configs, "-DMI_BUILD_OBJECT=OFF")
         table.insert(configs, "-DCMAKE_BUILD_TYPE=" .. (package:debug() and "Debug" or "Release"))
-        --table.insert(configs, "-DCMAKE_BUILD_TYPE=" .. (is_mode("debug") and "Debug" or "Release"))
-        --if is_mode("debug") then
-        --    table.insert(configs, "-D_DEBUG=")
-        --end
+        table.insert(configs, "-DCMAKE_BUILD_TYPE=" .. (is_mode("debug") and "Debug" or "Release"))
+        if is_mode("debug") then
+            table.insert(configs, "-D_DEBUG=")
+        end
         local cxflags
         if package:config("rltgenrandom") then
             if xmake:version():ge("2.5.1") then

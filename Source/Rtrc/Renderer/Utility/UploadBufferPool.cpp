@@ -25,7 +25,7 @@ RC<Buffer> UploadBufferPool<Policy>::Acquire(size_t leastSize)
     {
         .size           = leastSize,
         .usage          = usages_,
-        .hostAccessType = RHI::BufferHostAccessType::SequentialWrite
+        .hostAccessType = RHI::BufferHostAccessType::Upload
     });
 
     RegisterReleaseCallback(buffer);

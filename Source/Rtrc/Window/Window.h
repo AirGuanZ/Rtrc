@@ -64,6 +64,10 @@ public:
 
     ReferenceCountedPtr<RHI::Surface> CreateVulkanSurface(void *vkInstance);
 
+#if RTRC_IS_WIN32
+    uint64_t GetWin32WindowHandle() const;
+#endif
+
     RTRC_DECLARE_EVENT_SENDER(WindowCloseEvent)
     RTRC_DECLARE_EVENT_SENDER(WindowResizeEvent)
     RTRC_DECLARE_EVENT_SENDER(WindowFocusEvent)

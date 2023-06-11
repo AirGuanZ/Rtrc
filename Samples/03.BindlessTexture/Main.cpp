@@ -90,7 +90,7 @@ void Run()
         auto renderTarget = graph->RegisterSwapchainTexture(device->GetSwapchain());
 
         auto quadPass = graph->CreatePass("DrawQuads");
-        quadPass->Use(renderTarget, RG::COLOR_ATTACHMENT);
+        quadPass->Use(renderTarget, RG::ColorAttachment);
         quadPass->SetCallback([&](RG::PassContext &context)
         {
             auto rt = renderTarget->Get(context);
@@ -111,7 +111,7 @@ void Run()
             commandBuffer.BindGraphicsGroup(0, bindingGroup);
             commandBuffer.SetViewports(rt->GetViewport());
             commandBuffer.SetScissors(rt->GetScissor());
-            commandBuffer.SetGraphicsPushConstants(Vector4i(slots[0], slots[1], slots[2], slots[3]));
+            commandBuffer.SetGraphicsPushConstants(0, Vector4i(slots[0], slots[1], slots[2], slots[3]));
             commandBuffer.DrawIndexed(6, 1, 0, 0, 0);
         });
 

@@ -1,6 +1,9 @@
+#include <d3d12_agility/d3d12.h>
+#include <dxgi1_4.h>
 #include <dxgidebug.h>
 
 #include <Rtrc/Graphics/RHI/DirectX12/Context/Instance.h>
+#include <Rtrc/Graphics/RHI/DirectX12/Context/Device.h>
 
 RTRC_RHI_BEGIN
 
@@ -56,8 +59,53 @@ DirectX12Instance::DirectX12Instance(DirectX12InstanceDesc desc)
 
 Ptr<Device> DirectX12Instance::CreateDevice(const DeviceDesc &desc)
 {
-    // TODO
-    return {};
+    ComPtr<IDXGIFactory4> factory;
+    RTRC_D3D12_FAIL_MSG(
+        CreateDXGIFactory(IID_PPV_ARGS(factory.GetAddressOf())),
+        "Fail to create dxgi factory");
+
+    ComPtr<IDXGIAdapter> adapter;
+    RTRC_D3D12_FAIL_MSG(
+        factory->EnumAdapters(0, adapter.GetAddressOf()),
+        "Fail to get dxgi adapter");
+
+    ComPtr<ID3D12Device> device;
+    RTRC_D3D12_FAIL_MSG(
+        D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(device.GetAddressOf())),
+        "Fail to create directx12 device");
+
+    D3D12_COMMAND_QUEUE_DESC queueDesc;
+    queueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+    queueDesc.Flags    = D3D12_COMMAND_QUEUE_FLAG_NONE;
+    queueDesc.NodeMask = 0;
+
+    DirectX12Device::Queues queues;
+    if(desc.graphicsQueue)
+    {
+        queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+        RTRC_D3D12_FAIL_MSG(
+            device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(queues.graphicsQueue.GetAddressOf())),
+            "Fail to create directx12 graphics queue");
+        // RTRC_D3D12_FAIL_MSG(
+        //     device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(queues.presentQueue.GetAddressOf())),
+        //     "Fail to create directx12 graphics queue");
+    }
+    if(desc.computeQueue)
+    {
+        queueDesc.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
+        RTRC_D3D12_FAIL_MSG(
+            device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(queues.computeQueue.GetAddressOf())),
+            "Fail to create directx12 compute queue");
+    }
+    if(desc.transferQueue)
+    {
+        queueDesc.Type = D3D12_COMMAND_LIST_TYPE_COPY;
+        RTRC_D3D12_FAIL_MSG(
+            device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(queues.copyQueue.GetAddressOf())),
+            "Fail to create directx12 copy queue");
+    }
+
+    return MakePtr<DirectX12Device>(std::move(device), queues, std::move(factory), std::move(adapter));
 }
 
 RTRC_RHI_D3D12_END

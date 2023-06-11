@@ -59,13 +59,10 @@ VkFormat TranslateTexelFormat(Format format)
     case Format::R32G32_Float:       return VK_FORMAT_R32G32_SFLOAT;
     case Format::R32G32B32A32_Float: return VK_FORMAT_R32G32B32A32_SFLOAT;
     case Format::A2R10G10B10_UNorm:  return VK_FORMAT_A2R10G10B10_UNORM_PACK32;
-    case Format::A2B10G10R10_UNorm:  return VK_FORMAT_A2B10G10R10_UNORM_PACK32;
-    case Format::R11G11B10_UFloat:   return VK_FORMAT_B10G11R11_UFLOAT_PACK32;
     case Format::R32_UInt:           return VK_FORMAT_R32_UINT;
     case Format::R8_UNorm:           return VK_FORMAT_R8_UNORM;
     case Format::R16G16_Float:       return VK_FORMAT_R16G16_SFLOAT;
     case Format::D24S8:              return VK_FORMAT_D24_UNORM_S8_UINT;
-    case Format::D32S8:              return VK_FORMAT_D32_SFLOAT_S8_UINT;
     case Format::D32:                return VK_FORMAT_D32_SFLOAT;
     }
     Unreachable();
@@ -133,7 +130,6 @@ VkPolygonMode TranslateFillMode(FillMode mode)
     {
     case FillMode::Fill:  return VK_POLYGON_MODE_FILL;
     case FillMode::Line:  return VK_POLYGON_MODE_LINE;
-    case FillMode::Point: return VK_POLYGON_MODE_POINT;
     }
     Unreachable();
 }
@@ -145,7 +141,6 @@ VkCullModeFlags TranslateCullMode(CullMode mode)
     case CullMode::DontCull:  return VK_CULL_MODE_NONE;
     case CullMode::CullFront: return VK_CULL_MODE_FRONT_BIT;
     case CullMode::CullBack:  return VK_CULL_MODE_BACK_BIT;
-    case CullMode::CullAll:   return VK_CULL_MODE_FRONT_AND_BACK;
     }
     Unreachable();
 }
@@ -370,9 +365,10 @@ VkClearValue TranslateClearValue(const ClearValue &value)
 
 VkViewport TranslateViewport(const Viewport &viewport)
 {
-    return VkViewport{
-        .x        = viewport.lowerLeftCorner.x,
-        .y        = viewport.size.y - viewport.lowerLeftCorner.y,
+    return VkViewport
+    {
+        .x        = viewport.topLeftCorner.x,
+        .y        = viewport.size.y - viewport.topLeftCorner.y,
         .width    = viewport.size.x,
         .height   = -viewport.size.y,
         .minDepth = viewport.minDepth,
@@ -384,8 +380,8 @@ VkRect2D TranslateScissor(const Scissor &scissor)
 {
     return VkRect2D{
         .offset = {
-            static_cast<int32_t>(scissor.lowerLeftCorner.x),
-            static_cast<int32_t>(scissor.lowerLeftCorner.y)
+            static_cast<int32_t>(scissor.topLeftCorner.x),
+            static_cast<int32_t>(scissor.topLeftCorner.y)
         },
         .extent = {
             static_cast<uint32_t>(scissor.size.x),
@@ -398,9 +394,9 @@ VmaAllocationCreateFlags TranslateBufferHostAccessType(BufferHostAccessType type
 {
     switch(type)
     {
-    case BufferHostAccessType::None:            return 0;
-    case BufferHostAccessType::SequentialWrite: return VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
-    case BufferHostAccessType::Random:          return VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT;
+    case BufferHostAccessType::None:     return 0;
+    case BufferHostAccessType::Upload:   return VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+    case BufferHostAccessType::Readback: return VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT;
     }
     Unreachable();
 }
@@ -442,6 +438,7 @@ VkPipelineStageFlags2 TranslatePipelineStageFlag(PipelineStageFlag flag)
     static constexpr VkPipelineStageFlags2 bitToFlag[] =
     {
         VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT,
+        VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT,
         VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
         VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
         VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
@@ -471,35 +468,34 @@ VkAccessFlags2 TranslateAccessFlag(ResourceAccessFlag flag)
 {
     static constexpr VkAccessFlags2 bitToFlag[] =
     {
-        VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT,                          // VertexBufferRead
-        VK_ACCESS_2_INDEX_READ_BIT,                                     // IndexBufferRead
-        VK_ACCESS_2_UNIFORM_READ_BIT,                                   // ConstantBufferRead
-        VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT,                          // RenderTargetRead
-        VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,                         // RenderTargetWrite
-        VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT,                  // DepthStencilRead
-        VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,                 // DepthStencilWrite
-        VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,                            // TextureRead
-        VK_ACCESS_2_SHADER_STORAGE_READ_BIT,                            // RWTextureRead
-        VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,                           // RWTextureWrite
-        VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,                            // BufferRead
-        VK_ACCESS_2_SHADER_STORAGE_READ_BIT,                            // StructuredBufferRead
-        VK_ACCESS_2_SHADER_STORAGE_READ_BIT,                            // RWBufferRead
-        VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,                           // RWBufferWrite
-        VK_ACCESS_2_SHADER_STORAGE_READ_BIT,                            // RWStructuredBufferRead
-        VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,                           // RWStructuredBufferWrite
-        VK_ACCESS_2_TRANSFER_READ_BIT,                                  // CopyRead
-        VK_ACCESS_2_TRANSFER_WRITE_BIT,                                 // CopyWrite
-        VK_ACCESS_2_TRANSFER_READ_BIT,                                  // ResolveRead
-        VK_ACCESS_2_TRANSFER_WRITE_BIT,                                 // ResolveWrite
-        VK_ACCESS_2_TRANSFER_WRITE_BIT,                                 // ClearWrite
-        VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR,                // ReadAS
-        VK_ACCESS_2_ACCELERATION_STRUCTURE_WRITE_BIT_KHR,               // WriteAS
-        VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR |               // BuildASScratch
-        VK_ACCESS_2_ACCELERATION_STRUCTURE_WRITE_BIT_KHR,
-        VK_ACCESS_2_SHADER_BINDING_TABLE_READ_BIT_KHR,                  // ReadSBT
-        VK_ACCESS_2_SHADER_READ_BIT,                                    // ReadForBuildAS
-        VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,                          // IndirectCommandRead
-        VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT      // All
+        VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT,                                                              // VertexBufferRead
+        VK_ACCESS_2_INDEX_READ_BIT,                                                                         // IndexBufferRead
+        VK_ACCESS_2_UNIFORM_READ_BIT,                                                                       // ConstantBufferRead
+        VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT,                                                              // RenderTargetRead
+        VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,                                                             // RenderTargetWrite
+        VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT,                                                      // DepthStencilRead
+        VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,                                                     // DepthStencilWrite
+        VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,                                                                // TextureRead
+        VK_ACCESS_2_SHADER_STORAGE_READ_BIT,                                                                // RWTextureRead
+        VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,                                                               // RWTextureWrite
+        VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,                                                                // BufferRead
+        VK_ACCESS_2_SHADER_STORAGE_READ_BIT,                                                                // StructuredBufferRead
+        VK_ACCESS_2_SHADER_STORAGE_READ_BIT,                                                                // RWBufferRead
+        VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,                                                               // RWBufferWrite
+        VK_ACCESS_2_SHADER_STORAGE_READ_BIT,                                                                // RWStructuredBufferRead
+        VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT,                                                               // RWStructuredBufferWrite
+        VK_ACCESS_2_TRANSFER_READ_BIT,                                                                      // CopyRead
+        VK_ACCESS_2_TRANSFER_WRITE_BIT,                                                                     // CopyWrite
+        VK_ACCESS_2_TRANSFER_READ_BIT,                                                                      // ResolveRead
+        VK_ACCESS_2_TRANSFER_WRITE_BIT,                                                                     // ResolveWrite
+        VK_ACCESS_2_TRANSFER_WRITE_BIT,                                                                     // ClearWrite
+        VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR,                                                    // ReadAS
+        VK_ACCESS_2_ACCELERATION_STRUCTURE_WRITE_BIT_KHR,                                                   // WriteAS
+        VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR | VK_ACCESS_2_ACCELERATION_STRUCTURE_WRITE_BIT_KHR, // BuildASScratch
+        VK_ACCESS_2_SHADER_BINDING_TABLE_READ_BIT_KHR,                                                      // ReadSBT
+        VK_ACCESS_2_SHADER_READ_BIT,                                                                        // ReadForBuildAS
+        VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,                                                              // IndirectCommandRead
+        VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT                                          // All
     };
     VkAccessFlags2 result = 0;
     for(size_t i = 0; i < GetArraySize(bitToFlag); ++i)
@@ -521,8 +517,6 @@ VkImageLayout TranslateImageLayout(TextureLayout layout)
     case ColorAttachment:                              return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     case DepthStencilAttachment:                       return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
     case DepthStencilReadOnlyAttachment:               return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-    case DepthShaderTexture_StencilAttachment:         return VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL;
-    case DepthShaderTexture_StencilReadOnlyAttachment: return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
     case ShaderTexture:                                return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     case ShaderRWTexture:                              return VK_IMAGE_LAYOUT_GENERAL;
     case CopySrc:                                      return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;

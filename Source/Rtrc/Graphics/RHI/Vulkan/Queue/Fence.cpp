@@ -17,7 +17,7 @@ void VulkanFence::Reset()
 {
     RTRC_VK_FAIL_MSG(
         vkResetFences(device_, 1, &fence_),
-        "failed to reset vulkan fence");
+        "Failed to reset vulkan fence");
 }
 
 void VulkanFence::Wait()

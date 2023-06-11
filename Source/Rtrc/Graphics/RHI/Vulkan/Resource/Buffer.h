@@ -29,7 +29,7 @@ public:
 
     Ptr<BufferUav> CreateUav(const BufferUavDesc &desc) const RTRC_RHI_OVERRIDE;
 
-    void *Map(size_t offset, size_t size, bool invalidate = false) RTRC_RHI_OVERRIDE;
+    void *Map(size_t offset, size_t size, const BufferReadRange &readRange, bool invalidate = false) RTRC_RHI_OVERRIDE;
 
     void Unmap(size_t offset, size_t size, bool flush = false) RTRC_RHI_OVERRIDE;
 
@@ -37,7 +37,7 @@ public:
 
     void FlushAfterWrite(size_t offset, size_t size) RTRC_RHI_OVERRIDE;
 
-    BufferDeviceAddress GetDeviceAddress() RTRC_RHI_OVERRIDE;
+    BufferDeviceAddress GetDeviceAddress() const RTRC_RHI_OVERRIDE;
 
     VkBuffer _internalGetNativeBuffer() const;
 

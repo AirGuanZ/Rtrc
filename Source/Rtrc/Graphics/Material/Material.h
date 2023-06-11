@@ -28,9 +28,6 @@ RTRC_BEGIN
 class MaterialInstance;
 class ShaderTokenStream;
 
-using MaterialPropertyName = GeneralPooledString;
-#define RTRC_MATERIAL_PROPERTY_NAME(X) RTRC_GENERAL_POOLED_STRING(X)
-
 using MaterialPassTag = GeneralPooledString;
 #define RTRC_MATERIAL_PASS_TAG(X) RTRC_GENERAL_POOLED_STRING(X)
 
@@ -75,7 +72,6 @@ struct MaterialProperty
 };
 
 // Describe how properties are stored in a material instance
-// TODO optimize: using pooled string for property name
 class MaterialPropertyHostLayout
 {
 public:

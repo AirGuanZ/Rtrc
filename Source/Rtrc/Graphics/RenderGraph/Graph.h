@@ -1,10 +1,13 @@
 #pragma once
 
 #include <map>
+#include <stack>
 
 #include <Rtrc/Graphics/Device/Buffer.h>
 #include <Rtrc/Graphics/Device/Queue.h>
 #include <Rtrc/Graphics/Device/Texture.h>
+
+#define RTRC_RG_DEBUG RTRC_DEBUG
 
 RTRC_BEGIN
 
@@ -29,151 +32,169 @@ struct UseInfo
     RHI::ResourceAccessFlag accesses = RHI::ResourceAccess::None;
 };
 
-inline constexpr UseInfo COLOR_ATTACHMENT =
+constexpr UseInfo operator|(const UseInfo &lhs, const UseInfo &rhs)
+{
+    assert(lhs.layout == rhs.layout);
+    return UseInfo
+    {
+        .layout   = lhs.layout,
+        .stages   = lhs.stages   | rhs.stages,
+        .accesses = lhs.accesses | rhs.accesses
+    };
+}
+
+inline constexpr UseInfo ColorAttachment =
 {
     .layout   = RHI::TextureLayout::ColorAttachment,
     .stages   = RHI::PipelineStage::RenderTarget,
     .accesses = RHI::ResourceAccess::RenderTargetWrite | RHI::ResourceAccess::RenderTargetRead
 };
 
-inline constexpr UseInfo COLOR_ATTACHMENT_READONLY =
+inline constexpr UseInfo ColorAttachmentReadOnly =
 {
     .layout   = RHI::TextureLayout::ColorAttachment,
     .stages   = RHI::PipelineStage::RenderTarget,
     .accesses = RHI::ResourceAccess::RenderTargetRead
 };
 
-inline constexpr UseInfo COLOR_ATTACHMENT_WRITEONLY =
+inline constexpr UseInfo ColorAttachmentWriteOnly =
 {
     .layout   = RHI::TextureLayout::ColorAttachment,
     .stages   = RHI::PipelineStage::RenderTarget,
     .accesses = RHI::ResourceAccess::RenderTargetWrite
 };
 
-inline constexpr UseInfo DEPTH_STENCIL_ATTACHMENT =
+inline constexpr UseInfo DepthStencilAttachment =
 {
     .layout   = RHI::TextureLayout::DepthStencilAttachment,
     .stages   = RHI::PipelineStage::DepthStencil,
     .accesses = RHI::ResourceAccess::DepthStencilRead | RHI::ResourceAccess::DepthStencilWrite
 };
 
-inline constexpr UseInfo DEPTH_STENCIL_ATTACHMENT_WRITEONLY =
+inline constexpr UseInfo DepthStencilAttachmentWriteOnly =
 {
     .layout   = RHI::TextureLayout::DepthStencilAttachment,
     .stages   = RHI::PipelineStage::DepthStencil,
     .accesses = RHI::ResourceAccess::DepthStencilWrite
 };
 
-inline constexpr UseInfo DEPTH_STENCIL_ATTACHMENT_READONLY =
+inline constexpr UseInfo DepthStencilAttachmentReadOnly =
 {
     .layout   = RHI::TextureLayout::DepthStencilAttachment,
     .stages   = RHI::PipelineStage::DepthStencil,
     .accesses = RHI::ResourceAccess::DepthStencilRead
 };
 
-inline constexpr UseInfo CLEAR_DST =
+inline constexpr UseInfo ClearDst =
 {
     .layout   = RHI::TextureLayout::ClearDst,
     .stages   = RHI::PipelineStage::Clear,
     .accesses = RHI::ResourceAccess::ClearWrite
 };
 
-inline constexpr UseInfo PIXEL_SHADER_TEXTURE =
+inline constexpr UseInfo PS_Texture =
 {
     .layout   = RHI::TextureLayout::ShaderTexture,
     .stages   = RHI::PipelineStage::FragmentShader,
     .accesses = RHI::ResourceAccess::TextureRead
 };
 
-inline constexpr UseInfo COMPUTE_SHADER_TEXTURE =
+inline constexpr UseInfo CS_Texture =
 {
     .layout   = RHI::TextureLayout::ShaderTexture,
     .stages   = RHI::PipelineStage::ComputeShader,
     .accesses = RHI::ResourceAccess::TextureRead
 };
 
-inline constexpr UseInfo COMPUTE_SHADER_RWTEXTURE =
+inline constexpr UseInfo CS_RWTexture =
 {
     .layout   = RHI::TextureLayout::ShaderRWTexture,
     .stages   = RHI::PipelineStage::ComputeShader,
     .accesses = RHI::ResourceAccess::RWTextureRead | RHI::ResourceAccess::RWTextureWrite
 };
 
-inline constexpr UseInfo COMPUTE_SHADER_RWTEXTURE_WRITEONLY =
+inline constexpr UseInfo CS_RWTexture_WriteOnly =
 {
     .layout   = RHI::TextureLayout::ShaderRWTexture,
     .stages   = RHI::PipelineStage::ComputeShader,
     .accesses = RHI::ResourceAccess::RWTextureWrite
 };
 
-inline constexpr UseInfo COMPUTE_SHADER_BUFFER =
+inline constexpr UseInfo CS_Buffer =
 {
     .layout   = RHI::TextureLayout::Undefined,
     .stages   = RHI::PipelineStage::ComputeShader,
     .accesses = RHI::ResourceAccess::BufferRead
 };
 
-inline constexpr UseInfo COMPUTE_SHADER_RWBUFFER =
+inline constexpr UseInfo CS_RWBuffer =
 {
     .layout   = RHI::TextureLayout::Undefined,
     .stages   = RHI::PipelineStage::ComputeShader,
     .accesses = RHI::ResourceAccess::RWBufferRead | RHI::ResourceAccess::RWBufferWrite
 };
 
-inline constexpr UseInfo COMPUTE_SHADER_RWBUFFER_WRITEONLY =
+inline constexpr UseInfo CS_RWBuffer_WriteOnly =
 {
     .layout   = RHI::TextureLayout::Undefined,
     .stages   = RHI::PipelineStage::ComputeShader,
     .accesses = RHI::ResourceAccess::RWBufferWrite
 };
 
-inline constexpr UseInfo COMPUTE_SHADER_STRUCTURED_BUFFER =
+inline constexpr UseInfo CS_StructuredBuffer =
 {
     .layout   = RHI::TextureLayout::Undefined,
     .stages   = RHI::PipelineStage::ComputeShader,
     .accesses = RHI::ResourceAccess::StructuredBufferRead
 };
 
-inline constexpr UseInfo COMPUTE_SHADER_RWSTRUCTURED_BUFFER =
+inline constexpr UseInfo CS_RWStructuredBuffer =
 {
     .layout   = RHI::TextureLayout::Undefined,
     .stages   = RHI::PipelineStage::ComputeShader,
     .accesses = RHI::ResourceAccess::RWStructuredBufferRead | RHI::ResourceAccess::RWStructuredBufferWrite
 };
 
-inline constexpr UseInfo COMPUTE_SHADER_RWSTRUCTURED_BUFFER_WRITEONLY =
+inline constexpr UseInfo CS_RWStructuredBuffer_WriteOnly =
 {
     .layout   = RHI::TextureLayout::Undefined,
     .stages   = RHI::PipelineStage::ComputeShader,
     .accesses = RHI::ResourceAccess::RWStructuredBufferWrite
 };
 
-inline constexpr UseInfo COPY_DST =
+inline constexpr UseInfo CopyDst =
 {
     .layout   = RHI::TextureLayout::CopyDst,
     .stages   = RHI::PipelineStage::Copy,
     .accesses = RHI::ResourceAccess::CopyWrite
 };
 
-inline constexpr UseInfo BUILD_ACCELERATION_STRUCTURE_OUTPUT =
+inline constexpr UseInfo BuildAS_Output =
 {
     .layout   = RHI::TextureLayout::Undefined,
     .stages   = RHI::PipelineStage::BuildAS,
     .accesses = RHI::ResourceAccess::WriteAS
 };
 
-inline constexpr UseInfo BUILD_ACCELERATION_STRUCTURE_SCRATCH =
+inline constexpr UseInfo BuildAS_Scratch =
 {
     .layout   = RHI::TextureLayout::Undefined,
     .stages   = RHI::PipelineStage::BuildAS,
     .accesses = RHI::ResourceAccess::BuildASScratch
 };
 
-inline constexpr UseInfo COMPUTE_SHADER_READ_ACCELERATION_STRUCTURE =
+inline constexpr UseInfo CS_ReadAS =
 {
     .layout   = RHI::TextureLayout::Undefined,
     .stages   = RHI::PipelineStage::ComputeShader,
     .accesses = RHI::ResourceAccess::ReadAS
+};
+
+inline constexpr UseInfo IndirectDispatchRead =
+{
+    .layout   = RHI::TextureLayout::Undefined,
+    .stages   = RHI::PipelineStage::IndirectCommand,
+    .accesses = RHI::ResourceAccess::IndirectCommandRead
 };
 
 class Resource : public Uncopyable
@@ -241,6 +262,10 @@ private:
 
     const ExecutableResources &resources_;
     CommandBuffer &commandBuffer_;
+
+#if RTRC_RG_DEBUG
+    const std::set<const Resource *> *declaredResources_ = nullptr;
+#endif
 };
 
 void Connect(Pass *head, Pass *tail);
@@ -325,12 +350,15 @@ public:
 
     TextureResource *RegisterSwapchainTexture(const RHI::SwapchainPtr &swapchain);
 
-    Pass *CreatePass(std::string name);
-    Pass *CreateClearTexture2DPass(std::string name, TextureResource *tex2D, const Vector4f &clearValue);
-    Pass *CreateDummyPass(std::string name);
+    void PushPassGroup(std::string_view name);
+    void PopPassGroup();
 
-    Pass *CreateClearRWBufferPass(std::string name, BufferResource *buffer, uint32_t value);
-    Pass *CreateClearRWStructuredBufferPass(std::string name, BufferResource *buffer, uint32_t value);
+    Pass *CreatePass(std::string_view name);
+    Pass *CreateClearTexture2DPass(std::string_view name, TextureResource *tex2D, const Vector4f &clearValue);
+    Pass *CreateDummyPass(std::string_view name);
+
+    Pass *CreateClearRWBufferPass(std::string_view name, BufferResource *buffer, uint32_t value);
+    Pass *CreateClearRWStructuredBufferPass(std::string_view name, BufferResource *buffer, uint32_t value);
     
     void MakeDummyPassIfNull(Pass *&pass, std::string_view name);
 
@@ -399,6 +427,9 @@ private:
     ObserverPtr<Device> device_;
     Queue               queue_;
 
+    std::string        passNamePrefix_;
+    std::stack<size_t> passNamePrefixLengths_;
+
     std::map<const void *, int>       externalResourceMap_; // RHI object pointer to resource index
     std::vector<Box<BufferResource>>  buffers_;
     std::vector<Box<TextureResource>> textures_;
@@ -409,5 +440,9 @@ private:
 
     RHI::FencePtr completeFence_;
 };
+
+#define RTRC_RG_SCOPED_PASS_GROUP(RENDERGRAPH, NAME) \
+    (RENDERGRAPH).PushPassGroup(NAME);               \
+    RTRC_SCOPE_EXIT{ (RENDERGRAPH).PopPassGroup(); };
 
 RTRC_RG_END

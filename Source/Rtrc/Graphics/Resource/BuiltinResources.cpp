@@ -52,7 +52,7 @@ const Mesh &BuiltinResourceManager::GetFullscreenQuadMesh() const
     return fullscreenQuad_;
 }
 
-const Image<Vector4b> &BuiltinResourceManager::GetBlueNoiseRGBA256() const
+const Image<uint8_t> &BuiltinResourceManager::GetBlueNoise256() const
 {
     return blueNoise256_;
 }
@@ -64,13 +64,13 @@ void BuiltinResourceManager::LoadBuiltinTextures()
     textures_[std::to_underlying(BuiltinTexture::White2D)] =
         device_->CreateColorTexture2D(255, 255, 255, 255, "BuiltinWhite2D");
 
-    blueNoise256_ = Image<Vector4b>::Load("Asset/Builtin/Texture/BlueNoiseRGBA256.png");
-    textures_[std::to_underlying(BuiltinTexture::BlueNoiseRGBA256)] =
+    blueNoise256_ = Image<uint8_t>::Load("Asset/Builtin/Texture/BlueNoise256.png");
+    textures_[std::to_underlying(BuiltinTexture::BlueNoise256)] =
         device_->CreateAndUploadTexture2D(
             RHI::TextureDesc
             {
                 .dim                  = RHI::TextureDimension::Tex2D,
-                .format               = RHI::Format::R8G8B8A8_UNorm,
+                .format               = RHI::Format::R8_UNorm,
                 .width                = blueNoise256_.GetWidth(),
                 .height               = blueNoise256_.GetHeight(),
                 .depth                = 1,
@@ -108,6 +108,7 @@ void BuiltinResourceManager::LoadBuiltinMaterials()
     LOAD_BUILTIN_MATERIAL(DeferredLighting);
     LOAD_BUILTIN_MATERIAL(Atmosphere);
     LOAD_BUILTIN_MATERIAL(ShadowMask);
+    LOAD_BUILTIN_MATERIAL(SurfelGI);
 
 #undef LOAD_BUILTIN_MATERIAL
 }

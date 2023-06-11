@@ -465,7 +465,7 @@ Ptr<Swapchain> VulkanDevice::CreateSwapchain(const SwapchainDesc &desc, Window &
     return MakePtr<VulkanSwapchain>(std::move(surface), presentQueue_, imageDescription, this, swapchain);
 }
 
-Ptr<Semaphore> VulkanDevice::CreateSemaphore(uint64_t initialValue)
+Ptr<Semaphore> VulkanDevice::CreateTimelineSemaphore(uint64_t initialValue)
 {
     const VkSemaphoreTypeCreateInfo typeCreateInfo = {
         .sType         = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
@@ -1241,16 +1241,24 @@ size_t VulkanDevice::GetConstantBufferAlignment() const
     return physicalDevice_.GetNativeProperties().limits.minUniformBufferOffsetAlignment;
 }
 
+size_t VulkanDevice::GetConstantBufferSizeAlignment() const
+{
+    return 1;
+}
+
 size_t VulkanDevice::GetAccelerationStructureScratchBufferAlignment() const
 {
     return physicalDevice_._internalGetASProperties()->minAccelerationStructureScratchOffsetAlignment;
 }
 
+size_t VulkanDevice::GetTextureBufferCopyRowPitchAlignment(Format texelFormat) const
+{
+    return GetTexelSize(texelFormat);
+}
+
 void VulkanDevice::WaitIdle()
 {
-    RTRC_VK_FAIL_MSG(
-        vkDeviceWaitIdle(device_),
-        "Failed to call vkDeviceWaitIdle");
+    RTRC_VK_FAIL_MSG(vkDeviceWaitIdle(device_), "Failed to call vkDeviceWaitIdle");
 }
 
 BlasPtr VulkanDevice::CreateBlas(const BufferPtr &buffer, size_t offset, size_t size)
@@ -1333,7 +1341,7 @@ uint32_t VulkanDevice::_internalGetQueueFamilyIndex(QueueType type) const
     switch(type)
     {
     case QueueType::Graphics: return graphicsQueue_->_internalGetNativeFamilyIndex();
-    case QueueType::Compute: return computeQueue_->_internalGetNativeFamilyIndex();
+    case QueueType::Compute:  return computeQueue_->_internalGetNativeFamilyIndex();
     case QueueType::Transfer: return transferQueue_->_internalGetNativeFamilyIndex();
     }
     Unreachable();

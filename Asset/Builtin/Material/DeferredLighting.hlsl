@@ -11,9 +11,9 @@
 #define LIGHTING_MODE_REGULAR 0
 #define LIGHTING_MODE_SKY     1
 
-rtrc_group(Pass, FS)
+rtrc_group(Pass, CS)
 {
-    REF_GBUFFERS(FS)
+    REF_GBUFFERS(CS)
 
     rtrc_define(ConstantBuffer<CameraConstantBuffer>, Camera)
     
@@ -28,6 +28,10 @@ rtrc_group(Pass, FS)
     rtrc_define(Texture2D<float>, ShadowMask)
     rtrc_uniform(uint, shadowMaskLightType) // 0: none; 1: pointlight; 2: directionalLight
                                             // If >= 1, should be applied to the first of the specified type
+
+    rtrc_define(RWTexture2D<float4>, Output)
+    rtrc_uniform(uint2, resolution)
+    rtrc_uniform(float2, rcpResolution)
 };
 
 rtrc_sampler(SkyLutSampler, filter = linear, address_u = repeat, address_v = clamp)
@@ -51,15 +55,31 @@ float3 ComputeDirectionalLight(GBufferPixel gpixel, DirectionalLightShadingData 
     return gpixel.albedo * cosFactor * light.color;
 }
 
+float3 GetWorldRay(float2 uv)
+{
+    float3 rayAB = lerp(Camera.worldRays[0], Camera.worldRays[1], uv.x);
+    float3 rayCD = lerp(Camera.worldRays[2], Camera.worldRays[3], uv.x);
+    float3 ray = lerp(rayAB, rayCD, uv.y);
+    return ray;
+}
+
 #if LIGHTING_MODE == LIGHTING_MODE_REGULAR
 
-float4 FSMain(FullscreenPrimitive::VsToFsWithWorldRay input) : SV_TARGET
+[numthreads(8, 1, 1)]
+void CSMain(uint2 tid : SV_DispatchThreadID)
 {
-    GBufferPixel gpixel = LoadGBufferPixel(input.uv);
-    float3 worldRay = input.ray;
+    if(any(tid >= Pass.resolution))
+        return;
+    
+    float2 uv = (tid + 0.5) * Pass.rcpResolution;
+    GBufferPixel gpixel = LoadGBufferPixel(uv);
+    if(gpixel.depth >= 1)
+        return;
+    
+    float3 worldRay = GetWorldRay(uv);
     float viewSpaceZ = CameraUtils::DeviceZToViewZ(Camera.cameraToClipMatrix, gpixel.depth);
     float3 worldPos = viewSpaceZ * worldRay + Camera.worldPosition;
-    
+
     float3 color = 0;
 
     float3 mainLightResult = 0;
@@ -75,7 +95,7 @@ float4 FSMain(FullscreenPrimitive::VsToFsWithWorldRay input) : SV_TARGET
     }
     float shadow = 1;
     if(any(mainLightResult > 0))
-        shadow = ShadowMask.SampleLevel(ShadowMaskSampler, input.uv, 0);
+        shadow = ShadowMask.SampleLevel(ShadowMaskSampler, uv, 0);
     color += shadow * mainLightResult;
 
     for(int i = Pass.shadowMaskLightType == 1 ? 1 : 0; i < Pass.pointLightCount; ++i)
@@ -92,21 +112,31 @@ float4 FSMain(FullscreenPrimitive::VsToFsWithWorldRay input) : SV_TARGET
     
     color = Tonemap(color);
     color = pow(color, 1.0 / 2.2);
-    color = Dither01(color, input.uv);
-    return float4(color, 1);
+    color = Dither01(color, uv);
+    Output[tid] = float4(color, 1);
 }
 
 #elif LIGHTING_MODE == LIGHTING_MODE_SKY
 
-float4 FSMain(FullscreenPrimitive::VsToFsWithWorldRay input) : SV_TARGET
+[numthreads(8, 1, 1)]
+void CSMain(uint2 tid : SV_DispatchThreadID)
 {
-    float3 dir = normalize(input.ray);
-    float2 uv = Atmosphere::ComputeSkyLutTexCoord(dir);
-    float3 color = SkyLut.SampleLevel(SkyLutSampler, uv, 0);
+    if(any(tid >= Pass.resolution))
+        return;
+    
+    float2 uv = (tid + 0.5) * Pass.rcpResolution;
+    GBufferPixel gpixel = LoadGBufferPixel(uv);
+    if(gpixel.depth < 1)
+        return;
+
+    float3 worldRay = GetWorldRay(uv);
+    float3 dir = normalize(worldRay);
+    float2 skyLutUv = Atmosphere::ComputeSkyLutTexCoord(dir);
+    float3 color = SkyLut.SampleLevel(SkyLutSampler, skyLutUv, 0);
     color = Tonemap(color);
     color = pow(color, 1.0 / 2.2);
-    color = Dither01(color, input.uv);
-    return float4(color, 1);
+    color = Dither01(color, uv);
+    Output[tid] = float4(color, 1);
 }
 
 #endif // #if LIGHTING_MODE == ...

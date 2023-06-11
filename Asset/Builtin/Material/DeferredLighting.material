@@ -5,8 +5,9 @@ Material "Builtin/DeferredLighting"
 		Tag "Default"
 		Shader "Builtin/DeferredLighting/Default"
 		{
-			#vert FullscreenVsToFsWithWorldRay
-			#frag FSMain
+			//#vert FullscreenVsToFsWithWorldRay
+			//#frag FSMain
+			#comp CSMain
 			#define LIGHTING_MODE LIGHTING_MODE_REGULAR
 			#include "DeferredLighting.hlsl"
 		}
@@ -17,8 +18,9 @@ Material "Builtin/DeferredLighting"
 		Tag "Sky"
 		Shader "Builtin/DeferredLighting/Sky"
 		{
-			#vert FullscreenVsToFsWithWorldRay
-			#frag FSMain
+			//#vert FullscreenVsToFsWithWorldRay
+			//#frag FSMain
+			#comp CSMain
 			#define LIGHTING_MODE LIGHTING_MODE_SKY
 			#include "DeferredLighting.hlsl"
 		}

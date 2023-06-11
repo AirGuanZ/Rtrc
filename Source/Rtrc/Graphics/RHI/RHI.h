@@ -33,6 +33,30 @@
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/TextureView.h>
 #endif
 
+#if defined(RTRC_STATIC_RHI) && defined(RTRC_RHI_DIRECTX12)
+#include <Rtrc/Graphics/RHI/DirectX12/Context/BackBufferSemaphore.h>
+#include <Rtrc/Graphics/RHI/DirectX12/Context/Device.h>
+#include <Rtrc/Graphics/RHI/DirectX12/Context/Instance.h>
+#include <Rtrc/Graphics/RHI/DirectX12/Context/Surface.h>
+#include <Rtrc/Graphics/RHI/DirectX12/Context/Swapchain.h>
+#include <Rtrc/Graphics/RHI/DirectX12/Pipeline/BindingGroup.h>
+#include <Rtrc/Graphics/RHI/DirectX12/Pipeline/BindingGroupLayout.h>
+#include <Rtrc/Graphics/RHI/DirectX12/Pipeline/BindingLayout.h>
+#include <Rtrc/Graphics/RHI/DirectX12/Pipeline/ComputePipeline.h>
+#include <Rtrc/Graphics/RHI/DirectX12/Pipeline/GraphicsPipeline.h>
+#include <Rtrc/Graphics/RHI/DirectX12/Pipeline/Shader.h>
+#include <Rtrc/Graphics/RHI/DirectX12/Queue/CommandBuffer.h>
+#include <Rtrc/Graphics/RHI/DirectX12/Queue/CommandPool.h>
+#include <Rtrc/Graphics/RHI/DirectX12/Queue/Fence.h>
+#include <Rtrc/Graphics/RHI/DirectX12/Queue/Queue.h>
+#include <Rtrc/Graphics/RHI/DirectX12/Queue/Semaphore.h>
+#include <Rtrc/Graphics/RHI/DirectX12/Resource/Buffer.h>
+#include <Rtrc/Graphics/RHI/DirectX12/Resource/BufferView.h>
+#include <Rtrc/Graphics/RHI/DirectX12/Resource/Sampler.h>
+#include <Rtrc/Graphics/RHI/DirectX12/Resource/Texture.h>
+#include <Rtrc/Graphics/RHI/DirectX12/Resource/TextureView.h>
+#endif
+
 // =============================== inlined implementation ===============================
 
 RTRC_RHI_BEGIN

@@ -35,12 +35,12 @@ MaterialPassPropertyLayout::MaterialPassPropertyLayout(const MaterialPropertyHos
 {
     // Constant buffer
 
-    const ShaderConstantBuffer *cbuffer = nullptr;
-    for(auto &cb : shader.GetConstantBuffers())
+    const ShaderUniformBlock *uniformBlock = nullptr;
+    for(auto &b : shader.GetUniformBlocks())
     {
-        if(cb.name == "Material")
+        if(b.name == "Material")
         {
-            cbuffer = &cb;
+            uniformBlock = &b;
             break;
         }
     }
@@ -51,25 +51,24 @@ MaterialPassPropertyLayout::MaterialPassPropertyLayout(const MaterialPropertyHos
         bindingGroupLayout_ = shader.GetBindingGroupLayoutByIndex(bindingGroupIndex_);
     }
 
-    if(cbuffer)
+    if(uniformBlock)
     {
-        if(cbuffer->group != bindingGroupIndex_)
+        if(uniformBlock->group != bindingGroupIndex_)
         {
             throw Exception("Constant buffer 'Material' must be defined in 'Material' binding group");
         }
 
         int dwordOffset = 0;
-        for(auto &member : cbuffer->typeInfo->members)
+        for(auto &member : uniformBlock->variables)
         {
-            if((member.elementType != ShaderStruct::Member::ElementType::Int &&
-                member.elementType != ShaderStruct::Member::ElementType::Float) ||
-               (member.matrixType != ShaderStruct::Member::MatrixType::Scalar &&
-                member.matrixType != ShaderStruct::Member::MatrixType::Vector))
+            if(member.type == ShaderUniformBlock::Unknown)
             {
                 throw Exception("Only int/uint/float0123 properties are supported in 'Material' cbuffer");
             }
 
-            const int memberDWordCount = member.matrixType == ShaderStruct::Member::MatrixType::Scalar ? 1 : member.rowSize;
+            const size_t memberSize = ShaderUniformBlock::GetTypeSize(member.type);
+            assert(memberSize % 4 == 0);
+            const int memberDWordCount = static_cast<int>(memberSize / sizeof(uint32_t));
             if(memberDWordCount >= 4 || (dwordOffset % 4) + memberDWordCount > 4)
             {
                 dwordOffset = (dwordOffset + 3) / 4 * 4;
@@ -77,17 +76,6 @@ MaterialPassPropertyLayout::MaterialPassPropertyLayout(const MaterialPropertyHos
 
             size_t offsetInValueBuffer;
             {
-                using enum ShaderStruct::Member::ElementType;
-                using enum ShaderStruct::Member::MatrixType;
-
-                using Tuple = std::tuple<ShaderStruct::Member::ElementType, ShaderStruct::Member::MatrixType, int>;
-                static constexpr Tuple typeToMemberInfo[] =
-                {
-                    { Float, Scalar, 0 }, { Float, Vector, 2 }, { Float, Vector, 3 }, { Float, Vector, 4 },
-                    { Int,   Scalar, 0 }, { Int,   Vector, 2 }, { Int,   Vector, 3 }, { Int,   Vector, 4 },
-                    { Int,   Scalar, 0 }, { Int,   Vector, 2 }, { Int,   Vector, 3 }, { Int,   Vector, 4 },
-                };
-
                 const int propIndex = materialPropertyLayout.GetPropertyIndexByName(member.pooledName);
                 if(propIndex == -1)
                 {
@@ -98,30 +86,45 @@ MaterialPassPropertyLayout::MaterialPassPropertyLayout(const MaterialPropertyHos
                 {
                     throw Exception(fmt::format("Property {} is not declared as value type in material", member.name));
                 }
-
-                const auto requiredMemberInfo = typeToMemberInfo[static_cast<int>(prop.type)];
-                if(member.elementType != std::get<0>(requiredMemberInfo) ||
-                   member.matrixType  != std::get<1>(requiredMemberInfo) ||
-                   member.rowSize     != std::get<2>(requiredMemberInfo))
+                auto Equal = [](MaterialProperty::Type a, ShaderUniformBlock::UniformType b)
+                {
+                    switch(b)
+                    {
+                    case ShaderUniformBlock::Float:  return a == MaterialProperty::Type::Float;
+                    case ShaderUniformBlock::Float2: return a == MaterialProperty::Type::Float2;
+                    case ShaderUniformBlock::Float3: return a == MaterialProperty::Type::Float3;
+                    case ShaderUniformBlock::Float4: return a == MaterialProperty::Type::Float4;
+                    case ShaderUniformBlock::UInt:  return a == MaterialProperty::Type::UInt;
+                    case ShaderUniformBlock::UInt2: return a == MaterialProperty::Type::UInt2;
+                    case ShaderUniformBlock::UInt3: return a == MaterialProperty::Type::UInt3;
+                    case ShaderUniformBlock::UInt4: return a == MaterialProperty::Type::UInt4;
+                    case ShaderUniformBlock::Int:  return a == MaterialProperty::Type::Int;
+                    case ShaderUniformBlock::Int2: return a == MaterialProperty::Type::Int2;
+                    case ShaderUniformBlock::Int3: return a == MaterialProperty::Type::Int3;
+                    case ShaderUniformBlock::Int4: return a == MaterialProperty::Type::Int4;
+                    default:
+                        Unreachable();
+                    }
+                };
+                if(!Equal(prop.type, member.type))
                 {
                     throw Exception(fmt::format(
                         "Type of value property {} doesn't match its declaration in material", member.name));
                 }
-
                 offsetInValueBuffer = materialPropertyLayout.GetValueOffset(propIndex);
             }
 
             ValueReference ref;
-            ref.offsetInValueBuffer = offsetInValueBuffer;
+            ref.offsetInValueBuffer    = offsetInValueBuffer;
             ref.offsetInConstantBuffer = dwordOffset * 4;
-            ref.sizeInConstantBuffer = memberDWordCount * 4;
+            ref.sizeInConstantBuffer   = memberDWordCount * 4;
             valueReferences_.push_back(ref);
 
             dwordOffset += memberDWordCount;
         }
 
         constantBufferSize_ = dwordOffset * 4;
-        constantBufferIndexInBindingGroup_ = cbuffer->indexInGroup;
+        constantBufferIndexInBindingGroup_ = uniformBlock->indexInGroup;
     }
 
     // TODO optimize: merge neighboring values

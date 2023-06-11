@@ -11,10 +11,25 @@ Box<Device> Device::CreateComputeDevice(RHI::DevicePtr rhiDevice)
     return ret;
 }
 
-Box<Device> Device::CreateComputeDevice(bool debugMode)
+Box<Device> Device::CreateComputeDevice(RHI::BackendType rhiType, bool debugMode)
 {
     Box<Device> ret{ new Device };
-    ret->instance_ = RHI::CreateVulkanInstance({ .debugMode = debugMode });
+#if RTRC_RHI_VULKAN
+    if(rhiType == RHI::BackendType::Vulkan)
+    {
+        ret->instance_ = RHI::CreateVulkanInstance({ .debugMode = debugMode });
+    }
+#endif
+#if RTRC_RHI_DIRECTX12
+    if(rhiType == RHI::BackendType::DirectX12)
+    {
+        ret->instance_ = RHI::CreateDirectX12Instance({ .debugMode = debugMode, .gpuValidation = false });
+    }
+#endif
+    if(!ret->instance_)
+    {
+        throw Exception("No valid rhi instance is created");
+    }
     const RHI::DeviceDesc deviceDesc =
     {
         .graphicsQueue    = false,
@@ -25,6 +40,11 @@ Box<Device> Device::CreateComputeDevice(bool debugMode)
     auto rhiDevice = ret->instance_->CreateDevice(deviceDesc);
     ret->InitializeInternal(None, rhiDevice, true);
     return ret;
+}
+
+Box<Device> Device::CreateComputeDevice(bool debugMode)
+{
+    return CreateComputeDevice(DefaultBackendType, debugMode);
 }
 
 Box<Device> Device::CreateGraphicsDevice(
@@ -58,19 +78,41 @@ Box<Device> Device::CreateGraphicsDevice(
 }
 
 Box<Device> Device::CreateGraphicsDevice(
-    Window     &window,
-    RHI::Format swapchainFormat,
-    int         swapchainImageCount,
-    bool        debugMode,
-    bool        vsync,
-    Flags       flags)
+    Window          &window,
+    RHI::BackendType rhiType,
+    RHI::Format      swapchainFormat,
+    int              swapchainImageCount,
+    bool             debugMode,
+    bool             vsync,
+    Flags            flags)
 {
     Box<Device> ret{ new Device };
-    ret->instance_ = CreateVulkanInstance(RHI::VulkanInstanceDesc
+
+#if RTRC_RHI_VULKAN
+    if(rhiType == RHI::BackendType::Vulkan)
     {
-        .extensions = Window::GetRequiredVulkanInstanceExtensions(),
-        .debugMode  = debugMode
-    });
+        ret->instance_ = CreateVulkanInstance(RHI::VulkanInstanceDesc
+            {
+                .extensions = Window::GetRequiredVulkanInstanceExtensions(),
+                .debugMode = debugMode
+            });
+    }
+#endif
+#if RTRC_RHI_DIRECTX12
+    if(rhiType == RHI::BackendType::DirectX12)
+    {
+        ret->instance_ = CreateDirectX12Instance(RHI::DirectX12InstanceDesc
+        {
+            .debugMode     = debugMode,
+            .gpuValidation = debugMode
+        });
+    }
+#endif
+    if(!ret->instance_)
+    {
+        throw Exception("No valid rhi instance is created");
+    }
+
     const RHI::DeviceDesc deviceDesc =
     {
         .graphicsQueue    = true,
@@ -99,6 +141,18 @@ Box<Device> Device::CreateGraphicsDevice(
         });
     }
     return ret;
+}
+
+Box<Device> Device::CreateGraphicsDevice(
+    Window     &window,
+    RHI::Format swapchainFormat,
+    int         swapchainImageCount,
+    bool        debugMode,
+    bool        vsync,
+    Flags       flags)
+{
+    return CreateGraphicsDevice(
+        window, DefaultBackendType, swapchainFormat, swapchainImageCount, debugMode, vsync, flags);
 }
 
 Device::~Device()

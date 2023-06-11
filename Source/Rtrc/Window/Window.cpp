@@ -11,6 +11,7 @@
 #include <Rtrc/Graphics/RHI/Vulkan/Context/Surface.h>
 #endif
 #include <Rtrc/Utility/ScopeGuard.h>
+#include <Rtrc/Window/NativeWindow.h>
 #include <Rtrc/Window/Window.h>
 
 RTRC_BEGIN
@@ -411,6 +412,15 @@ ReferenceCountedPtr<RHI::Surface> Window::CreateVulkanSurface(void *vkInstance)
     throw Exception("vulkan backend is not supported");
 #endif
 }
+
+#if RTRC_IS_WIN32
+
+uint64_t Window::GetWin32WindowHandle() const
+{
+    return GetWin32WindowHandleFromGlfwWindow(impl_->glfwWindow);
+}
+
+#endif
 
 RTRC_DEFINE_EVENT_SENDER(Window, impl_->sender, WindowCloseEvent)
 RTRC_DEFINE_EVENT_SENDER(Window, impl_->sender, WindowResizeEvent)

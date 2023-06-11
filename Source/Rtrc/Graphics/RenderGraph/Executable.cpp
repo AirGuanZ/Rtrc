@@ -47,6 +47,9 @@ void Executer::Execute(const ExecutableGraph &graph)
             if(pass.callback)
             {
                 PassContext passContext(graph.resources, commandBuffer);
+#if RTRC_RG_DEBUG
+                passContext.declaredResources_ = &pass.declaredResources;
+#endif
                 (*pass.callback)(passContext);
             }
             if(emitDebugLabel)

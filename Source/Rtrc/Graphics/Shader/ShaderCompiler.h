@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Rtrc/Graphics/Device/Device.h>
+#include <Rtrc/Graphics/Shader/DXC.h>
 #include <Rtrc/Graphics/Shader/Shader.h>
 
 RTRC_BEGIN
@@ -52,7 +53,6 @@ private:
     {
         std::string      name;
         std::string      aliasedName;
-        //std::string      namespaceChain;
         RHI::BindingType type;
         std::string      rawTypename;
         std::string      templateParam;
@@ -61,11 +61,10 @@ private:
     struct ParsedBinding
     {
         std::string             name;
-        //std::string             namespaceChain;
         RHI::BindingType        type = {};
         std::string             rawTypename;
         std::optional<uint32_t> arraySize;
-        RHI::ShaderStageFlags    stages = {};
+        RHI::ShaderStageFlags   stages = {};
         std::string             templateParam;
         bool                    bindless = false;
         bool                    variableArraySize = false;
@@ -86,7 +85,40 @@ private:
         std::vector<ParsedUniformDefinition> uniformPropertyDefinitions;
         std::vector<ParsedBinding>           bindings;
         std::vector<bool>                    isRef;
-        RHI::ShaderStageFlags                 defaultStages;
+        RHI::ShaderStageFlags                defaultStages;
+    };
+
+    struct PushConstantVariable
+    {
+        enum Type
+        {
+            Float,
+            Float2,
+            Float3,
+            Float4,
+            Int,
+            Int2,
+            Int3,
+            Int4,
+            UInt,
+            UInt2,
+            UInt3,
+            UInt4
+        };
+
+        static const char *TypeToName(Type type);
+        static size_t      TypeToSize(Type type);
+
+        uint32_t    offset;
+        Type        type;
+        std::string name;
+    };
+
+    struct PushConstantRange
+    {
+        Shader::PushConstantRange         range;
+        std::vector<PushConstantVariable> variables;
+        std::string                       name;
     };
 
     struct Bindings
@@ -110,9 +142,7 @@ private:
 
         // Push constants
 
-        std::vector<Shader::PushConstantRange> pushConstantRanges;
-        std::vector<std::string>               pushConstantRangeContents;
-        std::vector<std::string>               pushConstantRangeNames;
+        std::vector<PushConstantRange> pushConstantRanges;
     };
 
     enum class BindingCategory
@@ -121,6 +151,11 @@ private:
         Bindless,
         BindlessWithVariableSize
     };
+
+    DXC::Target GetVSTarget() const;
+    DXC::Target GetFSTarget() const;
+    DXC::Target GetCSTarget() const;
+    DXC::Target GetRTTarget() const;
 
     ParsedShaderEntry ParseShaderEntry(std::string &source) const;
 
@@ -132,8 +167,10 @@ private:
     void ParseInlineSampler(ShaderTokenStream &tokens, std::string &name, RHI::SamplerDesc &desc) const;
 
     void ParsePushConstantRange(
-        ShaderTokenStream &tokens, std::string &name, std::string &content,
-        Shader::PushConstantRange &range, uint32_t &nextOffset, Shader::Category category) const;
+        ShaderTokenStream &tokens,
+        PushConstantRange &output,
+        uint32_t          &nextOffset,
+        Shader::Category   category) const;
 
     Bindings CollectBindings(const std::string &source, Shader::Category category) const;
 

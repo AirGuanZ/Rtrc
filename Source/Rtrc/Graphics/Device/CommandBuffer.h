@@ -143,7 +143,7 @@ public:
 
     void CopyBuffer(Buffer &dst, size_t dstOffset, const Buffer &src, size_t srcOffset, size_t size);
     void CopyColorTexture2DToBuffer(
-        Buffer &dst, size_t dstOffset, Texture &src, uint32_t arrayLayer, uint32_t mipLevel);
+        Buffer &dst, size_t dstOffset, size_t dstRowBytes, Texture &src, uint32_t arrayLayer, uint32_t mipLevel);
 
     void BeginRenderPass(Span<ColorAttachment> colorAttachments);
     void BeginRenderPass(const DepthStencilAttachment &depthStencilAttachment);
@@ -172,26 +172,16 @@ public:
 
     void SetStencilReferenceValue(uint8_t value);
 
-    void SetGraphicsPushConstantRange(RHI::ShaderStageFlags stages, uint32_t offset, uint32_t size, const void *data);
-    void SetComputePushConstantRange(RHI::ShaderStageFlags stages, uint32_t offset, uint32_t size, const void *data);
-    void SetRayTracingPushConstantRange(RHI::ShaderStageFlags stages, uint32_t offset, uint32_t size, const void *data);
+    void SetGraphicsPushConstants(uint32_t rangeIndex, uint32_t offset, uint32_t size, const void *data);
+    void SetComputePushConstants(uint32_t rangeIndex, uint32_t offset, uint32_t size, const void *data);
 
-    void SetGraphicsPushConstantRange(uint32_t rangeIndex, const void *data);
-    void SetComputePushConstantRange(uint32_t rangeIndex, const void *data);
-    void SetRayTracingPushConstantRange(uint32_t rangeIndex, const void *data);
-
-    void SetGraphicsPushConstants(const void *data, uint32_t size);
-    void SetComputePushConstants(const void *data, uint32_t size);
-    void SetRayTracingPushConstants(const void *data, uint32_t size);
-
-    void SetGraphicsPushConstants(Span<unsigned char> data);
-    void SetComputePushConstants(Span<unsigned char> data);
-    void SetRayTracingPushConstants(Span<unsigned char> data);
-
+    void SetGraphicsPushConstants(uint32_t rangeIndex, const void *data);
+    void SetComputePushConstants(uint32_t rangeIndex, const void *data);
+    
     template<typename T> requires std::is_trivially_copyable_v<T>
-    void SetGraphicsPushConstants(const T &data);
+    void SetGraphicsPushConstants(uint32_t rangeIndex, const T &data);
     template<typename T> requires std::is_trivially_copyable_v<T>
-    void SetComputePushConstants(const T &data);
+    void SetComputePushConstants(uint32_t rangeIndex, const T &data);
 
     void ClearColorTexture2D(const RC<Texture> &tex, const Vector4f &color);
 
@@ -368,15 +358,15 @@ private:
 };
 
 template<typename T> requires std::is_trivially_copyable_v<T>
-void CommandBuffer::SetGraphicsPushConstants(const T &data)
+void CommandBuffer::SetGraphicsPushConstants(uint32_t rangeIndex, const T &data)
 {
-    this->SetGraphicsPushConstants(&data, sizeof(data));
+    this->SetGraphicsPushConstants(rangeIndex, 0, sizeof(data), &data);
 }
 
 template<typename T> requires std::is_trivially_copyable_v<T>
-void CommandBuffer::SetComputePushConstants(const T &data)
+void CommandBuffer::SetComputePushConstants(uint32_t rangeIndex, const T &data)
 {
-    this->SetComputePushConstants(&data, sizeof(data));
+    this->SetComputePushConstants(rangeIndex, 0, sizeof(data), &data);
 }
 
 inline void CommandBuffer::ExecuteBarrier(

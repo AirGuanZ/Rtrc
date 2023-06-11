@@ -73,14 +73,14 @@ void BlasBuilder::ExtractVertexProperties(
     };
 
     const MeshLayout *meshLayout = sharedRenderingData.GetLayout();
-    const int vertexBufferIndex = meshLayout->GetVertexBufferIndexBySemantic(RTRC_VERTEX_SEMANTIC(POSITION));
+    const int vertexBufferIndex = meshLayout->GetVertexBufferIndexBySemantic(RTRC_VERTEX_SEMANTIC(POSITION, 0));
     if(vertexBufferIndex < 0)
     {
         ThrowNotFound();
     }
     const VertexBufferLayout *bufferLayout = meshLayout->GetVertexBufferLayouts()[vertexBufferIndex];
 
-    const int attribIndex = bufferLayout->GetAttributeIndexBySemantic(RTRC_VERTEX_SEMANTIC(POSITION));
+    const int attribIndex = bufferLayout->GetAttributeIndexBySemantic(RTRC_VERTEX_SEMANTIC(POSITION, 0));
     if(attribIndex < 0)
     {
         ThrowNotFound();

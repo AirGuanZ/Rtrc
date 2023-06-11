@@ -79,9 +79,9 @@ Mesh MeshManager::Load(Device *device, const std::string &filename, Flags flags)
     if(tangentData.empty())
     {
         meshBuilder.SetLayout(RTRC_MESH_LAYOUT(Buffer(
-            Attribute("POSITION", Float3),
-            Attribute("NORMAL",   Float3),
-            Attribute("TEXCOORD", Float2))));
+            Attribute("POSITION", 0, Float3),
+            Attribute("NORMAL",   0, Float3),
+            Attribute("TEXCOORD", 0, Float2))));
 
         struct Vertex
         {
@@ -109,10 +109,10 @@ Mesh MeshManager::Load(Device *device, const std::string &filename, Flags flags)
     else
     {
         meshBuilder.SetLayout(RTRC_MESH_LAYOUT(Buffer(
-            Attribute("POSITION", Float3),
-            Attribute("NORMAL",   Float3),
-            Attribute("TEXCOORD", Float2),
-            Attribute("TANGENT",  Float3))));
+            Attribute("POSITION", 0, Float3),
+            Attribute("NORMAL",   0, Float3),
+            Attribute("TEXCOORD", 0, Float2),
+            Attribute("TANGENT",  0, Float3))));
 
         struct Vertex
         {

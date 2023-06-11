@@ -1,9 +1,10 @@
 #include <ranges>
 #include <stack>
 
-#include <Rtrc/Graphics/Shader/DXC.h>
+#include <Rtrc/Graphics/Shader/D3D12Reflection.h>
 #include <Rtrc/Graphics/Shader/ShaderCompiler.h>
 #include <Rtrc/Graphics/Shader/ShaderTokenStream.h>
+#include <Rtrc/Graphics/Shader/SPIRVReflection.h>
 #include <Rtrc/Utility/Enumerate.h>
 #include <Rtrc/Utility/Filesystem/File.h>
 #include <Rtrc/Utility/String.h>
@@ -252,13 +253,12 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     DXC dxc;
     DXC::ShaderInfo shaderInfo =
     {
-        .source = std::move(actualSource),
+        .source         = std::move(actualSource),
         .sourceFilename = source.filename.empty() ? "anonymous.hlsl" : source.filename,
-        .includeDirs = std::move(includeDirs),
-        .macros = macros
+        .includeDirs    = std::move(includeDirs),
+        .macros         = macros
     };
-    shaderInfo.macros.insert({ "rtrc_push_constant(...)", "_rtrc_push_constant_impl2(__COUNTER__, __VA_ARGS__)" });
-    shaderInfo.macros.insert({ "_rtrc_push_constant_impl2(...)", "_rtrc_push_constant_impl(__VA_ARGS__)" });
+    shaderInfo.macros.insert({ "rtrc_push_constant(...)", "_rtrc_push_constant_impl(__VA_ARGS__)" });
     
     for(size_t i = 0; i < shaderInfo.source.size() && shaderInfo.source[i] != '\n'; ++i)
     {
@@ -307,27 +307,27 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     {
         shaderInfo.entryPoint = shaderEntry.vertexEntry;
         std::string preprocessed;
-        dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_VS_6_0, debug, &preprocessed);
+        dxc.Compile(shaderInfo, GetVSTarget(), debug, &preprocessed, nullptr);
         GetBindings(preprocessed);
     }
     if(!hasParsedBindings && hasFS)
     {
         shaderInfo.entryPoint = shaderEntry.fragmentEntry;
         std::string preprocessed;
-        dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_FS_6_0, debug, &preprocessed);
+        dxc.Compile(shaderInfo, GetFSTarget(), debug, &preprocessed, nullptr);
         GetBindings(preprocessed);
     }
     if(!hasParsedBindings && hasCS)
     {
         shaderInfo.entryPoint = shaderEntry.computeEntry;
         std::string preprocessed;
-        dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_CS_6_0, debug, &preprocessed);
+        dxc.Compile(shaderInfo, GetCSTarget(), debug, &preprocessed, nullptr);
         GetBindings(preprocessed);
     }
     if(!hasParsedBindings && hasRT)
     {
         std::string preprocessed;
-        dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_RT_6_4, debug, &preprocessed);
+        dxc.Compile(shaderInfo, GetRTTarget(), debug, &preprocessed, nullptr);
         GetBindings(preprocessed);
     }
 
@@ -432,7 +432,7 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     //
     //          
     //      };
-    // where:
+    // For vulkan
     //      _rtrc_resource_TexA expands to:
     //          [[vk::binding(0, 0)]] Texture2D<float4> TexA;
     //      _rtrc_group_GroupName expands to:
@@ -443,6 +443,19 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     //              float w;
     //          };
     //          [[vk::binding(2, 0)]] ConstantBuffer<_rtrc_generated_cbuffer_struct_GroupName> GroupName;
+    //          struct group_dummy_struct_GroupName
+    //      and _rtrc_resource_TexB expands to nothing
+    // For directx12
+    //      _rtrc_resource_TexA expands to:
+    //          Texture2D<float4> TexA : register(t0, space0);
+    //      _rtrc_group_GroupName expands to:
+    //          Texture2D<float3> TexB : register(t1, space0);
+    //          struct _rtrc_generated_cbuffer_struct_GroupName
+    //          {
+    //              float3 xyz;
+    //              float w;
+    //          };
+    //          ConstantBuffer<_rtrc_generated_cbuffer_struct_GroupName> GroupName : register(b0, space0);
     //          struct group_dummy_struct_GroupName
     //      and _rtrc_resource_TexB expands to nothing
 
@@ -456,38 +469,53 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     //  ===>
     //      static SamplerState SamplerA = _rtrc_generated_samplers[0];
     //      static SamplerState SamplerB = _rtrc_generated_samplers[1];
-    //  where _rtrc_generated_samplers is defined in _rtrc_generated_shader_prefix, which is put at the shader begining:
+    //  Where _rtrc_generated_samplers is defined in _rtrc_generated_shader_prefix, which is put at the shader begining.
+    //  For vulkan, _rtrc_generated_shader_prefix is:
     //      [[vk::binding(0, x)]] SamplerState _rtrc_generated_samplers[2]; // x = last_binding_group_index + 1
+    //  For directx12, _rtrc_generated_shader_prefix is:
+    //      SamplerState _rtrc_generated_samplers[2] : register(s0, spaceX); // x = last_binding_group_index + 1
 
     // Push constant block transformation:
     //
-    //      rtrc_push_constant(VS)
+    //      rtrc_push_constant(Range0, VS)
     //      {
     //      	float3 position;
     //      };
-    //      rtrc_push_constant(FS)
+    //      rtrc_push_constant(Range1, FS)
     //      {
     //      	float3 albedo;
     //      };
     //      ===>
-    //      _rtrc_push_constant_0 // Note that blocker indices 0 and 1 are generated with builtin macro __COUNTER__
+    //      _rtrc_push_constant_Range0
     //      {
     //      	float3 offset;
     //      };
-    //      _rtrc_push_constant_1
+    //      _rtrc_push_constant_Range1
     //      {
     //      	float3 albedo;
     //      };
-    // where:
-    //      _rtrc_push_constant_0 expands to:
+    // For vulkan:
+    //      _rtrc_push_constant_Range0 expands to:
     //          struct _rtrc_push_constant_struct
     //          {
     //          	[[vk::offset(0)]] float3 position;
     //          	[[vk::offset(16)]] float3 albedo;
     //          };
     //          struct _rtrc_push_constant_dummy_struct_0
-    //      _rtrc_push_constant_1 expands to:
+    //      _rtrc_push_constant_Range1 expands to:
     //          struct _rtrc_push_constant_dummy_struct_1
+    // For directx12:
+    //      _rtrc_push_constant_Range0 expands to:
+    //          struct _rtrc_push_constant_struct_0
+    //          {
+    //              float3 position;
+    //          };
+    //          ConstantBuffer<_rtrc_push_constant_struct_0>  _rtrc_push_constant_buffer_Range0 : register(0, x); // x = last_binding_group_index + 1
+    //          struct _rtrc_push_constant_struct_1
+    //          {
+    //              float3 albedo;
+    //          };
+    //          ConstantBuffer<_rtrc_push_constant_struct_1> _rtrc_push_constant_buffer_Range1 : register(1, x); // x = last_binding_group_index + 1
 
     Macros finalMacros = std::move(shaderInfo.macros);
     finalMacros["rtrc_group(NAME, ...)"]                  = "_rtrc_group_##NAME";
@@ -499,17 +527,19 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     finalMacros["rtrc_sampler(NAME, ...)"]                = "_rtrc_sampler_##NAME";
     finalMacros["rtrc_ref(NAME, ...)"]                    = "";
 
-    // rtrc_push_constant(...) is replaced with _rtrc_push_constant_impl(value of __COUNTER__, ...) in preprocessing
+    // rtrc_push_constant(...) is replaced with _rtrc_push_constant_impl(...) in preprocessing
     finalMacros["_rtrc_push_constant_impl(NAME, ...)"] = "_rtrc_push_constant_##NAME";
 
     bool hasBindless = false;
+    std::vector<ShaderUniformBlock> uniformBlocks;
     std::map<std::string, std::string> bindingNameToArraySpecifier;
+    std::map<std::string, std::string> bindingNameToRegisterSpecifier; // For directx12 backend
 
     for(auto &group : bindings.groups)
     {
+        int nextT = 0, nextB = 0, nextS = 0, nextU = 0; // For directx12 backend
         std::string groupLeft = fmt::format("_rtrc_group_{}", group.name);
         std::string groupRight;
-
         for(auto &&[bindingIndex, binding] : Enumerate(group.bindings))
         {
             const auto [set, slot] = bindingNameToSlots.at(binding.name);
@@ -517,13 +547,55 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
             std::string arraySpecifier = binding.GetArraySpeficier();
             bindingNameToArraySpecifier[binding.name] = arraySpecifier;
 
+            const std::string templateParamStr = binding.templateParam.empty() ?
+                std::string{} : fmt::format("<{}>", binding.templateParam);
+
             std::string left = fmt::format("_rtrc_resource_{}", binding.name);
-            std::string right = fmt::format(
-                "[[vk::binding({}, {})]] {}{} {}{};",
-                slot, set,
-                binding.rawTypename,
-                binding.templateParam.empty() ? std::string{} : fmt::format("<{}>", binding.templateParam),
-                binding.name, std::move(arraySpecifier));
+            std::string right;
+            if(device_->GetBackendType() == RHI::BackendType::Vulkan)
+            {
+                right = fmt::format(
+                    "[[vk::binding({}, {})]] {}{} {}{};",
+                    slot, set, binding.rawTypename, templateParamStr,
+                    binding.name, std::move(arraySpecifier));
+            }
+            else
+            {
+                assert(device_->GetBackendType() == RHI::BackendType::DirectX12);
+                const char *registerTypename; int *pNext;
+                switch(binding.type)
+                {
+                    using enum RHI::BindingType;
+                case Texture:
+                case Buffer:
+                case StructuredBuffer:
+                    registerTypename = "t";
+                    pNext = &nextT;
+                    break;
+                case ConstantBuffer:
+                    registerTypename = "b";
+                    pNext = &nextB;
+                    break;
+                case Sampler:
+                    registerTypename = "s";
+                    pNext = &nextS;
+                    break;
+                case RWTexture:
+                case RWBuffer:
+                case RWStructuredBuffer:
+                    registerTypename = "u";
+                    pNext = &nextU;
+                    break;
+                default:
+                    throw Exception(fmt::format(
+                        "Unsupported binding type: {}", GetBindingTypeName(binding.type)));
+                }
+                std::string regSpec = fmt::format("{}{}, space{}", registerTypename, (*pNext)++, set);
+                bindingNameToRegisterSpecifier.insert({ binding.name, regSpec });
+                right = fmt::format(
+                    "{}{} {}{} : register({});",
+                    binding.rawTypename, templateParamStr, binding.name, std::move(arraySpecifier), regSpec);
+            }
 
             if(group.isRef[bindingIndex])
             {
@@ -540,73 +612,213 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
 
         if(!group.uniformPropertyDefinitions.empty())
         {
+            const auto [set, slot] = bindingNameToSlots.at(group.name);
+
+            auto &uniformBlock = uniformBlocks.emplace_back();
+            uniformBlock.name = group.name;
+            uniformBlock.group = set;
+            uniformBlock.indexInGroup = slot;
+            uniformBlock.variables.reserve(group.uniformPropertyDefinitions.size());
+
             std::string uniformPropertiesStr;
             for(const ParsedUniformDefinition &definition : group.uniformPropertyDefinitions)
             {
                 uniformPropertiesStr += fmt::format("{} {};", definition.type, definition.name);
+
+                auto &var = uniformBlock.variables.emplace_back();
+                var.name = definition.name;
+                var.pooledName = MaterialPropertyName(var.name);
+                var.type = ShaderUniformBlock::GetTypeFromTypeName(definition.type);
             }
 
-            const auto [set, slot] = bindingNameToSlots.at(group.name);
-            groupRight += fmt::format(
-                "struct _rtrc_generated_cbuffer_struct_{} {{ {} }}; "
-                "[[vk::binding({}, {})]] ConstantBuffer<_rtrc_generated_cbuffer_struct_{}> {};",
-                group.name, uniformPropertiesStr,
-                slot, set, group.name, group.name);
+            if(device_->GetBackendType() == RHI::BackendType::Vulkan)
+            {
+                groupRight += fmt::format(
+                    "struct _rtrc_generated_cbuffer_struct_{} {{ {} }}; "
+                    "[[vk::binding({}, {})]] ConstantBuffer<_rtrc_generated_cbuffer_struct_{}> {};",
+                    group.name, uniformPropertiesStr,
+                    slot, set, group.name, group.name);
+            }
+            else
+            {
+                assert(device_->GetBackendType() == RHI::BackendType::DirectX12);
+                groupRight += fmt::format(
+                    "struct _rtrc_generated_cbuffer_struct_{} {{ {} }}; "
+                    "ConstantBuffer<_rtrc_generated_cbuffer_struct_{}> {} : register(b{}, space{});",
+                    group.name, uniformPropertiesStr,
+                    group.name, group.name, nextB++, set);
+            }
         }
 
         groupRight += fmt::format("struct group_dummy_struct_{}", group.name);
         finalMacros.insert({ std::move(groupLeft), std::move(groupRight) });
     }
 
-    std::string pushConstantContent;
-    for(auto &content : bindings.pushConstantRangeContents)
+    if(device_->GetBackendType() == RHI::BackendType::Vulkan)
     {
-        pushConstantContent += content;
-    }
-    for(size_t i = 0; i < bindings.pushConstantRanges.size(); ++i)
-    {
-        const std::string &name = bindings.pushConstantRangeNames[i];
-
-        std::string left = fmt::format("_rtrc_push_constant_{}", name);
-        std::string right;
-        if(i == 0)
+        std::string pushConstantContent;
+        for(auto &range : bindings.pushConstantRanges)
         {
-            right = fmt::format(
-                "struct _rtrc_push_constant_struct {{ {} }}; "
-                "[[vk::push_constant]] _rtrc_push_constant_struct PushConstant;", pushConstantContent);
+            for(auto &var : range.variables)
+            {
+                pushConstantContent += fmt::format(
+                    "[[vk::offset({})]] {} {}__{};",
+                    var.offset, PushConstantVariable::TypeToName(var.type), range.name, var.name);
+            }
         }
-        right += fmt::format("struct _rtrc_push_constant_dummy_struct_{}", name);
-        finalMacros.insert({ std::move(left), std::move(right) });
+        for(size_t i = 0; i < bindings.pushConstantRanges.size(); ++i)
+        {
+            const std::string &name = bindings.pushConstantRanges[i].name;
+            std::string left = fmt::format("_rtrc_push_constant_{}", name);
+            std::string right;
+            if(i == 0)
+            {
+                right = fmt::format(
+                    "struct _rtrc_push_constant_struct {{ {} }}; "
+                    "[[vk::push_constant]] _rtrc_push_constant_struct _rtrc_push_constant_struct_buffer;",
+                    pushConstantContent);
+            }
+            right += fmt::format("struct _rtrc_push_constant_dummy_struct_{}", name);
+            finalMacros.insert({ std::move(left), std::move(right) });
+        }
+        finalMacros.insert({
+            "rtrc_get_push_constant(RANGE_NAME, VAR_NAME)",
+            "(_rtrc_push_constant_struct_buffer.RANGE_NAME##__##VAR_NAME)"
+        });
+    }
+    else
+    {
+        assert(device_->GetBackendType() == RHI::BackendType::DirectX12);
+        const size_t pushConstantRegisterSpace = groupLayouts.size();
+        for(auto &&[rangeIndex, range] : Enumerate(bindings.pushConstantRanges))
+        {
+            std::string content;
+            size_t offset = 0; size_t padIndex = 0;
+            for(auto &var : range.variables)
+            {
+                const size_t size = PushConstantVariable::TypeToSize(var.type);
+                const size_t next16ByteOffset = UpAlignTo<size_t>(offset + 1, 16);
+                size_t alignedOffset = offset;
+                if(offset + size > next16ByteOffset)
+                {
+                    alignedOffset = next16ByteOffset;
+                }
+                for(size_t i = offset; i < alignedOffset; ++i)
+                {
+                    content += fmt::format("float pad{};", padIndex++);
+                }
+                content += fmt::format("{} {};", PushConstantVariable::TypeToName(var.type), var.name);
+                offset = alignedOffset + size;
+            }
+
+            const std::string &name = range.name;
+            std::string left = fmt::format("_rtrc_push_constant_{}", name);
+            std::string right = fmt::format(
+                "struct _rtrc_push_constant_struct_{} {{ {} }};"
+                "ConstantBuffer<_rtrc_push_constant_struct_{}> _rtrc_push_constant_range_{} : register(b{}, space{});"
+                "struct _rtrc_push_constant_dummy_struct_{}",
+                range.name, content, range.name, range.name,
+                rangeIndex, pushConstantRegisterSpace, rangeIndex);
+            finalMacros.insert({ std::move(left), std::move(right) });
+        }
+        finalMacros.insert({
+            "rtrc_get_push_constant(RANGE_NAME, VAR_NAME)",
+            "(_rtrc_push_constant_range_##RANGE_NAME.VAR_NAME)"
+        });
     }
 
-    std::string generatedShaderPrefix;
+    finalMacros["_rtrc_generated_shader_prefix"]; // Make sure _rtrc_generated_shader_prefix is defined
     if(inlineSamplerGroupIndex >= 0)
     {
-        generatedShaderPrefix += fmt::format(
-            "[[vk::binding(0, {})]] SamplerState _rtrc_generated_samplers[{}];",
-            inlineSamplerGroupIndex, bindings.inlineSamplerDescs.size());
-    }
-    finalMacros["_rtrc_generated_shader_prefix"] += std::move(generatedShaderPrefix);
+        if(device_->GetBackendType() == RHI::BackendType::Vulkan)
+        {
+            finalMacros["_rtrc_generated_shader_prefix"] += fmt::format(
+                "[[vk::binding(0, {})]] SamplerState _rtrc_generated_samplers[{}];",
+                inlineSamplerGroupIndex, bindings.inlineSamplerDescs.size());
 
-    for(auto &[name, slot] : bindings.inlineSamplerNameToDescIndex)
-    {
-        std::string left = fmt::format("_rtrc_sampler_{}", name);
-        std::string right = fmt::format("static SamplerState {} = _rtrc_generated_samplers[{}];", name, slot);
-        finalMacros.insert({ std::move(left), std::move(right) });
+            for(auto &[name, slot] : bindings.inlineSamplerNameToDescIndex)
+            {
+                std::string left = fmt::format("_rtrc_sampler_{}", name);
+                std::string right = fmt::format("static SamplerState {} = _rtrc_generated_samplers[{}];", name, slot);
+                finalMacros.insert({ std::move(left), std::move(right) });
+            }
+        }
+        else
+        {
+            assert(device_->GetBackendType() == RHI::BackendType::DirectX12);
+
+            std::string generatedShaderPrefix;
+            for(auto &&[i, s] : Enumerate(bindings.inlineSamplerDescs))
+            {
+                generatedShaderPrefix += fmt::format(
+                    "SamplerState _rtrc_generated_sampler_{} : register(s{}, space{});",
+                    i, i, inlineSamplerGroupIndex);
+            }
+            finalMacros["_rtrc_generated_shader_prefix"] += std::move(generatedShaderPrefix);
+
+            for(auto &&[name, slot] : bindings.inlineSamplerNameToDescIndex)
+            {
+                finalMacros.insert({
+                    fmt::format("_rtrc_sampler_{}", name),
+                    fmt::format("static SamplerState {} = _rtrc_generated_sampler_{};", name, slot)
+                });
+            }
+        }
     }
 
     const int setForUngroupedBindings = static_cast<int>(groupLayouts.size());
+    int nextUngroupedT = 0, nextUngroupedU = 0, nextUngroupedS = 0, nextUngroupedB = 0;
     for(auto &binding : bindings.ungroupedBindings)
     {
         const int slot = bindings.ungroupedBindingNameToSlot.at(binding.name);
+        std::string templateStr = binding.templateParam.empty() ? std::string{}
+                                                                : fmt::format("<{}>", binding.templateParam);
         std::string arraySpecifier = binding.GetArraySpeficier();
         std::string left = fmt::format("_rtrc_resource_{}", binding.name);
-        std::string right = fmt::format(
-            "[[vk::binding({}, {})]] {}{} {}{};",
-            slot, setForUngroupedBindings,
-            binding.rawTypename,
-            binding.templateParam.empty() ? std::string{} : fmt::format("<{}>", binding.templateParam),
-            binding.name, arraySpecifier);
+        std::string right;
+        if(device_->GetBackendType() == RHI::BackendType::Vulkan)
+        {
+            right = fmt::format(
+                "[[vk::binding({}, {})]] {}{} {}{};",
+                slot, setForUngroupedBindings, binding.rawTypename, templateStr, binding.name, arraySpecifier);
+        }
+        else
+        {
+            assert(device_->GetBackendType() == RHI::BackendType::DirectX12);
+            const char *registerTypename; int *pNext;
+            switch(binding.type)
+            {
+                using enum RHI::BindingType;
+            case Texture:
+            case Buffer:
+            case StructuredBuffer:
+                registerTypename = "t";
+                pNext = &nextUngroupedT;
+                break;
+            case ConstantBuffer:
+                registerTypename = "b";
+                pNext = &nextUngroupedB;
+                break;
+            case Sampler:
+                registerTypename = "s";
+                pNext = &nextUngroupedS;
+                break;
+            case RWTexture:
+            case RWBuffer:
+            case RWStructuredBuffer:
+                registerTypename = "u";
+                pNext = &nextUngroupedU;
+                break;
+            default:
+                throw Exception(fmt::format(
+                    "Unsupported binding type: {}", GetBindingTypeName(binding.type)));
+            }
+            std::string regSpec = fmt::format("{}{}, space{}", registerTypename, (*pNext)++, 9999);
+            bindingNameToRegisterSpecifier.insert({ binding.name, regSpec });
+            right = fmt::format(
+                "{}{} {}{} : register({})",
+                binding.rawTypename, templateStr, binding.name, arraySpecifier, regSpec);
+        }
         bindingNameToArraySpecifier[binding.name] = std::move(arraySpecifier);
         finalMacros.insert({ std::move(left), std::move(right) });
     }
@@ -631,11 +843,23 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
         }
 
         std::string left = fmt::format("_rtrc_alias_{}", alias.name);
-        std::string right = fmt::format(
-            "[[vk::binding({}, {})]] {}{} {}{};",
-            slot, set, alias.rawTypename,
-            alias.templateParam.empty() ? std::string{} : fmt::format("<{}>", alias.templateParam),
-            alias.name, bindingNameToArraySpecifier.at(alias.aliasedName));
+        std::string templateStr = alias.templateParam.empty() ? std::string{} : fmt::format("<{}>", alias.templateParam);
+        std::string right;
+        if(device_->GetBackendType() == RHI::BackendType::Vulkan)
+        {
+            right = fmt::format(
+                "[[vk::binding({}, {})]] {}{} {}{};",
+                slot, set, alias.rawTypename, templateStr,
+                alias.name, bindingNameToArraySpecifier.at(alias.aliasedName));
+        }
+        else
+        {
+            assert(device_->GetBackendType() == RHI::BackendType::DirectX12);
+            right = fmt::format(
+                "{}{} {}{} : register({});",
+                alias.rawTypename, templateStr, alias.name, bindingNameToArraySpecifier.at(alias.aliasedName),
+                bindingNameToRegisterSpecifier.at(alias.aliasedName));
+        }
         finalMacros.insert({ std::move(left), std::move(right) });
     }
 
@@ -670,35 +894,72 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     }
 
     std::vector<uint8_t> vsData, fsData, csData, rtData;
-    Box<SPIRVReflection> vsRefl, fsRefl, csRefl, rtRefl;
+    Box<ShaderReflection> vsRefl, fsRefl, csRefl, rtRefl;
     
     if(hasVS)
     {
         shaderInfo.entryPoint = shaderEntry.vertexEntry;
-        vsData = dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_VS_6_0, debug, nullptr);
-        vsRefl = MakeBox<SPIRVReflection>(vsData, shaderEntry.vertexEntry);
+        if(device_->GetBackendType() == RHI::BackendType::Vulkan)
+        {
+            vsData = dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_VS_6_0, debug, nullptr, nullptr);
+            vsRefl = MakeBox<SPIRVReflection>(vsData, shaderEntry.vertexEntry);
+        }
+        else
+        {
+            assert(device_->GetBackendType() == RHI::BackendType::DirectX12);
+            std::vector<std::byte> reflData;
+            vsData = dxc.Compile(shaderInfo, DXC::Target::DirectX12_VS_6_0, debug, nullptr, &reflData);
+            vsRefl = MakeBox<D3D12Reflection>(dxc.GetDxcUtils(), reflData, bindingNameToSlots);
+        }
     }
     if(hasFS)
     {
         shaderInfo.entryPoint = shaderEntry.fragmentEntry;
-        fsData = dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_FS_6_0, debug, nullptr);
-        fsRefl = MakeBox<SPIRVReflection>(fsData, shaderEntry.fragmentEntry);
+        if(device_->GetBackendType() == RHI::BackendType::Vulkan)
+        {
+            fsData = dxc.Compile(shaderInfo, GetFSTarget(), debug, nullptr, nullptr);
+            fsRefl = MakeBox<SPIRVReflection>(fsData, shaderEntry.fragmentEntry);
+        }
+        else
+        {
+            assert(device_->GetBackendType() == RHI::BackendType::DirectX12);
+            std::vector<std::byte> reflData;
+            fsData = dxc.Compile(shaderInfo, DXC::Target::DirectX12_FS_6_0, debug, nullptr, &reflData);
+            fsRefl = MakeBox<D3D12Reflection>(dxc.GetDxcUtils(), reflData, bindingNameToSlots);
+        }
     }
     if(hasCS)
     {
         shaderInfo.entryPoint = shaderEntry.computeEntry;
-        csData = dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_CS_6_0, debug, nullptr);
-        csRefl = MakeBox<SPIRVReflection>(csData, shaderEntry.computeEntry);
+        if(device_->GetBackendType() == RHI::BackendType::Vulkan)
+        {
+            csData = dxc.Compile(shaderInfo, GetCSTarget(), debug, nullptr, nullptr);
+            csRefl = MakeBox<SPIRVReflection>(csData, shaderEntry.computeEntry);
+        }
+        else
+        {
+            assert(device_->GetBackendType() == RHI::BackendType::DirectX12);
+            std::vector<std::byte> reflData;
+            csData = dxc.Compile(shaderInfo, DXC::Target::DirectX12_CS_6_0, debug, nullptr, &reflData);
+            csRefl = MakeBox<D3D12Reflection>(dxc.GetDxcUtils(), reflData, bindingNameToSlots);
+        }
     }
     if(hasRT)
     {
-        rtData = dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_RT_6_4, debug, nullptr);
-        rtRefl = MakeBox<SPIRVReflection>(rtData, std::string{});
+        if(device_->GetBackendType() == RHI::BackendType::Vulkan)
+        {
+            rtData = dxc.Compile(shaderInfo, GetRTTarget(), debug, nullptr, nullptr);
+            rtRefl = MakeBox<SPIRVReflection>(rtData, std::string{});
+        }
+        else
+        {
+            throw Exception("Ray tracing haven't been implemented for directx12 backend");
+        }
     }
 
     // Check uses of ungrouped bindings
 
-    auto EnsureAllUsedResourcesAreGrouped = [&](const Box<SPIRVReflection> &refl, std::string_view stageName)
+    auto EnsureAllUsedResourcesAreGrouped = [&](const Box<ShaderReflection> &refl, std::string_view stageName)
     {
         if(refl)
         {
@@ -834,46 +1095,8 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
             rtData.data(), rtData.size(), std::move(rayTracingEntries));
     }
 
-    // Constant buffers
-
-    std::map<std::pair<int, int>, ShaderConstantBuffer> slotToCBuffer;
-    auto MergeCBuffers = [&](const ShaderReflection &refl)
-    {
-        auto cbuffers = refl.GetConstantBuffers();
-        for(auto &cbuffer : cbuffers)
-        {
-            const std::pair key{ cbuffer.group, cbuffer.indexInGroup };
-            auto it = slotToCBuffer.find(key);
-            if(it == slotToCBuffer.end())
-            {
-                slotToCBuffer.insert({ key, cbuffer });
-            }
-#if RTRC_DEBUG
-            else
-            {
-                assert(it->second == cbuffer);
-            }
-#endif
-        }
-    };
-    if(hasVS)
-    {
-        MergeCBuffers(*vsRefl);
-    }
-    if(hasFS)
-    {
-        MergeCBuffers(*fsRefl);
-    }
-    if(hasCS)
-    {
-        MergeCBuffers(*csRefl);
-    }
-    if(hasRT)
-    {
-        MergeCBuffers(*rtRefl);
-    }
-    std::ranges::copy(std::ranges::views::values(slotToCBuffer), std::back_inserter(shader->info_->constantBuffers_));
-
+    // Binding name map
+    
     auto &bindingNameMap = shader->info_->shaderBindingLayoutInfo_->bindingNameMap_;
     bindingNameMap.allBindingNames_.resize(groupLayouts.size());
     for(size_t i = 0; i < groupLayouts.size(); ++i)
@@ -905,7 +1128,10 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     {
         bindingLayoutDesc.groupLayouts.push_back(group);
     }
-    bindingLayoutDesc.pushConstantRanges = bindings.pushConstantRanges;
+
+    std::ranges::transform(
+        bindings.pushConstantRanges, std::back_inserter(bindingLayoutDesc.pushConstantRanges),
+        [](const PushConstantRange &range) { return range.range; });
     shader->info_->shaderBindingLayoutInfo_->bindingLayout_ = device_->CreateBindingLayout(bindingLayoutDesc);
 
     if(inlineSamplerGroupIndex >= 0)
@@ -930,7 +1156,8 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
         shader->computePipeline_ = device_->CreateComputePipeline(shader);
     }
 
-    shader->info_->shaderBindingLayoutInfo_->pushConstantRanges_ = std::move(bindings.pushConstantRanges);
+    shader->info_->shaderBindingLayoutInfo_->pushConstantRanges_ = std::move(bindingLayoutDesc.pushConstantRanges);
+    shader->info_->shaderBindingLayoutInfo_->uniformBlocks_ = std::move(uniformBlocks);
 
     return shader;
 }
@@ -947,6 +1174,64 @@ std::string ShaderCompiler::ParsedBinding::GetArraySpeficier() const
         return fmt::format("[{}]", arraySize.value());
     }
     return {};
+}
+
+const char *ShaderCompiler::PushConstantVariable::TypeToName(Type type)
+{
+    const char *names[] =
+    {
+        "float",
+        "float2",
+        "float3",
+        "float4",
+        "int",
+        "int2",
+        "int3",
+        "int4",
+        "uint",
+        "uint2",
+        "uint3",
+        "uint4"
+    };
+    return names[std::to_underlying(type)];
+}
+
+size_t ShaderCompiler::PushConstantVariable::TypeToSize(Type type)
+{
+    const size_t sizes[] =
+    {
+        4, 8, 12, 16,
+        4, 8, 12, 16,
+        4, 8, 12, 16
+    };
+    return sizes[std::to_underlying(type)];
+}
+
+DXC::Target ShaderCompiler::GetVSTarget() const
+{
+    return device_->GetBackendType() == RHI::BackendType::Vulkan ? DXC::Target::Vulkan_1_3_VS_6_0
+                                                                 : DXC::Target::DirectX12_VS_6_0;
+}
+
+DXC::Target ShaderCompiler::GetFSTarget() const
+{
+    return device_->GetBackendType() == RHI::BackendType::Vulkan ? DXC::Target::Vulkan_1_3_FS_6_0
+                                                                 : DXC::Target::DirectX12_FS_6_0;
+}
+
+DXC::Target ShaderCompiler::GetCSTarget() const
+{
+    return device_->GetBackendType() == RHI::BackendType::Vulkan ? DXC::Target::Vulkan_1_3_CS_6_0
+                                                                 : DXC::Target::DirectX12_CS_6_0;
+}
+
+DXC::Target ShaderCompiler::GetRTTarget() const
+{
+    if(device_->GetBackendType() == RHI::BackendType::Vulkan)
+    {
+        return DXC::Target::Vulkan_1_3_RT_6_4;
+    }
+    throw Exception("Ray tracing for directx12 hasn't been implemented");
 }
 
 ShaderCompiler::ParsedShaderEntry ShaderCompiler::ParseShaderEntry(std::string &source) const
@@ -1034,7 +1319,7 @@ ShaderCompiler::ParsedBinding ShaderCompiler::ParseBinding(
             {
                 tokens.Throw("'>' expected");
             }
-            templateParam += tokens.GetCurrentToken();
+            templateParam += " " + tokens.GetCurrentToken();
             tokens.Next();
         }
         tokens.ConsumeOrThrow(">");
@@ -1234,21 +1519,23 @@ void ShaderCompiler::ParseInlineSampler(ShaderTokenStream &tokens, std::string &
 }
 
 void ShaderCompiler::ParsePushConstantRange(
-    ShaderTokenStream &tokens, std::string &name, std::string &content,
-    Shader::PushConstantRange &range, uint32_t &nextOffset, Shader::Category category) const
+    ShaderTokenStream &tokens,
+    PushConstantRange &output,
+    uint32_t          &nextOffset,
+    Shader::Category   category) const
 {
     tokens.ConsumeOrThrow("_rtrc_push_constant_impl");
     tokens.ConsumeOrThrow("(");
-    name = tokens.GetCurrentToken();
+    output.name = tokens.GetCurrentToken();
     tokens.Next();
     tokens.ConsumeOrThrow(",");
     if(tokens.GetCurrentToken() != ")")
     {
-        range.stages = ShaderCompilerDetail::ParseStages(tokens);
+        output.range.stages = ShaderCompilerDetail::ParseStages(tokens);
     }
     else
     {
-        range.stages = ShaderCompilerDetail::ShaderCategoryToStages(category);
+        output.range.stages = ShaderCompilerDetail::ShaderCategoryToStages(category);
     }
     tokens.ConsumeOrThrow(")");
     tokens.ConsumeOrThrow("{");
@@ -1266,33 +1553,34 @@ void ShaderCompiler::ParsePushConstantRange(
             break;
         }
 
-        const std::string type = tokens.GetCurrentToken();
+        const std::string typeStr = tokens.GetCurrentToken();
         tokens.Next();
 
-        static const std::map<std::string, std::pair<uint32_t, uint32_t>> typeToOffsetAndSize =
+        static const std::map<std::string, std::tuple<uint32_t, uint32_t, PushConstantVariable::Type>> typeInfo=
         {
-            { "float",  { 4,  4 } },
-            { "int",    { 4,  4 } },
-            { "uint",   { 4,  4 } },
-            { "float2", { 8,  8 } },
-            { "int2",   { 8,  8 } },
-            { "uint2",  { 8,  8 } },
-            { "float3", { 16, 12 } },
-            { "int3",   { 16, 12 } },
-            { "uint3",  { 16, 12 } },
-            { "float4", { 16, 16 } },
-            { "int4",   { 16, 16 } },
-            { "uint4",  { 16, 16 } },
+            // typename -> { alignment, size, type }
+            { "float",  { 4,  4,  PushConstantVariable::Float } },
+            { "int",    { 4,  4,  PushConstantVariable::Int } },
+            { "uint",   { 4,  4,  PushConstantVariable::UInt } },
+            { "float2", { 8,  8,  PushConstantVariable::Float2 } },
+            { "int2",   { 8,  8,  PushConstantVariable::Int2 } },
+            { "uint2",  { 8,  8,  PushConstantVariable::UInt2 } },
+            { "float3", { 16, 12, PushConstantVariable::Float3 } },
+            { "int3",   { 16, 12, PushConstantVariable::Int3 } },
+            { "uint3",  { 16, 12, PushConstantVariable::UInt3 } },
+            { "float4", { 16, 16, PushConstantVariable::Float4 } },
+            { "int4",   { 16, 16, PushConstantVariable::Int4 } },
+            { "uint4",  { 16, 16, PushConstantVariable::UInt4 } },
         };
 
-        uint32_t offset, size;
-        if(auto it = typeToOffsetAndSize.find(type); it == typeToOffsetAndSize.end())
+        uint32_t alignment, size; PushConstantVariable::Type type;
+        if(auto it = typeInfo.find(typeStr); it == typeInfo.end())
         {
             tokens.Throw(fmt::format("Unsupported type in push constant block: {}", tokens.GetCurrentToken()));
         }
         else
         {
-            std::tie(offset, size) = it->second;
+            std::tie(alignment, size, type) = it->second;
         }
 
         if(!ShaderTokenStream::IsIdentifier(tokens.GetCurrentToken()))
@@ -1301,46 +1589,27 @@ void ShaderCompiler::ParsePushConstantRange(
         }
         const std::string varName = tokens.GetCurrentToken();
         tokens.Next();
-
-        std::optional<uint32_t> arraySize;
-        if(tokens.GetCurrentToken() == "[")
-        {
-            tokens.Next();
-            try
-            {
-                arraySize = std::stoul(tokens.GetCurrentToken());
-            }
-            catch(...)
-            {
-                tokens.Throw(fmt::format("Invalid array size: {}", tokens.GetCurrentToken()));
-            }
-            tokens.Next();
-            tokens.ConsumeOrThrow("]");
-        }
-
+        
         tokens.ConsumeOrThrow(";");
 
-        nextOffset = UpAlignTo(nextOffset, offset);
+        nextOffset = UpAlignTo(nextOffset, alignment);
         if(isFirstMember)
         {
             isFirstMember = false;
-            range.offset = nextOffset;
+            output.range.offset = nextOffset;
         }
-
-        content += fmt::format(
-            "[[vk::offset({})]] {} {}{};", nextOffset, type, varName,
-            arraySize.has_value() ? fmt::format("[{}]", *arraySize) : std::string());
-        nextOffset += size * arraySize.value_or(1);
+        output.variables.push_back({ nextOffset, type, varName });
+        nextOffset += size;
     }
 
     if(isFirstMember)
     {
-        range.offset = nextOffset;
-        range.size = 0;
+        output.range.offset = nextOffset;
+        output.range.size = 0;
     }
     else
     {
-        range.size = nextOffset - range.offset;
+        output.range.size = nextOffset - output.range.offset;
     }
 }
 
@@ -1368,10 +1637,8 @@ ShaderCompiler::Bindings ShaderCompiler::CollectBindings(const std::string &sour
     std::map<std::string, int>      inlineSamplerNameToDescIndex;
     std::map<RHI::SamplerDesc, int> inlineSamplerDescToIndex;
 
-    std::vector<Shader::PushConstantRange> pushConstantRanges;
-    std::vector<std::string>               pushConstantRangeContents;
-    std::vector<std::string>               pushConstantRangeNames;
-    uint32_t                               pushConstantRangeOffset = 0;
+    std::vector<PushConstantRange> pushConstantRanges;
+    uint32_t                       pushConstantRangeOffset = 0;
 
     size_t keywordBeginPos = 0;
     while(true)
@@ -1450,8 +1717,7 @@ ShaderCompiler::Bindings ShaderCompiler::CollectBindings(const std::string &sour
             keywordBeginPos = pushConstantPos + PUSH_CONSTANT.size();
             ShaderTokenStream tokens(source, pushConstantPos);
             ParsePushConstantRange(
-                tokens, pushConstantRangeNames.emplace_back(), pushConstantRangeContents.emplace_back(),
-                pushConstantRanges.emplace_back(), pushConstantRangeOffset, category);
+                tokens, pushConstantRanges.emplace_back(), pushConstantRangeOffset, category);
             continue;
         }
 
@@ -1489,12 +1755,7 @@ ShaderCompiler::Bindings ShaderCompiler::CollectBindings(const std::string &sour
         ParsedBindingGroup &currentGroup = parsedGroups.emplace_back();
         currentGroup.name = std::move(groupName);
         currentGroup.defaultStages = groupDefaultStages;
-
-        /*if(!namespaceChain.empty())
-        {
-            throw Exception(fmt::format("Binding group {} is not defined in global namespace", currentGroup.name));
-        }*/
-
+        
         while(true)
         {
             if(tokens.GetCurrentToken() == RESOURCE ||
@@ -1612,14 +1873,10 @@ ShaderCompiler::Bindings ShaderCompiler::CollectBindings(const std::string &sour
         bindings.ungroupedBindingNameToSlot[binding.name] = static_cast<int>(index);
     }
 
-    bindings.aliases = std::move(parsedBindingAliases);
-
-    bindings.inlineSamplerDescs = std::move(inlineSamplerDescs);
+    bindings.aliases                      = std::move(parsedBindingAliases);
+    bindings.inlineSamplerDescs           = std::move(inlineSamplerDescs);
     bindings.inlineSamplerNameToDescIndex = std::move(inlineSamplerNameToDescIndex);
-
-    bindings.pushConstantRanges = std::move(pushConstantRanges);
-    bindings.pushConstantRangeContents = std::move(pushConstantRangeContents);
-    bindings.pushConstantRangeNames = std::move(pushConstantRangeNames);
+    bindings.pushConstantRanges           = std::move(pushConstantRanges);
 
     return bindings;
 }

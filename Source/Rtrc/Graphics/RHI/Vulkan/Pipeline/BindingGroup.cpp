@@ -32,9 +32,9 @@ uint32_t VulkanBindingGroup::GetVariableArraySize() const
     return variableArraySize_;
 }
 
-void VulkanBindingGroup::ModifyMember(int index, int arrayElem, BufferSrv *bufferSrv)
+void VulkanBindingGroup::ModifyMember(int index, int arrayElem, const BufferSrv *bufferSrv)
 {
-    auto rawBufferSrv = static_cast<VulkanBufferSrv *>(bufferSrv);
+    auto rawBufferSrv = static_cast<const VulkanBufferSrv *>(bufferSrv);
     auto &desc = rawBufferSrv->GetDesc();
 
     if(layout_->_internalIsSlotTexelBuffer(index))
@@ -74,9 +74,9 @@ void VulkanBindingGroup::ModifyMember(int index, int arrayElem, BufferSrv *buffe
     }
 }
 
-void VulkanBindingGroup::ModifyMember(int index, int arrayElem, BufferUav *bufferUav)
+void VulkanBindingGroup::ModifyMember(int index, int arrayElem, const BufferUav *bufferUav)
 {
-    auto rawBufferUav = static_cast<VulkanBufferUav *>(bufferUav);
+    auto rawBufferUav = static_cast<const VulkanBufferUav *>(bufferUav);
     auto &desc = rawBufferUav->GetDesc();
 
     if(layout_->_internalIsSlotStorageTexelBuffer(index))
@@ -116,26 +116,13 @@ void VulkanBindingGroup::ModifyMember(int index, int arrayElem, BufferUav *buffe
     }
 }
 
-void VulkanBindingGroup::ModifyMember(int index, int arrayElem, TextureSrv *textureSrv)
+void VulkanBindingGroup::ModifyMember(int index, int arrayElem, const TextureSrv *textureSrv)
 {
-    auto rawTexSrv = static_cast<VulkanTextureSrv *>(textureSrv);
+    auto rawTexSrv = static_cast<const VulkanTextureSrv *>(textureSrv);
     assert(layout_->_internalIsSlotTexture(index));
-    VkImageLayout imageLayout;
-    if(textureSrv->GetDesc().flags.Contains(TextureViewFlagBit::DepthSrv_StencilAttachment))
-    {
-        imageLayout = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL;
-    }
-    else if(textureSrv->GetDesc().flags.Contains(TextureViewFlagBit::DepthSrv_StencilAttachmentReadOnly))
-    {
-        imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-    }
-    else
-    {
-        imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    }
     const VkDescriptorImageInfo imageInfo = {
         .imageView   = rawTexSrv->_internalGetNativeImageView(),
-        .imageLayout = imageLayout
+        .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
     };
     const VkWriteDescriptorSet write = {
         .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -149,9 +136,9 @@ void VulkanBindingGroup::ModifyMember(int index, int arrayElem, TextureSrv *text
     vkUpdateDescriptorSets(device_, 1, &write, 0, nullptr);
 }
 
-void VulkanBindingGroup::ModifyMember(int index, int arrayElem, TextureUav *textureUav)
+void VulkanBindingGroup::ModifyMember(int index, int arrayElem, const TextureUav *textureUav)
 {
-    auto rawTexUav = static_cast<VulkanTextureUav *>(textureUav);
+    auto rawTexUav = static_cast<const VulkanTextureUav *>(textureUav);
     assert(layout_->_internalIsSlotRWTexture(index));
     const VkDescriptorImageInfo imageInfo = {
         .imageView   = rawTexUav->_internalGetNativeImageView(),
@@ -169,9 +156,9 @@ void VulkanBindingGroup::ModifyMember(int index, int arrayElem, TextureUav *text
     vkUpdateDescriptorSets(device_, 1, &write, 0, nullptr);
 }
 
-void VulkanBindingGroup::ModifyMember(int index, int arrayElem, Sampler *sampler)
+void VulkanBindingGroup::ModifyMember(int index, int arrayElem, const Sampler *sampler)
 {
-    auto rawSampler = static_cast<VulkanSampler *>(sampler);
+    auto rawSampler = static_cast<const VulkanSampler *>(sampler);
     const VkDescriptorImageInfo samplerInfo = {
         .sampler = rawSampler->_internalGetNativeSampler()
     };
@@ -206,9 +193,9 @@ void VulkanBindingGroup::ModifyMember(int index, int arrayElem, const ConstantBu
     vkUpdateDescriptorSets(device_, 1, &write, 0, nullptr);
 }
 
-void VulkanBindingGroup::ModifyMember(int index, int arrayElem, Tlas *tlas)
+void VulkanBindingGroup::ModifyMember(int index, int arrayElem, const Tlas *tlas)
 {
-    VkAccelerationStructureKHR vkTlas = static_cast<VulkanTlas *>(tlas)->_internalGetNativeTlas();
+    VkAccelerationStructureKHR vkTlas = static_cast<const VulkanTlas *>(tlas)->_internalGetNativeTlas();
     const VkWriteDescriptorSetAccelerationStructureKHR tlasWrite =
     {
         .sType                      = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,
@@ -321,23 +308,10 @@ void VulkanBindingGroup::_internalTranslate(
     const VulkanTextureSrv *textureSrv, VkWriteDescriptorSet &write) const
 {
     assert(layout_->_internalIsSlotTexture(index));
-    VkImageLayout imageLayout;
-    if(textureSrv->GetDesc().flags.Contains(TextureViewFlagBit::DepthSrv_StencilAttachment))
-    {
-        imageLayout = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL;
-    }
-    else if(textureSrv->GetDesc().flags.Contains(TextureViewFlagBit::DepthSrv_StencilAttachmentReadOnly))
-    {
-        imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-    }
-    else
-    {
-        imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    }
     auto imageInfo = arena.Create<VkDescriptorImageInfo>();
     *imageInfo = {
         .imageView   = textureSrv->_internalGetNativeImageView(),
-        .imageLayout = imageLayout
+        .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
     };
     write = {
         .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,

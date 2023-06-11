@@ -30,9 +30,9 @@ public:
     void BindPipeline(const Ptr<ComputePipeline>    &pipeline) RTRC_RHI_OVERRIDE;
     void BindPipeline(const Ptr<RayTracingPipeline> &pipeline) RTRC_RHI_OVERRIDE;
     
-    void BindGroupsToGraphicsPipeline  (int startIndex, Span<RC<BindingGroup>> groups) RTRC_RHI_OVERRIDE;
-    void BindGroupsToComputePipeline   (int startIndex, Span<RC<BindingGroup>> groups) RTRC_RHI_OVERRIDE;
-    void BindGroupsToRayTracingPipeline(int startIndex, Span<RC<BindingGroup>> groups) RTRC_RHI_OVERRIDE;
+    void BindGroupsToGraphicsPipeline  (int startIndex, Span<Ptr<BindingGroup>> groups) RTRC_RHI_OVERRIDE;
+    void BindGroupsToComputePipeline   (int startIndex, Span<Ptr<BindingGroup>> groups) RTRC_RHI_OVERRIDE;
+    void BindGroupsToRayTracingPipeline(int startIndex, Span<Ptr<BindingGroup>> groups) RTRC_RHI_OVERRIDE;
 
     void BindGroupToGraphicsPipeline  (int index, const Ptr<BindingGroup> &group) RTRC_RHI_OVERRIDE;
     void BindGroupToComputePipeline   (int index, const Ptr<BindingGroup> &group) RTRC_RHI_OVERRIDE;
@@ -49,12 +49,16 @@ public:
 
     void SetStencilReferenceValue(uint8_t value) RTRC_RHI_OVERRIDE;
 
-    void SetPushConstants(
-        const BindingLayoutPtr &bindingLayout,
-        ShaderStageFlags         stages,
-        uint32_t                offset,
-        uint32_t                size,
-        const void             *values) RTRC_RHI_OVERRIDE;
+    void SetGraphicsPushConstants(
+        uint32_t    rangeIndex,
+        uint32_t    offsetInRange,
+        uint32_t    size,
+        const void *data) RTRC_RHI_OVERRIDE;
+    void SetComputePushConstants(
+        uint32_t    rangeIndex,
+        uint32_t    offsetInRange,
+        uint32_t    size,
+        const void *data) RTRC_RHI_OVERRIDE;
 
     void Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance) RTRC_RHI_OVERRIDE;
     void DrawIndexed(
@@ -83,10 +87,12 @@ public:
         uint32_t mipLevel,
         uint32_t arrayLayer,
         Buffer  *src,
-        size_t   srcOffset) RTRC_RHI_OVERRIDE;
+        size_t   srcOffset,
+        size_t   srcRowBytes) RTRC_RHI_OVERRIDE;
     void CopyColorTexture2DToBuffer(
         Buffer  *dst,
         size_t   dstOffset,
+        size_t   dstRowBytes,
         Texture *src,
         uint32_t mipLevel,
         uint32_t arrayLayer) RTRC_RHI_OVERRIDE;

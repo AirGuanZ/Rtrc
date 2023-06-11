@@ -99,7 +99,7 @@ void Run()
         auto renderTarget = graph->RegisterSwapchainTexture(device->GetSwapchain());
 
         auto quadPass = graph->CreatePass("DrawQuad");
-        quadPass->Use(renderTarget, RG::COLOR_ATTACHMENT);
+        quadPass->Use(renderTarget, RG::ColorAttachment);
         quadPass->SetCallback([&](RG::PassContext &context)
         {
             auto rt = renderTarget->Get(context);
@@ -123,7 +123,10 @@ void Run()
 
         executer.Execute(graph);
 
-        device->Present();
+        if(!device->Present())
+        {
+            window.SetCloseFlag(true);
+        }
     }
     device->EndRenderLoop();
 }

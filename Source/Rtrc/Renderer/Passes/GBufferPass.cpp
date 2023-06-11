@@ -32,10 +32,10 @@ GBufferPass::RenderGraphOutput GBufferPass::RenderGBuffers(
     RenderGraphOutput ret;
     ret.gbuffers = AllocateGBuffers(renderGraph, rtSize);
     ret.gbufferPass = renderGraph.CreatePass("Render GBuffers");
-    ret.gbufferPass->Use(ret.gbuffers.normal, RG::COLOR_ATTACHMENT_WRITEONLY);
-    ret.gbufferPass->Use(ret.gbuffers.albedoMetallic, RG::COLOR_ATTACHMENT_WRITEONLY);
-    ret.gbufferPass->Use(ret.gbuffers.roughness, RG::COLOR_ATTACHMENT_WRITEONLY);
-    ret.gbufferPass->Use(ret.gbuffers.depth, RG::DEPTH_STENCIL_ATTACHMENT);
+    ret.gbufferPass->Use(ret.gbuffers.normal, RG::ColorAttachmentWriteOnly);
+    ret.gbufferPass->Use(ret.gbuffers.albedoMetallic, RG::ColorAttachmentWriteOnly);
+    ret.gbufferPass->Use(ret.gbuffers.roughness, RG::ColorAttachmentWriteOnly);
+    ret.gbufferPass->Use(ret.gbuffers.depth, RG::DepthStencilAttachment);
     ret.gbufferPass->SetCallback([this, gbuffers = ret.gbuffers, &sceneCamera, bindlessTextureGroup](RG::PassContext &context)
     {
         DoRenderGBuffers(context, sceneCamera, bindlessTextureGroup, gbuffers);
@@ -347,7 +347,7 @@ void GBufferPass::DoRenderGBuffers(
                 if(enableInstancing)
                 {
                     const uint32_t perObjectDataOffset = meshGroup.objectDataOffset;
-                    commandBuffer.SetGraphicsPushConstants(perObjectDataOffset);
+                    commandBuffer.SetGraphicsPushConstants(0, perObjectDataOffset);
                     if(meshGroup.meshRenderingData->GetIndexCount() > 0)
                     {
                         commandBuffer.DrawIndexed(
@@ -366,7 +366,7 @@ void GBufferPass::DoRenderGBuffers(
                         for(uint32_t i = 0; i < meshGroup.objectCount; ++i)
                         {
                             const uint32_t perObjectDataOffset = meshGroup.objectDataOffset + i;
-                            commandBuffer.SetGraphicsPushConstants(perObjectDataOffset);
+                            commandBuffer.SetGraphicsPushConstants(0, perObjectDataOffset);
                             commandBuffer.DrawIndexed(
                                 meshGroup.meshRenderingData->GetIndexCount(), 1, 0, 0, 0);
                         }
@@ -376,7 +376,7 @@ void GBufferPass::DoRenderGBuffers(
                         for(uint32_t i = 0; i < meshGroup.objectCount; ++i)
                         {
                             const uint32_t perObjectDataOffset = meshGroup.objectDataOffset + i;
-                            commandBuffer.SetGraphicsPushConstants(perObjectDataOffset);
+                            commandBuffer.SetGraphicsPushConstants(0, perObjectDataOffset);
                             commandBuffer.Draw(
                                 meshGroup.meshRenderingData->GetVertexCount(), 1, 0, 0);
                         }

@@ -105,11 +105,11 @@ private:
     RC<BindingGroupLayout> bindingGroupLayout_;
 
     // TODO: thread-local allocator
-    RC<SharedData>             sharedData_;
-    std::vector<RC<Resource>>  boundResources_;
-    RC<BindingGroup>           bindingGroup_;
-    uint32_t                   currentArraySize_;
-    uint32_t                   maxArraySize_;
+    RC<SharedData>            sharedData_;
+    std::vector<RC<Resource>> boundResources_;
+    RC<BindingGroup>          bindingGroup_;
+    uint32_t                  currentArraySize_;
+    uint32_t                  maxArraySize_;
 };
 
 template<BindlessResourceType ResourceType>

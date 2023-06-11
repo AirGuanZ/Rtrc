@@ -8,7 +8,7 @@ RTRC_RHI_IMPLEMENT(DirectX12BufferSrv, BufferSrv)
 {
 public:
 
-    DirectX12BufferSrv(const DirectX12Buffer * buffer, const BufferSrvDesc & desc, D3D12_CPU_DESCRIPTOR_HANDLE handle);
+    DirectX12BufferSrv(const DirectX12Buffer *buffer, const BufferSrvDesc &desc, D3D12_CPU_DESCRIPTOR_HANDLE handle);
 
     const BufferSrvDesc &GetDesc() const RTRC_RHI_OVERRIDE;
 

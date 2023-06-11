@@ -3,7 +3,7 @@ set_project("Rtrc")
 option("vulkan_backend")
     set_default(true)
 option("directx12_backend")
-    set_default(false)
+    set_default(true)
 option("static_rhi")
     set_default(false)
 option_end()
@@ -48,7 +48,7 @@ includes("External/glfw")
 add_requires("glfw", { configs = { glfw_include = "vulkan" } })
 
 includes("External/mimalloc")
-add_requires("mimalloc")
+add_requires("mimalloc", { configs = { shared = false } })
 
 includes("External/tbb")
 add_requires("mytbb", { configs = { debug = is_mode("debug") } })
@@ -69,6 +69,10 @@ end
 
 if has_config("directx12_backend") then
     add_requires("d3d12-memory-allocator v2.0.1")
+    includes("External/microsoft.direct3d.d3d12.1.610.3")
+	includes("External/winpixeventruntime.1.0.230302001")
+    add_requires("d3d12_1610")
+	add_requires("winpix_102")
 end
 
 includes("External/tinyobjloader")
@@ -88,6 +92,11 @@ target("Rtrc")
     add_files("Source/Rtrc/**.cpp|Graphics/RHI/**.cpp", "Source/Rtrc/Graphics/RHI/*.cpp")
     -- Source group
     add_filegroups("Rtrc", { rootdir = "Source/Rtrc" })
+    -- Dependencies
+    add_packages("mimalloc", "spdlog", "fmt", "mytbb", "abseil", { public = true })
+    add_packages("mydxc", "glfw", "stb", "tinyexr")
+    add_deps("tinyobjloader", "sigslot", "imgui", "avir", "cy")
+	add_includedirs("External/half/include", { public = true })
     -- Vulkan RHI
     add_options("vulkan_backend")
     if has_config("vulkan_backend") then
@@ -104,17 +113,16 @@ target("Rtrc")
         add_headerfiles("Source/Rtrc/Graphics/RHI/DirectX12/**.h")
         add_files("Source/Rtrc/Graphics/RHI/DirectX12/**.cpp", { unity_group = "DirectX12RHI" })
         add_defines("RTRC_RHI_DIRECTX12=1", { public = true })
-        add_packages("d3d12-memory-allocator")
+        add_syslinks("d3d12", "dxgi", "dxguid")
+        add_packages("d3d12-memory-allocator", "d3d12_1610", "winpix_102")
     end
+    -- RHI Helper
+    add_headerfiles("Source/Rtrc/Graphics/RHI/Helper/**.h")
+    add_files("Source/Rtrc/Graphics/RHI/Helper/**.cpp", { unity_group = "DirectX12RHI" })
     -- Static RHI
     if has_config("static_rhi") then
         add_defines("RTRC_STATIC_RHI=1", { public = true })
     end
-    -- Dependencies
-    add_packages("mydxc", "glfw", "stb", "tinyexr")
-    add_packages("spdlog", "fmt", "mimalloc", "mytbb", "abseil", { public = true })
-    add_deps("tinyobjloader", "sigslot", "imgui", "avir", "cy")
-	add_includedirs("External/half/include", { public = true })
 target_end()
 
 -- Standalone renderer

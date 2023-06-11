@@ -4,6 +4,8 @@
 #include <mutex>
 #include <limits>
 
+#include <tbb/concurrent_vector.h>
+
 #include <Rtrc/Utility/TemplateStringParameter.h>
 
 RTRC_BEGIN
@@ -14,6 +16,8 @@ class PooledString
 public:
 
     static constexpr Index INVALID_INDEX = (std::numeric_limits<Index>::max)();
+
+    static PooledString FromIndex(Index index);
 
     PooledString();
     PooledString(std::string_view str);
@@ -49,7 +53,7 @@ class StringPool
         {
             return it->second;
         }
-        const Index newIndex = static_cast<Index>(stringToIndex_.size());
+        const Index newIndex = static_cast<Index>(indexToString_.size());
         stringToIndex_.insert({ std::string(str), newIndex });
         indexToString_.push_back(std::string(str));
         return newIndex;
@@ -61,8 +65,9 @@ class StringPool
     }
 
     std::map<std::string, Index, std::less<>> stringToIndex_;
-    std::vector<std::string> indexToString_;
     std::mutex mutex_;
+
+    tbb::concurrent_vector<std::string> indexToString_;
 };
 
 struct GeneralPooledStringTag { };
@@ -81,6 +86,14 @@ const PooledStringInstance &GetPooledStringInstance()
 #else
 #define RTRC_POOLED_STRING(TYPE, X) (::Rtrc::GetPooledStringInstance<TYPE, ::Rtrc::TemplateStringParameter(#X)>())
 #endif
+
+template<typename Tag, typename Index>
+PooledString<Tag, Index> PooledString<Tag, Index>::FromIndex(Index index)
+{
+    PooledString ret;
+    ret.index_ = index;
+    return ret;
+}
 
 template <typename Tag, typename Index>
 PooledString<Tag, Index>::PooledString()

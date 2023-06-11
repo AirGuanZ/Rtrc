@@ -16,20 +16,20 @@ rtrc_group(Pass)
     rtrc_define(StructuredBuffer<PerObjectData>, PerObjectDataBuffer)
 };
 
-rtrc_push_constant(All)
+rtrc_push_constant(PerObject, All)
 {
-    uint perObjectDataOffset;
+    uint dataOffset;
 };
 
 #if ENABLE_INSTANCE
 #define DefineInstanceID()            uint instanceID : SV_InstanceID
 #define TransferInstanceID(IN, OUT)   OUT.instanceID = IN.instanceID
-#define GetInstancedPerObjectData(IN) (PerObjectDataBuffer[PushConstant.perObjectDataOffset + IN.instanceID])
+#define GetInstancedPerObjectData(IN) (PerObjectDataBuffer[rtrc_get_push_constant(PerObject, dataOffset) + IN.instanceID])
 #else
 #define DefineInstanceID()
 #define TransferInstanceID(IN, OUT)
-#define GetInstancedPerObjectData(IN) (PerObjectDataBuffer[PushConstant.perObjectDataOffset])
-#define GetPerObjectData()            (PerObjectDataBuffer[PushConstant.perObjectDataOffset])
+#define GetInstancedPerObjectData(IN) (PerObjectDataBuffer[rtrc_get_push_constant(PerObject, dataOffset)])
+#define GetPerObjectData()            (PerObjectDataBuffer[rtrc_get_push_constant(PerObject, dataOffset)])
 #endif
 
 struct GBufferPixelOutput

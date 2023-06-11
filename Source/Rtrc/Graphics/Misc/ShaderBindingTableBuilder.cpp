@@ -90,7 +90,7 @@ ShaderBindingTable ShaderBindingTableBuilder::CreateShaderBindingTable(bool useC
     {
         .size           = bufferSize,
         .usage          = RHI::BufferUsage::ShaderBindingTable | RHI::BufferUsage::DeviceAddress,
-        .hostAccessType = useCopyCommand ? RHI::BufferHostAccessType::None : RHI::BufferHostAccessType::SequentialWrite
+        .hostAccessType = useCopyCommand ? RHI::BufferHostAccessType::None : RHI::BufferHostAccessType::Upload
     }, storage.data());
 
     ShaderBindingTable ret;

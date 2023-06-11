@@ -16,6 +16,8 @@ public:
 
     VkPipelineLayout _internalGetNativeLayout() const;
 
+    const BindingLayoutDesc &_internalGetDesc() const { return desc_; }
+
 private:
 
     BindingLayoutDesc desc_;

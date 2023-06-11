@@ -34,12 +34,19 @@ class Device : public Uncopyable
 {
 public:
 
+#if RTRC_RHI_DIRECTX12
+    static constexpr RHI::BackendType DefaultBackendType = RHI::BackendType::DirectX12;
+#else
+    static constexpr RHI::BackendType DefaultBackendType = RHI::BackendType::Vulkan;
+#endif
+
     using Flags = DeviceDetail::Flags;
     using enum DeviceDetail::FlagBit;
 
     // Creation & destructor
 
     static Box<Device> CreateComputeDevice(RHI::DevicePtr rhiDevice);
+    static Box<Device> CreateComputeDevice(RHI::BackendType rhiType, bool debugMode = RTRC_DEBUG);
     static Box<Device> CreateComputeDevice(bool debugMode = RTRC_DEBUG);
 
     static Box<Device> CreateGraphicsDevice(
@@ -49,6 +56,14 @@ public:
         int            swapchainImageCount = 3,
         bool           vsync               = false,
         Flags          flags               = {});
+    static Box<Device> CreateGraphicsDevice(
+        Window          &window,
+        RHI::BackendType rhiType,
+        RHI::Format      swapchainFormat     = RHI::Format::B8G8R8A8_UNorm,
+        int              swapchainImageCount = 3,
+        bool             debugMode           = RTRC_DEBUG,
+        bool             vsync               = false,
+        Flags            flags               = {});
     static Box<Device> CreateGraphicsDevice(
         Window     &window,
         RHI::Format swapchainFormat     = RHI::Format::B8G8R8A8_UNorm,
@@ -61,11 +76,15 @@ public:
 
     // Query
 
+    RHI::BackendType GetBackendType() const { return GetRawDevice()->GetBackendType(); }
+
     bool IsRayTracingEnabled() const { return flags_.Contains(EnableRayTracing); }
 
     const RHI::ShaderGroupRecordRequirements &GetShaderGroupRecordRequirements() const;
 
     size_t GetAccelerationStructureScratchBufferAlignment() const;
+
+    size_t GetTextureBufferCopyRowPitchAlignment(RHI::Format format) const;
 
     // Context objects
 
@@ -299,6 +318,11 @@ inline const RHI::ShaderGroupRecordRequirements &Device::GetShaderGroupRecordReq
 inline size_t Device::GetAccelerationStructureScratchBufferAlignment() const
 {
     return GetRawDevice()->GetAccelerationStructureScratchBufferAlignment();
+}
+
+inline size_t Device::GetTextureBufferCopyRowPitchAlignment(RHI::Format format) const
+{
+    return GetRawDevice()->GetTextureBufferCopyRowPitchAlignment(format);
 }
 
 inline void Device::RecreateSwapchain()

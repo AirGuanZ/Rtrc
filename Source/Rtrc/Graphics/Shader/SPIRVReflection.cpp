@@ -1,6 +1,6 @@
 #include <spirv_reflect.h>
 
-#include <Rtrc/Graphics/Shader/ShaderReflection.h>
+#include <Rtrc/Graphics/Shader/SPIRVReflection.h>
 #include <Rtrc/Utility/ScopeGuard.h>
 #include <Rtrc/Utility/String.h>
 
@@ -51,13 +51,42 @@ namespace ShaderReflDetail
         }
     }
 
-    std::string ParseInputVarName(const std::string &inputName)
+    std::pair<std::string_view, int> ParseInputVarSemanticAndIndex(std::string_view inputName)
     {
-        if(StartsWith(inputName, "in.var."))
+        if(!StartsWith(inputName, "in.var."))
         {
-            return inputName.substr(7);
+            return { inputName, 0 };
         }
-        return inputName;
+
+        inputName = inputName.substr(7);
+        if(inputName.empty())
+        {
+            return { inputName, 0 };
+        }
+
+        // Find semantic string
+
+        size_t semanticLastPos = inputName.size() - 1;
+        while(semanticLastPos > 0 && std::isdigit(inputName[semanticLastPos]))
+        {
+            --semanticLastPos;
+        }
+        if(!semanticLastPos && std::isdigit(inputName[0]))
+        {
+            throw Exception(fmt::format("Invalid semantic name: {}", inputName));
+        }
+        const std::string_view semantic = inputName.substr(0, semanticLastPos + 1);
+
+        // Parse semantic index
+
+        int index = 0;
+        if(semanticLastPos < inputName.size() - 1)
+        {
+            const std::string_view indexStr = inputName.substr(semanticLastPos + 1);
+            index = std::stoi(std::string(indexStr));
+        }
+
+        return { semantic, index };
     }
 
     void GetInputVariables(
@@ -79,8 +108,9 @@ namespace ShaderReflDetail
         {
             auto &in = *inputVars[i];
             auto &out = result.emplace_back();
-            out.semantic = VertexSemantic(ParseInputVarName(in.name ? in.name : ""));
-            out.location = static_cast<int>(in.location);
+            auto [semanticName, semanticIndex] = ParseInputVarSemanticAndIndex(in.name ? in.name : "");
+            out.semantic  = VertexSemantic(semanticName, semanticIndex);
+            out.location  = static_cast<int>(in.location);
             out.isBuiltin = (in.decoration_flags & SPV_REFLECT_DECORATION_BUILT_IN) != 0;
             switch(in.format)
             {
@@ -100,85 +130,7 @@ namespace ShaderReflDetail
             }
         }
     }
-
-    Box<ShaderStruct> GetShaderStruct(std::string name, uint32_t memberCount, const SpvReflectTypeDescription *members)
-    {
-        auto ret = MakeBox<ShaderStruct>();
-        ret->typeName = std::move(name);
-
-        for(uint32_t i = 0; i < memberCount; ++i)
-        {
-            const SpvReflectTypeDescription *memberDesc = &members[i];
-            auto &newMember = ret->members.emplace_back();
-
-            newMember.name = memberDesc->struct_member_name;
-            newMember.pooledName = GeneralPooledString(newMember.name);
-
-            if(memberDesc->type_flags & SPV_REFLECT_TYPE_FLAG_ARRAY)
-            {
-                assert(memberDesc->op == SpvOpTypeArray);
-                for(uint32_t j = 0; j < memberDesc->traits.array.dims_count; ++j)
-                {
-                    newMember.arraySizes.PushBack(static_cast<int>(memberDesc->traits.array.dims[j]));
-                }
-            }
-
-            if(memberDesc->type_flags & SPV_REFLECT_TYPE_FLAG_FLOAT)
-            {
-                newMember.elementType = ShaderStruct::Member::ElementType::Float;
-            }
-            else if(memberDesc->type_flags & SPV_REFLECT_TYPE_FLAG_INT)
-            {
-                newMember.elementType = ShaderStruct::Member::ElementType::Int;
-            }
-            else if(memberDesc->type_flags & SPV_REFLECT_TYPE_FLAG_STRUCT)
-            {
-                newMember.elementType = ShaderStruct::Member::ElementType::Struct;
-                newMember.structInfo = GetShaderStruct(
-                    memberDesc->type_name, memberDesc->member_count, memberDesc->members);
-            }
-            else
-            {
-                throw Exception("Unsupported basic element type in constant buffer struct");
-            }
-
-            if(memberDesc->type_flags & SPV_REFLECT_TYPE_FLAG_VECTOR)
-            {
-                newMember.matrixType = ShaderStruct::Member::MatrixType::Vector;
-                newMember.rowSize = static_cast<int>(memberDesc->traits.numeric.vector.component_count);
-            }
-            else if(memberDesc->type_flags & SPV_REFLECT_TYPE_FLAG_MATRIX)
-            {
-                newMember.matrixType = ShaderStruct::Member::MatrixType::Matrix;
-                newMember.rowSize = static_cast<int>(memberDesc->traits.numeric.matrix.row_count);
-                newMember.colSize = static_cast<int>(memberDesc->traits.numeric.matrix.column_count);
-            }
-        }
-
-        return ret;
-    }
-
-    void ReflectConstantBuffers(const SpvReflectShaderModule &shaderModule, std::vector<ShaderConstantBuffer> &result)
-    {
-        for(uint32_t i = 0; i < shaderModule.descriptor_binding_count; ++i)
-        {
-            const SpvReflectDescriptorBinding &binding = shaderModule.descriptor_bindings[i];
-            if(binding.descriptor_type != SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
-            {
-                continue;
-            }
-            ShaderConstantBuffer cbuffer;
-            cbuffer.name = binding.name;
-            cbuffer.group = static_cast<int>(binding.set);
-            cbuffer.indexInGroup = static_cast<int>(binding.binding);
-            cbuffer.typeInfo = GetShaderStruct(
-                binding.type_description->type_name,
-                binding.type_description->member_count,
-                binding.type_description->members);
-            result.push_back(std::move(cbuffer));
-        }
-    }
-
+    
 } // namespace ShaderReflDetail
 
 SPIRVReflection::SPIRVReflection(Span<unsigned char> code, std::string entryPoint)
@@ -210,13 +162,6 @@ std::vector<ShaderIOVar> SPIRVReflection::GetInputVariables() const
 {
     std::vector<ShaderIOVar> result;
     ShaderReflDetail::GetInputVariables(*shaderModule_, entry_.c_str(), result);
-    return result;
-}
-
-std::vector<ShaderConstantBuffer> SPIRVReflection::GetConstantBuffers() const
-{
-    std::vector<ShaderConstantBuffer> result;
-    ShaderReflDetail::ReflectConstantBuffers(*shaderModule_, result);
     return result;
 }
 

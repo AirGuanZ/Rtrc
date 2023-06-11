@@ -4,15 +4,15 @@
 RTRC_BEGIN
 
 const VertexBufferLayout *Mesh::BuiltinVertexBufferLayout::Default = RTRC_VERTEX_BUFFER_LAYOUT(
-    Attribute("POSITION", Float3),
-    Attribute("NORMAL",   Float3),
-    Attribute("TEXCOORD", Float2),
-    Attribute("TANGENT",  Float3));
+    Attribute("POSITION", 0, Float3),
+    Attribute("NORMAL",   0, Float3),
+    Attribute("TEXCOORD", 0, Float2),
+    Attribute("TANGENT",  0, Float3));
 
 const VertexBufferLayout *Mesh::BuiltinVertexBufferLayout::Simplified = RTRC_VERTEX_BUFFER_LAYOUT(
-    Attribute("POSITION", Float3),
-    Attribute("NORMAL",   Float3),
-    Attribute("TEXCOORD", Float2));
+    Attribute("POSITION", 0, Float3),
+    Attribute("NORMAL",   0, Float3),
+    Attribute("TEXCOORD", 0, Float2));
 
 void Mesh::SharedRenderingData::BindVertexAndIndexBuffers(CommandBuffer &commandBuffer) const
 {

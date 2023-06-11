@@ -8,6 +8,7 @@ DynamicBufferManager::DynamicBufferManager(RHI::DevicePtr device, DeviceSynchron
 {
     chunkSize = (std::max)(MIN_SLAB_SIZE, chunkSize);
     cbufferAlignment_ = device_->GetConstantBufferAlignment();
+    cbufferSizeAlignment_ = device_->GetConstantBufferSizeAlignment();
     sharedData_ = MakeRC<SharedData>();
 
     int maxSlabIndex = 0;
@@ -33,7 +34,7 @@ void DynamicBufferManager::_internalSetData(DynamicBuffer &buffer, const void *d
     _internalRelease(buffer);
 
     // Process large buffer
-
+    
     if(size > chunkSize_)
     {
         buffer.buffer_ = MakeRC<Buffer>();
@@ -48,7 +49,7 @@ void DynamicBufferManager::_internalSetData(DynamicBuffer &buffer, const void *d
             .usage = RHI::BufferUsage::VertexBuffer |
                      RHI::BufferUsage::IndexBuffer |
                      RHI::BufferUsage::ShaderConstantBuffer,
-            .hostAccessType = RHI::BufferHostAccessType::SequentialWrite
+            .hostAccessType = RHI::BufferHostAccessType::Upload
         });
         bufferData.size_ = size;
         buffer.buffer_->Upload(data, 0, size);
@@ -60,7 +61,8 @@ void DynamicBufferManager::_internalSetData(DynamicBuffer &buffer, const void *d
     size_t allocatedSize = (std::max)(size, MIN_SLAB_SIZE);
     if(isConstantBuffer)
     {
-        allocatedSize = (std::max)(allocatedSize, cbufferAlignment_);
+        allocatedSize = UpAlignTo(allocatedSize, cbufferAlignment_);
+        allocatedSize = UpAlignTo(allocatedSize, cbufferSizeAlignment_);
     }
 
     // Allocate
@@ -93,10 +95,10 @@ void DynamicBufferManager::_internalSetData(DynamicBuffer &buffer, const void *d
                 .usage = RHI::BufferUsage::VertexBuffer |
                          RHI::BufferUsage::IndexBuffer |
                          RHI::BufferUsage::ShaderConstantBuffer,
-                .hostAccessType = RHI::BufferHostAccessType::SequentialWrite
+                .hostAccessType = RHI::BufferHostAccessType::Upload
             });
             newChunkBufferData.size_ = chunkSize_;
-            newChunk.mappedBuffer = static_cast<unsigned char*>(newChunkBufferData.rhiBuffer_->Map(0, chunkSize_));
+            newChunk.mappedBuffer = static_cast<unsigned char*>(newChunkBufferData.rhiBuffer_->Map(0, chunkSize_, {}));
 
             freeBufferRecord.chunkIndex = newChunkIndex;
             freeBufferRecord.offsetInChunk = 0;

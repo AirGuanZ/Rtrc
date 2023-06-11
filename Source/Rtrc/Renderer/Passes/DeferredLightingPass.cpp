@@ -8,7 +8,7 @@ RTRC_RENDERER_BEGIN
 namespace DeferredLightingPassDetail
 {
     
-    rtrc_group(BindingGroup_DeferredLightingPass, FS)
+    rtrc_group(BindingGroup_DeferredLightingPass, CS)
     {
         rtrc_inline(GBufferBindings_All, gbuffers);
 
@@ -25,6 +25,10 @@ namespace DeferredLightingPassDetail
         rtrc_define(Texture2D, ShadowMask);
         rtrc_uniform(uint,     shadowMaskLightType); // 0: none; 1: point; 2: directional
                                                      // If >= 1, should be applied to the first of the specified type
+
+        rtrc_define(RWTexture2D, Output);
+        rtrc_uniform(uint2,  resolution);
+        rtrc_uniform(float2, rcpResolution);
     };
 
 } // namespace DeferredLightingPassDetail
@@ -33,29 +37,14 @@ DeferredLightingPass::DeferredLightingPass(
     ObserverPtr<Device> device, ObserverPtr<const BuiltinResourceManager> builtinResources)
     : device_(device)
     , builtinResources_(builtinResources)
-    , pipelineCache_(device)
     , lightBufferPool_(device, RHI::BufferUsage::ShaderStructuredBuffer)
 {
     perPassBindingGroupLayout_ =
         device_->CreateBindingGroupLayout<DeferredLightingPassDetail::BindingGroup_DeferredLightingPass>();
 
     auto lightingMaterial = builtinResources_->GetBuiltinMaterial(BuiltinMaterial::DeferredLighting);
-    regularShaderTemplate_ = lightingMaterial->GetPassByIndex(0)->GetShaderTemplate();
-    skyShaderTemplate_     = lightingMaterial->GetPassByIndex(1)->GetShaderTemplate();
-
-    pipelineTemplate_ = GraphicsPipeline::Desc
-    {
-        .meshLayout = GetFullscreenPrimitiveMeshLayoutWithWorldRay(),
-        .enableStencilTest = true,
-        .stencilReadMask = 0xff,
-        .frontStencil = GraphicsPipeline::StencilOps
-        {
-            .depthFailOp = RHI::StencilOp::Keep,
-            .failOp      = RHI::StencilOp::Keep,
-            .passOp      = RHI::StencilOp::Keep,
-            .compareOp   = RHI::CompareOp::NotEqual // Shaded pixel has non-zero stencil value
-        }
-    };
+    regularShader_ = lightingMaterial->GetPassByIndex(0)->GetShader();
+    skyShader_ = lightingMaterial->GetPassByIndex(1)->GetShader();
 }
 
 DeferredLightingPass::RenderGraphOutput DeferredLightingPass::RenderDeferredLighting(
@@ -68,16 +57,16 @@ DeferredLightingPass::RenderGraphOutput DeferredLightingPass::RenderDeferredLigh
 
     RenderGraphOutput ret;
     ret.lightingPass = renderGraph.CreatePass("DeferredLighting");
-    DeclareGBufferUses<true, DeferredLightingPassDetail::BindingGroup_DeferredLightingPass>(
-        ret.lightingPass, gbuffers, RHI::PipelineStage::FragmentShader);
-    ret.lightingPass->Use(renderTarget, RG::COLOR_ATTACHMENT_WRITEONLY);
+    DeclareGBufferUses<DeferredLightingPassDetail::BindingGroup_DeferredLightingPass>(
+        ret.lightingPass, gbuffers, RHI::PipelineStage::ComputeShader);
+    ret.lightingPass->Use(renderTarget, RG::CS_RWTexture_WriteOnly);
     if(rgScene.skyLut)
     {
-        ret.lightingPass->Use(rgScene.skyLut, RG::PIXEL_SHADER_TEXTURE);
+        ret.lightingPass->Use(rgScene.skyLut, RG::PS_Texture);
     }
     if(rgScene.shadowMask)
     {
-        ret.lightingPass->Use(rgScene.shadowMask, RG::PIXEL_SHADER_TEXTURE);
+        ret.lightingPass->Use(rgScene.shadowMask, RG::PS_Texture);
     }
 
     ret.lightingPass->SetCallback(
@@ -163,7 +152,7 @@ void DeferredLightingPass::DoDeferredLighting(
     // Per-pass binding group
 
     BindingGroup_DeferredLightingPass passData;
-    FillBindingGroupGBuffers<true>(passData, rgScene.gbuffers, context);
+    FillBindingGroupGBuffers(passData, rgScene.gbuffers, context);
     passData.camera                 = sceneCamera.GetCameraCBuffer();
     passData.pointLightBuffer       = pointLightBuffer->GetStructuredSrv(sizeof(PointLightShadingData));
     passData.pointLightCount        = static_cast<uint32_t>(pointLightData.size());
@@ -178,86 +167,27 @@ void DeferredLightingPass::DoDeferredLighting(
     {
         passData.ShadowMask = builtinResources_->GetBuiltinTexture(BuiltinTexture::White2D);
     }
-
-    if(rgScene.skyLut)
-    {
-        passData.SkyLut = rgScene.skyLut->Get(context);
-    }
-    else
-    {
-        passData.SkyLut = builtinResources_->GetBuiltinTexture(BuiltinTexture::Black2D);
-    }
+    
+    passData.SkyLut = rgScene.skyLut ? rgScene.skyLut->Get(context)
+                                     : builtinResources_->GetBuiltinTexture(BuiltinTexture::Black2D);
+    passData.Output = rgRenderTarget->Get(context);
+    passData.resolution = rgRenderTarget->GetSize();
+    passData.rcpResolution.x = 1.0f / passData.resolution.x;
+    passData.rcpResolution.y = 1.0f / passData.resolution.y;
 
     auto passBindingGroup = device_->CreateBindingGroup(passData, perPassBindingGroupLayout_);
+
+    // Render
     
-    // Render Pass
-
-    RC<Texture> renderTarget = rgRenderTarget->Get(context);
-    RC<Texture> gbufferDepth = rgScene.gbuffers.depth->Get(context);
-
-    CommandBuffer &commandBuffer = context.GetCommandBuffer();
-    commandBuffer.BeginRenderPass(
-        ColorAttachment
-        {
-            .renderTargetView = renderTarget->CreateRtv(),
-            .loadOp           = AttachmentLoadOp::DontCare,
-            .storeOp          = AttachmentStoreOp::Store
-        },
-        DepthStencilAttachment
-        {
-            .depthStencilView = gbufferDepth->CreateDsv(
-                                    RHI::TextureViewFlagBit::DepthSrv_StencilAttachmentReadOnly),
-            .loadOp           = AttachmentLoadOp::Load,
-            .storeOp          = AttachmentStoreOp::Store
-        });
-    RTRC_SCOPE_EXIT{ commandBuffer.EndRenderPass(); };
-
-    // Mesh
-
-    const Mesh mesh = GetFullscreenTriangle(*device_, sceneCamera.GetCamera());
-    BindMesh(commandBuffer, mesh);
-
     for(const LightingPass lightingPass : { LightingPass::Regular, LightingPass::Sky })
     {
-        // Pipeline
+        auto shader = lightingPass == LightingPass::Regular ? regularShader_ : skyShader_;
 
-        GraphicsPipeline::Desc pipelineDesc = pipelineTemplate_;
-        RC<Shader> shader;
-        if(lightingPass == LightingPass::Regular)
-        {
-            shader = regularShaderTemplate_->GetShader();
-        }
-        else
-        {
-            assert(lightingPass == LightingPass::Sky);
-            shader = skyShaderTemplate_->GetShader();
-            pipelineDesc.frontStencil.compareOp = RHI::CompareOp::Equal;
-        }
-
-        regularShaderTemplate_->GetShader();
-        pipelineDesc.shader = shader;
-        pipelineDesc.colorAttachmentFormats = { renderTarget->GetFormat() };
-        pipelineDesc.depthStencilFormat = rgScene.gbuffers.depth->GetFormat();
-
-        RC<GraphicsPipeline> pipeline = pipelineCache_.GetGraphicsPipeline(pipelineDesc);
-        commandBuffer.BindGraphicsPipeline(pipeline);
-
-        // Dynamic states
-
-        commandBuffer.SetStencilReferenceValue(std::to_underlying(StencilBit::None));
-        commandBuffer.SetViewports(renderTarget->GetViewport());
-        commandBuffer.SetScissors(renderTarget->GetScissor());
-
-        commandBuffer.BindGraphicsGroup(
-            shader->GetBuiltinBindingGroupIndex(ShaderBindingLayoutInfo::BuiltinBindingGroup::Pass),
-            passBindingGroup);
-
-        // Render
-
-        commandBuffer.Draw(mesh.GetVertexCount(), 1, 0, 0);
+        CommandBuffer &commandBuffer = context.GetCommandBuffer();
+        commandBuffer.BindComputePipeline(shader->GetComputePipeline());
+        commandBuffer.BindComputeGroup(0, passBindingGroup);
+        commandBuffer.DispatchWithThreadCount(passData.resolution.x, passData.resolution.y, 1);
     }
-
-    pipelineCache_.CommitChanges();
 }
 
 RTRC_RENDERER_END

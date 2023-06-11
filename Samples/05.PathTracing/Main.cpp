@@ -60,14 +60,14 @@ Object LoadObject(Device &device, const std::string &filename)
     {
         .size           = sizeof(Vector3f) * meshData.positionData.size(),
         .usage          = RHI::BufferUsage::AccelerationStructureBuildInput | RHI::BufferUsage::DeviceAddress,
-        .hostAccessType = RHI::BufferHostAccessType::SequentialWrite
+        .hostAccessType = RHI::BufferHostAccessType::Upload
     }, meshData.positionData.data());
     
     auto indexBuffer = device.CreateAndUploadBuffer(RHI::BufferDesc
     {
         .size           = sizeof(uint32_t) * meshData.indexData.size(),
         .usage          = RHI::BufferUsage::AccelerationStructureBuildInput | RHI::BufferUsage::DeviceAddress,
-        .hostAccessType = RHI::BufferHostAccessType::SequentialWrite
+        .hostAccessType = RHI::BufferHostAccessType::Upload
     }, meshData.indexData.data());
 
     Object ret;
@@ -175,7 +175,7 @@ void Run()
     {
         .size           = sizeof(RHI::RayTracingInstanceData) * instanceData.size(),
         .usage          = RHI::BufferUsage::AccelerationStructureBuildInput | RHI::BufferUsage::DeviceAddress,
-        .hostAccessType = RHI::BufferHostAccessType::SequentialWrite
+        .hostAccessType = RHI::BufferHostAccessType::Upload
     }, instanceData.data());
 
     auto tlas = device->CreateTlas();
@@ -299,8 +299,8 @@ void Run()
             rgAccumulateTexture = graph->RegisterTexture(accumulateTexture);
             rgRngTexture = graph->RegisterTexture(rngTexture);
 
-            initializePass->Use(rgAccumulateTexture, RG::CLEAR_DST);
-            initializePass->Use(rgRngTexture, RG::COMPUTE_SHADER_RWTEXTURE_WRITEONLY);
+            initializePass->Use(rgAccumulateTexture, RG::ClearDst);
+            initializePass->Use(rgRngTexture, RG::CS_RWTexture_WriteOnly);
             initializePass->SetCallback(
                 [rgAccumulateTexture, rgRngTexture, &initRngPipeline, &device]
                 (RG::PassContext &context)
@@ -325,9 +325,9 @@ void Run()
         }
 
         auto ptPass = graph->CreatePass("Trace");
-        ptPass->Use(rgSwapchain,         RG::COMPUTE_SHADER_RWTEXTURE_WRITEONLY);
-        ptPass->Use(rgAccumulateTexture, RG::COMPUTE_SHADER_RWTEXTURE);
-        ptPass->Use(rgRngTexture,        RG::COMPUTE_SHADER_RWTEXTURE);
+        ptPass->Use(rgSwapchain,         RG::CS_RWTexture_WriteOnly);
+        ptPass->Use(rgAccumulateTexture, RG::CS_RWTexture);
+        ptPass->Use(rgRngTexture,        RG::CS_RWTexture);
         ptPass->SetCallback([&](RG::PassContext &context)
         {
             TracePass bindingGroupData;
