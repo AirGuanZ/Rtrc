@@ -61,18 +61,7 @@ public:
     Ptr<Texture> CreateTexture(const TextureDesc &desc) RTRC_RHI_OVERRIDE;
     Ptr<Buffer>  CreateBuffer(const BufferDesc &desc) RTRC_RHI_OVERRIDE;
     Ptr<Sampler> CreateSampler(const SamplerDesc &desc) RTRC_RHI_OVERRIDE;
-
-    Ptr<MemoryPropertyRequirements> GetMemoryRequirements(
-        const BufferDesc &desc, size_t *size, size_t *alignment) const RTRC_RHI_OVERRIDE;
-    Ptr<MemoryPropertyRequirements> GetMemoryRequirements(
-        const TextureDesc &desc, size_t *size, size_t *alignment) const RTRC_RHI_OVERRIDE;
-    Ptr<MemoryBlock> CreateMemoryBlock(const MemoryBlockDesc &desc) RTRC_RHI_OVERRIDE;
-
-    Ptr<Texture> CreatePlacedTexture(
-        const TextureDesc &desc, const Ptr<MemoryBlock> &memoryBlock, size_t offsetInMemoryBlock) RTRC_RHI_OVERRIDE;
-    Ptr<Buffer> CreatePlacedBuffer(
-        const BufferDesc &desc, const Ptr<MemoryBlock> &memoryBlock, size_t offsetInMemoryBlock) RTRC_RHI_OVERRIDE;
-
+    
     size_t GetConstantBufferAlignment() const RTRC_RHI_OVERRIDE;
     size_t GetConstantBufferSizeAlignment() const RTRC_RHI_OVERRIDE;
     size_t GetAccelerationStructureScratchBufferAlignment() const RTRC_RHI_OVERRIDE;

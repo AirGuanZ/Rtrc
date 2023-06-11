@@ -27,7 +27,6 @@
 #include <Rtrc/Graphics/RHI/Vulkan/RayTracing/TlasBuildInfo.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Buffer.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferView.h>
-#include <Rtrc/Graphics/RHI/Vulkan/Resource/MemoryBlock.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Sampler.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Texture.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/TextureView.h>

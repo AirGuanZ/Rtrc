@@ -22,7 +22,6 @@
 #include <Rtrc/Graphics/RHI/Vulkan/RayTracing/TlasPrebuildInfo.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Buffer.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/BufferView.h>
-#include <Rtrc/Graphics/RHI/Vulkan/Resource/MemoryBlock.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Sampler.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Texture.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/TextureView.h>
@@ -1130,110 +1129,6 @@ Ptr<Sampler> VulkanDevice::CreateSampler(const SamplerDesc &desc)
     RTRC_SCOPE_FAIL{ vkDestroySampler(device_, sampler, RTRC_VK_ALLOC); };
 
     return MakePtr<VulkanSampler>(desc, this, sampler);
-}
-
-Ptr<MemoryPropertyRequirements> VulkanDevice::GetMemoryRequirements(
-    const TextureDesc &desc, size_t *size, size_t *alignment) const
-{
-    const auto imageCreateInfo = VkDeviceDetail::TranslateImageCreateInfo(desc, queueFamilies_);
-    const VkDeviceImageMemoryRequirements queryInfo = {
-        .sType = VK_STRUCTURE_TYPE_DEVICE_IMAGE_MEMORY_REQUIREMENTS,
-        .pCreateInfo = &imageCreateInfo.createInfo,
-    };
-
-    VkMemoryRequirements2 requirements = { .sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2 };
-    vkGetDeviceImageMemoryRequirements(device_, &queryInfo, &requirements);
-
-    if(size)
-    {
-        *size = requirements.memoryRequirements.size;
-    }
-    if(alignment)
-    {
-        *alignment = requirements.memoryRequirements.alignment;
-    }
-    return MakePtr<VulkanMemoryPropertyRequirements>(requirements.memoryRequirements.memoryTypeBits);
-}
-
-Ptr<MemoryPropertyRequirements> VulkanDevice::GetMemoryRequirements(
-    const BufferDesc &desc, size_t *size, size_t *alignment) const
-{
-    const auto bufferCreateInfo = VkDeviceDetail::TranslateBufferCreateInfo(desc, queueFamilies_);
-    const VkDeviceBufferMemoryRequirements queryInfo = {
-        .sType = VK_STRUCTURE_TYPE_DEVICE_BUFFER_MEMORY_REQUIREMENTS,
-        .pCreateInfo = &bufferCreateInfo.createInfo
-    };
-
-    VkMemoryRequirements2 requirements = { .sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2 };
-    vkGetDeviceBufferMemoryRequirements(device_, &queryInfo, &requirements);
-
-    if(size)
-    {
-        *size = requirements.memoryRequirements.size;
-    }
-    if(alignment)
-    {
-        *alignment = requirements.memoryRequirements.alignment;
-    }
-    return MakePtr<VulkanMemoryPropertyRequirements>(requirements.memoryRequirements.memoryTypeBits);
-}
-
-Ptr<MemoryBlock> VulkanDevice::CreateMemoryBlock(const MemoryBlockDesc &desc)
-{
-    assert(desc.properties->IsValid());
-    const VkMemoryRequirements memoryRequirements = {
-        .size = desc.size,
-        .alignment = desc.alignment,
-        .memoryTypeBits = static_cast<VulkanMemoryPropertyRequirements*>(desc.properties.Get())->_internalGetMemoryTypeBits()
-    };
-    VmaAllocationCreateInfo allocCreateInfo = {};
-    allocCreateInfo.preferredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-
-    VmaAllocation alloc;
-    RTRC_VK_FAIL_MSG(
-        vmaAllocateMemory(allocator_, &memoryRequirements, &allocCreateInfo, &alloc, nullptr),
-        "Failed to allocate memory block");
-    RTRC_SCOPE_FAIL{ vmaFreeMemory(allocator_, alloc); };
-
-    return MakePtr<VulkanMemoryBlock>(desc, allocator_, alloc);
-}
-
-Ptr<Texture> VulkanDevice::CreatePlacedTexture(
-    const TextureDesc &desc, const Ptr<MemoryBlock> &memoryBlock, size_t offsetInMemoryBlock)
-{
-    const auto imageCreateInfo = VkDeviceDetail::TranslateImageCreateInfo(desc, queueFamilies_);
-    VkImage image;
-    RTRC_VK_FAIL_MSG(
-        vkCreateImage(device_, &imageCreateInfo.createInfo, RTRC_VK_ALLOC, &image),
-        "Failed to create placed vulkan image");
-    RTRC_SCOPE_FAIL{ vkDestroyImage(device_, image, RTRC_VK_ALLOC); };
-
-    auto vkMemoryBlock = static_cast<VulkanMemoryBlock *>(memoryBlock.Get());
-    RTRC_VK_FAIL_MSG(
-        vmaBindImageMemory2(allocator_, vkMemoryBlock->GetAllocation(), offsetInMemoryBlock, image, nullptr),
-        "Failed to bind vma memory with placed vulkan image");
-
-    const VulkanMemoryAllocation vmaAlloc = { allocator_, vkMemoryBlock->GetAllocation() };
-    return MakePtr<VulkanTexture>(desc, this, image, vmaAlloc, ResourceOwnership::Resource);
-}
-
-Ptr<Buffer> VulkanDevice::CreatePlacedBuffer(
-    const BufferDesc &desc, const Ptr<MemoryBlock> &memoryBlock, size_t offsetInMemoryBlock)
-{
-    const auto bufferCreateInfo = VkDeviceDetail::TranslateBufferCreateInfo(desc, queueFamilies_);
-    VkBuffer buffer;
-    RTRC_VK_FAIL_MSG(
-        vkCreateBuffer(device_, &bufferCreateInfo.createInfo, RTRC_VK_ALLOC, &buffer),
-        "Failed to create placed vulkan buffer");
-    RTRC_SCOPE_FAIL{ vkDestroyBuffer(device_, buffer, RTRC_VK_ALLOC); };
-
-    auto vkMemoryBlock = static_cast<VulkanMemoryBlock *>(memoryBlock.Get());
-    RTRC_VK_FAIL_MSG(
-        vmaBindBufferMemory2(allocator_, vkMemoryBlock->GetAllocation(), offsetInMemoryBlock, buffer, nullptr),
-        "Failed to bind vma memory with placed vulkan buffer");
-
-    const VulkanMemoryAllocation vmaAlloc = { allocator_, vkMemoryBlock->GetAllocation() };
-    return MakePtr<VulkanBuffer>(desc, this, buffer, vmaAlloc, ResourceOwnership::Resource);
 }
 
 size_t VulkanDevice::GetConstantBufferAlignment() const

@@ -616,35 +616,6 @@ Ptr<Sampler> DirectX12Device::CreateSampler(const SamplerDesc &desc)
     return MakePtr<DirectX12Sampler>(this, desc);
 }
 
-Ptr<MemoryPropertyRequirements> DirectX12Device::GetMemoryRequirements(
-    const BufferDesc &desc, size_t *size, size_t *alignment) const
-{
-    throw Exception("Not implemented");
-}
-
-Ptr<MemoryPropertyRequirements> DirectX12Device::GetMemoryRequirements(
-    const TextureDesc &desc, size_t *size, size_t *alignment) const
-{
-    throw Exception("Not implemented");
-}
-
-Ptr<MemoryBlock> DirectX12Device::CreateMemoryBlock(const MemoryBlockDesc &desc)
-{
-    throw Exception("Not implemented");
-}
-
-Ptr<Buffer> DirectX12Device::CreatePlacedBuffer(
-    const BufferDesc &desc, const Ptr<MemoryBlock> &memoryBlock, size_t offsetInMemoryBlock)
-{
-    throw Exception("Not implemented");
-}
-
-Ptr<Texture> DirectX12Device::CreatePlacedTexture(
-    const TextureDesc &desc, const Ptr<MemoryBlock> &memoryBlock, size_t offsetInMemoryBlock)
-{
-    throw Exception("Not implemented");
-}
-
 size_t DirectX12Device::GetConstantBufferAlignment() const
 {
     return 256;

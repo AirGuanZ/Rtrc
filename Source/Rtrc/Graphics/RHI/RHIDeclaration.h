@@ -79,8 +79,6 @@ RTRC_RHI_FORWARD_DECL(BufferSrv)
 RTRC_RHI_FORWARD_DECL(BufferUav)
 RTRC_RHI_FORWARD_DECL(RayTracingLibrary)
 RTRC_RHI_FORWARD_DECL(Sampler)
-RTRC_RHI_FORWARD_DECL(MemoryPropertyRequirements)
-RTRC_RHI_FORWARD_DECL(MemoryBlock)
 RTRC_RHI_FORWARD_DECL(BlasPrebuildInfo)
 RTRC_RHI_FORWARD_DECL(TlasPrebuildInfo)
 RTRC_RHI_FORWARD_DECL(Blas)
@@ -895,13 +893,6 @@ struct VertexInputAttribute
     uint32_t            semanticIndex;
 };
 
-struct MemoryBlockDesc
-{
-    size_t                          size;
-    size_t                          alignment;
-    Ptr<MemoryPropertyRequirements> properties;
-};
-
 struct DebugLabel
 {
     std::string             name;
@@ -1299,21 +1290,6 @@ public:
     RTRC_RHI_API Ptr<Buffer>  CreateBuffer(const BufferDesc &desc) RTRC_RHI_API_PURE;
     RTRC_RHI_API Ptr<Sampler> CreateSampler(const SamplerDesc &desc) RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API Ptr<MemoryPropertyRequirements> GetMemoryRequirements(
-        const TextureDesc &desc, size_t *size, size_t *alignment) const RTRC_RHI_API_PURE;
-    RTRC_RHI_API Ptr<MemoryPropertyRequirements> GetMemoryRequirements(
-        const BufferDesc &desc, size_t *size, size_t *alignment) const RTRC_RHI_API_PURE;
-    RTRC_RHI_API Ptr<MemoryBlock> CreateMemoryBlock(const MemoryBlockDesc &desc) RTRC_RHI_API_PURE;
-
-    RTRC_RHI_API Ptr<Texture> CreatePlacedTexture(
-        const TextureDesc      &desc,
-        const Ptr<MemoryBlock> &memoryBlock,
-        size_t                  offsetInMemoryBlock) RTRC_RHI_API_PURE;
-    RTRC_RHI_API Ptr<Buffer> CreatePlacedBuffer(
-        const BufferDesc       &desc,
-        const Ptr<MemoryBlock> &memoryBlock,
-        size_t                  offsetInMemoryBlock) RTRC_RHI_API_PURE;
-
     RTRC_RHI_API size_t GetConstantBufferAlignment() const RTRC_RHI_API_PURE;
     RTRC_RHI_API size_t GetConstantBufferSizeAlignment() const RTRC_RHI_API_PURE;
     RTRC_RHI_API size_t GetAccelerationStructureScratchBufferAlignment() const RTRC_RHI_API_PURE;
@@ -1693,25 +1669,6 @@ class Sampler : public RHIObject
 public:
 
     RTRC_RHI_API const SamplerDesc &GetDesc() const RTRC_RHI_API_PURE;
-};
-
-// All memory requirements other than size & alignment
-class MemoryPropertyRequirements : public RHIObject
-{
-public:
-
-    RTRC_RHI_API bool IsValid() const RTRC_RHI_API_PURE;
-
-    RTRC_RHI_API bool Merge(const MemoryPropertyRequirements &other) RTRC_RHI_API_PURE;
-
-    RTRC_RHI_API Ptr<MemoryPropertyRequirements> Clone() const RTRC_RHI_API_PURE;
-};
-
-class MemoryBlock : public RHIObject
-{
-public:
-
-    RTRC_RHI_API const MemoryBlockDesc &GetDesc() const RTRC_RHI_API_PURE;
 };
 
 class BlasPrebuildInfo : public RHIObject
