@@ -129,7 +129,7 @@ void Run()
 
     Box<Device> device = Device::CreateGraphicsDevice(
         window, RHI::Format::B8G8R8A8_UNorm, 3, RTRC_DEBUG,
-        false, Device::EnableRayTracing | Device::EnableSwapchainUav);
+        false, Device::EnableRayTracing);
 
     ResourceManager resourceManager(device);
     resourceManager.AddMaterialFiles($rtrc_get_files("Asset/Sample/05.PathTracing/*.*"));
@@ -256,8 +256,21 @@ void Run()
 
         auto graph = device->CreateRenderGraph();
         auto rgSwapchain = graph->RegisterSwapchainTexture(device->GetSwapchain());
+        auto renderTarget = graph->CreateTexture(RHI::TextureDesc
+        {
+            .dim                  = RHI::TextureDimension::Tex2D,
+            .format               = RHI::Format::B8G8R8A8_UNorm,
+            .width                = rgSwapchain->GetWidth(),
+            .height               = rgSwapchain->GetHeight(),
+            .arraySize            = 1,
+            .mipLevels            = 1,
+            .sampleCount          = 1,
+            .usage                = RHI::TextureUsage::ShaderResource | RHI::TextureUsage::UnorderAccess,
+            .initialLayout        = RHI::TextureLayout::Undefined,
+            .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
+        });
 
-        if(accumulateTexture && (accumulateTexture->GetSize() != rgSwapchain->GetSize() || needClear))
+        if(accumulateTexture && (accumulateTexture->GetSize() != renderTarget->GetSize() || needClear))
         {
             accumulateTexture = nullptr;
         }
@@ -270,24 +283,25 @@ void Run()
             {
                 .dim                  = RHI::TextureDimension::Tex2D,
                 .format               = RHI::Format::R32G32B32A32_Float,
-                .width                = rgSwapchain->GetWidth(),
-                .height               = rgSwapchain->GetHeight(),
+                .width                = renderTarget->GetWidth(),
+                .height               = renderTarget->GetHeight(),
                 .arraySize            = 1,
                 .mipLevels            = 1,
                 .sampleCount          = 1,
                 .usage                = RHI::TextureUsage::ShaderResource |
                                         RHI::TextureUsage::UnorderAccess |
-                                        RHI::TextureUsage::TransferDst,
+                                        RHI::TextureUsage::ClearColor,
                 .initialLayout        = RHI::TextureLayout::Undefined,
                 .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
             });
+            accumulateTexture->SetName("AccumulateTexture");
 
             rngTexture = device->CreatePooledTexture(RHI::TextureDesc
             {
                 .dim                  = RHI::TextureDimension::Tex2D,
                 .format               = RHI::Format::R32_UInt,
-                .width                = rgSwapchain->GetWidth(),
-                .height               = rgSwapchain->GetHeight(),
+                .width                = renderTarget->GetWidth(),
+                .height               = renderTarget->GetHeight(),
                 .arraySize            = 1,
                 .mipLevels            = 1,
                 .sampleCount          = 1,
@@ -295,6 +309,7 @@ void Run()
                 .initialLayout        = RHI::TextureLayout::Undefined,
                 .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
             });
+            rngTexture->SetName("RngTexture");
 
             rgAccumulateTexture = graph->RegisterTexture(accumulateTexture);
             rgRngTexture = graph->RegisterTexture(rngTexture);
@@ -325,14 +340,14 @@ void Run()
         }
 
         auto ptPass = graph->CreatePass("Trace");
-        ptPass->Use(rgSwapchain,         RG::CS_RWTexture_WriteOnly);
+        ptPass->Use(renderTarget,         RG::CS_RWTexture_WriteOnly);
         ptPass->Use(rgAccumulateTexture, RG::CS_RWTexture);
         ptPass->Use(rgRngTexture,        RG::CS_RWTexture);
         ptPass->SetCallback([&](RG::PassContext &context)
         {
             TracePass bindingGroupData;
             bindingGroupData.AccumulateTexture = rgAccumulateTexture->Get(context);
-            bindingGroupData.OutputTexture     = rgSwapchain->Get(context);
+            bindingGroupData.OutputTexture     = renderTarget->Get(context);
             bindingGroupData.RngTexture        = rgRngTexture->Get(context);
             bindingGroupData.Scene             = tlas;
             bindingGroupData.Geometries[0]     = room.primitives;
@@ -349,9 +364,11 @@ void Run()
             auto &commandBuffer = context.GetCommandBuffer();
             commandBuffer.BindComputePipeline(tracePipeline);
             commandBuffer.BindComputeGroup(0, bindingGroup);
-            commandBuffer.DispatchWithThreadCount(rgSwapchain->GetWidth(), rgSwapchain->GetHeight(), 1);
+            commandBuffer.DispatchWithThreadCount(renderTarget->GetWidth(), renderTarget->GetHeight(), 1);
         });
-        ptPass->SetSignalFence(device->GetFrameFence());
+
+        auto copyPass = graph->CreateBlitTexture2DPass("Blit", renderTarget, rgSwapchain, true);
+        copyPass->SetSignalFence(device->GetFrameFence());
 
         executer.Execute(graph);
         device->Present();

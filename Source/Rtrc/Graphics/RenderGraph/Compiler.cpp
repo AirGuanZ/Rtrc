@@ -42,7 +42,10 @@ Compiler::Compiler(ObserverPtr<Device> device, Options options)
     , device_(device)
     , graph_(nullptr)
 {
-    
+    if(!device_->GetRawDevice()->IsGlobalBarrierWellSupported())
+    {
+        options_.value &= ~std::to_underlying(Options::PreferGlobalMemoryBarrier);
+    }
 }
 
 void Compiler::Compile(const RenderGraph &graph, ExecutableGraph &result)
@@ -729,6 +732,9 @@ void Compiler::GenerateBarriers(const ExecutableResources &resources)
 
 void Compiler::FillSections(ExecutableGraph &output)
 {
+    const bool hasGoodBarrierMemoryModel =
+        device_->GetRawDevice()->GetBarrierMemoryModel() == RHI::BarrierMemoryModel::AvailableAndVisible;
+
     output.sections.clear();
     output.sections.reserve(sections_.size());
     for(const auto &compileSection : sections_)
@@ -772,16 +778,22 @@ void Compiler::FillSections(ExecutableGraph &output)
             ExecutablePass &pass        = section.passes.emplace_back();
 
             pass.preBufferBarriers = std::move(compilePass.preBufferTransitions);
-            for(RHI::BufferTransitionBarrier &b : pass.preBufferBarriers)
+            if(hasGoodBarrierMemoryModel)
             {
-                CompilerDetail::RemoveUnnecessaryBufferAccessMask(b.beforeAccesses, b.afterAccesses);
+                for(RHI::BufferTransitionBarrier &b : pass.preBufferBarriers)
+                {
+                    CompilerDetail::RemoveUnnecessaryBufferAccessMask(b.beforeAccesses, b.afterAccesses);
+                }
             }
 
             pass.preTextureBarriers = std::move(compilePass.preTextureTransitions);
-            for(RHI::TextureTransitionBarrier &b : pass.preTextureBarriers)
+            if(hasGoodBarrierMemoryModel)
             {
-                CompilerDetail::RemoveUnnecessaryTextureAccessMask(
-                    b.beforeLayout, b.afterLayout, b.beforeAccesses, b.afterAccesses);
+                for(RHI::TextureTransitionBarrier &b : pass.preTextureBarriers)
+                {
+                    CompilerDetail::RemoveUnnecessaryTextureAccessMask(
+                        b.beforeLayout, b.afterLayout, b.beforeAccesses, b.afterAccesses);
+                }
             }
 
             if(options_.Contains(Options::PreferGlobalMemoryBarrier))

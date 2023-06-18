@@ -98,6 +98,12 @@ enum class BackendType
     Vulkan
 };
 
+enum class BarrierMemoryModel
+{
+    Undefined,           // For directx12
+    AvailableAndVisible, // For vulkan
+};
+
 enum class QueueType : uint8_t
 {
     Graphics,
@@ -313,7 +319,8 @@ enum class TextureUsage : uint32_t
     ShaderResource = 1 << 2,
     UnorderAccess  = 1 << 3,
     RenderTarget   = 1 << 4,
-    DepthStencil   = 1 << 5
+    DepthStencil   = 1 << 5,
+    ClearColor     = 1 << 6, // vulkan -> TransferDst; directx12 -> RenderTarget
 };
 RTRC_DEFINE_ENUM_FLAGS(TextureUsage)
 using TextureUsageFlags = EnumFlagsTextureUsage;
@@ -731,6 +738,8 @@ struct BufferSrvDesc
     uint32_t offset;
     uint32_t range;
     uint32_t stride; // For structured buffer
+
+    auto operator<=>(const BufferSrvDesc &) const = default;
 };
 
 using BufferUavDesc = BufferSrvDesc;
@@ -837,8 +846,8 @@ struct ColorClearValue
 
 struct DepthStencilClearValue
 {
-    float    depth   = 1;
-    uint32_t stencil = 0;
+    float   depth   = 1;
+    uint8_t stencil = 0;
 };
 
 using ClearValue = Variant<ColorClearValue, DepthStencilClearValue>;
@@ -1001,8 +1010,8 @@ struct RayTracingPipelineDesc
     std::vector<RayTracingShaderGroup> shaderGroups;
     std::vector<RayTracingLibraryPtr>  libraries;
     Ptr<BindingLayout>                 bindingLayout;
-    uint32_t                           maxRayPayloadSize;      // Required when libraries is not empty
-    uint32_t                           maxRayHitAttributeSize; // Required when libraries is not empty
+    uint32_t                           maxRayPayloadSize;
+    uint32_t                           maxRayHitAttributeSize;
     uint32_t                           maxRecursiveDepth;
     bool                               useCustomStackSize = false;
 };
@@ -1060,18 +1069,18 @@ struct RayTracingInstanceArrayDesc
 {
     uint32_t            instanceCount;
     BufferDeviceAddress instanceData;
-    bool                opaque = false;
-    bool                noDuplicateAnyHitInvocation = false;
+    //bool                opaque = false;
+    //bool                noDuplicateAnyHitInvocation = false;
 };
 
 struct ShaderGroupRecordRequirements
 {
-    uint32_t shaderGroupHandleSize;
-    uint32_t shaderGroupHandleAlignment;
-    uint32_t shaderGroupBaseAlignment;
+    uint32_t shaderGroupHandleSize;      // Size of each single shader group handle
+    uint32_t shaderGroupHandleAlignment; // Alignment of each single shader group handle
+    uint32_t shaderGroupBaseAlignment;   // Alignment of the table start address
     uint32_t maxShaderGroupStride;
-    uint32_t shaderDataAlignment;
-    uint32_t shaderDataUnit;
+    //uint32_t shaderDataAlignment;
+    //uint32_t shaderDataUnit;
 };
 
 struct ShaderBindingTableRegion
@@ -1255,6 +1264,8 @@ class Device : public RHIObject
 public:
 
     RTRC_RHI_API BackendType GetBackendType() const RTRC_RHI_API_PURE;
+    RTRC_RHI_API bool IsGlobalBarrierWellSupported() const RTRC_RHI_API_PURE;
+    RTRC_RHI_API BarrierMemoryModel GetBarrierMemoryModel() const RTRC_RHI_API_PURE;
     
     RTRC_RHI_API Ptr<Queue> GetQueue(QueueType type) RTRC_RHI_API_PURE;
 
@@ -1265,7 +1276,8 @@ public:
     RTRC_RHI_API Ptr<Fence>     CreateFence(bool signaled) RTRC_RHI_API_PURE;
     RTRC_RHI_API Ptr<Semaphore> CreateTimelineSemaphore(uint64_t initialValue) RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API Ptr<RawShader> CreateShader(const void *data, size_t size, std::vector<RawShaderEntry> entries) RTRC_RHI_API_PURE;
+    RTRC_RHI_API Ptr<RawShader> CreateShader(
+        const void *data, size_t size, std::vector<RawShaderEntry> entries) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API Ptr<GraphicsPipeline>   CreateGraphicsPipeline  (const GraphicsPipelineDesc &desc) RTRC_RHI_API_PURE;
     RTRC_RHI_API Ptr<ComputePipeline>    CreateComputePipeline   (const ComputePipelineDesc &desc) RTRC_RHI_API_PURE;
@@ -1304,7 +1316,7 @@ public:
         Span<RayTracingGeometryDesc>              geometries,
         RayTracingAccelerationStructureBuildFlags flags) RTRC_RHI_API_PURE;
     RTRC_RHI_API TlasPrebuildInfoPtr CreateTlasPrebuildInfo(
-        Span<RayTracingInstanceArrayDesc>         instanceArrays,
+        const RayTracingInstanceArrayDesc        &instances,
         RayTracingAccelerationStructureBuildFlags flags) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API const ShaderGroupRecordRequirements &GetShaderGroupRecordRequirements() RTRC_RHI_API_PURE;
@@ -1440,7 +1452,7 @@ public:
     RTRC_RHI_API void SetViewportsWithCount(Span<Viewport> viewports) RTRC_RHI_API_PURE;
     RTRC_RHI_API void SetScissorsWithCount (Span<Scissor> scissors)   RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API void SetVertexBuffer(int slot, Span<BufferPtr> buffers, Span<size_t> byteOffsets) RTRC_RHI_API_PURE;
+    RTRC_RHI_API void SetVertexBuffer(int slot, Span<BufferPtr> buffers, Span<size_t> byteOffsets, Span<size_t> byteStrides) RTRC_RHI_API_PURE;
     RTRC_RHI_API void SetIndexBuffer(
         const BufferPtr  &buffer,
         size_t            byteOffset,
@@ -1529,10 +1541,10 @@ public:
         const BlasPtr               &blas,
         BufferDeviceAddress          scratchBufferAddress) RTRC_RHI_API_PURE;
     RTRC_RHI_API void BuildTlas(
-        const TlasPrebuildInfoPtr        &buildInfo,
-        Span<RayTracingInstanceArrayDesc> instanceArrays,
-        const TlasPtr                    &tlas,
-        BufferDeviceAddress               scratchBufferAddress) RTRC_RHI_API_PURE;
+        const TlasPrebuildInfoPtr         &buildInfo,
+        const RayTracingInstanceArrayDesc &instances,
+        const TlasPtr                     &tlas,
+        BufferDeviceAddress                scratchBufferAddress) RTRC_RHI_API_PURE;
 
 protected:
 

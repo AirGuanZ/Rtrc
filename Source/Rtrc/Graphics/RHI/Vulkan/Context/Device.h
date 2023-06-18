@@ -26,6 +26,8 @@ public:
     ~VulkanDevice() override;
 
     BackendType GetBackendType() const RTRC_RHI_OVERRIDE { return BackendType::Vulkan; }
+    bool IsGlobalBarrierWellSupported() const RTRC_RHI_OVERRIDE { return true; }
+    BarrierMemoryModel GetBarrierMemoryModel() const RTRC_RHI_OVERRIDE { return BarrierMemoryModel::AvailableAndVisible; }
 
     Ptr<Queue> GetQueue(QueueType type) RTRC_RHI_OVERRIDE;
 
@@ -77,7 +79,7 @@ public:
         Span<RayTracingGeometryDesc>              geometries,
         RayTracingAccelerationStructureBuildFlags flags) RTRC_RHI_OVERRIDE;
     TlasPrebuildInfoPtr CreateTlasPrebuildInfo(
-        Span<RayTracingInstanceArrayDesc>         instanceArrays,
+        const RayTracingInstanceArrayDesc        &instances,
         RayTracingAccelerationStructureBuildFlags flags) RTRC_RHI_OVERRIDE;
 
     const ShaderGroupRecordRequirements &GetShaderGroupRecordRequirements() RTRC_RHI_OVERRIDE;

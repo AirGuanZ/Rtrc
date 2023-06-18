@@ -80,7 +80,7 @@ inline constexpr UseInfo DepthStencilAttachmentWriteOnly =
 
 inline constexpr UseInfo DepthStencilAttachmentReadOnly =
 {
-    .layout   = RHI::TextureLayout::DepthStencilAttachment,
+    .layout   = RHI::TextureLayout::DepthStencilReadOnlyAttachment,
     .stages   = RHI::PipelineStage::DepthStencil,
     .accesses = RHI::ResourceAccess::DepthStencilRead
 };
@@ -167,6 +167,13 @@ inline constexpr UseInfo CopyDst =
     .layout   = RHI::TextureLayout::CopyDst,
     .stages   = RHI::PipelineStage::Copy,
     .accesses = RHI::ResourceAccess::CopyWrite
+};
+
+inline constexpr UseInfo CopySrc =
+{
+    .layout   = RHI::TextureLayout::CopySrc,
+    .stages   = RHI::PipelineStage::Copy,
+    .accesses = RHI::ResourceAccess::CopyRead
 };
 
 inline constexpr UseInfo BuildAS_Output =
@@ -359,6 +366,14 @@ public:
 
     Pass *CreateClearRWBufferPass(std::string_view name, BufferResource *buffer, uint32_t value);
     Pass *CreateClearRWStructuredBufferPass(std::string_view name, BufferResource *buffer, uint32_t value);
+
+    Pass *CreateBlitTexture2DPass(
+        std::string_view name,
+        TextureResource *src, uint32_t srcArrayLayer, uint32_t srcMipLevel,
+        TextureResource *dst, uint32_t dstArrayLayer, uint32_t dstMipLevel,
+        bool usePointSampling);
+    Pass *CreateBlitTexture2DPass(
+        std::string_view name, TextureResource *src, TextureResource *dst, bool usePointSampling);
     
     void MakeDummyPassIfNull(Pass *&pass, std::string_view name);
 

@@ -310,6 +310,36 @@ Pass *RenderGraph::CreateClearRWStructuredBufferPass(std::string_view name, Buff
     return pass;
 }
 
+Pass *RenderGraph::CreateBlitTexture2DPass(
+    std::string_view name,
+    TextureResource *src, uint32_t srcArrayLayer, uint32_t srcMipLevel,
+    TextureResource *dst, uint32_t dstArrayLayer, uint32_t dstMipLevel,
+    bool usePointSampling)
+{
+    auto pass = CreatePass(name);
+    pass->Use(src, PS_Texture);
+    pass->Use(dst, ColorAttachmentWriteOnly);
+    pass->SetCallback([src, dst, usePointSampling, this](PassContext &context)
+    {
+        device_->GetCopyTextureUtils().RenderQuad(
+            context.GetCommandBuffer(),
+            src->Get(context)->CreateSrv(0, 1, 0),
+            dst->Get(context)->CreateRtv(),
+            usePointSampling ? CopyTextureUtils::Point : CopyTextureUtils::Linear);
+    });
+    return pass;
+}
+
+Pass *RenderGraph::CreateBlitTexture2DPass(
+    std::string_view name, TextureResource *src, TextureResource *dst, bool usePointSampling)
+{
+    assert(src->GetArraySize() == 1);
+    assert(src->GetMipLevels() == 1);
+    assert(dst->GetArraySize() == 1);
+    assert(dst->GetMipLevels() == 1);
+    return CreateBlitTexture2DPass(name, src, 0, 0, dst, 0, 0, usePointSampling);
+}
+
 void RenderGraph::MakeDummyPassIfNull(Pass *&pass, std::string_view name)
 {
     if(!pass)

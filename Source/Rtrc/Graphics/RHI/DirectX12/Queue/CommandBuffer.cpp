@@ -6,8 +6,11 @@
 #include <Rtrc/Graphics/RHI/DirectX12/Pipeline/BindingGroup.h>
 #include <Rtrc/Graphics/RHI/DirectX12/Pipeline/ComputePipeline.h>
 #include <Rtrc/Graphics/RHI/DirectX12/Pipeline/GraphicsPipeline.h>
+#include <Rtrc/Graphics/RHI/DirectX12/Pipeline/RayTracingPipeline.h>
 #include <Rtrc/Graphics/RHI/DirectX12/Queue/CommandBuffer.h>
 #include <Rtrc/Graphics/RHI/DirectX12/Queue/CommandPool.h>
+#include <Rtrc/Graphics/RHI/DirectX12/RayTracing/BlasPrebuildInfo.h>
+#include <Rtrc/Graphics/RHI/DirectX12/RayTracing/TlasPrebuildInfo.h>
 #include <Rtrc/Graphics/RHI/DirectX12/Resource/Buffer.h>
 #include <Rtrc/Graphics/RHI/DirectX12/Resource/Texture.h>
 #include <Rtrc/Graphics/RHI/DirectX12/Resource/TextureView.h>
@@ -128,7 +131,14 @@ void DirectX12CommandBuffer::BindPipeline(const Ptr<ComputePipeline> &pipeline)
 
 void DirectX12CommandBuffer::BindPipeline(const Ptr<RayTracingPipeline> &pipeline)
 {
-    throw Exception("Not implemented");
+    auto d3dPipeline = static_cast<DirectX12RayTracingPipeline*>(pipeline.Get());
+    currentRayTracingPipeline_ = pipeline;
+    commandList_->SetPipelineState1(d3dPipeline->_internalGetStateObject().Get());
+    if(auto s = d3dPipeline->_internalGetRootSignature().Get(); currentComputeRootSignature_ != s)
+    {
+        commandList_->SetComputeRootSignature(s);
+        currentComputeRootSignature_ = s;
+    }
 }
 
 void DirectX12CommandBuffer::BindGroupsToGraphicsPipeline(int startIndex, Span<Ptr<BindingGroup>> groups)
@@ -149,7 +159,10 @@ void DirectX12CommandBuffer::BindGroupsToComputePipeline(int startIndex, Span<Pt
 
 void DirectX12CommandBuffer::BindGroupsToRayTracingPipeline(int startIndex, Span<Ptr<BindingGroup>> groups)
 {
-    throw Exception("Not implemented");
+    for(auto &&[i, group] : Enumerate(groups))
+    {
+        BindGroupToRayTracingPipeline(static_cast<int>(startIndex + i), group);
+    }
 }
 
 void DirectX12CommandBuffer::BindGroupToGraphicsPipeline(int index, const Ptr<BindingGroup> &group)
@@ -178,7 +191,14 @@ void DirectX12CommandBuffer::BindGroupToComputePipeline(int index, const Ptr<Bin
 
 void DirectX12CommandBuffer::BindGroupToRayTracingPipeline(int index, const Ptr<BindingGroup> &group)
 {
-    throw Exception("Not implemented");
+    const auto d3dBindingLayout = static_cast<DirectX12BindingLayout *>(
+        currentRayTracingPipeline_->GetBindingLayout().Get());
+    const auto d3dGroup = static_cast<DirectX12BindingGroup *>(group.Get());
+    const int firstRootParamIndex = d3dBindingLayout->_internalGetRootParamIndex(index);
+    for(auto &&[i, table] : Enumerate(d3dGroup->_internalGetDescriptorTables()))
+    {
+        commandList_->SetComputeRootDescriptorTable(static_cast<UINT>(firstRootParamIndex + i), table.gpuHandle);
+    }
 }
 
 void DirectX12CommandBuffer::SetViewports(Span<Viewport> viewports)
@@ -211,15 +231,14 @@ void DirectX12CommandBuffer::SetScissorsWithCount(Span<Scissor> scissors)
     SetScissors(scissors);
 }
 
-void DirectX12CommandBuffer::SetVertexBuffer(int slot, Span<BufferPtr> buffers, Span<size_t> byteOffsets)
+void DirectX12CommandBuffer::SetVertexBuffer(int slot, Span<BufferPtr> buffers, Span<size_t> byteOffsets, Span<size_t> byteStrides)
 {
-    const auto d3dPipeline = static_cast<DirectX12GraphicsPipeline*>(currentGraphicsPipeline_.Get());
     std::vector<D3D12_VERTEX_BUFFER_VIEW> views;
     views.reserve(buffers.size());
     for(auto &&[i, buffer] : Enumerate(buffers))
     {
         const size_t byteOffset = byteOffsets[i];
-        const size_t stride = d3dPipeline->_internalGetVertexStrides()[slot + i];
+        const size_t stride = byteStrides[i];
         const size_t size = buffer->GetDesc().size - byteOffsets[i];
         views.push_back(
         {
@@ -305,7 +324,22 @@ void DirectX12CommandBuffer::TraceRays(
     const ShaderBindingTableRegion &hitSbt,
     const ShaderBindingTableRegion &callableSbt)
 {
-    throw Exception("Not implemented");
+    D3D12_DISPATCH_RAYS_DESC desc;
+    desc.RayGenerationShaderRecord.StartAddress = rayGenSbt.deviceAddress.address;
+    desc.RayGenerationShaderRecord.SizeInBytes  = rayGenSbt.size;
+    desc.MissShaderTable.StartAddress           = missSbt.deviceAddress.address;
+    desc.MissShaderTable.SizeInBytes            = missSbt.size;
+    desc.MissShaderTable.StrideInBytes          = missSbt.stride;
+    desc.HitGroupTable.StartAddress             = hitSbt.deviceAddress.address;
+    desc.HitGroupTable.SizeInBytes              = hitSbt.size;
+    desc.HitGroupTable.StrideInBytes            = hitSbt.stride;
+    desc.CallableShaderTable.StartAddress       = callableSbt.deviceAddress.address;
+    desc.CallableShaderTable.SizeInBytes        = callableSbt.size;
+    desc.CallableShaderTable.StrideInBytes      = callableSbt.stride;
+    desc.Width                                  = static_cast<UINT>(rayCountX);
+    desc.Height                                 = static_cast<UINT>(rayCountY);
+    desc.Depth                                  = static_cast<UINT>(rayCountZ);
+    commandList_->DispatchRays(&desc);
 }
 
 void DirectX12CommandBuffer::DispatchIndirect(const BufferPtr &buffer, size_t byteOffset)
@@ -423,16 +457,18 @@ void DirectX12CommandBuffer::BuildBlas(
     const BlasPtr               &blas,
     BufferDeviceAddress          scratchBufferAddress)
 {
-    throw Exception("Not implemented");
+    static_cast<DirectX12BlasPrebuildInfo *>(buildInfo.Get())
+        ->_internalBuildBlas(commandList_.Get(), geometries, blas, scratchBufferAddress);
 }
 
 void DirectX12CommandBuffer::BuildTlas(
-    const TlasPrebuildInfoPtr        &buildInfo,
-    Span<RayTracingInstanceArrayDesc> instanceArrays,
-    const TlasPtr                    &tlas,
-    BufferDeviceAddress               scratchBufferAddress)
+    const TlasPrebuildInfoPtr         &buildInfo,
+    const RayTracingInstanceArrayDesc &instances,
+    const TlasPtr                     &tlas,
+    BufferDeviceAddress                scratchBufferAddress)
 {
-    throw Exception("Not implemented");
+    static_cast<DirectX12TlasPrebuildInfo*>(buildInfo.Get())
+        ->_internalBuildTlas(commandList_.Get(), instances, tlas, scratchBufferAddress);
 }
 
 void DirectX12CommandBuffer::ExecuteBarriersInternal(
@@ -493,8 +529,6 @@ void DirectX12CommandBuffer::ExecuteBarriersInternal(
             d3dBarrier.LayoutBefore = D3D12_BARRIER_LAYOUT_UNDEFINED;
             d3dBarrier.SyncBefore = D3D12_BARRIER_SYNC_NONE;
             d3dBarrier.AccessBefore = D3D12_BARRIER_ACCESS_NO_ACCESS;
-            /*d3dBarrier.SyncBefore = D3D12_BARRIER_SYNC_ALL;
-            d3dBarrier.AccessBefore = D3D12_BARRIER_ACCESS_COMMON;*/
         }
         else if(b.afterLayout == TextureLayout::Present)
         {
@@ -504,6 +538,20 @@ void DirectX12CommandBuffer::ExecuteBarriersInternal(
 
         LowerLayout(d3dBarrier.LayoutBefore);
         LowerLayout(d3dBarrier.LayoutAfter);
+
+        if(d3dBarrier.LayoutBefore == D3D12_BARRIER_LAYOUT_UNDEFINED)
+        {
+            d3dBarrier.AccessBefore = D3D12_BARRIER_ACCESS_NO_ACCESS;
+        }
+
+        if(d3dBarrier.AccessBefore & D3D12_BARRIER_ACCESS_DEPTH_STENCIL_WRITE)
+        {
+            d3dBarrier.AccessBefore &= ~D3D12_BARRIER_ACCESS_DEPTH_STENCIL_READ;
+        }
+        if(d3dBarrier.AccessAfter & D3D12_BARRIER_ACCESS_DEPTH_STENCIL_WRITE)
+        {
+            d3dBarrier.AccessAfter &= ~D3D12_BARRIER_ACCESS_DEPTH_STENCIL_READ;
+        }
     }
 
     std::vector<D3D12_BUFFER_BARRIER> d3dBufferBarriers;
@@ -517,6 +565,15 @@ void DirectX12CommandBuffer::ExecuteBarriersInternal(
         d3dBarrier.SyncAfter    = TranslateBarrierSync(b.afterStages);
         d3dBarrier.AccessBefore = TranslateBarrierAccess(b.beforeAccesses);
         d3dBarrier.AccessAfter  = TranslateBarrierAccess(b.afterAccesses);
+
+        if(b.beforeAccesses == ResourceAccess::BuildASScratch)
+        {
+            d3dBarrier.SyncBefore = D3D12_BARRIER_SYNC_COMPUTE_SHADING;
+        }
+        if(b.afterAccesses == ResourceAccess::BuildASScratch)
+        {
+            d3dBarrier.SyncAfter = D3D12_BARRIER_SYNC_COMPUTE_SHADING;
+        }
     }
 
     for(auto &b : textureReleaseBarriers)

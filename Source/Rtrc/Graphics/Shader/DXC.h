@@ -16,21 +16,22 @@ public:
 
     enum class Target
     {
-        Vulkan_1_3_VS_6_0,
-        Vulkan_1_3_FS_6_0,
-        Vulkan_1_3_CS_6_0,
-        Vulkan_1_3_RT_6_4,
+        Vulkan_1_3_VS_6_6,
+        Vulkan_1_3_FS_6_6,
+        Vulkan_1_3_CS_6_6,
+        Vulkan_1_3_RT_6_6,
 
-        DirectX12_VS_6_0,
-        DirectX12_FS_6_0,
-        DirectX12_CS_6_0,
+        DirectX12_VS_6_6,
+        DirectX12_FS_6_6,
+        DirectX12_CS_6_6,
+        DirectX12_RT_6_6,
     };
 
     struct ShaderInfo
     {
         std::string source;
         std::string sourceFilename;
-        std::string entryPoint; // Ignored when target is Vulkan_1_3_RT_6_4
+        std::string entryPoint; // Ignored when target is Vulkan_1_3_RT_6_6 or DirectX12_RT_6_6
 
         std::vector<std::string>           includeDirs;
         std::map<std::string, std::string> macros;

@@ -419,12 +419,12 @@ void CommandBuffer::SetScissors(Span<Scissor> scissors)
     rhiCommandBuffer_->SetScissors(scissors);
 }
 
-void CommandBuffer::SetVertexBuffers(int slot, const RC<SubBuffer> &buffer)
+void CommandBuffer::SetVertexBuffer(int slot, const RC<SubBuffer> &buffer, size_t stride)
 {
-    SetVertexBuffers(slot, Span(buffer));
+    SetVertexBuffers(slot, Span(buffer), Span(stride));
 }
 
-void CommandBuffer::SetVertexBuffers(int slot, Span<RC<SubBuffer>> buffers)
+void CommandBuffer::SetVertexBuffers(int slot, Span<RC<SubBuffer>> buffers, Span<size_t> byteStrides)
 {
     CheckThreadID();
     std::vector<RHI::BufferPtr> rhiBuffers(buffers.size());
@@ -434,7 +434,7 @@ void CommandBuffer::SetVertexBuffers(int slot, Span<RC<SubBuffer>> buffers)
         rhiBuffers[i] = buffers[i]->GetFullBufferRHIObject();
         rhiByteOffsets[i] = buffers[i]->GetSubBufferOffset();
     }
-    rhiCommandBuffer_->SetVertexBuffer(slot, rhiBuffers, rhiByteOffsets);
+    rhiCommandBuffer_->SetVertexBuffer(slot, rhiBuffers, rhiByteOffsets, byteStrides);
 }
 
 void CommandBuffer::SetIndexBuffer(const RC<SubBuffer> &buffer, RHI::IndexFormat format)
@@ -596,19 +596,19 @@ void CommandBuffer::BuildBlas(
 
 void CommandBuffer::BuildTlas(
     const RC<Tlas>                                &tlas,
-    Span<RHI::RayTracingInstanceArrayDesc>         instanceArrays,
+    const RHI::RayTracingInstanceArrayDesc        &instances,
     RHI::RayTracingAccelerationStructureBuildFlags flags,
     const RC<SubBuffer>                           &scratchBuffer)
 {
-    auto prebuildInfo = device_->CreateTlasPrebuildInfo(instanceArrays, flags);
-    return BuildTlas(tlas, instanceArrays, prebuildInfo, scratchBuffer);
+    auto prebuildInfo = device_->CreateTlasPrebuildInfo(instances, flags);
+    return BuildTlas(tlas, instances, prebuildInfo, scratchBuffer);
 }
 
 void CommandBuffer::BuildTlas(
-    const RC<Tlas>                        &tlas,
-    Span<RHI::RayTracingInstanceArrayDesc> instanceArrays,
-    const TlasPrebuildInfo                &prebuildInfo,
-    const RC<SubBuffer>                   &scratchBuffer)
+    const RC<Tlas>                         &tlas,
+    const RHI::RayTracingInstanceArrayDesc &instances,
+    const TlasPrebuildInfo                 &prebuildInfo,
+    const RC<SubBuffer>                    &scratchBuffer)
 {
     CheckThreadID();
 
@@ -642,7 +642,7 @@ void CommandBuffer::BuildTlas(
     scratchDeviceAddress.address = UpAlignTo(scratchDeviceAddress.address, scratchAlignement);
 
     rhiCommandBuffer_->BuildTlas(
-        prebuildInfo.GetRHIObject(), instanceArrays, tlas->GetRHIObject(), scratchDeviceAddress);
+        prebuildInfo.GetRHIObject(), instances, tlas->GetRHIObject(), scratchDeviceAddress);
 }
 
 void CommandBuffer::ExecuteBarriers(const BarrierBatch &barriers)

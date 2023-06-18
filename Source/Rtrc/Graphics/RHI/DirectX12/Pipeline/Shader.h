@@ -22,6 +22,11 @@ public:
         return byteCode_;
     }
 
+    Span<RawShaderEntry> _internalGetEntries() const
+    {
+        return entries_;
+    }
+
 private:
 
     std::vector<std::byte>      rawShaderByteCode_;

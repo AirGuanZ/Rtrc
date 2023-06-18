@@ -24,7 +24,7 @@ namespace LowDiscrepancyDetail
         std::default_random_engine rng(seed);
         std::uniform_real_distribution<float> dis(0, 1);
 
-        std::vector<CyType> rawPoints(std::max(16 * count, 2048));
+        std::vector<CyType> rawPoints((std::max)(16 * count, 2048));
         for(auto &out : rawPoints)
         {
             for(int i = 0; i < Channels; ++i)

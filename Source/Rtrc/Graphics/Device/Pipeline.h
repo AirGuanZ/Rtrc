@@ -142,8 +142,8 @@ public:
 
         RC<BindingLayout> bindingLayout;
 
-        uint32_t maxRayPayloadSize;      // Required when libraries is not empty
-        uint32_t maxRayHitAttributeSize; // Required when libraries is not empty
+        uint32_t maxRayPayloadSize;
+        uint32_t maxRayHitAttributeSize;
         uint32_t maxRecursiveDepth;
         bool     useCustomStackSize = false;
     };

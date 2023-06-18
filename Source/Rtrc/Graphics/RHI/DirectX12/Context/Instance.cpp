@@ -69,7 +69,7 @@ Ptr<Device> DirectX12Instance::CreateDevice(const DeviceDesc &desc)
         factory->EnumAdapters(0, adapter.GetAddressOf()),
         "Fail to get dxgi adapter");
 
-    ComPtr<ID3D12Device> device;
+    ComPtr<ID3D12Device5> device;
     RTRC_D3D12_FAIL_MSG(
         D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(device.GetAddressOf())),
         "Fail to create directx12 device");

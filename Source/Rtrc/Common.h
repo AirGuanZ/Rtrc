@@ -272,7 +272,7 @@ constexpr size_t GetContainerSize(const T &container)
 }
 
 template<typename T, size_t N>
-constexpr size_t GetContainerSize(const T(&arr)[N])
+constexpr size_t GetContainerSize(const T(&)[N])
 {
     return N;
 }

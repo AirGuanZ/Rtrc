@@ -36,6 +36,7 @@ RenderLoop::~RenderLoop()
 {
     assert(renderThread_.joinable());
     renderThread_.join();
+    renderCommandQueue_.clear();
 }
 
 void RenderLoop::AddCommand(RenderCommand command)
@@ -136,7 +137,22 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
     transientConstantBufferAllocator_->NewBatch();
 
     auto renderGraph = device_->CreateRenderGraph();
-    auto framebuffer = renderGraph->RegisterSwapchainTexture(device_->GetSwapchain());
+    auto swapchainImage = renderGraph->RegisterSwapchainTexture(device_->GetSwapchain());
+    auto framebuffer = renderGraph->CreateTexture(RHI::TextureDesc
+    {
+        .dim                  = RHI::TextureDimension::Tex2D,
+        .format               = RHI::Format::B8G8R8A8_UNorm,
+        .width                = swapchainImage->GetWidth(),
+        .height               = swapchainImage->GetHeight(),
+        .arraySize            = 1,
+        .mipLevels            = 1,
+        .sampleCount          = 1,
+        .usage                = RHI::TextureUsage::ShaderResource |
+                                RHI::TextureUsage::UnorderAccess |
+                                RHI::TextureUsage::RenderTarget,
+        .initialLayout        = RHI::TextureLayout::Undefined,
+        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
+    }, "Framebuffer");
     
     // ============= Update meshes =============
 
@@ -219,7 +235,11 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
 
     imguiRenderer_->AddToRenderGraph(
         frame.imguiDrawData.get(), framebuffer, renderGraph.get());
-    
+
+    // ============= Blit =============
+
+    renderGraph->CreateBlitTexture2DPass("BlitToSwapchain", framebuffer, swapchainImage, true);
+
     // ============= Execution =============
 
     transientConstantBufferAllocator_->Flush();

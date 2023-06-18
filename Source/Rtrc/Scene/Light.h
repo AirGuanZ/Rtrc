@@ -87,8 +87,8 @@ public:
     void SetFlags(Flags flags);
     void SetShadowSoftness(float softness);
 
-    const ReferenceCountedPtr<SharedRenderingData> &GetRenderingData() const { return data_; }
-    SharedRenderingData                            *GetMutableRenderingData() { return data_.Unshare(); }
+    ReferenceCountedPtr<SharedRenderingData> GetRenderingData() const { return data_; }
+    SharedRenderingData                     *GetMutableRenderingData() { return data_.Unshare(); }
 
 private:
 
@@ -170,7 +170,7 @@ inline void Light::SetFlags(Flags flags)
 
 inline void Light::SetShadowSoftness(float softness)
 {
-       data_.Unshare()->shadowSoftness_ = softness;
+    data_.Unshare()->shadowSoftness_ = softness;
 }
 
 inline Light::Light()

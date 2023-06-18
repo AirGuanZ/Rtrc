@@ -307,6 +307,7 @@ Ptr<TextureDsv> DirectX12Texture::CreateDsv(const TextureDsvDesc &desc) const
     
     D3D12_DEPTH_STENCIL_VIEW_DESC viewDesc;
     viewDesc.Format = TranslateFormat(desc.format != Format::Unknown ? desc.format : desc_.format);
+    viewDesc.Flags = D3D12_DSV_FLAG_NONE;
 
     assert(desc_.dim == TextureDimension::Tex2D);
     if(desc_.sampleCount == 1)

@@ -16,7 +16,7 @@ const VertexBufferLayout *Mesh::BuiltinVertexBufferLayout::Simplified = RTRC_VER
 
 void Mesh::SharedRenderingData::BindVertexAndIndexBuffers(CommandBuffer &commandBuffer) const
 {
-    commandBuffer.SetVertexBuffers(0, vertexBuffers_);
+    commandBuffer.SetVertexBuffers(0, vertexBuffers_, vertexStrides_);
     if(indexBuffer_)
     {
         commandBuffer.SetIndexBuffer(indexBuffer_, indexFormat_);

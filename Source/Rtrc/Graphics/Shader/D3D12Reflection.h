@@ -10,11 +10,7 @@ class D3D12Reflection : public ShaderReflection, public Uncopyable
 {
 public:
 
-    // bindingNameToLocation: name -> (set, slot)
-    D3D12Reflection(
-        IDxcUtils                                        *dxcUtils,
-        Span<std::byte>                                   code,
-        const std::map<std::string, std::pair<int, int>> &bindingNameToLocation);
+    D3D12Reflection(IDxcUtils *dxcUtils, Span<std::byte> code, bool isLibrary);
 
     std::vector<ShaderIOVar> GetInputVariables() const override { return inputVariables_; }
     Vector3i GetComputeShaderThreadGroupSize() const override { return threadGroupSize_; }
@@ -23,9 +19,13 @@ public:
 
 private:
 
+    void InitializeRegularReflection(IDxcUtils *dxcUtils, Span<std::byte> code);
+    void InitializeLibraryReflection(IDxcUtils *dxcUtils, Span<std::byte> code);
+
     std::vector<ShaderIOVar>           inputVariables_;
     Vector3i                           threadGroupSize_;
     std::set<std::string, std::less<>> usedBindings_;
+    std::vector<RHI::RawShaderEntry>   entries_; // For library only
 };
 
 RTRC_END

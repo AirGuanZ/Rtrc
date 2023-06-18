@@ -103,7 +103,7 @@ void DeferredLightingPass::DoDeferredLighting(
 
             // distFade = saturate((distEnd - dist) / (distEnd - distBegin))
             //          = saturate(-dist/(distEnd-distBegin) + distEnd/(distEnd-distBegin))
-            const float deltaDist = std::max(light->GetDistanceFadeEnd() - light->GetDistanceFadeBegin(), 1e-5f);
+            const float deltaDist = (std::max)(light->GetDistanceFadeEnd() - light->GetDistanceFadeBegin(), 1e-5f);
             data.distFadeScale = -1.0f / deltaDist;
             data.distFadeBias = light->GetDistanceFadeEnd() / deltaDist;
         }

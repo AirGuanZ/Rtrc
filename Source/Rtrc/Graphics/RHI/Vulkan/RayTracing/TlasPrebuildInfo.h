@@ -12,31 +12,31 @@ public:
 
     VulkanTlasPrebuildInfo(
         VulkanDevice                             *device,
-        Span<RayTracingInstanceArrayDesc>         instanceArrays,
+        const RayTracingInstanceArrayDesc        &instances,
         RayTracingAccelerationStructureBuildFlags flags);
 
     const RayTracingAccelerationStructurePrebuildInfo &GetPrebuildInfo() const RTRC_RHI_OVERRIDE;
 
 #if RTRC_DEBUG
-    bool _internalIsCompatiableWith(Span<RayTracingInstanceArrayDesc> instanceArrays) const;
+    bool _internalIsCompatiableWith(const RayTracingInstanceArrayDesc &instances) const;
 #endif
 
     void _internalBuildTlas(
-        VulkanCommandBuffer              *commandBuffer,
-        Span<RayTracingInstanceArrayDesc> instanceArrays,
-        const TlasPtr                    &tlas,
-        BufferDeviceAddress               scratchBuffer);
+        VulkanCommandBuffer               *commandBuffer,
+        const RayTracingInstanceArrayDesc &instances,
+        const TlasPtr                     &tlas,
+        BufferDeviceAddress                scratchBuffer);
 
 private:
 
 #if RTRC_DEBUG
-    std::vector<RayTracingInstanceArrayDesc> instanceArrays_;
+    RayTracingInstanceArrayDesc instances_;
 #endif
 
     VulkanDevice *device_;
-    std::vector<VkAccelerationStructureGeometryKHR> vkGeometries_;
+    VkAccelerationStructureGeometryKHR          vkGeometry_;
     RayTracingAccelerationStructurePrebuildInfo prebuildInfo_;
-    std::vector<VkAccelerationStructureBuildRangeInfoKHR> rangeInfo_;
+    VkAccelerationStructureBuildRangeInfoKHR    rangeInfo_;
     VkAccelerationStructureBuildGeometryInfoKHR vkBuildGeometryInfo_;
 };
 

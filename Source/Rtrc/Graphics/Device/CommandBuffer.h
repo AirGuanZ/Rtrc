@@ -165,8 +165,8 @@ public:
     void SetViewports(Span<Viewport> viewports);
     void SetScissors(Span<Scissor> scissors);
 
-    void SetVertexBuffers(int slot, const RC<SubBuffer> &buffer);
-    void SetVertexBuffers(int slot, Span<RC<SubBuffer>> buffers);
+    void SetVertexBuffer(int slot, const RC<SubBuffer> &buffer, size_t stride);
+    void SetVertexBuffers(int slot, Span<RC<SubBuffer>> buffers, Span<size_t> strides);
     void SetIndexBuffer(const RC<SubBuffer> &buffer, RHI::IndexFormat format);
     void BindMesh(const Mesh &mesh);
 
@@ -227,14 +227,14 @@ public:
 
     void BuildTlas(
         const RC<Tlas>                                &tlas,
-        Span<RHI::RayTracingInstanceArrayDesc>         instanceArrays,
+        const RHI::RayTracingInstanceArrayDesc        &instances,
         RHI::RayTracingAccelerationStructureBuildFlags flags,
         const RC<SubBuffer>                           &scratchBuffer);
     void BuildTlas(
-        const RC<Tlas>                        &tlas,
-        Span<RHI::RayTracingInstanceArrayDesc> instanceArrays,
-        const TlasPrebuildInfo                &prebuildInfo,
-        const RC<SubBuffer>                   &scratchBuffer);
+        const RC<Tlas>                         &tlas,
+        const RHI::RayTracingInstanceArrayDesc &instances,
+        const TlasPrebuildInfo                 &prebuildInfo,
+        const RC<SubBuffer>                    &scratchBuffer);
 
     void ExecuteBarriers(const BarrierBatch &barriers);
 

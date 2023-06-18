@@ -281,6 +281,10 @@ VkImageUsageFlags TranslateTextureUsageFlag(TextureUsageFlags flags)
     {
         result |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
     }
+    if(flags.Contains(TextureUsage::ClearColor))
+    {
+        result |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    }
     return result;
 }
 

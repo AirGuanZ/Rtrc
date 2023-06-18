@@ -105,9 +105,6 @@ CachedScene::RenderGraphInterface CachedScene::Update(
 
         const size_t materialDataSize = sizeof(TlasMaterial) * materialData.size();
         const size_t materialDataBufferSize = std::max<size_t>(materialDataSize, 1024);
-        RC<Buffer> materialDataUploadBuffer = materialDataUploadBufferPool_.Acquire(materialDataBufferSize);
-        materialDataUploadBuffer->SetName("Tlas Material Data Upload Buffer");
-        materialDataUploadBuffer->Upload(materialData.data(), 0, materialDataSize);
 
         if(!tlasMaterials_ || tlasMaterials_->GetSize() < materialDataBufferSize)
         {
@@ -125,6 +122,10 @@ CachedScene::RenderGraphInterface CachedScene::Update(
         ret.prepareTlasMaterialDataPass = renderGraph.CreatePass("Prepare Tlas Material Data Buffer");
         if(!materialData.empty())
         {
+            RC<Buffer> materialDataUploadBuffer = materialDataUploadBufferPool_.Acquire(materialDataBufferSize);
+            materialDataUploadBuffer->SetName("Tlas Material Data Upload Buffer");
+            materialDataUploadBuffer->Upload(materialData.data(), 0, materialDataSize);
+
             ret.prepareTlasMaterialDataPass->Use(ret.tlasMaterialDataBuffer, RG::CopyDst);
             ret.prepareTlasMaterialDataPass->SetCallback([
                 src = materialDataUploadBuffer,
@@ -147,8 +148,7 @@ CachedScene::RenderGraphInterface CachedScene::Update(
         const RHI::RayTracingInstanceArrayDesc instanceArrayDesc =
         {
             .instanceCount = static_cast<uint32_t>(instanceData.size()),
-            .instanceData  = instanceDataBuffer->GetDeviceAddress(),
-            .opaque        = true
+            .instanceData  = instanceDataBuffer->GetDeviceAddress()
         };
         TlasPrebuildInfo prebuildInfo = device_->CreateTlasPrebuildInfo(
             instanceArrayDesc, RHI::RayTracingAccelerationStructureBuildFlagBit::PreferFastBuild);

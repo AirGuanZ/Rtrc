@@ -45,7 +45,7 @@ public:
     void SetViewportsWithCount(Span<Viewport> viewports) RTRC_RHI_OVERRIDE;
     void SetScissorsWithCount(Span<Scissor> scissors) RTRC_RHI_OVERRIDE;
 
-    void SetVertexBuffer(int slot, Span<BufferPtr> buffers, Span<size_t> byteOffsets) RTRC_RHI_OVERRIDE;
+    void SetVertexBuffer(int slot, Span<BufferPtr> buffers, Span<size_t> byteOffsets, Span<size_t> byteStrides) RTRC_RHI_OVERRIDE;
     void SetIndexBuffer(const BufferPtr &buffer, size_t byteOffset, IndexFormat format) RTRC_RHI_OVERRIDE;
 
     void SetStencilReferenceValue(uint8_t value) RTRC_RHI_OVERRIDE;
@@ -109,10 +109,10 @@ public:
         const BlasPtr               &blas,
         BufferDeviceAddress          scratchBufferAddress) RTRC_RHI_OVERRIDE;
     void BuildTlas(
-        const TlasPrebuildInfoPtr        &buildInfo,
-        Span<RayTracingInstanceArrayDesc> instanceArrays,
-        const TlasPtr                    &tlas,
-        BufferDeviceAddress               scratchBufferAddress) RTRC_RHI_OVERRIDE;
+        const TlasPrebuildInfoPtr         &buildInfo,
+        const RayTracingInstanceArrayDesc &instances,
+        const TlasPtr                     &tlas,
+        BufferDeviceAddress                scratchBufferAddress) RTRC_RHI_OVERRIDE;
 
     ID3D12GraphicsCommandList *_internalGetCommandList() const { return commandList_.Get(); }
 
@@ -136,7 +136,7 @@ private:
     Ptr<RayTracingPipeline> currentRayTracingPipeline_;
 
     ID3D12RootSignature *currentGraphicsRootSignature_;
-    ID3D12RootSignature *currentComputeRootSignature_;
+    ID3D12RootSignature *currentComputeRootSignature_; // For both compute & ray tracing
 };
 
 RTRC_RHI_D3D12_END

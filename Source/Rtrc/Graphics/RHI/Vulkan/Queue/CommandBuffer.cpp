@@ -279,7 +279,7 @@ void VulkanCommandBuffer::SetScissorsWithCount(Span<Scissor> scissors)
     vkCmdSetScissorWithCount(commandBuffer_, scissors.GetSize(), vkScissors.data());
 }
 
-void VulkanCommandBuffer::SetVertexBuffer(int slot, Span<BufferPtr> buffers, Span<size_t> byteOffsets)
+void VulkanCommandBuffer::SetVertexBuffer(int slot, Span<BufferPtr> buffers, Span<size_t> byteOffsets, Span<size_t> byteStrides)
 {
     std::vector<VkBuffer> vkBuffers(buffers.size());
     for(size_t i = 0; i < buffers.size(); ++i)
@@ -507,13 +507,13 @@ void VulkanCommandBuffer::BuildBlas(
 }
 
 void VulkanCommandBuffer::BuildTlas(
-    const TlasPrebuildInfoPtr        &buildInfo,
-    Span<RayTracingInstanceArrayDesc> instanceArrays,
-    const TlasPtr                    &tlas,
-    BufferDeviceAddress               scratchBufferAddress)
+    const TlasPrebuildInfoPtr         &buildInfo,
+    const RayTracingInstanceArrayDesc &instances,
+    const TlasPtr                     &tlas,
+    BufferDeviceAddress                scratchBufferAddress)
 {
     static_cast<VulkanTlasPrebuildInfo *>(buildInfo.Get())
-        ->_internalBuildTlas(this, instanceArrays, tlas, scratchBufferAddress);
+        ->_internalBuildTlas(this, instances, tlas, scratchBufferAddress);
 }
 
 VkCommandBuffer VulkanCommandBuffer::_internalGetNativeCommandBuffer() const

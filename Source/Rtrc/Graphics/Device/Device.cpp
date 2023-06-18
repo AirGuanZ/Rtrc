@@ -61,7 +61,7 @@ Box<Device> Device::CreateGraphicsDevice(
     ret->swapchainFormat_     = swapchainFormat;
     ret->swapchainImageCount_ = swapchainImageCount;
     ret->vsync_               = vsync;
-    ret->swapchainUav_        = flags.Contains(EnableSwapchainUav);
+    ret->swapchainUav_        = false; // d3d12 doesn't support swapchain uav
     ret->RecreateSwapchain();
     if(!flags.Contains(DisableAutoSwapchainRecreate))
     {
@@ -103,8 +103,12 @@ Box<Device> Device::CreateGraphicsDevice(
     {
         ret->instance_ = CreateDirectX12Instance(RHI::DirectX12InstanceDesc
         {
-            .debugMode     = debugMode,
+            .debugMode = debugMode,
+#if RTRC_DEBUG
             .gpuValidation = debugMode
+#else
+            .gpuValidation = false
+#endif
         });
     }
 #endif
@@ -127,7 +131,7 @@ Box<Device> Device::CreateGraphicsDevice(
     ret->swapchainFormat_     = swapchainFormat;
     ret->swapchainImageCount_ = swapchainImageCount;
     ret->vsync_               = vsync;
-    ret->swapchainUav_        = flags.Contains(EnableSwapchainUav);
+    ret->swapchainUav_        = false;
     ret->RecreateSwapchain();
     if(!flags.Contains(DisableAutoSwapchainRecreate))
     {
@@ -175,6 +179,7 @@ Device::~Device()
         sync_->PrepareDestruction();
     }
 
+    copyTextureUtils_.reset();
     clearBufferUtils_.reset();
     accelerationManager_.reset();
     bindingLayoutManager_.reset();
@@ -238,6 +243,7 @@ void Device::InitializeInternal(Flags flags, RHI::DevicePtr device, bool isCompu
     accelerationManager_ = MakeBox<AccelerationStructureManager>(device_, *sync_);
 
     clearBufferUtils_ = MakeBox<ClearBufferUtils>(this);
+    copyTextureUtils_ = MakeBox<CopyTextureUtils>(this);
 }
 
 void Device::UploadBuffer(const RC<Buffer> &buffer, const void *initData, size_t offset, size_t size)

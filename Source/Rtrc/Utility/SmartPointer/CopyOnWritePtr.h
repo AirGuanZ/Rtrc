@@ -124,14 +124,9 @@ public:
         return CopyOnWritePtr(ptr);
     }
 
-    operator const ReferenceCountedPtr<T> &() const
+    operator ReferenceCountedPtr<T>() const
     {
         return ptr_;
-    }
-
-    operator ReferenceCountedPtr<const T>() const
-    {
-        return ReferenceCountedPtr<const T>(ptr_.Get());
     }
 
     operator const T *() const
@@ -161,7 +156,7 @@ public:
         if(GetCounter() > 1)
         {
             ptr_ = ReferenceCountedPtr<T>(cloner(*ptr_));
-            assert(ptr_.GetCounter() == 1);
+            assert(GetCounter() == 1);
         }
         return ptr_.Get();
     }

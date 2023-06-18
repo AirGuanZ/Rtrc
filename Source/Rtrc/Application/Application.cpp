@@ -15,7 +15,7 @@ void Application::Run(const Config &config)
         .SetMaximized(config.maximized)
         .Create();
 
-    Device::Flags deviceFlags = Device::EnableSwapchainUav | Device::DisableAutoSwapchainRecreate;
+    Device::Flags deviceFlags = Device::DisableAutoSwapchainRecreate;
     if(config.rayTracing)
     {
         deviceFlags |= Device::EnableRayTracing;

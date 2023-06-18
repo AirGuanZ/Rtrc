@@ -102,7 +102,7 @@ std::vector<unsigned char> DXC::Compile(
     }
 
     std::wstring entryPoint;
-    if(target != Target::Vulkan_1_3_RT_6_4)
+    if(target != Target::Vulkan_1_3_RT_6_6 && target != Target::DirectX12_RT_6_6)
     {
         entryPoint = DXCDetail::ToWString(shaderInfo.entryPoint);
         arguments.push_back(L"-E");
@@ -112,28 +112,29 @@ std::vector<unsigned char> DXC::Compile(
     std::wstring targetProfile;
     switch(target)
     {
-    case Target::Vulkan_1_3_VS_6_0:
-    case Target::DirectX12_VS_6_0:
-        targetProfile = L"vs_6_0";
+    case Target::Vulkan_1_3_VS_6_6:
+    case Target::DirectX12_VS_6_6:
+        targetProfile = L"vs_6_6";
         break;
-    case Target::Vulkan_1_3_FS_6_0:
-    case Target::DirectX12_FS_6_0:
-        targetProfile = L"ps_6_0";
+    case Target::Vulkan_1_3_FS_6_6:
+    case Target::DirectX12_FS_6_6:
+        targetProfile = L"ps_6_6";
         break;
-    case Target::Vulkan_1_3_CS_6_0:
-    case Target::DirectX12_CS_6_0:
-        targetProfile = L"cs_6_0";
+    case Target::Vulkan_1_3_CS_6_6:
+    case Target::DirectX12_CS_6_6:
+        targetProfile = L"cs_6_6";
         break;
-    case Target::Vulkan_1_3_RT_6_4:
-        targetProfile = L"lib_6_4";
+    case Target::Vulkan_1_3_RT_6_6:
+    case Target::DirectX12_RT_6_6:
+        targetProfile = L"lib_6_6";
         break;
     }
     arguments.push_back(L"-T");
     arguments.push_back(targetProfile.c_str());
 
-    if(target == Target::Vulkan_1_3_RT_6_4)
+    if(target == Target::Vulkan_1_3_RT_6_6)
     {
-        arguments.push_back(L"-Vd");
+        arguments.push_back(L"-Vd"); // DXC crashes when ray tracing is enabled for spirv
     }
 
     std::vector<std::wstring> macros;
@@ -149,7 +150,7 @@ std::vector<unsigned char> DXC::Compile(
 
     arguments.push_back(L"-Zpr");
 
-    const bool isVulkan = std::to_underlying(target) < std::to_underlying(Target::DirectX12_VS_6_0);
+    const bool isVulkan = std::to_underlying(target) < std::to_underlying(Target::DirectX12_VS_6_6);
     if(isVulkan)
     {
         arguments.push_back(L"-spirv");
@@ -159,9 +160,10 @@ std::vector<unsigned char> DXC::Compile(
         arguments.push_back(L"-fvk-stage-io-order=alpha");
     }
 
-    const bool enableDebugInfo = debugMode
-                              && target != Target::Vulkan_1_3_RT_6_4
-                              && !shaderInfo.rayQuery; // DXC crashes when enabling debug info for ray tracing shader
+    const bool enableDebugInfo =
+        debugMode &&
+        target != Target::Vulkan_1_3_RT_6_6 &&
+        !shaderInfo.rayQuery; // DXC crashes when enabling debug info for spirv ray tracing shader
     if(enableDebugInfo)
     {
         if(isVulkan)
@@ -172,8 +174,9 @@ std::vector<unsigned char> DXC::Compile(
         }
         else
         {
-            arguments.push_back(L"-Zi");
             arguments.push_back(L"-Od");
+            arguments.push_back(L"-Zi");
+            arguments.push_back(L"-Qembed_debug");
         }
     }
     else
@@ -204,7 +207,7 @@ std::vector<unsigned char> DXC::Compile(
         arguments.push_back(L"~");
     }
 
-    const DxcBuffer sourceBuffer = { sourceBlob->GetBufferPointer(), sourceBlob->GetBufferSize() };
+    const DxcBuffer sourceBuffer = { sourceBlob->GetBufferPointer(), sourceBlob->GetBufferSize(), 0 };
     ComPtr<IDxcResult> compileResult;
     if(FAILED(impl_->compiler->Compile(
         &sourceBuffer, arguments.data(), static_cast<uint32_t>(arguments.size()),
@@ -259,7 +262,7 @@ std::vector<unsigned char> DXC::Compile(
     if(reflectionData)
     {
         assert(!preprocessOutput);
-        assert(std::to_underlying(target) >= std::to_underlying(Target::DirectX12_VS_6_0));
+        assert(std::to_underlying(target) >= std::to_underlying(Target::DirectX12_VS_6_6));
         ComPtr<IDxcBlob> reflectionBlob;
         if(FAILED(compileResult->GetOutput(
             DXC_OUT_REFLECTION, IID_PPV_ARGS(reflectionBlob.GetAddressOf()), nullptr)))

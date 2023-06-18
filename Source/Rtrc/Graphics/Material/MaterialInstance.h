@@ -192,8 +192,8 @@ public:
         data_.Unshare()->propertySheet_.Set(name, value);
     }
 
-    const ReferenceCountedPtr<SharedRenderingData> &GetRenderingData() const { return data_; }
-    SharedRenderingData                            *GetMutableRenderingData() { return data_.Unshare(); }
+    ReferenceCountedPtr<SharedRenderingData> GetRenderingData() const { return data_; }
+    SharedRenderingData                     *GetMutableRenderingData() { return data_.Unshare(); }
 
 private:
 

@@ -17,7 +17,7 @@ void Run()
 
     Box<Device> device = Device::CreateGraphicsDevice(
         window, RHI::Format::B8G8R8A8_UNorm, 3,
-        RTRC_DEBUG, false, Device::EnableRayTracing | Device::EnableSwapchainUav);
+        RTRC_DEBUG, false, Device::EnableRayTracing);
 
     ResourceManager resourceManager(device);
     resourceManager.AddMaterialFiles($rtrc_get_files("Asset/Sample/04.RayTracingTriangle/*.*"));
@@ -116,8 +116,8 @@ void Run()
         .shaders                = { shader },
         .shaderGroups           = shaderGroups,
         .bindingLayout          = std::move(bindingLayout),
-        .maxRayPayloadSize      = 0,
-        .maxRayHitAttributeSize = 0,
+        .maxRayPayloadSize      = 3 * sizeof(float),
+        .maxRayHitAttributeSize = 2 * sizeof(float),
         .maxRecursiveDepth      = 1
     });
 
@@ -128,15 +128,15 @@ void Run()
         ShaderBindingTableBuilder sbtBuilder(device.get());
         auto startHandle = ShaderGroupHandle::FromPipeline(pipeline);
 
-        auto raygenTable = sbtBuilder.AddSubtable(0);
+        auto raygenTable = sbtBuilder.AddSubtable();
         raygenTable->Resize(1);
         raygenTable->SetEntry(0, startHandle.Offset(0), nullptr, 0);
 
-        auto missTable = sbtBuilder.AddSubtable(0);
+        auto missTable = sbtBuilder.AddSubtable();
         missTable->Resize(1);
         missTable->SetEntry(0, startHandle.Offset(1), nullptr, 0);
 
-        auto hitTable = sbtBuilder.AddSubtable(0);
+        auto hitTable = sbtBuilder.AddSubtable();
         hitTable->Resize(1);
         hitTable->SetEntry(0, startHandle.Offset(2), nullptr, 0);
 
@@ -164,7 +164,20 @@ void Run()
         }
 
         auto graph = device->CreateRenderGraph();
-        auto renderTarget = graph->RegisterSwapchainTexture(device->GetSwapchain());
+        auto swapchainImage = graph->RegisterSwapchainTexture(device->GetSwapchain());
+        auto renderTarget = graph->CreateTexture(RHI::TextureDesc
+        {
+            .dim                  = RHI::TextureDimension::Tex2D,
+            .format               = RHI::Format::B8G8R8A8_UNorm,
+            .width                = device->GetSwapchain()->GetRenderTargetDesc().width,
+            .height               = device->GetSwapchain()->GetRenderTargetDesc().height,
+            .arraySize            = 1,
+            .mipLevels            = 1,
+            .sampleCount          = 1,
+            .usage                = RHI::TextureUsage::ShaderResource | RHI::TextureUsage::UnorderAccess,
+            .initialLayout        = RHI::TextureLayout::Undefined,
+            .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
+        }, "RenderTarget");
 
         auto trianglePass = graph->CreatePass("DrawTriangle");
         trianglePass->Use(renderTarget, RG::CS_RWTexture_WriteOnly);
@@ -189,7 +202,9 @@ void Run()
                 {});
         });
 
-        trianglePass->SetSignalFence(device->GetFrameFence());
+        auto blitPass = graph->CreateBlitTexture2DPass("BlitToSwapchainImage", renderTarget, swapchainImage, true);
+
+        blitPass->SetSignalFence(device->GetFrameFence());
         executer.Execute(graph);
 
         device->Present();

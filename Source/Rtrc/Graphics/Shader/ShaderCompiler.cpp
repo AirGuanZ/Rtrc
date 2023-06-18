@@ -569,6 +569,7 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
                 case Texture:
                 case Buffer:
                 case StructuredBuffer:
+                case AccelerationStructure:
                     registerTypename = "t";
                     pNext = &nextT;
                     break;
@@ -587,8 +588,7 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
                     pNext = &nextU;
                     break;
                 default:
-                    throw Exception(fmt::format(
-                        "Unsupported binding type: {}", GetBindingTypeName(binding.type)));
+                    Unreachable();
                 }
                 std::string regSpec = fmt::format("{}{}, space{}", registerTypename, (*pNext)++, set);
                 bindingNameToRegisterSpecifier.insert({ binding.name, regSpec });
@@ -792,6 +792,7 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
             case Texture:
             case Buffer:
             case StructuredBuffer:
+            case AccelerationStructure:
                 registerTypename = "t";
                 pNext = &nextUngroupedT;
                 break;
@@ -810,8 +811,7 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
                 pNext = &nextUngroupedU;
                 break;
             default:
-                throw Exception(fmt::format(
-                    "Unsupported binding type: {}", GetBindingTypeName(binding.type)));
+                Unreachable();
             }
             std::string regSpec = fmt::format("{}{}, space{}", registerTypename, (*pNext)++, 9999);
             bindingNameToRegisterSpecifier.insert({ binding.name, regSpec });
@@ -901,15 +901,15 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
         shaderInfo.entryPoint = shaderEntry.vertexEntry;
         if(device_->GetBackendType() == RHI::BackendType::Vulkan)
         {
-            vsData = dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_VS_6_0, debug, nullptr, nullptr);
+            vsData = dxc.Compile(shaderInfo, DXC::Target::Vulkan_1_3_VS_6_6, debug, nullptr, nullptr);
             vsRefl = MakeBox<SPIRVReflection>(vsData, shaderEntry.vertexEntry);
         }
         else
         {
             assert(device_->GetBackendType() == RHI::BackendType::DirectX12);
             std::vector<std::byte> reflData;
-            vsData = dxc.Compile(shaderInfo, DXC::Target::DirectX12_VS_6_0, debug, nullptr, &reflData);
-            vsRefl = MakeBox<D3D12Reflection>(dxc.GetDxcUtils(), reflData, bindingNameToSlots);
+            vsData = dxc.Compile(shaderInfo, DXC::Target::DirectX12_VS_6_6, debug, nullptr, &reflData);
+            vsRefl = MakeBox<D3D12Reflection>(dxc.GetDxcUtils(), reflData, false);
         }
     }
     if(hasFS)
@@ -924,8 +924,8 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
         {
             assert(device_->GetBackendType() == RHI::BackendType::DirectX12);
             std::vector<std::byte> reflData;
-            fsData = dxc.Compile(shaderInfo, DXC::Target::DirectX12_FS_6_0, debug, nullptr, &reflData);
-            fsRefl = MakeBox<D3D12Reflection>(dxc.GetDxcUtils(), reflData, bindingNameToSlots);
+            fsData = dxc.Compile(shaderInfo, DXC::Target::DirectX12_FS_6_6, debug, nullptr, &reflData);
+            fsRefl = MakeBox<D3D12Reflection>(dxc.GetDxcUtils(), reflData, false);
         }
     }
     if(hasCS)
@@ -940,8 +940,8 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
         {
             assert(device_->GetBackendType() == RHI::BackendType::DirectX12);
             std::vector<std::byte> reflData;
-            csData = dxc.Compile(shaderInfo, DXC::Target::DirectX12_CS_6_0, debug, nullptr, &reflData);
-            csRefl = MakeBox<D3D12Reflection>(dxc.GetDxcUtils(), reflData, bindingNameToSlots);
+            csData = dxc.Compile(shaderInfo, DXC::Target::DirectX12_CS_6_6, debug, nullptr, &reflData);
+            csRefl = MakeBox<D3D12Reflection>(dxc.GetDxcUtils(), reflData, false);
         }
     }
     if(hasRT)
@@ -953,7 +953,9 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
         }
         else
         {
-            throw Exception("Ray tracing haven't been implemented for directx12 backend");
+            std::vector<std::byte> reflData;
+            rtData = dxc.Compile(shaderInfo, GetRTTarget(), debug, nullptr, &reflData);
+            rtRefl = MakeBox<D3D12Reflection>(dxc.GetDxcUtils(), reflData, true);
         }
     }
 
@@ -1082,9 +1084,9 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
                     HandleEntryIndex(entryIndex);
                 }
 
-                if(!group.closestHitShaderIndex)
+                if(group.closestHitShaderIndex == RHI::RAY_TRACING_UNUSED_SHADER)
                 {
-                    throw Exception("One must raygen/miss/closesthit shader must be on a shader group");
+                    throw Exception("A shader group must contain one of raygen/miss/closesthit shader");
                 }
                 shaderGroups->hitShaderGroups_.push_back(group);
             }
@@ -1209,29 +1211,26 @@ size_t ShaderCompiler::PushConstantVariable::TypeToSize(Type type)
 
 DXC::Target ShaderCompiler::GetVSTarget() const
 {
-    return device_->GetBackendType() == RHI::BackendType::Vulkan ? DXC::Target::Vulkan_1_3_VS_6_0
-                                                                 : DXC::Target::DirectX12_VS_6_0;
+    return device_->GetBackendType() == RHI::BackendType::Vulkan ? DXC::Target::Vulkan_1_3_VS_6_6
+                                                                 : DXC::Target::DirectX12_VS_6_6;
 }
 
 DXC::Target ShaderCompiler::GetFSTarget() const
 {
-    return device_->GetBackendType() == RHI::BackendType::Vulkan ? DXC::Target::Vulkan_1_3_FS_6_0
-                                                                 : DXC::Target::DirectX12_FS_6_0;
+    return device_->GetBackendType() == RHI::BackendType::Vulkan ? DXC::Target::Vulkan_1_3_FS_6_6
+                                                                 : DXC::Target::DirectX12_FS_6_6;
 }
 
 DXC::Target ShaderCompiler::GetCSTarget() const
 {
-    return device_->GetBackendType() == RHI::BackendType::Vulkan ? DXC::Target::Vulkan_1_3_CS_6_0
-                                                                 : DXC::Target::DirectX12_CS_6_0;
+    return device_->GetBackendType() == RHI::BackendType::Vulkan ? DXC::Target::Vulkan_1_3_CS_6_6
+                                                                 : DXC::Target::DirectX12_CS_6_6;
 }
 
 DXC::Target ShaderCompiler::GetRTTarget() const
 {
-    if(device_->GetBackendType() == RHI::BackendType::Vulkan)
-    {
-        return DXC::Target::Vulkan_1_3_RT_6_4;
-    }
-    throw Exception("Ray tracing for directx12 hasn't been implemented");
+    return device_->GetBackendType() == RHI::BackendType::Vulkan ? DXC::Target::Vulkan_1_3_RT_6_6
+                                                                 : DXC::Target::DirectX12_RT_6_6;
 }
 
 ShaderCompiler::ParsedShaderEntry ShaderCompiler::ParseShaderEntry(std::string &source) const
@@ -1465,8 +1464,9 @@ void ShaderCompiler::ParseInlineSampler(ShaderTokenStream &tokens, std::string &
 
         auto TranslateFilterMode = [&](std::string_view str)
         {
-            if(str == "point")  { return RHI::FilterMode::Point; }
-            if(str == "linear") { return RHI::FilterMode::Linear; }
+            if(str == "nearest") { return RHI::FilterMode::Point; }
+            if(str == "point")   { return RHI::FilterMode::Point; }
+            if(str == "linear")  { return RHI::FilterMode::Linear; }
             tokens.Throw(fmt::format("Unknown filter mode: ", str));
         };
 

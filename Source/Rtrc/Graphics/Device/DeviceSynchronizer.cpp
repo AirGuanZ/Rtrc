@@ -1,4 +1,5 @@
 #include <Rtrc/Graphics/Device/DeviceSynchronizer.h>
+#include <Rtrc/Utility/Enumerate.h>
 
 RTRC_BEGIN
 
@@ -68,9 +69,10 @@ void DeviceSynchronizer::BeginRenderLoop(int frameCountInFlight)
     WaitIdle();
 
     renderLoopFrames_.resize(frameCountInFlight);
-    for(auto &frame : renderLoopFrames_)
+    for(auto &&[i, frame] : Enumerate(renderLoopFrames_))
     {
         frame.fence = device_->CreateFence(true);
+        frame.fence->SetName(fmt::format("DeviceSynchronizer.Fence{}", i));
     }
     renderLoopFrameIndex_ = 0;
 }

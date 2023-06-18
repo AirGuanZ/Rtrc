@@ -8,6 +8,8 @@ RTRC_RHI_IMPLEMENT(DirectX12Fence, Fence)
 {
 public:
 
+    RTRC_D3D12_IMPL_SET_NAME(fence_)
+
     explicit DirectX12Fence(ComPtr<ID3D12Fence> fence, bool signaled)
         : fence_(std::move(fence))
     {

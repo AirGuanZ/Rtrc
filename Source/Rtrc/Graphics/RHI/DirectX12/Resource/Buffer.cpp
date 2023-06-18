@@ -1,4 +1,5 @@
 #include <ranges>
+#include <shared_mutex>
 
 #include <Rtrc/Graphics/RHI/DirectX12/Context/Device.h>
 #include <Rtrc/Graphics/RHI/DirectX12/Resource/Buffer.h>
@@ -35,13 +36,28 @@ const BufferDesc &DirectX12Buffer::GetDesc() const
 
 Ptr<BufferSrv> DirectX12Buffer::CreateSrv(const BufferSrvDesc &desc) const
 {
-    assert((desc.stride != 0) ^ (desc.format == Format::Unknown));
+    assert((desc.stride != 0) != (desc.format != Format::Unknown));
     assert(desc.stride == 0 || desc.offset % desc.stride == 0);
+
+    {
+        std::shared_lock lock(viewMutex_);
+        if(auto it = srvs_.find(desc); it != srvs_.end())
+        {
+            return MakePtr<DirectX12BufferSrv>(this, desc, it->second);
+        }
+    }
+
+    std::lock_guard lock(viewMutex_);
+    if(auto it = srvs_.find(desc); it != srvs_.end())
+    {
+        return MakePtr<DirectX12BufferSrv>(this, desc, it->second);
+    }
 
     const size_t actualStride = desc.stride != 0 ? desc.stride : GetTexelSize(desc.format);
 
     D3D12_SHADER_RESOURCE_VIEW_DESC viewDesc;
     viewDesc.Format                     = TranslateFormat(desc.format);
+    viewDesc.Shader4ComponentMapping    = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
     viewDesc.ViewDimension              = D3D12_SRV_DIMENSION_BUFFER;
     viewDesc.Buffer.FirstElement        = desc.offset / actualStride;
     viewDesc.Buffer.NumElements         = desc.range / actualStride;
@@ -49,15 +65,29 @@ Ptr<BufferSrv> DirectX12Buffer::CreateSrv(const BufferSrvDesc &desc) const
     viewDesc.Buffer.Flags               = D3D12_BUFFER_SRV_FLAG_NONE;
 
     auto handle = device_->_internalAllocateCPUDescriptorHandle_CbvSrvUav();
-    RTRC_SCOPE_FAIL{ device_->_internalFreeCPUDescriptorHandle_CbvSrvUav(handle); };
     device_->_internalGetNativeDevice()->CreateShaderResourceView(buffer_.Get(), &viewDesc, handle);
+    srvs_.insert({ desc, handle });
     return MakePtr<DirectX12BufferSrv>(this, desc, handle);
 }
 
 Ptr<BufferUav> DirectX12Buffer::CreateUav(const BufferUavDesc &desc) const
 {
-    assert((desc.stride != 0) ^ (desc.format == Format::Unknown));
+    assert((desc.stride != 0) != (desc.format != Format::Unknown));
     assert(desc.stride == 0 || desc.offset % desc.stride == 0);
+
+    {
+        std::shared_lock lock(viewMutex_);
+        if(auto it = uavs_.find(desc); it != uavs_.end())
+        {
+            return MakePtr<DirectX12BufferUav>(this, desc, it->second);
+        }
+    }
+
+    std::lock_guard lock(viewMutex_);
+    if(auto it = uavs_.find(desc); it != uavs_.end())
+    {
+        return MakePtr<DirectX12BufferUav>(this, desc, it->second);
+    }
 
     const size_t actualStride = desc.stride != 0 ? desc.stride : GetTexelSize(desc.format);
 
@@ -71,8 +101,8 @@ Ptr<BufferUav> DirectX12Buffer::CreateUav(const BufferUavDesc &desc) const
     viewDesc.Buffer.CounterOffsetInBytes = 0;
 
     auto handle = device_->_internalAllocateCPUDescriptorHandle_CbvSrvUav();
-    RTRC_SCOPE_FAIL{ device_->_internalFreeCPUDescriptorHandle_CbvSrvUav(handle); };
     device_->_internalGetNativeDevice()->CreateUnorderedAccessView(buffer_.Get(), nullptr, &viewDesc, handle);
+    uavs_.insert({ desc, handle });
     return MakePtr<DirectX12BufferUav>(this, desc, handle);
 }
 

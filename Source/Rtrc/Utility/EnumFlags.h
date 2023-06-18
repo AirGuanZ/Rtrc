@@ -13,6 +13,7 @@ RTRC_BEGIN
                                                                                                                             \
     public:                                                                                                                 \
         using enum Enum;                                                                                                    \
+        using Bits = Enum;                                                                                                  \
         using Integer = std::underlying_type_t<Enum>;                                                                       \
         constexpr EnumFlags##Enum(Enum value = static_cast<Enum>(0)) : value(std::to_underlying(value)) { }                 \
         constexpr EnumFlags##Enum(Integer value) : value(value) { }                                                         \

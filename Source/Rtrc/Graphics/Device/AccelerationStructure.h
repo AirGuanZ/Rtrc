@@ -83,7 +83,7 @@ public:
         Span<RHI::RayTracingGeometryDesc>              geometries,
         RHI::RayTracingAccelerationStructureBuildFlags flags);
     TlasPrebuildInfo CreateTlasPrebuildInfo(
-        Span<RHI::RayTracingInstanceArrayDesc>         instanceArrays,
+        const RHI::RayTracingInstanceArrayDesc        &instances,
         RHI::RayTracingAccelerationStructureBuildFlags flags);
 
     RC<Blas> CreateBlas(RC<SubBuffer> buffer = nullptr);

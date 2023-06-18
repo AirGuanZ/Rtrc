@@ -63,20 +63,19 @@ DirectX12BindingLayout::DirectX12BindingLayout(DirectX12Device *device, BindingL
 
         for(const auto &bindingAssignment : bindingGroupLayout->_internalGetD3D12Desc().bindings)
         {
-            std::ranges::transform(
-                bindingAssignment.immutableSamplers,
-                std::back_inserter(staticSamplers_),
-                [&](const Helper::D3D12BindingAssignment::StaticSamplerRecord &s)
-                {
-                    const D3D12_SHADER_VISIBILITY vis =
-                        s.shaderVisibility == Helper::D3D12DescTable::All ? D3D12_SHADER_VISIBILITY_ALL:
-                        s.shaderVisibility == Helper::D3D12DescTable::VS  ? D3D12_SHADER_VISIBILITY_VERTEX :
+            for(uint32_t i = 0; i < bindingAssignment.immutableSamplers.size(); ++i)
+            {
+                auto &s = bindingAssignment.immutableSamplers[i];
+
+                const D3D12_SHADER_VISIBILITY vis =
+                    s.shaderVisibility == Helper::D3D12DescTable::All ? D3D12_SHADER_VISIBILITY_ALL:
+                    s.shaderVisibility == Helper::D3D12DescTable::VS  ? D3D12_SHADER_VISIBILITY_VERTEX :
                                                                             D3D12_SHADER_VISIBILITY_PIXEL;
-                    D3D12_STATIC_SAMPLER_DESC d3d12Desc = TranslateStaticSamplerDesc(s.desc, vis);
-                    d3d12Desc.RegisterSpace = static_cast<UINT>(groupIndex);
-                    d3d12Desc.ShaderRegister = bindingAssignment.registerInSpace;
-                    return d3d12Desc;
-                });
+                D3D12_STATIC_SAMPLER_DESC d3d12Desc = TranslateStaticSamplerDesc(s.desc, vis);
+                d3d12Desc.RegisterSpace = static_cast<UINT>(groupIndex);
+                d3d12Desc.ShaderRegister = bindingAssignment.registerInSpace + i;
+                staticSamplers_.push_back(d3d12Desc);
+            }
         }
     }
 

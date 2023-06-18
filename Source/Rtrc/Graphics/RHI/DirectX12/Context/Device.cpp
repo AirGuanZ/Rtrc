@@ -4,11 +4,17 @@
 #include <Rtrc/Graphics/RHI/DirectX12/Pipeline/BindingGroup.h>
 #include <Rtrc/Graphics/RHI/DirectX12/Pipeline/ComputePipeline.h>
 #include <Rtrc/Graphics/RHI/DirectX12/Pipeline/GraphicsPipeline.h>
+#include <Rtrc/Graphics/RHI/DirectX12/Pipeline/RayTracingLibrary.h>
+#include <Rtrc/Graphics/RHI/DirectX12/Pipeline/RayTracingPipeline.h>
 #include <Rtrc/Graphics/RHI/DirectX12/Pipeline/Shader.h>
 #include <Rtrc/Graphics/RHI/DirectX12/Queue/CommandPool.h>
 #include <Rtrc/Graphics/RHI/DirectX12/Queue/Fence.h>
 #include <Rtrc/Graphics/RHI/DirectX12/Queue/Queue.h>
 #include <Rtrc/Graphics/RHI/DirectX12/Queue/Semaphore.h>
+#include <Rtrc/Graphics/RHI/DirectX12/RayTracing/Blas.h>
+#include <Rtrc/Graphics/RHI/DirectX12/RayTracing/BlasPrebuildInfo.h>
+#include <Rtrc/Graphics/RHI/DirectX12/RayTracing/Tlas.h>
+#include <Rtrc/Graphics/RHI/DirectX12/RayTracing/TlasPrebuildInfo.h>
 #include <Rtrc/Graphics/RHI/DirectX12/Resource/Buffer.h>
 #include <Rtrc/Graphics/RHI/DirectX12/Resource/Sampler.h>
 #include <Rtrc/Graphics/RHI/DirectX12/Resource/Texture.h>
@@ -32,11 +38,12 @@ namespace DirectX12DeviceDetail
 } // namespace DirectX12DeviceDetail
 
 DirectX12Device::DirectX12Device(
-    ComPtr<ID3D12Device>  device,
-    const Queues         &queues,
-    ComPtr<IDXGIFactory4> factory,
-    ComPtr<IDXGIAdapter>  adapter)
+    ComPtr<ID3D12Device5>  device,
+    const Queues          &queues,
+    ComPtr<IDXGIFactory4>  factory,
+    ComPtr<IDXGIAdapter>   adapter)
     : device_(std::move(device)), factory_(std::move(factory)), adapter_(std::move(adapter))
+    , shaderGroupRecordRequirements_{}
 {
     const D3D12MA::ALLOCATOR_DESC allocatorDesc =
     {
@@ -94,6 +101,11 @@ DirectX12Device::DirectX12Device(
             &indirectDispatchCommandSignatureDesc, nullptr,
             IID_PPV_ARGS(indirectDispatchCommandSignature_.GetAddressOf())),
         "Fail to create directx12 command signature for indirect dispatch");
+
+    shaderGroupRecordRequirements_.shaderGroupHandleSize      = D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES;
+    shaderGroupRecordRequirements_.shaderGroupHandleAlignment = D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT;
+    shaderGroupRecordRequirements_.shaderGroupBaseAlignment   = D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT;
+    shaderGroupRecordRequirements_.maxShaderGroupStride       = 4096;
 }
 
 DirectX12Device::~DirectX12Device()
@@ -355,12 +367,138 @@ Ptr<ComputePipeline> DirectX12Device::CreateComputePipeline(const ComputePipelin
 
 Ptr<RayTracingPipeline> DirectX12Device::CreateRayTracingPipeline(const RayTracingPipelineDesc &desc)
 {
-    throw Exception("Not implemented");
+    CD3DX12_STATE_OBJECT_DESC pipelineDesc(D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE);
+
+    // Collect shader entries
+
+    struct EntryRecord
+    {
+        std::string name;
+        int libraryIndex;
+        int shaderIndex;
+        int entryIndex;
+        std::wstring exportedName;
+
+        const std::wstring &GetExportName()
+        {
+            if(exportedName.empty())
+            {
+                exportedName = Utf8ToWin32W(fmt::format(
+                    "_{}_{}_{}_{}", name, libraryIndex, shaderIndex, entryIndex));
+            }
+            return exportedName;
+        }
+    };
+    std::vector<EntryRecord> entryRecords;
+
+    for(auto &&[shaderIndex, shader] : Enumerate(desc.rawShaders))
+    {
+        auto dxilLibrary = pipelineDesc.CreateSubobject<CD3DX12_DXIL_LIBRARY_SUBOBJECT>();
+
+        auto d3dShader = static_cast<DirectX12RawShader *>(shader.Get());
+        dxilLibrary->SetDXILLibrary(&d3dShader->_internalGetShaderByteCode());
+
+        for(auto &&[entryIndex, entry] : Enumerate(d3dShader->_internalGetEntries()))
+        {
+            entryRecords.push_back({ 
+                entry.name, (std::numeric_limits<int>::max)(),
+                static_cast<int>(shaderIndex), static_cast<int>(entryIndex), {}
+            });
+            dxilLibrary->DefineExport(
+                entryRecords.back().GetExportName().c_str(),
+                Utf8ToWin32W(entry.name).c_str());
+        }
+    }
+
+    for(auto &&[libraryIndex, library] : Enumerate(desc.libraries))
+    {
+        auto d3dLibrary = static_cast<DirectX12RayTracingLibrary *>(library.Get());
+        auto dxilLibrary = pipelineDesc.CreateSubobject<CD3DX12_DXIL_LIBRARY_SUBOBJECT>();
+
+        auto d3dShader = static_cast<DirectX12RawShader *>(d3dLibrary->_internalGetDesc().rawShader.Get());
+        dxilLibrary->SetDXILLibrary(&d3dShader->_internalGetShaderByteCode());
+
+        for(auto &&[entryIndex, entry] : Enumerate(d3dShader->_internalGetEntries()))
+        {
+            entryRecords.push_back({ entry.name, static_cast<int>(libraryIndex), 0, static_cast<int>(entryIndex), {} });
+            dxilLibrary->DefineExport(
+                entryRecords.back().GetExportName().c_str(),
+                Utf8ToWin32W(entry.name).c_str());
+        }
+    }
+
+    // Collect shader groups
+
+    std::vector<std::wstring> groupExportedNames;
+
+    for(auto &&[groupIndex, group] : Enumerate(desc.shaderGroups))
+    {
+        group.Match(
+            [&](const RayTracingHitShaderGroup &hitGroup)
+            {
+                auto dxilGroup = pipelineDesc.CreateSubobject<CD3DX12_HIT_GROUP_SUBOBJECT>();
+                if(hitGroup.closestHitShaderIndex != RAY_TRACING_UNUSED_SHADER)
+                {
+                    dxilGroup->SetClosestHitShaderImport(
+                        entryRecords[hitGroup.closestHitShaderIndex].GetExportName().c_str());
+                }
+                if(hitGroup.anyHitShaderIndex != RAY_TRACING_UNUSED_SHADER)
+                {
+                    dxilGroup->SetAnyHitShaderImport(
+                        entryRecords[hitGroup.anyHitShaderIndex].GetExportName().c_str());
+                }
+                if(hitGroup.intersectionShaderIndex != RAY_TRACING_UNUSED_SHADER)
+                {
+                    dxilGroup->SetIntersectionShaderImport(
+                        entryRecords[hitGroup.intersectionShaderIndex].GetExportName().c_str());
+                    dxilGroup->SetHitGroupType(D3D12_HIT_GROUP_TYPE_PROCEDURAL_PRIMITIVE);
+                }
+                else
+                {
+                    dxilGroup->SetHitGroupType(D3D12_HIT_GROUP_TYPE_TRIANGLES);
+                }
+                // groupName: HitGroup_{libraryIndex}_{groupIndex}
+                groupExportedNames.push_back(Utf8ToWin32W(fmt::format(
+"HitGroup_{}_{}", (std::numeric_limits<int>::max)(), groupIndex)));
+                dxilGroup->SetHitGroupExport(groupExportedNames.back().c_str());
+            },
+            [&](const RayTracingRayGenShaderGroup &rayGenGroup)
+            {
+                groupExportedNames.push_back(entryRecords[rayGenGroup.rayGenShaderIndex].GetExportName());
+            },
+                [&](const RayTracingMissShaderGroup &missGroup)
+            {
+                groupExportedNames.push_back(entryRecords[missGroup.missShaderIndex].GetExportName());
+            },
+                [&](const RayTracingCallableShaderGroup &callableGroup)
+            {
+                groupExportedNames.push_back(entryRecords[callableGroup.callableShaderIndex].GetExportName());
+            });
+    }
+
+    auto shaderConfig = pipelineDesc.CreateSubobject<CD3DX12_RAYTRACING_SHADER_CONFIG_SUBOBJECT>();
+    shaderConfig->Config(desc.maxRayPayloadSize, desc.maxRayHitAttributeSize);
+
+    auto d3dBindingLayout = static_cast<DirectX12BindingLayout *>(desc.bindingLayout.Get());
+    auto rootSignature = d3dBindingLayout->_internalGetRootSignature(false);
+    auto globalRootSignature = pipelineDesc.CreateSubobject<CD3DX12_GLOBAL_ROOT_SIGNATURE_SUBOBJECT>();
+    globalRootSignature->SetRootSignature(rootSignature.Get());
+
+    auto pipelineConfig = pipelineDesc.CreateSubobject<CD3DX12_RAYTRACING_PIPELINE_CONFIG_SUBOBJECT>();
+    pipelineConfig->Config(desc.maxRecursiveDepth);
+
+    ComPtr<ID3D12StateObject> stateObject;
+    RTRC_D3D12_FAIL_MSG(
+        device_->CreateStateObject(pipelineDesc, IID_PPV_ARGS(stateObject.GetAddressOf())),
+        "Fail to create directx12 ray tracing pipeline state object");
+
+    return MakePtr<DirectX12RayTracingPipeline>(
+        std::move(stateObject), desc.bindingLayout, std::move(rootSignature), std::move(groupExportedNames));
 }
 
 Ptr<RayTracingLibrary> DirectX12Device::CreateRayTracingLibrary(const RayTracingLibraryDesc &desc)
 {
-    throw Exception("Not implemented");
+    return MakePtr<DirectX12RayTracingLibrary>(desc);
 }
 
 Ptr<BindingGroupLayout> DirectX12Device::CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc)
@@ -531,6 +669,10 @@ Ptr<Texture> DirectX12Device::CreateTexture(const TextureDesc &desc)
     {
         flags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
     }
+    if(desc.usage.Contains(TextureUsage::ClearColor))
+    {
+        flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+    }
 
     const D3D12_RESOURCE_DESC resourceDesc =
     {
@@ -569,7 +711,11 @@ Ptr<Buffer> DirectX12Device::CreateBuffer(const BufferDesc &desc)
     {
         flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
     }
-    assert(!desc.usage.Contains(BufferUsage::AccelerationStructure) && "Not implemented");
+    if(desc.usage.Contains(BufferUsage::AccelerationStructure))
+    {
+        flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+        flags |= D3D12_RESOURCE_FLAG_RAYTRACING_ACCELERATION_STRUCTURE;
+    }
 
     D3D12_HEAP_TYPE heapType = D3D12_HEAP_TYPE_DEFAULT;
     if(desc.hostAccessType == BufferHostAccessType::Upload)
@@ -628,7 +774,7 @@ size_t DirectX12Device::GetConstantBufferSizeAlignment() const
 
 size_t DirectX12Device::GetAccelerationStructureScratchBufferAlignment() const
 {
-    throw Exception("Not implemented");
+    return 256;
 }
 
 size_t DirectX12Device::GetTextureBufferCopyRowPitchAlignment(Format texelFormat) const
@@ -655,29 +801,46 @@ void DirectX12Device::WaitIdle()
 
 BlasPtr DirectX12Device::CreateBlas(const BufferPtr &buffer, size_t offset, size_t size)
 {
-    throw Exception("Not implemented");
+    auto ret = MakePtr<DirectX12Blas>();
+    auto d3dBuffer = static_cast<DirectX12Buffer *>(buffer.Get());
+    auto address = d3dBuffer->GetDeviceAddress().address + offset;
+    ret->_internalSetBuffer(BufferDeviceAddress{ address }, buffer);
+    return ret;
 }
 
 TlasPtr DirectX12Device::CreateTlas(const BufferPtr &buffer, size_t offset, size_t size)
 {
-    throw Exception("Not implemented");
+    auto d3dBuffer = static_cast<DirectX12Buffer *>(buffer.Get());
+    auto address = d3dBuffer->GetDeviceAddress().address + offset;
+
+    auto srv = _internalAllocateCPUDescriptorHandle_CbvSrvUav();
+    RTRC_SCOPE_FAIL{ _internalFreeCPUDescriptorHandle_CbvSrvUav(srv); };
+
+    D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;
+    srvDesc.Format                                   = DXGI_FORMAT_UNKNOWN;
+    srvDesc.ViewDimension                            = D3D12_SRV_DIMENSION_RAYTRACING_ACCELERATION_STRUCTURE;
+    srvDesc.Shader4ComponentMapping                  = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+    srvDesc.RaytracingAccelerationStructure.Location = address;
+    device_->CreateShaderResourceView(nullptr, &srvDesc, srv);
+
+    return MakePtr<DirectX12Tlas>(this, BufferDeviceAddress{ address }, buffer, srv);
 }
 
 BlasPrebuildInfoPtr DirectX12Device::CreateBlasPrebuildInfo(
     Span<RayTracingGeometryDesc> geometries, RayTracingAccelerationStructureBuildFlags flags)
 {
-    throw Exception("Not implemented");
+    return MakePtr<DirectX12BlasPrebuildInfo>(this, geometries, flags);
 }
 
 TlasPrebuildInfoPtr DirectX12Device::CreateTlasPrebuildInfo(
-    Span<RayTracingInstanceArrayDesc> instanceArrays, RayTracingAccelerationStructureBuildFlags flags)
+    const RayTracingInstanceArrayDesc &instances, RayTracingAccelerationStructureBuildFlags flags)
 {
-    throw Exception("Not implemented");
+    return MakePtr<DirectX12TlasPrebuildInfo>(this, instances, flags);
 }
 
 const ShaderGroupRecordRequirements &DirectX12Device::GetShaderGroupRecordRequirements()
 {
-    throw Exception("Not implemented");
+    return shaderGroupRecordRequirements_;
 }
 
 void DirectX12Device::_internalFreeBindingGroup(DirectX12BindingGroup &bindingGroup)

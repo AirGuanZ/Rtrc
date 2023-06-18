@@ -11,7 +11,6 @@ Note that `Sample 4~5` and `StandaloneRenderer` is only runnable with Vulkan bac
 
 ## TODO
 
-- [ ] DirectX12 Ray tracing (WIP)
 - [ ] Remove reference counting in RHI layer
 
 ![](./Gallery/00.png)

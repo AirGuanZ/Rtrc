@@ -42,11 +42,11 @@ BlasPrebuildInfo AccelerationStructureManager::CreateBlasPrebuildinfo(
 }
 
 TlasPrebuildInfo AccelerationStructureManager::CreateTlasPrebuildInfo(
-    Span<RHI::RayTracingInstanceArrayDesc>         instanceArrays,
+    const RHI::RayTracingInstanceArrayDesc        &instances,
     RHI::RayTracingAccelerationStructureBuildFlags flags)
 {
     TlasPrebuildInfo info;
-    info.info_ = rhiDevice_->CreateTlasPrebuildInfo(instanceArrays, flags);
+    info.info_ = rhiDevice_->CreateTlasPrebuildInfo(instances, flags);
     return info;
 }
 

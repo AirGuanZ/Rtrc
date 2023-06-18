@@ -289,7 +289,7 @@ RG::TextureResource *PhysicalAtmospherePass::InitializeSkyLut(
             .sampleCount          = 1,
             .usage                = RHI::TextureUsage::UnorderAccess |
                                     RHI::TextureUsage::ShaderResource |
-                                    RHI::TextureUsage::TransferDst,
+                                    RHI::TextureUsage::ClearColor,
             .initialLayout        = RHI::TextureLayout::Undefined,
             .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
         });

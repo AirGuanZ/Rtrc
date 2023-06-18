@@ -110,7 +110,7 @@ public:
 
     explicit ShaderBindingTableBuilder(Device *device = nullptr);
 
-    SubtableBuilder *AddSubtable(uint32_t shaderDataSizeInBytes);
+    SubtableBuilder *AddSubtable(/*uint32_t shaderDataSizeInBytes*/);
 
     ShaderBindingTable CreateShaderBindingTable(bool useCopyCommand = false) const;
 
@@ -119,7 +119,7 @@ private:
     Device  *device_;
     uint32_t handleSize_;
     uint32_t recordAlignment_;
-    uint32_t dataUnit_;
+    //uint32_t dataUnit_;
 
     std::vector<Box<SubtableBuilder>> subtableBuilders_;
 };

@@ -296,8 +296,8 @@ VulkanDevice::VulkanDevice(
             .shaderGroupHandleAlignment = properties->shaderGroupHandleAlignment,
             .shaderGroupBaseAlignment   = properties->shaderGroupBaseAlignment,
             .maxShaderGroupStride       = properties->maxShaderGroupStride,
-            .shaderDataAlignment        = 4,
-            .shaderDataUnit             = 4
+            //.shaderDataAlignment        = 4,
+            //.shaderDataUnit             = 4
         };
     }
 }
@@ -730,8 +730,8 @@ Ptr<RayTracingPipeline> VulkanDevice::CreateRayTracingPipeline(const RayTracingP
     std::vector<VkPipelineShaderStageCreateInfo> vkStages;
     for(auto &rawShader : desc.rawShaders)
     {
-        static_cast<const VulkanRawShader *>(rawShader.Get())->
-            _internalGetStageCreateInfos(std::back_inserter(vkStages));
+        static_cast<const VulkanRawShader *>(rawShader.Get())
+            ->_internalGetStageCreateInfos(std::back_inserter(vkStages));
     }
     auto vkGroups = VkDeviceDetail::TranslateVulkanShaderGroups(desc.shaderGroups);
 
@@ -739,18 +739,35 @@ Ptr<RayTracingPipeline> VulkanDevice::CreateRayTracingPipeline(const RayTracingP
     vkLibraries.reserve(desc.libraries.size());
     for(auto &l : desc.libraries)
     {
-        vkLibraries.push_back(static_cast<VulkanRayTracingLibrary *>(l.Get())->_internalGetNativePipeline());
+        auto lib = static_cast<VulkanRayTracingLibrary *>(l.Get());
+        vkLibraries.push_back(lib->_internalGetNativePipeline());
+#if RTRC_DEBUG
+        if(lib->_internalGetMaxPayloadSize() != desc.maxRayPayloadSize)
+        {
+            throw Exception(fmt::format(
+                "VulkanDevice::CreateRayTracingPipeline: "
+                "library.maxRayPayloadSize({}) != pipeline.maxRayPayloadSize({})",
+                lib->_internalGetMaxPayloadSize(), desc.maxRayPayloadSize));
+        }
+        if(lib->_internalGetMaxHitAttributeSize() != desc.maxRayHitAttributeSize)
+        {
+            throw Exception(fmt::format(
+                "VulkanDevice::CreateRayTracingPipeline: "
+                "library.maxRayHitAttributeSize({}) != pipeline.maxRayHitAttributeSize({})",
+                lib->_internalGetMaxHitAttributeSize(), desc.maxRayHitAttributeSize));
+        }
+#endif
     }
     const VkPipelineLibraryCreateInfoKHR libraryCreateInfo =
     {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_LIBRARY_CREATE_INFO_KHR,
+        .sType        = VK_STRUCTURE_TYPE_PIPELINE_LIBRARY_CREATE_INFO_KHR,
         .libraryCount = static_cast<uint32_t>(desc.libraries.size()),
-        .pLibraries = vkLibraries.data()
+        .pLibraries   = vkLibraries.data()
     };
     const VkRayTracingPipelineInterfaceCreateInfoKHR interfaceCreateInfo =
     {
-        .sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_INTERFACE_CREATE_INFO_KHR,
-        .maxPipelineRayPayloadSize = desc.maxRayPayloadSize,
+        .sType                          = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_INTERFACE_CREATE_INFO_KHR,
+        .maxPipelineRayPayloadSize      = desc.maxRayPayloadSize,
         .maxPipelineRayHitAttributeSize = desc.maxRayHitAttributeSize
     };
 
@@ -761,9 +778,9 @@ Ptr<RayTracingPipeline> VulkanDevice::CreateRayTracingPipeline(const RayTracingP
     }
     const VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo =
     {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        .sType             = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
         .dynamicStateCount = static_cast<uint32_t>(dynamicStates.GetSize()),
-        .pDynamicStates = dynamicStates.GetData()
+        .pDynamicStates    = dynamicStates.GetData()
     };
 
     auto pipelineLayout = static_cast<VulkanBindingLayout *>(desc.bindingLayout.Get())->_internalGetNativeLayout();
@@ -1205,9 +1222,9 @@ BlasPrebuildInfoPtr VulkanDevice::CreateBlasPrebuildInfo(
 }
 
 TlasPrebuildInfoPtr VulkanDevice::CreateTlasPrebuildInfo(
-    Span<RayTracingInstanceArrayDesc> instanceArrays, RayTracingAccelerationStructureBuildFlags flags)
+    const RayTracingInstanceArrayDesc &instances, RayTracingAccelerationStructureBuildFlags flags)
 {
-    return MakePtr<VulkanTlasPrebuildInfo>(this, instanceArrays, flags);
+    return MakePtr<VulkanTlasPrebuildInfo>(this, instances, flags);
 }
 
 const ShaderGroupRecordRequirements &VulkanDevice::GetShaderGroupRecordRequirements()

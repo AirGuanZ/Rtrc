@@ -48,16 +48,16 @@ ShaderBindingTableBuilder::ShaderBindingTableBuilder(Device *device)
     : device_(device)
 {
     const RHI::ShaderGroupRecordRequirements &reqs = device->GetRawDevice()->GetShaderGroupRecordRequirements();
-    assert(reqs.shaderGroupHandleSize % reqs.shaderDataUnit == 0);
+    //assert(reqs.shaderGroupHandleSize % reqs.shaderDataUnit == 0);
     handleSize_      = reqs.shaderGroupHandleSize;
     recordAlignment_ = reqs.shaderGroupHandleAlignment;
-    dataUnit_        = reqs.shaderDataUnit;
+    //dataUnit_        = reqs.shaderDataUnit;
 }
 
-ShaderBindingTableBuilder::SubtableBuilder *ShaderBindingTableBuilder::AddSubtable(uint32_t shaderDataSizeInBytes)
+ShaderBindingTableBuilder::SubtableBuilder *ShaderBindingTableBuilder::AddSubtable(/*uint32_t shaderDataSizeInBytes*/)
 {
     auto builder = MakeBox<SubtableBuilder>();
-    builder->recordSize_ = UpAlignTo(handleSize_ + UpAlignTo(shaderDataSizeInBytes, dataUnit_), recordAlignment_);
+    builder->recordSize_ = UpAlignTo(handleSize_ /*+ UpAlignTo(shaderDataSizeInBytes, dataUnit_)*/, recordAlignment_);
     builder->shaderGroupHandleSize_ = handleSize_;
     subtableBuilders_.push_back(std::move(builder));
     return subtableBuilders_.back().get();

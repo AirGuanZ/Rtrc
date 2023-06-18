@@ -2,11 +2,16 @@
 
 RTRC_BEGIN
 
+std::atomic<int> proxyCount = 0;
+
 SceneProxy::~SceneProxy()
 {
     for(auto *light : lights_)
     {
-        (void)light->DecreaseCounter();
+        if(!light->DecreaseCounter())
+        {
+            delete light;
+        }
     }
 }
 

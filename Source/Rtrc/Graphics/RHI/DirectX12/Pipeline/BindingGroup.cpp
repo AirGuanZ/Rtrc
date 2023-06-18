@@ -1,5 +1,6 @@
 #include <Rtrc/Graphics/RHI/DirectX12/Context/Device.h>
 #include <Rtrc/Graphics/RHI/DirectX12/Pipeline/BindingGroup.h>
+#include <Rtrc/Graphics/RHI/DirectX12/RayTracing/Tlas.h>
 #include <Rtrc/Graphics/RHI/DirectX12/Resource/BufferView.h>
 #include <Rtrc/Graphics/RHI/DirectX12/Resource/Sampler.h>
 #include <Rtrc/Graphics/RHI/DirectX12/Resource/TextureView.h>
@@ -97,7 +98,10 @@ void DirectX12BindingGroup::ModifyMember(int index, int arrayElem, const Constan
 
 void DirectX12BindingGroup::ModifyMember(int index, int arrayElem, const Tlas *tlas)
 {
-    throw Exception("Not implemented");
+    assert(GetBindingType(index) == BindingType::AccelerationStructure);
+    auto d3dTlas = static_cast<const DirectX12Tlas *>(tlas);
+    ModifyMemberImpl(
+        index, arrayElem, d3dTlas->_internalGetSrv(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 }
 
 void DirectX12BindingGroup::ModifyMemberImpl(

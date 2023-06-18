@@ -408,16 +408,16 @@ D3D12_BARRIER_ACCESS TranslateBarrierAccess(ResourceAccessFlag accesses)
 {
     constexpr D3D12_BARRIER_ACCESS d3dAccesses[] =
     {
-        D3D12_BARRIER_ACCESS_VERTEX_BUFFER,                            // VertexBufferRead
-        D3D12_BARRIER_ACCESS_INDEX_BUFFER,                             // IndexBufferRead
-        D3D12_BARRIER_ACCESS_CONSTANT_BUFFER,                          // ConstantBufferRead
-        D3D12_BARRIER_ACCESS_RENDER_TARGET,                            // RenderTargetRead
-        D3D12_BARRIER_ACCESS_RENDER_TARGET,                            // RenderTargetWrite
-        D3D12_BARRIER_ACCESS_DEPTH_STENCIL_READ,                       // DepthStencilRead
-        D3D12_BARRIER_ACCESS_DEPTH_STENCIL_WRITE,                      // DepthStencilWrite
-        D3D12_BARRIER_ACCESS_SHADER_RESOURCE,                          // TextureRead
-        D3D12_BARRIER_ACCESS_UNORDERED_ACCESS,                         // RWTextureRead
-        D3D12_BARRIER_ACCESS_UNORDERED_ACCESS,                         // RWTextureWrite
+        D3D12_BARRIER_ACCESS_VERTEX_BUFFER,                           // VertexBufferRead
+        D3D12_BARRIER_ACCESS_INDEX_BUFFER,                            // IndexBufferRead
+        D3D12_BARRIER_ACCESS_CONSTANT_BUFFER,                         // ConstantBufferRead
+        D3D12_BARRIER_ACCESS_RENDER_TARGET,                           // RenderTargetRead
+        D3D12_BARRIER_ACCESS_RENDER_TARGET,                           // RenderTargetWrite
+        D3D12_BARRIER_ACCESS_DEPTH_STENCIL_READ,                      // DepthStencilRead
+        D3D12_BARRIER_ACCESS_DEPTH_STENCIL_WRITE,                     // DepthStencilWrite
+        D3D12_BARRIER_ACCESS_SHADER_RESOURCE,                         // TextureRead
+        D3D12_BARRIER_ACCESS_UNORDERED_ACCESS,                        // RWTextureRead
+        D3D12_BARRIER_ACCESS_UNORDERED_ACCESS,                        // RWTextureWrite
         D3D12_BARRIER_ACCESS_SHADER_RESOURCE,                         // BufferRead
         D3D12_BARRIER_ACCESS_SHADER_RESOURCE,                         // StructuredBufferRead
         D3D12_BARRIER_ACCESS_UNORDERED_ACCESS,                        // RWBufferRead
@@ -475,6 +475,53 @@ D3D12_BARRIER_LAYOUT TranslateTextureLayout(TextureLayout layout)
     case Present:                        return D3D12_BARRIER_LAYOUT_PRESENT;
     }
     Unreachable();
+}
+
+DXGI_FORMAT TranslateRayTracingIndexType(RayTracingIndexFormat type)
+{
+    switch(type)
+    {
+    case RayTracingIndexFormat::None:   return DXGI_FORMAT_UNKNOWN;
+    case RayTracingIndexFormat::UInt16: return DXGI_FORMAT_R16_UINT;
+    case RayTracingIndexFormat::UInt32: return DXGI_FORMAT_R32_UINT;
+    }
+    Unreachable();
+}
+
+DXGI_FORMAT TranslateRayTracingVertexFormat(RayTracingVertexFormat format)
+{
+    switch(format)
+    {
+    case RayTracingVertexFormat::Float3: return DXGI_FORMAT_R32G32B32_FLOAT;
+    }
+    Unreachable();
+}
+
+D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS
+    TranslateRayTracingAccelerationStructureBuildFlags(RayTracingAccelerationStructureBuildFlags flags)
+{
+    D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS ret = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_NONE;
+    if(flags.Contains(RayTracingAccelerationStructureBuildFlags::AllowUpdate))
+    {
+        ret |= D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_UPDATE;
+    }
+    if(flags.Contains(RayTracingAccelerationStructureBuildFlagBit::AllowCompaction))
+    {
+        ret |= D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_ALLOW_COMPACTION;
+    }
+    if(flags.Contains(RayTracingAccelerationStructureBuildFlagBit::PreferFastBuild))
+    {
+        ret |= D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_BUILD;
+    }
+    if(flags.Contains(RayTracingAccelerationStructureBuildFlagBit::PreferFastTrace))
+    {
+        ret |= D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE;
+    }
+    if(flags.Contains(RayTracingAccelerationStructureBuildFlagBit::PreferLowMemory))
+    {
+        ret |= D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_MINIMIZE_MEMORY;
+    }
+    return ret;
 }
 
 RTRC_RHI_D3D12_END

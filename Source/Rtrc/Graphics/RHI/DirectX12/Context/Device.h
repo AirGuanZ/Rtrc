@@ -23,10 +23,12 @@ public:
     RTRC_D3D12_IMPL_SET_NAME(device_)
 
     DirectX12Device(
-        ComPtr<ID3D12Device> device, const Queues &queues, ComPtr<IDXGIFactory4> factory, ComPtr<IDXGIAdapter> adapter);
+        ComPtr<ID3D12Device5> device, const Queues &queues, ComPtr<IDXGIFactory4> factory, ComPtr<IDXGIAdapter> adapter);
     ~DirectX12Device() override;
 
     BackendType GetBackendType() const RTRC_RHI_OVERRIDE { return BackendType::DirectX12; }
+    bool IsGlobalBarrierWellSupported() const RTRC_RHI_OVERRIDE { return false; }
+    BarrierMemoryModel GetBarrierMemoryModel() const RTRC_RHI_OVERRIDE { return BarrierMemoryModel::Undefined; }
 
     Ptr<Queue> GetQueue(QueueType type) RTRC_RHI_OVERRIDE;
 
@@ -76,12 +78,12 @@ public:
         Span<RayTracingGeometryDesc>              geometries,
         RayTracingAccelerationStructureBuildFlags flags) RTRC_RHI_OVERRIDE;
     TlasPrebuildInfoPtr CreateTlasPrebuildInfo(
-        Span<RayTracingInstanceArrayDesc>         instanceArrays,
+        const RayTracingInstanceArrayDesc        &instances,
         RayTracingAccelerationStructureBuildFlags flags) RTRC_RHI_OVERRIDE;
 
     const ShaderGroupRecordRequirements &GetShaderGroupRecordRequirements() RTRC_RHI_OVERRIDE;
 
-    ID3D12Device *_internalGetNativeDevice() const { return device_.Get(); }
+    ID3D12Device5 *_internalGetNativeDevice() const { return device_.Get(); }
 
     D3D12_CPU_DESCRIPTOR_HANDLE _internalAllocateCPUDescriptorHandle_CbvSrvUav();
     D3D12_CPU_DESCRIPTOR_HANDLE _internalAllocateCPUDescriptorHandle_Sampler();
@@ -111,9 +113,9 @@ public:
 
 private:
 
-    ComPtr<ID3D12Device>  device_;
-    ComPtr<IDXGIFactory4> factory_;
-    ComPtr<IDXGIAdapter>  adapter_;
+    ComPtr<ID3D12Device5>  device_;
+    ComPtr<IDXGIFactory4>  factory_;
+    ComPtr<IDXGIAdapter>   adapter_;
 
     ComPtr<D3D12MA::Allocator> allocator_;
 
@@ -131,6 +133,8 @@ private:
     // Ptr<DirectX12Queue> presentQueue_;
 
     ComPtr<ID3D12CommandSignature> indirectDispatchCommandSignature_;
+
+    ShaderGroupRecordRequirements shaderGroupRecordRequirements_;
 };
 
 inline D3D12_CPU_DESCRIPTOR_HANDLE DirectX12Device::_internalAllocateCPUDescriptorHandle_CbvSrvUav()

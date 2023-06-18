@@ -345,7 +345,7 @@ void ImGuiRenderer::RenderImmediately(
 
     if(vertexBuffer)
     {
-        commandBuffer.SetVertexBuffers(0, vertexBuffer);
+        commandBuffer.SetVertexBuffer(0, vertexBuffer, sizeof(ImDrawVert));
     }
 
     if(indexBuffer)

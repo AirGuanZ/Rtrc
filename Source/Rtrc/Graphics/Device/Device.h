@@ -6,6 +6,7 @@
 #include <Rtrc/Graphics/Device/Buffer.h>
 #include <Rtrc/Graphics/Device/ClearBufferUtils.h>
 #include <Rtrc/Graphics/Device/CopyContext.h>
+#include <Rtrc/Graphics/Device/CopyTextureUtils.h>
 #include <Rtrc/Graphics/Device/Queue.h>
 #include <Rtrc/Graphics/Device/Pipeline.h>
 #include <Rtrc/Graphics/Device/Sampler.h>
@@ -21,8 +22,7 @@ namespace DeviceDetail
     {
         None                         = 0,
         EnableRayTracing             = 1 << 0,
-        EnableSwapchainUav           = 1 << 1, // Allow swapchain images to be bound as UAVs
-        DisableAutoSwapchainRecreate = 1 << 2, // Don't recreate swapchain when window size changes
+        DisableAutoSwapchainRecreate = 1 << 1, // Don't recreate swapchain when window size changes
                                                // Usually required when render thread differs from window event thread
     };
     RTRC_DEFINE_ENUM_FLAGS(FlagBit)
@@ -41,7 +41,7 @@ public:
 #endif
 
     using Flags = DeviceDetail::Flags;
-    using enum DeviceDetail::FlagBit;
+    using enum Flags::Bits;
 
     // Creation & destructor
 
@@ -199,7 +199,7 @@ public:
         Span<RHI::RayTracingGeometryDesc>              geometries,
         RHI::RayTracingAccelerationStructureBuildFlags flags);
     TlasPrebuildInfo CreateTlasPrebuildInfo(
-        Span<RHI::RayTracingInstanceArrayDesc>         instanceArrays,
+        const RHI::RayTracingInstanceArrayDesc        &instances,
         RHI::RayTracingAccelerationStructureBuildFlags flags);
 
     RC<Blas> CreateBlas(RC<SubBuffer> buffer = nullptr);
@@ -269,6 +269,7 @@ public:
     const RHI::DevicePtr &GetRawDevice() const;
 
     ClearBufferUtils &GetClearBufferUtils() { return *clearBufferUtils_; }
+    CopyTextureUtils &GetCopyTextureUtils() { return *copyTextureUtils_; }
 
     operator DynamicBufferManager &();
 
@@ -308,6 +309,7 @@ private:
     Box<CopyContext>                  copyContext_;
     Box<AccelerationStructureManager> accelerationManager_;
     Box<ClearBufferUtils>             clearBufferUtils_;
+    Box<CopyTextureUtils>             copyTextureUtils_;
 };
 
 inline const RHI::ShaderGroupRecordRequirements &Device::GetShaderGroupRecordRequirements() const
@@ -556,10 +558,10 @@ inline BlasPrebuildInfo Device::CreateBlasPrebuildinfo(
 }
 
 inline TlasPrebuildInfo Device::CreateTlasPrebuildInfo(
-    Span<RHI::RayTracingInstanceArrayDesc>         instanceArrays,
+    const RHI::RayTracingInstanceArrayDesc        &instances,
     RHI::RayTracingAccelerationStructureBuildFlags flags)
 {
-    return accelerationManager_->CreateTlasPrebuildInfo(instanceArrays, flags);
+    return accelerationManager_->CreateTlasPrebuildInfo(instances, flags);
 }
 
 inline RC<Blas> Device::CreateBlas(RC<SubBuffer> buffer)

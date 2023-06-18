@@ -88,4 +88,10 @@ D3D12_BARRIER_SYNC   TranslateBarrierSync(PipelineStageFlag stages);
 D3D12_BARRIER_ACCESS TranslateBarrierAccess(ResourceAccessFlag accesses);
 D3D12_BARRIER_LAYOUT TranslateTextureLayout(TextureLayout layout);
 
+DXGI_FORMAT TranslateRayTracingIndexType(RayTracingIndexFormat type);
+DXGI_FORMAT TranslateRayTracingVertexFormat(RayTracingVertexFormat format);
+
+D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS
+    TranslateRayTracingAccelerationStructureBuildFlags(RayTracingAccelerationStructureBuildFlags flags);
+
 RTRC_RHI_D3D12_END

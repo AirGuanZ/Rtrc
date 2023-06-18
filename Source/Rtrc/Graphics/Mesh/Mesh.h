@@ -68,6 +68,7 @@ public:
 
         uint32_t                   vertexCount_ = 0;
         std::vector<RC<SubBuffer>> vertexBuffers_;
+        std::vector<size_t>        vertexStrides_;
 
         uint32_t         indexCount_ = 0;
         RHI::IndexFormat indexFormat_ = RHI::IndexFormat::UInt16;
@@ -96,8 +97,8 @@ public:
 
     AABB3f GetBoundingBox() const { return sharedData_->GetBoundingBox(); }
 
-    const ReferenceCountedPtr<SharedRenderingData> &GetRenderingData() const  { return sharedData_; }
-    SharedRenderingData                            *GetMutableRenderingData() { return sharedData_.Unshare(); }
+    ReferenceCountedPtr<SharedRenderingData> GetRenderingData() const  { return sharedData_; }
+    SharedRenderingData                     *GetMutableRenderingData() { return sharedData_.Unshare(); }
 
 private:
 
@@ -204,6 +205,11 @@ inline Mesh MeshBuilder::CreateMesh()
     data.vertexCount_   = vertexCount_;
     data.indexCount_    = indexCount_;
     data.bound_         = bound_;
+    data.vertexStrides_.resize(data.vertexBuffers_.size());
+    for(size_t i = 0; i < data.layout_->GetVertexBufferLayouts().size(); ++i)
+    {
+        data.vertexStrides_[i] = data.layout_->GetVertexBufferLayouts()[i]->GetElementStride();
+    }
     return ret;
 }
 
