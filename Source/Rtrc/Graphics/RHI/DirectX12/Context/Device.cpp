@@ -692,11 +692,32 @@ Ptr<Texture> DirectX12Device::CreateTexture(const TextureDesc &desc)
         .HeapType = D3D12_HEAP_TYPE_DEFAULT // Upload/readback are done using staging buffers
     };
 
+    D3D12_CLEAR_VALUE clearValue = {}, *pClearValue = nullptr;
+    if(!desc.clearValue.Is<std::monostate>())
+    {
+        clearValue.Format = resourceDesc.Format;
+        pClearValue = &clearValue;
+        if(auto c = desc.clearValue.AsIf<ColorClearValue>())
+        {
+            clearValue.Color[0] = c->r;
+            clearValue.Color[1] = c->g;
+            clearValue.Color[2] = c->b;
+            clearValue.Color[3] = c->a;
+        }
+        else
+        {
+            auto d = desc.clearValue.AsIf<DepthStencilClearValue>();
+            assert(d);
+            clearValue.DepthStencil.Depth = d->depth;
+            clearValue.DepthStencil.Stencil = d->stencil;
+        }
+    }
+
     ComPtr<D3D12MA::Allocation> rawAlloc;
     ComPtr<ID3D12Resource> resource;
     RTRC_D3D12_FAIL_MSG(
         allocator_->CreateResource(
-            &allocDesc, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, nullptr,
+            &allocDesc, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, pClearValue,
             rawAlloc.GetAddressOf(), IID_PPV_ARGS(resource.GetAddressOf())),
         "Fail to create directx12 texture resource");
 

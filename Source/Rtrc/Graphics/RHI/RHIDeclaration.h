@@ -640,8 +640,29 @@ struct TextureSubresources
     uint32_t layerCount = 1;
 };
 
+struct ColorClearValue
+{
+    float r = 0, g = 0, b = 0, a = 0;
+
+    auto operator<=>(const ColorClearValue &) const = default;
+    bool operator==(const ColorClearValue &) const = default;
+};
+
+struct DepthStencilClearValue
+{
+    float   depth = 1;
+    uint8_t stencil = 0;
+
+    auto operator<=>(const DepthStencilClearValue &) const = default;
+    bool operator==(const DepthStencilClearValue &) const = default;
+};
+
+using ClearValue = Variant<ColorClearValue, DepthStencilClearValue>;
+
 struct TextureDesc
 {
+    using OptionalClearValue = Variant<std::monostate, ColorClearValue, DepthStencilClearValue>;
+
     TextureDimension dim;
     Format           format;
     uint32_t         width;
@@ -656,20 +677,26 @@ struct TextureDesc
     TextureUsageFlags         usage;
     TextureLayout             initialLayout;
     QueueConcurrentAccessMode concurrentAccessMode;
+    OptionalClearValue        clearValue;
 
-    std::strong_ordering operator<=>(const TextureDesc &rhs) const
+    auto operator<=>(const TextureDesc &rhs) const
     {
         return std::make_tuple(
                     dim, format, width, height, arraySize, mipLevels,
-                    sampleCount, usage, initialLayout, concurrentAccessMode)
+                    sampleCount, usage, initialLayout, concurrentAccessMode, clearValue)
            <=> std::make_tuple(
                     rhs.dim, rhs.format, rhs.width, rhs.height, rhs.arraySize, rhs.mipLevels,
-                    rhs.sampleCount, rhs.usage, rhs.initialLayout, rhs.concurrentAccessMode);
+                    rhs.sampleCount, rhs.usage, rhs.initialLayout, rhs.concurrentAccessMode, rhs.clearValue);
     }
 
     bool operator==(const TextureDesc &rhs) const
     {
-        return (*this <=> rhs) == std::strong_ordering::equal;
+        return std::make_tuple(
+                    dim, format, width, height, arraySize, mipLevels,
+                    sampleCount, usage, initialLayout, concurrentAccessMode, clearValue)
+           == std::make_tuple(
+                    rhs.dim, rhs.format, rhs.width, rhs.height, rhs.arraySize, rhs.mipLevels,
+                    rhs.sampleCount, rhs.usage, rhs.initialLayout, rhs.concurrentAccessMode, rhs.clearValue);
     }
 
     size_t Hash() const
@@ -838,19 +865,6 @@ struct Scissor
 
     static Scissor Create(const TexturePtr &tex);
 };
-
-struct ColorClearValue
-{
-    float r = 0, g = 0, b = 0, a = 0;
-};
-
-struct DepthStencilClearValue
-{
-    float   depth   = 1;
-    uint8_t stencil = 0;
-};
-
-using ClearValue = Variant<ColorClearValue, DepthStencilClearValue>;
 
 struct RenderPassColorAttachment
 {

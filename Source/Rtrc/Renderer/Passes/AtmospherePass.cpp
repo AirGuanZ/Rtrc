@@ -291,7 +291,8 @@ RG::TextureResource *PhysicalAtmospherePass::InitializeSkyLut(
                                     RHI::TextureUsage::ShaderResource |
                                     RHI::TextureUsage::ClearColor,
             .initialLayout        = RHI::TextureLayout::Undefined,
-            .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
+            .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive,
+            .clearValue           = RHI::ColorClearValue{ 0, 0, 0, 0 }
         });
         tex->SetName("SkyLut");
     }

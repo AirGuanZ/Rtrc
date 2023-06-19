@@ -57,7 +57,8 @@ GBuffers GBufferPass::AllocateGBuffers(RG::RenderGraph &renderGraph, const Vecto
         .sampleCount          = 1,
         .usage                = RHI::TextureUsage::RenderTarget | RHI::TextureUsage::ShaderResource,
         .initialLayout        = RHI::TextureLayout::Undefined,
-        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
+        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive,
+        .clearValue           = RHI::ColorClearValue{ 0, 0, 0, 0 }
     }, "GBufferA");
     ret.albedoMetallic = renderGraph.CreateTexture(RHI::TextureDesc
     {
@@ -70,7 +71,8 @@ GBuffers GBufferPass::AllocateGBuffers(RG::RenderGraph &renderGraph, const Vecto
         .sampleCount          = 1,
         .usage                = RHI::TextureUsage::RenderTarget | RHI::TextureUsage::ShaderResource,
         .initialLayout        = RHI::TextureLayout::Undefined,
-        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
+        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive,
+        .clearValue           = RHI::ColorClearValue{ 0, 0, 0, 0 }
     }, "GBufferB");
     ret.roughness = renderGraph.CreateTexture(RHI::TextureDesc
     {
@@ -83,7 +85,8 @@ GBuffers GBufferPass::AllocateGBuffers(RG::RenderGraph &renderGraph, const Vecto
         .sampleCount          = 1,
         .usage                = RHI::TextureUsage::RenderTarget | RHI::TextureUsage::ShaderResource,
         .initialLayout        = RHI::TextureLayout::Undefined,
-        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
+        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive,
+        .clearValue           = RHI::ColorClearValue{ 0, 0, 0, 0 }
     }, "GBufferC");
     ret.depth = renderGraph.CreateTexture(RHI::TextureDesc
     {
@@ -96,7 +99,8 @@ GBuffers GBufferPass::AllocateGBuffers(RG::RenderGraph &renderGraph, const Vecto
         .sampleCount          = 1,
         .usage                = RHI::TextureUsage::DepthStencil | RHI::TextureUsage::ShaderResource,
         .initialLayout        = RHI::TextureLayout::Undefined,
-        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
+        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive,
+        .clearValue           = RHI::DepthStencilClearValue{ 1, 0 }
     }, "GBufferDepth");
     return ret;
 }

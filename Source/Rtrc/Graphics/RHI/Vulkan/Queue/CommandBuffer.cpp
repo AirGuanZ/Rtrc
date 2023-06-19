@@ -451,6 +451,7 @@ void VulkanCommandBuffer::CopyColorTexture2DToBuffer(
 
 void VulkanCommandBuffer::ClearColorTexture2D(Texture *dst, const ColorClearValue &clearValue)
 {
+    assert(dst->GetDesc().usage.Contains(TextureUsage::ClearColor));
     auto vkTexture = static_cast<VulkanTexture *>(dst);
     const VkClearColorValue vkClearValue = TranslateClearColorValue(clearValue);
     const VkImageSubresourceRange range =
