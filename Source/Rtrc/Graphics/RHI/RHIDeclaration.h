@@ -663,20 +663,20 @@ struct TextureDesc
 {
     using OptionalClearValue = Variant<std::monostate, ColorClearValue, DepthStencilClearValue>;
 
-    TextureDimension dim;
+    TextureDimension dim = TextureDimension::Tex2D;
     Format           format;
     uint32_t         width;
     uint32_t         height;
     union
     {
-        uint32_t arraySize;
+        uint32_t arraySize = 1;
         uint32_t depth;
     };
-    uint32_t                  mipLevels;
-    uint32_t                  sampleCount;
+    uint32_t                  mipLevels = 1;
+    uint32_t                  sampleCount = 1;
     TextureUsageFlags         usage;
-    TextureLayout             initialLayout;
-    QueueConcurrentAccessMode concurrentAccessMode;
+    TextureLayout             initialLayout = TextureLayout::Undefined;
+    QueueConcurrentAccessMode concurrentAccessMode = QueueConcurrentAccessMode::Exclusive;
     OptionalClearValue        clearValue;
 
     auto operator<=>(const TextureDesc &rhs) const

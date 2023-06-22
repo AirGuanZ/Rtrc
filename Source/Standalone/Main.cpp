@@ -6,16 +6,16 @@ int main()
     try
     {
         StandaloneApplication().Run(Rtrc::Application::Config
-            {
-                .title                      = "Rtrc Standalone Renderer",
-                .width                      = 640,
-                .height                     = 480,
-                .maximized                  = true,
-                .vsync                      = true,
-                .debug                      = RTRC_DEBUG,
-                .rayTracing                 = true,
-                .handleCrossThreadException = false
-            });
+        {
+            .title                      = "Rtrc Standalone Renderer",
+            .width                      = 640,
+            .height                     = 480,
+            .maximized                  = true,
+            .vsync                      = true,
+            .debug                      = RTRC_DEBUG,
+            .rayTracing                 = true,
+            .handleCrossThreadException = false
+        });
     }
     catch(const Rtrc::Exception &e)
     {

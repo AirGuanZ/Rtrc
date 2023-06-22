@@ -133,11 +133,7 @@ RTRC_IMPL_SET(const RC<Tlas>    &, AccelerationStructure)
 const unsigned char *MaterialPropertySheet::GetValue(MaterialPropertyName name) const
 {
     const int index = layout_->GetPropertyIndexByName(name);
-    if(index < 0)
-    {
-        throw Exception(fmt::format("Unknown material property: {}", name));
-    }
-    return GetValue(index);
+    return index >= 0 ? GetValue(index) : nullptr;
 }
 
 const unsigned char *MaterialPropertySheet::GetValue(int index) const

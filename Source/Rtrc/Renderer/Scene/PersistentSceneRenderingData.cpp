@@ -1,9 +1,9 @@
 #include <Rtrc/Renderer/Common.h>
-#include <Rtrc/Renderer/Scene/CachedScene.h>
+#include <Rtrc/Renderer/Scene/PersistentSceneCameraRenderingData.h>
 
 RTRC_RENDERER_BEGIN
 
-CachedScene::CachedScene(const Config &config, ObserverPtr<Device> device)
+PersistentSceneRenderingData::PersistentSceneRenderingData(const Config &config, ObserverPtr<Device> device)
     : config_(config)
     , device_(device)
     , scene_(nullptr)
@@ -14,7 +14,7 @@ CachedScene::CachedScene(const Config &config, ObserverPtr<Device> device)
     
 }
 
-CachedScene::RenderGraphInterface CachedScene::Update(
+PersistentSceneRenderingData::RenderGraphInterface PersistentSceneRenderingData::Update(
     const RenderCommand_RenderStandaloneFrame &frame,
     TransientConstantBufferAllocator          &transientConstantBufferAllocator,
     const CachedMeshManager                   &meshManager,
@@ -32,12 +32,12 @@ CachedScene::RenderGraphInterface CachedScene::Update(
 
     for(const StaticMeshRenderProxy *staticMeshProxy : frame.scene->GetStaticMeshRenderObjects())
     {
-        const CachedMaterialManager::CachedMaterial *material =
-            materialManager.FindCachedMaterial(staticMeshProxy->materialRenderingData->GetUniqueID());
+        const UniqueId materialID = staticMeshProxy->materialRenderingData->GetUniqueID();
+        const CachedMaterialManager::CachedMaterial *material = materialManager.FindCachedMaterial(materialID);
         assert(material);
 
-        const CachedMeshManager::CachedMesh *mesh =
-            meshManager.FindCachedMesh(staticMeshProxy->meshRenderingData->GetUniqueID());
+        const UniqueId staticMeshID = staticMeshProxy->meshRenderingData->GetUniqueID();
+        const CachedMeshManager::CachedMesh *mesh = meshManager.FindCachedMesh(staticMeshID);
         assert(mesh);
 
         auto record = linearAllocator.Create<StaticMeshRecord>();
@@ -48,8 +48,8 @@ CachedScene::RenderGraphInterface CachedScene::Update(
 
         if(config_.rayTracing)
         {
-            const bool inOpaqueTlas =
-                staticMeshProxy->rayTracingFlags.Contains(StaticMeshRendererRayTracingFlags::InOpaqueTlas);
+            using enum StaticMeshRendererRayTracingFlags::Bits;
+            const bool inOpaqueTlas = staticMeshProxy->rayTracingFlags.Contains(InOpaqueTlas);
             if(inOpaqueTlas && mesh->blas && material->albedoTextureEntry)
             {
                 tlasObjects_.push_back(record);
@@ -59,8 +59,8 @@ CachedScene::RenderGraphInterface CachedScene::Update(
 
     // Update per-camera scene data
 
-    std::vector<Box<CachedCamera>> newCachedScenesPerCamera;
-    for(Box<CachedCamera> &camera : cachedCameras_)
+    std::vector<Box<PersistentSceneCameraRenderingData>> newCachedScenesPerCamera;
+    for(Box<PersistentSceneCameraRenderingData> &camera : cachedCameras_)
     {
         if(camera->GetCamera().originalId == frame.camera.originalId)
         {
@@ -70,7 +70,7 @@ CachedScene::RenderGraphInterface CachedScene::Update(
     }
     if(newCachedScenesPerCamera.empty())
     {
-        newCachedScenesPerCamera.push_back(MakeBox<CachedCamera>(device_, *this, frame.camera.originalId));
+        newCachedScenesPerCamera.push_back(MakeBox<PersistentSceneCameraRenderingData>(device_, *this, frame.camera.originalId));
     }
     newCachedScenesPerCamera.back()->Update(frame.camera, transientConstantBufferAllocator, linearAllocator);
     cachedCameras_.swap(newCachedScenesPerCamera);
@@ -99,6 +99,7 @@ CachedScene::RenderGraphInterface CachedScene::Update(
 
             TlasMaterial &material = materialData.emplace_back();
             material.albedoTextureIndex = object->cachedMaterial->albedoTextureEntry->GetOffset();
+            material.albedoScale        = object->cachedMaterial->albedoScale;
         }
 
         // Upload material data
@@ -196,7 +197,7 @@ CachedScene::RenderGraphInterface CachedScene::Update(
     return ret;
 }
 
-CachedCamera *CachedScene::GetCachedCamera(UniqueId cameraId)
+PersistentSceneCameraRenderingData *PersistentSceneRenderingData::GetSceneCameraRenderingData(UniqueId cameraId) const
 {
     size_t beg = 0, end = cachedCameras_.size();
     while(beg < end)
@@ -216,81 +217,6 @@ CachedCamera *CachedScene::GetCachedCamera(UniqueId cameraId)
         }
     }
     return nullptr;
-}
-
-CachedCamera::CachedCamera(ObserverPtr<Device> device, const CachedScene &scene, UniqueId cameraId)
-    : scene_(scene), perObjectDataBufferPool_(device, RHI::BufferUsage::ShaderStructuredBuffer)
-{
-    renderCamera_.originalId = cameraId;
-}
-
-void CachedCamera::Update(
-    const RenderCamera               &camera,
-    TransientConstantBufferAllocator &transientConstantBufferAllocator,
-    LinearAllocator                  &linearAllocator)
-{
-    assert(renderCamera_.originalId == camera.originalId);
-    renderCamera_ = camera;
-
-    {
-        const CameraConstantBuffer cbufferData = CameraConstantBuffer::FromCamera(renderCamera_);
-        cameraCBuffer_ = transientConstantBufferAllocator.CreateConstantBuffer(cbufferData);
-    }
-
-    objects_.clear();
-    for(const CachedScene::StaticMeshRecord *src : scene_.GetStaticMeshes())
-    {
-        StaticMeshCBuffer cbuffer;
-        cbuffer.localToWorld  = src->proxy->localToWorld;
-        cbuffer.worldToLocal  = src->proxy->worldToLocal;
-        cbuffer.localToClip   = camera.worldToClip * cbuffer.localToWorld;
-        cbuffer.localToCamera = camera.worldToCamera * cbuffer.localToWorld;
-        auto cbufferBindingGroup = transientConstantBufferAllocator.CreateConstantBufferBindingGroup(cbuffer);
-
-        const Material *rawMaterial = src->cachedMaterial->materialRenderingData->GetMaterial().get();
-
-        auto record = linearAllocator.Create<StaticMeshRecord>();
-        record->cachedMesh            = src->cachedMesh;
-        record->cachedMaterial        = src->cachedMaterial;
-        record->proxy                 = src->proxy;
-        record->perObjectBindingGroup = std::move(cbufferBindingGroup);
-        record->gbufferPassIndex      = rawMaterial->GetBuiltinPassIndex(Material::BuiltinPass::GBuffer);
-        record->supportInstancing     = rawMaterial->GetPasses()[record->gbufferPassIndex]->GetShaderTemplate()
-                                                   ->HasBuiltinKeyword(BuiltinKeyword::EnableInstance);
-        objects_.push_back(record);
-    }
-    std::ranges::sort(objects_, [](const StaticMeshRecord *lhs, const StaticMeshRecord *rhs)
-    {
-        return std::make_tuple(
-                    lhs->cachedMaterial->materialId,
-                    lhs->cachedMaterial,
-                    lhs->cachedMesh->meshRenderingData->GetLayout(),
-                    lhs->cachedMesh) <
-               std::make_tuple(
-                    rhs->cachedMaterial->materialId,
-                    rhs->cachedMaterial,
-                    rhs->cachedMesh->meshRenderingData->GetLayout(),
-                    rhs->cachedMesh);
-    });
-
-    std::vector<StaticMeshCBuffer> perObjectData(objects_.size());
-    for(size_t i = 0; i < objects_.size(); ++i)
-    {
-        const StaticMeshRecord *src = objects_[i];
-        StaticMeshCBuffer &dst = perObjectData[i];
-        dst.localToWorld  = src->proxy->localToWorld;
-        dst.worldToLocal  = src->proxy->worldToLocal;
-        dst.localToCamera = renderCamera_.worldToCamera * dst.localToWorld;
-        dst.localToClip   = renderCamera_.worldToClip * dst.localToWorld;
-    }
-    perObjectDataBuffer_ = perObjectDataBufferPool_.Acquire(
-        sizeof(StaticMeshCBuffer) * std::max<size_t>(perObjectData.size(), 1));
-    perObjectDataBuffer_->SetDefaultStructStride(sizeof(StaticMeshCBuffer));
-    perObjectDataBuffer_->SetName("PerObjectDataBuffer");
-    if(!perObjectData.empty())
-    {
-        perObjectDataBuffer_->Upload(perObjectData.data(), 0, sizeof(StaticMeshCBuffer) * perObjectData.size());
-    }
 }
 
 RTRC_RENDERER_END

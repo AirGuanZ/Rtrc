@@ -55,7 +55,7 @@ public:
 
     const RC<MaterialPropertyHostLayout> &GetHostLayout() const { return layout_; }
 
-    const unsigned char *GetValue(MaterialPropertyName name) const;
+    const unsigned char *GetValue(MaterialPropertyName name) const; // Returns nullptr if not found
     const unsigned char *GetValue(int index) const;
 
     const BindlessTextureEntry *GetBindlessTextureEntry(MaterialPropertyName name) const; // Returns nullptr if not found

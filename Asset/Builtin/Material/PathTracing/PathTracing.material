@@ -1,0 +1,13 @@
+Material "Builtin/PathTracing"
+{
+
+    Pass
+    {
+        Shader "Builtin/PathTracing/Trace"
+        {
+            #comp CSMain
+            #include "./Trace.hlsl"
+        }
+    }
+
+} // Material "Builtin/PathTracing"

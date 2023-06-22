@@ -20,6 +20,8 @@ public:
     Span<const Light::SharedRenderingData *> GetLights() const { return lights_; }
     Span<const StaticMeshRenderProxy*> GetStaticMeshRenderObjects() const { return staticMeshRenderObjects_; }
 
+    UniqueId GetOriginalSceneID() const { return originanSceneID_; }
+
 private:
 
     friend class Scene;
@@ -40,6 +42,8 @@ private:
     
     std::vector<const Light::SharedRenderingData *> lights_;
     std::vector<const StaticMeshRenderProxy *>      staticMeshRenderObjects_;
+
+    UniqueId originanSceneID_;
 };
 
 class Scene : public Uncopyable, public WithUniqueObjectID

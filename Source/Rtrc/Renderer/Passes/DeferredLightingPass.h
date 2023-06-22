@@ -16,10 +16,10 @@ public:
     DeferredLightingPass(ObserverPtr<Device> device, ObserverPtr<const BuiltinResourceManager> builtinResources);
 
     RenderGraphOutput RenderDeferredLighting(
-        const CachedCamera &scene,
-        const RGScene              &rgScene,
-        RG::RenderGraph            &renderGraph,
-        RG::TextureResource        *renderTarget);
+        const PersistentSceneCameraRenderingData &scene,
+        const RGScene                            &rgScene,
+        RG::RenderGraph                          &renderGraph,
+        RG::TextureResource                      *renderTarget);
 
 private:
 
@@ -30,7 +30,7 @@ private:
     };
 
     void DoDeferredLighting(
-        const CachedCamera  &sceneCamera,
+        const PersistentSceneCameraRenderingData  &sceneCamera,
         const RGScene       &rgScene,
         RG::TextureResource *renderTarget,
         RG::PassContext     &context);

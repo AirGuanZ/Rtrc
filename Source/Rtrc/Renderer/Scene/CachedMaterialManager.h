@@ -16,7 +16,11 @@ public:
         UniqueId                                     materialRenderingDataId = {};
         const MaterialInstance::SharedRenderingData *materialRenderingData   = nullptr;
         
-        const BindlessTextureEntry *albedoTextureEntry;
+        const BindlessTextureEntry *albedoTextureEntry = nullptr;
+        float                       albedoScale = 1;
+
+        int  gbufferPassIndex             = -1;;
+        bool gbufferPassSupportInstancing = false;
     };
     
     void UpdateCachedMaterialData(const RenderCommand_RenderStandaloneFrame &frame);

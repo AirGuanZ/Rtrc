@@ -11,7 +11,7 @@
 #include <Rtrc/Renderer/Passes/GBufferPass.h>
 #include <Rtrc/Renderer/Passes/ShadowMaskPass.h>
 #include <Rtrc/Renderer/RenderCommand.h>
-#include <Rtrc/Renderer/Scene/CachedScene.h>
+#include <Rtrc/Renderer/Scene/PersistentSceneCameraRenderingData.h>
 #include <Rtrc/Utility/Timer.h>
 
 RTRC_RENDERER_BEGIN
@@ -77,7 +77,7 @@ private:
     CachedMeshManager     meshManager_;
     CachedMaterialManager materialManager_;
     
-    CachedScene cachedScene_;
+    PersistentSceneRenderingData cachedScene_;
 
     Box<PhysicalAtmospherePass> atmospherePass_;
     Box<GBufferPass>            gbufferPass_;

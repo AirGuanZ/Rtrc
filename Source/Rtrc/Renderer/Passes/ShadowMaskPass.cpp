@@ -2,6 +2,7 @@
 
 #include <Rtrc/Renderer/GBufferBinding.h>
 #include <Rtrc/Renderer/Passes/ShadowMaskPass.h>
+#include <Rtrc/Renderer/Scene/PersistentSceneCameraRenderingData.h>
 #include <Rtrc/Math/DistributionTransform.h>
 
 RTRC_RENDERER_BEGIN
@@ -76,7 +77,7 @@ ShadowMaskPass::ShadowMaskPass(
 }
 
 ShadowMaskPass::RenderGraphOutput ShadowMaskPass::Render(
-    const CachedCamera &sceneCamera,
+    const PersistentSceneCameraRenderingData &sceneCamera,
     int                 lightIndex,
     bool                enableLowResOptimization,
     const RGScene      &rgScene,

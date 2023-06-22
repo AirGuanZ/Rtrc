@@ -172,7 +172,7 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
         frame, *transientConstantBufferAllocator_,
         meshManager_, materialManager_, *renderGraph, linearAllocator);
 
-    CachedCamera *cachedCamera = cachedScene_.GetCachedCamera(frame.camera.originalId);
+    PersistentSceneCameraRenderingData *cachedCamera = cachedScene_.GetSceneCameraRenderingData(frame.camera.originalId);
     assert(cachedCamera);
 
     // Blas buffers are not tracked by render graph, so we need to manually add dependency.

@@ -467,7 +467,9 @@ ImGuiInstance::ImGuiInstance(ObserverPtr<Device> device, ObserverPtr<Window> win
     data_ = MakeBox<Data>();
     data_->device = device;
     data_->window = window;
+    auto oldContext = ImGui::GetCurrentContext();
     data_->context = ImGui::CreateContext();
+    ImGui::SetCurrentContext(oldContext);
     Do([&]
     {
         ImGui::GetIO().IniFilename = nullptr;

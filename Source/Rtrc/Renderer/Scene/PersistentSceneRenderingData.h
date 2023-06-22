@@ -1,6 +1,5 @@
 #pragma once
 
-#include <Rtrc/Renderer/Passes/AtmospherePass.h>
 #include <Rtrc/Renderer/Scene/CachedMaterialManager.h>
 #include <Rtrc/Renderer/Scene/CachedMeshManager.h>
 #include <Rtrc/Renderer/Utility/TransientConstantBufferAllocator.h>
@@ -9,9 +8,9 @@
 
 RTRC_RENDERER_BEGIN
 
-class CachedCamera;
+class PersistentSceneCameraRenderingData;
 
-class CachedScene : public Uncopyable
+class PersistentSceneRenderingData : public Uncopyable
 {
 public:
 
@@ -30,6 +29,7 @@ public:
     struct TlasMaterial
     {
         uint32_t albedoTextureIndex;
+        float    albedoScale;
     };
 
     struct RenderGraphInterface
@@ -41,7 +41,7 @@ public:
         RG::BufferResource *tlasBuffer             = nullptr; // Optional[RayTracing]
     };
 
-    CachedScene(const Config &config, ObserverPtr<Device> device);
+    PersistentSceneRenderingData(const Config &config, ObserverPtr<Device> device);
 
     RenderGraphInterface Update(
         const RenderCommand_RenderStandaloneFrame &frame,
@@ -51,7 +51,7 @@ public:
         RG::RenderGraph                           &renderGraph,
         LinearAllocator                           &linearAllocator);
 
-    CachedCamera *GetCachedCamera(UniqueId cameraId);
+    PersistentSceneCameraRenderingData *GetSceneCameraRenderingData(UniqueId cameraId) const;
 
     Span<StaticMeshRecord *> GetStaticMeshes() const { return objects_; }
 
@@ -80,51 +80,8 @@ private:
     RC<StatefulBuffer> opaqueTlasBuffer_;
     RC<Tlas>           opaqueTlas_;
 
-    std::vector<Box<CachedCamera>> cachedCameras_;
+    std::vector<Box<PersistentSceneCameraRenderingData>> cachedCameras_;
 };
 
-class CachedCamera
-{
-public:
-
-    struct StaticMeshRecord : CachedScene::StaticMeshRecord
-    {
-        RC<BindingGroup> perObjectBindingGroup;
-        int              gbufferPassIndex = -1;
-        bool             supportInstancing = false;
-    };
-
-    CachedCamera(ObserverPtr<Device> device, const CachedScene &scene, UniqueId cameraId);
-    
-    const RenderCamera  &GetCamera() const { return renderCamera_; }
-    const RC<SubBuffer> &GetCameraCBuffer() const { return cameraCBuffer_; }
-
-    const CachedScene &GetCachedScene() const { return scene_; }
-
-    Span<StaticMeshRecord *> GetStaticMeshes() const { return objects_; }
-    const RC<Buffer>        &GetStaticMeshPerObjectData() const { return perObjectDataBuffer_; }
-
-    Span<const Light::SharedRenderingData*> GetLights() const { return scene_.GetLights(); }
-
-    PhysicalAtmospherePass::CachedData &GetCachedAtmosphereData() { return atmosphereData_; }
-
-    void Update(
-        const RenderCamera               &camera,
-        TransientConstantBufferAllocator &transientConstantBufferAllocator,
-        LinearAllocator                  &linearAllocator);
-
-private:
-    
-    const CachedScene  &scene_;
-    RenderCamera        renderCamera_;
-
-    RC<SubBuffer> cameraCBuffer_;
-
-    std::vector<StaticMeshRecord *> objects_;
-    RC<Buffer>                      perObjectDataBuffer_;
-    UploadBufferPool<>              perObjectDataBufferPool_;
-
-    PhysicalAtmospherePass::CachedData atmosphereData_;
-};
 
 RTRC_RENDERER_END

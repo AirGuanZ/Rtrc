@@ -27,7 +27,7 @@ enum class BuiltinMaterial
     DeferredLighting,
     Atmosphere,
     ShadowMask,
-    SurfelGI,
+    PathTracing,
     Count
 };
 

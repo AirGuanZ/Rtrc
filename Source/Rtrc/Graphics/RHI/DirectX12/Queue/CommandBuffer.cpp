@@ -428,6 +428,7 @@ void DirectX12CommandBuffer::ClearColorTexture2D(Texture *dst, const ColorClearV
         .mipLevel   = 0,
         .arrayLayer = 0
     };
+    assert(dst->GetDesc().usage.Contains(TextureUsage::ClearColor));
     auto rtv = dst->CreateRtv(rtvDesc);
     auto d3dRtv = static_cast<DirectX12TextureRtv*>(rtv.Get())->_internalGetDescriptorHandle();
     const float rgba[4] = { clearValue.r, clearValue.g, clearValue.b, clearValue.a };

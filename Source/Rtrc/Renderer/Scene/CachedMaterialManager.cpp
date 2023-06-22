@@ -29,13 +29,36 @@ void CachedMaterialManager::UpdateCachedMaterialData(const RenderCommand_RenderS
         if(it == cachedMaterials_.end() ||
            it->get()->materialRenderingDataId > materialRecord.materialRenderingData->GetUniqueID())
         {
+            auto &propertySheet = materialRecord.materialRenderingData->GetPropertySheet();
+
+            auto albedoEntry = propertySheet.GetBindlessTextureEntry(RTRC_MATERIAL_PROPERTY_NAME(GIAlbedoTextureIndex));
+            if(!albedoEntry)
+            {
+                albedoEntry = propertySheet.GetBindlessTextureEntry(RTRC_MATERIAL_PROPERTY_NAME(albedoTextureIndex));
+            }
+
+            float albedoScale = 1.0f;
+            if(auto pScale = propertySheet.GetValue(RTRC_MATERIAL_PROPERTY_NAME(GIAlbedoScale)))
+            {
+                albedoScale = *reinterpret_cast<const float *>(pScale);
+            }
+
             auto &data = *cachedMaterials_.emplace(it, MakeBox<CachedMaterial>());
+
             data->material                = materialRecord.materialRenderingData->GetMaterial().get();
             data->materialId              = data->material->GetUniqueID();
             data->materialRenderingDataId = materialRecord.materialRenderingData->GetUniqueID();
             data->materialRenderingData   = materialRecord.materialRenderingData;
-            data->albedoTextureEntry      = materialRecord.materialRenderingData->GetPropertySheet()
-                                              .GetBindlessTextureEntry(RTRC_MATERIAL_PROPERTY_NAME(albedoTextureIndex));
+            data->albedoTextureEntry      = albedoEntry;
+            data->albedoScale             = albedoScale;
+
+            data->gbufferPassIndex = data->material->GetBuiltinPassIndex(Material::BuiltinPass::GBuffer);
+            if(data->gbufferPassIndex >= 0)
+            {
+                auto shaderT = data->material->GetPasses()[data->gbufferPassIndex]->GetShaderTemplate();
+                data->gbufferPassSupportInstancing = shaderT->HasBuiltinKeyword(BuiltinKeyword::EnableInstance);
+            }
+
             it = cachedMaterials_.end();
             continue;
         }

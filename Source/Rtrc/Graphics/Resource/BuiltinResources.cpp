@@ -102,13 +102,12 @@ void BuiltinResourceManager::LoadBuiltinMeshes()
 void BuiltinResourceManager::LoadBuiltinMaterials()
 {
 #define LOAD_BUILTIN_MATERIAL(NAME) \
-    materials_[std::to_underlying(BuiltinMaterial::NAME)] = \
-        materialManager_.GetMaterial("Builtin/" #NAME)
+    materials_[std::to_underlying(BuiltinMaterial::NAME)] = materialManager_.GetMaterial("Builtin/" #NAME)
     
     LOAD_BUILTIN_MATERIAL(DeferredLighting);
     LOAD_BUILTIN_MATERIAL(Atmosphere);
     LOAD_BUILTIN_MATERIAL(ShadowMask);
-    LOAD_BUILTIN_MATERIAL(SurfelGI);
+    LOAD_BUILTIN_MATERIAL(PathTracing);
 
 #undef LOAD_BUILTIN_MATERIAL
 }

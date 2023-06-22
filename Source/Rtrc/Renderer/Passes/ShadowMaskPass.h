@@ -2,7 +2,7 @@
 
 #include <Rtrc/Graphics/Resource/BuiltinResources.h>
 #include <Rtrc/Renderer/Passes/GBufferPass.h>
-#include <Rtrc/Renderer/Scene/CachedScene.h>
+#include <Rtrc/Renderer/Scene/PersistentSceneRenderingData.h>
 
 RTRC_RENDERER_BEGIN
 
@@ -20,7 +20,7 @@ public:
         ObserverPtr<const BuiltinResourceManager> builtinResources);
     
     RenderGraphOutput Render(
-        const CachedCamera &sceneCamera,
+        const PersistentSceneCameraRenderingData &sceneCamera,
         int                 lightIndex,
         bool                enableLowResOptimization,
         const RGScene      &rgScene,

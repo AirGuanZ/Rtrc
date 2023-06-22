@@ -54,10 +54,11 @@ Box<SceneProxy> Scene::CreateSceneProxy() const
 {
     auto ret = MakeBox<SceneProxy>();
 
-    ret->atmosphere_   = atmosphere_;
-    ret->sunDirection_ = Normalize(sunDirection_);
-    ret->sunColor_     = sunColor_;
-    ret->sunIntensity_ = sunIntensity_;
+    ret->originanSceneID_ = GetUniqueID();
+    ret->atmosphere_      = atmosphere_;
+    ret->sunDirection_    = Normalize(sunDirection_);
+    ret->sunColor_        = sunColor_;
+    ret->sunIntensity_    = sunIntensity_;
 
     staticRendererManager_.ForEachRenderer([&](const StaticMeshRenderObject *renderer)
     {

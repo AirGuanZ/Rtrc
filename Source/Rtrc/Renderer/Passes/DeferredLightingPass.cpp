@@ -1,5 +1,6 @@
 #include <Rtrc/Renderer/GBufferBinding.h>
 #include <Rtrc/Renderer/Passes/DeferredLightingPass.h>
+#include <Rtrc/Renderer/Scene/PersistentSceneCameraRenderingData.h>
 #include <Rtrc/Renderer/Utility/FullscreenPrimitive.h>
 #include <Rtrc/Utility/Enumerate.h>
 
@@ -48,7 +49,7 @@ DeferredLightingPass::DeferredLightingPass(
 }
 
 DeferredLightingPass::RenderGraphOutput DeferredLightingPass::RenderDeferredLighting(
-    const CachedCamera &scene,
+    const PersistentSceneCameraRenderingData &scene,
     const RGScene              &rgScene,
     RG::RenderGraph            &renderGraph,
     RG::TextureResource        *renderTarget)
@@ -80,7 +81,7 @@ DeferredLightingPass::RenderGraphOutput DeferredLightingPass::RenderDeferredLigh
 }
 
 void DeferredLightingPass::DoDeferredLighting(
-    const CachedCamera  &sceneCamera,
+    const PersistentSceneCameraRenderingData  &sceneCamera,
     const RGScene       &rgScene,
     RG::TextureResource *rgRenderTarget,
     RG::PassContext     &context)

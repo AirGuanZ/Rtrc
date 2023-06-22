@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Rtrc/Graphics/Misc/PipelineCache.h>
-#include <Rtrc/Renderer/Scene/CachedScene.h>
+#include <Rtrc/Renderer/Scene/PersistentSceneRenderingData.h>
 
 RTRC_RENDERER_BEGIN
 
@@ -18,7 +18,7 @@ public:
     explicit GBufferPass(ObserverPtr<Device> device);
 
     RenderGraphOutput RenderGBuffers(
-        const CachedCamera     &sceneCamera,
+        const PersistentSceneCameraRenderingData     &sceneCamera,
         const RC<BindingGroup> &bindlessTextureGroup,
         RG::RenderGraph        &renderGraph,
         const Vector2u         &rtSize);
@@ -49,11 +49,11 @@ private:
 
     GBuffers AllocateGBuffers(RG::RenderGraph &renderGraph, const Vector2u &rtSize);
 
-    std::vector<MaterialGroup> CollectPipelineGroups(const CachedCamera &scene) const;
+    std::vector<MaterialGroup> CollectPipelineGroups(const PersistentSceneCameraRenderingData &scene) const;
 
     void DoRenderGBuffers(
         RG::PassContext        &passContext,
-        const CachedCamera     &scene,
+        const PersistentSceneCameraRenderingData     &scene,
         const RC<BindingGroup> &bindlessTextureGroup,
         const GBuffers         &gbuffers);
 
