@@ -244,7 +244,7 @@ ImGuiRenderer::ImGuiRenderer(ObserverPtr<Device> device)
     passBindingGroupLayout_ = shader_->GetBindingGroupLayoutByName("Pass");
 }
 
-RG::Pass *ImGuiRenderer::AddToRenderGraph(
+RG::Pass *ImGuiRenderer::Render(
     const ImGuiDrawData *drawData,
     RG::TextureResource *renderTarget,
     RG::RenderGraph     *renderGraph)

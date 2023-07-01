@@ -141,7 +141,7 @@ public:
     void BeginDebugEvent(std::string name, const std::optional<Vector4f> &color = std::nullopt);
     void EndDebugEvent();
 
-    void CopyBuffer(Buffer &dst, size_t dstOffset, const Buffer &src, size_t srcOffset, size_t size);
+    void CopyBuffer(const Buffer &dst, size_t dstOffset, const Buffer &src, size_t srcOffset, size_t size);
     void CopyColorTexture2DToBuffer(
         Buffer &dst, size_t dstOffset, size_t dstRowBytes, Texture &src, uint32_t arrayLayer, uint32_t mipLevel);
 

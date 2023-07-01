@@ -31,14 +31,15 @@ public:
 
     struct Config
     {
-        std::string title                      = "Rtrc Application";
-        uint32_t    width                      = 640;
-        uint32_t    height                     = 480;
-        bool        maximized                  = false;
-        bool        vsync                      = true;
-        bool        debug                      = RTRC_DEBUG;
-        bool        rayTracing                 = false;
-        bool        handleCrossThreadException = false;
+        std::string      title                      = "Rtrc Application";
+        uint32_t         width                      = 640;
+        uint32_t         height                     = 480;
+        bool             maximized                  = false;
+        bool             vsync                      = true;
+        bool             debug                      = RTRC_DEBUG;
+        bool             rayTracing                 = false;
+        bool             handleCrossThreadException = false;
+        RHI::BackendType backendType                = Device::DefaultBackendType;
     };
 
     virtual ~Application() = default;

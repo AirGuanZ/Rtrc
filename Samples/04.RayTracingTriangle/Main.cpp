@@ -204,7 +204,7 @@ void Run()
 
         auto blitPass = graph->CreateBlitTexture2DPass("BlitToSwapchainImage", renderTarget, swapchainImage, true);
 
-        blitPass->SetSignalFence(device->GetFrameFence());
+        graph->SetCompleteFence(device->GetFrameFence());
         executer.Execute(graph);
 
         device->Present();

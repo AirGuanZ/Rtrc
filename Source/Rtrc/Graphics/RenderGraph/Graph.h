@@ -232,6 +232,22 @@ public:
     RC<Buffer> Get(PassContext &passContext) const;
 };
 
+class TlasResource
+{
+    friend class RenderGraph;
+
+    RC<Tlas>        tlas_;
+    BufferResource *tlasBuffer_;
+
+    TlasResource(RC<Tlas> tlas, BufferResource *tlasBuffer): tlas_(std::move(tlas)), tlasBuffer_(tlasBuffer) { }
+
+public:
+
+    BufferResource *GetInternalBuffer() const { return tlasBuffer_; }
+
+    const RC<Tlas> &Get(PassContext &passContext) const;
+};
+
 class TextureResource : public Resource
 {
 public:
@@ -258,8 +274,9 @@ public:
 
     CommandBuffer &GetCommandBuffer();
 
-    RC<Buffer> Get(const BufferResource *resource);
-    RC<Texture> Get(const TextureResource *resource);
+    RC<Buffer>      Get(const BufferResource *resource);
+    const RC<Tlas> &Get(const TlasResource *resource);
+    RC<Texture>     Get(const TextureResource *resource);
 
 private:
 
@@ -285,27 +302,14 @@ public:
 
     friend void Connect(Pass *head, Pass *tail);
 
-    Pass *Use(
-        BufferResource         *buffer,
-        RHI::PipelineStageFlag  stages,
-        RHI::ResourceAccessFlag accesses);
-
-    Pass *Use(
-        TextureResource        *texture,
-        RHI::TextureLayout      layout,
-        RHI::PipelineStageFlag  stages,
-        RHI::ResourceAccessFlag accesses);
-
-    Pass *Use(
-        TextureResource               *texture,
-        const RHI::TextureSubresource &subresource,
-        RHI::TextureLayout             layout,
-        RHI::PipelineStageFlag         stages,
-        RHI::ResourceAccessFlag        accesses);
-
     Pass *Use(BufferResource *buffer, const UseInfo &info);
+
     Pass *Use(TextureResource *texture, const UseInfo &info);
     Pass *Use(TextureResource *texture, const RHI::TextureSubresource &subrsc, const UseInfo &info);
+
+    Pass *Use(TlasResource *tlas, const UseInfo &info);
+    Pass *Build(TlasResource *tlas);
+    Pass *Read(TlasResource *tlas, RHI::PipelineStageFlag stages);
 
     Pass *SetCallback(Callback callback);
 
@@ -349,6 +353,7 @@ public:
     BufferResource  *RegisterBuffer(RC<StatefulBuffer> buffer);
     TextureResource *RegisterTexture(RC<StatefulTexture> texture);
     TextureResource *RegisterReadOnlyTexture(RC<Texture> texture);
+    TlasResource    *RegisterTlas(RC<Tlas> tlas, BufferResource *internalBuffer);
 
     TextureResource *RegisterSwapchainTexture(
         RHI::TexturePtr             rhiTexture,
@@ -366,6 +371,17 @@ public:
 
     Pass *CreateClearRWBufferPass(std::string_view name, BufferResource *buffer, uint32_t value);
     Pass *CreateClearRWStructuredBufferPass(std::string_view name, BufferResource *buffer, uint32_t value);
+
+    Pass* CreateCopyBufferPass(
+        std::string_view name,
+        BufferResource *src, size_t srcOffset,
+        BufferResource *dst, size_t dstOffset,
+        size_t size);
+    Pass *CreateCopyBufferPass(
+        std::string_view name,
+        BufferResource *src,
+        BufferResource *dst,
+        size_t size);
 
     Pass *CreateBlitTexture2DPass(
         std::string_view name,
@@ -450,6 +466,8 @@ private:
     std::vector<Box<TextureResource>> textures_;
     SwapchainTexture                 *swapchainTexture_;
     mutable ExecutableResources      *executableResource_;
+
+    std::map<const BufferResource *, Box<TlasResource>> tlasResources_;
 
     std::vector<Box<Pass>> passes_;
 

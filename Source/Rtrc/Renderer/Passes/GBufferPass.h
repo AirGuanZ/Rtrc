@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Rtrc/Graphics/Misc/PipelineCache.h>
-#include <Rtrc/Renderer/Scene/PersistentSceneRenderingData.h>
+#include <Rtrc/Renderer/Scene/RenderScene.h>
 
 RTRC_RENDERER_BEGIN
 
@@ -9,19 +9,13 @@ class GBufferPass : public Uncopyable
 {
 public:
 
-    struct RenderGraphOutput
-    {
-        GBuffers gbuffers;
-        RG::Pass *gbufferPass = nullptr;
-    };
-
     explicit GBufferPass(ObserverPtr<Device> device);
 
-    RenderGraphOutput RenderGBuffers(
-        const PersistentSceneCameraRenderingData     &sceneCamera,
-        const RC<BindingGroup> &bindlessTextureGroup,
-        RG::RenderGraph        &renderGraph,
-        const Vector2u         &rtSize);
+    GBuffers Render(
+        const RenderSceneCamera &sceneCamera,
+        const RC<BindingGroup>  &bindlessTextureGroup,
+        RG::RenderGraph         &renderGraph,
+        const Vector2u          &rtSize);
 
 private:
 
@@ -49,13 +43,13 @@ private:
 
     GBuffers AllocateGBuffers(RG::RenderGraph &renderGraph, const Vector2u &rtSize);
 
-    std::vector<MaterialGroup> CollectPipelineGroups(const PersistentSceneCameraRenderingData &scene) const;
+    std::vector<MaterialGroup> CollectPipelineGroups(const RenderSceneCamera &scene) const;
 
     void DoRenderGBuffers(
-        RG::PassContext        &passContext,
-        const PersistentSceneCameraRenderingData     &scene,
-        const RC<BindingGroup> &bindlessTextureGroup,
-        const GBuffers         &gbuffers);
+        RG::PassContext         &passContext,
+        const RenderSceneCamera &scene,
+        const RC<BindingGroup>  &bindlessTextureGroup,
+        const GBuffers          &gbuffers);
 
     ObserverPtr<Device>    device_;
     PipelineCache          gbufferPipelineCache_;

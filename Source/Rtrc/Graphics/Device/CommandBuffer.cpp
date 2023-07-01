@@ -266,7 +266,7 @@ void CommandBuffer::EndDebugEvent()
     rhiCommandBuffer_->EndDebugEvent();
 }
 
-void CommandBuffer::CopyBuffer(Buffer &dst, size_t dstOffset, const Buffer &src, size_t srcOffset, size_t size)
+void CommandBuffer::CopyBuffer(const Buffer &dst, size_t dstOffset, const Buffer &src, size_t srcOffset, size_t size)
 {
     CheckThreadID();
     rhiCommandBuffer_->CopyBuffer(dst.GetRHIObject(), dstOffset, src.GetRHIObject(), srcOffset, size);

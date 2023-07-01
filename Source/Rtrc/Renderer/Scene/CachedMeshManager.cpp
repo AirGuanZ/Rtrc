@@ -9,7 +9,7 @@ CachedMeshManager::CachedMeshManager(const Config &config, ObserverPtr<Device> d
     bindlessBufferManager_ = MakeBox<BindlessBufferManager>(device);
 }
 
-void CachedMeshManager::UpdateCachedMeshData(const RenderCommand_RenderStandaloneFrame &frame)
+void CachedMeshManager::Update(const RenderCommand_RenderStandaloneFrame &frame)
 {
     struct MeshRecord
     {
@@ -101,6 +101,87 @@ void CachedMeshManager::UpdateCachedMeshData(const RenderCommand_RenderStandalon
         [](const Box<CachedMesh> &data) { return data.get(); });
 }
 
+void CachedMeshManager::BuildBlasForMeshes(
+    RG::RenderGraph &renderGraph, int maxBuildCount, int maxPrimitiveCount)
+{
+    if(!config_.rayTracing)
+    {
+        return;
+    }
+
+    std::vector<CachedMesh *> meshesNeedBlas;
+    for(auto &meshData : cachedMeshes_)
+    {
+        if(meshData->buildBlasSortKey >= 0 && !meshData->blas)
+        {
+            meshesNeedBlas.push_back(meshData.get());
+        }
+    }
+    std::ranges::sort(meshesNeedBlas, [](const CachedMesh *a, const CachedMesh *b)
+    {
+        return a->buildBlasSortKey > b->buildBlasSortKey;
+    });
+
+    std::vector<CachedMesh *> meshesToBuildBlas;
+    {
+        int buildCount = 0, buildPrimitiveCount = 0;
+        auto it = meshesNeedBlas.begin();
+        while(buildCount < maxBuildCount && buildPrimitiveCount < maxPrimitiveCount && it != meshesNeedBlas.end())
+        {
+            auto mesh = *it;
+            const int newPrimitiveCount = buildPrimitiveCount + mesh->meshRenderingData->GetPrimitiveCount();
+            if(newPrimitiveCount > buildPrimitiveCount)
+            {
+                if(meshesToBuildBlas.empty())
+                {
+                    meshesToBuildBlas.push_back(mesh);
+                    break;
+                }
+                continue;
+            }
+
+            meshesToBuildBlas.push_back(mesh);
+            ++buildCount;
+            buildPrimitiveCount = newPrimitiveCount;
+        }
+    }
+
+    assert(!buildBlasPass_);
+    buildBlasPass_ = renderGraph.CreatePass("Build blas for meshes");
+    if(!meshesToBuildBlas.empty())
+    {
+        std::vector<BlasBuilder::BuildInfo> blasBuildInfo;
+        for(auto mesh : meshesToBuildBlas)
+        {
+            assert(!mesh->blas);
+            mesh->blas = device_->CreateBlas();
+            blasBuildInfo.push_back(blasBuilder_.Prepare(
+                *mesh->meshRenderingData, 
+                RHI::RayTracingAccelerationStructureBuildFlags::PreferFastTrace,
+                mesh->blas));
+            mesh->blas->SetBuffer(device_->CreateBuffer(RHI::BufferDesc
+            {
+                .size           = blasBuildInfo.back().prebuildInfo.GetAccelerationStructureBufferSize(),
+                .usage          = RHI::BufferUsage::AccelerationStructure,
+                .hostAccessType = RHI::BufferHostAccessType::None
+            }));
+        }
+        buildBlasPass_->SetCallback([builds = std::move(blasBuildInfo), this](RG::PassContext &context)
+        {
+            for(const BlasBuilder::BuildInfo &build : builds)
+            {
+                blasBuilder_.Build(context.GetCommandBuffer(), build);
+            }
+            blasBuilder_.Finalize(context.GetCommandBuffer());
+        });
+    }
+}
+
+void CachedMeshManager::ClearFrameData()
+{
+    buildBlasPass_ = nullptr;
+}
+
 CachedMeshManager::CachedMesh *CachedMeshManager::FindCachedMesh(UniqueId meshId)
 {
     size_t beg = 0, end = linearCachedMeshes_.size();
@@ -145,83 +226,6 @@ const CachedMeshManager::CachedMesh *CachedMeshManager::FindCachedMesh(UniqueId 
         }
     }
     return nullptr;
-}
-
-CachedMeshManager::RenderGraphOutput CachedMeshManager::BuildBlasForMeshes(
-    RG::RenderGraph &renderGraph, int maxBuildCount, int maxPrimitiveCount)
-{
-    if(!config_.rayTracing)
-    {
-        return {};
-    }
-
-    std::vector<CachedMesh *> meshesNeedBlas;
-    for(auto &meshData : cachedMeshes_)
-    {
-        if(meshData->buildBlasSortKey >= 0 && !meshData->blas)
-        {
-            meshesNeedBlas.push_back(meshData.get());
-        }
-    }
-    std::ranges::sort(meshesNeedBlas, [](const CachedMesh *a, const CachedMesh *b)
-    {
-        return a->buildBlasSortKey > b->buildBlasSortKey;
-    });
-
-    std::vector<CachedMesh *> meshesToBuildBlas;
-    {
-        int buildCount = 0, buildPrimitiveCount = 0;
-        auto it = meshesNeedBlas.begin();
-        while(buildCount < maxBuildCount && buildPrimitiveCount < maxPrimitiveCount && it != meshesNeedBlas.end())
-        {
-            auto mesh = *it;
-            const int newPrimitiveCount = buildPrimitiveCount + mesh->meshRenderingData->GetPrimitiveCount();
-            if(newPrimitiveCount > buildPrimitiveCount)
-            {
-                if(meshesToBuildBlas.empty())
-                {
-                    meshesToBuildBlas.push_back(mesh);
-                    break;
-                }
-                continue;
-            }
-
-            meshesToBuildBlas.push_back(mesh);
-            ++buildCount;
-            buildPrimitiveCount = newPrimitiveCount;
-        }
-    }
-
-    auto pass = renderGraph.CreatePass("Build blas for meshes");
-    if(!meshesToBuildBlas.empty())
-    {
-        std::vector<BlasBuilder::BuildInfo> blasBuildInfo;
-        for(auto mesh : meshesToBuildBlas)
-        {
-            assert(!mesh->blas);
-            mesh->blas = device_->CreateBlas();
-            blasBuildInfo.push_back(blasBuilder_.Prepare(
-                *mesh->meshRenderingData, 
-                RHI::RayTracingAccelerationStructureBuildFlags::PreferFastTrace,
-                mesh->blas));
-            mesh->blas->SetBuffer(device_->CreateBuffer(RHI::BufferDesc
-            {
-                .size           = blasBuildInfo.back().prebuildInfo.GetAccelerationStructureBufferSize(),
-                .usage          = RHI::BufferUsage::AccelerationStructure,
-                .hostAccessType = RHI::BufferHostAccessType::None
-            }));
-        }
-        pass->SetCallback([builds = std::move(blasBuildInfo), this](RG::PassContext &context)
-        {
-            for(const BlasBuilder::BuildInfo &build : builds)
-            {
-                blasBuilder_.Build(context.GetCommandBuffer(), build);
-            }
-            blasBuilder_.Finalize(context.GetCommandBuffer());
-        });
-    }
-
-    return { pass };
 }
 
 float CachedMeshManager::ComputeBuildBlasSortKey(const Vector3f &eye, const StaticMeshRenderProxy *renderer)

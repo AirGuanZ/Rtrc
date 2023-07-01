@@ -51,6 +51,16 @@ class KeywordContext
 {
 public:
 
+    KeywordContext() = default;
+
+    KeywordContext(std::initializer_list<std::pair<Keyword, uint8_t>> init)
+    {
+        for(auto &p : init)
+        {
+            Set(p.first, p.second);
+        }
+    }
+
     void Set(const Keyword &keyword, uint8_t value)
     {
         assert(keyword);

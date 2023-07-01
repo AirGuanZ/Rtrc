@@ -11,7 +11,7 @@
 #include <Rtrc/Renderer/Passes/GBufferPass.h>
 #include <Rtrc/Renderer/Passes/ShadowMaskPass.h>
 #include <Rtrc/Renderer/RenderCommand.h>
-#include <Rtrc/Renderer/Scene/PersistentSceneCameraRenderingData.h>
+#include <Rtrc/Renderer/Scene/RenderSceneCamera.h>
 #include <Rtrc/Utility/Timer.h>
 
 RTRC_RENDERER_BEGIN
@@ -68,7 +68,6 @@ private:
 
     Box<ImGuiRenderer>                    imguiRenderer_;
     Box<RG::Executer>                     renderGraphExecuter_;
-    Box<BindlessBufferManager>            bindlessStructuredBuffersForBlas_;
     Box<TransientConstantBufferAllocator> transientConstantBufferAllocator_;
 
     std::jthread                         renderThread_;
@@ -77,7 +76,7 @@ private:
     CachedMeshManager     meshManager_;
     CachedMaterialManager materialManager_;
     
-    PersistentSceneRenderingData cachedScene_;
+    RenderScene cachedScene_;
 
     Box<PhysicalAtmospherePass> atmospherePass_;
     Box<GBufferPass>            gbufferPass_;

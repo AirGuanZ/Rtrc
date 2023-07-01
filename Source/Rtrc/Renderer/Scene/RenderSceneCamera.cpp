@@ -1,15 +1,15 @@
 #include <Rtrc/Renderer/Common.h>
-#include <Rtrc/Renderer/Scene/PersistentScenecameraRenderingData.h>
+#include <Rtrc/Renderer/Scene/RenderSceneCamera.h>
 
 RTRC_RENDERER_BEGIN
 
-PersistentSceneCameraRenderingData::PersistentSceneCameraRenderingData(ObserverPtr<Device> device, const PersistentSceneRenderingData &scene, UniqueId cameraId)
+RenderSceneCamera::RenderSceneCamera(ObserverPtr<Device> device, const RenderScene &scene, UniqueId cameraId)
     : scene_(scene), perObjectDataBufferPool_(device, RHI::BufferUsage::ShaderStructuredBuffer)
 {
     renderCamera_.originalId = cameraId;
 }
 
-void PersistentSceneCameraRenderingData::Update(
+void RenderSceneCamera::Update(
     const RenderCamera               &camera,
     TransientConstantBufferAllocator &transientConstantBufferAllocator,
     LinearAllocator                  &linearAllocator)
@@ -23,7 +23,7 @@ void PersistentSceneCameraRenderingData::Update(
     }
 
     objects_.clear();
-    for(const PersistentSceneRenderingData::StaticMeshRecord *src : scene_.GetStaticMeshes())
+    for(const RenderScene::StaticMeshRecord *src : scene_.GetStaticMeshes())
     {
         StaticMeshCBuffer cbuffer;
         cbuffer.localToWorld  = src->proxy->localToWorld;

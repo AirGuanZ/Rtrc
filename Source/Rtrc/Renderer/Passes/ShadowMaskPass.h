@@ -2,29 +2,24 @@
 
 #include <Rtrc/Graphics/Resource/BuiltinResources.h>
 #include <Rtrc/Renderer/Passes/GBufferPass.h>
-#include <Rtrc/Renderer/Scene/PersistentSceneRenderingData.h>
+#include <Rtrc/Renderer/Scene/RenderScene.h>
 
 RTRC_RENDERER_BEGIN
 
 class ShadowMaskPass : public Uncopyable
 {
 public:
-
-    struct RenderGraphOutput
-    {
-        RG::TextureResource *shadowMask = nullptr;
-    };
-
+    
     ShadowMaskPass(
         ObserverPtr<Device>                       device,
         ObserverPtr<const BuiltinResourceManager> builtinResources);
     
-    RenderGraphOutput Render(
-        const PersistentSceneCameraRenderingData &sceneCamera,
-        int                 lightIndex,
-        bool                enableLowResOptimization,
-        const RGScene      &rgScene,
-        RG::RenderGraph    &renderGraph);
+    RG::TextureResource *Render(
+        const RenderSceneCamera          &sceneCamera,
+        const Light::SharedRenderingData *light,
+        bool                              enableLowResOptimization,
+        const GBuffers                   &gbuffers,
+        RG::RenderGraph                  &renderGraph);
 
 private:
 

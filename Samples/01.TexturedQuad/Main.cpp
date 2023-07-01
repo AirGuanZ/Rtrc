@@ -119,8 +119,8 @@ void Run()
             commandBuffer.DrawIndexed(6, 1, 0, 0, 0);
             commandBuffer.EndRenderPass();
         });
-        quadPass->SetSignalFence(device->GetFrameFence());
-
+        
+        graph->SetCompleteFence(device->GetFrameFence());
         executer.Execute(graph);
 
         if(!device->Present())

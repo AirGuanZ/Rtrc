@@ -24,20 +24,20 @@ public:
         BindlessBufferEntry geometryBufferEntry;
     };
 
-    struct RenderGraphOutput
-    {
-        RG::Pass *buildBlasPass = nullptr; // Optional[RayTracing]
-    };
-
     CachedMeshManager(const Config &config, ObserverPtr<Device> device);
 
-    void UpdateCachedMeshData(const RenderCommand_RenderStandaloneFrame &frame);
+    void Update(const RenderCommand_RenderStandaloneFrame &frame);
+
+    void BuildBlasForMeshes(RG::RenderGraph &renderGraph, int maxBuildCount, int maxPrimitiveCount);
+
+    void ClearFrameData();
 
           CachedMesh *FindCachedMesh(UniqueId meshId);
     const CachedMesh *FindCachedMesh(UniqueId meshId) const;
 
-    RenderGraphOutput BuildBlasForMeshes(RG::RenderGraph &renderGraph, int maxBuildCount, int maxPrimitiveCount);
-
+    // Returns nullptr when no blas is built
+    RG::Pass *GetRGBuildBlasPass() const { return buildBlasPass_; }
+    
 private:
 
     static float ComputeBuildBlasSortKey(const Vector3f &eye, const StaticMeshRenderProxy *renderer);
@@ -51,6 +51,8 @@ private:
 
     std::list<Box<CachedMesh>> cachedMeshes_;
     std::vector<CachedMesh *>  linearCachedMeshes_;
+
+    RG::Pass *buildBlasPass_ = nullptr;
 };
 
 RTRC_RENDERER_END

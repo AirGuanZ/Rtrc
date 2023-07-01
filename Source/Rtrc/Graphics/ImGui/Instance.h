@@ -39,7 +39,7 @@ public:
 
     explicit ImGuiRenderer(ObserverPtr<Device> device);
     
-    RG::Pass *AddToRenderGraph(
+    RG::Pass *Render(
         const ImGuiDrawData *drawData,
         RG::TextureResource *renderTarget,
         RG::RenderGraph     *renderGraph);

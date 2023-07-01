@@ -23,6 +23,7 @@ void Application::Run(const Config &config)
 
     device_ = Device::CreateGraphicsDevice(
         window_,
+        config.backendType,
         RHI::Format::B8G8R8A8_UNorm,
         2,
         config.debug,

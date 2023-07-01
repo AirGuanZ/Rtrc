@@ -38,7 +38,7 @@ namespace StructDetail
             U{}.template operator()<F>(f);
         }
     };
-
+    
     template<typename T, typename F, int I>
     constexpr void CallForMember(const F &f)
     {
@@ -60,26 +60,59 @@ namespace StructDetail
         StructDetail::ForEachMemberAux<T, F>(f, std::make_integer_sequence<int, STRUCT_MAX_MEMBER_COUNT>());
     }
 
+    template<typename T>
+    struct SelfTypeReader
+    {
+        friend auto GetSelfTypeADL(SelfTypeReader);
+    };
+
+    template<typename T, typename U>
+    struct SelfTypeWriter
+    {
+        friend auto GetSelfTypeADL(SelfTypeReader<T>) { return U{}; }
+    };
+
+    void GetSelfTypeADL();
+
+    template<typename T>
+    using SelfTypeResult = std::remove_pointer_t<decltype(GetSelfTypeADL(SelfTypeReader<T>{}))>;
+
+#define RTRC_DEFINE_SELF_TYPE(RESULT_NAME)                                                                          \
+    struct _rtrcSelfTypeTag##RESULT_NAME {};                                                                        \
+    constexpr auto _rtrcSelfTypeHelper##RESULT_NAME() ->                                                            \
+        decltype(::Rtrc::StructDetail::SelfTypeWriter<_rtrcSelfTypeTag##RESULT_NAME, decltype(this)>{}, void()) { } \
+    using RESULT_NAME = ::Rtrc::StructDetail::SelfTypeResult<_rtrcSelfTypeTag##RESULT_NAME>;
+
+    struct _rtrcStructCommonBase
+    {
+        struct _rtrcStructTypeFlag {};
+        static Sizer<1> _rtrcMemberCounter(...);
+        auto operator<=>(const _rtrcStructCommonBase &) const = default;
+        using float2 = Vector2f;
+        using float3 = Vector3f;
+        using float4 = Vector4f;
+        using int2 = Vector2i;
+        using int3 = Vector3i;
+        using int4 = Vector4i;
+        using uint = uint32_t;
+        using uint2 = Vector2u;
+        using uint3 = Vector3u;
+        using uint4 = Vector4u;
+        using float4x4 = Matrix4x4f;
+    };
+
 } // namespace StructDetail
 
 #define RTRC_META_STRUCT_BEGIN(NAME)                                          \
     struct NAME                                                               \
     {                                                                         \
-        using _rtrcSelf = NAME;                                               \
-        static constexpr std::string_view _rtrcSelfName = #NAME;              \
         static ::Rtrc::StructDetail::Sizer<1> _rtrcMemberCounter(...);
 
-#define RTRC_META_STRUCT_END()                                 \
-        template<typename F>                                   \
-        static constexpr void ForEachMember(const F &f)        \
-        {                                                      \
-            ::Rtrc::StructDetail::ForEachMember<_rtrcSelf>(f); \
-        }                                                      \
-    };
+#define RTRC_META_STRUCT_END() };
 
 #define RTRC_META_STRUCT_PRE_MEMBER(NAME)                                           \
     enum { _rtrcMemberCounter##NAME =                                               \
-        sizeof(_rtrcMemberCounter((::Rtrc::StructDetail::Int<                       \
+        sizeof(_rtrcSelf##NAME::_rtrcMemberCounter((::Rtrc::StructDetail::Int<      \
             ::Rtrc::StructDetail::STRUCT_MAX_MEMBER_COUNT >*)nullptr)) - 1 };       \
     static ::Rtrc::StructDetail::Sizer<(_rtrcMemberCounter##NAME) + 2>              \
         _rtrcMemberCounter(::Rtrc::StructDetail::Int<(_rtrcMemberCounter##NAME)>*); \
@@ -97,34 +130,14 @@ namespace StructDetail
 template<typename T>
 concept RtrcStruct = requires { typename T::_rtrcStructTypeFlag; };
 
-#define rtrc_struct(NAME)                                                 \
-    struct NAME;                                                          \
-    struct _rtrcCBufferBase##NAME                                         \
-    {                                                                     \
-        using _rtrcSelf = NAME;                                           \
-        struct _rtrcStructTypeFlag{};                                     \
-        static constexpr std::string_view _rtrcSelfName = #NAME;          \
-        static ::Rtrc::StructDetail::Sizer<1> _rtrcMemberCounter(...);    \
-        auto operator<=>(const _rtrcCBufferBase##NAME &) const = default; \
-        using float2   = ::Rtrc::Vector2f;                                \
-        using float3   = ::Rtrc::Vector3f;                                \
-        using float4   = ::Rtrc::Vector4f;                                \
-        using int2     = ::Rtrc::Vector2i;                                \
-        using int3     = ::Rtrc::Vector3i;                                \
-        using int4     = ::Rtrc::Vector4i;                                \
-        using uint     = uint32_t;                                        \
-        using uint2    = ::Rtrc::Vector2u;                                \
-        using uint3    = ::Rtrc::Vector3u;                                \
-        using uint4    = ::Rtrc::Vector4u;                                \
-        using float4x4 = ::Rtrc::Matrix4x4f;                              \
-    };                                                                    \
-    struct NAME : _rtrcCBufferBase##NAME
+#define rtrc_struct(NAME) struct NAME : ::Rtrc::StructDetail::_rtrcStructCommonBase
 
-#define rtrc_var(TYPE, NAME)                            \
-    using _rtrcMemberType##NAME = TYPE;                 \
-    _rtrcMemberType##NAME NAME;                         \
-    RTRC_META_STRUCT_PRE_MEMBER(NAME)                   \
-        f.template operator()(&_rtrcSelf::NAME, #NAME); \
+#define rtrc_var(TYPE, NAME)                                  \
+    RTRC_DEFINE_SELF_TYPE(_rtrcSelf##NAME)                    \
+    using _rtrcMemberType##NAME = TYPE;                       \
+    _rtrcMemberType##NAME NAME;                               \
+    RTRC_META_STRUCT_PRE_MEMBER(NAME)                         \
+        f.template operator()(&_rtrcSelf##NAME::NAME, #NAME); \
     RTRC_META_STRUCT_POST_MEMBER(NAME) using _requireComma##NAME = int
 
 RTRC_END

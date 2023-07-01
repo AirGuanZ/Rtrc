@@ -2,7 +2,7 @@
 
 #include <Rtrc/Renderer/Common.h>
 #include <Rtrc/Renderer/Passes/GBufferPass.h>
-#include <Rtrc/Renderer/Scene/PersistentSceneCameraRenderingData.h>
+#include <Rtrc/Renderer/Scene/RenderSceneCamera.h>
 #include <Rtrc/Utility/Enumerate.h>
 
 RTRC_RENDERER_BEGIN
@@ -24,20 +24,19 @@ GBufferPass::GBufferPass(ObserverPtr<Device> device)
     perPassBindingGroupLayout_ = device_->CreateBindingGroupLayout<GBufferPassDetail::BindingGroup_GBufferPass>();
 }
 
-GBufferPass::RenderGraphOutput GBufferPass::RenderGBuffers(
-    const PersistentSceneCameraRenderingData     &sceneCamera,
-    const RC<BindingGroup> &bindlessTextureGroup,
-    RG::RenderGraph        &renderGraph,
-    const Vector2u         &rtSize)
+GBuffers GBufferPass::Render(
+    const RenderSceneCamera &sceneCamera,
+    const RC<BindingGroup>  &bindlessTextureGroup,
+    RG::RenderGraph         &renderGraph,
+    const Vector2u          &rtSize)
 {
-    RenderGraphOutput ret;
-    ret.gbuffers = AllocateGBuffers(renderGraph, rtSize);
-    ret.gbufferPass = renderGraph.CreatePass("Render GBuffers");
-    ret.gbufferPass->Use(ret.gbuffers.normal, RG::ColorAttachmentWriteOnly);
-    ret.gbufferPass->Use(ret.gbuffers.albedoMetallic, RG::ColorAttachmentWriteOnly);
-    ret.gbufferPass->Use(ret.gbuffers.roughness, RG::ColorAttachmentWriteOnly);
-    ret.gbufferPass->Use(ret.gbuffers.depth, RG::DepthStencilAttachment);
-    ret.gbufferPass->SetCallback([this, gbuffers = ret.gbuffers, &sceneCamera, bindlessTextureGroup](RG::PassContext &context)
+    GBuffers ret = AllocateGBuffers(renderGraph, rtSize);
+    auto gbufferPass = renderGraph.CreatePass("Render GBuffers");
+    gbufferPass->Use(ret.normal, RG::ColorAttachmentWriteOnly);
+    gbufferPass->Use(ret.albedoMetallic, RG::ColorAttachmentWriteOnly);
+    gbufferPass->Use(ret.roughness, RG::ColorAttachmentWriteOnly);
+    gbufferPass->Use(ret.depth, RG::DepthStencilAttachment);
+    gbufferPass->SetCallback([this, gbuffers = ret, &sceneCamera, bindlessTextureGroup](RG::PassContext &context)
     {
         DoRenderGBuffers(context, sceneCamera, bindlessTextureGroup, gbuffers);
     });
@@ -106,7 +105,7 @@ GBuffers GBufferPass::AllocateGBuffers(RG::RenderGraph &renderGraph, const Vecto
     return ret;
 }
 
-std::vector<GBufferPass::MaterialGroup> GBufferPass::CollectPipelineGroups(const PersistentSceneCameraRenderingData &scene) const
+std::vector<GBufferPass::MaterialGroup> GBufferPass::CollectPipelineGroups(const RenderSceneCamera &scene) const
 {
     std::vector<MaterialGroup> materialGroups;
 
@@ -164,7 +163,7 @@ std::vector<GBufferPass::MaterialGroup> GBufferPass::CollectPipelineGroups(const
 
 void GBufferPass::DoRenderGBuffers(
     RG::PassContext            &passContext,
-    const PersistentSceneCameraRenderingData &scene,
+    const RenderSceneCamera &scene,
     const RC<BindingGroup>     &bindlessTextureGroup,
     const GBuffers             &gbuffers)
 {
@@ -213,7 +212,7 @@ void GBufferPass::DoRenderGBuffers(
 
     struct MeshRecord
     {
-        const PersistentSceneCameraRenderingData::StaticMeshRecord *mesh;
+        const RenderSceneCamera::StaticMeshRecord *mesh;
         uint32_t perObjectDataOffset;
     };
 

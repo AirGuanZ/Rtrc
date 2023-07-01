@@ -15,7 +15,7 @@ namespace LightDetail
     enum class FlagBit
     {
         None                  = 0,
-        EnableRayTracedShadow = 1 << 0
+        EnableRayTracedShadow = 1 << 0,
     };
     RTRC_DEFINE_ENUM_FLAGS(FlagBit)
     using Flags = EnumFlagsFlagBit;

@@ -2,7 +2,7 @@
 
 #include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/Graphics/Resource/BuiltinResources.h>
-#include <Rtrc/Renderer/Scene/CachedScene.h>
+#include <Rtrc/Renderer/Scene/RenderSceneCamera.h>
 
 RTRC_RENDERER_BEGIN
 
@@ -25,14 +25,26 @@ public:
     const Parameters &GetParameters() const;
           Parameters &GetParameters();
 
-    RGOutput Render(RG::RenderGraph &renderGraph, const CachedCamera &camera) const;
+    RGOutput Render(
+        RG::RenderGraph         &renderGraph,
+        const RenderSceneCamera &camera,
+        const GBuffers          &gbuffers,
+        const Vector2u          &framebufferSize) const;
 
 private:
+
+    enum PassIndex
+    {
+        PassIndex_Trace,
+        PassIndex_Count
+    };
 
     ObserverPtr<Device>                 device_;
     ObserverPtr<BuiltinResourceManager> builtinResources_;
 
     Parameters parameters_;
+
+    mutable RC<BindingGroupLayout> tracePassBindingGroupLayout_;
 };
 
 RTRC_RENDERER_END

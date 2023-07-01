@@ -1,15 +1,11 @@
 #pragma once
 
-#include "Atmosphere.hlsl"
-#include "Common/Fullscreen.hlsl"
-#include "Common/Scene.hlsl"
-#include "Common/Color.hlsl"
+#include "../Common/Fullscreen.hlsl"
+#include "../Common/Scene.hlsl"
+#include "../Common/Color.hlsl"
 
 #define GBUFFER_MODE GBUFFER_MODE_ALL
-#include "Common/GBufferRead.hlsl"
-
-#define LIGHTING_MODE_REGULAR 0
-#define LIGHTING_MODE_SKY     1
+#include "../Common/GBufferRead.hlsl"
 
 rtrc_group(Pass, CS)
 {
@@ -23,18 +19,20 @@ rtrc_group(Pass, CS)
     rtrc_define(StructuredBuffer<DirectionalLightShadingData>, DirectionalLightBuffer)
     rtrc_uniform(uint, directionalLightCount)
 
-    rtrc_define(Texture2D<float3>, SkyLut)
-
-    rtrc_define(Texture2D<float>, ShadowMask)
-    rtrc_uniform(uint, shadowMaskLightType) // 0: none; 1: pointlight; 2: directionalLight
-                                            // If >= 1, should be applied to the first of the specified type
+    rtrc_define(Texture2D<float>, MainLightShadowMask)
+#if MAIN_LIGHT_MODE == MAIN_LIGHT_MODE_POINT
+    rtrc_uniform(PointLightShadingData, mainPointLightShadingData)
+#elif MAIN_LIGHT_MODE == MAIN_LIGHT_MODE_DIRECTIONAL
+    rtrc_uniform(DirectionalLightShadingData, mainDirectionalLightShadingData)
+#elif MAIN_LIGHT_MODE != MAIN_LIGHT_MODE_NONE
+    #error "Unsupported main light mode"
+#endif
 
     rtrc_define(RWTexture2D<float4>, Output)
     rtrc_uniform(uint2, resolution)
     rtrc_uniform(float2, rcpResolution)
 };
 
-rtrc_sampler(SkyLutSampler, filter = linear, address_u = repeat, address_v = clamp)
 rtrc_sampler(ShadowMaskSampler, filter = point, address_u = clamp, address_v = clamp)
 
 float3 ComputePointLighting(GBufferPixel gpixel, float3 worldPos, PointLightShadingData light)
@@ -63,8 +61,6 @@ float3 GetWorldRay(float2 uv)
     return ray;
 }
 
-#if LIGHTING_MODE == LIGHTING_MODE_REGULAR
-
 [numthreads(8, 1, 1)]
 void CSMain(uint2 tid : SV_DispatchThreadID)
 {
@@ -80,63 +76,42 @@ void CSMain(uint2 tid : SV_DispatchThreadID)
     float viewSpaceZ = CameraUtils::DeviceZToViewZ(Camera.cameraToClipMatrix, gpixel.depth);
     float3 worldPos = viewSpaceZ * worldRay + Camera.worldPosition;
 
-    float3 color = 0;
+    // Main light color
 
     float3 mainLightResult = 0;
-    if(Pass.shadowMaskLightType == 1)
-    {
-        PointLightShadingData light = PointLightBuffer[0];
-        mainLightResult = ComputePointLighting(gpixel, worldPos, light);
-    }
-    else if(Pass.shadowMaskLightType == 2)
-    {
-        DirectionalLightShadingData light = DirectionalLightBuffer[0];
-        mainLightResult = ComputeDirectionalLight(gpixel, light);
-    }
-    float shadow = 1;
-    if(any(mainLightResult > 0))
-        shadow = ShadowMask.SampleLevel(ShadowMaskSampler, uv, 0);
-    color += shadow * mainLightResult;
+#if MAIN_LIGHT_MODE == MAIN_LIGHT_MODE_POINT
+    mainLightResult = ComputePointLighting(gpixel, worldPos, Pass.mainPointLightShadingData);
+#elif MAIN_LIGHT_MODE == MAIN_LIGHT_MODE_DIRECTIONAL
+    mainLightResult = ComputeDirectionalLight(gpixel, Pass.mainDirectionalLightShadingData);
+#endif
 
-    for(int i = Pass.shadowMaskLightType == 1 ? 1 : 0; i < Pass.pointLightCount; ++i)
+    // Main light shadow
+
+    float shadow = 1;
+#if MAIN_LIGHT_MODE != MAIN_LIGHT_MODE_NONE
+    if(any(mainLightResult > 0))
+        shadow = MainLightShadowMask.SampleLevel(ShadowMaskSampler, uv, 0);
+#endif
+
+    // Other lights
+
+    float3 color = shadow * mainLightResult;
+    for(int i = 0; i < Pass.pointLightCount; ++i)
     {
         PointLightShadingData light = PointLightBuffer[i];
         color += ComputePointLighting(gpixel, worldPos, light);
     }
 
-    for(int j = Pass.shadowMaskLightType == 2 ? 1 : 0; j < Pass.directionalLightCount; ++j)
+    for(int j = 0; j < Pass.directionalLightCount; ++j)
     {
         DirectionalLightShadingData light = DirectionalLightBuffer[j];
         color += ComputeDirectionalLight(gpixel, light);
     }
+
+    // Output
     
     color = Tonemap(color);
     color = pow(color, 1.0 / 2.2);
     color = Dither01(color, uv);
     Output[tid] = float4(color, 1);
 }
-
-#elif LIGHTING_MODE == LIGHTING_MODE_SKY
-
-[numthreads(8, 1, 1)]
-void CSMain(uint2 tid : SV_DispatchThreadID)
-{
-    if(any(tid >= Pass.resolution))
-        return;
-    
-    float2 uv = (tid + 0.5) * Pass.rcpResolution;
-    GBufferPixel gpixel = LoadGBufferPixel(uv);
-    if(gpixel.depth < 1)
-        return;
-
-    float3 worldRay = GetWorldRay(uv);
-    float3 dir = normalize(worldRay);
-    float2 skyLutUv = Atmosphere::ComputeSkyLutTexCoord(dir);
-    float3 color = SkyLut.SampleLevel(SkyLutSampler, skyLutUv, 0);
-    color = Tonemap(color);
-    color = pow(color, 1.0 / 2.2);
-    color = Dither01(color, uv);
-    Output[tid] = float4(color, 1);
-}
-
-#endif // #if LIGHTING_MODE == ...

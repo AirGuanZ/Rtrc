@@ -9,6 +9,12 @@ RC<Buffer> BufferResource::Get(PassContext &passContext) const
     return passContext.Get(this);
 }
 
+const RC<Tlas> &TlasResource::Get(PassContext &passContext) const
+{
+    assert(passContext.Get(tlasBuffer_));
+    return tlas_;
+}
+
 RC<Texture> TextureResource::Get(PassContext &passContext) const
 {
     return passContext.Get(this);
@@ -31,6 +37,11 @@ RC<Buffer> PassContext::Get(const BufferResource *resource)
     }
 #endif
     return result;
+}
+
+const RC<Tlas> &PassContext::Get(const TlasResource *resource)
+{
+    return resource->Get(*this);
 }
 
 RC<Texture> PassContext::Get(const TextureResource *resource)
@@ -59,19 +70,15 @@ void Connect(Pass *head, Pass *tail)
     tail->prevs_.insert(head);
 }
 
-Pass *Pass::Use(BufferResource *buffer, RHI::PipelineStageFlag stages, RHI::ResourceAccessFlag accesses)
+Pass *Pass::Use(BufferResource *buffer, const UseInfo &info)
 {
     auto &usage = bufferUsages_[buffer];
-    usage.stages |= stages;
-    usage.accesses |= accesses;
+    usage.stages |= info.stages;
+    usage.accesses |= info.accesses;
     return this;
 }
 
-Pass *Pass::Use(
-    TextureResource        *texture,
-    RHI::TextureLayout      layout,
-    RHI::PipelineStageFlag  stages,
-    RHI::ResourceAccessFlag accesses)
+Pass *Pass::Use(TextureResource *texture, const UseInfo &info)
 {
     const uint32_t mipLevels = texture->GetMipLevels();
     const uint32_t arraySize = texture->GetArraySize();
@@ -79,45 +86,42 @@ Pass *Pass::Use(
     {
         for(uint32_t ai = 0; ai < arraySize; ++ai)
         {
-            Use(texture, RHI::TextureSubresource{ mi, ai }, layout, stages, accesses);
+            Use(texture, RHI::TextureSubresource{ mi, ai }, info);
         }
     }
     return this;
 }
 
-Pass *Pass::Use(
-    TextureResource               *texture,
-    const RHI::TextureSubresource &subresource,
-    RHI::TextureLayout             layout,
-    RHI::PipelineStageFlag         stages,
-    RHI::ResourceAccessFlag        accesses)
+Pass *Pass::Use(TextureResource *texture, const RHI::TextureSubresource &subrsc, const UseInfo &info)
 {
     TextureUsage &usageMap = textureUsages_[texture];
     if(!usageMap.GetArrayLayerCount())
     {
         usageMap = TextureUsage(texture->GetMipLevels(), texture->GetArraySize());
     }
-    assert(!usageMap(subresource.mipLevel, subresource.arrayLayer).has_value());
-    usageMap(subresource.mipLevel, subresource.arrayLayer) = SubTexUsage(layout, stages, accesses);
+    assert(!usageMap(subrsc.mipLevel, subrsc.arrayLayer).has_value());
+    usageMap(subrsc.mipLevel, subrsc.arrayLayer) = SubTexUsage(info.layout, info.stages, info.accesses);
     return this;
 }
 
-Pass *Pass::Use(BufferResource *buffer, const UseInfo &info)
+Pass *Pass::Use(TlasResource *tlas, const UseInfo &info)
 {
-    Use(buffer, info.stages, info.accesses);
-    return this;
+    return Use(tlas->GetInternalBuffer(), info);
 }
 
-Pass *Pass::Use(TextureResource *texture, const UseInfo &info)
+Pass *Pass::Build(TlasResource *tlas)
 {
-    Use(texture, info.layout, info.stages, info.accesses);
-    return this;
+    return Use(tlas, BuildAS_Output);
 }
 
-Pass *Pass::Use(TextureResource *texture, const RHI::TextureSubresource &subrsc, const UseInfo &info)
+Pass *Pass::Read(TlasResource *tlas, RHI::PipelineStageFlag stages)
 {
-    Use(texture, subrsc, info.layout, info.stages, info.accesses);
-    return this;
+    return Use(tlas, UseInfo
+    {
+        .layout   = RHI::TextureLayout::Undefined,
+        .stages   = stages,
+        .accesses = RHI::ResourceAccess::ReadAS
+    });
 }
 
 Pass *Pass::SetCallback(Callback callback)
@@ -227,6 +231,18 @@ TextureResource *RenderGraph::RegisterReadOnlyTexture(RC<Texture> texture)
     return textures_.back().get();
 }
 
+TlasResource *RenderGraph::RegisterTlas(RC<Tlas> tlas, BufferResource *internalBuffer)
+{
+    if(auto it = tlasResources_.find(internalBuffer); it != tlasResources_.end())
+    {
+        return it->second.get();
+    }
+    auto ret = new TlasResource(std::move(tlas), internalBuffer);
+    auto rsc = Box<TlasResource>(ret);
+    tlasResources_.insert({ internalBuffer, std::move(rsc) });
+    return ret;
+}
+
 TextureResource *RenderGraph::RegisterSwapchainTexture(
     RHI::TexturePtr             rhiTexture,
     RHI::BackBufferSemaphorePtr acquireSemaphore,
@@ -308,6 +324,24 @@ Pass *RenderGraph::CreateClearRWStructuredBufferPass(std::string_view name, Buff
         device_->GetClearBufferUtils().ClearRWStructuredBuffer(context.GetCommandBuffer(), context.Get(buffer), value);
     });
     return pass;
+}
+
+Pass *RenderGraph::CreateCopyBufferPass(
+    std::string_view name, BufferResource *src, size_t srcOffset, BufferResource *dst, size_t dstOffset, size_t size)
+{
+    auto pass = CreatePass(name);
+    pass->Use(src, CopySrc);
+    pass->Use(dst, CopyDst);
+    pass->SetCallback([=](PassContext &context)
+    {
+        context.GetCommandBuffer().CopyBuffer(*dst->Get(context), dstOffset, *src->Get(context), srcOffset, size);
+    });
+    return pass;
+}
+
+Pass *RenderGraph::CreateCopyBufferPass(std::string_view name, BufferResource *src, BufferResource *dst, size_t size)
+{
+    return CreateCopyBufferPass(name, src, 0, dst, 0, size);
 }
 
 Pass *RenderGraph::CreateBlitTexture2DPass(

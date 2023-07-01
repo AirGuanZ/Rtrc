@@ -114,8 +114,8 @@ void Run()
             commandBuffer.SetGraphicsPushConstants(0, Vector4i(slots[0], slots[1], slots[2], slots[3]));
             commandBuffer.DrawIndexed(6, 1, 0, 0, 0);
         });
-
-        quadPass->SetSignalFence(device->GetFrameFence());
+        
+        graph->SetCompleteFence(device->GetFrameFence());
         renderGraphExecuter.Execute(graph);
 
         device->Present();

@@ -367,9 +367,9 @@ void Run()
             commandBuffer.DispatchWithThreadCount(renderTarget->GetWidth(), renderTarget->GetHeight(), 1);
         });
 
-        auto copyPass = graph->CreateBlitTexture2DPass("Blit", renderTarget, rgSwapchain, true);
-        copyPass->SetSignalFence(device->GetFrameFence());
-
+        graph->CreateBlitTexture2DPass("Blit", renderTarget, rgSwapchain, true);
+        
+        graph->SetCompleteFence(device->GetFrameFence());
         executer.Execute(graph);
         device->Present();
     }

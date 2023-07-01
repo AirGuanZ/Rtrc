@@ -604,7 +604,7 @@ RC<Material> MaterialManager::CreateMaterial(std::string_view name)
     for(auto &pass : passes)
     {
         pass->parentPropertyLayout_ = propertyLayout.get();
-        pass->shaderTemplate_->sharedEnvir_ = sharedCompileEnvir;
+        pass->shaderTemplate_ = pass->shaderTemplate_->MergeCompileEnvironment(sharedCompileEnvir);
     }
 
     // Material tag

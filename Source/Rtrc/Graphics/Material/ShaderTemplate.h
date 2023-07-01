@@ -51,6 +51,31 @@ public:
         return compiledShaders_[keywordValueMask];
     }
 
+    RC<ShaderTemplate> ReplaceCompileEnvironment(RC<SharedCompileEnvironment> envir) const
+    {
+        auto ret = MakeRC<ShaderTemplate>();
+        ret->builtinKeywordMask_ = builtinKeywordMask_;
+        ret->debug_              = debug_;
+        ret->keywordSet_         = keywordSet_;
+        ret->source_             = source_;
+        ret->sharedEnvir_        = std::move(envir);
+        ret->shaderCompiler_     = shaderCompiler_;
+        ret->compiledShaders_.resize(1 << keywordSet_.GetTotalBitCount());
+        return ret;
+    }
+    
+    RC<ShaderTemplate> MergeCompileEnvironment(RC<SharedCompileEnvironment> envir) const
+    {
+        if(sharedEnvir_)
+        {
+            for(auto &p : sharedEnvir_->macros)
+            {
+                envir->macros.insert(p);
+            }
+        }
+        return ReplaceCompileEnvironment(std::move(envir));
+    }
+
     const KeywordSet &GetKeywordSet() const { return keywordSet_; }
     KeywordSet::ValueMask GetKeywordValueMask(const KeywordContext &keywordValueContext) const
     {

@@ -94,6 +94,18 @@ public:
             ++nextPos_;
         }
 
+        // Skip '#line ...'
+
+        if(nextPos_ < source_.size() && source_.substr(nextPos_).starts_with("#line"))
+        {
+            while(nextPos_ < source_.size() && source_[nextPos_] != '\n')
+            {
+                ++nextPos_;
+            }
+            Next();
+            return;
+        }
+
         // Early exit
 
         if(nextPos_ >= source_.size())

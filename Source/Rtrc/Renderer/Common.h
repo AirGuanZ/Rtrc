@@ -52,19 +52,26 @@ enum class StencilBit : uint8_t
     Regular = 1 << 0,
 };
 
-struct PointLightShadingData
+rtrc_struct(PointLightShadingData)
 {
-    Vector3f position;
-    float    distFadeBias; // distFade = distFadeBias + distFadeScale * dist
-    Vector3f color;
-    float    distFadeScale;
+    rtrc_var(float3, position);
+    rtrc_var(float,  distFadeBias); // distFade = distFadeBias + distFadeScale * dist
+    rtrc_var(float3, color);
+    rtrc_var(float,  distFadeScale);
 };
 
-struct DirectionalLightShadingData
+static_assert(sizeof(PointLightShadingData) == 8 * sizeof(float));
+
+rtrc_struct(DirectionalLightShadingData)
 {
-    Vector3f direction;
-    Vector3f color;
+    rtrc_var(float3, direction); rtrc_var(float, pad0);
+    rtrc_var(float3, color);     rtrc_var(float, pad1);
 };
+
+static_assert(sizeof(DirectionalLightShadingData) == 8 * sizeof(float));
+
+PointLightShadingData       ExtractPointLightShadingData      (const Light::SharedRenderingData *light);
+DirectionalLightShadingData ExtractDirectionalLightShadingData(const Light::SharedRenderingData *light);
 
 struct GBuffers
 {
@@ -72,19 +79,6 @@ struct GBuffers
     RG::TextureResource *albedoMetallic = nullptr;
     RG::TextureResource *roughness      = nullptr;
     RG::TextureResource *depth          = nullptr;
-};
-
-struct RGScene
-{
-    RG::BufferResource *opaqueTlasMaterialDataBuffer = nullptr;
-    RG::BufferResource *opaqueTlasBuffer             = nullptr;
-
-    GBuffers gbuffers;
-
-    int                  shadowMaskLightIndex = -1;
-    RG::TextureResource *shadowMask           = nullptr;
-
-    RG::TextureResource *skyLut = nullptr;
 };
 
 RTRC_RENDERER_END

@@ -2,14 +2,14 @@
 
 #include <Rtrc/Renderer/GBufferBinding.h>
 #include <Rtrc/Renderer/Passes/ShadowMaskPass.h>
-#include <Rtrc/Renderer/Scene/PersistentSceneCameraRenderingData.h>
+#include <Rtrc/Renderer/Scene/RenderSceneCamera.h>
 #include <Rtrc/Math/DistributionTransform.h>
 
 RTRC_RENDERER_BEGIN
 
 namespace ShadowMaskPassDetail
 {
-
+    
     rtrc_group(BindingGroup_CollectLowResShadowMaskPass, CS)
     {
         rtrc_inline(GBufferBindings_NormalDepth, gbuffers);
@@ -47,7 +47,7 @@ namespace ShadowMaskPassDetail
 
         rtrc_define(Texture2D, BlueNoise256);
         rtrc_define(Texture2D, LowResMask);
-
+        
         rtrc_uniform(uint2,  outputResolution);
         rtrc_uniform(float2, rcpOutputResolution);
         rtrc_uniform(uint,   lightType);
@@ -76,21 +76,20 @@ ShadowMaskPass::ShadowMaskPass(
     InitializeShaders();
 }
 
-ShadowMaskPass::RenderGraphOutput ShadowMaskPass::Render(
-    const PersistentSceneCameraRenderingData &sceneCamera,
-    int                 lightIndex,
-    bool                enableLowResOptimization,
-    const RGScene      &rgScene,
-    RG::RenderGraph    &renderGraph)
+RG::TextureResource *ShadowMaskPass::Render(
+    const RenderSceneCamera          &sceneCamera,
+    const Light::SharedRenderingData *light,
+    bool                              enableLowResOptimization,
+    const GBuffers                   &gbuffers,
+    RG::RenderGraph                  &renderGraph)
 {
     using namespace ShadowMaskPassDetail;
 
-    if(!device_->IsRayTracingEnabled() || lightIndex < 0)
+    if(!device_->IsRayTracingEnabled())
     {
         return {};
     }
-
-    const Light::SharedRenderingData *light = sceneCamera.GetLights()[lightIndex];
+    
     if(!light->GetFlags().Contains(Light::Flags::EnableRayTracedShadow))
     {
         return {};
@@ -98,7 +97,7 @@ ShadowMaskPass::RenderGraphOutput ShadowMaskPass::Render(
 
     RTRC_RG_SCOPED_PASS_GROUP(renderGraph, "ShadowMask");
 
-    const Vector2u outputSize = rgScene.gbuffers.normal->GetSize();
+    const Vector2u outputSize = gbuffers.normal->GetSize();
     const Vector2u lowResSize = Vector2u(
         std::max(1u, outputSize.x / 8),
         std::max(1u, outputSize.y / 8));
@@ -121,16 +120,16 @@ ShadowMaskPass::RenderGraphOutput ShadowMaskPass::Render(
         }, "LowResShadowMask0");
         auto generateLowResMaskPass = renderGraph.CreatePass("LowResShadowMask");
         DeclareGBufferUses<BindingGroup_CollectLowResShadowMaskPass>(
-                generateLowResMaskPass, rgScene.gbuffers, RHI::PipelineStage::ComputeShader);
-        generateLowResMaskPass->Use(rgScene.opaqueTlasBuffer, RG::CS_ReadAS);
+                generateLowResMaskPass, gbuffers, RHI::PipelineStage::ComputeShader);
+        generateLowResMaskPass->Use(sceneCamera.GetCachedScene().GetRGTlas(), RG::CS_ReadAS);
         generateLowResMaskPass->Use(lowResShadowMask0, RG::CS_RWTexture_WriteOnly);
         generateLowResMaskPass->SetCallback(
-            [gbuffers = rgScene.gbuffers, &sceneCamera, lowResShadowMask0, lowResSize, light, this]
+            [gbuffers, &sceneCamera, lowResShadowMask0, lowResSize, light, this]
             (RG::PassContext &context)
         {
             BindingGroup_CollectLowResShadowMaskPass passData;
             FillBindingGroupGBuffers(passData, gbuffers, context);
-            passData.Scene               = sceneCamera.GetCachedScene().GetOpaqueTlas();
+            passData.Scene               = sceneCamera.GetCachedScene().GetRGTlas()->Get(context);
             passData.Camera              = sceneCamera.GetCameraCBuffer();
             passData.OutputTextureRW     = lowResShadowMask0->Get(context);
             passData.BlueNoise256        = builtinResources_->GetBuiltinTexture(BuiltinTexture::BlueNoise256);
@@ -215,22 +214,21 @@ ShadowMaskPass::RenderGraphOutput ShadowMaskPass::Render(
     }
 
     auto generateRawMaskPass = renderGraph.CreatePass("ShadowMask");
-    DeclareGBufferUses<BindingGroup_ShadowMaskPass>(
-        generateRawMaskPass, rgScene.gbuffers, RHI::PipelineStage::ComputeShader);
-    generateRawMaskPass->Use(rgScene.opaqueTlasBuffer, RG::CS_ReadAS);
+    DeclareGBufferUses<BindingGroup_ShadowMaskPass>(generateRawMaskPass, gbuffers, RHI::PipelineStage::ComputeShader);
+    generateRawMaskPass->Use(sceneCamera.GetCachedScene().GetRGTlas(), RG::CS_ReadAS);
     if(lowResShadowMask0)
     {
         generateRawMaskPass->Use(lowResShadowMask0, RG::CS_Texture);
     }
     generateRawMaskPass->Use(shadowMask0, RG::CS_RWTexture_WriteOnly);
     generateRawMaskPass->SetCallback(
-        [shadowMaskShader, gbuffers = rgScene.gbuffers, &sceneCamera,
+        [shadowMaskShader, gbuffers, &sceneCamera,
          lowResShadowMask0, shadowMask0, outputSize, light, this]
         (RG::PassContext &context)
     {
         BindingGroup_ShadowMaskPass passData;
         FillBindingGroupGBuffers(passData, gbuffers, context);
-        passData.Scene               = sceneCamera.GetCachedScene().GetOpaqueTlas();
+        passData.Scene               = sceneCamera.GetCachedScene().GetRGTlas()->Get(context);
         passData.Camera              = sceneCamera.GetCameraCBuffer();
         passData.OutputTextureRW     = shadowMask0->Get(context);
         passData.BlueNoise256        = builtinResources_->GetBuiltinTexture(BuiltinTexture::BlueNoise256);
@@ -251,19 +249,17 @@ ShadowMaskPass::RenderGraphOutput ShadowMaskPass::Render(
 
     if(light->GetShadowSoftness() <= 0)
     {
-        RenderGraphOutput ret;
-        ret.shadowMask = shadowMask0;
-        return ret;
+        return shadowMask0;
     }
 
     auto shadowMask1 = renderGraph.CreateTexture(shadowMask0->GetDesc(), "IntermediatelyBlurredShadowMask");
 
     auto blurXPass = renderGraph.CreatePass("BlurShadowMaskX");
-    DeclareGBufferUses<BindingGroup_BlurPass>(blurXPass, rgScene.gbuffers, RHI::PipelineStage::ComputeShader);
+    DeclareGBufferUses<BindingGroup_BlurPass>(blurXPass, gbuffers, RHI::PipelineStage::ComputeShader);
     blurXPass->Use(shadowMask0, RG::CS_Texture);
     blurXPass->Use(shadowMask1, RG::CS_RWTexture);
     blurXPass->SetCallback(
-        [&sceneCamera, gbuffers = rgScene.gbuffers, shadowMask0, shadowMask1, this, outputSize]
+        [&sceneCamera, gbuffers, shadowMask0, shadowMask1, this, outputSize]
         (RG::PassContext &context)
     {
         BindingGroup_BlurPass passData;
@@ -281,11 +277,11 @@ ShadowMaskPass::RenderGraphOutput ShadowMaskPass::Render(
     });
     
     auto blurYPass = renderGraph.CreatePass("BlurShadowMaskY");
-    DeclareGBufferUses<BindingGroup_BlurPass>(blurYPass, rgScene.gbuffers, RHI::PipelineStage::ComputeShader);
+    DeclareGBufferUses<BindingGroup_BlurPass>(blurYPass, gbuffers, RHI::PipelineStage::ComputeShader);
     blurYPass->Use(shadowMask1, RG::CS_Texture);
     blurYPass->Use(shadowMask0, RG::CS_RWTexture);
     blurYPass->SetCallback(
-        [&sceneCamera, gbuffers = rgScene.gbuffers, shadowMask0, shadowMask1, this, outputSize]
+        [&sceneCamera, gbuffers, shadowMask0, shadowMask1, this, outputSize]
         (RG::PassContext &context)
     {
         BindingGroup_BlurPass passData;
@@ -302,9 +298,7 @@ ShadowMaskPass::RenderGraphOutput ShadowMaskPass::Render(
         commandBuffer.DispatchWithThreadCount(outputSize.x, outputSize.y, 1);
     });
     
-    RenderGraphOutput ret;
-    ret.shadowMask = shadowMask0;
-    return ret;
+    return shadowMask0;
 }
 
 void ShadowMaskPass::InitializeShaders()

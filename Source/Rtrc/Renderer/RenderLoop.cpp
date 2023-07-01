@@ -21,7 +21,6 @@ RenderLoop::RenderLoop(
     imguiRenderer_       = MakeBox<ImGuiRenderer>(device_);
     renderGraphExecuter_ = MakeBox<RG::Executer>(device_);
 
-    bindlessStructuredBuffersForBlas_ = MakeBox<BindlessBufferManager>(device_, 64, MAX_BLAS_BINDLESS_BUFFER_COUNT);
     transientConstantBufferAllocator_ = MakeBox<TransientConstantBufferAllocator>(*device);
 
     atmospherePass_       = MakeBox<PhysicalAtmospherePass>(device_, builtinResources_);
@@ -156,11 +155,11 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
     
     // ============= Update meshes =============
 
-    meshManager_.UpdateCachedMeshData(frame);
+    meshManager_.Update(frame);
     constexpr int MAX_BLAS_BUILD_COUNT = 5;
     constexpr int MAX_BLAS_BUILD_PRIMITIVE_COUNT = 1e5;
-    auto rgMesh = meshManager_.BuildBlasForMeshes(
-        *renderGraph, MAX_BLAS_BUILD_COUNT, MAX_BLAS_BUILD_PRIMITIVE_COUNT);
+    meshManager_.BuildBlasForMeshes(*renderGraph, MAX_BLAS_BUILD_COUNT, MAX_BLAS_BUILD_PRIMITIVE_COUNT);
+    RTRC_SCOPE_EXIT{ meshManager_.ClearFrameData(); };
 
     // ============= Update materials =============
 
@@ -168,43 +167,41 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
 
     // ============= Update scene =============
 
-    auto rgCachedScene = cachedScene_.Update(
+    cachedScene_.Update(
         frame, *transientConstantBufferAllocator_,
         meshManager_, materialManager_, *renderGraph, linearAllocator);
+    RTRC_SCOPE_EXIT{ cachedScene_.ClearFrameData(); };
 
-    PersistentSceneCameraRenderingData *cachedCamera = cachedScene_.GetSceneCameraRenderingData(frame.camera.originalId);
-    assert(cachedCamera);
+    RenderSceneCamera *renderSceneCamera = cachedScene_.GetSceneCameraRenderingData(frame.camera.originalId);
+    assert(renderSceneCamera);
 
     // Blas buffers are not tracked by render graph, so we need to manually add dependency.
-    renderGraph->MakeDummyPassIfNull(rgMesh.buildBlasPass, "BuildMeshBlas");
-    renderGraph->MakeDummyPassIfNull(rgCachedScene.buildTlasPass, "BuildTlas");
-    Connect(rgMesh.buildBlasPass, rgCachedScene.buildTlasPass);
 
-    RGScene rgScene;
-    rgScene.opaqueTlasMaterialDataBuffer = rgCachedScene.tlasMaterialDataBuffer;
-    rgScene.opaqueTlasBuffer             = rgCachedScene.tlasBuffer;
-
+    if(meshManager_.GetRGBuildBlasPass() && cachedScene_.GetRGBuildTlasPass())
+    {
+        Connect(meshManager_.GetRGBuildBlasPass(), cachedScene_.GetRGBuildTlasPass());
+    }
+    
     // ============= GBuffers =============
 
-    rgScene.gbuffers = gbufferPass_->RenderGBuffers(
-        *cachedCamera, frame.bindlessTextureGroup, *renderGraph, framebuffer->GetSize()).gbuffers;
+    GBuffers gbuffers = gbufferPass_->Render(
+        *renderSceneCamera, frame.bindlessTextureGroup, *renderGraph, framebuffer->GetSize());
 
     // ============= Atmosphere =============
 
     atmospherePass_->SetProperties(frame.scene->GetAtmosphere());
-    auto rgAtmosphere = atmospherePass_->Render(
+    auto skyLut = atmospherePass_->Render(
         *renderGraph, 
         frame.scene->GetSunDirection(), 
         frame.scene->GetSunColor() * frame.scene->GetSunIntensity(),
         1000.0f,
         frameTimer_.GetDeltaSecondsF(),
-        cachedCamera->GetCachedAtmosphereData());
-    rgScene.skyLut = rgAtmosphere.skyLut;
+        renderSceneCamera->GetCachedAtmosphereData()).skyLut;
 
     // ============= Shadow mask =============
-
+    
     int shadowMaskLightIndex = -1;
-    for(auto &&[i, light] : Enumerate(cachedCamera->GetLights()))
+    for(auto &&[i, light] : Enumerate(renderSceneCamera->GetLights()))
     {
         if(light->GetFlags().Contains(LightDetail::FlagBit::EnableRayTracedShadow))
         {
@@ -218,22 +215,21 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
             }
         }
     }
-    auto rgShadowMask = shadowMaskPass_->Render(
-        *cachedCamera,
-        shadowMaskLightIndex,
+    auto shadowMask = shadowMaskPass_->Render(
+        *renderSceneCamera,
+        renderSceneCamera->GetCachedScene().GetRenderLights().GetMainLight(),
         frame.renderSettings.enableSoftShadowMaskLowResOptimization,
-        rgScene,
+        gbuffers,
         *renderGraph);
-    rgScene.shadowMaskLightIndex = shadowMaskLightIndex;
-    rgScene.shadowMask = rgShadowMask.shadowMask;
-
+    
     // ============= Deferred lighting =============
     
-    deferredLightingPass_->RenderDeferredLighting(*cachedCamera, rgScene , *renderGraph, framebuffer);
+    deferredLightingPass_->Render(
+        *renderSceneCamera, gbuffers, skyLut, *renderGraph, framebuffer);
 
     // ============= ImGui =============
 
-    imguiRenderer_->AddToRenderGraph(
+    imguiRenderer_->Render(
         frame.imguiDrawData.get(), framebuffer, renderGraph.get());
 
     // ============= Blit =============
