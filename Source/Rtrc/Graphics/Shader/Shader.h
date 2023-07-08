@@ -508,8 +508,7 @@ inline const RHI::RawShaderPtr &Shader::GetRawShader(RHI::ShaderType type) const
     case FragmentShader:   assert(GetCategory() == Graphics);   return rawShaders_[FS_INDEX];
     case ComputeShader:    assert(GetCategory() == Compute);    return rawShaders_[CS_INDEX];
     case RayTracingShader: assert(GetCategory() == RayTracing); return rawShaders_[RT_INDEX];
-    default:
-        break;
+    default: break;
     }
     Unreachable();
 }

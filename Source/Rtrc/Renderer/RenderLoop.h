@@ -6,12 +6,11 @@
 
 #include <Rtrc/Graphics/ImGui/Instance.h>
 #include <Rtrc/Graphics/RenderGraph/Executable.h>
-#include <Rtrc/Renderer/Passes/AtmospherePass.h>
 #include <Rtrc/Renderer/Passes/DeferredLightingPass.h>
 #include <Rtrc/Renderer/Passes/GBufferPass.h>
 #include <Rtrc/Renderer/Passes/ShadowMaskPass.h>
 #include <Rtrc/Renderer/RenderCommand.h>
-#include <Rtrc/Renderer/Scene/RenderSceneCamera.h>
+#include <Rtrc/Renderer/Scene/RenderCamera.h>
 #include <Rtrc/Utility/Timer.h>
 
 RTRC_RENDERER_BEGIN
@@ -73,12 +72,11 @@ private:
     std::jthread                         renderThread_;
     tbb::concurrent_queue<RenderCommand> renderCommandQueue_;
 
-    CachedMeshManager     meshManager_;
-    CachedMaterialManager materialManager_;
+    RenderMeshes    renderMeshes_;
+    RenderMaterials renderMaterials_;
     
-    RenderScene cachedScene_;
-
-    Box<PhysicalAtmospherePass> atmospherePass_;
+    RenderScene renderScene_;
+    
     Box<GBufferPass>            gbufferPass_;
     Box<DeferredLightingPass>   deferredLightingPass_;
     Box<ShadowMaskPass>         shadowMaskPass_;

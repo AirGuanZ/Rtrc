@@ -1,7 +1,8 @@
 #pragma once
 
-#include <Rtrc/Renderer/Scene/CachedMaterialManager.h>
-#include <Rtrc/Renderer/Scene/CachedMeshManager.h>
+#include <Rtrc/Renderer/Atmosphere/AtmosphereRenderer.h>
+#include <Rtrc/Renderer/Scene/RenderMaterials.h>
+#include <Rtrc/Renderer/Scene/RenderMeshes.h>
 #include <Rtrc/Renderer/Scene/RenderLights.h>
 #include <Rtrc/Renderer/Utility/TransientConstantBufferAllocator.h>
 #include <Rtrc/Renderer/Utility/UploadBufferPool.h>
@@ -9,7 +10,7 @@
 
 RTRC_RENDERER_BEGIN
 
-class RenderSceneCamera;
+class RenderCamera;
 
 class RenderScene : public Uncopyable
 {
@@ -22,9 +23,9 @@ public:
 
     struct StaticMeshRecord
     {
-        const StaticMeshRenderProxy                 *proxy          = nullptr;
-        const CachedMeshManager::CachedMesh         *cachedMesh     = nullptr;
-        const CachedMaterialManager::CachedMaterial *cachedMaterial = nullptr;
+        const StaticMeshRenderProxy           *proxy          = nullptr;
+        const RenderMeshes::RenderMesh        *renderMesh     = nullptr;
+        const RenderMaterials::RenderMaterial *renderMaterial = nullptr;
     };
 
     struct TlasMaterial
@@ -33,24 +34,28 @@ public:
         float    albedoScale;
     };
     
-    RenderScene(const Config &config, ObserverPtr<Device> device);
+    RenderScene(
+        const Config                             &config,
+        ObserverPtr<Device>                       device,
+        ObserverPtr<const BuiltinResourceManager> builtinResources);
 
     void Update(
         const RenderCommand_RenderStandaloneFrame &frame,
         TransientConstantBufferAllocator          &transientConstantBufferAllocator,
-        const CachedMeshManager                   &meshManager,
-        const CachedMaterialManager               &materialManager,
+        const RenderMeshes                        &renderMeshes,
+        const RenderMaterials                     &renderMaterials,
         RG::RenderGraph                           &renderGraph,
         LinearAllocator                           &linearAllocator);
 
     void ClearFrameData();
     
-    RenderSceneCamera *GetSceneCameraRenderingData(UniqueId cameraId) const;
+    RenderCamera *GetRenderCamera(UniqueId cameraId) const;
 
     Span<StaticMeshRecord *> GetStaticMeshes() const { return objects_; }
     
     Span<const Light::SharedRenderingData*> GetLights()            const { return scene_->GetLights(); }
     const RenderLights                     &GetRenderLights()      const { return *renderLights_; }
+    const RenderAtmosphere                 &GetRenderAtmosphere()  const { return *renderAtmosphere_; }
 
     RG::BufferResource *GetRGPointLightBuffer()       const { return renderLights_->GetRGPointLightBuffer(); }
     RG::BufferResource *GetRGDirectionalLightBuffer() const { return renderLights_->GetRGDirectionalLightBuffer(); }
@@ -63,10 +68,10 @@ private:
 
     // Update objects_ & tlasObjects_
     void CollectObjects(
-        const SceneProxy            &scene,
-        const CachedMeshManager     &meshManager,
-        const CachedMaterialManager &materialManager,
-        LinearAllocator             &linearAllocator);
+        const SceneProxy      &scene,
+        const RenderMeshes    &meshManager,
+        const RenderMaterials &materialManager,
+        LinearAllocator       &linearAllocator);
 
     void UpdateTlasScene(RG::RenderGraph &renderGraph);
     
@@ -91,9 +96,13 @@ private:
 
     Box<RenderLights> renderLights_;
 
+    // Atmosphere
+
+    Box<RenderAtmosphere> renderAtmosphere_;
+
     // Per-camera data
 
-    std::vector<Box<RenderSceneCamera>> cachedCameras_;
+    std::vector<Box<RenderCamera>> renderCameras_;
 };
 
 RTRC_RENDERER_END

@@ -13,7 +13,7 @@ struct PerspectiveProjectionParameters
     float farPlane  = 100.0f;
 };
 
-struct RenderCamera
+struct CameraRenderData
 {
     Vector3f position;
     Vector3f rotation;
@@ -37,7 +37,7 @@ struct RenderCamera
     UniqueId originalId;
 };
 
-class Camera : public WithUniqueObjectID, RenderCamera
+class Camera : public WithUniqueObjectID, CameraRenderData
 {
 public:
 
@@ -74,7 +74,7 @@ public:
     const CornerRays &GetWorldRays() const;
     const CornerRays &GetCameraRays() const;
 
-    const RenderCamera &GetRenderCamera() const;
+    const CameraRenderData &GetRenderCamera() const;
 };
 
 inline Camera::Camera()
@@ -168,7 +168,7 @@ inline const Camera::CornerRays &Camera::GetCameraRays() const
     return cameraRays;
 }
 
-inline const RenderCamera &Camera::GetRenderCamera() const
+inline const CameraRenderData &Camera::GetRenderCamera() const
 {
     return *this;
 }

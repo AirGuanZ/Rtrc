@@ -136,8 +136,8 @@ Pass *Pass::SetSignalFence(RHI::FencePtr fence)
     return this;
 }
 
-Pass::Pass(int index, std::string name)
-    : index_(index), name_(std::move(name))
+Pass::Pass(int index, const LabelStack::Node *node)
+    : index_(index), nameNode_(node)
 {
     
 }
@@ -267,30 +267,31 @@ TextureResource *RenderGraph::RegisterSwapchainTexture(const RHI::SwapchainPtr &
         swapchain->GetRenderTarget(), swapchain->GetAcquireSemaphore(), swapchain->GetPresentSemaphore());
 }
 
-void RenderGraph::PushPassGroup(std::string_view name)
+void RenderGraph::PushPassGroup(std::string name)
 {
-    passNamePrefixLengths_.push(passNamePrefix_.size());
-    passNamePrefix_.append(passNamePrefix_.empty() ? name : ("." + std::string(name)));
+    labelStack_.Push(std::move(name));
 }
 
 void RenderGraph::PopPassGroup()
 {
-    passNamePrefix_.resize(passNamePrefixLengths_.top());
-    passNamePrefixLengths_.pop();
+    labelStack_.Pop();
 }
 
-Pass *RenderGraph::CreatePass(std::string_view name)
+Pass *RenderGraph::CreatePass(std::string name)
 {
+    labelStack_.Push(std::move(name));
+    auto node = labelStack_.GetCurrentNode();
+    labelStack_.Pop();
+
     const int index = static_cast<int>(passes_.size());
-    auto pass = Box<Pass>(new Pass(
-        index, passNamePrefix_.empty() ? std::string(name) : passNamePrefix_ + "." + std::string(name)));
+    auto pass = Box<Pass>(new Pass(index, node));
     passes_.push_back(std::move(pass));
     return passes_.back().get();
 }
 
-Pass *RenderGraph::CreateClearTexture2DPass(std::string_view name, TextureResource *tex2D, const Vector4f &clearValue)
+Pass *RenderGraph::CreateClearTexture2DPass(std::string name, TextureResource *tex2D, const Vector4f &clearValue)
 {
-    auto pass = CreatePass(name);
+    auto pass = CreatePass(std::move(name));
     pass->Use(tex2D, ClearDst);
     pass->SetCallback([tex2D, clearValue](PassContext &context)
     {
@@ -299,14 +300,14 @@ Pass *RenderGraph::CreateClearTexture2DPass(std::string_view name, TextureResour
     return pass;
 }
 
-Pass *RenderGraph::CreateDummyPass(std::string_view name)
+Pass *RenderGraph::CreateDummyPass(std::string name)
 {
-    return CreatePass(name);
+    return CreatePass(std::move(name));
 }
 
-Pass *RenderGraph::CreateClearRWBufferPass(std::string_view name, BufferResource *buffer, uint32_t value)
+Pass *RenderGraph::CreateClearRWBufferPass(std::string name, BufferResource *buffer, uint32_t value)
 {
-    auto pass = CreatePass(name);
+    auto pass = CreatePass(std::move(name));
     pass->Use(buffer, CS_RWBuffer_WriteOnly);
     pass->SetCallback([buffer, value, this](PassContext &context)
     {
@@ -315,9 +316,9 @@ Pass *RenderGraph::CreateClearRWBufferPass(std::string_view name, BufferResource
     return pass;
 }
 
-Pass *RenderGraph::CreateClearRWStructuredBufferPass(std::string_view name, BufferResource *buffer, uint32_t value)
+Pass *RenderGraph::CreateClearRWStructuredBufferPass(std::string name, BufferResource *buffer, uint32_t value)
 {
-    auto pass = CreatePass(name);
+    auto pass = CreatePass(std::move(name));
     pass->Use(buffer, CS_RWStructuredBuffer_WriteOnly);
     pass->SetCallback([buffer, value, this](PassContext &context)
     {
@@ -327,9 +328,9 @@ Pass *RenderGraph::CreateClearRWStructuredBufferPass(std::string_view name, Buff
 }
 
 Pass *RenderGraph::CreateCopyBufferPass(
-    std::string_view name, BufferResource *src, size_t srcOffset, BufferResource *dst, size_t dstOffset, size_t size)
+    std::string name, BufferResource *src, size_t srcOffset, BufferResource *dst, size_t dstOffset, size_t size)
 {
-    auto pass = CreatePass(name);
+    auto pass = CreatePass(std::move(name));
     pass->Use(src, CopySrc);
     pass->Use(dst, CopyDst);
     pass->SetCallback([=](PassContext &context)
@@ -339,47 +340,39 @@ Pass *RenderGraph::CreateCopyBufferPass(
     return pass;
 }
 
-Pass *RenderGraph::CreateCopyBufferPass(std::string_view name, BufferResource *src, BufferResource *dst, size_t size)
+Pass *RenderGraph::CreateCopyBufferPass(std::string name, BufferResource *src, BufferResource *dst, size_t size)
 {
-    return CreateCopyBufferPass(name, src, 0, dst, 0, size);
+    return CreateCopyBufferPass(std::move(name), src, 0, dst, 0, size);
 }
 
 Pass *RenderGraph::CreateBlitTexture2DPass(
-    std::string_view name,
+    std::string name,
     TextureResource *src, uint32_t srcArrayLayer, uint32_t srcMipLevel,
     TextureResource *dst, uint32_t dstArrayLayer, uint32_t dstMipLevel,
     bool usePointSampling)
 {
-    auto pass = CreatePass(name);
+    auto pass = CreatePass(std::move(name));
     pass->Use(src, PS_Texture);
     pass->Use(dst, ColorAttachmentWriteOnly);
-    pass->SetCallback([src, dst, usePointSampling, this](PassContext &context)
+    pass->SetCallback([=](PassContext &context)
     {
         device_->GetCopyTextureUtils().RenderQuad(
             context.GetCommandBuffer(),
-            src->Get(context)->CreateSrv(0, 1, 0),
-            dst->Get(context)->CreateRtv(),
+            src->Get(context)->CreateSrv(srcMipLevel, 1, srcArrayLayer),
+            dst->Get(context)->CreateRtv(dstMipLevel, dstArrayLayer),
             usePointSampling ? CopyTextureUtils::Point : CopyTextureUtils::Linear);
     });
     return pass;
 }
 
 Pass *RenderGraph::CreateBlitTexture2DPass(
-    std::string_view name, TextureResource *src, TextureResource *dst, bool usePointSampling)
+    std::string name, TextureResource *src, TextureResource *dst, bool usePointSampling)
 {
     assert(src->GetArraySize() == 1);
     assert(src->GetMipLevels() == 1);
     assert(dst->GetArraySize() == 1);
     assert(dst->GetMipLevels() == 1);
-    return CreateBlitTexture2DPass(name, src, 0, 0, dst, 0, 0, usePointSampling);
-}
-
-void RenderGraph::MakeDummyPassIfNull(Pass *&pass, std::string_view name)
-{
-    if(!pass)
-    {
-        pass = CreateDummyPass(std::string(name));
-    }
+    return CreateBlitTexture2DPass(std::move(name), src, 0, 0, dst, 0, 0, usePointSampling);
 }
 
 void RenderGraph::SetCompleteFence(RHI::FencePtr fence)

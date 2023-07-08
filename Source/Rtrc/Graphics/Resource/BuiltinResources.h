@@ -31,7 +31,7 @@ enum class BuiltinMaterial
     Count
 };
 
-class BuiltinResourceManager : public Uncopyable
+class BuiltinResourceManager : public Uncopyable, public WithUniqueObjectID
 {
 public:
 

@@ -15,9 +15,8 @@ public:
         ObserverPtr<const BuiltinResourceManager> builtinResources);
     
     RG::TextureResource *Render(
-        const RenderSceneCamera          &sceneCamera,
+        const RenderCamera               &camera,
         const Light::SharedRenderingData *light,
-        bool                              enableLowResOptimization,
         const GBuffers                   &gbuffers,
         RG::RenderGraph                  &renderGraph);
 
@@ -28,18 +27,13 @@ private:
     ObserverPtr<Device>                       device_;
     ObserverPtr<const BuiltinResourceManager> builtinResources_;
     
-    RC<Shader>             collectLowResShadowMaskShader_;
-    RC<BindingGroupLayout> collectLowResShadowMaskBindingGroupLayout_;
-
+    RC<Shader> collectLowResShadowMaskShader_;
+    
     RC<Shader>             blurLowResXShader_;
     RC<Shader>             blurLowResYShader_;
-    RC<BindingGroupLayout> blurLowResShadowMaskBindingGroupLayout_;
     
-    RC<BindingGroupLayout> shadowMaskPassBindingGroupLayout_;
-
     RC<Shader>             blurXShader_;
     RC<Shader>             blurYShader_;
-    RC<BindingGroupLayout> blurPassBindingGroupLayout_;
 };
 
 RTRC_RENDERER_END

@@ -5,7 +5,7 @@
 
 RTRC_RENDERER_BEGIN
 
-class CachedMeshManager : public Uncopyable
+class RenderMeshes : public Uncopyable
 {
 public:
 
@@ -14,7 +14,7 @@ public:
         bool rayTracing = false;
     };
 
-    struct CachedMesh
+    struct RenderMesh
     {
         UniqueId                         meshId = {};
         const Mesh::SharedRenderingData *meshRenderingData = nullptr;
@@ -24,7 +24,7 @@ public:
         BindlessBufferEntry geometryBufferEntry;
     };
 
-    CachedMeshManager(const Config &config, ObserverPtr<Device> device);
+    RenderMeshes(const Config &config, ObserverPtr<Device> device);
 
     void Update(const RenderCommand_RenderStandaloneFrame &frame);
 
@@ -32,8 +32,8 @@ public:
 
     void ClearFrameData();
 
-          CachedMesh *FindCachedMesh(UniqueId meshId);
-    const CachedMesh *FindCachedMesh(UniqueId meshId) const;
+          RenderMesh *FindCachedMesh(UniqueId meshId);
+    const RenderMesh *FindCachedMesh(UniqueId meshId) const;
 
     // Returns nullptr when no blas is built
     RG::Pass *GetRGBuildBlasPass() const { return buildBlasPass_; }
@@ -49,8 +49,8 @@ private:
 
     BlasBuilder blasBuilder_;
 
-    std::list<Box<CachedMesh>> cachedMeshes_;
-    std::vector<CachedMesh *>  linearCachedMeshes_;
+    std::list<Box<RenderMesh>> cachedMeshes_;
+    std::vector<RenderMesh *>  linearCachedMeshes_;
 
     RG::Pass *buildBlasPass_ = nullptr;
 };

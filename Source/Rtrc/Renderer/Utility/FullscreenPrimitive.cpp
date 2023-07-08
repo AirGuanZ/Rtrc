@@ -84,7 +84,7 @@ Mesh GetFullscreenTriangle(DynamicBufferManager &bufferManager)
     return builder.CreateMesh();
 }
 
-Mesh GetFullscreenTriangle(DynamicBufferManager &bufferManager, const RenderCamera &camera)
+Mesh GetFullscreenTriangle(DynamicBufferManager &bufferManager, const CameraRenderData &camera)
 {
     using namespace FullscreenPrimitiveDetail;
 
@@ -141,7 +141,7 @@ Mesh GetFullscreenQuad(DynamicBufferManager &bufferManager)
     return builder.CreateMesh();
 }
 
-Mesh GetFullscreenQuad(DynamicBufferManager &bufferManager, const RenderCamera &camera)
+Mesh GetFullscreenQuad(DynamicBufferManager &bufferManager, const CameraRenderData &camera)
 {
     using namespace FullscreenPrimitiveDetail;
 

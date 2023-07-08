@@ -38,11 +38,11 @@ const MeshLayout *GetFullscreenPrimitiveMeshLayout();
 const MeshLayout *GetFullscreenPrimitiveMeshLayoutWithWorldRay();
 
 Mesh GetFullscreenTriangle(DynamicBufferManager &bufferManager);
-Mesh GetFullscreenTriangle(DynamicBufferManager &bufferManager, const RenderCamera &camera);
+Mesh GetFullscreenTriangle(DynamicBufferManager &bufferManager, const CameraRenderData &camera);
 Mesh GetFullscreenTriangle(DynamicBufferManager &bufferManager, const Camera &camera);
 
 Mesh GetFullscreenQuad(DynamicBufferManager &bufferManager);
-Mesh GetFullscreenQuad(DynamicBufferManager &bufferManager, const RenderCamera &camera);
+Mesh GetFullscreenQuad(DynamicBufferManager &bufferManager, const CameraRenderData &camera);
 Mesh GetFullscreenQuad(DynamicBufferManager &bufferManager, const Camera &camera);
 
 RTRC_END

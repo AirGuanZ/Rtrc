@@ -12,7 +12,7 @@ public:
 
     ~SceneProxy();
 
-    const PhysicalAtmosphereProperties &GetAtmosphere() const { return atmosphere_; }
+    const AtmosphereProperties &GetAtmosphere() const { return atmosphere_; }
     const Vector3f &GetSunDirection() const { return sunDirection_; }
     const Vector3f &GetSunColor() const { return sunColor_; }
     float GetSunIntensity() const { return sunIntensity_; }
@@ -35,7 +35,7 @@ private:
 
     LinearAllocator arena_;
 
-    PhysicalAtmosphereProperties atmosphere_;
+    AtmosphereProperties atmosphere_;
     Vector3f                     sunDirection_;
     Vector3f                     sunColor_;
     float                        sunIntensity_;
@@ -56,8 +56,8 @@ public:
 
     Box<Light> CreateLight();
 
-          PhysicalAtmosphereProperties &GetAtmosphere();
-    const PhysicalAtmosphereProperties &GetAtmosphere() const;
+          AtmosphereProperties &GetAtmosphere();
+    const AtmosphereProperties &GetAtmosphere() const;
 
     void SetAtmosphereSunDirection(const Vector3f &direction) { sunDirection_ = Normalize(direction); }
     void SetAtmosphereSunColor(const Vector3f &color) { sunColor_ = color; }
@@ -75,7 +75,7 @@ private:
     
     SceneObject rootNode_;
 
-    PhysicalAtmosphereProperties atmosphere_;
+    AtmosphereProperties atmosphere_;
     Vector3f                     sunDirection_;
     Vector3f                     sunColor_;
     float                        sunIntensity_;

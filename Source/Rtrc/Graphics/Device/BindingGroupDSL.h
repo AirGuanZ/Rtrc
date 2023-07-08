@@ -451,15 +451,6 @@ namespace BindingGroupDSL
     RTRC_META_STRUCT_POST_MEMBER(NAME) using _requireComma##NAME = int
 #endif
 
-/*#define RTRC_DEFINE_IMPL(TYPE, NAME, STAGES, IS_BINDLESS, VARIABLE_ARRAY_SIZE)              \
-    using _rtrcMemberType##NAME = ::Rtrc::BindingGroupDSL::MemberProxy_##TYPE;              \
-    _rtrcMemberType##NAME NAME;                                                             \
-    RTRC_META_STRUCT_PRE_MEMBER(NAME)                                                       \
-        f.template operator()<false>(                                                       \
-            &_rtrcSelf::NAME, #NAME, STAGES,                                                \
-            ::Rtrc::BindingGroupDSL::CreateBindingFlags(IS_BINDLESS, VARIABLE_ARRAY_SIZE)); \
-    RTRC_META_STRUCT_POST_MEMBER(NAME) using _requireComma##NAME = int*/
-
 #define RTRC_DEFINE_IMPL(TYPE, NAME, STAGES, IS_BINDLESS, VARIABLE_ARRAY_SIZE) \
     RTRC_CONDITIONAL_DEFINE_IMPL(true, TYPE, NAME, STAGES, IS_BINDLESS, VARIABLE_ARRAY_SIZE)
 

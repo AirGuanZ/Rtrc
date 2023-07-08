@@ -1,16 +1,16 @@
 #include <Rtrc/Renderer/Common.h>
-#include <Rtrc/Renderer/Scene/RenderSceneCamera.h>
+#include <Rtrc/Renderer/Scene/RenderCamera.h>
 
 RTRC_RENDERER_BEGIN
 
-RenderSceneCamera::RenderSceneCamera(ObserverPtr<Device> device, const RenderScene &scene, UniqueId cameraId)
+RenderCamera::RenderCamera(ObserverPtr<Device> device, const RenderScene &scene, UniqueId cameraId)
     : scene_(scene), perObjectDataBufferPool_(device, RHI::BufferUsage::ShaderStructuredBuffer)
 {
     renderCamera_.originalId = cameraId;
 }
 
-void RenderSceneCamera::Update(
-    const RenderCamera               &camera,
+void RenderCamera::Update(
+    const CameraRenderData           &camera,
     TransientConstantBufferAllocator &transientConstantBufferAllocator,
     LinearAllocator                  &linearAllocator)
 {
@@ -33,8 +33,8 @@ void RenderSceneCamera::Update(
         auto cbufferBindingGroup = transientConstantBufferAllocator.CreateConstantBufferBindingGroup(cbuffer);
         
         auto record = linearAllocator.Create<StaticMeshRecord>();
-        record->cachedMesh            = src->cachedMesh;
-        record->cachedMaterial        = src->cachedMaterial;
+        record->renderMesh            = src->renderMesh;
+        record->renderMaterial        = src->renderMaterial;
         record->proxy                 = src->proxy;
         record->perObjectBindingGroup = std::move(cbufferBindingGroup);
         objects_.push_back(record);
@@ -42,15 +42,15 @@ void RenderSceneCamera::Update(
     std::ranges::sort(objects_, [](const StaticMeshRecord *lhs, const StaticMeshRecord *rhs)
     {
         return std::make_tuple(
-                    lhs->cachedMaterial->materialId,
-                    lhs->cachedMaterial,
-                    lhs->cachedMesh->meshRenderingData->GetLayout(),
-                    lhs->cachedMesh) <
+                    lhs->renderMaterial->materialId,
+                    lhs->renderMaterial,
+                    lhs->renderMesh->meshRenderingData->GetLayout(),
+                    lhs->renderMesh) <
                std::make_tuple(
-                    rhs->cachedMaterial->materialId,
-                    rhs->cachedMaterial,
-                    rhs->cachedMesh->meshRenderingData->GetLayout(),
-                    rhs->cachedMesh);
+                    rhs->renderMaterial->materialId,
+                    rhs->renderMaterial,
+                    rhs->renderMesh->meshRenderingData->GetLayout(),
+                    rhs->renderMesh);
     });
 
     std::vector<StaticMeshCBuffer> perObjectData(objects_.size());

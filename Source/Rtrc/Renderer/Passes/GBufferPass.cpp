@@ -2,7 +2,7 @@
 
 #include <Rtrc/Renderer/Common.h>
 #include <Rtrc/Renderer/Passes/GBufferPass.h>
-#include <Rtrc/Renderer/Scene/RenderSceneCamera.h>
+#include <Rtrc/Renderer/Scene/RenderCamera.h>
 #include <Rtrc/Utility/Enumerate.h>
 
 RTRC_RENDERER_BEGIN
@@ -21,11 +21,11 @@ namespace GBufferPassDetail
 GBufferPass::GBufferPass(ObserverPtr<Device> device)
     : device_(device), gbufferPipelineCache_(device)
 {
-    perPassBindingGroupLayout_ = device_->CreateBindingGroupLayout<GBufferPassDetail::BindingGroup_GBufferPass>();
+
 }
 
 GBuffers GBufferPass::Render(
-    const RenderSceneCamera &sceneCamera,
+    const RenderCamera &sceneCamera,
     const RC<BindingGroup>  &bindlessTextureGroup,
     RG::RenderGraph         &renderGraph,
     const Vector2u          &rtSize)
@@ -105,7 +105,7 @@ GBuffers GBufferPass::AllocateGBuffers(RG::RenderGraph &renderGraph, const Vecto
     return ret;
 }
 
-std::vector<GBufferPass::MaterialGroup> GBufferPass::CollectPipelineGroups(const RenderSceneCamera &scene) const
+std::vector<GBufferPass::MaterialGroup> GBufferPass::CollectPipelineGroups(const RenderCamera &scene) const
 {
     std::vector<MaterialGroup> materialGroups;
 
@@ -115,14 +115,14 @@ std::vector<GBufferPass::MaterialGroup> GBufferPass::CollectPipelineGroups(const
 
     for(auto &&[recordIndex, record] : Enumerate(scene.GetStaticMeshes()))
     {
-        const int gbufferPassIndex = record->cachedMaterial->gbufferPassIndex;
+        const int gbufferPassIndex = record->renderMaterial->gbufferPassIndex;
         if(gbufferPassIndex < 0)
             continue;
 
-        if(record->cachedMaterial->material != lastMaterial)
+        if(record->renderMaterial->material != lastMaterial)
         {
             auto &group = materialGroups.emplace_back();
-            group.material          = record->cachedMaterial->material;
+            group.material          = record->renderMaterial->material;
             group.shaderTemplate    = group.material->GetPasses()[gbufferPassIndex]->GetShaderTemplate().get();
             group.supportInstancing = group.shaderTemplate->HasBuiltinKeyword(BuiltinKeyword::EnableInstance);
             group.gbufferPassIndex  = gbufferPassIndex;
@@ -131,29 +131,29 @@ std::vector<GBufferPass::MaterialGroup> GBufferPass::CollectPipelineGroups(const
         }
 
         MaterialGroup &materialGroup = materialGroups.back();
-        assert(materialGroup.material == record->cachedMaterial->material);
-        if(record->cachedMaterial->materialRenderingData != lastMaterialRenderingData)
+        assert(materialGroup.material == record->renderMaterial->material);
+        if(record->renderMaterial->materialRenderingData != lastMaterialRenderingData)
         {
             auto &group = materialGroup.materialInstanceGroups.emplace_back();
-            group.materialRenderingData = record->cachedMaterial->materialRenderingData;
+            group.materialRenderingData = record->renderMaterial->materialRenderingData;
             lastMaterialRenderingData = group.materialRenderingData;
             lastMeshRenderingData = nullptr;
         }
 
         MaterialInstanceGroup &materialInstanceGroup = materialGroup.materialInstanceGroups.back();
-        assert(materialInstanceGroup.materialRenderingData == record->cachedMaterial->materialRenderingData);
+        assert(materialInstanceGroup.materialRenderingData == record->renderMaterial->materialRenderingData);
 
-        if(record->cachedMesh->meshRenderingData != lastMeshRenderingData)
+        if(record->renderMesh->meshRenderingData != lastMeshRenderingData)
         {
             auto &group = materialInstanceGroup.meshGroups.emplace_back();
-            group.meshRenderingData = record->cachedMesh->meshRenderingData;
+            group.meshRenderingData = record->renderMesh->meshRenderingData;
             group.objectDataOffset  = static_cast<uint32_t>(recordIndex);
             group.objectCount       = 0;
             lastMeshRenderingData = group.meshRenderingData;
         }
 
         MeshGroup &meshGroup = materialInstanceGroup.meshGroups.back();
-        assert(meshGroup.meshRenderingData == record->cachedMesh->meshRenderingData);
+        assert(meshGroup.meshRenderingData == record->renderMesh->meshRenderingData);
         assert(meshGroup.objectDataOffset + meshGroup.objectCount == recordIndex);
         ++meshGroup.objectCount;
     }
@@ -163,7 +163,7 @@ std::vector<GBufferPass::MaterialGroup> GBufferPass::CollectPipelineGroups(const
 
 void GBufferPass::DoRenderGBuffers(
     RG::PassContext            &passContext,
-    const RenderSceneCamera &scene,
+    const RenderCamera &camera,
     const RC<BindingGroup>     &bindlessTextureGroup,
     const GBuffers             &gbuffers)
 {
@@ -212,14 +212,14 @@ void GBufferPass::DoRenderGBuffers(
 
     struct MeshRecord
     {
-        const RenderSceneCamera::StaticMeshRecord *mesh;
+        const RenderCamera::StaticMeshRecord *mesh;
         uint32_t perObjectDataOffset;
     };
 
     std::vector<MeshRecord> meshes;
-    for(auto &&[index, record] : Enumerate(scene.GetStaticMeshes()))
+    for(auto &&[index, record] : Enumerate(camera.GetStaticMeshes()))
     {
-        if(record->cachedMaterial->gbufferPassIndex >= 0)
+        if(record->renderMaterial->gbufferPassIndex >= 0)
         {
             meshes.push_back({ record, static_cast<uint32_t>(index) });
         }
@@ -227,15 +227,15 @@ void GBufferPass::DoRenderGBuffers(
     assert(std::ranges::is_sorted(meshes, [](const MeshRecord &lhs, const MeshRecord &rhs)
     {
         return std::make_tuple(
-                    lhs.mesh->cachedMaterial->materialId,
-                    lhs.mesh->cachedMaterial,
-                    lhs.mesh->cachedMesh->meshRenderingData->GetLayout(),
-                    lhs.mesh->cachedMesh) <
+                    lhs.mesh->renderMaterial->materialId,
+                    lhs.mesh->renderMaterial,
+                    lhs.mesh->renderMesh->meshRenderingData->GetLayout(),
+                    lhs.mesh->renderMesh) <
                std::make_tuple(
-                    rhs.mesh->cachedMaterial->materialId,
-                    rhs.mesh->cachedMaterial,
-                    rhs.mesh->cachedMesh->meshRenderingData->GetLayout(),
-                    rhs.mesh->cachedMesh);
+                    rhs.mesh->renderMaterial->materialId,
+                    rhs.mesh->renderMaterial,
+                    rhs.mesh->renderMesh->meshRenderingData->GetLayout(),
+                    rhs.mesh->renderMesh);
     }));
 
     // Dynamic pipeline states
@@ -249,16 +249,18 @@ void GBufferPass::DoRenderGBuffers(
     RC<BindingGroup> perPassBindingGroup;
     {
         GBufferPassDetail::BindingGroup_GBufferPass passData;
-        passData.Camera = scene.GetCameraCBuffer();
-        passData.PerObjectDataBuffer = scene.GetStaticMeshPerObjectData();
-        perPassBindingGroup = device_->CreateBindingGroup(passData, perPassBindingGroupLayout_);
+        passData.Camera = camera.GetCameraCBuffer();
+        passData.PerObjectDataBuffer = camera.GetStaticMeshPerObjectData();
+
+        RTRC_STATIC_BINDING_GROUP_LAYOUT(device_, GBufferPassDetail::BindingGroup_GBufferPass, bindingGroupLayout);
+        perPassBindingGroup = device_->CreateBindingGroup(passData, bindingGroupLayout);
     }
     
     // Render
 
     KeywordContext keywords;
 
-    const std::vector<MaterialGroup> materialGroups = CollectPipelineGroups(scene);
+    const std::vector<MaterialGroup> materialGroups = CollectPipelineGroups(camera);
 
     RC<GraphicsPipeline> lastPipeline;
     for(const MaterialGroup &materialGroup : materialGroups)

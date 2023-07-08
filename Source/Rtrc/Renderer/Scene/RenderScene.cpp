@@ -1,31 +1,31 @@
 #include <Rtrc/Renderer/Common.h>
-#include <Rtrc/Renderer/Scene/RenderSceneCamera.h>
+#include <Rtrc/Renderer/Scene/RenderCamera.h>
 
 RTRC_RENDERER_BEGIN
 
-RenderScene::RenderScene(const Config &config, ObserverPtr<Device> device)
+RenderScene::RenderScene(
+    const Config &config, ObserverPtr<Device> device, ObserverPtr<const BuiltinResourceManager> builtinResources)
     : config_(config)
     , device_(device)
     , scene_(nullptr)
     , materialDataUploadBufferPool_(device, RHI::BufferUsage::TransferSrc)
-    , instanceDataUploadBufferPool_(
-        device, RHI::BufferUsage::AccelerationStructureBuildInput | RHI::BufferUsage::DeviceAddress)
-    , renderLights_(MakeBox<RenderLights>(device))
+    , instanceDataUploadBufferPool_(device, RHI::BufferUsage::AccelerationStructureBuildInput)
 {
-
+    renderLights_ = MakeBox<RenderLights>(device);
+    renderAtmosphere_ = MakeBox<RenderAtmosphere>(device, builtinResources);
 }
 
 void RenderScene::Update(
     const RenderCommand_RenderStandaloneFrame &frame,
     TransientConstantBufferAllocator          &transientConstantBufferAllocator,
-    const CachedMeshManager                   &meshManager,
-    const CachedMaterialManager               &materialManager,
+    const RenderMeshes                        &renderMeshes,
+    const RenderMaterials                     &renderMaterials,
     RG::RenderGraph                           &renderGraph,
     LinearAllocator                           &linearAllocator)
 {
     scene_ = frame.scene.get();
 
-    CollectObjects(*frame.scene, meshManager, materialManager, linearAllocator);
+    CollectObjects(*frame.scene, renderMeshes, renderMaterials, linearAllocator);
     
     // Lights
     
@@ -33,10 +33,10 @@ void RenderScene::Update(
 
     // Update per-camera scenes
 
-    std::vector<Box<RenderSceneCamera>> newCachedScenesPerCamera;
-    for(Box<RenderSceneCamera> &camera : cachedCameras_)
+    std::vector<Box<RenderCamera>> newCachedScenesPerCamera;
+    for(Box<RenderCamera> &camera : renderCameras_)
     {
-        if(camera->GetCamera().originalId == frame.camera.originalId)
+        if(camera->GetCameraRenderData().originalId == frame.camera.originalId)
         {
             newCachedScenesPerCamera.push_back(std::move(camera));
             break;
@@ -44,10 +44,10 @@ void RenderScene::Update(
     }
     if(newCachedScenesPerCamera.empty())
     {
-        newCachedScenesPerCamera.push_back(MakeBox<RenderSceneCamera>(device_, *this, frame.camera.originalId));
+        newCachedScenesPerCamera.push_back(MakeBox<RenderCamera>(device_, *this, frame.camera.originalId));
     }
     newCachedScenesPerCamera.back()->Update(frame.camera, transientConstantBufferAllocator, linearAllocator);
-    cachedCameras_.swap(newCachedScenesPerCamera);
+    renderCameras_.swap(newCachedScenesPerCamera);
 
     // Tlas
 
@@ -55,6 +55,10 @@ void RenderScene::Update(
     {
         UpdateTlasScene(renderGraph);
     }
+
+    // Atmosphere
+
+    renderAtmosphere_->Update(renderGraph, frame.scene->GetAtmosphere());
 }
 
 void RenderScene::ClearFrameData()
@@ -67,19 +71,20 @@ void RenderScene::ClearFrameData()
     opaqueTlas_           = nullptr;
 
     renderLights_->ClearFrameData();
+    renderAtmosphere_->ClearFrameData();
 }
 
-RenderSceneCamera *RenderScene::GetSceneCameraRenderingData(UniqueId cameraId) const
+RenderCamera *RenderScene::GetRenderCamera(UniqueId cameraId) const
 {
-    size_t beg = 0, end = cachedCameras_.size();
+    size_t beg = 0, end = renderCameras_.size();
     while(beg < end)
     {
         const size_t mid = (beg + end) / 2;
-        if(cachedCameras_[mid]->GetCamera().originalId == cameraId)
+        if(renderCameras_[mid]->GetCameraRenderData().originalId == cameraId)
         {
-            return cachedCameras_[mid].get();
+            return renderCameras_[mid].get();
         }
-        if(cachedCameras_[mid]->GetCamera().originalId < cameraId)
+        if(renderCameras_[mid]->GetCameraRenderData().originalId < cameraId)
         {
             beg = mid;
         }
@@ -92,10 +97,10 @@ RenderSceneCamera *RenderScene::GetSceneCameraRenderingData(UniqueId cameraId) c
 }
 
 void RenderScene::CollectObjects(
-    const SceneProxy            &scene,
-    const CachedMeshManager     &meshManager,
-    const CachedMaterialManager &materialManager,
-    LinearAllocator             &linearAllocator)
+    const SceneProxy      &scene,
+    const RenderMeshes    &meshManager,
+    const RenderMaterials &materialManager,
+    LinearAllocator       &linearAllocator)
 {
     objects_.clear();
     tlasObjects_.clear();
@@ -103,17 +108,17 @@ void RenderScene::CollectObjects(
     for(const StaticMeshRenderProxy *staticMeshProxy : scene.GetStaticMeshRenderObjects())
     {
         const UniqueId materialID = staticMeshProxy->materialRenderingData->GetUniqueID();
-        const CachedMaterialManager::CachedMaterial *material = materialManager.FindCachedMaterial(materialID);
+        const RenderMaterials::RenderMaterial *material = materialManager.FindCachedMaterial(materialID);
         assert(material);
 
         const UniqueId staticMeshID = staticMeshProxy->meshRenderingData->GetUniqueID();
-        const CachedMeshManager::CachedMesh *mesh = meshManager.FindCachedMesh(staticMeshID);
+        const RenderMeshes::RenderMesh *mesh = meshManager.FindCachedMesh(staticMeshID);
         assert(mesh);
 
         auto record = linearAllocator.Create<StaticMeshRecord>();
         record->proxy          = staticMeshProxy;
-        record->cachedMesh     = mesh;
-        record->cachedMaterial = material;
+        record->renderMesh     = mesh;
+        record->renderMaterial = material;
         objects_.push_back(record);
 
         if(config_.rayTracing)
@@ -142,15 +147,15 @@ void RenderScene::UpdateTlasScene(RG::RenderGraph &renderGraph)
     {
         RHI::RayTracingInstanceData &instance = instanceData.emplace_back();
         std::memcpy(instance.transform3x4, &object->proxy->localToWorld[0][0], sizeof(instance.transform3x4));
-        instance.instanceCustomIndex          = object->cachedMesh->geometryBufferEntry.GetOffset();
+        instance.instanceCustomIndex          = object->renderMesh->geometryBufferEntry.GetOffset();
         instance.instanceMask                 = 0xff;
         instance.instanceSbtOffset            = 0;
         instance.flags                        = 0;
-        instance.accelerationStructureAddress = object->cachedMesh->blas->GetRHIObject()->GetDeviceAddress().address;
+        instance.accelerationStructureAddress = object->renderMesh->blas->GetRHIObject()->GetDeviceAddress().address;
     
         TlasMaterial &material = materialData.emplace_back();
-        material.albedoTextureIndex = object->cachedMaterial->albedoTextureEntry->GetOffset();
-        material.albedoScale        = object->cachedMaterial->albedoScale;
+        material.albedoTextureIndex = object->renderMaterial->albedoTextureEntry->GetOffset();
+        material.albedoScale        = object->renderMaterial->albedoScale;
     }
     
     // Upload material data

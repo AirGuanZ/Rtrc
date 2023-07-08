@@ -330,7 +330,7 @@ void Run()
 
                 commandBuffer.BindComputePipeline(initRngPipeline);
                 commandBuffer.BindComputeGroup(0, bindingGroup);
-                commandBuffer.DispatchWithThreadCount(rgRngTexture->GetWidth(), rgRngTexture->GetHeight(), 1);
+                commandBuffer.DispatchWithThreadCount(rgRngTexture->GetWidth(), rgRngTexture->GetHeight());
             });
         }
         else
@@ -364,7 +364,7 @@ void Run()
             auto &commandBuffer = context.GetCommandBuffer();
             commandBuffer.BindComputePipeline(tracePipeline);
             commandBuffer.BindComputeGroup(0, bindingGroup);
-            commandBuffer.DispatchWithThreadCount(renderTarget->GetWidth(), renderTarget->GetHeight(), 1);
+            commandBuffer.DispatchWithThreadCount(renderTarget->GetWidth(), renderTarget->GetHeight());
         });
 
         graph->CreateBlitTexture2DPass("Blit", renderTarget, rgSwapchain, true);

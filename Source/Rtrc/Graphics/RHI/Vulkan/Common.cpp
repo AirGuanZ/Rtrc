@@ -291,7 +291,6 @@ VkImageUsageFlags TranslateTextureUsageFlag(TextureUsageFlags flags)
 VkBufferUsageFlags TranslateBufferUsageFlag(BufferUsageFlag flag)
 {
     VkBufferUsageFlags result = 0;
-    assert(!flag.Contains(BufferUsage::AccelerationStructureBuildInput) || flag.Contains(BufferUsage::DeviceAddress));
 #define ADD_CASE(FLAG, VAL) if(flag.Contains(BufferUsage::FLAG)) { result |= (VAL); }
     ADD_CASE(TransferDst,                     VK_BUFFER_USAGE_TRANSFER_DST_BIT)
     ADD_CASE(TransferSrc,                     VK_BUFFER_USAGE_TRANSFER_SRC_BIT)
@@ -304,7 +303,8 @@ VkBufferUsageFlags TranslateBufferUsageFlag(BufferUsageFlag flag)
     ADD_CASE(VertexBuffer,                    VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
     ADD_CASE(IndirectBuffer,                  VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT)
     ADD_CASE(DeviceAddress,                   VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT)
-    ADD_CASE(AccelerationStructureBuildInput, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR)
+    ADD_CASE(AccelerationStructureBuildInput, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR |
+                                              VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT)
     ADD_CASE(AccelerationStructure,           VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR |
                                               VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                                               VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT)

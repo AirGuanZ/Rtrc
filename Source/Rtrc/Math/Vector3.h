@@ -25,6 +25,8 @@ public:
 
     std::tuple<T, T, T> ToTuple() const;
 
+    size_t Hash() const { return Rtrc::Hash(x, y, z); }
+
     T x, y, z;
 };
 

@@ -20,10 +20,10 @@ PathTracer::Parameters &PathTracer::GetParameters()
 }
 
 PathTracer::RGOutput PathTracer::Render(
-    RG::RenderGraph         &renderGraph,
-    const RenderSceneCamera &camera,
-    const GBuffers          &gbuffers,
-    const Vector2u          &framebufferSize) const
+    RG::RenderGraph    &renderGraph,
+    const RenderCamera &camera,
+    const GBuffers     &gbuffers,
+    const Vector2u     &framebufferSize) const
 {
     auto indirectDiffuse = renderGraph.CreateTexture(RHI::TextureDesc
     {

@@ -6,6 +6,7 @@
 #include <Rtrc/Graphics/Device/Buffer.h>
 #include <Rtrc/Graphics/Device/Queue.h>
 #include <Rtrc/Graphics/Device/Texture.h>
+#include <Rtrc/Graphics/RenderGraph/Label.h>
 
 #define RTRC_RG_DEBUG RTRC_DEBUG
 
@@ -325,12 +326,13 @@ private:
     friend class RenderGraph;
     friend class Compiler;
 
-    Pass(int index, std::string name);
+    Pass(int index, const LabelStack::Node *node);
     
     int           index_;
-    std::string   name_;
     Callback      callback_;
     RHI::FencePtr signalFence_;
+
+    const LabelStack::Node *nameNode_;
 
     std::map<BufferResource *, BufferUsage> bufferUsages_;
     std::map<TextureResource *, TextureUsage> textureUsages_;
@@ -362,37 +364,35 @@ public:
 
     TextureResource *RegisterSwapchainTexture(const RHI::SwapchainPtr &swapchain);
 
-    void PushPassGroup(std::string_view name);
+    void PushPassGroup(std::string name);
     void PopPassGroup();
 
-    Pass *CreatePass(std::string_view name);
-    Pass *CreateClearTexture2DPass(std::string_view name, TextureResource *tex2D, const Vector4f &clearValue);
-    Pass *CreateDummyPass(std::string_view name);
+    Pass *CreatePass(std::string name);
+    Pass *CreateClearTexture2DPass(std::string name, TextureResource *tex2D, const Vector4f &clearValue);
+    Pass *CreateDummyPass(std::string name);
 
-    Pass *CreateClearRWBufferPass(std::string_view name, BufferResource *buffer, uint32_t value);
-    Pass *CreateClearRWStructuredBufferPass(std::string_view name, BufferResource *buffer, uint32_t value);
+    Pass *CreateClearRWBufferPass(std::string name, BufferResource *buffer, uint32_t value);
+    Pass *CreateClearRWStructuredBufferPass(std::string name, BufferResource *buffer, uint32_t value);
 
     Pass* CreateCopyBufferPass(
-        std::string_view name,
+        std::string name,
         BufferResource *src, size_t srcOffset,
         BufferResource *dst, size_t dstOffset,
         size_t size);
     Pass *CreateCopyBufferPass(
-        std::string_view name,
+        std::string name,
         BufferResource *src,
         BufferResource *dst,
         size_t size);
 
     Pass *CreateBlitTexture2DPass(
-        std::string_view name,
+        std::string name,
         TextureResource *src, uint32_t srcArrayLayer, uint32_t srcMipLevel,
         TextureResource *dst, uint32_t dstArrayLayer, uint32_t dstMipLevel,
         bool usePointSampling);
     Pass *CreateBlitTexture2DPass(
-        std::string_view name, TextureResource *src, TextureResource *dst, bool usePointSampling);
+        std::string name, TextureResource *src, TextureResource *dst, bool usePointSampling);
     
-    void MakeDummyPassIfNull(Pass *&pass, std::string_view name);
-
     void SetCompleteFence(RHI::FencePtr fence);
 
 private:
@@ -458,9 +458,8 @@ private:
     ObserverPtr<Device> device_;
     Queue               queue_;
 
-    std::string        passNamePrefix_;
-    std::stack<size_t> passNamePrefixLengths_;
-
+    LabelStack labelStack_;
+    
     std::map<const void *, int>       externalResourceMap_; // RHI object pointer to resource index
     std::vector<Box<BufferResource>>  buffers_;
     std::vector<Box<TextureResource>> textures_;
@@ -474,8 +473,8 @@ private:
     RHI::FencePtr completeFence_;
 };
 
-#define RTRC_RG_SCOPED_PASS_GROUP(RENDERGRAPH, NAME) \
-    (RENDERGRAPH).PushPassGroup(NAME);               \
-    RTRC_SCOPE_EXIT{ (RENDERGRAPH).PopPassGroup(); };
+#define RTRC_RG_SCOPED_PASS_GROUP(RENDERGRAPH, NAME)       \
+    ::Rtrc::ObserverPtr(RENDERGRAPH)->PushPassGroup(NAME); \
+    RTRC_SCOPE_EXIT{ ::Rtrc::ObserverPtr(RENDERGRAPH)->PopPassGroup(); };
 
 RTRC_RG_END

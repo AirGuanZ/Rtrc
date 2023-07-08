@@ -20,7 +20,7 @@ struct RenderCommand_RenderStandaloneFrame
 {
     RenderSettings         renderSettings;
     Box<SceneProxy>        scene;
-    RenderCamera           camera;
+    CameraRenderData       camera;
     Box<ImGuiDrawData>     imguiDrawData;
     RC<BindingGroup>       bindlessTextureGroup;
     std::binary_semaphore *finishSemaphore;

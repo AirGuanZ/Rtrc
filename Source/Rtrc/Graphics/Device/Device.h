@@ -3,6 +3,7 @@
 #include <Rtrc/Graphics/Device/AccelerationStructure.h>
 #include <Rtrc/Graphics/Device/BindingGroup.h>
 #include <Rtrc/Graphics/Device/BindingGroupDSL.h>
+#include <Rtrc/Graphics/Device/BindingGroupLayoutCache.h>
 #include <Rtrc/Graphics/Device/Buffer.h>
 #include <Rtrc/Graphics/Device/ClearBufferUtils.h>
 #include <Rtrc/Graphics/Device/CopyContext.h>
@@ -30,7 +31,7 @@ namespace DeviceDetail
 
 } // namespace DeviceDetail
 
-class Device : public Uncopyable
+class Device : public Uncopyable, public WithUniqueObjectID
 {
 public:
 
@@ -263,10 +264,11 @@ public:
 
     // Internal helper classes
 
-    CopyContext          &GetCopyContext();
-    BufferManager        &GetBufferManager();
-    BindingGroupManager  &GetBindingGroupManager();
-    const RHI::DevicePtr &GetRawDevice() const;
+    CopyContext             &GetCopyContext();
+    BufferManager           &GetBufferManager();
+    BindingGroupManager     &GetBindingGroupManager();
+    BindingGroupLayoutCache &GetBindingGroupCache();
+    const RHI::DevicePtr    &GetRawDevice() const;
 
     ClearBufferUtils &GetClearBufferUtils() { return *clearBufferUtils_; }
     CopyTextureUtils &GetCopyTextureUtils() { return *copyTextureUtils_; }
@@ -310,6 +312,7 @@ private:
     Box<AccelerationStructureManager> accelerationManager_;
     Box<ClearBufferUtils>             clearBufferUtils_;
     Box<CopyTextureUtils>             copyTextureUtils_;
+    Box<BindingGroupLayoutCache>      bindingGroupLayoutCache_;
 };
 
 inline const RHI::ShaderGroupRecordRequirements &Device::GetShaderGroupRecordRequirements() const
@@ -691,6 +694,11 @@ inline BindingGroupManager &Device::GetBindingGroupManager()
     return *bindingLayoutManager_;
 }
 
+inline BindingGroupLayoutCache &Device::GetBindingGroupCache()
+{
+    return *bindingGroupLayoutCache_;
+}
+
 inline const RHI::DevicePtr &Device::GetRawDevice() const
 {
     return device_;
@@ -708,6 +716,42 @@ void Device::ExecuteBarrierImpl(Args &&... args)
     {
         cmd.ExecuteBarriers(BarrierBatch{}(std::forward<Args>(args)...));
     });
+}
+
+template<BindingGroupDSL::RtrcGroupStruct T>
+RC<BindingGroupLayout> BindingGroupLayoutCache::Get(CachedBindingGroupLayoutStorage *storage)
+{
+    const uint32_t index = storage->index_;
+
+    {
+        std::shared_lock lock(mutex_);
+        if(index < layouts_.size() && layouts_[index])
+        {
+            return layouts_[index];
+        }
+    }
+
+    std::lock_guard lock(mutex_);
+    if(index < layouts_.size() && layouts_[index])
+    {
+        return layouts_[index];
+    }
+
+    if(index >= layouts_.size())
+    {
+        layouts_.resize(index + 1);
+    }
+    if(!layouts_[index])
+    {
+        layouts_[index] = device_->CreateBindingGroupLayout<T>();
+    }
+    return layouts_[index];
+}
+
+template<typename T>
+RC<BindingGroupLayout> CachedBindingGroupLayoutHandle<T>::Get() const
+{
+    return device_->GetBindingGroupCache().Get<T>(storage_);
 }
 
 RTRC_END

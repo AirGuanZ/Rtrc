@@ -3,12 +3,13 @@
 #include <Rtrc/Scene/Camera/Camera.h>
 #include <Rtrc/Scene/Scene.h>
 #include <Rtrc/Graphics/Device/Device.h>
+#include <Rtrc/Graphics/Resource/BuiltinResources.h>
 
 RTRC_RENDERER_BEGIN
 
 rtrc_struct(CameraConstantBuffer)
 {
-    static CameraConstantBuffer FromCamera(const RenderCamera &camera)
+    static CameraConstantBuffer FromCamera(const CameraRenderData &camera)
     {
         CameraConstantBuffer ret;
         ret.worldPosition       = camera.position;
@@ -79,6 +80,22 @@ struct GBuffers
     RG::TextureResource *albedoMetallic = nullptr;
     RG::TextureResource *roughness      = nullptr;
     RG::TextureResource *depth          = nullptr;
+};
+
+class RenderAlgorithm : public Uncopyable
+{
+public:
+
+    RenderAlgorithm(ObserverPtr<Device> device, ObserverPtr<const BuiltinResourceManager> builtinResources)
+        : device_(device), builtinResources_(builtinResources)
+    {
+        
+    }
+
+protected:
+
+    ObserverPtr<Device>                       device_;
+    ObserverPtr<const BuiltinResourceManager> builtinResources_;
 };
 
 RTRC_RENDERER_END

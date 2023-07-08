@@ -5,6 +5,7 @@
 
 RTRC_RENDERER_BEGIN
 
+// Per-scene light rendering data
 class RenderLights
 {
 public:

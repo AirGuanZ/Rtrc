@@ -103,13 +103,6 @@ namespace StructDetail
 
 } // namespace StructDetail
 
-#define RTRC_META_STRUCT_BEGIN(NAME)                                          \
-    struct NAME                                                               \
-    {                                                                         \
-        static ::Rtrc::StructDetail::Sizer<1> _rtrcMemberCounter(...);
-
-#define RTRC_META_STRUCT_END() };
-
 #define RTRC_META_STRUCT_PRE_MEMBER(NAME)                                           \
     enum { _rtrcMemberCounter##NAME =                                               \
         sizeof(_rtrcSelf##NAME::_rtrcMemberCounter((::Rtrc::StructDetail::Int<      \
@@ -132,6 +125,12 @@ concept RtrcStruct = requires { typename T::_rtrcStructTypeFlag; };
 
 #define rtrc_struct(NAME) struct NAME : ::Rtrc::StructDetail::_rtrcStructCommonBase
 
+#if defined(__INTELLISENSE__) || defined(__RSCPP_VERSION)
+#define rtrc_var(TYPE, NAME)            \
+    using _rtrcMemberType##NAME = TYPE; \
+    _rtrcMemberType##NAME NAME;         \
+    using _requireComma##NAME = int
+#else
 #define rtrc_var(TYPE, NAME)                                  \
     RTRC_DEFINE_SELF_TYPE(_rtrcSelf##NAME)                    \
     using _rtrcMemberType##NAME = TYPE;                       \
@@ -139,5 +138,6 @@ concept RtrcStruct = requires { typename T::_rtrcStructTypeFlag; };
     RTRC_META_STRUCT_PRE_MEMBER(NAME)                         \
         f.template operator()(&_rtrcSelf##NAME::NAME, #NAME); \
     RTRC_META_STRUCT_POST_MEMBER(NAME) using _requireComma##NAME = int
+#endif
 
 RTRC_END

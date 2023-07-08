@@ -4,6 +4,31 @@
 
 RTRC_BEGIN
 
+namespace ApplicationDetail
+{
+
+    Application *appInst = nullptr;
+
+} // namespace ApplicationDetail
+
+Application &Application::GetInstance()
+{
+    assert(ApplicationDetail::appInst);
+    return *ApplicationDetail::appInst;
+}
+
+Application::Application()
+{
+    assert(!ApplicationDetail::appInst);
+    ApplicationDetail::appInst = this;
+}
+
+Application::~Application()
+{
+    assert(ApplicationDetail::appInst == this);
+    ApplicationDetail::appInst = nullptr;
+}
+
 void Application::Run(const Config &config)
 {
     SetThreadMode(ThreadUtility::ThreadMode::Standard);

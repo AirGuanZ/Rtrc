@@ -42,7 +42,13 @@ public:
         RHI::BackendType backendType                = Device::DefaultBackendType;
     };
 
-    virtual ~Application() = default;
+    static Application &GetInstance();
+
+    ObserverPtr<Device>                       GetDevice()           const { return device_; }
+    ObserverPtr<const BuiltinResourceManager> GetBuiltinResources() const { return resourceManager_->GetBuiltinResources(); }
+
+    Application();
+    virtual ~Application();
     
     void Run(const Config &config);
 

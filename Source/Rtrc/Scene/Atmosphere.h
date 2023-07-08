@@ -4,7 +4,7 @@
 
 RTRC_BEGIN
 
-rtrc_struct(PhysicalAtmosphereProperties)
+rtrc_struct(AtmosphereProperties)
 {
     // Rayleigh
 
@@ -31,7 +31,7 @@ rtrc_struct(PhysicalAtmosphereProperties)
 
     rtrc_var(float3, terrainAlbedo);
 
-    PhysicalAtmosphereProperties()
+    AtmosphereProperties()
     {
         scatterRayleigh  = 1e-6f * Vector3f(5.802f, 13.558f, 33.1f);
         hDensityRayleigh = 1e3f * 8;
@@ -51,7 +51,17 @@ rtrc_struct(PhysicalAtmosphereProperties)
         terrainAlbedo = { 0.3f, 0.3f, 0.3f };
     }
 
-    auto operator<=>(const PhysicalAtmosphereProperties &) const = default;
+    auto operator<=>(const AtmosphereProperties &) const = default;
+
+    size_t Hash() const
+    {
+        return Rtrc::Hash(
+            scatterRayleigh, hDensityRayleigh,
+            scatterMie, assymmetryMie, absorbMie, hDensityMie,
+            absorbOzone, ozoneCenterHeight, ozoneThickness,
+            planetRadius, atmosphereRadius,
+            terrainAlbedo);
+    }
 };
 
 RTRC_END

@@ -179,6 +179,7 @@ Device::~Device()
         sync_->PrepareDestruction();
     }
 
+    bindingGroupLayoutCache_.reset();
     copyTextureUtils_.reset();
     clearBufferUtils_.reset();
     accelerationManager_.reset();
@@ -244,6 +245,8 @@ void Device::InitializeInternal(Flags flags, RHI::DevicePtr device, bool isCompu
 
     clearBufferUtils_ = MakeBox<ClearBufferUtils>(this);
     copyTextureUtils_ = MakeBox<CopyTextureUtils>(this);
+
+    bindingGroupLayoutCache_ = MakeBox<BindingGroupLayoutCache>(this);
 }
 
 void Device::UploadBuffer(const RC<Buffer> &buffer, const void *initData, size_t offset, size_t size)

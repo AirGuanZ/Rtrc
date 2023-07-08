@@ -1,8 +1,8 @@
-#include <Rtrc/Renderer/Scene/CachedMaterialManager.h>
+#include <Rtrc/Renderer/Scene/RenderMaterials.h>
 
 RTRC_RENDERER_BEGIN
 
-void CachedMaterialManager::UpdateCachedMaterialData(const RenderCommand_RenderStandaloneFrame &frame)
+void RenderMaterials::UpdateCachedMaterialData(const RenderCommand_RenderStandaloneFrame &frame)
 {
     struct MaterialRecord
     {
@@ -43,7 +43,7 @@ void CachedMaterialManager::UpdateCachedMaterialData(const RenderCommand_RenderS
                 albedoScale = *reinterpret_cast<const float *>(pScale);
             }
 
-            auto &data = *cachedMaterials_.emplace(it, MakeBox<CachedMaterial>());
+            auto &data = *cachedMaterials_.emplace(it, MakeBox<RenderMaterial>());
 
             data->material                = materialRecord.materialRenderingData->GetMaterial().get();
             data->materialId              = data->material->GetUniqueID();
@@ -76,16 +76,16 @@ void CachedMaterialManager::UpdateCachedMaterialData(const RenderCommand_RenderS
     linearCachedMaterials_.clear();
     std::ranges::transform(
         cachedMaterials_, std::back_inserter(linearCachedMaterials_),
-        [](const Box<CachedMaterial> &box) { return box.get(); });
+        [](const Box<RenderMaterial> &box) { return box.get(); });
 }
 
-const CachedMaterialManager::CachedMaterial *CachedMaterialManager::FindCachedMaterial(UniqueId materialId) const
+const RenderMaterials::RenderMaterial *RenderMaterials::FindCachedMaterial(UniqueId materialId) const
 {
     size_t beg = 0, end = linearCachedMaterials_.size();
     while(beg < end)
     {
         const size_t mid = (beg + end) / 2;
-        CachedMaterial *data = linearCachedMaterials_[mid];
+        RenderMaterial *data = linearCachedMaterials_[mid];
         if(data->materialRenderingDataId == materialId)
         {
             return linearCachedMaterials_[mid];

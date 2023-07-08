@@ -61,6 +61,11 @@ public:
         }
     }
 
+    KeywordContext(const Keyword &keyword, uint8_t value)
+    {
+        Set(keyword, value);
+    }
+
     void Set(const Keyword &keyword, uint8_t value)
     {
         assert(keyword);

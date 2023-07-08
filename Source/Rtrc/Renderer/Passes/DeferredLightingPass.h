@@ -19,11 +19,11 @@ public:
     DeferredLightingPass(ObserverPtr<Device> device, ObserverPtr<const BuiltinResourceManager> builtinResources);
 
     void Render(
-        const RenderSceneCamera &scene,
-        const GBuffers          &gbuffers,
-        RG::TextureResource     *skyLut,
-        RG::RenderGraph         &renderGraph,
-        RG::TextureResource     *renderTarget);
+        const RenderCamera  &scene,
+        const GBuffers      &gbuffers,
+        RG::TextureResource *skyLut,
+        RG::RenderGraph     &renderGraph,
+        RG::TextureResource *renderTarget);
 
 private:
 
@@ -35,7 +35,7 @@ private:
 
     template<MainLightMode Mode>
     void DoDeferredLighting(
-        const RenderSceneCamera &sceneCamera,
+        const RenderCamera &sceneCamera,
         const GBuffers          &gbuffers,
         RG::TextureResource     *skyLut,
         RG::TextureResource     *shadowMask,

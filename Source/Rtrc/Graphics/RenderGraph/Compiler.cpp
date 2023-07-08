@@ -801,14 +801,8 @@ void Compiler::FillSections(ExecutableGraph &output)
                 GenerateGlobalMemoryBarriers(pass);
             }
 
-            if(rawPass->name_.empty())
-            {
-                pass.name = nullptr;
-            }
-            else
-            {
-                pass.name = &rawPass->name_;
-            }
+            pass.nameNode = rawPass->nameNode_;
+
             if(sortedPasses_[compilePassIndex]->callback_)
             {
                 pass.callback = &rawPass->callback_;

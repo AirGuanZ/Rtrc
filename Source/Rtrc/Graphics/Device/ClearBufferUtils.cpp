@@ -90,7 +90,7 @@ void ClearBufferUtils::ClearRWBuffer(CommandBuffer &commandBuffer, const RC<SubB
 
     commandBuffer.BindComputePipeline(clearRWBufferShader_->GetComputePipeline());
     commandBuffer.BindComputeGroup(0, passGroup);
-    commandBuffer.DispatchWithThreadCount(passData.threadCount, 1, 1);
+    commandBuffer.DispatchWithThreadCount(passData.threadCount);
 }
 
 void ClearBufferUtils::ClearRWStructuredBuffer(CommandBuffer &commandBuffer, const RC<SubBuffer> &buffer, uint32_t value)
@@ -107,7 +107,7 @@ void ClearBufferUtils::ClearRWStructuredBuffer(CommandBuffer &commandBuffer, con
 
     commandBuffer.BindComputePipeline(clearRWStructuredBufferShader_->GetComputePipeline());
     commandBuffer.BindComputeGroup(0, passGroup);
-    commandBuffer.DispatchWithThreadCount(passData.threadCount, 1, 1);
+    commandBuffer.DispatchWithThreadCount(passData.threadCount);
 }
 
 RTRC_END

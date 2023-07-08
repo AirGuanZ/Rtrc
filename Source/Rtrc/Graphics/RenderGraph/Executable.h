@@ -30,7 +30,7 @@ struct ExecutablePass
     std::vector<RHI::TextureTransitionBarrier> preTextureBarriers;
     std::vector<RHI::BufferTransitionBarrier>  preBufferBarriers;
     const Pass::Callback                      *callback;
-    const std::string                         *name;
+    const LabelStack::Node             *nameNode;
 
 #if RTRC_RG_DEBUG
     std::set<const Resource *> declaredResources;

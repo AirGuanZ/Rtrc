@@ -4,11 +4,11 @@
 
 RTRC_RENDERER_BEGIN
 
-class CachedMaterialManager : public Uncopyable
+class RenderMaterials : public Uncopyable
 {
 public:
 
-    struct CachedMaterial
+    struct RenderMaterial
     {
         UniqueId        materialId = {};
         const Material *material   = nullptr;
@@ -25,12 +25,12 @@ public:
     
     void UpdateCachedMaterialData(const RenderCommand_RenderStandaloneFrame &frame);
 
-    const CachedMaterial *FindCachedMaterial(UniqueId materialId) const;
+    const RenderMaterial *FindCachedMaterial(UniqueId materialId) const;
 
 private:
 
-    std::list<Box<CachedMaterial>> cachedMaterials_;
-    std::vector<CachedMaterial *>  linearCachedMaterials_;
+    std::list<Box<RenderMaterial>> cachedMaterials_;
+    std::vector<RenderMaterial *>  linearCachedMaterials_;
 };
 
 RTRC_RENDERER_END

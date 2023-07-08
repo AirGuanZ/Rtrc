@@ -1,15 +1,15 @@
-#include <Rtrc/Renderer/Scene/CachedMeshManager.h>
+#include <Rtrc/Renderer/Scene/RenderMeshes.h>
 #include <Rtrc/Utility/Enumerate.h>
 
 RTRC_RENDERER_BEGIN
 
-CachedMeshManager::CachedMeshManager(const Config &config, ObserverPtr<Device> device)
+RenderMeshes::RenderMeshes(const Config &config, ObserverPtr<Device> device)
     : config_(config), device_(device), blasBuilder_(device)
 {
     bindlessBufferManager_ = MakeBox<BindlessBufferManager>(device);
 }
 
-void CachedMeshManager::Update(const RenderCommand_RenderStandaloneFrame &frame)
+void RenderMeshes::Update(const RenderCommand_RenderStandaloneFrame &frame)
 {
     struct MeshRecord
     {
@@ -69,7 +69,7 @@ void CachedMeshManager::Update(const RenderCommand_RenderStandaloneFrame &frame)
     {
         if(it == cachedMeshes_.end() || it->get()->meshId > meshRecord.mesh->GetUniqueID())
         {
-            auto &data = *cachedMeshes_.emplace(it, MakeBox<CachedMesh>());
+            auto &data = *cachedMeshes_.emplace(it, MakeBox<RenderMesh>());
             data->buildBlasSortKey  = meshRecord.buildBlasSortKey;
             data->meshRenderingData = meshRecord.mesh;
             data->meshId            = meshRecord.mesh->GetUniqueID();
@@ -98,10 +98,10 @@ void CachedMeshManager::Update(const RenderCommand_RenderStandaloneFrame &frame)
     linearCachedMeshes_.clear();
     std::ranges::transform(
         cachedMeshes_, std::back_inserter(linearCachedMeshes_),
-        [](const Box<CachedMesh> &data) { return data.get(); });
+        [](const Box<RenderMesh> &data) { return data.get(); });
 }
 
-void CachedMeshManager::BuildBlasForMeshes(
+void RenderMeshes::BuildBlasForMeshes(
     RG::RenderGraph &renderGraph, int maxBuildCount, int maxPrimitiveCount)
 {
     if(!config_.rayTracing)
@@ -109,7 +109,7 @@ void CachedMeshManager::BuildBlasForMeshes(
         return;
     }
 
-    std::vector<CachedMesh *> meshesNeedBlas;
+    std::vector<RenderMesh *> meshesNeedBlas;
     for(auto &meshData : cachedMeshes_)
     {
         if(meshData->buildBlasSortKey >= 0 && !meshData->blas)
@@ -117,12 +117,12 @@ void CachedMeshManager::BuildBlasForMeshes(
             meshesNeedBlas.push_back(meshData.get());
         }
     }
-    std::ranges::sort(meshesNeedBlas, [](const CachedMesh *a, const CachedMesh *b)
+    std::ranges::sort(meshesNeedBlas, [](const RenderMesh *a, const RenderMesh *b)
     {
         return a->buildBlasSortKey > b->buildBlasSortKey;
     });
 
-    std::vector<CachedMesh *> meshesToBuildBlas;
+    std::vector<RenderMesh *> meshesToBuildBlas;
     {
         int buildCount = 0, buildPrimitiveCount = 0;
         auto it = meshesNeedBlas.begin();
@@ -177,18 +177,18 @@ void CachedMeshManager::BuildBlasForMeshes(
     }
 }
 
-void CachedMeshManager::ClearFrameData()
+void RenderMeshes::ClearFrameData()
 {
     buildBlasPass_ = nullptr;
 }
 
-CachedMeshManager::CachedMesh *CachedMeshManager::FindCachedMesh(UniqueId meshId)
+RenderMeshes::RenderMesh *RenderMeshes::FindCachedMesh(UniqueId meshId)
 {
     size_t beg = 0, end = linearCachedMeshes_.size();
     while(beg < end)
     {
         const size_t mid = (beg + end) / 2;
-        CachedMesh *data = linearCachedMeshes_[mid];
+        RenderMesh *data = linearCachedMeshes_[mid];
         if(data->meshId == meshId)
         {
             return linearCachedMeshes_[mid];
@@ -205,13 +205,13 @@ CachedMeshManager::CachedMesh *CachedMeshManager::FindCachedMesh(UniqueId meshId
     return nullptr;
 }
 
-const CachedMeshManager::CachedMesh *CachedMeshManager::FindCachedMesh(UniqueId meshId) const
+const RenderMeshes::RenderMesh *RenderMeshes::FindCachedMesh(UniqueId meshId) const
 {
     size_t beg = 0, end = linearCachedMeshes_.size();
     while(beg < end)
     {
         const size_t mid = (beg + end) / 2;
-        CachedMesh *data = linearCachedMeshes_[mid];
+        RenderMesh *data = linearCachedMeshes_[mid];
         if(data->meshId == meshId)
         {
             return linearCachedMeshes_[mid];
@@ -228,7 +228,7 @@ const CachedMeshManager::CachedMesh *CachedMeshManager::FindCachedMesh(UniqueId 
     return nullptr;
 }
 
-float CachedMeshManager::ComputeBuildBlasSortKey(const Vector3f &eye, const StaticMeshRenderProxy *renderer)
+float RenderMeshes::ComputeBuildBlasSortKey(const Vector3f &eye, const StaticMeshRenderProxy *renderer)
 {
     if(renderer->rayTracingFlags == StaticMeshRendererRayTracingFlagBit::None)
     {

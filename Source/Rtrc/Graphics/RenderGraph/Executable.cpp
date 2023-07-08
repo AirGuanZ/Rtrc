@@ -20,10 +20,21 @@ void Executer::Execute(const RenderGraph &graph)
 
 void Executer::Execute(const ExecutableGraph &graph)
 {
+    const LabelStack::Node *nameNode = nullptr;
+
     for(auto &section : graph.sections)
     {
         auto commandBuffer = device_->CreateCommandBuffer();
         commandBuffer.Begin();
+
+        auto PushNameNode = [&](const LabelStack::Node *node)
+        {
+            commandBuffer.GetRHIObject()->BeginDebugEvent(RHI::DebugLabel{ .name = node->name });
+        };
+        auto PopNameNode = [&](const LabelStack::Node *)
+        {
+            commandBuffer.GetRHIObject()->EndDebugEvent();
+        };
 
         for(auto &pass : section.passes)
         {
@@ -39,11 +50,14 @@ void Executer::Execute(const ExecutableGraph &graph)
                     commandBuffer.GetRHIObject()->ExecuteBarriers(pass.preTextureBarriers, pass.preBufferBarriers);
                 }
             }
-            const bool emitDebugLabel = pass.name && pass.callback;
+            
+            const bool emitDebugLabel = pass.callback;
             if(emitDebugLabel)
             {
-                commandBuffer.GetRHIObject()->BeginDebugEvent(RHI::DebugLabel{ .name = *pass.name });
+                LabelStack::Transfer(nameNode, pass.nameNode, PushNameNode, PopNameNode);
+                nameNode = pass.nameNode;
             }
+
             if(pass.callback)
             {
                 PassContext passContext(graph.resources, commandBuffer);
@@ -52,10 +66,6 @@ void Executer::Execute(const ExecutableGraph &graph)
 #endif
                 (*pass.callback)(passContext);
             }
-            if(emitDebugLabel)
-            {
-                commandBuffer.GetRHIObject()->EndDebugEvent();
-            }
         }
 
         if(!section.postTextureBarriers.IsEmpty())
@@ -63,10 +73,16 @@ void Executer::Execute(const ExecutableGraph &graph)
             commandBuffer.GetRHIObject()->ExecuteBarriers(section.postTextureBarriers);
         }
 
+        const bool isLastSection = &section == &graph.sections.back();
+        if(isLastSection)
+        {
+            LabelStack::Transfer(nameNode, nullptr, PushNameNode, PopNameNode);
+        }
+
         commandBuffer.End();
 
         RHI::FencePtr fence = section.signalFence;
-        if(!fence && &section == &graph.sections.back() && graph.completeFence)
+        if(!fence && isLastSection && graph.completeFence)
         {
             fence = graph.completeFence;
         }

@@ -2,7 +2,7 @@
 
 #include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/Graphics/Resource/BuiltinResources.h>
-#include <Rtrc/Renderer/Scene/RenderSceneCamera.h>
+#include <Rtrc/Renderer/Scene/RenderCamera.h>
 
 RTRC_RENDERER_BEGIN
 
@@ -26,10 +26,10 @@ public:
           Parameters &GetParameters();
 
     RGOutput Render(
-        RG::RenderGraph         &renderGraph,
-        const RenderSceneCamera &camera,
-        const GBuffers          &gbuffers,
-        const Vector2u          &framebufferSize) const;
+        RG::RenderGraph    &renderGraph,
+        const RenderCamera &camera,
+        const GBuffers     &gbuffers,
+        const Vector2u     &framebufferSize) const;
 
 private:
 

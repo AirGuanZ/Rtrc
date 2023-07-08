@@ -1,6 +1,6 @@
 #include <Rtrc/Renderer/GBufferBinding.h>
 #include <Rtrc/Renderer/Passes/DeferredLightingPass.h>
-#include <Rtrc/Renderer/Scene/RenderSceneCamera.h>
+#include <Rtrc/Renderer/Scene/RenderCamera.h>
 #include <Rtrc/Renderer/Utility/FullscreenPrimitive.h>
 #include <Rtrc/Utility/Enumerate.h>
 
@@ -70,17 +70,17 @@ DeferredLightingPass::DeferredLightingPass(
 }
 
 void DeferredLightingPass::Render(
-    const RenderSceneCamera &scene,
-    const GBuffers          &gbuffers,
-    RG::TextureResource     *skyLut,
-    RG::RenderGraph         &renderGraph,
-    RG::TextureResource     *renderTarget)
+    const RenderCamera  &scene,
+    const GBuffers      &gbuffers,
+    RG::TextureResource *skyLut,
+    RG::RenderGraph     &renderGraph,
+    RG::TextureResource *renderTarget)
 {
     RG::TextureResource *shadowMask = nullptr;
     auto &renderLights = scene.GetCachedScene().GetRenderLights();
     if(renderLights.HasMainLight())
     {
-        shadowMask = shadowMaskPass_->Render(scene, renderLights.GetMainLight(), true, gbuffers, renderGraph);
+        shadowMask = shadowMaskPass_->Render(scene, renderLights.GetMainLight(), gbuffers, renderGraph);
     }
 
     auto RenderImpl = [&]<MainLightMode mainLightMode>()
@@ -127,7 +127,7 @@ void DeferredLightingPass::Render(
 
 template<DeferredLightingPass::MainLightMode Mode>
 void DeferredLightingPass::DoDeferredLighting(
-    const RenderSceneCamera &sceneCamera,
+    const RenderCamera &sceneCamera,
     const GBuffers          &gbuffers,
     RG::TextureResource     *skyLut,
     RG::TextureResource     *shadowMask,
@@ -207,7 +207,7 @@ void DeferredLightingPass::DoDeferredLighting(
         CommandBuffer &commandBuffer = context.GetCommandBuffer();
         commandBuffer.BindComputePipeline(shader->GetComputePipeline());
         commandBuffer.BindComputeGroup(0, lightingPass == LightingPass::Regular ? lightingPassGroup : skyPassGroup);
-        commandBuffer.DispatchWithThreadCount(rgRenderTarget->GetWidth(), rgRenderTarget->GetHeight(), 1);
+        commandBuffer.DispatchWithThreadCount(rgRenderTarget->GetWidth(), rgRenderTarget->GetHeight());
     }
 }
 

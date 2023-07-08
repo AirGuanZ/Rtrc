@@ -15,15 +15,14 @@ RenderLoop::RenderLoop(
     , builtinResources_(builtinResources)
     , bindlessTextures_(bindlessTextures)
     , frameIndex_      (1)
-    , meshManager_     ({ config.rayTracing }, device)
-    , cachedScene_     ({ config.rayTracing }, device)
+    , renderMeshes_    ({ config.rayTracing }, device)
+    , renderScene_     ({ config.rayTracing }, device, builtinResources)
 {
     imguiRenderer_       = MakeBox<ImGuiRenderer>(device_);
     renderGraphExecuter_ = MakeBox<RG::Executer>(device_);
 
     transientConstantBufferAllocator_ = MakeBox<TransientConstantBufferAllocator>(*device);
-
-    atmospherePass_       = MakeBox<PhysicalAtmospherePass>(device_, builtinResources_);
+    
     gbufferPass_          = MakeBox<GBufferPass>(device_);
     deferredLightingPass_ = MakeBox<DeferredLightingPass>(device_, builtinResources_);
     shadowMaskPass_       = MakeBox<ShadowMaskPass>(device_, builtinResources_);
@@ -155,77 +154,55 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
     
     // ============= Update meshes =============
 
-    meshManager_.Update(frame);
+    renderMeshes_.Update(frame);
     constexpr int MAX_BLAS_BUILD_COUNT = 5;
     constexpr int MAX_BLAS_BUILD_PRIMITIVE_COUNT = 1e5;
-    meshManager_.BuildBlasForMeshes(*renderGraph, MAX_BLAS_BUILD_COUNT, MAX_BLAS_BUILD_PRIMITIVE_COUNT);
-    RTRC_SCOPE_EXIT{ meshManager_.ClearFrameData(); };
+    renderMeshes_.BuildBlasForMeshes(*renderGraph, MAX_BLAS_BUILD_COUNT, MAX_BLAS_BUILD_PRIMITIVE_COUNT);
+    RTRC_SCOPE_EXIT{ renderMeshes_.ClearFrameData(); };
 
     // ============= Update materials =============
 
-    materialManager_.UpdateCachedMaterialData(frame);
+    renderMaterials_.UpdateCachedMaterialData(frame);
 
     // ============= Update scene =============
 
-    cachedScene_.Update(
+    renderScene_.Update(
         frame, *transientConstantBufferAllocator_,
-        meshManager_, materialManager_, *renderGraph, linearAllocator);
-    RTRC_SCOPE_EXIT{ cachedScene_.ClearFrameData(); };
+        renderMeshes_, renderMaterials_, *renderGraph, linearAllocator);
+    RTRC_SCOPE_EXIT{ renderScene_.ClearFrameData(); };
+    RenderCamera *renderCamera = renderScene_.GetRenderCamera(frame.camera.originalId);
+    
+    // Blas buffers are read-only after initialized and not tracked by render graph,
+    // so we need to manually add dependency.
 
-    RenderSceneCamera *renderSceneCamera = cachedScene_.GetSceneCameraRenderingData(frame.camera.originalId);
-    assert(renderSceneCamera);
-
-    // Blas buffers are not tracked by render graph, so we need to manually add dependency.
-
-    if(meshManager_.GetRGBuildBlasPass() && cachedScene_.GetRGBuildTlasPass())
+    if(renderMeshes_.GetRGBuildBlasPass() && renderScene_.GetRGBuildTlasPass())
     {
-        Connect(meshManager_.GetRGBuildBlasPass(), cachedScene_.GetRGBuildTlasPass());
+        Connect(renderMeshes_.GetRGBuildBlasPass(), renderScene_.GetRGBuildTlasPass());
     }
     
     // ============= GBuffers =============
 
     GBuffers gbuffers = gbufferPass_->Render(
-        *renderSceneCamera, frame.bindlessTextureGroup, *renderGraph, framebuffer->GetSize());
+        *renderCamera, frame.bindlessTextureGroup, *renderGraph, framebuffer->GetSize());
 
     // ============= Atmosphere =============
 
-    atmospherePass_->SetProperties(frame.scene->GetAtmosphere());
-    auto skyLut = atmospherePass_->Render(
-        *renderGraph, 
-        frame.scene->GetSunDirection(), 
+    auto &renderAtmosphere = renderScene_.GetRenderAtmosphere();
+    auto &cameraAtmosphere = renderCamera->GetAtmosphereData();
+    renderAtmosphere.Render(
+        *renderGraph,
+        frame.scene->GetSunDirection(),
         frame.scene->GetSunColor() * frame.scene->GetSunIntensity(),
         1000.0f,
         frameTimer_.GetDeltaSecondsF(),
-        renderSceneCamera->GetCachedAtmosphereData()).skyLut;
-
-    // ============= Shadow mask =============
-    
-    int shadowMaskLightIndex = -1;
-    for(auto &&[i, light] : Enumerate(renderSceneCamera->GetLights()))
-    {
-        if(light->GetFlags().Contains(LightDetail::FlagBit::EnableRayTracedShadow))
-        {
-            if(shadowMaskLightIndex < 0)
-            {
-                shadowMaskLightIndex = static_cast<int>(i);
-            }
-            else
-            {
-                throw Exception("Only one light can enable ray traced shadow mask");
-            }
-        }
-    }
-    auto shadowMask = shadowMaskPass_->Render(
-        *renderSceneCamera,
-        renderSceneCamera->GetCachedScene().GetRenderLights().GetMainLight(),
-        frame.renderSettings.enableSoftShadowMaskLowResOptimization,
-        gbuffers,
-        *renderGraph);
+        cameraAtmosphere);
+    RTRC_SCOPE_EXIT{ renderAtmosphere.ClearPerCameraFrameData(cameraAtmosphere); };
+    auto skyLut = cameraAtmosphere.S;
     
     // ============= Deferred lighting =============
     
     deferredLightingPass_->Render(
-        *renderSceneCamera, gbuffers, skyLut, *renderGraph, framebuffer);
+        *renderCamera, gbuffers, skyLut, *renderGraph, framebuffer);
 
     // ============= ImGui =============
 

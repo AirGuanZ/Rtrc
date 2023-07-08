@@ -35,12 +35,12 @@ Box<Light> Scene::CreateLight()
     return lightManager_.CreateLight();
 }
 
-PhysicalAtmosphereProperties &Scene::GetAtmosphere()
+AtmosphereProperties &Scene::GetAtmosphere()
 {
     return atmosphere_;
 }
 
-const PhysicalAtmosphereProperties &Scene::GetAtmosphere() const
+const AtmosphereProperties &Scene::GetAtmosphere() const
 {
     return atmosphere_;
 }

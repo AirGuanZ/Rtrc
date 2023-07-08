@@ -515,11 +515,41 @@ void CommandBuffer::Dispatch(const Vector3i &groupCount)
     this->Dispatch(groupCount.x, groupCount.y, groupCount.z);
 }
 
-void CommandBuffer::DispatchWithThreadCount(int countX, int countY, int countZ)
+void CommandBuffer::DispatchWithThreadCount(unsigned countX, unsigned countY, unsigned countZ)
 {
     const Vector3i groupCount = currentComputePipeline_->GetShaderInfo()
-        ->ComputeThreadGroupCount({ countX, countY, countZ });
+        ->ComputeThreadGroupCount({ static_cast<int>(countX), static_cast<int>(countY), static_cast<int>(countZ) });
     Dispatch(groupCount);
+}
+
+void CommandBuffer::DispatchWithThreadCount(unsigned countX, unsigned countY)
+{
+    DispatchWithThreadCount(countX, countY, 1u);
+}
+
+void CommandBuffer::DispatchWithThreadCount(unsigned countX)
+{
+    DispatchWithThreadCount(countX, 1u, 1u);
+}
+
+void CommandBuffer::DispatchWithThreadCount(const Vector3i &count)
+{
+    DispatchWithThreadCount(count.x, count.y, count.z);
+}
+
+void CommandBuffer::DispatchWithThreadCount(const Vector3u &count)
+{
+    DispatchWithThreadCount(count.x, count.y, count.z);
+}
+
+void CommandBuffer::DispatchWithThreadCount(const Vector2i &count)
+{
+    DispatchWithThreadCount(count.x, count.y, 1);
+}
+
+void CommandBuffer::DispatchWithThreadCount(const Vector2u &count)
+{
+    DispatchWithThreadCount(count.x, count.y, 1u);
 }
 
 void CommandBuffer::Trace(
