@@ -16,7 +16,7 @@ public:
         MainLightMode_Directional = 2,
     };
 
-    DeferredLightingPass(ObserverPtr<Device> device, ObserverPtr<const BuiltinResourceManager> builtinResources);
+    DeferredLightingPass(ObserverPtr<Device> device, ObserverPtr<BuiltinResourceManager> builtinResources);
 
     void Render(
         const RenderCamera  &scene,
@@ -42,8 +42,8 @@ private:
         RG::TextureResource     *renderTarget,
         RG::PassContext         &context);
 
-    ObserverPtr<Device>                       device_;
-    ObserverPtr<const BuiltinResourceManager> builtinResources_;
+    ObserverPtr<Device>                 device_;
+    ObserverPtr<BuiltinResourceManager> builtinResources_;
     
     RC<Shader> regularShader_PointMainLight_;
     RC<Shader> regularShader_DirectionalMainLight_;

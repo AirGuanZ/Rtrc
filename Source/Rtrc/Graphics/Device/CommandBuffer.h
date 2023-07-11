@@ -207,6 +207,12 @@ public:
     
     void DispatchIndirect(const RC<SubBuffer> &buffer, size_t byteOffset);
 
+    void DrawIndexedIndirect(
+        const RC<SubBuffer> &buffer,
+        uint32_t             drawCount,
+        size_t               byteOffset,
+        size_t               byteStride = sizeof(RHI::IndirectDrawIndexedArgument));
+
     // if prebuildInfo is not presented
     //   generate prebuildInfo
     // else

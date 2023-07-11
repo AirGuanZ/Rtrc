@@ -18,7 +18,7 @@ public:
     void AddMaterialFiles(const std::set<std::filesystem::path> &filenames);
     void AddShaderIncludeDirectory(std::string_view dir);
 
-    const BuiltinResourceManager &GetBuiltinResources() const;
+    BuiltinResourceManager &GetBuiltinResources();
 
     RC<Material>       GetMaterial      (const std::string &name);
     RC<ShaderTemplate> GetShaderTemplate(const std::string &name);

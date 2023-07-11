@@ -110,6 +110,7 @@ public:
         const D3D12_CPU_DESCRIPTOR_HANDLE &start, size_t offset, bool isSampler) const;
     
     ID3D12CommandSignature *_internalGetIndirectDispatchCommandSignature() const;
+    ID3D12CommandSignature *_internalGetIndirectDrawIndexedCommandSignature() const;
 
 private:
 
@@ -133,6 +134,7 @@ private:
     // Ptr<DirectX12Queue> presentQueue_;
 
     ComPtr<ID3D12CommandSignature> indirectDispatchCommandSignature_;
+    ComPtr<ID3D12CommandSignature> indirectDrawIndexedCommandSignature_;
 
     ShaderGroupRecordRequirements shaderGroupRecordRequirements_;
 };

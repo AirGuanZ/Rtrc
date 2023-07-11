@@ -26,10 +26,10 @@ public:
     };
     
     RenderLoop(
-        const Config                             &config,
-        ObserverPtr<Device>                       device,
-        ObserverPtr<const BuiltinResourceManager> builtinResources,
-        ObserverPtr<BindlessTextureManager>       bindlessTextures);
+        const Config                       &config,
+        ObserverPtr<Device>                 device,
+        ObserverPtr<BuiltinResourceManager> builtinResources,
+        ObserverPtr<BindlessTextureManager> bindlessTextures);
     ~RenderLoop();
 
     void AddCommand(RenderCommand command);
@@ -58,9 +58,9 @@ private:
     std::atomic<bool>  hasException_;
     std::exception_ptr exceptionPtr_;
 
-    ObserverPtr<Device>                       device_;
-    ObserverPtr<const BuiltinResourceManager> builtinResources_;
-    ObserverPtr<BindlessTextureManager>       bindlessTextures_;
+    ObserverPtr<Device>                 device_;
+    ObserverPtr<BuiltinResourceManager> builtinResources_;
+    ObserverPtr<BindlessTextureManager> bindlessTextures_;
 
     int32_t frameIndex_;
     Timer   frameTimer_;

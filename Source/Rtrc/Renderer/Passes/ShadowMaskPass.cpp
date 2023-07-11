@@ -69,8 +69,8 @@ namespace ShadowMaskPassDetail
 } // namespace ShadowMaskPassDetail
 
 ShadowMaskPass::ShadowMaskPass(
-    ObserverPtr<Device>                       device,
-    ObserverPtr<const BuiltinResourceManager> builtinResources)
+    ObserverPtr<Device>                 device,
+    ObserverPtr<BuiltinResourceManager> builtinResources)
     : device_(device), builtinResources_(builtinResources)
 {
     InitializeShaders();

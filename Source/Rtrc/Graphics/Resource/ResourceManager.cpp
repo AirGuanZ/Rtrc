@@ -21,7 +21,7 @@ void ResourceManager::AddShaderIncludeDirectory(std::string_view dir)
     materialManager_.AddIncludeDirectory(dir);
 }
 
-const BuiltinResourceManager &ResourceManager::GetBuiltinResources() const
+BuiltinResourceManager &ResourceManager::GetBuiltinResources()
 {
     return builtinResourceManager_;
 }

@@ -528,6 +528,22 @@ inline BufferDeviceAddress operator+(std::ptrdiff_t lhs, const BufferDeviceAddre
 
 // =============================== rhi descriptions ===============================
 
+struct IndirectDrawIndexedArgument
+{
+    uint32_t indexCountPerInstance;
+    uint32_t instanceCount;
+    uint32_t startIndexLocation;
+    int32_t  baseVertexLocation;
+    uint32_t startInstanceLocation;
+};
+
+struct IndirectDispatchArgument
+{
+    uint32_t threadGroupCountX;
+    uint32_t threadGroupCountY;
+    uint32_t threadGroupCountZ;
+};
+
 struct DeviceDesc
 {
     bool graphicsQueue    = true;
@@ -1512,6 +1528,9 @@ public:
     // Indirect draw
 
     RTRC_RHI_API void DispatchIndirect(const BufferPtr &buffer, size_t byteOffset) RTRC_RHI_API_PURE;
+
+    RTRC_RHI_API void DrawIndexedIndirect(
+        const BufferPtr &buffer, uint32_t drawCount, size_t byteOffset, size_t byteStride) RTRC_RHI_API_PURE;
 
     // Copy
 

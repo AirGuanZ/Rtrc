@@ -11,8 +11,8 @@ class ShadowMaskPass : public Uncopyable
 public:
     
     ShadowMaskPass(
-        ObserverPtr<Device>                       device,
-        ObserverPtr<const BuiltinResourceManager> builtinResources);
+        ObserverPtr<Device>                 device,
+        ObserverPtr<BuiltinResourceManager> builtinResources);
     
     RG::TextureResource *Render(
         const RenderCamera               &camera,

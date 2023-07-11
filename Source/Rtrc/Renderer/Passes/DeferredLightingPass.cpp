@@ -52,7 +52,7 @@ namespace DeferredLightingPassDetail
 } // namespace DeferredLightingPassDetail
 
 DeferredLightingPass::DeferredLightingPass(
-    ObserverPtr<Device> device, ObserverPtr<const BuiltinResourceManager> builtinResources)
+    ObserverPtr<Device> device, ObserverPtr<BuiltinResourceManager> builtinResources)
     : device_(device)
     , builtinResources_(builtinResources)
     , lightBufferPool_(device, RHI::BufferUsage::ShaderStructuredBuffer)
@@ -127,12 +127,12 @@ void DeferredLightingPass::Render(
 
 template<DeferredLightingPass::MainLightMode Mode>
 void DeferredLightingPass::DoDeferredLighting(
-    const RenderCamera &sceneCamera,
-    const GBuffers          &gbuffers,
-    RG::TextureResource     *skyLut,
-    RG::TextureResource     *shadowMask,
-    RG::TextureResource     *rgRenderTarget,
-    RG::PassContext         &context)
+    const RenderCamera  &sceneCamera,
+    const GBuffers      &gbuffers,
+    RG::TextureResource *skyLut,
+    RG::TextureResource *shadowMask,
+    RG::TextureResource *rgRenderTarget,
+    RG::PassContext     &context)
 {
     using namespace DeferredLightingPassDetail;
 

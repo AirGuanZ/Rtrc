@@ -35,9 +35,9 @@ public:
     };
     
     RenderScene(
-        const Config                             &config,
-        ObserverPtr<Device>                       device,
-        ObserverPtr<const BuiltinResourceManager> builtinResources);
+        const Config                       &config,
+        ObserverPtr<Device>                 device,
+        ObserverPtr<BuiltinResourceManager> builtinResources);
 
     void Update(
         const RenderCommand_RenderStandaloneFrame &frame,

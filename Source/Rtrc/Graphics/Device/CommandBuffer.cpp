@@ -573,6 +573,15 @@ void CommandBuffer::DispatchIndirect(const RC<SubBuffer> &buffer, size_t byteOff
     rhiCommandBuffer_->DispatchIndirect(rhiBuffer, byteOffset);
 }
 
+void CommandBuffer::DrawIndexedIndirect(
+    const RC<SubBuffer> &buffer, uint32_t drawCount, size_t byteOffset, size_t byteStride)
+{
+    CheckThreadID();
+    byteOffset += buffer->GetSubBufferOffset();
+    auto &rhiBuffer = buffer->GetFullBufferRHIObject();
+    rhiCommandBuffer_->DrawIndexedIndirect(rhiBuffer, drawCount, byteOffset, byteStride);
+}
+
 void CommandBuffer::BuildBlas(
     const RC<Blas>                                &blas,
     Span<RHI::RayTracingGeometryDesc>              geometries,

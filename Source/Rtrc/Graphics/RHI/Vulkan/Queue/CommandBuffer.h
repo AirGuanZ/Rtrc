@@ -81,6 +81,9 @@ public:
 
     void DispatchIndirect(const BufferPtr &buffer, size_t byteOffset) RTRC_RHI_OVERRIDE;
 
+    void DrawIndexedIndirect(
+        const BufferPtr &buffer, uint32_t drawCount, size_t byteOffset, size_t byteStride) RTRC_RHI_OVERRIDE;
+
     void CopyBuffer(Buffer *dst, size_t dstOffset, Buffer *src, size_t srcOffset, size_t range) RTRC_RHI_OVERRIDE;
     void CopyBufferToColorTexture2D(
         Texture *dst,

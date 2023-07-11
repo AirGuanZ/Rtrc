@@ -389,6 +389,13 @@ void VulkanCommandBuffer::DispatchIndirect(const BufferPtr &buffer, size_t byteO
     vkCmdDispatchIndirect(commandBuffer_, vkBuffer, byteOffset);
 }
 
+void VulkanCommandBuffer::DrawIndexedIndirect(
+    const BufferPtr &buffer, uint32_t drawCount, size_t byteOffset, size_t byteStride)
+{
+    auto vkBuffer = static_cast<VulkanBuffer *>(buffer.Get())->_internalGetNativeBuffer();
+    vkCmdDrawIndexedIndirect(commandBuffer_, vkBuffer, byteOffset, drawCount, static_cast<uint32_t>(byteStride));
+}
+
 void VulkanCommandBuffer::CopyBuffer(
     Buffer *dst, size_t dstOffset,
     Buffer *src, size_t srcOffset, size_t range)

@@ -4,7 +4,7 @@
 RTRC_RENDERER_BEGIN
 
 RenderScene::RenderScene(
-    const Config &config, ObserverPtr<Device> device, ObserverPtr<const BuiltinResourceManager> builtinResources)
+    const Config &config, ObserverPtr<Device> device, ObserverPtr<BuiltinResourceManager> builtinResources)
     : config_(config)
     , device_(device)
     , scene_(nullptr)

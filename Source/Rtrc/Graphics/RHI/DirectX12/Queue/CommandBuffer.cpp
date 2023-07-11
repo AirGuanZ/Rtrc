@@ -349,6 +349,25 @@ void DirectX12CommandBuffer::DispatchIndirect(const BufferPtr &buffer, size_t by
     commandList_->ExecuteIndirect(commandSignature, 1, d3dBuffer, byteOffset, nullptr, 0);
 }
 
+void DirectX12CommandBuffer::DrawIndexedIndirect(
+    const BufferPtr &buffer, uint32_t drawCount, size_t byteOffset, size_t byteStride)
+{
+    auto d3dBuffer = static_cast<DirectX12Buffer *>(buffer.Get())->_internalGetNativeBuffer().Get();
+    auto commandSignature = device_->_internalGetIndirectDrawIndexedCommandSignature();
+    if(byteStride == sizeof(D3D12_DRAW_INDEXED_ARGUMENTS))
+    {
+        commandList_->ExecuteIndirect(commandSignature, drawCount, d3dBuffer, byteOffset, nullptr, 0);
+    }
+    else
+    {
+        for(uint32_t i = 0; i < drawCount; ++i)
+        {
+            commandList_->ExecuteIndirect(commandSignature, 1, d3dBuffer, byteOffset, nullptr, 0);
+            byteOffset += byteStride;
+        }
+    }
+}
+
 void DirectX12CommandBuffer::CopyBuffer(Buffer *dst, size_t dstOffset, Buffer *src, size_t srcOffset, size_t range)
 {
     auto d3dDst = static_cast<DirectX12Buffer*>(dst)->_internalGetNativeBuffer().Get();

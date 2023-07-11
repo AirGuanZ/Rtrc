@@ -5,10 +5,10 @@
 RTRC_RENDERER_BEGIN
 
 RenderLoop::RenderLoop(
-    const Config                             &config,
-    ObserverPtr<Device>                       device,
-    ObserverPtr<const BuiltinResourceManager> builtinResources,
-    ObserverPtr<BindlessTextureManager>       bindlessTextures)
+    const Config                       &config,
+    ObserverPtr<Device>                 device,
+    ObserverPtr<BuiltinResourceManager> builtinResources,
+    ObserverPtr<BindlessTextureManager> bindlessTextures)
     : config_          (config)
     , hasException_    (false)
     , device_          (device)

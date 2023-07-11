@@ -102,6 +102,22 @@ DirectX12Device::DirectX12Device(
             IID_PPV_ARGS(indirectDispatchCommandSignature_.GetAddressOf())),
         "Fail to create directx12 command signature for indirect dispatch");
 
+    const D3D12_INDIRECT_ARGUMENT_DESC indirectDrawIndexedArgDesc =
+    {
+        .Type = D3D12_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED,
+    };
+    const D3D12_COMMAND_SIGNATURE_DESC indirectDrawIndexedCommandSignatureDesc =
+    {
+        .ByteStride       = sizeof(D3D12_DRAW_INDEXED_ARGUMENTS),
+        .NumArgumentDescs = 1,
+        .pArgumentDescs   = &indirectDrawIndexedArgDesc
+    };
+    RTRC_D3D12_FAIL_MSG(
+        device_->CreateCommandSignature(
+            &indirectDrawIndexedCommandSignatureDesc, nullptr,
+            IID_PPV_ARGS(indirectDrawIndexedCommandSignature_.GetAddressOf())),
+        "Fail to create directx12 command signature for indirect indexed draw");
+
     shaderGroupRecordRequirements_.shaderGroupHandleSize      = D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES;
     shaderGroupRecordRequirements_.shaderGroupHandleAlignment = D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT;
     shaderGroupRecordRequirements_.shaderGroupBaseAlignment   = D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT;
@@ -890,6 +906,11 @@ D3D12_CPU_DESCRIPTOR_HANDLE DirectX12Device::_internalOffsetDescriptorHandle(
 ID3D12CommandSignature *DirectX12Device::_internalGetIndirectDispatchCommandSignature() const
 {
     return indirectDispatchCommandSignature_.Get();
+}
+
+ID3D12CommandSignature *DirectX12Device::_internalGetIndirectDrawIndexedCommandSignature() const
+{
+    return indirectDrawIndexedCommandSignature_.Get();
 }
 
 RTRC_RHI_D3D12_END
