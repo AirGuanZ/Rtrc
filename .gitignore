@@ -1,6 +1,7 @@
-﻿bin/
-build/
-Build/
-BuildCMake/
-.xmake/
-vsxmake2022/
+﻿/bin/
+/build/
+/Build/
+/BuildCMake/
+/External/mimalloc/build/
+/.xmake/
+/vsxmake2022/

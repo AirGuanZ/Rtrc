@@ -53,14 +53,6 @@ float3 ComputeDirectionalLight(GBufferPixel gpixel, DirectionalLightShadingData 
     return gpixel.albedo * cosFactor * light.color;
 }
 
-float3 GetWorldRay(float2 uv)
-{
-    float3 rayAB = lerp(Camera.worldRays[0], Camera.worldRays[1], uv.x);
-    float3 rayCD = lerp(Camera.worldRays[2], Camera.worldRays[3], uv.x);
-    float3 ray = lerp(rayAB, rayCD, uv.y);
-    return ray;
-}
-
 [numthreads(8, 1, 1)]
 void CSMain(uint2 tid : SV_DispatchThreadID)
 {
@@ -72,8 +64,8 @@ void CSMain(uint2 tid : SV_DispatchThreadID)
     if(gpixel.depth >= 1)
         return;
     
-    float3 worldRay = GetWorldRay(uv);
-    float viewSpaceZ = CameraUtils::DeviceZToViewZ(Camera.cameraToClipMatrix, gpixel.depth);
+    float3 worldRay = CameraUtils::GetWorldRay(Camera, uv);
+    float viewSpaceZ = CameraUtils::DeviceZToViewZ(Camera, gpixel.depth);
     float3 worldPos = viewSpaceZ * worldRay + Camera.worldPosition;
 
     // Main light color

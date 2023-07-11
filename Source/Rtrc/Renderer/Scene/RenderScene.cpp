@@ -31,7 +31,7 @@ void RenderScene::Update(
     
     renderLights_->Update(*scene_, renderGraph);
 
-    // Update per-camera scenes
+    // Per-camera scenes
 
     std::vector<Box<RenderCamera>> newCachedScenesPerCamera;
     for(Box<RenderCamera> &camera : renderCameras_)

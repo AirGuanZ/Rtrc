@@ -75,10 +75,32 @@ void RenderMeshes::Update(const RenderCommand_RenderStandaloneFrame &frame)
             data->meshId            = meshRecord.mesh->GetUniqueID();
             if(data->buildBlasSortKey > 0)
             {
-                assert(data->meshRenderingData->GetLayout()->GetVertexBufferLayouts()[0] == Mesh::BuiltinVertexBufferLayout::Default);
-                auto &buffer = data->meshRenderingData->GetVertexBuffer(0);
-                data->geometryBufferEntry = bindlessBufferManager_->Allocate();
-                data->geometryBufferEntry.Set(buffer->GetStructuredSrv(sizeof(Mesh::BuiltinVertexStruct_Default)));
+                assert(data->meshRenderingData->GetLayout()->GetVertexBufferLayouts()[0] == Mesh::BuiltinVertexBufferLayout::Standard);
+                auto &vertexBuffer = data->meshRenderingData->GetVertexBuffer(0);
+                auto &indexBuffer = data->meshRenderingData->GetIndexBuffer();
+
+                data->geometryBufferEntry = bindlessBufferManager_->Allocate(indexBuffer ? 2 : 1);
+                data->geometryBufferEntry.Set(
+                    0, vertexBuffer->GetStructuredSrv(sizeof(Mesh::BuiltinVertexStruct_Default)));
+                if(indexBuffer)
+                {
+                    RHI::Format format;
+                    if(data->meshRenderingData->GetIndexFormat() == RHI::IndexFormat::UInt16)
+                    {
+                        format = RHI::Format::R16_UInt;
+                    }
+                    else
+                    {
+                        assert(data->meshRenderingData->GetIndexFormat() == RHI::IndexFormat::UInt32);
+                        format = RHI::Format::R32_UInt;
+                    }
+                    data->geometryBufferEntry.Set(1, indexBuffer->GetTexelSrv(format));
+                    data->hasIndexBuffer = true;
+                }
+                else
+                {
+                    data->hasIndexBuffer = false;
+                }
             }
             it = cachedMeshes_.end();
             continue;
@@ -236,7 +258,7 @@ float RenderMeshes::ComputeBuildBlasSortKey(const Vector3f &eye, const StaticMes
     }
     const MeshLayout *meshLayout = renderer->meshRenderingData->GetLayout();
     const VertexBufferLayout *firstVertexBufferLayout = meshLayout->GetVertexBufferLayouts()[0];
-    if(firstVertexBufferLayout != Mesh::BuiltinVertexBufferLayout::Default)
+    if(firstVertexBufferLayout != Mesh::BuiltinVertexBufferLayout::Standard)
     {
         throw Exception(
             "Static mesh render object with ray tracing flag enabled must have a mesh "

@@ -219,7 +219,7 @@ CommandBuffer &CommandBuffer::operator=(CommandBuffer &&other) noexcept
 
 void CommandBuffer::Swap(CommandBuffer &other) noexcept
 {
-    RTRC_SWAP_MEMBERS(*this, other, manager_, queueType_, rhiCommandBuffer_, pool_);
+    RTRC_SWAP_MEMBERS(*this, other, device_, manager_, queueType_, rhiCommandBuffer_, pool_);
 #if RTRC_DEBUG
     std::swap(threadID_, other.threadID_);
 #endif

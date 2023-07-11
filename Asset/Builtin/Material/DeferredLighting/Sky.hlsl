@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Atmosphere.hlsl"
+#include "../Atmosphere/Atmosphere.hlsl"
 #include "../Common/Fullscreen.hlsl"
 #include "../Common/Scene.hlsl"
 #include "../Common/Color.hlsl"
@@ -20,14 +20,6 @@ rtrc_group(Pass, CS)
 
 rtrc_sampler(SkyLutSampler, filter = linear, address_u = repeat, address_v = clamp)
 
-float3 GetWorldRay(float2 uv)
-{
-    float3 rayAB = lerp(Camera.worldRays[0], Camera.worldRays[1], uv.x);
-    float3 rayCD = lerp(Camera.worldRays[2], Camera.worldRays[3], uv.x);
-    float3 ray = lerp(rayAB, rayCD, uv.y);
-    return ray;
-}
-
 [numthreads(8, 1, 1)]
 void CSMain(uint2 tid : SV_DispatchThreadID)
 {
@@ -39,7 +31,7 @@ void CSMain(uint2 tid : SV_DispatchThreadID)
     if(gpixel.depth < 1)
         return;
 
-    float3 worldRay = GetWorldRay(uv);
+    float3 worldRay = CameraUtils::GetWorldRay(Camera, uv);
     float3 dir = normalize(worldRay);
     float2 skyLutUv = Atmosphere::ComputeSkyLutTexCoord(dir);
     float3 color = SkyLut.SampleLevel(SkyLutSampler, skyLutUv, 0);

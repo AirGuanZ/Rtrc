@@ -73,6 +73,7 @@ private:
         const RenderMaterials &materialManager,
         LinearAllocator       &linearAllocator);
 
+    // Update tlas & materials
     void UpdateTlasScene(RG::RenderGraph &renderGraph);
     
     Config              config_;
@@ -84,8 +85,8 @@ private:
 
     // Tlas scene
 
-    UploadBufferPool<> materialDataUploadBufferPool_;
-    UploadBufferPool<> instanceDataUploadBufferPool_;
+    UploadBufferPool<>  materialDataUploadBufferPool_;
+    UploadBufferPool<>  instanceDataUploadBufferPool_;
     RG::Pass           *buildTlasPass_      = nullptr;
     RG::BufferResource *tlasMaterialBuffer_ = nullptr;
     RG::TlasResource   *opaqueTlas_         = nullptr;

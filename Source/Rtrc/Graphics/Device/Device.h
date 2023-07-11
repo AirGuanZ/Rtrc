@@ -1,9 +1,9 @@
 #pragma once
 
+#include <Rtrc/Graphics/Device/LocalCache/BindingGroupLayoutCache.h>
 #include <Rtrc/Graphics/Device/AccelerationStructure.h>
 #include <Rtrc/Graphics/Device/BindingGroup.h>
 #include <Rtrc/Graphics/Device/BindingGroupDSL.h>
-#include <Rtrc/Graphics/Device/BindingGroupLayoutCache.h>
 #include <Rtrc/Graphics/Device/Buffer.h>
 #include <Rtrc/Graphics/Device/ClearBufferUtils.h>
 #include <Rtrc/Graphics/Device/CopyContext.h>
@@ -34,13 +34,7 @@ namespace DeviceDetail
 class Device : public Uncopyable, public WithUniqueObjectID
 {
 public:
-
-#if RTRC_RHI_DIRECTX12
-    static constexpr RHI::BackendType DefaultBackendType = RHI::BackendType::DirectX12;
-#else
-    static constexpr RHI::BackendType DefaultBackendType = RHI::BackendType::Vulkan;
-#endif
-
+    
     using Flags = DeviceDetail::Flags;
     using enum Flags::Bits;
 

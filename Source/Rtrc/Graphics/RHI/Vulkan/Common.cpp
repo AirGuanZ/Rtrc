@@ -59,6 +59,7 @@ VkFormat TranslateTexelFormat(Format format)
     case Format::R32G32_Float:       return VK_FORMAT_R32G32_SFLOAT;
     case Format::R32G32B32A32_Float: return VK_FORMAT_R32G32B32A32_SFLOAT;
     case Format::A2R10G10B10_UNorm:  return VK_FORMAT_A2R10G10B10_UNORM_PACK32;
+    case Format::R16_UInt:           return VK_FORMAT_R16_UINT;
     case Format::R32_UInt:           return VK_FORMAT_R32_UINT;
     case Format::R8_UNorm:           return VK_FORMAT_R8_UNORM;
     case Format::R16G16_Float:       return VK_FORMAT_R16G16_SFLOAT;
@@ -120,6 +121,7 @@ VkPrimitiveTopology TranslatePrimitiveTopology(PrimitiveTopology topology)
     switch(topology)
     {
     case PrimitiveTopology::TriangleList: return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    case PrimitiveTopology::LineList:     return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
     }
     Unreachable();
 }

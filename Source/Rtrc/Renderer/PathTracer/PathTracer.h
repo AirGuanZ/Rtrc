@@ -2,11 +2,13 @@
 
 #include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/Graphics/Resource/BuiltinResources.h>
-#include <Rtrc/Renderer/Scene/RenderCamera.h>
+#include <Rtrc/Renderer/Common.h>
 
 RTRC_RENDERER_BEGIN
 
-class PathTracer
+class RenderCamera;
+
+class PathTracer : public RenderAlgorithm
 {
 public:
 
@@ -15,21 +17,24 @@ public:
         uint32_t maxDepth = 5;
     };
 
-    struct RGOutput
+    struct PerCameraData
     {
+        RC<StatefulTexture> persistentRngState;
         RG::TextureResource *indirectDiffuse = nullptr;
     };
 
-    PathTracer(ObserverPtr<Device> device, ObserverPtr<BuiltinResourceManager> builtinResources);
+    using RenderAlgorithm::RenderAlgorithm;
 
-    const Parameters &GetParameters() const;
-          Parameters &GetParameters();
+    const Parameters &GetParameters() const { return parameters_; }
+          Parameters &GetParameters()       { return parameters_; }
+          
+    void Render(
+        RG::RenderGraph &renderGraph,
+        RenderCamera    &camera,
+        const GBuffers  &gbuffers,
+        const Vector2u  &framebufferSize) const;
 
-    RGOutput Render(
-        RG::RenderGraph    &renderGraph,
-        const RenderCamera &camera,
-        const GBuffers     &gbuffers,
-        const Vector2u     &framebufferSize) const;
+    void ClearFrameData(PerCameraData &data);
 
 private:
 
@@ -39,12 +44,12 @@ private:
         PassIndex_Count
     };
 
+    RG::TextureResource *InitializeRngStateTexture(PerCameraData &data, const Vector2u &res) const;
+
     ObserverPtr<Device>                 device_;
     ObserverPtr<BuiltinResourceManager> builtinResources_;
 
     Parameters parameters_;
-
-    mutable RC<BindingGroupLayout> tracePassBindingGroupLayout_;
 };
 
 RTRC_RENDERER_END

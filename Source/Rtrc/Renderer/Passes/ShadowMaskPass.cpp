@@ -120,7 +120,7 @@ RG::TextureResource *ShadowMaskPass::Render(
         auto generateLowResMaskPass = renderGraph.CreatePass("LowResShadowMask");
         DeclareGBufferUses<BindingGroup_CollectLowResShadowMaskPass>(
                 generateLowResMaskPass, gbuffers, RHI::PipelineStage::ComputeShader);
-        generateLowResMaskPass->Use(camera.GetCachedScene().GetRGTlas(), RG::CS_ReadAS);
+        generateLowResMaskPass->Use(camera.GetScene().GetRGTlas(), RG::CS_ReadAS);
         generateLowResMaskPass->Use(lowResShadowMask0, RG::CS_RWTexture_WriteOnly);
         generateLowResMaskPass->SetCallback(
             [gbuffers, &camera, lowResShadowMask0, lowResSize, light, this]
@@ -128,7 +128,7 @@ RG::TextureResource *ShadowMaskPass::Render(
         {
             BindingGroup_CollectLowResShadowMaskPass passData;
             FillBindingGroupGBuffers(passData, gbuffers, context);
-            passData.Scene               = camera.GetCachedScene().GetRGTlas()->Get(context);
+            passData.Scene               = camera.GetScene().GetRGTlas()->Get(context);
             passData.Camera              = camera.GetCameraCBuffer();
             passData.OutputTextureRW     = lowResShadowMask0->Get(context);
             passData.BlueNoise256        = builtinResources_->GetBuiltinTexture(BuiltinTexture::BlueNoise256);
@@ -217,7 +217,7 @@ RG::TextureResource *ShadowMaskPass::Render(
 
     auto generateRawMaskPass = renderGraph.CreatePass("ShadowMask");
     DeclareGBufferUses<BindingGroup_ShadowMaskPass>(generateRawMaskPass, gbuffers, RHI::PipelineStage::ComputeShader);
-    generateRawMaskPass->Use(camera.GetCachedScene().GetRGTlas(), RG::CS_ReadAS);
+    generateRawMaskPass->Use(camera.GetScene().GetRGTlas(), RG::CS_ReadAS);
     if(lowResShadowMask0)
     {
         generateRawMaskPass->Use(lowResShadowMask0, RG::CS_Texture);
@@ -230,7 +230,7 @@ RG::TextureResource *ShadowMaskPass::Render(
     {
         BindingGroup_ShadowMaskPass passData;
         FillBindingGroupGBuffers(passData, gbuffers, context);
-        passData.Scene               = camera.GetCachedScene().GetRGTlas()->Get(context);
+        passData.Scene               = camera.GetScene().GetRGTlas()->Get(context);
         passData.Camera              = camera.GetCameraCBuffer();
         passData.OutputTextureRW     = shadowMask0->Get(context);
         passData.BlueNoise256        = builtinResources_->GetBuiltinTexture(BuiltinTexture::BlueNoise256);

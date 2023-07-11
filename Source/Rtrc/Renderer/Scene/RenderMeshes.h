@@ -22,6 +22,7 @@ public:
         float               buildBlasSortKey = -1;
         RC<Blas>            blas;
         BindlessBufferEntry geometryBufferEntry;
+        bool                hasIndexBuffer = false;
     };
 
     RenderMeshes(const Config &config, ObserverPtr<Device> device);

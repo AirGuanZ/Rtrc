@@ -12,11 +12,11 @@ RTRC_RHI_IMPLEMENT(VulkanSwapchain, Swapchain)
 public:
 
     VulkanSwapchain(
-        Ptr<VulkanSurface>   surface,
-        Ptr<VulkanQueue>     presentQueue,
+        Ptr<VulkanSurface> surface,
+        Ptr<VulkanQueue>   presentQueue,
         const TextureDesc &imageDesc,
-        VulkanDevice        *device,
-        VkSwapchainKHR       swapchain);
+        VulkanDevice      *device,
+        VkSwapchainKHR     swapchain);
 
     ~VulkanSwapchain() override;
 

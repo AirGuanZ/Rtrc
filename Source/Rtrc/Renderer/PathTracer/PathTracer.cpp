@@ -1,41 +1,78 @@
 #include <Rtrc/Renderer/GBufferBinding.h>
 #include <Rtrc/Renderer/PathTracer/PathTracer.h>
+#include <Rtrc/Renderer/Scene/RenderCamera.h>
 
 RTRC_RENDERER_BEGIN
 
-PathTracer::PathTracer(ObserverPtr<Device> device, ObserverPtr<BuiltinResourceManager> builtinResources)
-    : device_(device), builtinResources_(builtinResources)
+void PathTracer::Render(
+    RG::RenderGraph &renderGraph,
+    RenderCamera    &camera,
+    const GBuffers  &gbuffers,
+    const Vector2u  &framebufferSize) const
 {
-    
-}
+    RTRC_RG_SCOPED_PASS_GROUP(renderGraph, "PathTracing");
 
-const PathTracer::Parameters &PathTracer::GetParameters() const
-{
-    return parameters_;
-}
+    PerCameraData &perCameraData = camera.GetPathTracingData();
+    auto rngState = InitializeRngStateTexture(perCameraData, framebufferSize);
 
-PathTracer::Parameters &PathTracer::GetParameters()
-{
-    return parameters_;
-}
-
-PathTracer::RGOutput PathTracer::Render(
-    RG::RenderGraph    &renderGraph,
-    const RenderCamera &camera,
-    const GBuffers     &gbuffers,
-    const Vector2u     &framebufferSize) const
-{
-    auto indirectDiffuse = renderGraph.CreateTexture(RHI::TextureDesc
+    assert(!perCameraData.indirectDiffuse);
+    perCameraData.indirectDiffuse = renderGraph.CreateTexture(RHI::TextureDesc
     {
         .dim    = RHI::TextureDimension::Tex2D,
-        .format = RHI::Format::R8G8B8A8_UNorm,
+        .format = RHI::Format::R32G32B32A32_Float,
         .width  = framebufferSize.x,
         .height = framebufferSize.y,
-        .usage  = RHI::TextureUsage::UnorderAccess | RHI::TextureUsage::ShaderResource
-    }, "PathTracer-IndirectDiffuse");
+        .usage  = RHI::TextureUsage::ShaderResource | RHI::TextureUsage::UnorderAccess
+    });
 
-    // TODO
-    return {};
+    rtrc_group(TracePassGroup)
+    {
+        GBufferBindings_NormalDepth gbuffers;
+
+        rtrc_define(ConstantBuffer<CameraConstantBuffer>, Camera);
+
+        rtrc_define(RaytracingAccelerationStructure,        Tlas);
+        rtrc_define(StructuredBuffer,                       Materials);
+        // rtrc_bindless(StructuredBuffer[MAX_INSTANCE_COUNT], Geometries);
+
+        rtrc_define(RWTexture2D, RngState);
+
+        rtrc_define(RWTexture2D, Output);
+        rtrc_uniform(uint2,      outputResolution);
+
+        rtrc_uniform(uint, maxDepth);
+    };
+
+    auto &scene = camera.GetScene();
+
+    auto pass = renderGraph.CreatePass("PathTracing");
+    DeclareGBufferUses<TracePassGroup>(pass, gbuffers, RHI::PipelineStage::ComputeShader);
+    pass->Read(scene.GetRGTlas(), RHI::PipelineStage::ComputeShader);
+    pass->Use(scene.GetRGTlasMaterialBuffer(), RG::CS_StructuredBuffer);
+    pass->Use(rngState, RG::CS_Texture);
+    pass->Use(perCameraData.indirectDiffuse, RG::CS_RWTexture_WriteOnly);
+    pass->SetCallback(
+        [gbuffers, perCameraData, rngState , &scene, &camera, framebufferSize, this]
+        (RG::PassContext &context)
+    {
+        TracePassGroup passData;
+        FillBindingGroupGBuffers(passData, gbuffers, context);
+        passData.Camera           = camera.GetCameraCBuffer();
+        passData.Tlas             = scene.GetRGTlas()->Get(context);
+        passData.Materials        = scene.GetRGTlasMaterialBuffer()->Get(context);
+        passData.RngState         = rngState->Get(context);
+        passData.Output           = perCameraData.indirectDiffuse->Get(context);
+        passData.outputResolution = framebufferSize;
+        auto passGroup = RTRC_CREATE_BINDING_GROUP_WITH_CACHED_LAYOUT(device_, passData);
+
+        auto material = builtinResources_->GetBuiltinMaterial(BuiltinMaterial::PathTracing).get();
+        auto shader = material->GetPassByIndex(PassIndex_Trace)->GetShader().get();
+
+        auto &commandBuffer = context.GetCommandBuffer();
+        commandBuffer.BindComputePipeline(shader->GetComputePipeline());
+        commandBuffer.BindComputeGroup(0, passGroup);
+        commandBuffer.DispatchWithThreadCount(framebufferSize);
+    });
 }
 
 RTRC_RENDERER_END

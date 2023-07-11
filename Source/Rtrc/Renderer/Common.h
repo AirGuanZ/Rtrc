@@ -86,7 +86,7 @@ class RenderAlgorithm : public Uncopyable
 {
 public:
 
-    RenderAlgorithm(ObserverPtr<Device> device, ObserverPtr<const BuiltinResourceManager> builtinResources)
+    RenderAlgorithm(ObserverPtr<Device> device, ObserverPtr<BuiltinResourceManager> builtinResources)
         : device_(device), builtinResources_(builtinResources)
     {
         
@@ -94,8 +94,8 @@ public:
 
 protected:
 
-    ObserverPtr<Device>                       device_;
-    ObserverPtr<const BuiltinResourceManager> builtinResources_;
+    ObserverPtr<Device>                 device_;
+    ObserverPtr<BuiltinResourceManager> builtinResources_;
 };
 
 RTRC_RENDERER_END

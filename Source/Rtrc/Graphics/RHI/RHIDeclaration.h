@@ -95,7 +95,12 @@ class BindingGroupUpdateBatch;
 enum class BackendType
 {
     DirectX12,
-    Vulkan
+    Vulkan,
+#if RTRC_RHI_DIRECTX12
+    Default = DirectX12,
+#else
+    Default = Vulkan,
+#endif
 };
 
 enum class BarrierMemoryModel
@@ -121,6 +126,7 @@ enum class Format : uint32_t
     R32G32_Float,
     R32G32B32A32_Float,
     A2R10G10B10_UNorm,
+    R16_UInt,
     R32_UInt,
     R8_UNorm,
     R16G16_Float,
@@ -209,7 +215,8 @@ std::string GetShaderStageFlagsName(ShaderStageFlags flags);
 
 enum class PrimitiveTopology
 {
-    TriangleList
+    TriangleList,
+    LineList,
 };
 
 enum class CullMode
@@ -1083,8 +1090,6 @@ struct RayTracingInstanceArrayDesc
 {
     uint32_t            instanceCount;
     BufferDeviceAddress instanceData;
-    //bool                opaque = false;
-    //bool                noDuplicateAnyHitInvocation = false;
 };
 
 struct ShaderGroupRecordRequirements
@@ -1093,8 +1098,6 @@ struct ShaderGroupRecordRequirements
     uint32_t shaderGroupHandleAlignment; // Alignment of each single shader group handle
     uint32_t shaderGroupBaseAlignment;   // Alignment of the table start address
     uint32_t maxShaderGroupStride;
-    //uint32_t shaderDataAlignment;
-    //uint32_t shaderDataUnit;
 };
 
 struct ShaderBindingTableRegion

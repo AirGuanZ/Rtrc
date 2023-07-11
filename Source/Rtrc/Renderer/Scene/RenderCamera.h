@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Rtrc/Renderer/PathTracer/PathTracer.h>
 #include <Rtrc/Renderer/Scene/RenderScene.h>
 #include <Rtrc/Renderer/Utility/TransientConstantBufferAllocator.h>
 #include <Rtrc/Renderer/Utility/UploadBufferPool.h>
@@ -18,16 +19,17 @@ public:
     };
 
     RenderCamera(ObserverPtr<Device> device, const RenderScene &scene, UniqueId cameraId);
-    
+
+    const RenderScene &GetScene() const { return scene_; }
+
     const CameraRenderData &GetCameraRenderData() const { return renderCamera_; }
-    const RC<SubBuffer> &GetCameraCBuffer() const { return cameraCBuffer_; }
+    const RC<SubBuffer>    &GetCameraCBuffer()    const { return cameraCBuffer_; }
 
-    const RenderScene &GetCachedScene() const { return scene_; }
-
-    Span<StaticMeshRecord *> GetStaticMeshes() const { return objects_; }
+    Span<StaticMeshRecord *> GetStaticMeshes()            const { return objects_; }
     const RC<Buffer>        &GetStaticMeshPerObjectData() const { return perObjectDataBuffer_; }
     
-    RenderAtmosphere::PerCameraData &GetAtmosphereData() { return atmosphereData_; }
+    RenderAtmosphere::PerCameraData &GetAtmosphereData()  { return atmosphereData_; }
+    PathTracer::PerCameraData       &GetPathTracingData() { return pathTracingData_; }
 
     void Update(
         const CameraRenderData           &camera,
@@ -46,6 +48,8 @@ private:
     UploadBufferPool<>              perObjectDataBufferPool_;
     
     RenderAtmosphere::PerCameraData atmosphereData_;
+
+    PathTracer::PerCameraData pathTracingData_;
 };
 
 RTRC_RENDERER_END

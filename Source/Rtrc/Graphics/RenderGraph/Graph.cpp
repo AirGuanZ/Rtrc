@@ -148,11 +148,6 @@ RenderGraph::RenderGraph(ObserverPtr<Device> device, Queue queue)
     
 }
 
-void RenderGraph::SetQueue(Queue queue)
-{
-    queue_ = std::move(queue);
-}
-
 BufferResource *RenderGraph::CreateBuffer(const RHI::BufferDesc &desc, std::string name)
 {
     const int index = static_cast<int>(buffers_.size());

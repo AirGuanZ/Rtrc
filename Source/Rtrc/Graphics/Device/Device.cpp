@@ -44,7 +44,7 @@ Box<Device> Device::CreateComputeDevice(RHI::BackendType rhiType, bool debugMode
 
 Box<Device> Device::CreateComputeDevice(bool debugMode)
 {
-    return CreateComputeDevice(DefaultBackendType, debugMode);
+    return CreateComputeDevice(RHI::BackendType::Default, debugMode);
 }
 
 Box<Device> Device::CreateGraphicsDevice(
@@ -156,7 +156,7 @@ Box<Device> Device::CreateGraphicsDevice(
     Flags       flags)
 {
     return CreateGraphicsDevice(
-        window, DefaultBackendType, swapchainFormat, swapchainImageCount, debugMode, vsync, flags);
+        window, RHI::BackendType::Default, swapchainFormat, swapchainImageCount, debugMode, vsync, flags);
 }
 
 Device::~Device()

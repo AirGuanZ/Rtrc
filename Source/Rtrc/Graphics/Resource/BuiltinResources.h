@@ -48,6 +48,9 @@ public:
 
     const Image<uint8_t> &GetBlueNoise256() const;
 
+    operator MaterialManager &() { return materialManager_; }
+    operator ObserverPtr<MaterialManager>() { return materialManager_; }
+
 private:
 
     void LoadBuiltinTextures();

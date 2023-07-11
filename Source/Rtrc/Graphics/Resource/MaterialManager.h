@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Rtrc/Graphics/Device/LocalCache/LocalMaterialCache.h>
+#include <Rtrc/Graphics/Device/LocalCache/LocalShaderCache.h>
 #include <Rtrc/Graphics/Material/Material.h>
 
 RTRC_BEGIN
@@ -16,11 +18,14 @@ public:
     void AddIncludeDirectory(std::string_view directory);
     void AddFiles(const std::set<std::filesystem::path> &filenames);
 
-    RC<Material> GetMaterial(const std::string &name);
+    RC<Material>       GetMaterial      (const std::string &name);
     RC<ShaderTemplate> GetShaderTemplate(const std::string &name);
-    RC<Shader> GetShader(const std::string &name); // Available when no keyword is defined in the shader template
+    RC<Shader>         GetShader        (const std::string &name);
 
     RC<MaterialInstance> CreateMaterialInstance(const std::string &name);
+
+    LocalMaterialCache &GetLocalMaterialCache() { return *localMaterialCache_; }
+    LocalShaderCache   &GetLocalShaderCache()   { return *localShaderCache_; }
 
 private:
 
@@ -51,6 +56,9 @@ private:
     std::vector<std::string>                          filenames_;
     std::map<std::string, FileReference, std::less<>> materialNameToFilename_;
     std::map<std::string, FileReference, std::less<>> shaderNameToFilename_;
+
+    Box<LocalMaterialCache> localMaterialCache_;
+    Box<LocalShaderCache>   localShaderCache_;
 };
 
 RTRC_END

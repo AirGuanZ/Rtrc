@@ -39,7 +39,7 @@ public:
         bool             debug                      = RTRC_DEBUG;
         bool             rayTracing                 = false;
         bool             handleCrossThreadException = false;
-        RHI::BackendType backendType                = Device::DefaultBackendType;
+        RHI::BackendType backendType                = RHI::BackendType::Default;
     };
 
     static Application &GetInstance();

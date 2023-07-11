@@ -347,7 +347,10 @@ public:
 
     explicit RenderGraph(ObserverPtr<Device> device, Queue queue = Queue(nullptr));
 
-    void SetQueue(Queue queue);
+    ObserverPtr<Device> GetDevice() const { return device_; }
+
+    const Queue &GetQueue() const { return queue_; }
+    void SetQueue(Queue queue) { queue_ = std::move(queue); }
 
     BufferResource  *CreateBuffer(const RHI::BufferDesc &desc, std::string name = {});
     TextureResource *CreateTexture(const RHI::TextureDesc &desc, std::string name = {});

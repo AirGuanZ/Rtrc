@@ -180,7 +180,7 @@ Ptr<Swapchain> DirectX12Device::CreateSwapchain(const SwapchainDesc &desc, Windo
         .arraySize     = 1,
         .mipLevels     = 1,
         .sampleCount   = 1,
-        .usage         = TextureUsage::RenderTarget |
+        .usage         = TextureUsage::RenderTarget | TextureUsage::ClearColor |
                          (desc.allowUav ? TextureUsage::UnorderAccess : TextureUsage::None),
         .initialLayout = TextureLayout::Undefined,
         .concurrentAccessMode = QueueConcurrentAccessMode::Exclusive

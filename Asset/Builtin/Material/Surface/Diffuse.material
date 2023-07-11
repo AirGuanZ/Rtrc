@@ -1,0 +1,68 @@
+Material "Builtin/Diffuse"
+{
+
+    uint albedoTextureIndex;
+    
+    Pass
+    {
+        Tag "GBuffer"
+        ShaderRef "Builtin/Diffuse"
+    }
+}
+
+Shader "Builtin/Diffuse"
+{
+
+#keyword ENABLE_INSTANCE
+
+#vert VSMain
+#frag FSMain
+
+#include "../Common/Bindless.hlsl"
+#include "../Common/GBufferPassCommon.hlsl"
+
+rtrc_group(Material)
+{
+    rtrc_uniform(uint, albedoTextureIndex)
+    //rtrc_define(Texture2D<float3>, Albedo)
+};
+
+struct VsInput
+{
+    float3 position : POSITION;
+    float3 normal   : NORMAL;
+    float2 uv       : TEXCOORD;
+
+    DefineInstanceID();
+};
+
+struct VsToFs
+{
+    float4 clipPosition : SV_POSITION;
+    float3 worldNormal  : WORLD_NORMAL;
+    float2 uv           : TEXCOORD;
+
+    DefineInstanceID();
+};
+
+rtrc_sampler(AlbedoSampler, filter = linear, address = clamp)
+
+VsToFs VSMain(VsInput input)
+{
+    PerObjectData object = GetInstancedPerObjectData(input);
+	VsToFs output = (VsToFs)0;
+	output.clipPosition = mul(object.localToClip, float4(input.position, 1));
+	output.worldNormal = normalize(mul(float4(input.normal, 0), object.worldToLocal).xyz);
+	output.uv = input.uv;
+    TransferInstanceID(input, output);
+	return output;
+}
+
+GBufferPixelOutput FSMain(VsToFs input)
+{
+    Texture2D<float4> AlbedoTexture = BindlessTextures[Material.albedoTextureIndex];
+    float3 albedo = AlbedoTexture.Sample(AlbedoSampler, input.uv).xyz;
+    return EncodeGBufferPixel(normalize(input.worldNormal), albedo, 0, 1);
+}
+
+}

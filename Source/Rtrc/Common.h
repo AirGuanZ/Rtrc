@@ -4,8 +4,15 @@
 
 #include <cstddef>
 #include <memory>
-#include <stacktrace>
 #include <stdexcept>
+#include <version>
+
+#if defined(__cpp_lib_stacktrace)
+#include <stacktrace>
+#define RTRC_ENABLE_EXCEPTION_STACKTRACE RTRC_DEBUG
+#else
+#define RTRC_ENABLE_EXCEPTION_STACKTRACE 0
+#endif
 
 #define RTRC_BEGIN namespace Rtrc {
 #define RTRC_END   }
@@ -28,7 +35,6 @@
 #define RTRC_DEBUG 0
 #endif
 
-#define RTRC_ENABLE_EXCEPTION_STACKTRACE RTRC_DEBUG
 #define RTRC_MAYBE_UNUSED(X) ((void)(X))
 
 #if defined(WIN32) || defined(_WIN32)

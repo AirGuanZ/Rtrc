@@ -77,7 +77,7 @@ void DeferredLightingPass::Render(
     RG::TextureResource *renderTarget)
 {
     RG::TextureResource *shadowMask = nullptr;
-    auto &renderLights = scene.GetCachedScene().GetRenderLights();
+    auto &renderLights = scene.GetScene().GetRenderLights();
     if(renderLights.HasMainLight())
     {
         shadowMask = shadowMaskPass_->Render(scene, renderLights.GetMainLight(), gbuffers, renderGraph);
@@ -136,7 +136,7 @@ void DeferredLightingPass::DoDeferredLighting(
 {
     using namespace DeferredLightingPassDetail;
 
-    auto &renderLights          = sceneCamera.GetCachedScene().GetRenderLights();
+    auto &renderLights          = sceneCamera.GetScene().GetRenderLights();
     auto pointLightBuffer       = renderLights.GetRGPointLightBuffer();
     auto directionalLightBuffer = renderLights.GetRGDirectionalLightBuffer();
 

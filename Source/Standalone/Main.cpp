@@ -15,6 +15,7 @@ int main()
             .debug                      = RTRC_DEBUG,
             .rayTracing                 = true,
             .handleCrossThreadException = false,
+            .backendType                = Rtrc::RHI::BackendType::Default
         });
     }
     catch(const Rtrc::Exception &e)

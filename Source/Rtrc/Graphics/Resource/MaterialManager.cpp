@@ -354,6 +354,8 @@ MaterialManager::MaterialManager()
 {
     device_ = nullptr;
     debug_ = RTRC_DEBUG;
+    localMaterialCache_ = MakeBox<LocalMaterialCache>(this);
+    localShaderCache_ = MakeBox<LocalShaderCache>(this);
 }
 
 void MaterialManager::SetDevice(Device *device)
@@ -427,7 +429,6 @@ RC<ShaderTemplate> MaterialManager::GetShaderTemplate(const std::string &name)
 RC<Shader> MaterialManager::GetShader(const std::string &name)
 {
     auto shaderTemplate = GetShaderTemplate(name);
-    assert(shaderTemplate->GetKeywordSet().GetTotalBitCount() == 0);
     return shaderTemplate->GetShader(0);
 }
 

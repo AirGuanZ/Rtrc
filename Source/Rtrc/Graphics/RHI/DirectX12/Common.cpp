@@ -91,6 +91,8 @@ DXGI_FORMAT TranslateFormat(Format format)
         return DXGI_FORMAT_R32G32B32A32_FLOAT;
     case A2R10G10B10_UNorm:
         return DXGI_FORMAT_R10G10B10A2_UNORM;
+    case R16_UInt:
+        return DXGI_FORMAT_R16_UINT;
     case R32_UInt:
         return DXGI_FORMAT_R32_UINT;
     case R8_UNorm:
@@ -255,6 +257,7 @@ D3D12_PRIMITIVE_TOPOLOGY_TYPE TranslatePrimitiveTopologyType(PrimitiveTopology t
     switch(topology)
     {
     case PrimitiveTopology::TriangleList: return D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+    case PrimitiveTopology::LineList:     return D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
     }
     Unreachable();
 }
@@ -264,6 +267,7 @@ D3D12_PRIMITIVE_TOPOLOGY TranslatePrimitiveTopology(PrimitiveTopology topology)
     switch(topology)
     {
     case PrimitiveTopology::TriangleList: return D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+    case PrimitiveTopology::LineList:     return D3D_PRIMITIVE_TOPOLOGY_LINELIST;
     }
     Unreachable();
 }

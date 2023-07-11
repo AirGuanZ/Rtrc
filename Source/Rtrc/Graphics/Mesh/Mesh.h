@@ -34,8 +34,7 @@ public:
 
     struct BuiltinVertexBufferLayout
     {
-        static const VertexBufferLayout *Default;
-        static const VertexBufferLayout *Simplified;
+        static const VertexBufferLayout *Standard;
     };
 
     // Acquired SharedRenderingData will never be modified by original Mesh,
