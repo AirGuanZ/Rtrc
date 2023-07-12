@@ -1135,6 +1135,12 @@ bool ImGuiInstance::InputText(const char *label, MutableSpan<char> buffer, ImGui
     return ImGui::InputText(label, buffer.GetData(), buffer.GetSize(), flags);
 }
 
+bool ImGuiInstance::IsAnyItemActive() const
+{
+    IMGUI_CONTEXT;
+    return ImGui::IsAnyItemActive();
+}
+
 RTRC_END
 
 constexpr ImVec2::ImVec2(const Rtrc::Vector2<float> &v)

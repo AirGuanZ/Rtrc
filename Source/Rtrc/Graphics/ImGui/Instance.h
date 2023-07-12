@@ -176,6 +176,8 @@ public:
     void TextUnformatted(std::string_view text);
     bool InputText(const char *label, MutableSpan<char> buffer, ImGuiInputTextFlags flags = 0);
 
+    bool IsAnyItemActive() const;
+
 private:
 
     template<typename F>

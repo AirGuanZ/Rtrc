@@ -390,6 +390,13 @@ namespace BindingGroupDSL
         using float4x4 = Matrix4x4f;
     };
 
+    template<bool COND, typename A, typename B>
+    auto ConditionalType(A *, B *)
+    {
+        using Ret = std::conditional_t<COND, A, B>;
+        return static_cast<Ret *>(nullptr);
+    }
+
 } // namespace BindingGroupDSL
 
 #define rtrc_group1(NAME)                 rtrc_group2(NAME, ::Rtrc::RHI::ShaderStage::All)
@@ -437,10 +444,10 @@ namespace BindingGroupDSL
 #define rtrc_bindless_variable_size(...) RTRC_MACRO_OVERLOADING(rtrc_bindless_variable_size, __VA_ARGS__)
 
 #if defined(__INTELLISENSE__) || defined(__RSCPP_VERSION)
-#define rtrc_uniform(TYPE, NAME) \
+#define RTRC_UNIFORM_IMPL(TYPE, NAME) \
     using _rtrcMemberType##NAME = TYPE; _rtrcMemberType##NAME NAME; using _requireComma##NAME = int
 #else
-#define rtrc_uniform(TYPE, NAME)                                         \
+#define RTRC_UNIFORM_IMPL(TYPE, NAME)                                    \
     RTRC_DEFINE_SELF_TYPE(_rtrcSelf##NAME)                               \
     using _rtrcMemberType##NAME = TYPE;                                  \
     _rtrcMemberType##NAME NAME;                                          \
@@ -450,6 +457,13 @@ namespace BindingGroupDSL
             ::Rtrc::BindingGroupDSL::CreateBindingFlags(false, false));  \
     RTRC_META_STRUCT_POST_MEMBER(NAME) using _requireComma##NAME = int
 #endif
+
+#define rtrc_uniform(TYPE, NAME) RTRC_UNIFORM_IMPL(TYPE, NAME)
+#define rtrc_cond_uniform(COND, TYPE, NAME)                                                                           \
+    RTRC_UNIFORM_IMPL(                                                                                                \
+        std::remove_pointer_t<decltype(::Rtrc::BindingGroupDSL::ConditionalType<COND>(                                \
+            static_cast<TYPE*>(nullptr), static_cast<::Rtrc::BindingGroupDSL::RtrcGroupDummyMemberType*>(nullptr)))>, \
+        NAME)
 
 #define RTRC_DEFINE_IMPL(TYPE, NAME, STAGES, IS_BINDLESS, VARIABLE_ARRAY_SIZE) \
     RTRC_CONDITIONAL_DEFINE_IMPL(true, TYPE, NAME, STAGES, IS_BINDLESS, VARIABLE_ARRAY_SIZE)

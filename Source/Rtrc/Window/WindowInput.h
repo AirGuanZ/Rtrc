@@ -31,6 +31,8 @@ public:
     float GetCursorRelativePositionX() const;
     float GetCursorRelativePositionY() const;
 
+    int GetRelativeWheelScrollOffset() const;
+
     void LockCursor(bool lock);
     bool IsCursorLocked() const;
 
@@ -63,6 +65,7 @@ private:
     float absoluteY_;
     float relativeX_;
     float relativeY_;
+    int relativeWheelScrollOffset_;
 
     bool lock_;
 

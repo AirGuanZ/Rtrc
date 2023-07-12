@@ -21,6 +21,7 @@ void WindowInput::Clear()
     currKeys_.reset();
     absoluteX_ = absoluteY_ = 0;
     relativeX_ = relativeY_ = 0;
+    relativeWheelScrollOffset_ = 0;
     LockCursor(false);
 }
 
@@ -59,6 +60,11 @@ float WindowInput::GetCursorRelativePositionY() const
     return relativeY_;
 }
 
+int WindowInput::GetRelativeWheelScrollOffset() const
+{
+    return relativeWheelScrollOffset_;
+}
+
 void WindowInput::LockCursor(bool lock)
 {
     if(lock_ != lock)
@@ -89,6 +95,7 @@ void WindowInput::_internalUpdate()
     relativeY_ = newY - absoluteY_;
     absoluteX_ = newX;
     absoluteY_ = newY;
+    relativeWheelScrollOffset_ = 0;
 
     if(relativeX_ != 0.0f || relativeY_ != 0.0f)
     {
@@ -106,6 +113,7 @@ void WindowInput::_internalUpdate()
 void WindowInput::_internalTriggerWheelScroll(int offset)
 {
     sender_.Send(WheelScrollEvent{ offset });
+    relativeWheelScrollOffset_ += offset;
 }
 
 void WindowInput::_internalTriggerKeyDown(KeyCode key)
@@ -134,6 +142,7 @@ WindowInput::WindowInput(void *glfwWindow)
     absoluteY_ = 0;
     relativeX_ = 0;
     relativeY_ = 0;
+    relativeWheelScrollOffset_ = 0;
     std::tie(absoluteX_, absoluteY_) = QueryCursorPosition();
 
     glfwSetInputMode(static_cast<GLFWwindow *>(glfwWindow), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
