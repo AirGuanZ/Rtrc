@@ -1,6 +1,7 @@
 #pragma once
 
 #include <fmt/format.h>
+#include <half.hpp>
 
 #include <cstddef>
 #include <memory>
@@ -75,6 +76,11 @@ public:
     const std::string &stacktrace() const { static std::string ret; return ret; }
 #endif
 };
+
+using float16 = half_float::half;
+
+inline float16 operator "" _f16(long double f) { return float16(static_cast<float>(f)); }
+inline float16 operator "" _f16(unsigned long long f) { return float16(static_cast<float>(f)); }
 
 template<typename T>
 using Box = std::unique_ptr<T>;

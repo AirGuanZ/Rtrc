@@ -9,6 +9,8 @@ class RenderMeshes : public Uncopyable
 {
 public:
 
+    static constexpr int GLOBAL_BINDLESS_GEOMETRY_BUFFER_MAX_SIZE = 2048;
+
     struct Config
     {
         bool rayTracing = false;
@@ -37,7 +39,11 @@ public:
     const RenderMesh *FindCachedMesh(UniqueId meshId) const;
 
     // Returns nullptr when no blas is built
-    RG::Pass *GetRGBuildBlasPass() const { return buildBlasPass_; }
+    RG::Pass *GetRGBuildBlasPass() const;
+
+    RC<BindingGroup> GetGeometryBuffersBindingGroup() const;
+
+    const RC<BindingGroupLayout> &GetGeometryBuffersBindingGroupLayout() const;
     
 private:
 
@@ -55,5 +61,20 @@ private:
 
     RG::Pass *buildBlasPass_ = nullptr;
 };
+
+inline RG::Pass *RenderMeshes::GetRGBuildBlasPass() const
+{
+    return buildBlasPass_;
+}
+
+inline RC<BindingGroup> RenderMeshes::GetGeometryBuffersBindingGroup() const
+{
+    return bindlessBufferManager_->GetBindingGroup();
+}
+
+inline const RC<BindingGroupLayout> &RenderMeshes::GetGeometryBuffersBindingGroupLayout() const
+{
+    return bindlessBufferManager_->GetBindingGroupLayout();
+}
 
 RTRC_RENDERER_END

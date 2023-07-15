@@ -1,6 +1,7 @@
 #include <Rtrc/Renderer/GBufferBinding.h>
 #include <Rtrc/Renderer/PathTracer/PathTracer.h>
 #include <Rtrc/Renderer/Scene/RenderCamera.h>
+#include <Rtrc/Renderer/Utility/PcgStateTexture.h>
 
 RTRC_RENDERER_BEGIN
 
@@ -13,8 +14,8 @@ void PathTracer::Render(
     RTRC_RG_SCOPED_PASS_GROUP(renderGraph, "PathTracing");
 
     PerCameraData &perCameraData = camera.GetPathTracingData();
-    auto rngState = InitializeRngStateTexture(perCameraData, framebufferSize);
-
+    auto rngState = Prepare2DPcgStateTexture(
+        renderGraph, *builtinResources_, perCameraData.persistentRngState, framebufferSize);
     assert(!perCameraData.indirectDiffuse);
     perCameraData.indirectDiffuse = renderGraph.CreateTexture(RHI::TextureDesc
     {
@@ -24,16 +25,17 @@ void PathTracer::Render(
         .height = framebufferSize.y,
         .usage  = RHI::TextureUsage::ShaderResource | RHI::TextureUsage::UnorderAccess
     });
-
+    
     rtrc_group(TracePassGroup)
     {
         GBufferBindings_NormalDepth gbuffers;
 
         rtrc_define(ConstantBuffer<CameraConstantBuffer>, Camera);
 
-        rtrc_define(RaytracingAccelerationStructure,        Tlas);
-        rtrc_define(StructuredBuffer,                       Materials);
-        // rtrc_bindless(StructuredBuffer[MAX_INSTANCE_COUNT], Geometries);
+        rtrc_define(Texture2D, SkyLut);
+
+        rtrc_define(RaytracingAccelerationStructure, Tlas);
+        rtrc_define(StructuredBuffer,                Instances);
 
         rtrc_define(RWTexture2D, RngState);
 
@@ -47,32 +49,38 @@ void PathTracer::Render(
 
     auto pass = renderGraph.CreatePass("PathTracing");
     DeclareGBufferUses<TracePassGroup>(pass, gbuffers, RHI::PipelineStage::ComputeShader);
+    pass->Use(camera.GetAtmosphereData().S, RG::CS_Texture);
     pass->Read(scene.GetRGTlas(), RHI::PipelineStage::ComputeShader);
-    pass->Use(scene.GetRGTlasMaterialBuffer(), RG::CS_StructuredBuffer);
+    pass->Use(scene.GetRGInstanceBuffer(), RG::CS_StructuredBuffer);
     pass->Use(rngState, RG::CS_Texture);
     pass->Use(perCameraData.indirectDiffuse, RG::CS_RWTexture_WriteOnly);
-    pass->SetCallback(
-        [gbuffers, perCameraData, rngState , &scene, &camera, framebufferSize, this]
-        (RG::PassContext &context)
+    pass->SetCallback([gbuffers, perCameraData, rngState, &scene, &camera, framebufferSize, this]
     {
-        TracePassGroup passData;
-        FillBindingGroupGBuffers(passData, gbuffers, context);
-        passData.Camera           = camera.GetCameraCBuffer();
-        passData.Tlas             = scene.GetRGTlas()->Get(context);
-        passData.Materials        = scene.GetRGTlasMaterialBuffer()->Get(context);
-        passData.RngState         = rngState->Get(context);
-        passData.Output           = perCameraData.indirectDiffuse->Get(context);
-        passData.outputResolution = framebufferSize;
-        auto passGroup = RTRC_CREATE_BINDING_GROUP_WITH_CACHED_LAYOUT(device_, passData);
-
         auto material = builtinResources_->GetBuiltinMaterial(BuiltinMaterial::PathTracing).get();
         auto shader = material->GetPassByIndex(PassIndex_Trace)->GetShader().get();
 
-        auto &commandBuffer = context.GetCommandBuffer();
+        TracePassGroup passData;
+        FillBindingGroupGBuffers(passData, gbuffers);
+        passData.Camera           = camera.GetCameraCBuffer();
+        passData.SkyLut           = camera.GetAtmosphereData().S;
+        passData.Tlas             = scene.GetRGTlas();
+        passData.Instances        = scene.GetRGInstanceBuffer();
+        passData.RngState         = rngState;
+        passData.Output           = perCameraData.indirectDiffuse;
+        passData.outputResolution = framebufferSize;
+        auto passGroup = RTRC_CREATE_BINDING_GROUP_WITH_CACHED_LAYOUT(device_, passData);
+        auto geometryBufferGroup = scene.GetRenderMeshes().GetGeometryBuffersBindingGroup();
+        
+        auto &commandBuffer = RG::GetCurrentCommandBuffer();
         commandBuffer.BindComputePipeline(shader->GetComputePipeline());
-        commandBuffer.BindComputeGroup(0, passGroup);
+        commandBuffer.BindComputeGroups({ passGroup, geometryBufferGroup });
         commandBuffer.DispatchWithThreadCount(framebufferSize);
     });
+}
+
+void PathTracer::ClearFrameData(PerCameraData &data) const
+{
+    data.indirectDiffuse = nullptr;
 }
 
 RTRC_RENDERER_END

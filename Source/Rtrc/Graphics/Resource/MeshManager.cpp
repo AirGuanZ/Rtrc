@@ -73,7 +73,7 @@ Mesh MeshManager::Load(Device *device, const std::string &filename, Flags flags)
                             RHI::BufferUsage::ShaderStructuredBuffer;
         indexUsageFlags |= RHI::BufferUsage::AccelerationStructureBuildInput |
                            RHI::BufferUsage::DeviceAddress |
-                           RHI::BufferUsage::ShaderStructuredBuffer;
+                           RHI::BufferUsage::ShaderBuffer;
     }
 
     if(tangentData.empty())
@@ -161,22 +161,16 @@ Mesh MeshManager::Load(Device *device, const std::string &filename, Flags flags)
                 uint16IndexData[i] = static_cast<uint16_t>(meshData.indexData[i]);
             }
             indexBuffer = device->CreateAndUploadBuffer(
-                RHI::BufferDesc{
-                    sizeof(uint16_t) * uint16IndexData.size(),
-                    indexUsageFlags,
-                    RHI::BufferHostAccessType::None
-                },
+                RHI::BufferDesc{ sizeof(uint16_t) * uint16IndexData.size(), indexUsageFlags },
                 uint16IndexData.data());
+            indexBuffer->SetDefaultTexelFormat(RHI::Format::R16_UInt);
         }
         else
         {
             indexBuffer = device->CreateAndUploadBuffer(
-                RHI::BufferDesc{   
-                    sizeof(uint32_t) * meshData.indexData.size(),
-                    indexUsageFlags,
-                    RHI::BufferHostAccessType::None
-                },
+                RHI::BufferDesc{ sizeof(uint32_t) * meshData.indexData.size(), indexUsageFlags },
                 meshData.indexData.data());
+            indexBuffer->SetDefaultTexelFormat(RHI::Format::R32_UInt);
         }
 
         meshBuilder.SetIndexBuffer(std::move(indexBuffer), RHI::IndexFormat::UInt16);

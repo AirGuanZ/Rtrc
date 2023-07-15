@@ -19,10 +19,17 @@ class RenderLoop : public Uncopyable
 {
 public:
 
+    enum class Mode
+    {
+        Immediate,
+        Threaded
+    };
+
     struct Config
     {
         bool rayTracing                 = false;
         bool handleCrossThreadException = true;
+        Mode mode                       = Mode::Threaded;
     };
     
     RenderLoop(
@@ -77,9 +84,12 @@ private:
     
     RenderScene renderScene_;
     
-    Box<GBufferPass>            gbufferPass_;
-    Box<DeferredLightingPass>   deferredLightingPass_;
-    Box<ShadowMaskPass>         shadowMaskPass_;
+    Box<GBufferPass>          gbufferPass_;
+    Box<DeferredLightingPass> deferredLightingPass_;
+    Box<ShadowMaskPass>       shadowMaskPass_;
+
+    bool isSwapchainInvalid_ = false;
+    bool continueRenderLoop_ = true;
 };
 
 RTRC_RENDERER_END

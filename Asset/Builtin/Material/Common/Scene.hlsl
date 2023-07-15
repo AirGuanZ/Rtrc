@@ -32,10 +32,21 @@ struct DirectionalLightShadingData
     float3 color;
 };
 
-struct TlasMaterial
+struct TlasInstance
 {
-    uint albedoTextureIndex;
-    float albedoScale;
+    uint16_t  albedoTextureIndex;
+    float16_t albedoScale;
+    uint16_t  geometryBufferIndex : 15;
+    uint16_t  hasIndexBuffer : 1;
+    uint16_t  pad0;
+};
+
+struct BuiltinVertexStruct_Default
+{
+    float3 position;
+    float3 normal;
+    float2 uv;
+    float3 tangent;
 };
 
 namespace CameraUtils

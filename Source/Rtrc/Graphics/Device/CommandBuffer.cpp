@@ -280,6 +280,19 @@ void CommandBuffer::CopyColorTexture2DToBuffer(
         dst.GetRHIObject(), dstOffset, dstRowBytes, src.GetRHIObject(), mipLevel, arrayLayer);
 }
 
+void CommandBuffer::CopyBuffer(
+    const RG::BufferResource *dst, size_t dstOffset, const RG::BufferResource *src, size_t srcOffset, size_t size)
+{
+    CopyBuffer(*dst->Get(), dstOffset, *src->Get(), srcOffset, size);
+}
+
+void CommandBuffer::CopyColorTexture2DToBuffer(
+    RG::BufferResource *dst, size_t dstOffset, size_t dstRowBytes,
+    RG::TextureResource *src, uint32_t arrayLayer, uint32_t mipLevel)
+{
+    CopyColorTexture2DToBuffer(*dst->Get(), dstOffset, dstRowBytes, *src->Get(), arrayLayer, mipLevel);
+}
+
 void CommandBuffer::BeginRenderPass(Span<ColorAttachment> colorAttachments)
 {
     BeginRenderPass(colorAttachments, {});
@@ -405,6 +418,96 @@ void CommandBuffer::BindRayTracingGroup(int index, const RC<BindingGroup> &group
     }
 #endif
     rhiCommandBuffer_->BindGroupToRayTracingPipeline(index, group->GetRHIObject());
+}
+
+void CommandBuffer::BindGraphicsGroups(Span<RC<BindingGroup>> groups)
+{
+    CheckThreadID();
+    auto &shaderInfo = currentGraphicsPipeline_->GetShaderInfo();
+    for(auto &group : groups)
+    {
+#if RTRC_DEBUG
+        int foundIndex = -1;
+#endif
+        for(int i = 0; i < shaderInfo->GetBindingGroupCount(); ++i)
+        {
+            if(shaderInfo->GetBindingGroupLayoutByIndex(i) == group->GetLayout())
+            {
+                BindGraphicsGroup(i, group);
+#if RTRC_DEBUG
+                if(foundIndex >= 0)
+                {
+                    throw Exception(fmt::format(
+                        "CommandBuffer::BindGraphicsGroups: group {} and {} have the same group layout",
+                        foundIndex, i));
+                }
+                foundIndex = i;
+#else
+                break;
+#endif
+            }
+        }
+    }
+}
+
+void CommandBuffer::BindComputeGroups(Span<RC<BindingGroup>> groups)
+{
+    CheckThreadID();
+    auto &shaderInfo = currentComputePipeline_->GetShaderInfo();
+    for(auto &group : groups)
+    {
+#if RTRC_DEBUG
+        int foundIndex = -1;
+#endif
+        for(int i = 0; i < shaderInfo->GetBindingGroupCount(); ++i)
+        {
+            if(shaderInfo->GetBindingGroupLayoutByIndex(i) == group->GetLayout())
+            {
+                BindComputeGroup(i, group);
+#if RTRC_DEBUG
+                if(foundIndex >= 0)
+                {
+                    throw Exception(fmt::format(
+                        "CommandBuffer::BindComputeGroups: group {} and {} have the same group layout",
+                        foundIndex, i));
+                }
+                foundIndex = i;
+#else
+                break;
+#endif
+            }
+        }
+    }
+}
+
+void CommandBuffer::BindRayTracingGroups(Span<RC<BindingGroup>> groups)
+{
+    CheckThreadID();
+    auto &layoutInfo = currentRayTracingPipeline_->GetBindingLayoutInfo();
+    for(auto &group : groups)
+    {
+#if RTRC_DEBUG
+        int foundIndex = -1;
+#endif
+        for(int i = 0; i < layoutInfo.GetBindingGroupCount(); ++i)
+        {
+            if(layoutInfo.GetBindingGroupLayoutByIndex(i) == group->GetLayout())
+            {
+                BindComputeGroup(i, group);
+#if RTRC_DEBUG
+                if(foundIndex >= 0)
+                {
+                    throw Exception(fmt::format(
+                        "CommandBuffer::BindRayTracingGroups: group {} and {} have the same group layout",
+                        foundIndex, i));
+                }
+                foundIndex = i;
+#else
+                break;
+#endif
+            }
+        }
+    }
 }
 
 void CommandBuffer::SetViewports(Span<Viewport> viewports)

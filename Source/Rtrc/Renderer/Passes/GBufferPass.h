@@ -46,7 +46,6 @@ private:
     std::vector<MaterialGroup> CollectPipelineGroups(const RenderCamera &scene) const;
 
     void DoRenderGBuffers(
-        RG::PassContext        &passContext,
         const RenderCamera     &camera,
         const RC<BindingGroup> &bindlessTextureGroup,
         const GBuffers         &gbuffers);

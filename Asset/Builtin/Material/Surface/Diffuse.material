@@ -18,13 +18,13 @@ Shader "Builtin/Diffuse"
 #vert VSMain
 #frag FSMain
 
+#define ENABLE_GLOBAL_BINDLESS_TEXTURES 1
 #include "../Common/Bindless.hlsl"
 #include "../Common/GBufferPassCommon.hlsl"
 
 rtrc_group(Material)
 {
     rtrc_uniform(uint, albedoTextureIndex)
-    //rtrc_define(Texture2D<float3>, Albedo)
 };
 
 struct VsInput

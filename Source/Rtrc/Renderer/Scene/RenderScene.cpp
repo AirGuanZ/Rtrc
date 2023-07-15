@@ -1,5 +1,6 @@
 #include <Rtrc/Renderer/Common.h>
 #include <Rtrc/Renderer/Scene/RenderCamera.h>
+#include <Rtrc/Utility/Enumerate.h>
 
 RTRC_RENDERER_BEGIN
 
@@ -8,8 +9,10 @@ RenderScene::RenderScene(
     : config_(config)
     , device_(device)
     , scene_(nullptr)
-    , materialDataUploadBufferPool_(device, RHI::BufferUsage::TransferSrc)
-    , instanceDataUploadBufferPool_(device, RHI::BufferUsage::AccelerationStructureBuildInput)
+    , renderMeshes_(nullptr)
+    , renderMaterials_(nullptr)
+    , instanceStagingBufferPool_(device, RHI::BufferUsage::TransferSrc)
+    , rhiInstanceDataBufferPool_(device, RHI::BufferUsage::AccelerationStructureBuildInput)
 {
     renderLights_ = MakeBox<RenderLights>(device);
     renderAtmosphere_ = MakeBox<RenderAtmosphere>(device, builtinResources);
@@ -24,6 +27,8 @@ void RenderScene::Update(
     LinearAllocator                           &linearAllocator)
 {
     scene_ = frame.scene.get();
+    renderMeshes_ = &renderMeshes;
+    renderMaterials_ = &renderMaterials;
 
     CollectObjects(*frame.scene, renderMeshes, renderMaterials, linearAllocator);
     
@@ -66,9 +71,12 @@ void RenderScene::ClearFrameData()
     objects_.clear();
     tlasObjects_.clear();
 
-    buildTlasPass_        = nullptr;
-    tlasMaterialBuffer_   = nullptr;
-    opaqueTlas_           = nullptr;
+    renderMeshes_ = nullptr;
+    renderMaterials_ = nullptr;
+
+    buildTlasPass_  = nullptr;
+    instanceBuffer_ = nullptr;
+    opaqueTlas_     = nullptr;
 
     renderLights_->ClearFrameData();
     renderAtmosphere_->ClearFrameData();
@@ -137,69 +145,71 @@ void RenderScene::UpdateTlasScene(RG::RenderGraph &renderGraph)
 {
     // Prepare instance data & material data
     
-    std::vector<RHI::RayTracingInstanceData> instanceData;
+    std::vector<RHI::RayTracingInstanceData> rhiInstanceData;
+    rhiInstanceData.reserve(tlasObjects_.size());
+    
+    std::vector<TlasInstance> instanceData;
     instanceData.reserve(tlasObjects_.size());
     
-    std::vector<TlasMaterial> materialData;
-    materialData.reserve(tlasObjects_.size());
-    
-    for(const StaticMeshRecord *object : tlasObjects_)
+    for(auto &&[instanceIndex, object] : Enumerate(tlasObjects_))
     {
-        RHI::RayTracingInstanceData &instance = instanceData.emplace_back();
-        std::memcpy(instance.transform3x4, &object->proxy->localToWorld[0][0], sizeof(instance.transform3x4));
-        instance.instanceCustomIndex          = object->renderMesh->geometryBufferEntry.GetOffset();
-        instance.instanceMask                 = 0xff;
-        instance.instanceSbtOffset            = 0;
-        instance.flags                        = 0;
-        instance.accelerationStructureAddress = object->renderMesh->blas->GetRHIObject()->GetDeviceAddress().address;
+        RHI::RayTracingInstanceData &rhiInstance = rhiInstanceData.emplace_back();
+        std::memcpy(rhiInstance.transform3x4, &object->proxy->localToWorld[0][0], sizeof(rhiInstance.transform3x4));
+        rhiInstance.instanceCustomIndex          = 0;
+        rhiInstance.instanceMask                 = 0xff;
+        rhiInstance.instanceSbtOffset            = 0;
+        rhiInstance.flags                        = 0;
+        rhiInstance.accelerationStructureAddress = object->renderMesh->blas->GetRHIObject()->GetDeviceAddress().address;
     
-        TlasMaterial &material = materialData.emplace_back();
-        material.albedoTextureIndex = object->renderMaterial->albedoTextureEntry->GetOffset();
-        material.albedoScale        = object->renderMaterial->albedoScale;
+        TlasInstance &instance = instanceData.emplace_back();
+        instance.albedoTextureIndex = object->renderMaterial->albedoTextureEntry->GetOffset();
+        instance.albedoScale        = object->renderMaterial->albedoScale;
+        instance.vertexBufferIndex  = object->renderMesh->geometryBufferEntry.GetOffset();
+        instance.hasIndexBuffer     = object->renderMesh->hasIndexBuffer ? 1 : 0;
     }
-    
-    // Upload material data
-    
-    const size_t materialDataSize = sizeof(TlasMaterial) * materialData.size();
-    const size_t materialDataBufferSize = std::max<size_t>(materialDataSize, 1024);
-    assert(!tlasMaterialBuffer_);
-    tlasMaterialBuffer_ = renderGraph.CreateBuffer(RHI::BufferDesc
+
+    // Upload instance data
+
     {
-        .size           = materialDataBufferSize,
-        .usage          = RHI::BufferUsage::ShaderStructuredBuffer | RHI::BufferUsage::TransferDst,
-        .hostAccessType = RHI::BufferHostAccessType::None
-    }, "Tlas material data buffer");
-    
-    auto prepareTlasMaterialDataPass = renderGraph.CreatePass("Prepare Tlas Material Data Buffer");
-    if(!materialData.empty())
-    {
-        RC<Buffer> materialDataUploadBuffer = materialDataUploadBufferPool_.Acquire(materialDataBufferSize);
-        materialDataUploadBuffer->SetName("Tlas Material Data Upload Buffer");
-        materialDataUploadBuffer->Upload(materialData.data(), 0, materialDataSize);
-    
-        prepareTlasMaterialDataPass->Use(tlasMaterialBuffer_, RG::CopyDst);
-        prepareTlasMaterialDataPass->SetCallback([
-            src = materialDataUploadBuffer,
-            dst = tlasMaterialBuffer_,
-            size = materialDataBufferSize]
-            (RG::PassContext &context)
+        const size_t instanceDataSize = sizeof(TlasInstance) * instanceData.size();
+        const size_t instanceDataBufferSize = std::max<size_t>(instanceDataSize, 1024);
+        assert(!instanceBuffer_);
+        instanceBuffer_ = renderGraph.CreateBuffer(RHI::BufferDesc
         {
-            context.GetCommandBuffer().CopyBuffer(*dst->Get(context), 0, *src, 0, size);
-        });
+            .size  = instanceDataBufferSize,
+            .usage = RHI::BufferUsage::ShaderStructuredBuffer | RHI::BufferUsage::TransferDst
+        }, "Instance data buffer");
+
+        if(!instanceData.empty())
+        {
+            auto stagingBuffer = instanceStagingBufferPool_.Acquire(instanceDataBufferSize);
+            stagingBuffer->SetName("Instance data staging buffer");
+            stagingBuffer->Upload(instanceData.data(), 0, instanceDataSize);
+
+            auto uploadInstanceDataPass = renderGraph.CreatePass("Upload instance data buffer");
+            uploadInstanceDataPass->Use(instanceBuffer_, RG::CopyDst);
+            uploadInstanceDataPass->SetCallback([
+                src = stagingBuffer,
+                dst = instanceBuffer_,
+                size = instanceDataBufferSize]
+            {
+                RG::GetCurrentCommandBuffer().CopyBuffer(*dst->Get(), 0, *src, 0, size);
+            });
+        }
     }
     
     // Build tlas
     
-    const size_t instanceDataSize = sizeof(RHI::RayTracingInstanceData) * instanceData.size();
-    const size_t instanceDataBufferSize = std::max<size_t>(instanceDataSize, 1024);
-    RC<Buffer> instanceDataBuffer = instanceDataUploadBufferPool_.Acquire(instanceDataBufferSize);
-    instanceDataBuffer->SetName("Tlas Instance Data Buffer");
-    instanceDataBuffer->Upload(instanceData.data(), 0, instanceDataSize);
+    const size_t rhiInstanceDataSize = sizeof(RHI::RayTracingInstanceData) * rhiInstanceData.size();
+    const size_t rhiInstanceDataBufferSize = std::max<size_t>(rhiInstanceDataSize, 1024);
+    RC<Buffer> rhiInstanceDataBuffer = rhiInstanceDataBufferPool_.Acquire(rhiInstanceDataBufferSize);
+    rhiInstanceDataBuffer->SetName("Tlas Instance Data Buffer");
+    rhiInstanceDataBuffer->Upload(rhiInstanceData.data(), 0, rhiInstanceDataSize);
     
     const RHI::RayTracingInstanceArrayDesc instanceArrayDesc =
     {
-        .instanceCount = static_cast<uint32_t>(instanceData.size()),
-        .instanceData  = instanceDataBuffer->GetDeviceAddress()
+        .instanceCount = static_cast<uint32_t>(rhiInstanceData.size()),
+        .instanceData  = rhiInstanceDataBuffer->GetDeviceAddress()
     };
     TlasPrebuildInfo prebuildInfo = device_->CreateTlasPrebuildInfo(
         instanceArrayDesc, RHI::RayTracingAccelerationStructureBuildFlagBit::PreferFastBuild);
@@ -233,9 +243,8 @@ void RenderScene::UpdateTlasScene(RG::RenderGraph &renderGraph)
     buildTlasPass_->Use(opaqueTlasScratchBuffer, RG::BuildAS_Scratch);
     buildTlasPass_->SetCallback([
         info = std::move(prebuildInfo), instanceArrayDesc, tlas = cachedOpaqueTlas_, scratch = opaqueTlasScratchBuffer]
-        (RG::PassContext &context)
     {
-        context.GetCommandBuffer().BuildTlas(tlas, instanceArrayDesc, info, scratch->Get(context));
+        RG::GetCurrentCommandBuffer().BuildTlas(tlas, instanceArrayDesc, info, scratch->Get());
     });
 }
 

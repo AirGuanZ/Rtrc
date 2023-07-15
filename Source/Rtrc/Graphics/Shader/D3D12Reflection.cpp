@@ -1,6 +1,8 @@
 #include <Rtrc/Graphics/Shader/D3D12Reflection.h>
 
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 #include <Windows.h>
 #include <dxc/dxcapi.h>
 #include <dxc/d3d12shader.h>

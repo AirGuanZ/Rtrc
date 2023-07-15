@@ -1,5 +1,8 @@
 #include <system_error>
 
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 #include <comdef.h>
 #include <mimalloc.h>
 

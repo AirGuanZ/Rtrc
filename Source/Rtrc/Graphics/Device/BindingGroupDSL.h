@@ -4,6 +4,7 @@
 #include <Rtrc/Graphics/Device/BindingGroup.h>
 #include <Rtrc/Graphics/Device/Buffer/Buffer.h>
 #include <Rtrc/Graphics/Device/Buffer/DynamicBuffer.h>
+#include <Rtrc/Graphics/Device/RGResourceForward.h>
 #include <Rtrc/Graphics/Device/Texture/Texture.h>
 #include <Rtrc/Utility/Macro/MacroOverloading.h>
 #include <Rtrc/Utility/Struct.h>
@@ -40,6 +41,11 @@ namespace BindingGroupDSL
             _rtrcObj = tex->CreateSrv(0, 0, 0);
             return *this;
         }
+
+        auto &operator=(RG::TextureResource *tex)
+        {
+            return *this = _internalRGGet(tex);
+        }
     };
     
     struct MemberProxy_RWTexture2D
@@ -57,6 +63,11 @@ namespace BindingGroupDSL
         {
             _rtrcObj = tex->CreateUav(0, 0);
             return *this;
+        }
+
+        auto &operator=(RG::TextureResource *tex)
+        {
+            return *this = _internalRGGet(tex);
         }
     };
 
@@ -85,6 +96,11 @@ namespace BindingGroupDSL
         {
             return *this = buffer->GetTexelSrv();
         }
+
+        auto &operator=(RG::BufferResource *buffer)
+        {
+            return *this = _internalRGGet(buffer);
+        }
     };
     
     struct MemberProxy_RWBuffer
@@ -102,6 +118,11 @@ namespace BindingGroupDSL
         auto &operator=(const RC<SubBuffer> &buffer)
         {
             return *this = buffer->GetTexelUav();
+        }
+
+        auto &operator=(RG::BufferResource *buffer)
+        {
+            return *this = _internalRGGet(buffer);
         }
     };
     
@@ -122,6 +143,11 @@ namespace BindingGroupDSL
         {
             return *this = buffer->GetStructuredSrv();
         }
+
+        auto &operator=(RG::BufferResource *buffer)
+        {
+            return *this = _internalRGGet(buffer);
+        }
     };
     
     struct MemberProxy_RWStructuredBuffer
@@ -140,6 +166,11 @@ namespace BindingGroupDSL
         auto &operator=(const RC<SubBuffer> &buffer)
         {
             return *this = buffer->GetStructuredUav();
+        }
+
+        auto &operator=(RG::BufferResource *buffer)
+        {
+            return *this = _internalRGGet(buffer);
         }
     };
 
@@ -198,6 +229,11 @@ namespace BindingGroupDSL
         {
             _rtrcObj = std::move(value);
             return *this;
+        }
+
+        auto &operator=(RG::TlasResource *tlas)
+        {
+            return *this = _internalRGGet(tlas);
         }
     };
 

@@ -8,6 +8,9 @@
 #include <locale>
 
 // TODO: dxc for linux
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 #include <Windows.h>
 #include <dxc/dxcapi.h>
 #include <wrl/client.h>
@@ -149,6 +152,9 @@ std::vector<unsigned char> DXC::Compile(
     }
 
     arguments.push_back(L"-Zpr");
+    arguments.push_back(L"-enable-16bit-types");
+    arguments.push_back(L"-HV");
+    arguments.push_back(L"2021");
 
     const bool isVulkan = std::to_underlying(target) < std::to_underlying(Target::DirectX12_VS_6_6);
     if(isVulkan)

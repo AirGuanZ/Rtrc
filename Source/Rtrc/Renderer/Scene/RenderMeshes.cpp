@@ -188,13 +188,14 @@ void RenderMeshes::BuildBlasForMeshes(
                 .hostAccessType = RHI::BufferHostAccessType::None
             }));
         }
-        buildBlasPass_->SetCallback([builds = std::move(blasBuildInfo), this](RG::PassContext &context)
+        buildBlasPass_->SetCallback([builds = std::move(blasBuildInfo), this]
         {
+            auto &commandBuffer = RG::GetCurrentCommandBuffer();
             for(const BlasBuilder::BuildInfo &build : builds)
             {
-                blasBuilder_.Build(context.GetCommandBuffer(), build);
+                blasBuilder_.Build(commandBuffer, build);
             }
-            blasBuilder_.Finalize(context.GetCommandBuffer());
+            blasBuilder_.Finalize(commandBuffer);
         });
     }
 }

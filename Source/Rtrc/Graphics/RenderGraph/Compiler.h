@@ -25,7 +25,7 @@ public:
 
     explicit Compiler(
         ObserverPtr<Device> device,
-        Options             options = Options::ConnectPassesByDefinitionOrder | Options::PreferGlobalMemoryBarrier);
+        Options options = Options::ConnectPassesByDefinitionOrder | Options::PreferGlobalMemoryBarrier);
 
     void Compile(const RenderGraph &graph, ExecutableGraph &result);
 

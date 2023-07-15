@@ -15,7 +15,7 @@ float3 Dither01(float3 input, float2 seed)
 {
     float rand = frac(sin(dot(seed, float2(12.9898, 78.233) * 2.0)) * 43758.5453);
     input = 255 * saturate(input);
-    input = rand.xxx < (input - floor(input)) ? ceil(input) : floor(input);
+    input = select(rand.xxx < (input - floor(input)), ceil(input), floor(input));
     input *= 1.0 / 255;
     return input;
 }

@@ -39,8 +39,7 @@ private:
         const GBuffers          &gbuffers,
         RG::TextureResource     *skyLut,
         RG::TextureResource     *shadowMask,
-        RG::TextureResource     *renderTarget,
-        RG::PassContext         &context);
+        RG::TextureResource     *renderTarget);
 
     ObserverPtr<Device>                 device_;
     ObserverPtr<BuiltinResourceManager> builtinResources_;

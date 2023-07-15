@@ -251,9 +251,9 @@ RG::Pass *ImGuiRenderer::Render(
 {
     auto pass = renderGraph->CreatePass("Render ImGui");
     pass->Use(renderTarget, RG::ColorAttachment);
-    pass->SetCallback([this, drawData, renderTarget](RG::PassContext &ctx)
+    pass->SetCallback([this, drawData, renderTarget]
     {
-        RenderImmediately(drawData, renderTarget->Get(ctx)->CreateRtv(), ctx.GetCommandBuffer(), false);
+        RenderImmediately(drawData, renderTarget->CreateRtv(), RG::GetCurrentCommandBuffer(), false);
     });
     return pass;
 }

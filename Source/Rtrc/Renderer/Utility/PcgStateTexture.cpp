@@ -35,16 +35,16 @@ RG::TextureResource *Prepare2DPcgStateTexture(
 
     auto initPass = renderGraph.CreatePass("InitializePcgState");
     initPass->Use(ret, RG::CS_RWTexture_WriteOnly);
-    initPass->SetCallback([ret, size, device, &materials](RG::PassContext &context)
+    initPass->SetCallback([ret, size, device, &materials]
     {
         Pass passData;
-        passData.Output = ret->Get(context);
+        passData.Output = ret;
         passData.resolution = size;
         auto passGroup = RTRC_CREATE_BINDING_GROUP_WITH_CACHED_LAYOUT(device, passData);
 
         auto shader = RTRC_GET_CACHED_SHADER(materials, "Builtin/Utility/InitializePcgState2D").get();
         
-        auto &commandBuffer = context.GetCommandBuffer();
+        auto &commandBuffer = RG::GetCurrentCommandBuffer();
         commandBuffer.BindComputePipeline(shader->GetComputePipeline());
         commandBuffer.BindComputeGroup(0, passGroup);
         commandBuffer.DispatchWithThreadCount(size);

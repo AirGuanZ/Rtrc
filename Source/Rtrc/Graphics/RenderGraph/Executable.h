@@ -66,15 +66,11 @@ public:
 
     explicit Executer(ObserverPtr<Device> device);
 
-    void Execute(const RenderGraph &graph);
+    void Execute(ObserverPtr<const RenderGraph> graph);
     
-    void Execute(const Box<RenderGraph> &graph) { Execute(*graph); }
-
-    void Execute(const Box<const RenderGraph> &graph) { Execute(*graph); }
-
 private:
 
-    void Execute(const ExecutableGraph &graph);
+    void ExecuteImpl(const ExecutableGraph &graph);
 
     ObserverPtr<Device> device_;
 };

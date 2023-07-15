@@ -4,20 +4,37 @@
 
 RTRC_RG_BEGIN
 
-RC<Buffer> BufferResource::Get(PassContext &passContext) const
+namespace GraphDetail
 {
-    return passContext.Get(this);
+
+    thread_local PassContext *gCurrentPassContext = nullptr;
+
+} // namespace GraphDetail
+
+RC<Buffer> BufferResource::Get() const
+{
+    return GetCurrentPassContext().Get(this);
 }
 
-const RC<Tlas> &TlasResource::Get(PassContext &passContext) const
+const RC<Tlas> &TlasResource::Get() const
 {
-    assert(passContext.Get(tlasBuffer_));
+    assert(GetCurrentPassContext().Get(tlasBuffer_));
     return tlas_;
 }
 
-RC<Texture> TextureResource::Get(PassContext &passContext) const
+RHI::Viewport TextureResource::GetViewport(float minDepth, float maxDepth) const
 {
-    return passContext.Get(this);
+    return RHI::Viewport::Create(GetDesc(), minDepth, maxDepth);
+}
+
+RHI::Scissor TextureResource::GetScissor() const
+{
+    return RHI::Scissor::Create(GetDesc());
+}
+
+RC<Texture> TextureResource::Get() const
+{
+    return GetCurrentPassContext().Get(this);
 }
 
 CommandBuffer &PassContext::GetCommandBuffer()
@@ -41,7 +58,7 @@ RC<Buffer> PassContext::Get(const BufferResource *resource)
 
 const RC<Tlas> &PassContext::Get(const TlasResource *resource)
 {
-    return resource->Get(*this);
+    return resource->Get();
 }
 
 RC<Texture> PassContext::Get(const TextureResource *resource)
@@ -61,7 +78,24 @@ RC<Texture> PassContext::Get(const TextureResource *resource)
 PassContext::PassContext(const ExecutableResources &resources, CommandBuffer &commandBuffer)
     : resources_(resources), commandBuffer_(commandBuffer)
 {
-    
+    assert(!GraphDetail::gCurrentPassContext);
+    GraphDetail::gCurrentPassContext = this;
+}
+
+PassContext::~PassContext()
+{
+    assert(GraphDetail::gCurrentPassContext == this);
+    GraphDetail::gCurrentPassContext = nullptr;
+}
+
+PassContext &GetCurrentPassContext()
+{
+    return *GraphDetail::gCurrentPassContext;
+}
+
+CommandBuffer &GetCurrentCommandBuffer()
+{
+    return GetCurrentPassContext().GetCommandBuffer();
 }
 
 void Connect(Pass *head, Pass *tail)
@@ -128,6 +162,11 @@ Pass *Pass::SetCallback(Callback callback)
 {
     callback_ = std::move(callback);
     return this;
+}
+
+Pass *Pass::SetCallback(LegacyCallback callback)
+{
+    return SetCallback([c = std::move(callback)] { c(GetCurrentPassContext()); });
 }
 
 Pass *Pass::SetSignalFence(RHI::FencePtr fence)
@@ -290,7 +329,7 @@ Pass *RenderGraph::CreateClearTexture2DPass(std::string name, TextureResource *t
     pass->Use(tex2D, ClearDst);
     pass->SetCallback([tex2D, clearValue](PassContext &context)
     {
-        context.GetCommandBuffer().ClearColorTexture2D(context.Get(tex2D), clearValue);
+        context.GetCommandBuffer().ClearColorTexture2D(tex2D->Get(), clearValue);
     });
     return pass;
 }
@@ -304,9 +343,9 @@ Pass *RenderGraph::CreateClearRWBufferPass(std::string name, BufferResource *buf
 {
     auto pass = CreatePass(std::move(name));
     pass->Use(buffer, CS_RWBuffer_WriteOnly);
-    pass->SetCallback([buffer, value, this](PassContext &context)
+    pass->SetCallback([buffer, value, this]
     {
-        device_->GetClearBufferUtils().ClearRWBuffer(context.GetCommandBuffer(), context.Get(buffer), value);
+        device_->GetClearBufferUtils().ClearRWBuffer(GetCurrentCommandBuffer(), buffer->Get(), value);
     });
     return pass;
 }
@@ -315,9 +354,9 @@ Pass *RenderGraph::CreateClearRWStructuredBufferPass(std::string name, BufferRes
 {
     auto pass = CreatePass(std::move(name));
     pass->Use(buffer, CS_RWStructuredBuffer_WriteOnly);
-    pass->SetCallback([buffer, value, this](PassContext &context)
+    pass->SetCallback([buffer, value, this]
     {
-        device_->GetClearBufferUtils().ClearRWStructuredBuffer(context.GetCommandBuffer(), context.Get(buffer), value);
+        device_->GetClearBufferUtils().ClearRWStructuredBuffer(GetCurrentCommandBuffer(), buffer->Get(), value);
     });
     return pass;
 }
@@ -328,9 +367,9 @@ Pass *RenderGraph::CreateCopyBufferPass(
     auto pass = CreatePass(std::move(name));
     pass->Use(src, CopySrc);
     pass->Use(dst, CopyDst);
-    pass->SetCallback([=](PassContext &context)
+    pass->SetCallback([=]
     {
-        context.GetCommandBuffer().CopyBuffer(*dst->Get(context), dstOffset, *src->Get(context), srcOffset, size);
+        GetCurrentCommandBuffer().CopyBuffer(dst, dstOffset, src, srcOffset, size);
     });
     return pass;
 }
@@ -353,8 +392,8 @@ Pass *RenderGraph::CreateBlitTexture2DPass(
     {
         device_->GetCopyTextureUtils().RenderQuad(
             context.GetCommandBuffer(),
-            src->Get(context)->CreateSrv(srcMipLevel, 1, srcArrayLayer),
-            dst->Get(context)->CreateRtv(dstMipLevel, dstArrayLayer),
+            src->CreateSrv(srcMipLevel, 1, srcArrayLayer),
+            dst->CreateRtv(dstMipLevel, dstArrayLayer),
             usePointSampling ? CopyTextureUtils::Point : CopyTextureUtils::Linear);
     });
     return pass;

@@ -124,13 +124,12 @@ RG::TextureResource *ShadowMaskPass::Render(
         generateLowResMaskPass->Use(lowResShadowMask0, RG::CS_RWTexture_WriteOnly);
         generateLowResMaskPass->SetCallback(
             [gbuffers, &camera, lowResShadowMask0, lowResSize, light, this]
-            (RG::PassContext &context)
         {
             BindingGroup_CollectLowResShadowMaskPass passData;
-            FillBindingGroupGBuffers(passData, gbuffers, context);
-            passData.Scene               = camera.GetScene().GetRGTlas()->Get(context);
+            FillBindingGroupGBuffers(passData, gbuffers);
+            passData.Scene               = camera.GetScene().GetRGTlas();
             passData.Camera              = camera.GetCameraCBuffer();
-            passData.OutputTextureRW     = lowResShadowMask0->Get(context);
+            passData.OutputTextureRW     = lowResShadowMask0;
             passData.BlueNoise256        = builtinResources_->GetBuiltinTexture(BuiltinTexture::BlueNoise256);
             passData.LowResMask          = builtinResources_->GetBuiltinTexture(BuiltinTexture::Black2D);
             passData.outputResolution    = lowResSize;
@@ -141,7 +140,7 @@ RG::TextureResource *ShadowMaskPass::Render(
 
             auto passGroup = RTRC_CREATE_BINDING_GROUP_WITH_CACHED_LAYOUT(device_, passData);
             
-            CommandBuffer &commandBuffer = context.GetCommandBuffer();
+            CommandBuffer &commandBuffer = RG::GetCurrentCommandBuffer();
             commandBuffer.BindComputePipeline(collectLowResShadowMaskShader_->GetComputePipeline());
             commandBuffer.BindComputeGroup(0, passGroup);
             commandBuffer.DispatchWithThreadCount(lowResSize.x, lowResSize.y);
@@ -155,16 +154,15 @@ RG::TextureResource *ShadowMaskPass::Render(
         blurLowResShadowMaskPass0->Use(lowResShadowMask1, RG::CS_RWTexture_WriteOnly);
         blurLowResShadowMaskPass0->SetCallback(
             [lowResShadowMask0, lowResShadowMask1, lowResSize, this]
-            (RG::PassContext &context)
         {
             BindingGroup_BlurLowResShadowMaskPass passData;
-            passData.In = lowResShadowMask0->Get(context);
-            passData.Out = lowResShadowMask1->Get(context);
+            passData.In = lowResShadowMask0;
+            passData.Out = lowResShadowMask1;
             passData.resolution = lowResSize;
 
             auto passGroup = RTRC_CREATE_BINDING_GROUP_WITH_CACHED_LAYOUT(device_, passData);
 
-            CommandBuffer &commandBuffer = context.GetCommandBuffer();
+            CommandBuffer &commandBuffer = RG::GetCurrentCommandBuffer();
             commandBuffer.BindComputePipeline(blurLowResXShader_->GetComputePipeline());
             commandBuffer.BindComputeGroup(0, passGroup);
             commandBuffer.DispatchWithThreadCount(lowResSize.x, lowResSize.y);
@@ -175,16 +173,15 @@ RG::TextureResource *ShadowMaskPass::Render(
         blurLowResShadowMaskPass1->Use(lowResShadowMask0, RG::CS_RWTexture_WriteOnly);
         blurLowResShadowMaskPass1->SetCallback(
             [lowResShadowMask0, lowResShadowMask1, lowResSize, this]
-            (RG::PassContext &context)
         {
             BindingGroup_BlurLowResShadowMaskPass passData;
-            passData.In = lowResShadowMask1->Get(context);
-            passData.Out = lowResShadowMask0->Get(context);
+            passData.In = lowResShadowMask1;
+            passData.Out = lowResShadowMask0;
             passData.resolution = lowResSize;
             
             auto passGroup = RTRC_CREATE_BINDING_GROUP_WITH_CACHED_LAYOUT(device_, passData);
 
-            CommandBuffer &commandBuffer = context.GetCommandBuffer();
+            CommandBuffer &commandBuffer = RG::GetCurrentCommandBuffer();
             commandBuffer.BindComputePipeline(blurLowResYShader_->GetComputePipeline());
             commandBuffer.BindComputeGroup(0, passGroup);
             commandBuffer.DispatchWithThreadCount(lowResSize.x, lowResSize.y);
@@ -226,15 +223,14 @@ RG::TextureResource *ShadowMaskPass::Render(
     generateRawMaskPass->SetCallback(
         [shadowMaskShader, gbuffers, &camera,
          lowResShadowMask0, shadowMask0, outputSize, light, this]
-        (RG::PassContext &context)
     {
         BindingGroup_ShadowMaskPass passData;
-        FillBindingGroupGBuffers(passData, gbuffers, context);
-        passData.Scene               = camera.GetScene().GetRGTlas()->Get(context);
+        FillBindingGroupGBuffers(passData, gbuffers);
+        passData.Scene               = camera.GetScene().GetRGTlas();
         passData.Camera              = camera.GetCameraCBuffer();
-        passData.OutputTextureRW     = shadowMask0->Get(context);
+        passData.OutputTextureRW     = shadowMask0;
         passData.BlueNoise256        = builtinResources_->GetBuiltinTexture(BuiltinTexture::BlueNoise256);
-        passData.LowResMask          = lowResShadowMask0 ? lowResShadowMask0->Get(context)
+        passData.LowResMask          = lowResShadowMask0 ? lowResShadowMask0->Get()
                                                          : builtinResources_->GetBuiltinTexture(BuiltinTexture::Black2D);
         passData.outputResolution    = outputSize;
         passData.rcpOutputResolution = Vector2f(1.0f / outputSize.x, 1.0f / outputSize.y);
@@ -243,7 +239,7 @@ RG::TextureResource *ShadowMaskPass::Render(
         passData.shadowSoftness      = light->GetShadowSoftness();
         auto passGroup = RTRC_CREATE_BINDING_GROUP_WITH_CACHED_LAYOUT(device_, passData);
         
-        CommandBuffer &commandBuffer = context.GetCommandBuffer();
+        CommandBuffer &commandBuffer = RG::GetCurrentCommandBuffer();
         commandBuffer.BindComputePipeline(shadowMaskShader->GetComputePipeline());
         commandBuffer.BindComputeGroup(0, passGroup);
         commandBuffer.DispatchWithThreadCount(outputSize.x, outputSize.y);
@@ -262,17 +258,16 @@ RG::TextureResource *ShadowMaskPass::Render(
     blurXPass->Use(shadowMask1, RG::CS_RWTexture);
     blurXPass->SetCallback(
         [&camera, gbuffers, shadowMask0, shadowMask1, this, outputSize]
-        (RG::PassContext &context)
     {
         BindingGroup_BlurPass passData;
-        FillBindingGroupGBuffers(passData, gbuffers, context);
-        passData.InShadowMask = shadowMask0->Get(context);
-        passData.OutShadowMask = shadowMask1->Get(context);
+        FillBindingGroupGBuffers(passData, gbuffers);
+        passData.InShadowMask = shadowMask0;
+        passData.OutShadowMask = shadowMask1;
         passData.resolution = outputSize;
         passData.cameraToClip = camera.GetCameraRenderData().cameraToClip;
         auto passGroup = RTRC_CREATE_BINDING_GROUP_WITH_CACHED_LAYOUT(device_, passData);
 
-        CommandBuffer &commandBuffer = context.GetCommandBuffer();
+        CommandBuffer &commandBuffer = RG::GetCurrentCommandBuffer();
         commandBuffer.BindComputePipeline(blurXShader_->GetComputePipeline());
         commandBuffer.BindComputeGroup(0, passGroup);
         commandBuffer.DispatchWithThreadCount(outputSize.x, outputSize.y);
@@ -284,17 +279,16 @@ RG::TextureResource *ShadowMaskPass::Render(
     blurYPass->Use(shadowMask0, RG::CS_RWTexture);
     blurYPass->SetCallback(
         [&camera, gbuffers, shadowMask0, shadowMask1, this, outputSize]
-        (RG::PassContext &context)
     {
         BindingGroup_BlurPass passData;
-        FillBindingGroupGBuffers(passData, gbuffers, context);
-        passData.InShadowMask = shadowMask1->Get(context);
-        passData.OutShadowMask = shadowMask0->Get(context);
+        FillBindingGroupGBuffers(passData, gbuffers);
+        passData.InShadowMask = shadowMask1;
+        passData.OutShadowMask = shadowMask0;
         passData.resolution = outputSize;
         passData.cameraToClip = camera.GetCameraRenderData().cameraToClip;
         auto passGroup = RTRC_CREATE_BINDING_GROUP_WITH_CACHED_LAYOUT(device_, passData);
 
-        CommandBuffer &commandBuffer = context.GetCommandBuffer();
+        CommandBuffer &commandBuffer = RG::GetCurrentCommandBuffer();
         commandBuffer.BindComputePipeline(blurYShader_->GetComputePipeline());
         commandBuffer.BindComputeGroup(0, passGroup);
         commandBuffer.DispatchWithThreadCount(outputSize.x, outputSize.y);

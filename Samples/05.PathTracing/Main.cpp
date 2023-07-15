@@ -318,13 +318,12 @@ void Run()
             initializePass->Use(rgRngTexture, RG::CS_RWTexture_WriteOnly);
             initializePass->SetCallback(
                 [rgAccumulateTexture, rgRngTexture, &initRngPipeline, &device]
-                (RG::PassContext &context)
             {
-                auto &commandBuffer = context.GetCommandBuffer();
-                commandBuffer.ClearColorTexture2D(rgAccumulateTexture->Get(context), { 0, 0, 0, 0 });
+                auto &commandBuffer = RG::GetCurrentCommandBuffer();
+                commandBuffer.ClearColorTexture2D(rgAccumulateTexture->Get(), { 0, 0, 0, 0 });
 
                 InitRngPass bindingGroupData;
-                bindingGroupData.RngTexture = rgRngTexture->Get(context);
+                bindingGroupData.RngTexture = rgRngTexture;
                 bindingGroupData.Resolution = rgRngTexture->GetSize();
                 auto bindingGroup = device->CreateBindingGroup(bindingGroupData);
 
@@ -343,12 +342,12 @@ void Run()
         ptPass->Use(renderTarget,         RG::CS_RWTexture_WriteOnly);
         ptPass->Use(rgAccumulateTexture, RG::CS_RWTexture);
         ptPass->Use(rgRngTexture,        RG::CS_RWTexture);
-        ptPass->SetCallback([&](RG::PassContext &context)
+        ptPass->SetCallback([&]
         {
             TracePass bindingGroupData;
-            bindingGroupData.AccumulateTexture = rgAccumulateTexture->Get(context);
-            bindingGroupData.OutputTexture     = renderTarget->Get(context);
-            bindingGroupData.RngTexture        = rgRngTexture->Get(context);
+            bindingGroupData.AccumulateTexture = rgAccumulateTexture;
+            bindingGroupData.OutputTexture     = renderTarget;
+            bindingGroupData.RngTexture        = rgRngTexture;
             bindingGroupData.Scene             = tlas;
             bindingGroupData.Geometries[0]     = room.primitives;
             bindingGroupData.Geometries[1]     = torus.primitives;
@@ -361,7 +360,7 @@ void Run()
             bindingGroupData.Resolution        = rgAccumulateTexture->GetSize();
             auto bindingGroup = device->CreateBindingGroup(bindingGroupData);
 
-            auto &commandBuffer = context.GetCommandBuffer();
+            auto &commandBuffer = RG::GetCurrentCommandBuffer();
             commandBuffer.BindComputePipeline(tracePipeline);
             commandBuffer.BindComputeGroup(0, bindingGroup);
             commandBuffer.DispatchWithThreadCount(renderTarget->GetWidth(), renderTarget->GetHeight());

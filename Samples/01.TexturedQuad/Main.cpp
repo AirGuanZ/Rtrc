@@ -100,13 +100,12 @@ void Run()
 
         auto quadPass = graph->CreatePass("DrawQuad");
         quadPass->Use(renderTarget, RG::ColorAttachment);
-        quadPass->SetCallback([&](RG::PassContext &context)
+        quadPass->SetCallback([&]
         {
-            auto rt = renderTarget->Get(context);
-            auto &commandBuffer = context.GetCommandBuffer();
+            auto &commandBuffer = RG::GetCurrentCommandBuffer();
             commandBuffer.BeginRenderPass(ColorAttachment
             {
-                .renderTargetView = rt->CreateRtv(),
+                .renderTargetView = renderTarget->CreateRtv(),
                 .loadOp       = AttachmentLoadOp::Clear,
                 .storeOp      = AttachmentStoreOp::Store,
                 .clearValue   = ColorClearValue{ 0, 1, 1, 1 }
@@ -114,8 +113,8 @@ void Run()
             commandBuffer.BindGraphicsPipeline(pipeline);
             commandBuffer.BindMesh(*mesh);
             matPassInst->BindGraphicsProperties(keywords, commandBuffer);
-            commandBuffer.SetViewports(rt->GetViewport());
-            commandBuffer.SetScissors(rt->GetScissor());
+            commandBuffer.SetViewports(renderTarget->GetViewport());
+            commandBuffer.SetScissors(renderTarget->GetScissor());
             commandBuffer.DrawIndexed(6, 1, 0, 0, 0);
             commandBuffer.EndRenderPass();
         });

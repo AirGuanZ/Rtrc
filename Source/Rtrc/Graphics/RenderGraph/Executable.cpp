@@ -9,16 +9,16 @@ Executer::Executer(ObserverPtr<Device> device)
     
 }
 
-void Executer::Execute(const RenderGraph &graph)
+void Executer::Execute(ObserverPtr<const RenderGraph> graph)
 {
     ExecutableGraph compiledResult;
-    Compiler(device_).Compile(graph, compiledResult);
-    graph.executableResource_ = &compiledResult.resources;
-    Execute(compiledResult);
-    graph.executableResource_ = nullptr;
+    Compiler(device_).Compile(*graph, compiledResult);
+    graph->executableResource_ = &compiledResult.resources;
+    ExecuteImpl(compiledResult);
+    graph->executableResource_ = nullptr;
 }
 
-void Executer::Execute(const ExecutableGraph &graph)
+void Executer::ExecuteImpl(const ExecutableGraph &graph)
 {
     const LabelStack::Node *nameNode = nullptr;
 
@@ -64,7 +64,7 @@ void Executer::Execute(const ExecutableGraph &graph)
 #if RTRC_RG_DEBUG
                 passContext.declaredResources_ = &pass.declaredResources;
 #endif
-                (*pass.callback)(passContext);
+                (*pass.callback)();
             }
         }
 

@@ -181,28 +181,27 @@ void Run()
 
         auto trianglePass = graph->CreatePass("DrawTriangle");
         trianglePass->Use(renderTarget, RG::CS_RWTexture_WriteOnly);
-        trianglePass->SetCallback([&](RG::PassContext &context)
+        trianglePass->SetCallback([&]
         {
-            auto rt = renderTarget->Get(context);
-            auto &commandBuffer = context.GetCommandBuffer();
+            auto &commandBuffer = RG::GetCurrentCommandBuffer();
 
             commandBuffer.BindRayTracingPipeline(pipeline);
 
             MainGroup bindingGroupData;
-            bindingGroupData.OutputTexture = rt;
+            bindingGroupData.OutputTexture = renderTarget;
             bindingGroupData.Scene = tlas;
             auto bindingGroup = device->CreateBindingGroup(bindingGroupData);
             commandBuffer.BindRayTracingGroup(0, bindingGroup);
 
             commandBuffer.Trace(
-                rt->GetWidth(), rt->GetHeight(), 1,
+                renderTarget->GetWidth(), renderTarget->GetHeight(), 1,
                 sbt.GetSubtable(0),
                 sbt.GetSubtable(1),
                 sbt.GetSubtable(2),
                 {});
         });
 
-        auto blitPass = graph->CreateBlitTexture2DPass("BlitToSwapchainImage", renderTarget, swapchainImage, true);
+        graph->CreateBlitTexture2DPass("BlitToSwapchainImage", renderTarget, swapchainImage, true);
 
         graph->SetCompleteFence(device->GetFrameFence());
         executer.Execute(graph);

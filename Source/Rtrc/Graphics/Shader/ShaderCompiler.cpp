@@ -1142,15 +1142,19 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
             shader->info_->shaderBindingLayoutInfo_->bindingGroupLayouts_.back()->CreateBindingGroup();
     }
 
-    auto SetBuiltinBindingGroupIndex = [&](Shader::BuiltinBindingGroup group, std::string_view name)
     {
-        shader->info_->shaderBindingLayoutInfo_->builtinBindingGroupIndices_[std::to_underlying(group)] =
-            shader->GetBindingGroupIndexByName(name);
-    };
-    SetBuiltinBindingGroupIndex(Shader::BuiltinBindingGroup::Pass,            "Pass");
-    SetBuiltinBindingGroupIndex(Shader::BuiltinBindingGroup::Material,        "Material");
-    SetBuiltinBindingGroupIndex(Shader::BuiltinBindingGroup::Object,          "Object");
-    SetBuiltinBindingGroupIndex(Shader::BuiltinBindingGroup::BindlessTexture, "GlobalBindlessTextureGroup");
+        using enum Shader::BuiltinBindingGroup;
+        auto SetBuiltinBindingGroupIndex = [&](Shader::BuiltinBindingGroup group, std::string_view name)
+        {
+            shader->info_->shaderBindingLayoutInfo_->builtinBindingGroupIndices_[std::to_underlying(group)] =
+                shader->GetBindingGroupIndexByName(name);
+        };
+        SetBuiltinBindingGroupIndex(Pass,                   "Pass");
+        SetBuiltinBindingGroupIndex(Material,               "Material");
+        SetBuiltinBindingGroupIndex(Object,                 "Object");
+        SetBuiltinBindingGroupIndex(BindlessTexture,        "GlobalBindlessTextureGroup");
+        SetBuiltinBindingGroupIndex(BindlessGeometryBuffer, "GlobalBindlessGeometryBufferGroup");
+    }
 
     if(hasCS)
     {
@@ -1329,29 +1333,14 @@ ShaderCompiler::ParsedBinding ShaderCompiler::ParseBinding(
     if(tokens.GetCurrentToken() == "[")
     {
         tokens.Next();
-        if constexpr(Category == BindingCategory::Bindless || Category == BindingCategory::BindlessWithVariableSize)
+        try
         {
-            try
-            {
-                arraySize = std::stoi(tokens.GetCurrentToken());
-                tokens.Next();
-            }
-            catch(...)
-            {
-                tokens.Throw(fmt::format("Invalid array size: {}", tokens.GetCurrentToken()));
-            }
+            arraySize = std::stoi(tokens.GetCurrentToken());
+            tokens.Next();
         }
-        else
+        catch(...)
         {
-            try
-            {
-                arraySize = std::stoi(tokens.GetCurrentToken());
-                tokens.Next();
-            }
-            catch(...)
-            {
-                tokens.Throw(fmt::format("Invalid array size: {}", tokens.GetCurrentToken()));
-            }
+            tokens.Throw(fmt::format("Invalid array size: {}", tokens.GetCurrentToken()));
         }
         tokens.ConsumeOrThrow("]");
     }

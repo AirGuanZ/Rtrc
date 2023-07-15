@@ -1,5 +1,14 @@
 #pragma once
 
+/*
+    Utilities for rendering to gbuffers
+        * DefineInstanceID()
+        * TransferInstanceID(IN, OUT)
+        * GetInstancedPerObjectData(IN) -> PerObjectData
+        * GetPerObjectData() -> PerObjectData
+        * EncodeGBufferPixel(normal, albedo, metallic, roughness) -> GBufferPixelOutput
+*/
+
 #include "Scene.hlsl"
 
 struct PerObjectData

@@ -34,7 +34,7 @@ public:
         const GBuffers  &gbuffers,
         const Vector2u  &framebufferSize) const;
 
-    void ClearFrameData(PerCameraData &data);
+    void ClearFrameData(PerCameraData &data) const;
 
 private:
 
@@ -43,9 +43,7 @@ private:
         PassIndex_Trace,
         PassIndex_Count
     };
-
-    RG::TextureResource *InitializeRngStateTexture(PerCameraData &data, const Vector2u &res) const;
-
+    
     ObserverPtr<Device>                 device_;
     ObserverPtr<BuiltinResourceManager> builtinResources_;
 

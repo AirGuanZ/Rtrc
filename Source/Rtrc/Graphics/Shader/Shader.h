@@ -74,6 +74,7 @@ public:
         Material,
         Object,
         BindlessTexture,
+        BindlessGeometryBuffer,
         Count
     };
 

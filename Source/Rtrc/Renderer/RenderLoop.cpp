@@ -27,19 +27,68 @@ RenderLoop::RenderLoop(
     deferredLightingPass_ = MakeBox<DeferredLightingPass>(device_, builtinResources_);
     shadowMaskPass_       = MakeBox<ShadowMaskPass>(device_, builtinResources_);
 
-    renderThread_ = std::jthread(&RenderLoop::RenderThreadEntry, this);
+    device_->BeginRenderLoop();
+    if(config_.mode == Mode::Threaded)
+    {
+        renderThread_ = std::jthread(&RenderLoop::RenderThreadEntry, this);
+    }
 }
 
 RenderLoop::~RenderLoop()
 {
-    assert(renderThread_.joinable());
-    renderThread_.join();
-    renderCommandQueue_.clear();
+    if(config_.mode == Mode::Threaded)
+    {
+        assert(renderThread_.joinable());
+        renderThread_.join();
+        renderCommandQueue_.clear();
+    }
 }
 
 void RenderLoop::AddCommand(RenderCommand command)
 {
-    renderCommandQueue_.push(std::move(command));
+    if(config_.mode == Mode::Threaded)
+    {
+        renderCommandQueue_.push(std::move(command));
+        return;
+    }
+
+    assert(continueRenderLoop_);
+    command.Match(
+        [&](const RenderCommand_ResizeFramebuffer &resize)
+        {
+            RTRC_SCOPE_EXIT{ resize.finishSemaphore->release(); };
+            if(resize.width > 0 && resize.height > 0)
+            {
+                device_->GetRawDevice()->WaitIdle();
+                device_->RecreateSwapchain();
+                isSwapchainInvalid_ = false;
+            }
+        },
+        [&](const RenderCommand_RenderStandaloneFrame &frame)
+        {
+            RTRC_SCOPE_EXIT{ frame.finishSemaphore->release(); };
+            if(isSwapchainInvalid_)
+            {
+                return;
+            }
+            if(!device_->BeginFrame(false))
+            {
+                isSwapchainInvalid_ = true;
+                return;
+            }
+            ++frameIndex_;
+            frameTimer_.BeginFrame();
+            RenderStandaloneFrame(frame);
+            if(!device_->Present())
+            {
+                isSwapchainInvalid_ = true;
+            }
+        },
+        [&](const RenderCommand_Exit &)
+        {
+            continueRenderLoop_ = false;
+            device_->EndRenderLoop();
+        });
 }
 
 const BindlessTextureEntry *RenderLoop::ExtractAlbedoTextureEntry(const MaterialInstance::SharedRenderingData *material)
@@ -50,12 +99,6 @@ const BindlessTextureEntry *RenderLoop::ExtractAlbedoTextureEntry(const Material
 void RenderLoop::RenderThreadEntry()
 {
     SetThreadIndentifier(ThreadUtility::ThreadIdentifier::Render);
-
-    bool isSwapchainInvalid = false;
-    bool continueRenderLoop = true;
-
-    device_->BeginRenderLoop();
-    RTRC_SCOPE_EXIT{ device_->EndRenderLoop(); };
 
     auto DoWithExceptionHandling = [&]<typename F>(const F &f)
     {
@@ -69,7 +112,7 @@ void RenderLoop::RenderThreadEntry()
             {
                 hasException_ = true;
                 exceptionPtr_ = std::current_exception();
-                continueRenderLoop = false;
+                continueRenderLoop_ = false;
             }
         }
         else
@@ -78,8 +121,10 @@ void RenderLoop::RenderThreadEntry()
         }
     };
 
+    RTRC_SCOPE_EXIT{ device_->EndRenderLoop(); };
+
     frameTimer_.Restart();
-    while(continueRenderLoop)
+    while(continueRenderLoop_)
     {
         RenderCommand nextRenderCommand;
         if(renderCommandQueue_.try_pop(nextRenderCommand))
@@ -94,7 +139,7 @@ void RenderLoop::RenderThreadEntry()
                         {
                             device_->GetRawDevice()->WaitIdle();
                             device_->RecreateSwapchain();
-                            isSwapchainInvalid = false;
+                            isSwapchainInvalid_ = false;
                         });
                     }
                 },
@@ -103,13 +148,13 @@ void RenderLoop::RenderThreadEntry()
                     RTRC_SCOPE_EXIT{ frame.finishSemaphore->release(); };
                     DoWithExceptionHandling([&]
                     {
-                        if(isSwapchainInvalid)
+                        if(isSwapchainInvalid_)
                         {
                             return;
                         }
                         if(!device_->BeginFrame(false))
                         {
-                            isSwapchainInvalid = true;
+                            isSwapchainInvalid_ = true;
                             return;
                         }
                         ++frameIndex_;
@@ -117,13 +162,13 @@ void RenderLoop::RenderThreadEntry()
                         RenderStandaloneFrame(frame);
                         if(!device_->Present())
                         {
-                            isSwapchainInvalid = true;
+                            isSwapchainInvalid_ = true;
                         }
                     });
                 },
                 [&](const RenderCommand_Exit &)
                 {
-                    continueRenderLoop = false;
+                    continueRenderLoop_ = false;
                 });
         }
     }

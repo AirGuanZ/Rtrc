@@ -141,15 +141,15 @@ void RenderAtmosphere::Render(
     pass->Use(S, RG::CS_RWTexture);
     pass->Use(T_, RG::CS_Texture);
     pass->Use(M_, RG::CS_Texture);
-    pass->SetCallback([&perCameraData, dt, S, eyeAltitude, sunDir, sunColor, this](RG::PassContext &context)
+    pass->SetCallback([&perCameraData, dt, S, eyeAltitude, sunDir, sunColor, this]
     {
         const float lerpFactor = std::clamp(
             1.0f - std::pow(0.03f, 0.4f * dt), 0.001f, 0.05f);
 
         PhysicalAtmospherePassDetail::SkyLutPass passData;
-        passData.SkyLutTextureRW         = S->Get(context);
-        passData.TransmittanceLutTexture = T_->Get(context);
-        passData.MultiScatterLutTexture  = M_->Get(context);
+        passData.SkyLutTextureRW         = S;
+        passData.TransmittanceLutTexture = T_;
+        passData.MultiScatterLutTexture  = M_;
         passData.atmosphere              = properties_;
         passData.outputResolution        = resS_;
         passData.rayMarchStepCount       = rayMarchingStepCount_;
@@ -163,7 +163,7 @@ void RenderAtmosphere::Render(
         auto material = builtinResources_->GetBuiltinMaterial(BuiltinMaterial::Atmosphere).get();
         auto shader = material->GetPassByIndex(Pass_GenerateS)->GetShader().get();
 
-        CommandBuffer &commandBuffer = context.GetCommandBuffer();
+        CommandBuffer &commandBuffer = RG::GetCurrentCommandBuffer();
         commandBuffer.BindComputePipeline(shader->GetComputePipeline());
         commandBuffer.BindComputeGroup(0, passGroup);
         commandBuffer.DispatchWithThreadCount(resS_);
@@ -191,18 +191,18 @@ RG::TextureResource *RenderAtmosphere::GenerateT(RG::RenderGraph &renderGraph, c
 
     auto passT = renderGraph.CreatePass("GenerateTransmittanceLut");
     passT->Use(T, RG::CS_RWTexture_WriteOnly);
-    passT->SetCallback([this, T, props](RG::PassContext &context)
+    passT->SetCallback([this, T, props]
     {
         PhysicalAtmospherePassDetail::TransmittanceLutPass passData;
         passData.outputResolution       = resT_;
-        passData.TransmittanceTextureRW = T->Get(context);
+        passData.TransmittanceTextureRW = T;
         passData.atmosphere             = props;
         auto passGroup = RTRC_CREATE_BINDING_GROUP_WITH_CACHED_LAYOUT(device_, passData);
 
         auto material = builtinResources_->GetBuiltinMaterial(BuiltinMaterial::Atmosphere).get();
         auto shader = material->GetPassByIndex(Pass_GenerateT)->GetShader().get();
 
-        CommandBuffer &commandBuffer = context.GetCommandBuffer();
+        CommandBuffer &commandBuffer = RG::GetCurrentCommandBuffer();
         commandBuffer.BindComputePipeline(shader->GetComputePipeline());
         commandBuffer.BindComputeGroup(0, passGroup);
         commandBuffer.DispatchWithThreadCount(resT_);
@@ -242,12 +242,12 @@ RG::TextureResource *RenderAtmosphere::GenerateM(RG::RenderGraph &renderGraph, c
     auto passM = renderGraph.CreatePass("GenerateMultiScatteringLut");
     passM->Use(T_, RG::CS_Texture);
     passM->Use(M, RG::CS_RWTexture_WriteOnly);
-    passM->SetCallback([this, M, props](RG::PassContext &context)
+    passM->SetCallback([this, M, props]
     {
         PhysicalAtmospherePassDetail::MultiScatterLutPass passData;
-        passData.MultiScatterTextureRW = M->Get(context);
+        passData.MultiScatterTextureRW = M;
         passData.RawDirSamples         = multiScatterDirSamples_;
-        passData.TransmittanceLut      = T_->Get(context);
+        passData.TransmittanceLut      = T_;
         passData.outputResolution      = resM_;
         passData.dirSampleCount        = MULTI_SCATTER_DIR_SAMPLE_COUNT;
         passData.rayMarchStepCount     = rayMarchingStepCount_;
@@ -257,7 +257,7 @@ RG::TextureResource *RenderAtmosphere::GenerateM(RG::RenderGraph &renderGraph, c
         auto material = builtinResources_->GetBuiltinMaterial(BuiltinMaterial::Atmosphere).get();
         auto shader = material->GetPassByIndex(Pass_GenerateM)->GetShader().get();
 
-        CommandBuffer &commandBuffer = context.GetCommandBuffer();
+        CommandBuffer &commandBuffer = RG::GetCurrentCommandBuffer();
         commandBuffer.BindComputePipeline(shader->GetComputePipeline());
         commandBuffer.BindComputeGroup(0, passGroup);
         commandBuffer.DispatchWithThreadCount(resM_);

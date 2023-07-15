@@ -1,3 +1,6 @@
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 #include <d3d12_agility/d3d12.h>
 #include <d3d12_agility/d3dx12/d3dx12.h>
 #include <WinPixEventRuntime/pix3.h>

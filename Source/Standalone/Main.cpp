@@ -14,7 +14,8 @@ int main()
             .vsync                      = true,
             .debug                      = RTRC_DEBUG,
             .rayTracing                 = true,
-            .handleCrossThreadException = false,
+            .renderThread               = false,
+            .handleCrossThreadException = true,
             .backendType                = Rtrc::RHI::BackendType::Default
         });
     }

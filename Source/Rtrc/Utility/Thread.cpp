@@ -19,7 +19,10 @@ namespace ThreadUtility
     void SetThreadIndentifier(ThreadIdentifier identifier)
     {
         assert(gThreadIdentifier == ThreadIdentifier::Unknown);
-        gThreadIdentifier = identifier;
+        if(gThreadMode == ThreadMode::Standard)
+        {
+            gThreadIdentifier = identifier;
+        }
     }
 
     bool IsStandardThreadMode()

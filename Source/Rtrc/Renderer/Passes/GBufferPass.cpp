@@ -36,9 +36,9 @@ GBuffers GBufferPass::Render(
     gbufferPass->Use(ret.albedoMetallic, RG::ColorAttachmentWriteOnly);
     gbufferPass->Use(ret.roughness, RG::ColorAttachmentWriteOnly);
     gbufferPass->Use(ret.depth, RG::DepthStencilAttachment);
-    gbufferPass->SetCallback([this, gbuffers = ret, &sceneCamera, bindlessTextureGroup](RG::PassContext &context)
+    gbufferPass->SetCallback([this, gbuffers = ret, &sceneCamera, bindlessTextureGroup]
     {
-        DoRenderGBuffers(context, sceneCamera, bindlessTextureGroup, gbuffers);
+        DoRenderGBuffers(sceneCamera, bindlessTextureGroup, gbuffers);
     });
     return ret;
 }
@@ -162,19 +162,18 @@ std::vector<GBufferPass::MaterialGroup> GBufferPass::CollectPipelineGroups(const
 }
 
 void GBufferPass::DoRenderGBuffers(
-    RG::PassContext            &passContext,
-    const RenderCamera &camera,
-    const RC<BindingGroup>     &bindlessTextureGroup,
-    const GBuffers             &gbuffers)
+    const RenderCamera     &camera,
+    const RC<BindingGroup> &bindlessTextureGroup,
+    const GBuffers         &gbuffers)
 {
-    auto gbufferA = gbuffers.normal->Get(passContext);
-    auto gbufferB = gbuffers.albedoMetallic->Get(passContext);
-    auto gbufferC = gbuffers.roughness->Get(passContext);
-    auto gbufferDepth = gbuffers.depth->Get(passContext);
+    auto gbufferA = gbuffers.normal;
+    auto gbufferB = gbuffers.albedoMetallic;
+    auto gbufferC = gbuffers.roughness;
+    auto gbufferDepth = gbuffers.depth;
 
     // Render Pass
 
-    CommandBuffer &commandBuffer = passContext.GetCommandBuffer();
+    CommandBuffer &commandBuffer = RG::GetCurrentCommandBuffer();
     commandBuffer.BeginRenderPass(
         {
             ColorAttachment

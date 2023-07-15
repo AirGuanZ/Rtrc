@@ -38,15 +38,13 @@ public:
         bool             vsync                      = true;
         bool             debug                      = RTRC_DEBUG;
         bool             rayTracing                 = false;
+        bool             renderThread               = true;
         bool             handleCrossThreadException = false;
         RHI::BackendType backendType                = RHI::BackendType::Default;
     };
 
     static Application &GetInstance();
-
-    ObserverPtr<Device>                       GetDevice()           const { return device_; }
-    ObserverPtr<const BuiltinResourceManager> GetBuiltinResources() const { return resourceManager_->GetBuiltinResources(); }
-
+    
     Application();
     virtual ~Application();
     

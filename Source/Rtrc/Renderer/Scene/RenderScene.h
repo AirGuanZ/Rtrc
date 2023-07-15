@@ -27,12 +27,16 @@ public:
         const RenderMeshes::RenderMesh        *renderMesh     = nullptr;
         const RenderMaterials::RenderMaterial *renderMaterial = nullptr;
     };
-
-    struct TlasMaterial
+    
+    struct TlasInstance
     {
-        uint32_t albedoTextureIndex;
-        float    albedoScale;
+        uint16_t albedoTextureIndex     = 0;
+        float16  albedoScale            = 1.0_f16;
+        uint16_t vertexBufferIndex : 15 = 0;
+        uint16_t hasIndexBuffer    : 1  = 0;
+        uint16_t pad0                   = 0;
     };
+    static_assert(sizeof(TlasInstance) == 8);
     
     RenderScene(
         const Config                       &config,
@@ -60,9 +64,12 @@ public:
     RG::BufferResource *GetRGPointLightBuffer()       const { return renderLights_->GetRGPointLightBuffer(); }
     RG::BufferResource *GetRGDirectionalLightBuffer() const { return renderLights_->GetRGDirectionalLightBuffer(); }
     
-    RG::Pass           *GetRGBuildTlasPass()      const { return buildTlasPass_;      }
-    RG::BufferResource *GetRGTlasMaterialBuffer() const { return tlasMaterialBuffer_; }
-    RG::TlasResource   *GetRGTlas()               const { return opaqueTlas_;         }
+    RG::Pass           *GetRGBuildTlasPass()  const { return buildTlasPass_;  }
+    RG::TlasResource   *GetRGTlas()           const { return opaqueTlas_;     }
+    RG::BufferResource *GetRGInstanceBuffer() const { return instanceBuffer_; }
+
+    const RenderMeshes &GetRenderMeshes()       const { return *renderMeshes_;    }
+    const RenderMaterials &GetRenderMaterials() const { return *renderMaterials_; }
     
 private:
 
@@ -83,13 +90,18 @@ private:
     std::vector<StaticMeshRecord*> objects_;
     std::vector<StaticMeshRecord*> tlasObjects_;
 
+    const RenderMeshes    *renderMeshes_;
+    const RenderMaterials *renderMaterials_;
+
     // Tlas scene
 
-    UploadBufferPool<>  materialDataUploadBufferPool_;
-    UploadBufferPool<>  instanceDataUploadBufferPool_;
-    RG::Pass           *buildTlasPass_      = nullptr;
-    RG::BufferResource *tlasMaterialBuffer_ = nullptr;
-    RG::TlasResource   *opaqueTlas_         = nullptr;
+    UploadBufferPool<> instanceStagingBufferPool_;
+    UploadBufferPool<> rhiInstanceDataBufferPool_;
+
+    RG::Pass           *buildTlasPass_  = nullptr;
+    RG::BufferResource *instanceBuffer_ = nullptr;
+    RG::TlasResource   *opaqueTlas_     = nullptr;
+
     RC<StatefulBuffer>  cachedOpaqueTlasBuffer_;
     RC<Tlas>            cachedOpaqueTlas_;
 

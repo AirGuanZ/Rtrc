@@ -101,9 +101,8 @@ void DeferredLightingPass::Render(
         }
         lightingPass->SetCallback(
             [this, gbuffers, shadowMask, skyLut, renderTarget, &scene]
-            (RG::PassContext &context)
         {
-            DoDeferredLighting<mainLightMode>(scene, gbuffers, skyLut, shadowMask, renderTarget, context);
+            DoDeferredLighting<mainLightMode>(scene, gbuffers, skyLut, shadowMask, renderTarget);
         });
     };
 
@@ -131,8 +130,7 @@ void DeferredLightingPass::DoDeferredLighting(
     const GBuffers      &gbuffers,
     RG::TextureResource *skyLut,
     RG::TextureResource *shadowMask,
-    RG::TextureResource *rgRenderTarget,
-    RG::PassContext     &context)
+    RG::TextureResource *rgRenderTarget)
 {
     using namespace DeferredLightingPassDetail;
 
@@ -143,11 +141,11 @@ void DeferredLightingPass::DoDeferredLighting(
     // Per-pass binding group
 
     BindingGroup_Lighting<Mode> lightingPassData;
-    FillBindingGroupGBuffers(lightingPassData, gbuffers, context);
+    FillBindingGroupGBuffers(lightingPassData, gbuffers);
     lightingPassData.camera                 = sceneCamera.GetCameraCBuffer();
-    lightingPassData.pointLightBuffer       = pointLightBuffer->Get(context)->GetStructuredSrv(sizeof(PointLightShadingData));
+    lightingPassData.pointLightBuffer       = pointLightBuffer->GetStructuredSrv(sizeof(PointLightShadingData));
     lightingPassData.pointLightCount        = renderLights.GetPointLights().size();
-    lightingPassData.directionalLightBuffer = directionalLightBuffer->Get(context)->GetStructuredSrv(sizeof(DirectionalLightShadingData));
+    lightingPassData.directionalLightBuffer = directionalLightBuffer->GetStructuredSrv(sizeof(DirectionalLightShadingData));
     lightingPassData.directionalLightCount  = renderLights.GetDirectionalLights().size();
     if constexpr(Mode == MainLightMode_Point)
     {
@@ -161,18 +159,18 @@ void DeferredLightingPass::DoDeferredLighting(
     {
         static_assert(Mode == MainLightMode_None);
     }
-    lightingPassData.MainLightShadowMask = shadowMask ? shadowMask->Get(context)
+    lightingPassData.MainLightShadowMask = shadowMask ? shadowMask->Get()
                                                       : builtinResources_->GetBuiltinTexture(BuiltinTexture::White2D);
-    lightingPassData.Output = rgRenderTarget->Get(context);
+    lightingPassData.Output = rgRenderTarget;
     lightingPassData.resolution = rgRenderTarget->GetSize();
     lightingPassData.rcpResolution.x = 1.0f / lightingPassData.resolution.x;
     lightingPassData.rcpResolution.y = 1.0f / lightingPassData.resolution.y;
     auto lightingPassGroup = device_->CreateBindingGroup(lightingPassData);
 
     BindingGroup_Sky skyPassData;
-    FillBindingGroupGBuffers(skyPassData, gbuffers, context);
+    FillBindingGroupGBuffers(skyPassData, gbuffers);
     skyPassData.camera = lightingPassData.camera;
-    skyPassData.SkyLut = skyLut ? skyLut->Get(context) : builtinResources_->GetBuiltinTexture(BuiltinTexture::Black2D);
+    skyPassData.SkyLut = skyLut ? skyLut->Get() : builtinResources_->GetBuiltinTexture(BuiltinTexture::Black2D);
     skyPassData.Output = lightingPassData.Output;
     skyPassData.resolution = lightingPassData.resolution;
     skyPassData.rcpResolution = lightingPassData.rcpResolution;
@@ -204,7 +202,7 @@ void DeferredLightingPass::DoDeferredLighting(
             shader = skyShader_.get();
         }
         
-        CommandBuffer &commandBuffer = context.GetCommandBuffer();
+        CommandBuffer &commandBuffer = RG::GetCurrentCommandBuffer();
         commandBuffer.BindComputePipeline(shader->GetComputePipeline());
         commandBuffer.BindComputeGroup(0, lightingPass == LightingPass::Regular ? lightingPassGroup : skyPassGroup);
         commandBuffer.DispatchWithThreadCount(rgRenderTarget->GetWidth(), rgRenderTarget->GetHeight());

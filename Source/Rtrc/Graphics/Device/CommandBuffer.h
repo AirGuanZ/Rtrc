@@ -7,6 +7,7 @@
 #include <Rtrc/Graphics/Device/Buffer.h>
 #include <Rtrc/Graphics/Device/DeviceSynchronizer.h>
 #include <Rtrc/Graphics/Device/Pipeline.h>
+#include <Rtrc/Graphics/Device/RGResourceForward.h>
 #include <Rtrc/Graphics/Device/Texture.h>
 
 RTRC_BEGIN
@@ -145,6 +146,13 @@ public:
     void CopyColorTexture2DToBuffer(
         Buffer &dst, size_t dstOffset, size_t dstRowBytes, Texture &src, uint32_t arrayLayer, uint32_t mipLevel);
 
+    void CopyBuffer(
+        const RG::BufferResource *dst, size_t dstOffset,
+        const RG::BufferResource *src, size_t srcOffset, size_t size);
+    void CopyColorTexture2DToBuffer(
+        RG::BufferResource *dst, size_t dstOffset, size_t dstRowBytes,
+        RG::TextureResource *src, uint32_t arrayLayer, uint32_t mipLevel);
+
     void BeginRenderPass(Span<ColorAttachment> colorAttachments);
     void BeginRenderPass(const DepthStencilAttachment &depthStencilAttachment);
     void BeginRenderPass(Span<ColorAttachment> colorAttachments, const DepthStencilAttachment &depthStencilAttachment);
@@ -161,6 +169,10 @@ public:
     void BindGraphicsGroup(int index, const RC<BindingGroup> &group);
     void BindComputeGroup(int index, const RC<BindingGroup> &group);
     void BindRayTracingGroup(int index, const RC<BindingGroup> &group);
+    
+    void BindGraphicsGroups(Span<RC<BindingGroup>> groups);
+    void BindComputeGroups(Span<RC<BindingGroup>> groups);
+    void BindRayTracingGroups(Span<RC<BindingGroup>> groups);
     
     void SetViewports(Span<Viewport> viewports);
     void SetScissors(Span<Scissor> scissors);
@@ -184,7 +196,7 @@ public:
     void SetComputePushConstants(uint32_t rangeIndex, const T &data);
 
     void ClearColorTexture2D(const RC<Texture> &tex, const Vector4f &color);
-
+    
     void Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance);
     void DrawIndexed(int indexCount, int instanceCount, int firstIndex, int firstVertex, int firstInstance);
     void Dispatch(int groupCountX, int groupCountY, int groupCountZ);

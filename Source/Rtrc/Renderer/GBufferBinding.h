@@ -99,23 +99,23 @@ namespace GBufferBindingDetail
     }
 
     template<IsGBufferBindings T>
-    void FillBindingGroupData(T &data, const GBuffers &gbuffers, RG::PassContext &context)
+    void FillBindingGroupData(T &data, const GBuffers &gbuffers)
     {
         if constexpr(NeedNormal<T>)
         {
-            data._internalGBuffer_Normal = gbuffers.normal->Get(context);
+            data._internalGBuffer_Normal = gbuffers.normal;
         }
         if constexpr(NeedAlbedoMetallic<T>)
         {
-            data._internalGBuffer_AlbedoMetallic = gbuffers.albedoMetallic->Get(context);
+            data._internalGBuffer_AlbedoMetallic = gbuffers.albedoMetallic;
         }
         if constexpr(NeedRoughness<T>)
         {
-            data._internalGBuffer_Roughness = gbuffers.roughness->Get(context);
+            data._internalGBuffer_Roughness = gbuffers.roughness;
         }
         if constexpr(NeedDepth<T>)
         {
-            data._internalGBuffer_Depth = gbuffers.depth->Get(context)->CreateSrv(RHI::TextureViewFlags::None);
+            data._internalGBuffer_Depth = gbuffers.depth->CreateSrv(RHI::TextureViewFlags::None);
         }
     }
 
@@ -144,16 +144,16 @@ void DeclareGBufferUses(RG::Pass *pass, const GBuffers &gbuffers, RHI::PipelineS
 }
 
 template<typename T>
-void FillBindingGroupGBuffers(T &data, const GBuffers &gbuffers, RG::PassContext &context)
+void FillBindingGroupGBuffers(T &data, const GBuffers &gbuffers)
 {
     if constexpr(GBufferBindingDetail::IsGBufferBindings<T>)
     {
-        GBufferBindingDetail::FillBindingGroupData<T>(data, gbuffers, context);
+        GBufferBindingDetail::FillBindingGroupData<T>(data, gbuffers);
     }
     else
     {
         using TT = std::remove_reference_t<decltype(std::declval<T &>().gbuffers)>;
-        GBufferBindingDetail::FillBindingGroupData<TT>(data.gbuffers, gbuffers, context);
+        GBufferBindingDetail::FillBindingGroupData<TT>(data.gbuffers, gbuffers);
     }
 }
 
