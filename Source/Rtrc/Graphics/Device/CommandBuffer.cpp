@@ -6,6 +6,7 @@
 #include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/Graphics/Device/Texture.h>
 #include <Rtrc/Graphics/Device/CommandBuffer.h>
+#include <Rtrc/Utility/Enumerate.h>
 
 RTRC_BEGIN
 
@@ -373,12 +374,11 @@ void CommandBuffer::BindGraphicsGroup(int index, const RC<BindingGroup> &group)
     auto bindingGroupLayoutInShader = currentGraphicsPipeline_->GetShaderInfo()->GetBindingGroupLayoutByIndex(index);
     if(bindingGroupLayoutInShader != group->GetLayout())
     {
-        LogError("Unmatched binding group layout for graphics pipeline!");
         LogError("Binding group defined in shader is");
         DumpBindingGroupLayoutDesc(bindingGroupLayoutInShader->GetRHIObject()->GetDesc());
         LogError("Binding group being bound is");
         DumpBindingGroupLayoutDesc(group->GetLayout()->GetRHIObject()->GetDesc());
-        std::terminate();
+        throw Exception("Unmatched binding group layout for graphics pipeline!");
     }
 #endif
     rhiCommandBuffer_->BindGroupToGraphicsPipeline(index, group->GetRHIObject());
@@ -391,12 +391,11 @@ void CommandBuffer::BindComputeGroup(int index, const RC<BindingGroup> &group)
     auto bindingGroupLayoutInShader = currentComputePipeline_->GetShaderInfo()->GetBindingGroupLayoutByIndex(index);
     if(bindingGroupLayoutInShader != group->GetLayout())
     {
-        LogError("Unmatched binding group layout for compute pipeline!");
         LogError("Binding group defined in shader is");
         DumpBindingGroupLayoutDesc(bindingGroupLayoutInShader->GetRHIObject()->GetDesc());
         LogError("Binding group being bound is");
         DumpBindingGroupLayoutDesc(group->GetLayout()->GetRHIObject()->GetDesc());
-        std::terminate();
+        throw Exception("Unmatched binding group layout for compute pipeline!");
     }
 #endif
     rhiCommandBuffer_->BindGroupToComputePipeline(index, group->GetRHIObject());
@@ -409,12 +408,11 @@ void CommandBuffer::BindRayTracingGroup(int index, const RC<BindingGroup> &group
     auto bindingGroupLayoutInShader = currentRayTracingPipeline_->GetBindingLayoutInfo().GetBindingGroupLayoutByIndex(index);
     if(bindingGroupLayoutInShader != group->GetLayout())
     {
-        LogError("Unmatched binding group layout for ray tracing pipeline!");
         LogError("Binding group defined in shader is");
         DumpBindingGroupLayoutDesc(bindingGroupLayoutInShader->GetRHIObject()->GetDesc());
         LogError("Binding group being bound is");
         DumpBindingGroupLayoutDesc(group->GetLayout()->GetRHIObject()->GetDesc());
-        std::terminate();
+        throw Exception("Unmatched binding group layout for ray tracing pipeline!");
     }
 #endif
     rhiCommandBuffer_->BindGroupToRayTracingPipeline(index, group->GetRHIObject());
@@ -424,7 +422,7 @@ void CommandBuffer::BindGraphicsGroups(Span<RC<BindingGroup>> groups)
 {
     CheckThreadID();
     auto &shaderInfo = currentGraphicsPipeline_->GetShaderInfo();
-    for(auto &group : groups)
+    for(auto &&[groupIndex, group] : Enumerate(groups))
     {
 #if RTRC_DEBUG
         int foundIndex = -1;
@@ -447,6 +445,19 @@ void CommandBuffer::BindGraphicsGroups(Span<RC<BindingGroup>> groups)
 #endif
             }
         }
+#if RTRC_DEBUG
+        if(foundIndex < 0)
+        {
+            LogError("Layout of given binding group is:");
+            DumpBindingGroupLayoutDesc(group->GetLayout()->GetRHIObject()->GetDesc());
+            LogError("Binding group layouts defined in shader are:");
+            for(int i = 0; i < shaderInfo->GetBindingGroupCount(); ++i)
+            {
+                DumpBindingGroupLayoutDesc(shaderInfo->GetBindingGroupLayoutByIndex(i)->GetRHIObject()->GetDesc());
+            }
+            throw Exception(fmt::format("CommandBuffer::BindGraphicsGroups: group {} is unbounded", groupIndex));
+        }
+#endif
     }
 }
 
@@ -454,7 +465,7 @@ void CommandBuffer::BindComputeGroups(Span<RC<BindingGroup>> groups)
 {
     CheckThreadID();
     auto &shaderInfo = currentComputePipeline_->GetShaderInfo();
-    for(auto &group : groups)
+    for(auto &&[groupIndex, group] : Enumerate(groups))
     {
 #if RTRC_DEBUG
         int foundIndex = -1;
@@ -477,6 +488,19 @@ void CommandBuffer::BindComputeGroups(Span<RC<BindingGroup>> groups)
 #endif
             }
         }
+#if RTRC_DEBUG
+        if(foundIndex < 0)
+        {
+            LogError("Layout of given binding group is:");
+            DumpBindingGroupLayoutDesc(group->GetLayout()->GetRHIObject()->GetDesc());
+            LogError("Binding group layouts defined in shader are:");
+            for(int i = 0; i < shaderInfo->GetBindingGroupCount(); ++i)
+            {
+                DumpBindingGroupLayoutDesc(shaderInfo->GetBindingGroupLayoutByIndex(i)->GetRHIObject()->GetDesc());
+            }
+            throw Exception(fmt::format("CommandBuffer::BindComputeGroups: group {} is unbounded", groupIndex));
+        }
+#endif
     }
 }
 
@@ -484,7 +508,7 @@ void CommandBuffer::BindRayTracingGroups(Span<RC<BindingGroup>> groups)
 {
     CheckThreadID();
     auto &layoutInfo = currentRayTracingPipeline_->GetBindingLayoutInfo();
-    for(auto &group : groups)
+    for(auto &&[groupIndex, group] : Enumerate(groups))
     {
 #if RTRC_DEBUG
         int foundIndex = -1;
@@ -507,6 +531,19 @@ void CommandBuffer::BindRayTracingGroups(Span<RC<BindingGroup>> groups)
 #endif
             }
         }
+#if RTRC_DEBUG
+        if(foundIndex < 0)
+        {
+            LogError("Layout of given binding group is:");
+            DumpBindingGroupLayoutDesc(group->GetLayout()->GetRHIObject()->GetDesc());
+            LogError("Binding group layouts defined in shader are:");
+            for(int i = 0; i < layoutInfo.GetBindingGroupCount(); ++i)
+            {
+                DumpBindingGroupLayoutDesc(layoutInfo.GetBindingGroupLayoutByIndex(i)->GetRHIObject()->GetDesc());
+            }
+            throw Exception(fmt::format("CommandBuffer::BindRayTracingGroups: group {} is unbounded", groupIndex));
+        }
+#endif
     }
 }
 

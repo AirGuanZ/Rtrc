@@ -6,9 +6,8 @@
 
 #include <Rtrc/Graphics/ImGui/Instance.h>
 #include <Rtrc/Graphics/RenderGraph/Executable.h>
-#include <Rtrc/Renderer/Passes/DeferredLightingPass.h>
+#include <Rtrc/Renderer/DeferredLighting/DeferredLightingPass.h>
 #include <Rtrc/Renderer/Passes/GBufferPass.h>
-#include <Rtrc/Renderer/Passes/ShadowMaskPass.h>
 #include <Rtrc/Renderer/RenderCommand.h>
 #include <Rtrc/Renderer/Scene/RenderCamera.h>
 #include <Rtrc/Utility/Timer.h>
@@ -87,6 +86,7 @@ private:
     Box<GBufferPass>          gbufferPass_;
     Box<DeferredLightingPass> deferredLightingPass_;
     Box<ShadowMaskPass>       shadowMaskPass_;
+    Box<PathTracer>           pathTracer_;
 
     bool isSwapchainInvalid_ = false;
     bool continueRenderLoop_ = true;

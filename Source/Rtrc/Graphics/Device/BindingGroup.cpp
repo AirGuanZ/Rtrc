@@ -87,21 +87,22 @@ RC<BindingGroup> BindingGroupManager::CreateBindingGroup(
 RC<BindingLayout> BindingGroupManager::CreateBindingLayout(const BindingLayout::Desc &desc)
 {
     return layoutCache_.GetOrCreate(desc, [&]
+    {
+        RHI::BindingLayoutDesc rhiDesc;
+        rhiDesc.groups.reserve(desc.groupLayouts.size());
+        for(auto &group : desc.groupLayouts)
         {
-            RHI::BindingLayoutDesc rhiDesc;
-            rhiDesc.groups.reserve(desc.groupLayouts.size());
-            for(auto &group : desc.groupLayouts)
-            {
-                rhiDesc.groups.push_back(group->GetRHIObject());
-            }
-            rhiDesc.pushConstantRanges = desc.pushConstantRanges;
-
-            auto ret = MakeRC<BindingLayout>();
-            ret->manager_ = this;
-            ret->desc = desc;
-            ret->rhiLayout_ = device_->CreateBindingLayout(rhiDesc);
-            return ret;
-        });
+            rhiDesc.groups.push_back(group->GetRHIObject());
+        }
+        rhiDesc.pushConstantRanges = desc.pushConstantRanges;
+        rhiDesc.unboundedAliases = desc.unboundedAliases;
+    
+        auto ret = MakeRC<BindingLayout>();
+        ret->manager_ = this;
+        ret->desc = desc;
+        ret->rhiLayout_ = device_->CreateBindingLayout(rhiDesc);
+        return ret;
+    });
 }
 
 void BindingGroupManager::CopyBindings(

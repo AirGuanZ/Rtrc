@@ -835,6 +835,12 @@ void ImGuiInstance::Combo(const char *label, int *curr, const ItemGetter &getIte
     ImGui::Combo(label, curr, cGetter, getterData, itemCount, popupMaxHeightInItems);
 }
 
+bool ImGuiInstance::Selectable(const char *label, bool selected, ImGuiSelectableFlags flags, const Vector2f &size)
+{
+    IMGUI_CONTEXT;
+    return ImGui::Selectable(label, selected, flags, size);
+}
+
 bool ImGuiInstance::DragFloat(const char *label, float *v, float vSpeed, float vMin, float vMax, const char *format, ImGuiSliderFlags flags)
 {
     IMGUI_CONTEXT;

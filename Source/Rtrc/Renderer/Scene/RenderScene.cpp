@@ -5,10 +5,14 @@
 RTRC_RENDERER_BEGIN
 
 RenderScene::RenderScene(
-    const Config &config, ObserverPtr<Device> device, ObserverPtr<BuiltinResourceManager> builtinResources)
+    const Config                       &config,
+    ObserverPtr<Device>                 device,
+    ObserverPtr<BuiltinResourceManager> builtinResources,
+    ObserverPtr<BindlessTextureManager> bindlessTextures)
     : config_(config)
     , device_(device)
     , scene_(nullptr)
+    , bindlessTextures_(bindlessTextures)
     , renderMeshes_(nullptr)
     , renderMaterials_(nullptr)
     , instanceStagingBufferPool_(device, RHI::BufferUsage::TransferSrc)
@@ -162,10 +166,15 @@ void RenderScene::UpdateTlasScene(RG::RenderGraph &renderGraph)
         rhiInstance.accelerationStructureAddress = object->renderMesh->blas->GetRHIObject()->GetDeviceAddress().address;
     
         TlasInstance &instance = instanceData.emplace_back();
-        instance.albedoTextureIndex = object->renderMaterial->albedoTextureEntry->GetOffset();
-        instance.albedoScale        = object->renderMaterial->albedoScale;
-        instance.vertexBufferIndex  = object->renderMesh->geometryBufferEntry.GetOffset();
-        instance.hasIndexBuffer     = object->renderMesh->hasIndexBuffer ? 1 : 0;
+        instance.albedoTextureIndex        = object->renderMaterial->albedoTextureEntry->GetOffset();
+        instance.albedoScale               = object->renderMaterial->albedoScale;
+
+        const uint32_t geometryBufferOffset = object->renderMesh->geometryBufferEntry.GetOffset();
+        const bool isIndex16Bit = object->renderMesh->meshRenderingData->GetIndexFormat() == RHI::IndexFormat::UInt16;
+        const bool hasIndexBuffer = object->renderMesh->hasIndexBuffer;
+        instance.encodedGeometryBufferInfo = geometryBufferOffset |
+                                            ((isIndex16Bit ? 1 : 0) << 14) |
+                                            ((hasIndexBuffer ? 1 : 0) << 15);
     }
 
     // Upload instance data

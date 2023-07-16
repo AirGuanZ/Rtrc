@@ -168,8 +168,8 @@ std::vector<unsigned char> DXC::Compile(
 
     const bool enableDebugInfo =
         debugMode &&
-        target != Target::Vulkan_1_3_RT_6_6 &&
-        !shaderInfo.rayQuery; // DXC crashes when enabling debug info for spirv ray tracing shader
+        target != Target::Vulkan_1_3_RT_6_6 && // DXC crashes when enabling debug info for spirv ray tracing shader
+        (!shaderInfo.rayQuery || SupportRayQueryDebugInfo(target));
     if(enableDebugInfo)
     {
         if(isVulkan)
@@ -287,6 +287,14 @@ std::vector<unsigned char> DXC::Compile(
 IDxcUtils *DXC::GetDxcUtils()
 {
     return impl_->utils.Get();
+}
+
+bool DXC::SupportRayQueryDebugInfo(Target target)
+{
+    return target == Target::DirectX12_CS_6_6 ||
+           target == Target::DirectX12_FS_6_6 ||
+           target == Target::DirectX12_VS_6_6 ||
+           target == Target::DirectX12_RT_6_6;
 }
 
 RTRC_END

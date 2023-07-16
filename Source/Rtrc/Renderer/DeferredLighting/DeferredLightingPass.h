@@ -1,7 +1,7 @@
 #pragma once
 
+#include <Rtrc/Renderer/DeferredLighting/ShadowMaskPass.h>
 #include <Rtrc/Renderer/Passes/GBufferPass.h>
-#include <Rtrc/Renderer/Passes/ShadowMaskPass.h>
 
 RTRC_RENDERER_BEGIN
 

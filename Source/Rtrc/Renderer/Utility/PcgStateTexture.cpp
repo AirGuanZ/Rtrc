@@ -35,7 +35,7 @@ RG::TextureResource *Prepare2DPcgStateTexture(
 
     auto initPass = renderGraph.CreatePass("InitializePcgState");
     initPass->Use(ret, RG::CS_RWTexture_WriteOnly);
-    initPass->SetCallback([ret, size, device, &materials]
+    initPass->SetCallback([ret, size, device, materials]
     {
         Pass passData;
         passData.Output = ret;

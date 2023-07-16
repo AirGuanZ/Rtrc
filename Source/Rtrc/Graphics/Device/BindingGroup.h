@@ -109,6 +109,7 @@ public:
     {
         std::vector<RC<BindingGroupLayout>> groupLayouts;
         std::vector<RHI::PushConstantRange> pushConstantRanges;
+        std::vector<RHI::UnboundedBindingArrayAliasing> unboundedAliases;
         auto operator<=>(const Desc &) const = default;
     };
 

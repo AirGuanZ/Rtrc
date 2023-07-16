@@ -30,10 +30,11 @@ public:
     
     struct TlasInstance
     {
-        uint16_t albedoTextureIndex     = 0;
-        float16  albedoScale            = 1.0_f16;
-        uint16_t vertexBufferIndex : 15 = 0;
-        uint16_t hasIndexBuffer    : 1  = 0;
+        uint16_t albedoTextureIndex        = 0;
+        float16  albedoScale               = 1.0_f16;
+        uint16_t encodedGeometryBufferInfo = 0; // [0, 14): vertex buffer index
+                                                // [14, 15): is index 16-bit
+                                                // [15, 16): has index buffer
         uint16_t pad0                   = 0;
     };
     static_assert(sizeof(TlasInstance) == 8);
@@ -41,7 +42,8 @@ public:
     RenderScene(
         const Config                       &config,
         ObserverPtr<Device>                 device,
-        ObserverPtr<BuiltinResourceManager> builtinResources);
+        ObserverPtr<BuiltinResourceManager> builtinResources,
+        ObserverPtr<BindlessTextureManager> bindlessTextures);
 
     void Update(
         const RenderCommand_RenderStandaloneFrame &frame,
@@ -68,9 +70,12 @@ public:
     RG::TlasResource   *GetRGTlas()           const { return opaqueTlas_;     }
     RG::BufferResource *GetRGInstanceBuffer() const { return instanceBuffer_; }
 
-    const RenderMeshes &GetRenderMeshes()       const { return *renderMeshes_;    }
+    const RenderMeshes    &GetRenderMeshes()    const { return *renderMeshes_;    }
     const RenderMaterials &GetRenderMaterials() const { return *renderMaterials_; }
-    
+
+    RC<BindingGroup>              GetGlobalTextureBindingGroup()       const { return bindlessTextures_->GetBindingGroup();       }
+    const RC<BindingGroupLayout> &GetGlobalTextureBindingGroupLayout() const { return bindlessTextures_->GetBindingGroupLayout(); }
+
 private:
 
     // Update objects_ & tlasObjects_
@@ -86,6 +91,8 @@ private:
     Config              config_;
     ObserverPtr<Device> device_;
     const SceneProxy   *scene_;
+
+    ObserverPtr<BindlessTextureManager> bindlessTextures_;
     
     std::vector<StaticMeshRecord*> objects_;
     std::vector<StaticMeshRecord*> tlasObjects_;

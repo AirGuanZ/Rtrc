@@ -6,7 +6,7 @@ RTRC_RENDERER_BEGIN
 RenderMeshes::RenderMeshes(const Config &config, ObserverPtr<Device> device)
     : config_(config), device_(device), blasBuilder_(device)
 {
-    bindlessBufferManager_ = MakeBox<BindlessBufferManager>(device);
+    bindlessBufferManager_ = MakeBox<BindlessBufferManager>(device, 64, GLOBAL_BINDLESS_GEOMETRY_BUFFER_MAX_SIZE);
 }
 
 void RenderMeshes::Update(const RenderCommand_RenderStandaloneFrame &frame)

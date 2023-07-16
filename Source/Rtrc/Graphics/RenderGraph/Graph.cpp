@@ -383,30 +383,31 @@ Pass *RenderGraph::CreateBlitTexture2DPass(
     std::string name,
     TextureResource *src, uint32_t srcArrayLayer, uint32_t srcMipLevel,
     TextureResource *dst, uint32_t dstArrayLayer, uint32_t dstMipLevel,
-    bool usePointSampling)
+    bool usePointSampling, float gamma)
 {
     auto pass = CreatePass(std::move(name));
     pass->Use(src, PS_Texture);
     pass->Use(dst, ColorAttachmentWriteOnly);
     pass->SetCallback([=](PassContext &context)
     {
-        device_->GetCopyTextureUtils().RenderQuad(
+        device_->GetCopyTextureUtils().RenderFullscreenTriangle(
             context.GetCommandBuffer(),
             src->CreateSrv(srcMipLevel, 1, srcArrayLayer),
             dst->CreateRtv(dstMipLevel, dstArrayLayer),
-            usePointSampling ? CopyTextureUtils::Point : CopyTextureUtils::Linear);
+            usePointSampling ? CopyTextureUtils::Point : CopyTextureUtils::Linear, gamma);
     });
     return pass;
 }
 
 Pass *RenderGraph::CreateBlitTexture2DPass(
-    std::string name, TextureResource *src, TextureResource *dst, bool usePointSampling)
+    std::string name, TextureResource *src, TextureResource *dst, bool usePointSampling, float gamma)
 {
     assert(src->GetArraySize() == 1);
     assert(src->GetMipLevels() == 1);
     assert(dst->GetArraySize() == 1);
     assert(dst->GetMipLevels() == 1);
-    return CreateBlitTexture2DPass(std::move(name), src, 0, 0, dst, 0, 0, usePointSampling);
+    return CreateBlitTexture2DPass(
+        std::move(name), src, 0, 0, dst, 0, 0, usePointSampling, gamma);
 }
 
 void RenderGraph::SetCompleteFence(RHI::FencePtr fence)

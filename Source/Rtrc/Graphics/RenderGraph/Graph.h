@@ -439,9 +439,9 @@ public:
         std::string name,
         TextureResource *src, uint32_t srcArrayLayer, uint32_t srcMipLevel,
         TextureResource *dst, uint32_t dstArrayLayer, uint32_t dstMipLevel,
-        bool usePointSampling);
+        bool usePointSampling = true, float gamma = 1.0f);
     Pass *CreateBlitTexture2DPass(
-        std::string name, TextureResource *src, TextureResource *dst, bool usePointSampling);
+        std::string name, TextureResource *src, TextureResource *dst, bool usePointSampling = true, float gamma = 1.0f);
     
     void SetCompleteFence(RHI::FencePtr fence);
 

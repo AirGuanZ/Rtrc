@@ -11,7 +11,7 @@
 #include "../Common/Random.hlsl"
 #include "../Common/Scene.hlsl"
 
-rtrc_group(TracePassGroup)
+rtrc_group(Pass, CS)
 {
     REF_GBUFFERS(CS)
     
@@ -35,11 +35,12 @@ rtrc_sampler(AlbedoSampler, filter = linear, address_u = clamp, address_v = clam
 
 rtrc_alias(Texture2D<float3>,                             AlbedoTextureArray, BindlessTextures);
 rtrc_alias(StructuredBuffer<BuiltinVertexStruct_Default>, VertexBufferArray,  BindlessGeometryBuffers);
-rtrc_alias(Buffer<uint>,                                  IndexBufferArray,   BindlessGeometryBuffers);
+rtrc_alias(StructuredBuffer<uint>,                        Index32BufferArray, BindlessGeometryBuffers);
+rtrc_alias(StructuredBuffer<uint16_t>,                    Index16BufferArray, BindlessGeometryBuffers);
 
 static float PI = 3.14159265;
 
-float2 SampleDiffuseDirection(float3 normal, inout uint rngState)
+float3 SampleDiffuseDirection(float3 normal, inout uint rngState)
 {
     float3 localDir = Pcg::NextUniformOnUnitHemisphere(rngState);
     LocalFrame frame;
@@ -65,22 +66,32 @@ Intersection GetIntersection(int instanceIndex, int primitiveIndex, float2 bary)
     int index0 = 3 * primitiveIndex + 0;
     int index1 = 3 * primitiveIndex + 1;
     int index2 = 3 * primitiveIndex + 2;
-    if(instance.hasIndexBuffer)
+    if(instance.HasIndexBuffer())
     {
-        Buffer<uint> indexBuffer = IndexBufferArray[instance.geometryBufferIndex + 1];
-        index0 = indexBuffer[index0];
-        index1 = indexBuffer[index1];
-        index2 = indexBuffer[index2];
+        if(instance.IsUInt16Index())
+        {
+            StructuredBuffer<uint16_t> indexBuffer = Index16BufferArray[instance.GetGeometryBufferIndex() + 1];
+            index0 = indexBuffer[index0];
+            index1 = indexBuffer[index1];
+            index2 = indexBuffer[index2];
+        }
+        else
+        {
+            StructuredBuffer<uint> indexBuffer = Index32BufferArray[instance.GetGeometryBufferIndex() + 1];
+            index0 = indexBuffer[index0];
+            index1 = indexBuffer[index1];
+            index2 = indexBuffer[index2];
+        }
     }
 
-    StructuredBuffer<BuiltinVertexStruct_Default> vertexBuffer = VertexBufferArray[instance.geometryBufferIndex];
+    StructuredBuffer<BuiltinVertexStruct_Default> vertexBuffer = VertexBufferArray[instance.GetGeometryBufferIndex()];
     BuiltinVertexStruct_Default vertex0 = vertexBuffer[index0];
     BuiltinVertexStruct_Default vertex1 = vertexBuffer[index1];
     BuiltinVertexStruct_Default vertex2 = vertexBuffer[index2];
 
     float3 geometryNormal = normalize(cross(vertex2.position - vertex1.position, vertex1.position - vertex0.position));
     float3 normal = normalize(InterpolateWithBaryCoord(vertex0.normal, vertex1.normal, vertex2.normal, bary));
-    float3 tangent = normalize(InterpolateWithBaryCoord(vertex0.tangent, vertex1.tangent, vertex2.tangent));
+    float3 tangent = normalize(InterpolateWithBaryCoord(vertex0.tangent, vertex1.tangent, vertex2.tangent, bary));
 
     LocalFrame geometryFrame;
     geometryFrame.z = geometryNormal;
@@ -92,12 +103,12 @@ Intersection GetIntersection(int instanceIndex, int primitiveIndex, float2 bary)
     shadingFrame.y = normalize(cross(normal, tangent));
     shadingFrame.x = cross(shadingFrame.y, shadingFrame.z);
 
-    uint albedoTextureIndex = instance.albedoTextureIndex;
+    uint albedoTextureIndex = instance.GetAlbedoTextureIndex();
     Texture2D<float3> albedoTexture = AlbedoTextureArray[albedoTextureIndex];
     
     float2 uv = InterpolateWithBaryCoord(vertex0.uv, vertex1.uv, vertex2.uv, bary);
     float3 rawAlbedo = albedoTexture.SampleLevel(AlbedoSampler, uv, 0);
-    float3 scaledAlbedo = (float)instance.albedoScale * rawAlbedo;
+    float3 scaledAlbedo = (float)instance.GetAlbedoScale() * rawAlbedo;
 
     Intersection ret;
     ret.position      = InterpolateWithBaryCoord(vertex0.position, vertex1.position, vertex2.position, bary);
@@ -127,12 +138,12 @@ bool FindClosestIntersection(RayDesc ray, out Intersection intersection)
 [numthreads(8, 8, 1)]
 void CSMain(uint2 tid : SV_DispatchThreadID)
 {
-    if(any(tid >= Pass.outputSize))
+    if(any(tid >= Pass.outputResolution))
         return;
     
-    float2 uv = (tid + 0.5) / Pass.outputSize;
+    float2 uv = (tid + 0.5) / Pass.outputResolution;
     GBufferPixel gpixel = LoadGBufferPixel(uv);
-    if(gpixel.z >= 1)
+    if(gpixel.depth >= 1)
         return;
     
     float3 worldRay = CameraUtils::GetWorldRay(Camera, uv);
@@ -161,7 +172,7 @@ void CSMain(uint2 tid : SV_DispatchThreadID)
         {
             float2 skyLutUV = Atmosphere::ComputeSkyLutTexCoord(d);
             float3 color = SkyLut.SampleLevel(SkyLutSampler, skyLutUV, 0);
-            result = beta * color;
+            result += beta * color;
             break;
         }
 
@@ -181,6 +192,8 @@ void CSMain(uint2 tid : SV_DispatchThreadID)
         beta *= saturate(intersection.albedo) / PI * cosFactor / pdf;
     }
 
-    Output[tid] = result;
+    result = pow(result, 1 / 2.2);
+
+    Output[tid] = float4(result, 1);
     RngState[tid] = rng;
 }

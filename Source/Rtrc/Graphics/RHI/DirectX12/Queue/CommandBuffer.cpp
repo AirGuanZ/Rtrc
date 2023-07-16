@@ -170,37 +170,55 @@ void DirectX12CommandBuffer::BindGroupsToRayTracingPipeline(int startIndex, Span
 
 void DirectX12CommandBuffer::BindGroupToGraphicsPipeline(int index, const Ptr<BindingGroup> &group)
 {
-    const auto d3dBindingLayout = static_cast<DirectX12BindingLayout*>(
-        currentGraphicsPipeline_->GetBindingLayout().Get());
+    const auto bindingLayout = static_cast<DirectX12BindingLayout*>(currentGraphicsPipeline_->GetBindingLayout().Get());
     const auto d3dGroup = static_cast<DirectX12BindingGroup *>(group.Get());
-    const int firstRootParamIndex = d3dBindingLayout->_internalGetRootParamIndex(index);
+    const int firstRootParamIndex = bindingLayout->_internalGetRootParamIndex(index);
     for(auto &&[i, table] : Enumerate(d3dGroup->_internalGetDescriptorTables()))
     {
         commandList_->SetGraphicsRootDescriptorTable(static_cast<UINT>(firstRootParamIndex + i), table.gpuHandle);
+    }
+
+    for(auto &alias : bindingLayout->_internalGetUnboundedResourceArrayAliases(index))
+    {
+        auto &table = d3dGroup->_internalGetDescriptorTables()[alias.srcTableIndex];
+        const D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = { table.gpuHandle.ptr + alias.offsetInSrcTable };
+        commandList_->SetGraphicsRootDescriptorTable(static_cast<UINT>(alias.rootParamIndex), gpuHandle);
     }
 }
 
 void DirectX12CommandBuffer::BindGroupToComputePipeline(int index, const Ptr<BindingGroup> &group)
 {
-    const auto d3dBindingLayout = static_cast<DirectX12BindingLayout *>(
-        currentComputePipeline_->GetBindingLayout().Get());
+    const auto bindingLayout = static_cast<DirectX12BindingLayout*>(currentComputePipeline_->GetBindingLayout().Get());
     const auto d3dGroup = static_cast<DirectX12BindingGroup *>(group.Get());
-    const int firstRootParamIndex = d3dBindingLayout->_internalGetRootParamIndex(index);
+    const int firstRootParamIndex = bindingLayout->_internalGetRootParamIndex(index);
     for(auto &&[i, table] : Enumerate(d3dGroup->_internalGetDescriptorTables()))
     {
         commandList_->SetComputeRootDescriptorTable(static_cast<UINT>(firstRootParamIndex + i), table.gpuHandle);
+    }
+
+    for(auto &alias : bindingLayout->_internalGetUnboundedResourceArrayAliases(index))
+    {
+        auto &table = d3dGroup->_internalGetDescriptorTables()[alias.srcTableIndex];
+        const D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = { table.gpuHandle.ptr + alias.offsetInSrcTable };
+        commandList_->SetComputeRootDescriptorTable(static_cast<UINT>(alias.rootParamIndex), gpuHandle);
     }
 }
 
 void DirectX12CommandBuffer::BindGroupToRayTracingPipeline(int index, const Ptr<BindingGroup> &group)
 {
-    const auto d3dBindingLayout = static_cast<DirectX12BindingLayout *>(
-        currentRayTracingPipeline_->GetBindingLayout().Get());
+    const auto bindingLayout = static_cast<DirectX12BindingLayout *>(currentRayTracingPipeline_->GetBindingLayout().Get());
     const auto d3dGroup = static_cast<DirectX12BindingGroup *>(group.Get());
-    const int firstRootParamIndex = d3dBindingLayout->_internalGetRootParamIndex(index);
+    const int firstRootParamIndex = bindingLayout->_internalGetRootParamIndex(index);
     for(auto &&[i, table] : Enumerate(d3dGroup->_internalGetDescriptorTables()))
     {
         commandList_->SetComputeRootDescriptorTable(static_cast<UINT>(firstRootParamIndex + i), table.gpuHandle);
+    }
+
+    for(auto &alias : bindingLayout->_internalGetUnboundedResourceArrayAliases(index))
+    {
+        auto &table = d3dGroup->_internalGetDescriptorTables()[alias.srcTableIndex];
+        const D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = { table.gpuHandle.ptr + alias.offsetInSrcTable };
+        commandList_->SetComputeRootDescriptorTable(static_cast<UINT>(alias.rootParamIndex), gpuHandle);
     }
 }
 

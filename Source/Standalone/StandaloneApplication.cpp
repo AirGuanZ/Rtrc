@@ -80,8 +80,20 @@ void StandaloneApplication::Update(const Rtrc::ApplicationUpdateContext &context
             pointLight_->SetShadowSoftness(shadowSoftness);
         }
 
-        imgui.CheckBox(
-            "Low-res optimization for soft shadow", &GetRenderSettings().enableSoftShadowMaskLowResOptimization);
+        if(imgui.BeginCombo("Visualization Mode", GetVisualizationModeName(GetRenderSettings().visualizationMode)))
+        {
+            for(int i = 0; i < Rtrc::EnumCount<Rtrc::Renderer::VisualizationMode>; ++i)
+            {
+                const auto mode = static_cast<Rtrc::Renderer::VisualizationMode>(i);
+                const char *name = GetVisualizationModeName(mode);
+                const bool selected = GetRenderSettings().visualizationMode == mode;
+                if(imgui.Selectable(name, selected))
+                {
+                    GetRenderSettings().visualizationMode = mode;
+                }
+            }
+            imgui.EndCombo();
+        }
     }
     imgui.End();
 

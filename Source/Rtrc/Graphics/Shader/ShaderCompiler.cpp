@@ -767,8 +767,7 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     }
 
     const int setForUngroupedBindings = static_cast<int>(groupLayouts.size());
-    int nextUngroupedT = 0, nextUngroupedU = 0, nextUngroupedS = 0, nextUngroupedB = 0;
-    for(auto &binding : bindings.ungroupedBindings)
+    for(auto &&[ungroupedBindingIndex, binding] : Enumerate(bindings.ungroupedBindings))
     {
         const int slot = bindings.ungroupedBindingNameToSlot.at(binding.name);
         std::string templateStr = binding.templateParam.empty() ? std::string{}
@@ -785,7 +784,7 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
         else
         {
             assert(device_->GetBackendType() == RHI::BackendType::DirectX12);
-            const char *registerTypename; int *pNext;
+            const char *registerTypename;
             switch(binding.type)
             {
                 using enum RHI::BindingType;
@@ -794,26 +793,23 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
             case StructuredBuffer:
             case AccelerationStructure:
                 registerTypename = "t";
-                pNext = &nextUngroupedT;
                 break;
             case ConstantBuffer:
                 registerTypename = "b";
-                pNext = &nextUngroupedB;
                 break;
             case Sampler:
                 registerTypename = "s";
-                pNext = &nextUngroupedS;
                 break;
             case RWTexture:
             case RWBuffer:
             case RWStructuredBuffer:
                 registerTypename = "u";
-                pNext = &nextUngroupedU;
                 break;
             default:
                 Unreachable();
             }
-            std::string regSpec = fmt::format("{}{}, space{}", registerTypename, (*pNext)++, 9999);
+            std::string regSpec = fmt::format(
+                "{}0, space{}", registerTypename, 9000 + ungroupedBindingIndex);
             bindingNameToRegisterSpecifier.insert({ binding.name, regSpec });
             right = fmt::format(
                 "{}{} {}{} : register({})",
@@ -823,7 +819,7 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
         finalMacros.insert({ std::move(left), std::move(right) });
     }
 
-    for(const ParsedBindingAlias &alias : bindings.aliases)
+    for(auto &&[aliasIndex, alias] : Enumerate(bindings.aliases))
     {
         int set, slot;
         if(auto it = bindingNameToSlots.find(alias.aliasedName); it != bindingNameToSlots.end())
@@ -855,10 +851,35 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
         else
         {
             assert(device_->GetBackendType() == RHI::BackendType::DirectX12);
+            const char *registerTypename;
+            switch(alias.type)
+            {
+                using enum RHI::BindingType;
+            case Texture:
+            case Buffer:
+            case StructuredBuffer:
+            case AccelerationStructure:
+                registerTypename = "t";
+                break;
+            case ConstantBuffer:
+                registerTypename = "b";
+                break;
+            case Sampler:
+                registerTypename = "s";
+                break;
+            case RWTexture:
+            case RWBuffer:
+            case RWStructuredBuffer:
+                registerTypename = "u";
+                break;
+            default:
+                Unreachable();
+            }
             right = fmt::format(
-                "{}{} {}{} : register({});",
-                alias.rawTypename, templateStr, alias.name, bindingNameToArraySpecifier.at(alias.aliasedName),
-                bindingNameToRegisterSpecifier.at(alias.aliasedName));
+                "{}{} {}{} : register({}0, space{});",
+                alias.rawTypename, templateStr, alias.name,
+                bindingNameToArraySpecifier.at(alias.aliasedName),
+                registerTypename, 1000 + aliasIndex);
         }
         finalMacros.insert({ std::move(left), std::move(right) });
     }
@@ -1122,18 +1143,27 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     }
 
     shader->info_->shaderBindingLayoutInfo_->nameToBindingGroupLayoutIndex_ = std::move(bindings.nameToGroupIndex);
-    shader->info_->shaderBindingLayoutInfo_->bindingGroupLayouts_ = std::move(groupLayouts);
-    shader->info_->shaderBindingLayoutInfo_->bindingGroupNames_ = std::move(bindings.groupNames);
+    shader->info_->shaderBindingLayoutInfo_->bindingGroupLayouts_           = std::move(groupLayouts);
+    shader->info_->shaderBindingLayoutInfo_->bindingGroupNames_             = std::move(bindings.groupNames);
     
     BindingLayout::Desc bindingLayoutDesc;
     for(auto &group : shader->info_->shaderBindingLayoutInfo_->bindingGroupLayouts_)
     {
         bindingLayoutDesc.groupLayouts.push_back(group);
     }
-
     std::ranges::transform(
         bindings.pushConstantRanges, std::back_inserter(bindingLayoutDesc.pushConstantRanges),
         [](const PushConstantRange &range) { return range.range; });
+    if(device_->GetBackendType() == RHI::BackendType::DirectX12)
+    {
+        for(auto &&[aliasIndex, alias] : Enumerate(bindings.aliases))
+        {
+            bindingLayoutDesc.unboundedAliases.push_back(RHI::UnboundedBindingArrayAliasing
+                {
+                    .srcGroup = bindingNameToSlots.at(alias.aliasedName).first
+                });
+        }
+    }
     shader->info_->shaderBindingLayoutInfo_->bindingLayout_ = device_->CreateBindingLayout(bindingLayoutDesc);
 
     if(inlineSamplerGroupIndex >= 0)
@@ -1399,7 +1429,6 @@ ShaderCompiler::ParsedBindingAlias ShaderCompiler::ParseBindingAlias(ShaderToken
     if(alias.type != RHI::BindingType::Sampler && alias.type != RHI::BindingType::AccelerationStructure)
     {
         tokens.ConsumeOrThrow("<");
-        tokens.Next();
         while(tokens.GetCurrentToken() != ">")
         {
             if(tokens.IsFinished())
@@ -1407,6 +1436,7 @@ ShaderCompiler::ParsedBindingAlias ShaderCompiler::ParseBindingAlias(ShaderToken
                 tokens.Throw("'>' expected");
             }
             alias.templateParam += tokens.GetCurrentToken();
+            tokens.Next();
         }
         tokens.Next();
     }

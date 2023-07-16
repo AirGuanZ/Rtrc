@@ -14,17 +14,21 @@ int main()
             .vsync                      = true,
             .debug                      = RTRC_DEBUG,
             .rayTracing                 = true,
-            .renderThread               = false,
+            .renderThread               = true,
             .handleCrossThreadException = true,
             .backendType                = Rtrc::RHI::BackendType::Default
         });
     }
     catch(const Rtrc::Exception &e)
     {
+#if RTRC_ENABLE_EXCEPTION_STACKTRACE
         Rtrc::LogError("{}\n{}", e.what(), e.stacktrace());
+#else
+        Rtrc::LogErrorUnformatted(e.what());
+#endif
     }
     catch(const std::exception &e)
     {
-        Rtrc::LogError(e.what());
+        Rtrc::LogErrorUnformatted(e.what());
     }
 }

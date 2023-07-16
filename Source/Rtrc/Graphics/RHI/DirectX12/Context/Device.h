@@ -104,6 +104,9 @@ public:
     ID3D12DescriptorHeap *_internalGetGPUDescriptorHeap_CbvSrvUav() const;
     ID3D12DescriptorHeap *_internalGetGPUDescriptorHeap_Sampler() const;
 
+    uint32_t _internalGetDescriptorHandleIncrementSize_CbvSrvUav() const;
+    uint32_t _internalGetDescriptorHandleIncrementSize_Sampler() const;
+
     void _internalFreeBindingGroup(DirectX12BindingGroup &bindingGroup);
 
     D3D12_CPU_DESCRIPTOR_HANDLE _internalOffsetDescriptorHandle(
@@ -137,6 +140,9 @@ private:
     ComPtr<ID3D12CommandSignature> indirectDrawIndexedCommandSignature_;
 
     ShaderGroupRecordRequirements shaderGroupRecordRequirements_;
+
+    uint32_t srvUavCbvDescriptorSize_;
+    uint32_t samplerDescriptorSize_;
 };
 
 inline D3D12_CPU_DESCRIPTOR_HANDLE DirectX12Device::_internalAllocateCPUDescriptorHandle_CbvSrvUav()
@@ -207,6 +213,16 @@ inline ID3D12DescriptorHeap *DirectX12Device::_internalGetGPUDescriptorHeap_CbvS
 inline ID3D12DescriptorHeap *DirectX12Device::_internalGetGPUDescriptorHeap_Sampler() const
 {
     return gpuDescHeap_Sampler_->GetNativeHeap();
+}
+
+inline uint32_t DirectX12Device::_internalGetDescriptorHandleIncrementSize_CbvSrvUav() const
+{
+    return srvUavCbvDescriptorSize_;
+}
+
+inline uint32_t DirectX12Device::_internalGetDescriptorHandleIncrementSize_Sampler() const
+{
+    return samplerDescriptorSize_;
 }
 
 RTRC_RHI_D3D12_END

@@ -122,6 +122,9 @@ DirectX12Device::DirectX12Device(
     shaderGroupRecordRequirements_.shaderGroupHandleAlignment = D3D12_RAYTRACING_SHADER_RECORD_BYTE_ALIGNMENT;
     shaderGroupRecordRequirements_.shaderGroupBaseAlignment   = D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT;
     shaderGroupRecordRequirements_.maxShaderGroupStride       = 4096;
+
+    srvUavCbvDescriptorSize_ = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    samplerDescriptorSize_ = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
 }
 
 DirectX12Device::~DirectX12Device()

@@ -16,7 +16,7 @@ RenderLoop::RenderLoop(
     , bindlessTextures_(bindlessTextures)
     , frameIndex_      (1)
     , renderMeshes_    ({ config.rayTracing }, device)
-    , renderScene_     ({ config.rayTracing }, device, builtinResources)
+    , renderScene_     ({ config.rayTracing }, device, builtinResources, bindlessTextures)
 {
     imguiRenderer_       = MakeBox<ImGuiRenderer>(device_);
     renderGraphExecuter_ = MakeBox<RG::Executer>(device_);
@@ -26,6 +26,7 @@ RenderLoop::RenderLoop(
     gbufferPass_          = MakeBox<GBufferPass>(device_);
     deferredLightingPass_ = MakeBox<DeferredLightingPass>(device_, builtinResources_);
     shadowMaskPass_       = MakeBox<ShadowMaskPass>(device_, builtinResources_);
+    pathTracer_           = MakeBox<PathTracer>(device_, builtinResources_);
 
     device_->BeginRenderLoop();
     if(config_.mode == Mode::Threaded)
@@ -243,21 +244,42 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
         cameraAtmosphere);
     RTRC_SCOPE_EXIT{ renderAtmosphere.ClearPerCameraFrameData(cameraAtmosphere); };
     auto skyLut = cameraAtmosphere.S;
-    
+
+    // ============= Indirect diffuse =============
+
+    const bool visIndirectDiffuse = frame.renderSettings.visualizationMode == VisualizationMode::IndirectDiffuse;
+    pathTracer_->Render(*renderGraph, *renderCamera, gbuffers, framebuffer->GetSize(), visIndirectDiffuse);
+    RTRC_SCOPE_EXIT{ pathTracer_->ClearFrameData(renderCamera->GetPathTracingData()); };
+
     // ============= Deferred lighting =============
     
     deferredLightingPass_->Render(
         *renderCamera, gbuffers, skyLut, *renderGraph, framebuffer);
 
+    // ============= Blit =============
+
+    if(frame.renderSettings.visualizationMode == VisualizationMode::IndirectDiffuse)
+    {
+        renderGraph->CreateBlitTexture2DPass(
+            "Visualize indirect diffuse",
+            renderCamera->GetPathTracingData().indirectDiffuse,
+            swapchainImage,
+            true, 1 / 2.2f);
+    }
+    else
+    {
+        renderGraph->CreateBlitTexture2DPass(
+            "BlitToSwapchain",
+            framebuffer,
+            swapchainImage,
+            true, 1.0f);
+    }
+
     // ============= ImGui =============
 
     imguiRenderer_->Render(
-        frame.imguiDrawData.get(), framebuffer, renderGraph.get());
-
-    // ============= Blit =============
-
-    renderGraph->CreateBlitTexture2DPass("BlitToSwapchain", framebuffer, swapchainImage, true);
-
+        frame.imguiDrawData.get(), swapchainImage, renderGraph.get());
+    
     // ============= Execution =============
 
     transientConstantBufferAllocator_->Flush();

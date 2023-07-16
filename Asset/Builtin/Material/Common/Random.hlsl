@@ -72,7 +72,7 @@ namespace Pcg
 
     float NextFloat(inout uint state)
     {
-        uint word = PcgNext(state);
+        uint word = Pcg::Next(state);
         return word * (1 / 4294967296.0);
     }
 

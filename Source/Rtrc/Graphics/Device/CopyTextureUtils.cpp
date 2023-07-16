@@ -12,6 +12,9 @@ namespace CopyTextureUtilsDetail
 rtrc_group(Pass)
 {
     rtrc_define(Texture2D<float4>, Src)
+#if USE_GAMMA
+    rtrc_uniform(float, gamma)
+#endif
 };
 #if USE_POINT_SAMPLING
 rtrc_sampler(Sampler, filter = point, address_u = repeat, address_v = clamp)
@@ -33,13 +36,19 @@ Vs2Ps VSMain(uint id : SV_VertexID)
 }
 float4 PSMain(Vs2Ps input) : SV_Target
 {
-    return Src.SampleLevel(Sampler, input.uv, 0);
+    float4 result = Src.SampleLevel(Sampler, input.uv, 0);
+#if USE_GAMMA
+    result.xyz = pow(result.xyz, Pass.gamma);
+#endif
+    return result;
 }
 )___";
 
+    template<bool EnableGamma>
     rtrc_group(Pass)
     {
         rtrc_define(Texture2D, Src);
+        rtrc_cond_uniform(EnableGamma, float, gamma);
     };
 
 } // namespace namespace CopyTextureUtilsDetail
@@ -50,16 +59,18 @@ CopyTextureUtils::CopyTextureUtils(ObserverPtr<Device> device)
     ShaderCompiler shaderCompiler;
     shaderCompiler.SetDevice(device);
     const ShaderCompiler::ShaderSource source = { .source = CopyTextureUtilsDetail::SHADER_SOURCE_POINT_SAMPLING };
-    shaderUsingPointSampling_ = shaderCompiler.Compile(source, { { "USE_POINT_SAMPLING", "1" } }, RTRC_DEBUG);
-    shaderUsingLinearSampling_ = shaderCompiler.Compile(source, { { "USE_POINT_SAMPLING", "0" } }, RTRC_DEBUG);
-    bindingGroupLayout_ = device->CreateBindingGroupLayout<CopyTextureUtilsDetail::Pass>();
+    shaderPointSampling_ = shaderCompiler.Compile(source, { { "USE_POINT_SAMPLING", "1" }, { "USE_GAMMA", "0" }}, RTRC_DEBUG);
+    shaderLinearSampling_ = shaderCompiler.Compile(source, { { "USE_POINT_SAMPLING", "0" }, { "USE_GAMMA", "0" } }, RTRC_DEBUG);
+    shaderPointSamplingGamma_ = shaderCompiler.Compile(source, { { "USE_POINT_SAMPLING", "1" }, { "USE_GAMMA", "1" } }, RTRC_DEBUG);
+    shaderLinearSamplingGamma_ = shaderCompiler.Compile(source, { { "USE_POINT_SAMPLING", "0" }, { "USE_GAMMA", "1" } }, RTRC_DEBUG);
 }
 
-void CopyTextureUtils::RenderQuad(
+void CopyTextureUtils::RenderFullscreenTriangle(
     CommandBuffer    &commandBuffer,
     const TextureSrv &src,
     const TextureRtv &dst,
-    SamplingMethod    samplingMethod)
+    SamplingMethod    samplingMethod,
+    float             gamma)
 {
     commandBuffer.BeginRenderPass(ColorAttachment
     {
@@ -69,13 +80,25 @@ void CopyTextureUtils::RenderQuad(
     });
     RTRC_SCOPE_EXIT{ commandBuffer.EndRenderPass(); };
 
+    const bool enableGamma = gamma != 1.0f;
     auto dstTexture = dst.GetTexture().get();
-    auto pipeline = GetPipeline(dstTexture->GetFormat(), samplingMethod == Point);
+    auto pipeline = GetPipeline(Key{ dstTexture->GetFormat(), samplingMethod, enableGamma });
     commandBuffer.BindGraphicsPipeline(pipeline);
 
-    CopyTextureUtilsDetail::Pass passData;
-    passData.Src = src;
-    auto passGroup = device_->CreateBindingGroup(passData, bindingGroupLayout_);
+    RC<BindingGroup> passGroup;
+    if(enableGamma)
+    {
+        CopyTextureUtilsDetail::Pass<true> passData;
+        passData.Src = src;
+        passData.gamma = gamma;
+        passGroup = RTRC_CREATE_BINDING_GROUP_WITH_CACHED_LAYOUT(device_, passData);
+    }
+    else
+    {
+        CopyTextureUtilsDetail::Pass<false> passData;
+        passData.Src = src;
+        passGroup = RTRC_CREATE_BINDING_GROUP_WITH_CACHED_LAYOUT(device_, passData);
+    }
     commandBuffer.BindGraphicsGroup(0, passGroup);
 
     commandBuffer.SetViewports(dstTexture->GetViewport());
@@ -83,31 +106,31 @@ void CopyTextureUtils::RenderQuad(
     commandBuffer.Draw(3, 1, 0, 0);
 }
 
-const RC<GraphicsPipeline> &CopyTextureUtils::GetPipeline(RHI::Format format, bool pointSampling)
+const RC<GraphicsPipeline> &CopyTextureUtils::GetPipeline(const Key &key)
 {
-    auto &map = pointSampling ? dstFormatToPipelineUsingPointSampling_ : dstFormatToPipelineUsingLinearSampling_;
-
     {
         std::shared_lock lock(mutex_);
-        if(auto it = map.find(format); it != map.end())
+        if(auto it = keyToPipeline_.find(key); it != keyToPipeline_.end())
         {
             return it->second;
         }
     }
 
     std::lock_guard lock(mutex_);
-    if(auto it = map.find(format); it != map.end())
+    if(auto it = keyToPipeline_.find(key); it != keyToPipeline_.end())
     {
         return it->second;
     }
 
-    auto &shader = pointSampling ? shaderUsingPointSampling_ : shaderUsingLinearSampling_;
+    auto &shader = key.samplingMethod == Point ?
+        (key.enableGamma ? shaderPointSamplingGamma_ : shaderPointSampling_) :
+        (key.enableGamma ? shaderLinearSamplingGamma_ : shaderLinearSampling_);
     auto newPipeline = device_->CreateGraphicsPipeline(GraphicsPipeline::Desc
     {
         .shader                 = shader,
-        .colorAttachmentFormats = { format }
+        .colorAttachmentFormats = { key.dstFormat }
     });
-    auto it = map.insert({ format, std::move(newPipeline) }).first;
+    auto it = keyToPipeline_.insert({ key, std::move(newPipeline) }).first;
     return it->second;
 }
 

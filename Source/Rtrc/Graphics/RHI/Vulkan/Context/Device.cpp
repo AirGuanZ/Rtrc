@@ -941,6 +941,11 @@ Ptr<BindingGroup> VulkanDevice::CreateBindingGroup(
 
 Ptr<BindingLayout> VulkanDevice::CreateBindingLayout(const BindingLayoutDesc &desc)
 {
+    if(!desc.unboundedAliases.empty())
+    {
+        throw Exception("VulkanDevice::CreateBindingLayout: unbounded resource array aliasing is not supported");
+    }
+
     std::vector<VkDescriptorSetLayout> setLayouts;
     for(auto &group : desc.groups)
     {

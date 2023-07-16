@@ -9,7 +9,8 @@ void PathTracer::Render(
     RG::RenderGraph &renderGraph,
     RenderCamera    &camera,
     const GBuffers  &gbuffers,
-    const Vector2u  &framebufferSize) const
+    const Vector2u  &framebufferSize,
+    bool             clearBeforeRender) const
 {
     RTRC_RG_SCOPED_PASS_GROUP(renderGraph, "PathTracing");
 
@@ -25,10 +26,15 @@ void PathTracer::Render(
         .height = framebufferSize.y,
         .usage  = RHI::TextureUsage::ShaderResource | RHI::TextureUsage::UnorderAccess
     });
-    
-    rtrc_group(TracePassGroup)
+
+    if(clearBeforeRender)
     {
-        GBufferBindings_NormalDepth gbuffers;
+        // TODO
+    }
+    
+    rtrc_group(TracePassGroup, CS)
+    {
+        rtrc_inline(GBufferBindings_NormalDepth, gbuffers);
 
         rtrc_define(ConstantBuffer<CameraConstantBuffer>, Camera);
 
@@ -52,7 +58,7 @@ void PathTracer::Render(
     pass->Use(camera.GetAtmosphereData().S, RG::CS_Texture);
     pass->Read(scene.GetRGTlas(), RHI::PipelineStage::ComputeShader);
     pass->Use(scene.GetRGInstanceBuffer(), RG::CS_StructuredBuffer);
-    pass->Use(rngState, RG::CS_Texture);
+    pass->Use(rngState, RG::CS_RWTexture);
     pass->Use(perCameraData.indirectDiffuse, RG::CS_RWTexture_WriteOnly);
     pass->SetCallback([gbuffers, perCameraData, rngState, &scene, &camera, framebufferSize, this]
     {
@@ -64,16 +70,18 @@ void PathTracer::Render(
         passData.Camera           = camera.GetCameraCBuffer();
         passData.SkyLut           = camera.GetAtmosphereData().S;
         passData.Tlas             = scene.GetRGTlas();
-        passData.Instances        = scene.GetRGInstanceBuffer();
+        passData.Instances        = scene.GetRGInstanceBuffer()->GetStructuredSrv(sizeof(RenderScene::TlasInstance));
         passData.RngState         = rngState;
         passData.Output           = perCameraData.indirectDiffuse;
         passData.outputResolution = framebufferSize;
+        passData.maxDepth         = 5;
         auto passGroup = RTRC_CREATE_BINDING_GROUP_WITH_CACHED_LAYOUT(device_, passData);
-        auto geometryBufferGroup = scene.GetRenderMeshes().GetGeometryBuffersBindingGroup();
+        auto geometryBufferGroup = scene.GetRenderMeshes().GetGlobalGeometryBuffersBindingGroup();
+        auto textureGroup = scene.GetGlobalTextureBindingGroup();
         
         auto &commandBuffer = RG::GetCurrentCommandBuffer();
         commandBuffer.BindComputePipeline(shader->GetComputePipeline());
-        commandBuffer.BindComputeGroups({ passGroup, geometryBufferGroup });
+        commandBuffer.BindComputeGroups({ passGroup, geometryBufferGroup, textureGroup });
         commandBuffer.DispatchWithThreadCount(framebufferSize);
     });
 }

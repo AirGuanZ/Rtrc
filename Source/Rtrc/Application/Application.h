@@ -81,6 +81,8 @@ private:
     Box<Scene>               activeScene_;
     Camera                   activeCamera_;
     Renderer::RenderSettings activeRenderSettings_;
+
+    Renderer::VisualizationMode visualizationMode_ = Renderer::VisualizationMode::None;
 };
 
 RTRC_END

@@ -54,8 +54,14 @@ namespace VkPhysicalDeviceDetail
             synchronization2);
 
         ADD_PHYSICAL_DEVICE_FEATURE(
-            VkPhysicalDeviceDescriptorIndexingFeatures,
-            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES,
+            VkPhysicalDevice16BitStorageFeatures,
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES,
+            storageBuffer16BitAccess);
+
+        ADD_PHYSICAL_DEVICE_FEATURE(
+            VkPhysicalDeviceVulkan12Features,
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
+            shaderFloat16,
             shaderInputAttachmentArrayDynamicIndexing,
             shaderUniformTexelBufferArrayDynamicIndexing,
             shaderStorageTexelBufferArrayDynamicIndexing,
@@ -75,19 +81,11 @@ namespace VkPhysicalDeviceDetail
             descriptorBindingUpdateUnusedWhilePending,
             descriptorBindingPartiallyBound,
             descriptorBindingVariableDescriptorCount,
-            runtimeDescriptorArray);
-
-        ADD_PHYSICAL_DEVICE_FEATURE(
-            VkPhysicalDeviceBufferDeviceAddressFeatures,
-            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES,
-            bufferDeviceAddress);
-
-        // Allow StructuredBuffer<struct { float3 }>
-        ADD_PHYSICAL_DEVICE_FEATURE(
-            VkPhysicalDeviceScalarBlockLayoutFeatures,
-            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES,
-            scalarBlockLayout);
-
+            runtimeDescriptorArray,
+            bufferDeviceAddress,
+            scalarBlockLayout // Allow StructuredBuffer<struct { float3 }>
+        );
+        
         if(enableRayTracing)
         {
             ADD_PHYSICAL_DEVICE_FEATURE(
@@ -154,11 +152,18 @@ namespace VkPhysicalDeviceDetail
             last = current;
             current += feature.size;
         }
-
+        
         VkPhysicalDeviceFeatures2 feature2 = {};
         feature2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
         feature2.pNext = last;
+        feature2.features.shaderInt16 = true;
         vkGetPhysicalDeviceFeatures2(device, &feature2);
+
+        if(!feature2.features.shaderInt16)
+        {
+            unsupportedFeatureString = fmt::format("VkPhysicalDeviceFeatures.shaderInt16");
+            return false;
+        }
 
         current = storage.get();
         for(const PhysicalDeviceFeature &feature : features)
@@ -360,6 +365,7 @@ VkPhysicalDeviceFeatures2 VulkanPhysicalDevice::GetRequiredFeatures(
     ret.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
     ret.pNext = EnablePhysicalDeviceFeatures(
         VkPhysicalDeviceDetail::GetRequiredPhysicalDeviceFeatures(desc.enableRayTracing), storage);
+    ret.features.shaderInt16 = true;
     return ret;
 }
 

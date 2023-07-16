@@ -32,7 +32,8 @@ public:
         RG::RenderGraph &renderGraph,
         RenderCamera    &camera,
         const GBuffers  &gbuffers,
-        const Vector2u  &framebufferSize) const;
+        const Vector2u  &framebufferSize,
+        bool             clearBeforeRender) const;
 
     void ClearFrameData(PerCameraData &data) const;
 
@@ -44,9 +45,6 @@ private:
         PassIndex_Count
     };
     
-    ObserverPtr<Device>                 device_;
-    ObserverPtr<BuiltinResourceManager> builtinResources_;
-
     Parameters parameters_;
 };
 

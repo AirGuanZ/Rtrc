@@ -600,10 +600,18 @@ struct PushConstantRange
     bool operator==(const PushConstantRange &) const = default;
 };
 
+struct UnboundedBindingArrayAliasing
+{
+    int srcGroup; // assert(groups[srcGroup].variableArraySize)
+
+    auto operator<=>(const UnboundedBindingArrayAliasing &) const = default;
+};
+
 struct BindingLayoutDesc
 {
-    std::vector<Ptr<BindingGroupLayout>> groups;
-    std::vector<PushConstantRange> pushConstantRanges;
+    std::vector<Ptr<BindingGroupLayout>>       groups;
+    std::vector<PushConstantRange>             pushConstantRanges;
+    std::vector<UnboundedBindingArrayAliasing> unboundedAliases;
 
     auto operator<=>(const BindingLayoutDesc &) const = default;
     bool operator==(const BindingLayoutDesc &) const = default;

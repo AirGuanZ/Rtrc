@@ -58,6 +58,8 @@ public:
 
 private:
 
+    static bool SupportRayQueryDebugInfo(Target target);
+
     struct Impl;
 
     Impl *impl_;

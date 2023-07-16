@@ -111,6 +111,8 @@ public:
     void Combo(const char *label, int *curr, const char *itemsSeparatedByZeros, int popupMaxHeightInItems = -1);
     void Combo(const char *label, int *curr, const ItemGetter &getItem, int itemCount, int popupMaxHeightInItems = -1);
 
+    bool Selectable(const char *label, bool selected, ImGuiSelectableFlags flags = 0, const Vector2f &size = {});
+
     bool DragFloat (const char *label, float    *v, float vSpeed = 1.0f, float vMin = 0.0f, float vMax = 0.0f, const char *format = "%.3f", ImGuiSliderFlags flags = 0);
     bool DragFloat2(const char *label, float    *v, float vSpeed = 1.0f, float vMin = 0.0f, float vMax = 0.0f, const char *format = "%.3f", ImGuiSliderFlags flags = 0);
     bool DragFloat3(const char *label, float    *v, float vSpeed = 1.0f, float vMin = 0.0f, float vMax = 0.0f, const char *format = "%.3f", ImGuiSliderFlags flags = 0);

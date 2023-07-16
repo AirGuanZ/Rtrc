@@ -41,9 +41,8 @@ public:
     // Returns nullptr when no blas is built
     RG::Pass *GetRGBuildBlasPass() const;
 
-    RC<BindingGroup> GetGeometryBuffersBindingGroup() const;
-
-    const RC<BindingGroupLayout> &GetGeometryBuffersBindingGroupLayout() const;
+          RC<BindingGroup>        GetGlobalGeometryBuffersBindingGroup()       const;
+    const RC<BindingGroupLayout> &GetGlobalGeometryBuffersBindingGroupLayout() const;
     
 private:
 
@@ -67,12 +66,12 @@ inline RG::Pass *RenderMeshes::GetRGBuildBlasPass() const
     return buildBlasPass_;
 }
 
-inline RC<BindingGroup> RenderMeshes::GetGeometryBuffersBindingGroup() const
+inline RC<BindingGroup> RenderMeshes::GetGlobalGeometryBuffersBindingGroup() const
 {
     return bindlessBufferManager_->GetBindingGroup();
 }
 
-inline const RC<BindingGroupLayout> &RenderMeshes::GetGeometryBuffersBindingGroupLayout() const
+inline const RC<BindingGroupLayout> &RenderMeshes::GetGlobalGeometryBuffersBindingGroupLayout() const
 {
     return bindlessBufferManager_->GetBindingGroupLayout();
 }

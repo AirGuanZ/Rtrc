@@ -1,7 +1,5 @@
-#include <half.hpp>
-
+#include <Rtrc/Renderer/DeferredLighting/ShadowMaskPass.h>
 #include <Rtrc/Renderer/GBufferBinding.h>
-#include <Rtrc/Renderer/Passes/ShadowMaskPass.h>
 #include <Rtrc/Renderer/Scene/RenderCamera.h>
 #include <Rtrc/Math/DistributionTransform.h>
 

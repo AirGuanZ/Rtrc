@@ -6,9 +6,31 @@
 
 RTRC_RHI_D3D12_BEGIN
 
+// Root signature layout
+//     binding group 0
+//     binding group 1
+//     ...
+//     binding group X
+//     push constant range 0
+//     push constant range 1
+//     ...
+//     push constant range Y
+//     alias 0
+//     alias 1
+//     ...
+//     alias Z
+
 RTRC_RHI_IMPLEMENT(DirectX12BindingLayout, BindingLayout)
 {
 public:
+
+    struct Alias
+    {
+        int srcRootParamIndex;
+        int srcTableIndex;
+        int rootParamIndex;
+        int offsetInSrcTable; // In bytes
+    };
     
     DirectX12BindingLayout(DirectX12Device *device, BindingLayoutDesc desc);
 
@@ -22,6 +44,8 @@ public:
     const BindingLayoutDesc &_internalGetDesc() const { return desc_; }
 
     const ComPtr<ID3D12RootSignature> &_internalGetRootSignature(bool allowIA) const;
+
+    Span<Alias> _internalGetUnboundedResourceArrayAliases(int groupIndex) const { return groupIndexToAliases_[groupIndex]; }
 
 private:
 
@@ -39,6 +63,10 @@ private:
     mutable tbb::spin_rw_mutex          rootSignatureMutex_;
     mutable ComPtr<ID3D12RootSignature> rootSignature_;
     mutable ComPtr<ID3D12RootSignature> rootSignatureAllowInputAssembler_;
+
+    int firstAliasRootParamIndex_ = -1;
+    std::vector<Alias>       aliases_;
+    std::vector<Span<Alias>> groupIndexToAliases_;
 };
 
 RTRC_RHI_D3D12_END

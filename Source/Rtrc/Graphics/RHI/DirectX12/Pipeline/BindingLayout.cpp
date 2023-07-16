@@ -2,19 +2,36 @@
 
 #include <Rtrc/Graphics/RHI/DirectX12/Context/Device.h>
 #include <Rtrc/Graphics/RHI/DirectX12/Pipeline/BindingLayout.h>
+#include <Rtrc/Graphics/RHI/Helper/D3D12BindingGroupLayoutAux.h>
 #include <Rtrc/Utility/Enumerate.h>
 
 RTRC_RHI_D3D12_BEGIN
 
+namespace DirectX12BindingLayoutDetail
+{
+
+    D3D12_SHADER_VISIBILITY TranslateHelperShaderVisibility(Helper::D3D12DescTable::ShaderVisibility vis)
+    {
+        using enum Helper::D3D12DescTable::ShaderVisibility;
+        return vis == All ? D3D12_SHADER_VISIBILITY_ALL :
+               vis == VS  ? D3D12_SHADER_VISIBILITY_VERTEX :
+                            D3D12_SHADER_VISIBILITY_PIXEL;
+    }
+    
+} // namespace DirectX12BindingLayoutDetail
+
 DirectX12BindingLayout::DirectX12BindingLayout(DirectX12Device *device, BindingLayoutDesc desc)
     : device_(device), desc_(std::move(desc))
 {
+    using namespace DirectX12BindingLayoutDetail;
+
     size_t rangeCount = 0;
     for(auto &groupLayout : desc_.groups)
     {
         const auto bindingGroupLayout = static_cast<DirectX12BindingGroupLayout *>(groupLayout.Get());
         rangeCount += bindingGroupLayout->_internalGetD3D12Desc().ranges.size();
     }
+    rangeCount += static_cast<int>(desc_.unboundedAliases.size());
     descRanges_.reserve(rangeCount);
 
     bindingGroupIndexToRootParamIndex_.resize(desc_.groups.size());
@@ -27,10 +44,7 @@ DirectX12BindingLayout::DirectX12BindingLayout(DirectX12Device *device, BindingL
             auto &rootParam = rootParams_.emplace_back();
 
             rootParam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-            rootParam.ShaderVisibility =
-                table.shaderVisibility == Helper::D3D12DescTable::All ? D3D12_SHADER_VISIBILITY_ALL :
-                table.shaderVisibility == Helper::D3D12DescTable::VS  ? D3D12_SHADER_VISIBILITY_VERTEX :
-                                                                        D3D12_SHADER_VISIBILITY_PIXEL;
+            rootParam.ShaderVisibility = TranslateHelperShaderVisibility(table.shaderVisibility);
 
             const size_t oldRangeCount = descRanges_.size();
             for(int i = 0; i < table.rangeCount; ++i)
@@ -66,11 +80,7 @@ DirectX12BindingLayout::DirectX12BindingLayout(DirectX12Device *device, BindingL
             for(uint32_t i = 0; i < bindingAssignment.immutableSamplers.size(); ++i)
             {
                 auto &s = bindingAssignment.immutableSamplers[i];
-
-                const D3D12_SHADER_VISIBILITY vis =
-                    s.shaderVisibility == Helper::D3D12DescTable::All ? D3D12_SHADER_VISIBILITY_ALL:
-                    s.shaderVisibility == Helper::D3D12DescTable::VS  ? D3D12_SHADER_VISIBILITY_VERTEX :
-                                                                            D3D12_SHADER_VISIBILITY_PIXEL;
+                const D3D12_SHADER_VISIBILITY vis = TranslateHelperShaderVisibility(s.shaderVisibility);
                 D3D12_STATIC_SAMPLER_DESC d3d12Desc = TranslateStaticSamplerDesc(s.desc, vis);
                 d3d12Desc.RegisterSpace = static_cast<UINT>(groupIndex);
                 d3d12Desc.ShaderRegister = bindingAssignment.registerInSpace + i;
@@ -90,6 +100,66 @@ DirectX12BindingLayout::DirectX12BindingLayout(DirectX12Device *device, BindingL
         param.ShaderVisibility = pcr.stages == ShaderStage::VS ? D3D12_SHADER_VISIBILITY_VERTEX :
                                  pcr.stages == ShaderStage::FS ? D3D12_SHADER_VISIBILITY_PIXEL :
                                                                  D3D12_SHADER_VISIBILITY_ALL;
+    }
+
+    firstAliasRootParamIndex_ = static_cast<int>(rootParams_.size());
+    for(auto &&[aliasIndex, alias] : Enumerate(desc_.unboundedAliases))
+    {
+        auto *srcGroupLayout = static_cast<DirectX12BindingGroupLayout *>(desc_.groups[alias.srcGroup].Get());
+        auto &srcDesc = srcGroupLayout->GetDesc();
+        assert(srcDesc.variableArraySize);
+
+        const int srcSlot = static_cast<int>(srcGroupLayout->GetDesc().bindings.size() - 1);
+        assert(srcDesc.bindings[srcSlot].bindless);
+        
+        auto &srcAssignment = srcGroupLayout->_internalGetD3D12Desc().bindings[srcSlot];
+        auto &srcTable = srcGroupLayout->_internalGetD3D12Desc().tables[srcAssignment.tableIndex];
+
+        auto &srcRange = descRanges_[srcTable.firstRange + srcAssignment.rangeIndexInTable];
+        auto &dstRange = descRanges_.emplace_back();
+        dstRange.RangeType                         = srcRange.RangeType;
+        dstRange.NumDescriptors                    = srcRange.NumDescriptors;
+        dstRange.BaseShaderRegister                = 0;
+        dstRange.RegisterSpace                     = 1000u + static_cast<UINT>(aliasIndex);
+        dstRange.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+        const int incSize = static_cast<int>(
+            srcTable.type == Helper::D3D12DescTable::SrvUavCbv ?
+                device->_internalGetDescriptorHandleIncrementSize_CbvSrvUav() :
+                device->_internalGetDescriptorHandleIncrementSize_Sampler());
+
+        auto &dstAlias = aliases_.emplace_back();
+        dstAlias.srcRootParamIndex = alias.srcGroup;
+        dstAlias.srcTableIndex     = srcAssignment.tableIndex;
+        dstAlias.rootParamIndex    = static_cast<int>(rootParams_.size());
+        dstAlias.offsetInSrcTable  = srcAssignment.offsetInTable * incSize;
+
+        auto &param = rootParams_.emplace_back();
+        param.ParameterType                       = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+        param.ShaderVisibility                    = TranslateHelperShaderVisibility(srcTable.shaderVisibility);
+        param.DescriptorTable.NumDescriptorRanges = 1;
+        param.DescriptorTable.pDescriptorRanges   = &dstRange;
+    }
+
+    std::ranges::sort(aliases_, [](const Alias &lhs, const Alias &rhs)
+    {
+        return lhs.srcRootParamIndex < rhs.srcRootParamIndex;
+    });
+
+    uint32_t nextAliasIndex = 0;
+    groupIndexToAliases_.resize(desc_.groups.size());
+    for(uint32_t i = 0; i < groupIndexToAliases_.size(); ++i)
+    {
+        uint32_t end = nextAliasIndex;
+        while(end < aliases_.size() && aliases_[end].srcRootParamIndex == static_cast<int>(i))
+        {
+            ++end;
+        }
+        if(nextAliasIndex != end)
+        {
+            groupIndexToAliases_[i] = Span(&aliases_[nextAliasIndex], end - nextAliasIndex);
+            nextAliasIndex = end;
+        }
     }
 
     rootSignatureDesc_.NumParameters     = static_cast<UINT>(rootParams_.size());

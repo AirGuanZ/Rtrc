@@ -17,25 +17,34 @@ public:
 
     explicit CopyTextureUtils(ObserverPtr<Device> device);
 
-    void RenderQuad(
+    void RenderFullscreenTriangle(
         CommandBuffer    &commandBuffer,
         const TextureSrv &src,
         const TextureRtv &dst,
-        SamplingMethod    samplingMethod);
+        SamplingMethod    samplingMethod,
+        float             gamma = 1.0f);
 
 private:
 
-    const RC<GraphicsPipeline> &GetPipeline(RHI::Format format, bool pointSampling);
+    struct Key
+    {
+        RHI::Format    dstFormat;
+        SamplingMethod samplingMethod;
+        bool           enableGamma;
+
+        auto operator<=>(const Key &) const = default;
+    };
+
+    const RC<GraphicsPipeline> &GetPipeline(const Key &key);
 
     ObserverPtr<Device> device_;
-
-    RC<Shader> shaderUsingPointSampling_;
-    RC<Shader> shaderUsingLinearSampling_;
-    RC<BindingGroupLayout> bindingGroupLayout_;
+    RC<Shader> shaderPointSampling_;
+    RC<Shader> shaderLinearSampling_;
+    RC<Shader> shaderPointSamplingGamma_;
+    RC<Shader> shaderLinearSamplingGamma_;
 
     tbb::spin_rw_mutex mutex_;
-    std::map<RHI::Format, RC<GraphicsPipeline>> dstFormatToPipelineUsingPointSampling_;
-    std::map<RHI::Format, RC<GraphicsPipeline>> dstFormatToPipelineUsingLinearSampling_;
+    std::map<Key, RC<GraphicsPipeline>> keyToPipeline_;
 };
 
 RTRC_END

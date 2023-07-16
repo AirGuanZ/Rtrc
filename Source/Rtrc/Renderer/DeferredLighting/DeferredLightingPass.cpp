@@ -1,5 +1,5 @@
+#include <Rtrc/Renderer/DeferredLighting/DeferredLightingPass.h>
 #include <Rtrc/Renderer/GBufferBinding.h>
-#include <Rtrc/Renderer/Passes/DeferredLightingPass.h>
 #include <Rtrc/Renderer/Scene/RenderCamera.h>
 #include <Rtrc/Renderer/Utility/FullscreenPrimitive.h>
 #include <Rtrc/Utility/Enumerate.h>

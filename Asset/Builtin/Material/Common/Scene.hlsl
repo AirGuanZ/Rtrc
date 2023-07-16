@@ -34,11 +34,38 @@ struct DirectionalLightShadingData
 
 struct TlasInstance
 {
-    uint16_t  albedoTextureIndex;
-    float16_t albedoScale;
-    uint16_t  geometryBufferIndex : 15;
-    uint16_t  hasIndexBuffer : 1;
-    uint16_t  pad0;
+    uint16_t  _albedoTextureIndex;
+    float16_t _albedoScale;
+    uint16_t  _encodeGeometryBufferInfo;
+    uint16_t  _pad0;
+
+    uint GetAlbedoTextureIndex()
+    {
+        return _albedoTextureIndex;
+    }
+
+    float GetAlbedoScale()
+    {
+        return _albedoScale;
+    }
+
+    uint GetGeometryBufferIndex()
+    {
+        // 2023.07.16:
+        // If we don't explicitly convert _encodeGeometryBufferInfo to uint before using bit operation,
+        // dxc will generate invalid spirv for vulkan backend.
+        return (uint)_encodeGeometryBufferInfo & 0x3fff;
+    }
+
+    bool HasIndexBuffer()
+    {
+        return ((uint)_encodeGeometryBufferInfo >> 15) != 0;
+    }
+
+    bool IsUInt16Index()
+    {
+        return ((uint)_encodeGeometryBufferInfo & 8000) != 0;
+    }
 };
 
 struct BuiltinVertexStruct_Default
