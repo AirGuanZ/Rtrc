@@ -91,13 +91,13 @@ void CopyTextureUtils::RenderFullscreenTriangle(
         CopyTextureUtilsDetail::Pass<true> passData;
         passData.Src = src;
         passData.gamma = gamma;
-        passGroup = RTRC_CREATE_BINDING_GROUP_WITH_CACHED_LAYOUT(device_, passData);
+        passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
     }
     else
     {
         CopyTextureUtilsDetail::Pass<false> passData;
         passData.Src = src;
-        passGroup = RTRC_CREATE_BINDING_GROUP_WITH_CACHED_LAYOUT(device_, passData);
+        passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
     }
     commandBuffer.BindGraphicsGroup(0, passGroup);
 

@@ -1567,7 +1567,7 @@ public:
     // Clear
 
     RTRC_RHI_API void ClearColorTexture2D(Texture *dst, const ColorClearValue &clearValue) RTRC_RHI_API_PURE;
-
+    
     // Debug
 
     RTRC_RHI_API void BeginDebugEvent(const DebugLabel &label) RTRC_RHI_API_PURE;

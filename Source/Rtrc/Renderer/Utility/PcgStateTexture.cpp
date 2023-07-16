@@ -40,7 +40,7 @@ RG::TextureResource *Prepare2DPcgStateTexture(
         Pass passData;
         passData.Output = ret;
         passData.resolution = size;
-        auto passGroup = RTRC_CREATE_BINDING_GROUP_WITH_CACHED_LAYOUT(device, passData);
+        auto passGroup = device->CreateBindingGroupWithCachedLayout(passData);
 
         auto shader = RTRC_GET_CACHED_SHADER(materials, "Builtin/Utility/InitializePcgState2D").get();
         

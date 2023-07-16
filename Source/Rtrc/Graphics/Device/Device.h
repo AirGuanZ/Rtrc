@@ -6,6 +6,7 @@
 #include <Rtrc/Graphics/Device/BindingGroupDSL.h>
 #include <Rtrc/Graphics/Device/Buffer.h>
 #include <Rtrc/Graphics/Device/ClearBufferUtils.h>
+#include <Rtrc/Graphics/Device/ClearTextureUtils.h>
 #include <Rtrc/Graphics/Device/CopyContext.h>
 #include <Rtrc/Graphics/Device/CopyTextureUtils.h>
 #include <Rtrc/Graphics/Device/Queue.h>
@@ -171,6 +172,9 @@ public:
     template<BindingGroupDSL::RtrcGroupStruct T>
     RC<BindingGroup> CreateBindingGroup(const T &value, const RC<BindingGroupLayout> &layoutHint, int variableBindingCount = 0);
 
+    template<BindingGroupDSL::RtrcGroupStruct T>
+    RC<BindingGroup> CreateBindingGroupWithCachedLayout(const T &value);
+
     void CopyBindings(
         const RC<BindingGroup> &dst, uint32_t dstSlot, uint32_t dstArrElem,
         const RC<BindingGroup> &src, uint32_t srcSlot, uint32_t srcArrElem,
@@ -264,8 +268,9 @@ public:
     BindingGroupLayoutCache &GetBindingGroupCache();
     const RHI::DevicePtr    &GetRawDevice() const;
 
-    ClearBufferUtils &GetClearBufferUtils() { return *clearBufferUtils_; }
-    CopyTextureUtils &GetCopyTextureUtils() { return *copyTextureUtils_; }
+    ClearBufferUtils  &GetClearBufferUtils()  { return *clearBufferUtils_; }
+    ClearTextureUtils &GetClearTextureUtils() { return *clearTextureUtils_; }
+    CopyTextureUtils  &GetCopyTextureUtils()  { return *copyTextureUtils_; }
 
     operator DynamicBufferManager &();
 
@@ -305,6 +310,7 @@ private:
     Box<CopyContext>                  copyContext_;
     Box<AccelerationStructureManager> accelerationManager_;
     Box<ClearBufferUtils>             clearBufferUtils_;
+    Box<ClearTextureUtils>            clearTextureUtils_;
     Box<CopyTextureUtils>             copyTextureUtils_;
     Box<BindingGroupLayoutCache>      bindingGroupLayoutCache_;
 };
@@ -507,6 +513,13 @@ RC<BindingGroup> Device::CreateBindingGroup(
     auto group = this->CreateBindingGroup<T>(layoutHint, variableBindingCount);
     Rtrc::ApplyBindingGroup(device_.Get(), dynamicBufferManager_.get(), group, value);
     return group;
+}
+
+template<BindingGroupDSL::RtrcGroupStruct T>
+RC<BindingGroup> Device::CreateBindingGroupWithCachedLayout(const T &value)
+{
+    RTRC_STATIC_BINDING_GROUP_LAYOUT(this, std::remove_cvref_t<decltype(value)>, _tempLayout);
+    return this->CreateBindingGroup(value, _tempLayout);
 }
 
 inline void Device::CopyBindings(

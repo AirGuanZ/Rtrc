@@ -29,7 +29,8 @@ void PathTracer::Render(
 
     if(clearBeforeRender)
     {
-        // TODO
+        renderGraph.CreateClearRWTexture2DPass(
+            "Clear IndirectDiffuse Output", perCameraData.indirectDiffuse, Vector4f(0, 0, 0, 0));
     }
     
     rtrc_group(TracePassGroup, CS)
@@ -75,7 +76,7 @@ void PathTracer::Render(
         passData.Output           = perCameraData.indirectDiffuse;
         passData.outputResolution = framebufferSize;
         passData.maxDepth         = 5;
-        auto passGroup = RTRC_CREATE_BINDING_GROUP_WITH_CACHED_LAYOUT(device_, passData);
+        auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
         auto geometryBufferGroup = scene.GetRenderMeshes().GetGlobalGeometryBuffersBindingGroup();
         auto textureGroup = scene.GetGlobalTextureBindingGroup();
         

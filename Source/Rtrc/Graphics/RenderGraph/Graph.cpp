@@ -379,6 +379,39 @@ Pass *RenderGraph::CreateCopyBufferPass(std::string name, BufferResource *src, B
     return CreateCopyBufferPass(std::move(name), src, 0, dst, 0, size);
 }
 
+Pass *RenderGraph::CreateClearRWTexture2DPass(std::string name, TextureResource *tex2D, const Vector4f &value)
+{
+    auto pass = CreatePass(std::move(name));
+    pass->Use(tex2D, CS_RWTexture);
+    pass->SetCallback([tex2D, value, this]
+    {
+        device_->GetClearTextureUtils().ClearRWTexture2D(GetCurrentCommandBuffer(), tex2D->CreateUav(), value);
+    });
+    return pass;
+}
+
+Pass *RenderGraph::CreateClearRWTexture2DPass(std::string name, TextureResource *tex2D, const Vector4i &value)
+{
+    auto pass = CreatePass(std::move(name));
+    pass->Use(tex2D, CS_RWTexture);
+    pass->SetCallback([tex2D, value, this]
+    {
+        device_->GetClearTextureUtils().ClearRWTexture2D(GetCurrentCommandBuffer(), tex2D->CreateUav(), value);
+    });
+    return pass;
+}
+
+Pass *RenderGraph::CreateClearRWTexture2DPass(std::string name, TextureResource *tex2D, const Vector4u &value)
+{
+    auto pass = CreatePass(std::move(name));
+    pass->Use(tex2D, CS_RWTexture);
+    pass->SetCallback([tex2D, value, this]
+    {
+        device_->GetClearTextureUtils().ClearRWTexture2D(GetCurrentCommandBuffer(), tex2D->CreateUav(), value);
+    });
+    return pass;
+}
+
 Pass *RenderGraph::CreateBlitTexture2DPass(
     std::string name,
     TextureResource *src, uint32_t srcArrayLayer, uint32_t srcMipLevel,

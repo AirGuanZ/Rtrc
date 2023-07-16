@@ -158,7 +158,7 @@ void RenderAtmosphere::Render(
         passData.lerpFactor              = lerpFactor;
         passData.sunDirection            = sunDir;
         passData.sunIntensity            = sunColor;
-        auto passGroup = RTRC_CREATE_BINDING_GROUP_WITH_CACHED_LAYOUT(device_, passData);
+        auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
 
         auto material = builtinResources_->GetBuiltinMaterial(BuiltinMaterial::Atmosphere).get();
         auto shader = material->GetPassByIndex(Pass_GenerateS)->GetShader().get();
@@ -197,7 +197,7 @@ RG::TextureResource *RenderAtmosphere::GenerateT(RG::RenderGraph &renderGraph, c
         passData.outputResolution       = resT_;
         passData.TransmittanceTextureRW = T;
         passData.atmosphere             = props;
-        auto passGroup = RTRC_CREATE_BINDING_GROUP_WITH_CACHED_LAYOUT(device_, passData);
+        auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
 
         auto material = builtinResources_->GetBuiltinMaterial(BuiltinMaterial::Atmosphere).get();
         auto shader = material->GetPassByIndex(Pass_GenerateT)->GetShader().get();
@@ -252,7 +252,7 @@ RG::TextureResource *RenderAtmosphere::GenerateM(RG::RenderGraph &renderGraph, c
         passData.dirSampleCount        = MULTI_SCATTER_DIR_SAMPLE_COUNT;
         passData.rayMarchStepCount     = rayMarchingStepCount_;
         passData.atmosphere            = props;
-        auto passGroup = RTRC_CREATE_BINDING_GROUP_WITH_CACHED_LAYOUT(device_, passData);
+        auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
 
         auto material = builtinResources_->GetBuiltinMaterial(BuiltinMaterial::Atmosphere).get();
         auto shader = material->GetPassByIndex(Pass_GenerateM)->GetShader().get();

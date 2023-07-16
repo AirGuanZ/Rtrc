@@ -192,8 +192,6 @@ void CSMain(uint2 tid : SV_DispatchThreadID)
         beta *= saturate(intersection.albedo) / PI * cosFactor / pdf;
     }
 
-    result = pow(result, 1 / 2.2);
-
     Output[tid] = float4(result, 1);
     RngState[tid] = rng;
 }

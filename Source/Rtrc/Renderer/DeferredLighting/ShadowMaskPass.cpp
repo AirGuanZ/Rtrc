@@ -136,7 +136,7 @@ RG::TextureResource *ShadowMaskPass::Render(
             passData.lightGeometry       = light->GetType() == Light::Type::Point ? light->GetPosition() : light->GetDirection();
             passData.shadowSoftness      = light->GetShadowSoftness();
 
-            auto passGroup = RTRC_CREATE_BINDING_GROUP_WITH_CACHED_LAYOUT(device_, passData);
+            auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
             
             CommandBuffer &commandBuffer = RG::GetCurrentCommandBuffer();
             commandBuffer.BindComputePipeline(collectLowResShadowMaskShader_->GetComputePipeline());
@@ -158,7 +158,7 @@ RG::TextureResource *ShadowMaskPass::Render(
             passData.Out = lowResShadowMask1;
             passData.resolution = lowResSize;
 
-            auto passGroup = RTRC_CREATE_BINDING_GROUP_WITH_CACHED_LAYOUT(device_, passData);
+            auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
 
             CommandBuffer &commandBuffer = RG::GetCurrentCommandBuffer();
             commandBuffer.BindComputePipeline(blurLowResXShader_->GetComputePipeline());
@@ -177,7 +177,7 @@ RG::TextureResource *ShadowMaskPass::Render(
             passData.Out = lowResShadowMask0;
             passData.resolution = lowResSize;
             
-            auto passGroup = RTRC_CREATE_BINDING_GROUP_WITH_CACHED_LAYOUT(device_, passData);
+            auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
 
             CommandBuffer &commandBuffer = RG::GetCurrentCommandBuffer();
             commandBuffer.BindComputePipeline(blurLowResYShader_->GetComputePipeline());
@@ -235,7 +235,7 @@ RG::TextureResource *ShadowMaskPass::Render(
         passData.lightType           = light->GetType() == Light::Type::Point ? 0 : 1;
         passData.lightGeometry       = light->GetType() == Light::Type::Point ? light->GetPosition() : light->GetDirection();
         passData.shadowSoftness      = light->GetShadowSoftness();
-        auto passGroup = RTRC_CREATE_BINDING_GROUP_WITH_CACHED_LAYOUT(device_, passData);
+        auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
         
         CommandBuffer &commandBuffer = RG::GetCurrentCommandBuffer();
         commandBuffer.BindComputePipeline(shadowMaskShader->GetComputePipeline());
@@ -263,7 +263,7 @@ RG::TextureResource *ShadowMaskPass::Render(
         passData.OutShadowMask = shadowMask1;
         passData.resolution = outputSize;
         passData.cameraToClip = camera.GetCameraRenderData().cameraToClip;
-        auto passGroup = RTRC_CREATE_BINDING_GROUP_WITH_CACHED_LAYOUT(device_, passData);
+        auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
 
         CommandBuffer &commandBuffer = RG::GetCurrentCommandBuffer();
         commandBuffer.BindComputePipeline(blurXShader_->GetComputePipeline());
@@ -284,7 +284,7 @@ RG::TextureResource *ShadowMaskPass::Render(
         passData.OutShadowMask = shadowMask0;
         passData.resolution = outputSize;
         passData.cameraToClip = camera.GetCameraRenderData().cameraToClip;
-        auto passGroup = RTRC_CREATE_BINDING_GROUP_WITH_CACHED_LAYOUT(device_, passData);
+        auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
 
         CommandBuffer &commandBuffer = RG::GetCurrentCommandBuffer();
         commandBuffer.BindComputePipeline(blurYShader_->GetComputePipeline());

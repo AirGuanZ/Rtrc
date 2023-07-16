@@ -277,8 +277,7 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
 
     // ============= ImGui =============
 
-    imguiRenderer_->Render(
-        frame.imguiDrawData.get(), swapchainImage, renderGraph.get());
+    imguiRenderer_->Render(frame.imguiDrawData.get(), swapchainImage, renderGraph.get());
     
     // ============= Execution =============
 

@@ -435,6 +435,10 @@ public:
         BufferResource *dst,
         size_t size);
 
+    Pass *CreateClearRWTexture2DPass(std::string name, TextureResource *tex2D, const Vector4f &value);
+    Pass *CreateClearRWTexture2DPass(std::string name, TextureResource *tex2D, const Vector4u &value);
+    Pass *CreateClearRWTexture2DPass(std::string name, TextureResource *tex2D, const Vector4i &value);
+
     Pass *CreateBlitTexture2DPass(
         std::string name,
         TextureResource *src, uint32_t srcArrayLayer, uint32_t srcMipLevel,

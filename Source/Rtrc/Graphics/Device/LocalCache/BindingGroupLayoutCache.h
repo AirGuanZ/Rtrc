@@ -83,13 +83,4 @@ private:
     static ::Rtrc::CachedBindingGroupLayoutStorage _staticBindingGroupLayoutStorage##NAME;                  \
     ::Rtrc::CachedBindingGroupLayoutHandle<TYPE> NAME{ (DEVICE), &_staticBindingGroupLayoutStorage##NAME }
 
-#define RTRC_CREATE_BINDING_GROUP_WITH_CACHED_LAYOUT(DEVICE, DATA)                                       \
-    [&]                                                                                                  \
-    {                                                                                                    \
-        ObserverPtr<Device> _tempDevice = (DEVICE);                                                      \
-        RTRC_STATIC_BINDING_GROUP_LAYOUT(_tempDevice, std::remove_cvref_t<decltype(DATA)>, _tempLayout); \
-        return _tempDevice->CreateBindingGroup(DATA, _tempLayout);                                       \
-    }()
-
-
 RTRC_END
