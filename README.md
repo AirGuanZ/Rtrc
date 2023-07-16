@@ -9,6 +9,7 @@ Real-time rendering playground
 
 ## TODO
 
+- [ ] Unify binding group definition in shader & C++
 - [ ] Path-traced GI
 - [ ] Remove reference counting in RHI layer
 
