@@ -372,8 +372,8 @@ void MaterialManager::AddIncludeDirectory(std::string_view directory)
 
 void MaterialManager::AddFiles(const std::set<std::filesystem::path> &filenames)
 {
-    std::vector<std::string> shaderFilenames;
-    std::vector<std::string> materialFilenames;
+    std::set<std::string> shaderFilenames;
+    std::set<std::string> materialFilenames;
 
     for(const auto &p : filenames)
     {
@@ -383,31 +383,34 @@ void MaterialManager::AddFiles(const std::set<std::filesystem::path> &filenames)
             if(ext == ".material")
             {
                 auto filename = absolute(p).lexically_normal().string();
-                materialFilenames.push_back(filename);
-                shaderFilenames.push_back(std::move(filename));
+                materialFilenames.insert(filename);
+                shaderFilenames.insert(std::move(filename));
             }
             else if(ext == ".shader")
             {
-                shaderFilenames.push_back(absolute(p).lexically_normal().string());
+                auto filename = absolute(p).lexically_normal().string();
+                shaderFilenames.insert(std::move(filename));
             }
         }
     }
 
-    std::map<std::string, int> filenameToIndex;
     for(auto &filename : shaderFilenames)
     {
-        const int index = static_cast<int>(filenames_.size());
-        filenameToIndex.insert({ filename, index });
-        filenames_.push_back(filename);
+        if(!filenameToIndex_.contains(filename))
+        {
+            const int index = filenames_.size();
+            filenameToIndex_.insert({ filename, index });
+            filenames_.push_back(filename);
+        }
     }
 
     for(auto &filename : shaderFilenames)
     {
-        ProcessShaderFile(filenameToIndex.at(filename), filename);
+        ProcessShaderFile(filenameToIndex_.at(filename), filename);
     }
     for(auto &filename : materialFilenames)
     {
-        ProcessMaterialFile(filenameToIndex.at(filename), filename);
+        ProcessMaterialFile(filenameToIndex_.at(filename), filename);
     }
 }
 
@@ -479,11 +482,12 @@ void MaterialManager::ProcessShaderFile(int filenameIndex, const std::string &fi
         {
             break;
         }
-        if(shaderNameToFilename_.contains(name))
+        const FileReference fileRef{ filenameIndex, shaderBeg, shaderEnd };
+        if(auto it = shaderNameToFilename_.find(name); it != shaderNameToFilename_.end() && it->second != fileRef)
         {
             throw Exception("Repeated shader name: " + name);
         }
-        shaderNameToFilename_.insert({ std::move(name), FileReference{ filenameIndex, shaderBeg, shaderEnd } });
+        shaderNameToFilename_.insert({ std::move(name), fileRef });
         begPos = shaderEnd + 1;
     }
 }
@@ -501,12 +505,12 @@ void MaterialManager::ProcessMaterialFile(int filenameIndex, const std::string &
         {
             break;
         }
-        if(materialNameToFilename_.contains(name))
+        const FileReference fileRef{ filenameIndex, matBeg, matEnd };
+        if(auto it = materialNameToFilename_.find(name); it != materialNameToFilename_.end() && it->second != fileRef)
         {
             throw Exception("Repeated material name: " + name);
         }
-        materialNameToFilename_.insert(
-            { std::move(name), FileReference{ filenameIndex, matBeg, matEnd } });
+        materialNameToFilename_.insert({ std::move(name), fileRef });
         begPos = matEnd + 1;
     }
 }

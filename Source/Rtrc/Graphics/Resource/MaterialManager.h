@@ -38,6 +38,8 @@ private:
         int filenameIndex;
         size_t beginPos;
         size_t endPos;
+
+        auto operator<=>(const FileReference &) const = default;
     };
 
     void ProcessShaderFile(int filenameIndex, const std::string &filename);
@@ -58,6 +60,7 @@ private:
     ObjectCache<std::string, ShaderTemplate, true, true> shaderPool_;
 
     std::vector<std::string>                          filenames_;
+    std::map<std::string, int>                        filenameToIndex_;
     std::map<std::string, FileReference, std::less<>> materialNameToFilename_;
     std::map<std::string, FileReference, std::less<>> shaderNameToFilename_;
 
