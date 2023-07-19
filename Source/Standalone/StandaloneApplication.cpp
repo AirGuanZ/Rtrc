@@ -13,7 +13,7 @@ void StandaloneApplication::Initialize(const Rtrc::ApplicationInitializeContext 
     resources.AddMaterialFiles($rtrc_get_files("Asset/Builtin/*/*.*"));
 
     {
-        auto cubeMesh = resources.GetBuiltinResources().GetBuiltinMesh(Rtrc::BuiltinMesh::Cube);
+        auto cubeMesh = resources.GetBuiltinMesh(Rtrc::BuiltinMesh::Cube);
         auto matInst = resources.CreateMaterialInstance("Builtin/Diffuse");
 
         auto skyBlue = context.device->CreateColorTexture2D(0, 255, 255, 255, "SkyBlue");

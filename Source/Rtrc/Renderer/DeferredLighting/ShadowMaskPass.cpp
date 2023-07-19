@@ -67,9 +67,9 @@ namespace ShadowMaskPassDetail
 } // namespace ShadowMaskPassDetail
 
 ShadowMaskPass::ShadowMaskPass(
-    ObserverPtr<Device>                 device,
-    ObserverPtr<BuiltinResourceManager> builtinResources)
-    : device_(device), builtinResources_(builtinResources)
+    ObserverPtr<Device>          device,
+    ObserverPtr<ResourceManager> resources)
+    : device_(device), resources_(resources)
 {
     InitializeShaders();
 }
@@ -128,8 +128,8 @@ RG::TextureResource *ShadowMaskPass::Render(
             passData.Scene               = camera.GetScene().GetRGTlas();
             passData.Camera              = camera.GetCameraCBuffer();
             passData.OutputTextureRW     = lowResShadowMask0;
-            passData.BlueNoise256        = builtinResources_->GetBuiltinTexture(BuiltinTexture::BlueNoise256);
-            passData.LowResMask          = builtinResources_->GetBuiltinTexture(BuiltinTexture::Black2D);
+            passData.BlueNoise256        = resources_->GetBuiltinTexture(BuiltinTexture::BlueNoise256);
+            passData.LowResMask          = resources_->GetBuiltinTexture(BuiltinTexture::Black2D);
             passData.outputResolution    = lowResSize;
             passData.rcpOutputResolution = Vector2f(1.0f / lowResSize.x, 1.0f / lowResSize.y);
             passData.lightType           = light->GetType() == Light::Type::Point ? 0 : 1;
@@ -205,9 +205,9 @@ RG::TextureResource *ShadowMaskPass::Render(
         KeywordContext keywords;
         keywords.Set(RTRC_KEYWORD(ENABLE_SHADOW_SOFTNESS), light->GetShadowSoftness() > 0);
         keywords.Set(RTRC_KEYWORD(ENABLE_LOW_RES_MASK), light->GetShadowSoftness() > 0);
-        shadowMaskShader = builtinResources_->GetBuiltinMaterial(BuiltinMaterial::ShadowMask)
-                                            ->GetPassByTag(RTRC_MATERIAL_PASS_TAG(BruteForce))
-                                            ->GetShaderTemplate()->GetShader(keywords);
+        shadowMaskShader = resources_->GetBuiltinMaterial(BuiltinMaterial::ShadowMask)
+                                     ->GetPassByTag(RTRC_MATERIAL_PASS_TAG(BruteForce))
+                                     ->GetShaderTemplate()->GetShader(keywords);
     }
 
     auto generateRawMaskPass = renderGraph.CreatePass("ShadowMask");
@@ -227,9 +227,9 @@ RG::TextureResource *ShadowMaskPass::Render(
         passData.Scene               = camera.GetScene().GetRGTlas();
         passData.Camera              = camera.GetCameraCBuffer();
         passData.OutputTextureRW     = shadowMask0;
-        passData.BlueNoise256        = builtinResources_->GetBuiltinTexture(BuiltinTexture::BlueNoise256);
+        passData.BlueNoise256        = resources_->GetBuiltinTexture(BuiltinTexture::BlueNoise256);
         passData.LowResMask          = lowResShadowMask0 ? lowResShadowMask0->Get()
-                                                         : builtinResources_->GetBuiltinTexture(BuiltinTexture::Black2D);
+                                                         : resources_->GetBuiltinTexture(BuiltinTexture::Black2D);
         passData.outputResolution    = outputSize;
         passData.rcpOutputResolution = Vector2f(1.0f / outputSize.x, 1.0f / outputSize.y);
         passData.lightType           = light->GetType() == Light::Type::Point ? 0 : 1;
@@ -297,7 +297,7 @@ RG::TextureResource *ShadowMaskPass::Render(
 
 void ShadowMaskPass::InitializeShaders()
 {
-    Material *material = builtinResources_->GetBuiltinMaterial(BuiltinMaterial::ShadowMask).get();
+    Material *material = resources_->GetBuiltinMaterial(BuiltinMaterial::ShadowMask).get();
 
     collectLowResShadowMaskShader_ = material->GetPassByTag(RTRC_MATERIAL_PASS_TAG(Collect))->GetShader();
 

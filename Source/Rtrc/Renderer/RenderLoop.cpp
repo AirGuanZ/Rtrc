@@ -7,16 +7,16 @@ RTRC_RENDERER_BEGIN
 RenderLoop::RenderLoop(
     const Config                       &config,
     ObserverPtr<Device>                 device,
-    ObserverPtr<BuiltinResourceManager> builtinResources,
+    ObserverPtr<ResourceManager>        resources,
     ObserverPtr<BindlessTextureManager> bindlessTextures)
     : config_          (config)
     , hasException_    (false)
     , device_          (device)
-    , builtinResources_(builtinResources)
+    , resources_(resources)
     , bindlessTextures_(bindlessTextures)
     , frameIndex_      (1)
     , renderMeshes_    ({ config.rayTracing }, device)
-    , renderScene_     ({ config.rayTracing }, device, builtinResources, bindlessTextures)
+    , renderScene_     ({ config.rayTracing }, device, resources, bindlessTextures)
 {
     imguiRenderer_       = MakeBox<ImGuiRenderer>(device_);
     renderGraphExecuter_ = MakeBox<RG::Executer>(device_);
@@ -24,9 +24,9 @@ RenderLoop::RenderLoop(
     transientConstantBufferAllocator_ = MakeBox<TransientConstantBufferAllocator>(*device);
     
     gbufferPass_          = MakeBox<GBufferPass>(device_);
-    deferredLightingPass_ = MakeBox<DeferredLightingPass>(device_, builtinResources_);
-    shadowMaskPass_       = MakeBox<ShadowMaskPass>(device_, builtinResources_);
-    pathTracer_           = MakeBox<PathTracer>(device_, builtinResources_);
+    deferredLightingPass_ = MakeBox<DeferredLightingPass>(device_, resources_);
+    shadowMaskPass_       = MakeBox<ShadowMaskPass>(device_, resources_);
+    pathTracer_           = MakeBox<PathTracer>(device_, resources_);
 
     device_->BeginRenderLoop();
     if(config_.mode == Mode::Threaded)

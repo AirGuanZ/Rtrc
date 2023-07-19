@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/Graphics/Device/LocalCache/BindingGroupLayoutCache.h>
+#include <Rtrc/Graphics/Device/LocalCache/LocalBindingGroupLayoutCache.h>
 #include <Rtrc/Graphics/Device/AccelerationStructure.h>
 #include <Rtrc/Graphics/Device/BindingGroup.h>
 #include <Rtrc/Graphics/Device/BindingGroupDSL.h>

@@ -27,6 +27,10 @@ public:
     LocalMaterialCache &GetLocalMaterialCache() { return *localMaterialCache_; }
     LocalShaderCache   &GetLocalShaderCache()   { return *localShaderCache_; }
 
+    template<TemplateStringParameter MaterialName> RC<ShaderTemplate> GetCachedShaderTemplate();
+    template<TemplateStringParameter MaterialName> RC<Shader>         GetCachedShader();
+    template<TemplateStringParameter MaterialName> RC<Material>       GetCachedMaterial();
+
 private:
 
     struct FileReference
@@ -60,5 +64,27 @@ private:
     Box<LocalMaterialCache> localMaterialCache_;
     Box<LocalShaderCache>   localShaderCache_;
 };
+
+template<TemplateStringParameter MaterialName>
+RC<ShaderTemplate> MaterialManager::GetCachedShaderTemplate()
+{
+    static LocalCachedShaderStorage _staticShaderStorage;
+    const LocalCachedShaderHandle handle{ this, &_staticShaderStorage, MaterialName.GetString() };
+    return handle.Get();
+}
+
+template<TemplateStringParameter MaterialName>
+RC<Shader> MaterialManager::GetCachedShader()
+{
+    return GetCachedShaderTemplate<MaterialName>()->GetShader();
+}
+
+template<TemplateStringParameter MaterialName>
+RC<Material> MaterialManager::GetCachedMaterial()
+{
+    static LocalCachedMaterialStorage _staticMaterialStorage;
+    const LocalCachedMaterialHandle handle{ this, &_staticMaterialStorage, MaterialName.GetString() };
+    return handle.Get();
+}
 
 RTRC_END

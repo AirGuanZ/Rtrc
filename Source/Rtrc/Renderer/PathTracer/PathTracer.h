@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Rtrc/Graphics/Device/Device.h>
-#include <Rtrc/Graphics/Resource/BuiltinResources.h>
 #include <Rtrc/Renderer/Common.h>
 
 RTRC_RENDERER_BEGIN
@@ -19,7 +18,7 @@ public:
 
     struct PerCameraData
     {
-        RC<StatefulTexture> persistentRngState;
+        RC<StatefulTexture> rngState;
         RG::TextureResource *indirectDiffuse = nullptr;
     };
 

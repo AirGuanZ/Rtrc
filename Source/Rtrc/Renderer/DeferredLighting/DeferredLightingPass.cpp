@@ -51,13 +51,12 @@ namespace DeferredLightingPassDetail
 
 } // namespace DeferredLightingPassDetail
 
-DeferredLightingPass::DeferredLightingPass(
-    ObserverPtr<Device> device, ObserverPtr<BuiltinResourceManager> builtinResources)
+DeferredLightingPass::DeferredLightingPass(ObserverPtr<Device> device, ObserverPtr<ResourceManager> resources)
     : device_(device)
-    , builtinResources_(builtinResources)
+    , resources_(resources)
     , lightBufferPool_(device, RHI::BufferUsage::ShaderStructuredBuffer)
 {
-    auto lightingMaterial = builtinResources_->GetBuiltinMaterial(BuiltinMaterial::DeferredLighting);
+    auto lightingMaterial = resources_->GetBuiltinMaterial(BuiltinMaterial::DeferredLighting);
     auto regularShaderTemplate = lightingMaterial->GetPassByIndex(0)->GetShaderTemplate().get();
     regularShader_NoMainLight_ = regularShaderTemplate->GetShader(
         { { RTRC_KEYWORD(MAIN_LIGHT_MODE), MainLightMode_None } });
@@ -66,7 +65,7 @@ DeferredLightingPass::DeferredLightingPass(
     regularShader_PointMainLight_ = regularShaderTemplate->GetShader(
         { { RTRC_KEYWORD(MAIN_LIGHT_MODE), MainLightMode_Point } });
     skyShader_ = lightingMaterial->GetPassByIndex(1)->GetShader();
-    shadowMaskPass_ = MakeBox<ShadowMaskPass>(device_, builtinResources_);
+    shadowMaskPass_ = MakeBox<ShadowMaskPass>(device_, resources_);
 }
 
 void DeferredLightingPass::Render(
@@ -160,7 +159,7 @@ void DeferredLightingPass::DoDeferredLighting(
         static_assert(Mode == MainLightMode_None);
     }
     lightingPassData.MainLightShadowMask = shadowMask ? shadowMask->Get()
-                                                      : builtinResources_->GetBuiltinTexture(BuiltinTexture::White2D);
+                                                      : resources_->GetBuiltinTexture(BuiltinTexture::White2D);
     lightingPassData.Output = rgRenderTarget;
     lightingPassData.resolution = rgRenderTarget->GetSize();
     lightingPassData.rcpResolution.x = 1.0f / lightingPassData.resolution.x;
@@ -170,7 +169,7 @@ void DeferredLightingPass::DoDeferredLighting(
     BindingGroup_Sky skyPassData;
     FillBindingGroupGBuffers(skyPassData, gbuffers);
     skyPassData.camera = lightingPassData.camera;
-    skyPassData.SkyLut = skyLut ? skyLut->Get() : builtinResources_->GetBuiltinTexture(BuiltinTexture::Black2D);
+    skyPassData.SkyLut = skyLut ? skyLut->Get() : resources_->GetBuiltinTexture(BuiltinTexture::Black2D);
     skyPassData.Output = lightingPassData.Output;
     skyPassData.resolution = lightingPassData.resolution;
     skyPassData.rcpResolution = lightingPassData.rcpResolution;

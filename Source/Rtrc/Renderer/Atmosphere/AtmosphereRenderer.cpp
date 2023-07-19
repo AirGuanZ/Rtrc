@@ -160,7 +160,7 @@ void RenderAtmosphere::Render(
         passData.sunIntensity            = sunColor;
         auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
 
-        auto material = builtinResources_->GetBuiltinMaterial(BuiltinMaterial::Atmosphere).get();
+        auto material = resources_->GetBuiltinMaterial(BuiltinMaterial::Atmosphere).get();
         auto shader = material->GetPassByIndex(Pass_GenerateS)->GetShader().get();
 
         CommandBuffer &commandBuffer = RG::GetCurrentCommandBuffer();
@@ -199,7 +199,7 @@ RG::TextureResource *RenderAtmosphere::GenerateT(RG::RenderGraph &renderGraph, c
         passData.atmosphere             = props;
         auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
 
-        auto material = builtinResources_->GetBuiltinMaterial(BuiltinMaterial::Atmosphere).get();
+        auto material = resources_->GetBuiltinMaterial(BuiltinMaterial::Atmosphere).get();
         auto shader = material->GetPassByIndex(Pass_GenerateT)->GetShader().get();
 
         CommandBuffer &commandBuffer = RG::GetCurrentCommandBuffer();
@@ -254,7 +254,7 @@ RG::TextureResource *RenderAtmosphere::GenerateM(RG::RenderGraph &renderGraph, c
         passData.atmosphere            = props;
         auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
 
-        auto material = builtinResources_->GetBuiltinMaterial(BuiltinMaterial::Atmosphere).get();
+        auto material = resources_->GetBuiltinMaterial(BuiltinMaterial::Atmosphere).get();
         auto shader = material->GetPassByIndex(Pass_GenerateM)->GetShader().get();
 
         CommandBuffer &commandBuffer = RG::GetCurrentCommandBuffer();

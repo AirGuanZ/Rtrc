@@ -16,7 +16,7 @@ void PathTracer::Render(
 
     PerCameraData &perCameraData = camera.GetPathTracingData();
     auto rngState = Prepare2DPcgStateTexture(
-        renderGraph, *builtinResources_, perCameraData.persistentRngState, framebufferSize);
+        renderGraph, resources_, perCameraData.rngState, framebufferSize);
     assert(!perCameraData.indirectDiffuse);
     perCameraData.indirectDiffuse = renderGraph.CreateTexture(RHI::TextureDesc
     {
@@ -63,7 +63,7 @@ void PathTracer::Render(
     pass->Use(perCameraData.indirectDiffuse, RG::CS_RWTexture_WriteOnly);
     pass->SetCallback([gbuffers, perCameraData, rngState, &scene, &camera, framebufferSize, this]
     {
-        auto material = builtinResources_->GetBuiltinMaterial(BuiltinMaterial::PathTracing).get();
+        auto material = resources_->GetBuiltinMaterial(BuiltinMaterial::PathTracing).get();
         auto shader = material->GetPassByIndex(PassIndex_Trace)->GetShader().get();
 
         TracePassGroup passData;

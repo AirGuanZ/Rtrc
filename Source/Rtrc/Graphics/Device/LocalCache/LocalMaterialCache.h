@@ -10,9 +10,9 @@
 
 RTRC_BEGIN
 
-class BuiltinResourceManager;
 class Material;
 class MaterialManager;
+class ResourceManager;
 
 class LocalCachedMaterialStorage : public Uncopyable
 {
@@ -45,9 +45,9 @@ public:
     }
     
     LocalCachedMaterialHandle(
-        ObserverPtr<BuiltinResourceManager> builtinResources,
-        LocalCachedMaterialStorage         *storage,
-        std::string_view                    name);
+        ObserverPtr<ResourceManager> resources,
+        LocalCachedMaterialStorage  *storage,
+        std::string_view             name);
     
     operator RC<Material>() const
     {
@@ -86,18 +86,5 @@ private:
     tbb::spin_rw_mutex mutex_;
     std::vector<RC<Material>> materials_;
 };
-
-#define RTRC_STATIC_MATERIAL(MANAGER, HANDLE_NAME, NAME) \
-    RTRC_STATIC_MATERIAL_IMPL(MANAGER, HANDLE_NAME, NAME)
-#define RTRC_STATIC_MATERIAL_IMPL(MANAGER, HANDLE_NAME, NAME)                      \
-    static ::Rtrc::LocalCachedMaterialStorage _staticMaterialStorage##HANDLE_NAME; \
-    ::Rtrc::LocalCachedMaterialHandle HANDLE_NAME{ (MANAGER), &_staticMaterialStorage##HANDLE_NAME, NAME }
-
-#define RTRC_GET_CACHED_MATERIAL(MANAGER, NAME)               \
-    [&]                                                       \
-    {                                                         \
-        RTRC_STATIC_MATERIAL((MANAGER), _tempMaterial, NAME); \
-        return _tempMaterial.Get();                           \
-    }()
 
 RTRC_END

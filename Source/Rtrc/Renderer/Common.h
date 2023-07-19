@@ -3,7 +3,7 @@
 #include <Rtrc/Scene/Camera/Camera.h>
 #include <Rtrc/Scene/Scene.h>
 #include <Rtrc/Graphics/Device/Device.h>
-#include <Rtrc/Graphics/Resource/BuiltinResources.h>
+#include <Rtrc/Graphics/Resource/ResourceManager.h>
 
 RTRC_RENDERER_BEGIN
 
@@ -86,16 +86,16 @@ class RenderAlgorithm : public Uncopyable
 {
 public:
 
-    RenderAlgorithm(ObserverPtr<Device> device, ObserverPtr<BuiltinResourceManager> builtinResources)
-        : device_(device), builtinResources_(builtinResources)
+    RenderAlgorithm(ObserverPtr<Device> device, ObserverPtr<ResourceManager> resources)
+        : device_(device), resources_(resources)
     {
         
     }
 
 protected:
 
-    ObserverPtr<Device>                 device_;
-    ObserverPtr<BuiltinResourceManager> builtinResources_;
+    ObserverPtr<Device>          device_;
+    ObserverPtr<ResourceManager> resources_;
 };
 
 RTRC_RENDERER_END

@@ -6,7 +6,7 @@ RTRC_RENDERER_BEGIN
 
 RG::TextureResource *Prepare2DPcgStateTexture(
     RG::RenderGraph             &renderGraph,
-    ObserverPtr<MaterialManager> materials,
+    ObserverPtr<ResourceManager> materials,
     RC<StatefulTexture>         &tex,
     const Vector2u              &size);
 

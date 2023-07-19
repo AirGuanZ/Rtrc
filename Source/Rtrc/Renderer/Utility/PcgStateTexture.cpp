@@ -1,11 +1,12 @@
 #include <Rtrc/Graphics/Resource/MaterialManager.h>
 #include <Rtrc/Renderer/Utility/PcgStateTexture.h>
 
-RTRC_RENDERER_BEGIN
+#include "Rtrc/Graphics/Resource/ResourceManager.h"
 
-RG::TextureResource *Prepare2DPcgStateTexture(
+RTRC_RENDERER_BEGIN
+    RG::TextureResource *Prepare2DPcgStateTexture(
     RG::RenderGraph             &renderGraph,
-    ObserverPtr<MaterialManager> materials,
+    ObserverPtr<ResourceManager> materials,
     RC<StatefulTexture>         &tex,
     const Vector2u              &size)
 {
@@ -42,10 +43,11 @@ RG::TextureResource *Prepare2DPcgStateTexture(
         passData.resolution = size;
         auto passGroup = device->CreateBindingGroupWithCachedLayout(passData);
 
-        auto shader = RTRC_GET_CACHED_SHADER(materials, "Builtin/Utility/InitializePcgState2D").get();
-        
+        auto shader = materials->GetMaterialManager()->GetCachedShader<"Builtin/Utility/InitializePcgState2D">();
+        auto &pipeline = shader->GetComputePipeline();
+
         auto &commandBuffer = RG::GetCurrentCommandBuffer();
-        commandBuffer.BindComputePipeline(shader->GetComputePipeline());
+        commandBuffer.BindComputePipeline(pipeline);
         commandBuffer.BindComputeGroup(0, passGroup);
         commandBuffer.DispatchWithThreadCount(size);
     });

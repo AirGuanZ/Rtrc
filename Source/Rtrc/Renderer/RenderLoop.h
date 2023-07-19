@@ -34,7 +34,7 @@ public:
     RenderLoop(
         const Config                       &config,
         ObserverPtr<Device>                 device,
-        ObserverPtr<BuiltinResourceManager> builtinResources,
+        ObserverPtr<ResourceManager>        resources,
         ObserverPtr<BindlessTextureManager> bindlessTextures);
     ~RenderLoop();
 
@@ -65,7 +65,7 @@ private:
     std::exception_ptr exceptionPtr_;
 
     ObserverPtr<Device>                 device_;
-    ObserverPtr<BuiltinResourceManager> builtinResources_;
+    ObserverPtr<ResourceManager>        resources_;
     ObserverPtr<BindlessTextureManager> bindlessTextures_;
 
     int32_t frameIndex_;

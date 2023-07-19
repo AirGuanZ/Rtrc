@@ -3,7 +3,6 @@
 #include <imgui.h>
 
 #include <Rtrc/Graphics/Device/Device.h>
-#include <Rtrc/Graphics/Resource/BuiltinResources.h>
 #include <Rtrc/Window/WindowInput.h>
 
 RTRC_BEGIN

@@ -1,11 +1,11 @@
 #include <Rtrc/Graphics/Device/LocalCache/LocalShaderCache.h>
-#include <Rtrc/Graphics/Resource/BuiltinResources.h>
+#include <Rtrc/Graphics/Resource/ResourceManager.h>
 
 RTRC_BEGIN
 
 LocalCachedShaderHandle::LocalCachedShaderHandle(
-    ObserverPtr<BuiltinResourceManager> builtinResources, LocalCachedShaderStorage *storage, std::string_view name)
-    : LocalCachedShaderHandle(static_cast<MaterialManager&>(*builtinResources), storage, name)
+    ObserverPtr<ResourceManager> resources, LocalCachedShaderStorage *storage, std::string_view name)
+    : LocalCachedShaderHandle(resources->GetMaterialManager(), storage, name)
 {
     
 }

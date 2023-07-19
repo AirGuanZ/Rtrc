@@ -42,7 +42,7 @@ public:
     RenderScene(
         const Config                       &config,
         ObserverPtr<Device>                 device,
-        ObserverPtr<BuiltinResourceManager> builtinResources,
+        ObserverPtr<ResourceManager>        resources,
         ObserverPtr<BindlessTextureManager> bindlessTextures);
 
     void Update(

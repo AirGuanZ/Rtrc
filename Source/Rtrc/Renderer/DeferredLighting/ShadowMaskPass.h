@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/Graphics/Resource/BuiltinResources.h>
+#include <Rtrc/Graphics/Resource/ResourceManager.h>
 #include <Rtrc/Renderer/Passes/GBufferPass.h>
 #include <Rtrc/Renderer/Scene/RenderScene.h>
 
@@ -11,8 +11,8 @@ class ShadowMaskPass : public Uncopyable
 public:
     
     ShadowMaskPass(
-        ObserverPtr<Device>                 device,
-        ObserverPtr<BuiltinResourceManager> builtinResources);
+        ObserverPtr<Device>          device,
+        ObserverPtr<ResourceManager> resources);
     
     RG::TextureResource *Render(
         const RenderCamera               &camera,
@@ -24,8 +24,8 @@ private:
 
     void InitializeShaders();
     
-    ObserverPtr<Device>                       device_;
-    ObserverPtr<const BuiltinResourceManager> builtinResources_;
+    ObserverPtr<Device>                device_;
+    ObserverPtr<const ResourceManager> resources_;
     
     RC<Shader> collectLowResShadowMaskShader_;
     

@@ -7,7 +7,7 @@ RTRC_RENDERER_BEGIN
 RenderScene::RenderScene(
     const Config                       &config,
     ObserverPtr<Device>                 device,
-    ObserverPtr<BuiltinResourceManager> builtinResources,
+    ObserverPtr<ResourceManager>        resources,
     ObserverPtr<BindlessTextureManager> bindlessTextures)
     : config_(config)
     , device_(device)
@@ -19,7 +19,7 @@ RenderScene::RenderScene(
     , rhiInstanceDataBufferPool_(device, RHI::BufferUsage::AccelerationStructureBuildInput)
 {
     renderLights_ = MakeBox<RenderLights>(device);
-    renderAtmosphere_ = MakeBox<RenderAtmosphere>(device, builtinResources);
+    renderAtmosphere_ = MakeBox<RenderAtmosphere>(device, resources);
 }
 
 void RenderScene::Update(

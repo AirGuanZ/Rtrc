@@ -79,8 +79,7 @@ void Application::Run(const Config &config)
     renderLoopConfig.rayTracing = config.rayTracing;
     renderLoopConfig.handleCrossThreadException = config.handleCrossThreadException;
     renderLoopConfig.mode = config.renderThread ? RenderLoop::Mode::Threaded : RenderLoop::Mode::Immediate;
-    renderLoop_ = MakeBox<RenderLoop>(
-        renderLoopConfig, device_, resourceManager_->GetBuiltinResources(), bindlessTextureManager_);
+    renderLoop_ = MakeBox<RenderLoop>(renderLoopConfig, device_, resourceManager_, bindlessTextureManager_);
 
     RTRC_SCOPE_EXIT
     {
