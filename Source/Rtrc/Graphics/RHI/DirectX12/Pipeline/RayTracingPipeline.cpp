@@ -1,4 +1,4 @@
-#include <Rtrc/Graphics/RHI/DirectX12/Pipeline/RayTracingPipeline.h>
+#include <Rtrc/Graphics/RHI/RHI.h>
 
 RTRC_RHI_D3D12_BEGIN
 

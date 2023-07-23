@@ -268,11 +268,7 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
     }
     else
     {
-        renderGraph->CreateBlitTexture2DPass(
-            "BlitToSwapchain",
-            framebuffer,
-            swapchainImage,
-            true, 1.0f);
+        renderGraph->CreateBlitTexture2DPass("BlitToSwapchain", framebuffer, swapchainImage);
     }
 
     // ============= ImGui =============

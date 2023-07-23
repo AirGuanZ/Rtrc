@@ -15,16 +15,16 @@ public:
         ComPtr<IDXGISwapChain3>  swapchain,
         int                      syncInterval);
 
-    bool Acquire() override;
+    bool Acquire() RTRC_RHI_OVERRIDE;
 
-    Ptr<BackBufferSemaphore> GetAcquireSemaphore() override;
-    Ptr<BackBufferSemaphore> GetPresentSemaphore() override;
+    Ptr<BackBufferSemaphore> GetAcquireSemaphore() RTRC_RHI_OVERRIDE;
+    Ptr<BackBufferSemaphore> GetPresentSemaphore() RTRC_RHI_OVERRIDE;
 
-    bool Present() override;
+    bool Present() RTRC_RHI_OVERRIDE;
 
-    int                GetRenderTargetCount() const override;
-    const TextureDesc &GetRenderTargetDesc() const override;
-    Ptr<Texture>       GetRenderTarget() const override;
+    int                GetRenderTargetCount() const RTRC_RHI_OVERRIDE;
+    const TextureDesc &GetRenderTargetDesc() const RTRC_RHI_OVERRIDE;
+    Ptr<Texture>       GetRenderTarget() const RTRC_RHI_OVERRIDE;
 
 private:
 

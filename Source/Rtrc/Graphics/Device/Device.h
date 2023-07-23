@@ -5,14 +5,14 @@
 #include <Rtrc/Graphics/Device/BindingGroup.h>
 #include <Rtrc/Graphics/Device/BindingGroupDSL.h>
 #include <Rtrc/Graphics/Device/Buffer.h>
-#include <Rtrc/Graphics/Device/ClearBufferUtils.h>
-#include <Rtrc/Graphics/Device/ClearTextureUtils.h>
 #include <Rtrc/Graphics/Device/CopyContext.h>
-#include <Rtrc/Graphics/Device/CopyTextureUtils.h>
 #include <Rtrc/Graphics/Device/Queue.h>
 #include <Rtrc/Graphics/Device/Pipeline.h>
 #include <Rtrc/Graphics/Device/Sampler.h>
 #include <Rtrc/Graphics/Device/Texture.h>
+#include <Rtrc/Graphics/Device/Utility/ClearBufferUtils.h>
+#include <Rtrc/Graphics/Device/Utility/ClearTextureUtils.h>
+#include <Rtrc/Graphics/Device/Utility/CopyTextureUtils.h>
 #include <Rtrc/Graphics/RenderGraph/Graph.h>
 
 RTRC_BEGIN

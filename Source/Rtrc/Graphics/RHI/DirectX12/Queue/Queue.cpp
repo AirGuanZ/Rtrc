@@ -4,6 +4,7 @@
 #include <Rtrc/Graphics/RHI/DirectX12/Queue/Fence.h>
 #include <Rtrc/Graphics/RHI/DirectX12/Queue/Queue.h>
 #include <Rtrc/Graphics/RHI/DirectX12/Queue/Semaphore.h>
+#include <Rtrc/Graphics/RHI/DirectX12/Resource/Sampler.h>
 
 RTRC_RHI_D3D12_BEGIN
 

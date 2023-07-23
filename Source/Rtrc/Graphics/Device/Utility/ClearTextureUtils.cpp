@@ -1,4 +1,4 @@
-#include <Rtrc/Graphics/Device/ClearTextureUtils.h>
+#include <Rtrc/Graphics/Device/Utility/ClearTextureUtils.h>
 #include <Rtrc/Graphics/Shader/ShaderCompiler.h>
 
 RTRC_BEGIN

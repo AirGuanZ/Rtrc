@@ -1,5 +1,5 @@
-#include <Rtrc/Graphics/Device/CopyTextureUtils.h>
 #include <Rtrc/Graphics/Device/Device.h>
+#include <Rtrc/Graphics/Device/Utility/CopyTextureUtils.h>
 #include <Rtrc/Graphics/Shader/ShaderCompiler.h>
 
 RTRC_BEGIN

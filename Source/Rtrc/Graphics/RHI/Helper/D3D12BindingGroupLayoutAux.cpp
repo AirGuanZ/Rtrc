@@ -2,6 +2,7 @@
 #include <ranges>
 
 #include <Rtrc/Graphics/RHI/Helper/D3D12BindingGroupLayoutAux.h>
+#include <Rtrc/Graphics/RHI/RHI.h>
 #include <Rtrc/Utility/Enumerate.h>
 
 RTRC_RHI_BEGIN

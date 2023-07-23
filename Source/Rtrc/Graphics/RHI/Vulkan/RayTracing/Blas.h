@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/Graphics/RHI/Vulkan/Common.h>
+#include <Rtrc/Graphics/RHI/Vulkan/Resource/Buffer.h>
 
 RTRC_RHI_VK_BEGIN
 

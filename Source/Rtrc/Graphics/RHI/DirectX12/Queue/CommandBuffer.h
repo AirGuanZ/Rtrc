@@ -1,6 +1,8 @@
 #pragma once
 
-#include <Rtrc/Graphics/RHI/DirectX12/Common.h>
+#include <Rtrc/Graphics/RHI/DirectX12/Pipeline/ComputePipeline.h>
+#include <Rtrc/Graphics/RHI/DirectX12/Pipeline/GraphicsPipeline.h>
+#include <Rtrc/Graphics/RHI/DirectX12/Pipeline/RayTracingPipeline.h>
 
 RTRC_RHI_D3D12_BEGIN
 

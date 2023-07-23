@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/Graphics/RHI/DirectX12/Common.h>
+#include <Rtrc/Graphics/RHI/DirectX12/Resource/Sampler.h>
 #include <Rtrc/Graphics/RHI/Helper/D3D12BindingGroupLayoutAux.h>
 
 RTRC_RHI_D3D12_BEGIN
@@ -10,7 +10,7 @@ RTRC_RHI_IMPLEMENT(DirectX12BindingGroupLayout, BindingGroupLayout)
 public:
 
     explicit DirectX12BindingGroupLayout(BindingGroupLayoutDesc desc)
-        : desc_(desc)
+        : desc_(std::move(desc))
     {
         d3d12Desc_ = Helper::GenerateD3D12BindingGroupLayout(desc_);
     }

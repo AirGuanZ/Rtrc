@@ -47,6 +47,9 @@ using RHIObjectPtr = Ptr<RHIObject>;
 #define RTRC_RHI_FORWARD_DECL(CLASS) \
     namespace Vk { class Vulkan##CLASS; } using CLASS = Vk::Vulkan##CLASS; using CLASS##Ptr = Ptr<CLASS>;
 #define RTRC_RHI_IMPL_PREFIX(X) Vulkan##X
+#elif RTRC_RHI_DIRECTX12
+#define RTRC_RHI_FORWARD_DECL(CLASS) \
+    namespace D3D12 { class DirectX12##CLASS; } using CLASS = D3D12::DirectX12##CLASS; using CLASS##Ptr = Ptr<CLASS>;
 #else
 #error "No RHI backend is enabled"
 #endif
@@ -1131,6 +1134,16 @@ struct ShaderBindingTableRegion
     uint32_t            size   = 0; // In bytes
 };
 
+struct BufferReadRange
+{
+    size_t offset = 0;
+    size_t size = 0;
+
+    bool operator==(const BufferReadRange &) const = default;
+};
+
+static constexpr BufferReadRange READ_WHOLE_BUFFER = { 0, (std::numeric_limits<size_t>::max)() };
+
 // =============================== rhi interfaces ===============================
 
 class RHIObject : public ReferenceCounted, public Uncopyable
@@ -1678,16 +1691,6 @@ public:
 
     RTRC_RHI_API const TextureDsvDesc &GetDesc() const RTRC_RHI_API_PURE;
 };
-
-struct BufferReadRange
-{
-    size_t offset = 0;
-    size_t size = 0;
-
-    bool operator==(const BufferReadRange &) const = default;
-};
-
-static constexpr BufferReadRange READ_WHOLE_BUFFER = { 0, (std::numeric_limits<size_t>::max)() };
 
 class Buffer : public RHIObject
 {

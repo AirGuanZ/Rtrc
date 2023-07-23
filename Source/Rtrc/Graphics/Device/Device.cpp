@@ -1,5 +1,4 @@
 #include <Rtrc/Graphics/Device/Device.h>
-#include <Rtrc/Graphics/Device/ClearBufferUtils.h>
 #include <Rtrc/Utility/Resource/GenerateMipmap.h>
 
 RTRC_BEGIN

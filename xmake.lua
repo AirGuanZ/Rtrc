@@ -45,7 +45,11 @@ includes("External/abseil")
 add_requires("abseil", { configs = { shared = false } })
 
 includes("External/glfw")
-add_requires("glfw", { configs = { glfw_include = "vulkan" } })
+if has_config("vulkan_backend") then
+    add_requires("glfw", { configs = { glfw_include = "vulkan" } })
+else
+    add_requires("glfw")
+end
 
 includes("External/mimalloc")
 add_requires("mimalloc", { configs = { shared = false } })
@@ -94,7 +98,7 @@ target("Rtrc")
     add_filegroups("Rtrc", { rootdir = "Source/Rtrc" })
     -- Dependencies
     add_packages("mimalloc", "spdlog", "fmt", "mytbb", "abseil", { public = true })
-    add_packages("mydxc", "glfw", "stb", "tinyexr")
+    add_packages("mydxc", "glfw", "stb", "tinyexr", "spirv-reflect")
     add_deps("tinyobjloader", "sigslot", "imgui", "avir", "cy")
 	add_includedirs("External/half/include", { public = true })
     -- Vulkan RHI
@@ -104,7 +108,6 @@ target("Rtrc")
         add_files("Source/Rtrc/Graphics/RHI/Vulkan/**.cpp", { unity_group = "VulkanRHI" })
         add_defines("RTRC_RHI_VULKAN=1", { public = true })
         add_defines("VMA_STATIC_VULKAN_FUNCTIONS=0", "VMA_DYNAMIC_VULKAN_FUNCTIONS=1", { public = false })
-        add_packages("spirv-reflect")
         add_packages("volk", "vk-bootstrap", "vulkan-memory-allocator", { public = has_config("static_rhi") })
     end
     -- DirectX12 RHI
@@ -114,7 +117,7 @@ target("Rtrc")
         add_files("Source/Rtrc/Graphics/RHI/DirectX12/**.cpp", { unity_group = "DirectX12RHI" })
         add_defines("RTRC_RHI_DIRECTX12=1", { public = true })
         add_syslinks("d3d12", "dxgi", "dxguid")
-        add_packages("d3d12-memory-allocator", "d3d12_1610", "winpix_102")
+        add_packages("d3d12-memory-allocator", "d3d12_1610", "winpix_102", { public = has_config("static_rhi") })
     end
     -- RHI Helper
     add_headerfiles("Source/Rtrc/Graphics/RHI/Helper/**.h")
