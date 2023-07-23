@@ -95,7 +95,7 @@ void CSMain(uint2 tid : SV_DispatchThreadID)
     float viewZ = CameraUtils::DeviceZToViewZ(Camera.cameraToClipMatrix, gpixel.depth);
     float3 worldPosition = viewZ * worldRay + Camera.worldPosition;
     float3 worldNormal = gpixel.normal;
-    float3 origin = worldPosition + 1e-4 * worldNormal;
+    float3 origin = worldPosition + 1e-3 * worldNormal;
  
 #if ENABLE_LOW_RES_MASK
     float lowResMaskValue = LowResMask.SampleLevel(LowResMaskSampler, uv, 0);

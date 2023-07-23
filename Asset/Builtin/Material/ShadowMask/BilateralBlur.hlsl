@@ -35,7 +35,7 @@ void LoadSourceData(int2 pixel, out float value, out float depth)
     value = ShadowMaskIn[clampedPixel];
     
     float deviceZ = LoadGBufferDepth(clampedPixel);
-    depth = deviceZ < 1 ? CameraUtils::DeviceZToViewZ(Pass.cameraToClip, deviceZ) : 1e10;
+    depth = deviceZ < 1 ? CameraUtils::DeviceZToViewZ(Pass.cameraToClip, deviceZ) : -1e10;
 }
 
 void AddSample(float refDepth, float sampleDepth, float sampleValue, float spatialWeight, inout float sumValue, inout float sumWeight)
@@ -54,9 +54,6 @@ void CSMain(int2 tid : SV_DispatchThreadID, int2 ltid : SV_GroupThreadID)
 {
     float value, depth;
     LoadSourceData(tid, value, depth);
-
-    if(WaveActiveBitAnd(uint(depth == 1e10)))
-        return;
 
 #if IS_BLUR_DIRECTION_Y
     int lid = ltid.y;
@@ -95,6 +92,9 @@ void CSMain(int2 tid : SV_DispatchThreadID, int2 ltid : SV_GroupThreadID)
     }
 
     GroupMemoryBarrierWithGroupSync();
+
+    if(depth < 0)
+        return;
 
     float v0 = SharedSourceData[2 + lid - 2];
     float v1 = SharedSourceData[2 + lid - 1];

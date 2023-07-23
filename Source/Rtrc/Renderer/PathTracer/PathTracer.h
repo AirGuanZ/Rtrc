@@ -19,7 +19,8 @@ public:
     struct PerCameraData
     {
         RC<StatefulTexture> rngState;
-        RC<StatefulTexture> prev;
+
+        RC<StatefulTexture> prev; // Temporal-filtered result
         RC<StatefulTexture> curr;
 
         RG::TextureResource *indirectDiffuse = nullptr;
@@ -44,6 +45,8 @@ private:
     enum PassIndex
     {
         PassIndex_Trace,
+        PassIndex_TemporalFilter,
+        PassIndex_SpatialFilter,
         PassIndex_Count
     };
     

@@ -6,7 +6,8 @@ RTRC_RENDERER_BEGIN
 RenderCamera::RenderCamera(ObserverPtr<Device> device, const RenderScene &scene, UniqueId cameraId)
     : device_(device), scene_(scene), perObjectDataBufferPool_(device, RHI::BufferUsage::ShaderStructuredBuffer)
 {
-    renderCamera_.originalId = cameraId;
+    prevRenderCamera_.originalId = cameraId;
+    currRenderCamera_.originalId = cameraId;
 }
 
 void RenderCamera::Update(
@@ -14,12 +15,14 @@ void RenderCamera::Update(
     TransientConstantBufferAllocator &transientConstantBufferAllocator,
     LinearAllocator                  &linearAllocator)
 {
-    assert(renderCamera_.originalId == camera.originalId);
-    renderCamera_ = camera;
+    assert(currRenderCamera_.originalId == camera.originalId);
+    prevRenderCamera_ = currRenderCamera_;
+    currRenderCamera_ = camera;
 
     {
-        const CameraConstantBuffer cbufferData = CameraConstantBuffer::FromCamera(renderCamera_);
-        cameraCBuffer_ = transientConstantBufferAllocator.CreateConstantBuffer(cbufferData);
+        const CameraConstantBuffer cbufferData = CameraConstantBuffer::FromCamera(currRenderCamera_);
+        prevCameraCBuffer_ = currCameraCBuffer_;
+        currCameraCBuffer_ = device_->CreateConstantBuffer(cbufferData);
     }
 
     objects_.clear();
@@ -60,8 +63,8 @@ void RenderCamera::Update(
         StaticMeshCBuffer &dst = perObjectData[i];
         dst.localToWorld  = src->proxy->localToWorld;
         dst.worldToLocal  = src->proxy->worldToLocal;
-        dst.localToCamera = renderCamera_.worldToCamera * dst.localToWorld;
-        dst.localToClip   = renderCamera_.worldToClip * dst.localToWorld;
+        dst.localToCamera = currRenderCamera_.worldToCamera * dst.localToWorld;
+        dst.localToClip   = currRenderCamera_.worldToClip * dst.localToWorld;
     }
     perObjectDataBuffer_ = perObjectDataBufferPool_.Acquire(
         sizeof(StaticMeshCBuffer) * std::max<size_t>(perObjectData.size(), 1));

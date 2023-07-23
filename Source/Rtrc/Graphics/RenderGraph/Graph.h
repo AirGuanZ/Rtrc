@@ -356,7 +356,6 @@ public:
 
     Pass *Use(TlasResource *tlas, const UseInfo &info);
     Pass *Build(TlasResource *tlas);
-    Pass *Read(TlasResource *tlas, RHI::PipelineStageFlag stages);
 
     Pass *SetCallback(Callback callback);
     Pass *SetCallback(LegacyCallback callback);

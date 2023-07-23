@@ -10,4 +10,23 @@ Material "Builtin/PathTracing"
         }
     }
 
+    Pass
+    {
+        Shader "Builtin/PathTracing/TemporalFilter"
+        {
+            #comp CSMain
+            #include "./TemporalFilter.hlsl"
+        }
+    }
+
+    Pass
+    {
+        Shader "Builtin/PathTracing/SpatialFilter"
+        {
+            #keyword IS_FILTER_DIRECTION_Y
+            #comp CSMain
+            #include "./SpatialFilter.hlsl"
+        }
+    }
+
 } // Material "Builtin/PathTracing"

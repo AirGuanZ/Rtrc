@@ -22,8 +22,11 @@ public:
 
     const RenderScene &GetScene() const { return scene_; }
 
-    const CameraRenderData &GetCameraRenderData() const { return renderCamera_; }
-    const RC<SubBuffer>    &GetCameraCBuffer()    const { return cameraCBuffer_; }
+    const CameraRenderData &GetCameraRenderData() const { return currRenderCamera_; }
+    const RC<SubBuffer>    &GetCameraCBuffer()    const { return currCameraCBuffer_; }
+
+    const CameraRenderData &GetPrevCameraRenderData() const { return prevRenderCamera_; }
+    const RC<SubBuffer>    &GetPrevCameraCBuffer()    const { return prevCameraCBuffer_; }
 
     Span<StaticMeshRecord *> GetStaticMeshes()            const { return objects_; }
     const RC<Buffer>        &GetStaticMeshPerObjectData() const { return perObjectDataBuffer_; }
@@ -43,9 +46,11 @@ private:
     ObserverPtr<Device> device_;
     
     const RenderScene  &scene_;
-    CameraRenderData    renderCamera_;
+    CameraRenderData    currRenderCamera_;
+    CameraRenderData    prevRenderCamera_;
 
-    RC<SubBuffer> cameraCBuffer_;
+    RC<SubBuffer> currCameraCBuffer_;
+    RC<SubBuffer> prevCameraCBuffer_;
 
     std::vector<StaticMeshRecord *> objects_;
     RC<Buffer>                      perObjectDataBuffer_;

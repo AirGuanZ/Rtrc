@@ -152,45 +152,49 @@ void CSMain(uint2 tid : SV_DispatchThreadID)
 
     uint rng = RngState[tid];
 
-    float3 o = worldPos + 0.01 * gpixel.normal;
-    float3 d = SampleDiffuseDirection(gpixel.normal, rng);
-    float3 beta = 1;
-
     float3 result = 0;
-    for(uint i = 0; i < Pass.maxDepth; ++i)
+    const int N = 4;
+    for(int s = 0; s < N; ++s)
     {
-        RayDesc ray;
-        ray.Origin    = o;
-        ray.Direction = d;
-        ray.TMin      = 0;
-        ray.TMax      = 9999;
-
-        // Find closest intersection
-
-        Intersection intersection;
-        if(!FindClosestIntersection(ray, intersection))
+        float3 o = worldPos + 0.01 * gpixel.normal;
+        float3 d = SampleDiffuseDirection(gpixel.normal, rng);
+        float3 beta = 1;
+        for(uint i = 0; i < Pass.maxDepth; ++i)
         {
-            float2 skyLutUV = Atmosphere::ComputeSkyLutTexCoord(d);
-            float3 color = SkyLut.SampleLevel(SkyLutSampler, skyLutUV, 0);
-            result += beta * color;
-            break;
+            RayDesc ray;
+            ray.Origin    = o;
+            ray.Direction = d;
+            ray.TMin      = 0;
+            ray.TMax      = 9999;
+
+            // Find closest intersection
+
+            Intersection intersection;
+            if(!FindClosestIntersection(ray, intersection))
+            {
+                float2 skyLutUV = Atmosphere::ComputeSkyLutTexCoord(d);
+                float3 color = SkyLut.SampleLevel(SkyLutSampler, skyLutUV, 0);
+                result += beta * color;
+                break;
+            }
+
+            // Sample new direction
+
+            float3 newDir = SampleDiffuseDirection(intersection.geometryFrame.z, rng);
+            float pdf = 1 / (2 * PI);
+
+            // Generate new ray
+
+            o = intersection.position + 0.01 * intersection.geometryFrame.z;
+            d = newDir;
+
+            // Update beta
+
+            float cosFactor = abs(dot(newDir, intersection.geometryFrame.z));
+            beta *= saturate(intersection.albedo) / PI * cosFactor / pdf;
         }
-
-        // Sample new direction
-
-        float3 newDir = SampleDiffuseDirection(intersection.geometryFrame.z, rng);
-        float pdf = 1 / (2 * PI);
-
-        // Generate new ray
-
-        o = intersection.position + 0.01 * intersection.geometryFrame.z;
-        d = newDir;
-
-        // Update beta
-
-        float cosFactor = abs(dot(newDir, intersection.geometryFrame.z));
-        beta *= saturate(intersection.albedo) / PI * cosFactor / pdf;
     }
+    result *= 1.0 / N;
 
     Output[tid] = float4(result, 1);
     RngState[tid] = rng;

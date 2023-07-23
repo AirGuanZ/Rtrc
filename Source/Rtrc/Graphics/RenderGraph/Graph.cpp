@@ -148,16 +148,6 @@ Pass *Pass::Build(TlasResource *tlas)
     return Use(tlas, BuildAS_Output);
 }
 
-Pass *Pass::Read(TlasResource *tlas, RHI::PipelineStageFlag stages)
-{
-    return Use(tlas, UseInfo
-    {
-        .layout   = RHI::TextureLayout::Undefined,
-        .stages   = stages,
-        .accesses = RHI::ResourceAccess::ReadAS
-    });
-}
-
 Pass *Pass::SetCallback(Callback callback)
 {
     callback_ = std::move(callback);

@@ -61,6 +61,11 @@ float3 LoadGBufferNormal(float2 uv)
     float3 encoded = _internalGBuffer_Normal.SampleLevel(_internalGBufferSampler, uv, 0);
     return 2.0 * encoded - 1.0;
 }
+float3 LoadGBufferNormal(uint2 coord)
+{
+    float3 encoded = _internalGBuffer_Normal[coord];
+    return 2.0 * encoded - 1.0;
+}
 #endif
 
 #if GBUFFER_ENABLE_ALBEDO
