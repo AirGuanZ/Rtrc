@@ -79,7 +79,10 @@ struct GBuffers
     RG::TextureResource *normal         = nullptr;
     RG::TextureResource *albedoMetallic = nullptr;
     RG::TextureResource *roughness      = nullptr;
-    RG::TextureResource *depth          = nullptr;
+    RG::TextureResource *depthStencil   = nullptr;
+
+    RG::TextureResource *currDepth = nullptr;
+    RG::TextureResource *prevDepth = nullptr;
 };
 
 class RenderAlgorithm : public Uncopyable

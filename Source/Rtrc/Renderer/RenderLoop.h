@@ -7,7 +7,7 @@
 #include <Rtrc/Graphics/ImGui/Instance.h>
 #include <Rtrc/Graphics/RenderGraph/Executable.h>
 #include <Rtrc/Renderer/DeferredLighting/DeferredLightingPass.h>
-#include <Rtrc/Renderer/Passes/GBufferPass.h>
+#include <Rtrc/Renderer/GBuffer/GBufferPass.h>
 #include <Rtrc/Renderer/RenderCommand.h>
 #include <Rtrc/Renderer/Scene/RenderCamera.h>
 #include <Rtrc/Utility/Timer.h>
@@ -58,6 +58,9 @@ private:
     void RenderThreadEntry();
 
     void RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame &frame);
+
+    template<bool HandleExcpetionExplicitly>
+    void HandleRenderCommand(const RenderCommand &command);
 
     Config config_;
 

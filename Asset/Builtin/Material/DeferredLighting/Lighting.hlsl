@@ -28,12 +28,15 @@ rtrc_group(Pass, CS)
     #error "Unsupported main light mode"
 #endif
 
+    rtrc_define(Texture2D<float3>, IndirectDiffuse)
+
     rtrc_define(RWTexture2D<float4>, Output)
     rtrc_uniform(uint2, resolution)
     rtrc_uniform(float2, rcpResolution)
 };
 
 rtrc_sampler(ShadowMaskSampler, filter = point, address_u = clamp, address_v = clamp)
+rtrc_sampler(IndirectDiffuseSampler, filter = point, address_u = clamp, address_v = clamp)
 
 float3 ComputePointLighting(GBufferPixel gpixel, float3 worldPos, PointLightShadingData light)
 {
@@ -99,6 +102,11 @@ void CSMain(uint2 tid : SV_DispatchThreadID)
         DirectionalLightShadingData light = DirectionalLightBuffer[j];
         color += ComputeDirectionalLight(gpixel, light);
     }
+
+    // Indirect diffuse
+
+    float3 indirectDiffuse = IndirectDiffuse.SampleLevel(IndirectDiffuseSampler, uv, 0);
+    color += indirectDiffuse;
 
     // Output
     

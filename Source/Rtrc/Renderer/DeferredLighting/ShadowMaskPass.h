@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Rtrc/Graphics/Resource/ResourceManager.h>
-#include <Rtrc/Renderer/Passes/GBufferPass.h>
+#include <Rtrc/Renderer/GBuffer/GBufferPass.h>
 #include <Rtrc/Renderer/Scene/RenderScene.h>
 
 RTRC_RENDERER_BEGIN

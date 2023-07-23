@@ -54,42 +54,7 @@ void RenderLoop::AddCommand(RenderCommand command)
     }
 
     assert(continueRenderLoop_);
-    command.Match(
-        [&](const RenderCommand_ResizeFramebuffer &resize)
-        {
-            RTRC_SCOPE_EXIT{ resize.finishSemaphore->release(); };
-            if(resize.width > 0 && resize.height > 0)
-            {
-                device_->GetRawDevice()->WaitIdle();
-                device_->RecreateSwapchain();
-                isSwapchainInvalid_ = false;
-            }
-        },
-        [&](const RenderCommand_RenderStandaloneFrame &frame)
-        {
-            RTRC_SCOPE_EXIT{ frame.finishSemaphore->release(); };
-            if(isSwapchainInvalid_)
-            {
-                return;
-            }
-            if(!device_->BeginFrame(false))
-            {
-                isSwapchainInvalid_ = true;
-                return;
-            }
-            ++frameIndex_;
-            frameTimer_.BeginFrame();
-            RenderStandaloneFrame(frame);
-            if(!device_->Present())
-            {
-                isSwapchainInvalid_ = true;
-            }
-        },
-        [&](const RenderCommand_Exit &)
-        {
-            continueRenderLoop_ = false;
-            device_->EndRenderLoop();
-        });
+    HandleRenderCommand<false>(command);
 }
 
 const BindlessTextureEntry *RenderLoop::ExtractAlbedoTextureEntry(const MaterialInstance::SharedRenderingData *material)
@@ -100,77 +65,14 @@ const BindlessTextureEntry *RenderLoop::ExtractAlbedoTextureEntry(const Material
 void RenderLoop::RenderThreadEntry()
 {
     SetThreadIndentifier(ThreadUtility::ThreadIdentifier::Render);
-
-    auto DoWithExceptionHandling = [&]<typename F>(const F &f)
-    {
-        if(config_.handleCrossThreadException)
-        {
-            try
-            {
-                f();
-            }
-            catch(...)
-            {
-                hasException_ = true;
-                exceptionPtr_ = std::current_exception();
-                continueRenderLoop_ = false;
-            }
-        }
-        else
-        {
-            f();
-        }
-    };
-
     RTRC_SCOPE_EXIT{ device_->EndRenderLoop(); };
-
     frameTimer_.Restart();
     while(continueRenderLoop_)
     {
-        RenderCommand nextRenderCommand;
-        if(renderCommandQueue_.try_pop(nextRenderCommand))
+        RenderCommand command;
+        if(renderCommandQueue_.try_pop(command))
         {
-            nextRenderCommand.Match(
-                [&](const RenderCommand_ResizeFramebuffer &resize)
-                {
-                    RTRC_SCOPE_EXIT{ resize.finishSemaphore->release(); };
-                    if(resize.width > 0 && resize.height > 0)
-                    {
-                        DoWithExceptionHandling([&]
-                        {
-                            device_->GetRawDevice()->WaitIdle();
-                            device_->RecreateSwapchain();
-                            isSwapchainInvalid_ = false;
-                        });
-                    }
-                },
-                [&](const RenderCommand_RenderStandaloneFrame &frame)
-                {
-                    RTRC_SCOPE_EXIT{ frame.finishSemaphore->release(); };
-                    DoWithExceptionHandling([&]
-                    {
-                        if(isSwapchainInvalid_)
-                        {
-                            return;
-                        }
-                        if(!device_->BeginFrame(false))
-                        {
-                            isSwapchainInvalid_ = true;
-                            return;
-                        }
-                        ++frameIndex_;
-                        frameTimer_.BeginFrame();
-                        RenderStandaloneFrame(frame);
-                        if(!device_->Present())
-                        {
-                            isSwapchainInvalid_ = true;
-                        }
-                    });
-                },
-                [&](const RenderCommand_Exit &)
-                {
-                    continueRenderLoop_ = false;
-                });
+            HandleRenderCommand<true>(command);
         }
     }
 }
@@ -231,6 +133,10 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
     GBuffers gbuffers = gbufferPass_->Render(
         *renderCamera, frame.bindlessTextureGroup, *renderGraph, framebuffer->GetSize());
 
+    // ============= Resolve depth =============
+
+    renderCamera->UpdateDepth(*renderGraph, gbuffers);
+
     // ============= Atmosphere =============
 
     auto &renderAtmosphere = renderScene_.GetRenderAtmosphere();
@@ -248,23 +154,24 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
     // ============= Indirect diffuse =============
 
     const bool visIndirectDiffuse = frame.renderSettings.visualizationMode == VisualizationMode::IndirectDiffuse;
-    pathTracer_->Render(*renderGraph, *renderCamera, gbuffers, framebuffer->GetSize(), visIndirectDiffuse);
+    const bool renderIndirectDiffuse = visIndirectDiffuse || frame.renderSettings.enableIndirectDiffuse;
+    if(renderIndirectDiffuse)
+    {
+        pathTracer_->Render(*renderGraph, *renderCamera, gbuffers, framebuffer->GetSize(), visIndirectDiffuse);
+    }
+    auto indirectDiffuse = renderCamera->GetPathTracingData().indirectDiffuse;
     RTRC_SCOPE_EXIT{ pathTracer_->ClearFrameData(renderCamera->GetPathTracingData()); };
 
     // ============= Deferred lighting =============
     
     deferredLightingPass_->Render(
-        *renderCamera, gbuffers, skyLut, *renderGraph, framebuffer);
+        *renderCamera, gbuffers, skyLut, indirectDiffuse, *renderGraph, framebuffer);
 
     // ============= Blit =============
 
     if(frame.renderSettings.visualizationMode == VisualizationMode::IndirectDiffuse)
     {
-        renderGraph->CreateBlitTexture2DPass(
-            "Visualize indirect diffuse",
-            renderCamera->GetPathTracingData().indirectDiffuse,
-            swapchainImage,
-            true, 1 / 2.2f);
+        renderGraph->CreateBlitTexture2DPass("DisplayIndirectDiffuse", indirectDiffuse, swapchainImage, true, 1 / 2.2f);
     }
     else
     {
@@ -281,6 +188,73 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
     
     renderGraph->SetCompleteFence(device_->GetFrameFence());
     renderGraphExecuter_->Execute(renderGraph);
+}
+
+template<bool HandleExcpetionExplicitly>
+void RenderLoop::HandleRenderCommand(const RenderCommand &command)
+{
+    auto Exec = [&]<typename F>(const F &f)
+    {
+        if(HandleExcpetionExplicitly && config_.handleCrossThreadException)
+        {
+            try
+            {
+                f();
+            }
+            catch(...)
+            {
+                hasException_ = true;
+                exceptionPtr_ = std::current_exception();
+                continueRenderLoop_ = false;
+            }
+        }
+        else
+        {
+            f();
+        }
+    };
+
+    command.Match(
+        [&](const RenderCommand_ResizeFramebuffer &resize)
+        {
+            RTRC_SCOPE_EXIT{ resize.finishSemaphore->release(); };
+            if(resize.width > 0 && resize.height > 0)
+            {
+                Exec([&]
+                {
+                    device_->GetRawDevice()->WaitIdle();
+                    device_->RecreateSwapchain();
+                    isSwapchainInvalid_ = false;
+                });
+            }
+        },
+        [&](const RenderCommand_RenderStandaloneFrame &frame)
+        {
+            RTRC_SCOPE_EXIT{ frame.finishSemaphore->release(); };
+            Exec([&]
+            {
+                if(isSwapchainInvalid_)
+                {
+                    return;
+                }
+                if(!device_->BeginFrame(false))
+                {
+                    isSwapchainInvalid_ = true;
+                    return;
+                }
+                ++frameIndex_;
+                frameTimer_.BeginFrame();
+                RenderStandaloneFrame(frame);
+                if(!device_->Present())
+                {
+                    isSwapchainInvalid_ = true;
+                }
+            });
+        },
+        [&](const RenderCommand_Exit &)
+        {
+            continueRenderLoop_ = false;
+        });
 }
 
 RTRC_RENDERER_END

@@ -34,6 +34,8 @@ namespace DeferredLightingPassDetail
         rtrc_define(Texture2D,             MainLightShadowMask);
         rtrc_uniform(MainLightShadingData, mainLightShadingData);
 
+        rtrc_define(Texture2D, IndirectDiffuse);
+
         rtrc_define(RWTexture2D, Output);
         rtrc_uniform(uint2,  resolution);
         rtrc_uniform(float2, rcpResolution);
@@ -72,6 +74,7 @@ void DeferredLightingPass::Render(
     const RenderCamera  &scene,
     const GBuffers      &gbuffers,
     RG::TextureResource *skyLut,
+    RG::TextureResource *indirectDiffuse,
     RG::RenderGraph     &renderGraph,
     RG::TextureResource *renderTarget)
 {
@@ -90,6 +93,10 @@ void DeferredLightingPass::Render(
         lightingPass->Use(renderLights.GetRGPointLightBuffer(), RG::CS_StructuredBuffer);
         lightingPass->Use(renderLights.GetRGDirectionalLightBuffer(), RG::CS_StructuredBuffer);
         DeclareGBufferUses<PassGroup>(lightingPass, gbuffers, RHI::PipelineStage::ComputeShader);
+        if(indirectDiffuse)
+        {
+            lightingPass->Use(indirectDiffuse, RG::CS_Texture);
+        }
         if(skyLut)
         {
             lightingPass->Use(skyLut, RG::PS_Texture);
@@ -99,9 +106,9 @@ void DeferredLightingPass::Render(
             lightingPass->Use(shadowMask, RG::PS_Texture);
         }
         lightingPass->SetCallback(
-            [this, gbuffers, shadowMask, skyLut, renderTarget, &scene]
+            [this, gbuffers, shadowMask, skyLut, indirectDiffuse, renderTarget, &scene]
         {
-            DoDeferredLighting<mainLightMode>(scene, gbuffers, skyLut, shadowMask, renderTarget);
+            DoDeferredLighting<mainLightMode>(scene, gbuffers, skyLut, indirectDiffuse, shadowMask, renderTarget);
         });
     };
 
@@ -128,6 +135,7 @@ void DeferredLightingPass::DoDeferredLighting(
     const RenderCamera  &sceneCamera,
     const GBuffers      &gbuffers,
     RG::TextureResource *skyLut,
+    RG::TextureResource *indirectDiffuse,
     RG::TextureResource *shadowMask,
     RG::TextureResource *rgRenderTarget)
 {
@@ -160,6 +168,8 @@ void DeferredLightingPass::DoDeferredLighting(
     }
     lightingPassData.MainLightShadowMask = shadowMask ? shadowMask->Get()
                                                       : resources_->GetBuiltinTexture(BuiltinTexture::White2D);
+    lightingPassData.IndirectDiffuse = indirectDiffuse ? indirectDiffuse->Get()
+                                                       : resources_->GetBuiltinTexture(BuiltinTexture::Black2D);
     lightingPassData.Output = rgRenderTarget;
     lightingPassData.resolution = rgRenderTarget->GetSize();
     lightingPassData.rcpResolution.x = 1.0f / lightingPassData.resolution.x;

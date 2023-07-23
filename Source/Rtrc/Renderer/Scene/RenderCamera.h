@@ -36,7 +36,11 @@ public:
         TransientConstantBufferAllocator &transientConstantBufferAllocator,
         LinearAllocator                  &linearAllocator);
 
+    void UpdateDepth(RG::RenderGraph &renderGraph, GBuffers &gbuffers);
+
 private:
+
+    ObserverPtr<Device> device_;
     
     const RenderScene  &scene_;
     CameraRenderData    renderCamera_;
@@ -50,6 +54,9 @@ private:
     RenderAtmosphere::PerCameraData atmosphereData_;
 
     PathTracer::PerCameraData pathTracingData_;
+
+    RC<StatefulTexture> prevDepth_;
+    RC<StatefulTexture> currDepth_;
 };
 
 RTRC_RENDERER_END

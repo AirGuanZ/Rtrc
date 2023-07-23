@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Rtrc/Renderer/DeferredLighting/ShadowMaskPass.h>
-#include <Rtrc/Renderer/Passes/GBufferPass.h>
+#include <Rtrc/Renderer/GBuffer/GBufferPass.h>
 
 RTRC_RENDERER_BEGIN
 
@@ -22,6 +22,7 @@ public:
         const RenderCamera  &scene,
         const GBuffers      &gbuffers,
         RG::TextureResource *skyLut,
+        RG::TextureResource *indirectDiffuse,
         RG::RenderGraph     &renderGraph,
         RG::TextureResource *renderTarget);
 
@@ -36,10 +37,11 @@ private:
     template<MainLightMode Mode>
     void DoDeferredLighting(
         const RenderCamera &sceneCamera,
-        const GBuffers          &gbuffers,
-        RG::TextureResource     *skyLut,
-        RG::TextureResource     *shadowMask,
-        RG::TextureResource     *renderTarget);
+        const GBuffers      &gbuffers,
+        RG::TextureResource *skyLut,
+        RG::TextureResource *indirectDiffuse,
+        RG::TextureResource *shadowMask,
+        RG::TextureResource *renderTarget);
 
     ObserverPtr<Device>          device_;
     ObserverPtr<ResourceManager> resources_;

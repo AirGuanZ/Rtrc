@@ -19,6 +19,9 @@ public:
     struct PerCameraData
     {
         RC<StatefulTexture> rngState;
+        RC<StatefulTexture> prev;
+        RC<StatefulTexture> curr;
+
         RG::TextureResource *indirectDiffuse = nullptr;
     };
 

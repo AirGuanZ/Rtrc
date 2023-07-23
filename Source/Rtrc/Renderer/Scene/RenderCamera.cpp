@@ -4,7 +4,7 @@
 RTRC_RENDERER_BEGIN
 
 RenderCamera::RenderCamera(ObserverPtr<Device> device, const RenderScene &scene, UniqueId cameraId)
-    : scene_(scene), perObjectDataBufferPool_(device, RHI::BufferUsage::ShaderStructuredBuffer)
+    : device_(device), scene_(scene), perObjectDataBufferPool_(device, RHI::BufferUsage::ShaderStructuredBuffer)
 {
     renderCamera_.originalId = cameraId;
 }
@@ -71,6 +71,37 @@ void RenderCamera::Update(
     {
         perObjectDataBuffer_->Upload(perObjectData.data(), 0, sizeof(StaticMeshCBuffer) * perObjectData.size());
     }
+}
+
+void RenderCamera::UpdateDepth(RG::RenderGraph &renderGraph, GBuffers &gbuffers)
+{
+    assert(!gbuffers.prevDepth && !gbuffers.currDepth);
+    std::swap(prevDepth_, currDepth_);
+
+    auto depthStencil = gbuffers.depthStencil;
+    if(prevDepth_ && prevDepth_->GetSize() != depthStencil->GetSize())
+    {
+        prevDepth_ = nullptr;
+    }
+    if(prevDepth_)
+    {
+        gbuffers.prevDepth = renderGraph.RegisterTexture(prevDepth_);
+    }
+
+    if(!currDepth_ || currDepth_->GetSize() != depthStencil->GetSize())
+    {
+        currDepth_ = device_->CreatePooledTexture(RHI::TextureDesc
+        {
+            .dim    = RHI::TextureDimension::Tex2D,
+            .format = RHI::Format::R32_Float,
+            .width  = depthStencil->GetWidth(),
+            .height = depthStencil->GetHeight(),
+            .usage  = RHI::TextureUsage::ShaderResource | RHI::TextureUsage::RenderTarget
+        });
+        currDepth_->SetName("Readonly depth");
+    }
+    gbuffers.currDepth = renderGraph.RegisterTexture(currDepth_);
+    renderGraph.CreateBlitTexture2DPass("InitializeReadOnlyDepth", depthStencil, gbuffers.currDepth);
 }
 
 RTRC_RENDERER_END

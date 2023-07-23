@@ -80,6 +80,8 @@ void StandaloneApplication::Update(const Rtrc::ApplicationUpdateContext &context
             pointLight_->SetShadowSoftness(shadowSoftness);
         }
 
+        imgui.CheckBox("Indirect Diffuse", &GetRenderSettings().enableIndirectDiffuse);
+
         if(imgui.BeginCombo("Visualization Mode", GetVisualizationModeName(GetRenderSettings().visualizationMode)))
         {
             for(int i = 0; i < Rtrc::EnumCount<Rtrc::Renderer::VisualizationMode>; ++i)

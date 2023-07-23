@@ -12,10 +12,10 @@ public:
     explicit GBufferPass(ObserverPtr<Device> device);
 
     GBuffers Render(
-        const RenderCamera &sceneCamera,
-        const RC<BindingGroup>  &bindlessTextureGroup,
-        RG::RenderGraph         &renderGraph,
-        const Vector2u          &rtSize);
+        const RenderCamera     &sceneCamera,
+        const RC<BindingGroup> &bindlessTextureGroup,
+        RG::RenderGraph        &renderGraph,
+        const Vector2u         &rtSize);
 
 private:
 

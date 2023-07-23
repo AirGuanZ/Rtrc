@@ -1,7 +1,7 @@
 #include <ranges>
 
 #include <Rtrc/Renderer/Common.h>
-#include <Rtrc/Renderer/Passes/GBufferPass.h>
+#include <Rtrc/Renderer/GBuffer/GBufferPass.h>
 #include <Rtrc/Renderer/Scene/RenderCamera.h>
 #include <Rtrc/Utility/Enumerate.h>
 
@@ -35,7 +35,7 @@ GBuffers GBufferPass::Render(
     gbufferPass->Use(ret.normal, RG::ColorAttachmentWriteOnly);
     gbufferPass->Use(ret.albedoMetallic, RG::ColorAttachmentWriteOnly);
     gbufferPass->Use(ret.roughness, RG::ColorAttachmentWriteOnly);
-    gbufferPass->Use(ret.depth, RG::DepthStencilAttachment);
+    gbufferPass->Use(ret.depthStencil, RG::DepthStencilAttachment);
     gbufferPass->SetCallback([this, gbuffers = ret, &sceneCamera, bindlessTextureGroup]
     {
         DoRenderGBuffers(sceneCamera, bindlessTextureGroup, gbuffers);
@@ -88,7 +88,7 @@ GBuffers GBufferPass::AllocateGBuffers(RG::RenderGraph &renderGraph, const Vecto
         .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive,
         .clearValue           = RHI::ColorClearValue{ 0, 0, 0, 0 }
     }, "GBufferC");
-    ret.depth = renderGraph.CreateTexture(RHI::TextureDesc
+    ret.depthStencil = renderGraph.CreateTexture(RHI::TextureDesc
     {
         .dim                  = RHI::TextureDimension::Tex2D,
         .format               = RHI::Format::D24S8,
@@ -169,7 +169,7 @@ void GBufferPass::DoRenderGBuffers(
     auto gbufferA = gbuffers.normal;
     auto gbufferB = gbuffers.albedoMetallic;
     auto gbufferC = gbuffers.roughness;
-    auto gbufferDepth = gbuffers.depth;
+    auto gbufferDepth = gbuffers.depthStencil;
 
     // Render Pass
 
@@ -319,7 +319,7 @@ void GBufferPass::DoRenderGBuffers(
                             gbufferB->GetFormat(),
                             gbufferC->GetFormat()
                         },
-                        .depthStencilFormat = gbuffers.depth->GetFormat()
+                        .depthStencilFormat = gbuffers.depthStencil->GetFormat()
                     });
                 }
 

@@ -187,7 +187,7 @@ void Run()
             .instanceData  = instanceDataBuffer->GetDeviceAddress()
         };
         commandBuffer.BuildTlas(
-            tlas, instanceArrayDesc, RHI::RayTracingAccelerationStructureBuildFlagBit::PreferFastTrace, nullptr);
+            tlas, instanceArrayDesc, RHI::RayTracingAccelerationStructureBuildFlags::PreferFastTrace, nullptr);
     });
 
     // Pipeline
