@@ -147,28 +147,43 @@ void Compiler::GenerateGlobalMemoryBarriers(ExecutablePass &pass)
 }
 
 void Compiler::GenerateConnectionsByDefinitionOrder(
+    bool                          optimizeConnection,
     Span<Box<Pass>>               passes,
     std::vector<std::set<Pass*>> &outPrevs,
     std::vector<std::set<Pass*>> &outSuccs)
 {
-    std::map<uint64_t, Pass *> resourceIndexToLastUser;
+    struct UserRecord
+    {
+        std::set<Pass *> prevUsers;
+        std::set<Pass *> users;
+        RHI::TextureLayout layout = RHI::TextureLayout::Undefined;
+        bool isReadOnly = false;
+    };
+
+    std::map<uint64_t, UserRecord> resourceIndexToUsers;
+
     for(const Box<Pass> &pass : passes)
     {
         Pass *curr = pass.get();
 
-        for(auto &buffer : std::ranges::views::keys(pass->bufferUsages_))
+        for(auto &&[buffer, usage] : pass->bufferUsages_)
         {
-            auto it = resourceIndexToLastUser.find(buffer->GetResourceIndex());
-            if(it != resourceIndexToLastUser.end())
+            const bool isCurrReadOnly = IsReadOnly(usage.accesses);
+            auto &userRecord = resourceIndexToUsers[buffer->GetResourceIndex()];
+            if(optimizeConnection && userRecord.isReadOnly && isCurrReadOnly)
             {
-                Pass *prev = it->second;
-                outSuccs[prev->index_].insert(curr);
-                outPrevs[curr->index_].insert(prev);
-                it->second = curr;
+                userRecord.users.insert(curr);
             }
             else
             {
-                resourceIndexToLastUser.insert({ buffer->GetResourceIndex(), curr });
+                userRecord.prevUsers = userRecord.users;
+                userRecord.users = { curr };
+                userRecord.isReadOnly = isCurrReadOnly;
+            }
+            for(auto prev : userRecord.prevUsers)
+            {
+                outSuccs[prev->index_].insert(curr);
+                outPrevs[curr->index_].insert(prev);
             }
         }
         
@@ -179,18 +194,25 @@ void Compiler::GenerateConnectionsByDefinitionOrder(
             {
                 if(subrscUsage.has_value())
                 {
-                    const uint64_t key = tex->GetResourceIndex() | (subrscIndex << 32);
-                    auto it = resourceIndexToLastUser.find(key);
-                    if(it != resourceIndexToLastUser.end())
+                    const bool isCurrReadOnly = IsReadOnly(subrscUsage->accesses);
+
+                    auto& userRecord = resourceIndexToUsers[tex->GetResourceIndex() | (subrscIndex << 32)];
+                    if(optimizeConnection && userRecord.layout == subrscUsage->layout &&
+                       userRecord.isReadOnly && isCurrReadOnly)
                     {
-                        Pass *prev = it->second;
-                        outSuccs[prev->index_].insert(curr);
-                        outPrevs[curr->index_].insert(prev);
-                        it->second = curr;
+                        userRecord.users.insert(curr);
                     }
                     else
                     {
-                        resourceIndexToLastUser.insert({ key, curr });
+                        userRecord.prevUsers = userRecord.users;
+                        userRecord.users = { curr };
+                        userRecord.layout = subrscUsage->layout;
+                        userRecord.isReadOnly = isCurrReadOnly;
+                    }
+                    for(auto prev : userRecord.prevUsers)
+                    {
+                        outSuccs[prev->index_].insert(curr);
+                        outPrevs[curr->index_].insert(prev);
                     }
                 }
                 ++subrscIndex;
@@ -218,8 +240,19 @@ void Compiler::TopologySortPasses()
 
     if(options_.Contains(Options::ConnectPassesByDefinitionOrder))
     {
-        GenerateConnectionsByDefinitionOrder(passes, prevs, succs);
+        const bool optimize = options_.Contains(CompilerDetail::OptionBit::OptimizePassConnection);
+        GenerateConnectionsByDefinitionOrder(optimize, passes, prevs, succs);
     }
+
+    /*fmt::print("=======================\n");
+    for(size_t i = 0; i < passes.size(); ++i)
+    {
+        fmt::print("{}\n", passes[i]->nameNode_->name);
+        for(auto succ : succs[i])
+        {
+            fmt::print("    {}\n", succ->nameNode_->name);
+        }
+    }*/
 
     std::queue<int> availablePasses;
     std::vector<int> passToUnprocessedPrevCount(passes.size());
@@ -261,6 +294,11 @@ void Compiler::TopologySortPasses()
         sortedPasses_[i] = pass;
         passToSortedIndex_[pass] = static_cast<int>(i);
     }
+
+    /*for(auto pass : sortedPasses_)
+    {
+        fmt::print("...{}\n", pass->nameNode_->name);
+    }*/
 }
 
 void Compiler::CollectResourceUsers()

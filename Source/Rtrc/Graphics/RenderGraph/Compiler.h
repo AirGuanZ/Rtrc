@@ -10,7 +10,8 @@ namespace CompilerDetail
     enum class OptionBit : uint32_t
     {
         ConnectPassesByDefinitionOrder = 1 << 0,
-        PreferGlobalMemoryBarrier      = 1 << 1,
+        OptimizePassConnection         = 1 << 1,
+        PreferGlobalMemoryBarrier      = 1 << 2,
     };
     RTRC_DEFINE_ENUM_FLAGS(OptionBit)
     using Options = EnumFlagsOptionBit;
@@ -72,6 +73,7 @@ private:
     static void GenerateGlobalMemoryBarriers(ExecutablePass &pass);
 
     static void GenerateConnectionsByDefinitionOrder(
+        bool                           optimizeConnection,
         Span<Box<Pass>>                passes,
         std::vector<std::set<Pass *>> &outPrevs,
         std::vector<std::set<Pass *>> &outSuccs);

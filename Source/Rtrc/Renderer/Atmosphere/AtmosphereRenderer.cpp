@@ -114,14 +114,11 @@ void RenderAtmosphere::Render(
     {
         perCameraData.persistentS = device_->CreatePooledTexture(RHI::TextureDesc
         {
-            .dim        = RHI::TextureDimension::Tex2D,
-            .format     = RHI::Format::R32G32B32A32_Float,
-            .width      = resS_.x,
-            .height     = resS_.y,
-            .usage      = RHI::TextureUsage::UnorderAccess |
-                          RHI::TextureUsage::ShaderResource |
-                          RHI::TextureUsage::ClearColor,
-            .clearValue = RHI::ColorClearValue{ 0, 0, 0, 0 }
+            .dim    = RHI::TextureDimension::Tex2D,
+            .format = RHI::Format::R32G32B32A32_Float,
+            .width  = resS_.x,
+            .height = resS_.y,
+            .usage  = RHI::TextureUsage::UnorderAccess | RHI::TextureUsage::ShaderResource
         });
         perCameraData.persistentS->SetName("AtmosphereSkyLut");
         needClearSkyLut = true;
@@ -131,7 +128,7 @@ void RenderAtmosphere::Render(
     perCameraData.S = renderGraph.RegisterTexture(perCameraData.persistentS);
     if(needClearSkyLut)
     {
-        renderGraph.CreateClearTexture2DPass("ClearSkyLut", perCameraData.S, { 0, 0, 0, 0 });
+        renderGraph.CreateClearRWTexture2DPass("ClearSkyLut", perCameraData.S, Vector4f(0));
     }
     auto S = perCameraData.S;
 
