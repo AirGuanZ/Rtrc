@@ -32,9 +32,9 @@ public:
 };
 
 using Vector2f = Vector2<float>;
-using Vector2i = Vector2<int32_t>;
-using Vector2u = Vector2<uint32_t>;
-using Vector2b = Vector2<uint8_t>;
+using Vector2i = Vector2<int>;
+using Vector2u = Vector2<unsigned int>;
+using Vector2b = Vector2<unsigned char>;
 
 template<typename T>
 auto operator<=>(const Vector2<T> &a, const Vector2<T> &b);
@@ -54,6 +54,8 @@ template<typename T>
 auto operator*(const Vector2<T> &a, T b);
 template<typename T>
 auto operator*(T a, const Vector2<T> &b);
+template<typename T>
+auto operator/(const Vector2<T> &a, T b);
 
 template<typename T>
 constexpr Vector2<T>::Vector2()
@@ -153,6 +155,12 @@ template<typename T>
 auto operator*(T a, const Vector2<T> &b)
 {
     return b * a;
+}
+
+template<typename T>
+auto operator/(const Vector2<T> &a, T b)
+{
+    return Vector2<T>(a.x / b, a.y / b);
 }
 
 RTRC_END

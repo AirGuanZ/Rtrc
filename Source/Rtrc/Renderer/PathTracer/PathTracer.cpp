@@ -9,13 +9,14 @@ void PathTracer::Render(
     RG::RenderGraph &renderGraph,
     RenderCamera    &camera,
     const GBuffers  &gbuffers,
-    const Vector2u  &framebufferSize,
     bool             clearBeforeRender) const
 {
     RTRC_RG_SCOPED_PASS_GROUP(renderGraph, "PathTracing");
 
     auto &scene = camera.GetScene();
     PerCameraData &perCameraData = camera.GetPathTracingData();
+
+    const Vector2u framebufferSize = gbuffers.normal->GetSize();
     auto rngState = Prepare2DPcgStateTexture(renderGraph, resources_, perCameraData.rngState, framebufferSize);
 
     // =================== Trace ===================

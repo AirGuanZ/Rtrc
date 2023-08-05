@@ -88,8 +88,8 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
     {
         .dim                  = RHI::TextureDimension::Tex2D,
         .format               = RHI::Format::B8G8R8A8_UNorm,
-        .width                = swapchainImage->GetWidth(),
-        .height               = swapchainImage->GetHeight(),
+        .width                = UpAlignTo(swapchainImage->GetWidth(), 4u),
+        .height               = UpAlignTo(swapchainImage->GetHeight(), 4u),
         .arraySize            = 1,
         .mipLevels            = 1,
         .sampleCount          = 1,
@@ -157,7 +157,7 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
     const bool renderIndirectDiffuse = visIndirectDiffuse || frame.renderSettings.enableIndirectDiffuse;
     if(renderIndirectDiffuse)
     {
-        pathTracer_->Render(*renderGraph, *renderCamera, gbuffers, framebuffer->GetSize(), visIndirectDiffuse);
+        pathTracer_->Render(*renderGraph, *renderCamera, gbuffers, visIndirectDiffuse);
     }
     auto indirectDiffuse = renderCamera->GetPathTracingData().indirectDiffuse;
     RTRC_SCOPE_EXIT{ pathTracer_->ClearFrameData(renderCamera->GetPathTracingData()); };
@@ -175,7 +175,8 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
     }
     else
     {
-        renderGraph->CreateBlitTexture2DPass("BlitToSwapchain", framebuffer, swapchainImage);
+        const bool usePointSampling = framebuffer->GetSize() == swapchainImage->GetSize();
+        renderGraph->CreateBlitTexture2DPass("BlitToSwapchain", framebuffer, swapchainImage, usePointSampling);
     }
 
     // ============= ImGui =============

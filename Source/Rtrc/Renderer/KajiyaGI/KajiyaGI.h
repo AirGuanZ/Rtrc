@@ -1,28 +1,32 @@
 #pragma once
 
-#include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/Renderer/Common.h>
 
 RTRC_RENDERER_BEGIN
 
 class RenderCamera;
 
-class PathTracer : public RenderAlgorithm
+class KajiyaGI : public RenderAlgorithm
 {
 public:
 
     struct Parameters
     {
-        uint32_t maxDepth = 5;
+        
     };
 
     struct PerCameraData
     {
-        RC<StatefulTexture> rngState;
+        RC<StatefulTexture> persistentRngState;
+        RG::TextureResource *rngState = nullptr;
 
-        RC<StatefulTexture> prev; // Temporal-filtered result
-        RC<StatefulTexture> curr;
+        RG::TextureResource *rawTracedA = nullptr;
+        RG::TextureResource *rawTracedB = nullptr;
 
+        RC<StatefulTexture> persistentReservoirs;
+        RG::TextureResource *reservoirs = nullptr;
+
+        // In half resolution
         RG::TextureResource *indirectDiffuse = nullptr;
     };
 
@@ -30,25 +34,21 @@ public:
 
     const Parameters &GetParameters() const { return parameters_; }
           Parameters &GetParameters()       { return parameters_; }
-          
-    void Render(
-        RG::RenderGraph &renderGraph,
-        RenderCamera    &camera,
-        const GBuffers  &gbuffers,
-        bool             clearBeforeRender) const;
+
+    void Render(RG::RenderGraph &renderGraph, RenderCamera &camera, const GBuffers &gbuffers) const;
 
     void ClearFrameData(PerCameraData &data) const;
 
 private:
 
+    void InitializeData(RG::RenderGraph &renderGraph, const Vector2u &framebufferSize, PerCameraData &data) const;
+
     enum PassIndex
     {
         PassIndex_Trace,
-        PassIndex_TemporalFilter,
-        PassIndex_SpatialFilter,
         PassIndex_Count
     };
-    
+
     Parameters parameters_;
 };
 

@@ -16,22 +16,28 @@ void StandaloneApplication::Initialize(const Rtrc::ApplicationInitializeContext 
         auto cubeMesh = resources.GetBuiltinMesh(Rtrc::BuiltinMesh::Cube);
         auto matInst = resources.CreateMaterialInstance("Builtin/Diffuse");
 
-        auto skyBlue = context.device->CreateColorTexture2D(0, 255, 255, 255, "SkyBlue");
-        auto skyBlueHandle = GetBindlessTextureManager().Allocate();
-        skyBlueHandle.Set(skyBlue);
+        auto gray = context.device->CreateColorTexture2D(180, 180, 180, 255, "Gray");
+        auto grayHandle = GetBindlessTextureManager().Allocate();
+        grayHandle.Set(gray);
 
-        matInst->Set("albedoTextureIndex", skyBlueHandle);
+        matInst->Set("albedoTextureIndex", grayHandle);
 
-        cubeObjects_[0] = context.activeScene->CreateStaticMeshRenderer();
-        cubeObjects_[0]->SetMesh(cubeMesh);
-        cubeObjects_[0]->SetMaterial(matInst);
-        cubeObjects_[0]->SetRayTracingFlags(Rtrc::StaticMeshRenderObject::RayTracingFlags::InOpaqueTlas);
+        {
+            auto object = context.activeScene->CreateStaticMeshRenderer();
+            object->SetMesh(cubeMesh);
+            object->SetMaterial(matInst);
+            object->SetRayTracingFlags(Rtrc::StaticMeshRenderObject::RayTracingFlags::InOpaqueTlas);
+            objects_.push_back(std::move(object));
+        }
 
-        cubeObjects_[1] = context.activeScene->CreateStaticMeshRenderer();
-        cubeObjects_[1]->SetMesh(cubeMesh);
-        cubeObjects_[1]->SetMaterial(matInst);
-        cubeObjects_[1]->SetRayTracingFlags(Rtrc::StaticMeshRenderObject::RayTracingFlags::InOpaqueTlas);
-        cubeObjects_[1]->GetMutableTransform().SetTranslation({ 0, 1.3f, 0 }).SetScale({ 0.3f, 0.3f, 0.3f });
+        {
+            auto object = context.activeScene->CreateStaticMeshRenderer();
+            object->SetMesh(cubeMesh);
+            object->SetMaterial(matInst);
+            object->SetRayTracingFlags(Rtrc::StaticMeshRenderObject::RayTracingFlags::InOpaqueTlas);
+            object->GetMutableTransform().SetTranslation({ 0, 1.3f, 0 }).SetScale({ 0.3f, 0.3f, 0.3f });
+            objects_.push_back(std::move(object));
+        }
     }
 
     {

@@ -12,9 +12,9 @@ protected:
 
 private:
 
-    Rtrc::FreeCameraController        cameraController_;
-    Box<Rtrc::StaticMeshRenderObject> cubeObjects_[2];
-    Box<Rtrc::Light>                  pointLight_;
+    Rtrc::FreeCameraController                     cameraController_;
+    std::vector<Box<Rtrc::StaticMeshRenderObject>> objects_;
+    Box<Rtrc::Light>                               pointLight_;
 
     float sunAngle_ = 20.0f;
 };

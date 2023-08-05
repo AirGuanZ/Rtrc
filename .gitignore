@@ -3,5 +3,7 @@
 /Build/
 /BuildCMake/
 /External/mimalloc/build/
+/External/llvm16/install_debug/
+/External/llvm16/install_release/
 /.xmake/
 /vsxmake2022/

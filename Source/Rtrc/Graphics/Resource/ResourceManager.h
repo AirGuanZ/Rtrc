@@ -26,6 +26,7 @@ enum class BuiltinMaterial
     Atmosphere,
     ShadowMask,
     PathTracing,
+    KajiyaGI,
     Count
 };
 

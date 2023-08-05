@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Rtrc/Renderer/KajiyaGI/KajiyaGI.h>
 #include <Rtrc/Renderer/PathTracer/PathTracer.h>
 #include <Rtrc/Renderer/Scene/RenderScene.h>
 #include <Rtrc/Renderer/Utility/TransientConstantBufferAllocator.h>
@@ -33,6 +34,7 @@ public:
     
     RenderAtmosphere::PerCameraData &GetAtmosphereData()  { return atmosphereData_; }
     PathTracer::PerCameraData       &GetPathTracingData() { return pathTracingData_; }
+    KajiyaGI::PerCameraData         &GetKajiyaGIData()    { return kajiyaGIData_; }
 
     void Update(
         const CameraRenderData           &camera,
@@ -57,8 +59,8 @@ private:
     UploadBufferPool<>              perObjectDataBufferPool_;
     
     RenderAtmosphere::PerCameraData atmosphereData_;
-
-    PathTracer::PerCameraData pathTracingData_;
+    PathTracer::PerCameraData       pathTracingData_;
+    KajiyaGI::PerCameraData         kajiyaGIData_;
 
     RC<StatefulTexture> prevDepth_;
     RC<StatefulTexture> currDepth_;

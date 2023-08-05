@@ -8,6 +8,8 @@
 #include <stdexcept>
 #include <version>
 
+#include <Rtrc/Utility/Macro/MacroForEach.h>
+
 #if defined(__cpp_lib_stacktrace)
 #include <stacktrace>
 #define RTRC_ENABLE_EXCEPTION_STACKTRACE RTRC_DEBUG
@@ -44,7 +46,47 @@
 #define RTRC_IS_WIN32 0
 #endif
 
+#ifndef RTRC_REFLECTION_TOOL
+#define RTRC_REFLECTION_TOOL 0
+#endif
+
 RTRC_BEGIN
+
+template<typename T> class Vector2;
+template<typename T> class Vector3;
+template<typename T> class Vector4;
+class Matrix4x4f;
+
+struct _rtrcReflStructBaseSuffix {};
+struct _rtrcReflStructBase_rtrc {};
+struct _rtrcReflStructBase_shader
+{
+    using float2 = Vector2<float>;
+    using float3 = Vector3<float>;
+    using float4 = Vector4<float>;
+    using float4x4 = Matrix4x4f;
+    using int2 = Vector2<int>;
+    using int3 = Vector3<int>;
+    using int4 = Vector4<int>;
+    using uint2 = Vector2<unsigned int>;
+    using uint3 = Vector3<unsigned int>;
+    using uint4 = Vector4<unsigned int>;
+};
+
+#define rtrc_derive_from_refl_base_impl(name) ::Rtrc::_rtrcReflStructBase_##name,
+#define rtrc_derive_from_refl_base(name) rtrc_derive_from_refl_base_impl(name)
+#define rtrc_derive_from_refl_bases(...) \
+    RTRC_MACRO_FOREACH_1(rtrc_derive_from_refl_base, __VA_ARGS__) ::Rtrc::_rtrcReflStructBaseSuffix
+
+#if RTRC_REFLECTION_TOOL
+#define rtrc_apply_refl(name) __attribute__((annotate(#name)))
+#define rtrc_refl_impl(...) RTRC_MACRO_FOREACH_1(rtrc_apply_refl, __VA_ARGS__)
+#define rtrc_refl_struct(NAME, ...)                             \
+    struct rtrc_refl_impl(rtrc __VA_OPT__(,) __VA_ARGS__) NAME \
+        : rtrc_derive_from_refl_bases(rtrc __VA_OPT__(,) __VA_ARGS__)
+#else
+#define rtrc_refl_struct(NAME, ...) struct NAME : rtrc_derive_from_refl_bases(rtrc __VA_OPT__(,) __VA_ARGS__)
+#endif
 
 class Exception : public std::runtime_error
 {
@@ -167,12 +209,6 @@ constexpr auto EnumCount = std::to_underlying(T::Count);
 
 template<typename T>
 constexpr bool AlwaysFalse = false;
-
-// Note that this is different from std::declval: there is no std::add_rvalue_reference_t around the result type
-template<typename T>
-T DeclVal() { static_assert(AlwaysFalse<T>); std::terminate(); }
-
-#define RTRC_TYPE_IDENTITY(...) decltype(DeclVal<__VA_ARGS__>())
 
 class WithUniqueObjectID
 {

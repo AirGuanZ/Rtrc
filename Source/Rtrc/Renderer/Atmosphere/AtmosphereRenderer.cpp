@@ -9,21 +9,21 @@ namespace PhysicalAtmospherePassDetail
     
     rtrc_group(TransmittanceLutPass)
     {
-        rtrc_define(RWTexture2D,                   TransmittanceTextureRW);
-        rtrc_uniform(uint2,                        outputResolution);
+        rtrc_define(RWTexture2D,           TransmittanceTextureRW);
+        rtrc_uniform(uint2,                outputResolution);
         rtrc_uniform(AtmosphereProperties, atmosphere);
     };
 
     rtrc_group(MultiScatterLutPass)
     {
-        rtrc_define(RWTexture2D,                   MultiScatterTextureRW);
-        rtrc_define(StructuredBuffer,              RawDirSamples);
-        rtrc_define(Texture2D,                     TransmittanceLut);
-        rtrc_uniform(uint2,                        outputResolution);
-        rtrc_uniform(int,                          dirSampleCount);
-        rtrc_uniform(int,                          rayMarchStepCount);
+        rtrc_define(RWTexture2D,           MultiScatterTextureRW);
+        rtrc_define(StructuredBuffer,      RawDirSamples);
+        rtrc_define(Texture2D,             TransmittanceLut);
+        rtrc_uniform(uint2,                outputResolution);
+        rtrc_uniform(int,                  dirSampleCount);
+        rtrc_uniform(int,                  rayMarchStepCount);
         rtrc_uniform(AtmosphereProperties, atmosphere);
-        rtrc_uniform(float3,                       terrainAlbedo);
+        rtrc_uniform(float3,               terrainAlbedo);
     };
 
     rtrc_group(SkyLutPass)

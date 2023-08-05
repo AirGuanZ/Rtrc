@@ -4,6 +4,23 @@
 
 RTRC_BEGIN
 
+rtrc_refl_struct(TestAtmosphere, shader)
+{
+    Vector2u sss;
+    Vector3f scattRayleigh;
+    float hDensityRayleigh;
+};
+
+using SSS = TestAtmosphere;
+
+using YYY = SSS;
+
+rtrc_refl_struct(TestAtmosphere2)
+{
+    Matrix4x4f xxx;
+    YYY atmos;
+};
+
 rtrc_struct(AtmosphereProperties)
 {
     // Rayleigh

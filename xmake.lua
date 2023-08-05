@@ -2,10 +2,13 @@ set_project("Rtrc")
 
 option("vulkan_backend")
     set_default(true)
+    set_showmenu(true)
 option("directx12_backend")
     set_default(true)
+    set_showmenu(true)
 option("static_rhi")
     set_default(false)
+    set_showmenu(true)
 option_end()
 
 -- Global settings
@@ -13,6 +16,7 @@ option_end()
 set_arch("x64")
 set_languages("c++23")
 add_rules("mode.debug", "mode.release")
+set_policy("build.across_targets_in_parallel", false)
 
 if is_mode("release") then
     add_rules("c++.unity_build", { batchsize = 16 })
@@ -65,6 +69,10 @@ add_requires("spirv-reflect 1.2.189+1")
 add_requires("catch2 3.1.0")
 add_requires("fmt 9.1.0", { configs = { header_only = true } })
 add_requires("spdlog v1.11.0")
+add_requires("cxxopts v3.1.1")
+
+includes("External/llvm16")
+add_requires("myclang")
 
 if has_config("vulkan_backend") then
     add_requires("vk-bootstrap v0.5", "vulkan-memory-allocator v3.0.0")
@@ -86,6 +94,86 @@ includes("External/avir")
 includes("External/cy")
 
 -- Targets
+
+target("Reflection")
+    set_kind("binary")
+    set_rundir(".")
+    set_strip("all")
+    set_optimize("fastest")
+    -- Source files
+    add_includedirs("Source", { public = true })
+    add_headerfiles("Source/Reflection/**.h")
+    add_files("Source/Reflection/**.cpp")
+    add_filegroups("Reflection", { rootdir = "Source/Reflection" })
+    -- Dependencies
+    add_packages("myclang", "fmt", "cxxopts")
+    if is_plat("windows") then
+        add_syslinks("Version")
+    end
+target_end()
+
+rule("reflect_cpp")
+    on_load(function (target)
+        local outdir = path.join(target:autogendir(), "AutoGen")
+        target:add("includedirs", outdir, { public = true })
+        target:add("deps", "Reflection")
+    end)
+    before_build(function (target)
+        local sourcebatch = nil
+        for _, batch in pairs(target:sourcebatches()) do
+            if batch.sourcekind == "cxx" and batch.rulename == "c++.build" then
+                sourcebatch = batch
+                break
+            end
+        end
+        if sourcebatch == nil then
+            return
+        end
+
+        local outdir = path.join(target:autogendir(), "AutoGen")
+        local outcppfile = path.join(outdir, "Rtrc/Generated/Reflection.h")
+        outcppfile = outcppfile:gsub("\\", "/")
+        local outhlslfile = path.join(outdir, "Rtrc/Generated/Reflection.hlsl")
+        outhlslfile = outhlslfile:gsub("\\", "/")
+        local outlistfile = path.join(outdir, "Rtrc/Generated/ReflectionList.inc")
+        outlistfile = outlistfile:gsub("\\", "/")
+
+        local unity_source = ""
+        for _, sourcefile in ipairs(sourcebatch.sourcefiles) do
+            local absfile = path.absolute(sourcefile)
+            local relfile = path.relative(absfile, path.join("$(projectdir)", Source))
+			unity_source = unity_source.."#include <"..relfile..">\n"
+		end
+        
+        local unity_source_file = path.join(target:autogendir(), "unity_source.cpp")
+        io.writefile(unity_source_file, unity_source)
+
+        local source_txt_file = path.join(target:autogendir(), "rtrc_sources.txt")
+        source_txt_file = source_txt_file:gsub("\\", "/")
+        
+        local source_txt = "source "..unity_source_file.."\n"
+        for _, includedir in ipairs(target:get("includedirs")) do
+            source_txt = source_txt.."include "..includedir.."\n"
+        end
+    
+        refltarget = target:dep("Reflection")
+        io.writefile(source_txt_file, source_txt)
+
+        local cmd = refltarget:targetfile()
+        local cmdi = " -i "..source_txt_file
+        local cmdc = " -c "..outcppfile
+        local cmds = " -s "..outhlslfile
+        local cmdl = " -l "..outlistfile
+
+        print("generating reflection info...command is")
+        print("    "..cmd)
+        print("       "..cmdi)
+        print("       "..cmdc)
+        print("       "..cmds)
+        print("       "..cmdl)
+        os.run(cmd..cmdi..cmdc..cmds..cmdl)
+    end)
+rule_end()
 
 target("Rtrc")
     set_kind("static")
@@ -126,6 +214,8 @@ target("Rtrc")
     if has_config("static_rhi") then
         add_defines("RTRC_STATIC_RHI=1", { public = true })
     end
+    -- Reflection
+    add_rules("reflect_cpp")
 target_end()
 
 -- Standalone renderer

@@ -123,6 +123,7 @@ void ResourceManager::LoadBuiltinMaterials()
     LOAD_BUILTIN_MATERIAL(Atmosphere);
     LOAD_BUILTIN_MATERIAL(ShadowMask);
     LOAD_BUILTIN_MATERIAL(PathTracing);
+    LOAD_BUILTIN_MATERIAL(KajiyaGI);
 
 #undef LOAD_BUILTIN_MATERIAL
 }
