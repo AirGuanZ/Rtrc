@@ -4,50 +4,33 @@
 
 RTRC_BEGIN
 
-rtrc_refl_struct(TestAtmosphere, shader)
-{
-    Vector2u sss;
-    Vector3f scattRayleigh;
-    float hDensityRayleigh;
-};
-
-using SSS = TestAtmosphere;
-
-using YYY = SSS;
-
-rtrc_refl_struct(TestAtmosphere2)
-{
-    Matrix4x4f xxx;
-    YYY atmos;
-};
-
-rtrc_struct(AtmosphereProperties)
+rtrc_refl_struct(AtmosphereProperties, shader)
 {
     // Rayleigh
 
-    rtrc_var(float3, scatterRayleigh);
-    rtrc_var(float,  hDensityRayleigh);
+    float3 scatterRayleigh;
+    float  hDensityRayleigh;
 
     // Mie
 
-    rtrc_var(float, scatterMie);
-    rtrc_var(float, assymmetryMie);
-    rtrc_var(float, absorbMie);
-    rtrc_var(float, hDensityMie);
+    float scatterMie;
+    float assymmetryMie;
+    float absorbMie;
+    float hDensityMie;
 
     // Ozone
 
-    rtrc_var(float3, absorbOzone);
-    rtrc_var(float,  ozoneCenterHeight);
-    rtrc_var(float,  ozoneThickness);
+    float3 absorbOzone;
+    float  ozoneCenterHeight;
+    float  ozoneThickness;
 
     // Geometry
 
-    rtrc_var(float, planetRadius);
-    rtrc_var(float, atmosphereRadius);
+    float planetRadius;
+    float atmosphereRadius;
 
-    rtrc_var(float3, terrainAlbedo);
-
+    float3 terrainAlbedo;
+    
     AtmosphereProperties()
     {
         scatterRayleigh  = 1e-6f * Vector3f(5.802f, 13.558f, 33.1f);

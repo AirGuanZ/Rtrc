@@ -113,9 +113,10 @@ public:
     RC<Texture>         CreateColorTexture2D(uint8_t r, uint8_t g, uint8_t b, uint8_t a, const std::string &name = {});
 
     RC<DynamicBuffer> CreateDynamicBuffer();
-    RC<SubBuffer>     CreateConstantBuffer(const void *data, size_t bytes);
-    template<RtrcStruct T>
-    RC<SubBuffer>     CreateConstantBuffer(const T &data);
+
+    RC<SubBuffer> CreateConstantBuffer(const void *data, size_t bytes);
+    template<RtrcReflStruct T>
+    RC<SubBuffer> CreateConstantBuffer(const T &data);
     
     void UploadBuffer(
         const RC<Buffer> &buffer,
@@ -444,7 +445,7 @@ inline RC<SubBuffer> Device::CreateConstantBuffer(const void *data, size_t bytes
     return dynamicBufferManager_->CreateConstantBuffer(data, bytes);
 }
 
-template<RtrcStruct T>
+template<RtrcReflStruct T>
 RC<SubBuffer> Device::CreateConstantBuffer(const T &data)
 {
     auto ret = this->CreateDynamicBuffer();

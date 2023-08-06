@@ -1,10 +1,10 @@
 #pragma once
 
+#include <Rtrc/Graphics/Device/Buffer/ReflectedConstantBufferStruct.h>
 #include <Rtrc/Math/Matrix4x4.h>
 #include <Rtrc/Math/Vector2.h>
 #include <Rtrc/Math/Vector3.h>
 #include <Rtrc/Math/Vector4.h>
-#include <Rtrc/Utility/Struct.h>
 #include <Rtrc/Utility/TypeList.h>
 
 RTRC_BEGIN
@@ -27,8 +27,14 @@ namespace ConstantBufferDetail
         return ((x + 3) >> 2) << 2;
     }
 
+    using BasicTypeList = TypeList<
+        float, Vector2f, Vector3f, Vector4f,
+        int32_t, Vector2i, Vector3i, Vector4i,
+        uint32_t, Vector2u, Vector3u, Vector4u,
+        Matrix4x4f>;
+
     template<typename T>
-    consteval size_t GetConstantBufferDWordCount()
+    size_t GetConstantBufferDWordCount()
     {
         if constexpr(std::is_array_v<T>)
         {
@@ -37,107 +43,49 @@ namespace ConstantBufferDetail
             constexpr size_t elemSize = GetConstantBufferDWordCount<Element>();
             return Size * UpAlignTo4(elemSize);
         }
-        else if constexpr(RtrcStruct<T>)
+        else if constexpr(RtrcReflStruct<T>)
         {
-            size_t result = 0;
-            StructDetail::ForEachMember<T>([&result]<typename M>(const M T::*, const char *) constexpr
-            {
-                constexpr size_t memSize = GetConstantBufferDWordCount<M>();
-                bool needNewLine;
-                if constexpr(std::is_array_v<M> || RtrcStruct<M>)
-                {
-                    needNewLine = true;
-                }
-                else
-                {
-                    needNewLine = (result % 4) + memSize > 4;
-                }
-                if(needNewLine)
-                {
-                    result = UpAlignTo4(result);
-                }
-                result += memSize;
-            });
-            return UpAlignTo4(result);
+            return ReflectedConstantBufferStruct::GetDeviceDWordCount<T>();
         }
         else
         {
-            using ValidTypeList = TypeList<
-                float, Vector2f, Vector3f, Vector4f,
-                int32_t, Vector2i, Vector3i, Vector4i,
-                uint32_t, Vector2u, Vector3u, Vector4u,
-                Matrix4x4f>;
-            static_assert(ValidTypeList::Contains<T>, "Invalid value type in constant buffer struct");
+            static_assert(BasicTypeList::Contains<T>, "Invalid value type in constant buffer struct");
             return sizeof(T) / 4;
         }
     }
-
-    template<typename T, typename F>
-    constexpr void ForEachFlattenMember(const char *name, const F &f, size_t hostDWordOffset, size_t deviceDWordOffset)
+    
+    template<typename T>
+    void FlattenToConstantBufferData(const void *input, void *output, size_t hostDWordOffset, size_t deviceDWordOffset)
     {
         if constexpr(std::is_array_v<T>)
         {
-            // assert(deviceDWordOffset % 4 == 0);
+            assert(deviceDWordOffset % 4 == 0);
             using Element = typename ArrayTrait<T>::Element;
-            static_assert(sizeof(Element) % 4 == 0);
-            static_assert(alignof(Element) <= 4);
-            const size_t elemSize = UpAlignTo4(GetConstantBufferDWordCount<Element>());
-            const size_t elemCount = ArrayTrait<T>::Size;
+            const size_t elemSize = ConstantBufferDetail::UpAlignTo4(
+                ConstantBufferDetail::GetConstantBufferDWordCount<Element>());
+            constexpr size_t elemCount = ArrayTrait<T>::Size;
             for(size_t i = 0; i < elemCount; ++i)
             {
-                ForEachFlattenMember<Element, F>(name, f, hostDWordOffset, deviceDWordOffset);
+                FlattenToConstantBufferData<Element>(input, output, hostDWordOffset, deviceDWordOffset);
                 hostDWordOffset += sizeof(Element) / 4;
                 deviceDWordOffset += elemSize;
             }
         }
-        else if constexpr(RtrcStruct<T>)
+        else if constexpr(RtrcReflStruct<T>)
         {
-            // assert(deviceDWordOffset % 4 == 0)
-            StructDetail::ForEachMember<T>([&deviceDWordOffset, &hostDWordOffset, &f]<typename M>(
-                const M T::*, const char *memberName) constexpr
-            {
-                const size_t memberSize = GetConstantBufferDWordCount<M>();
-                bool needNewLine;
-                if constexpr(std::is_array_v<M> || RtrcStruct<M>)
-                {
-                    needNewLine = true;
-                }
-                else
-                {
-                    needNewLine = (deviceDWordOffset % 4) + memberSize > 4;
-                }
-                if(needNewLine)
-                {
-                    deviceDWordOffset = UpAlignTo4(deviceDWordOffset);
-                }
-                ForEachFlattenMember<M, F>(memberName, f, hostDWordOffset, deviceDWordOffset);
-                static_assert(sizeof(M) % 4 == 0);
-                static_assert(alignof(M) <= 4);
-                hostDWordOffset += sizeof(M) / 4;
-                deviceDWordOffset += memberSize;
-            });
+            ReflectedConstantBufferStruct::ToDeviceLayout<T>(
+                input, output, hostDWordOffset * 4, deviceDWordOffset * 4);
         }
         else
         {
-            using ValidTypeList = TypeList<
-                float, Vector2f, Vector3f, Vector4f,
-                int32_t, Vector2i, Vector3i, Vector4i,
-                uint32_t, Vector2u, Vector3u, Vector4u,
-                Matrix4x4f>;
-            static_assert(ValidTypeList::Contains<T>, "Invalid value type in constant buffer struct");
-            f.template operator()<T>(name, hostDWordOffset * 4, deviceDWordOffset * 4);
+            static_assert(BasicTypeList::Contains<T>);
+            std::memcpy(
+                static_cast<char *>(output) + deviceDWordOffset * 4,
+                static_cast<const char *>(input) + hostDWordOffset * 4,
+                sizeof(T));
         }
     }
-
-    template<RtrcStruct T, typename F>
-    void ForEachFlattenMember(const F &f)
-    {
-        ForEachFlattenMember<T>("struct", f, 0, 0);
-    }
-
+    
 } // namespace ConstantBufferDetail
-
-template<RtrcStruct T>
-constexpr size_t ConstantBufferSize = ConstantBufferDetail::GetConstantBufferDWordCount<T>() * 4;
 
 RTRC_END

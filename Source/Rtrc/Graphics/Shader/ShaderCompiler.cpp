@@ -851,6 +851,7 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
         else
         {
             assert(device_->GetBackendType() == RHI::BackendType::DirectX12);
+
             const char *registerTypename;
             switch(alias.type)
             {
@@ -875,6 +876,7 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
             default:
                 Unreachable();
             }
+
             right = fmt::format(
                 "{}{} {}{} : register({}0, space{});",
                 alias.rawTypename, templateStr, alias.name,
@@ -1154,14 +1156,15 @@ RC<Shader> ShaderCompiler::Compile(const ShaderSource &source, const Macros &mac
     std::ranges::transform(
         bindings.pushConstantRanges, std::back_inserter(bindingLayoutDesc.pushConstantRanges),
         [](const PushConstantRange &range) { return range.range; });
+
     if(device_->GetBackendType() == RHI::BackendType::DirectX12)
     {
         for(auto &&[aliasIndex, alias] : Enumerate(bindings.aliases))
         {
             bindingLayoutDesc.unboundedAliases.push_back(RHI::UnboundedBindingArrayAliasing
-                {
-                    .srcGroup = bindingNameToSlots.at(alias.aliasedName).first
-                });
+            {
+                .srcGroup = bindingNameToSlots.at(alias.aliasedName).first
+            });
         }
     }
     shader->info_->shaderBindingLayoutInfo_->bindingLayout_ = device_->CreateBindingLayout(bindingLayoutDesc);

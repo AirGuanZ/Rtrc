@@ -13,6 +13,12 @@ namespace ReflectedConstantBufferStruct
     template<typename T>
     void ToDeviceLayout(const void *hostData, void *deviceData);
 
+    template<typename T>
+    void ToDeviceLayout(const void *hostData, void *deviceData, size_t initHostOffset, size_t initDeviceOffset);
+    
+    template<typename T>
+    void DumpDeviceLayout();
+
 } // namespace ReflectedConstantBufferStruct
 
 RTRC_END

@@ -22,12 +22,12 @@ using StaticMeshRendererRayTracingFlags = EnumFlagsStaticMeshRendererRayTracingF
 
 // ========================= Per-object constant buffer struct =========================
 
-rtrc_struct(StaticMeshCBuffer)
+rtrc_refl_struct(StaticMeshCBuffer, shader)
 {
-    rtrc_var(float4x4, localToWorld);
-    rtrc_var(float4x4, worldToLocal);
-    rtrc_var(float4x4, localToCamera);
-    rtrc_var(float4x4, localToClip);
+    float4x4 localToWorld;
+    float4x4 worldToLocal;
+    float4x4 localToCamera;
+    float4x4 localToClip;
 };
 
 // ========================= RenderObject proxy =========================

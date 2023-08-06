@@ -6,13 +6,9 @@ using namespace Rtrc;
 
 rtrc_group(MainGroup)
 {
-    rtrc_struct(ScaleSetting)
-    {
-        rtrc_var(float, scale);
-    };
-    rtrc_define(Texture2D,                    InputTexture);
-    rtrc_define(RWTexture2D,                  OutputTexture);
-    rtrc_define(ConstantBuffer<ScaleSetting>, ScaleSetting);
+    rtrc_define(Texture2D,   InputTexture);
+    rtrc_define(RWTexture2D, OutputTexture);
+    rtrc_uniform(float,      scale);
 };
 
 void Run()
@@ -66,9 +62,9 @@ void Run()
     const int bindingGroupIndex = shader->GetBindingGroupIndexByName("MainGroup");
 
     MainGroup bindingGroupValue;
-    bindingGroupValue.InputTexture = inputTexture;
+    bindingGroupValue.InputTexture  = inputTexture;
     bindingGroupValue.OutputTexture = outputTexture;
-    bindingGroupValue.ScaleSetting.scale = 2.0f;
+    bindingGroupValue.scale         = 2.0f;
     auto bindingGroup = device->CreateBindingGroup(bindingGroupValue);
 
     device->ExecuteAndWait([&](CommandBuffer &cmd)

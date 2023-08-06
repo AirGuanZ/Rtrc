@@ -112,12 +112,14 @@ namespace ReflectedConstantBufferStruct
                     deviceDWordOffset = UpAlignTo4(deviceDWordOffset);
                 }
                 ForEachFlattenMember<M, F>(name, f, hostDWordOffset, deviceDWordOffset);
+                hostDWordOffset += sizeof(M) / 4;
+                deviceDWordOffset += memberSize;
             });
         }
     }
 
     template<typename T>
-    void ToDeviceLayoutImpl(const void *hostData, void *deviceData)
+    void ToDeviceLayoutImpl(const void *hostData, void *deviceData, size_t initHostDWordOffset, size_t initDeviceDWordOffset)
     {
         auto f = [&]<typename M>(const char *, size_t hostOffset, size_t deviceOffset)
         {
@@ -125,7 +127,17 @@ namespace ReflectedConstantBufferStruct
             auto dst = static_cast<unsigned char*>(deviceData) + deviceOffset;
             std::memcpy(dst, src, sizeof(M));
         };
-        ForEachFlattenMember<T>("root", f, 0, 0);
+        ForEachFlattenMember<T>("root", f, initHostDWordOffset, initDeviceDWordOffset);
+    }
+
+    template<typename T>
+    void DumpDeviceLayoutImpl()
+    {
+        auto PrintFlattenMember = [&]<typename M>(const char *name, size_t hostOffset, size_t deviceOffset)
+        {
+            fmt::print("name = {}, hostOffset = {}, deviceOffset = {}\n", name, hostOffset, deviceOffset);
+        };
+        ForEachFlattenMember<T>("root", PrintFlattenMember, 0, 0);
     }
 
     template<typename T>
@@ -137,7 +149,21 @@ namespace ReflectedConstantBufferStruct
     template<typename T>
     void ToDeviceLayout(const void *hostData, void *deviceData)
     {
-        ToDeviceLayoutImpl<MirrorType<T>>(hostData, deviceData);
+        ToDeviceLayoutImpl<MirrorType<T>>(hostData, deviceData, 0, 0);
+    }
+
+    template<typename T>
+    void ToDeviceLayout(const void *hostData, void *deviceData, size_t initHostOffset, size_t initDeviceOffset)
+    {
+        assert(initHostOffset % 4 == 0);
+        assert(initDeviceOffset % 4 == 0);
+        ToDeviceLayoutImpl<MirrorType<T>>(hostData, deviceData, initHostOffset / 4, initDeviceOffset / 4);
+    }
+
+    template<typename T>
+    void DumpDeviceLayout()
+    {
+        DumpDeviceLayoutImpl<MirrorType<T>>();
     }
 
 #define TRAVERSE_rtrc(TYPE)
@@ -147,7 +173,14 @@ namespace ReflectedConstantBufferStruct
 #undef TRAVERSE_shader
 
 #define TRAVERSE_rtrc(TYPE)
-#define TRAVERSE_shader(TYPE) template void ToDeviceLayout<TYPE>(const void *, void *);
+#define TRAVERSE_shader(TYPE) template void ToDeviceLayout<TYPE>(const void *, void *); \
+                              template void ToDeviceLayout<TYPE>(const void *, void *, size_t, size_t);
+#include <Rtrc/Generated/ReflectionList.inc>
+#undef TRAVERSE_rtrc
+#undef TRAVERSE_shader
+
+#define TRAVERSE_rtrc(TYPE)
+#define TRAVERSE_shader(TYPE) template void DumpDeviceLayout<TYPE>();
 #include <Rtrc/Generated/ReflectionList.inc>
 #undef TRAVERSE_rtrc
 #undef TRAVERSE_shader

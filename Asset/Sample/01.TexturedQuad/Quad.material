@@ -22,13 +22,11 @@ Shader "Quad"
 
     rtrc_group(Material)
     {
-        rtrc_define(Texture3D<float4>, MainTexture)
+        rtrc_define(Texture2D<float4>, MainTexture)
         rtrc_define(SamplerState, MainSampler)
         rtrc_uniform(float, scale)
         rtrc_uniform(float, mipLevel)
     };
-
-    rtrc_alias(Texture2DArray<float3>, MainTextureAlias, MainTexture)
 
     struct VSInput
     {
@@ -59,9 +57,9 @@ Shader "Quad"
     {
         FSOutput output;
 #if DADADA
-        output.color = float4(MainTextureAlias.SampleLevel(MainSampler, float3(input.texCoord, 0), Material.mipLevel).rgb, 1.0);
+        output.color = float4(MainTexture.SampleLevel(MainSampler, input.texCoord, Material.mipLevel).rgb, 1.0);
 #else
-        output.color = float4(2 * MainTextureAlias.SampleLevel(MainSampler, float3(input.texCoord, 0), Material.mipLevel).rgb, 1.0);
+        output.color = float4(2 * MainTexture.SampleLevel(MainSampler, input.texCoord, Material.mipLevel).rgb, 1.0);
 #endif
         output.color *= Material.scale;
         return output;

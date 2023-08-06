@@ -3,12 +3,10 @@
 #include <array>
 
 #include <tbb/spin_mutex.h>
-#include <tbb/spin_rw_mutex.h>
 
 #include <Rtrc/Graphics/Device/Buffer/Buffer.h>
-#include <Rtrc/Graphics/Device/Buffer/ConstantBufferStruct.h>
+#include <Rtrc/Graphics/Device/Buffer/ReflectedConstantBufferStruct.h>
 #include <Rtrc/Utility/Container/SlotVector.h>
-#include <Rtrc/Utility/Struct.h>
 #include <Rtrc/Utility/Swap.h>
 
 RTRC_BEGIN
@@ -20,8 +18,8 @@ public:
     virtual ~ConstantBufferManagerInterface() = default;
 
     virtual RC<SubBuffer> CreateConstantBuffer(const void *data, size_t size) = 0;
-
-    template<RtrcStruct T>
+    
+    template<RtrcReflStruct T>
     RC<SubBuffer> CreateConstantBuffer(const T &data);
 };
 
@@ -38,8 +36,8 @@ public:
     DynamicBuffer &operator=(DynamicBuffer &&other) noexcept;
 
     void Swap(DynamicBuffer &other) noexcept;
-
-    template<RtrcStruct T>
+    
+    template<RtrcReflStruct T>
     void SetData(const T &data); // For constant buffer
     void SetData(const void *data, size_t size, bool isConstantBuffer);
 
@@ -124,37 +122,22 @@ private:
     RC<SharedData> sharedData_;
 };
 
-template<RtrcStruct T, typename Func>
+template<RtrcReflStruct T, typename Func>
 decltype(auto) FlattenConstantBufferStruct(const T &data, Func &&func)
 {
-    constexpr size_t deviceSize = 4 * ConstantBufferDetail::GetConstantBufferDWordCount<T>();
-    if constexpr(deviceSize > 2048)
+    const size_t deviceSize = 4 * ReflectedConstantBufferStruct::GetDeviceDWordCount<T>();
+    if(deviceSize <= 1024)
     {
-        std::array<uint8_t, deviceSize> flattenData;
-        ConstantBufferDetail::ForEachFlattenMember<T>(
-            [&]<typename M>(const char *, size_t hostOffset, size_t deviceOffset)
-        {
-            auto dst = flattenData.data() + deviceOffset;
-            auto src = reinterpret_cast<const unsigned char *>(&data) + hostOffset;
-            std::memcpy(dst, src, sizeof(M));
-        });
-        return func(flattenData.data(), deviceSize);
+        unsigned char flattenData[1024];
+        ReflectedConstantBufferStruct::ToDeviceLayout<T>(&data, flattenData);
+        return std::invoke(std::forward<Func>(func), flattenData, deviceSize);
     }
-    else
-    {
-        std::vector<uint8_t> flattenData(deviceSize);
-        ConstantBufferDetail::ForEachFlattenMember<T>(
-            [&]<typename M>(const char *, size_t hostOffset, size_t deviceOffset)
-        {
-            uint8_t *dst = flattenData.data() + deviceOffset;
-            auto src = reinterpret_cast<const unsigned char *>(&data) + hostOffset;
-            std::memcpy(dst, src, sizeof(M));
-        });
-        return func(flattenData.data(), deviceSize);
-    }
+    std::vector<unsigned char> flattenData(deviceSize);
+    ReflectedConstantBufferStruct::ToDeviceLayout<T>(&data, flattenData.data());
+    return std::invoke(std::forward<Func>(func), flattenData.data(), deviceSize);
 }
 
-template<RtrcStruct T>
+template<RtrcReflStruct T>
 RC<SubBuffer> ConstantBufferManagerInterface::CreateConstantBuffer(const T &data)
 {
     return Rtrc::FlattenConstantBufferStruct(data, [this](const void *flattenData, size_t size)
@@ -178,33 +161,13 @@ inline void DynamicBuffer::Swap(DynamicBuffer &other) noexcept
         buffer_, offset_, size_, manager_, chunkIndex_, slabIndex_);
 }
 
-template<RtrcStruct T>
+template<RtrcReflStruct T>
 void DynamicBuffer::SetData(const T &data)
 {
-    constexpr size_t deviceSize = 4 * ConstantBufferDetail::GetConstantBufferDWordCount<T>();
-    if constexpr(deviceSize <= 1024)
+    Rtrc::FlattenConstantBufferStruct(data, [&](const void *flattenData, size_t size)
     {
-        // Avoid dynamic allocation for small buffer
-        std::array<uint8_t, deviceSize> flattenData;
-        ConstantBufferDetail::ForEachFlattenMember<T>([&]<typename M>(const char *, size_t hostOffset, size_t deviceOffset)
-        {
-            auto dst = flattenData.data() + deviceOffset;
-            auto src = reinterpret_cast<const unsigned char *>(&data) + hostOffset;
-            std::memcpy(dst, src, sizeof(M));
-        });
-        this->SetData(flattenData.data(), deviceSize, true);
-    }
-    else
-    {
-        std::vector<uint8_t> flattenData(deviceSize);
-        ConstantBufferDetail::ForEachFlattenMember<T>([&]<typename M>(const char *, size_t hostOffset, size_t deviceOffset)
-        {
-            uint8_t *dst = flattenData.data() + deviceOffset;
-            auto src = reinterpret_cast<const unsigned char *>(&data) + hostOffset;
-            std::memcpy(dst, src, sizeof(M));
-        });
-        SetData(flattenData.data(), deviceSize, true);
-    }
+        this->SetData(flattenData, size, true);
+    });
 }
 
 inline void DynamicBuffer::SetData(const void *data, size_t size, bool isConstantBuffer)

@@ -314,14 +314,14 @@ void Run()
             rgAccumulateTexture = graph->RegisterTexture(accumulateTexture);
             rgRngTexture = graph->RegisterTexture(rngTexture);
 
-            initializePass->Use(rgAccumulateTexture, RG::ClearDst);
+            graph->CreateClearRWTexture2DPass("ClearAccumulationTexture", rgAccumulateTexture, Vector4f(0));
+
             initializePass->Use(rgRngTexture, RG::CS_RWTexture_WriteOnly);
             initializePass->SetCallback(
-                [rgAccumulateTexture, rgRngTexture, &initRngPipeline, &device]
+                [rgRngTexture, &initRngPipeline, &device]
             {
                 auto &commandBuffer = RG::GetCurrentCommandBuffer();
-                commandBuffer.ClearColorTexture2D(rgAccumulateTexture->Get(), { 0, 0, 0, 0 });
-
+                
                 InitRngPass bindingGroupData;
                 bindingGroupData.RngTexture = rgRngTexture;
                 bindingGroupData.Resolution = rgRngTexture->GetSize();

@@ -7,7 +7,7 @@
 
 RTRC_RENDERER_BEGIN
 
-rtrc_struct(CameraConstantBuffer)
+rtrc_refl_struct(CameraConstantBuffer, shader)
 {
     static CameraConstantBuffer FromCamera(const CameraRenderData &camera)
     {
@@ -32,19 +32,19 @@ rtrc_struct(CameraConstantBuffer)
         ret.cameraRays[3]       = camera.cameraRays[3];
         return ret;
     }
-
-    rtrc_var(float3,    worldPosition);
-    rtrc_var(float3,    worldFront);
-    rtrc_var(float3,    worldLeft);
-    rtrc_var(float3,    worldUp);
-    rtrc_var(float4x4,  worldToCameraMatrix);
-    rtrc_var(float4x4,  cameraToWorldMatrix);
-    rtrc_var(float4x4,  cameraToClipMatrix);
-    rtrc_var(float4x4,  clipToCameraMatrix);
-    rtrc_var(float4x4,  worldToClipMatrix);
-    rtrc_var(float4x4,  clipToWorldMatrix);
-    rtrc_var(float3[4], cameraRays);
-    rtrc_var(float3[4], worldRays);
+    
+    float3   worldPosition;
+    float3   worldFront;
+    float3   worldLeft;
+    float3   worldUp;
+    float4x4 worldToCameraMatrix;
+    float4x4 cameraToWorldMatrix;
+    float4x4 cameraToClipMatrix;
+    float4x4 clipToCameraMatrix;
+    float4x4 worldToClipMatrix;
+    float4x4 clipToWorldMatrix;
+    float3   cameraRays[4];
+    float3   worldRays[4];
 };
 
 enum class StencilBit : uint8_t
@@ -53,22 +53,20 @@ enum class StencilBit : uint8_t
     Regular = 1 << 0,
 };
 
-rtrc_struct(PointLightShadingData)
+rtrc_refl_struct(PointLightShadingData, shader)
 {
-    rtrc_var(float3, position);
-    rtrc_var(float,  distFadeBias); // distFade = distFadeBias + distFadeScale * dist
-    rtrc_var(float3, color);
-    rtrc_var(float,  distFadeScale);
+    float3 position;
+    float  distFadeBias = 0; // distFade = distFadeBias + distFadeScale * dist
+    float3 color;
+    float  distFadeScale = 0;
 };
-
 static_assert(sizeof(PointLightShadingData) == 8 * sizeof(float));
 
-rtrc_struct(DirectionalLightShadingData)
+rtrc_refl_struct(DirectionalLightShadingData, shader)
 {
-    rtrc_var(float3, direction); rtrc_var(float, pad0);
-    rtrc_var(float3, color);     rtrc_var(float, pad1);
+    float3 direction; float pad0 = 0;
+    float3 color;     float pad1 = 0;
 };
-
 static_assert(sizeof(DirectionalLightShadingData) == 8 * sizeof(float));
 
 PointLightShadingData       ExtractPointLightShadingData      (const Light::SharedRenderingData *light);

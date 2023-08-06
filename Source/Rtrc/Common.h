@@ -57,21 +57,25 @@ template<typename T> class Vector3;
 template<typename T> class Vector4;
 class Matrix4x4f;
 
-struct _rtrcReflStructBaseSuffix {};
-struct _rtrcReflStructBase_rtrc {};
+struct _rtrcReflStructBaseSuffix { auto operator<=>(const _rtrcReflStructBaseSuffix &) const = default; };
+struct _rtrcReflStructBase_rtrc { auto operator<=>(const _rtrcReflStructBase_rtrc &) const = default; };
 struct _rtrcReflStructBase_shader
 {
-    using float2 = Vector2<float>;
-    using float3 = Vector3<float>;
-    using float4 = Vector4<float>;
+    struct _rtrcReflStructBaseTag {};
+    using float2   = Vector2<float>;
+    using float3   = Vector3<float>;
+    using float4   = Vector4<float>;
     using float4x4 = Matrix4x4f;
-    using int2 = Vector2<int>;
-    using int3 = Vector3<int>;
-    using int4 = Vector4<int>;
-    using uint2 = Vector2<unsigned int>;
-    using uint3 = Vector3<unsigned int>;
-    using uint4 = Vector4<unsigned int>;
+    using int2     = Vector2<int>;
+    using int3     = Vector3<int>;
+    using int4     = Vector4<int>;
+    using uint2    = Vector2<unsigned int>;
+    using uint3    = Vector3<unsigned int>;
+    using uint4    = Vector4<unsigned int>;
+    auto operator<=>(const _rtrcReflStructBase_shader &) const = default;
 };
+template<typename T>
+concept RtrcReflStruct = requires { typename T::_rtrcReflStructBaseTag; };
 
 #define rtrc_derive_from_refl_base_impl(name) ::Rtrc::_rtrcReflStructBase_##name,
 #define rtrc_derive_from_refl_base(name) rtrc_derive_from_refl_base_impl(name)
@@ -85,7 +89,16 @@ struct _rtrcReflStructBase_shader
     struct rtrc_refl_impl(rtrc __VA_OPT__(,) __VA_ARGS__) NAME \
         : rtrc_derive_from_refl_bases(rtrc __VA_OPT__(,) __VA_ARGS__)
 #else
-#define rtrc_refl_struct(NAME, ...) struct NAME : rtrc_derive_from_refl_bases(rtrc __VA_OPT__(,) __VA_ARGS__)
+#if _MSC_VER
+// Use '__declspec(empty_bases)' to fix EBO in msvc.
+// See https://devblogs.microsoft.com/cppblog/optimizing-the-layout-of-empty-base-classes-in-vs2015-update-2-3/
+#define rtrc_refl_struct(NAME, ...) \
+    struct __declspec(empty_bases) NAME \
+        : rtrc_derive_from_refl_bases(rtrc __VA_OPT__(,) __VA_ARGS__)
+#else
+#define rtrc_refl_struct(NAME, ...) \
+    struct NAME : rtrc_derive_from_refl_bases(rtrc __VA_OPT__(,) __VA_ARGS__)
+#endif
 #endif
 
 class Exception : public std::runtime_error

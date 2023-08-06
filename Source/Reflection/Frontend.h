@@ -26,18 +26,19 @@ enum class FieldType
 
 struct Field
 {
-    FieldType type = FieldType::Others;
-    std::string typeStr;
-    std::string name;
+    FieldType          type = FieldType::Others;
+    std::string        typeStr;
+    std::string        name;
+    std::optional<int> arraySize;
 
     auto operator<=>(const Field &) const = default;
 };
 
 struct Struct
 {
-    std::string qualifiedName;
+    std::string           qualifiedName;
     std::set<std::string> annotations;
-    std::vector<Field> fields;
+    std::vector<Field>    fields;
 
     auto operator<=>(const Struct &) const = default;
 };

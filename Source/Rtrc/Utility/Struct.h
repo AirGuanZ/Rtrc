@@ -1,9 +1,6 @@
 #pragma once
 
-#include <Rtrc/Math/Vector2.h>
-#include <Rtrc/Math/Vector3.h>
-#include <Rtrc/Math/Vector4.h>
-#include <Rtrc/Math/Matrix4x4.h>
+#include <Rtrc/Common.h>
 
 RTRC_BEGIN
 
@@ -82,25 +79,7 @@ namespace StructDetail
     constexpr auto _rtrcSelfTypeHelper##RESULT_NAME() ->                                                            \
         decltype(::Rtrc::StructDetail::SelfTypeWriter<_rtrcSelfTypeTag##RESULT_NAME, decltype(this)>{}, void()) { } \
     using RESULT_NAME = ::Rtrc::StructDetail::SelfTypeResult<_rtrcSelfTypeTag##RESULT_NAME>;
-
-    struct _rtrcStructCommonBase
-    {
-        struct _rtrcStructTypeFlag {};
-        static Sizer<1> _rtrcMemberCounter(...);
-        auto operator<=>(const _rtrcStructCommonBase &) const = default;
-        using float2 = Vector2f;
-        using float3 = Vector3f;
-        using float4 = Vector4f;
-        using int2 = Vector2i;
-        using int3 = Vector3i;
-        using int4 = Vector4i;
-        using uint = uint32_t;
-        using uint2 = Vector2u;
-        using uint3 = Vector3u;
-        using uint4 = Vector4u;
-        using float4x4 = Matrix4x4f;
-    };
-
+    
 } // namespace StructDetail
 
 #define RTRC_META_STRUCT_PRE_MEMBER(NAME)                                           \
@@ -119,25 +98,5 @@ namespace StructDetail
     };                                                                                         \
     static _rtrcMemberDesc##NAME *_rtrcMemberIndexToDesc(                                      \
         ::Rtrc::StructDetail::Int2Type<(_rtrcMemberCounter##NAME)>*);
-
-template<typename T>
-concept RtrcStruct = requires { typename T::_rtrcStructTypeFlag; };
-
-#define rtrc_struct(NAME) struct NAME : ::Rtrc::StructDetail::_rtrcStructCommonBase
-
-#if defined(__INTELLISENSE__) || defined(__RSCPP_VERSION)
-#define rtrc_var(TYPE, NAME)            \
-    using _rtrcMemberType##NAME = TYPE; \
-    _rtrcMemberType##NAME NAME;         \
-    using _requireComma##NAME = int
-#else
-#define rtrc_var(TYPE, NAME)                                  \
-    RTRC_DEFINE_SELF_TYPE(_rtrcSelf##NAME)                    \
-    using _rtrcMemberType##NAME = TYPE;                       \
-    _rtrcMemberType##NAME NAME;                               \
-    RTRC_META_STRUCT_PRE_MEMBER(NAME)                         \
-        f.template operator()(&_rtrcSelf##NAME::NAME, #NAME); \
-    RTRC_META_STRUCT_POST_MEMBER(NAME) using _requireComma##NAME = int
-#endif
 
 RTRC_END

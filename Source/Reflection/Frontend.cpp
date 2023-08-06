@@ -94,6 +94,14 @@ namespace FrontendDetail
                 assert(type);
                 type = RemoveTypedefs(type);
 
+                if(type->getTypeClass() == Type::ConstantArray)
+                {
+                    auto cat = cast<ConstantArrayType>(type);
+                    outField.arraySize = static_cast<int>(cat->getSize().getSExtValue());
+                    type = cat->getElementType().getTypePtr();
+                    type = RemoveTypedefs(type);
+                }
+
                 std::string templateArgStr;
                 if(auto tt = type->getAs<TemplateSpecializationType>())
                 {

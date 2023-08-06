@@ -285,7 +285,23 @@ namespace BindingGroupDSL
     }
 
     template<RtrcGroupStruct T>
-    consteval size_t GetUniformDWordCount()
+    consteval bool HasUniform()
+    {
+        bool ret = false;
+        BindingGroupDSL::ForEachFlattenMember<T>(
+            [&ret]<bool IsUniform, typename M, typename A>
+            (const char *, RHI::ShaderStageFlags, const A &, BindingFlags)
+        {
+            if constexpr(IsUniform)
+            {
+                ret = true;
+            }
+        });
+        return ret;
+    }
+
+    template<RtrcGroupStruct T>
+    size_t GetUniformDWordCount()
     {
         size_t dwordCount = 0;
         BindingGroupDSL::ForEachFlattenMember<T>(
@@ -294,9 +310,17 @@ namespace BindingGroupDSL
         {
             if constexpr(IsUniform)
             {
-                constexpr size_t memSize = ConstantBufferDetail::GetConstantBufferDWordCount<M>();
+                size_t memSize;
+                if constexpr(RtrcReflStruct<M>)
+                {
+                    memSize = ReflectedConstantBufferStruct::GetDeviceDWordCount<M>();
+                }
+                else
+                {
+                    memSize = ConstantBufferDetail::GetConstantBufferDWordCount<M>();
+                }
                 bool needNewLine;
-                if constexpr(std::is_array_v<M> || RtrcStruct<M>)
+                if constexpr(std::is_array_v<M> || RtrcReflStruct<M>)
                 {
                     needNewLine = true;
                 }
@@ -314,19 +338,20 @@ namespace BindingGroupDSL
         return dwordCount;
     }
 
-    template<RtrcGroupStruct T, typename F>
-    void ForEachFlattenUniform(const F &f)
+    template<RtrcGroupStruct T>
+    void FlattenUniformsToConstantBufferData(const T &data, void *output)
     {
         size_t deviceDWordOffset = 0;
         BindingGroupDSL::ForEachFlattenMember<T>(
-            [&deviceDWordOffset, &f]<bool IsUniform, typename M, typename A>
-            (const char *name, RHI::ShaderStageFlags stages, const A &accessor, BindingFlags flags)
+            [&]<bool IsUniform, typename M, typename A>
+            (const char *name, RHI::ShaderStageFlags stages, const A & accessor, BindingFlags flags)
         {
             if constexpr(IsUniform)
             {
                 const size_t memberSize = ConstantBufferDetail::GetConstantBufferDWordCount<M>();
+
                 bool needNewLine;
-                if constexpr(std::is_array_v<M> || RtrcStruct<M>)
+                if constexpr(std::is_array_v<M> || RtrcReflStruct<M>)
                 {
                     needNewLine = true;
                 }
@@ -338,16 +363,18 @@ namespace BindingGroupDSL
                 {
                     deviceDWordOffset = ((deviceDWordOffset + 3) >> 2) << 2;
                 }
+
                 constexpr T *nullT = nullptr;
                 const size_t hostOffset = reinterpret_cast<size_t>(accessor(nullT));
                 assert(hostOffset % 4 == 0);
-                const size_t hostDWordOffset = hostOffset / 4;
-                ConstantBufferDetail::ForEachFlattenMember<M, F>(name, f, hostDWordOffset, deviceDWordOffset);
+
+                ConstantBufferDetail::FlattenToConstantBufferData<M>(&data, output, hostOffset / 4, deviceDWordOffset);
+                
                 deviceDWordOffset += memberSize;
             }
         });
     }
-
+    
     template<RtrcGroupStruct T>
     const BindingGroupLayout::Desc &ToBindingGroupLayout()
     {
@@ -371,14 +398,14 @@ namespace BindingGroupDSL
                     desc.variableArraySize |= flags.Contains(BindingFlagBit::VariableArraySize);
                 }
             });
-            if constexpr(GetUniformDWordCount<T>() > 0)
+            if constexpr(HasUniform<T>())
             {
                 BindingGroupLayout::BindingDesc binding;
                 binding.type = RHI::BindingType::ConstantBuffer;
                 binding.stages = T::_rtrcGroupDefaultStages;
                 desc.bindings.push_back(binding);
             }
-            if(desc.variableArraySize && GetUniformDWordCount<T>() > 0)
+            if(desc.variableArraySize && HasUniform<T>())
             {
                 assert(desc.bindings[desc.bindings.size() - 2].bindless);
                 std::swap(desc.bindings[desc.bindings.size() - 2], desc.bindings[desc.bindings.size() - 1]);
@@ -590,7 +617,7 @@ void ApplyBindingGroup(RHI::Device *device, ConstantBufferManagerInterface *cbMg
 
                 assert(!swapUniformAndVariableSizedArray);
                 swapUniformAndVariableSizedArray =
-                    BindingGroupDSL::GetUniformDWordCount<T>() > 0 &&
+                    BindingGroupDSL::HasUniform<T>() &&
                     flags.Contains(BindingGroupDSL::BindingFlagBit::VariableArraySize);
 
                 ApplyArrayElements(swapUniformAndVariableSizedArray ? (index + 1) : index);
@@ -642,15 +669,13 @@ void ApplyBindingGroup(RHI::Device *device, ConstantBufferManagerInterface *cbMg
             }
         }
     });
-    if constexpr(constexpr size_t dwordCount = BindingGroupDSL::GetUniformDWordCount<T>())
+    if constexpr(BindingGroupDSL::HasUniform<T>())
     {
-        std::vector<unsigned char> deviceData(dwordCount * 4);
-        BindingGroupDSL::ForEachFlattenUniform<T>(
-            [&]<typename M>(const char *name, size_t hostOffset, size_t deviceOffset)
-        {
-            std::memcpy(deviceData.data() + deviceOffset, reinterpret_cast<const char *>(&value) + hostOffset, sizeof(M));
-        });
+        const size_t dwordCount = BindingGroupDSL::GetUniformDWordCount<T>();
 
+        std::vector<unsigned char> deviceData(dwordCount * 4);
+        BindingGroupDSL::FlattenUniformsToConstantBufferData(value, deviceData.data());
+        
         const int actualIndex = swapUniformAndVariableSizedArray ? (index - 1) : index;
         auto cbuffer = cbMgr->CreateConstantBuffer(deviceData.data(), deviceData.size());
         batch.Append(*group.GetRHIObject(), actualIndex, RHI::ConstantBufferUpdate{
