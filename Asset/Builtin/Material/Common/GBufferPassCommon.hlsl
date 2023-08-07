@@ -11,14 +11,6 @@
 
 #include "Scene.hlsl"
 
-struct PerObjectData
-{
-    float4x4 localToWorld;
-    float4x4 worldToLocal;
-    float4x4 localToCamera;
-    float4x4 localToClip;
-};
-
 rtrc_group(Pass)
 {
     rtrc_define(ConstantBuffer<CameraConstantBuffer>, Camera)

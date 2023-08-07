@@ -294,6 +294,10 @@ int main(int argc, const char *argv[])
 
     auto WriteTxt = [](const std::string &filename, const std::string &content)
     {
+        auto parentDir = absolute(std::filesystem::path(filename)).parent_path();
+        if(!exists(parentDir))
+            create_directories(parentDir);
+
         if(std::ifstream fin2(filename, std::ifstream::in); fin2)
         {
             std::stringstream buffer;

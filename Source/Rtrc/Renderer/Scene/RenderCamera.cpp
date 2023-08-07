@@ -28,18 +28,18 @@ void RenderCamera::Update(
     objects_.clear();
     for(const RenderScene::StaticMeshRecord *src : scene_.GetStaticMeshes())
     {
-        StaticMeshCBuffer cbuffer;
+        PerObjectData cbuffer;
         cbuffer.localToWorld  = src->proxy->localToWorld;
         cbuffer.worldToLocal  = src->proxy->worldToLocal;
         cbuffer.localToClip   = camera.worldToClip * cbuffer.localToWorld;
         cbuffer.localToCamera = camera.worldToCamera * cbuffer.localToWorld;
-        auto cbufferBindingGroup = transientConstantBufferAllocator.CreateConstantBufferBindingGroup(cbuffer);
         
         auto record = linearAllocator.Create<StaticMeshRecord>();
-        record->renderMesh            = src->renderMesh;
-        record->renderMaterial        = src->renderMaterial;
-        record->proxy                 = src->proxy;
-        record->perObjectBindingGroup = std::move(cbufferBindingGroup);
+        record->renderMesh     = src->renderMesh;
+        record->renderMaterial = src->renderMaterial;
+        record->proxy          = src->proxy;
+        record->perObjectData  = cbuffer;
+
         objects_.push_back(record);
     }
     std::ranges::sort(objects_, [](const StaticMeshRecord *lhs, const StaticMeshRecord *rhs)
@@ -56,23 +56,18 @@ void RenderCamera::Update(
                     rhs->renderMesh);
     });
 
-    std::vector<StaticMeshCBuffer> perObjectData(objects_.size());
+    std::vector<PerObjectData> perObjectData(objects_.size());
     for(size_t i = 0; i < objects_.size(); ++i)
     {
-        const StaticMeshRecord *src = objects_[i];
-        StaticMeshCBuffer &dst = perObjectData[i];
-        dst.localToWorld  = src->proxy->localToWorld;
-        dst.worldToLocal  = src->proxy->worldToLocal;
-        dst.localToCamera = currRenderCamera_.worldToCamera * dst.localToWorld;
-        dst.localToClip   = currRenderCamera_.worldToClip * dst.localToWorld;
+        perObjectData[i] = objects_[i]->perObjectData;
     }
     perObjectDataBuffer_ = perObjectDataBufferPool_.Acquire(
-        sizeof(StaticMeshCBuffer) * std::max<size_t>(perObjectData.size(), 1));
-    perObjectDataBuffer_->SetDefaultStructStride(sizeof(StaticMeshCBuffer));
+        sizeof(PerObjectData) * std::max<size_t>(perObjectData.size(), 1));
+    perObjectDataBuffer_->SetDefaultStructStride(sizeof(PerObjectData));
     perObjectDataBuffer_->SetName("PerObjectDataBuffer");
     if(!perObjectData.empty())
     {
-        perObjectDataBuffer_->Upload(perObjectData.data(), 0, sizeof(StaticMeshCBuffer) * perObjectData.size());
+        perObjectDataBuffer_->Upload(perObjectData.data(), 0, sizeof(PerObjectData) * perObjectData.size());
     }
 }
 

@@ -14,7 +14,7 @@ rtrc_refl_struct(AtmosphereProperties, shader)
     // Mie
 
     float scatterMie;
-    float assymmetryMie;
+    float asymmetryMie;
     float absorbMie;
     float hDensityMie;
 
@@ -36,10 +36,10 @@ rtrc_refl_struct(AtmosphereProperties, shader)
         scatterRayleigh  = 1e-6f * Vector3f(5.802f, 13.558f, 33.1f);
         hDensityRayleigh = 1e3f * 8;
 
-        scatterMie    = 1e-6f * 3.996f;
-        assymmetryMie = 0.8f;
-        absorbMie     = 1e-6f * 4.4f;
-        hDensityMie   = 1e3f * 1.2f;
+        scatterMie   = 1e-6f * 3.996f;
+        asymmetryMie = 0.8f;
+        absorbMie    = 1e-6f * 4.4f;
+        hDensityMie  = 1e3f * 1.2f;
 
         absorbOzone       = 1e-6f * Vector3f(0.65f, 1.881f, 0.085f);
         ozoneCenterHeight = 1e3f * 25;
@@ -57,7 +57,7 @@ rtrc_refl_struct(AtmosphereProperties, shader)
     {
         return Rtrc::Hash(
             scatterRayleigh, hDensityRayleigh,
-            scatterMie, assymmetryMie, absorbMie, hDensityMie,
+            scatterMie, asymmetryMie, absorbMie, hDensityMie,
             absorbOzone, ozoneCenterHeight, ozoneThickness,
             planetRadius, atmosphereRadius,
             terrainAlbedo);

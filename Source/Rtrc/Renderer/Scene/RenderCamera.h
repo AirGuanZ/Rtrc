@@ -16,7 +16,7 @@ public:
 
     struct StaticMeshRecord : RenderScene::StaticMeshRecord
     {
-        RC<BindingGroup> perObjectBindingGroup;
+        PerObjectData perObjectData;
     };
 
     RenderCamera(ObserverPtr<Device> device, const RenderScene &scene, UniqueId cameraId);

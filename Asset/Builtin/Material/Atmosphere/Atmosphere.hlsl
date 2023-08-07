@@ -1,26 +1,11 @@
 #pragma once
 
+#include "Rtrc/Generated/Reflection.hlsl"
+
 namespace Atmosphere
 {
 
-    struct Properties
-    {
-        float3 scatterRayleigh;
-        float  hDensityRayleigh;
-
-        float scatterMie;
-        float asymmetryMie;
-        float absorbMie;
-        float hDensityMie;
-
-        float3 absorbOzone;
-        float  ozoneCenterHeight;
-        float  ozoneThickness;
-        float  planetRadius;
-        float  atmosphereRadius;
-
-        float3 terrainAlbedo;
-    };
+    using Properties = Rtrc::AtmosphereProperties;
 
     static float PI = 3.14159265;
 

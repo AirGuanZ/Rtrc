@@ -1,36 +1,15 @@
 #pragma once
 
+#include "Rtrc/Generated/Reflection.hlsl"
+
 // See Rtrc/Renderer/Common.h
 
-struct CameraConstantBuffer
-{
-    float3   worldPosition;
-    float3   worldFront;
-    float3   worldLeft;
-    float3   worldUp;
-    float4x4 worldToCameraMatrix;
-    float4x4 cameraToWorldMatrix;
-    float4x4 cameraToClipMatrix;
-    float4x4 clipToCameraMatrix;
-    float4x4 worldToClipMatrix;
-    float4x4 clipToWorldMatrix;
-    float3   cameraRays[4];
-    float3   worldRays[4];
-};
+using CameraConstantBuffer = Rtrc::Renderer::CameraConstantBuffer;
 
-struct PointLightShadingData
-{
-    float3 position;
-    float  distFadeBias;
-    float3 color;
-    float  distFadeScale;
-};
+using PointLightShadingData       = Rtrc::Renderer::PointLightShadingData;
+using DirectionalLightShadingData = Rtrc::Renderer::DirectionalLightShadingData;
 
-struct DirectionalLightShadingData
-{
-    float3 direction;
-    float3 color;
-};
+using PerObjectData = Rtrc::PerObjectData;
 
 struct TlasInstance
 {

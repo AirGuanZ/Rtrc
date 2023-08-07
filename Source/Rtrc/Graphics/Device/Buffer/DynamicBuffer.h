@@ -60,10 +60,7 @@ private:
     int                   slabIndex_ = 0; // -1 means unpooled
 };
 
-class DynamicBufferManager :
-    public Uncopyable,
-    public BufferManagerInterface,
-    public ConstantBufferManagerInterface
+class DynamicBufferManager : public Uncopyable, public BufferManagerInterface, public ConstantBufferManagerInterface
 {
 public:
 

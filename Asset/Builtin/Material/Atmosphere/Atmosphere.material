@@ -129,14 +129,14 @@ Shader "Builtin/Atmosphere/GenerateMultiScatterLut"
             float h = length(worldPos) - Pass.atmosphere.planetRadius;
 
             float3 sigmaS = 0, sigmaT = 0;
-            GetSigmaST(Pass.atmosphere, h, sigmaS, sigmaT);
+            Atmosphere::GetSigmaST(Pass.atmosphere, h, sigmaS, sigmaT);
 
             float3 deltaSumSigmaT = dt * sigmaT;
             float3 transmittance = exp(-sumSigmaT - 0.5 * deltaSumSigmaT);
 
             if(!Atmosphere::TestRaySphere(worldPos, toSunDir, Pass.atmosphere.planetRadius))
             {
-                float3 rho = EvaluatePhaseFunction(Pass.atmosphere, h, u);
+                float3 rho = Atmosphere::EvaluatePhaseFunction(Pass.atmosphere, h, u);
                 float3 sunTransmittance = Atmosphere::SampleTransmittanceLut(
                     TransmittanceLutTexture, TransmittanceLutSampler, Pass.atmosphere, h, sunTheta);
                 sumL2 += dt * transmittance * sunTransmittance * sigmaS * rho;
