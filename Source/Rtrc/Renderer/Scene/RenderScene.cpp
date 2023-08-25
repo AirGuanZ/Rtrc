@@ -1,6 +1,6 @@
 #include <Rtrc/Renderer/Common.h>
 #include <Rtrc/Renderer/Scene/RenderCamera.h>
-#include <Rtrc/Utility/Enumerate.h>
+#include <Rtrc/Core/Enumerate.h>
 
 RTRC_RENDERER_BEGIN
 

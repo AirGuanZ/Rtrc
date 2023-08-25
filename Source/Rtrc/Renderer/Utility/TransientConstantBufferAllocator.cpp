@@ -1,5 +1,5 @@
 #include <Rtrc/Renderer/Utility/TransientConstantBufferAllocator.h>
-#include <Rtrc/Utility/Enumerate.h>
+#include <Rtrc/Core/Enumerate.h>
 
 RTRC_BEGIN
 

@@ -2,8 +2,8 @@
 
 #include <shared_mutex>
 #include <Rtrc/Graphics/Device/Device.h>
-#include <Rtrc/Utility/Container/RangeSet.h>
-#include <Rtrc/Utility/SmartPointer/ObserverPtr.h>
+#include <Rtrc/Core/Container/RangeSet.h>
+#include <Rtrc/Core/SmartPointer/ObserverPtr.h>
 
 RTRC_BEGIN
 

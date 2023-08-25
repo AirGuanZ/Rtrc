@@ -31,7 +31,7 @@ void Run()
     auto inputTexture = device->LoadTexture2D(
         "Asset/Sample/01.TexturedQuad/MainTexture.png", RHI::Format::B8G8R8A8_UNorm, 
         RHI::TextureUsage::ShaderResource, false, RHI::TextureLayout::ShaderTexture);
-    auto inputTextureSrv = inputTexture->CreateSrv();
+    auto inputTextureSrv = inputTexture->GetSrv();
 
     auto outputTexture = StatefulTexture::FromTexture(device->CreateTexture(RHI::TextureDesc
         {
@@ -46,7 +46,7 @@ void Run()
             .initialLayout = RHI::TextureLayout::Undefined,
             .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
         }));
-    auto outputTextureUav = outputTexture->CreateUav();
+    auto outputTextureUav = outputTexture->GetUav();
 
     const size_t rowDataSize = outputTexture->GetDesc().width * GetTexelSize(outputTexture->GetFormat());
     const size_t rowDataAlignment = device->GetTextureBufferCopyRowPitchAlignment(outputTexture->GetFormat());

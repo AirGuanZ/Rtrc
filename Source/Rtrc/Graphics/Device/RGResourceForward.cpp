@@ -3,17 +3,17 @@
 
 RTRC_BEGIN
 
-RC<Texture> _internalRGGet(RG::TextureResource *tex)
+RC<Texture> _internalRGGet(const RG::TextureResource *tex)
 {
     return tex->Get();
 }
 
-RC<Buffer> _internalRGGet(RG::BufferResource *buffer)
+RC<Buffer> _internalRGGet(const RG::BufferResource *buffer)
 {
     return buffer->Get();
 }
 
-RC<Tlas> _internalRGGet(RG::TlasResource *tlas)
+RC<Tlas> _internalRGGet(const RG::TlasResource *tlas)
 {
     return tlas->Get();
 }

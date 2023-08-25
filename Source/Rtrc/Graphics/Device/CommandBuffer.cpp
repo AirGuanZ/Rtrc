@@ -6,7 +6,7 @@
 #include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/Graphics/Device/Texture.h>
 #include <Rtrc/Graphics/Device/CommandBuffer.h>
-#include <Rtrc/Utility/Enumerate.h>
+#include <Rtrc/Core/Enumerate.h>
 
 RTRC_BEGIN
 

@@ -3,7 +3,7 @@
 #include <Rtrc/Renderer/Common.h>
 #include <Rtrc/Renderer/GBuffer/GBufferPass.h>
 #include <Rtrc/Renderer/Scene/RenderCamera.h>
-#include <Rtrc/Utility/Enumerate.h>
+#include <Rtrc/Core/Enumerate.h>
 
 RTRC_RENDERER_BEGIN
 
@@ -178,21 +178,21 @@ void GBufferPass::DoRenderGBuffers(
         {
             ColorAttachment
             {
-                .renderTargetView = gbufferA->CreateRtv(),
+                .renderTargetView = gbufferA->GetRtv(),
                 .loadOp           = AttachmentLoadOp::Clear,
                 .storeOp          = AttachmentStoreOp::Store,
                 .clearValue       = { 0, 0, 0, 0 }
             },
             ColorAttachment
             {
-                .renderTargetView = gbufferB->CreateRtv(),
+                .renderTargetView = gbufferB->GetRtv(),
                 .loadOp           = AttachmentLoadOp::Clear,
                 .storeOp          = AttachmentStoreOp::Store,
                 .clearValue       = { 0, 0, 0, 0 }
             },
             ColorAttachment
             {
-                .renderTargetView = gbufferC->CreateRtv(),
+                .renderTargetView = gbufferC->GetRtv(),
                 .loadOp           = AttachmentLoadOp::Clear,
                 .storeOp          = AttachmentStoreOp::Store,
                 .clearValue       = { 0, 0, 0, 0 }
@@ -200,7 +200,7 @@ void GBufferPass::DoRenderGBuffers(
         },
         DepthStencilAttachment
         {
-            .depthStencilView = gbufferDepth->CreateDsv(),
+            .depthStencilView = gbufferDepth->GetDsv(),
             .loadOp           = AttachmentLoadOp::Clear,
             .storeOp          = AttachmentStoreOp::Store,
             .clearValue       = { 1, 0 }

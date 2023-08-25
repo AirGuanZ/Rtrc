@@ -18,6 +18,8 @@ public:
 
     const T &GetRHIObject() const;
 
+    RHI::Format GetFinalFormat() const;
+
 private:
 
     static_assert(std::is_same_v<T, RHI::BufferSrvPtr> || std::is_same_v<T, RHI::BufferUavPtr>);
@@ -66,6 +68,12 @@ template<typename T>
 const T &TBufferView<T>::GetRHIObject() const
 {
     return view_;
+}
+
+template<typename T>
+RHI::Format TBufferView<T>::GetFinalFormat() const
+{
+    return GetRHIObject().GetDesc().format;
 }
 
 template<typename T>

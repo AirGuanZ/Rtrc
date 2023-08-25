@@ -2,7 +2,7 @@
 
 #include <Rtrc/Graphics/Material/Keyword.h>
 #include <Rtrc/Graphics/Shader/ShaderCompiler.h>
-#include <Rtrc/Utility/Container/ObjectCache.h>
+#include <Rtrc/Core/Container/ObjectCache.h>
 
 RTRC_BEGIN
 

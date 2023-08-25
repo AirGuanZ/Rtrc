@@ -1,6 +1,6 @@
 #include <Rtrc/Renderer/RenderLoop.h>
-#include <Rtrc/Utility/Enumerate.h>
-#include <Rtrc/Utility/Thread.h>
+#include <Rtrc/Core/Enumerate.h>
+#include <Rtrc/Core/Thread.h>
 
 RTRC_RENDERER_BEGIN
 

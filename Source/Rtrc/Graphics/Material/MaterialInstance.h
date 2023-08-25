@@ -2,8 +2,8 @@
 
 #include <Rtrc/Graphics/Material/Material.h>
 #include <Rtrc/Graphics/Resource/BindlessResourceManager.h>
-#include <Rtrc/Utility/SmartPointer/CopyOnWritePtr.h>
-#include <Rtrc/Utility/Thread.h>
+#include <Rtrc/Core/SmartPointer/CopyOnWritePtr.h>
+#include <Rtrc/Core/Thread.h>
 
 RTRC_BEGIN
 

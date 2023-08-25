@@ -1,4 +1,5 @@
-#pragma once
+#ifndef RTRC_COMMON_FRAME_HLSL
+#define RTRC_COMMON_FRAME_HLSL
 
 struct LocalFrame
 {
@@ -38,3 +39,5 @@ struct LocalFrame
         return float3(dot(globalVec, x), dot(globalVec, y), dot(globalVec, z));
     }
 };
+
+#endif // #ifndef RTRC_COMMON_FRAME_HLSL

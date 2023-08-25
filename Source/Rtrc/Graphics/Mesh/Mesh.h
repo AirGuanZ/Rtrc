@@ -2,10 +2,10 @@
 
 #include <Rtrc/Graphics/Mesh/MeshLayout.h>
 #include <Rtrc/Graphics/Device/Buffer.h>
-#include <Rtrc/Math/AABB.h>
-#include <Rtrc/Utility/Container/ObjectCache.h>
-#include <Rtrc/Utility/SmartPointer/CopyOnWritePtr.h>
-#include <Rtrc/Utility/Thread.h>
+#include <Rtrc/Core/Math/AABB.h>
+#include <Rtrc/Core/Container/ObjectCache.h>
+#include <Rtrc/Core/SmartPointer/CopyOnWritePtr.h>
+#include <Rtrc/Core/Thread.h>
 
 RTRC_BEGIN
 

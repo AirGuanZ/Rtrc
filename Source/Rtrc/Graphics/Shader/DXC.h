@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include <Rtrc/Utility/Uncopyable.h>
+#include <Rtrc/Core/Uncopyable.h>
 
 struct IDxcUtils;
 

@@ -2,7 +2,7 @@
 
 #include <Rtrc/Graphics/Device/GeneralGPUObject.h>
 #include <Rtrc/Graphics/Shader/Shader.h>
-/*#include <Rtrc/Utility/ObjectCache.h>*/
+/*#include <Rtrc/Core/ObjectCache.h>*/
 
 RTRC_BEGIN
 

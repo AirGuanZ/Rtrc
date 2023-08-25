@@ -52,8 +52,6 @@ namespace FrontendDetail
 
             if(record->isTemplated())
                 return;
-
-            printf("%s\n", matchResult.SourceManager->getFilename(record->getSourceRange().getEnd()).str().c_str());
             
             std::set<std::string> annos;
             for(auto attr : record->attrs())
@@ -134,26 +132,26 @@ namespace FrontendDetail
                 }
                 outField.typeStr += templateArgStr;
                 
-                static const std::map<std::string, FieldType> STR_TO_TYPE =
+                static const std::map<std::string, FieldCategory> STR_TO_TYPE =
                 {
-                    { "float",                       FieldType::Float    },
-                    { "Rtrc::Vector2<float>",        FieldType::Float2   },
-                    { "Rtrc::Vector3<float>",        FieldType::Float3   },
-                    { "Rtrc::Vector4<float>",        FieldType::Float4   },
-                    { "int",                         FieldType::Int      },
-                    { "Rtrc::Vector2<int>",          FieldType::Int2     },
-                    { "Rtrc::Vector3<int>",          FieldType::Int3     },
-                    { "Rtrc::Vector4<int>",          FieldType::Int4     },
-                    { "unsigned int",                FieldType::UInt     },
-                    { "Rtrc::Vector2<unsigned int>", FieldType::UInt2    },
-                    { "Rtrc::Vector3<unsigned int>", FieldType::UInt3    },
-                    { "Rtrc::Vector4<unsigned int>", FieldType::UInt4    },
-                    { "Rtrc::Matrix4x4f",            FieldType::Float4x4 },
+                    { "float",                       FieldCategory::Float    },
+                    { "Rtrc::Vector2<float>",        FieldCategory::Float2   },
+                    { "Rtrc::Vector3<float>",        FieldCategory::Float3   },
+                    { "Rtrc::Vector4<float>",        FieldCategory::Float4   },
+                    { "int",                         FieldCategory::Int      },
+                    { "Rtrc::Vector2<int>",          FieldCategory::Int2     },
+                    { "Rtrc::Vector3<int>",          FieldCategory::Int3     },
+                    { "Rtrc::Vector4<int>",          FieldCategory::Int4     },
+                    { "unsigned int",                FieldCategory::UInt     },
+                    { "Rtrc::Vector2<unsigned int>", FieldCategory::UInt2    },
+                    { "Rtrc::Vector3<unsigned int>", FieldCategory::UInt3    },
+                    { "Rtrc::Vector4<unsigned int>", FieldCategory::UInt4    },
+                    { "Rtrc::Matrix4x4f",            FieldCategory::Float4x4 },
                 };
                 if(auto it = STR_TO_TYPE.find(outField.typeStr); it != STR_TO_TYPE.end())
-                    outField.type = it->second;
+                    outField.categoty = it->second;
                 else
-                    outField.type = FieldType::Others;
+                    outField.categoty = FieldCategory::Others;
 
                 outField.name = field->getNameAsString();
             }

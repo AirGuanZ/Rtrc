@@ -1,7 +1,7 @@
 #include <Rtrc/Renderer/DeferredLighting/ShadowMaskPass.h>
 #include <Rtrc/Renderer/GBufferBinding.h>
 #include <Rtrc/Renderer/Scene/RenderCamera.h>
-#include <Rtrc/Math/DistributionTransform.h>
+#include <Rtrc/Core/Math/DistributionTransform.h>
 
 RTRC_RENDERER_BEGIN
 

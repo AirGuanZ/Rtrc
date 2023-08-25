@@ -1,4 +1,5 @@
-#pragma once
+#ifndef RTRC_COMMON_GBUFFER_PASS_COMMON_HLSL
+#define RTRC_COMMON_GBUFFER_PASS_COMMON_HLSL
 
 /*
     Utilities for rendering to gbuffers
@@ -48,3 +49,5 @@ GBufferPixelOutput EncodeGBufferPixel(float3 worldNormal, float3 albedo, float m
     pixel.gbufferRoughness      = float4(roughness, 0, 0, 0);
     return pixel;
 }
+
+#endif // #ifndef RTRC_COMMON_GBUFFER_PASS_COMMON_HLSL

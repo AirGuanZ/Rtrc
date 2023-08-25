@@ -1,8 +1,8 @@
 #include <mutex>
 
+#include <Rtrc/Core/ScopeGuard.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/BindingGroup.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Sampler.h>
-#include <Rtrc/Utility/ScopeGuard.h>
 
 RTRC_RHI_VK_BEGIN
 

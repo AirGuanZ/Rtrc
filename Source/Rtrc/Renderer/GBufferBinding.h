@@ -115,7 +115,7 @@ namespace GBufferBindingDetail
         }
         if constexpr(NeedDepth<T>)
         {
-            data._internalGBuffer_Depth = gbuffers.currDepth->CreateSrv(RHI::TextureViewFlags::None);
+            data._internalGBuffer_Depth = gbuffers.currDepth->GetSrv(RHI::TextureViewFlags::None);
         }
     }
 

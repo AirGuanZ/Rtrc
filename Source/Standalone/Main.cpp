@@ -16,7 +16,7 @@ int main()
             .rayTracing                 = true,
             .renderThread               = true,
             .handleCrossThreadException = true,
-            .backendType                = Rtrc::RHI::BackendType::Default
+            .backendType                = Rtrc::RHI::BackendType::Vulkan
         });
     }
     catch(const Rtrc::Exception &e)

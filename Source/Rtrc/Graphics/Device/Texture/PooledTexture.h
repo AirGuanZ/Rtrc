@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Rtrc/Graphics/Device/Texture/StatefulTexture.h>
-#include <Rtrc/Utility/Container/ObjectPool.h>
+#include <Rtrc/Core/Container/ObjectPool.h>
 
 RTRC_BEGIN
 

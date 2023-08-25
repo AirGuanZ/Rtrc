@@ -1,4 +1,5 @@
-#pragma once
+#ifndef RTRC_COMMON_FULLSCREEN_HLSL
+#define RTRC_COMMON_FULLSCREEN_HLSL
 
 namespace FullscreenPrimitive
 {
@@ -47,3 +48,5 @@ FullscreenPrimitive::VsToFsWithWorldRay FullscreenVsToFsWithWorldRay(FullscreenP
     output.ray      = input.ray;
     return output;
 }
+
+#endif // #ifndef RTRC_COMMON_FULLSCREEN_HLSL

@@ -1,8 +1,8 @@
 #include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/Graphics/Resource/MeshManager.h>
-#include <Rtrc/Math/Frame.h>
-#include <Rtrc/Utility/Resource/MeshData.h>
-#include <Rtrc/Utility/String.h>
+#include <Rtrc/Core/Math/Frame.h>
+#include <Rtrc/Core/Resource/MeshData.h>
+#include <Rtrc/Core/String.h>
 
 RTRC_BEGIN
 

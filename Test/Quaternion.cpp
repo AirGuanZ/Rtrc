@@ -1,7 +1,7 @@
 #include <catch2/catch_all.hpp>
 
-#include <Rtrc/Math/Angle.h>
-#include <Rtrc/Math/Quaternion.h>
+#include <Rtrc/Core/Math/Angle.h>
+#include <Rtrc/Core/Math/Quaternion.h>
 
 using namespace Rtrc;
 

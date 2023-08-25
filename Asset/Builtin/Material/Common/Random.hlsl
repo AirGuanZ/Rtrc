@@ -1,4 +1,5 @@
-#pragma once
+#ifndef RTRC_COMMON_RANDOM_HLSL
+#define RTRC_COMMON_RANDOM_HLSL
 
 namespace Distribution
 {
@@ -91,3 +92,5 @@ namespace Pcg
     }
 
 } // namespace Pcg
+
+#endif // #ifndef RTRC_COMMON_RANDOM_HLSL

@@ -3,8 +3,8 @@
 #include <memory>
 #include <string>
 
-#include <Rtrc/Math/Vector2.h>
-#include <Rtrc/Utility/SmartPointer/ReferenceCounted.h>
+#include <Rtrc/Core/Math/Vector2.h>
+#include <Rtrc/Core/SmartPointer/ReferenceCounted.h>
 #include <Rtrc/Window/WindowInput.h>
 
 RTRC_RHI_BEGIN

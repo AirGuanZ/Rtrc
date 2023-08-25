@@ -2,11 +2,11 @@
 
 #include <Rtrc/Graphics/Material/ShaderTemplate.h>
 #include <Rtrc/Graphics/Device/Device.h>
-#include <Rtrc/Math/Vector3.h>
-#include <Rtrc/Utility/Container/ObjectCache.h>
-#include <Rtrc/Utility/Container/SharedObjectPool.h>
-#include <Rtrc/Utility/SignalSlot.h>
-#include <Rtrc/Utility/StringPool.h>
+#include <Rtrc/Core/Math/Vector3.h>
+#include <Rtrc/Core/Container/ObjectCache.h>
+#include <Rtrc/Core/Container/SharedObjectPool.h>
+#include <Rtrc/Core/SignalSlot.h>
+#include <Rtrc/Core/StringPool.h>
 
 /* Material
     Material:

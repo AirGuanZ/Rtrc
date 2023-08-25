@@ -3,7 +3,7 @@
 #include <list>
 
 #include <Rtrc/Scene/Hierarchy/SceneObject.h>
-#include <Rtrc/Utility/SmartPointer/CopyOnWritePtr.h>
+#include <Rtrc/Core/SmartPointer/CopyOnWritePtr.h>
 
 RTRC_BEGIN
 

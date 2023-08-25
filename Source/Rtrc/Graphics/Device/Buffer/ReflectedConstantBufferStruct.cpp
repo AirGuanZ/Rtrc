@@ -1,5 +1,5 @@
 #include <Rtrc/Graphics/Device/Buffer/ReflectedConstantBufferStruct.h>
-#include <Rtrc/Utility/TypeList.h>
+#include <Rtrc/Core/TypeList.h>
 
 #include <Rtrc/Generated/Reflection.h>
 

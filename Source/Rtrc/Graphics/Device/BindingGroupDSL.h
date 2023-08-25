@@ -6,8 +6,8 @@
 #include <Rtrc/Graphics/Device/Buffer/DynamicBuffer.h>
 #include <Rtrc/Graphics/Device/RGResourceForward.h>
 #include <Rtrc/Graphics/Device/Texture/Texture.h>
-#include <Rtrc/Utility/Macro/MacroOverloading.h>
-#include <Rtrc/Utility/Struct.h>
+#include <Rtrc/Core/Macro/MacroOverloading.h>
+#include <Rtrc/Core/Struct.h>
 
 RTRC_BEGIN
 
@@ -38,7 +38,7 @@ namespace BindingGroupDSL
 
         auto &operator=(const RC<Texture> &tex)
         {
-            _rtrcObj = tex->CreateSrv(0, 0, 0);
+            _rtrcObj = tex->GetSrv(0, 0, 0);
             return *this;
         }
 
@@ -61,7 +61,7 @@ namespace BindingGroupDSL
 
         auto &operator=(const RC<Texture> &tex)
         {
-            _rtrcObj = tex->CreateUav(0, 0);
+            _rtrcObj = tex->GetUav(0, 0);
             return *this;
         }
 
@@ -311,7 +311,7 @@ namespace BindingGroupDSL
             if constexpr(IsUniform)
             {
                 size_t memSize;
-                if constexpr(RtrcReflStruct<M>)
+                if constexpr(RtrcReflShaderStruct<M>)
                 {
                     memSize = ReflectedConstantBufferStruct::GetDeviceDWordCount<M>();
                 }
@@ -320,7 +320,7 @@ namespace BindingGroupDSL
                     memSize = ConstantBufferDetail::GetConstantBufferDWordCount<M>();
                 }
                 bool needNewLine;
-                if constexpr(std::is_array_v<M> || RtrcReflStruct<M>)
+                if constexpr(std::is_array_v<M> || RtrcReflShaderStruct<M>)
                 {
                     needNewLine = true;
                 }
@@ -351,7 +351,7 @@ namespace BindingGroupDSL
                 const size_t memberSize = ConstantBufferDetail::GetConstantBufferDWordCount<M>();
 
                 bool needNewLine;
-                if constexpr(std::is_array_v<M> || RtrcReflStruct<M>)
+                if constexpr(std::is_array_v<M> || RtrcReflShaderStruct<M>)
                 {
                     needNewLine = true;
                 }

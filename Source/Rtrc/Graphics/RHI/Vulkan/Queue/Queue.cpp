@@ -1,11 +1,11 @@
+#include <Rtrc/Core/Enumerate.h>
+#include <Rtrc/Core/ScopeGuard.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Context/BackBufferSemaphore.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Context/Device.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/CommandPool.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/Fence.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/Queue.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/Semaphore.h>
-#include <Rtrc/Utility/Enumerate.h>
-#include <Rtrc/Utility/ScopeGuard.h>
 
 RTRC_RHI_VK_BEGIN
 

@@ -34,6 +34,8 @@ public:
 
     const RC<Texture> &GetTexture() const { return texture_; }
 
+    RHI::Format GetFinalFormat() const;
+
 private:
 
     static_assert(
@@ -146,57 +148,68 @@ TTextureView<T>::operator typename T::ElementType *() const
     return view_.Get();
 }
 
-inline TextureSrv Texture::CreateSrv(RHI::TextureViewFlags flags)
+template<typename T>
+RHI::Format TTextureView<T>::GetFinalFormat() const
+{
+    RHI::Format ret = GetRHIObject().GetDesc().format;
+    if(ret == RHI::Format::Unknown)
+    {
+        ret = texture_->GetFormat();
+    }
+    return ret;
+}
+
+inline TextureSrv Texture::GetSrv(RHI::TextureViewFlags flags)
 {
     if(GetDesc().arraySize > 1)
     {
-        return CreateSrv(0, 0, 0, 0, flags);
+        return GetSrv(0, 0, 0, 0, flags);
     }
-    return CreateSrv(0, 0, 0, flags);
+    return GetSrv(0, 0, 0, flags);
 }
 
-inline TextureSrv Texture::CreateSrv(
+inline TextureSrv Texture::GetSrv(
     uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, RHI::TextureViewFlags flags)
 {
     return TextureSrv(shared_from_this(), mipLevel, levelCount, arrayLayer, 1, false, flags);
 }
 
-inline TextureSrv Texture::CreateSrv(
+inline TextureSrv Texture::GetSrv(
     uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, uint32_t layerCount, RHI::TextureViewFlags flags)
 {
     return TextureSrv(shared_from_this(), mipLevel, levelCount, arrayLayer, layerCount, true, flags);
 }
 
-inline TextureUav Texture::CreateUav()
+inline TextureUav Texture::GetUav()
 {
     if(GetDesc().arraySize > 1)
     {
-        return CreateUav(0, 0, 0);
+        return GetUav(0, 0, 0);
     }
-    return CreateUav(0, 0);
+    return GetUav(0, 0);
 }
 
-inline TextureUav Texture::CreateUav(uint32_t mipLevel, uint32_t arrayLayer)
+inline TextureUav Texture::GetUav(uint32_t mipLevel, uint32_t arrayLayer)
 {
     return TextureUav(shared_from_this(), mipLevel, 1, arrayLayer, 1, false);
 }
 
-inline TextureUav Texture::CreateUav(uint32_t mipLevel, uint32_t arrayLayer, uint32_t layerCount)
+inline TextureUav Texture::GetUav(uint32_t mipLevel, uint32_t arrayLayer, uint32_t layerCount)
 {
     return TextureUav(shared_from_this(), mipLevel, 1, arrayLayer, layerCount, true);
 }
 
-inline TextureRtv Texture::CreateRtv(uint32_t mipLevel, uint32_t arrayLayer)
+inline TextureRtv Texture::GetRtv(uint32_t mipLevel, uint32_t arrayLayer)
 {
     return TextureRtv(shared_from_this(), mipLevel, arrayLayer, false);
 }
 
-inline TextureDsv Texture::CreateDsv(RHI::TextureViewFlags flags)
+inline TextureDsv Texture::GetDsv(RHI::TextureViewFlags flags)
 {
-    return CreateDsv(0, 0, flags);
+    return GetDsv(0, 0, flags);
 }
 
-inline TextureDsv Texture::CreateDsv(uint32_t mipLevel, uint32_t arrayLayer, RHI::TextureViewFlags flags)
+inline TextureDsv Texture::GetDsv(uint32_t mipLevel, uint32_t arrayLayer, RHI::TextureViewFlags flags)
 {
     return TextureDsv(shared_from_this(), mipLevel, arrayLayer, false, flags);
 }

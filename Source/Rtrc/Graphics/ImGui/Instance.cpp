@@ -1,7 +1,7 @@
 #include <Rtrc/Graphics/ImGui/Instance.h>
 #include <Rtrc/Graphics/Mesh/MeshLayout.h>
 #include <Rtrc/Graphics/Shader/ShaderCompiler.h>
-#include <Rtrc/Utility/Timer.h>
+#include <Rtrc/Core/Timer.h>
 
 RTRC_BEGIN
 
@@ -253,7 +253,7 @@ RG::Pass *ImGuiRenderer::Render(
     pass->Use(renderTarget, RG::ColorAttachment);
     pass->SetCallback([this, drawData, renderTarget]
     {
-        RenderImmediately(drawData, renderTarget->CreateRtv(), RG::GetCurrentCommandBuffer(), false);
+        RenderImmediately(drawData, renderTarget->GetRtv(), RG::GetCurrentCommandBuffer(), false);
     });
     return pass;
 }
@@ -416,7 +416,7 @@ void ImGuiRenderer::RenderImmediately(
             {
                 auto texture = static_cast<Texture *>(drawCmd.GetTexID());
                 auto group = passBindingGroupLayout_->CreateBindingGroup();
-                group->Set(0, texture->CreateSrv());
+                group->Set(0, texture->GetSrv());
                 commandBuffer.BindGraphicsGroup(1, group);
             }
 
@@ -649,7 +649,7 @@ void ImGuiInstance::RecreateFontTexture()
             .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Concurrent
         }, data, RHI::TextureLayout::ShaderTexture);
     data_->fontTextureBindingGroup = data_->passBindingGroupLayout->CreateBindingGroup();
-    data_->fontTextureBindingGroup->Set(0, data_->fontTexture->CreateSrv());
+    data_->fontTextureBindingGroup->Set(0, data_->fontTexture->GetSrv());
     ImGui::GetIO().Fonts->SetTexID(data_->fontTexture.get());
 }
 

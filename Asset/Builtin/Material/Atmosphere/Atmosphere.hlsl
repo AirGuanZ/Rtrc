@@ -5,7 +5,7 @@
 namespace Atmosphere
 {
 
-    using Properties = Rtrc::AtmosphereProperties;
+    typedef Rtrc::AtmosphereProperties Properties;
 
     static float PI = 3.14159265;
 

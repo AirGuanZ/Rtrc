@@ -17,8 +17,8 @@
 #include <Rtrc/Graphics/RHI/DirectX12/Resource/Buffer.h>
 #include <Rtrc/Graphics/RHI/DirectX12/Resource/Texture.h>
 #include <Rtrc/Graphics/RHI/DirectX12/Resource/TextureView.h>
-#include <Rtrc/Utility/Enumerate.h>
-#include <Rtrc/Utility/Unreachable.h>
+#include <Rtrc/Core/Enumerate.h>
+#include <Rtrc/Core/Unreachable.h>
 
 RTRC_RHI_D3D12_BEGIN
 

@@ -3,7 +3,7 @@
 #include <Rtrc/Graphics/RHI/DirectX12/Context/Device.h>
 #include <Rtrc/Graphics/RHI/DirectX12/Pipeline/BindingLayout.h>
 #include <Rtrc/Graphics/RHI/Helper/D3D12BindingGroupLayoutAux.h>
-#include <Rtrc/Utility/Enumerate.h>
+#include <Rtrc/Core/Enumerate.h>
 
 RTRC_RHI_D3D12_BEGIN
 

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <Rtrc/Math/Angle.h>
-#include <Rtrc/Math/Matrix4x4.h>
+#include <Rtrc/Core/Math/Angle.h>
+#include <Rtrc/Core/Math/Matrix4x4.h>
 
 RTRC_BEGIN
 

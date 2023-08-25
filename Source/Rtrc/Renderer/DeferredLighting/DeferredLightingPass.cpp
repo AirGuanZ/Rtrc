@@ -2,7 +2,7 @@
 #include <Rtrc/Renderer/GBufferBinding.h>
 #include <Rtrc/Renderer/Scene/RenderCamera.h>
 #include <Rtrc/Renderer/Utility/FullscreenPrimitive.h>
-#include <Rtrc/Utility/Enumerate.h>
+#include <Rtrc/Core/Enumerate.h>
 
 RTRC_RENDERER_BEGIN
 

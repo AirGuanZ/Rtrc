@@ -1,6 +1,6 @@
 #include <catch2/catch_all.hpp>
 
-#include <Rtrc/Math/Matrix4x4.h>
+#include <Rtrc/Core/Math/Matrix4x4.h>
 
 using namespace Rtrc;
 

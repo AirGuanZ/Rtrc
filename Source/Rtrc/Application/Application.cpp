@@ -1,6 +1,6 @@
 #include <Rtrc/Application/Application.h>
 #include <Rtrc/Graphics/RenderGraph/Executable.h>
-#include <Rtrc/Utility/Thread.h>
+#include <Rtrc/Core/Thread.h>
 
 RTRC_BEGIN
 

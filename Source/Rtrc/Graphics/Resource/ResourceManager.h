@@ -2,7 +2,7 @@
 
 #include <Rtrc/Graphics/Resource/MaterialManager.h>
 #include <Rtrc/Graphics/Resource/MeshManager.h>
-#include <Rtrc/Utility/SmartPointer/ObserverPtr.h>
+#include <Rtrc/Core/SmartPointer/ObserverPtr.h>
 
 RTRC_BEGIN
 

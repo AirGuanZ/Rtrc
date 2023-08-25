@@ -1,4 +1,5 @@
-#pragma once
+#ifndef RTRC_COMMON_BINDLESS_HLSL
+#define RTRC_COMMON_BINDLESS_HLSL
 
 #include "Constants.hlsl"
 
@@ -15,3 +16,5 @@ rtrc_group(GlobalBindlessGeometryBufferGroup)
     rtrc_bindless_varsize(StructuredBuffer<uint>[GLOBAL_BINDLESS_GEOMETRY_BUFFER_MAX_SIZE], BindlessGeometryBuffers)
 };
 #endif
+
+#endif // #ifndef RTRC_COMMON_BINDLESS_HLSL

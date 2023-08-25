@@ -3,7 +3,7 @@
 #include <Rtrc/Renderer/RenderLoop.h>
 #include <Rtrc/Graphics/ImGui/Instance.h>
 #include <Rtrc/Graphics/Resource/ResourceManager.h>
-#include <Rtrc/Utility/Timer.h>
+#include <Rtrc/Core/Timer.h>
 
 RTRC_BEGIN
 

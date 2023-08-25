@@ -82,10 +82,10 @@ std::string GenerateCppReflection(std::span<const Struct> structs)
 
     std::string ret = COMMON_HEADER;
     
-    ret += "#include <Rtrc/Math/Vector2.h>\n";
-    ret += "#include <Rtrc/Math/Vector3.h>\n";
-    ret += "#include <Rtrc/Math/Vector4.h>\n";
-    ret += "#include <Rtrc/Math/Matrix4x4.h>\n";
+    ret += "#include <Rtrc/Core/Math/Vector2.h>\n";
+    ret += "#include <Rtrc/Core/Math/Vector3.h>\n";
+    ret += "#include <Rtrc/Core/Math/Vector4.h>\n";
+    ret += "#include <Rtrc/Core/Math/Matrix4x4.h>\n";
 
     ret += "\n/*====================== Forward Declarations ======================*/\n\n";
 
@@ -128,7 +128,7 @@ std::string GenerateCppReflection(std::span<const Struct> structs)
         {
             const std::string arrayModifier = f.arraySize ? "[" + std::to_string(*f.arraySize) + "]" : "";
             std::string mirrorTypeStr = f.typeStr;
-            if(f.type == FieldType::Others)
+            if(f.categoty == FieldCategory::Others)
                 mirrorTypeStr = QualifiedNameToMirrorName(mirrorTypeStr);
             ret += namespaceIndent + "    " + mirrorTypeStr + " " + f.name + arrayModifier + ";\n";
         }
@@ -206,9 +206,9 @@ std::string GenerateShaderHeader(std::span<const Struct> structs)
         ret += indent + "{\n";
         for(auto &f : s.fields)
         {
-            using enum FieldType;
+            using enum FieldCategory;
             std::string type;
-            switch(f.type)
+            switch(f.categoty)
             {
             case Float:    type = "float";    break;
             case Float2:   type = "float2";   break;

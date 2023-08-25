@@ -1,7 +1,7 @@
 #pragma once
 
-#include <Rtrc/Math/Matrix4x4.h>
-#include <Rtrc/Math/Quaternion.h>
+#include <Rtrc/Core/Math/Matrix4x4.h>
+#include <Rtrc/Core/Math/Quaternion.h>
 
 RTRC_BEGIN
 

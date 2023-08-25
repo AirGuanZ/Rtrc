@@ -14,8 +14,8 @@ RTRC_RG_END
 
 RTRC_BEGIN
 
-RC<Texture> _internalRGGet(RG::TextureResource *tex);
-RC<Buffer>  _internalRGGet(RG::BufferResource *buffer);
-RC<Tlas>    _internalRGGet(RG::TlasResource *tlas);
+RC<Texture> _internalRGGet(const RG::TextureResource *tex);
+RC<Buffer>  _internalRGGet(const RG::BufferResource *buffer);
+RC<Tlas>    _internalRGGet(const RG::TlasResource *tlas);
 
 RTRC_END

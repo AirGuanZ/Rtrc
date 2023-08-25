@@ -4,13 +4,13 @@
 #include <optional>
 #include <vector>
 
-#include <Rtrc/Math/Vector4.h>
-#include <Rtrc/Utility/Container/Span.h>
-#include <Rtrc/Utility/EnumFlags.h>
-#include <Rtrc/Utility/Hash.h>
-#include <Rtrc/Utility/SmartPointer/ReferenceCounted.h>
-#include <Rtrc/Utility/Uncopyable.h>
-#include <Rtrc/Utility/Variant.h>
+#include <Rtrc/Core/Math/Vector4.h>
+#include <Rtrc/Core/Container/Span.h>
+#include <Rtrc/Core/EnumFlags.h>
+#include <Rtrc/Core/Hash.h>
+#include <Rtrc/Core/SmartPointer/ReferenceCounted.h>
+#include <Rtrc/Core/Uncopyable.h>
+#include <Rtrc/Core/Variant.h>
 #include <Rtrc/Window/Window.h>
 
 RTRC_RHI_BEGIN
@@ -156,18 +156,16 @@ enum class VertexAttributeType : uint32_t
 };
 
 const char *GetFormatName(Format format);
-
 size_t GetTexelSize(Format format);
 
-inline bool HasDepthAspect(Format format)
-{
-    return format == Format::D24S8 || format == Format::D32;
-}
+bool CanBeAccessedAsFloatInShader(Format format);
+bool CanBeAccessedAsIntInShader(Format format);
+bool CanBeAccessedAsUIntInShader(Format format);
+bool NeedUNormAsTypedUAV(Format format);
+bool NeedSNormAsTypedUAV(Format format);
 
-inline bool HasStencilAspect(Format format)
-{
-    return format == Format::D24S8;
-}
+bool HasDepthAspect(Format format);
+bool HasStencilAspect(Format format);
 
 enum class IndexFormat
 {

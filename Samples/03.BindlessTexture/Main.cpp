@@ -66,7 +66,7 @@ void Run()
     for(int i = 0; i < 4; ++i)
     {
         slots[i] = bindingSlotAllocator.Allocate(1);
-        bindingGroup->Set(1, slots[i], textures[i]->CreateSrv());
+        bindingGroup->Set(1, slots[i], textures[i]->GetSrv());
     }
 
     RG::Executer renderGraphExecuter(device);
@@ -97,7 +97,7 @@ void Run()
 
             commandBuffer.BeginRenderPass(ColorAttachment
             {
-                .renderTargetView = renderTarget->CreateRtv(),
+                .renderTargetView = renderTarget->GetRtv(),
                 .loadOp           = AttachmentLoadOp::Clear,
                 .storeOp          = AttachmentStoreOp::Store,
                 .clearValue       = ColorClearValue(0, 0, 0, 0)

@@ -2,7 +2,7 @@
 
 #include <cassert>
 
-#include <Rtrc/Common.h>
+#include <Rtrc/Core/Common.h>
 
 RTRC_BEGIN
 

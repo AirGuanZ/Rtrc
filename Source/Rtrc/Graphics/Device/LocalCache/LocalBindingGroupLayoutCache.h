@@ -3,7 +3,7 @@
 #include <atomic>
 
 #include <Rtrc/Graphics/Device/BindingGroupDSL.h>
-#include <Rtrc/Utility/SmartPointer/ObserverPtr.h>
+#include <Rtrc/Core/SmartPointer/ObserverPtr.h>
 
 RTRC_BEGIN
 

@@ -5,8 +5,8 @@
 
 #include <tbb/spin_rw_mutex.h>
 
-#include <Rtrc/Utility/SmartPointer/ObserverPtr.h>
-#include <Rtrc/Utility/Uncopyable.h>
+#include <Rtrc/Core/SmartPointer/ObserverPtr.h>
+#include <Rtrc/Core/Uncopyable.h>
 
 RTRC_BEGIN
 

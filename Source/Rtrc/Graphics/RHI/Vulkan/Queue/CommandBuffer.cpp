@@ -1,3 +1,4 @@
+#include <Rtrc/Core/Enumerate.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Context/Device.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/BindingGroup.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/BindingLayout.h>
@@ -10,7 +11,6 @@
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Buffer.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Texture.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/TextureView.h>
-#include <Rtrc/Utility/Enumerate.h>
 
 RTRC_RHI_VK_BEGIN
 

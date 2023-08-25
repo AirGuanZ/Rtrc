@@ -1,6 +1,6 @@
 #include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/Graphics/Resource/ResourceManager.h>
-#include <Rtrc/Utility/Filesystem/DirectoryFilter.h>
+#include <Rtrc/Core/Filesystem/DirectoryFilter.h>
 
 RTRC_BEGIN
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Rtrc/Scene/Camera/Camera.h>
-#include <Rtrc/Utility/Timer.h>
+#include <Rtrc/Core/Timer.h>
 #include <Rtrc/Window/WindowInput.h>
 
 RTRC_BEGIN

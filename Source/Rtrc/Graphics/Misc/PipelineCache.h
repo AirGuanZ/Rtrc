@@ -6,7 +6,7 @@
 #include <tbb/spin_mutex.h>
 
 #include <Rtrc/Graphics/Device/Pipeline.h>
-#include <Rtrc/Utility/SmartPointer/ObserverPtr.h>
+#include <Rtrc/Core/SmartPointer/ObserverPtr.h>
 
 RTRC_BEGIN
 

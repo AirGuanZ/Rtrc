@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Rtrc/Graphics/Device/DeviceSynchronizer.h>
-#include <Rtrc/Utility/Container/ObjectCache.h>
+#include <Rtrc/Core/Container/ObjectCache.h>
 
 RTRC_BEGIN
 
@@ -68,24 +68,24 @@ public:
     uint32_t GetMipmapLevelCount() const;
 
     // non-array view for single-layer texture, array view for multi-layer texture
-    TextureSrv CreateSrv(RHI::TextureViewFlags flags = 0);
+    TextureSrv GetSrv(RHI::TextureViewFlags flags = 0);
     // non-array view
-    TextureSrv CreateSrv(uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, RHI::TextureViewFlags flags = 0);
+    TextureSrv GetSrv(uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, RHI::TextureViewFlags flags = 0);
     // array view
-    TextureSrv CreateSrv(
+    TextureSrv GetSrv(
         uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, uint32_t layerCount, RHI::TextureViewFlags flags = 0);
 
     // non-array view for single-layer texture, array view for multi-layer texture
-    TextureUav CreateUav();
+    TextureUav GetUav();
     // non-array view
-    TextureUav CreateUav(uint32_t mipLevel, uint32_t arrayLayer);
+    TextureUav GetUav(uint32_t mipLevel, uint32_t arrayLayer);
     // array view
-    TextureUav CreateUav(uint32_t mipLevel, uint32_t arrayLayer, uint32_t layerCount);
+    TextureUav GetUav(uint32_t mipLevel, uint32_t arrayLayer, uint32_t layerCount);
     
-    TextureRtv CreateRtv(uint32_t mipLevel = 0, uint32_t arrayLayer = 0);
+    TextureRtv GetRtv(uint32_t mipLevel = 0, uint32_t arrayLayer = 0);
 
-    TextureDsv CreateDsv(RHI::TextureViewFlags flags);
-    TextureDsv CreateDsv(uint32_t mipLevel = 0, uint32_t arrayLayer = 0, RHI::TextureViewFlags flags = 0);
+    TextureDsv GetDsv(RHI::TextureViewFlags flags);
+    TextureDsv GetDsv(uint32_t mipLevel = 0, uint32_t arrayLayer = 0, RHI::TextureViewFlags flags = 0);
 
     RHI::Viewport GetViewport(float minDepth = 0, float maxDepth = 1) const;
     RHI::Scissor GetScissor() const;

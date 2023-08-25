@@ -1,11 +1,11 @@
 #pragma once
 
 #include <Rtrc/Graphics/Device/Buffer/ReflectedConstantBufferStruct.h>
-#include <Rtrc/Math/Matrix4x4.h>
-#include <Rtrc/Math/Vector2.h>
-#include <Rtrc/Math/Vector3.h>
-#include <Rtrc/Math/Vector4.h>
-#include <Rtrc/Utility/TypeList.h>
+#include <Rtrc/Core/Math/Matrix4x4.h>
+#include <Rtrc/Core/Math/Vector2.h>
+#include <Rtrc/Core/Math/Vector3.h>
+#include <Rtrc/Core/Math/Vector4.h>
+#include <Rtrc/Core/TypeList.h>
 
 RTRC_BEGIN
 
@@ -43,7 +43,7 @@ namespace ConstantBufferDetail
             constexpr size_t elemSize = GetConstantBufferDWordCount<Element>();
             return Size * UpAlignTo4(elemSize);
         }
-        else if constexpr(RtrcReflStruct<T>)
+        else if constexpr(RtrcReflShaderStruct<T>)
         {
             return ReflectedConstantBufferStruct::GetDeviceDWordCount<T>();
         }
@@ -71,7 +71,7 @@ namespace ConstantBufferDetail
                 deviceDWordOffset += elemSize;
             }
         }
-        else if constexpr(RtrcReflStruct<T>)
+        else if constexpr(RtrcReflShaderStruct<T>)
         {
             ReflectedConstantBufferStruct::ToDeviceLayout<T>(
                 input, output, hostDWordOffset * 4, deviceDWordOffset * 4);

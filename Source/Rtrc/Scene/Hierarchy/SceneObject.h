@@ -2,9 +2,9 @@
 
 #include <set>
 
-#include <Rtrc/Math/AABB.h>
+#include <Rtrc/Core/Math/AABB.h>
 #include <Rtrc/Scene/Hierarchy/Transform.h>
-#include <Rtrc/Utility/Uncopyable.h>
+#include <Rtrc/Core/Uncopyable.h>
 
 RTRC_BEGIN
 

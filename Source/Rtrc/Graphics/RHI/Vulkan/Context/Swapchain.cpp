@@ -1,7 +1,7 @@
+#include <Rtrc/Core/ScopeGuard.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Context/Device.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Context/Swapchain.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Texture.h>
-#include <Rtrc/Utility/ScopeGuard.h>
 
 RTRC_RHI_VK_BEGIN
 

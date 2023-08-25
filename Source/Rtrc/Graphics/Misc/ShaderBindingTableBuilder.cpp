@@ -1,6 +1,6 @@
 #include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/Graphics/Misc/ShaderBindingTableBuilder.h>
-#include <Rtrc/Utility/Enumerate.h>
+#include <Rtrc/Core/Enumerate.h>
 
 RTRC_BEGIN
 

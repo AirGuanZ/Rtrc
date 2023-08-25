@@ -7,7 +7,7 @@
 #include <mimalloc.h>
 
 #include <Rtrc/Graphics/RHI/DirectX12/Common.h>
-#include <Rtrc/Utility/Unreachable.h>
+#include <Rtrc/Core/Unreachable.h>
 
 RTRC_RHI_D3D12_BEGIN
 

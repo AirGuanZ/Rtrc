@@ -1,5 +1,5 @@
 #include <Rtrc/Renderer/Scene/RenderMeshes.h>
-#include <Rtrc/Utility/Enumerate.h>
+#include <Rtrc/Core/Enumerate.h>
 
 RTRC_RENDERER_BEGIN
 

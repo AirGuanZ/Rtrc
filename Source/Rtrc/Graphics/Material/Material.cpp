@@ -3,8 +3,8 @@
 
 #include <Rtrc/Graphics/Material/Material.h>
 #include <Rtrc/Graphics/Material/MaterialInstance.h>
-#include <Rtrc/Utility/Enumerate.h>
-#include <Rtrc/Utility/Unreachable.h>
+#include <Rtrc/Core/Enumerate.h>
+#include <Rtrc/Core/Unreachable.h>
 
 RTRC_BEGIN
 

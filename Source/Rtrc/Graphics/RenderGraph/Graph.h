@@ -7,7 +7,7 @@
 #include <Rtrc/Graphics/Device/Queue.h>
 #include <Rtrc/Graphics/Device/Texture.h>
 #include <Rtrc/Graphics/RenderGraph/Label.h>
-#include <Rtrc/Utility/SmartPointer/ObserverPtr.h>
+#include <Rtrc/Core/SmartPointer/ObserverPtr.h>
 
 #define RTRC_RG_DEBUG RTRC_DEBUG
 
@@ -235,21 +235,21 @@ public:
 
     // Helper methods available when executing pass callback function:
 
-    BufferSrv GetStructuredSrv();
-    BufferSrv GetStructuredSrv(size_t structStride);
-    BufferSrv GetStructuredSrv(size_t byteOffset, size_t structStride);
+    BufferSrv GetStructuredSrv() const;
+    BufferSrv GetStructuredSrv(size_t structStride) const;
+    BufferSrv GetStructuredSrv(size_t byteOffset, size_t structStride) const;
 
-    BufferSrv GetTexelSrv();
-    BufferSrv GetTexelSrv(RHI::Format texelFormat);
-    BufferSrv GetTexelSrv(size_t byteOffset, RHI::Format texelFormat);
+    BufferSrv GetTexelSrv() const;
+    BufferSrv GetTexelSrv(RHI::Format texelFormat) const;
+    BufferSrv GetTexelSrv(size_t byteOffset, RHI::Format texelFormat) const;
 
-    BufferUav GetStructuredUav();
-    BufferUav GetStructuredUav(size_t structStride);
-    BufferUav GetStructuredUav(size_t byteOffset, size_t structStride);
+    BufferUav GetStructuredUav() const;
+    BufferUav GetStructuredUav(size_t structStride) const;
+    BufferUav GetStructuredUav(size_t byteOffset, size_t structStride) const;
 
-    BufferUav GetTexelUav();
-    BufferUav GetTexelUav(RHI::Format texelFormat);
-    BufferUav GetTexelUav(size_t byteOffset, RHI::Format texelFormat);
+    BufferUav GetTexelUav() const;
+    BufferUav GetTexelUav(RHI::Format texelFormat) const;
+    BufferUav GetTexelUav(size_t byteOffset, RHI::Format texelFormat) const;
 };
 
 class TlasResource
@@ -293,21 +293,21 @@ public:
     // Helper methods available when executing pass callback function:
 
     // non-array view for single-layer texture, array view for multi-layer texture
-    TextureSrv CreateSrv(RHI::TextureViewFlags flags = 0);
+    TextureSrv GetSrv(RHI::TextureViewFlags flags = 0) const;
     // non-array view
-    TextureSrv CreateSrv(uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, RHI::TextureViewFlags flags = 0);
+    TextureSrv GetSrv(uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, RHI::TextureViewFlags flags = 0) const;
     // array view
-    TextureSrv CreateSrv(
-        uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, uint32_t layerCount, RHI::TextureViewFlags flags = 0);
+    TextureSrv GetSrv(
+        uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, uint32_t layerCount, RHI::TextureViewFlags flags = 0) const;
     // non-array view for single-layer texture, array view for multi-layer texture
-    TextureUav CreateUav();
+    TextureUav GetUav() const;
     // non-array view
-    TextureUav CreateUav(uint32_t mipLevel, uint32_t arrayLayer);
+    TextureUav GetUav(uint32_t mipLevel, uint32_t arrayLayer) const;
     // array view
-    TextureUav CreateUav(uint32_t mipLevel, uint32_t arrayLayer, uint32_t layerCount);
-    TextureRtv CreateRtv(uint32_t mipLevel = 0, uint32_t arrayLayer = 0);
-    TextureDsv CreateDsv(RHI::TextureViewFlags flags);
-    TextureDsv CreateDsv(uint32_t mipLevel = 0, uint32_t arrayLayer = 0, RHI::TextureViewFlags flags = 0);
+    TextureUav GetUav(uint32_t mipLevel, uint32_t arrayLayer, uint32_t layerCount) const;
+    TextureRtv GetRtv(uint32_t mipLevel = 0, uint32_t arrayLayer = 0) const;
+    TextureDsv GetDsv(RHI::TextureViewFlags flags) const;
+    TextureDsv GetDsv(uint32_t mipLevel = 0, uint32_t arrayLayer = 0, RHI::TextureViewFlags flags = 0) const;
 };
 
 class PassContext : public Uncopyable
@@ -530,111 +530,111 @@ private:
     ::Rtrc::ObserverPtr(RENDERGRAPH)->PushPassGroup(NAME); \
     RTRC_SCOPE_EXIT{ ::Rtrc::ObserverPtr(RENDERGRAPH)->PopPassGroup(); };
 
-inline BufferSrv BufferResource::GetStructuredSrv()
+inline BufferSrv BufferResource::GetStructuredSrv() const
 {
     return Get()->GetStructuredSrv();
 }
 
-inline BufferSrv BufferResource::GetStructuredSrv(size_t structStride)
+inline BufferSrv BufferResource::GetStructuredSrv(size_t structStride) const
 {
     return Get()->GetStructuredSrv(structStride);
 }
 
-inline BufferSrv BufferResource::GetStructuredSrv(size_t byteOffset, size_t structStride)
+inline BufferSrv BufferResource::GetStructuredSrv(size_t byteOffset, size_t structStride) const
 {
     return Get()->GetStructuredSrv(byteOffset, structStride);
 }
 
-inline BufferSrv BufferResource::GetTexelSrv()
+inline BufferSrv BufferResource::GetTexelSrv() const
 {
     return Get()->GetTexelSrv();
 }
 
-inline BufferSrv BufferResource::GetTexelSrv(RHI::Format texelFormat)
+inline BufferSrv BufferResource::GetTexelSrv(RHI::Format texelFormat) const
 {
     return Get()->GetTexelSrv(texelFormat);
 }
 
-inline BufferSrv BufferResource::GetTexelSrv(size_t byteOffset, RHI::Format texelFormat)
+inline BufferSrv BufferResource::GetTexelSrv(size_t byteOffset, RHI::Format texelFormat) const
 {
     return Get()->GetTexelSrv(byteOffset, texelFormat);
 }
 
-inline BufferUav BufferResource::GetStructuredUav()
+inline BufferUav BufferResource::GetStructuredUav() const
 {
     return Get()->GetStructuredUav();
 }
 
-inline BufferUav BufferResource::GetStructuredUav(size_t structStride)
+inline BufferUav BufferResource::GetStructuredUav(size_t structStride) const
 {
     return Get()->GetStructuredUav(structStride);
 }
 
-inline BufferUav BufferResource::GetStructuredUav(size_t byteOffset, size_t structStride)
+inline BufferUav BufferResource::GetStructuredUav(size_t byteOffset, size_t structStride) const
 {
     return Get()->GetStructuredUav(byteOffset, structStride);
 }
 
-inline BufferUav BufferResource::GetTexelUav()
+inline BufferUav BufferResource::GetTexelUav() const
 {
     return Get()->GetTexelUav();
 }
 
-inline BufferUav BufferResource::GetTexelUav(RHI::Format texelFormat)
+inline BufferUav BufferResource::GetTexelUav(RHI::Format texelFormat) const
 {
     return Get()->GetTexelUav(texelFormat);
 }
 
-inline BufferUav BufferResource::GetTexelUav(size_t byteOffset, RHI::Format texelFormat)
+inline BufferUav BufferResource::GetTexelUav(size_t byteOffset, RHI::Format texelFormat) const
 {
     return Get()->GetTexelUav(byteOffset, texelFormat);
 }
 
-inline TextureSrv TextureResource::CreateSrv(RHI::TextureViewFlags flags)
+inline TextureSrv TextureResource::GetSrv(RHI::TextureViewFlags flags) const
 {
-    return Get()->CreateSrv(flags);
+    return Get()->GetSrv(flags);
 }
 
-inline TextureSrv TextureResource::CreateSrv(
-    uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, RHI::TextureViewFlags flags)
+inline TextureSrv TextureResource::GetSrv(
+    uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, RHI::TextureViewFlags flags) const
 {
-    return Get()->CreateSrv(mipLevel, levelCount, arrayLayer, flags);
+    return Get()->GetSrv(mipLevel, levelCount, arrayLayer, flags);
 }
 
-inline TextureSrv TextureResource::CreateSrv(
-    uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, uint32_t layerCount, RHI::TextureViewFlags flags)
+inline TextureSrv TextureResource::GetSrv(
+    uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, uint32_t layerCount, RHI::TextureViewFlags flags) const
 {
-    return Get()->CreateSrv(mipLevel, levelCount, arrayLayer, layerCount, flags);
+    return Get()->GetSrv(mipLevel, levelCount, arrayLayer, layerCount, flags);
 }
 
-inline TextureUav TextureResource::CreateUav()
+inline TextureUav TextureResource::GetUav() const
 {
-    return Get()->CreateUav();
+    return Get()->GetUav();
 }
 
-inline TextureUav TextureResource::CreateUav(uint32_t mipLevel, uint32_t arrayLayer)
+inline TextureUav TextureResource::GetUav(uint32_t mipLevel, uint32_t arrayLayer) const
 {
-    return Get()->CreateUav(mipLevel, arrayLayer);
+    return Get()->GetUav(mipLevel, arrayLayer);
 }
 
-inline TextureUav TextureResource::CreateUav(uint32_t mipLevel, uint32_t arrayLayer, uint32_t layerCount)
+inline TextureUav TextureResource::GetUav(uint32_t mipLevel, uint32_t arrayLayer, uint32_t layerCount) const
 {
-    return Get()->CreateUav(mipLevel, arrayLayer, layerCount);
+    return Get()->GetUav(mipLevel, arrayLayer, layerCount);
 }
 
-inline TextureDsv TextureResource::CreateDsv(RHI::TextureViewFlags flags)
+inline TextureDsv TextureResource::GetDsv(RHI::TextureViewFlags flags) const
 {
-    return Get()->CreateDsv(flags);
+    return Get()->GetDsv(flags);
 }
 
-inline TextureDsv TextureResource::CreateDsv(uint32_t mipLevel, uint32_t arrayLayer, RHI::TextureViewFlags flags)
+inline TextureDsv TextureResource::GetDsv(uint32_t mipLevel, uint32_t arrayLayer, RHI::TextureViewFlags flags) const
 {
-    return Get()->CreateDsv(mipLevel, arrayLayer, flags);
+    return Get()->GetDsv(mipLevel, arrayLayer, flags);
 }
 
-inline TextureRtv TextureResource::CreateRtv(uint32_t mipLevel, uint32_t arrayLayer)
+inline TextureRtv TextureResource::GetRtv(uint32_t mipLevel, uint32_t arrayLayer) const
 {
-    return Get()->CreateRtv(mipLevel, arrayLayer);
+    return Get()->GetRtv(mipLevel, arrayLayer);
 }
 
 RTRC_RG_END

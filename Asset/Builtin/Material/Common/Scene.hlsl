@@ -1,15 +1,14 @@
-#pragma once
+#ifndef RTRC_COMMON_SCENE_HLSL
+#define RTRC_COMMON_SCENE_HLSL
 
 #include "Rtrc/Generated/Reflection.hlsl"
 
 // See Rtrc/Renderer/Common.h
 
-using CameraConstantBuffer = Rtrc::Renderer::CameraConstantBuffer;
-
-using PointLightShadingData       = Rtrc::Renderer::PointLightShadingData;
-using DirectionalLightShadingData = Rtrc::Renderer::DirectionalLightShadingData;
-
-using PerObjectData = Rtrc::PerObjectData;
+typedef Rtrc::Renderer::CameraConstantBuffer        CameraConstantBuffer;
+typedef Rtrc::Renderer::PointLightShadingData       PointLightShadingData;
+typedef Rtrc::Renderer::DirectionalLightShadingData DirectionalLightShadingData;
+typedef Rtrc::PerObjectData                         PerObjectData;
 
 struct TlasInstance
 {
@@ -84,3 +83,5 @@ namespace CameraUtils
     }
 
 } // namespace namespace CameraUtils
+
+#endif // #ifndef RTRC_COMMON_SCENE_HLSL

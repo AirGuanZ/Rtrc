@@ -1,9 +1,9 @@
 #pragma once
 
-#include <Rtrc/Math/AABB.h>
-#include <Rtrc/Math/Matrix4x4.h>
+#include <Rtrc/Core/Math/AABB.h>
+#include <Rtrc/Core/Math/Matrix4x4.h>
 #include <Rtrc/Scene/Hierarchy/SceneObject.h>
-#include <Rtrc/Utility/Memory/Arena.h>
+#include <Rtrc/Core/Memory/Arena.h>
 
 RTRC_BEGIN
 

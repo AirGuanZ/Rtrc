@@ -3,7 +3,7 @@
 #include <ranges>
 
 #include <Rtrc/Graphics/Material/Material.h>
-#include <Rtrc/Utility/SignalSlot.h>
+#include <Rtrc/Core/SignalSlot.h>
 
 RTRC_BEGIN
 

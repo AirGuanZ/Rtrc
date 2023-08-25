@@ -3,7 +3,7 @@
 #include <Rtrc/Graphics/Material/MaterialInstance.h>
 #include <Rtrc/Graphics/Mesh/Mesh.h>
 #include <Rtrc/Scene/Renderer/RenderObject.h>
-#include <Rtrc/Utility/Memory/Arena.h>
+#include <Rtrc/Core/Memory/Arena.h>
 
 RTRC_BEGIN
 

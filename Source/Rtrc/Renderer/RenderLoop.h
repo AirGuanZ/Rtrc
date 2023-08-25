@@ -10,7 +10,7 @@
 #include <Rtrc/Renderer/GBuffer/GBufferPass.h>
 #include <Rtrc/Renderer/RenderCommand.h>
 #include <Rtrc/Renderer/Scene/RenderCamera.h>
-#include <Rtrc/Utility/Timer.h>
+#include <Rtrc/Core/Timer.h>
 
 RTRC_RENDERER_BEGIN
 

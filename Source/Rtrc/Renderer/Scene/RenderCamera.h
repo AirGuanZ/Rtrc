@@ -5,7 +5,7 @@
 #include <Rtrc/Renderer/Scene/RenderScene.h>
 #include <Rtrc/Renderer/Utility/TransientConstantBufferAllocator.h>
 #include <Rtrc/Renderer/Utility/UploadBufferPool.h>
-#include <Rtrc/Utility/Memory/Arena.h>
+#include <Rtrc/Core/Memory/Arena.h>
 
 RTRC_RENDERER_BEGIN
 

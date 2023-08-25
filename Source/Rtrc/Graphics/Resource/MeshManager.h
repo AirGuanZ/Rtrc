@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Rtrc/Graphics/Mesh/Mesh.h>
-#include <Rtrc/Utility/Container/ObjectCache.h>
+#include <Rtrc/Core/Container/ObjectCache.h>
 
 RTRC_BEGIN
 

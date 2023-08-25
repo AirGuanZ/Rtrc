@@ -2,6 +2,9 @@
 #include <array>
 #include <map>
 
+#include <Rtrc/Core/Enumerate.h>
+#include <Rtrc/Core/Container/StaticVector.h>
+#include <Rtrc/Core/Unreachable.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Context/Device.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Context/Surface.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Context/Swapchain.h>
@@ -25,9 +28,6 @@
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Sampler.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Texture.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/TextureView.h>
-#include <Rtrc/Utility/Enumerate.h>
-#include <Rtrc/Utility/Container/StaticVector.h>
-#include <Rtrc/Utility/Unreachable.h>
 
 #ifdef RTRC_STATIC_RHI
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/CommandPool.h>

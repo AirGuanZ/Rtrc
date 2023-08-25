@@ -70,7 +70,7 @@ void Run()
 
     auto materialInstance = material->CreateInstance();
     auto matPassInst = materialInstance->GetPassInstance(0);
-    materialInstance->Set("MainTexture", mainTex->CreateSrv(0, 0, 0, 0));
+    materialInstance->Set("MainTexture", mainTex->GetSrv(0, 0, 0, 0));
     materialInstance->Set("MainSampler", mainSampler);
     materialInstance->SetFloat("scale", 1);
     materialInstance->SetFloat("mipLevel", 0);
@@ -105,7 +105,7 @@ void Run()
             auto &commandBuffer = RG::GetCurrentCommandBuffer();
             commandBuffer.BeginRenderPass(ColorAttachment
             {
-                .renderTargetView = renderTarget->CreateRtv(),
+                .renderTargetView = renderTarget->GetRtv(),
                 .loadOp       = AttachmentLoadOp::Clear,
                 .storeOp      = AttachmentStoreOp::Store,
                 .clearValue   = ColorClearValue{ 0, 1, 1, 1 }

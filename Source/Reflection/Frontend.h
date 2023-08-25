@@ -4,9 +4,7 @@
 #include <string>
 #include <vector>
 
-#define DEBUG_OUTPUT 0
-
-enum class FieldType
+enum class FieldCategory
 {
     Float,
     Float2,
@@ -26,7 +24,7 @@ enum class FieldType
 
 struct Field
 {
-    FieldType          type = FieldType::Others;
+    FieldCategory      categoty = FieldCategory::Others;
     std::string        typeStr;
     std::string        name;
     std::optional<int> arraySize;

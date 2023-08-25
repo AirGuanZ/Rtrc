@@ -15,11 +15,11 @@ public:
     void NewBatch();
     void Flush();
     
-    template<RtrcReflStruct T>
+    template<RtrcReflShaderStruct T>
     RC<SubBuffer> CreateConstantBuffer(const T &data);
     RC<SubBuffer> CreateConstantBuffer(const void *data, size_t size) override;
     
-    template<RtrcReflStruct T>
+    template<RtrcReflShaderStruct T>
     RC<BindingGroup> CreateConstantBufferBindingGroup(const T &data);
     RC<BindingGroup> CreateConstantBufferBindingGroup(const void *data, size_t bytes);
 
@@ -34,13 +34,13 @@ private:
     LinearTransientConstantBufferAllocator linearConstantBufferAllocator_;
 };
 
-template<RtrcReflStruct T>
+template<RtrcReflShaderStruct T>
 RC<SubBuffer> TransientConstantBufferAllocator::CreateConstantBuffer(const T &data)
 {
     return ConstantBufferManagerInterface::CreateConstantBuffer(data);
 }
 
-template<RtrcReflStruct T>
+template<RtrcReflShaderStruct T>
 RC<BindingGroup> TransientConstantBufferAllocator::CreateConstantBufferBindingGroup(const T &data)
 {
     return Rtrc::FlattenConstantBufferStruct(data, [this](const void *flattenData, size_t size)

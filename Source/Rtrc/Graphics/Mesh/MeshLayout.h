@@ -3,8 +3,8 @@
 #include <map>
 
 #include <Rtrc/Graphics/RHI/RHI.h>
-#include <Rtrc/Utility/StringPool.h>
-#include <Rtrc/Utility/TemplateStringParameter.h>
+#include <Rtrc/Core/StringPool.h>
+#include <Rtrc/Core/TemplateStringParameter.h>
 
 RTRC_BEGIN
 

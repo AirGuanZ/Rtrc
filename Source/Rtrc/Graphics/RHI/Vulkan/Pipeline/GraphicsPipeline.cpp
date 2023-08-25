@@ -2,7 +2,7 @@
 
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/BindingLayout.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/GraphicsPipeline.h>
-#include <Rtrc/Utility/Enumerate.h>
+#include <Rtrc/Core/Enumerate.h>
 
 RTRC_RHI_VK_BEGIN
 

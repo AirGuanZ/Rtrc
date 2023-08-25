@@ -75,7 +75,7 @@ includes("External/llvm16")
 add_requires("myclang")
 
 if has_config("vulkan_backend") then
-    add_requires("vk-bootstrap v0.5", "vulkan-memory-allocator v3.0.0")
+    add_requires("vk-bootstrap v0.7", "vulkan-memory-allocator v3.0.0")
     add_requires("volk 1.3.231", { configs = { header_only = true } })
 end
 
@@ -175,20 +175,29 @@ rule("reflect_cpp")
     end)
 rule_end()
 
+target("Core")
+    set_kind("static")
+    add_includedirs("Source", { public = true })
+    add_headerfiles("Source/Rtrc/Core/**.h")
+    add_files("Source/Rtrc/Core/**.cpp")
+    add_filegroups("Core", { rootdir = "Source/Rtrc/Core" })
+    add_packages("mimalloc", "spdlog", "fmt", "mytbb", "abseil", "stb", "tinyexr", { public = true })
+    add_deps("tinyobjloader", "sigslot", "imgui", "avir", "cy")
+	add_includedirs("External/half/include", { public = true })
+target_end()
+
 target("Rtrc")
     set_kind("static")
     -- Source files
     add_includedirs("Source", { public = true })
-    add_headerfiles("Source/Rtrc/**.h|Graphics/RHI/**.h", "Source/Rtrc/Graphics/RHI/*.h")
+    add_headerfiles("Source/Rtrc/**.h|Graphics/RHI/**.h|Core/**.h", "Source/Rtrc/Graphics/RHI/*.h")
     add_headerfiles()
-    add_files("Source/Rtrc/**.cpp|Graphics/RHI/**.cpp", "Source/Rtrc/Graphics/RHI/*.cpp")
+    add_files("Source/Rtrc/**.cpp|Graphics/RHI/**.cpp|Core/**.cpp", "Source/Rtrc/Graphics/RHI/*.cpp")
     -- Source group
     add_filegroups("Rtrc", { rootdir = "Source/Rtrc" })
     -- Dependencies
-    add_packages("mimalloc", "spdlog", "fmt", "mytbb", "abseil", { public = true })
-    add_packages("mydxc", "glfw", "stb", "tinyexr", "spirv-reflect")
-    add_deps("tinyobjloader", "sigslot", "imgui", "avir", "cy")
-	add_includedirs("External/half/include", { public = true })
+    add_packages("mydxc", "glfw", "spirv-reflect")
+    add_deps("Core")
     -- Vulkan RHI
     add_options("vulkan_backend")
     if has_config("vulkan_backend") then

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Rtrc/Graphics/Device/CommandBuffer.h>
-#include <Rtrc/Utility/Macro/AnonymousName.h>
+#include <Rtrc/Core/Macro/AnonymousName.h>
 
 RTRC_BEGIN
 

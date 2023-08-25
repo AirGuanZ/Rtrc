@@ -5,9 +5,9 @@
 #include <Rtrc/Graphics/Shader/ShaderCompiler.h>
 #include <Rtrc/Graphics/Shader/ShaderTokenStream.h>
 #include <Rtrc/Graphics/Shader/SPIRVReflection.h>
-#include <Rtrc/Utility/Enumerate.h>
-#include <Rtrc/Utility/Filesystem/File.h>
-#include <Rtrc/Utility/String.h>
+#include <Rtrc/Core/Enumerate.h>
+#include <Rtrc/Core/Filesystem/File.h>
+#include <Rtrc/Core/String.h>
 
 RTRC_BEGIN
 

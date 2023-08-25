@@ -115,7 +115,7 @@ public:
     RC<DynamicBuffer> CreateDynamicBuffer();
 
     RC<SubBuffer> CreateConstantBuffer(const void *data, size_t bytes);
-    template<RtrcReflStruct T>
+    template<RtrcReflShaderStruct T>
     RC<SubBuffer> CreateConstantBuffer(const T &data);
     
     void UploadBuffer(
@@ -445,7 +445,7 @@ inline RC<SubBuffer> Device::CreateConstantBuffer(const void *data, size_t bytes
     return dynamicBufferManager_->CreateConstantBuffer(data, bytes);
 }
 
-template<RtrcReflStruct T>
+template<RtrcReflShaderStruct T>
 RC<SubBuffer> Device::CreateConstantBuffer(const T &data)
 {
     auto ret = this->CreateDynamicBuffer();

@@ -375,7 +375,7 @@ Pass *RenderGraph::CreateClearRWTexture2DPass(std::string name, TextureResource 
     pass->Use(tex2D, CS_RWTexture);
     pass->SetCallback([tex2D, value, this]
     {
-        device_->GetClearTextureUtils().ClearRWTexture2D(GetCurrentCommandBuffer(), tex2D->CreateUav(), value);
+        device_->GetClearTextureUtils().ClearRWTexture2D(GetCurrentCommandBuffer(), tex2D->GetUav(), value);
     });
     return pass;
 }
@@ -386,7 +386,7 @@ Pass *RenderGraph::CreateClearRWTexture2DPass(std::string name, TextureResource 
     pass->Use(tex2D, CS_RWTexture);
     pass->SetCallback([tex2D, value, this]
     {
-        device_->GetClearTextureUtils().ClearRWTexture2D(GetCurrentCommandBuffer(), tex2D->CreateUav(), value);
+        device_->GetClearTextureUtils().ClearRWTexture2D(GetCurrentCommandBuffer(), tex2D->GetUav(), value);
     });
     return pass;
 }
@@ -397,7 +397,7 @@ Pass *RenderGraph::CreateClearRWTexture2DPass(std::string name, TextureResource 
     pass->Use(tex2D, CS_RWTexture);
     pass->SetCallback([tex2D, value, this]
     {
-        device_->GetClearTextureUtils().ClearRWTexture2D(GetCurrentCommandBuffer(), tex2D->CreateUav(), value);
+        device_->GetClearTextureUtils().ClearRWTexture2D(GetCurrentCommandBuffer(), tex2D->GetUav(), value);
     });
     return pass;
 }
@@ -415,8 +415,8 @@ Pass *RenderGraph::CreateBlitTexture2DPass(
     {
         device_->GetCopyTextureUtils().RenderFullscreenTriangle(
             context.GetCommandBuffer(),
-            src->CreateSrv(srcMipLevel, 1, srcArrayLayer),
-            dst->CreateRtv(dstMipLevel, dstArrayLayer),
+            src->GetSrv(srcMipLevel, 1, srcArrayLayer),
+            dst->GetRtv(dstMipLevel, dstArrayLayer),
             usePointSampling ? CopyTextureUtils::Point : CopyTextureUtils::Linear, gamma);
     });
     return pass;

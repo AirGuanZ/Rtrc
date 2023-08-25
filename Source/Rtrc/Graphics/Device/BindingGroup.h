@@ -8,7 +8,7 @@
 #include <Rtrc/Graphics/Device/Buffer.h>
 #include <Rtrc/Graphics/Device/Sampler.h>
 #include <Rtrc/Graphics/Device/Texture.h>
-#include <Rtrc/Utility/Container/ObjectCache.h>
+#include <Rtrc/Core/Container/ObjectCache.h>
 
 RTRC_BEGIN
 
@@ -87,7 +87,7 @@ public:
         bool operator==(const Desc &) const = default;
     };
 
-    ~BindingGroupLayout();
+    ~BindingGroupLayout() override;
 
     const RHI::BindingGroupLayoutPtr &GetRHIObject() const;
 
@@ -113,7 +113,7 @@ public:
         auto operator<=>(const Desc &) const = default;
     };
 
-    ~BindingLayout();
+    ~BindingLayout() override;
 
     const RHI::BindingLayoutPtr &GetRHIObject() const;
 
@@ -241,10 +241,10 @@ void BindingGroup::Set(int slot, int arrElem, T &&object)
         switch(const RHI::BindingType type = layout_->GetRHIObject()->GetDesc().bindings[slot].type)
         {
         case RHI::BindingType::Texture:
-            this->Set(slot, arrElem, object->CreateSrv(0, 0, 0));
+            this->Set(slot, arrElem, object->GetSrv(0, 0, 0));
             break;
         case RHI::BindingType::RWTexture:
-            this->Set(slot, arrElem, object->CreateUav(0, 0));
+            this->Set(slot, arrElem, object->GetUav(0, 0));
             break;
         default:
             throw Exception(fmt::format(

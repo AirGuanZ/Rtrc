@@ -1,6 +1,6 @@
 #include <Rtrc/Graphics/RHI/RHI.h>
-#include <Rtrc/Utility/String.h>
-#include <Rtrc/Utility/Unreachable.h>
+#include <Rtrc/Core/String.h>
+#include <Rtrc/Core/Unreachable.h>
 
 RTRC_RHI_BEGIN
 
@@ -31,22 +31,68 @@ size_t GetTexelSize(Format format)
 {
     switch(format)
     {
-    case Format::Unknown:            return 0;
+    case Format::Unknown:
+        return 0;
+    case Format::R32G32B32A32_Float:
+        return 16;
+    case Format::R32G32_Float:
+        return 8;
     case Format::B8G8R8A8_UNorm:
-    case Format::R8G8B8A8_UNorm:     return 4;
-    case Format::R32_Float:          return 4;
-    case Format::R32G32_Float:       return 8;
-    case Format::R32G32B32A32_Float: return 16;
+    case Format::R8G8B8A8_UNorm:
+    case Format::R32_Float:
+    case Format::R32_UInt:
+    case Format::R16G16_Float:
+        return 4;
     case Format::A2R10G10B10_UNorm:
-    case Format::R16_UInt:           return 2;
-    case Format::R32_UInt:           return 4;
-    case Format::R8_UNorm:           return 1;
-    case Format::R16G16_Float:       return 4;
+    case Format::R16_UInt:
+        return 2;
+    case Format::R8_UNorm:
+        return 1;
     case Format::D24S8:
     case Format::D32:
         throw Exception(fmt::format("Texel size of {} is unknown", GetFormatName(format)));
     }
     throw Exception("Unknown format: " + std::to_string(static_cast<int>(format)));
+}
+
+bool CanBeAccessedAsFloatInShader(Format format)
+{
+    if(format == Format::R16_UInt || format == Format::R32_UInt)
+        return false;
+    return true;
+}
+
+bool CanBeAccessedAsIntInShader(Format format)
+{
+    return format == Format::R16_UInt || format == Format::R32_UInt;
+}
+
+bool CanBeAccessedAsUIntInShader(Format format)
+{
+    return format == Format::R16_UInt || format == Format::R32_UInt;
+}
+
+bool NeedUNormAsTypedUAV(Format format)
+{
+    return format == Format::B8G8R8A8_UNorm ||
+           format == Format::R8G8B8A8_UNorm ||
+           format == Format::A2R10G10B10_UNorm ||
+           format == Format::R8_UNorm;
+}
+
+bool NeedSNormAsTypedUAV(Format format)
+{
+    return false;
+}
+
+bool HasDepthAspect(Format format)
+{
+    return format == Format::D24S8 || format == Format::D32;
+}
+
+bool HasStencilAspect(Format format)
+{
+    return format == Format::D24S8;
 }
 
 std::string GetShaderStageFlagsName(ShaderStageFlags flags)

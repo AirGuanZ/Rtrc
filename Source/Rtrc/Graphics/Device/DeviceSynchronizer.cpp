@@ -1,5 +1,5 @@
 #include <Rtrc/Graphics/Device/DeviceSynchronizer.h>
-#include <Rtrc/Utility/Enumerate.h>
+#include <Rtrc/Core/Enumerate.h>
 
 RTRC_BEGIN
 

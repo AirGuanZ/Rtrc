@@ -1,4 +1,5 @@
-#pragma once
+#ifndef RTRC_COMMON_COLOR_HLSL
+#define RTRC_COMMON_COLOR_HLSL
 
 float3 Tonemap(float3 input)
 {
@@ -19,3 +20,5 @@ float3 Dither01(float3 input, float2 seed)
     input *= 1.0 / 255;
     return input;
 }
+
+#endif // #ifndef RTRC_COMMON_COLOR_HLSL

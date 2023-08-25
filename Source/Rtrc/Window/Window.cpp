@@ -10,7 +10,7 @@
 #ifdef RTRC_RHI_VULKAN
 #include <Rtrc/Graphics/RHI/Vulkan/Context/Surface.h>
 #endif
-#include <Rtrc/Utility/ScopeGuard.h>
+#include <Rtrc/Core/ScopeGuard.h>
 #include <Rtrc/Window/NativeWindow.h>
 #include <Rtrc/Window/Window.h>
 

@@ -4,7 +4,7 @@
 #include <ranges>
 #include <stack>
 
-#include <Rtrc/Utility/Memory/Arena.h>
+#include <Rtrc/Core/Memory/Arena.h>
 
 RTRC_RG_BEGIN
 

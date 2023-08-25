@@ -1,8 +1,8 @@
 #pragma once
 
-#include <VkBootstrap.h>
-
 #include <Rtrc/Graphics/RHI/Vulkan/Common.h>
+
+#include <VkBootstrap.h>
 
 RTRC_RHI_VK_BEGIN
 

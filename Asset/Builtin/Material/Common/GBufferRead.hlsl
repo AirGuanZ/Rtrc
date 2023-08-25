@@ -1,4 +1,5 @@
-#pragma once
+#ifndef RTRC_COMMON_GBUFFER_READ_HLSL
+#define RTRC_COMMON_GBUFFER_READ_HLSL
 
 #define GBUFFER_MODE_ALL          1
 #define GBUFFER_MODE_NORMAL_DEPTH 2
@@ -159,3 +160,5 @@ uint2 GetGBufferResolution()
 #endif
     return ret;
 }
+
+#endif // #ifndef RTRC_COMMON_GBUFFER_READ_HLSL

@@ -44,8 +44,8 @@ void PathTracer::Render(
 
         rtrc_define(Texture2D, SkyLut);
 
-        rtrc_define(RaytracingAccelerationStructure, Tlas);
-        rtrc_define(StructuredBuffer,                Instances);
+        rtrc_define(RaytracingAccelerationStructure, OpaqueScene_Tlas);
+        rtrc_define(StructuredBuffer,                OpaqueScene_Instances);
 
         rtrc_define(RWTexture2D, RngState);
 
@@ -69,14 +69,14 @@ void PathTracer::Render(
 
         TracePassGroup passData;
         FillBindingGroupGBuffers(passData, gbuffers);
-        passData.Camera           = camera.GetCameraCBuffer();
-        passData.SkyLut           = camera.GetAtmosphereData().S;
-        passData.Tlas             = scene.GetRGTlas();
-        passData.Instances        = scene.GetRGInstanceBuffer()->GetStructuredSrv(sizeof(RenderScene::TlasInstance));
-        passData.RngState         = rngState;
-        passData.Output           = traceResult;
-        passData.outputResolution = framebufferSize;
-        passData.maxDepth         = 5;
+        passData.Camera                = camera.GetCameraCBuffer();
+        passData.SkyLut                = camera.GetAtmosphereData().S;
+        passData.OpaqueScene_Tlas      = scene.GetRGTlas();
+        passData.OpaqueScene_Instances = scene.GetRGInstanceBuffer()->GetStructuredSrv(sizeof(RenderScene::TlasInstance));
+        passData.RngState              = rngState;
+        passData.Output                = traceResult;
+        passData.outputResolution      = framebufferSize;
+        passData.maxDepth              = 5;
         auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
         auto geometryBufferGroup = scene.GetRenderMeshes().GetGlobalGeometryBuffersBindingGroup();
         auto textureGroup = scene.GetGlobalTextureBindingGroup();

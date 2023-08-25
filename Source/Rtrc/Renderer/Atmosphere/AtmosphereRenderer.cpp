@@ -1,6 +1,6 @@
 #include <Rtrc/Application/Application.h>
 #include <Rtrc/Renderer/Atmosphere/AtmosphereRenderer.h>
-#include <Rtrc/Math/LowDiscrepancy.h>
+#include <Rtrc/Core/Math/LowDiscrepancy.h>
 
 RTRC_RENDERER_BEGIN
 
