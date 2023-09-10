@@ -23,18 +23,18 @@ void StandaloneApplication::Initialize(const Rtrc::ApplicationInitializeContext 
         matInst->Set("albedoTextureIndex", grayHandle);
 
         {
-            auto object = context.activeScene->CreateStaticMeshRenderer();
+            auto object = context.activeScene->CreateMeshRenderer();
             object->SetMesh(cubeMesh);
             object->SetMaterial(matInst);
-            object->SetRayTracingFlags(Rtrc::StaticMeshRenderObject::RayTracingFlags::InOpaqueTlas);
+            object->SetFlags(Rtrc::MeshRenderer::Flags::OpaqueTlas);
             objects_.push_back(std::move(object));
         }
 
         {
-            auto object = context.activeScene->CreateStaticMeshRenderer();
+            auto object = context.activeScene->CreateMeshRenderer();
             object->SetMesh(cubeMesh);
             object->SetMaterial(matInst);
-            object->SetRayTracingFlags(Rtrc::StaticMeshRenderObject::RayTracingFlags::InOpaqueTlas);
+            object->SetFlags(Rtrc::MeshRenderer::Flags::OpaqueTlas);
             object->GetMutableTransform().SetTranslation({ 0, 1.3f, 0 }).SetScale({ 0.3f, 0.3f, 0.3f });
             objects_.push_back(std::move(object));
         }
@@ -48,7 +48,7 @@ void StandaloneApplication::Initialize(const Rtrc::ApplicationInitializeContext 
         pointLight_->SetIntensity(1);
         pointLight_->SetDistanceFadeBegin(1.0f);
         pointLight_->SetDistanceFadeEnd(5.0f);
-        pointLight_->SetFlags(Rtrc::Light::Flags::EnableRayTracedShadow);
+        pointLight_->SetFlags(Rtrc::Light::Flags::RayTracedShadow);
     }
 }
 
@@ -106,5 +106,5 @@ void StandaloneApplication::Update(const Rtrc::ApplicationUpdateContext &context
     imgui.End();
 
     const Rtrc::Vector3f sunDirection = -Rtrc::Vector3f(std::cos(sunAngle_), std::sin(sunAngle_), 0);
-    context.activeScene->SetAtmosphereSunDirection(sunDirection);
+    context.activeScene->GetSky().SetSunDirection(sunDirection);
 }

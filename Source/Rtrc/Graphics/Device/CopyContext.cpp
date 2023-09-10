@@ -1,5 +1,5 @@
 #include <Rtrc/Graphics/Device/CopyContext.h>
-#include <Rtrc/Core/Resource/Image.h>
+#include <Core/Resource/Image.h>
 
 RTRC_BEGIN
 

@@ -7,16 +7,14 @@ int main()
     {
         StandaloneApplication().Run(Rtrc::Application::Config
         {
-            .title                      = "Rtrc Standalone Renderer",
-            .width                      = 640,
-            .height                     = 480,
-            .maximized                  = true,
-            .vsync                      = true,
-            .debug                      = RTRC_DEBUG,
-            .rayTracing                 = true,
-            .renderThread               = true,
-            .handleCrossThreadException = true,
-            .backendType                = Rtrc::RHI::BackendType::Vulkan
+            .title       = "Rtrc Standalone Renderer",
+            .width       = 640,
+            .height      = 480,
+            .maximized   = true,
+            .vsync       = true,
+            .debug       = RTRC_DEBUG,
+            .rayTracing  = true,
+            .backendType = Rtrc::RHI::BackendType::Default
         });
     }
     catch(const Rtrc::Exception &e)

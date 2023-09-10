@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Rtrc/Graphics/Device/CommandBuffer.h>
-#include <Rtrc/Core/SmartPointer/ObserverPtr.h>
+#include <Core/SmartPointer/ObserverPtr.h>
 
 RTRC_BEGIN
 

@@ -4,13 +4,14 @@
 #include <optional>
 #include <vector>
 
-#include <Rtrc/Core/Math/Vector4.h>
-#include <Rtrc/Core/Container/Span.h>
-#include <Rtrc/Core/EnumFlags.h>
-#include <Rtrc/Core/Hash.h>
-#include <Rtrc/Core/SmartPointer/ReferenceCounted.h>
-#include <Rtrc/Core/Uncopyable.h>
-#include <Rtrc/Core/Variant.h>
+#include <Core/Math/Vector4.h>
+#include <Core/Container/Span.h>
+#include <Core/EnumFlags.h>
+#include <Core/Hash.h>
+#include <Core/SmartPointer/ReferenceCounted.h>
+#include <Core/StringPool.h>
+#include <Core/Uncopyable.h>
+#include <Core/Variant.h>
 #include <Rtrc/Window/Window.h>
 
 RTRC_RHI_BEGIN
@@ -528,6 +529,46 @@ inline BufferDeviceAddress operator+(std::ptrdiff_t lhs, const BufferDeviceAddre
 }
 
 // =============================== rhi descriptions ===============================
+
+class VertexSemantic
+{
+
+    static constexpr uint32_t INVALID_KEY = (std::numeric_limits<uint32_t>::max)();
+
+    uint32_t key_;
+
+public:
+
+    struct VertexSemanticTag { };
+    using PooledSemanticName = PooledString<VertexSemanticTag, uint32_t>;
+
+    static VertexSemantic FromPooledName(PooledSemanticName pooledSemanticName, uint32_t semanticIndex)
+    {
+        VertexSemantic ret;
+        ret.key_ = pooledSemanticName.GetIndex() | (semanticIndex << 24);
+        return ret;
+    }
+
+    VertexSemantic() : key_(INVALID_KEY) { }
+    VertexSemantic(std::string_view semanticName, uint32_t semanticIndex)
+    {
+        const auto pooledString = PooledSemanticName(semanticName);
+        assert(pooledString.GetIndex() < 0xffffff);
+        assert(semanticIndex < 0xff);
+        key_ = (semanticIndex << 24) | pooledString.GetIndex();
+    }
+
+    bool IsValid() const { return key_ != INVALID_KEY; }
+    const std::string &GetName() const { return PooledSemanticName::FromIndex(key_ & 0xffffff).GetString(); }
+    uint32_t GetIndex() const { return key_ >> 24; }
+    std::string ToString() const { return fmt::format("{}{}", GetName(), GetIndex()); }
+
+    auto operator<=>(const VertexSemantic &) const = default;
+};
+
+#define RTRC_VERTEX_SEMANTIC(X, INDEX)            \
+    (::Rtrc::RHI::VertexSemantic::FromPooledName( \
+        RTRC_POOLED_STRING(::Rtrc::RHI::VertexSemantic::PooledSemanticName, X), INDEX))
 
 struct IndirectDrawIndexedArgument
 {

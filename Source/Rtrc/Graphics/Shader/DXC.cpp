@@ -16,7 +16,7 @@
 #include <wrl/client.h>
 
 #include <Rtrc/Graphics/Shader/DXC.h>
-#include <Rtrc/Core/ScopeGuard.h>
+#include <Core/ScopeGuard.h>
 
 RTRC_BEGIN
 

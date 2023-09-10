@@ -2,9 +2,9 @@
 #include <array>
 #include <map>
 
-#include <Rtrc/Core/Enumerate.h>
-#include <Rtrc/Core/Container/StaticVector.h>
-#include <Rtrc/Core/Unreachable.h>
+#include <Core/Enumerate.h>
+#include <Core/Container/StaticVector.h>
+#include <Core/Unreachable.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Context/Device.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Context/Surface.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Context/Swapchain.h>

@@ -13,6 +13,7 @@ public:
     
     void SetBuffer(RC<SubBuffer> buffer);
     const RC<SubBuffer> &GetBuffer() const;
+    RHI::BufferDeviceAddress GetDeviceAddress() const;
 
 private:
 

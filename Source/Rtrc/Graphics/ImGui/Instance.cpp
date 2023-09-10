@@ -1,7 +1,7 @@
+#include <Core/Timer.h>
 #include <Rtrc/Graphics/ImGui/Instance.h>
-#include <Rtrc/Graphics/Mesh/MeshLayout.h>
 #include <Rtrc/Graphics/Shader/ShaderCompiler.h>
-#include <Rtrc/Core/Timer.h>
+#include <Rtrc/Resource/Mesh/MeshLayout.h>
 
 RTRC_BEGIN
 
@@ -156,7 +156,7 @@ float4 FSMain(VsToFs input) : SV_TARGET
 }
 )___";
     
-    rtrc_refl_struct(CBuffer, shader)
+    rtrc_struct(CBuffer)
     {
         float4x4 Matrix;
     };

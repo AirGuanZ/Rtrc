@@ -6,8 +6,8 @@
 #include <Rtrc/Graphics/Device/Buffer/DynamicBuffer.h>
 #include <Rtrc/Graphics/Device/RGResourceForward.h>
 #include <Rtrc/Graphics/Device/Texture/Texture.h>
-#include <Rtrc/Core/Macro/MacroOverloading.h>
-#include <Rtrc/Core/Struct.h>
+#include <Core/Macro/MacroOverloading.h>
+#include <Core/Struct.h>
 
 RTRC_BEGIN
 
@@ -313,7 +313,7 @@ namespace BindingGroupDSL
                 size_t memSize;
                 if constexpr(RtrcReflShaderStruct<M>)
                 {
-                    memSize = ReflectedConstantBufferStruct::GetDeviceDWordCount<M>();
+                    memSize = ReflectedStruct::GetDeviceDWordCount<M>();
                 }
                 else
                 {

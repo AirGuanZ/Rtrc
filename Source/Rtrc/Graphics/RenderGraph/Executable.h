@@ -2,7 +2,7 @@
 
 #include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/Graphics/RenderGraph/Graph.h>
-#include <Rtrc/Core/SmartPointer/ObserverPtr.h>
+#include <Core/SmartPointer/ObserverPtr.h>
 
 RTRC_RG_BEGIN
 

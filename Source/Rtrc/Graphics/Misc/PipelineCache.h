@@ -2,11 +2,11 @@
 
 #include <shared_mutex>
 
-#include <absl/container/flat_hash_map.h>
 #include <tbb/spin_mutex.h>
+#include <ankerl/unordered_dense.h>
 
 #include <Rtrc/Graphics/Device/Pipeline.h>
-#include <Rtrc/Core/SmartPointer/ObserverPtr.h>
+#include <Core/SmartPointer/ObserverPtr.h>
 
 RTRC_BEGIN
 
@@ -38,10 +38,10 @@ private:
     
     ObserverPtr<Device> device_;
 
-    absl::flat_hash_map<GraphicsPipeline::Desc, Record, HashOperator<>> staticCache_;
+    ankerl::unordered_dense::map<GraphicsPipeline::Desc, Record, HashOperator<>> staticCache_;
 
-    std::shared_mutex                                                   dynamicCacheMutex_;
-    absl::flat_hash_map<GraphicsPipeline::Desc, Record, HashOperator<>> dynamicCache_;
+    std::shared_mutex dynamicCacheMutex_;
+    ankerl::unordered_dense::map<GraphicsPipeline::Desc, Record, HashOperator<>> dynamicCache_;
 
     RC<SharedData> sharedData_;
 };

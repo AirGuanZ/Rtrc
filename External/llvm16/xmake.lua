@@ -1,6 +1,0 @@
-package("myclang")
-    set_sourcedir(os.scriptdir())
-    on_install("windows", function (package)
-        os.cp(is_mode("debug") and "install_debug/include/*" or "install_release/include/*", package:installdir("include"))
-        os.cp(is_mode("debug") and "install_debug/lib/*" or "install_release/lib/*", package:installdir("lib"))
-    end)

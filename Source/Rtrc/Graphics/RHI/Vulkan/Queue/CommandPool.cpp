@@ -1,4 +1,4 @@
-#include <Rtrc/Core/ScopeGuard.h>
+#include <Core/ScopeGuard.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Context/Device.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Queue/CommandPool.h>
 

@@ -14,7 +14,7 @@
 
 rtrc_group(Pass)
 {
-    rtrc_define(ConstantBuffer<CameraConstantBuffer>, Camera)
+    rtrc_define(ConstantBuffer<CameraData>, Camera)
     rtrc_define(StructuredBuffer<PerObjectData>, PerObjectDataBuffer)
 };
 

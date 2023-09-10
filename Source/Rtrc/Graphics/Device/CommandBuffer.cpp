@@ -1,12 +1,12 @@
 #include <ranges>
 #include <shared_mutex>
 
-#include <Rtrc/Graphics/Mesh/Mesh.h>
 #include <Rtrc/Graphics/Device/Buffer/Buffer.h>
 #include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/Graphics/Device/Texture.h>
 #include <Rtrc/Graphics/Device/CommandBuffer.h>
-#include <Rtrc/Core/Enumerate.h>
+#include <Rtrc/Resource/Mesh/Mesh.h>
+#include <Core/Enumerate.h>
 
 RTRC_BEGIN
 
@@ -586,7 +586,7 @@ void CommandBuffer::SetIndexBuffer(const RC<SubBuffer> &buffer, RHI::IndexFormat
 void CommandBuffer::BindMesh(const Mesh &mesh)
 {
     CheckThreadID();
-    mesh.GetRenderingData()->BindVertexAndIndexBuffers(*this);
+    mesh.Bind(*this);
 }
 
 void CommandBuffer::SetStencilReferenceValue(uint8_t value)

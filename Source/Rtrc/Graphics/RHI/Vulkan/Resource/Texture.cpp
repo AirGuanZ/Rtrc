@@ -1,8 +1,8 @@
 #include <ranges>
 #include <shared_mutex>
 
-#include <Rtrc/Core/ScopeGuard.h>
-#include <Rtrc/Core/Unreachable.h>
+#include <Core/ScopeGuard.h>
+#include <Core/Unreachable.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Context/Device.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Texture.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/TextureView.h>

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/Core/Common.h>
+#include <Core/Common.h>
 
 RTRC_BEGIN
 

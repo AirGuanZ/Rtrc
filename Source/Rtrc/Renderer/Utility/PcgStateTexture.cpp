@@ -1,10 +1,9 @@
-#include <Rtrc/Graphics/Resource/MaterialManager.h>
 #include <Rtrc/Renderer/Utility/PcgStateTexture.h>
-
-#include "Rtrc/Graphics/Resource/ResourceManager.h"
+#include <Rtrc/Resource/ResourceManager.h>
 
 RTRC_RENDERER_BEGIN
-    RG::TextureResource *Prepare2DPcgStateTexture(
+
+RG::TextureResource *Prepare2DPcgStateTexture(
     RG::RenderGraph             &renderGraph,
     ObserverPtr<ResourceManager> materials,
     RC<StatefulTexture>         &tex,
@@ -22,7 +21,6 @@ RTRC_RENDERER_BEGIN
     }
 
     auto device = renderGraph.GetDevice();
-    
     tex = device->CreatePooledTexture(RHI::TextureDesc
     {
         .dim    = RHI::TextureDimension::Tex2D,

@@ -1,7 +1,8 @@
 #pragma once
 
 #include <Rtrc/Graphics/Misc/PipelineCache.h>
-#include <Rtrc/Renderer/Scene/RenderScene.h>
+#include <Rtrc/Renderer/GPUScene/RenderCamera.h>
+#include <Rtrc/Renderer/GPUScene/RenderScene.h>
 
 RTRC_RENDERER_BEGIN
 
@@ -21,15 +22,15 @@ private:
 
     struct MeshGroup
     {
-        const Mesh::SharedRenderingData *meshRenderingData = nullptr;
-        uint32_t                         objectDataOffset  = 0;
-        uint32_t                         objectCount       = 0;
+        const MeshRenderingCache *meshCache        = nullptr;
+        uint32_t                  objectDataOffset = 0;
+        uint32_t                  objectCount      = 0;
     };
 
     struct MaterialInstanceGroup
     {
-        const MaterialInstance::SharedRenderingData *materialRenderingData = nullptr;
-        std::vector<MeshGroup>                       meshGroups;
+        const MaterialRenderingCache *materialCache = nullptr;
+        std::vector<MeshGroup>        meshGroups;
     };
 
     struct MaterialGroup

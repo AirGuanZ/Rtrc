@@ -4,6 +4,10 @@
 #pragma warning(push)
 #pragma warning(disable: 4624)
 #pragma warning(disable: 4291)
+#pragma warning(disable: 4146)
+#pragma warning(disable: 4267)
+#pragma warning(disable: 4244)
+#pragma warning(disable: 4996)
 #endif
 #include <clang/ASTMatchers/ASTMatchFinder.h>
 #include <clang/Frontend/FrontendAction.h>
@@ -132,26 +136,26 @@ namespace FrontendDetail
                 }
                 outField.typeStr += templateArgStr;
                 
-                static const std::map<std::string, FieldCategory> STR_TO_TYPE =
+                static const std::map<std::string, FieldKind> STR_TO_TYPE =
                 {
-                    { "float",                       FieldCategory::Float    },
-                    { "Rtrc::Vector2<float>",        FieldCategory::Float2   },
-                    { "Rtrc::Vector3<float>",        FieldCategory::Float3   },
-                    { "Rtrc::Vector4<float>",        FieldCategory::Float4   },
-                    { "int",                         FieldCategory::Int      },
-                    { "Rtrc::Vector2<int>",          FieldCategory::Int2     },
-                    { "Rtrc::Vector3<int>",          FieldCategory::Int3     },
-                    { "Rtrc::Vector4<int>",          FieldCategory::Int4     },
-                    { "unsigned int",                FieldCategory::UInt     },
-                    { "Rtrc::Vector2<unsigned int>", FieldCategory::UInt2    },
-                    { "Rtrc::Vector3<unsigned int>", FieldCategory::UInt3    },
-                    { "Rtrc::Vector4<unsigned int>", FieldCategory::UInt4    },
-                    { "Rtrc::Matrix4x4f",            FieldCategory::Float4x4 },
+                    { "float",                       FieldKind::Float    },
+                    { "Rtrc::Vector2<float>",        FieldKind::Float2   },
+                    { "Rtrc::Vector3<float>",        FieldKind::Float3   },
+                    { "Rtrc::Vector4<float>",        FieldKind::Float4   },
+                    { "int",                         FieldKind::Int      },
+                    { "Rtrc::Vector2<int>",          FieldKind::Int2     },
+                    { "Rtrc::Vector3<int>",          FieldKind::Int3     },
+                    { "Rtrc::Vector4<int>",          FieldKind::Int4     },
+                    { "unsigned int",                FieldKind::UInt     },
+                    { "Rtrc::Vector2<unsigned int>", FieldKind::UInt2    },
+                    { "Rtrc::Vector3<unsigned int>", FieldKind::UInt3    },
+                    { "Rtrc::Vector4<unsigned int>", FieldKind::UInt4    },
+                    { "Rtrc::Matrix4x4f",            FieldKind::Float4x4 },
                 };
                 if(auto it = STR_TO_TYPE.find(outField.typeStr); it != STR_TO_TYPE.end())
-                    outField.categoty = it->second;
+                    outField.kind = it->second;
                 else
-                    outField.categoty = FieldCategory::Others;
+                    outField.kind = FieldKind::Others;
 
                 outField.name = field->getNameAsString();
             }
@@ -303,6 +307,7 @@ std::vector<Struct> ParseStructs(const SourceInfo &sourceInfo)
     std::vector<std::string> commandLine;
     commandLine.push_back("-ferror-limit=0");
     commandLine.push_back("-DRTRC_REFLECTION_TOOL=1");
+    //commandLine.push_back("-std=c++23");
     for(auto &dir : sourceInfo.includeDirs)
     {
         commandLine.push_back("-I");

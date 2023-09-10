@@ -1,7 +1,7 @@
 #include <Rtrc/Graphics/Device/BindingGroup.h>
 #include <Rtrc/Graphics/Device/Pipeline.h>
-#include <Rtrc/Graphics/Mesh/MeshLayout.h>
 #include <Rtrc/Graphics/Shader/Shader.h>
+#include <Rtrc/Resource/Mesh/MeshLayout.h>
 
 RTRC_BEGIN
 

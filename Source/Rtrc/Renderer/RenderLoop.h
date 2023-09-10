@@ -1,71 +1,42 @@
 #pragma once
 
-#include <list>
-#include <semaphore>
-#include <thread>
-
 #include <Rtrc/Graphics/ImGui/Instance.h>
 #include <Rtrc/Graphics/RenderGraph/Executable.h>
-#include <Rtrc/Renderer/DeferredLighting/DeferredLightingPass.h>
+#include <Rtrc/Renderer/Debug/GBufferVisualizer.h>
 #include <Rtrc/Renderer/GBuffer/GBufferPass.h>
 #include <Rtrc/Renderer/RenderCommand.h>
-#include <Rtrc/Renderer/Scene/RenderCamera.h>
-#include <Rtrc/Core/Timer.h>
+#include <Rtrc/Renderer/GPUScene/RenderCamera.h>
+#include <Core/Timer.h>
 
 RTRC_RENDERER_BEGIN
 
 class RenderLoop : public Uncopyable
 {
 public:
-
-    enum class Mode
-    {
-        Immediate,
-        Threaded
-    };
-
-    struct Config
-    {
-        bool rayTracing                 = false;
-        bool handleCrossThreadException = true;
-        Mode mode                       = Mode::Threaded;
-    };
     
-    RenderLoop(
-        const Config                       &config,
-        ObserverPtr<Device>                 device,
-        ObserverPtr<ResourceManager>        resources,
-        ObserverPtr<BindlessTextureManager> bindlessTextures);
-    ~RenderLoop();
+    struct FrameInput
+    {
+        const Scene         *scene;
+        const Camera        *camera;
+        const ImGuiDrawData *imguiDrawData;
+    };
 
-    void AddCommand(RenderCommand command);
+    RenderLoop(ObserverPtr<ResourceManager> resources, ObserverPtr<BindlessTextureManager> bindlessTextures);
+    
+    void BeginRenderLoop();
+    void EndRenderLoop();
 
-    bool HasException() const { return hasException_; }
+    void SetRenderSettings(const RenderSettings &settings);
 
-    const std::exception_ptr &GetExceptionPointer() const { return exceptionPtr_; }
+    void ResizeFramebuffer(uint32_t width, uint32_t height);
+
+    void RenderFrame(const FrameInput &frame);
 
 private:
 
-    static constexpr int MAX_BLAS_BINDLESS_BUFFER_COUNT = 4096;
-
-    struct MaterialDataPerInstanceInOpaqueTlas
-    {
-        uint32_t albedoTextureIndex = 0;
-    };
+    void RenderFrameImpl(const FrameInput &frame);
     
-    static const BindlessTextureEntry *ExtractAlbedoTextureEntry(const MaterialInstance::SharedRenderingData *material);
-    
-    void RenderThreadEntry();
-
-    void RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame &frame);
-
-    template<bool HandleExcpetionExplicitly>
-    void HandleRenderCommand(const RenderCommand &command);
-
-    Config config_;
-
-    std::atomic<bool>  hasException_;
-    std::exception_ptr exceptionPtr_;
+    RenderSettings renderSettings_;
 
     ObserverPtr<Device>                 device_;
     ObserverPtr<ResourceManager>        resources_;
@@ -76,29 +47,18 @@ private:
 
     Box<ImGuiRenderer>                    imguiRenderer_;
     Box<RG::Executer>                     renderGraphExecuter_;
-    Box<TransientConstantBufferAllocator> transientConstantBufferAllocator_;
+    Box<TransientConstantBufferAllocator> transientCBufferAllocator_;
 
-    std::jthread                         renderThread_;
-    tbb::concurrent_queue<RenderCommand> renderCommandQueue_;
+    Box<MeshRenderingCacheManager>     cachedMeshes_;
+    Box<MaterialRenderingCacheManager> cachedMaterials_;
+    Box<RenderSceneManager>            renderScenes_;
+    Box<RenderCameraManager>           renderCameras_;
 
-    RenderMeshes    renderMeshes_;
-    RenderMaterials renderMaterials_;
-    
-    RenderScene renderScene_;
-    
-    Box<GBufferPass>          gbufferPass_;
-    Box<DeferredLightingPass> deferredLightingPass_;
-    Box<ShadowMaskPass>       shadowMaskPass_;
-    Box<PathTracer>           pathTracer_;
+    Box<GBufferPass>       gbufferPass_;
+    Box<PathTracer>        pathTracer_;
+    Box<GBufferVisualizer> gbufferVisualizer_;
 
-    bool isSwapchainInvalid_ = false;
-    bool continueRenderLoop_ = true;
+    bool isSwapchainInvalid_;
 };
 
 RTRC_RENDERER_END
-
-RTRC_BEGIN
-
-using Renderer::RenderLoop;
-
-RTRC_END

@@ -1,6 +1,5 @@
 #include <Rtrc/Application/Application.h>
 #include <Rtrc/Graphics/RenderGraph/Executable.h>
-#include <Rtrc/Core/Thread.h>
 
 RTRC_BEGIN
 
@@ -31,9 +30,6 @@ Application::~Application()
 
 void Application::Run(const Config &config)
 {
-    SetThreadMode(ThreadUtility::ThreadMode::Standard);
-    SetThreadIndentifier(ThreadUtility::ThreadIdentifier::Main);
-
     window_ = WindowBuilder()
         .SetTitle(config.title)
         .SetSize(config.width, config.height)
@@ -75,15 +71,13 @@ void Application::Run(const Config &config)
     };
     Initialize(initContext);
 
-    RenderLoop::Config renderLoopConfig;
-    renderLoopConfig.rayTracing = config.rayTracing;
-    renderLoopConfig.handleCrossThreadException = config.handleCrossThreadException;
-    renderLoopConfig.mode = config.renderThread ? RenderLoop::Mode::Threaded : RenderLoop::Mode::Immediate;
-    renderLoop_ = MakeBox<RenderLoop>(renderLoopConfig, device_, resourceManager_, bindlessTextureManager_);
+    activeRenderSettings_.enableRayTracing = config.rayTracing;
+    renderLoop_ = MakeBox<Renderer::RenderLoop>(resourceManager_, bindlessTextureManager_);
+    renderLoop_->BeginRenderLoop();
 
     RTRC_SCOPE_EXIT
     {
-        renderLoop_->AddCommand(Renderer::RenderCommand_Exit{});
+        renderLoop_->EndRenderLoop();
         renderLoop_.reset();
     };
     UpdateLoop();
@@ -146,24 +140,7 @@ WindowInput &Application::GetWindowInput()
 
 void Application::UpdateLoop()
 {
-    std::binary_semaphore finishRenderSemaphore(1);
-    bool shouldWaitForFinishRenderSemaphore = true;
-    auto BeforeAddNextCommand = [&]
-    {
-        if(shouldWaitForFinishRenderSemaphore)
-        {
-            finishRenderSemaphore.acquire();
-            shouldWaitForFinishRenderSemaphore = false;
-        }
-        if(renderLoop_->HasException())
-        {
-            std::rethrow_exception(renderLoop_->GetExceptionPointer());
-        }
-    };
-
-    std::binary_semaphore framebufferResizeSemaphore(0);
     Vector2i framebufferSize = window_.GetFramebufferSize();
-
     Timer timer;
     while(!window_.ShouldClose())
     {
@@ -174,14 +151,7 @@ void Application::UpdateLoop()
         if(framebufferSize != window_.GetFramebufferSize() || framebufferSize.x == 0 || framebufferSize.y == 0)
         {
             framebufferSize = window_.GetFramebufferSize();
-            BeforeAddNextCommand();
-            renderLoop_->AddCommand(Renderer::RenderCommand_ResizeFramebuffer
-            {
-                .width           = static_cast<uint32_t>(framebufferSize.x),
-                .height          = static_cast<uint32_t>(framebufferSize.y),
-                .finishSemaphore = &framebufferResizeSemaphore
-            });
-            framebufferResizeSemaphore.acquire();
+            renderLoop_->ResizeFramebuffer(framebufferSize.x, framebufferSize.y);
         }
 
         // ImGui
@@ -202,23 +172,17 @@ void Application::UpdateLoop()
 
         // Send render command
 
-        activeScene_->PrepareRendering();
-        auto activeSceneProxy = activeScene_->CreateSceneProxy();
+        renderLoop_->SetRenderSettings(activeRenderSettings_);
 
-        Renderer::RenderCommand_RenderStandaloneFrame frame;
-        frame.renderSettings       = activeRenderSettings_;
-        frame.scene                = std::move(activeSceneProxy);
-        frame.camera               = activeCamera_.GetRenderCamera();
-        frame.imguiDrawData        = imgui_->Render();
-        frame.bindlessTextureGroup = bindlessTextureManager_->GetBindingGroup();
-        frame.finishSemaphore      = &finishRenderSemaphore;
+        auto imguiDrawData = imgui_->Render();
+        activeScene_->PrepareRender();
 
-        BeforeAddNextCommand();
-        renderLoop_->AddCommand(std::move(frame));
-        shouldWaitForFinishRenderSemaphore = true;
+        Renderer::RenderLoop::FrameInput frameInput;
+        frameInput.scene = activeScene_.get();
+        frameInput.camera = &activeCamera_;
+        frameInput.imguiDrawData = imguiDrawData.get();
+        renderLoop_->RenderFrame(frameInput);
     }
-
-    BeforeAddNextCommand();
 }
 
 RTRC_END

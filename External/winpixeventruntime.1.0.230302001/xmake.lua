@@ -1,8 +1,0 @@
-package("winpix_102")
-    set_sourcedir(os.scriptdir())
-    on_install("windows", function (package)
-        os.cp("Include/*", package:installdir("include"))
-        os.cp("bin/x64/*.dll", package:installdir("bin"))
-        os.cp("bin/x64/*.lib", package:installdir("lib"))
-    end)
-package_end()

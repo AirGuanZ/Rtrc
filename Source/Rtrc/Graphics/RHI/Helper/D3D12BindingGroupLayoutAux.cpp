@@ -3,7 +3,7 @@
 
 #include <Rtrc/Graphics/RHI/Helper/D3D12BindingGroupLayoutAux.h>
 #include <Rtrc/Graphics/RHI/RHI.h>
-#include <Rtrc/Core/Enumerate.h>
+#include <Core/Enumerate.h>
 
 RTRC_RHI_BEGIN
 

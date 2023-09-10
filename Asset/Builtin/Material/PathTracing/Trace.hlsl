@@ -16,7 +16,7 @@ rtrc_group(Pass, CS)
 {
     REF_GBUFFERS(CS)
     
-    rtrc_define(ConstantBuffer<CameraConstantBuffer>, Camera)
+    rtrc_define(ConstantBuffer<CameraData>, Camera)
 
     rtrc_define(Texture2D<float3>, SkyLut)
 
@@ -35,14 +35,6 @@ rtrc_sampler(SkyLutSampler, filter = linear, address_u = repeat, address_v = cla
 
 static float PI = 3.14159265;
 
-float3 SampleDiffuseDirection(float3 normal, inout uint rngState)
-{
-    float3 localDir = Pcg::NextUniformOnUnitHemisphere(rngState);
-    LocalFrame frame;
-    frame.InitializeFromNormalizedZ(normal);
-    return frame.LocalToGlobal(localDir);
-}
-
 [numthreads(8, 8, 1)]
 void CSMain(uint2 tid : SV_DispatchThreadID)
 {
@@ -56,16 +48,17 @@ void CSMain(uint2 tid : SV_DispatchThreadID)
     
     float3 worldRay = CameraUtils::GetWorldRay(Camera, uv);
     float viewZ = CameraUtils::DeviceZToViewZ(Camera, gpixel.depth);
-    float3 worldPos = viewZ * worldRay + Camera.worldPosition;
+    float3 worldPos = viewZ * worldRay + Camera.position;
 
-    uint rng = RngState[tid];
+    Pcg::Sampler sam;
+    sam.SetState(RngState[tid]);
 
     float3 result = 0;
     const int N = 4;
     for(int s = 0; s < N; ++s)
     {
         float3 o = worldPos + 0.01 * gpixel.normal;
-        float3 d = SampleDiffuseDirection(gpixel.normal, rng);
+        float3 d = sam.NextUniformOnUnitHemisphere(gpixel.normal);
         float3 beta = 1;
         for(uint i = 0; i < Pass.maxDepth; ++i)
         {
@@ -88,7 +81,7 @@ void CSMain(uint2 tid : SV_DispatchThreadID)
 
             // Sample new direction
 
-            float3 newDir = SampleDiffuseDirection(intersection.geometryFrame.z, rng);
+            float3 newDir = sam.NextUniformOnUnitHemisphere(intersection.geometryFrame.z);
             float pdf = 1 / (2 * PI);
 
             // Generate new ray
@@ -105,5 +98,5 @@ void CSMain(uint2 tid : SV_DispatchThreadID)
     result *= 1.0 / N;
 
     Output[tid] = float4(result, 1);
-    RngState[tid] = rng;
+    RngState[tid] = sam.GetState();
 }

@@ -1,10 +1,27 @@
-﻿CMAKE_MINIMUM_REQUIRED(VERSION 3.20)
+﻿cmake_minimum_required(VERSION 3.19)
 
-PROJECT(DXC)
+project(DXC)
 
-ADD_LIBRARY(dxc INTERFACE)
+add_custom_command(
+	OUTPUT
+		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<IF:$<CONFIG:Debug>,Debug,Release>/dxcompiler.dll"
+		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<IF:$<CONFIG:Debug>,Debug,Release>/dxil.dll"
+	COMMAND
+		${CMAKE_COMMAND} -E copy
+		"${CMAKE_CURRENT_SOURCE_DIR}/bin/dxcompiler.dll"
+		"${CMAKE_CURRENT_SOURCE_DIR}/bin/dxil.dll"
+		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<IF:$<CONFIG:Debug>,Debug,Release>"
+	DEPENDS
+		"${CMAKE_CURRENT_SOURCE_DIR}/bin/dxcompiler.dll"
+		"${CMAKE_CURRENT_SOURCE_DIR}/bin/dxil.dll")
 
-TARGET_INCLUDE_DIRECTORIES(dxc INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/include/")
-TARGET_LINK_LIBRARIES(dxc INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/lib/dxcompiler.lib")
+add_custom_target(
+	CopyDXCDlls
+	DEPENDS
+		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<IF:$<CONFIG:Debug>,Debug,Release>/dxcompiler.dll"
+		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<IF:$<CONFIG:Debug>,Debug,Release>/dxil.dll")
 
-SET(DXC_SHARED_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/bin/dxcompiler.dll")
+add_library(dxc INTERFACE)
+target_include_directories(dxc INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_link_libraries(dxc INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/lib/dxcompiler.lib")
+add_dependencies(dxc CopyDXCDlls)

@@ -1,6 +1,5 @@
-#include <Rtrc/Application/Application.h>
 #include <Rtrc/Renderer/Atmosphere/AtmosphereRenderer.h>
-#include <Rtrc/Core/Math/LowDiscrepancy.h>
+#include <Core/Math/LowDiscrepancy.h>
 
 RTRC_RENDERER_BEGIN
 
@@ -157,7 +156,7 @@ void RenderAtmosphere::Render(
         passData.sunIntensity            = sunColor;
         auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
 
-        auto material = resources_->GetBuiltinMaterial(BuiltinMaterial::Atmosphere).get();
+        auto material = resources_->GetMaterialManager()->GetCachedMaterial<"Builtin/Atmosphere">().get();
         auto shader = material->GetPassByIndex(Pass_GenerateS)->GetShader().get();
 
         CommandBuffer &commandBuffer = RG::GetCurrentCommandBuffer();
@@ -196,7 +195,7 @@ RG::TextureResource *RenderAtmosphere::GenerateT(RG::RenderGraph &renderGraph, c
         passData.atmosphere             = props;
         auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
 
-        auto material = resources_->GetBuiltinMaterial(BuiltinMaterial::Atmosphere).get();
+        auto material = resources_->GetMaterialManager()->GetCachedMaterial<"Builtin/Atmosphere">().get();
         auto shader = material->GetPassByIndex(Pass_GenerateT)->GetShader().get();
 
         CommandBuffer &commandBuffer = RG::GetCurrentCommandBuffer();
@@ -251,7 +250,7 @@ RG::TextureResource *RenderAtmosphere::GenerateM(RG::RenderGraph &renderGraph, c
         passData.atmosphere            = props;
         auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
 
-        auto material = resources_->GetBuiltinMaterial(BuiltinMaterial::Atmosphere).get();
+        auto material = resources_->GetMaterialManager()->GetCachedMaterial<"Builtin/Atmosphere">().get();
         auto shader = material->GetPassByIndex(Pass_GenerateM)->GetShader().get();
 
         CommandBuffer &commandBuffer = RG::GetCurrentCommandBuffer();

@@ -1,14 +1,12 @@
 #pragma once
 
-#include <array>
-
 #include <tbb/spin_mutex.h>
 #include <tbb/spin_rw_mutex.h>
 
 #include <Rtrc/Graphics/Device/Buffer/Buffer.h>
-#include <Rtrc/Graphics/Device/Buffer/ReflectedConstantBufferStruct.h>
-#include <Rtrc/Core/Container/SlotVector.h>
-#include <Rtrc/Core/Swap.h>
+#include <Core/ReflectedStruct.h>
+#include <Core/Container/SlotVector.h>
+#include <Core/Swap.h>
 
 RTRC_BEGIN
 
@@ -123,15 +121,15 @@ private:
 template<RtrcReflShaderStruct T, typename Func>
 decltype(auto) FlattenConstantBufferStruct(const T &data, Func &&func)
 {
-    const size_t deviceSize = 4 * ReflectedConstantBufferStruct::GetDeviceDWordCount<T>();
+    const size_t deviceSize = 4 * ReflectedStruct::GetDeviceDWordCount<T>();
     if(deviceSize <= 1024)
     {
         unsigned char flattenData[1024];
-        ReflectedConstantBufferStruct::ToDeviceLayout<T>(&data, flattenData);
+        ReflectedStruct::ToDeviceLayout<T>(&data, flattenData);
         return std::invoke(std::forward<Func>(func), flattenData, deviceSize);
     }
     std::vector<unsigned char> flattenData(deviceSize);
-    ReflectedConstantBufferStruct::ToDeviceLayout<T>(&data, flattenData.data());
+    ReflectedStruct::ToDeviceLayout<T>(&data, flattenData.data());
     return std::invoke(std::forward<Func>(func), flattenData.data(), deviceSize);
 }
 

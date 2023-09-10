@@ -1,10 +1,11 @@
 #pragma once
 
+#include <optional>
 #include <set>
 #include <string>
 #include <vector>
 
-enum class FieldCategory
+enum class FieldKind
 {
     Float,
     Float2,
@@ -24,7 +25,7 @@ enum class FieldCategory
 
 struct Field
 {
-    FieldCategory      categoty = FieldCategory::Others;
+    FieldKind          kind = FieldKind::Others;
     std::string        typeStr;
     std::string        name;
     std::optional<int> arraySize;

@@ -46,8 +46,12 @@ RC<GraphicsPipeline> PipelineCache::GetGraphicsPipeline(const GraphicsPipeline::
 
 void PipelineCache::CommitChanges()
 {
-    staticCache_.merge(dynamicCache_);
-
+    for(auto &it : dynamicCache_)
+    {
+        staticCache_.insert(it);
+    }
+    dynamicCache_.clear();
+    
     std::vector<UniqueId> invalidatedShaders;
     {
         std::lock_guard lock(sharedData_->mutex);

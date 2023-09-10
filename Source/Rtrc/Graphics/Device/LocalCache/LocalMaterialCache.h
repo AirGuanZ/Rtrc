@@ -5,8 +5,8 @@
 
 #include <tbb/spin_rw_mutex.h>
 
-#include <Rtrc/Core/SmartPointer/ObserverPtr.h>
-#include <Rtrc/Core/Uncopyable.h>
+#include <Core/SmartPointer/ObserverPtr.h>
+#include <Core/Uncopyable.h>
 
 RTRC_BEGIN
 
@@ -64,8 +64,8 @@ public:
 private:
 
     ObserverPtr<MaterialManager> materialManager_;
-    LocalCachedMaterialStorage *storage_;
-    std::string_view name_;
+    LocalCachedMaterialStorage  *storage_;
+    std::string_view             name_;
 };
 
 class LocalMaterialCache : public Uncopyable

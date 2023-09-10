@@ -11,7 +11,7 @@ rtrc_group(Pass, CS)
 {
     REF_GBUFFERS(CS)
 
-    rtrc_define(ConstantBuffer<CameraConstantBuffer>, Camera)
+    rtrc_define(ConstantBuffer<CameraData>, Camera)
     
     rtrc_define(StructuredBuffer<PointLightShadingData>, PointLightBuffer)
     rtrc_uniform(uint, pointLightCount)

@@ -1,14 +1,12 @@
 #ifndef RTRC_COMMON_SCENE_HLSL
 #define RTRC_COMMON_SCENE_HLSL
 
-#include "Rtrc/Generated/Reflection.hlsl"
+#include "Generated/Reflection.hlsl"
 
 // See Rtrc/Renderer/Common.h
 
-typedef Rtrc::Renderer::CameraConstantBuffer        CameraConstantBuffer;
-typedef Rtrc::Renderer::PointLightShadingData       PointLightShadingData;
-typedef Rtrc::Renderer::DirectionalLightShadingData DirectionalLightShadingData;
-typedef Rtrc::PerObjectData                         PerObjectData;
+typedef Rtrc::CameraData    CameraData;
+typedef Rtrc::PerObjectData PerObjectData;
 
 struct TlasInstance
 {
@@ -64,9 +62,9 @@ namespace CameraUtils
         return cameraToClip._34 / (deviceZ - cameraToClip._33);
     }
     
-    float DeviceZToViewZ(CameraConstantBuffer camera, float deviceZ)
+    float DeviceZToViewZ(CameraData camera, float deviceZ)
     {
-        return CameraUtils::DeviceZToViewZ(camera.cameraToClipMatrix, deviceZ);
+        return CameraUtils::DeviceZToViewZ(camera.cameraToClip, deviceZ);
     }
     
     float3 GetWorldRay(float3 cameraWorldRays[4], float2 uv)
@@ -77,7 +75,7 @@ namespace CameraUtils
         return ray;
     }
     
-    float3 GetWorldRay(CameraConstantBuffer camera, float2 uv)
+    float3 GetWorldRay(CameraData camera, float2 uv)
     {
         return CameraUtils::GetWorldRay(camera.worldRays, uv);
     }

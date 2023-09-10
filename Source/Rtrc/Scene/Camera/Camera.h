@@ -1,43 +1,38 @@
 #pragma once
 
-#include <Rtrc/Core/Math/Angle.h>
-#include <Rtrc/Core/Math/Matrix4x4.h>
+#include <Core/Math/Angle.h>
+#include <Core/Math/Matrix4x4.h>
+#include <Core/SignalSlot.h>
 
 RTRC_BEGIN
 
-struct PerspectiveProjectionParameters
+rtrc_struct(CameraData)
 {
-    float fovYRad   = Deg2Rad(50.0f);
+    float3 position;
+    float3 rotation;
+    float3 front;
+    float3 left;
+    float3 up;
+
+    float4x4 worldToCamera;
+    float4x4 cameraToWorld;
+
+    float4x4 worldToClip;
+    float4x4 clipToWorld;
+
+    float4x4 cameraToClip;
+    float4x4 clipToCamera;
+
+    float3 cameraRays[4];
+    float3 worldRays[4];
+
+    float fovYRad   = Deg2Rad(50);
     float wOverH    = 1;
     float nearPlane = 0.1f;
     float farPlane  = 100.0f;
 };
 
-struct CameraRenderData
-{
-    Vector3f position;
-    Vector3f rotation;
-
-    PerspectiveProjectionParameters projParams;
-
-    Vector3f forward;
-    Vector3f left;
-    Vector3f up;
-
-    Matrix4x4f worldToCamera;
-    Matrix4x4f cameraToWorld;
-    Matrix4x4f cameraToClip;
-    Matrix4x4f clipToCamera;
-    Matrix4x4f worldToClip;
-    Matrix4x4f clipToWorld;
-
-    Vector3f cameraRays[4];
-    Vector3f worldRays[4];
-
-    UniqueId originalId;
-};
-
-class Camera : public WithUniqueObjectID, CameraRenderData
+class Camera : public WithUniqueObjectID, CameraData
 {
 public:
 
@@ -45,8 +40,12 @@ public:
 
     const Vector3f &GetRotation() const;
     const Vector3f &GetPosition() const;
-    const PerspectiveProjectionParameters &GetProjection() const;
 
+    float GetFOVYRad() const;
+    float GetWOverH() const;
+    float GetNearPlane() const;
+    float GetFarPlane() const;
+    
     const Vector3f &GetLeft() const;
     const Vector3f &GetForward() const;
     const Vector3f &GetUp() const;
@@ -74,13 +73,19 @@ public:
     const CornerRays &GetWorldRays() const;
     const CornerRays &GetCameraRays() const;
 
-    const CameraRenderData &GetRenderCamera() const;
+    const CameraData &GetData() const;
+
+    template<typename...Args>
+    Connection OnDestroy(Args&&...args) const { return onDestroy_.Connect(std::forward<Args>(args)...); }
+
+private:
+
+    mutable Signal<SignalThreadPolicy::SpinLock> onDestroy_;
 };
 
 inline Camera::Camera()
 {
     CalculateDerivedData();
-    originalId = GetUniqueID();
 }
 
 inline const Vector3f &Camera::GetRotation() const
@@ -93,9 +98,24 @@ inline const Vector3f &Camera::GetPosition() const
     return position;
 }
 
-inline const PerspectiveProjectionParameters &Camera::GetProjection() const
+inline float Camera::GetFOVYRad() const
 {
-    return projParams;
+    return fovYRad;
+}
+
+inline float Camera::GetWOverH() const
+{
+    return wOverH;
+}
+
+inline float Camera::GetNearPlane() const
+{
+    return nearPlane;
+}
+
+inline float Camera::GetFarPlane() const
+{
+    return farPlane;
 }
 
 inline const Vector3f &Camera::GetLeft() const
@@ -105,7 +125,7 @@ inline const Vector3f &Camera::GetLeft() const
 
 inline const Vector3f &Camera::GetForward() const
 {
-    return forward;
+    return front;
 }
 
 inline const Vector3f &Camera::GetUp() const
@@ -123,9 +143,12 @@ inline void Camera::SetPosition(const Vector3f &_position)
     position = _position;
 }
 
-inline void Camera::SetProjection(float fovYRad, float wOverH, float nearPlane, float farPlane)
+inline void Camera::SetProjection(float _fovYRad, float _wOverH, float _nearPlane, float _farPlane)
 {
-    projParams = { fovYRad, wOverH, nearPlane, farPlane };
+    fovYRad = _fovYRad;
+    wOverH = _wOverH;
+    nearPlane = _nearPlane;
+    farPlane = _farPlane;
 }
 
 inline const Matrix4x4f &Camera::GetWorldToCameraMatrix() const
@@ -168,7 +191,7 @@ inline const Camera::CornerRays &Camera::GetCameraRays() const
     return cameraRays;
 }
 
-inline const CameraRenderData &Camera::GetRenderCamera() const
+inline const CameraData &Camera::GetData() const
 {
     return *this;
 }

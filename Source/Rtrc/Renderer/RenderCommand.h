@@ -19,8 +19,8 @@ struct RenderCommand_ResizeFramebuffer
 struct RenderCommand_RenderStandaloneFrame
 {
     RenderSettings         renderSettings;
-    Box<SceneProxy>        scene;
-    CameraRenderData       camera;
+    const Scene           *scene;
+    const Camera          *camera;
     Box<ImGuiDrawData>     imguiDrawData;
     RC<BindingGroup>       bindlessTextureGroup;
     std::binary_semaphore *finishSemaphore;

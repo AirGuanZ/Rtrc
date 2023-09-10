@@ -19,6 +19,7 @@ inline const char *GetVisualizationModeName(VisualizationMode mode)
 
 struct RenderSettings
 {
+    bool enableRayTracing = true;
     bool enableIndirectDiffuse = false;
     VisualizationMode visualizationMode = VisualizationMode::None;
 };

@@ -1,13 +1,13 @@
 #include <ranges>
 #include <stack>
 
+#include <Core/Enumerate.h>
+#include <Core/Filesystem/File.h>
+#include <Core/Parser/ShaderTokenStream.h>
+#include <Core/String.h>
 #include <Rtrc/Graphics/Shader/D3D12Reflection.h>
 #include <Rtrc/Graphics/Shader/ShaderCompiler.h>
-#include <Rtrc/Graphics/Shader/ShaderTokenStream.h>
 #include <Rtrc/Graphics/Shader/SPIRVReflection.h>
-#include <Rtrc/Core/Enumerate.h>
-#include <Rtrc/Core/Filesystem/File.h>
-#include <Rtrc/Core/String.h>
 
 RTRC_BEGIN
 

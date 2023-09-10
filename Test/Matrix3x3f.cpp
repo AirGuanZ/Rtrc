@@ -1,7 +1,7 @@
 #include <catch2/catch_all.hpp>
 
-#include <Rtrc/Core/Math/Angle.h>
-#include <Rtrc/Core/Math/Matrix3x3.h>
+#include <Core/Math/Angle.h>
+#include <Core/Math/Matrix3x3.h>
 
 using namespace Rtrc;
 

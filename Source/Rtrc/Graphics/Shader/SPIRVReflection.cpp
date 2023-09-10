@@ -1,8 +1,8 @@
 #include <spirv_reflect.h>
 
 #include <Rtrc/Graphics/Shader/SPIRVReflection.h>
-#include <Rtrc/Core/ScopeGuard.h>
-#include <Rtrc/Core/String.h>
+#include <Core/ScopeGuard.h>
+#include <Core/String.h>
 
 RTRC_BEGIN
 
@@ -109,7 +109,7 @@ namespace ShaderReflDetail
             auto &in = *inputVars[i];
             auto &out = result.emplace_back();
             auto [semanticName, semanticIndex] = ParseInputVarSemanticAndIndex(in.name ? in.name : "");
-            out.semantic  = VertexSemantic(semanticName, semanticIndex);
+            out.semantic  = RHI::VertexSemantic(semanticName, semanticIndex);
             out.location  = static_cast<int>(in.location);
             out.isBuiltin = (in.decoration_flags & SPV_REFLECT_DECORATION_BUILT_IN) != 0;
             switch(in.format)

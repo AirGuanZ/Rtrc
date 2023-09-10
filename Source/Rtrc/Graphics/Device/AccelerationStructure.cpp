@@ -14,6 +14,11 @@ const RC<SubBuffer> &Blas::GetBuffer() const
     return buffer_;
 }
 
+RHI::BufferDeviceAddress Blas::GetDeviceAddress() const
+{
+    return GetRHIObject()->GetDeviceAddress();
+}
+
 void Tlas::SetBuffer(RC<SubBuffer> buffer)
 {
     buffer_ = std::move(buffer);

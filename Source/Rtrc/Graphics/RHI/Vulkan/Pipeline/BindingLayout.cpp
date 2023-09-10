@@ -1,4 +1,4 @@
-#include <Rtrc/Core/Enumerate.h>
+#include <Core/Enumerate.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/BindingLayout.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/BindingGroupLayout.h>
 

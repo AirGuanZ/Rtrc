@@ -1,6 +1,6 @@
 #include <mutex>
 
-#include <Rtrc/Core/ScopeGuard.h>
+#include <Core/ScopeGuard.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Pipeline/BindingGroup.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Resource/Sampler.h>
 

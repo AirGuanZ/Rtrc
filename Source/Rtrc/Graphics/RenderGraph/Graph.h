@@ -7,7 +7,7 @@
 #include <Rtrc/Graphics/Device/Queue.h>
 #include <Rtrc/Graphics/Device/Texture.h>
 #include <Rtrc/Graphics/RenderGraph/Label.h>
-#include <Rtrc/Core/SmartPointer/ObserverPtr.h>
+#include <Core/SmartPointer/ObserverPtr.h>
 
 #define RTRC_RG_DEBUG RTRC_DEBUG
 

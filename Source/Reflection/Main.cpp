@@ -82,10 +82,10 @@ std::string GenerateCppReflection(std::span<const Struct> structs)
 
     std::string ret = COMMON_HEADER;
     
-    ret += "#include <Rtrc/Core/Math/Vector2.h>\n";
-    ret += "#include <Rtrc/Core/Math/Vector3.h>\n";
-    ret += "#include <Rtrc/Core/Math/Vector4.h>\n";
-    ret += "#include <Rtrc/Core/Math/Matrix4x4.h>\n";
+    ret += "#include <Core/Math/Vector2.h>\n";
+    ret += "#include <Core/Math/Vector3.h>\n";
+    ret += "#include <Core/Math/Vector4.h>\n";
+    ret += "#include <Core/Math/Matrix4x4.h>\n";
 
     ret += "\n/*====================== Forward Declarations ======================*/\n\n";
 
@@ -128,7 +128,7 @@ std::string GenerateCppReflection(std::span<const Struct> structs)
         {
             const std::string arrayModifier = f.arraySize ? "[" + std::to_string(*f.arraySize) + "]" : "";
             std::string mirrorTypeStr = f.typeStr;
-            if(f.categoty == FieldCategory::Others)
+            if(f.kind == FieldKind::Others)
                 mirrorTypeStr = QualifiedNameToMirrorName(mirrorTypeStr);
             ret += namespaceIndent + "    " + mirrorTypeStr + " " + f.name + arrayModifier + ";\n";
         }
@@ -206,9 +206,9 @@ std::string GenerateShaderHeader(std::span<const Struct> structs)
         ret += indent + "{\n";
         for(auto &f : s.fields)
         {
-            using enum FieldCategory;
+            using enum FieldKind;
             std::string type;
-            switch(f.categoty)
+            switch(f.kind)
             {
             case Float:    type = "float";    break;
             case Float2:   type = "float2";   break;
@@ -297,14 +297,7 @@ int main(int argc, const char *argv[])
         auto parentDir = absolute(std::filesystem::path(filename)).parent_path();
         if(!exists(parentDir))
             create_directories(parentDir);
-
-        if(std::ifstream fin2(filename, std::ifstream::in); fin2)
-        {
-            std::stringstream buffer;
-            buffer << fin2.rdbuf();
-            if(buffer.str() == content)
-                return;
-        }
+        
         std::ofstream fout(filename, std::ofstream::out | std::ofstream::trunc);
         if(fout)
             fout << content;

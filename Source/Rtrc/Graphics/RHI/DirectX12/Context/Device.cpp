@@ -18,8 +18,8 @@
 #include <Rtrc/Graphics/RHI/DirectX12/Resource/Buffer.h>
 #include <Rtrc/Graphics/RHI/DirectX12/Resource/Sampler.h>
 #include <Rtrc/Graphics/RHI/DirectX12/Resource/Texture.h>
-#include <Rtrc/Core/Enumerate.h>
-#include <Rtrc/Core/Unreachable.h>
+#include <Core/Enumerate.h>
+#include <Core/Unreachable.h>
 
 RTRC_RHI_D3D12_BEGIN
 

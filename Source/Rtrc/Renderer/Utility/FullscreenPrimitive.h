@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Rtrc/Graphics/Device/Device.h>
-#include <Rtrc/Graphics/Mesh/Mesh.h>
+#include <Rtrc/Resource/Mesh/Mesh.h>
 #include <Rtrc/Scene/Camera/Camera.h>
 
 RTRC_BEGIN
@@ -38,11 +38,11 @@ const MeshLayout *GetFullscreenPrimitiveMeshLayout();
 const MeshLayout *GetFullscreenPrimitiveMeshLayoutWithWorldRay();
 
 Mesh GetFullscreenTriangle(DynamicBufferManager &bufferManager);
-Mesh GetFullscreenTriangle(DynamicBufferManager &bufferManager, const CameraRenderData &camera);
+Mesh GetFullscreenTriangle(DynamicBufferManager &bufferManager, const Camera &camera);
 Mesh GetFullscreenTriangle(DynamicBufferManager &bufferManager, const Camera &camera);
 
 Mesh GetFullscreenQuad(DynamicBufferManager &bufferManager);
-Mesh GetFullscreenQuad(DynamicBufferManager &bufferManager, const CameraRenderData &camera);
+Mesh GetFullscreenQuad(DynamicBufferManager &bufferManager, const Camera &camera);
 Mesh GetFullscreenQuad(DynamicBufferManager &bufferManager, const Camera &camera);
 
 RTRC_END

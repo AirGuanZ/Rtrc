@@ -1,5 +1,5 @@
 #include <Rtrc/Graphics/Device/LocalCache/LocalShaderCache.h>
-#include <Rtrc/Graphics/Resource/ResourceManager.h>
+#include <Rtrc/Resource/ResourceManager.h>
 
 RTRC_BEGIN
 

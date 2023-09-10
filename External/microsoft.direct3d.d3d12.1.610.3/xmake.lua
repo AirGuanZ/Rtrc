@@ -1,7 +1,0 @@
-package("d3d12_1610")
-    set_sourcedir(os.scriptdir())
-    on_install("windows", function (package)
-        os.cp("build/native/include/*", package:installdir("include/d3d12_agility"))
-        --os.cp("build/native/bin/x64", package:installdir("bin"))
-    end)
-package_end()

@@ -1,9 +1,9 @@
 #pragma once
 
-#include <Rtrc/Renderer/RenderLoop.h>
 #include <Rtrc/Graphics/ImGui/Instance.h>
-#include <Rtrc/Graphics/Resource/ResourceManager.h>
-#include <Rtrc/Core/Timer.h>
+#include <Rtrc/Renderer/RenderLoop.h>
+#include <Rtrc/Resource/ResourceManager.h>
+#include <Core/Timer.h>
 
 RTRC_BEGIN
 
@@ -31,16 +31,14 @@ public:
 
     struct Config
     {
-        std::string      title                      = "Rtrc Application";
-        uint32_t         width                      = 640;
-        uint32_t         height                     = 480;
-        bool             maximized                  = false;
-        bool             vsync                      = true;
-        bool             debug                      = RTRC_DEBUG;
-        bool             rayTracing                 = false;
-        bool             renderThread               = true;
-        bool             handleCrossThreadException = false;
-        RHI::BackendType backendType                = RHI::BackendType::Default;
+        std::string      title       = "Rtrc Application";
+        uint32_t         width       = 640;
+        uint32_t         height      = 480;
+        bool             maximized   = false;
+        bool             vsync       = true;
+        bool             debug       = RTRC_DEBUG;
+        bool             rayTracing  = false;
+        RHI::BackendType backendType = RHI::BackendType::Default;
     };
 
     static Application &GetInstance();
@@ -76,7 +74,7 @@ private:
     Box<ImGuiInstance>          imgui_;
     Box<ResourceManager>        resourceManager_;
     Box<BindlessTextureManager> bindlessTextureManager_;
-    Box<RenderLoop>             renderLoop_;
+    Box<Renderer::RenderLoop>   renderLoop_;
 
     Box<Scene>               activeScene_;
     Camera                   activeCamera_;

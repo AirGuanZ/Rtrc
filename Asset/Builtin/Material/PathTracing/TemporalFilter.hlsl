@@ -7,8 +7,8 @@ rtrc_group(Pass, CS)
     rtrc_define(Texture2D<float>, CurrDepth)
     rtrc_define(Texture2D<float>, PrevDepth)
 
-    rtrc_define(ConstantBuffer<CameraConstantBuffer>, CurrCamera)
-    rtrc_define(ConstantBuffer<CameraConstantBuffer>, PrevCamera)
+    rtrc_define(ConstantBuffer<CameraData>, CurrCamera)
+    rtrc_define(ConstantBuffer<CameraData>, PrevCamera)
 
     rtrc_define(Texture2D<float3>,   History)
     rtrc_define(Texture2D<float3>,   TraceResult)
@@ -34,9 +34,9 @@ void CSMain(uint2 tid : SV_DispatchThreadID)
         return;
 
     float viewZ = CameraUtils::DeviceZToViewZ(CurrCamera, deviceZ);
-    float3 worldPos = viewZ * worldRay + CurrCamera.worldPosition;
+    float3 worldPos = viewZ * worldRay + CurrCamera.position;
 
-    float4 prevClip = mul(PrevCamera.worldToClipMatrix, float4(worldPos, 1));
+    float4 prevClip = mul(PrevCamera.worldToClip, float4(worldPos, 1));
     float2 prevScr = prevClip.xy / prevClip.w;
     float2 prevUV = 0.5 + float2(0.5, -0.5) * prevScr;
     float prevDeviceZ = PrevDepth.SampleLevel(DepthSampler, prevUV, 0);
@@ -50,7 +50,7 @@ void CSMain(uint2 tid : SV_DispatchThreadID)
 
     float prevViewZ = CameraUtils::DeviceZToViewZ(PrevCamera, prevDeviceZ);
     float3 prevWorldRay = CameraUtils::GetWorldRay(PrevCamera, prevUV);
-    float3 prevWorldPos = PrevCamera.worldPosition + prevWorldRay * prevViewZ;
+    float3 prevWorldPos = PrevCamera.position + prevWorldRay * prevViewZ;
 
     float alpha = 0.03;
     alpha *= exp(min(3 * distance(worldPos, prevWorldPos), 10.0));

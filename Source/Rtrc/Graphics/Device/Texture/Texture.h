@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Rtrc/Graphics/Device/DeviceSynchronizer.h>
-#include <Rtrc/Core/Container/ObjectCache.h>
+#include <Core/Container/ObjectCache.h>
 
 RTRC_BEGIN
 

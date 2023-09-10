@@ -106,7 +106,7 @@ void D3D12Reflection::InitializeRegularReflection(IDxcUtils *dxcUtils, Span<std:
         }
 
         auto &var = inputVariables_.emplace_back();
-        var.semantic  = VertexSemantic(signatureParameterDesc.SemanticName, signatureParameterDesc.SemanticIndex);
+        var.semantic  = RHI::VertexSemantic(signatureParameterDesc.SemanticName, signatureParameterDesc.SemanticIndex);
         var.type      = vertexAttributeType;
         var.isBuiltin = signatureParameterDesc.SystemValueType != D3D_NAME_UNDEFINED;
         var.location  = -1; // Not used by directx12 backend

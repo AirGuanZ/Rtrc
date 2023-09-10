@@ -1,175 +1,155 @@
 #include <Rtrc/Renderer/RenderLoop.h>
-#include <Rtrc/Core/Enumerate.h>
-#include <Rtrc/Core/Thread.h>
 
 RTRC_RENDERER_BEGIN
 
-RenderLoop::RenderLoop(
-    const Config                       &config,
-    ObserverPtr<Device>                 device,
-    ObserverPtr<ResourceManager>        resources,
-    ObserverPtr<BindlessTextureManager> bindlessTextures)
-    : config_          (config)
-    , hasException_    (false)
-    , device_          (device)
+RenderLoop::RenderLoop(ObserverPtr<ResourceManager> resources, ObserverPtr<BindlessTextureManager> bindlessTextures)
+    : device_(resources->GetDevice())
     , resources_(resources)
     , bindlessTextures_(bindlessTextures)
-    , frameIndex_      (1)
-    , renderMeshes_    ({ config.rayTracing }, device)
-    , renderScene_     ({ config.rayTracing }, device, resources, bindlessTextures)
+    , frameIndex_(1)
+    , isSwapchainInvalid_(false)
 {
-    imguiRenderer_       = MakeBox<ImGuiRenderer>(device_);
+    imguiRenderer_ = MakeBox<ImGuiRenderer>(device_);
     renderGraphExecuter_ = MakeBox<RG::Executer>(device_);
+    transientCBufferAllocator_ = MakeBox<TransientConstantBufferAllocator>(*device_);
 
-    transientConstantBufferAllocator_ = MakeBox<TransientConstantBufferAllocator>(*device);
-    
-    gbufferPass_          = MakeBox<GBufferPass>(device_);
-    deferredLightingPass_ = MakeBox<DeferredLightingPass>(device_, resources_);
-    shadowMaskPass_       = MakeBox<ShadowMaskPass>(device_, resources_);
-    pathTracer_           = MakeBox<PathTracer>(device_, resources_);
+    cachedMeshes_ = MakeBox<MeshRenderingCacheManager>(device_);
+    cachedMaterials_ = MakeBox<MaterialRenderingCacheManager>();
+    renderScenes_ = MakeBox<RenderSceneManager>(resources_, cachedMaterials_, cachedMeshes_, bindlessTextures_);
+    renderCameras_ = MakeBox<RenderCameraManager>(device_, renderScenes_);
 
+    gbufferPass_ = MakeBox<GBufferPass>(device_);
+    pathTracer_ = MakeBox<PathTracer>(resources_);
+    gbufferVisualizer_ = MakeBox<GBufferVisualizer>(resources_);
+}
+
+void RenderLoop::BeginRenderLoop()
+{
     device_->BeginRenderLoop();
-    if(config_.mode == Mode::Threaded)
+}
+
+void RenderLoop::EndRenderLoop()
+{
+    device_->EndRenderLoop();
+}
+
+void RenderLoop::SetRenderSettings(const RenderSettings &settings)
+{
+    renderSettings_ = settings;
+}
+
+void RenderLoop::ResizeFramebuffer(uint32_t width, uint32_t height)
+{
+    if(width > 0 && height > 0)
     {
-        renderThread_ = std::jthread(&RenderLoop::RenderThreadEntry, this);
+        device_->GetRawDevice()->WaitIdle();
+        device_->RecreateSwapchain();
+        isSwapchainInvalid_ = false;
     }
 }
 
-RenderLoop::~RenderLoop()
+void RenderLoop::RenderFrame(const FrameInput &frame)
 {
-    if(config_.mode == Mode::Threaded)
+    if(isSwapchainInvalid_)
     {
-        assert(renderThread_.joinable());
-        renderThread_.join();
-        renderCommandQueue_.clear();
-    }
-}
-
-void RenderLoop::AddCommand(RenderCommand command)
-{
-    if(config_.mode == Mode::Threaded)
-    {
-        renderCommandQueue_.push(std::move(command));
         return;
     }
-
-    assert(continueRenderLoop_);
-    HandleRenderCommand<false>(command);
-}
-
-const BindlessTextureEntry *RenderLoop::ExtractAlbedoTextureEntry(const MaterialInstance::SharedRenderingData *material)
-{
-    return material->GetPropertySheet().GetBindlessTextureEntry(RTRC_MATERIAL_PROPERTY_NAME(AlbedoTextureIndex));
-}
-
-void RenderLoop::RenderThreadEntry()
-{
-    SetThreadIndentifier(ThreadUtility::ThreadIdentifier::Render);
-    RTRC_SCOPE_EXIT{ device_->EndRenderLoop(); };
-    frameTimer_.Restart();
-    while(continueRenderLoop_)
+    if(!device_->BeginFrame(false))
     {
-        RenderCommand command;
-        if(renderCommandQueue_.try_pop(command))
-        {
-            HandleRenderCommand<true>(command);
-        }
+        isSwapchainInvalid_ = true;
+        return;
+    }
+    ++frameIndex_;
+    frameTimer_.BeginFrame();
+    RenderFrameImpl(frame);
+    if(!device_->Present())
+    {
+        isSwapchainInvalid_ = true;
     }
 }
 
-void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame &frame)
+void RenderLoop::RenderFrameImpl(const FrameInput &frame)
 {
     LinearAllocator linearAllocator;
-    transientConstantBufferAllocator_->NewBatch();
+    transientCBufferAllocator_->NewBatch();
 
     auto renderGraph = device_->CreateRenderGraph();
     auto swapchainImage = renderGraph->RegisterSwapchainTexture(device_->GetSwapchain());
     auto framebuffer = renderGraph->CreateTexture(RHI::TextureDesc
     {
-        .dim                  = RHI::TextureDimension::Tex2D,
-        .format               = RHI::Format::B8G8R8A8_UNorm,
-        .width                = UpAlignTo(swapchainImage->GetWidth(), 4u),
-        .height               = UpAlignTo(swapchainImage->GetHeight(), 4u),
-        .arraySize            = 1,
-        .mipLevels            = 1,
-        .sampleCount          = 1,
-        .usage                = RHI::TextureUsage::ShaderResource |
-                                RHI::TextureUsage::UnorderAccess |
-                                RHI::TextureUsage::RenderTarget,
-        .initialLayout        = RHI::TextureLayout::Undefined,
-        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
+        .dim         = RHI::TextureDimension::Tex2D,
+        .format      = RHI::Format::B8G8R8A8_UNorm,
+        .width       = UpAlignTo(swapchainImage->GetWidth(), 4u),
+        .height      = UpAlignTo(swapchainImage->GetHeight(), 4u),
+        .arraySize   = 1,
+        .mipLevels   = 1,
+        .sampleCount = 1,
+        .usage       = RHI::TextureUsage::ShaderResource |
+                       RHI::TextureUsage::UnorderAccess |
+                       RHI::TextureUsage::RenderTarget,
     }, "Framebuffer");
-    
-    // ============= Update meshes =============
 
-    renderMeshes_.Update(frame);
-    constexpr int MAX_BLAS_BUILD_COUNT = 5;
-    constexpr int MAX_BLAS_BUILD_PRIMITIVE_COUNT = 1e5;
-    renderMeshes_.BuildBlasForMeshes(*renderGraph, MAX_BLAS_BUILD_COUNT, MAX_BLAS_BUILD_PRIMITIVE_COUNT);
-    RTRC_SCOPE_EXIT{ renderMeshes_.ClearFrameData(); };
+    // ============= Common scene/camera updates =============
 
-    // ============= Update materials =============
+    cachedMeshes_->Update(*frame.scene, *frame.camera);
+    cachedMaterials_->Update(*frame.scene);
+    auto buildBlasPass = cachedMeshes_->Build(*renderGraph, 5, 100000);
 
-    renderMaterials_.UpdateCachedMaterialData(frame);
+    auto &renderScene = renderScenes_->GetRenderScene(*frame.scene);
+    auto &renderCamera = renderCameras_->GetRenderCamera(*frame.scene, *frame.camera);
 
-    // ============= Update scene =============
+    RenderScene::Config renderSceneConfig;
+    renderSceneConfig.opaqueTlas = renderSettings_.enableRayTracing;
+    renderScene.FrameUpdate(renderSceneConfig, *renderGraph);
+    RTRC_SCOPE_EXIT{ renderScene.ClearFrameData(); };
 
-    renderScene_.Update(
-        frame, *transientConstantBufferAllocator_,
-        renderMeshes_, renderMaterials_, *renderGraph, linearAllocator);
-    RTRC_SCOPE_EXIT{ renderScene_.ClearFrameData(); };
-    RenderCamera *renderCamera = renderScene_.GetRenderCamera(frame.camera.originalId);
-    
+    renderCamera.Update(*cachedMeshes_, *cachedMaterials_, linearAllocator);
+
     // Blas buffers are read-only after initialized and not tracked by render graph,
     // so we need to manually add dependency.
-
-    if(renderMeshes_.GetRGBuildBlasPass() && renderScene_.GetRGBuildTlasPass())
+    if(buildBlasPass && renderScene.GetBuildTlasPass())
     {
-        Connect(renderMeshes_.GetRGBuildBlasPass(), renderScene_.GetRGBuildTlasPass());
+        Connect(buildBlasPass, renderScene.GetBuildTlasPass());
     }
-    
+
     // ============= GBuffers =============
 
-    GBuffers gbuffers = gbufferPass_->Render(
-        *renderCamera, frame.bindlessTextureGroup, *renderGraph, framebuffer->GetSize());
+    auto gbuffers = gbufferPass_->Render(
+        renderCamera, bindlessTextures_->GetBindingGroup(), *renderGraph, framebuffer->GetSize());
 
     // ============= Resolve depth =============
 
-    renderCamera->UpdateDepth(*renderGraph, gbuffers);
+    renderCamera.UpdateDepthTexture(*renderGraph, gbuffers);
 
     // ============= Atmosphere =============
 
-    auto &renderAtmosphere = renderScene_.GetRenderAtmosphere();
-    auto &cameraAtmosphere = renderCamera->GetAtmosphereData();
-    renderAtmosphere.Render(
+    auto &atmosphere = renderScene.GetRenderAtmosphere();
+    auto &cameraAtmosphereData = renderCamera.GetAtmosphereData();
+    atmosphere.Render(
         *renderGraph,
-        frame.scene->GetSunDirection(),
-        frame.scene->GetSunColor() * frame.scene->GetSunIntensity(),
+        frame.scene->GetSky().GetSunDirection(),
+        frame.scene->GetSky().GetSunColor() * frame.scene->GetSky().GetSunIntensity(),
         1000.0f,
         frameTimer_.GetDeltaSecondsF(),
-        cameraAtmosphere);
-    RTRC_SCOPE_EXIT{ renderAtmosphere.ClearPerCameraFrameData(cameraAtmosphere); };
-    auto skyLut = cameraAtmosphere.S;
-
+        cameraAtmosphereData);
+    RTRC_SCOPE_EXIT{ atmosphere.ClearPerCameraFrameData(cameraAtmosphereData); };
+    
     // ============= Indirect diffuse =============
 
-    const bool visIndirectDiffuse = frame.renderSettings.visualizationMode == VisualizationMode::IndirectDiffuse;
-    const bool renderIndirectDiffuse = visIndirectDiffuse || frame.renderSettings.enableIndirectDiffuse;
+    const bool visIndirectDiffuse = renderSettings_.visualizationMode == VisualizationMode::IndirectDiffuse;
+    const bool renderIndirectDiffuse = visIndirectDiffuse || renderSettings_.enableIndirectDiffuse;
     if(renderIndirectDiffuse)
     {
-        pathTracer_->Render(*renderGraph, *renderCamera, gbuffers, visIndirectDiffuse);
+        pathTracer_->Render(*renderGraph, renderCamera, gbuffers, visIndirectDiffuse);
     }
-    auto indirectDiffuse = renderCamera->GetPathTracingData().indirectDiffuse;
-    RTRC_SCOPE_EXIT{ pathTracer_->ClearFrameData(renderCamera->GetPathTracingData()); };
+    auto indirectDiffuse = renderCamera.GetPathTracingData().indirectDiffuse;
+    RTRC_SCOPE_EXIT{ pathTracer_->ClearFrameData(renderCamera.GetPathTracingData()); };
 
-    // ============= Deferred lighting =============
-    
-    deferredLightingPass_->Render(
-        *renderCamera, gbuffers, skyLut, indirectDiffuse, *renderGraph, framebuffer);
+    gbufferVisualizer_->Render(GBufferVisualizer::Mode::Normal, *renderGraph, gbuffers, framebuffer);
 
     // ============= Blit =============
 
-    if(frame.renderSettings.visualizationMode == VisualizationMode::IndirectDiffuse)
+    if(renderSettings_.visualizationMode == VisualizationMode::IndirectDiffuse)
     {
         renderGraph->CreateBlitTexture2DPass("DisplayIndirectDiffuse", indirectDiffuse, swapchainImage, true, 1 / 2.2f);
     }
@@ -181,81 +161,13 @@ void RenderLoop::RenderStandaloneFrame(const RenderCommand_RenderStandaloneFrame
 
     // ============= ImGui =============
 
-    imguiRenderer_->Render(frame.imguiDrawData.get(), swapchainImage, renderGraph.get());
-    
+    imguiRenderer_->Render(frame.imguiDrawData, swapchainImage, renderGraph.get());
+
     // ============= Execution =============
 
-    transientConstantBufferAllocator_->Flush();
-    
+    transientCBufferAllocator_->Flush();
     renderGraph->SetCompleteFence(device_->GetFrameFence());
     renderGraphExecuter_->Execute(renderGraph);
-}
-
-template<bool HandleExcpetionExplicitly>
-void RenderLoop::HandleRenderCommand(const RenderCommand &command)
-{
-    auto Exec = [&]<typename F>(const F &f)
-    {
-        if(HandleExcpetionExplicitly && config_.handleCrossThreadException)
-        {
-            try
-            {
-                f();
-            }
-            catch(...)
-            {
-                hasException_ = true;
-                exceptionPtr_ = std::current_exception();
-                continueRenderLoop_ = false;
-            }
-        }
-        else
-        {
-            f();
-        }
-    };
-
-    command.Match(
-        [&](const RenderCommand_ResizeFramebuffer &resize)
-        {
-            RTRC_SCOPE_EXIT{ resize.finishSemaphore->release(); };
-            if(resize.width > 0 && resize.height > 0)
-            {
-                Exec([&]
-                {
-                    device_->GetRawDevice()->WaitIdle();
-                    device_->RecreateSwapchain();
-                    isSwapchainInvalid_ = false;
-                });
-            }
-        },
-        [&](const RenderCommand_RenderStandaloneFrame &frame)
-        {
-            RTRC_SCOPE_EXIT{ frame.finishSemaphore->release(); };
-            Exec([&]
-            {
-                if(isSwapchainInvalid_)
-                {
-                    return;
-                }
-                if(!device_->BeginFrame(false))
-                {
-                    isSwapchainInvalid_ = true;
-                    return;
-                }
-                ++frameIndex_;
-                frameTimer_.BeginFrame();
-                RenderStandaloneFrame(frame);
-                if(!device_->Present())
-                {
-                    isSwapchainInvalid_ = true;
-                }
-            });
-        },
-        [&](const RenderCommand_Exit &)
-        {
-            continueRenderLoop_ = false;
-        });
 }
 
 RTRC_RENDERER_END

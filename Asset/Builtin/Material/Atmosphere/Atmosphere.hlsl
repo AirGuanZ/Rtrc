@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Rtrc/Generated/Reflection.hlsl"
+#include "Generated/Reflection.hlsl"
 
 namespace Atmosphere
 {

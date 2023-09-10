@@ -1,7 +1,0 @@
-package("mydxc")
-    set_sourcedir(os.scriptdir())
-    on_install(function (package)
-        os.cp("include", package:installdir())
-        os.cp("lib/*", package:installdir("lib"))
-        os.cp("bin/*", package:installdir("bin"))
-    end)

@@ -1,87 +1,103 @@
 #pragma once
 
-#include <Rtrc/Scene/Atmosphere.h>
-#include <Rtrc/Scene/Light.h>
-#include <Rtrc/Scene/Renderer/StaticMeshRenderObject.h>
+#include <Core/SignalSlot.h>
+#include <Rtrc/Scene/Light/LightManager.h>
+#include <Rtrc/Scene/MeshRenderer/MeshRendererManager.h>
+#include <Rtrc/Scene/Sky/Sky.h>
 
 RTRC_BEGIN
 
-class SceneProxy : public Uncopyable
+enum class SceneFlagBit : uint32_t
 {
-public:
-
-    ~SceneProxy();
-
-    const AtmosphereProperties &GetAtmosphere() const { return atmosphere_; }
-    const Vector3f &GetSunDirection() const { return sunDirection_; }
-    const Vector3f &GetSunColor() const { return sunColor_; }
-    float GetSunIntensity() const { return sunIntensity_; }
-
-    Span<const Light::SharedRenderingData *> GetLights() const { return lights_; }
-    Span<const StaticMeshRenderProxy*> GetStaticMeshRenderObjects() const { return staticMeshRenderObjects_; }
-
-    UniqueId GetOriginalSceneID() const { return originanSceneID_; }
-
-private:
-
-    friend class Scene;
-
-    enum VersionType
-    {
-        VersionType_UpdateStaticMeshTransform,
-        VersionType_AddOrRemoveStaticMesh,
-        VersionType_Count
-    };
-
-    LinearAllocator arena_;
-
-    AtmosphereProperties atmosphere_;
-    Vector3f                     sunDirection_;
-    Vector3f                     sunColor_;
-    float                        sunIntensity_;
-    
-    std::vector<const Light::SharedRenderingData *> lights_;
-    std::vector<const StaticMeshRenderProxy *>      staticMeshRenderObjects_;
-
-    UniqueId originanSceneID_;
+    EnableRayTracing
 };
 
-class Scene : public Uncopyable, public WithUniqueObjectID
+class Scene : public Uncopyable
 {
 public:
 
     Scene();
-    
-    Box<StaticMeshRenderObject> CreateStaticMeshRenderer();
+    ~Scene();
 
     Box<Light> CreateLight();
 
-          AtmosphereProperties &GetAtmosphere();
-    const AtmosphereProperties &GetAtmosphere() const;
+    Box<MeshRenderer> CreateMeshRenderer();
 
-    void SetAtmosphereSunDirection(const Vector3f &direction) { sunDirection_ = Normalize(direction); }
-    void SetAtmosphereSunColor(const Vector3f &color) { sunColor_ = color; }
-    void SetAtmosphereSunIntensity(float intensity) { sunIntensity_ = intensity; }
+    const Sky &GetSky() const;
+          Sky &GetSky();
 
-    const Vector3f GetAtmosphereSunDirection() const { return sunDirection_; }
-    const Vector3f GetAtmosphereSunColor() const { return sunColor_; }
-    float GetAtmosphereSunIntensity() const { return sunIntensity_; }
+    template<typename F>
+    void ForEachLight(const F &func);
+    template<typename F>
+    void ForEachLight(const F &func) const;
 
-    void PrepareRendering();
+    template<typename F>
+    void ForEachMeshRenderer(const F &func);
+    template<typename F>
+    void ForEachMeshRenderer(const F &func) const;
 
-    Box<SceneProxy> CreateSceneProxy() const;
+    void PrepareRender();
+
+    template<typename...Args>
+    Connection OnDestroy(Args&&...args) const { return onDestroy_.Connect(std::forward<Args>(args)...); }
 
 private:
-    
-    SceneObject rootNode_;
 
-    AtmosphereProperties atmosphere_;
-    Vector3f                     sunDirection_;
-    Vector3f                     sunColor_;
-    float                        sunIntensity_;
+    SceneObject root_;
 
-    LightManager              lightManager_;
-    StaticMeshRendererManager staticRendererManager_;
+    Sky                 sky_;
+    LightManager        lights_;
+    MeshRendererManager meshRenderers_;
+
+    mutable Signal<SignalThreadPolicy::SpinLock> onDestroy_;
 };
+
+inline Box<Light> Scene::CreateLight()
+{
+    auto ret = lights_.CreateLight();
+    ret->SetParent(&root_);
+    return ret;
+}
+
+inline Box<MeshRenderer> Scene::CreateMeshRenderer()
+{
+    auto ret = meshRenderers_.CreateMeshRenderer();
+    ret->SetParent(&root_);
+    return ret;
+}
+
+inline const Sky &Scene::GetSky() const
+{
+    return sky_;
+}
+
+inline Sky &Scene::GetSky()
+{
+    return sky_;
+}
+
+template<typename F>
+void Scene::ForEachLight(const F &func)
+{
+    lights_.ForEachLight(func);
+}
+
+template<typename F>
+void Scene::ForEachLight(const F &func) const
+{
+    lights_.ForEachLight(func);
+}
+
+template<typename F>
+void Scene::ForEachMeshRenderer(const F &func)
+{
+    meshRenderers_.ForEachMeshRenderer(func);
+}
+
+template<typename F>
+void Scene::ForEachMeshRenderer(const F &func) const
+{
+    meshRenderers_.ForEachMeshRenderer(func);
+}
 
 RTRC_END

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Rtrc/Graphics/RHI/RHI.h>
-#include <Rtrc/Graphics/Mesh/MeshLayout.h>
 
 struct SpvReflectShaderModule;
 
@@ -9,7 +8,7 @@ RTRC_BEGIN
 
 struct ShaderIOVar
 {
-    VertexSemantic           semantic;
+    RHI::VertexSemantic      semantic;
     RHI::VertexAttributeType type;
     bool                     isBuiltin;
     int                      location;

@@ -1,11 +1,11 @@
 #pragma once
 
-#include <Rtrc/Graphics/Device/Buffer/ReflectedConstantBufferStruct.h>
-#include <Rtrc/Core/Math/Matrix4x4.h>
-#include <Rtrc/Core/Math/Vector2.h>
-#include <Rtrc/Core/Math/Vector3.h>
-#include <Rtrc/Core/Math/Vector4.h>
-#include <Rtrc/Core/TypeList.h>
+#include <Core/ReflectedStruct.h>
+#include <Core/Math/Matrix4x4.h>
+#include <Core/Math/Vector2.h>
+#include <Core/Math/Vector3.h>
+#include <Core/Math/Vector4.h>
+#include <Core/TypeList.h>
 
 RTRC_BEGIN
 
@@ -45,7 +45,7 @@ namespace ConstantBufferDetail
         }
         else if constexpr(RtrcReflShaderStruct<T>)
         {
-            return ReflectedConstantBufferStruct::GetDeviceDWordCount<T>();
+            return ReflectedStruct::GetDeviceDWordCount<T>();
         }
         else
         {
@@ -73,7 +73,7 @@ namespace ConstantBufferDetail
         }
         else if constexpr(RtrcReflShaderStruct<T>)
         {
-            ReflectedConstantBufferStruct::ToDeviceLayout<T>(
+            ReflectedStruct::ToDeviceLayout<T>(
                 input, output, hostDWordOffset * 4, deviceDWordOffset * 4);
         }
         else

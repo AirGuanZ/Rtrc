@@ -5,8 +5,8 @@
 #include <Rtrc/Graphics/Shader/ParsedBindingGroup.h>
 #include <Rtrc/Graphics/Shader/ShaderBindingNameMap.h>
 #include <Rtrc/Graphics/Shader/ShaderReflection.h>
-#include <Rtrc/Core/SignalSlot.h>
-#include <Rtrc/Core/Unreachable.h>
+#include <Core/SignalSlot.h>
+#include <Core/Unreachable.h>
 
 
 RTRC_BEGIN

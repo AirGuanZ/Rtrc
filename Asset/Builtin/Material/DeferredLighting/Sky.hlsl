@@ -11,7 +11,7 @@
 rtrc_group(Pass, CS)
 {
     REF_GBUFFERS(CS)
-    rtrc_define(ConstantBuffer<CameraConstantBuffer>, Camera)
+    rtrc_define(ConstantBuffer<CameraData>, Camera)
     rtrc_define(Texture2D<float3>, SkyLut)
     rtrc_define(RWTexture2D<float4>, Output)
     rtrc_uniform(uint2, resolution)

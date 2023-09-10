@@ -2,8 +2,8 @@
 
 #include <Rtrc/Renderer/Common.h>
 #include <Rtrc/Renderer/GBuffer/GBufferPass.h>
-#include <Rtrc/Renderer/Scene/RenderCamera.h>
-#include <Rtrc/Core/Enumerate.h>
+#include <Rtrc/Renderer/GPUScene/RenderCamera.h>
+#include <Core/Enumerate.h>
 
 RTRC_RENDERER_BEGIN
 
@@ -12,8 +12,8 @@ namespace GBufferPassDetail
 
     rtrc_group(BindingGroup_GBufferPass)
     {
-        rtrc_define(ConstantBuffer<CameraConstantBuffer>, Camera);
-        rtrc_define(StructuredBuffer,                     PerObjectDataBuffer);
+        rtrc_define(ConstantBuffer<CameraData>, Camera);
+        rtrc_define(StructuredBuffer,           PerObjectDataBuffer);
     };
 
 } // namespace GBufferPassDetail
@@ -109,20 +109,38 @@ std::vector<GBufferPass::MaterialGroup> GBufferPass::CollectPipelineGroups(const
 {
     std::vector<MaterialGroup> materialGroups;
 
-    const Material                              *lastMaterial              = nullptr;
-    const MaterialInstance::SharedRenderingData *lastMaterialRenderingData = nullptr;
-    const Mesh::SharedRenderingData             *lastMeshRenderingData     = nullptr;
+    const Material *lastMaterial = nullptr;
+    const MaterialRenderingCache *lastMaterialRenderingData = nullptr;
+    const MeshRenderingCache *lastMeshRenderingData = nullptr;
 
-    for(auto &&[recordIndex, record] : Enumerate(scene.GetStaticMeshes()))
+    std::vector<RenderCamera::MeshRendererRecord *> rendererRecords =
+        { scene.GetMeshRendererRecords().begin(), scene.GetMeshRendererRecords().end() };
+    std::ranges::sort(
+        rendererRecords,
+        [](const RenderCamera::MeshRendererRecord *lhs, const RenderCamera::MeshRendererRecord *rhs)
+        {
+            return std::make_tuple(
+                        lhs->materialCache->material,
+                        lhs->materialCache->materialInstance,
+                        lhs->meshCache->mesh->GetLayout(),
+                        lhs->meshCache->mesh) <
+                    std::make_tuple(
+                        rhs->materialCache->material,
+                        rhs->materialCache->materialInstance,
+                        rhs->meshCache->mesh->GetLayout(),
+                        rhs->meshCache->mesh);
+    });
+
+    for(auto &&[recordIndex, record] : Enumerate(scene.GetMeshRendererRecords()))
     {
-        const int gbufferPassIndex = record->renderMaterial->gbufferPassIndex;
+        const int gbufferPassIndex = record->materialCache->gbufferPassIndex;
         if(gbufferPassIndex < 0)
             continue;
 
-        if(record->renderMaterial->material != lastMaterial)
+        if(record->materialCache->materialInstance->GetMaterial().get() != lastMaterial)
         {
             auto &group = materialGroups.emplace_back();
-            group.material          = record->renderMaterial->material;
+            group.material          = record->materialCache->materialInstance->GetMaterial().get();
             group.shaderTemplate    = group.material->GetPasses()[gbufferPassIndex]->GetShaderTemplate().get();
             group.supportInstancing = group.shaderTemplate->HasBuiltinKeyword(BuiltinKeyword::EnableInstance);
             group.gbufferPassIndex  = gbufferPassIndex;
@@ -131,29 +149,29 @@ std::vector<GBufferPass::MaterialGroup> GBufferPass::CollectPipelineGroups(const
         }
 
         MaterialGroup &materialGroup = materialGroups.back();
-        assert(materialGroup.material == record->renderMaterial->material);
-        if(record->renderMaterial->materialRenderingData != lastMaterialRenderingData)
+        assert(materialGroup.material == record->materialCache->materialInstance->GetMaterial().get());
+        if(record->materialCache != lastMaterialRenderingData)
         {
             auto &group = materialGroup.materialInstanceGroups.emplace_back();
-            group.materialRenderingData = record->renderMaterial->materialRenderingData;
-            lastMaterialRenderingData = group.materialRenderingData;
+            group.materialCache = record->materialCache;
+            lastMaterialRenderingData = group.materialCache;
             lastMeshRenderingData = nullptr;
         }
 
         MaterialInstanceGroup &materialInstanceGroup = materialGroup.materialInstanceGroups.back();
-        assert(materialInstanceGroup.materialRenderingData == record->renderMaterial->materialRenderingData);
+        assert(materialInstanceGroup.materialCache == record->materialCache);
 
-        if(record->renderMesh->meshRenderingData != lastMeshRenderingData)
+        if(record->meshCache != lastMeshRenderingData)
         {
             auto &group = materialInstanceGroup.meshGroups.emplace_back();
-            group.meshRenderingData = record->renderMesh->meshRenderingData;
+            group.meshCache = record->meshCache;
             group.objectDataOffset  = static_cast<uint32_t>(recordIndex);
             group.objectCount       = 0;
-            lastMeshRenderingData = group.meshRenderingData;
+            lastMeshRenderingData = group.meshCache;
         }
 
         MeshGroup &meshGroup = materialInstanceGroup.meshGroups.back();
-        assert(meshGroup.meshRenderingData == record->renderMesh->meshRenderingData);
+        assert(meshGroup.meshCache == record->meshCache);
         assert(meshGroup.objectDataOffset + meshGroup.objectCount == recordIndex);
         ++meshGroup.objectCount;
     }
@@ -207,36 +225,6 @@ void GBufferPass::DoRenderGBuffers(
         });
     RTRC_SCOPE_EXIT{ commandBuffer.EndRenderPass(); };
 
-    // Sort static meshes by material
-
-    struct MeshRecord
-    {
-        const RenderCamera::StaticMeshRecord *mesh;
-        uint32_t perObjectDataOffset;
-    };
-
-    std::vector<MeshRecord> meshes;
-    for(auto &&[index, record] : Enumerate(camera.GetStaticMeshes()))
-    {
-        if(record->renderMaterial->gbufferPassIndex >= 0)
-        {
-            meshes.push_back({ record, static_cast<uint32_t>(index) });
-        }
-    }
-    assert(std::ranges::is_sorted(meshes, [](const MeshRecord &lhs, const MeshRecord &rhs)
-    {
-        return std::make_tuple(
-                    lhs.mesh->renderMaterial->materialId,
-                    lhs.mesh->renderMaterial,
-                    lhs.mesh->renderMesh->meshRenderingData->GetLayout(),
-                    lhs.mesh->renderMesh) <
-               std::make_tuple(
-                    rhs.mesh->renderMaterial->materialId,
-                    rhs.mesh->renderMaterial,
-                    rhs.mesh->renderMesh->meshRenderingData->GetLayout(),
-                    rhs.mesh->renderMesh);
-    }));
-
     // Dynamic pipeline states
 
     commandBuffer.SetStencilReferenceValue(std::to_underlying(StencilBit::Regular));
@@ -249,7 +237,7 @@ void GBufferPass::DoRenderGBuffers(
     {
         GBufferPassDetail::BindingGroup_GBufferPass passData;
         passData.Camera = camera.GetCameraCBuffer();
-        passData.PerObjectDataBuffer = camera.GetStaticMeshPerObjectData();
+        passData.PerObjectDataBuffer = camera.GetMeshRendererPerObjectDataBuffer();
 
         RTRC_STATIC_BINDING_GROUP_LAYOUT(device_, GBufferPassDetail::BindingGroup_GBufferPass, bindingGroupLayout);
         perPassBindingGroup = device_->CreateBindingGroup(passData, bindingGroupLayout);
@@ -269,15 +257,16 @@ void GBufferPass::DoRenderGBuffers(
 
         for(const MaterialInstanceGroup &materialInstanceGroup : materialGroup.materialInstanceGroups)
         {
-            auto materialRenderingData = materialInstanceGroup.materialRenderingData;
-            auto materialPassInstance = materialRenderingData->GetPassInstance(materialGroup.gbufferPassIndex);
+            auto materialInstance = materialInstanceGroup.materialCache->materialInstance;
+            auto materialPassInstance = materialInstance->GetPassInstance(materialGroup.gbufferPassIndex);
             bool shouldBindMaterialProperties = true;
 
             for(const MeshGroup &meshGroup : materialInstanceGroup.meshGroups)
             {
-                BindMesh(commandBuffer, *meshGroup.meshRenderingData);
-
-                const MeshLayout *meshLayout = meshGroup.meshRenderingData->GetLayout();
+                const Mesh *mesh = meshGroup.meshCache->mesh;
+                mesh->Bind(commandBuffer);
+                
+                const MeshLayout *meshLayout = mesh->GetLayout();
                 if(meshLayout != lastMeshLayout)
                 {
                     pipelineInstanceOn = {};
@@ -325,22 +314,22 @@ void GBufferPass::DoRenderGBuffers(
 
                 if(pipeline != lastPipeline)
                 {
+                    using enum Shader::BuiltinBindingGroup;
+
                     lastPipeline = pipeline;
                     shouldBindMaterialProperties = true;
                     commandBuffer.BindGraphicsPipeline(pipeline);
 
-                    const int passBindingGroupIndex = shader->GetBuiltinBindingGroupIndex(
-                        Shader::BuiltinBindingGroup::Pass);
-                    if(passBindingGroupIndex >= 0)
+                    const int passGroupIndex = shader->GetBuiltinBindingGroupIndex(Pass);
+                    if(passGroupIndex >= 0)
                     {
-                        commandBuffer.BindGraphicsGroup(passBindingGroupIndex, perPassBindingGroup);
+                        commandBuffer.BindGraphicsGroup(passGroupIndex, perPassBindingGroup);
                     }
 
-                    const int bindlessTextureGroupIndex = shader->GetBuiltinBindingGroupIndex(
-                        Shader::BuiltinBindingGroup::BindlessTexture);
-                    if(bindlessTextureGroupIndex >= 0)
+                    const int texGroupIndex = shader->GetBuiltinBindingGroupIndex(BindlessTexture);
+                    if(texGroupIndex >= 0)
                     {
-                        commandBuffer.BindGraphicsGroup(bindlessTextureGroupIndex, bindlessTextureGroup);
+                        commandBuffer.BindGraphicsGroup(texGroupIndex, bindlessTextureGroup);
                     }
                 }
 
@@ -353,27 +342,24 @@ void GBufferPass::DoRenderGBuffers(
                 {
                     const uint32_t perObjectDataOffset = meshGroup.objectDataOffset;
                     commandBuffer.SetGraphicsPushConstants(0, perObjectDataOffset);
-                    if(meshGroup.meshRenderingData->GetIndexCount() > 0)
+                    if(meshGroup.meshCache->mesh->GetIndexCount() > 0)
                     {
-                        commandBuffer.DrawIndexed(
-                            meshGroup.meshRenderingData->GetIndexCount(), meshGroup.objectCount, 0, 0, 0);
+                        commandBuffer.DrawIndexed(mesh->GetIndexCount(), meshGroup.objectCount, 0, 0, 0);
                     }
                     else
                     {
-                        commandBuffer.Draw(
-                            meshGroup.meshRenderingData->GetVertexCount(), meshGroup.objectCount, 0, 0);
+                        commandBuffer.Draw(mesh->GetVertexCount(), meshGroup.objectCount, 0, 0);
                     }
                 }
                 else
                 {
-                    if(meshGroup.meshRenderingData->GetIndexCount() > 0)
+                    if(mesh->GetIndexCount() > 0)
                     {
                         for(uint32_t i = 0; i < meshGroup.objectCount; ++i)
                         {
                             const uint32_t perObjectDataOffset = meshGroup.objectDataOffset + i;
                             commandBuffer.SetGraphicsPushConstants(0, perObjectDataOffset);
-                            commandBuffer.DrawIndexed(
-                                meshGroup.meshRenderingData->GetIndexCount(), 1, 0, 0, 0);
+                            commandBuffer.DrawIndexed(mesh->GetIndexCount(), 1, 0, 0, 0);
                         }
                     }
                     else
@@ -382,8 +368,7 @@ void GBufferPass::DoRenderGBuffers(
                         {
                             const uint32_t perObjectDataOffset = meshGroup.objectDataOffset + i;
                             commandBuffer.SetGraphicsPushConstants(0, perObjectDataOffset);
-                            commandBuffer.Draw(
-                                meshGroup.meshRenderingData->GetVertexCount(), 1, 0, 0);
+                            commandBuffer.Draw(mesh->GetVertexCount(), 1, 0, 0);
                         }
                     }
                 }

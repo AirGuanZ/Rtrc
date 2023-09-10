@@ -63,15 +63,14 @@ void Camera::CalculateDerivedData()
         Matrix4x4f::RotateX(rotation.x) *
         Matrix4x4f::RotateZ(rotation.z);
 
-    forward = (rotateToWorld * Vector4f(0, 0, 1, 0)).xyz();
-    up      = (rotateToWorld * Vector4f(0, 1, 0, 0)).xyz();
-    left    = (rotateToWorld * Vector4f(1, 0, 0, 0)).xyz();
+    front = (rotateToWorld * Vector4f(0, 0, 1, 0)).xyz();
+    up    = (rotateToWorld * Vector4f(0, 1, 0, 0)).xyz();
+    left  = (rotateToWorld * Vector4f(1, 0, 0, 0)).xyz();
     
     cameraToWorld = Matrix4x4f::Translate(position) * rotateToWorld;
     worldToCamera = Transpose(rotateToWorld) * Matrix4x4f::Translate(-position);
 
-    cameraToClip = Matrix4x4f::Perspective(
-        projParams.fovYRad, projParams.wOverH, projParams.nearPlane, projParams.farPlane);
+    cameraToClip = Matrix4x4f::Perspective(fovYRad, wOverH, nearPlane, farPlane);
     clipToCamera = Inverse(cameraToClip); // TODO: optimize
 
     worldToClip = cameraToClip * worldToCamera;
@@ -101,10 +100,10 @@ void Camera::CalculateDerivedData()
     worldRays[1] = worldSpaceRays[1].xyz() / worldSpaceRays[0].w - position;
     worldRays[2] = worldSpaceRays[2].xyz() / worldSpaceRays[0].w - position;
     worldRays[3] = worldSpaceRays[3].xyz() / worldSpaceRays[0].w - position;
-    worldRays[0] = 1.0f / Dot(worldRays[0], forward) * worldRays[0];
-    worldRays[1] = 1.0f / Dot(worldRays[1], forward) * worldRays[1];
-    worldRays[2] = 1.0f / Dot(worldRays[2], forward) * worldRays[2];
-    worldRays[3] = 1.0f / Dot(worldRays[3], forward) * worldRays[3];
+    worldRays[0] = 1.0f / Dot(worldRays[0], front) * worldRays[0];
+    worldRays[1] = 1.0f / Dot(worldRays[1], front) * worldRays[1];
+    worldRays[2] = 1.0f / Dot(worldRays[2], front) * worldRays[2];
+    worldRays[3] = 1.0f / Dot(worldRays[3], front) * worldRays[3];
 }
 
 RTRC_END

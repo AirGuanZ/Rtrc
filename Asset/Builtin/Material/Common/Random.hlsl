@@ -1,6 +1,8 @@
 #ifndef RTRC_COMMON_RANDOM_HLSL
 #define RTRC_COMMON_RANDOM_HLSL
 
+#include "./Frame.hlsl"
+
 namespace Distribution
 {
 
@@ -90,6 +92,28 @@ namespace Pcg
         float v = NextFloat(state);
         return Distribution::UniformOnUnitHemisphere(float2(u, v));
     }
+
+    struct Sampler
+    {
+        uint state_;
+
+        void SetState(uint state) { state_ = state; }
+        uint GetState() { return state_; }
+
+        uint NextUInt() { return Pcg::Next(state_); }
+        float NextFloat() { return Pcg::NextFloat(state_); }
+
+        float3 NextUniformOnUnitSphere() { return Pcg::NextUniformOnUnitSphere(state_); }
+        float3 NextUniformOnUnitHemisphere() { return Pcg::NextUniformOnUnitHemisphere(state_); }
+
+        float3 NextUniformOnUnitHemisphere(float3 normal)
+        {
+            float3 localDir = NextUniformOnUnitHemisphere();
+            LocalFrame frame;
+            frame.InitializeFromNormalizedZ(normal);
+            return frame.LocalToGlobal(localDir);
+        }
+    };
 
 } // namespace Pcg
 

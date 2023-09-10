@@ -1,8 +1,9 @@
 
 #
 # generate_dispatch.py
-# 
+#
 # Copyright © 2021 Cody Goodson (contact@vibimanx.com)
+# Copyright © 2022 Charles Giessen (charles@lunarg.com)
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the “Software”), to deal in the Software without restriction, including without
@@ -27,6 +28,9 @@
 # https://github.com/martinblech/xmltodict
 # User will be prompted to install if not detected
 
+# Command Line Arguments
+# [--auto] Don't ask for input from the command line
+
 # Exclusions
 exclusions = [
 	'vkGetDeviceProcAddr',
@@ -34,12 +38,23 @@ exclusions = [
 	'vkDestroyDevice'
 ]
 
+# Excluded extension authors - don't generate anything for these types of extensions
+excluded_extension_authors = [
+	'NVX'
+]
+
+excluded_alias_types = [
+    'VkPipelineInfoKHR'
+]
+
 # Check for/install xmltodict
 import sys
+import os
 import subprocess
 import pkg_resources
 import copy
 import codecs
+import re
 from string import Template
 
 installed = {pkg.key for pkg in pkg_resources.working_set}
@@ -47,29 +62,34 @@ xmltodict_missing = {'xmltodict'} - installed
 
 # Install xmltodict
 if xmltodict_missing:
-	val = input("xmltodict is required to run this script. Would you like to install? (y/n): ");
+	if '--auto' not in sys.argv:
+		val = input("xmltodict is required to run this script. Would you like to install? (y/n): ")
+	else:
+		val = "y"
 	if(val.lower() == "y"):
 		try:
 			subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'xmltodict'])
 		except subprocess.CalledProcessError as error:
-			print("Failed to install xmltodict due to error:");
-			print(error);
-			input("Press Enter to continue...");
-			sys.exit();
+			print("Failed to install xmltodict due to error:")
+			print(error)
+			if '--auto' not in sys.argv:
+				input("Press Enter to continue...")
+			sys.exit()
 	else:
-		sys.exit();
+		sys.exit()
 
 # Fetch fresh vk.xml from Khronos repo
 import urllib.request
 import xmltodict
 
-try: 
-	response = urllib.request.urlopen('https://raw.githubusercontent.com/KhronosGroup/Vulkan-Headers/master/registry/vk.xml')
+try:
+	response = urllib.request.urlopen('https://raw.githubusercontent.com/KhronosGroup/Vulkan-Headers/main/registry/vk.xml')
 except urllib.error.URLError as error:
-	print("Failed to download vk.xml due to error:");
+	print("Failed to download vk.xml due to error:")
 	print(error.reason)
-	input("Press Enter to continue...");
-	sys.exit();
+	if '-q' not in sys.argv:
+		input("Press Enter to continue...")
+	sys.exit()
 vk_xml_raw = response.read()
 
 vk_xml = xmltodict.parse(vk_xml_raw,process_namespaces=True)
@@ -77,6 +97,12 @@ vk_xml = xmltodict.parse(vk_xml_raw,process_namespaces=True)
 command_params = {'return_type': '', 'args': [], 'requirements': [], 'macro_template': Template('')}
 
 device_commands = {}
+
+aliased_types = {}
+types_node = vk_xml['registry']['types']['type']
+for type_node in  types_node:
+	if '@alias' in type_node:
+		aliased_types[type_node['@alias']] = type_node['@name']
 
 # Gather all device functions/aliases for filtering core/extension function fetching
 commands_node = vk_xml['registry']['commands']['command']
@@ -91,16 +117,17 @@ for command_node in commands_node:
 		else:
 			new_command_params['args'] = [command_node['param']]
 		if not command_name in exclusions:
-			if new_command_params['args'][0]['type'] == 'VkDevice' or new_command_params['args'][0]['type'] == 'VkCommandBuffer' or new_command_params['args'][0]['type'] == 'VkQueue':
+			if new_command_params['args'][0]['type'] in ['VkDevice', 'VkCommandBuffer', 'VkQueue']:
 				device_commands[command_name] = new_command_params
+				device_commands[command_name]['is_alias'] = False
 	elif '@alias' in command_node:
-		aliases[command_node['@alias']] = command_node['@name'];
+		aliases[command_node['@alias']] = command_node['@name']
 
 # Push the alias name as a device function if the alias exists in device commands
 for alias in aliases:
 	if alias in device_commands:
-		aliased_command_params = device_commands[alias].copy()
-		device_commands[aliases[alias]] = aliased_command_params;
+		device_commands[aliases[alias]] = copy.deepcopy(device_commands[alias])
+		device_commands[aliases[alias]]['is_alias'] = True
 
 # Add requirements for core PFN's
 features_node = vk_xml['registry']['feature']
@@ -123,24 +150,30 @@ for extension_node in extensions_node:
 	if 'require' in extension_node.keys():
 		require_nodes = extension_node['require']
 		for require_node in require_nodes:
-			requirements = [extension_name];
+			requirements = [extension_name]
 			if type(require_node) is not str:
 				if 'command' in require_node.keys():
 					if '@feature' in require_node.keys():
 						requirements.append(require_node['@feature'])
 					if '@extension' in require_node.keys():
-						requirements.append(require_node['@extension'])
+						requirements.extend(require_node['@extension'].split(','))
 					if type(require_node['command']) is not list:
 						require_node['command'] = [require_node['command']]
 					for command_node in require_node['command']:
 						if command_node['@name'] in device_commands:
-							device_commands[command_node['@name']]['requirements'] += [requirements]
+							if '@author' in extension_node and extension_node['@author'] in excluded_extension_authors:
+								device_commands.pop(command_node['@name'])
+							else:
+								device_commands[command_node['@name']]['requirements'] += [requirements]
 			elif require_node == 'command':
 				if type(require_nodes['command']) is not list:
 					require_nodes['command'] = [require_nodes['command']]
 				for command_node in require_nodes['command']:
 					if command_node['@name'] in device_commands:
-						device_commands[command_node['@name']]['requirements'] += [requirements]
+						if '@author' in extension_node and extension_node['@author'] in excluded_extension_authors:
+							device_commands.pop(command_node['@name'])
+						else:
+							device_commands[command_node['@name']]['requirements'] += [requirements]
 
 # Generate macro templates
 for command in device_commands:
@@ -162,7 +195,7 @@ for command in device_commands:
 				if collection_count > 0:
 					collection_count -= 1
 					if collection_count > 0:
-				 		macro += ' || '
+						macro += ' || '
 		macro += '\n$body#endif\n'
 	else:
 		macro = '$body'
@@ -171,6 +204,7 @@ for command in device_commands:
 # License
 license = '/* \n'
 license += ' * Copyright © 2021 Cody Goodson (contact@vibimanx.com)\n'
+license += ' * Copyright © 2022 Charles Giessen (charles@lunarg.com)\n'
 license += ' * \n'
 license += ' * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated\n'
 license += ' * documentation files (the “Software”), to deal in the Software without restriction, including without\n'
@@ -203,7 +237,7 @@ pfn_load_section = ''
 
 proxy_template = Template('\t$return_type $proxy_name($args_full) const noexcept {\n\t\t$opt_return$fp_name($args_names);\n\t}\n')
 fp_decl_template = Template('\t$pfn_name $fp_name = nullptr;\n')
-pfn_load_template = Template('\t\t$fp_name = ($pfn_name)procAddr(device, "$command_name");\n')
+pfn_load_template = Template('\t\t$fp_name = reinterpret_cast<$pfn_name>(procAddr(device, "$command_name"));\n')
 
 for command in device_commands:
 	params = device_commands[command]
@@ -224,9 +258,9 @@ for command in device_commands:
 	args_count = len(params['args'])
 	i = args_count
 	for arg in params['args']:
-		front_mods = '';
-		back_mods = ' ';
-		array = '';
+		front_mods = ''
+		back_mods = ' '
+		array = ''
 		arg_type = arg['type']
 		arg_name = arg['name']
 		if '#text' in arg:
@@ -242,6 +276,9 @@ for command in device_commands:
 			elif text == '**':
 				front_mods = ''
 				back_mods = '** '
+			elif text == 'struct**':
+				front_mods = 'struct '
+				back_mods = '** '
 			elif text == 'const*':
 				front_mods = 'const '
 				back_mods = '* '
@@ -251,20 +288,25 @@ for command in device_commands:
 			elif text == 'const*const*':
 				front_mods = 'const '
 				back_mods = '* const* '
+			elif text == 'conststruct*':
+				front_mods = 'const struct '
+				back_mods = '* '
 		if i == args_count and arg_type == 'VkDevice':
 			args_names += arg_name
 			if i > 0:
 				i -= 1
 				if i > 0:
-			 		args_names += ', '
+					args_names += ', '
 		else:
+			if arg_type in aliased_types and  arg_type not in excluded_alias_types:
+				arg_type = aliased_types[arg_type]
 			args_full += arg_template.substitute(front_mods = front_mods, arg_type = arg_type, back_mods = back_mods, arg_name = arg_name, array = array)
 			args_names += arg_name
 			if i > 0:
 				i -= 1
 				if i > 0:
-			 		args_full += ', '
-			 		args_names += ', '
+					args_full += ', '
+					args_names += ', '
 
 	proxy_body = proxy_template.substitute(return_type = return_type, proxy_name = proxy_name, args_full = args_full, opt_return = opt_return, fp_name = fp_name, args_names = args_names)
 	fp_decl_body = fp_decl_template.substitute(pfn_name = pfn_name, fp_name = fp_name)
@@ -286,10 +328,41 @@ body += '\t bool populated = false;\n'
 body += '};\n\n'
 body += '} // namespace vkb'
 
+# find the version used to generate the code
+for type_node in  types_node:
+	if 'name' in type_node and type_node['name'] == 'VK_HEADER_VERSION_COMPLETE':
+		complete_header_version = type_node["#text"]
+	if 'name' in type_node and type_node['name'] == 'VK_HEADER_VERSION':
+		vk_header_version = type_node['#text']
+find_number_fields = re.compile('[0-9]+')
+version_fields = find_number_fields.findall(complete_header_version)
+header_version_field = find_number_fields.findall(vk_header_version)[0]
+version_tag = f'{version_fields[1]}.{version_fields[2]}.{header_version_field}'
+
 header = license + info + body
 
-header_file = codecs.open("../src/VkBootstrapDispatch.h", "w", "utf-8")
-header_file.write(header)
-header_file.close();
+path_to_src = os.path.join('src')
+if not os.path.exists(path_to_src):
+	path_to_src = os.path.join('..', 'src')
+if not os.path.exists(path_to_src):
+	print("Couldn't find source folder. Is the current directory wrong?")
+	sys.exit()
 
-input("Generation finished. Press Enter to continue...")
+header_file = codecs.open(os.path.join(path_to_src,"VkBootstrapDispatch.h"), "w", "utf-8")
+header_file.write(header)
+header_file.close()
+
+path_to_gen = os.path.join('gen')
+if not os.path.exists(path_to_gen):
+	path_to_gen = os.path.join('..', 'gen')
+if not os.path.exists(path_to_gen):
+	print("Couldn't find gen folder. Is the current directory wrong?")
+	sys.exit()
+
+# Generate a CMake file that contains the header version used.
+cmake_version_file = codecs.open(os.path.join(path_to_gen,"CurrentBuildVulkanVersion.cmake"), "w", "utf-8")
+cmake_version_file.write(f'set(VK_BOOTSTRAP_SOURCE_HEADER_VERSION {version_tag})\n')
+cmake_version_file.write(f'set(VK_BOOTSTRAP_SOURCE_HEADER_VERSION_GIT_TAG v{version_tag})\n')
+cmake_version_file.close()
+
+print("Generation finished.")

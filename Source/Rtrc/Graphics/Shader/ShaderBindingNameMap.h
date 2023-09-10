@@ -2,8 +2,8 @@
 
 #include <map>
 
-#include <Rtrc/Core/StringPool.h>
-#include <Rtrc/Core/Uncopyable.h>
+#include <Core/StringPool.h>
+#include <Core/Uncopyable.h>
 
 RTRC_BEGIN
 

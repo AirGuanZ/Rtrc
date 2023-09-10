@@ -1,6 +1,6 @@
 #include <Rtrc/Graphics/RHI/RHI.h>
-#include <Rtrc/Core/String.h>
-#include <Rtrc/Core/Unreachable.h>
+#include <Core/String.h>
+#include <Core/Unreachable.h>
 
 RTRC_RHI_BEGIN
 

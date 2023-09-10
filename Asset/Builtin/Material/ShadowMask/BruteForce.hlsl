@@ -17,7 +17,7 @@ rtrc_group(Pass, CS)
     REF_GBUFFERS(CS)
 
     rtrc_define(RaytracingAccelerationStructure, Scene)
-    rtrc_define(ConstantBuffer<CameraConstantBuffer>, Camera)
+    rtrc_define(ConstantBuffer<CameraData>, Camera)
 
     rtrc_define(RWTexture2D<unorm float>, OutputTextureRW)
 

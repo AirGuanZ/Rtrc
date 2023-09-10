@@ -4,7 +4,7 @@
 #include <volk.h>
 #undef VOLK_IMPLEMENTATION
 
-#include <Rtrc/Core/ScopeGuard.h>
+#include <Core/ScopeGuard.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Context/Device.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Context/Instance.h>
 #include <Rtrc/Graphics/RHI/Vulkan/Context/PhysicalDevice.h>
