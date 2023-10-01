@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/Graphics/Device/Device.h>
+#include <Graphics/Device/Device.h>
 #include <Rtrc/Renderer/Utility/FixedSizedTransientConstantBufferBindingGroupPool.h>
 #include <Rtrc/Renderer/Utility/LinearTransientConstantBufferAllocator.h>
 

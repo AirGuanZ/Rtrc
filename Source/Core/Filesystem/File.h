@@ -14,6 +14,8 @@ namespace File
 
     std::string ReadTextFile(const std::string &filename);
 
+    void WriteTextFile(const std::string &filename, std::string_view content);
+
 } // namespace File
 
 RTRC_END

@@ -1,8 +1,8 @@
 #pragma once
 
-#include <Rtrc/Scene/Camera/Camera.h>
 #include <Core/Timer.h>
-#include <Rtrc/Window/WindowInput.h>
+#include <RHI/Window/WindowInput.h>
+#include <Rtrc/Scene/Camera/Camera.h>
 
 RTRC_BEGIN
 

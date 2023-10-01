@@ -1,7 +1,7 @@
 #include <Core/Math/Frame.h>
 #include <Core/Resource/MeshData.h>
 #include <Core/String.h>
-#include <Rtrc/Graphics/Device/Device.h>
+#include <Graphics/Device/Device.h>
 #include <Rtrc/Resource/MeshManager.h>
 
 RTRC_BEGIN

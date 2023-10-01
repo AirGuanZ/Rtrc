@@ -11,6 +11,11 @@ Box<Light> LightManager::CreateLight()
     return light;
 }
 
+int LightManager::GetLightCount() const
+{
+    return lights_.size();
+}
+
 void LightManager::_internalRelease(Light *light)
 {
     assert(light && light->manager_ == this);

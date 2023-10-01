@@ -36,12 +36,17 @@ public:
         return true;
     }
 
+    static bool IsNonEmptyStringLiterial(std::string_view s)
+    {
+        return s.size() >= 3 && s[0] == '"' && s[s.size() - 1] == '"';
+    }
+
     static bool IsNonIdentifierChar(char c)
     {
         return !std::isalnum(c) && c != '_';
     }
 
-    ShaderTokenStream(const std::string &source, size_t startPos, ErrorMode errMode = ErrorMode::PreprocessedShader)
+    ShaderTokenStream(std::string_view source, size_t startPos, ErrorMode errMode = ErrorMode::PreprocessedShader)
         : nextPos_(startPos), errMode_(errMode), source_(source)
     {
         Next();
@@ -78,6 +83,21 @@ public:
         {
             Throw(msg);
         }
+    }
+
+    std::string ConsumeIdentifierOrThrow(std::string_view msg = "")
+    {
+        if(IsIdentifier(GetCurrentToken()))
+        {
+            auto ret = GetCurrentToken();
+            Next();
+            return ret;
+        }
+        if(msg.empty())
+        {
+            Throw("Identifier expected");
+        }
+        Throw(msg);
     }
 
     size_t GetCurrentPosition() const
@@ -224,7 +244,7 @@ private:
                 {
                     ++filenameEnd;
                 }
-                const std::string filename = source_.substr(filenameStart, filenameEnd - filenameStart);
+                const std::string_view filename = source_.substr(filenameStart, filenameEnd - filenameStart);
 
                 throw Exception(fmt::format("Parsing error at {}, line {}. {}", filename, line, msg));
             }
@@ -280,7 +300,7 @@ private:
     size_t nextPos_;
     ErrorMode errMode_;
     std::string currentToken_;
-    const std::string &source_;
+    std::string_view source_;
 };
 
 RTRC_END

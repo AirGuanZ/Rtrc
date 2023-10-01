@@ -32,6 +32,9 @@
 #define RTRC_RENDERER_BEGIN RTRC_BEGIN namespace Renderer {
 #define RTRC_RENDERER_END   } RTRC_END
 
+#define RTRC_SHADER_COMPILER_BEGIN RTRC_BEGIN namespace SC {
+#define RTRC_SHADER_COMPILER_END } RTRC_END
+
 #if defined(DEBUG) || defined(_DEBUG)
 #define RTRC_DEBUG 1
 #else
@@ -69,6 +72,7 @@ struct _rtrcReflStructBase_shader
     using int2     = Vector2<int>;
     using int3     = Vector3<int>;
     using int4     = Vector4<int>;
+    using uint     = unsigned int;
     using uint2    = Vector2<unsigned int>;
     using uint3    = Vector3<unsigned int>;
     using uint4    = Vector4<unsigned int>;

@@ -1,7 +1,7 @@
 #include <ranges>
 
-#include <Rtrc/Graphics/Device/CommandBuffer.h>
-#include <Rtrc/Graphics/Shader/Shader.h>
+#include <Graphics/Device/CommandBuffer.h>
+#include <Graphics/Shader/Shader.h>
 #include <Rtrc/Resource/Material/ShaderBindingContext.h>
 
 RTRC_BEGIN

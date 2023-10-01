@@ -1,23 +1,27 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(CppReflection)
+project(Reflection)
 
 set(CPP_REFL_SRCS
 	"${CMAKE_CURRENT_SOURCE_DIR}/Frontend.h"
 	"${CMAKE_CURRENT_SOURCE_DIR}/Frontend.cpp"
 	"${CMAKE_CURRENT_SOURCE_DIR}/Main.cpp")
-add_executable(CppReflection ${CPP_REFL_SRCS})
+add_executable(Reflection ${CPP_REFL_SRCS})
 
 foreach(SRC IN ITEMS ${CPP_REFL_SRCS})
     get_filename_component(SRC_PATH "${SRC}" PATH)
-    string(REPLACE "${CMAKE_CURRENT_SOURCE_DIR}" "CppReflection" GROUP_PATH "${SRC_PATH}")
+    string(REPLACE "${CMAKE_CURRENT_SOURCE_DIR}" "Reflection" GROUP_PATH "${SRC_PATH}")
     string(REPLACE "/" "\\" GROUP_PATH "${GROUP_PATH}")
     source_group("${GROUP_PATH}" FILES "${SRC}")
 endforeach()
 
-set_property(TARGET CppReflection PROPERTY CXX_STANDARD 23)
+set_property(TARGET Reflection PROPERTY CXX_STANDARD 23)
 
-target_link_libraries(CppReflection PUBLIC Core LLVM cxxopts version)
+if(MSVC)
+	target_link_options(Reflection PUBLIC "/STACK:10485760") # Default 4MB stack is not enough for cista x libtooling
+endif()
+
+target_link_libraries(Reflection PUBLIC Core LLVM cxxopts version)
 
 function(get_interface_build_includes OUT TARGET_NAME)
 	get_target_property(INCS ${TARGET_NAME} INTERFACE_INCLUDE_DIRECTORIES)
@@ -64,7 +68,7 @@ function(list_to_string RESULT DELIM)
 	set(${RESULT} "${L}" PARENT_SCOPE)
 endfunction()
 
-function(enable_rtrc_cpp_reflection)
+function(enable_rtrc_cpp_reflection_helper)
 
 	# collect sources & includes
 
@@ -82,7 +86,7 @@ function(enable_rtrc_cpp_reflection)
 	# generate reflection input
 
 	set(MAIN_TARGET ${ARGV0})
-	set(GEN_PATH "${CMAKE_BINARY_DIR}/RtrcGenerated/${MAIN_TARGET}")
+	set(GEN_PATH "${CMAKE_SOURCE_DIR}/Asset/RtrcGenerated/${MAIN_TARGET}")
 
 	set(REFL_SOURCE_CONTENT)
 	foreach(SRC ${ALL_SOURCES})
@@ -98,28 +102,29 @@ function(enable_rtrc_cpp_reflection)
 
 	# add generating command
 
-	add_custom_command(
-		OUTPUT
+	set(GEN_FILES
 			"${GEN_PATH}/Generated/Reflection.h"
 			"${GEN_PATH}/Generated/Reflection.hlsl"
 			"${GEN_PATH}/Generated/ReflectionList.inc"
 			"${GEN_PATH}/Generated/ReflectionPath.inc"
+			"${GEN_PATH}/Generated/ReflectionSourceLocation.txt")
+	add_custom_command(
+		OUTPUT ${GEN_FILES}
 		COMMAND
-			CppReflection -i "${GEN_PATH}/sources.txt"
-						  -c "${GEN_PATH}/Generated/Reflection.h"
-						  -s "${GEN_PATH}/Generated/Reflection.hlsl"
-						  -l "${GEN_PATH}/Generated/ReflectionList.inc"
+			Reflection -i "${GEN_PATH}/sources.txt"
+					   -c "${GEN_PATH}/Generated/Reflection.h"
+					   -s "${GEN_PATH}/Generated/Reflection.hlsl"
+					   -l "${GEN_PATH}/Generated/ReflectionList.inc"
+					   -f "${GEN_PATH}/Generated/ReflectionSourceLocation.txt"
 		COMMAND
-			${CMAKE_COMMAND} -E echo "\\\"${GEN_PATH}\\\"" > "${GEN_PATH}/Generated/ReflectionPath.inc"
-		DEPENDS CppReflection "${ALL_SOURCES}")
+			${CMAKE_COMMAND} -E echo "\\\"Asset/RtrcGenerated/${MAIN_TARGET}\\\""
+							 > "${GEN_PATH}/Generated/ReflectionPath.inc"
+		WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+		DEPENDS Reflection "${ALL_SOURCES}")
 
 	add_custom_target(
 		"RtrcGeneratedFilesFor${MAIN_TARGET}" ALL
-		DEPENDS
-			"${GEN_PATH}/Generated/Reflection.h"
-			"${GEN_PATH}/Generated/Reflection.hlsl"
-			"${GEN_PATH}/Generated/ReflectionList.inc"
-			"${GEN_PATH}/Generated/ReflectionPath.inc")
+		DEPENDS ${GEN_FILES})
 	
 	# setup target dependencies		
 			
@@ -131,4 +136,8 @@ function(enable_rtrc_cpp_reflection)
 	target_sources(${MAIN_TARGET} PUBLIC "${CBUFFER_REFL_FILE}")
 	source_group("Reflection" FILES "${CBUFFER_REFL_FILE}")
 
+endfunction()
+
+function(enable_rtrc_cpp_reflection TARGET_NAME)
+	enable_rtrc_cpp_reflection_helper(${TARGET_NAME} Rtrc Graphics)
 endfunction()

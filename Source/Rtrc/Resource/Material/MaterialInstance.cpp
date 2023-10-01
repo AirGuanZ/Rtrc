@@ -3,7 +3,7 @@
 RTRC_BEGIN
 
 template <MaterialProperty::Type Type, typename T>
-void MaterialPropertySheet::SetImpl(MaterialPropertyName name, const T &value)
+void MaterialPropertySheet::SetImpl(ShaderPropertyName name, const T &value)
 {
     const int index = layout_->GetPropertyIndexByName(name);
     if(index < 0)
@@ -51,7 +51,7 @@ void MaterialPropertySheet::CopyFrom(const MaterialPropertySheet &other)
     resources_ = other.resources_;
 }
 
-void MaterialPropertySheet::Set(MaterialPropertyName name, const BindlessTextureEntry &entry)
+void MaterialPropertySheet::Set(ShaderPropertyName name, const BindlessTextureEntry &entry)
 {
     const int index = layout_->GetPropertyIndexByName(name);
     if(index < 0)
@@ -93,7 +93,7 @@ void MaterialPropertySheet::Set(int index, const BindlessTextureEntry &entry)
 }
 
 #define RTRC_IMPL_SET(VALUE_TYPE, TYPE)                                          \
-    void MaterialPropertySheet::Set(MaterialPropertyName name, VALUE_TYPE value) \
+    void MaterialPropertySheet::Set(ShaderPropertyName name, VALUE_TYPE value) \
     {                                                                            \
         this->SetImpl<MaterialProperty::Type::TYPE>(name, value);                \
     }                                                                            \
@@ -125,7 +125,7 @@ RTRC_IMPL_SET(const RC<Tlas>    &, AccelerationStructure)
 
 #undef RTRC_IMPL_SET
 
-const unsigned char *MaterialPropertySheet::GetValue(MaterialPropertyName name) const
+const unsigned char *MaterialPropertySheet::GetValue(ShaderPropertyName name) const
 {
     const int index = layout_->GetPropertyIndexByName(name);
     return index >= 0 ? GetValue(index) : nullptr;
@@ -136,7 +136,7 @@ const unsigned char *MaterialPropertySheet::GetValue(int index) const
     return GetValueBuffer() + layout_->GetValueOffset(index);
 }
 
-const BindlessTextureEntry *MaterialPropertySheet::GetBindlessTextureEntry(MaterialPropertyName name) const
+const BindlessTextureEntry *MaterialPropertySheet::GetBindlessTextureEntry(ShaderPropertyName name) const
 {
     const int index = layout_->GetPropertyIndexByName(name);
     return index >= 0 ? GetBindlessTextureEntry(index) : nullptr;

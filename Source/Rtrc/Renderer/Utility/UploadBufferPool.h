@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/Graphics/Device/Device.h>
+#include <Graphics/Device/Device.h>
 #include <Core/SmartPointer/ObserverPtr.h>
 
 RTRC_BEGIN

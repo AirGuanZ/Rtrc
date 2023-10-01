@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Core/SmartPointer/ObserverPtr.h>
-#include <Rtrc/Graphics/Device/Device.h>
+#include <Graphics/Device/Device.h>
 #include <Rtrc/Resource/Mesh/Mesh.h>
 
 RTRC_BEGIN

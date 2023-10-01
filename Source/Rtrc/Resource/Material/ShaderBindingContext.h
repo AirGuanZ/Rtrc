@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/Graphics/Device/BindingGroup.h>
+#include <Graphics/Device/BindingGroup.h>
 
 RTRC_BEGIN
 

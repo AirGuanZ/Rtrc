@@ -105,7 +105,7 @@ void Run()
             RTRC_SCOPE_EXIT{ commandBuffer.EndRenderPass(); };
 
             commandBuffer.BindGraphicsPipeline(pipeline);
-            commandBuffer.BindMesh(*mesh);
+            mesh->Bind(commandBuffer);
             matPassInst->BindGraphicsProperties(0, commandBuffer);
             commandBuffer.BindGraphicsGroup(0, bindingGroup);
             commandBuffer.SetViewports(renderTarget->GetViewport());

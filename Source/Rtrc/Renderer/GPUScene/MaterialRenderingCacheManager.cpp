@@ -35,14 +35,14 @@ void MaterialRenderingCacheManager::Update(const Scene &scene)
             cache.materialInstance = record.materialInstance;
             cache.material = record.materialInstance->GetMaterial().get();
             
-            auto albedoEntry = propertySheet.GetBindlessTextureEntry(RTRC_MATERIAL_PROPERTY_NAME(albedoTextureIndex));
+            auto albedoEntry = propertySheet.GetBindlessTextureEntry(RTRC_SHADER_PROPERTY_NAME(albedoTextureIndex));
             if(albedoEntry)
             {
                 cache.albedoTextureEntry = *albedoEntry;
             }
 
             cache.albedoScale = 1.0f;
-            if(auto scaleProp = propertySheet.GetValue(RTRC_MATERIAL_PROPERTY_NAME(albedoScale)))
+            if(auto scaleProp = propertySheet.GetValue(RTRC_SHADER_PROPERTY_NAME(albedoScale)))
             {
                 cache.albedoScale = *reinterpret_cast<const float *>(scaleProp);
             }

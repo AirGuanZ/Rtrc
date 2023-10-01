@@ -1,8 +1,9 @@
 #pragma once
 
 #include <Core/Container/ObjectCache.h>
-#include <Rtrc/Graphics/Shader/ShaderCompiler.h>
+#include <Graphics/Shader/ShaderCompiler.h>
 #include <Rtrc/Resource/Material/Keyword.h>
+#include <ShaderCompiler/Compiler/Compiler.h>
 
 RTRC_BEGIN
 

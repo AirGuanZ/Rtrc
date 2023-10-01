@@ -1,3 +1,4 @@
+#include <filesystem>
 #include <queue>
 
 #ifdef _MSC_VER
@@ -28,9 +29,19 @@ namespace FrontendDetail
 
     const Type *RemoveTypedefs(const Type *type)
     {
-        while(auto tt = type->getAs<TypedefType>())
+        while(true)
         {
-            type = tt->desugar().getTypePtr();
+            if(auto tt = type->getAs<TypedefType>())
+            {
+                type = tt->desugar().getTypePtr();
+                continue;
+            }
+            if(auto tt = type->getAs<UsingType>())
+            {
+                type = tt->desugar().getTypePtr();
+                continue;
+            }
+            break;
         }
         return type;
     }
@@ -135,6 +146,9 @@ namespace FrontendDetail
                     outField.typeStr = field->getType().getAsString();
                 }
                 outField.typeStr += templateArgStr;
+
+                if(outField.typeStr == "uint")
+                    outField.typeStr = "unsigned int";
                 
                 static const std::map<std::string, FieldKind> STR_TO_TYPE =
                 {
@@ -158,6 +172,18 @@ namespace FrontendDetail
                     outField.kind = FieldKind::Others;
 
                 outField.name = field->getNameAsString();
+            }
+            
+            const SourceLocation loc = record->getLocation();
+            const PresumedLoc presumedLoc = matchResult.SourceManager->getPresumedLoc(loc);
+            if(presumedLoc.isValid())
+            {
+                std::string filename = presumedLoc.getFilename();
+                if(!filename.empty())
+                {
+                    auto path = std::filesystem::path(filename);
+                    outRecord.sourceFilename = absolute(path).lexically_normal().string();
+                }
             }
         }
 
@@ -307,7 +333,7 @@ std::vector<Struct> ParseStructs(const SourceInfo &sourceInfo)
     std::vector<std::string> commandLine;
     commandLine.push_back("-ferror-limit=0");
     commandLine.push_back("-DRTRC_REFLECTION_TOOL=1");
-    //commandLine.push_back("-std=c++23");
+    commandLine.push_back("-std=c++23");
     for(auto &dir : sourceInfo.includeDirs)
     {
         commandLine.push_back("-I");

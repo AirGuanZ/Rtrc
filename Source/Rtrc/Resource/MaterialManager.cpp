@@ -843,7 +843,7 @@ MaterialProperty MaterialManager::ParseProperty(MaterialProperty::Type propertyT
 
     MaterialProperty prop;
     prop.type = propertyType;
-    prop.name = MaterialPropertyName(propertyName);
+    prop.name = ShaderPropertyName(propertyName);
     return prop;
 }
 

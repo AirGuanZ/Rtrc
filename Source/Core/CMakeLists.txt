@@ -26,4 +26,5 @@ endif()
 target_include_directories(Core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..")
 target_link_libraries(
 	Core PUBLIC
-	mimalloc-static spdlog fmt tbbinterface stb tinyexr half tinyobjloader sigslot avir cy smhasher)
+	mimalloc-static spdlog fmt tbbinterface stb tinyexr
+	half tinyobjloader sigslot avir cy smhasher cista)

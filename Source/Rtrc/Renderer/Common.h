@@ -1,11 +1,14 @@
 #pragma once
 
-#include <Rtrc/Graphics/Device/Device.h>
+#include <Graphics/Device/Device.h>
 #include <Rtrc/Resource/ResourceManager.h>
 #include <Rtrc/Scene/Camera/Camera.h>
 #include <Rtrc/Scene/Scene.h>
 
 RTRC_RENDERER_BEGIN
+
+class RenderScene;
+class RenderCamera;
 
 enum class StencilBit : uint8_t
 {

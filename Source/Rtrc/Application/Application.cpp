@@ -1,5 +1,5 @@
 #include <Rtrc/Application/Application.h>
-#include <Rtrc/Graphics/RenderGraph/Executable.h>
+#include <Graphics/RenderGraph/Executable.h>
 
 RTRC_BEGIN
 

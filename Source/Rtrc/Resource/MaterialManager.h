@@ -1,8 +1,9 @@
 #pragma once
 
-#include <Rtrc/Graphics/Device/LocalCache/LocalMaterialCache.h>
-#include <Rtrc/Graphics/Device/LocalCache/LocalShaderCache.h>
+#include <Rtrc/Resource/LocalCache/LocalMaterialCache.h>
+#include <Rtrc/Resource/LocalCache/LocalShaderCache.h>
 #include <Rtrc/Resource/Material/Material.h>
+#include <ShaderCompiler/Compiler/Compiler.h>
 
 RTRC_BEGIN
 

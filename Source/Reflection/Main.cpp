@@ -6,6 +6,7 @@
 #include <string>
 
 #include <cxxopts.hpp>
+#include <fmt/format.h>
 
 #include <Reflection/Frontend.h>
 
@@ -15,6 +16,7 @@ struct Options
     std::string outputCppReflectionFile;
     std::string outputShaderHeaderFile;
     std::string outputListFile;
+    std::string outputStructToFilenameFile;
 };
 
 constexpr auto COMMON_HEADER = R"___(#pragma once
@@ -33,6 +35,7 @@ std::optional<Options> ParseOptions(int argc, const char *argv[])
         ("c,cpp",   "Cpp reflection output file", cxxopts::value<std::string>())
         ("s,hlsl",  "Shader header file",         cxxopts::value<std::string>())
         ("l,list",  "List file",                  cxxopts::value<std::string>())
+        ("f,file",  "Struct to file mapping",     cxxopts::value<std::string>())
         ("h,help",  "Print usage");
 
     auto parseResult = options.parse(argc, argv);
@@ -51,6 +54,8 @@ std::optional<Options> ParseOptions(int argc, const char *argv[])
         result.outputShaderHeaderFile = parseResult["hlsl"].as<std::string>();
     if(parseResult.count("list"))
         result.outputListFile = parseResult["list"].as<std::string>();
+    if(parseResult.count("file"))
+        result.outputStructToFilenameFile = parseResult["file"].as<std::string>();
     return result;
 }
 
@@ -249,6 +254,28 @@ std::string GenerateList(std::span<const Struct> structs)
     return ret;
 }
 
+std::string GenerateStructToFileList(std::span<const Struct> structs)
+{
+    size_t maxNameLen = 0;
+    for(auto &s : structs)
+        maxNameLen = (std::max)(maxNameLen, s.qualifiedName.size());
+
+    std::string ret;
+    for(const Struct &s : structs)
+    {
+        ret += s.qualifiedName;
+        for(size_t i = s.qualifiedName.size(); i < maxNameLen; ++i)
+            ret += ' ';
+        if(!s.sourceFilename.empty())
+        {
+            ret += ", ";
+            ret += s.sourceFilename;
+        }
+        ret += ";\n";
+    }
+    return ret;
+}
+
 int main(int argc, const char *argv[])
 {
     auto options = ParseOptions(argc, argv);
@@ -316,5 +343,10 @@ int main(int argc, const char *argv[])
     {
         const std::string content = GenerateList(structs);
         WriteTxt(options->outputListFile, content);
+    }
+    if(!options->outputStructToFilenameFile.empty())
+    {
+        const std::string content = GenerateStructToFileList(structs);
+        WriteTxt(options->outputStructToFilenameFile, content);
     }
 }

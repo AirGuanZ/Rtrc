@@ -1,4 +1,4 @@
-#include <Rtrc/Graphics/Device/Device.h>
+#include <Graphics/Device/Device.h>
 #include <Rtrc/Resource/ResourceManager.h>
 
 RTRC_BEGIN

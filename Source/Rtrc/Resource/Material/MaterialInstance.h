@@ -20,7 +20,7 @@ public:
     void CopyFrom(const MaterialPropertySheet &other);
 
 #define RTRC_DECL_SET(TYPE) \
-    void Set(MaterialPropertyName name, TYPE value); \
+    void Set(ShaderPropertyName name, TYPE value); \
     void Set(int index, TYPE value);
 
     RTRC_DECL_SET(float           )
@@ -46,7 +46,7 @@ public:
 
 #undef RTRC_DECL_SET
 
-    void Set(MaterialPropertyName, const BindlessTextureEntry &entry);
+    void Set(ShaderPropertyName, const BindlessTextureEntry &entry);
     void Set(int index,            const BindlessTextureEntry &entry);
 
     const unsigned char *GetValueBuffer() const { return valueBuffer_.data(); }
@@ -54,16 +54,16 @@ public:
 
     const RC<MaterialPropertyHostLayout> &GetHostLayout() const { return layout_; }
 
-    const unsigned char *GetValue(MaterialPropertyName name) const; // Returns nullptr if not found
+    const unsigned char *GetValue(ShaderPropertyName name) const; // Returns nullptr if not found
     const unsigned char *GetValue(int index) const;
 
-    const BindlessTextureEntry *GetBindlessTextureEntry(MaterialPropertyName name) const; // Returns nullptr if not found
+    const BindlessTextureEntry *GetBindlessTextureEntry(ShaderPropertyName name) const; // Returns nullptr if not found
     const BindlessTextureEntry *GetBindlessTextureEntry(int index) const;
 
 private:
 
     template<MaterialProperty::Type Type, typename T>
-    void SetImpl(MaterialPropertyName name, const T &value);
+    void SetImpl(ShaderPropertyName name, const T &value);
 
     template<MaterialProperty::Type Type, typename T>
     void SetImpl(int index, const T &value);
@@ -142,27 +142,27 @@ public:
     MaterialPassInstance *GetPassInstance(MaterialPassTag tag) const;
     MaterialPassInstance *GetPassInstance(size_t index) const;
     
-    void SetFloat(MaterialPropertyName name, float value)      { SetPropertyImpl<true>(name, value); }
-    void Set(MaterialPropertyName name, const Vector2f &value) { SetPropertyImpl<true>(name, value); }
-    void Set(MaterialPropertyName name, const Vector3f &value) { SetPropertyImpl<true>(name, value); }
-    void Set(MaterialPropertyName name, const Vector4f &value) { SetPropertyImpl<true>(name, value); }
+    void SetFloat(ShaderPropertyName name, float value)      { SetPropertyImpl<true>(name, value); }
+    void Set(ShaderPropertyName name, const Vector2f &value) { SetPropertyImpl<true>(name, value); }
+    void Set(ShaderPropertyName name, const Vector3f &value) { SetPropertyImpl<true>(name, value); }
+    void Set(ShaderPropertyName name, const Vector4f &value) { SetPropertyImpl<true>(name, value); }
 
-    void SetUInt(MaterialPropertyName name, uint32_t value)    { SetPropertyImpl<true>(name, value); }
-    void Set(MaterialPropertyName name, const Vector2u &value) { SetPropertyImpl<true>(name, value); }
-    void Set(MaterialPropertyName name, const Vector3u &value) { SetPropertyImpl<true>(name, value); }
-    void Set(MaterialPropertyName name, const Vector4u &value) { SetPropertyImpl<true>(name, value); }
+    void SetUInt(ShaderPropertyName name, uint32_t value)    { SetPropertyImpl<true>(name, value); }
+    void Set(ShaderPropertyName name, const Vector2u &value) { SetPropertyImpl<true>(name, value); }
+    void Set(ShaderPropertyName name, const Vector3u &value) { SetPropertyImpl<true>(name, value); }
+    void Set(ShaderPropertyName name, const Vector4u &value) { SetPropertyImpl<true>(name, value); }
 
-    void SetInt(MaterialPropertyName name, int32_t value)      { SetPropertyImpl<true>(name, value); }
-    void Set(MaterialPropertyName name, const Vector2i &value) { SetPropertyImpl<true>(name, value); }
-    void Set(MaterialPropertyName name, const Vector3i &value) { SetPropertyImpl<true>(name, value); }
-    void Set(MaterialPropertyName name, const Vector4i &value) { SetPropertyImpl<true>(name, value); }
+    void SetInt(ShaderPropertyName name, int32_t value)      { SetPropertyImpl<true>(name, value); }
+    void Set(ShaderPropertyName name, const Vector2i &value) { SetPropertyImpl<true>(name, value); }
+    void Set(ShaderPropertyName name, const Vector3i &value) { SetPropertyImpl<true>(name, value); }
+    void Set(ShaderPropertyName name, const Vector4i &value) { SetPropertyImpl<true>(name, value); }
 
-    void Set(MaterialPropertyName name, const TextureSrv &srv) { SetPropertyImpl<false>(name, srv); }
-    void Set(MaterialPropertyName name, const BufferSrv &srv)  { SetPropertyImpl<false>(name, srv); }
-    void Set(MaterialPropertyName name, RC<Sampler> sampler)   { SetPropertyImpl<false>(name, sampler); }
+    void Set(ShaderPropertyName name, const TextureSrv &srv) { SetPropertyImpl<false>(name, srv); }
+    void Set(ShaderPropertyName name, const BufferSrv &srv)  { SetPropertyImpl<false>(name, srv); }
+    void Set(ShaderPropertyName name, RC<Sampler> sampler)   { SetPropertyImpl<false>(name, sampler); }
 
     template<typename T>
-    void Set(MaterialPropertyName name, const T &value)
+    void Set(ShaderPropertyName name, const T &value)
     {
         propertySheet_.Set(name, value);
     }
@@ -170,7 +170,7 @@ public:
 private:
 
     template<bool CBuffer, typename T>
-    void SetPropertyImpl(MaterialPropertyName name, const T &value)
+    void SetPropertyImpl(ShaderPropertyName name, const T &value)
     {
         propertySheet_.Set(name, value);
         if constexpr(CBuffer)

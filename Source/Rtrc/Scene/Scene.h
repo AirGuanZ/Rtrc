@@ -19,12 +19,13 @@ public:
     Scene();
     ~Scene();
 
-    Box<Light> CreateLight();
-
+    Box<Light>        CreateLight();
     Box<MeshRenderer> CreateMeshRenderer();
 
     const Sky &GetSky() const;
           Sky &GetSky();
+
+    int GetLightCount() const;
 
     template<typename F>
     void ForEachLight(const F &func);
@@ -74,6 +75,11 @@ inline const Sky &Scene::GetSky() const
 inline Sky &Scene::GetSky()
 {
     return sky_;
+}
+
+inline int Scene::GetLightCount() const
+{
+    return lights_.GetLightCount();
 }
 
 template<typename F>

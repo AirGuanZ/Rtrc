@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/Graphics/Device/Device.h>
+#include <Graphics/Device/Device.h>
 #include <Rtrc/Scene/Light/Light.h>
 
 RTRC_BEGIN
@@ -12,6 +12,8 @@ public:
     // ============= Management =============
     
     Box<Light> CreateLight();
+
+    int GetLightCount() const;
 
     template<typename F>
     void ForEachLight(const F &f);

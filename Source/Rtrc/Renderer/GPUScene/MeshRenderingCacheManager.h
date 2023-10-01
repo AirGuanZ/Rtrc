@@ -1,8 +1,9 @@
 #pragma once
 
 #include <Rtrc/Renderer/GPUScene/BlasBuilder.h>
-#include <Rtrc/Renderer/RenderCommand.h>
 #include <Rtrc/Resource/BindlessResourceManager.h>
+#include <Rtrc/Scene/Camera/Camera.h>
+#include <Rtrc/Scene/Scene.h>
 
 RTRC_RENDERER_BEGIN
 

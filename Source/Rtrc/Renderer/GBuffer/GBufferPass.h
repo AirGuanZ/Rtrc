@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/Graphics/Misc/PipelineCache.h>
+#include <Graphics/Misc/PipelineCache.h>
 #include <Rtrc/Renderer/GPUScene/RenderCamera.h>
 #include <Rtrc/Renderer/GPUScene/RenderScene.h>
 

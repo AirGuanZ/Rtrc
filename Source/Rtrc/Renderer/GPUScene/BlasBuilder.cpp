@@ -1,4 +1,4 @@
-#include <Rtrc/Graphics/Device/Device.h>
+#include <Graphics/Device/Device.h>
 #include <Rtrc/Renderer/GPUScene/BlasBuilder.h>
 
 RTRC_RENDERER_BEGIN

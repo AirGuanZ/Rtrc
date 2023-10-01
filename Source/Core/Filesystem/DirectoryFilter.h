@@ -8,6 +8,23 @@
 
 RTRC_BEGIN
 
+//
+//  Filename pattern:
+//      DirectoryPattern/NamePattern(.ExtensionPattern)
+//
+//  DirectoryPattern:
+//      Single directory:      xxx/yyy/zzz
+//      Recursive directories: xxx/yyy/*
+//
+//  NamePattern & ExtensionPattern:
+//      Fixed:           xxx
+//      Any:             *
+//      Suffix:          *xxx
+//      Infix:           *xxx*
+//      Prefix:          xxx*
+//      Prefix & suffix: xxx*yyy
+//
+
 namespace DirectoryFilter
 {
 

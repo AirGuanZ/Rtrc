@@ -1,11 +1,11 @@
 #pragma once
 
-#include <Rtrc/Graphics/ImGui/Instance.h>
-#include <Rtrc/Graphics/RenderGraph/Executable.h>
+#include <Graphics/ImGui/Instance.h>
+#include <Graphics/RenderGraph/Executable.h>
 #include <Rtrc/Renderer/Debug/GBufferVisualizer.h>
 #include <Rtrc/Renderer/GBuffer/GBufferPass.h>
-#include <Rtrc/Renderer/RenderCommand.h>
 #include <Rtrc/Renderer/GPUScene/RenderCamera.h>
+#include <Rtrc/Renderer/RenderSettings.h>
 #include <Core/Timer.h>
 
 RTRC_RENDERER_BEGIN

@@ -111,7 +111,7 @@ void Run()
                 .clearValue   = ColorClearValue{ 0, 1, 1, 1 }
             });
             commandBuffer.BindGraphicsPipeline(pipeline);
-            commandBuffer.BindMesh(*mesh);
+            mesh->Bind(commandBuffer);
             matPassInst->BindGraphicsProperties(keywords, commandBuffer);
             commandBuffer.SetViewports(renderTarget->GetViewport());
             commandBuffer.SetScissors(renderTarget->GetScissor());

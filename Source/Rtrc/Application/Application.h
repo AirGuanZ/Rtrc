@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/Graphics/ImGui/Instance.h>
+#include <Graphics/ImGui/Instance.h>
 #include <Rtrc/Renderer/RenderLoop.h>
 #include <Rtrc/Resource/ResourceManager.h>
 #include <Core/Timer.h>

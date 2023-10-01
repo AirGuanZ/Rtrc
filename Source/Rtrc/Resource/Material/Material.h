@@ -5,7 +5,7 @@
 #include <Core/Container/SharedObjectPool.h>
 #include <Core/SignalSlot.h>
 #include <Core/StringPool.h>
-#include <Rtrc/Graphics/Device/Device.h>
+#include <Graphics/Device/Device.h>
 #include <Rtrc/Resource/Material/ShaderTemplate.h>
 
 /* Material
@@ -66,8 +66,8 @@ struct MaterialProperty
     static const char *GetTypeName(Type type);
     const char        *GetTypeName() const;
 
-    Type                 type;
-    MaterialPropertyName name;
+    Type               type;
+    ShaderPropertyName name;
 };
 
 // Describe how properties are stored in a material instance
@@ -87,17 +87,17 @@ public:
 
     size_t GetValueBufferSize() const;
     size_t GetValueOffset(int index) const;
-    size_t GetValueOffset(MaterialPropertyName name) const;
+    size_t GetValueOffset(ShaderPropertyName name) const;
 
     // return -1 when not found
-    int GetPropertyIndexByName(MaterialPropertyName name) const;
-    const MaterialProperty &GetPropertyByName(MaterialPropertyName name) const;
+    int GetPropertyIndexByName(ShaderPropertyName name) const;
+    const MaterialProperty &GetPropertyByName(ShaderPropertyName name) const;
 
 private:
 
     // value0, value1, ..., resource0, resource1, ...
     std::vector<MaterialProperty>                    sortedProperties_;
-    std::map<MaterialPropertyName, int, std::less<>> nameToIndex_;
+    std::map<ShaderPropertyName, int, std::less<>> nameToIndex_;
     size_t                                           valueBufferSize_;
     std::vector<size_t>                              valueIndexToOffset_;
 };
@@ -293,7 +293,7 @@ inline size_t MaterialPropertyHostLayout::GetValueOffset(int index) const
     return valueIndexToOffset_[index];
 }
 
-inline size_t MaterialPropertyHostLayout::GetValueOffset(MaterialPropertyName name) const
+inline size_t MaterialPropertyHostLayout::GetValueOffset(ShaderPropertyName name) const
 {
     auto it = nameToIndex_.find(name);
     if(it == nameToIndex_.end())
@@ -304,13 +304,13 @@ inline size_t MaterialPropertyHostLayout::GetValueOffset(MaterialPropertyName na
 }
 
 // return -1 when not found
-inline int MaterialPropertyHostLayout::GetPropertyIndexByName(MaterialPropertyName name) const
+inline int MaterialPropertyHostLayout::GetPropertyIndexByName(ShaderPropertyName name) const
 {
     auto it = nameToIndex_.find(name);
     return it != nameToIndex_.end() ? it->second : -1;
 }
 
-inline const MaterialProperty &MaterialPropertyHostLayout::GetPropertyByName(MaterialPropertyName name) const
+inline const MaterialProperty &MaterialPropertyHostLayout::GetPropertyByName(ShaderPropertyName name) const
 {
     const int index = GetPropertyIndexByName(name);
     if(index < 0)

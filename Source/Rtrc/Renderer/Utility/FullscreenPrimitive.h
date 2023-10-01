@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/Graphics/Device/Device.h>
+#include <Graphics/Device/Device.h>
 #include <Rtrc/Resource/Mesh/Mesh.h>
 #include <Rtrc/Scene/Camera/Camera.h>
 

@@ -2,8 +2,8 @@
 
 #include <Core/Math/AABB.h>
 #include <Core/Container/ObjectCache.h>
-#include <Rtrc/Graphics/Device/Buffer.h>
-#include <Rtrc/Resource/Mesh/MeshLayout.h>
+#include <Graphics/Device/Buffer.h>
+#include <Graphics/Device/MeshLayout.h>
 
 RTRC_BEGIN
 

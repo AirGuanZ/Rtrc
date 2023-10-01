@@ -1,7 +1,7 @@
 #pragma once
 
 #include <shared_mutex>
-#include <Rtrc/Graphics/Device/Device.h>
+#include <Graphics/Device/Device.h>
 #include <Core/Container/RangeSet.h>
 #include <Core/SmartPointer/ObserverPtr.h>
 

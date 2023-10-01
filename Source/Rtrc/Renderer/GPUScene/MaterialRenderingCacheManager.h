@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/Renderer/RenderCommand.h>
+#include <Rtrc/Renderer/Common.h>
 
 RTRC_RENDERER_BEGIN
 

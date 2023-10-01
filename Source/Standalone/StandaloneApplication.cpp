@@ -46,8 +46,8 @@ void StandaloneApplication::Initialize(const Rtrc::ApplicationInitializeContext 
         pointLight_->SetPosition({ 0, 2, -3 });
         pointLight_->SetColor({ 1, 1, 1 });
         pointLight_->SetIntensity(1);
-        pointLight_->SetDistanceFadeBegin(1.0f);
-        pointLight_->SetDistanceFadeEnd(5.0f);
+        pointLight_->SetDistFadeBegin(1.0f);
+        pointLight_->SetDistFadeEnd(5.0f);
         pointLight_->SetFlags(Rtrc::Light::Flags::RayTracedShadow);
     }
 }
@@ -80,10 +80,10 @@ void StandaloneApplication::Update(const Rtrc::ApplicationUpdateContext &context
         imgui.SliderAngle("Sun Direction", &sunAngle_, 1, 179);
         sunAngle_ = std::clamp(sunAngle_, Rtrc::Deg2Rad(1), Rtrc::Deg2Rad(179));
 
-        float shadowSoftness = pointLight_->GetShadowSoftness();
+        float shadowSoftness = pointLight_->GetSoftness();
         if(imgui.SliderFloat("Shadow Softness", &shadowSoftness, 0.0f, 0.999f))
         {
-            pointLight_->SetShadowSoftness(shadowSoftness);
+            pointLight_->SetSoftness(shadowSoftness);
         }
 
         imgui.CheckBox("Indirect Diffuse", &GetRenderSettings().enableIndirectDiffuse);

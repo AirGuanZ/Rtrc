@@ -39,6 +39,8 @@ struct Struct
     std::set<std::string> annotations;
     std::vector<Field>    fields;
 
+    std::string sourceFilename;
+
     auto operator<=>(const Struct &) const = default;
 };
 
