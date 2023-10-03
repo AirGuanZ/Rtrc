@@ -3,6 +3,8 @@
 #include <Rtrc/Renderer/GPUScene/RenderCamera.h>
 #include <Rtrc/Renderer/Utility/PcgStateTexture.h>
 
+#include <Rtrc/Renderer/PathTracer/Shader/PathTracing.shader.outh>
+
 RTRC_RENDERER_BEGIN
 
 void PathTracer::Render(
@@ -35,28 +37,11 @@ void PathTracer::Render(
         renderGraph.CreateClearRWTexture2DPass(
             "Clear IndirectDiffuse Output", traceResult, Vector4f(0, 0, 0, 0));
     }
-    
-    rtrc_group(TracePassGroup, CS)
-    {
-        rtrc_inline(GBufferBindings_NormalDepth, gbuffers);
 
-        rtrc_define(ConstantBuffer<CameraData>, Camera);
-
-        rtrc_define(Texture2D, SkyLut);
-
-        rtrc_define(RaytracingAccelerationStructure, OpaqueScene_Tlas);
-        rtrc_define(StructuredBuffer,                OpaqueScene_Instances);
-
-        rtrc_define(RWTexture2D, RngState);
-
-        rtrc_define(RWTexture2D, Output);
-        rtrc_uniform(uint2,      outputResolution);
-
-        rtrc_uniform(uint, maxDepth);
-    };
+    using TraceGroup = StaticShaderInfo<"PathTracing/Trace">::Variant::Pass;
 
     auto tracePass = renderGraph.CreatePass("Trace");
-    DeclareGBufferUses<TracePassGroup>(tracePass, gbuffers, RHI::PipelineStage::ComputeShader);
+    DeclareGBufferUses<TraceGroup>(tracePass, gbuffers, RHI::PipelineStage::ComputeShader);
     tracePass->Use(camera.GetAtmosphereData().S, RG::CS_Texture);
     tracePass->Use(scene.GetTlas(),              RG::CS_ReadAS);
     tracePass->Use(scene.GetInstanceBuffer(),    RG::CS_StructuredBuffer);
@@ -64,19 +49,18 @@ void PathTracer::Render(
     tracePass->Use(traceResult,                  RG::CS_RWTexture_WriteOnly);
     tracePass->SetCallback([gbuffers, traceResult, rngState, &scene, &camera, framebufferSize, this]
     {
-            auto material = resources_->GetMaterialManager()->GetCachedMaterial<"Builtin/PathTracing">().get();
-        auto shader = material->GetPassByIndex(PassIndex_Trace)->GetShader().get();
+        auto shader = resources_->GetMaterialManager()->GetCachedShader<"PathTracing/Trace">();
 
-        TracePassGroup passData;
+        TraceGroup passData;
         FillBindingGroupGBuffers(passData, gbuffers);
-        passData.Camera                = camera.GetCameraCBuffer();
-        passData.SkyLut                = camera.GetAtmosphereData().S;
-        passData.OpaqueScene_Tlas      = scene.GetTlas();
-        passData.OpaqueScene_Instances = scene.GetInstanceBuffer()->GetStructuredSrv(sizeof(RenderScene::TlasInstance));
-        passData.RngState              = rngState;
-        passData.Output                = traceResult;
-        passData.outputResolution      = framebufferSize;
-        passData.maxDepth              = 5;
+        passData.Camera                    = camera.GetCameraCBuffer();
+        passData.SkyLut                    = camera.GetAtmosphereData().S;
+        passData.OpaqueScene_Tlas          = scene.GetTlas();
+        passData.OpaqueScene_TlasInstances = scene.GetInstanceBuffer()->GetStructuredSrv(sizeof(RenderScene::TlasInstance));
+        passData.RngState                  = rngState;
+        passData.Output                    = traceResult;
+        passData.outputResolution          = framebufferSize;
+        passData.maxDepth                  = 5;
         auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
         auto geometryBufferGroup = scene.GetBindlessGeometryBuffers();
         auto textureGroup = scene.GetBindlessTextures();
@@ -90,13 +74,14 @@ void PathTracer::Render(
     // =================== Temporal filter ===================
 
     std::swap(perCameraData.prev, perCameraData.curr);
-    if(perCameraData.prev && perCameraData.prev->GetSize() != framebufferSize)
+    assert((perCameraData.prev != nullptr) == (perCameraData.curr != nullptr));
+    if(perCameraData.curr && perCameraData.curr->GetSize() != framebufferSize)
     {
-        perCameraData.prev = nullptr;
+        perCameraData.curr = nullptr;
     }
 
     RG::TextureResource *prev, *curr;
-    if(!perCameraData.curr || perCameraData.curr->GetSize() != framebufferSize)
+    if(!perCameraData.curr)
     {
         const RHI::TextureDesc desc =
         {
@@ -120,34 +105,23 @@ void PathTracer::Render(
         curr = renderGraph.RegisterTexture(perCameraData.curr);
     }
 
-    rtrc_group(TemporalFilterPassGroup, CS)
-    {
-        rtrc_define(Texture2D, CurrDepth);
-        rtrc_define(Texture2D, PrevDepth);
-
-        rtrc_define(ConstantBuffer<CameraData>, CurrCamera);
-        rtrc_define(ConstantBuffer<CameraData>, PrevCamera);
-
-        rtrc_define(Texture2D,   History);
-        rtrc_define(Texture2D,   TraceResult);
-        rtrc_define(RWTexture2D, Resolved);
-
-        rtrc_uniform(uint2, resolution);
-    };
+    using TemporalFilterGroup = StaticShaderInfo<"PathTracing/TemporalFilter">::Variant::Pass;
 
     auto temporalFilterPass = renderGraph.CreatePass("TemporalFilter");
     temporalFilterPass->Use(gbuffers.currDepth, RG::CS_Texture);
-    temporalFilterPass->Use(gbuffers.prevDepth, RG::CS_Texture);
+    if(gbuffers.prevDepth)
+    {
+        temporalFilterPass->Use(gbuffers.prevDepth, RG::CS_Texture);
+    }
     temporalFilterPass->Use(prev,               RG::CS_Texture);
     temporalFilterPass->Use(traceResult,        RG::CS_Texture);
     temporalFilterPass->Use(curr,               RG::CS_RWTexture_WriteOnly);
     temporalFilterPass->SetCallback([gbuffers, prev, traceResult, curr, &camera, this]
     {
-            auto material = resources_->GetMaterialManager()->GetCachedMaterial<"Builtin/PathTracing">().get();
-        auto shader = material->GetPassByIndex(PassIndex_TemporalFilter)->GetShader().get();
+        auto shader = resources_->GetMaterialManager()->GetCachedShader<"PathTracing/TemporalFilter">();
 
-        TemporalFilterPassGroup passData;
-        passData.PrevDepth   = gbuffers.prevDepth;
+        TemporalFilterGroup passData;
+        passData.PrevDepth   = gbuffers.prevDepth ? gbuffers.prevDepth : gbuffers.currDepth;
         passData.CurrDepth   = gbuffers.currDepth;
         passData.CurrCamera  = camera.GetCameraCBuffer();
         passData.PrevCamera  = camera.GetPreviousCameraCBuffer();
@@ -165,29 +139,23 @@ void PathTracer::Render(
 
     // =================== Spatial filter ===================
 
-    rtrc_group(SpatialFilterPassGroup, CS)
-    {
-        rtrc_inline(GBufferBindings_NormalDepth, gbuffers);
-        rtrc_define(Texture2D, In);
-        rtrc_define(RWTexture2D, Out);
-        rtrc_uniform(uint2, resolution);
-        rtrc_uniform(float4x4, cameraToClip);
-    };
+    using SpatialFilterGroup = StaticShaderInfo<"PathTracing/SpatialFilter">::Variant<false>::Pass;
 
     auto AddSpatialFilterPass = [&]<bool IsDirectionY>(RG::TextureResource *in, RG::TextureResource *out)
     {
         auto pass = renderGraph.CreatePass("SpatialFilter");
-        DeclareGBufferUses<SpatialFilterPassGroup>(pass, gbuffers, RHI::PipelineStage::ComputeShader);
+        DeclareGBufferUses<SpatialFilterGroup>(pass, gbuffers, RHI::PipelineStage::ComputeShader);
         pass->Use(in, RG::CS_Texture);
         pass->Use(out, RG::CS_RWTexture_WriteOnly);
         pass->SetCallback([gbuffers, in, out, &camera, this]
         {
-            KeywordContext keywords;
-            keywords.Set(RTRC_KEYWORD(IS_FILTER_DIRECTION_Y), IsDirectionY ? 1 : 0);
-            auto material = resources_->GetMaterialManager()->GetCachedMaterial<"Builtin/PathTracing">().get();
-            auto shader = material->GetPassByIndex(PassIndex_SpatialFilter)->GetShader(keywords).get();
+            FastKeywordContext keywords;
+            keywords.Set(RTRC_FAST_KEYWORD(IS_FILTER_DIRECTION_Y), IsDirectionY ? 1 : 0);
+            auto shader = resources_->GetMaterialManager()
+                                    ->GetCachedShaderTemplate<"PathTracing/SpatialFilter">()
+                                    ->GetVariant(keywords);
 
-            SpatialFilterPassGroup passData;
+            SpatialFilterGroup passData;
             FillBindingGroupGBuffers(passData, gbuffers);
             passData.In           = in;
             passData.Out          = out;

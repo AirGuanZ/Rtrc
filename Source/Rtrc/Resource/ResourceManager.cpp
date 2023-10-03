@@ -14,23 +14,11 @@ ResourceManager::ResourceManager(ObserverPtr<Device> device, bool debugMode)
     : device_(device)
 {
     materialManager_.SetDevice(device);
-    materialManager_.SetDebugMode(debugMode);
+    materialManager_.SetDebug(debugMode);
     meshManager_.SetDevice(device);
 
     LoadBuiltinMeshes();
     LoadBuiltinTextures();
-
-    materialManager_.AddIncludeDirectory(ReflectedStruct::GetGeneratedFilePath());
-}
-
-void ResourceManager::AddMaterialFiles(const std::set<std::filesystem::path> &filenames)
-{
-    materialManager_.AddFiles(filenames);
-}
-
-void ResourceManager::AddShaderIncludeDirectory(std::string_view dir)
-{
-    materialManager_.AddIncludeDirectory(dir);
 }
 
 RC<Material> ResourceManager::GetMaterial(const std::string &name)
@@ -38,14 +26,14 @@ RC<Material> ResourceManager::GetMaterial(const std::string &name)
     return materialManager_.GetMaterial(name);
 }
 
-RC<ShaderTemplate> ResourceManager::GetShaderTemplate(const std::string &name)
+RC<ShaderTemplate> ResourceManager::GetShaderTemplate(const std::string &name, bool persistent)
 {
-    return materialManager_.GetShaderTemplate(name);
+    return materialManager_.GetShaderTemplate(name, persistent);
 }
 
-RC<Shader> ResourceManager::GetShader(const std::string &name)
+RC<Shader> ResourceManager::GetShader(const std::string &name, bool persistent)
 {
-    return materialManager_.GetShader(name);
+    return materialManager_.GetShader(name, persistent);
 }
 
 RC<Mesh> ResourceManager::GetMesh(std::string_view name, MeshFlags flags)

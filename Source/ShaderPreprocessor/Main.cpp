@@ -5,8 +5,8 @@
 #include <Core/Filesystem/File.h>
 #include <Core/Serialization/TextSerializer.h>
 #include <Core/SourceWriter.h>
-#include <ShaderCompiler/DXC/DXC.h>
-#include <ShaderCompiler/Parser/ShaderParser.h>
+#include <ShaderCommon/DXC/DXC.h>
+#include <ShaderCommon/Parser/ShaderParser.h>
 
 struct CommandArguments
 {
@@ -104,24 +104,25 @@ std::string_view BindingNameToTypeName(Rtrc::RHI::BindingType type)
 }
 
 void GenerateBindingGroupDefinition(
-    Rtrc::SourceWriter                 &sw,
-    const Rtrc::SC::ParsedBindingGroup &group,
-    std::string_view                    name)
+    Rtrc::SourceWriter             &sw,
+    const Rtrc::ParsedBindingGroup &group,
+    std::string_view                name)
 {
-    sw("rtrc_group({})", name).NewLine();
+    const std::string uniformStages = GetShaderStageFlagsName(group.stages);
+    sw("rtrc_group({}, {})", name, uniformStages).NewLine();
     sw("{").NewLine();
     ++sw;
 
     for(size_t i = 0; i < group.bindings.size(); ++i)
     {
         auto &binding = group.bindings[i];
-        if(group.isRef[i])
-        {
-            sw("rtrc_ref({}, {});", binding.name, ToString(binding.stages)).NewLine();
-            continue;
-        }
+        //if(group.isRef[i])
+        //{
+        //    sw("rtrc_ref({}, {});", binding.name, ToString(binding.stages)).NewLine();
+        //    continue;
+        //}
 
-        const std::string_view typeStr = BindingNameToTypeName(binding.type);
+        const std::string_view typeStr = binding.rawTypeName;
 
         std::string templateParamStr;
         if(binding.type == Rtrc::RHI::BindingType::ConstantBuffer && !binding.templateParam.empty())
@@ -153,24 +154,33 @@ void GenerateBindingGroupDefinition(
             head, typeStr, templateParamStr, arraySizeStr, binding.name, ToString(binding.stages)).NewLine();
     }
 
+    for(size_t i = 0; i < group.uniformPropertyDefinitions.size(); ++i)
+    {
+        auto &uniform = group.uniformPropertyDefinitions[i];
+        sw("rtrc_uniform({}, {});", uniform.type, uniform.name).NewLine();
+    }
+
     --sw;
     sw("};").NewLine();
 }
 
 void GenerateKeywordAndBindingGroupsInShader(
-    Rtrc::SourceWriter           &sw,
-    const Rtrc::SC::RawShader    &rawShader,
-    const Rtrc::SC::ParsedShader &parsedShader)
+    Rtrc::SourceWriter       &sw,
+    const Rtrc::RawShader    &rawShader,
+    const Rtrc::ParsedShader &parsedShader)
 {
     std::cout << "Preprocessing shader " << rawShader.shaderName << std::endl;
     const std::string namespaceName = ShaderNameToNamespaceName(parsedShader.name);
+
+    sw("#ifndef RTRC_STATIC_SHADER_INFO_{}", namespaceName).NewLine();
+    sw("#define RTRC_STATIC_SHADER_INFO_{}", namespaceName).NewLine();
 
     sw("namespace Rtrc::ShaderInfoDetail::{}", namespaceName).NewLine();
     sw("{").NewLine();
     ++sw;
 
     std::set<std::string> allBindingGroupNames;
-    std::map<Rtrc::SC::ParsedBindingGroup, std::string> bindingGroupNames;
+    std::map<Rtrc::ParsedBindingGroup, std::string> bindingGroupNames;
     auto &bgsw = sw.GetSubWritter();
     bgsw("namespace BindingGroups", namespaceName).NewLine();
     bgsw("{").NewLine();
@@ -180,11 +190,11 @@ void GenerateKeywordAndBindingGroupsInShader(
 
     for(auto &keyword : parsedShader.keywords)
     {
-        if(keyword.Is<Rtrc::SC::BoolShaderKeyword>())
+        if(keyword.Is<Rtrc::BoolShaderKeyword>())
         {
             continue;
         }
-        auto &enumKeyword = keyword.As<Rtrc::SC::EnumShaderKeyword>();
+        auto &enumKeyword = keyword.As<Rtrc::EnumShaderKeyword>();
         sw("enum class {} : uint32_t", enumKeyword.name).NewLine();
         sw("{").NewLine();
         ++sw;
@@ -206,11 +216,11 @@ void GenerateKeywordAndBindingGroupsInShader(
                 sw(", ");
             }
             parsedShader.keywords[i].Match(
-                [&](const Rtrc::SC::BoolShaderKeyword &keyword)
+                [&](const Rtrc::BoolShaderKeyword &keyword)
                 {
                     sw("bool kw{}", keyword.name);
                 },
-                [&](const Rtrc::SC::EnumShaderKeyword &keyword)
+                [&](const Rtrc::EnumShaderKeyword &keyword)
                 {
                     sw("{} kw{}", keyword.name, keyword.name);
                 });
@@ -242,11 +252,11 @@ void GenerateKeywordAndBindingGroupsInShader(
                 }
                 const int value = keywordValues[keywordIndex].value;
                 parsedShader.keywords[keywordIndex].Match(
-                    [&](const Rtrc::SC::BoolShaderKeyword &)
+                    [&](const Rtrc::BoolShaderKeyword &)
                     {
                         sw(value ? "true" : "false");
                     },
-                    [&](const Rtrc::SC::EnumShaderKeyword &keyword)
+                    [&](const Rtrc::EnumShaderKeyword &keyword)
                     {
                         sw("{}::{}", keyword.name, keyword.values[value]);
                     });
@@ -294,18 +304,18 @@ void GenerateKeywordAndBindingGroupsInShader(
     --sw;
     sw("}").NewLine(); // namespace Rtrc::ShaderInfoDetail::ShaderNamespaceName
 
-    sw("namespace Rtrc::ShaderDatabase").NewLine();
+    sw("namespace Rtrc").NewLine();
     sw("{").NewLine();
     ++sw;
 
     sw("template<>").NewLine();
-    sw("struct ShaderInfo<TemplateStringParameter<\"{}\">>", rawShader.shaderName).NewLine();
+    sw("struct StaticShaderInfo<TemplateStringParameter(\"{}\")>", rawShader.shaderName).NewLine();
     sw("{").NewLine();
     ++sw;
 
     for(auto &keyword : parsedShader.keywords)
     {
-        if(auto kw = keyword.AsIf<Rtrc::SC::EnumShaderKeyword>())
+        if(auto kw = keyword.AsIf<Rtrc::EnumShaderKeyword>())
         {
             sw(
                 "using {} = Rtrc::ShaderInfoDetail::{}::{};",
@@ -326,12 +336,12 @@ void GenerateKeywordAndBindingGroupsInShader(
                 templateArgsStr += ", ";
             }
             parsedShader.keywords[i].Match(
-                [&](const Rtrc::SC::BoolShaderKeyword &keyword)
+                [&](const Rtrc::BoolShaderKeyword &keyword)
                 {
                     sw("bool kw{}", keyword.name);
                     templateArgsStr += "kw" + keyword.name;
                 },
-                [&](const Rtrc::SC::EnumShaderKeyword &keyword)
+                [&](const Rtrc::EnumShaderKeyword &keyword)
                 {
                     sw("{} kw{}", keyword.name, keyword.name);
                     templateArgsStr += keyword.name + "kw" + keyword.name;
@@ -349,42 +359,46 @@ void GenerateKeywordAndBindingGroupsInShader(
 
     --sw;
     sw("}").NewLine();
+
+    sw("#endif // #ifndef RTRC_STATIC_SHADER_INFO_{}", namespaceName).NewLine();
 }
 
-void GenerateShaderRegistration(
-    Rtrc::SourceWriter                       &sw,
-    const Rtrc::SC::ParsedShader             &parsedShader,
-    const Rtrc::SC::ShaderCompileEnvironment &envir)
+void FillStringAsCharArray(Rtrc::SourceWriter &sw, std::string_view varName, std::string_view data)
+{
+    constexpr int CHARS_PER_LINE = 512;
+    sw("static const char {}[] = {{", varName).NewLine();
+    ++sw;
+    for(size_t i = 0; i < data.size(); i += CHARS_PER_LINE)
+    {
+        const size_t end = std::min(i + CHARS_PER_LINE, data.size());
+        for(size_t j = i; j < end; ++j)
+        {
+            sw("0x{:0>2x}, ", static_cast<int>(data[j]));
+        }
+        sw.NewLine();
+    }
+    if(!data.empty())
+    {
+        sw("0").NewLine();
+    }
+    --sw;
+    sw("};").NewLine();
+}
+
+void GenerateShaderRegistration(Rtrc::SourceWriter &sw, const Rtrc::ParsedShader &parsedShader)
 {
     sw("template<>").NewLine();
-    sw("void _rtrcRegisterShaderInfo<__COUNTER__>(ShaderDatabase &database)").NewLine();
+    sw("void _rtrcRegisterShaderInfo<__COUNTER__>(Rtrc::ShaderDatabase &database)").NewLine();
     sw("{").NewLine();
     ++sw;
 
     Rtrc::TextSerializer parsedShaderSerializer;
     parsedShaderSerializer(parsedShader, "shader");
-    std::string parsedShaderString = parsedShaderSerializer.ResolveResult();
+    const std::string parsedShaderString = parsedShaderSerializer.ResolveResult();
+    FillStringAsCharArray(sw, "SERIALIZED_SHADER", parsedShaderString);
 
-    constexpr int CHARS_PER_LINE = 40;
-
-    // Parsed shader
-
-    sw("static const char SERIALIZED_SHADER[] = {").NewLine();
-    ++sw;
-    for(size_t i = 0; i <= parsedShaderString.size() /* '\0' is also included */; i += CHARS_PER_LINE)
-    {
-        const size_t end = std::min(i + CHARS_PER_LINE, parsedShaderString.size());
-        for(size_t j = i; j < end; ++j)
-        {
-            sw("{}, ", static_cast<int>(parsedShaderString[j]));
-        }
-        sw.NewLine();
-    }
-    --sw;
-    sw("};").NewLine();
-
-    sw("TextDeserializer shaderDeser;").NewLine();
-    sw("ParsedShader shader;").NewLine();
+    sw("Rtrc::TextDeserializer shaderDeser;").NewLine();
+    sw("Rtrc::ParsedShader shader;").NewLine();
     sw("shaderDeser.SetSource(std::string(SERIALIZED_SHADER));").NewLine();
     sw("shaderDeser(shader, \"shader\");").NewLine();
 
@@ -394,60 +408,81 @@ void GenerateShaderRegistration(
     sw("}").NewLine();
 }
 
-int main(int argc, const char *argv[])
+void GenerateMaterialRegistration(Rtrc::SourceWriter &sw, const std::vector<Rtrc::RawMaterialRecord> &materials)
+{
+    sw("template<>").NewLine();
+    sw("void _rtrcRegisterMaterial<__COUNTER__>(Rtrc::MaterialManager &manager)").NewLine();
+    sw("{").NewLine();
+    ++sw;
+
+    Rtrc::TextSerializer ser;
+    ser(materials, "materials");
+    const std::string materialsString = ser.ResolveResult();
+    FillStringAsCharArray(sw, "SERIALIZED_MATERIALS", materialsString);
+
+    sw("Rtrc::TextDeserializer deser;").NewLine();
+    sw("std::vector<Rtrc::RawMaterialRecord> materials;").NewLine();
+    sw("deser.SetSource(std::string(SERIALIZED_MATERIALS));").NewLine();
+    sw("deser(materials, \"materials\");").NewLine();
+
+    sw("for(auto &m : materials)").NewLine();
+    sw("{").NewLine();
+    ++sw;
+    sw("manager.AddMaterial(m);").NewLine();
+    --sw;
+    sw("}").NewLine();
+
+    --sw;
+    sw("}").NewLine();
+}
+
+void Run(int argc, const char *argv[])
 {
     const auto args = ParseCommandArguments(argc, argv);
     if(!args)
     {
-        return 0;
+        return;
     }
 
-    struct FileRecord
+    Rtrc::SourceWriter sw;
+    
     {
-        std::vector<const Rtrc::SC::RawShader*> shaders;
-    };
-    std::map<std::string, FileRecord> fileRecords;
+        const auto rawShaderDatabase = Rtrc::CreateRawShaderDatabase({ args->inputFilename });
 
-    const Rtrc::SC::RawShaderDatabase rawShaderDatabase = Rtrc::SC::CreateRawShaderDatabase({ args->inputFilename });
-    for(const Rtrc::SC::RawShader &rawShader : rawShaderDatabase.rawShaders)
-    {
-        fileRecords[rawShader.filename].shaders.push_back(&rawShader);
-    }
-
-    Rtrc::SC::DXC dxc;
-    Rtrc::SC::ShaderCompileEnvironment envir;
-    for(auto &inc : args->includeDirectory)
-    {
-        envir.includeDirs.push_back(std::filesystem::absolute(inc).lexically_normal().string());
-    }
-
-    for(const auto &[path, file] : fileRecords)
-    {
-        std::cout << "Preprocessing file " << path << std::endl;
-
-        std::vector<Rtrc::SC::ParsedShader> parsedShaders;
-        for(const Rtrc::SC::RawShader *rawShader : file.shaders)
+        Rtrc::DXC dxc;
+        Rtrc::ShaderCompileEnvironment envir;
+        for(auto &inc : args->includeDirectory)
         {
-            parsedShaders.push_back(ParseShader(envir, &dxc, *rawShader));
+            envir.includeDirs.push_back(std::filesystem::absolute(inc).lexically_normal().string());
         }
 
-        Rtrc::SourceWriter sw;
-        sw("#pragma once").NewLine(2);
+        std::vector<Rtrc::ParsedShader> parsedShaders;
+        for(const Rtrc::RawShader &rawShader : rawShaderDatabase.rawShaders)
+        {
+            parsedShaders.push_back(ParseShader(envir, &dxc, rawShader));
+        }
 
-        sw("#if ENABLE_SHADER_INFO").NewLine();
+        sw("/*=============================================================================").NewLine();
+        sw("    Generated by Rtrc shader preprocessor. Don't modify this file directly.").NewLine();
+        sw("=============================================================================*/").NewLine();
+        sw.NewLine();
+
+        sw("#if !RTRC_REFLECTION_TOOL").NewLine();
+
+        sw("#if !ENABLE_SHADER_REGISTRATION && !ENABLE_MATERIAL_REGISTRATION").NewLine();
         sw("#include <Core/TemplateStringParameter.h>").NewLine();
         sw("#include <Graphics/Device/BindingGroupDSL.h>").NewLine();
-        sw("#include <ShaderCompiler/Database/ShaderInfo.h>").NewLine();
+        sw("#include <Graphics/Shader/ShaderInfo.h>").NewLine();
         for(size_t i = 0; i < parsedShaders.size(); ++i)
         {
-            GenerateKeywordAndBindingGroupsInShader(sw, *file.shaders[i], parsedShaders[i]);
+            GenerateKeywordAndBindingGroupsInShader(sw, rawShaderDatabase.rawShaders[i], parsedShaders[i]);
         }
-        sw("#endif // #if ENABLE_SHADER_INFO").NewLine();
+        sw("#endif // #if !ENABLE_SHADER_REGISTRATION &&  && !ENABLE_MATERIAL_REGISTRATION").NewLine();
 
         sw("#if ENABLE_SHADER_REGISTRATION").NewLine();
         for(size_t i = 0; i < parsedShaders.size(); ++i)
         {
-            GenerateShaderRegistration(sw, parsedShaders[i], envir);
+            GenerateShaderRegistration(sw, parsedShaders[i]);
         }
         sw("#endif // #if ENABLE_SHADER_REGISTRATION").NewLine();
 
@@ -456,5 +491,46 @@ int main(int argc, const char *argv[])
         
         create_directories(outputFile.parent_path());
         Rtrc::File::WriteTextFile(outputFile.string(), content);
+    }
+
+    if(args->inputFilename.ends_with(".material"))
+    {
+        const std::string fileContent = Rtrc::File::ReadTextFile(args->inputFilename);
+        std::vector<Rtrc::RawMaterialRecord> rawMaterials;
+        std::vector<Rtrc::RawShader> rawShaders;
+        Rtrc::ParseRawMaterials(fileContent, rawMaterials, rawShaders);
+        sw("#if ENABLE_MATERIAL_REGISTRATION").NewLine();
+        GenerateMaterialRegistration(sw, rawMaterials);
+        sw("#endif // #if ENABLE_MATERIAL_REGISTRATION").NewLine();
+    }
+
+    sw("#endif // #if !RTRC_REFLECTION_TOOL").NewLine();
+
+    const std::string content = sw.ResolveResult();
+    const auto outputFile = absolute(std::filesystem::path(args->outputFilename));
+
+    create_directories(outputFile.parent_path());
+    Rtrc::File::WriteTextFile(outputFile.string(), content);
+}
+
+int main(int argc, const char *argv[])
+{
+    try
+    {
+        Run(argc, argv);
+    }
+    catch(const Rtrc::Exception &e)
+    {
+#if RTRC_ENABLE_EXCEPTION_STACKTRACE
+        Rtrc::LogError("{}\n{}", e.what(), e.stacktrace());
+#else
+        Rtrc::LogErrorUnformatted(e.what());
+#endif
+        return -1;
+    }
+    catch(const std::exception &e)
+    {
+        Rtrc::LogErrorUnformatted(e.what());
+        return -1;
     }
 }

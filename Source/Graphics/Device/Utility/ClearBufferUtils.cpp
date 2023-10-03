@@ -1,6 +1,6 @@
 #include <Graphics/Device/Device.h>
 #include <Graphics/Device/Utility/ClearBufferUtils.h>
-#include <Graphics/Shader/ShaderCompiler.h>
+#include <Graphics/Shader/StandaloneCompiler.h>
 
 RTRC_BEGIN
 
@@ -8,7 +8,7 @@ namespace ClearBufferUtilsDetail
 {
 
     const char *SHADER_SOURCE_RWBUFFER = R"___(
-#comp CSMain
+rtrc_comp(CSMain)
 rtrc_group(Pass)
 {
     rtrc_define(RWBuffer<uint>, Out)
@@ -31,7 +31,7 @@ void CSMain(uint tid : SV_DispatchThreadID)
     };
 
     const char *SHADER_SOURCE_RWSTRUCTURED_BUFFER = R"___(
-#comp CSMain
+rtrc_comp(CSMain)
 rtrc_group(Pass)
 {
     rtrc_define(RWStructuredBuffer<uint>, Out)
@@ -58,21 +58,15 @@ void CSMain(uint tid : SV_DispatchThreadID)
 ClearBufferUtils::ClearBufferUtils(ObserverPtr<Device> device)
     : device_(device)
 {
-    ShaderCompiler shaderCompiler;
+    StandaloneShaderCompiler shaderCompiler;
     shaderCompiler.SetDevice(device);
-
-    ShaderCompiler::ShaderSource source =
-    {
-        .source = ClearBufferUtilsDetail::SHADER_SOURCE_RWBUFFER
-    };
-    clearRWBufferShader_ = shaderCompiler.Compile(source, {}, RTRC_DEBUG);
+    
+    clearRWBufferShader_ = shaderCompiler.Compile(
+        ClearBufferUtilsDetail::SHADER_SOURCE_RWBUFFER, {}, RTRC_DEBUG);
     clearRWBufferBindingGroupLayout_ = clearRWBufferShader_->GetBindingGroupLayoutByIndex(0);
-
-    source =
-    {
-        .source = ClearBufferUtilsDetail::SHADER_SOURCE_RWSTRUCTURED_BUFFER
-    };
-    clearRWStructuredBufferShader_ = shaderCompiler.Compile(source, {}, RTRC_DEBUG);
+    
+    clearRWStructuredBufferShader_ = shaderCompiler.Compile(
+        ClearBufferUtilsDetail::SHADER_SOURCE_RWSTRUCTURED_BUFFER, {}, RTRC_DEBUG);
     clearRWStructuredBufferBindingGroupLayout_ = clearRWStructuredBufferShader_->GetBindingGroupLayoutByIndex(0);
 }
 

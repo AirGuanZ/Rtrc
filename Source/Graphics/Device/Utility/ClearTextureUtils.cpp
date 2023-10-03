@@ -1,12 +1,12 @@
 #include <Graphics/Device/Utility/ClearTextureUtils.h>
-#include <Graphics/Shader/ShaderCompiler.h>
+#include <Graphics/Shader/StandaloneCompiler.h>
 
 RTRC_BEGIN
 
 namespace ClearTextureUtilsDetail
 {
     const char *SHADER_SOURCE_CLEAR = R"___(
-#comp CSMain
+rtrc_comp(CSMain)
 rtrc_group(Pass)
 {
     rtrc_define(RWTexture2D<OUTPUT_TYPE>, Output)
@@ -34,13 +34,10 @@ void CSMain(uint2 tid : SV_DispatchThreadID)
 ClearTextureUtils::ClearTextureUtils(ObserverPtr<Device> device)
     : device_(device)
 {
-    ShaderCompiler shaderCompiler;
+    StandaloneShaderCompiler shaderCompiler;
     shaderCompiler.SetDevice(device);
 
-    ShaderCompiler::ShaderSource source =
-    {
-        .source = ClearTextureUtilsDetail::SHADER_SOURCE_CLEAR
-    };
+    const std::string source = ClearTextureUtilsDetail::SHADER_SOURCE_CLEAR;
     clearFloat4Shader_ = shaderCompiler.Compile(
         source, { { "OUTPUT_TYPE", "float4" }, { "VALUE_TYPE", "float4" } }, RTRC_DEBUG);
     clearFloat2Shader_ = shaderCompiler.Compile(

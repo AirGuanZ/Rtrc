@@ -22,4 +22,5 @@ set_property(TARGET Standalone PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_S
 
 target_link_libraries(Standalone PUBLIC Rtrc)
 
-enable_rtrc_cpp_reflection(Standalone Rtrc)
+enable_rtrc_cpp_reflection(Standalone)
+enable_preprocessed_shaders(Standalone "")

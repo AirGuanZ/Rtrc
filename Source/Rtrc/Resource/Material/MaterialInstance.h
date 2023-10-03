@@ -1,6 +1,5 @@
 #pragma once
 
-#include <Core/SmartPointer/CopyOnWritePtr.h>
 #include <Rtrc/Resource/BindlessResourceManager.h>
 #include <Rtrc/Resource/Material/Material.h>
 
@@ -88,16 +87,18 @@ class MaterialPassInstance
 {
 public:
 
-    RC<Shader> GetShader(const KeywordContext &keywordValues);
-    RC<Shader> GetShader(KeywordSet::ValueMask keywordMask);
+    RC<Shader> GetShader(const FastKeywordContext &keywordValues);
+    RC<Shader> GetShader(FastKeywordSetValue keywordMask);
 
     const MaterialPass *GetPass() const;
 
-    void BindGraphicsProperties(const KeywordContext &keywordValues, const CommandBuffer &commandBuffer) const;
-    void BindGraphicsProperties(KeywordSet::ValueMask mask, const CommandBuffer &commandBuffer) const;
+    void BindGraphicsProperties(const FastKeywordContext &keywordValues, const CommandBuffer &commandBuffer) const;
+    void BindGraphicsProperties(FastKeywordSetValue mask, const CommandBuffer &commandBuffer) const;
+    void BindGraphicsProperties(const CommandBuffer &commandBuffer) const;
 
-    void BindComputeProperties(const KeywordContext &keywordValues, const CommandBuffer &commandBuffer) const;
-    void BindComputeProperties(KeywordSet::ValueMask mask, const CommandBuffer &commandBuffer) const;
+    void BindComputeProperties(const FastKeywordContext &keywordValues, const CommandBuffer &commandBuffer) const;
+    void BindComputeProperties(FastKeywordSetValue mask, const CommandBuffer &commandBuffer) const;
+    void BindComputeProperties(const CommandBuffer &commandBuffer) const;
 
 private:
 
@@ -113,7 +114,7 @@ private:
 
     // return binding group index
     template<bool Graphics>
-    void BindPropertiesImpl(KeywordSet::ValueMask mask, const RHI::CommandBufferPtr &commandBuffer) const;
+    void BindPropertiesImpl(FastKeywordSetValue mask, const RHI::CommandBufferPtr &commandBuffer) const;
 
     Device                 *device_ = nullptr;
     const MaterialInstance *materialInstance_ = nullptr;
@@ -125,7 +126,7 @@ private:
 
 void BindMaterialProperties(
     const MaterialPassInstance &instance,
-    const KeywordContext       &keywords,
+    const FastKeywordContext       &keywords,
     const CommandBuffer        &commandBuffer,
     bool                        graphics);
 

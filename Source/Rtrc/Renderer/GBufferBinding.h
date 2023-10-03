@@ -83,10 +83,12 @@ namespace GBufferBindingDetail
     }
 
     template<typename T>
-    concept IsGBufferBindings = std::is_same_v<T, GBuffers_All>
-                             || std::is_same_v<T, GBuffers_NormalDepth>
-                             || std::is_same_v<T, GBuffers_Depth>;
-
+    concept IsGBufferBindings =
+        requires(T & t) { t._internalGBuffer_Normal; } ||
+        requires(T & t) { t._internalGBuffer_AlbedoMetallic; } ||
+        requires(T & t) { t._internalGBuffer_Roughness; } ||
+        requires(T & t) { t._internalGBuffer_Depth; };
+    
     template<IsGBufferBindings T>
     void DeclarePassUses(RG::Pass *pass, const GBuffers &gbuffers, RHI::PipelineStageFlag stages)
     {

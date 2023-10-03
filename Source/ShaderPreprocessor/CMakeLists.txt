@@ -16,39 +16,60 @@ endforeach()
 set_property(TARGET ShaderPreprocessor PROPERTY CXX_STANDARD 23)
 set_property(TARGET ShaderPreprocessor PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
 
-target_link_libraries(ShaderPreprocessor PUBLIC ShaderCompiler cxxopts)
+target_link_libraries(ShaderPreprocessor PUBLIC ShaderCommon cxxopts)
 
 file(
     GLOB_RECURSE ALL_SHADER_FILES CONFIGURE_DEPENDS
     "${CMAKE_SOURCE_DIR}/Source/*.shader"
-    "${CMAKE_SOURCE_DIR}/Source/*.material")
+    "${CMAKE_SOURCE_DIR}/Source/*.material"
+    "${CMAKE_SOURCE_DIR}/Samples/*.shader"
+    "${CMAKE_SOURCE_DIR}/Samples/*.material")
+
+file(GLOB_RECURSE ALL_HLSL_FILES CONFIGURE_DEPENDS
+    "${CMAKE_SOURCE_DIR}/Source/*.hlsl"
+    "${CMAKE_SOURCE_DIR}/Samples/*.hlsl")
 
 set(ALL_SHADER_OUT_FILES)
-set(INCLUDE_ALL_GENERATED_FILES)
 foreach(SHADER_FILE IN ITEMS ${ALL_SHADER_FILES})
     set(IN ${SHADER_FILE})
-    set(OUT "${SHADER_FILE}.h")
+    set(OUT "${SHADER_FILE}.outh")
     add_custom_command(
         OUTPUT ${OUT}
         COMMAND
             ShaderPreprocessor -i "${IN}"
                                -o "${OUT}"
-                               -r "${CMAKE_SOURCE_DIR}"
+                               -r "${CMAKE_SOURCE_DIR}/Source"
                                -r "${CMAKE_CURRENT_SOURCE_DIR}/DummyShader"
         DEPENDS
-            ShaderPreprocessor "${IN}")
+            ShaderPreprocessor "${IN}" "${ALL_HLSL_FILES}") # TODO: ALL_HLSL_FILES is far from optimal. optimize this.
     list(APPEND ALL_SHADER_OUT_FILES ${OUT})
-    set(INCLUDE_ALL_GENERATED_FILES "${INCLUDE_ALL_GENERATED_FILES}#include \"${OUT}\"\n")
 endforeach()
 
-file(
-    WRITE
-    "${CMAKE_BINARY_DIR}/RtrcGenerated/ShaderDatabase/RtrcPreprocessedShaderFiles.inl"
-    "${INCLUDE_ALL_GENERATED_FILES}")
-
 add_custom_target(RtrcPreprocessedShaderCustomTarget ALL DEPENDS ${ALL_SHADER_OUT_FILES})
+set_property(TARGET RtrcPreprocessedShaderCustomTarget PROPERTY FOLDER "Generated")
 
 add_library(RtrcPreprocessedShader INTERFACE)
 set_property(TARGET RtrcPreprocessedShader PROPERTY FOLDER "Generated")
-target_include_directories(RtrcPreprocessedShader INTERFACE "${CMAKE_BINARY_DIR}/RtrcGenerated/ShaderDatabase")
+
 add_dependencies(RtrcPreprocessedShader RtrcPreprocessedShaderCustomTarget)
+  
+function(enable_preprocessed_shaders TARGET_NAME ADDITIONAL_SHADERS)
+    file(
+        GLOB_RECURSE FIXED_SHADER_FILES CONFIGURE_DEPENDS
+        "${CMAKE_SOURCE_DIR}/Source/*.shader"
+        "${CMAKE_SOURCE_DIR}/Source/*.material")
+    set(SHADERS "${ADDITIONAL_SHADERS}" "${FIXED_SHADER_FILES}")
+    set(INCLUDE_CONTENT)
+    get_target_property(TARGET_DIR ${TARGET_NAME} SOURCE_DIR)
+    foreach(F IN ITEMS ${SHADERS})
+        set(INCLUDE_CONTENT "${INCLUDE_CONTENT}#include \"${F}.outh\"\n")
+    endforeach()
+    file(
+        WRITE
+        "${CMAKE_SOURCE_DIR}/Asset/RtrcGenerated/${TARGET_NAME}/Generated/PreprocessedShaderFiles.inl"
+        "${INCLUDE_CONTENT}")
+    target_include_directories(${TARGET_NAME} PUBLIC "${CMAKE_SOURCE_DIR}/Asset/RtrcGenerated/${TARGET_NAME}")
+    target_link_libraries(${TARGET_NAME} PUBLIC RtrcPreprocessedShader)
+    target_sources(${TARGET_NAME} PUBLIC "${CMAKE_SOURCE_DIR}/Source/ShaderPreprocessor/RegisterShadersAndMaterials.cpp")
+    source_group("Reflection" FILES "${CMAKE_SOURCE_DIR}/Source/ShaderPreprocessor/RegisterShadersAndMaterials.cpp")
+endfunction()

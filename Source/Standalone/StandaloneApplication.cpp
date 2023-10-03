@@ -10,11 +10,10 @@ void StandaloneApplication::Initialize(const Rtrc::ApplicationInitializeContext 
     GetWindowInput().LockCursor(true);
 
     Rtrc::ResourceManager &resources = *context.resourceManager;
-    resources.AddMaterialFiles($rtrc_get_files("Asset/Builtin/*/*.*"));
 
     {
         auto cubeMesh = resources.GetBuiltinMesh(Rtrc::BuiltinMesh::Cube);
-        auto matInst = resources.CreateMaterialInstance("Builtin/Diffuse");
+        auto matInst = resources.CreateMaterialInstance("Surface/Diffuse");
 
         auto gray = context.device->CreateColorTexture2D(180, 180, 180, 255, "Gray");
         auto grayHandle = GetBindlessTextureManager().Allocate();

@@ -104,7 +104,7 @@ Box<Device> Device::CreateGraphicsDevice(
         {
             .debugMode = debugMode,
 #if RTRC_DEBUG
-            .gpuValidation = debugMode
+            .gpuValidation = false /*debugMode*/ // gpu validation cause serious ram leak. disable it for now.
 #else
             .gpuValidation = false
 #endif

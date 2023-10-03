@@ -1,6 +1,8 @@
 #include <Rtrc/Renderer/Utility/PcgStateTexture.h>
 #include <Rtrc/Resource/ResourceManager.h>
 
+#include "PcgStateTexture.shader.outh"
+
 RTRC_RENDERER_BEGIN
 
 RG::TextureResource *Prepare2DPcgStateTexture(
@@ -9,12 +11,6 @@ RG::TextureResource *Prepare2DPcgStateTexture(
     RC<StatefulTexture>         &tex,
     const Vector2u              &size)
 {
-    rtrc_group(Pass)
-    {
-        rtrc_define(RWTexture2D, Output);
-        rtrc_uniform(uint2, resolution);
-    };
-
     if(tex && tex->GetSize() == size)
     {
         return renderGraph.RegisterTexture(tex);
@@ -36,16 +32,15 @@ RG::TextureResource *Prepare2DPcgStateTexture(
     initPass->Use(ret, RG::CS_RWTexture_WriteOnly);
     initPass->SetCallback([ret, size, device, materials]
     {
-        Pass passData;
+        StaticShaderInfo<"InitializePcgState2D">::Variant::Pass passData;
         passData.Output = ret;
         passData.resolution = size;
         auto passGroup = device->CreateBindingGroupWithCachedLayout(passData);
 
-        auto shader = materials->GetMaterialManager()->GetCachedShader<"Builtin/Utility/InitializePcgState2D">();
-        auto &pipeline = shader->GetComputePipeline();
+        auto shader = materials->GetMaterialManager()->GetCachedShader<"InitializePcgState2D">();
 
         auto &commandBuffer = RG::GetCurrentCommandBuffer();
-        commandBuffer.BindComputePipeline(pipeline);
+        commandBuffer.BindComputePipeline(shader->GetComputePipeline());
         commandBuffer.BindComputeGroup(0, passGroup);
         commandBuffer.DispatchWithThreadCount(size);
     });

@@ -1,4 +1,5 @@
 #include <filesystem>
+#include <iostream>
 #include <queue>
 
 #ifdef _MSC_VER
@@ -94,7 +95,7 @@ namespace FrontendDetail
             {
                 return;
             }
-
+            
             assert(!results_.empty());
             auto &outRecord = *pOutRecord;
             outRecord.qualifiedName = std::move(qualifiedName);

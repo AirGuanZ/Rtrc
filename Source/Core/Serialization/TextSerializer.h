@@ -528,28 +528,28 @@ struct TextSerializer_Custom<std::map<K, V, L>>
 };
 
 template<typename...Types>
-struct TextSerializer_Custom<Variant<Types...>>
+struct TextSerializer_Custom<std::variant<Types...>>
 {
-    static void Serialize(const Variant<Types...> &value, TextSerializer &ser)
+    static void Serialize(const std::variant<Types...> &value, TextSerializer &ser)
     {
         ser.GetWriter().Write(std::to_string(value.index()));
         TextSerializer_Custom::WriteElem(value, ser, std::make_integer_sequence<int, TypeList<Types...>::Size>());
     }
 
-    static void Deserialize(Variant<Types...> &value, TextDeserializer &ser)
+    static void Deserialize(std::variant<Types...> &value, TextDeserializer &ser)
     {
         const int index = std::stoi(ser.GetReader().NextToken());
         TextSerializer_Custom::ReadElem(index, value, ser, std::make_integer_sequence<int, TypeList<Types...>::Size>());
     }
 
     template<int...Is>
-    static void WriteElem(const Variant<Types...> &value, TextSerializer &ser, std::integer_sequence<int, Is...>)
+    static void WriteElem(const std::variant<Types...> &value, TextSerializer &ser, std::integer_sequence<int, Is...>)
     {
         (TextSerializer_Custom::WriteElem<Is>(value, ser), ...);
     }
 
     template<int I>
-    static void WriteElem(const Variant<Types...> &value, TextSerializer &ser)
+    static void WriteElem(const std::variant<Types...> &value, TextSerializer &ser)
     {
         if(I == value.index())
         {
@@ -559,13 +559,13 @@ struct TextSerializer_Custom<Variant<Types...>>
     }
 
     template<int...Is>
-    static void ReadElem(int index, Variant<Types...> &value, TextDeserializer &ser, std::integer_sequence<int, Is...>)
+    static void ReadElem(int index, std::variant<Types...> &value, TextDeserializer &ser, std::integer_sequence<int, Is...>)
     {
         (TextSerializer_Custom::ReadElem<Is>(index, value, ser), ...);
     }
 
     template<int I>
-    static void ReadElem(int index, Variant<Types...> &value, TextDeserializer &ser)
+    static void ReadElem(int index, std::variant<Types...> &value, TextDeserializer &ser)
     {
         if(I == index)
         {
@@ -574,6 +574,20 @@ struct TextSerializer_Custom<Variant<Types...>>
             Type &internalValue = std::get<I>(value);
             ser(internalValue, "internalValue");
         }
+    }
+};
+
+template<typename...Types>
+struct TextSerializer_Custom<Variant<Types...>>
+{
+    static void Serialize(const Variant<Types...> &value, TextSerializer &ser)
+    {
+        TextSerializer_Custom<std::variant<Types...>>::Serialize(value, ser);
+    }
+
+    static void Deserialize(Variant<Types...> &value, TextDeserializer &ser)
+    {
+        TextSerializer_Custom<std::variant<Types...>>::Deserialize(value, ser);
     }
 };
 

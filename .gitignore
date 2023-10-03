@@ -10,3 +10,5 @@
 /External/mcpp-2.7.2
 /.xmake/
 /vsxmake2022/
+*.shader.outh
+*.material.outh

@@ -9,12 +9,12 @@ LocalCachedShaderHandle::LocalCachedShaderHandle(
     
 }
 
-RC<ShaderTemplate> LocalCachedShaderHandle::Get() const
+const RC<ShaderTemplate> &LocalCachedShaderHandle::Get() const
 {
     return materialManager_->GetLocalShaderCache().Get(storage_, name_);
 }
 
-RC<ShaderTemplate> LocalShaderCache::Get(LocalCachedShaderStorage *storage, std::string_view materialName)
+const RC<ShaderTemplate> &LocalShaderCache::Get(LocalCachedShaderStorage *storage, std::string_view materialName)
 {
     const uint32_t index = storage->index_;
 
@@ -38,7 +38,7 @@ RC<ShaderTemplate> LocalShaderCache::Get(LocalCachedShaderStorage *storage, std:
     }
     if(!shaders_[index])
     {
-        shaders_[index] = materialManager_->GetShaderTemplate(std::string(materialName));
+        shaders_[index] = materialManager_->GetShaderTemplate(materialName, false);
     }
     return shaders_[index];
 }

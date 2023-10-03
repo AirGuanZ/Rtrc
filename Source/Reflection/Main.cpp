@@ -86,7 +86,8 @@ std::string GenerateCppReflection(std::span<const Struct> structs)
     }
 
     std::string ret = COMMON_HEADER;
-    
+
+    ret += "#if !RTRC_REFLECTION_TOOL\n";
     ret += "#include <Core/Math/Vector2.h>\n";
     ret += "#include <Core/Math/Vector3.h>\n";
     ret += "#include <Core/Math/Vector4.h>\n";
@@ -182,6 +183,8 @@ std::string GenerateCppReflection(std::span<const Struct> structs)
     ret += "    template<typename T>\n";
     ret += "    using MirrorType = typename Rtrc::ReflectionDetail::MirrorTypeTrait<T>::Type;\n";
     ret += "}\n";
+
+    ret += "#endif // #if !RTRC_REFLECTION_TOOL\n";
 
     return ret;
 }

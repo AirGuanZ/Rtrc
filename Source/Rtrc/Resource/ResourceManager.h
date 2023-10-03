@@ -30,17 +30,14 @@ public:
 
     ObserverPtr<Device> GetDevice() const { return device_; }
     
-    void AddMaterialFiles(const std::set<std::filesystem::path> &filenames);
-    void AddShaderIncludeDirectory(std::string_view dir);
-
     ObserverPtr<MaterialManager> GetMaterialManager() { return materialManager_; }
     ObserverPtr<MeshManager>     GetMeshManager()     { return meshManager_;     }
     
     // General resource loading
 
     RC<Material>       GetMaterial      (const std::string &name);
-    RC<ShaderTemplate> GetShaderTemplate(const std::string &name);
-    RC<Shader>         GetShader        (const std::string &name); // Valid when no keyword is defined in corresponding shader template
+    RC<ShaderTemplate> GetShaderTemplate(const std::string &name, bool persistent);
+    RC<Shader>         GetShader        (const std::string &name, bool persistent); // Valid when no keyword is defined in corresponding shader template
     RC<Mesh>           GetMesh          (std::string_view name, MeshFlags flags = MeshFlags::None);
 
     RC<MaterialInstance> CreateMaterialInstance(const std::string &name);

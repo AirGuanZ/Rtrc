@@ -22,6 +22,7 @@ DirectX12CommandPool::~DirectX12CommandPool()
 void DirectX12CommandPool::Reset()
 {
     RTRC_D3D12_FAIL_MSG(allocator_->Reset(), "Fail to reset directx12 command pool");
+    nextFreeCommandBufferIndex_ = 0;
 }
 
 QueueType DirectX12CommandPool::GetType() const

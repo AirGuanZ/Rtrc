@@ -1,3 +1,5 @@
+#if !RTRC_REFLECTION_TOOL
+
 #include <Core/ReflectedStruct.h>
 #include <Core/TypeList.h>
 
@@ -210,3 +212,5 @@ namespace ReflectedStruct
 } // namespace ReflectedStruct
 
 RTRC_END
+
+#endif // #if !RTRC_REFLECTION_TOOL

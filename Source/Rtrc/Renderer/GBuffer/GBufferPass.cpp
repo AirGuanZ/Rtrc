@@ -245,7 +245,7 @@ void GBufferPass::DoRenderGBuffers(
     
     // Render
 
-    KeywordContext keywords;
+    FastKeywordContext keywords;
 
     const std::vector<MaterialGroup> materialGroups = CollectPipelineGroups(camera);
 
@@ -275,8 +275,8 @@ void GBufferPass::DoRenderGBuffers(
                 }
 
                 const bool enableInstancing = materialGroup.supportInstancing && meshGroup.objectCount > 0;
-                keywords.Set(GetBuiltinKeyword(BuiltinKeyword::EnableInstance), enableInstancing ? 1 : 0);
-                RC<Shader> shader = materialGroup.shaderTemplate->GetShader(keywords);
+                keywords.Set(GetBuiltinShaderKeyword(BuiltinKeyword::EnableInstance), enableInstancing ? 1 : 0);
+                RC<Shader> shader = materialGroup.shaderTemplate->GetVariant(keywords, true);
                 RC<GraphicsPipeline> &pipeline = enableInstancing ? pipelineInstanceOn : pipelineInstanceOff;
 
                 if(!pipeline)

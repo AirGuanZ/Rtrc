@@ -15,11 +15,7 @@ public:
 
     using RenderAlgorithm::RenderAlgorithm;
 
-    void Render(
-        Mode                 mode,
-        RG::RenderGraph     &renderGraph,
-        const GBuffers      &gbuffers,
-        RG::TextureResource *renderTarget);
+    void Render(Mode mode, RG::RenderGraph &renderGraph, const GBuffers &gbuffers, RG::TextureResource *renderTarget);
 };
 
 RTRC_RENDERER_END

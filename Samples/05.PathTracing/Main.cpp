@@ -4,29 +4,8 @@ using namespace Rtrc;
 
 constexpr int MAX_INSTANCE_COUNT = 128;
 
-rtrc_group(TracePass)
-{
-    rtrc_define(RWTexture2D, AccumulateTexture);
-    rtrc_define(RWTexture2D, OutputTexture);
-    rtrc_define(RWTexture2D, RngTexture);
-
-    rtrc_define  (RaytracingAccelerationStructure,      Scene);
-    rtrc_define  (StructuredBuffer,                     Materials);
-    rtrc_bindless(StructuredBuffer[MAX_INSTANCE_COUNT], Geometries);
-    
-    rtrc_uniform(float3, EyePosition);
-    rtrc_uniform(float3, FrustumA);
-    rtrc_uniform(float3, FrustumB);
-    rtrc_uniform(float3, FrustumC);
-    rtrc_uniform(float3, FrustumD);
-    rtrc_uniform(uint2,  Resolution);
-};
-
-rtrc_group(InitRngPass)
-{
-    rtrc_define(RWTexture2D, RngTexture);
-    rtrc_uniform(uint2, Resolution);
-};
+#include "InitRng.shader.outh"
+#include "PathTracing.shader.outh"
 
 struct Vertex
 {
@@ -132,8 +111,7 @@ void Run()
         false, Device::EnableRayTracing);
 
     ResourceManager resourceManager(device);
-    resourceManager.AddMaterialFiles($rtrc_get_files("Asset/Sample/05.PathTracing/*.*"));
-
+    
     // Scene
 
     std::vector<SurfaceMaterial> materialData;
@@ -192,10 +170,10 @@ void Run()
 
     // Pipeline
 
-    auto traceShader = resourceManager.GetShader("PathTracing");
+    auto traceShader = resourceManager.GetShader("PathTracing", true);
     auto tracePipeline = traceShader->GetComputePipeline();
 
-    auto initRngShader = resourceManager.GetShader("InitRng");
+    auto initRngShader = resourceManager.GetShader("InitRng", true);
     auto initRngPipeline = initRngShader->GetComputePipeline();
 
     // Render target
@@ -322,10 +300,10 @@ void Run()
             {
                 auto &commandBuffer = RG::GetCurrentCommandBuffer();
                 
-                InitRngPass bindingGroupData;
+                StaticShaderInfo<"InitRng">::Variant::Pass bindingGroupData;
                 bindingGroupData.RngTexture = rgRngTexture;
                 bindingGroupData.Resolution = rgRngTexture->GetSize();
-                auto bindingGroup = device->CreateBindingGroup(bindingGroupData);
+                auto bindingGroup = device->CreateBindingGroupWithCachedLayout(bindingGroupData);
 
                 commandBuffer.BindComputePipeline(initRngPipeline);
                 commandBuffer.BindComputeGroup(0, bindingGroup);
@@ -344,7 +322,7 @@ void Run()
         ptPass->Use(rgRngTexture,        RG::CS_RWTexture);
         ptPass->SetCallback([&]
         {
-            TracePass bindingGroupData;
+            StaticShaderInfo<"PathTracing">::Variant::Pass bindingGroupData;
             bindingGroupData.AccumulateTexture = rgAccumulateTexture;
             bindingGroupData.OutputTexture     = renderTarget;
             bindingGroupData.RngTexture        = rgRngTexture;
@@ -358,7 +336,7 @@ void Run()
             bindingGroupData.FrustumC          = camera.GetWorldRays()[2];
             bindingGroupData.FrustumD          = camera.GetWorldRays()[3];
             bindingGroupData.Resolution        = rgAccumulateTexture->GetSize();
-            auto bindingGroup = device->CreateBindingGroup(bindingGroupData);
+            auto bindingGroup = device->CreateBindingGroupWithCachedLayout(bindingGroupData);
 
             auto &commandBuffer = RG::GetCurrentCommandBuffer();
             commandBuffer.BindComputePipeline(tracePipeline);

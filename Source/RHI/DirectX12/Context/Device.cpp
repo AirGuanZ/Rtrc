@@ -739,7 +739,7 @@ Ptr<Texture> DirectX12Device::CreateTexture(const TextureDesc &desc)
             &allocDesc, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, pClearValue,
             rawAlloc.GetAddressOf(), IID_PPV_ARGS(resource.GetAddressOf())),
         "Fail to create directx12 texture resource");
-
+    
     DirectX12MemoryAllocation alloc = { allocator_.Get(), std::move(rawAlloc) };
     return MakePtr<DirectX12Texture>(desc, this, std::move(resource), std::move(alloc));
 }

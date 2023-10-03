@@ -2,7 +2,7 @@
 
 #include <type_traits>
 
-#include <Core/Common.h>
+#include <Core/Serialization/Serialize.h>
 
 RTRC_BEGIN
 
@@ -24,6 +24,7 @@ RTRC_BEGIN
         size_t Hash() const { return std::hash<Integer>{}(value); }                                                         \
         constexpr auto operator<=>(const EnumFlags##Enum &) const = default;                                                \
         Integer value;                                                                                                      \
+        RTRC_AUTO_SERIALIZE(value);                                                                                         \
     };                                                                                                                      \
     constexpr EnumFlags##Enum operator|(const EnumFlags##Enum &a, const EnumFlags##Enum &b)                                 \
     {                                                                                                                       \

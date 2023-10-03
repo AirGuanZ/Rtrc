@@ -32,9 +32,6 @@
 #define RTRC_RENDERER_BEGIN RTRC_BEGIN namespace Renderer {
 #define RTRC_RENDERER_END   } RTRC_END
 
-#define RTRC_SHADER_COMPILER_BEGIN RTRC_BEGIN namespace SC {
-#define RTRC_SHADER_COMPILER_END } RTRC_END
-
 #if defined(DEBUG) || defined(_DEBUG)
 #define RTRC_DEBUG 1
 #else
@@ -342,8 +339,18 @@ constexpr size_t GetContainerSize(const T(&)[N])
     return N;
 }
 
-#define RTRC_SET_GET(TYPE, PROP_NAME, MEMBER_NAME) \
+#define RTRC_SET_GET(TYPE, PROP_NAME, MEMBER_NAME)                    \
     void Set##PROP_NAME(const TYPE &value) { (MEMBER_NAME) = value; } \
     const TYPE &Get##PROP_NAME() const { return MEMBER_NAME; }
+
+// Note that this function doesn't convert the input utf-8 string into any other encoding.
+// It just copies the bytes from the input string to the output.
+inline std::string u8StringToString(const std::u8string &s)
+{
+    std::string ret;
+    ret.resize(s.size());
+    std::memcpy(&ret[0], &s[0], s.size());
+    return ret;
+}
 
 RTRC_END

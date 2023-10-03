@@ -1,6 +1,8 @@
 #pragma once
 
+#if !RTRC_REFLECTION_TOOL
 #include <cista.h>
+#endif
 
 #include <Core/Macro/MacroForEach.h>
 #include <Core/SelfType.h>

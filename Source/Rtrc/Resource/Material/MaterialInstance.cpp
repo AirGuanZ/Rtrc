@@ -147,12 +147,12 @@ const BindlessTextureEntry *MaterialPropertySheet::GetBindlessTextureEntry(int i
     return bindlessEntries_[index] ? &bindlessEntries_[index] : nullptr;
 }
 
-RC<Shader> MaterialPassInstance::GetShader(const KeywordContext &keywordValues)
+RC<Shader> MaterialPassInstance::GetShader(const FastKeywordContext &keywordValues)
 {
     return pass_->GetShader(keywordValues);
 }
 
-RC<Shader> MaterialPassInstance::GetShader(KeywordSet::ValueMask keywordMask)
+RC<Shader> MaterialPassInstance::GetShader(FastKeywordSetValue keywordMask)
 {
     return pass_->GetShader(keywordMask);
 }
@@ -163,34 +163,44 @@ const MaterialPass *MaterialPassInstance::GetPass() const
 }
 
 void MaterialPassInstance::BindGraphicsProperties(
-    const KeywordContext &keywordValues, const CommandBuffer &commandBuffer) const
+    const FastKeywordContext &keywordValues, const CommandBuffer &commandBuffer) const
 {
-    KeywordSet::ValueMask mask = pass_->ExtractKeywordValueMask(keywordValues);
+    FastKeywordSetValue mask = pass_->ExtractKeywordValueMask(keywordValues);
     BindGraphicsProperties(mask, commandBuffer);
 }
 
 void MaterialPassInstance::BindGraphicsProperties(
-    KeywordSet::ValueMask mask, const CommandBuffer &commandBuffer) const
+    FastKeywordSetValue mask, const CommandBuffer &commandBuffer) const
 {
     BindPropertiesImpl<true>(mask, commandBuffer.GetRHIObject());
 }
 
-void MaterialPassInstance::BindComputeProperties(
-    const KeywordContext &keywordValues, const CommandBuffer &commandBuffer) const
+void MaterialPassInstance::BindGraphicsProperties(const CommandBuffer &commandBuffer) const
 {
-    KeywordSet::ValueMask mask = pass_->ExtractKeywordValueMask(keywordValues);
+    BindGraphicsProperties(FastKeywordSetValue{}, commandBuffer);
+}
+
+void MaterialPassInstance::BindComputeProperties(
+    const FastKeywordContext &keywordValues, const CommandBuffer &commandBuffer) const
+{
+    FastKeywordSetValue mask = pass_->ExtractKeywordValueMask(keywordValues);
     BindComputeProperties(mask, commandBuffer);
 }
 
 void MaterialPassInstance::BindComputeProperties(
-    KeywordSet::ValueMask mask, const CommandBuffer &commandBuffer) const
+    FastKeywordSetValue mask, const CommandBuffer &commandBuffer) const
 {
     BindPropertiesImpl<false>(mask, commandBuffer.GetRHIObject());
 }
 
+void MaterialPassInstance::BindComputeProperties(const CommandBuffer &commandBuffer) const
+{
+    BindComputeProperties(FastKeywordSetValue{}, commandBuffer);
+}
+
 template <bool Graphics>
 void MaterialPassInstance::BindPropertiesImpl(
-    KeywordSet::ValueMask mask, const RHI::CommandBufferPtr &commandBuffer) const
+    FastKeywordSetValue mask, const RHI::CommandBufferPtr &commandBuffer) const
 {
     auto subLayout = pass_->GetPropertyLayout(mask);
     const int bindingGroupIndex = subLayout->GetBindingGroupIndex();
@@ -199,7 +209,7 @@ void MaterialPassInstance::BindPropertiesImpl(
         return;
     }
 
-    const Record &record = keywordMaskToRecord_[mask];
+    const Record &record = keywordMaskToRecord_[mask.GetInternalValue()];
     auto bind = [&]
     {
         if constexpr(Graphics)
@@ -248,7 +258,7 @@ void MaterialPassInstance::BindPropertiesImpl(
 
 void BindMaterialProperties(
     const MaterialPassInstance &instance,
-    const KeywordContext       &keywords,
+    const FastKeywordContext       &keywords,
     const CommandBuffer        &commandBuffer,
     bool                        graphics)
 {

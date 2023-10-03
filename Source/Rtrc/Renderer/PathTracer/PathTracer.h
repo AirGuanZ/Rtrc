@@ -7,6 +7,7 @@ RTRC_RENDERER_BEGIN
 
 class RenderCamera;
 
+// Test only. Will be replaced by a more general solution.
 class PathTracer : public RenderAlgorithm
 {
 public:

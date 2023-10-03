@@ -14,7 +14,7 @@ DirectX12Texture::DirectX12Texture(
     DirectX12MemoryAllocation alloc)
     : desc_(desc), device_(device), alloc_(std::move(alloc)), texture_(std::move(texture))
 {
-    
+
 }
 
 DirectX12Texture::~DirectX12Texture()

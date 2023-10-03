@@ -2,12 +2,7 @@
 
 #include <Rtrc/Rtrc.h>
 
-rtrc_group(TestGroup)
-{
-    rtrc_define(Texture2D,              MainTexture);
-    rtrc_define(SamplerState[4],        MainSampler);
-    rtrc_define(ConstantBuffer<float3>, MainConstantBuffer);
-};
+#include <Graphics/RenderGraph/Compiler.h>
 
 using namespace Rtrc;
 
@@ -23,18 +18,17 @@ void Run()
     auto device = Device::CreateGraphicsDevice(window);
 
     ResourceManager resourceManager(device);
-    resourceManager.AddMaterialFiles($rtrc_get_files("Asset/Sample/01.TexturedQuad/*.*"));
-
+    
     // Mesh
 
     auto mesh = resourceManager.GetMesh("Asset/Sample/01.TexturedQuad/Quad.obj");
 
     // Pipeline
 
-    KeywordContext keywords;
-    keywords.Set(RTRC_KEYWORD(DADADA), 1);
+    FastKeywordContext keywords;
+    keywords.Set(RTRC_FAST_KEYWORD(DADADA), 1);
 
-    auto material = resourceManager.GetMaterial("Quad");
+    auto material = resourceManager.GetMaterial("Sample01/Quad");
     auto matPass = material->GetPassByTag(RTRC_MATERIAL_PASS_TAG(Default));
     auto shader = matPass->GetShader(keywords);
 
@@ -70,7 +64,7 @@ void Run()
 
     auto materialInstance = material->CreateInstance();
     auto matPassInst = materialInstance->GetPassInstance(0);
-    materialInstance->Set("MainTexture", mainTex->GetSrv(0, 0, 0, 0));
+    materialInstance->Set("MainTexture", mainTex->GetSrv(0, 0, 0));
     materialInstance->Set("MainSampler", mainSampler);
     materialInstance->SetFloat("scale", 1);
     materialInstance->SetFloat("mipLevel", 0);
@@ -95,9 +89,8 @@ void Run()
         }
 
         auto graph = device->CreateRenderGraph();
-        
         auto renderTarget = graph->RegisterSwapchainTexture(device->GetSwapchain());
-
+        
         auto quadPass = graph->CreatePass("DrawQuad");
         quadPass->Use(renderTarget, RG::ColorAttachment);
         quadPass->SetCallback([&]
@@ -121,7 +114,7 @@ void Run()
         
         graph->SetCompleteFence(device->GetFrameFence());
         executer.Execute(graph);
-
+        
         if(!device->Present())
         {
             window.SetCloseFlag(true);

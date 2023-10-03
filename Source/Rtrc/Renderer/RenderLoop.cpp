@@ -158,7 +158,7 @@ void RenderLoop::RenderFrameImpl(const FrameInput &frame)
         const bool usePointSampling = framebuffer->GetSize() == swapchainImage->GetSize();
         renderGraph->CreateBlitTexture2DPass("BlitToSwapchain", framebuffer, swapchainImage, usePointSampling);
     }
-
+    
     // ============= ImGui =============
 
     imguiRenderer_->Render(frame.imguiDrawData, swapchainImage, renderGraph.get());

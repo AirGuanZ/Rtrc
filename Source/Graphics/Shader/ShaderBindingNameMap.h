@@ -5,15 +5,9 @@
 #include <Core/StringPool.h>
 #include <Core/Uncopyable.h>
 
-RTRC_SHADER_COMPILER_BEGIN
-
-class Compiler;
-
-RTRC_SHADER_COMPILER_END
-
 RTRC_BEGIN
 
-class ShaderCompiler;
+class Compiler;
 
 class ShaderBindingNameMap : public Uncopyable
 {
@@ -29,7 +23,7 @@ public:
 private:
 
     friend class ShaderCompiler;
-    friend class SC::Compiler;
+    friend class Compiler;
 
     struct BindingIndexInfo
     {

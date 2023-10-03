@@ -82,7 +82,7 @@ function(enable_rtrc_cpp_reflection_helper)
 		get_target_property(TGT_SRCS ${TGT} SOURCES)
 		list(APPEND ALL_SOURCES ${TGT_SRCS})
 	endforeach()
-
+	
 	# generate reflection input
 
 	set(MAIN_TARGET ${ARGV0})
@@ -123,13 +123,13 @@ function(enable_rtrc_cpp_reflection_helper)
 		DEPENDS Reflection "${ALL_SOURCES}")
 
 	add_custom_target(
-		"RtrcGeneratedFilesFor${MAIN_TARGET}" ALL
+		"RtrcGeneratedCppReflectionFilesFor${MAIN_TARGET}" ALL
 		DEPENDS ${GEN_FILES})
 	
 	# setup target dependencies		
 			
-	add_dependencies(${MAIN_TARGET} RtrcGeneratedFilesFor${MAIN_TARGET})
-	set_property(TARGET RtrcGeneratedFilesFor${MAIN_TARGET} PROPERTY FOLDER "Generated")
+	add_dependencies(${MAIN_TARGET} RtrcGeneratedCppReflectionFilesFor${MAIN_TARGET})
+	set_property(TARGET RtrcGeneratedCppReflectionFilesFor${MAIN_TARGET} PROPERTY FOLDER "Generated")
 	target_include_directories(${MAIN_TARGET} PUBLIC "${GEN_PATH}")
 	
 	set(CBUFFER_REFL_FILE "${CMAKE_SOURCE_DIR}/Source/Reflection/ReflectedStruct.cpp")

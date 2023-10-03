@@ -1,6 +1,6 @@
 #include <Core/Timer.h>
 #include <Graphics/ImGui/Instance.h>
-#include <Graphics/Shader/ShaderCompiler.h>
+#include <Graphics/Shader/StandaloneCompiler.h>
 #include <Graphics/Device/MeshLayout.h>
 
 RTRC_BEGIN
@@ -112,8 +112,8 @@ namespace ImGuiDetail
     }
 
     const char *SHADER_SOURCE = R"___(
-#vert VSMain
-#frag FSMain
+rtrc_vert(VSMain)
+rtrc_frag(FSMain)
 
 rtrc_group(CBuffer)
 {
@@ -232,14 +232,10 @@ void ImGuiDrawData::BuildFromImDrawData(const ImDrawData *src)
 ImGuiRenderer::ImGuiRenderer(ObserverPtr<Device> device)
     : device_(device)
 {
-    ShaderCompiler shaderCompiler;
+    StandaloneShaderCompiler shaderCompiler;
     shaderCompiler.SetDevice(device_);
-
-    const ShaderCompiler::ShaderSource source =
-    {
-        .source = ImGuiDetail::SHADER_SOURCE
-    };
-    shader_ = shaderCompiler.Compile(source, {}, RTRC_DEBUG);
+    
+    shader_ = shaderCompiler.Compile(ImGuiDetail::SHADER_SOURCE, {}, RTRC_DEBUG);
     cbufferBindingGroupLayout_ = shader_->GetBindingGroupLayoutByName("CBuffer");
     passBindingGroupLayout_ = shader_->GetBindingGroupLayoutByName("Pass");
 }

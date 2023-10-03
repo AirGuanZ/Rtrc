@@ -2,11 +2,7 @@
 
 using namespace Rtrc;
 
-rtrc_group(MainGroup)
-{
-    rtrc_define(RWTexture2D,                     OutputTexture);
-    rtrc_define(RaytracingAccelerationStructure, Scene);
-};
+#include "RayTracingTriangle.shader.outh"
 
 void Run()
 {
@@ -20,8 +16,7 @@ void Run()
         RTRC_DEBUG, false, Device::EnableRayTracing);
 
     ResourceManager resourceManager(device);
-    resourceManager.AddMaterialFiles($rtrc_get_files("Asset/Sample/04.RayTracingTriangle/*.*"));
-
+    
     // Blas
 
     std::vector<Vector3f> triangleData =
@@ -98,7 +93,7 @@ void Run()
 
     // Pipeline
 
-    auto shader = resourceManager.GetShader("RayTracingTriangle");
+    auto shader = resourceManager.GetShader("RayTracingTriangle", true);
 
     assert(shader->GetRayGenShaderGroups().size() == 1);
     assert(shader->GetMissShaderGroups().size() == 1);
@@ -187,8 +182,8 @@ void Run()
 
             commandBuffer.BindRayTracingPipeline(pipeline);
 
-            MainGroup bindingGroupData;
-            bindingGroupData.OutputTexture = renderTarget;
+            StaticShaderInfo<"RayTracingTriangle">::Variant::Pass bindingGroupData;
+            bindingGroupData.OutputTextureRW = renderTarget;
             bindingGroupData.Scene = tlas;
             auto bindingGroup = device->CreateBindingGroup(bindingGroupData);
             commandBuffer.BindRayTracingGroup(0, bindingGroup);

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 
 project(RtrcMain)
 
-file(GLOB_RECURSE SRCS CONFIGURE_DEPENDS "*.cpp" "*.h")
+file(GLOB_RECURSE SRCS CONFIGURE_DEPENDS "*.cpp" "*.h" "*.inl")
 
 add_library(Rtrc STATIC ${SRCS})
 
@@ -17,4 +17,4 @@ set_property(TARGET Rtrc PROPERTY CXX_STANDARD 23)
 
 target_include_directories(Rtrc PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..")
 
-target_link_libraries(Rtrc PUBLIC Graphics RtrcPreprocessedShader ShaderCompiler)
+target_link_libraries(Rtrc PUBLIC Graphics)

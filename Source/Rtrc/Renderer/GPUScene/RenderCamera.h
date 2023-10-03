@@ -1,6 +1,5 @@
 #pragma once
 
-#include <Rtrc/Renderer/CriusGI/CriusGI.h>
 #include <Rtrc/Renderer/GPUScene/RenderScene.h>
 #include <Rtrc/Renderer/PathTracer/PathTracer.h>
 #include <Rtrc/Renderer/ReSTIR/ReSTIR.h>
@@ -40,7 +39,6 @@ public:
 
     RenderAtmosphere::PerCameraData &GetAtmosphereData()  { return atmosphereData_; }
     PathTracer::PerCameraData       &GetPathTracingData() { return pathTracingData_; }
-    CriusGI::PerCameraData          &GetCriusGIGIData()   { return criusGIGIData_; }
     ReSTIR::PerCameraData           &GetReSTIRData()      { return restirData_; }
 
     void Update(
@@ -70,7 +68,6 @@ private:
     
     RenderAtmosphere::PerCameraData atmosphereData_;
     PathTracer::PerCameraData       pathTracingData_;
-    CriusGI::PerCameraData          criusGIGIData_;
     ReSTIR::PerCameraData           restirData_;
 
     RC<StatefulTexture> prevDepth_;

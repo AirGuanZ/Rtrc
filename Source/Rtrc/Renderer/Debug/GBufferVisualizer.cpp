@@ -1,4 +1,5 @@
 #include <Rtrc/Renderer/Debug/GBufferVisualizer.h>
+#include <Rtrc/Renderer/Debug/Shader/GBufferVisualizer.shader.outh>
 #include <Rtrc/Renderer/GBufferBinding.h>
 
 RTRC_RENDERER_BEGIN
@@ -9,19 +10,14 @@ void GBufferVisualizer::Render(
     const GBuffers      &gbuffers,
     RG::TextureResource *renderTarget)
 {
-    rtrc_group(Pass)
-    {
-        rtrc_inline(GBufferBindings_All, gbuffers);
-        rtrc_define(RWTexture2D, Output);
-        rtrc_uniform(uint2, outputResolution);
-    };
+    using PassData = StaticShaderInfo<"VisualizeNormal">::Variant::Pass;
 
     auto pass = renderGraph.CreatePass("VisualizeGBuffer");
-    DeclareGBufferUses<Pass>(pass, gbuffers, RHI::PipelineStage::ComputeShader);
+    DeclareGBufferUses<PassData>(pass, gbuffers, RHI::PipelineStage::ComputeShader);
     pass->Use(renderTarget, RG::CS_RWTexture_WriteOnly);
     pass->SetCallback([mode, gbuffers, renderTarget, this]
     {
-        Pass passData;
+        PassData passData;
         FillBindingGroupGBuffers(passData, gbuffers);
         passData.Output = renderTarget;
         passData.outputResolution = renderTarget->GetSize();
@@ -30,7 +26,7 @@ void GBufferVisualizer::Render(
         RC<Shader> shader;
         if(mode == Mode::Normal)
         {
-            shader = resources_->GetMaterialManager()->GetCachedShader<"Builtin/Debug/VisualizeNormal">();
+            shader = resources_->GetMaterialManager()->GetCachedShader<"VisualizeNormal">();
         }
         else
         {

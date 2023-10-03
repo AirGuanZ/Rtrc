@@ -6,7 +6,8 @@
 #include <Core/SignalSlot.h>
 #include <Core/StringPool.h>
 #include <Graphics/Device/Device.h>
-#include <Rtrc/Resource/Material/ShaderTemplate.h>
+#include <Graphics/Shader/Keyword.h>
+#include <Graphics/Shader/ShaderDatabase.h>
 
 /* Material
     Material:
@@ -29,6 +30,10 @@ class MaterialInstance;
 
 using MaterialPassTag = GeneralPooledString;
 #define RTRC_MATERIAL_PASS_TAG(X) RTRC_GENERAL_POOLED_STRING(X)
+
+using FastKeywordSet      = FastKeywordSet;
+using FastKeywordSetValue = FastKeywordSetValue;
+using FastKeywordContext  = FastKeywordContext;
 
 // Property declared at material scope
 struct MaterialProperty
@@ -156,15 +161,15 @@ public:
     const std::vector<std::string>     &GetTags() const;
     const std::vector<MaterialPassTag> &GetPooledTags() const;
 
-    KeywordSet::ValueMask ExtractKeywordValueMask(const KeywordContext &keywordValues) const;
+    FastKeywordSetValue ExtractKeywordValueMask(const FastKeywordContext &keywordValues) const;
 
-    RC<Shader> GetShader(KeywordSet::ValueMask mask = 0);
-    RC<Shader> GetShader(const KeywordContext &keywordValues);
+    RC<Shader> GetShader(FastKeywordSetValue mask = {});
+    RC<Shader> GetShader(const FastKeywordContext &keywordValues);
 
-    const MaterialPassPropertyLayout *GetPropertyLayout(KeywordSet::ValueMask mask);
-    const MaterialPassPropertyLayout *GetPropertyLayout(const KeywordContext &keywordValues);
+    const MaterialPassPropertyLayout *GetPropertyLayout(FastKeywordSetValue mask);
+    const MaterialPassPropertyLayout *GetPropertyLayout(const FastKeywordContext &keywordValues);
 
-    auto &GetShaderTemplate() const;
+    const RC<ShaderTemplate> &GetShaderTemplate() const;
 
 private:
 
@@ -345,46 +350,46 @@ inline const std::vector<MaterialPassTag> &MaterialPass::GetPooledTags() const
     return pooledTags_;
 }
 
-inline KeywordSet::ValueMask MaterialPass::ExtractKeywordValueMask(const KeywordContext &keywordValues) const
+inline FastKeywordSetValue MaterialPass::ExtractKeywordValueMask(const FastKeywordContext &keywordValues) const
 {
-    return shaderTemplate_->GetKeywordValueMask(keywordValues);
+    return shaderTemplate_->GetKeywordSet().ExtractValue(keywordValues);
 }
 
-inline RC<Shader> MaterialPass::GetShader(KeywordSet::ValueMask mask)
+inline RC<Shader> MaterialPass::GetShader(FastKeywordSetValue mask)
 {
-    return shaderTemplate_->GetShader(mask);
+    return shaderTemplate_->GetVariant(mask, true);
 }
 
-inline RC<Shader> MaterialPass::GetShader(const KeywordContext &keywordValues)
+inline RC<Shader> MaterialPass::GetShader(const FastKeywordContext &keywordValues)
 {
-    return GetShader(shaderTemplate_->GetKeywordValueMask(keywordValues));
+    return GetShader(shaderTemplate_->GetKeywordSet().ExtractValue(keywordValues));
 }
 
-inline const MaterialPassPropertyLayout *MaterialPass::GetPropertyLayout(KeywordSet::ValueMask mask)
+inline const MaterialPassPropertyLayout *MaterialPass::GetPropertyLayout(FastKeywordSetValue mask)
 {
     {
         std::shared_lock readLock(propertyLayoutsMutex_);
-        if(materialPassPropertyLayouts_[mask])
+        if(materialPassPropertyLayouts_[mask.GetInternalValue()])
         {
-            return materialPassPropertyLayouts_[mask].get();
+            return materialPassPropertyLayouts_[mask.GetInternalValue()].get();
         }
     }
 
     std::unique_lock writeLock(propertyLayoutsMutex_);
-    if(!materialPassPropertyLayouts_[mask])
+    if(!materialPassPropertyLayouts_[mask.GetInternalValue()])
     {
         auto newLayout = MakeBox<MaterialPassPropertyLayout>(*hostMaterialPropertyLayout_, *GetShader(mask));
-        materialPassPropertyLayouts_[mask] = std::move(newLayout);
+        materialPassPropertyLayouts_[mask.GetInternalValue()] = std::move(newLayout);
     }
-    return materialPassPropertyLayouts_[mask].get();
+    return materialPassPropertyLayouts_[mask.GetInternalValue()].get();
 }
 
-inline const MaterialPassPropertyLayout *MaterialPass::GetPropertyLayout(const KeywordContext &keywordValues)
+inline const MaterialPassPropertyLayout *MaterialPass::GetPropertyLayout(const FastKeywordContext &keywordValues)
 {
-    return GetPropertyLayout(shaderTemplate_->GetKeywordValueMask(keywordValues));
+    return GetPropertyLayout(shaderTemplate_->GetKeywordSet().ExtractValue(keywordValues));
 }
 
-inline auto &MaterialPass::GetShaderTemplate() const
+inline const RC<ShaderTemplate> &MaterialPass::GetShaderTemplate() const
 {
     return shaderTemplate_;
 }

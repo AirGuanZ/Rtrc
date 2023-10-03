@@ -1,46 +1,9 @@
 #include <Rtrc/Renderer/Atmosphere/AtmosphereRenderer.h>
 #include <Core/Math/LowDiscrepancy.h>
 
+#include <Rtrc/Renderer/Atmosphere/Shader/Atmosphere.shader.outh>
+
 RTRC_RENDERER_BEGIN
-
-namespace PhysicalAtmospherePassDetail
-{
-    
-    rtrc_group(TransmittanceLutPass)
-    {
-        rtrc_define(RWTexture2D,           TransmittanceTextureRW);
-        rtrc_uniform(uint2,                outputResolution);
-        rtrc_uniform(AtmosphereProperties, atmosphere);
-    };
-
-    rtrc_group(MultiScatterLutPass)
-    {
-        rtrc_define(RWTexture2D,           MultiScatterTextureRW);
-        rtrc_define(StructuredBuffer,      RawDirSamples);
-        rtrc_define(Texture2D,             TransmittanceLut);
-        rtrc_uniform(uint2,                outputResolution);
-        rtrc_uniform(int,                  dirSampleCount);
-        rtrc_uniform(int,                  rayMarchStepCount);
-        rtrc_uniform(AtmosphereProperties, atmosphere);
-        rtrc_uniform(float3,               terrainAlbedo);
-    };
-
-    rtrc_group(SkyLutPass)
-    {
-        rtrc_define(RWTexture2D,           SkyLutTextureRW);
-        rtrc_define(Texture2D,             TransmittanceLutTexture);
-        rtrc_define(Texture2D,             MultiScatterLutTexture);
-        rtrc_uniform(AtmosphereProperties, atmosphere);
-        rtrc_uniform(uint2,                outputResolution);
-        rtrc_uniform(int,                  rayMarchStepCount);
-        rtrc_uniform(float,                frameRandom01);
-        rtrc_uniform(float,                eyePosY);
-        rtrc_uniform(float3,               sunDirection);
-        rtrc_uniform(float,                lerpFactor);
-        rtrc_uniform(float3,               sunIntensity);
-    };
-
-} // namespace PhysicalAtmospherePassDetail
 
 void RenderAtmosphere::SetLutTResolution(const Vector2u &res)
 {
@@ -142,7 +105,7 @@ void RenderAtmosphere::Render(
         const float lerpFactor = std::clamp(
             1.0f - std::pow(0.03f, 0.4f * dt), 0.001f, 0.05f);
 
-        PhysicalAtmospherePassDetail::SkyLutPass passData;
+        StaticShaderInfo<"Atmosphere/GenerateSkyLut">::Variant::Pass passData;
         passData.SkyLutTextureRW         = S;
         passData.TransmittanceLutTexture = T_;
         passData.MultiScatterLutTexture  = M_;
@@ -155,10 +118,8 @@ void RenderAtmosphere::Render(
         passData.sunDirection            = sunDir;
         passData.sunIntensity            = sunColor;
         auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
-
-        auto material = resources_->GetMaterialManager()->GetCachedMaterial<"Builtin/Atmosphere">().get();
-        auto shader = material->GetPassByIndex(Pass_GenerateS)->GetShader().get();
-
+        
+        auto shader = resources_->GetMaterialManager()->GetCachedShader<"Atmosphere/GenerateSkyLut">();
         CommandBuffer &commandBuffer = RG::GetCurrentCommandBuffer();
         commandBuffer.BindComputePipeline(shader->GetComputePipeline());
         commandBuffer.BindComputeGroup(0, passGroup);
@@ -189,15 +150,13 @@ RG::TextureResource *RenderAtmosphere::GenerateT(RG::RenderGraph &renderGraph, c
     passT->Use(T, RG::CS_RWTexture_WriteOnly);
     passT->SetCallback([this, T, props]
     {
-        PhysicalAtmospherePassDetail::TransmittanceLutPass passData;
+        StaticShaderInfo<"Atmosphere/GenerateTransmittanceLut">::Variant::Pass passData;
         passData.outputResolution       = resT_;
         passData.TransmittanceTextureRW = T;
         passData.atmosphere             = props;
         auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
-
-        auto material = resources_->GetMaterialManager()->GetCachedMaterial<"Builtin/Atmosphere">().get();
-        auto shader = material->GetPassByIndex(Pass_GenerateT)->GetShader().get();
-
+        
+        auto shader = resources_->GetMaterialManager()->GetCachedShader<"Atmosphere/GenerateTransmittanceLut">();
         CommandBuffer &commandBuffer = RG::GetCurrentCommandBuffer();
         commandBuffer.BindComputePipeline(shader->GetComputePipeline());
         commandBuffer.BindComputeGroup(0, passGroup);
@@ -240,19 +199,17 @@ RG::TextureResource *RenderAtmosphere::GenerateM(RG::RenderGraph &renderGraph, c
     passM->Use(M, RG::CS_RWTexture_WriteOnly);
     passM->SetCallback([this, M, props]
     {
-        PhysicalAtmospherePassDetail::MultiScatterLutPass passData;
-        passData.MultiScatterTextureRW = M;
-        passData.RawDirSamples         = multiScatterDirSamples_;
-        passData.TransmittanceLut      = T_;
-        passData.outputResolution      = resM_;
-        passData.dirSampleCount        = MULTI_SCATTER_DIR_SAMPLE_COUNT;
-        passData.rayMarchStepCount     = rayMarchingStepCount_;
-        passData.atmosphere            = props;
+        StaticShaderInfo<"Atmosphere/GenerateMultiScatterLut">::Variant::Pass passData;
+        passData.MultiScatterTextureRW   = M;
+        passData.RawDirSamples           = multiScatterDirSamples_;
+        passData.TransmittanceLutTexture = T_;
+        passData.outputResolution        = resM_;
+        passData.dirSampleCount          = MULTI_SCATTER_DIR_SAMPLE_COUNT;
+        passData.rayMarchStepCount       = rayMarchingStepCount_;
+        passData.atmosphere              = props;
         auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
-
-        auto material = resources_->GetMaterialManager()->GetCachedMaterial<"Builtin/Atmosphere">().get();
-        auto shader = material->GetPassByIndex(Pass_GenerateM)->GetShader().get();
-
+        
+        auto shader = resources_->GetMaterialManager()->GetCachedShader<"Atmosphere/GenerateMultiScatterLut">();
         CommandBuffer &commandBuffer = RG::GetCurrentCommandBuffer();
         commandBuffer.BindComputePipeline(shader->GetComputePipeline());
         commandBuffer.BindComputeGroup(0, passGroup);

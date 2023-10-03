@@ -1,14 +1,14 @@
 #include <Graphics/Device/Device.h>
 #include <Graphics/Device/Utility/CopyTextureUtils.h>
-#include <Graphics/Shader/ShaderCompiler.h>
+#include <Graphics/Shader/StandaloneCompiler.h>
 
 RTRC_BEGIN
 
 namespace CopyTextureUtilsDetail
 {
     const char *SHADER_SOURCE_POINT_SAMPLING = R"___(
-#vertex VSMain
-#pixel PSMain
+rtrc_vertex(VSMain)
+rtrc_pixel(PSMain)
 rtrc_group(Pass)
 {
     rtrc_define(Texture2D<float4>, Src)
@@ -56,12 +56,12 @@ float4 PSMain(Vs2Ps input) : SV_Target
 CopyTextureUtils::CopyTextureUtils(ObserverPtr<Device> device)
     : device_(device)
 {
-    ShaderCompiler shaderCompiler;
+    StandaloneShaderCompiler shaderCompiler;
     shaderCompiler.SetDevice(device);
-    const ShaderCompiler::ShaderSource source = { .source = CopyTextureUtilsDetail::SHADER_SOURCE_POINT_SAMPLING };
-    shaderPointSampling_ = shaderCompiler.Compile(source, { { "USE_POINT_SAMPLING", "1" }, { "USE_GAMMA", "0" }}, RTRC_DEBUG);
-    shaderLinearSampling_ = shaderCompiler.Compile(source, { { "USE_POINT_SAMPLING", "0" }, { "USE_GAMMA", "0" } }, RTRC_DEBUG);
-    shaderPointSamplingGamma_ = shaderCompiler.Compile(source, { { "USE_POINT_SAMPLING", "1" }, { "USE_GAMMA", "1" } }, RTRC_DEBUG);
+    const std::string source = CopyTextureUtilsDetail::SHADER_SOURCE_POINT_SAMPLING;
+    shaderPointSampling_       = shaderCompiler.Compile(source, { { "USE_POINT_SAMPLING", "1" }, { "USE_GAMMA", "0" } }, RTRC_DEBUG);
+    shaderLinearSampling_      = shaderCompiler.Compile(source, { { "USE_POINT_SAMPLING", "0" }, { "USE_GAMMA", "0" } }, RTRC_DEBUG);
+    shaderPointSamplingGamma_  = shaderCompiler.Compile(source, { { "USE_POINT_SAMPLING", "1" }, { "USE_GAMMA", "1" } }, RTRC_DEBUG);
     shaderLinearSamplingGamma_ = shaderCompiler.Compile(source, { { "USE_POINT_SAMPLING", "0" }, { "USE_GAMMA", "1" } }, RTRC_DEBUG);
 }
 

@@ -7,6 +7,7 @@
 
 #include <Core/SmartPointer/ObserverPtr.h>
 #include <Core/Uncopyable.h>
+#include <Graphics/Shader/ShaderDatabase.h>
 
 RTRC_BEGIN
 
@@ -14,7 +15,6 @@ class Material;
 class MaterialManager;
 class ResourceManager;
 class Shader;
-class ShaderTemplate;
 
 class LocalCachedShaderStorage : public Uncopyable
 {
@@ -51,7 +51,7 @@ public:
         LocalCachedShaderStorage    *storage,
         std::string_view             name);
     
-    operator RC<ShaderTemplate>() const
+    operator const RC<ShaderTemplate>&() const
     {
         return Get();
     }
@@ -61,7 +61,7 @@ public:
         return Get().get();
     }
 
-    RC<ShaderTemplate> Get() const;
+    const RC<ShaderTemplate> &Get() const;
 
 private:
 
@@ -80,7 +80,7 @@ public:
         
     }
 
-    RC<ShaderTemplate> Get(LocalCachedShaderStorage *storage, std::string_view materialName);
+    const RC<ShaderTemplate> &Get(LocalCachedShaderStorage *storage, std::string_view materialName);
 
 private:
 

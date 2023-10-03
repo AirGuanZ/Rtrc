@@ -14,7 +14,7 @@ int main()
             .vsync       = true,
             .debug       = RTRC_DEBUG,
             .rayTracing  = true,
-            .backendType = Rtrc::RHI::BackendType::Default
+            .backendType = Rtrc::RHI::BackendType::Vulkan
         });
     }
     catch(const Rtrc::Exception &e)

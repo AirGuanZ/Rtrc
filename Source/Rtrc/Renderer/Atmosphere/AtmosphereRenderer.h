@@ -38,13 +38,6 @@ public:
     void ClearPerCameraFrameData(PerCameraData &perCameraData) const;
 
 private:
-    
-    enum BuiltinMaterialPass
-    {
-        Pass_GenerateT,
-        Pass_GenerateM,
-        Pass_GenerateS
-    };
 
     RG::TextureResource *GenerateT(RG::RenderGraph &renderGraph, const AtmosphereProperties &properties);
     RG::TextureResource *GenerateM(RG::RenderGraph &renderGraph, const AtmosphereProperties &properties);

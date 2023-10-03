@@ -2,11 +2,7 @@
 
 using namespace Rtrc;
 
-rtrc_group(Pass)
-{
-    rtrc_uniform(float, alpha);
-    rtrc_bindless_variable_size(Texture2D[2048], Textures);
-};
+#include "Bindless.material.outh"
 
 void Run()
 {
@@ -18,7 +14,6 @@ void Run()
     auto device = Device::CreateGraphicsDevice(window);
 
     ResourceManager resourceManager(device);
-    resourceManager.AddMaterialFiles($rtrc_get_files("Asset/Sample/03.BindlessTexture/*.*"));
 
     // Mesh
 
@@ -26,7 +21,7 @@ void Run()
 
     // Pipeline
 
-    auto material = resourceManager.GetMaterial("Quad");
+    auto material = resourceManager.GetMaterial("Bindless");
     auto shader = material->GetPassByIndex(0)->GetShader();
     auto pipeline = device->CreateGraphicsPipeline(
     {
@@ -58,7 +53,7 @@ void Run()
     constexpr int BINDING_GROUP_SIZE = 1024;
     RangeSet bindingSlotAllocator(BINDING_GROUP_SIZE);
 
-    Pass bindingGroupData;
+    StaticShaderInfo<"Bindless/pass0/shader">::Variant::Pass bindingGroupData;
     bindingGroupData.alpha = 1;
     auto bindingGroup = device->CreateBindingGroup(bindingGroupData, BINDING_GROUP_SIZE);
 
@@ -106,7 +101,7 @@ void Run()
 
             commandBuffer.BindGraphicsPipeline(pipeline);
             mesh->Bind(commandBuffer);
-            matPassInst->BindGraphicsProperties(0, commandBuffer);
+            matPassInst->BindGraphicsProperties(commandBuffer);
             commandBuffer.BindGraphicsGroup(0, bindingGroup);
             commandBuffer.SetViewports(renderTarget->GetViewport());
             commandBuffer.SetScissors(renderTarget->GetScissor());

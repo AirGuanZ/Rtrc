@@ -2,22 +2,17 @@
 
 #include <map>
 
-#include <Graphics/Shader/ShaderBindingNameMap.h>
-#include <Graphics/Shader/ShaderReflection.h>
 #include <Core/SignalSlot.h>
 #include <Core/Unreachable.h>
-
-RTRC_SHADER_COMPILER_BEGIN
-
-class Compiler;
-
-RTRC_SHADER_COMPILER_END
+#include <Graphics/Shader/ShaderBindingNameMap.h>
+#include <ShaderCommon/Reflection/ShaderReflection.h>
 
 RTRC_BEGIN
 
 class BindingLayout;
 class BindingGroup;
 class BindingGroupLayout;
+class Compiler;
 class ComputePipeline;
 class ShaderCompiler;
 
@@ -36,7 +31,7 @@ public:
 private:
 
     friend class ShaderCompiler;
-    friend class SC::Compiler;
+    friend class Compiler;
 
     std::vector<RHI::RayTracingRayGenShaderGroup> rayGenShaderGroups_;
     std::vector<RHI::RayTracingMissShaderGroup>   missShaderGroups_;
@@ -117,7 +112,7 @@ public:
 private:
 
     friend class ShaderCompiler;
-    friend class SC::Compiler;
+    friend class Compiler;
 
     std::map<std::string, int, std::less<>> nameToBindingGroupLayoutIndex_;
     std::vector<RC<BindingGroupLayout>>     bindingGroupLayouts_;
@@ -198,7 +193,7 @@ public:
 private:
 
     friend class ShaderCompiler;
-    friend class SC::Compiler;
+    friend class Compiler;
 
     Category category_ = Category::Graphics;
 
@@ -265,7 +260,7 @@ public:
 private:
     
     friend class ShaderCompiler;
-    friend class SC::Compiler;
+    friend class Compiler;
 
     static constexpr int VS_INDEX = 0;
     static constexpr int FS_INDEX = 1;

@@ -100,9 +100,14 @@ public:
         Throw(msg);
     }
 
-    size_t GetCurrentPosition() const
+    size_t GetNextPosition() const
     {
         return nextPos_;
+    }
+
+    size_t GetCurrentPosition() const
+    {
+        return nextPos_ - currentToken_.size();
     }
 
     void Next()
@@ -222,7 +227,7 @@ private:
             {
                 --i;
             }
-
+            
             // #line LINE "Filename"
             if(source_[i + 1] == '#')
             {

@@ -1,32 +1,17 @@
-#include <iostream>
-
 #include <Rtrc/Rtrc.h>
 
 using namespace Rtrc;
 
-rtrc_group(MainGroup)
-{
-    rtrc_define(Texture2D,   InputTexture);
-    rtrc_define(RWTexture2D, OutputTexture);
-    rtrc_uniform(float,      scale);
-};
+#include "Compute.shader.outh"
 
 void Run()
 {
     auto device = Device::CreateComputeDevice();
 
     ResourceManager resourceManager(device);
-    resourceManager.AddMaterialFiles($rtrc_get_files("Asset/Sample/02.ComputeShader/*.*"));
     
-    KeywordContext keywords;
-
-    auto material = resourceManager.GetMaterial("ScaleImage");
-    auto matPass = material->GetPassByTag(RTRC_MATERIAL_PASS_TAG(Default));
-    auto shader = matPass->GetShader(keywords);
+    auto shader = resourceManager.GetShader("Compute", true);
     auto pipeline = shader->GetComputePipeline();
-
-    auto matInst = material->CreateInstance();
-    auto matPassInst = matInst->GetPassInstance(RTRC_MATERIAL_PASS_TAG(Default));
 
     auto inputTexture = device->LoadTexture2D(
         "Asset/Sample/01.TexturedQuad/MainTexture.png", RHI::Format::B8G8R8A8_UNorm, 
@@ -61,7 +46,7 @@ void Run()
 
     const int bindingGroupIndex = shader->GetBindingGroupIndexByName("MainGroup");
 
-    MainGroup bindingGroupValue;
+    StaticShaderInfo<"Compute">::Variant::MainGroup bindingGroupValue;
     bindingGroupValue.InputTexture  = inputTexture;
     bindingGroupValue.OutputTexture = outputTexture;
     bindingGroupValue.scale         = 2.0f;
@@ -76,7 +61,6 @@ void Run()
             RHI::ResourceAccess::RWTextureWrite);
 
         cmd.BindComputePipeline(pipeline);
-        matPassInst->BindGraphicsProperties(keywords, cmd);
         cmd.BindComputeGroup(bindingGroupIndex, bindingGroup);
 
         constexpr Vector2i GROUP_SIZE = Vector2i(8, 8);
