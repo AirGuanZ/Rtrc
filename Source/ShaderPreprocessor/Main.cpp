@@ -6,6 +6,7 @@
 #include <Core/Filesystem/File.h>
 #include <Core/Serialization/TextSerializer.h>
 #include <Core/SourceWriter.h>
+#include <Core/String.h>
 #include <ShaderCommon/DXC/DXC.h>
 #include <ShaderCommon/Parser/ShaderParser.h>
 
@@ -438,20 +439,27 @@ void WriteTxt(const std::string &filename, const std::string &content)
     if(!exists(parentDir))
         create_directories(parentDir);
 
-    std::ifstream fin(filename);
-    if(fin)
     {
-        std::stringstream sst;
-        sst << fin.rdbuf();
-        if(sst.str() == content)
+        std::ifstream fin(filename, std::ifstream::in);
+        if(fin)
         {
-            return;
+            const std::string oldContent
+            {
+                std::istreambuf_iterator<char>(fin),
+                std::istreambuf_iterator<char>()
+            };
+            if(oldContent == content)
+            {
+                return;
+            }
         }
     }
 
     std::ofstream fout(filename, std::ofstream::out | std::ofstream::trunc);
     if(fout)
+    {
         fout << content;
+    }
 }
 
 void Run(int argc, const char *argv[])
@@ -495,7 +503,7 @@ void Run(int argc, const char *argv[])
         {
             GenerateKeywordAndBindingGroupsInShader(sw, rawShaderDatabase.rawShaders[i], parsedShaders[i]);
         }
-        sw("#endif // #if !ENABLE_SHADER_REGISTRATION &&  && !ENABLE_MATERIAL_REGISTRATION").NewLine();
+        sw("#endif // #if !ENABLE_SHADER_REGISTRATION && !ENABLE_MATERIAL_REGISTRATION").NewLine();
 
         sw("#if ENABLE_SHADER_REGISTRATION").NewLine();
         for(size_t i = 0; i < parsedShaders.size(); ++i)
@@ -503,12 +511,6 @@ void Run(int argc, const char *argv[])
             GenerateShaderRegistration(sw, parsedShaders[i]);
         }
         sw("#endif // #if ENABLE_SHADER_REGISTRATION").NewLine();
-
-        const std::string content = sw.ResolveResult();
-        const auto outputFile = absolute(std::filesystem::path(args->outputFilename));
-        
-        create_directories(outputFile.parent_path());
-        Rtrc::File::WriteTextFile(outputFile.string(), content);
     }
 
     if(args->inputFilename.ends_with(".material"))
@@ -526,7 +528,6 @@ void Run(int argc, const char *argv[])
 
     const std::string content = sw.ResolveResult();
     const auto outputFile = absolute(std::filesystem::path(args->outputFilename));
-    
     WriteTxt(outputFile.string(), content);
 }
 
