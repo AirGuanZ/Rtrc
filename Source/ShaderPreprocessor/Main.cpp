@@ -1,3 +1,4 @@
+#include <fstream>
 #include <iostream>
 
 #include <cxxopts.hpp>
@@ -431,6 +432,28 @@ void GenerateMaterialRegistration(Rtrc::SourceWriter &sw, const std::vector<Rtrc
     sw("}").NewLine();
 }
 
+void WriteTxt(const std::string &filename, const std::string &content)
+{
+    auto parentDir = absolute(std::filesystem::path(filename)).parent_path();
+    if(!exists(parentDir))
+        create_directories(parentDir);
+
+    std::ifstream fin(filename);
+    if(fin)
+    {
+        std::stringstream sst;
+        sst << fin.rdbuf();
+        if(sst.str() == content)
+        {
+            return;
+        }
+    }
+
+    std::ofstream fout(filename, std::ofstream::out | std::ofstream::trunc);
+    if(fout)
+        fout << content;
+}
+
 void Run(int argc, const char *argv[])
 {
     const auto args = ParseCommandArguments(argc, argv);
@@ -503,9 +526,8 @@ void Run(int argc, const char *argv[])
 
     const std::string content = sw.ResolveResult();
     const auto outputFile = absolute(std::filesystem::path(args->outputFilename));
-
-    create_directories(outputFile.parent_path());
-    Rtrc::File::WriteTextFile(outputFile.string(), content);
+    
+    WriteTxt(outputFile.string(), content);
 }
 
 int main(int argc, const char *argv[])

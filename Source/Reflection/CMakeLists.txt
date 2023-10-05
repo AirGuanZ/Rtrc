@@ -102,14 +102,16 @@ function(enable_rtrc_cpp_reflection_helper)
 
 	# add generating command
 
+	file(WRITE "${GEN_PATH}/Generated/ReflectionPath.inc" "\"Asset/RtrcGenerated/${MAIN_TARGET}\"")
+
 	set(GEN_FILES
 			"${GEN_PATH}/Generated/Reflection.h"
 			"${GEN_PATH}/Generated/Reflection.hlsl"
 			"${GEN_PATH}/Generated/ReflectionList.inc"
-			"${GEN_PATH}/Generated/ReflectionPath.inc"
 			"${GEN_PATH}/Generated/ReflectionSourceLocation.txt")
 	add_custom_command(
-		OUTPUT ${GEN_FILES}
+		OUTPUT "${GEN_PATH}/CppReflectionTimestamp.txt"
+		BYPRODUCTS ${GEN_FILES}
 		COMMAND
 			Reflection -i "${GEN_PATH}/sources.txt"
 					   -c "${GEN_PATH}/Generated/Reflection.h"
@@ -117,14 +119,13 @@ function(enable_rtrc_cpp_reflection_helper)
 					   -l "${GEN_PATH}/Generated/ReflectionList.inc"
 					   -f "${GEN_PATH}/Generated/ReflectionSourceLocation.txt"
 		COMMAND
-			${CMAKE_COMMAND} -E echo "\\\"Asset/RtrcGenerated/${MAIN_TARGET}\\\""
-							 > "${GEN_PATH}/Generated/ReflectionPath.inc"
+			${CMAKE_COMMAND} -E touch "${GEN_PATH}/CppReflectionTimestamp.txt"
 		WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
 		DEPENDS Reflection "${ALL_SOURCES}")
 
 	add_custom_target(
 		"RtrcGeneratedCppReflectionFilesFor${MAIN_TARGET}" ALL
-		DEPENDS ${GEN_FILES})
+		DEPENDS ${GEN_FILES} "${GEN_PATH}/CppReflectionTimestamp.txt")
 	
 	# setup target dependencies		
 			

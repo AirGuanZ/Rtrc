@@ -30,22 +30,28 @@ file(GLOB_RECURSE ALL_HLSL_FILES CONFIGURE_DEPENDS
     "${CMAKE_SOURCE_DIR}/Samples/*.hlsl")
 
 set(ALL_SHADER_OUT_FILES)
+set(ALL_SHADER_TIMESTAMP_FILES)
 foreach(SHADER_FILE IN ITEMS ${ALL_SHADER_FILES})
     set(IN ${SHADER_FILE})
     set(OUT "${SHADER_FILE}.outh")
+    set(TS "${SHADER_FILE}.outh.timestamp")
     add_custom_command(
-        OUTPUT ${OUT}
+        OUTPUT ${TS}
+        BYPRODUCTS ${OUT}
         COMMAND
             ShaderPreprocessor -i "${IN}"
                                -o "${OUT}"
                                -r "${CMAKE_SOURCE_DIR}/Source"
                                -r "${CMAKE_CURRENT_SOURCE_DIR}/DummyShader"
+        COMMAND
+            ${CMAKE_COMMAND} -E touch "${TS}"
         DEPENDS
-            ShaderPreprocessor "${IN}" "${ALL_HLSL_FILES}") # TODO: ALL_HLSL_FILES is far from optimal. optimize this.
+            ShaderPreprocessor "${IN}" "${ALL_HLSL_FILES}") # TODO: optimize this.
     list(APPEND ALL_SHADER_OUT_FILES ${OUT})
+    list(APPEND ALL_SHADER_TIMESTAMP_FILES ${TS})
 endforeach()
 
-add_custom_target(RtrcPreprocessedShaderCustomTarget ALL DEPENDS ${ALL_SHADER_OUT_FILES})
+add_custom_target(RtrcPreprocessedShaderCustomTarget ALL DEPENDS ${ALL_SHADER_TIMESTAMP_FILES})
 set_property(TARGET RtrcPreprocessedShaderCustomTarget PROPERTY FOLDER "Generated")
 
 add_library(RtrcPreprocessedShader INTERFACE)

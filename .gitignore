@@ -12,3 +12,4 @@
 /vsxmake2022/
 *.shader.outh
 *.material.outh
+*.outh.timestamp

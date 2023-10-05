@@ -113,8 +113,9 @@ std::string GenerateCppReflection(std::span<const Struct> structs)
         std::string ret = qualifiedName;
         size_t pos = ret.rfind("::");
         if(pos == std::string::npos)
-            pos = 0;
-        ret.insert(pos + 2, "rtrcReflMirrorStruct_");
+            ret.insert(0, "rtrcReflMirrorStruct_");
+        else
+            ret.insert(pos + 2, "rtrcReflMirrorStruct_");
         return ret;
     };
 
@@ -327,6 +328,17 @@ int main(int argc, const char *argv[])
         auto parentDir = absolute(std::filesystem::path(filename)).parent_path();
         if(!exists(parentDir))
             create_directories(parentDir);
+
+        std::ifstream fin(filename);
+        if(fin)
+        {
+            std::stringstream sst;
+            sst << fin.rdbuf();
+            if(sst.str() == content)
+            {
+                return;
+            }
+        }
         
         std::ofstream fout(filename, std::ofstream::out | std::ofstream::trunc);
         if(fout)
