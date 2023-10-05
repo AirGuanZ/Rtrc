@@ -25,9 +25,7 @@
 
 #define RTRC_RG_BEGIN RTRC_BEGIN namespace RG {
 #define RTRC_RG_END } RTRC_END
-
-#define RTRC_RDG_BEGIN RTRC_BEGIN namespace RDG {
-#define RTRC_RDG_END } RTRC_END
+#define RTRC_RG_DEBUG RTRC_DEBUG
 
 #define RTRC_RENDERER_BEGIN RTRC_BEGIN namespace Renderer {
 #define RTRC_RENDERER_END   } RTRC_END

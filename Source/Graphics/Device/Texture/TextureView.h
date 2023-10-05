@@ -12,21 +12,19 @@ public:
     TTextureView() = default;
 
     TTextureView(
-        RC<Texture>           texture,
-        uint32_t              mipLevel,
-        uint32_t              arrayLayer,
-        bool                  isArrayView,
-        RHI::TextureViewFlags flags = 0);
+        RC<Texture> texture,
+        uint32_t    mipLevel,
+        uint32_t    arrayLayer,
+        bool        isArrayView);
 
     // For levelCount/layerCount, 0 means all
     TTextureView(
-        RC<Texture>           texture,
-        uint32_t              mipLevel,
-        uint32_t              levelCount,
-        uint32_t              arrayLayer,
-        uint32_t              layerCount,
-        bool                  isArrayView,
-        RHI::TextureViewFlags flags = 0);
+        RC<Texture> texture,
+        uint32_t    mipLevel,
+        uint32_t    levelCount,
+        uint32_t    arrayLayer,
+        uint32_t    layerCount,
+        bool        isArrayView);
 
     const T &GetRHIObject() const;
 
@@ -50,25 +48,23 @@ private:
 
 template<typename T>
 TTextureView<T>::TTextureView(
-    RC<Texture>           texture,
-    uint32_t              mipLevel,
-    uint32_t              arrayLayer,
-    bool                  isArrayView,
-    RHI::TextureViewFlags flags)
-    : TTextureView(std::move(texture), mipLevel, arrayLayer, 0, isArrayView ? 0 : 1, isArrayView, flags)
+    RC<Texture> texture,
+    uint32_t    mipLevel,
+    uint32_t    arrayLayer,
+    bool        isArrayView)
+    : TTextureView(std::move(texture), mipLevel, arrayLayer, 0, isArrayView ? 0 : 1, isArrayView)
 {
     
 }
 
 template<typename T>
 TTextureView<T>::TTextureView(
-    RC<Texture>           texture,
-    uint32_t              mipLevel,
-    uint32_t              levelCount,
-    uint32_t              arrayLayer,
-    uint32_t              layerCount,
-    bool                  isArrayView,
-    RHI::TextureViewFlags flags)
+    RC<Texture> texture,
+    uint32_t    mipLevel,
+    uint32_t    levelCount,
+    uint32_t    arrayLayer,
+    uint32_t    layerCount,
+    bool        isArrayView)
     : texture_(std::move(texture))
 {
     if(levelCount == 0)
@@ -91,14 +87,12 @@ TTextureView<T>::TTextureView(
             .levelCount     = levelCount,
             .baseArrayLayer = arrayLayer,
             .layerCount     = layerCount,
-            .flags          = flags
         };
         view_ = texture_->GetRHIObject()->CreateSrv(desc);
     }
     else if constexpr(std::is_same_v<T, RHI::TextureUavPtr>)
     {
         assert(levelCount == 1);
-        assert(!flags);
         const RHI::TextureUavDesc desc =
         {
             .isArray        = isArrayView,
@@ -112,7 +106,6 @@ TTextureView<T>::TTextureView(
     else if constexpr(std::is_same_v<T, RHI::TextureRtvPtr>)
     {
         assert(levelCount == 1 && layerCount == 1 && !isArrayView);
-        assert(!flags);
         const RHI::TextureRtvDesc desc =
         {
             .format     = RHI::Format::Unknown,
@@ -130,7 +123,6 @@ TTextureView<T>::TTextureView(
             .format     = RHI::Format::Unknown,
             .mipLevel   = mipLevel,
             .arrayLayer = arrayLayer,
-            .flags      = flags
         };
         view_ = texture_->GetRHIObject()->CreateDsv(desc);
     }
@@ -159,25 +151,25 @@ RHI::Format TTextureView<T>::GetFinalFormat() const
     return ret;
 }
 
-inline TextureSrv Texture::GetSrv(RHI::TextureViewFlags flags)
+inline TextureSrv Texture::GetSrv()
 {
     if(GetDesc().arraySize > 1)
     {
-        return GetSrv(0, 0, 0, 0, flags);
+        return GetSrv(0, 0, 0, 0);
     }
-    return GetSrv(0, 0, 0, flags);
+    return GetSrv(0, 0, 0);
 }
 
 inline TextureSrv Texture::GetSrv(
-    uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, RHI::TextureViewFlags flags)
+    uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer)
 {
-    return TextureSrv(shared_from_this(), mipLevel, levelCount, arrayLayer, 1, false, flags);
+    return TextureSrv(shared_from_this(), mipLevel, levelCount, arrayLayer, 1, false);
 }
 
 inline TextureSrv Texture::GetSrv(
-    uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, uint32_t layerCount, RHI::TextureViewFlags flags)
+    uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, uint32_t layerCount)
 {
-    return TextureSrv(shared_from_this(), mipLevel, levelCount, arrayLayer, layerCount, true, flags);
+    return TextureSrv(shared_from_this(), mipLevel, levelCount, arrayLayer, layerCount, true);
 }
 
 inline TextureUav Texture::GetUav()
@@ -204,14 +196,9 @@ inline TextureRtv Texture::GetRtv(uint32_t mipLevel, uint32_t arrayLayer)
     return TextureRtv(shared_from_this(), mipLevel, arrayLayer, false);
 }
 
-inline TextureDsv Texture::GetDsv(RHI::TextureViewFlags flags)
+inline TextureDsv Texture::GetDsv(uint32_t mipLevel, uint32_t arrayLayer)
 {
-    return GetDsv(0, 0, flags);
-}
-
-inline TextureDsv Texture::GetDsv(uint32_t mipLevel, uint32_t arrayLayer, RHI::TextureViewFlags flags)
-{
-    return TextureDsv(shared_from_this(), mipLevel, arrayLayer, false, flags);
+    return TextureDsv(shared_from_this(), mipLevel, arrayLayer, false);
 }
 
 RTRC_END

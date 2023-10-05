@@ -4,171 +4,24 @@
 
 RTRC_RG_BEGIN
 
-namespace GraphDetail
+void RenderGraph::InternalBufferResource::SetDefaultStructStride(size_t stride)
 {
-
-    thread_local PassContext *gCurrentPassContext = nullptr;
-
-} // namespace GraphDetail
-
-RC<Buffer> BufferResource::Get() const
-{
-    return GetCurrentPassContext().Get(this);
+    defaultStructStride_ = stride;
 }
 
-const RC<Tlas> &TlasResource::Get() const
+void RenderGraph::InternalBufferResource::SetDefaultTexelFormat(RHI::Format format)
 {
-    assert(GetCurrentPassContext().Get(tlasBuffer_));
-    return tlas_;
+    defaultTexelFormat_ = format;
 }
 
-RHI::Viewport TextureResource::GetViewport(float minDepth, float maxDepth) const
+size_t RenderGraph::InternalBufferResource::GetDefaultStructStride() const
 {
-    return RHI::Viewport::Create(GetDesc(), minDepth, maxDepth);
+    return defaultStructStride_;
 }
 
-RHI::Scissor TextureResource::GetScissor() const
+RHI::Format RenderGraph::InternalBufferResource::GetDefaultTexelFormat() const
 {
-    return RHI::Scissor::Create(GetDesc());
-}
-
-RC<Texture> TextureResource::Get() const
-{
-    return GetCurrentPassContext().Get(this);
-}
-
-CommandBuffer &PassContext::GetCommandBuffer()
-{
-    return commandBuffer_;
-}
-
-RC<Buffer> PassContext::Get(const BufferResource *resource)
-{
-    auto &result = resources_.indexToBuffer[resource->GetResourceIndex()].buffer;
-    assert(result);
-#if RTRC_RG_DEBUG
-    if(!declaredResources_->contains(resource))
-    {
-        throw Exception(fmt::format(
-            "Cannot use rg buffer resource {} without declaring usage", result->GetRHIObject()->GetName()));
-    }
-#endif
-    return result;
-}
-
-const RC<Tlas> &PassContext::Get(const TlasResource *resource)
-{
-    return resource->Get();
-}
-
-RC<Texture> PassContext::Get(const TextureResource *resource)
-{
-    auto &result = resources_.indexToTexture[resource->GetResourceIndex()].texture;
-    assert(result);
-#if RTRC_RG_DEBUG
-    if(!declaredResources_->contains(resource))
-    {
-        throw Exception(fmt::format(
-            "Cannot use rg texture resource {} without declaring usage", result->GetRHIObject()->GetName()));
-    }
-#endif
-    return result;
-}
-
-PassContext::PassContext(const ExecutableResources &resources, CommandBuffer &commandBuffer)
-    : resources_(resources), commandBuffer_(commandBuffer)
-{
-    assert(!GraphDetail::gCurrentPassContext);
-    GraphDetail::gCurrentPassContext = this;
-}
-
-PassContext::~PassContext()
-{
-    assert(GraphDetail::gCurrentPassContext == this);
-    GraphDetail::gCurrentPassContext = nullptr;
-}
-
-PassContext &GetCurrentPassContext()
-{
-    return *GraphDetail::gCurrentPassContext;
-}
-
-CommandBuffer &GetCurrentCommandBuffer()
-{
-    return GetCurrentPassContext().GetCommandBuffer();
-}
-
-void Connect(Pass *head, Pass *tail)
-{
-    head->succs_.insert(tail);
-    tail->prevs_.insert(head);
-}
-
-Pass *Pass::Use(BufferResource *buffer, const UseInfo &info)
-{
-    auto &usage = bufferUsages_[buffer];
-    usage.stages |= info.stages;
-    usage.accesses |= info.accesses;
-    return this;
-}
-
-Pass *Pass::Use(TextureResource *texture, const UseInfo &info)
-{
-    const uint32_t mipLevels = texture->GetMipLevels();
-    const uint32_t arraySize = texture->GetArraySize();
-    for(uint32_t mi = 0; mi < mipLevels; ++mi)
-    {
-        for(uint32_t ai = 0; ai < arraySize; ++ai)
-        {
-            Use(texture, RHI::TextureSubresource{ mi, ai }, info);
-        }
-    }
-    return this;
-}
-
-Pass *Pass::Use(TextureResource *texture, const RHI::TextureSubresource &subrsc, const UseInfo &info)
-{
-    TextureUsage &usageMap = textureUsages_[texture];
-    if(!usageMap.GetArrayLayerCount())
-    {
-        usageMap = TextureUsage(texture->GetMipLevels(), texture->GetArraySize());
-    }
-    assert(!usageMap(subrsc.mipLevel, subrsc.arrayLayer).has_value());
-    usageMap(subrsc.mipLevel, subrsc.arrayLayer) = SubTexUsage(info.layout, info.stages, info.accesses);
-    return this;
-}
-
-Pass *Pass::Use(TlasResource *tlas, const UseInfo &info)
-{
-    return Use(tlas->GetInternalBuffer(), info);
-}
-
-Pass *Pass::Build(TlasResource *tlas)
-{
-    return Use(tlas, BuildAS_Output);
-}
-
-Pass *Pass::SetCallback(Callback callback)
-{
-    callback_ = std::move(callback);
-    return this;
-}
-
-Pass *Pass::SetCallback(LegacyCallback callback)
-{
-    return SetCallback([c = std::move(callback)] { c(GetCurrentPassContext()); });
-}
-
-Pass *Pass::SetSignalFence(RHI::FencePtr fence)
-{
-    signalFence_ = std::move(fence);
-    return this;
-}
-
-Pass::Pass(int index, const LabelStack::Node *node)
-    : index_(index), nameNode_(node)
-{
-    
+    return defaultTexelFormat_;
 }
 
 RenderGraph::RenderGraph(ObserverPtr<Device> device, Queue queue)
@@ -291,6 +144,11 @@ TextureResource *RenderGraph::RegisterSwapchainTexture(const RHI::SwapchainPtr &
         swapchain->GetRenderTarget(), swapchain->GetAcquireSemaphore(), swapchain->GetPresentSemaphore());
 }
 
+void RenderGraph::SetCompleteFence(RHI::FencePtr fence)
+{
+    completeFence_.Swap(fence);
+}
+
 void RenderGraph::PushPassGroup(std::string name)
 {
     labelStack_.Push(std::move(name));
@@ -375,7 +233,7 @@ Pass *RenderGraph::CreateClearRWTexture2DPass(std::string name, TextureResource 
     pass->Use(tex2D, CS_RWTexture);
     pass->SetCallback([tex2D, value, this]
     {
-        device_->GetClearTextureUtils().ClearRWTexture2D(GetCurrentCommandBuffer(), tex2D->GetUav(), value);
+        device_->GetClearTextureUtils().ClearRWTexture2D(GetCurrentCommandBuffer(), tex2D->GetUavImm(), value);
     });
     return pass;
 }
@@ -386,7 +244,7 @@ Pass *RenderGraph::CreateClearRWTexture2DPass(std::string name, TextureResource 
     pass->Use(tex2D, CS_RWTexture);
     pass->SetCallback([tex2D, value, this]
     {
-        device_->GetClearTextureUtils().ClearRWTexture2D(GetCurrentCommandBuffer(), tex2D->GetUav(), value);
+        device_->GetClearTextureUtils().ClearRWTexture2D(GetCurrentCommandBuffer(), tex2D->GetUavImm(), value);
     });
     return pass;
 }
@@ -397,7 +255,7 @@ Pass *RenderGraph::CreateClearRWTexture2DPass(std::string name, TextureResource 
     pass->Use(tex2D, CS_RWTexture);
     pass->SetCallback([tex2D, value, this]
     {
-        device_->GetClearTextureUtils().ClearRWTexture2D(GetCurrentCommandBuffer(), tex2D->GetUav(), value);
+        device_->GetClearTextureUtils().ClearRWTexture2D(GetCurrentCommandBuffer(), tex2D->GetUavImm(), value);
     });
     return pass;
 }
@@ -415,8 +273,8 @@ Pass *RenderGraph::CreateBlitTexture2DPass(
     {
         device_->GetCopyTextureUtils().RenderFullscreenTriangle(
             context.GetCommandBuffer(),
-            src->GetSrv(srcMipLevel, 1, srcArrayLayer),
-            dst->GetRtv(dstMipLevel, dstArrayLayer),
+            src->GetSrvImm(srcMipLevel, 1, srcArrayLayer),
+            dst->GetRtvImm(dstMipLevel, dstArrayLayer),
             usePointSampling ? CopyTextureUtils::Point : CopyTextureUtils::Linear, gamma);
     });
     return pass;
@@ -433,9 +291,14 @@ Pass *RenderGraph::CreateBlitTexture2DPass(
         std::move(name), src, 0, 0, dst, 0, 0, usePointSampling, gamma);
 }
 
-void RenderGraph::SetCompleteFence(RHI::FencePtr fence)
+size_t RenderGraph::ExternalBufferResource::GetDefaultStructStride() const
 {
-    completeFence_.Swap(fence);
+    return buffer->GetDefaultStructStride();
+}
+
+RHI::Format RenderGraph::ExternalBufferResource::GetDefaultTexelFormat() const
+{
+    return buffer->GetDefaultTexelFormat();
 }
 
 const RHI::TextureDesc &RenderGraph::ExternalTextureResource::GetDesc() const

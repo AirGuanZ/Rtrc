@@ -96,35 +96,27 @@ void RenderAtmosphere::Render(
 
     // Render
 
-    auto pass = renderGraph.CreatePass("GenerateSkyLut");
-    pass->Use(S, RG::CS_RWTexture);
-    pass->Use(T_, RG::CS_Texture);
-    pass->Use(M_, RG::CS_Texture);
-    pass->SetCallback([&perCameraData, dt, S, eyeAltitude, sunDir, sunColor, this]
-    {
-        const float lerpFactor = std::clamp(
-            1.0f - std::pow(0.03f, 0.4f * dt), 0.001f, 0.05f);
+    const float lerpFactor = std::clamp(1.0f - std::pow(0.03f, 0.4f * dt), 0.001f, 0.05f);
 
-        StaticShaderInfo<"Atmosphere/GenerateSkyLut">::Variant::Pass passData;
-        passData.SkyLutTextureRW         = S;
-        passData.TransmittanceLutTexture = T_;
-        passData.MultiScatterLutTexture  = M_;
-        passData.atmosphere              = properties_;
-        passData.outputResolution        = resS_;
-        passData.rayMarchStepCount       = rayMarchingStepCount_;
-        passData.frameRandom01           = std::uniform_real_distribution<float>(0, 1)(perCameraData.rng);
-        passData.eyePosY                 = eyeAltitude;
-        passData.lerpFactor              = lerpFactor;
-        passData.sunDirection            = sunDir;
-        passData.sunIntensity            = sunColor;
-        auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
-        
-        auto shader = resources_->GetMaterialManager()->GetCachedShader<"Atmosphere/GenerateSkyLut">();
-        CommandBuffer &commandBuffer = RG::GetCurrentCommandBuffer();
-        commandBuffer.BindComputePipeline(shader->GetComputePipeline());
-        commandBuffer.BindComputeGroup(0, passGroup);
-        commandBuffer.DispatchWithThreadCount(resS_);
-    });
+    StaticShaderInfo<"Atmosphere/GenerateSkyLut">::Variant::Pass skyPassData;
+    skyPassData.SkyLutTextureRW           = S;
+    skyPassData.SkyLutTextureRW.writeOnly = true;
+    skyPassData.TransmittanceLutTexture   = T_;
+    skyPassData.MultiScatterLutTexture    = M_;
+    skyPassData.atmosphere                = properties_;
+    skyPassData.outputResolution          = resS_;
+    skyPassData.rayMarchStepCount         = rayMarchingStepCount_;
+    skyPassData.frameRandom01             = std::uniform_real_distribution<float>(0, 1)(perCameraData.rng);
+    skyPassData.eyePosY                   = eyeAltitude;
+    skyPassData.lerpFactor                = lerpFactor;
+    skyPassData.sunDirection              = sunDir;
+    skyPassData.sunIntensity              = sunColor;
+
+    renderGraph.CreateComputePassWithThreadCount(
+        "GenerateSkyLut",
+        resources_->GetMaterialManager()->GetCachedShader<"Atmosphere/GenerateSkyLut">(),
+        resS_,
+        skyPassData);
 }
 
 void RenderAtmosphere::ClearPerCameraFrameData(PerCameraData &perCameraData) const
@@ -146,22 +138,16 @@ RG::TextureResource *RenderAtmosphere::GenerateT(RG::RenderGraph &renderGraph, c
     persistentT_->SetName("RenderAtmosphere_T");
     auto T = renderGraph.RegisterTexture(persistentT_);
 
-    auto passT = renderGraph.CreatePass("GenerateTransmittanceLut");
-    passT->Use(T, RG::CS_RWTexture_WriteOnly);
-    passT->SetCallback([this, T, props]
-    {
-        StaticShaderInfo<"Atmosphere/GenerateTransmittanceLut">::Variant::Pass passData;
-        passData.outputResolution       = resT_;
-        passData.TransmittanceTextureRW = T;
-        passData.atmosphere             = props;
-        auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
-        
-        auto shader = resources_->GetMaterialManager()->GetCachedShader<"Atmosphere/GenerateTransmittanceLut">();
-        CommandBuffer &commandBuffer = RG::GetCurrentCommandBuffer();
-        commandBuffer.BindComputePipeline(shader->GetComputePipeline());
-        commandBuffer.BindComputeGroup(0, passGroup);
-        commandBuffer.DispatchWithThreadCount(resT_);
-    });
+    StaticShaderInfo<"Atmosphere/GenerateTransmittanceLut">::Variant::Pass passData;
+    passData.outputResolution                 = resT_;
+    passData.TransmittanceTextureRW           = T;
+    passData.TransmittanceTextureRW.writeOnly = true;
+    passData.atmosphere                       = props;
+    renderGraph.CreateComputePassWithThreadCount(
+        "GenerateTransmittanceLut",
+        resources_->GetMaterialManager()->GetCachedShader<"Atmosphere/GenerateTransmittanceLut">(),
+        resT_,
+        passData);
 
     return T;
 }
@@ -194,27 +180,21 @@ RG::TextureResource *RenderAtmosphere::GenerateM(RG::RenderGraph &renderGraph, c
     auto M = renderGraph.RegisterTexture(persistentM_);
 
     assert(T_);
-    auto passM = renderGraph.CreatePass("GenerateMultiScatteringLut");
-    passM->Use(T_, RG::CS_Texture);
-    passM->Use(M, RG::CS_RWTexture_WriteOnly);
-    passM->SetCallback([this, M, props]
-    {
-        StaticShaderInfo<"Atmosphere/GenerateMultiScatterLut">::Variant::Pass passData;
-        passData.MultiScatterTextureRW   = M;
-        passData.RawDirSamples           = multiScatterDirSamples_;
-        passData.TransmittanceLutTexture = T_;
-        passData.outputResolution        = resM_;
-        passData.dirSampleCount          = MULTI_SCATTER_DIR_SAMPLE_COUNT;
-        passData.rayMarchStepCount       = rayMarchingStepCount_;
-        passData.atmosphere              = props;
-        auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
-        
-        auto shader = resources_->GetMaterialManager()->GetCachedShader<"Atmosphere/GenerateMultiScatterLut">();
-        CommandBuffer &commandBuffer = RG::GetCurrentCommandBuffer();
-        commandBuffer.BindComputePipeline(shader->GetComputePipeline());
-        commandBuffer.BindComputeGroup(0, passGroup);
-        commandBuffer.DispatchWithThreadCount(resM_);
-    });
+    StaticShaderInfo<"Atmosphere/GenerateMultiScatterLut">::Variant::Pass passData;
+    passData.MultiScatterTextureRW           = M;
+    passData.MultiScatterTextureRW.writeOnly = true;
+    passData.RawDirSamples                   = multiScatterDirSamples_;
+    passData.TransmittanceLutTexture         = T_;
+    passData.outputResolution                = resM_;
+    passData.dirSampleCount                  = MULTI_SCATTER_DIR_SAMPLE_COUNT;
+    passData.rayMarchStepCount               = rayMarchingStepCount_;
+    passData.atmosphere                      = props;
+
+    renderGraph.CreateComputePassWithThreadCount(
+        "GenerateMultiScatteringLut",
+        resources_->GetMaterialManager()->GetCachedShader<"Atmosphere/GenerateMultiScatterLut">(),
+        resM_,
+        passData);
 
     return M;
 }

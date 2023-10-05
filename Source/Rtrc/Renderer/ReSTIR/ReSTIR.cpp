@@ -2,6 +2,8 @@
 #include <Rtrc/Renderer/GBufferBinding.h>
 #include <Rtrc/Scene/Light/Light.h>
 
+#include <Rtrc/Renderer/ReSTIR/Shader/ReSTIR.shader.outh>
+
 RTRC_RENDERER_BEGIN
 
 namespace ReSTIRDetail
@@ -50,19 +52,6 @@ namespace ReSTIRDetail
         }
         return ret;
     }
-
-    rtrc_group(InitialSamplePass)
-    {
-        rtrc_inline(GBufferBindings_NormalDepth, gbuffers);
-        rtrc_define(ConstantBuffer<CameraData>, Camera);
-        rtrc_define(RaytracingAccelerationStructure, Scene);
-
-        rtrc_define(StructuredBuffer, LightBuffer);
-        rtrc_uniform(uint, lightCount);
-
-        rtrc_define(RWTexture2D, Output);
-        rtrc_uniform(uint2, outputResolution);
-    };
 
 } // namespace ReSTIRDetail
 
@@ -132,29 +121,27 @@ void ReSTIR::Render(RenderCamera &renderCamera, RG::RenderGraph &renderGraph, co
 
     // Initial sample pass
 
-    auto initialSamplePass = renderGraph.CreatePass("InitialSamplePass");
-    DeclareGBufferUses<ReSTIRDetail::InitialSamplePass>(initialSamplePass, gbuffers, RHI::PipelineStage::ComputeShader);
-    initialSamplePass->Use(reservoirs0, RG::CS_RWTexture_WriteOnly);
-    initialSamplePass->Use(renderScene.GetTlas(), RG::CS_ReadAS);
-    initialSamplePass->SetCallback([gbuffers, lightBuffer, &renderCamera, &renderScene, reservoirs0, this]
+    if(lightShadingData.empty())
     {
-        auto shader = resources_->GetMaterialManager()->GetCachedShader<"Builtin/ReSTIR/InitialSamplePass">();
-
-        ReSTIRDetail::InitialSamplePass passData;
+        // TODO
+    }
+    else
+    {
+        StaticShaderInfo<"ReSTIR/CreateNewReservoirs">::Variant::Pass passData;
         FillBindingGroupGBuffers(passData, gbuffers);
-        passData.Camera           = renderCamera.GetCameraCBuffer();
-        passData.Scene            = renderScene.GetTlas();
-        passData.LightBuffer      = lightBuffer;
-        passData.lightCount       = renderScene.GetScene().GetLightCount();
-        passData.Output           = reservoirs0;
-        passData.outputResolution = reservoirs0->GetSize();
-        auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
-
-        auto &commandBuffer = RG::GetCurrentCommandBuffer();
-        commandBuffer.BindComputePipeline(shader->GetComputePipeline());
-        commandBuffer.BindComputeGroups(passGroup);
-        commandBuffer.DispatchWithThreadCount(reservoirs0->GetSize());
-    });
+        passData.Camera                    = renderCamera.GetCameraCBuffer();
+        passData.LightShadingDataBuffer    = lightBuffer;
+        passData.lightCount                = renderScene.GetScene().GetLightCount();
+        passData.OutputTextureRW           = reservoirs0;
+        passData.OutputTextureRW.writeOnly = true;
+        passData.outputResolution          = reservoirs0->GetSize();
+        passData.M                         = M_;
+        renderGraph.CreateComputePassWithThreadCount(
+            "InitialSamplePass",
+            resources_->GetMaterialManager()->GetCachedShader<"Builtin/ReSTIR/InitialSamplePass">(),
+            reservoirs0->GetSize(),
+            passData);
+    }
 }
 
 void ReSTIR::ClearFrameData(PerCameraData &data) const

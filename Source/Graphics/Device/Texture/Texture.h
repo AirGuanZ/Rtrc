@@ -68,12 +68,11 @@ public:
     uint32_t GetMipmapLevelCount() const;
 
     // non-array view for single-layer texture, array view for multi-layer texture
-    TextureSrv GetSrv(RHI::TextureViewFlags flags = 0);
+    TextureSrv GetSrv();
     // non-array view
-    TextureSrv GetSrv(uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, RHI::TextureViewFlags flags = 0);
+    TextureSrv GetSrv(uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer);
     // array view
-    TextureSrv GetSrv(
-        uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, uint32_t layerCount, RHI::TextureViewFlags flags = 0);
+    TextureSrv GetSrv(uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, uint32_t layerCount);
 
     // non-array view for single-layer texture, array view for multi-layer texture
     TextureUav GetUav();
@@ -83,9 +82,8 @@ public:
     TextureUav GetUav(uint32_t mipLevel, uint32_t arrayLayer, uint32_t layerCount);
     
     TextureRtv GetRtv(uint32_t mipLevel = 0, uint32_t arrayLayer = 0);
-
-    TextureDsv GetDsv(RHI::TextureViewFlags flags);
-    TextureDsv GetDsv(uint32_t mipLevel = 0, uint32_t arrayLayer = 0, RHI::TextureViewFlags flags = 0);
+    
+    TextureDsv GetDsv(uint32_t mipLevel = 0, uint32_t arrayLayer = 0);
 
     RHI::Viewport GetViewport(float minDepth = 0, float maxDepth = 1) const;
     RHI::Scissor GetScissor() const;

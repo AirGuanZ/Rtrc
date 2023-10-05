@@ -92,7 +92,7 @@ void Run()
 
             commandBuffer.BeginRenderPass(ColorAttachment
             {
-                .renderTargetView = renderTarget->GetRtv(),
+                .renderTargetView = renderTarget->GetRtvImm(),
                 .loadOp           = AttachmentLoadOp::Clear,
                 .storeOp          = AttachmentStoreOp::Store,
                 .clearValue       = ColorClearValue(0, 0, 0, 0)

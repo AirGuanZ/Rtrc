@@ -5,7 +5,7 @@ int main()
     Rtrc::EnableMemoryLeakReporter();
     try
     {
-        StandaloneApplication().Run(Rtrc::Application::Config
+        StandaloneApplication().Run(
         {
             .title       = "Rtrc Standalone Renderer",
             .width       = 640,
@@ -14,7 +14,7 @@ int main()
             .vsync       = true,
             .debug       = RTRC_DEBUG,
             .rayTracing  = true,
-            .backendType = Rtrc::RHI::BackendType::Vulkan
+            .backendType = Rtrc::RHI::BackendType::Default
         });
     }
     catch(const Rtrc::Exception &e)

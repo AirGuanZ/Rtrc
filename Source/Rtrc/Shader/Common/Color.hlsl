@@ -21,4 +21,9 @@ float3 Dither01(float3 input, float2 seed)
     return input;
 }
 
+float RelativeLuminance(float3 color)
+{
+    return 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b;
+}
+
 #endif // #ifndef RTRC_COMMON_COLOR_HLSL

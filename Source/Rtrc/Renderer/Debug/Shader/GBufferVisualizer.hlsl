@@ -5,9 +5,9 @@
 
 #define VIS_MODE_NORMAL 1
 
-rtrc_group(Pass)
+rtrc_group(Pass, CS)
 {
-    REF_GBUFFERS(All)
+    REF_GBUFFERS(CS)
     rtrc_define(RWTexture2D<float4>, Output)
     rtrc_uniform(uint2, outputResolution)
 };

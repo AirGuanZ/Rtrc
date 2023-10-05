@@ -4,8 +4,8 @@
 #include <Graphics/Device/BindingGroup.h>
 #include <Graphics/Device/Buffer/Buffer.h>
 #include <Graphics/Device/Buffer/DynamicBuffer.h>
-#include <Graphics/Device/RGResourceForward.h>
 #include <Graphics/Device/Texture/Texture.h>
+#include <Graphics/RenderGraph/Pass.h>
 #include <Core/Macro/MacroOverloading.h>
 #include <Core/Struct.h>
 
@@ -25,49 +25,127 @@ namespace BindingGroupDSL
     RTRC_DEFINE_ENUM_FLAGS(BindingFlagBit)
     using BindingFlags = EnumFlagsBindingFlagBit;
 
-    struct MemberProxy_Texture2D
+    class MemberProxy_Texture2D
     {
+        Variant<TextureSrv, RG::TextureResourceSrv> data_;
+
+    public:
+
         static constexpr RHI::BindingType BindingType = RHI::BindingType::Texture;
-        TextureSrv _rtrcObj;
+
+        TextureSrv GetRtrcObject() const
+        {
+            return data_.Match(
+                [&](const TextureSrv &v) { return v; },
+                [&](const RG::TextureResourceSrv &v) { return v.GetSrv(); });
+        }
+
+        void DeclareRenderGraphResourceUsage(RG::Pass *pass, RHI::PipelineStageFlag stages) const
+        {
+            if(auto d = data_.AsIf<RG::TextureResourceSrv>())
+            {
+                d->ForEachSubresourceAccess(
+                    [&](
+                        const RHI::TextureSubresource &subrsc,
+                        RHI::TextureLayout             layout,
+                        RHI::ResourceAccessFlag        access)
+                    {
+                        pass->Use(
+                            d->GetResource(),
+                            subrsc,
+                            RG::UseInfo
+                            {
+                                .layout = layout,
+                                .stages = stages,
+                                .accesses = access
+                            });
+                    });
+            }
+        }
 
         auto &operator=(TextureSrv value)
         {
-            _rtrcObj = std::move(value);
+            data_ = std::move(value);
             return *this;
         }
 
         auto &operator=(const RC<Texture> &tex)
         {
-            _rtrcObj = tex->GetSrv(0, 0, 0);
+            return *this = tex->GetSrv(0, 0, 0);
+        }
+
+        auto &operator=(const RG::TextureResourceSrv &srv)
+        {
+            data_ = srv;
             return *this;
         }
 
         auto &operator=(RG::TextureResource *tex)
         {
-            return *this = _internalRGGet(tex);
+            return *this = tex->GetSrv();
         }
     };
     
-    struct MemberProxy_RWTexture2D
+    class MemberProxy_RWTexture2D
     {
-        static constexpr RHI::BindingType BindingType = RHI::BindingType::RWTexture;
-        TextureUav _rtrcObj;
+        Variant<TextureUav, RG::TextureResourceUav> data_;
 
+    public:
+
+        static constexpr RHI::BindingType BindingType = RHI::BindingType::RWTexture;
+
+        bool writeOnly = false;
+
+        TextureUav GetRtrcObject() const
+        {
+            return data_.Match(
+                [&](const TextureUav &v) { return v; },
+                [&](const RG::TextureResourceUav &v) { return v.GetUav(); });
+        }
+
+        void DeclareRenderGraphResourceUsage(RG::Pass *pass, RHI::PipelineStageFlag stages) const
+        {
+            if(auto d = data_.AsIf<RG::TextureResourceUav>())
+            {
+                d->ForEachSubresourceAccess(
+                    [&](
+                        const RHI::TextureSubresource &subrsc,
+                        RHI::TextureLayout             layout,
+                        RHI::ResourceAccessFlag        access)
+                    {
+                        pass->Use(
+                            d->GetResource(),
+                            subrsc,
+                            RG::UseInfo
+                            {
+                                .layout = layout,
+                                .stages = stages,
+                                .accesses = access
+                            });
+                    }, writeOnly);
+            }
+        }
+        
         auto &operator=(TextureUav value)
         {
-            _rtrcObj = std::move(value);
+            data_ = std::move(value);
             return *this;
         }
 
         auto &operator=(const RC<Texture> &tex)
         {
-            _rtrcObj = tex->GetUav(0, 0);
+            return *this = tex->GetUav(0, 0);
+        }
+
+        auto &operator=(const RG::TextureResourceUav &v)
+        {
+            data_ = v;
             return *this;
         }
 
         auto &operator=(RG::TextureResource *tex)
         {
-            return *this = _internalRGGet(tex);
+            return *this = tex->GetUav();
         }
     };
 
@@ -80,15 +158,38 @@ namespace BindingGroupDSL
     using MemberProxy_Texture3DArray = MemberProxy_Texture2D;
     using MemberProxy_RWTexture3DArray = MemberProxy_Texture2D;
     
-    struct MemberProxy_Buffer
+    class MemberProxy_Buffer
     {
+        Variant<BufferSrv, RG::BufferResourceSrv> data_;
+
+    public:
+
         static constexpr RHI::BindingType BindingType = RHI::BindingType::Buffer;
-        BufferSrv _rtrcObj;
+
+        BufferSrv GetRtrcObject() const
+        {
+            return data_.Match(
+                [&](const BufferSrv &v) { return v; },
+                [&](const RG::BufferResourceSrv &v) { return v.GetSrv(); });
+        }
+
+        void DeclareRenderGraphResourceUsage(RG::Pass *pass, RHI::PipelineStageFlag stages) const
+        {
+            if(auto d = data_.AsIf<RG::BufferResourceSrv>())
+            {
+                pass->Use(d->GetResource(), RG::UseInfo
+                    {
+                        .layout = RHI::TextureLayout::Undefined,
+                        .stages = stages,
+                        .accesses = d->GetResourceAccess()
+                    });
+            }
+        }
 
         auto &operator=(BufferSrv value)
         {
             assert(value.GetRHIObject()->GetDesc().format != RHI::Format::Unknown);
-            _rtrcObj = std::move(value);
+            data_ = std::move(value);
             return *this;
         }
 
@@ -97,21 +198,50 @@ namespace BindingGroupDSL
             return *this = buffer->GetTexelSrv();
         }
 
+        auto &operator=(const RG::BufferResourceSrv &v)
+        {
+            data_ = v;
+            return *this;
+        }
+
         auto &operator=(RG::BufferResource *buffer)
         {
-            return *this = _internalRGGet(buffer);
+            return *this = buffer->GetTexelSrv();
         }
     };
     
-    struct MemberProxy_RWBuffer
+    class MemberProxy_RWBuffer
     {
+    public:
+
         static constexpr RHI::BindingType BindingType = RHI::BindingType::RWBuffer;
-        BufferUav _rtrcObj;
+
+        bool writeOnly = false;
+
+        BufferUav GetRtrcObject() const
+        {
+            return data_.Match(
+                [&](const BufferUav &v) { return v; },
+                [&](const RG::BufferResourceUav &v) { return v.GetUav(); });
+        }
+
+        void DeclareRenderGraphResourceUsage(RG::Pass *pass, RHI::PipelineStageFlag stages) const
+        {
+            if(auto d = data_.AsIf<RG::BufferResourceUav>())
+            {
+                pass->Use(d->GetResource(), RG::UseInfo
+                    {
+                        .layout = RHI::TextureLayout::Undefined,
+                        .stages = stages,
+                        .accesses = d->GetResourceAccess(writeOnly)
+                    });
+            }
+        }
 
         auto &operator=(BufferUav value)
         {
             assert(value.GetRHIObject()->GetDesc().format != RHI::Format::Unknown);
-            _rtrcObj = std::move(value);
+            data_ = std::move(value);
             return *this;
         }
 
@@ -120,22 +250,54 @@ namespace BindingGroupDSL
             return *this = buffer->GetTexelUav();
         }
 
+        auto &operator=(const RG::BufferResourceUav &v)
+        {
+            data_ = v;
+            return v;
+        }
+
         auto &operator=(RG::BufferResource *buffer)
         {
-            return *this = _internalRGGet(buffer);
+            return *this = buffer->GetTexelUav();
         }
+
+    private:
+
+        Variant<BufferUav, RG::BufferResourceUav> data_;
     };
     
-    struct MemberProxy_StructuredBuffer
+    class MemberProxy_StructuredBuffer
     {
+        Variant<BufferSrv, RG::BufferResourceSrv> data_;
+
+    public:
+
         static constexpr RHI::BindingType BindingType = RHI::BindingType::StructuredBuffer;
 
-        BufferSrv _rtrcObj;
+        BufferSrv GetRtrcObject() const
+        {
+            return data_.Match(
+                [&](const BufferSrv &v) { return v; },
+                [&](const RG::BufferResourceSrv &v) { return v.GetSrv(); });
+        }
+
+        void DeclareRenderGraphResourceUsage(RG::Pass *pass, RHI::PipelineStageFlag stages) const
+        {
+            if(auto d = data_.AsIf<RG::BufferResourceSrv>())
+            {
+                pass->Use(d->GetResource(), RG::UseInfo
+                    {
+                        .layout = RHI::TextureLayout::Undefined,
+                        .stages = stages,
+                        .accesses = d->GetResourceAccess()
+                    });
+            }
+        }
 
         auto &operator=(BufferSrv value)
         {
             assert(value.GetRHIObject()->GetDesc().stride);
-            _rtrcObj = std::move(value);
+            data_ = std::move(value);
             return *this;
         }
 
@@ -144,22 +306,50 @@ namespace BindingGroupDSL
             return *this = buffer->GetStructuredSrv();
         }
 
+        auto &operator=(const RG::BufferResourceSrv &v)
+        {
+            data_ = v;
+            return *this;
+        }
+
         auto &operator=(RG::BufferResource *buffer)
         {
-            return *this = _internalRGGet(buffer);
+            return *this = buffer->GetStructuredSrv();
         }
     };
     
-    struct MemberProxy_RWStructuredBuffer
+    class MemberProxy_RWStructuredBuffer
     {
+    public:
+
         static constexpr RHI::BindingType BindingType = RHI::BindingType::RWStructuredBuffer;
 
-        BufferUav _rtrcObj;
+        bool writeOnly = false;
+
+        BufferUav GetRtrcObject() const
+        {
+            return data_.Match(
+                [&](const BufferUav &v) { return v; },
+                [&](const RG::BufferResourceUav &v) { return v.GetUav(); });
+        }
+
+        void DeclareRenderGraphResourceUsage(RG::Pass *pass, RHI::PipelineStageFlag stages) const
+        {
+            if(auto d = data_.AsIf<RG::BufferResourceUav>())
+            {
+                pass->Use(d->GetResource(), RG::UseInfo
+                    {
+                        .layout = RHI::TextureLayout::Undefined,
+                        .stages = stages,
+                        .accesses = d->GetResourceAccess(writeOnly)
+                    });
+            }
+        }
 
         auto &operator=(BufferUav value)
         {
             assert(value.GetRHIObject()->GetDesc().stride);
-            _rtrcObj = std::move(value);
+            data_ = std::move(value);
             return *this;
         }
 
@@ -168,22 +358,38 @@ namespace BindingGroupDSL
             return *this = buffer->GetStructuredUav();
         }
 
+        auto &operator=(const RG::BufferResourceUav &v)
+        {
+            data_ = v;
+            return *this;
+        }
+
         auto &operator=(RG::BufferResource *buffer)
         {
-            return *this = _internalRGGet(buffer);
+            return *this = buffer->GetStructuredUav();
         }
+
+    private:
+
+        Variant<BufferUav, RG::BufferResourceUav> data_;
     };
 
     template<typename T>
-    struct MemberProxy_ConstantBuffer : T
+    class MemberProxy_ConstantBuffer : public T
     {
-        static constexpr RHI::BindingType BindingType = RHI::BindingType::ConstantBuffer;
+        RC<SubBuffer> data_;
+
+    public:
+
         using Struct = T;
-        RC<SubBuffer> _rtrcObj;
+
+        static constexpr RHI::BindingType BindingType = RHI::BindingType::ConstantBuffer;
+
+        RC<SubBuffer> GetRtrcObject() const { return data_; }
 
         auto &operator=(RC<SubBuffer> value)
         {
-            _rtrcObj = std::move(value);
+            data_ = std::move(value);
             return *this;
         }
 
@@ -195,45 +401,79 @@ namespace BindingGroupDSL
     };
     
     template<>
-    struct MemberProxy_ConstantBuffer<void>
+    class MemberProxy_ConstantBuffer<void>
     {
+        RC<SubBuffer> data_;
+
+    public:
+
         static constexpr RHI::BindingType BindingType = RHI::BindingType::ConstantBuffer;
 
-        RC<SubBuffer> _rtrcObj;
+        RC<SubBuffer> GetRtrcObject() const { return data_; }
 
         auto &operator=(RC<SubBuffer> value)
         {
-            _rtrcObj = std::move(value);
+            data_ = std::move(value);
             return *this;
         }
     };
 
-    struct MemberProxy_SamplerState
+    class MemberProxy_SamplerState
     {
+        RC<Sampler> data_;
+
+    public:
+
         static constexpr RHI::BindingType BindingType = RHI::BindingType::Sampler;
-        RC<Sampler> _rtrcObj;
+
+        RC<Sampler> GetRtrcObject() const { return data_; }
 
         auto &operator=(RC<Sampler> value)
         {
-            _rtrcObj = std::move(value);
+            data_ = std::move(value);
             return *this;
         }
     };
 
-    struct MemberProxy_RaytracingAccelerationStructure
+    class MemberProxy_RaytracingAccelerationStructure
     {
+        Variant<RC<Tlas>, RG::TlasResource *> data_;
+
+    public:
+
         static constexpr RHI::BindingType BindingType = RHI::BindingType::AccelerationStructure;
-        RC<Tlas> _rtrcObj;
+
+        RC<Tlas> GetRtrcObject() const
+        {
+            return data_.Match(
+                [&](const RC<Tlas> &t) { return t; },
+                [&](RG::TlasResource *t) { return t->Get(); });
+        }
+
+        void DeclareRenderGraphResourceUsage(RG::Pass *pass, RHI::PipelineStageFlag stages) const
+        {
+            if(auto d = data_.AsIf<RG::TlasResource*>())
+            {
+                auto buffer = (*d)->GetInternalBuffer();
+                pass->Use(buffer, RG::UseInfo
+                    {
+                        .layout = RHI::TextureLayout::Undefined,
+                        .stages = stages,
+                        .accesses = RHI::ResourceAccess::ReadAS
+                    });
+            }
+        }
 
         auto &operator=(RC<Tlas> value)
         {
-            _rtrcObj = std::move(value);
+            data_ = std::move(value);
             return *this;
         }
 
         auto &operator=(RG::TlasResource *tlas)
         {
-            return *this = _internalRGGet(tlas);
+            data_ = tlas;
+            return *this;
         }
     };
 
@@ -576,6 +816,50 @@ const BindingGroupLayout::Desc &GetBindingGroupLayoutDesc()
 }
 
 template<BindingGroupDSL::RtrcGroupStruct T>
+void DeclareRenderGraphResourceUses(RG::Pass *pass, const T &value, RHI::PipelineStageFlag stages)
+{
+    BindingGroupDSL::ForEachFlattenMember<T>(
+        [&]<bool IsUniform, typename M, typename A>
+        (const char *name, RHI::ShaderStageFlags shaderStages, const A &accessor, BindingGroupDSL::BindingFlags flags)
+    {
+        const RHI::PipelineStageFlag pipelineStages = ShaderStagesToPipelineStages(shaderStages) & stages;
+        if constexpr(!IsUniform)
+        {
+            using MemberElement = typename BindingGroupDSL::MemberProxyTrait<M>::MemberProxyElement;
+            constexpr size_t arraySize = BindingGroupDSL::MemberProxyTrait<M>::ArraySize;
+            static_assert(
+                arraySize == 0 || MemberElement::BindingType != RHI::BindingType::ConstantBuffer,
+                "ConstantBuffer array hasn't been supported");
+            if constexpr(arraySize > 0)
+            {
+                constexpr bool CanDeclare = requires
+                {
+                    (*accessor(&value))[0].DeclareRenderGraphResourceUsage(pass, pipelineStages);
+                };
+                for(size_t i = 0; i < arraySize; ++i)
+                {
+                    if constexpr(CanDeclare)
+                    {
+                        (*accessor(&value))[i].DeclareRenderGraphResourceUsage(pass, pipelineStages);
+                    }
+                }
+            }
+            else
+            {
+                constexpr bool CanDeclare = requires
+                {
+                    accessor(&value)->DeclareRenderGraphResourceUsage(pass, pipelineStages);
+                };
+                if constexpr(CanDeclare)
+                {
+                    accessor(&value)->DeclareRenderGraphResourceUsage(pass, pipelineStages);
+                }
+            }
+        }
+    });
+}
+
+template<BindingGroupDSL::RtrcGroupStruct T>
 void ApplyBindingGroup(RHI::Device *device, ConstantBufferManagerInterface *cbMgr, BindingGroup &group, const T &value)
 {
     RHI::BindingGroupUpdateBatch batch;
@@ -598,18 +882,18 @@ void ApplyBindingGroup(RHI::Device *device, ConstantBufferManagerInterface *cbMg
                 {
                     for(size_t i = 0; i < as; ++i)
                     {
-                        if constexpr(IsRC<std::remove_cvref_t<decltype((*accessor(&value))[i]._rtrcObj)>>)
+                        if constexpr(IsRC<std::remove_cvref_t<decltype((*accessor(&value))[i].GetRtrcObject())>>)
                         {
-                            if(auto &obj = (*accessor(&value))[i]._rtrcObj)
+                            if(auto obj = (*accessor(&value))[i].GetRtrcObject())
                             {
-                                batch.Append(*group.GetRHIObject(), actualIndex, i, obj->GetRHIObject().Get());
+                                batch.Append(*group.GetRHIObject(), actualIndex, i, obj->GetRHIObject());
                             }
                         }
                         else
                         {
-                            if(auto &rhiObj = (*accessor(&value))[i]._rtrcObj.GetRHIObject())
+                            if(auto rhiObj = (*accessor(&value))[i].GetRtrcObject().GetRHIObject())
                             {
-                                batch.Append(*group.GetRHIObject(), actualIndex, i, rhiObj.Get());
+                                batch.Append(*group.GetRHIObject(), actualIndex, i, std::move(rhiObj));
                             }
                         }
                     }
@@ -625,9 +909,9 @@ void ApplyBindingGroup(RHI::Device *device, ConstantBufferManagerInterface *cbMg
             }
             else if constexpr(MemberElement::BindingType == RHI::BindingType::ConstantBuffer)
             {
-                if(accessor(&value)->_rtrcObj)
+                if(accessor(&value)->GetRtrcObject())
                 {
-                    auto cbuffer = accessor(&value)->_rtrcObj;
+                    auto cbuffer = accessor(&value)->GetRtrcObject();
                     batch.Append(*group.GetRHIObject(), index++, RHI::ConstantBufferUpdate{
                         cbuffer->GetFullBufferRHIObject().Get(),
                         cbuffer->GetSubBufferOffset(),
@@ -651,19 +935,19 @@ void ApplyBindingGroup(RHI::Device *device, ConstantBufferManagerInterface *cbMg
                     });
                 }
             }
-            else if constexpr(IsRC<std::remove_cvref_t<decltype(accessor(&value)->_rtrcObj)>>)
+            else if constexpr(IsRC<std::remove_cvref_t<decltype(accessor(&value)->GetRtrcObject())>>)
             {
-                if(auto &obj = accessor(&value)->_rtrcObj)
+                if(auto obj = accessor(&value)->GetRtrcObject())
                 {
-                    batch.Append(*group.GetRHIObject(), index, obj->GetRHIObject().Get());
+                    batch.Append(*group.GetRHIObject(), index, obj->GetRHIObject());
                 }
                 ++index;
             }
             else
             {
-                if(auto &rhiObj = accessor(&value)->_rtrcObj.GetRHIObject())
+                if(auto rhiObj = accessor(&value)->GetRtrcObject().GetRHIObject())
                 {
-                    batch.Append(*group.GetRHIObject(), index, rhiObj.Get());
+                    batch.Append(*group.GetRHIObject(), index, std::move(rhiObj));
                 }
                 ++index;
             }

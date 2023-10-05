@@ -13,7 +13,12 @@
 #include <Graphics/Device/Utility/ClearBufferUtils.h>
 #include <Graphics/Device/Utility/ClearTextureUtils.h>
 #include <Graphics/Device/Utility/CopyTextureUtils.h>
-#include <Graphics/RenderGraph/Graph.h>
+
+RTRC_RG_BEGIN
+
+class RenderGraph;
+
+RTRC_RG_END
 
 RTRC_BEGIN
 
@@ -451,11 +456,6 @@ RC<SubBuffer> Device::CreateConstantBuffer(const T &data)
     auto ret = this->CreateDynamicBuffer();
     ret->SetData(data);
     return ret;
-}
-
-inline Box<RG::RenderGraph> Device::CreateRenderGraph()
-{
-    return MakeBox<RG::RenderGraph>(this, mainQueue_);
 }
 
 template<BindingGroupDSL::RtrcGroupStruct T>

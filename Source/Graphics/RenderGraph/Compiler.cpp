@@ -1,5 +1,4 @@
 #include <queue>
-#include <ranges>
 
 #include <Graphics/RenderGraph/Compiler.h>
 #include <Graphics/RenderGraph/Graph.h>
@@ -335,7 +334,7 @@ void Compiler::CollectResourceUsers()
             }
 
 #if RTRC_DEBUG
-            if(const auto extRsc = dynamic_cast<RenderGraph::ExternalTextureResource *>(textureResource);
+            if(const auto extRsc = dynamic_cast<const RenderGraph::ExternalTextureResource *>(textureResource);
                extRsc && extRsc->isReadOnlySampledTexture)
             {
                 for(auto [mipLevel, arrayLayer] : EnumerateSubTextures(extRsc->GetMipLevels(), extRsc->GetArraySize()))
@@ -553,6 +552,9 @@ void Compiler::AllocateInternalResources(ExecutableResources &output)
             output.indexToBuffer[resourceIndex].buffer = MakeRC<WrappedStatefulBuffer>(std::move(buffer), BufferState{});
             output.indexToBuffer[resourceIndex].buffer->SetName(std::move(intRsc->name));
         }
+
+        output.indexToBuffer[resourceIndex].buffer->SetDefaultStructStride(intRsc->defaultStructStride_);
+        output.indexToBuffer[resourceIndex].buffer->SetDefaultTexelFormat(intRsc->defaultTexelFormat_);
     }
 
     for(auto &texture : graph_->textures_)

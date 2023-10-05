@@ -98,7 +98,7 @@ void Run()
             auto &commandBuffer = RG::GetCurrentCommandBuffer();
             commandBuffer.BeginRenderPass(ColorAttachment
             {
-                .renderTargetView = renderTarget->GetRtv(),
+                .renderTargetView = renderTarget->GetRtvImm(),
                 .loadOp       = AttachmentLoadOp::Clear,
                 .storeOp      = AttachmentStoreOp::Store,
                 .clearValue   = ColorClearValue{ 0, 1, 1, 1 }

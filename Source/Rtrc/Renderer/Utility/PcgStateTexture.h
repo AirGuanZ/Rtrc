@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Graphics/Device/Device.h>
+#include <Graphics/RenderGraph/Graph.h>
 #include <Rtrc/Resource/ResourceManager.h>
 
 RTRC_RENDERER_BEGIN

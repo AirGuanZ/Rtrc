@@ -27,9 +27,7 @@ public:
     void EndRenderLoop();
 
     void SetRenderSettings(const RenderSettings &settings);
-
     void ResizeFramebuffer(uint32_t width, uint32_t height);
-
     void RenderFrame(const FrameInput &frame);
 
 private:

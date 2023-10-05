@@ -27,6 +27,7 @@ public:
 private:
 
     RC<Buffer> dummyLightBuffer_;
+    int M_ = 1;
 };
 
 RTRC_RENDERER_END

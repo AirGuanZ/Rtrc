@@ -1,4 +1,5 @@
 #include <Graphics/Device/Device.h>
+#include <Graphics/RenderGraph/Graph.h>
 #include <Core/Resource/GenerateMipmap.h>
 
 RTRC_BEGIN
@@ -194,6 +195,11 @@ Device::~Device()
     textureManager_.reset();
     pooledTextureManager_.reset();
     sync_.reset();
+}
+
+Box<RG::RenderGraph> Device::CreateRenderGraph()
+{
+    return MakeBox<RG::RenderGraph>(this, mainQueue_);
 }
 
 RC<Texture> Device::CreateColorTexture2D(uint8_t r, uint8_t g, uint8_t b, uint8_t a, const std::string &name)

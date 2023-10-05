@@ -1,5 +1,6 @@
 #include <Core/Timer.h>
 #include <Graphics/ImGui/Instance.h>
+#include <Graphics/RenderGraph/Graph.h>
 #include <Graphics/Shader/StandaloneCompiler.h>
 #include <Graphics/Device/MeshLayout.h>
 
@@ -249,7 +250,7 @@ RG::Pass *ImGuiRenderer::Render(
     pass->Use(renderTarget, RG::ColorAttachment);
     pass->SetCallback([this, drawData, renderTarget]
     {
-        RenderImmediately(drawData, renderTarget->GetRtv(), RG::GetCurrentCommandBuffer(), false);
+        RenderImmediately(drawData, renderTarget->GetRtvImm(), RG::GetCurrentCommandBuffer(), false);
     });
     return pass;
 }

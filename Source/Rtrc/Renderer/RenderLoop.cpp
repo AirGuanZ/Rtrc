@@ -145,6 +145,8 @@ void RenderLoop::RenderFrameImpl(const FrameInput &frame)
     auto indirectDiffuse = renderCamera.GetPathTracingData().indirectDiffuse;
     RTRC_SCOPE_EXIT{ pathTracer_->ClearFrameData(renderCamera.GetPathTracingData()); };
 
+    // ============= Lighting =============
+
     gbufferVisualizer_->Render(GBufferVisualizer::Mode::Normal, *renderGraph, gbuffers, framebuffer);
 
     // ============= Blit =============
@@ -152,6 +154,11 @@ void RenderLoop::RenderFrameImpl(const FrameInput &frame)
     if(renderSettings_.visualizationMode == VisualizationMode::IndirectDiffuse)
     {
         renderGraph->CreateBlitTexture2DPass("DisplayIndirectDiffuse", indirectDiffuse, swapchainImage, true, 1 / 2.2f);
+    }
+    else if(renderSettings_.visualizationMode == VisualizationMode::Normal)
+    {
+        gbufferVisualizer_->Render(GBufferVisualizer::Mode::Normal, *renderGraph, gbuffers, framebuffer);
+        renderGraph->CreateBlitTexture2DPass("BlitToSwapchain", framebuffer, swapchainImage);
     }
     else
     {

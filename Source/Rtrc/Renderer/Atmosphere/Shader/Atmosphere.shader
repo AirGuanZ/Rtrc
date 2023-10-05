@@ -7,7 +7,7 @@ rtrc_shader("Atmosphere/GenerateTransmittanceLut")
 
     #define SAMPLE_COUNT 256
 
-    rtrc_group(Pass)
+    rtrc_group(Pass, CS)
     {
         rtrc_define(RWTexture2D<float4>,         TransmittanceTextureRW)
         rtrc_uniform(uint2,                      outputResolution)
@@ -54,7 +54,7 @@ rtrc_shader("Atmosphere/GenerateMultiScatterLut")
 
     #include "Atmosphere.hlsl"
 
-    rtrc_group(Pass)
+    rtrc_group(Pass, CS)
     {
         rtrc_define(RWTexture2D<float4>,         MultiScatterTextureRW)
         rtrc_define(StructuredBuffer<float2>,    RawDirSamples)
@@ -185,7 +185,7 @@ rtrc_shader("Atmosphere/GenerateSkyLut")
 
     #include "Atmosphere.hlsl"
 
-    rtrc_group(Pass)
+    rtrc_group(Pass, CS)
     {
         rtrc_define(RWTexture2D<float4>,         SkyLutTextureRW)
         rtrc_define(Texture2D<float3>,           TransmittanceLutTexture)

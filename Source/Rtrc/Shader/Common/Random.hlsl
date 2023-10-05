@@ -79,6 +79,14 @@ namespace Pcg
         return word * (1 / 4294967296.0);
     }
 
+    float2 NextFloat2(inout uint state)
+    {
+        float2 ret;
+        ret.x = NextFloat(state);
+        ret.y = NextFloat(state);
+        return ret;
+    }
+
     float3 NextUniformOnUnitSphere(inout uint state)
     {
         float u = NextFloat(state);
@@ -102,6 +110,7 @@ namespace Pcg
 
         uint NextUInt() { return Pcg::Next(state_); }
         float NextFloat() { return Pcg::NextFloat(state_); }
+        float2 NextFloat2() { return Pcg::NextFloat2(state_); }
 
         float3 NextUniformOnUnitSphere() { return Pcg::NextUniformOnUnitSphere(state_); }
         float3 NextUniformOnUnitHemisphere() { return Pcg::NextUniformOnUnitHemisphere(state_); }

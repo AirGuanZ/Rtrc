@@ -25,7 +25,7 @@ GBufferPass::GBufferPass(ObserverPtr<Device> device)
 }
 
 GBuffers GBufferPass::Render(
-    const RenderCamera &sceneCamera,
+    const RenderCamera      &sceneCamera,
     const RC<BindingGroup>  &bindlessTextureGroup,
     RG::RenderGraph         &renderGraph,
     const Vector2u          &rtSize)
@@ -196,21 +196,21 @@ void GBufferPass::DoRenderGBuffers(
         {
             ColorAttachment
             {
-                .renderTargetView = gbufferA->GetRtv(),
+                .renderTargetView = gbufferA->GetRtvImm(),
                 .loadOp           = AttachmentLoadOp::Clear,
                 .storeOp          = AttachmentStoreOp::Store,
                 .clearValue       = { 0, 0, 0, 0 }
             },
             ColorAttachment
             {
-                .renderTargetView = gbufferB->GetRtv(),
+                .renderTargetView = gbufferB->GetRtvImm(),
                 .loadOp           = AttachmentLoadOp::Clear,
                 .storeOp          = AttachmentStoreOp::Store,
                 .clearValue       = { 0, 0, 0, 0 }
             },
             ColorAttachment
             {
-                .renderTargetView = gbufferC->GetRtv(),
+                .renderTargetView = gbufferC->GetRtvImm(),
                 .loadOp           = AttachmentLoadOp::Clear,
                 .storeOp          = AttachmentStoreOp::Store,
                 .clearValue       = { 0, 0, 0, 0 }
@@ -218,7 +218,7 @@ void GBufferPass::DoRenderGBuffers(
         },
         DepthStencilAttachment
         {
-            .depthStencilView = gbufferDepth->GetDsv(),
+            .depthStencilView = gbufferDepth->GetDsvImm(),
             .loadOp           = AttachmentLoadOp::Clear,
             .storeOp          = AttachmentStoreOp::Store,
             .clearValue       = { 1, 0 }

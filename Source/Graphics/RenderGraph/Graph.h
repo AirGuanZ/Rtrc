@@ -1,15 +1,15 @@
 #pragma once
 
 #include <map>
-#include <stack>
 
+#include <Graphics/Device/BindingGroupDSL.h>
 #include <Graphics/Device/Buffer.h>
+#include <Graphics/Device/Device.h>
 #include <Graphics/Device/Queue.h>
 #include <Graphics/Device/Texture.h>
 #include <Graphics/RenderGraph/Label.h>
+#include <Graphics/RenderGraph/Pass.h>
 #include <Core/SmartPointer/ObserverPtr.h>
-
-#define RTRC_RG_DEBUG RTRC_DEBUG
 
 RTRC_BEGIN
 
@@ -23,373 +23,39 @@ struct ExecutableResources;
 
 class RenderGraph;
 class Executer;
-class Pass;
-class PassContext;
 class Compiler;
 
-struct UseInfo
-{
-    RHI::TextureLayout      layout   = RHI::TextureLayout::Undefined;
-    RHI::PipelineStageFlag  stages   = RHI::PipelineStage::None;
-    RHI::ResourceAccessFlag accesses = RHI::ResourceAccess::None;
-};
-
-constexpr UseInfo operator|(const UseInfo &lhs, const UseInfo &rhs)
-{
-    assert(lhs.layout == rhs.layout);
-    return UseInfo
-    {
-        .layout   = lhs.layout,
-        .stages   = lhs.stages   | rhs.stages,
-        .accesses = lhs.accesses | rhs.accesses
-    };
-}
-
-inline constexpr UseInfo ColorAttachment =
-{
-    .layout   = RHI::TextureLayout::ColorAttachment,
-    .stages   = RHI::PipelineStage::RenderTarget,
-    .accesses = RHI::ResourceAccess::RenderTargetWrite | RHI::ResourceAccess::RenderTargetRead
-};
-
-inline constexpr UseInfo ColorAttachmentReadOnly =
-{
-    .layout   = RHI::TextureLayout::ColorAttachment,
-    .stages   = RHI::PipelineStage::RenderTarget,
-    .accesses = RHI::ResourceAccess::RenderTargetRead
-};
-
-inline constexpr UseInfo ColorAttachmentWriteOnly =
-{
-    .layout   = RHI::TextureLayout::ColorAttachment,
-    .stages   = RHI::PipelineStage::RenderTarget,
-    .accesses = RHI::ResourceAccess::RenderTargetWrite
-};
-
-inline constexpr UseInfo DepthStencilAttachment =
-{
-    .layout   = RHI::TextureLayout::DepthStencilAttachment,
-    .stages   = RHI::PipelineStage::DepthStencil,
-    .accesses = RHI::ResourceAccess::DepthStencilRead | RHI::ResourceAccess::DepthStencilWrite
-};
-
-inline constexpr UseInfo DepthStencilAttachmentWriteOnly =
-{
-    .layout   = RHI::TextureLayout::DepthStencilAttachment,
-    .stages   = RHI::PipelineStage::DepthStencil,
-    .accesses = RHI::ResourceAccess::DepthStencilWrite
-};
-
-inline constexpr UseInfo DepthStencilAttachmentReadOnly =
-{
-    .layout   = RHI::TextureLayout::DepthStencilReadOnlyAttachment,
-    .stages   = RHI::PipelineStage::DepthStencil,
-    .accesses = RHI::ResourceAccess::DepthStencilRead
-};
-
-inline constexpr UseInfo ClearDst =
-{
-    .layout   = RHI::TextureLayout::ClearDst,
-    .stages   = RHI::PipelineStage::Clear,
-    .accesses = RHI::ResourceAccess::ClearWrite
-};
-
-inline constexpr UseInfo PS_Texture =
-{
-    .layout   = RHI::TextureLayout::ShaderTexture,
-    .stages   = RHI::PipelineStage::FragmentShader,
-    .accesses = RHI::ResourceAccess::TextureRead
-};
-
-inline constexpr UseInfo CS_Texture =
-{
-    .layout   = RHI::TextureLayout::ShaderTexture,
-    .stages   = RHI::PipelineStage::ComputeShader,
-    .accesses = RHI::ResourceAccess::TextureRead
-};
-
-inline constexpr UseInfo CS_RWTexture =
-{
-    .layout   = RHI::TextureLayout::ShaderRWTexture,
-    .stages   = RHI::PipelineStage::ComputeShader,
-    .accesses = RHI::ResourceAccess::RWTextureRead | RHI::ResourceAccess::RWTextureWrite
-};
-
-inline constexpr UseInfo CS_RWTexture_WriteOnly =
-{
-    .layout   = RHI::TextureLayout::ShaderRWTexture,
-    .stages   = RHI::PipelineStage::ComputeShader,
-    .accesses = RHI::ResourceAccess::RWTextureWrite
-};
-
-inline constexpr UseInfo CS_Buffer =
-{
-    .layout   = RHI::TextureLayout::Undefined,
-    .stages   = RHI::PipelineStage::ComputeShader,
-    .accesses = RHI::ResourceAccess::BufferRead
-};
-
-inline constexpr UseInfo CS_RWBuffer =
-{
-    .layout   = RHI::TextureLayout::Undefined,
-    .stages   = RHI::PipelineStage::ComputeShader,
-    .accesses = RHI::ResourceAccess::RWBufferRead | RHI::ResourceAccess::RWBufferWrite
-};
-
-inline constexpr UseInfo CS_RWBuffer_WriteOnly =
-{
-    .layout   = RHI::TextureLayout::Undefined,
-    .stages   = RHI::PipelineStage::ComputeShader,
-    .accesses = RHI::ResourceAccess::RWBufferWrite
-};
-
-inline constexpr UseInfo CS_StructuredBuffer =
-{
-    .layout   = RHI::TextureLayout::Undefined,
-    .stages   = RHI::PipelineStage::ComputeShader,
-    .accesses = RHI::ResourceAccess::StructuredBufferRead
-};
-
-inline constexpr UseInfo CS_RWStructuredBuffer =
-{
-    .layout   = RHI::TextureLayout::Undefined,
-    .stages   = RHI::PipelineStage::ComputeShader,
-    .accesses = RHI::ResourceAccess::RWStructuredBufferRead | RHI::ResourceAccess::RWStructuredBufferWrite
-};
-
-inline constexpr UseInfo CS_RWStructuredBuffer_WriteOnly =
-{
-    .layout   = RHI::TextureLayout::Undefined,
-    .stages   = RHI::PipelineStage::ComputeShader,
-    .accesses = RHI::ResourceAccess::RWStructuredBufferWrite
-};
-
-inline constexpr UseInfo CopyDst =
-{
-    .layout   = RHI::TextureLayout::CopyDst,
-    .stages   = RHI::PipelineStage::Copy,
-    .accesses = RHI::ResourceAccess::CopyWrite
-};
-
-inline constexpr UseInfo CopySrc =
-{
-    .layout   = RHI::TextureLayout::CopySrc,
-    .stages   = RHI::PipelineStage::Copy,
-    .accesses = RHI::ResourceAccess::CopyRead
-};
-
-inline constexpr UseInfo BuildAS_Output =
-{
-    .layout   = RHI::TextureLayout::Undefined,
-    .stages   = RHI::PipelineStage::BuildAS,
-    .accesses = RHI::ResourceAccess::WriteAS
-};
-
-inline constexpr UseInfo BuildAS_Scratch =
-{
-    .layout   = RHI::TextureLayout::Undefined,
-    .stages   = RHI::PipelineStage::BuildAS,
-    .accesses = RHI::ResourceAccess::BuildASScratch
-};
-
-inline constexpr UseInfo CS_ReadAS =
-{
-    .layout   = RHI::TextureLayout::Undefined,
-    .stages   = RHI::PipelineStage::ComputeShader,
-    .accesses = RHI::ResourceAccess::ReadAS
-};
-
-inline constexpr UseInfo IndirectDispatchRead =
-{
-    .layout   = RHI::TextureLayout::Undefined,
-    .stages   = RHI::PipelineStage::IndirectCommand,
-    .accesses = RHI::ResourceAccess::IndirectCommandRead
-};
-
-class Resource : public Uncopyable
-{
-    int index_;
-
-public:
-
-    explicit Resource(int resourceIndex) : index_(resourceIndex) { }
-
-    virtual ~Resource() = default;
-
-    int GetResourceIndex() const { return index_; }
-};
-
 template<typename T>
-const T *TryCastResource(const Resource *rsc) { return dynamic_cast<const T *>(rsc); }
-
-template<typename T>
-T *TryCastResource(Resource *rsc) { return dynamic_cast<T *>(rsc); }
-
-class BufferResource : public Resource
-{
-public:
-
-    using Resource::Resource;
-
-    RC<Buffer> Get() const;
-
-    // Helper methods available when executing pass callback function:
-
-    BufferSrv GetStructuredSrv() const;
-    BufferSrv GetStructuredSrv(size_t structStride) const;
-    BufferSrv GetStructuredSrv(size_t byteOffset, size_t structStride) const;
-
-    BufferSrv GetTexelSrv() const;
-    BufferSrv GetTexelSrv(RHI::Format texelFormat) const;
-    BufferSrv GetTexelSrv(size_t byteOffset, RHI::Format texelFormat) const;
-
-    BufferUav GetStructuredUav() const;
-    BufferUav GetStructuredUav(size_t structStride) const;
-    BufferUav GetStructuredUav(size_t byteOffset, size_t structStride) const;
-
-    BufferUav GetTexelUav() const;
-    BufferUav GetTexelUav(RHI::Format texelFormat) const;
-    BufferUav GetTexelUav(size_t byteOffset, RHI::Format texelFormat) const;
-};
-
-class TlasResource
-{
-    friend class RenderGraph;
-
-    RC<Tlas>        tlas_;
-    BufferResource *tlasBuffer_;
-
-    TlasResource(RC<Tlas> tlas, BufferResource *tlasBuffer): tlas_(std::move(tlas)), tlasBuffer_(tlasBuffer) { }
-
-public:
-
-    BufferResource *GetInternalBuffer() const { return tlasBuffer_; }
-
-    const RC<Tlas> &Get() const;
-};
-
-class TextureResource : public Resource
-{
-public:
-
-    using Resource::Resource;
-
-    virtual const RHI::TextureDesc &GetDesc() const = 0;
-
-    RHI::TextureDimension GetDimension() const { return GetDesc().dim; }
-    RHI::Format           GetFormat()    const { return GetDesc().format; }
-    uint32_t              GetWidth()     const { return GetDesc().width; }
-    uint32_t              GetHeight()    const { return GetDesc().height; }
-    Vector2u              GetSize()      const { return { GetWidth(), GetHeight() }; }
-    uint32_t              GetDepth()     const { return GetDesc().depth; }
-    uint32_t              GetMipLevels() const { return GetDesc().mipLevels; }
-    uint32_t              GetArraySize() const { return GetDesc().arraySize; }
-
-    RHI::Viewport GetViewport(float minDepth = 0, float maxDepth = 1) const;
-    RHI::Scissor GetScissor() const;
-
-    RC<Texture> Get() const;
-
-    // Helper methods available when executing pass callback function:
-
-    // non-array view for single-layer texture, array view for multi-layer texture
-    TextureSrv GetSrv(RHI::TextureViewFlags flags = 0) const;
-    // non-array view
-    TextureSrv GetSrv(uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, RHI::TextureViewFlags flags = 0) const;
-    // array view
-    TextureSrv GetSrv(
-        uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, uint32_t layerCount, RHI::TextureViewFlags flags = 0) const;
-    // non-array view for single-layer texture, array view for multi-layer texture
-    TextureUav GetUav() const;
-    // non-array view
-    TextureUav GetUav(uint32_t mipLevel, uint32_t arrayLayer) const;
-    // array view
-    TextureUav GetUav(uint32_t mipLevel, uint32_t arrayLayer, uint32_t layerCount) const;
-    TextureRtv GetRtv(uint32_t mipLevel = 0, uint32_t arrayLayer = 0) const;
-    TextureDsv GetDsv(RHI::TextureViewFlags flags) const;
-    TextureDsv GetDsv(uint32_t mipLevel = 0, uint32_t arrayLayer = 0, RHI::TextureViewFlags flags = 0) const;
-};
-
-class PassContext : public Uncopyable
-{
-public:
-
-    CommandBuffer &GetCommandBuffer();
-
-    RC<Buffer>      Get(const BufferResource *resource);
-    const RC<Tlas> &Get(const TlasResource *resource);
-    RC<Texture>     Get(const TextureResource *resource);
-
-private:
-
-    friend class Executer;
-
-    PassContext(const ExecutableResources &resources, CommandBuffer &commandBuffer);
-    ~PassContext();
-
-    const ExecutableResources &resources_;
-    CommandBuffer &commandBuffer_;
-
-#if RTRC_RG_DEBUG
-    const std::set<const Resource *> *declaredResources_ = nullptr;
-#endif
-};
-
-PassContext   &GetCurrentPassContext();
-CommandBuffer &GetCurrentCommandBuffer();
-
-void Connect(Pass *head, Pass *tail);
-
-class Pass
-{
-public:
-
-    using Callback = std::function<void()>;
-    using LegacyCallback = std::function<void(PassContext &)>;
-
-    friend void Connect(Pass *head, Pass *tail);
-
-    Pass *Use(BufferResource *buffer, const UseInfo &info);
-
-    Pass *Use(TextureResource *texture, const UseInfo &info);
-    Pass *Use(TextureResource *texture, const RHI::TextureSubresource &subrsc, const UseInfo &info);
-
-    Pass *Use(TlasResource *tlas, const UseInfo &info);
-    Pass *Build(TlasResource *tlas);
-
-    Pass *SetCallback(Callback callback);
-    Pass *SetCallback(LegacyCallback callback);
-
-    Pass *SetSignalFence(RHI::FencePtr fence);
-
-private:
-
-    using SubTexUsage = TextureSubrscState;
-    using BufferUsage = BufferState;
-
-    using TextureUsage = TextureSubrscMap<std::optional<SubTexUsage>>;
-
-    friend class RenderGraph;
-    friend class Compiler;
-
-    Pass(int index, const LabelStack::Node *node);
-    
-    int           index_;
-    Callback      callback_;
-    RHI::FencePtr signalFence_;
-
-    const LabelStack::Node *nameNode_;
-
-    std::map<BufferResource *, BufferUsage> bufferUsages_;
-    std::map<TextureResource *, TextureUsage> textureUsages_;
-
-    std::set<Pass *> prevs_;
-    std::set<Pass *> succs_;
-};
+concept RenderGraphBindingGroupInput =
+    BindingGroupDSL::RtrcGroupStruct<T> ||
+    std::is_same_v<T, RC<BindingGroup>>;
 
 class RenderGraph : public Uncopyable
 {
 public:
+
+    class InternalBufferResource : public BufferResource
+    {
+    public:
+
+        using BufferResource::BufferResource;
+
+        void SetDefaultStructStride(size_t stride);
+        void SetDefaultTexelFormat(RHI::Format format);
+
+        size_t GetDefaultStructStride() const override;
+        RHI::Format GetDefaultTexelFormat() const override;
+
+    private:
+
+        friend class RenderGraph;
+        friend class Compiler;
+
+        size_t defaultStructStride_ = 0;
+        RHI::Format defaultTexelFormat_ = RHI::Format::Unknown;
+        RHI::BufferDesc rhiDesc;
+        std::string name;
+    };
 
     explicit RenderGraph(ObserverPtr<Device> device, Queue queue = Queue(nullptr));
 
@@ -410,43 +76,90 @@ public:
         RHI::TexturePtr             rhiTexture,
         RHI::BackBufferSemaphorePtr acquireSemaphore,
         RHI::BackBufferSemaphorePtr presentSemaphore);
-
     TextureResource *RegisterSwapchainTexture(const RHI::SwapchainPtr &swapchain);
+
+    void SetCompleteFence(RHI::FencePtr fence);
 
     void PushPassGroup(std::string name);
     void PopPassGroup();
 
     Pass *CreatePass(std::string name);
-    Pass *CreateClearTexture2DPass(std::string name, TextureResource *tex2D, const Vector4f &clearValue);
+
+    // ====================== Common functional passes ======================
+
+    Pass *CreateClearTexture2DPass(
+        std::string      name,
+        TextureResource *tex2D,
+        const Vector4f  &clearValue);
     Pass *CreateDummyPass(std::string name);
 
-    Pass *CreateClearRWBufferPass(std::string name, BufferResource *buffer, uint32_t value);
-    Pass *CreateClearRWStructuredBufferPass(std::string name, BufferResource *buffer, uint32_t value);
+    Pass *CreateClearRWBufferPass(
+        std::string     name,
+        BufferResource *buffer,
+        uint32_t        value);
+    Pass *CreateClearRWStructuredBufferPass(
+        std::string     name,
+        BufferResource *buffer,
+        uint32_t        value);
 
     Pass* CreateCopyBufferPass(
-        std::string name,
-        BufferResource *src, size_t srcOffset,
-        BufferResource *dst, size_t dstOffset,
-        size_t size);
+        std::string     name,
+        BufferResource *src,
+        size_t          srcOffset,
+        BufferResource *dst,
+        size_t          dstOffset,
+        size_t          size);
     Pass *CreateCopyBufferPass(
-        std::string name,
+        std::string     name,
         BufferResource *src,
         BufferResource *dst,
-        size_t size);
+        size_t          size);
 
     Pass *CreateClearRWTexture2DPass(std::string name, TextureResource *tex2D, const Vector4f &value);
     Pass *CreateClearRWTexture2DPass(std::string name, TextureResource *tex2D, const Vector4u &value);
     Pass *CreateClearRWTexture2DPass(std::string name, TextureResource *tex2D, const Vector4i &value);
 
     Pass *CreateBlitTexture2DPass(
-        std::string name,
-        TextureResource *src, uint32_t srcArrayLayer, uint32_t srcMipLevel,
-        TextureResource *dst, uint32_t dstArrayLayer, uint32_t dstMipLevel,
-        bool usePointSampling = true, float gamma = 1.0f);
+        std::string      name,
+        TextureResource *src,
+        uint32_t         srcArrayLayer,
+        uint32_t         srcMipLevel,
+        TextureResource *dst,
+        uint32_t         dstArrayLayer,
+        uint32_t         dstMipLevel,
+        bool             usePointSampling = true,
+        float            gamma = 1.0f);
     Pass *CreateBlitTexture2DPass(
-        std::string name, TextureResource *src, TextureResource *dst, bool usePointSampling = true, float gamma = 1.0f);
+        std::string      name,
+        TextureResource *src,
+        TextureResource *dst,
+        bool             usePointSampling = true,
+        float            gamma = 1.0f);
+
+    template<RenderGraphBindingGroupInput...Ts>
+    Pass *CreateComputePass(
+        std::string     name,
+        RC<Shader>      shader,
+        const Vector3i &threadGroupCount,
+        const Ts&...    bindingGroups);
     
-    void SetCompleteFence(RHI::FencePtr fence);
+#define DECLARE_CREATE_COMPUTE_PASS_WITH_THREAD_COUNT(...) \
+    template<RenderGraphBindingGroupInput...Ts>            \
+    Pass *CreateComputePassWithThreadCount(                \
+        std::string     name,                              \
+        RC<Shader>      shader,                            \
+        __VA_ARGS__,                                       \
+        const Ts&...    bindingGroups);
+
+    DECLARE_CREATE_COMPUTE_PASS_WITH_THREAD_COUNT(const Vector3i &threadCount)
+    DECLARE_CREATE_COMPUTE_PASS_WITH_THREAD_COUNT(const Vector3u &threadCount)
+    DECLARE_CREATE_COMPUTE_PASS_WITH_THREAD_COUNT(const Vector2i &threadCount)
+    DECLARE_CREATE_COMPUTE_PASS_WITH_THREAD_COUNT(const Vector2u &threadCount)
+    DECLARE_CREATE_COMPUTE_PASS_WITH_THREAD_COUNT(unsigned int threadCountX)
+    DECLARE_CREATE_COMPUTE_PASS_WITH_THREAD_COUNT(unsigned int threadCountX, unsigned int threadCountY)
+    DECLARE_CREATE_COMPUTE_PASS_WITH_THREAD_COUNT(unsigned int threadCountX, unsigned int threadCountY, unsigned int threadCountZ)
+
+#undef DECLARE_CREATE_COMPUTE_PASS_WITH_THREAD_COUNT
 
 private:
 
@@ -461,6 +174,9 @@ private:
 
         using BufferResource::BufferResource;
 
+        size_t GetDefaultStructStride() const override;
+        RHI::Format GetDefaultTexelFormat() const override;
+
         RC<StatefulBuffer> buffer;
     };
 
@@ -474,16 +190,6 @@ private:
 
         bool isReadOnlySampledTexture = false;
         RC<StatefulTexture> texture;
-    };
-
-    class InternalBufferResource : public BufferResource
-    {
-    public:
-
-        using BufferResource::BufferResource;
-
-        RHI::BufferDesc rhiDesc;
-        std::string name;
     };
 
     class InternalTextureResource : public TextureResource
@@ -530,111 +236,75 @@ private:
     ::Rtrc::ObserverPtr(RENDERGRAPH)->PushPassGroup(NAME); \
     RTRC_SCOPE_EXIT{ ::Rtrc::ObserverPtr(RENDERGRAPH)->PopPassGroup(); };
 
-inline BufferSrv BufferResource::GetStructuredSrv() const
+template<RenderGraphBindingGroupInput ... Ts>
+Pass *RenderGraph::CreateComputePass(
+    std::string     name,
+    RC<Shader>      shader,
+    const Vector3i &threadGroupCount,
+    const Ts &...   bindingGroups)
 {
-    return Get()->GetStructuredSrv();
+    auto pass = CreatePass(std::move(name));
+    auto DeclareUse = [&]<RenderGraphBindingGroupInput T>(const T &group)
+    {
+        if constexpr(BindingGroupDSL::RtrcGroupStruct<T>)
+        {
+            DeclareRenderGraphResourceUses(pass, group, RHI::PipelineStageFlag::ComputeShader);
+        }
+    };
+    (DeclareUse(bindingGroups), ...);
+    pass->SetCallback([d = device_, s = std::move(shader), threadGroupCount, ...bindingGroups = bindingGroups]
+    {
+        std::vector<RC<BindingGroup>> finalGroups;
+        auto BindGroup = [&]<RenderGraphBindingGroupInput T>(const T &group)
+        {
+            if constexpr(BindingGroupDSL::RtrcGroupStruct<T>)
+            {
+                finalGroups.push_back(d->CreateBindingGroupWithCachedLayout(group));
+            }
+            else
+            {
+                finalGroups.push_back(group);
+            }
+        };
+        (BindGroup(bindingGroups), ...);
+
+        auto &commandBuffer = GetCurrentCommandBuffer();
+        commandBuffer.BindComputePipeline(s->GetComputePipeline());
+        commandBuffer.BindComputeGroups(finalGroups);
+        commandBuffer.Dispatch(threadGroupCount);
+    });
+    return pass;
 }
 
-inline BufferSrv BufferResource::GetStructuredSrv(size_t structStride) const
+template<RenderGraphBindingGroupInput ... Ts>
+Pass *RenderGraph::CreateComputePassWithThreadCount(
+    std::string     name,
+    RC<Shader>      shader,
+    const Vector3i &threadCount,
+    const Ts &...   bindingGroups)
 {
-    return Get()->GetStructuredSrv(structStride);
+    const Vector3i groupCount = shader->ComputeThreadGroupCount(threadCount);
+    return this->CreateComputePass(std::move(name), std::move(shader), groupCount, bindingGroups...);
 }
 
-inline BufferSrv BufferResource::GetStructuredSrv(size_t byteOffset, size_t structStride) const
-{
-    return Get()->GetStructuredSrv(byteOffset, structStride);
+#define DEFINE_CREATE_COMPUTE_PASS_WITH_THREAD_COUNT(EXPR, ...)                                                \
+template<RenderGraphBindingGroupInput ... Ts>                                                                  \
+Pass *RenderGraph::CreateComputePassWithThreadCount(                                                           \
+    std::string     name,                                                                                      \
+    RC<Shader>      shader,                                                                                    \
+    __VA_ARGS__,                                                                                               \
+    const Ts &...   bindingGroups)                                                                             \
+{                                                                                                              \
+    return this->CreateComputePassWithThreadCount(std::move(name), std::move(shader), EXPR, bindingGroups...); \
 }
 
-inline BufferSrv BufferResource::GetTexelSrv() const
-{
-    return Get()->GetTexelSrv();
-}
+DEFINE_CREATE_COMPUTE_PASS_WITH_THREAD_COUNT(Vector3i(t.x, t.y, t.z), const Vector3u &t)
+DEFINE_CREATE_COMPUTE_PASS_WITH_THREAD_COUNT(Vector3i(t.x, t.y, 1), const Vector2i &t)
+DEFINE_CREATE_COMPUTE_PASS_WITH_THREAD_COUNT(Vector3i(t.x, t.y, 1), const Vector2u &t)
+DEFINE_CREATE_COMPUTE_PASS_WITH_THREAD_COUNT(Vector3i(x, 1, 1), unsigned int x)
+DEFINE_CREATE_COMPUTE_PASS_WITH_THREAD_COUNT(Vector3i(x, y, 1), unsigned int x, unsigned int y)
+DEFINE_CREATE_COMPUTE_PASS_WITH_THREAD_COUNT(Vector3i(x, y, z), unsigned int x, unsigned int y, unsigned int z)
 
-inline BufferSrv BufferResource::GetTexelSrv(RHI::Format texelFormat) const
-{
-    return Get()->GetTexelSrv(texelFormat);
-}
-
-inline BufferSrv BufferResource::GetTexelSrv(size_t byteOffset, RHI::Format texelFormat) const
-{
-    return Get()->GetTexelSrv(byteOffset, texelFormat);
-}
-
-inline BufferUav BufferResource::GetStructuredUav() const
-{
-    return Get()->GetStructuredUav();
-}
-
-inline BufferUav BufferResource::GetStructuredUav(size_t structStride) const
-{
-    return Get()->GetStructuredUav(structStride);
-}
-
-inline BufferUav BufferResource::GetStructuredUav(size_t byteOffset, size_t structStride) const
-{
-    return Get()->GetStructuredUav(byteOffset, structStride);
-}
-
-inline BufferUav BufferResource::GetTexelUav() const
-{
-    return Get()->GetTexelUav();
-}
-
-inline BufferUav BufferResource::GetTexelUav(RHI::Format texelFormat) const
-{
-    return Get()->GetTexelUav(texelFormat);
-}
-
-inline BufferUav BufferResource::GetTexelUav(size_t byteOffset, RHI::Format texelFormat) const
-{
-    return Get()->GetTexelUav(byteOffset, texelFormat);
-}
-
-inline TextureSrv TextureResource::GetSrv(RHI::TextureViewFlags flags) const
-{
-    return Get()->GetSrv(flags);
-}
-
-inline TextureSrv TextureResource::GetSrv(
-    uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, RHI::TextureViewFlags flags) const
-{
-    return Get()->GetSrv(mipLevel, levelCount, arrayLayer, flags);
-}
-
-inline TextureSrv TextureResource::GetSrv(
-    uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, uint32_t layerCount, RHI::TextureViewFlags flags) const
-{
-    return Get()->GetSrv(mipLevel, levelCount, arrayLayer, layerCount, flags);
-}
-
-inline TextureUav TextureResource::GetUav() const
-{
-    return Get()->GetUav();
-}
-
-inline TextureUav TextureResource::GetUav(uint32_t mipLevel, uint32_t arrayLayer) const
-{
-    return Get()->GetUav(mipLevel, arrayLayer);
-}
-
-inline TextureUav TextureResource::GetUav(uint32_t mipLevel, uint32_t arrayLayer, uint32_t layerCount) const
-{
-    return Get()->GetUav(mipLevel, arrayLayer, layerCount);
-}
-
-inline TextureDsv TextureResource::GetDsv(RHI::TextureViewFlags flags) const
-{
-    return Get()->GetDsv(flags);
-}
-
-inline TextureDsv TextureResource::GetDsv(uint32_t mipLevel, uint32_t arrayLayer, RHI::TextureViewFlags flags) const
-{
-    return Get()->GetDsv(mipLevel, arrayLayer, flags);
-}
-
-inline TextureRtv TextureResource::GetRtv(uint32_t mipLevel, uint32_t arrayLayer) const
-{
-    return Get()->GetRtv(mipLevel, arrayLayer);
-}
+#undef DEFINE_CREATE_COMPUTE_PASS_WITH_THREAD_COUNT
 
 RTRC_RG_END

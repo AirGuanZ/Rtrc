@@ -419,6 +419,16 @@ enum class PipelineStage : uint32_t
 RTRC_DEFINE_ENUM_FLAGS(PipelineStage)
 using PipelineStageFlag = EnumFlagsPipelineStage;
 
+inline PipelineStageFlag ShaderStagesToPipelineStages(ShaderStageFlags stages)
+{
+    PipelineStageFlag ret = PipelineStage::None;
+    if(stages.Contains(ShaderStage::VertexShader))   { ret |= PipelineStage::VertexShader; }
+    if(stages.Contains(ShaderStage::FragmentShader)) { ret |= PipelineStage::FragmentShader; }
+    if(stages.Contains(ShaderStage::ComputeShader))  { ret |= PipelineStage::ComputeShader; }
+    if(stages | ShaderStage::AllRT)                          { ret |= PipelineStage::RayTracingShader; }
+    return ret;
+}
+
 enum class ResourceAccess : uint32_t
 {
     None                    = 0,
@@ -476,7 +486,7 @@ enum class QueueConcurrentAccessMode
     Concurrent // Concurrently accessed by graphics/compute queues
 };
 
-enum class TextureViewFlagBit
+/*enum class TextureViewFlagBit
 {
     None = 0,
 
@@ -485,7 +495,7 @@ enum class TextureViewFlagBit
     // DepthSrv_StencilAttachmentReadOnly = 1 << 1,
 };
 RTRC_DEFINE_ENUM_FLAGS(TextureViewFlagBit)
-using TextureViewFlags = EnumFlagsTextureViewFlagBit;
+using TextureViewFlags = EnumFlagsTextureViewFlagBit;*/
 
 enum class RayTracingGeometryType
 {
@@ -799,7 +809,7 @@ struct TextureSrvDesc
     uint32_t         levelCount     = 0; // 0 means all levels
     uint32_t         baseArrayLayer = 0;
     uint32_t         layerCount     = 0; // 0 means all layers. only used when isArray == true
-    TextureViewFlags flags          = 0;
+    //TextureViewFlags flags          = 0;
 
     auto operator<=>(const TextureSrvDesc &) const = default;
 };
@@ -820,7 +830,7 @@ struct TextureDsvDesc
     Format           format       = Format::Unknown;
     uint32_t         mipLevel     = 0;
     uint32_t         arrayLayer   = 0;
-    TextureViewFlags flags        = 0;
+    //TextureViewFlags flags        = 0;
 
     auto operator<=>(const TextureDsvDesc &) const = default;
 };
@@ -1213,13 +1223,13 @@ class BindingGroupUpdateBatch
 public:
 
     using UpdateData = Variant<
-        const BufferSrv *,
-        const BufferUav *,
-        const TextureSrv *,
-        const TextureUav *,
-        const Sampler *,
+        Ptr<BufferSrv>,
+        Ptr<BufferUav>,
+        Ptr<TextureSrv>,
+        Ptr<TextureUav>,
+        Ptr<Sampler>,
         ConstantBufferUpdate,
-        const Tlas *>;
+        Ptr<Tlas>>;
 
     struct Record
     {
@@ -1229,21 +1239,21 @@ public:
         UpdateData    data;
     };
 
-    void Append(BindingGroup &group, int index, const BufferSrv            *bufferSrv);
-    void Append(BindingGroup &group, int index, const BufferUav            *bufferUav);
-    void Append(BindingGroup &group, int index, const TextureSrv           *textureSrv);
-    void Append(BindingGroup &group, int index, const TextureUav           *textureUav);
-    void Append(BindingGroup &group, int index, const Sampler              *sampler);
+    void Append(BindingGroup &group, int index, Ptr<BufferSrv>              bufferSrv);
+    void Append(BindingGroup &group, int index, Ptr<BufferUav>              bufferUav);
+    void Append(BindingGroup &group, int index, Ptr<TextureSrv>             textureSrv);
+    void Append(BindingGroup &group, int index, Ptr<TextureUav>             textureUav);
+    void Append(BindingGroup &group, int index, Ptr<Sampler>                sampler);
     void Append(BindingGroup &group, int index, const ConstantBufferUpdate &cbuffer);
-    void Append(BindingGroup &group, int index, const Tlas                 *tlas);
+    void Append(BindingGroup &group, int index, Ptr<Tlas>                   tlas);
 
-    void Append(BindingGroup &group, int index, int arrayElem, const BufferSrv            *bufferSrv);
-    void Append(BindingGroup &group, int index, int arrayElem, const BufferUav            *bufferUav);
-    void Append(BindingGroup &group, int index, int arrayElem, const TextureSrv           *textureSrv);
-    void Append(BindingGroup &group, int index, int arrayElem, const TextureUav           *textureUav);
-    void Append(BindingGroup &group, int index, int arrayElem, const Sampler              *sampler);
+    void Append(BindingGroup &group, int index, int arrayElem, Ptr<BufferSrv>              bufferSrv);
+    void Append(BindingGroup &group, int index, int arrayElem, Ptr<BufferUav>              bufferUav);
+    void Append(BindingGroup &group, int index, int arrayElem, Ptr<TextureSrv>             textureSrv);
+    void Append(BindingGroup &group, int index, int arrayElem, Ptr<TextureUav>             textureUav);
+    void Append(BindingGroup &group, int index, int arrayElem, Ptr<Sampler>                sampler);
     void Append(BindingGroup &group, int index, int arrayElem, const ConstantBufferUpdate &cbuffer);
-    void Append(BindingGroup &group, int index, int arrayElem, const Tlas *tlas);
+    void Append(BindingGroup &group, int index, int arrayElem, Ptr<Tlas>                   tlas);
 
     Span<Record> GetRecords() const { return records_; }
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Graphics/RenderGraph/Graph.h>
 #include <Rtrc/Renderer/GPUScene/BlasBuilder.h>
 #include <Rtrc/Resource/BindlessResourceManager.h>
 #include <Rtrc/Scene/Camera/Camera.h>

@@ -116,11 +116,6 @@ void GenerateBindingGroupDefinition(
     for(size_t i = 0; i < group.bindings.size(); ++i)
     {
         auto &binding = group.bindings[i];
-        //if(group.isRef[i])
-        //{
-        //    sw("rtrc_ref({}, {});", binding.name, ToString(binding.stages)).NewLine();
-        //    continue;
-        //}
 
         const std::string_view typeStr = binding.rawTypeName;
 

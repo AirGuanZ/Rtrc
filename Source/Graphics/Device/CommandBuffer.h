@@ -7,8 +7,8 @@
 #include <Graphics/Device/Buffer.h>
 #include <Graphics/Device/DeviceSynchronizer.h>
 #include <Graphics/Device/Pipeline.h>
-#include <Graphics/Device/RGResourceForward.h>
 #include <Graphics/Device/Texture.h>
+#include <Graphics/RenderGraph/Resource.h>
 
 RTRC_BEGIN
 

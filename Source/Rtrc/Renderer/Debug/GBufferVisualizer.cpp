@@ -10,34 +10,27 @@ void GBufferVisualizer::Render(
     const GBuffers      &gbuffers,
     RG::TextureResource *renderTarget)
 {
-    using PassData = StaticShaderInfo<"VisualizeNormal">::Variant::Pass;
-
-    auto pass = renderGraph.CreatePass("VisualizeGBuffer");
-    DeclareGBufferUses<PassData>(pass, gbuffers, RHI::PipelineStage::ComputeShader);
-    pass->Use(renderTarget, RG::CS_RWTexture_WriteOnly);
-    pass->SetCallback([mode, gbuffers, renderTarget, this]
+    RC<Shader> shader;
+    if(mode == Mode::Normal)
     {
-        PassData passData;
-        FillBindingGroupGBuffers(passData, gbuffers);
-        passData.Output = renderTarget;
-        passData.outputResolution = renderTarget->GetSize();
-        auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
+        shader = resources_->GetMaterialManager()->GetCachedShader<"VisualizeNormal">();
+    }
+    else
+    {
+        throw Exception(fmt::format("GBufferVisualizer: unknown mode {}", std::to_underlying(mode)));
+    }
 
-        RC<Shader> shader;
-        if(mode == Mode::Normal)
-        {
-            shader = resources_->GetMaterialManager()->GetCachedShader<"VisualizeNormal">();
-        }
-        else
-        {
-            throw Exception(fmt::format("GBufferVisualizer: unknown mode {}", std::to_underlying(mode)));
-        }
+    StaticShaderInfo<"VisualizeNormal">::Variant::Pass passData;
+    FillBindingGroupGBuffers(passData, gbuffers);
+    passData.Output           = renderTarget;
+    passData.Output.writeOnly = true;
+    passData.outputResolution = renderTarget->GetSize();
 
-        auto &commandBuffer = RG::GetCurrentCommandBuffer();
-        commandBuffer.BindComputePipeline(shader->GetComputePipeline());
-        commandBuffer.BindComputeGroup(0, passGroup);
-        commandBuffer.DispatchWithThreadCount(renderTarget->GetSize());
-    });
+    renderGraph.CreateComputePassWithThreadCount(
+        "VisualizeGBuffer",
+        shader,
+        renderTarget->GetSize(),
+        passData);
 }
 
 RTRC_RENDERER_END

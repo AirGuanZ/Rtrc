@@ -81,34 +81,34 @@ inline void BindingGroupUpdateBatch::Append(BindingGroup &group, int index, cons
     records_.push_back({ &group, index, 0, cbuffer });
 }
 
-inline void BindingGroupUpdateBatch::Append(BindingGroup &group, int index, const BufferSrv *bufferSrv)
+inline void BindingGroupUpdateBatch::Append(BindingGroup &group, int index, Ptr<BufferSrv> bufferSrv)
 {
-    records_.push_back({ &group, index, 0, bufferSrv });
+    records_.push_back({ &group, index, 0, std::move(bufferSrv) });
 }
 
-inline void BindingGroupUpdateBatch::Append(BindingGroup &group, int index, const BufferUav *bufferUav)
+inline void BindingGroupUpdateBatch::Append(BindingGroup &group, int index, Ptr<BufferUav> bufferUav)
 {
-    records_.push_back({ &group, index, 0, bufferUav });
+    records_.push_back({ &group, index, 0, std::move(bufferUav) });
 }
 
-inline void BindingGroupUpdateBatch::Append(BindingGroup &group, int index, const Sampler *sampler)
+inline void BindingGroupUpdateBatch::Append(BindingGroup &group, int index, Ptr<Sampler> sampler)
 {
-    records_.push_back({ &group, index, 0, sampler });
+    records_.push_back({ &group, index, 0, std::move(sampler) });
 }
 
-inline void BindingGroupUpdateBatch::Append(BindingGroup &group, int index, const TextureSrv *textureSrv)
+inline void BindingGroupUpdateBatch::Append(BindingGroup &group, int index, Ptr<TextureSrv> textureSrv)
 {
-    records_.push_back({ &group, index, 0, textureSrv });
+    records_.push_back({ &group, index, 0, std::move(textureSrv) });
 }
 
-inline void BindingGroupUpdateBatch::Append(BindingGroup &group, int index, const TextureUav *textureUav)
+inline void BindingGroupUpdateBatch::Append(BindingGroup &group, int index, Ptr<TextureUav> textureUav)
 {
-    records_.push_back({ &group, index, 0, textureUav });
+    records_.push_back({ &group, index, 0, std::move(textureUav) });
 }
 
-inline void BindingGroupUpdateBatch::Append(BindingGroup &group, int index, const Tlas *tlas)
+inline void BindingGroupUpdateBatch::Append(BindingGroup &group, int index, Ptr<Tlas> tlas)
 {
-    records_.push_back({ &group, index, 0, tlas });
+    records_.push_back({ &group, index, 0, std::move(tlas) });
 }
 
 inline void BindingGroupUpdateBatch::Append(
@@ -117,40 +117,34 @@ inline void BindingGroupUpdateBatch::Append(
     records_.push_back({ &group, index, arrayElem, cbuffer });
 }
 
-inline void BindingGroupUpdateBatch::Append(
-    BindingGroup &group, int index, int arrayElem, const BufferSrv *bufferSrv)
+inline void BindingGroupUpdateBatch::Append(BindingGroup &group, int index, int arrayElem, Ptr<BufferSrv> bufferSrv)
 {
-    records_.push_back({ &group, index, arrayElem, bufferSrv });
+    records_.push_back({ &group, index, arrayElem, std::move(bufferSrv) });
 }
 
-inline void BindingGroupUpdateBatch::Append(
-    BindingGroup &group, int index, int arrayElem, const BufferUav *bufferUav)
+inline void BindingGroupUpdateBatch::Append(BindingGroup &group, int index, int arrayElem, Ptr<BufferUav> bufferUav)
 {
-    records_.push_back({ &group, index, arrayElem, bufferUav });
+    records_.push_back({ &group, index, arrayElem, std::move(bufferUav) });
 }
 
-inline void BindingGroupUpdateBatch::Append(
-    BindingGroup &group, int index, int arrayElem, const Sampler *sampler)
+inline void BindingGroupUpdateBatch::Append(BindingGroup &group, int index, int arrayElem, Ptr<Sampler> sampler)
 {
-    records_.push_back({ &group, index, arrayElem, sampler });
+    records_.push_back({ &group, index, arrayElem, std::move(sampler) });
 }
 
-inline void BindingGroupUpdateBatch::Append(
-    BindingGroup &group, int index, int arrayElem, const TextureSrv *textureSrv)
+inline void BindingGroupUpdateBatch::Append(BindingGroup &group, int index, int arrayElem, Ptr<TextureSrv> textureSrv)
 {
-    records_.push_back({ &group, index, arrayElem, textureSrv });
+    records_.push_back({ &group, index, arrayElem, std::move(textureSrv) });
 }
 
-inline void BindingGroupUpdateBatch::Append(
-    BindingGroup &group, int index, int arrayElem, const TextureUav *textureUav)
+inline void BindingGroupUpdateBatch::Append(BindingGroup &group, int index, int arrayElem, Ptr<TextureUav> textureUav)
 {
-    records_.push_back({ &group, index, arrayElem, textureUav });
+    records_.push_back({ &group, index, arrayElem, std::move(textureUav) });
 }
 
-inline void BindingGroupUpdateBatch::Append(
-    BindingGroup &group, int index, int arrayElem, const Tlas *tlas)
+inline void BindingGroupUpdateBatch::Append(BindingGroup &group, int index, int arrayElem, Ptr<Tlas> tlas)
 {
-    records_.push_back({ &group, index, arrayElem, tlas });
+    records_.push_back({ &group, index, arrayElem, std::move(tlas) });
 }
 
 RTRC_RHI_END
