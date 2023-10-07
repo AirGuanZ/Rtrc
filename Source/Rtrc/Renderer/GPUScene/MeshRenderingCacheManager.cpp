@@ -132,7 +132,7 @@ RG::Pass *MeshRenderingCacheManager::Build(RG::RenderGraph &renderGraph, int max
         auto it = meshesNeedBlas.begin();
         while(buildCount < maxBuildCount && buildPrimitiveCount < maxPrimitiveCount && it != meshesNeedBlas.end())
         {
-            auto mesh = *it;
+            auto mesh = *it++;
             const int newPrimitiveCount = buildPrimitiveCount + mesh->mesh->GetPrimitiveCount();
             if(newPrimitiveCount > buildPrimitiveCount)
             {

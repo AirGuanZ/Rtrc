@@ -46,7 +46,7 @@ foreach(SHADER_FILE IN ITEMS ${ALL_SHADER_FILES})
         COMMAND
             ${CMAKE_COMMAND} -E touch "${TS}"
         DEPENDS
-            ShaderPreprocessor "${IN}" "${ALL_HLSL_FILES}") # TODO: optimize this.
+            ShaderPreprocessor "${IN}" "${ALL_HLSL_FILES}") # TODO: use depfile to optimize this
     list(APPEND ALL_SHADER_OUT_FILES ${OUT})
     list(APPEND ALL_SHADER_TIMESTAMP_FILES ${TS})
 endforeach()

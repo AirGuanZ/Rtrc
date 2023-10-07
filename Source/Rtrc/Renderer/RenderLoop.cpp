@@ -21,6 +21,8 @@ RenderLoop::RenderLoop(ObserverPtr<ResourceManager> resources, ObserverPtr<Bindl
     gbufferPass_ = MakeBox<GBufferPass>(device_);
     pathTracer_ = MakeBox<PathTracer>(resources_);
     gbufferVisualizer_ = MakeBox<GBufferVisualizer>(resources_);
+    restir_ = MakeBox<ReSTIR>(resources_);
+    deferredLighting_ = MakeBox<DeferredLighting>(resources_);
 }
 
 void RenderLoop::BeginRenderLoop()
@@ -145,10 +147,15 @@ void RenderLoop::RenderFrameImpl(const FrameInput &frame)
     auto indirectDiffuse = renderCamera.GetPathTracingData().indirectDiffuse;
     RTRC_SCOPE_EXIT{ pathTracer_->ClearFrameData(renderCamera.GetPathTracingData()); };
 
+    // ============= ReSTIR =============
+
+    restir_->Render(renderCamera, *renderGraph, gbuffers);
+    RTRC_SCOPE_EXIT{ restir_->ClearFrameData(renderCamera.GetReSTIRData()); };
+
     // ============= Lighting =============
 
-    gbufferVisualizer_->Render(GBufferVisualizer::Mode::Normal, *renderGraph, gbuffers, framebuffer);
-
+    deferredLighting_->Render(renderCamera, renderGraph, gbuffers, framebuffer);
+    
     // ============= Blit =============
 
     if(renderSettings_.visualizationMode == VisualizationMode::IndirectDiffuse)
@@ -159,6 +166,11 @@ void RenderLoop::RenderFrameImpl(const FrameInput &frame)
     {
         gbufferVisualizer_->Render(GBufferVisualizer::Mode::Normal, *renderGraph, gbuffers, framebuffer);
         renderGraph->CreateBlitTexture2DPass("BlitToSwapchain", framebuffer, swapchainImage);
+    }
+    else if(renderSettings_.visualizationMode == VisualizationMode::ReSTIRDirectIllumination)
+    {
+        renderGraph->CreateBlitTexture2DPass(
+            "BlitToSwapchain", renderCamera.GetReSTIRData().directIllum, swapchainImage);
     }
     else
     {

@@ -31,18 +31,18 @@ public:
 
     ~Light() override;
 
-    RTRC_SET_GET(Type,     Type,           type_)
-    RTRC_SET_GET(Vector3f, Color,          color_)
-    RTRC_SET_GET(float,    Intensity,      intensity_)
-    RTRC_SET_GET(float,    Softness,       softness_)
-    RTRC_SET_GET(Flags,    Flags,          flags_)
+    RTRC_SET_GET(Type,     Type,      type_)
+    RTRC_SET_GET(Vector3f, Color,     color_)
+    RTRC_SET_GET(float,    Intensity, intensity_)
+    RTRC_SET_GET(float,    Softness,  softness_)
+    RTRC_SET_GET(Flags,    Flags,     flags_)
 
     RTRC_SET_GET(Vector3f, Position,   position_)  // For point/spot light
     RTRC_SET_GET(Vector3f, Direction,  direction_) // For spot/directional light
 
     RTRC_SET_GET(float, DistFadeBegin, distFadeBegin_)
     RTRC_SET_GET(float, DistFadeEnd,   distFadeEnd_)
-    RTRC_SET_GET(float, ConeFadeBegin, coneFadeBegin) // In angle
+    RTRC_SET_GET(float, ConeFadeBegin, coneFadeBegin) // In angle, \in [0, 90)
     RTRC_SET_GET(float, ConeFadeEnd,   coneFadeEnd_)
 
 private:

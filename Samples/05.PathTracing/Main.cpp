@@ -2,8 +2,6 @@
 
 using namespace Rtrc;
 
-constexpr int MAX_INSTANCE_COUNT = 128;
-
 #include "InitRng.shader.outh"
 #include "PathTracing.shader.outh"
 

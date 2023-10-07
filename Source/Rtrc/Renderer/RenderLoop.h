@@ -3,6 +3,7 @@
 #include <Graphics/ImGui/Instance.h>
 #include <Graphics/RenderGraph/Executable.h>
 #include <Rtrc/Renderer/Debug/GBufferVisualizer.h>
+#include <Rtrc/Renderer/DeferredLighting/DeferredLighting.h>
 #include <Rtrc/Renderer/GBuffer/GBufferPass.h>
 #include <Rtrc/Renderer/GPUScene/RenderCamera.h>
 #include <Rtrc/Renderer/RenderSettings.h>
@@ -55,6 +56,8 @@ private:
     Box<GBufferPass>       gbufferPass_;
     Box<PathTracer>        pathTracer_;
     Box<GBufferVisualizer> gbufferVisualizer_;
+    Box<ReSTIR>            restir_;
+    Box<DeferredLighting>  deferredLighting_;
 
     bool isSwapchainInvalid_;
 };

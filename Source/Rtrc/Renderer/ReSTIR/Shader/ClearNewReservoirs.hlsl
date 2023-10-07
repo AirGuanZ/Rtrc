@@ -1,10 +1,10 @@
 #pragma once
 
-#include "Common.hlsl"
+#include "Reservoir.hlsl"
 
 rtrc_group(Pass)
 {
-    rtrc_define(RWTexture2D<float4>, OutputTextureRW)
+    rtrc_define(RWTexture2D<uint4>, OutputTextureRW)
     rtrc_uniform(uint2, outputResolution)
 };
 

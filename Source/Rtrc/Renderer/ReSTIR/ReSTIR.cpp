@@ -1,5 +1,6 @@
 #include <Rtrc/Renderer/GPUScene/RenderCamera.h>
 #include <Rtrc/Renderer/GBufferBinding.h>
+#include <Rtrc/Renderer/Utility/PcgStateTexture.h>
 #include <Rtrc/Scene/Light/Light.h>
 
 #include <Rtrc/Renderer/ReSTIR/Shader/ReSTIR.shader.outh>
@@ -25,7 +26,7 @@ namespace ReSTIRDetail
         float coneFadeScale = 0;
     };
 
-    LightShadingData ExtractLight(const Light *light)
+    LightShadingData ExtractLightShadingData(const Light *light)
     {
         const Light::Type type = light->GetType();
         assert(type == Light::Type::Point || type == Light::Type::Spot || type == Light::Type::Directional);
@@ -46,9 +47,21 @@ namespace ReSTIRDetail
         {
             ret.direction = light->GetDirection();
         }
-        if(type == Light::Type::Point || type == Light::Type::Directional)
+        if(type == Light::Type::Point || type == Light::Type::Spot)
         {
             ret.softness = light->GetSoftness();
+        }
+        if(type == Light::Type::Directional)
+        {
+            ret.softness = std::min(light->GetSoftness(), 0.999f);
+        }
+        if(type == Light::Type::Spot)
+        {
+            // coneFadeFactor = saturate(scale * dot + bias)
+            const float dot0 = std::clamp(std::cos(Deg2Rad(light->GetConeFadeBegin())), 0.0f, 1.0f);
+            const float dot1 = std::clamp(std::cos(Deg2Rad(light->GetConeFadeEnd())), 0.0f, 1.0f);
+            ret.coneFadeScale = 1.0 / (dot0 - dot1);
+            ret.coneFadeBias = -ret.coneFadeScale * dot1;
         }
         return ret;
     }
@@ -63,17 +76,22 @@ void ReSTIR::Render(RenderCamera &renderCamera, RG::RenderGraph &renderGraph, co
     const RenderScene &renderScene = renderCamera.GetScene();
     const Scene &scene = renderScene.GetScene();
 
-    // Setup RTs
+    // Setup rng states && reservoirs
 
     const Vector2u framebufferSize = gbuffers.currDepth->GetSize();
-    if(data.reservoirs && data.reservoirs->GetSize() != framebufferSize)
+    auto pcgState = Prepare2DPcgStateTexture(renderGraph, resources_, data.pcgState, framebufferSize);
+
+    std::swap(data.prevReservoirs, data.currReservoirs);
+    if(data.prevReservoirs && data.prevReservoirs->GetSize() != framebufferSize)
     {
-        data.reservoirs.reset();
+        data.prevReservoirs.reset();
     }
-    
-    if(!data.reservoirs)
+
+    bool shouldClearPrevReservoirs = false;
+    if(!data.prevReservoirs)
     {
-        data.reservoirs = device_->CreatePooledTexture(RHI::TextureDesc
+        shouldClearPrevReservoirs = true;
+        data.prevReservoirs = device_->CreatePooledTexture(RHI::TextureDesc
         {
             .dim    = RHI::TextureDimension::Tex2D,
             .format = RHI::Format::R32G32B32A32_UInt,
@@ -81,19 +99,23 @@ void ReSTIR::Render(RenderCamera &renderCamera, RG::RenderGraph &renderGraph, co
             .height = framebufferSize.y,
             .usage  = RHI::TextureUsage::ShaderResource | RHI::TextureUsage::UnorderAccess
         });
+        data.currReservoirs = device_->CreatePooledTexture(data.prevReservoirs->GetDesc());
     }
-    auto historyReservoirs = renderGraph.RegisterTexture(data.reservoirs);
-
-    auto reservoirs0 = renderGraph.CreateTexture(historyReservoirs->GetDesc(), "TempReservoirs0");
-    auto reservoirs1 = renderGraph.CreateTexture(historyReservoirs->GetDesc(), "TempReservoirs1");
-
+    auto prevReservoirs = renderGraph.RegisterTexture(data.prevReservoirs);
+    auto currReservoirs = renderGraph.RegisterTexture(data.currReservoirs);
+    if(shouldClearPrevReservoirs)
+    {
+        renderGraph.CreateClearRWTexture2DPass(
+            "ClearPreviousReservoirs", prevReservoirs, Vector4u(0, 0, 0, 0));
+    }
+    
     // Setup light buffers
 
     std::vector<ReSTIRDetail::LightShadingData> lightShadingData;
     lightShadingData.reserve(scene.GetLightCount());
     scene.ForEachLight([&](const Light *light)
     {
-        lightShadingData.push_back(ReSTIRDetail::ExtractLight(light));
+        lightShadingData.push_back(ReSTIRDetail::ExtractLightShadingData(light));
     });
 
     RC<Buffer> lightBuffer;
@@ -107,6 +129,7 @@ void ReSTIR::Render(RenderCamera &renderCamera, RG::RenderGraph &renderGraph, co
                 .size = sizeof(dummyLightShadingData),
                 .usage = RHI::BufferUsage::ShaderStructuredBuffer
             }, &dummyLightShadingData, sizeof(dummyLightShadingData));
+            dummyLightBuffer_->SetDefaultStructStride(sizeof(ReSTIRDetail::LightShadingData));
         }
         lightBuffer = dummyLightBuffer_;
     }
@@ -117,29 +140,98 @@ void ReSTIR::Render(RenderCamera &renderCamera, RG::RenderGraph &renderGraph, co
             .size = lightShadingData.size() * sizeof(ReSTIRDetail::LightShadingData),
             .usage = RHI::BufferUsage::ShaderStructuredBuffer
         }, lightShadingData.data());
+        lightBuffer->SetDefaultStructStride(sizeof(ReSTIRDetail::LightShadingData));
     }
 
-    // Initial sample pass
+    // Create new reservoirs
 
     if(lightShadingData.empty())
     {
-        // TODO
+        StaticShaderInfo<"ReSTIR/ClearNewReservoirs">::Variant::Pass passData;
+        passData.OutputTextureRW           = currReservoirs;
+        passData.OutputTextureRW.writeOnly = true;
+        passData.outputResolution          = currReservoirs->GetSize();
+        renderGraph.CreateComputePassWithThreadCount(
+            "ClearNewReservoirs",
+            resources_->GetMaterialManager()->GetCachedShader<"ReSTIR/ClearNewReservoirs">(),
+            currReservoirs->GetSize(),
+            passData);
     }
     else
     {
         StaticShaderInfo<"ReSTIR/CreateNewReservoirs">::Variant::Pass passData;
         FillBindingGroupGBuffers(passData, gbuffers);
         passData.Camera                    = renderCamera.GetCameraCBuffer();
+        passData.Scene                     = renderScene.GetTlas();
         passData.LightShadingDataBuffer    = lightBuffer;
         passData.lightCount                = renderScene.GetScene().GetLightCount();
-        passData.OutputTextureRW           = reservoirs0;
+        passData.PcgStateTextureRW         = pcgState;
+        passData.OutputTextureRW           = currReservoirs;
         passData.OutputTextureRW.writeOnly = true;
-        passData.outputResolution          = reservoirs0->GetSize();
+        passData.outputResolution          = currReservoirs->GetSize();
         passData.M                         = M_;
         renderGraph.CreateComputePassWithThreadCount(
-            "InitialSamplePass",
-            resources_->GetMaterialManager()->GetCachedShader<"Builtin/ReSTIR/InitialSamplePass">(),
-            reservoirs0->GetSize(),
+            "CreateNewReservoirs",
+            resources_->GetMaterialManager()->GetCachedShader<"ReSTIR/CreateNewReservoirs">(),
+            currReservoirs->GetSize(),
+            passData);
+    }
+
+    // Temporal reuse
+
+    if(!lightShadingData.empty())
+    {
+        StaticShaderInfo<"ReSTIR/TemporalReuse">::Variant::Pass passData;
+        FillBindingGroupGBuffers(passData, gbuffers);
+        passData.PrevDepth              = gbuffers.prevDepth ? gbuffers.prevDepth : gbuffers.currDepth;
+        passData.CurrDepth              = gbuffers.currDepth;
+        passData.PrevCamera             = renderCamera.GetPreviousCameraCBuffer();
+        passData.CurrCamera             = renderCamera.GetCameraCBuffer();
+        passData.LightShadingDataBuffer = lightBuffer;
+        passData.HistoryReservoirs      = prevReservoirs;
+        passData.NewReservoirs          = currReservoirs;
+        passData.PcgState               = pcgState;
+        passData.maxM                   = maxM_;
+        passData.resolution             = currReservoirs->GetSize();
+        renderGraph.CreateComputePassWithThreadCount(
+            "TemporalReuse",
+            resources_->GetMaterialManager()->GetCachedShader<"ReSTIR/TemporalReuse">(),
+            currReservoirs->GetSize(),
+            passData);
+    }
+
+    // Spatial reuse
+
+    if(!lightShadingData.empty())
+    {
+        // TODO
+    }
+
+    // Resolve final result
+
+    data.directIllum = renderGraph.CreateTexture(RHI::TextureDesc
+    {
+        .dim    = RHI::TextureDimension::Tex2D,
+        .format = RHI::Format::R32G32B32A32_Float,
+        .width  = framebufferSize.x,
+        .height = framebufferSize.y,
+        .usage  = RHI::TextureUsage::ShaderResource | RHI::TextureUsage::UnorderAccess
+    });
+
+    {
+        StaticShaderInfo<"ReSTIR/Resolve">::Variant::Pass passData;
+        FillBindingGroupGBuffers(passData, gbuffers);
+        passData.Camera                 = renderCamera.GetCameraCBuffer();
+        passData.Scene                  = renderScene.GetTlas();
+        passData.LightShadingDataBuffer = lightBuffer;
+        passData.Reservoirs             = currReservoirs;
+        passData.Output                 = data.directIllum;
+        passData.Output.writeOnly       = true;
+        passData.outputResolution       = data.directIllum->GetSize();
+        renderGraph.CreateComputePassWithThreadCount(
+            "Resolve",
+            resources_->GetMaterialManager()->GetCachedShader<"ReSTIR/Resolve">(),
+            data.directIllum->GetSize(),
             passData);
     }
 }

@@ -10,11 +10,10 @@ public:
 
     struct PerCameraData
     {
-        // x: light index
-        // y: light uv
-        // z: weight sum
-        // w: sample count
-        RC<StatefulTexture> reservoirs;
+        RC<StatefulTexture> pcgState;
+        RC<StatefulTexture> prevReservoirs;
+        RC<StatefulTexture> currReservoirs;
+
         RG::TextureResource *directIllum = nullptr;
     };
 
@@ -27,7 +26,9 @@ public:
 private:
 
     RC<Buffer> dummyLightBuffer_;
-    int M_ = 1;
+    unsigned int M_ = 2;
+    unsigned int maxM_ = 32;
+    bool enableTemporalReuse_ = true;
 };
 
 RTRC_RENDERER_END

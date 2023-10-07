@@ -25,8 +25,10 @@ public:
     ~MeshRenderer() override;
 
     RTRC_SET_GET(Flags,                Flags,    flags_)
-    RTRC_SET_GET(RC<Mesh>,             Mesh,     mesh_)
     RTRC_SET_GET(RC<MaterialInstance>, Material, material_)
+
+    const RC<Mesh> &GetMesh() const { return mesh_; }
+    void SetMesh(RC<Mesh> mesh);
 
 private:
 

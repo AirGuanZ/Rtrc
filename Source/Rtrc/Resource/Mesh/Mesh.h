@@ -120,7 +120,7 @@ inline void Mesh::Swap(Mesh &other) noexcept
 {
     RTRC_SWAP_MEMBERS(
         *this, other,
-        layout_, vertexCount_, vertexBuffers_, vertexStrides_, indexCount_, indexFormat_, indexBuffer_);
+        layout_, vertexCount_, vertexBuffers_, vertexStrides_, indexCount_, indexFormat_, indexBuffer_, bound_);
 }
 
 inline MeshBuilder &MeshBuilder::SetLayout(const MeshLayout *layout)

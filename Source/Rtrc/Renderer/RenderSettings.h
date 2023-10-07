@@ -9,12 +9,13 @@ enum class VisualizationMode
     None,
     IndirectDiffuse,
     Normal,
+    ReSTIRDirectIllumination,
     Count
 };
 
 inline const char *GetVisualizationModeName(VisualizationMode mode)
 {
-    constexpr const char *ret[] = { "None", "IndirectDiffuse", "Normal", "Count" };
+    constexpr const char *ret[] = { "None", "IndirectDiffuse", "Normal", "ReSTIR", "Count" };
     return ret[std::to_underlying(mode)];
 }
 

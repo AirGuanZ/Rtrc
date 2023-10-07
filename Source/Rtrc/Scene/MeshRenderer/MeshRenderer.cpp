@@ -8,4 +8,10 @@ MeshRenderer::~MeshRenderer()
     manager_->_internalRelease(this);
 }
 
+void MeshRenderer::SetMesh(RC<Mesh> mesh)
+{
+    mesh_ = std::move(mesh);
+    SetLocalBound(mesh_->GetBoundingBox());
+}
+
 RTRC_END

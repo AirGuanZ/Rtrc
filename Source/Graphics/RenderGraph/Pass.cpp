@@ -106,8 +106,17 @@ Pass *Pass::Use(const TextureResource *texture, const RHI::TextureSubresource &s
     {
         usageMap = TextureUsage(texture->GetMipLevels(), texture->GetArraySize());
     }
-    assert(!usageMap(subrsc.mipLevel, subrsc.arrayLayer).has_value());
-    usageMap(subrsc.mipLevel, subrsc.arrayLayer) = SubTexUsage(info.layout, info.stages, info.accesses);
+    auto &usage = usageMap(subrsc.mipLevel, subrsc.arrayLayer);
+    if(usage.has_value())
+    {
+        assert(usage->layout == info.layout);
+        usage->stages |= info.stages;
+        usage->accesses |= info.accesses;
+    }
+    else
+    {
+        usage = SubTexUsage(info.layout, info.stages, info.accesses);
+    }
     return this;
 }
 

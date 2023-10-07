@@ -4,6 +4,7 @@
 #define GBUFFER_MODE_ALL          1
 #define GBUFFER_MODE_NORMAL_DEPTH 2
 #define GBUFFER_MODE_DEPTH        3
+#define GBUFFER_MODE_NORMAL       4
 
 #if GBUFFER_MODE == GBUFFER_MODE_ALL
 #define GBUFFER_ENABLE_NORMAL    1
@@ -16,6 +17,8 @@
 #define GBUFFER_ENABLE_DEPTH  1
 #elif GBUFFER_MODE == GBUFFER_MODE_DEPTH
 #define GBUFFER_ENABLE_DEPTH 1
+#elif GBUFFER_MODE == GBUFFER_MODE_NORMAL
+#define GBUFFER_ENABLE_NORMAL 1
 #else
 #error "GBUFFER_MODE must be properly defined before including GBuffer.hlsl"
 #endif
