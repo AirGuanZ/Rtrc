@@ -33,7 +33,7 @@ rtrc_material("Surface/Diffuse")
             struct VsToFs
             {
                 float4 clipPosition : SV_POSITION;
-                float3 worldNormal  : WORLD_NORMAL;
+                float3 worldNormal  : NORMAL;
                 float2 uv           : TEXCOORD;
 
                 DefineInstanceID();

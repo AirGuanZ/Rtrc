@@ -149,6 +149,11 @@ void RenderLoop::RenderFrameImpl(const FrameInput &frame)
 
     // ============= ReSTIR =============
 
+    restir_->SetM(renderSettings_.ReSTIR_M);
+    restir_->SetMaxM(renderSettings_.ReSTIR_MaxM);
+    restir_->SetN(renderSettings_.ReSTIR_N);
+    restir_->SetRadius(renderSettings_.ReSTIR_Radius);
+    restir_->SetEnableTemporalReuse(renderSettings_.ReSTIR_EnableTemporalReuse);
     restir_->Render(renderCamera, *renderGraph, gbuffers);
     RTRC_SCOPE_EXIT{ restir_->ClearFrameData(renderCamera.GetReSTIRData()); };
 

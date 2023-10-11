@@ -21,8 +21,9 @@ rtrc_group(Pass, CS)
 
     rtrc_define(StructuredBuffer<LightShadingData>, LightShadingDataBuffer)
 
-    rtrc_define(Texture2D<uint4>, HistoryReservoirs)
-    rtrc_define(RWTexture2D<uint4>, NewReservoirs)
+    rtrc_define(Texture2D<uint4>, NewReservoirs)
+    rtrc_define(Texture2D<uint4>, PrevReservoirs)
+    rtrc_define(RWTexture2D<uint4>, CurrReservoirs)
 
     rtrc_define(RWTexture2D<uint>, PcgState)
 
@@ -30,53 +31,45 @@ rtrc_group(Pass, CS)
     rtrc_uniform(uint2, resolution)
 };
 
-rtrc_sampler(HistorySampler, filter = point, address = clamp)
-
-[numthreads(8, 8, 1)]
-void CSMain(uint2 tid : SV_DispatchThreadID)
+uint4 Reuse(uint2 tid, float deviceZ, float2 uv)
 {
-    if(any(tid >= Pass.resolution))
-        return;
-        
-    // Decode gbuffer
-
-    const float2 uv = (tid + 0.5) / Pass.resolution;
-    const float3 worldRay = CameraUtils::GetWorldRay(CurrCamera, uv);
-    const float deviceZ = CurrDepth[tid];
-    if(deviceZ >= 1)
-        return;
     const float viewZ = CameraUtils::DeviceZToViewZ(CurrCamera, deviceZ);
+
+    const float3 worldRay = CameraUtils::GetWorldRay(CurrCamera, uv);
     const float3 worldPos = viewZ * worldRay + CurrCamera.position;
+    
+    const uint4 currEncodedState = NewReservoirs[tid];
+    Reservoir currR;
+    currR.SetEncodedState(currEncodedState);
 
     // Reproject
 
     const float4 prevClip = mul(PrevCamera.worldToClip, float4(worldPos, 1));
     const float2 prevScr = prevClip.xy / prevClip.w;
+    if(prevClip.w <= 0 || any(abs(prevScr) > 1))
+        return currEncodedState;
+    
     const float2 prevUV = 0.5 + float2(0.5, -0.5) * prevScr;
-    const float prevDeviceZ = PrevDepth.SampleLevel(HistorySampler, prevUV, 0);
-    if(prevClip.w <= 0 || any(abs(prevScr) > 1) || prevDeviceZ >= 1)
-        return;
+    const uint2 prevCoord = min(uint2(prevUV * Pass.resolution), Pass.resolution - 1);
+    const float prevDeviceZ = PrevDepth[prevCoord];
+    if(prevDeviceZ >= 1)
+        return currEncodedState;
     
     const float expectedPrevDeviceZ = prevClip.z / prevClip.w;
     const float expectedPrevViewZ = CameraUtils::DeviceZToViewZ(PrevCamera, expectedPrevDeviceZ);
     const float actualPrevViewZ = CameraUtils::DeviceZToViewZ(PrevCamera, prevDeviceZ);
-    const float absErr = abs((expectedPrevViewZ - actualPrevViewZ));
+    const float absErr = abs(expectedPrevViewZ - actualPrevViewZ);
     const float relErr = absErr / max(expectedPrevViewZ, 0.01);
-    if(absErr >= 5 || relErr >= 0.03)
-        return;
+    if(absErr >= 0.2 || relErr >= 0.02)
+        return currEncodedState;
 
     // Load prev/curr states
 
-    const uint2 prevCoord = min(uint2(prevUV * Pass.resolution), Pass.resolution - 1);
-    const uint4 prevEncodedState = HistoryReservoirs[prevCoord];
+    const uint4 prevEncodedState = PrevReservoirs[prevCoord];
     Reservoir prevR;
     prevR.SetEncodedState(prevEncodedState);
-    if(!prevR.M || prevR.wsum <= 1e-3 || prevR.pbar <= 1e-3)
-        return;
-    
-    const uint4 currEncodedState = NewReservoirs[tid];
-    Reservoir currR;
-    currR.SetEncodedState(currEncodedState);
+    if(!prevR.M || prevR.wsum <= 1e-3 || prevR.W <= 1e-3)
+        return currEncodedState;
 
     // Combine reservoirs
 
@@ -87,8 +80,16 @@ void CSMain(uint2 tid : SV_DispatchThreadID)
     const float3 normal = LoadGBufferNormal(uv);
     const float3 reshade = ShadeNoVisibility(worldPos, normal, prevLightData, prevR.data.lightUV);
     const float reshadePBar = RelativeLuminance(reshade);
+    
+    float finalPBar;
+    if(currR.W > 1e-3)
+        finalPBar = currR.wsum / currR.M / currR.W;
+    else
+        finalPBar = 1;
 
-    currR.Update(prevR.data, reshadePBar * prevR.W() * prevR.M, reshadePBar, pcgSampler.NextFloat());
+    if(currR.Update(prevR.data, reshadePBar * prevR.W * prevR.M, pcgSampler.NextFloat()))
+        finalPBar = reshadePBar;
+
     currR.M += prevR.M;
 
     if(currR.M > Pass.maxM)
@@ -97,6 +98,23 @@ void CSMain(uint2 tid : SV_DispatchThreadID)
         currR.M = Pass.maxM;
     }
 
-    NewReservoirs[tid] = currR.GetEncodedState();
+    currR.W = 1.0 / max(finalPBar, 1e-5) * (1.0 / currR.M) * currR.wsum;
+
     PcgState[tid] = pcgSampler.GetState();
+    return currR.GetEncodedState();
+}
+
+[numthreads(8, 8, 1)]
+void CSMain(uint2 tid : SV_DispatchThreadID)
+{
+    if(any(tid >= Pass.resolution))
+        return;
+
+    const float2 uv = (tid + 0.5) / Pass.resolution;
+    const float deviceZ = CurrDepth[tid];
+    if(deviceZ >= 1)
+        return;
+    
+    const uint4 newState = Reuse(tid, deviceZ, uv);
+    CurrReservoirs[tid] = newState;
 }

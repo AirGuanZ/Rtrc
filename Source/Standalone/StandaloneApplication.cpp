@@ -66,6 +66,11 @@ void StandaloneApplication::Update(const Rtrc::ApplicationUpdateContext &context
         imgui.SetInputEnabled(!input.IsCursorLocked());
     }
 
+    if(IsGPUCapturerAvailable() && input.IsKeyDown(Rtrc::KeyCode::F10))
+    {
+        AddPendingCaptureFrames(1);
+    }
+
     if(input.IsCursorLocked())
     {
         (void)cameraController_.UpdateCamera(input, *context.frameTimer);
@@ -73,9 +78,15 @@ void StandaloneApplication::Update(const Rtrc::ApplicationUpdateContext &context
     context.activeCamera->SetProjection(Rtrc::Deg2Rad(60), GetWindow().GetFramebufferWOverH(), 0.1f, 100.0f);
     context.activeCamera->CalculateDerivedData();
 
+    auto &renderSettings = GetRenderSettings();
     if(imgui.Begin("Rtrc Standalone Renderer", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
         imgui.Text("Press F1 to show/hide cursor");
+        if(IsGPUCapturerAvailable())
+        {
+            imgui.Text("Press F10 to capture one frame");
+        }
+
         imgui.SliderAngle("Sun Direction", &sunAngle_, 1, 179);
         sunAngle_ = std::clamp(sunAngle_, Rtrc::Deg2Rad(1), Rtrc::Deg2Rad(179));
 
@@ -85,18 +96,24 @@ void StandaloneApplication::Update(const Rtrc::ApplicationUpdateContext &context
             pointLight_->SetSoftness(shadowSoftness);
         }
 
-        imgui.CheckBox("Indirect Diffuse", &GetRenderSettings().enableIndirectDiffuse);
+        imgui.DragUInt("ReSTIR M", &renderSettings.ReSTIR_M, 1, 512);
+        imgui.DragUInt("ReSTIR Max M", &renderSettings.ReSTIR_MaxM, 1, 512);
+        imgui.DragUInt("ReSTIR N", &renderSettings.ReSTIR_N, 1, 512);
+        imgui.DragFloat("ReSTIR Radius", &renderSettings.ReSTIR_Radius, 1, 0, 512);
+        imgui.CheckBox("ReSTIR Enable Temporal Reuse", &renderSettings.ReSTIR_EnableTemporalReuse);
 
-        if(imgui.BeginCombo("Visualization Mode", GetVisualizationModeName(GetRenderSettings().visualizationMode)))
+        imgui.CheckBox("Indirect Diffuse", &renderSettings.enableIndirectDiffuse);
+
+        if(imgui.BeginCombo("Visualization Mode", GetVisualizationModeName(renderSettings.visualizationMode)))
         {
             for(int i = 0; i < Rtrc::EnumCount<Rtrc::Renderer::VisualizationMode>; ++i)
             {
                 const auto mode = static_cast<Rtrc::Renderer::VisualizationMode>(i);
                 const char *name = GetVisualizationModeName(mode);
-                const bool selected = GetRenderSettings().visualizationMode == mode;
+                const bool selected = renderSettings.visualizationMode == mode;
                 if(imgui.Selectable(name, selected))
                 {
-                    GetRenderSettings().visualizationMode = mode;
+                    renderSettings.visualizationMode = mode;
                 }
             }
             imgui.EndCombo();

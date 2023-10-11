@@ -65,7 +65,7 @@ float3 Resolve(uint2 tid)
     if(rayQuery.CommittedStatus() == COMMITTED_TRIANGLE_HIT)
         f = 0;
     
-    f *= r.W();
+    f *= r.W;
     return f;
 }
 

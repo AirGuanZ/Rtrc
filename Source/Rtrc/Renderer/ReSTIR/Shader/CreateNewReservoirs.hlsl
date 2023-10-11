@@ -55,6 +55,7 @@ void CSMain(uint2 tid : SV_DispatchThreadID)
     RayDesc ray;
     ray.Origin = worldPos + 4e-3 * gpixel.normal;
     ray.TMin = 0;
+    float finalPBar = 0;
     for(uint i = 0; i < Pass.M; ++i)
     {
         const uint lightIndex = pcgSampler.NextUInt() % Pass.lightCount;
@@ -70,8 +71,9 @@ void CSMain(uint2 tid : SV_DispatchThreadID)
             ReservoirData data;
             data.lightIndex = lightIndex;
             data.lightUV = lightUV;
-            if(r.Update(data, w, pbar, pcgSampler.NextFloat()))
+            if(r.Update(data, w, pcgSampler.NextFloat()))
             {
+                finalPBar = pbar;
                 if(light.type == LIGHT_SHADING_DATA_TYPE_DIRECTION)
                 {
                     ray.Direction = positionOnLight;
@@ -93,8 +95,12 @@ void CSMain(uint2 tid : SV_DispatchThreadID)
         rayQuery.TraceRayInline(Scene, RAY_FLAG_NONE, 0xff, ray);
         rayQuery.Proceed();
         if(rayQuery.CommittedStatus() == COMMITTED_TRIANGLE_HIT)
-            r.wsum = 0;
+            r.W = 0;
+        else
+            r.W = 1 / finalPBar * (1.0 / r.M) * r.wsum;
     }
+    else
+        r.W = 0;
 
     OutputTextureRW[tid] = r.GetEncodedState();
     PcgStateTextureRW[tid] = pcgSampler.GetState();

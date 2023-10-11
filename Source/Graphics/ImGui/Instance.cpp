@@ -922,6 +922,15 @@ bool ImGuiInstance::DragInt4(const char *label, Vector4i *v, float vSpeed, int v
     return DragInt4(label, &v->x, vSpeed, vMin, vMax, format, flags);
 }
 
+bool ImGuiInstance::DragUInt(const char *label, unsigned *v, float vSpeed, int vMax, const char *format, ImGuiSliderFlags flags)
+{
+    IMGUI_CONTEXT;
+    int vbar = *v;
+    const bool ret = DragInt(label, &vbar, vSpeed, 0, vMax, format, flags);
+    *v = vbar;
+    return ret;
+}
+
 bool ImGuiInstance::DragFloatRange2(const char *label, float *currMin, float *currMax, float vSpeed, float vMin, float vMax, const char *format, const char *formatMax, ImGuiSliderFlags flags)
 {
     IMGUI_CONTEXT;

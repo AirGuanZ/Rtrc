@@ -10,6 +10,7 @@
 /External/mcpp-2.7.2
 /.xmake/
 /vsxmake2022/
+/GPUCapture.wpix
 *.shader.outh
 *.material.outh
 *.outh.timestamp

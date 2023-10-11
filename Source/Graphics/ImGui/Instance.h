@@ -128,6 +128,8 @@ public:
     bool DragInt3(const char *label, Vector3i *v, float vSpeed = 1.0f, int vMin = 0, int vMax = 0, const char *format = "%d", ImGuiSliderFlags flags = 0);
     bool DragInt4(const char *label, Vector4i *v, float vSpeed = 1.0f, int vMin = 0, int vMax = 0, const char *format = "%d", ImGuiSliderFlags flags = 0);
 
+    bool DragUInt (const char *label, unsigned *v, float vSpeed = 1.0f, int vMax = 0, const char *format = "%d", ImGuiSliderFlags flags = 0);
+
     bool DragFloatRange2(const char *label, float *currMin, float *currMax, float vSpeed = 1.0f, float vMin = 0.0f, float vMax = 0.0f, const char *format = "%.3f", const char *formatMax = nullptr, ImGuiSliderFlags flags = 0);
     bool DragIntRange2  (const char *label, int   *currMin, int   *currMax, float vSpeed = 1.0f, int   vMin = 0.0f, int   vMax = 0.0f, const char *format = "%.3f", const char *formatMax = nullptr, ImGuiSliderFlags flags = 0);
 

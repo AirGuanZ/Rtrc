@@ -5,7 +5,7 @@
 
 typedef Rtrc::Renderer::ReSTIRDetail::LightShadingData LightShadingData;
 
-#define PI 3.1415926
+static const float PI = 3.1415926;
 
 #define LIGHT_SHADING_DATA_TYPE_DIRECTION 0
 #define LIGHT_SHADING_DATA_TYPE_POINT     1
@@ -26,7 +26,7 @@ float3 ShadeNoVisibility(float3 position, float3 normal, LightShadingData light,
         const float radius = light.softness;
         const float3 p = light.position + radius * us;
         direction = normalize(p - position);
-        const float s = dot(direction, us);
+        const float s = dot(-direction, us);
         if(s > 1e-3)
         {
             const float dist = max(length(p - position), 1e-3);

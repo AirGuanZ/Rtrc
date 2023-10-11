@@ -16,6 +16,12 @@ rtrc_shader("ReSTIR/TemporalReuse")
     #include "./TemporalReuse.hlsl"
 }
 
+rtrc_shader("ReSTIR/SpatialReuse")
+{
+    rtrc_comp(CSMain)
+    #include "./SpatialReuse.hlsl"
+}
+
 rtrc_shader("ReSTIR/Resolve")
 {
     rtrc_comp(CSMain)

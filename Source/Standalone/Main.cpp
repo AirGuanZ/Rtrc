@@ -7,14 +7,15 @@ int main()
     {
         StandaloneApplication().Run(
         {
-            .title       = "Rtrc Standalone Renderer",
-            .width       = 640,
-            .height      = 480,
-            .maximized   = true,
-            .vsync       = true,
-            .debug       = RTRC_DEBUG,
-            .rayTracing  = true,
-            .backendType = Rtrc::RHI::BackendType::Default
+            .title             = "Rtrc Standalone Renderer",
+            .width             = 640,
+            .height            = 480,
+            .maximized         = true,
+            .vsync             = true,
+            .debug             = RTRC_DEBUG,
+            .rayTracing        = true,
+            .backendType       = Rtrc::RHI::BackendType::Default,
+            .enableGPUCapturer = false
         });
     }
     catch(const Rtrc::Exception &e)

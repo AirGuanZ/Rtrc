@@ -42,6 +42,13 @@ void Application::Run(const Config &config)
         deviceFlags |= Device::EnableRayTracing;
     }
 
+    if(config.enableGPUCapturer)
+    {
+#if RTRC_PIX_CAPTURER
+        gpuCapturer_ = RHI::CreatePIXCapturer();
+#endif
+    }
+
     device_ = Device::CreateGraphicsDevice(
         window_,
         config.backendType,
@@ -170,6 +177,19 @@ void Application::UpdateLoop()
         };
         Update(updateContext);
 
+        if(!isCapturing_ && pendingGPUCaptureFrames_)
+        {
+            device_->WaitIdle();
+            isCapturing_ = true;
+            if(gpuCapturer_)
+            {
+                if(!gpuCapturer_->Begin(gpuCaptureOutputPrefix_))
+                {
+                    LogWarning("Fail to begin gpu capture");
+                }
+            }
+        }
+
         // Send render command
 
         renderLoop_->SetRenderSettings(activeRenderSettings_);
@@ -182,6 +202,18 @@ void Application::UpdateLoop()
         frameInput.camera = &activeCamera_;
         frameInput.imguiDrawData = imguiDrawData.get();
         renderLoop_->RenderFrame(frameInput);
+
+        if(isCapturing_ && !--pendingGPUCaptureFrames_)
+        {
+            isCapturing_ = false;
+            if(gpuCapturer_)
+            {
+                if(!gpuCapturer_->End())
+                {
+                    LogWarning("Fail to end gpu capture");
+                }
+            }
+        }
     }
 }
 

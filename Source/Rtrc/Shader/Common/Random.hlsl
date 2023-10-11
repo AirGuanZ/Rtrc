@@ -15,7 +15,7 @@ namespace Distribution
         float r = sqrt(max(0.0, 1.0 - z * z));
         float x = r * cos(phi);
         float y = r * sin(phi);
-        return float3(x, y, z);
+        return float3(y, z, x);
     }
 
     float3 UniformOnUnitHemisphere(float2 uv)
@@ -61,6 +61,13 @@ namespace Distribution
         return ZWeightedOnHemisphere(uv, pdf);
     }
 
+    float2 UniformOnUnitDisk(float2 uv)
+    {
+        const float phi = uv.x * 2 * PI;
+        const float r = sqrt(uv.y);
+        return r * float2(cos(phi), sin(phi));
+    }
+
 } // namespace Distribution
 
 namespace Pcg
@@ -101,6 +108,13 @@ namespace Pcg
         return Distribution::UniformOnUnitHemisphere(float2(u, v));
     }
 
+    float2 NextUniformOnUnitDisk(inout uint state)
+    {
+        float u = NextFloat(state);
+        float v = NextFloat(state);
+        return Distribution::UniformOnUnitDisk(float2(u, v));
+    }
+
     struct Sampler
     {
         uint state_;
@@ -114,6 +128,7 @@ namespace Pcg
 
         float3 NextUniformOnUnitSphere() { return Pcg::NextUniformOnUnitSphere(state_); }
         float3 NextUniformOnUnitHemisphere() { return Pcg::NextUniformOnUnitHemisphere(state_); }
+        float2 NextUniformOnUnitDisk() { return Pcg::NextUniformOnUnitDisk(state_); }
 
         float3 NextUniformOnUnitHemisphere(float3 normal)
         {

@@ -24,10 +24,12 @@ rtrc_push_constant(PerObject, All)
 };
 
 #if ENABLE_INSTANCE
-#define DefineInstanceID()            uint instanceID : SV_InstanceID
-#define TransferInstanceID(IN, OUT)   OUT.instanceID = IN.instanceID
-#define GetInstancedPerObjectData(IN) (PerObjectDataBuffer[rtrc_get_push_constant(PerObject, dataOffset) + IN.instanceID])
+#define DefineInstanceIDWithCustomSemantic(SEMANTIC) uint instanceID : SEMANTIC
+#define DefineInstanceID()                           DefineInstanceIDWithCustomSemantic(SV_InstanceID)
+#define TransferInstanceID(IN, OUT)                  OUT.instanceID = IN.instanceID
+#define GetInstancedPerObjectData(IN)                (PerObjectDataBuffer[rtrc_get_push_constant(PerObject, dataOffset) + IN.instanceID])
 #else
+#define DefineInstanceIDWithCustomSemantic(SEMANTIC)
 #define DefineInstanceID()
 #define TransferInstanceID(IN, OUT)
 #define GetInstancedPerObjectData(IN) (PerObjectDataBuffer[rtrc_get_push_constant(PerObject, dataOffset)])

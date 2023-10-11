@@ -51,7 +51,7 @@ public:
     const RC<SubBuffer> &GetIndexBuffer() const { return indexBuffer_; }
     RHI::IndexFormat     GetIndexFormat() const { return indexFormat_; }
 
-    uint32_t GetPrimitiveCount() const { return indexCount_ / 3; }
+    uint32_t GetPrimitiveCount() const { return (indexCount_ ? indexCount_ : vertexCount_) / 3; }
 
     AABB3f GetBoundingBox() const { return bound_; }
 

@@ -68,6 +68,31 @@ namespace ReSTIRDetail
 
 } // namespace ReSTIRDetail
 
+void ReSTIR::SetM(unsigned M)
+{
+    M_ = std::min(M, 512u);
+}
+
+void ReSTIR::SetMaxM(unsigned maxM)
+{
+    maxM_ = std::min(maxM, 512u);
+}
+
+void ReSTIR::SetN(unsigned N)
+{
+    N_ = std::min(N, 512u);
+}
+
+void ReSTIR::SetRadius(float radius)
+{
+    radius_ = std::max(radius, 0.0f);
+}
+
+void ReSTIR::SetEnableTemporalReuse(bool value)
+{
+    enableTemporalReuse_ = value;
+}
+
 void ReSTIR::Render(RenderCamera &renderCamera, RG::RenderGraph &renderGraph, const GBuffers &gbuffers)
 {
     RTRC_RG_SCOPED_PASS_GROUP(renderGraph, "ReSTIR");
@@ -99,7 +124,9 @@ void ReSTIR::Render(RenderCamera &renderCamera, RG::RenderGraph &renderGraph, co
             .height = framebufferSize.y,
             .usage  = RHI::TextureUsage::ShaderResource | RHI::TextureUsage::UnorderAccess
         });
+        data.prevReservoirs->SetName("PersistentReservoirsA");
         data.currReservoirs = device_->CreatePooledTexture(data.prevReservoirs->GetDesc());
+        data.currReservoirs->SetName("PersistentReservoirsB");
     }
     auto prevReservoirs = renderGraph.RegisterTexture(data.prevReservoirs);
     auto currReservoirs = renderGraph.RegisterTexture(data.currReservoirs);
@@ -145,16 +172,17 @@ void ReSTIR::Render(RenderCamera &renderCamera, RG::RenderGraph &renderGraph, co
 
     // Create new reservoirs
 
+    auto newReservoirs = renderGraph.CreateTexture(prevReservoirs->GetDesc(), "NewReservoirs");
     if(lightShadingData.empty())
     {
         StaticShaderInfo<"ReSTIR/ClearNewReservoirs">::Variant::Pass passData;
-        passData.OutputTextureRW           = currReservoirs;
+        passData.OutputTextureRW           = newReservoirs;
         passData.OutputTextureRW.writeOnly = true;
-        passData.outputResolution          = currReservoirs->GetSize();
+        passData.outputResolution          = newReservoirs->GetSize();
         renderGraph.CreateComputePassWithThreadCount(
             "ClearNewReservoirs",
             resources_->GetMaterialManager()->GetCachedShader<"ReSTIR/ClearNewReservoirs">(),
-            currReservoirs->GetSize(),
+            newReservoirs->GetSize(),
             passData);
     }
     else
@@ -166,14 +194,14 @@ void ReSTIR::Render(RenderCamera &renderCamera, RG::RenderGraph &renderGraph, co
         passData.LightShadingDataBuffer    = lightBuffer;
         passData.lightCount                = renderScene.GetScene().GetLightCount();
         passData.PcgStateTextureRW         = pcgState;
-        passData.OutputTextureRW           = currReservoirs;
+        passData.OutputTextureRW           = newReservoirs;
         passData.OutputTextureRW.writeOnly = true;
-        passData.outputResolution          = currReservoirs->GetSize();
+        passData.outputResolution          = newReservoirs->GetSize();
         passData.M                         = M_;
         renderGraph.CreateComputePassWithThreadCount(
             "CreateNewReservoirs",
             resources_->GetMaterialManager()->GetCachedShader<"ReSTIR/CreateNewReservoirs">(),
-            currReservoirs->GetSize(),
+            newReservoirs->GetSize(),
             passData);
     }
 
@@ -188,23 +216,46 @@ void ReSTIR::Render(RenderCamera &renderCamera, RG::RenderGraph &renderGraph, co
         passData.PrevCamera             = renderCamera.GetPreviousCameraCBuffer();
         passData.CurrCamera             = renderCamera.GetCameraCBuffer();
         passData.LightShadingDataBuffer = lightBuffer;
-        passData.HistoryReservoirs      = prevReservoirs;
-        passData.NewReservoirs          = currReservoirs;
+        passData.PrevReservoirs         = prevReservoirs;
+        passData.CurrReservoirs         = currReservoirs;
+        passData.NewReservoirs          = newReservoirs;
         passData.PcgState               = pcgState;
         passData.maxM                   = maxM_;
-        passData.resolution             = currReservoirs->GetSize();
+        passData.resolution             = newReservoirs->GetSize();
         renderGraph.CreateComputePassWithThreadCount(
             "TemporalReuse",
             resources_->GetMaterialManager()->GetCachedShader<"ReSTIR/TemporalReuse">(),
-            currReservoirs->GetSize(),
+            newReservoirs->GetSize(),
             passData);
     }
 
     // Spatial reuse
 
-    if(!lightShadingData.empty())
+    auto finalReservoirs = currReservoirs;
+    if(!lightShadingData.empty() && N_ > 0 && radius_ > 0)
     {
-        // TODO
+        auto reservoirsA = currReservoirs;
+        auto reservoirsB = renderGraph.CreateTexture(currReservoirs->GetDesc(), "TempReservoirs");
+
+        StaticShaderInfo<"ReSTIR/SpatialReuse">::Variant::Pass passData;
+        passData.Camera                 = renderCamera.GetCameraCBuffer();
+        passData.Depth                  = gbuffers.currDepth;
+        passData.Normal                 = gbuffers.normal;
+        passData.LightShadingDataBuffer = lightBuffer;
+        passData.InputReservoirs        = reservoirsA;
+        passData.OutputReservoirs       = reservoirsB;
+        passData.PcgState               = pcgState;
+        passData.resolution             = reservoirsA->GetSize();
+        passData.N                      = N_;
+        passData.maxM                   = maxM_;
+        passData.radius                 = radius_;
+        renderGraph.CreateComputePassWithThreadCount(
+            "SpatialReuse",
+            resources_->GetMaterialManager()->GetCachedShader<"ReSTIR/SpatialReuse">(),
+            reservoirsA->GetSize(),
+            passData);
+
+        finalReservoirs = reservoirsB;
     }
 
     // Resolve final result
@@ -224,7 +275,7 @@ void ReSTIR::Render(RenderCamera &renderCamera, RG::RenderGraph &renderGraph, co
         passData.Camera                 = renderCamera.GetCameraCBuffer();
         passData.Scene                  = renderScene.GetTlas();
         passData.LightShadingDataBuffer = lightBuffer;
-        passData.Reservoirs             = currReservoirs;
+        passData.Reservoirs             = finalReservoirs;
         passData.Output                 = data.directIllum;
         passData.Output.writeOnly       = true;
         passData.outputResolution       = data.directIllum->GetSize();

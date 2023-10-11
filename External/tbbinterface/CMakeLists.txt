@@ -14,7 +14,7 @@ add_custom_target(
 	CopyTBBDlls
 	DEPENDS "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<IF:$<CONFIG:Debug>,Debug,Release>/tbb12$<$<CONFIG:Debug>:_debug>.dll")
 	
-find_package(TBB REQUIRED tbb PATHS "${CMAKE_CURRENT_SOURCE_DIR}/oneapi-tbb-2021.10.0/lib/cmake/tbb")
+find_package(TBB REQUIRED tbb PATHS "${CMAKE_CURRENT_SOURCE_DIR}/../oneapi-tbb-2021.10.0/lib/cmake/tbb")
 
 add_library(tbbinterface INTERFACE)
 target_link_libraries(tbbinterface INTERFACE TBB::tbb)

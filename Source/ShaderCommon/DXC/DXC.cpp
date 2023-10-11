@@ -38,9 +38,9 @@ using Microsoft::WRL::ComPtr;
 
 struct DXC::Impl
 {
-    ComPtr<IDxcUtils>           utils;
-    ComPtr<IDxcCompiler3>       compiler;
-    ComPtr<IDxcIncludeHandler>  defaultHandler;
+    ComPtr<IDxcUtils>          utils;
+    ComPtr<IDxcCompiler3>      compiler;
+    ComPtr<IDxcIncludeHandler> defaultHandler;
 };
 
 DXC::DXC()
@@ -175,8 +175,10 @@ std::vector<unsigned char> DXC::Compile(
         if(isVulkan)
         {
             arguments.push_back(L"-O0");
-            arguments.push_back(L"-fspv-extension=SPV_KHR_non_semantic_info");
-            arguments.push_back(L"-fspv-debug=vulkan-with-source");
+
+            // Temporarily disable debug info for vulkan shader to work around ice of dxc
+            // arguments.push_back(L"-fspv-extension=SPV_KHR_non_semantic_info");
+            // arguments.push_back(L"-fspv-debug=vulkan-with-source");
         }
         else
         {

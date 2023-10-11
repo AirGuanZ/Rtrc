@@ -18,48 +18,42 @@ struct Reservoir
         data.lightUV = 0;
         wsum = 0;
         M = 0;
-        pbar = 0;
+        W = 0;
     }
 
     void SetEncodedState(uint4 state)
     {
-        data.lightIndex = state.x;
+        data.lightIndex = state.x >> 16;
         data.lightUV.x = f16tof32(state.y >> 16);
         data.lightUV.y = f16tof32(state.y & 0xffff);
+        M = state.x & 0xffff;
         wsum = asfloat(state.z);
-        M = state.w >> 16;
-        pbar = f16tof32(state.w & 0xffff);
+        W = asfloat(state.w);
     }
 
     uint4 GetEncodedState()
     {
         uint4 ret;
-        ret.x = data.lightIndex;
+        ret.x = (data.lightIndex << 16) | M;
         ret.y = (f32tof16(data.lightUV.x) << 16) | f32tof16(data.lightUV.y);
         ret.z = asuint(wsum);
-        ret.w = (M << 16) | f32tof16(pbar);
+        ret.w = asuint(W);
         return ret;
     }
 
-    bool Update(ReservoirData newData, float weight, float newPBar, float rand01)
+    bool Update(ReservoirData newData, float weight, float rand01)
     {
         wsum += weight;
         if(rand01 < weight / wsum)
         {
             data = newData;
-            pbar = newPBar;
             return true;
         }
         return false;
     }
 
-    float W()
-    {
-        return (1.0 / pbar) * (1.0 / M) * wsum;
-    }
-
     ReservoirData data;
     float wsum;
     uint M;
-    float pbar;
+    float W;
 };
