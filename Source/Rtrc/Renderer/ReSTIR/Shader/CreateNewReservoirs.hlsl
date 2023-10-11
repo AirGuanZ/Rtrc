@@ -15,6 +15,7 @@ rtrc_group(Pass, CS)
     rtrc_define(ConstantBuffer<CameraData>, Camera)
     rtrc_define(RaytracingAccelerationStructure, Scene)
 
+    rtrc_define(Texture2D<float3>, Sky)
     rtrc_define(StructuredBuffer<LightShadingData>, LightShadingDataBuffer)
     rtrc_uniform(uint, lightCount)
 
@@ -58,12 +59,23 @@ void CSMain(uint2 tid : SV_DispatchThreadID)
     float finalPBar = 0;
     for(uint i = 0; i < Pass.M; ++i)
     {
-        const uint lightIndex = pcgSampler.NextUInt() % Pass.lightCount;
-        const LightShadingData light = LightShadingDataBuffer[lightIndex];
+        const uint lightIndex = pcgSampler.NextUInt() % (Pass.lightCount + 1);
         const float2 lightUV = pcgSampler.NextFloat2();
-        const float p = 1.0 / Pass.lightCount;
-        float3 positionOnLight;
-        const float3 L = ShadeNoVisibility(worldPos, gpixel.normal, light, lightUV, positionOnLight);
+        const float p = 1.0 / (Pass.lightCount + 1);
+
+        float3 L, lightSampleGeometry; bool isLightSampleGeometryDirection;
+        if(lightIndex < Pass.lightCount)
+        {
+            const LightShadingData light = LightShadingDataBuffer[lightIndex];
+            isLightSampleGeometryDirection = light.type == LIGHT_SHADING_DATA_TYPE_DIRECTION;
+            L = ShadeLightNoVisibility(worldPos, gpixel.normal, light, lightUV, lightSampleGeometry);
+        }
+        else
+        {
+            isLightSampleGeometryDirection = true;
+            L = ShadeSkyNoVisibility(worldPos, gpixel.normal, Sky, lightUV, lightSampleGeometry);
+        }
+
         const float pbar = RelativeLuminance(L);
         const float w = pbar / p;
         if(w > 0)
@@ -74,14 +86,14 @@ void CSMain(uint2 tid : SV_DispatchThreadID)
             if(r.Update(data, w, pcgSampler.NextFloat()))
             {
                 finalPBar = pbar;
-                if(light.type == LIGHT_SHADING_DATA_TYPE_DIRECTION)
+                if(isLightSampleGeometryDirection)
                 {
-                    ray.Direction = positionOnLight;
-                    ray.TMax= 1e5;
+                    ray.Direction = lightSampleGeometry;
+                    ray.TMax= 1000;
                 }
                 else
                 {
-                    ray.Direction = positionOnLight - ray.Origin;
+                    ray.Direction = lightSampleGeometry - ray.Origin;
                     ray.TMax = 1;
                 }
             }

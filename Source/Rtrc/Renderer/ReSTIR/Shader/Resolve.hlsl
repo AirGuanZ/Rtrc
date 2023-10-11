@@ -11,6 +11,7 @@ rtrc_group(Pass)
     REF_GBUFFERS(CS)
 
     rtrc_define(ConstantBuffer<CameraData>, Camera)
+    rtrc_define(Texture2D<float3>, Sky)
     rtrc_define(RaytracingAccelerationStructure, Scene)
     
     rtrc_define(StructuredBuffer<LightShadingData>, LightShadingDataBuffer)
@@ -18,6 +19,7 @@ rtrc_group(Pass)
 
     rtrc_define(RWTexture2D<float4>, Output)
     rtrc_uniform(uint2, outputResolution)
+    rtrc_uniform(uint, lightCount)
 };
 
 float3 Resolve(uint2 tid)
@@ -39,23 +41,33 @@ float3 Resolve(uint2 tid)
     const float viewZ = CameraUtils::DeviceZToViewZ(Camera, gpixel.depth);
     const float3 worldPos = viewZ * worldRay + Camera.position;
 
-    const LightShadingData light = LightShadingDataBuffer[r.data.lightIndex];
-    float3 positionOnLight;
-    float3 f = ShadeNoVisibility(worldPos, gpixel.normal, light, r.data.lightUV, positionOnLight);
+    float3 f, lightSampleGeometry; bool isLightSampleGeometryDirection;
+    if(r.data.lightIndex < Pass.lightCount)
+    {
+        const LightShadingData light = LightShadingDataBuffer[r.data.lightIndex];
+        isLightSampleGeometryDirection = light.type == LIGHT_SHADING_DATA_TYPE_DIRECTION;
+        f = ShadeLightNoVisibility(worldPos, gpixel.normal, light, r.data.lightUV, lightSampleGeometry);
+    }
+    else
+    {
+        isLightSampleGeometryDirection = true;
+        f = ShadeSkyNoVisibility(worldPos, gpixel.normal, Sky, r.data.lightUV, lightSampleGeometry);
+    }
+
     if(all(f <= 0))
         return 0;
 
     RayDesc ray;
     ray.Origin = worldPos + 4e-3 * gpixel.normal;
     ray.TMin = 0;
-    if(light.type == LIGHT_SHADING_DATA_TYPE_DIRECTION)
+    if(isLightSampleGeometryDirection)
     {
-        ray.Direction = positionOnLight;
+        ray.Direction = lightSampleGeometry;
         ray.TMax = 1e5;
     }
     else
     {
-        ray.Direction = positionOnLight - ray.Origin;
+        ray.Direction = lightSampleGeometry - ray.Origin;
         ray.TMax = 1;
     }
     

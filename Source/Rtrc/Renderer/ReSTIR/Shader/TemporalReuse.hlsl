@@ -13,6 +13,8 @@ rtrc_group(Pass, CS)
 {
     REF_GBUFFERS(CS)
 
+    rtrc_define(Texture2D<float3>, Sky)
+
     rtrc_define(Texture2D<float>, PrevDepth)
     rtrc_define(Texture2D<float>, CurrDepth)
 
@@ -28,6 +30,7 @@ rtrc_group(Pass, CS)
     rtrc_define(RWTexture2D<uint>, PcgState)
 
     rtrc_uniform(uint, maxM)
+    rtrc_uniform(uint, lightCount)
     rtrc_uniform(uint2, resolution)
 };
 
@@ -75,10 +78,17 @@ uint4 Reuse(uint2 tid, float deviceZ, float2 uv)
 
     Pcg::Sampler pcgSampler;
     pcgSampler.SetState(PcgState[tid]);
-
-    const LightShadingData prevLightData = LightShadingDataBuffer[prevR.data.lightIndex];
+    
     const float3 normal = LoadGBufferNormal(uv);
-    const float3 reshade = ShadeNoVisibility(worldPos, normal, prevLightData, prevR.data.lightUV);
+
+    float3 reshade;
+    if(prevR.data.lightIndex < Pass.lightCount)
+    {
+        const LightShadingData prevLightData = LightShadingDataBuffer[prevR.data.lightIndex];
+        reshade = ShadeLightNoVisibility(worldPos, normal, prevLightData, prevR.data.lightUV);
+    }
+    else
+        reshade = ShadeSkyNoVisibility(worldPos, normal, Sky, prevR.data.lightUV);
     const float reshadePBar = RelativeLuminance(reshade);
     
     float finalPBar;

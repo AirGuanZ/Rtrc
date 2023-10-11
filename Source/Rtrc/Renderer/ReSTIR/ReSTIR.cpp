@@ -100,6 +100,7 @@ void ReSTIR::Render(RenderCamera &renderCamera, RG::RenderGraph &renderGraph, co
     PerCameraData &data = renderCamera.GetReSTIRData();
     const RenderScene &renderScene = renderCamera.GetScene();
     const Scene &scene = renderScene.GetScene();
+    auto sky = renderCamera.GetAtmosphereData().S;
 
     // Setup rng states && reservoirs
 
@@ -144,6 +145,7 @@ void ReSTIR::Render(RenderCamera &renderCamera, RG::RenderGraph &renderGraph, co
     {
         lightShadingData.push_back(ReSTIRDetail::ExtractLightShadingData(light));
     });
+    const int lightCount = scene.GetLightCount();
 
     RC<Buffer> lightBuffer;
     if(lightShadingData.empty())
@@ -190,9 +192,10 @@ void ReSTIR::Render(RenderCamera &renderCamera, RG::RenderGraph &renderGraph, co
         StaticShaderInfo<"ReSTIR/CreateNewReservoirs">::Variant::Pass passData;
         FillBindingGroupGBuffers(passData, gbuffers);
         passData.Camera                    = renderCamera.GetCameraCBuffer();
+        passData.Sky                       = sky;
         passData.Scene                     = renderScene.GetTlas();
         passData.LightShadingDataBuffer    = lightBuffer;
-        passData.lightCount                = renderScene.GetScene().GetLightCount();
+        passData.lightCount                = lightCount;
         passData.PcgStateTextureRW         = pcgState;
         passData.OutputTextureRW           = newReservoirs;
         passData.OutputTextureRW.writeOnly = true;
@@ -211,6 +214,7 @@ void ReSTIR::Render(RenderCamera &renderCamera, RG::RenderGraph &renderGraph, co
     {
         StaticShaderInfo<"ReSTIR/TemporalReuse">::Variant::Pass passData;
         FillBindingGroupGBuffers(passData, gbuffers);
+        passData.Sky                    = sky;
         passData.PrevDepth              = gbuffers.prevDepth ? gbuffers.prevDepth : gbuffers.currDepth;
         passData.CurrDepth              = gbuffers.currDepth;
         passData.PrevCamera             = renderCamera.GetPreviousCameraCBuffer();
@@ -222,6 +226,7 @@ void ReSTIR::Render(RenderCamera &renderCamera, RG::RenderGraph &renderGraph, co
         passData.PcgState               = pcgState;
         passData.maxM                   = maxM_;
         passData.resolution             = newReservoirs->GetSize();
+        passData.lightCount             = lightCount;
         renderGraph.CreateComputePassWithThreadCount(
             "TemporalReuse",
             resources_->GetMaterialManager()->GetCachedShader<"ReSTIR/TemporalReuse">(),
@@ -239,6 +244,7 @@ void ReSTIR::Render(RenderCamera &renderCamera, RG::RenderGraph &renderGraph, co
 
         StaticShaderInfo<"ReSTIR/SpatialReuse">::Variant::Pass passData;
         passData.Camera                 = renderCamera.GetCameraCBuffer();
+        passData.Sky                    = sky;
         passData.Depth                  = gbuffers.currDepth;
         passData.Normal                 = gbuffers.normal;
         passData.LightShadingDataBuffer = lightBuffer;
@@ -249,6 +255,7 @@ void ReSTIR::Render(RenderCamera &renderCamera, RG::RenderGraph &renderGraph, co
         passData.N                      = N_;
         passData.maxM                   = maxM_;
         passData.radius                 = radius_;
+        passData.lightCount             = lightCount;
         renderGraph.CreateComputePassWithThreadCount(
             "SpatialReuse",
             resources_->GetMaterialManager()->GetCachedShader<"ReSTIR/SpatialReuse">(),
@@ -260,6 +267,7 @@ void ReSTIR::Render(RenderCamera &renderCamera, RG::RenderGraph &renderGraph, co
 
     // Resolve final result
 
+    assert(!data.directIllum);
     data.directIllum = renderGraph.CreateTexture(RHI::TextureDesc
     {
         .dim    = RHI::TextureDimension::Tex2D,
@@ -273,12 +281,14 @@ void ReSTIR::Render(RenderCamera &renderCamera, RG::RenderGraph &renderGraph, co
         StaticShaderInfo<"ReSTIR/Resolve">::Variant::Pass passData;
         FillBindingGroupGBuffers(passData, gbuffers);
         passData.Camera                 = renderCamera.GetCameraCBuffer();
+        passData.Sky                    = sky;
         passData.Scene                  = renderScene.GetTlas();
         passData.LightShadingDataBuffer = lightBuffer;
         passData.Reservoirs             = finalReservoirs;
         passData.Output                 = data.directIllum;
         passData.Output.writeOnly       = true;
         passData.outputResolution       = data.directIllum->GetSize();
+        passData.lightCount             = lightCount;
         renderGraph.CreateComputePassWithThreadCount(
             "Resolve",
             resources_->GetMaterialManager()->GetCachedShader<"ReSTIR/Resolve">(),

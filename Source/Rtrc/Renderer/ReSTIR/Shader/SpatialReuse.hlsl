@@ -9,6 +9,7 @@
 rtrc_group(Pass, CS)
 {
     rtrc_define(ConstantBuffer<CameraData>, Camera)
+    rtrc_define(Texture2D<float3>, Sky)
 
     rtrc_define(Texture2D<float>, Depth)
     rtrc_define(Texture2D<float3>, Normal)
@@ -24,6 +25,7 @@ rtrc_group(Pass, CS)
     rtrc_uniform(uint, N)
     rtrc_uniform(uint, maxM)
     rtrc_uniform(float, radius)
+    rtrc_uniform(uint, lightCount)
 };
 
 [numthreads(8, 8, 1)]
@@ -78,8 +80,14 @@ void CSMain(uint2 tid : SV_DispatchThreadID)
         if(!sR.M || sR.wsum <= 1e-3 || sR.W <= 1e-3)
             continue;
 
-        const LightShadingData light = LightShadingDataBuffer[sR.data.lightIndex];
-        const float3 reshade = ShadeNoVisibility(worldPos, normal, light, sR.data.lightUV);
+        float3 reshade;
+        if(sR.data.lightIndex < Pass.lightCount)
+        {
+            const LightShadingData light = LightShadingDataBuffer[sR.data.lightIndex];
+            reshade = ShadeLightNoVisibility(worldPos, normal, light, sR.data.lightUV);
+        }
+        else
+            reshade = ShadeSkyNoVisibility(worldPos, normal, Sky, sR.data.lightUV);
         const float reshadePBar = RelativeLuminance(reshade);
 
         if(r.Update(sR.data, reshadePBar * sR.W * sR.M, pcgSampler.NextFloat()))
