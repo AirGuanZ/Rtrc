@@ -205,6 +205,7 @@ void Application::UpdateLoop()
 
         if(isCapturing_ && !--pendingGPUCaptureFrames_)
         {
+            device_->WaitIdle();
             isCapturing_ = false;
             if(gpuCapturer_)
             {

@@ -80,14 +80,14 @@ void CSMain(uint2 tid : SV_DispatchThreadID)
         if(!sR.M || sR.wsum <= 1e-3 || sR.W <= 1e-3)
             continue;
 
-        float3 reshade;
+        float3 reshade, lightSampleGeometry;
         if(sR.data.lightIndex < Pass.lightCount)
         {
             const LightShadingData light = LightShadingDataBuffer[sR.data.lightIndex];
-            reshade = ShadeLightNoVisibility(worldPos, normal, light, sR.data.lightUV);
+            reshade = ShadeLightNoVisibility(worldPos, normal, light, sR.data.lightUV, lightSampleGeometry);
         }
         else
-            reshade = ShadeSkyNoVisibility(worldPos, normal, Sky, sR.data.lightUV);
+            reshade = ShadeSkyNoVisibility(worldPos, normal, Sky, sR.data.lightUV, lightSampleGeometry);
         const float reshadePBar = RelativeLuminance(reshade);
 
         if(r.Update(sR.data, reshadePBar * sR.W * sR.M, pcgSampler.NextFloat()))

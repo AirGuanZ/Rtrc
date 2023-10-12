@@ -163,24 +163,27 @@ void RenderLoop::RenderFrameImpl(const FrameInput &frame)
     
     // ============= Blit =============
 
+    const bool blitUsePointSampling = framebuffer->GetSize() == swapchainImage->GetSize();
     if(renderSettings_.visualizationMode == VisualizationMode::IndirectDiffuse)
     {
-        renderGraph->CreateBlitTexture2DPass("DisplayIndirectDiffuse", indirectDiffuse, swapchainImage, true, 1 / 2.2f);
+        renderGraph->CreateBlitTexture2DPass(
+            "DisplayIndirectDiffuse", indirectDiffuse, swapchainImage, blitUsePointSampling, 1 / 2.2f);
     }
     else if(renderSettings_.visualizationMode == VisualizationMode::Normal)
     {
         gbufferVisualizer_->Render(GBufferVisualizer::Mode::Normal, *renderGraph, gbuffers, framebuffer);
-        renderGraph->CreateBlitTexture2DPass("BlitToSwapchain", framebuffer, swapchainImage);
+        renderGraph->CreateBlitTexture2DPass(
+            "BlitToSwapchain", framebuffer, swapchainImage, blitUsePointSampling);
     }
     else if(renderSettings_.visualizationMode == VisualizationMode::ReSTIRDirectIllumination)
     {
         renderGraph->CreateBlitTexture2DPass(
-            "BlitToSwapchain", renderCamera.GetReSTIRData().directIllum, swapchainImage);
+            "BlitToSwapchain", renderCamera.GetReSTIRData().directIllum, swapchainImage, blitUsePointSampling, 1 / 2.2f);
     }
     else
     {
-        const bool usePointSampling = framebuffer->GetSize() == swapchainImage->GetSize();
-        renderGraph->CreateBlitTexture2DPass("BlitToSwapchain", framebuffer, swapchainImage, usePointSampling);
+        renderGraph->CreateBlitTexture2DPass(
+            "BlitToSwapchain", framebuffer, swapchainImage, blitUsePointSampling);
     }
     
     // ============= ImGui =============

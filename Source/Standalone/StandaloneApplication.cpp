@@ -38,13 +38,13 @@ void StandaloneApplication::Initialize(const Rtrc::ApplicationInitializeContext 
             objects_.push_back(std::move(object));
         }
     }
-
+    
     {
         pointLight_ = context.activeScene->CreateLight();
         pointLight_->SetType(Rtrc::Light::Type::Point);
         pointLight_->SetPosition({ 0, 2, -3 });
-        pointLight_->SetColor({ 1, 1, 1 });
-        pointLight_->SetIntensity(1);
+        pointLight_->SetColor({ 0.2f, 1, 0.3f });
+        pointLight_->SetIntensity(20);
         pointLight_->SetDistFadeBegin(1.0f);
         pointLight_->SetDistFadeEnd(5.0f);
         pointLight_->SetFlags(Rtrc::Light::Flags::RayTracedShadow);
@@ -90,10 +90,13 @@ void StandaloneApplication::Update(const Rtrc::ApplicationUpdateContext &context
         imgui.SliderAngle("Sun Direction", &sunAngle_, 1, 179);
         sunAngle_ = std::clamp(sunAngle_, Rtrc::Deg2Rad(1), Rtrc::Deg2Rad(179));
 
-        float shadowSoftness = pointLight_->GetSoftness();
-        if(imgui.SliderFloat("Shadow Softness", &shadowSoftness, 0.0f, 0.999f))
+        if(pointLight_)
         {
-            pointLight_->SetSoftness(shadowSoftness);
+            float shadowSoftness = pointLight_->GetSoftness();
+            if(imgui.SliderFloat("Shadow Softness", &shadowSoftness, 0.0f, 0.999f))
+            {
+                pointLight_->SetSoftness(shadowSoftness);
+            }
         }
 
         imgui.DragUInt("ReSTIR M", &renderSettings.ReSTIR_M, 1, 512);

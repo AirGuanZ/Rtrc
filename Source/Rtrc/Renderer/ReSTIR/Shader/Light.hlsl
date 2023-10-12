@@ -35,9 +35,10 @@ float3 ShadeLightNoVisibility(float3 position, float3 normal, LightShadingData l
 
             const float area = max(4 * PI * radius * radius, 1e-4);
             const float pdfArea = 1 / area;
-            const float pdfSA = pdfArea * dist * dist / s;
-            const float radiance = 20 / area;
-            throughput *= radiance / pdfSA;
+            const float pdf = pdfArea * dist * dist / s;
+
+            const float radiance = 1 / area;
+            throughput *= radiance / pdf;
         }
         else
             throughput = 0;
@@ -55,11 +56,13 @@ float3 ShadeLightNoVisibility(float3 position, float3 normal, LightShadingData l
             throughput = saturate(light.coneFadeScale * dotc + light.coneFadeBias);
             const float dist = max(length(p - position), 1e-3);
             throughput *= saturate(light.distFadeScale * dist + light.distFadeBias);
+
             const float area = max(4 * PI * radius * radius, 1e-4);
             const float pdfArea = 1 / area;
-            const float pdfSA = pdfArea * dist * dist / s;
-            const float radiance = 20 / area;
-            throughput *= radiance / pdfSA;
+            const float pdf = pdfArea * dist * dist / s;
+
+            const float radiance = 1 / area;
+            throughput *= radiance / pdf;
         }
         else
             throughput = 0;
@@ -69,28 +72,16 @@ float3 ShadeLightNoVisibility(float3 position, float3 normal, LightShadingData l
     return throughput * bsdfFactor * light.color * light.intensity;
 }
 
-float3 ShadeLightNoVisibility(float3 position, float3 normal, LightShadingData light, float2 lightUV)
-{
-    float3 dummyPositionOnLight;
-    return ShadeLightNoVisibility(position, normal, light, lightUV, dummyPositionOnLight);
-}
-
 rtrc_sampler(ReSTIR_SkySampler, filter = linear, address_u = repeat, address_v = clamp)
 
 float3 ShadeSkyNoVisibility(float3 position, float3 normal, Texture2D<float3> sky, float2 lightUV, out float3 direction)
 {
     const float phi = 2 * PI * lightUV.x;
-    const float theta = lerp(-0.5 * PI, 0.5 * PI, lightUV.y);
-    direction = float3(cos(phi) * cos(theta), sin(theta), sin(phi) * cos(theta));
+    const float theta = PI * (lightUV.y - 0.5);
+    direction = Distribution::UniformOnUnitSphere(lightUV);
     const float2 skyUV = Atmosphere::ComputeSkyLutTexCoord(direction);
     const float3 skyRadiance = sky.SampleLevel(ReSTIR_SkySampler, skyUV, 0);
     const float bsdfFactor = max(0, dot(direction, normal));
     const float pdf = 1 / (4 * PI);
     return bsdfFactor * skyRadiance / pdf;
-}
-
-float3 ShadeSkyNoVisibility(float3 position, float3 normal, Texture2D<float3> sky, float2 lightUV)
-{
-    float3 dummyDirection;
-    return ShadeSkyNoVisibility(position, normal, sky, lightUV, dummyDirection);
 }

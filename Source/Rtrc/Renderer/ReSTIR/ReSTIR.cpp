@@ -100,6 +100,7 @@ void ReSTIR::Render(RenderCamera &renderCamera, RG::RenderGraph &renderGraph, co
     PerCameraData &data = renderCamera.GetReSTIRData();
     const RenderScene &renderScene = renderCamera.GetScene();
     const Scene &scene = renderScene.GetScene();
+
     auto sky = renderCamera.GetAtmosphereData().S;
 
     // Setup rng states && reservoirs
@@ -157,7 +158,7 @@ void ReSTIR::Render(RenderCamera &renderCamera, RG::RenderGraph &renderGraph, co
             {
                 .size = sizeof(dummyLightShadingData),
                 .usage = RHI::BufferUsage::ShaderStructuredBuffer
-            }, &dummyLightShadingData, sizeof(dummyLightShadingData));
+            }, &dummyLightShadingData);
             dummyLightBuffer_->SetDefaultStructStride(sizeof(ReSTIRDetail::LightShadingData));
         }
         lightBuffer = dummyLightBuffer_;
@@ -175,7 +176,7 @@ void ReSTIR::Render(RenderCamera &renderCamera, RG::RenderGraph &renderGraph, co
     // Create new reservoirs
 
     auto newReservoirs = renderGraph.CreateTexture(prevReservoirs->GetDesc(), "NewReservoirs");
-    if(lightShadingData.empty())
+    /*if(lightShadingData.empty())
     {
         StaticShaderInfo<"ReSTIR/ClearNewReservoirs">::Variant::Pass passData;
         passData.OutputTextureRW           = newReservoirs;
@@ -187,7 +188,7 @@ void ReSTIR::Render(RenderCamera &renderCamera, RG::RenderGraph &renderGraph, co
             newReservoirs->GetSize(),
             passData);
     }
-    else
+    else*/
     {
         StaticShaderInfo<"ReSTIR/CreateNewReservoirs">::Variant::Pass passData;
         FillBindingGroupGBuffers(passData, gbuffers);
@@ -210,8 +211,11 @@ void ReSTIR::Render(RenderCamera &renderCamera, RG::RenderGraph &renderGraph, co
 
     // Temporal reuse
 
-    if(!lightShadingData.empty())
+    auto temporalReuseOutput = newReservoirs;
+    if(/*!lightShadingData.empty() &&*/ enableTemporalReuse_)
     {
+        temporalReuseOutput = currReservoirs;
+
         StaticShaderInfo<"ReSTIR/TemporalReuse">::Variant::Pass passData;
         FillBindingGroupGBuffers(passData, gbuffers);
         passData.Sky                    = sky;
@@ -236,11 +240,11 @@ void ReSTIR::Render(RenderCamera &renderCamera, RG::RenderGraph &renderGraph, co
 
     // Spatial reuse
 
-    auto finalReservoirs = currReservoirs;
-    if(!lightShadingData.empty() && N_ > 0 && radius_ > 0)
+    auto finalReservoirs = temporalReuseOutput;
+    if(/*!lightShadingData.empty() &&*/ N_ > 0 && radius_ > 0)
     {
-        auto reservoirsA = currReservoirs;
-        auto reservoirsB = renderGraph.CreateTexture(currReservoirs->GetDesc(), "TempReservoirs");
+        auto reservoirsA = temporalReuseOutput;
+        auto reservoirsB = renderGraph.CreateTexture(temporalReuseOutput->GetDesc(), "TempReservoirs");
 
         StaticShaderInfo<"ReSTIR/SpatialReuse">::Variant::Pass passData;
         passData.Camera                 = renderCamera.GetCameraCBuffer();

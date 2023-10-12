@@ -58,7 +58,7 @@ void CSMain(uint2 tid : SV_DispatchThreadID)
     {
         float3 o = worldPos + 0.01 * gpixel.normal;
         float3 d = sam.NextUniformOnUnitHemisphere(gpixel.normal);
-        float3 beta = 1;
+        float3 beta = max(0, dot(gpixel.normal, d)) / (1 / (2 * PI));
         for(uint i = 0; i < Pass.maxDepth; ++i)
         {
             RayDesc ray;

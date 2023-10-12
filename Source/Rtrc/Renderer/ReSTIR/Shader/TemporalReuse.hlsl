@@ -81,14 +81,14 @@ uint4 Reuse(uint2 tid, float deviceZ, float2 uv)
     
     const float3 normal = LoadGBufferNormal(uv);
 
-    float3 reshade;
+    float3 reshade, lightSampleGeometry;
     if(prevR.data.lightIndex < Pass.lightCount)
     {
         const LightShadingData prevLightData = LightShadingDataBuffer[prevR.data.lightIndex];
-        reshade = ShadeLightNoVisibility(worldPos, normal, prevLightData, prevR.data.lightUV);
+        reshade = ShadeLightNoVisibility(worldPos, normal, prevLightData, prevR.data.lightUV, lightSampleGeometry);
     }
     else
-        reshade = ShadeSkyNoVisibility(worldPos, normal, Sky, prevR.data.lightUV);
+        reshade = ShadeSkyNoVisibility(worldPos, normal, Sky, prevR.data.lightUV, lightSampleGeometry);
     const float reshadePBar = RelativeLuminance(reshade);
     
     float finalPBar;

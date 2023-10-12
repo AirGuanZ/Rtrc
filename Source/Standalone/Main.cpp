@@ -15,7 +15,7 @@ int main()
             .debug             = RTRC_DEBUG,
             .rayTracing        = true,
             .backendType       = Rtrc::RHI::BackendType::Default,
-            .enableGPUCapturer = false
+            .enableGPUCapturer = true
         });
     }
     catch(const Rtrc::Exception &e)

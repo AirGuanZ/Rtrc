@@ -61,7 +61,7 @@ void CSMain(uint2 tid : SV_DispatchThreadID)
     {
         const uint lightIndex = pcgSampler.NextUInt() % (Pass.lightCount + 1);
         const float2 lightUV = pcgSampler.NextFloat2();
-        const float p = 1.0 / (Pass.lightCount + 1);
+        const float pdfLight = 1.0 / (Pass.lightCount + 1);
 
         float3 L, lightSampleGeometry; bool isLightSampleGeometryDirection;
         if(lightIndex < Pass.lightCount)
@@ -77,7 +77,7 @@ void CSMain(uint2 tid : SV_DispatchThreadID)
         }
 
         const float pbar = RelativeLuminance(L);
-        const float w = pbar / p;
+        const float w = pbar / pdfLight;
         if(w > 0)
         {
             ReservoirData data;
