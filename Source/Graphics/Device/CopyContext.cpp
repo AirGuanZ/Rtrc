@@ -176,6 +176,7 @@ CopyContext::Batch CopyContext::GetBatch()
     Batch result;
     if(batches_.try_pop(result))
     {
+        result.commandPool->Reset();
         return result;
     }
     result.commandPool = device_->CreateCommandPool(copyQueue_);
