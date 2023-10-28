@@ -53,7 +53,7 @@ struct CompilableShader
 };
 
 // TODO: support rtrc_group_struct
-class Compiler : public Uncopyable
+class ShaderCompiler : public Uncopyable
 {
 public:
     

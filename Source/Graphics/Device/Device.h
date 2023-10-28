@@ -87,6 +87,8 @@ public:
 
     size_t GetTextureBufferCopyRowPitchAlignment(RHI::Format format) const;
 
+    const RHI::WarpSizeInfo &GetWarpSizeInfo() const;
+
     // Context objects
 
     void RecreateSwapchain();
@@ -334,6 +336,11 @@ inline size_t Device::GetAccelerationStructureScratchBufferAlignment() const
 inline size_t Device::GetTextureBufferCopyRowPitchAlignment(RHI::Format format) const
 {
     return GetRawDevice()->GetTextureBufferCopyRowPitchAlignment(format);
+}
+
+inline const RHI::WarpSizeInfo &Device::GetWarpSizeInfo() const
+{
+    return GetRawDevice()->GetWarpSizeInfo();
 }
 
 inline void Device::RecreateSwapchain()

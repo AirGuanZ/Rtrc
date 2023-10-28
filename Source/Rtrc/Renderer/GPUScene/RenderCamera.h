@@ -1,8 +1,10 @@
 #pragma once
 
+#include <Rtrc/Renderer/GBufferBinding.h>
 #include <Rtrc/Renderer/GPUScene/RenderScene.h>
 #include <Rtrc/Renderer/PathTracer/PathTracer.h>
 #include <Rtrc/Renderer/ReSTIR/ReSTIR.h>
+#include <Rtrc/Renderer/VXIR/VXIR.h>
 #include <Rtrc/Renderer/Utility/UploadBufferPool.h>
 #include <Core/Memory/Arena.h>
 
@@ -37,16 +39,28 @@ public:
     Span<MeshRendererRecord*> GetMeshRendererRecords()             const { return objects_; }
     const RC<Buffer>         &GetMeshRendererPerObjectDataBuffer() const { return perObjectDataBuffer_; }
 
+          GBuffers &GetGBuffers()       { return gbuffers_; }
+    const GBuffers &GetGBuffers() const { return gbuffers_; }
+
     RenderAtmosphere::PerCameraData &GetAtmosphereData()  { return atmosphereData_; }
     PathTracer::PerCameraData       &GetPathTracingData() { return pathTracingData_; }
     ReSTIR::PerCameraData           &GetReSTIRData()      { return restirData_; }
+    VXIR::PerCameraData             &GetVXIRData()        { return vxirData_; }
+
+    void CreateGBuffers(ObserverPtr<RG::RenderGraph> renderGraph, const Vector2u &framebufferSize);
+    void ClearGBuffers();
+
+    template<typename T>
+    void FillGBuffersIntoBindingGroup(T &data);
+
+    void CreateNormalTexture(RG::RenderGraph &renderGraph, const Vector2u &framebufferSize, GBuffers &gbuffers);
 
     void Update(
         const MeshRenderingCacheManager     &cachedMeshes,
         const MaterialRenderingCacheManager &cachedMaterials,
         LinearAllocator                     &linearAllocator);
 
-    void UpdateDepthTexture(RG::RenderGraph &renderGraph, GBuffers &gbuffers);
+    void ResolveDepthTexture(RG::RenderGraph &renderGraph);
 
 private:
 
@@ -65,13 +79,19 @@ private:
     std::vector<MeshRendererRecord *> objects_;
     RC<Buffer>                        perObjectDataBuffer_;
     UploadBufferPool<>                perObjectDataBufferPool_;
+
+    GBuffers gbuffers_;
     
     RenderAtmosphere::PerCameraData atmosphereData_;
     PathTracer::PerCameraData       pathTracingData_;
     ReSTIR::PerCameraData           restirData_;
+    VXIR::PerCameraData             vxirData_;
 
     RC<StatefulTexture> prevDepth_;
     RC<StatefulTexture> currDepth_;
+
+    RC<StatefulTexture> prevNormal_;
+    RC<StatefulTexture> currNormal_;
 };
 
 class RenderCameraManager : public Uncopyable
@@ -99,5 +119,11 @@ private:
 
     std::map<const Camera *, CameraRecord> cameras_;
 };
+
+template<typename T>
+void RenderCamera::FillGBuffersIntoBindingGroup(T &data)
+{
+    Renderer::FillBindingGroupGBuffers(data, gbuffers_);
+}
 
 RTRC_RENDERER_END

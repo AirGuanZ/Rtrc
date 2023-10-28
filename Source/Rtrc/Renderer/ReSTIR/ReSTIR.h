@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/Renderer/Common.h>
+#include <Rtrc/Renderer/SVGF/SVGF.h>
 
 RTRC_RENDERER_BEGIN
 
@@ -8,8 +8,20 @@ class ReSTIR : public RenderAlgorithm
 {
 public:
 
+    struct Settings
+    {
+        bool enableTemporalReuse = true;
+        unsigned int M  = 4;
+        unsigned int maxM = 64;
+
+        unsigned int N = 5; // N = 0 implies no spatial reuse
+        float radius = 15;
+    };
+
     struct PerCameraData
     {
+        SVGF::PerCameraData svgf;
+
         RC<StatefulTexture> pcgState;
         RC<StatefulTexture> prevReservoirs;
         RC<StatefulTexture> currReservoirs;
@@ -17,26 +29,19 @@ public:
         RG::TextureResource *directIllum = nullptr;
     };
 
-    using RenderAlgorithm::RenderAlgorithm;
+    explicit ReSTIR(ObserverPtr<ResourceManager> resources);
 
-    void SetM(unsigned int M);
-    void SetMaxM(unsigned int maxM);
-    void SetN(unsigned int N);
-    void SetRadius(float radius);
-    void SetEnableTemporalReuse(bool value);
+    RTRC_SET_GET(Settings, Settings, settings_)
 
-    void Render(RenderCamera &renderCamera, RG::RenderGraph &renderGraph, const GBuffers &gbuffers);
+    void Render(RenderCamera &renderCamera, RG::RenderGraph &renderGraph);
 
     void ClearFrameData(PerCameraData &data) const;
 
 private:
 
+    Settings   settings_;
     RC<Buffer> dummyLightBuffer_;
-    unsigned int M_ = 2;
-    unsigned int maxM_ = 32;
-    unsigned int N_ = 5;
-    float radius_ = 5;
-    bool enableTemporalReuse_ = true;
+    SVGF       svgf_;
 };
 
 RTRC_RENDERER_END

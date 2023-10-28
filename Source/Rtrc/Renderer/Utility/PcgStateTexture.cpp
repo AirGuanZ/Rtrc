@@ -32,7 +32,7 @@ RG::TextureResource *Prepare2DPcgStateTexture(
     initPass->Use(ret, RG::CS_RWTexture_WriteOnly);
     initPass->SetCallback([ret, size, device, materials]
     {
-        StaticShaderInfo<"InitializePcgState2D">::Variant::Pass passData;
+        StaticShaderInfo<"InitializePcgState2D">::Pass passData;
         passData.Output = ret;
         passData.resolution = size;
         auto passGroup = device->CreateBindingGroupWithCachedLayout(passData);

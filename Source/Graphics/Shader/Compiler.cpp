@@ -6,12 +6,12 @@
 
 RTRC_BEGIN
 
-void Compiler::SetDevice(ObserverPtr<Device> device)
+void ShaderCompiler::SetDevice(ObserverPtr<Device> device)
 {
     device_ = device;
 }
 
-RC<Shader> Compiler::Compile(
+RC<Shader> ShaderCompiler::Compile(
     const ShaderCompileEnvironment &envir,
     const CompilableShader         &shader,
     bool                            debug) const
@@ -801,7 +801,7 @@ RC<Shader> Compiler::Compile(
     return ret;
 }
 
-RHI::ShaderStageFlags Compiler::GetFullShaderStages(ShaderInfo::Category category)
+RHI::ShaderStageFlags ShaderCompiler::GetFullShaderStages(ShaderInfo::Category category)
 {
     switch(category)
     {
@@ -812,7 +812,7 @@ RHI::ShaderStageFlags Compiler::GetFullShaderStages(ShaderInfo::Category categor
     }
 }
 
-Compiler::D3D12RegisterType Compiler::BindingTypeToD3D12RegisterType(RHI::BindingType type)
+ShaderCompiler::D3D12RegisterType ShaderCompiler::BindingTypeToD3D12RegisterType(RHI::BindingType type)
 {
     using enum RHI::BindingType;
     switch(type)
@@ -835,12 +835,12 @@ Compiler::D3D12RegisterType Compiler::BindingTypeToD3D12RegisterType(RHI::Bindin
     }
 }
 
-std::string Compiler::GetArraySpecifier(std::optional<uint32_t> arraySize)
+std::string ShaderCompiler::GetArraySpecifier(std::optional<uint32_t> arraySize)
 {
     return arraySize ? fmt::format("[{}]", *arraySize) : std::string();
 }
 
-void Compiler::DoCompilation(
+void ShaderCompiler::DoCompilation(
     const DXC::ShaderInfo      &shaderInfo,
     CompileStage                stage,
     bool                        debug,
@@ -872,7 +872,7 @@ void Compiler::DoCompilation(
     }
 }
 
-void Compiler::EnsureAllUsedBindingsAreGrouped(
+void ShaderCompiler::EnsureAllUsedBindingsAreGrouped(
     const CompilableShader &shader,
     const Box<ShaderReflection> &refl,
     std::string_view             stage) const

@@ -50,7 +50,8 @@ bool FreeCameraController::UpdateCamera(const WindowInput &input, const Timer &t
         ret = true;
     }
 
-    camera_->SetPosition(camera_->GetPosition() + moveSpeed_ * moveDirection * timer.GetDeltaSecondsF());
+    const float dt = timer.GetDeltaSecondsF();
+    camera_->SetPosition(camera_->GetPosition() + moveSpeed_ * moveDirection * dt);
 
     // Rotate
 

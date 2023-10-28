@@ -123,6 +123,13 @@ DirectX12Device::DirectX12Device(
     shaderGroupRecordRequirements_.shaderGroupBaseAlignment   = D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT;
     shaderGroupRecordRequirements_.maxShaderGroupStride       = 4096;
 
+    D3D12_FEATURE_DATA_D3D12_OPTIONS1 dataOptions1;
+    RTRC_D3D12_FAIL_MSG(
+        device_->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS1, &dataOptions1, sizeof(dataOptions1)),
+        "D3D12_FEATURE_DATA_D3D12_OPTIONS1 is not supported");
+    warpSizeInfo_.minSize = dataOptions1.WaveLaneCountMin;
+    warpSizeInfo_.maxSize = dataOptions1.WaveLaneCountMax;
+
     srvUavCbvDescriptorSize_ = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
     samplerDescriptorSize_ = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
 }
@@ -785,11 +792,17 @@ Ptr<Buffer> DirectX12Device::CreateBuffer(const BufferDesc &desc)
         .HeapType = heapType
     };
 
+    D3D12_RESOURCE_STATES initialState = D3D12_RESOURCE_STATE_COMMON;
+    if(desc.usage.Contains(BufferUsage::AccelerationStructure))
+    {
+        initialState = D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
+    }
+
     ComPtr<D3D12MA::Allocation> rawAlloc;
     ComPtr<ID3D12Resource> resource;
     RTRC_D3D12_FAIL_MSG(
         allocator_->CreateResource(
-            &allocDesc, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, nullptr,
+            &allocDesc, &resourceDesc, initialState, nullptr,
             rawAlloc.GetAddressOf(), IID_PPV_ARGS(resource.GetAddressOf())),
         "Fail to create directx12 buffer resource");
 
@@ -836,7 +849,6 @@ void DirectX12Device::WaitIdle()
     {
         copyQueue_->WaitIdle();
     }
-    // presentQueue_->WaitIdle();
 }
 
 BlasPtr DirectX12Device::CreateBlas(const BufferPtr &buffer, size_t offset, size_t size)
@@ -878,9 +890,14 @@ TlasPrebuildInfoPtr DirectX12Device::CreateTlasPrebuildInfo(
     return MakePtr<DirectX12TlasPrebuildInfo>(this, instances, flags);
 }
 
-const ShaderGroupRecordRequirements &DirectX12Device::GetShaderGroupRecordRequirements()
+const ShaderGroupRecordRequirements &DirectX12Device::GetShaderGroupRecordRequirements() const
 {
     return shaderGroupRecordRequirements_;
+}
+
+const WarpSizeInfo &DirectX12Device::GetWarpSizeInfo() const
+{
+    return warpSizeInfo_;
 }
 
 void DirectX12Device::_internalFreeBindingGroup(DirectX12BindingGroup &bindingGroup)

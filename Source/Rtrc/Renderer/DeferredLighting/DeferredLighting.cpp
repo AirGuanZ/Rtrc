@@ -9,14 +9,13 @@ RTRC_RENDERER_BEGIN
 void DeferredLighting::Render(
     ObserverPtr<RenderCamera>    renderCamera,
     ObserverPtr<RG::RenderGraph> renderGraph,
-    const GBuffers              &gbuffers,
     RG::TextureResource         *renderTarget) const
 {
     auto directIllum = renderCamera->GetReSTIRData().directIllum;
     auto skyLut = renderCamera->GetAtmosphereData().S;
 
-    StaticShaderInfo<"DeferredLighting">::Variant::Pass passData;
-    FillBindingGroupGBuffers(passData, gbuffers);
+    StaticShaderInfo<"DeferredLighting">::Pass passData;
+    FillBindingGroupGBuffers(passData, renderCamera->GetGBuffers());
     passData.Camera             = renderCamera->GetCameraCBuffer();
     passData.DirectIllumination = directIllum;
     passData.SkyLut             = skyLut;

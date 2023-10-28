@@ -12,11 +12,10 @@ public:
 
     explicit GBufferPass(ObserverPtr<Device> device);
 
-    GBuffers Render(
+    void Render(
         const RenderCamera     &sceneCamera,
         const RC<BindingGroup> &bindlessTextureGroup,
-        RG::RenderGraph        &renderGraph,
-        const Vector2u         &rtSize);
+        RG::RenderGraph        &renderGraph);
 
 private:
 
@@ -41,9 +40,7 @@ private:
         int                                gbufferPassIndex  = 0;
         std::vector<MaterialInstanceGroup> materialInstanceGroups;
     };
-
-    GBuffers AllocateGBuffers(RG::RenderGraph &renderGraph, const Vector2u &rtSize);
-
+    
     std::vector<MaterialGroup> CollectPipelineGroups(const RenderCamera &scene) const;
 
     void DoRenderGBuffers(

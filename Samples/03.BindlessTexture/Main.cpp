@@ -50,10 +50,10 @@ void Run()
 
     // Binding group
 
-    constexpr int BINDING_GROUP_SIZE = 1024;
+    constexpr int BINDING_GROUP_SIZE = 2048;
     RangeSet bindingSlotAllocator(BINDING_GROUP_SIZE);
 
-    StaticShaderInfo<"Bindless/pass0/shader">::Variant::Pass bindingGroupData;
+    StaticShaderInfo<"Bindless/pass0/shader">::Pass bindingGroupData;
     bindingGroupData.alpha = 1;
     auto bindingGroup = device->CreateBindingGroup(bindingGroupData, BINDING_GROUP_SIZE);
 

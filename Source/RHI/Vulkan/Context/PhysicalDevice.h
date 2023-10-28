@@ -28,18 +28,20 @@ public:
     VkPhysicalDevice GetNativeHandle() const;
     const VkPhysicalDeviceProperties &GetNativeProperties() const;
 
+    const VkPhysicalDeviceSubgroupProperties &_internalGetSubgroupProperties() const;
     const std::optional<VkPhysicalDeviceAccelerationStructurePropertiesKHR> &_internalGetASProperties() const;
     const std::optional<VkPhysicalDeviceRayTracingPipelinePropertiesKHR> &_internalGetRtPipelineProperties() const;
 
 private:
 
     VkPhysicalDevice physicalDevice_;
-    VkPhysicalDeviceProperties properties_;
+    VkPhysicalDeviceProperties2 properties_;
 
     std::optional<uint32_t> graphicsQueueFamily_;
     std::optional<uint32_t> computeQueueFamily_;
     std::optional<uint32_t> transferQueueFamily_;
 
+    VkPhysicalDeviceSubgroupProperties                                subgroupProperties_;
     std::optional<VkPhysicalDeviceAccelerationStructurePropertiesKHR> asProperties_;
     std::optional<VkPhysicalDeviceRayTracingPipelinePropertiesKHR>    rtPipelineProperties_;
 };

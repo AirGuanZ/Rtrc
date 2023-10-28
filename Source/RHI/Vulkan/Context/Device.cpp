@@ -295,11 +295,13 @@ VulkanDevice::VulkanDevice(
             .shaderGroupHandleSize      = properties->shaderGroupHandleSize,
             .shaderGroupHandleAlignment = properties->shaderGroupHandleAlignment,
             .shaderGroupBaseAlignment   = properties->shaderGroupBaseAlignment,
-            .maxShaderGroupStride       = properties->maxShaderGroupStride,
-            //.shaderDataAlignment        = 4,
-            //.shaderDataUnit             = 4
+            .maxShaderGroupStride       = properties->maxShaderGroupStride
         };
     }
+
+    auto &subgroupProperties = physicalDevice_._internalGetSubgroupProperties();
+    warpSizeInfo_.minSize = subgroupProperties.subgroupSize;
+    warpSizeInfo_.maxSize = subgroupProperties.subgroupSize;
 }
 
 VulkanDevice::~VulkanDevice()
@@ -1234,10 +1236,15 @@ TlasPrebuildInfoPtr VulkanDevice::CreateTlasPrebuildInfo(
     return MakePtr<VulkanTlasPrebuildInfo>(this, instances, flags);
 }
 
-const ShaderGroupRecordRequirements &VulkanDevice::GetShaderGroupRecordRequirements()
+const ShaderGroupRecordRequirements &VulkanDevice::GetShaderGroupRecordRequirements() const
 {
     assert(shaderGroupRecordRequirements_.has_value());
     return *shaderGroupRecordRequirements_;
+}
+
+const WarpSizeInfo &VulkanDevice::GetWarpSizeInfo() const
+{
+    return warpSizeInfo_;
 }
 
 void VulkanDevice::_internalSetObjectName(VkObjectType objectType, uint64_t objectHandle, const char* name)

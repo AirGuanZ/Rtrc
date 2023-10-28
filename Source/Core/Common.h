@@ -87,6 +87,10 @@ concept RtrcReflShaderStruct = requires { typename T::_rtrcReflStructBaseShaderT
 #define rtrc_struct(NAME, ...)                                         \
     struct rtrc_refl_impl(rtrc, shader __VA_OPT__(,) __VA_ARGS__) NAME \
         : rtrc_derive_from_refl_bases(rtrc, shader __VA_OPT__(,) __VA_ARGS__)
+#define rtrc_enum(NAME) \
+    enum __attribute__((annotate("rtrc"))) __attribute__((annotate("shader"))) NAME
+#define rtrc_enum_class(NAME) \
+    enum class __attribute__((annotate("rtrc"))) __attribute__((annotate("shader"))) NAME
 #else
 #if _MSC_VER
 // Use '__declspec(empty_bases)' to fix EBO in msvc.
@@ -98,6 +102,8 @@ concept RtrcReflShaderStruct = requires { typename T::_rtrcReflStructBaseShaderT
 #define rtrc_refl_struct(NAME, ...) \
     struct NAME : rtrc_derive_from_refl_bases(rtrc, shader __VA_OPT__(,) __VA_ARGS__)
 #endif
+#define rtrc_enum(NAME) enum NAME
+#define rtrc_enum_class(NAME) enum class NAME
 #endif
 
 class Exception : public std::runtime_error
@@ -339,7 +345,8 @@ constexpr size_t GetContainerSize(const T(&)[N])
 
 #define RTRC_SET_GET(TYPE, PROP_NAME, MEMBER_NAME)                    \
     void Set##PROP_NAME(const TYPE &value) { (MEMBER_NAME) = value; } \
-    const TYPE &Get##PROP_NAME() const { return MEMBER_NAME; }
+    const TYPE &Get##PROP_NAME() const { return MEMBER_NAME; }        \
+    TYPE &Get##PROP_NAME() { return MEMBER_NAME; } 
 
 // Note that this function doesn't convert the input utf-8 string into any other encoding.
 // It just copies the bytes from the input string to the output.

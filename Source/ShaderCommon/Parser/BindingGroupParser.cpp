@@ -207,7 +207,7 @@ namespace BindingGroupParserDetail
                 if(str == "nearest") { return RHI::FilterMode::Point; }
                 if(str == "point") { return RHI::FilterMode::Point; }
                 if(str == "linear") { return RHI::FilterMode::Linear; }
-                tokens.Throw(fmt::format("Unknown filter mode: ", str));
+                tokens.Throw(fmt::format("Unknown filter mode: {}", str));
             };
 
             auto TranslateAddressMode = [&](std::string_view str)

@@ -20,7 +20,7 @@ void GBufferVisualizer::Render(
         throw Exception(fmt::format("GBufferVisualizer: unknown mode {}", std::to_underlying(mode)));
     }
 
-    StaticShaderInfo<"VisualizeNormal">::Variant::Pass passData;
+    StaticShaderInfo<"VisualizeNormal">::Pass passData;
     FillBindingGroupGBuffers(passData, gbuffers);
     passData.Output           = renderTarget;
     passData.Output.writeOnly = true;

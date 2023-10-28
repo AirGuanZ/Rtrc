@@ -66,7 +66,7 @@ namespace GBufferBindingDetail
         };
         if constexpr(Normal)
         {
-            pass->Use(gbuffers.normal, use);
+            pass->Use(gbuffers.currNormal, use);
         }
         if constexpr(Albedo || Metallic)
         {
@@ -105,7 +105,7 @@ namespace GBufferBindingDetail
     {
         if constexpr(NeedNormal<T>)
         {
-            data._internalGBuffer_Normal = gbuffers.normal;
+            data._internalGBuffer_Normal = gbuffers.currNormal;
         }
         if constexpr(NeedAlbedoMetallic<T>)
         {

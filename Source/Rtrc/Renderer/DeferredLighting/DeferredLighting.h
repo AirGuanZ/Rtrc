@@ -13,7 +13,6 @@ public:
     void Render(
         ObserverPtr<RenderCamera>    renderCamera,
         ObserverPtr<RG::RenderGraph> renderGraph,
-        const GBuffers              &gbuffers,
         RG::TextureResource         *renderTarget) const;
 };
 

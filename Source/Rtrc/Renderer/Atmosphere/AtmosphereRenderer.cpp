@@ -98,7 +98,7 @@ void RenderAtmosphere::Render(
 
     const float lerpFactor = std::clamp(1.0f - std::pow(0.03f, 0.4f * dt), 0.001f, 0.05f);
 
-    StaticShaderInfo<"Atmosphere/GenerateSkyLut">::Variant::Pass skyPassData;
+    StaticShaderInfo<"Atmosphere/GenerateSkyLut">::Pass skyPassData;
     skyPassData.SkyLutTextureRW           = S;
     skyPassData.SkyLutTextureRW.writeOnly = true;
     skyPassData.TransmittanceLutTexture   = T_;
@@ -138,7 +138,7 @@ RG::TextureResource *RenderAtmosphere::GenerateT(RG::RenderGraph &renderGraph, c
     persistentT_->SetName("RenderAtmosphere_T");
     auto T = renderGraph.RegisterTexture(persistentT_);
 
-    StaticShaderInfo<"Atmosphere/GenerateTransmittanceLut">::Variant::Pass passData;
+    StaticShaderInfo<"Atmosphere/GenerateTransmittanceLut">::Pass passData;
     passData.outputResolution                 = resT_;
     passData.TransmittanceTextureRW           = T;
     passData.TransmittanceTextureRW.writeOnly = true;
@@ -180,7 +180,7 @@ RG::TextureResource *RenderAtmosphere::GenerateM(RG::RenderGraph &renderGraph, c
     auto M = renderGraph.RegisterTexture(persistentM_);
 
     assert(T_);
-    StaticShaderInfo<"Atmosphere/GenerateMultiScatterLut">::Variant::Pass passData;
+    StaticShaderInfo<"Atmosphere/GenerateMultiScatterLut">::Pass passData;
     passData.MultiScatterTextureRW           = M;
     passData.MultiScatterTextureRW.writeOnly = true;
     passData.RawDirSamples                   = multiScatterDirSamples_;

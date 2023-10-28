@@ -19,13 +19,15 @@ enum class StencilBit : uint8_t
 
 struct GBuffers
 {
-    RG::TextureResource *normal         = nullptr;
     RG::TextureResource *albedoMetallic = nullptr;
     RG::TextureResource *roughness      = nullptr;
     RG::TextureResource *depthStencil   = nullptr;
 
     RG::TextureResource *currDepth = nullptr;
     RG::TextureResource *prevDepth = nullptr;
+
+    RG::TextureResource *currNormal = nullptr;
+    RG::TextureResource *prevNormal = nullptr;
 };
 
 class RenderAlgorithm : public Uncopyable
@@ -39,6 +41,18 @@ public:
     }
 
 protected:
+
+    template<TemplateStringParameter S>
+    RC<Shader> GetStaticShader() const
+    {
+        return resources_->GetMaterialManager()->GetCachedShader<S>();
+    }
+
+    template<TemplateStringParameter S>
+    RC<Shader> GetStaticShader(const FastKeywordContext &context) const
+    {
+        return resources_->GetMaterialManager()->GetCachedShaderTemplate<S>()->GetVariant(context);
+    }
 
     ObserverPtr<Device>          device_;
     ObserverPtr<ResourceManager> resources_;

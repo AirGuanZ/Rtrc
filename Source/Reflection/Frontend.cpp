@@ -55,14 +55,68 @@ namespace FrontendDetail
         struct ResultPerTranslateUnit
         {
             std::vector<Struct> structs;
+            std::vector<Enum> enums;
         };
 
-        void run(const MatchFinder::MatchResult &matchResult) override
+        void runEnum(const MatchFinder::MatchResult &matchResult, const EnumDecl *record)
         {
-            auto record = matchResult.Nodes.getNodeAs<CXXRecordDecl>("id");
-            if(!record)
+            std::set<std::string> annos;
+            for(auto attr : record->attrs())
+            {
+                auto anno = dyn_cast_or_null<AnnotateAttr>(attr);
+                if(anno && anno->getAnnotationLength() > 0)
+                    annos.insert(anno->getAnnotation().str());
+            }
+
+            std::string qualifiedName = record->getQualifiedNameAsString();
+            Enum *outEnum = nullptr;
+            for(auto &r : results_.back().enums)
+            {
+                if(r.qualifiedName == qualifiedName)
+                {
+                    outEnum = &r;
+                    break;
+                }
+            }
+            if(!outEnum)
+            {
+                outEnum = &results_.back().enums.emplace_back();
+            }
+            else if(!outEnum->values.empty())
+            {
                 return;
-            
+            }
+
+            assert(!results_.empty());
+            outEnum->qualifiedName = std::move(qualifiedName);
+            outEnum->annotations = std::move(annos);
+            outEnum->isScoped = record->isScoped();
+            for(EnumConstantDecl *constDecl : record->enumerators())
+            {
+                auto &pair = outEnum->values.emplace_back();
+                pair.first = constDecl->getNameAsString();
+                if(auto expr = constDecl->getInitExpr())
+                {
+                    auto result = expr->getIntegerConstantExpr(*matchResult.Context);
+                    if(result)
+                    {
+                        pair.second = static_cast<int>(result->getSExtValue());
+                    }
+                    else
+                    {
+                        std::cerr << "Unevaluated enum value expression in enum "
+                                  << outEnum->qualifiedName << std::endl;
+                    }
+                }
+                else
+                {
+                    pair.second = static_cast<int>(constDecl->getInitVal().getSExtValue());
+                }
+            }
+        }
+
+        void runStruct(const MatchFinder::MatchResult &matchResult, const CXXRecordDecl *record)
+        {
             if(!record->hasDefinition() || record->isTemplated())
                 return;
 
@@ -188,6 +242,15 @@ namespace FrontendDetail
             }
         }
 
+        void run(const MatchFinder::MatchResult &matchResult) override
+        {
+            if(auto record = matchResult.Nodes.getNodeAs<CXXRecordDecl>("id"))
+                runStruct(matchResult, record);
+            
+            if(auto record = matchResult.Nodes.getNodeAs<EnumDecl>("id"))
+                runEnum(matchResult, record);
+        }
+
         void onStartOfTranslationUnit() override
         {
             results_.emplace_back();
@@ -211,6 +274,9 @@ namespace FrontendDetail
         {
             const DeclarationMatcher recordMatcher = cxxRecordDecl(decl().bind("id"), hasAttr(attr::Annotate));
             finder_.addMatcher(recordMatcher, callback);
+
+            const DeclarationMatcher enumMatcher = enumDecl(decl().bind("id"), hasAttr(attr::Annotate));
+            finder_.addMatcher(enumMatcher, callback);
         }
 
         std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance &CI, StringRef InFile) override
@@ -329,7 +395,7 @@ namespace FrontendDetail
 
 } // namespace FrontendDetail
 
-std::vector<Struct> ParseStructs(const SourceInfo &sourceInfo)
+void Parse(const SourceInfo &sourceInfo, std::vector<Struct> &outStructs, std::vector<Enum> &outEnums)
 {
     std::vector<std::string> commandLine;
     commandLine.push_back("-ferror-limit=0");
@@ -349,24 +415,45 @@ std::vector<Struct> ParseStructs(const SourceInfo &sourceInfo)
     FrontendDetail::MatchCallback callback;
     tool.run(std::make_unique<FrontendDetail::FrontendActionFactory>(&callback).get());
 
-    FrontendDetail::StructDatabase database;
+    FrontendDetail::StructDatabase structDatabase;
     for(auto &translationUnit : callback.GetResults())
     {
         const FrontendDetail::StructRecord *prev = nullptr;
         for(auto &s : translationUnit.structs)
         {
-            const auto curr = database.Register(s);
+            const auto curr = structDatabase.Register(s);
             if(prev)
-                database.AddArc(prev, curr);
+                structDatabase.AddArc(prev, curr);
             prev = curr;
         }
     }
 
-    auto sortedRecords = database.GetSortedRecords();
+    auto sortedRecords = structDatabase.GetSortedRecords();
+    outStructs.clear();
+    for(auto record : structDatabase.GetSortedRecords())
+        outStructs.push_back(record->rawStruct);
 
-    std::vector<Struct> ret;
-    for(auto record : database.GetSortedRecords())
-        ret.push_back(record->rawStruct);
+    std::map<std::string, Enum> nameToEnums;
+    for(auto &tu : callback.GetResults())
+    {
+        for(auto &e : tu.enums)
+        {
+            if(auto it = nameToEnums.find(e.qualifiedName); it != nameToEnums.end())
+            {
+                auto &oe = it->second;
+                if(!e.values.empty() && oe.values.empty())
+                {
+                    oe = e;
+                }
+            }
+            else
+            {
+                nameToEnums.insert({ e.qualifiedName, e });
+            }
+        }
+    }
 
-    return ret;
+    outEnums.clear();
+    for(auto &def : std::ranges::views::values(nameToEnums))
+        outEnums.push_back(def);
 }

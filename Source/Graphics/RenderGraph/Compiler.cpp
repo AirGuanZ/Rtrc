@@ -243,16 +243,6 @@ void Compiler::TopologySortPasses()
         GenerateConnectionsByDefinitionOrder(optimize, passes, prevs, succs);
     }
 
-    /*fmt::print("=======================\n");
-    for(size_t i = 0; i < passes.size(); ++i)
-    {
-        fmt::print("{}\n", passes[i]->nameNode_->name);
-        for(auto succ : succs[i])
-        {
-            fmt::print("    {}\n", succ->nameNode_->name);
-        }
-    }*/
-
     std::queue<int> availablePasses;
     std::vector<int> passToUnprocessedPrevCount(passes.size());
     for(size_t i = 0; i < passes.size(); ++i)
@@ -293,11 +283,6 @@ void Compiler::TopologySortPasses()
         sortedPasses_[i] = pass;
         passToSortedIndex_[pass] = static_cast<int>(i);
     }
-
-    /*for(auto pass : sortedPasses_)
-    {
-        fmt::print("...{}\n", pass->nameNode_->name);
-    }*/
 }
 
 void Compiler::CollectResourceUsers()

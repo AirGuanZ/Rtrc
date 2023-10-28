@@ -169,7 +169,7 @@ namespace ShaderParserDetail
                     {
                         macros[fmt::format("{}_{}", keyword.name, keyword.values[j])] = std::to_string(j);
                     }
-                    macros[keyword.name] = fmt::format("{}_{}", keyword.name, value);
+                    macros[keyword.name] = fmt::format("{}_{}", keyword.name, keyword.values[value]);
                 });
         }
 

@@ -116,12 +116,14 @@ void RenderLoop::RenderFrameImpl(const FrameInput &frame)
 
     // ============= GBuffers =============
 
-    auto gbuffers = gbufferPass_->Render(
-        renderCamera, bindlessTextures_->GetBindingGroup(), *renderGraph, framebuffer->GetSize());
+    renderCamera.CreateGBuffers(renderGraph, framebuffer->GetSize());
+    RTRC_SCOPE_EXIT{ renderCamera.ClearGBuffers(); };
+    
+    gbufferPass_->Render(renderCamera, bindlessTextures_->GetBindingGroup(), *renderGraph);
 
     // ============= Resolve depth =============
 
-    renderCamera.UpdateDepthTexture(*renderGraph, gbuffers);
+    renderCamera.ResolveDepthTexture(*renderGraph);
 
     // ============= Atmosphere =============
 
@@ -142,24 +144,26 @@ void RenderLoop::RenderFrameImpl(const FrameInput &frame)
     const bool renderIndirectDiffuse = visIndirectDiffuse || renderSettings_.enableIndirectDiffuse;
     if(renderIndirectDiffuse)
     {
-        pathTracer_->Render(*renderGraph, renderCamera, gbuffers, visIndirectDiffuse);
+        pathTracer_->Render(*renderGraph, renderCamera, visIndirectDiffuse);
     }
     auto indirectDiffuse = renderCamera.GetPathTracingData().indirectDiffuse;
     RTRC_SCOPE_EXIT{ pathTracer_->ClearFrameData(renderCamera.GetPathTracingData()); };
 
     // ============= ReSTIR =============
 
-    restir_->SetM(renderSettings_.ReSTIR_M);
-    restir_->SetMaxM(renderSettings_.ReSTIR_MaxM);
-    restir_->SetN(renderSettings_.ReSTIR_N);
-    restir_->SetRadius(renderSettings_.ReSTIR_Radius);
-    restir_->SetEnableTemporalReuse(renderSettings_.ReSTIR_EnableTemporalReuse);
-    restir_->Render(renderCamera, *renderGraph, gbuffers);
+    ReSTIR::Settings restirSettings;
+    restirSettings.M                   = renderSettings_.ReSTIR_M;
+    restirSettings.maxM                = renderSettings_.ReSTIR_MaxM;
+    restirSettings.N                   = renderSettings_.ReSTIR_N;
+    restirSettings.radius              = renderSettings_.ReSTIR_Radius;
+    restirSettings.enableTemporalReuse = renderSettings_.ReSTIR_EnableTemporalReuse;
+    restir_->SetSettings(restirSettings);
+    restir_->Render(renderCamera, *renderGraph);
     RTRC_SCOPE_EXIT{ restir_->ClearFrameData(renderCamera.GetReSTIRData()); };
 
     // ============= Lighting =============
 
-    deferredLighting_->Render(renderCamera, renderGraph, gbuffers, framebuffer);
+    deferredLighting_->Render(renderCamera, renderGraph, framebuffer);
     
     // ============= Blit =============
 
@@ -171,7 +175,8 @@ void RenderLoop::RenderFrameImpl(const FrameInput &frame)
     }
     else if(renderSettings_.visualizationMode == VisualizationMode::Normal)
     {
-        gbufferVisualizer_->Render(GBufferVisualizer::Mode::Normal, *renderGraph, gbuffers, framebuffer);
+        gbufferVisualizer_->Render(
+            GBufferVisualizer::Mode::Normal, *renderGraph, renderCamera.GetGBuffers(), framebuffer);
         renderGraph->CreateBlitTexture2DPass(
             "BlitToSwapchain", framebuffer, swapchainImage, blitUsePointSampling);
     }

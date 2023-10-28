@@ -28,7 +28,7 @@ struct RenderSettings
     unsigned int ReSTIR_M = 4;
     unsigned int ReSTIR_MaxM = 64;
     unsigned int ReSTIR_N = 8;
-    float ReSTIR_Radius = 15;
+    float ReSTIR_Radius = 25.0f;
     bool ReSTIR_EnableTemporalReuse = true;
 };
 

@@ -10,7 +10,6 @@ RTRC_RENDERER_BEGIN
 void PathTracer::Render(
     RG::RenderGraph &renderGraph,
     RenderCamera    &camera,
-    const GBuffers  &gbuffers,
     bool             clearBeforeRender) const
 {
     RTRC_RG_SCOPED_PASS_GROUP(renderGraph, "PathTracing");
@@ -18,7 +17,8 @@ void PathTracer::Render(
     auto &scene = camera.GetScene();
     PerCameraData &perCameraData = camera.GetPathTracingData();
 
-    const Vector2u framebufferSize = gbuffers.normal->GetSize();
+    auto &gbuffers = camera.GetGBuffers();
+    const Vector2u framebufferSize = gbuffers.currNormal->GetSize();
     auto rngState = Prepare2DPcgStateTexture(renderGraph, resources_, perCameraData.rngState, framebufferSize);
 
     // =================== Trace ===================
@@ -38,7 +38,7 @@ void PathTracer::Render(
             "Clear IndirectDiffuse Output", traceResult, Vector4f(0, 0, 0, 0));
     }
 
-    using TraceGroup = StaticShaderInfo<"PathTracing/Trace">::Variant::Pass;
+    using TraceGroup = StaticShaderInfo<"PathTracing/Trace">::Pass;
 
     TraceGroup tracePassData;
     FillBindingGroupGBuffers(tracePassData, gbuffers);
@@ -93,7 +93,7 @@ void PathTracer::Render(
         curr = renderGraph.RegisterTexture(perCameraData.curr);
     }
 
-    using TemporalFilterGroup = StaticShaderInfo<"PathTracing/TemporalFilter">::Variant::Pass;
+    using TemporalFilterGroup = StaticShaderInfo<"PathTracing/TemporalFilter">::Pass;
     
     TemporalFilterGroup temporalPassData;
     temporalPassData.PrevDepth          = gbuffers.prevDepth ? gbuffers.prevDepth : gbuffers.currDepth;

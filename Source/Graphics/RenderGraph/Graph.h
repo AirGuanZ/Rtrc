@@ -135,15 +135,14 @@ public:
         TextureResource *dst,
         bool             usePointSampling = true,
         float            gamma = 1.0f);
-
-    template<RenderGraphBindingGroupInput...Ts>
-    Pass *CreateComputePass(
-        std::string     name,
-        RC<Shader>      shader,
-        const Vector3i &threadGroupCount,
-        const Ts&...    bindingGroups);
     
 #define DECLARE_CREATE_COMPUTE_PASS_WITH_THREAD_COUNT(...) \
+    template<RenderGraphBindingGroupInput...Ts>            \
+    Pass *CreateComputePass(                               \
+        std::string     name,                              \
+        RC<Shader>      shader,                            \
+        __VA_ARGS__,                                       \
+        const Ts&...    bindingGroups);                    \
     template<RenderGraphBindingGroupInput...Ts>            \
     Pass *CreateComputePassWithThreadCount(                \
         std::string     name,                              \
@@ -160,6 +159,14 @@ public:
     DECLARE_CREATE_COMPUTE_PASS_WITH_THREAD_COUNT(unsigned int threadCountX, unsigned int threadCountY, unsigned int threadCountZ)
 
 #undef DECLARE_CREATE_COMPUTE_PASS_WITH_THREAD_COUNT
+
+    template<RenderGraphBindingGroupInput...Ts>
+    Pass *CreateIndirectComputePass(
+        std::string     name,
+        RC<Shader>      shader,
+        BufferResource *indirectBuffer,
+        size_t          indirectBufferOffset,
+        const Ts&...    bindnigGroups);
 
 private:
 
@@ -289,6 +296,15 @@ Pass *RenderGraph::CreateComputePassWithThreadCount(
 
 #define DEFINE_CREATE_COMPUTE_PASS_WITH_THREAD_COUNT(EXPR, ...)                                                \
 template<RenderGraphBindingGroupInput ... Ts>                                                                  \
+Pass *RenderGraph::CreateComputePass(                                                                          \
+    std::string     name,                                                                                      \
+    RC<Shader>      shader,                                                                                    \
+    __VA_ARGS__,                                                                                               \
+    const Ts &...   bindingGroups)                                                                             \
+{                                                                                                              \
+    return this->CreateComputePass(std::move(name), std::move(shader), EXPR, bindingGroups...);                \
+}                                                                                                              \
+template<RenderGraphBindingGroupInput ... Ts>                                                                  \
 Pass *RenderGraph::CreateComputePassWithThreadCount(                                                           \
     std::string     name,                                                                                      \
     RC<Shader>      shader,                                                                                    \
@@ -306,5 +322,48 @@ DEFINE_CREATE_COMPUTE_PASS_WITH_THREAD_COUNT(Vector3i(x, y, 1), unsigned int x, 
 DEFINE_CREATE_COMPUTE_PASS_WITH_THREAD_COUNT(Vector3i(x, y, z), unsigned int x, unsigned int y, unsigned int z)
 
 #undef DEFINE_CREATE_COMPUTE_PASS_WITH_THREAD_COUNT
+
+template<RenderGraphBindingGroupInput ... Ts>
+Pass *RenderGraph::CreateIndirectComputePass(
+    std::string     name,
+    RC<Shader>      shader,
+    BufferResource *indirectBuffer,
+    size_t          indirectBufferOffset,
+    const Ts &...   bindingGroups)
+{
+    auto pass = CreatePass(std::move(name));
+    auto DeclareUse = [&]<RenderGraphBindingGroupInput T>(const T & group)
+    {
+        if constexpr(BindingGroupDSL::RtrcGroupStruct<T>)
+        {
+            DeclareRenderGraphResourceUses(pass, group, RHI::PipelineStageFlag::ComputeShader);
+        }
+    };
+    (DeclareUse(bindingGroups), ...);
+    pass->Use(indirectBuffer, IndirectDispatchRead);
+    pass->SetCallback(
+        [d = device_, s = std::move(shader), indirectBuffer, indirectBufferOffset, ...bindingGroups = bindingGroups]
+    {
+        std::vector<RC<BindingGroup>> finalGroups;
+        auto BindGroup = [&]<RenderGraphBindingGroupInput T>(const T &group)
+        {
+            if constexpr(BindingGroupDSL::RtrcGroupStruct<T>)
+            {
+                finalGroups.push_back(d->CreateBindingGroupWithCachedLayout(group));
+            }
+            else
+            {
+                finalGroups.push_back(group);
+            }
+        };
+        (BindGroup(bindingGroups), ...);
+
+        auto &commandBuffer = GetCurrentCommandBuffer();
+        commandBuffer.BindComputePipeline(s->GetComputePipeline());
+        commandBuffer.BindComputeGroups(finalGroups);
+        commandBuffer.DispatchIndirect(indirectBuffer->Get(), indirectBufferOffset);
+    });
+    return pass;
+}
 
 RTRC_RG_END

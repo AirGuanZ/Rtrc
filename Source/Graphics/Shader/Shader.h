@@ -12,7 +12,7 @@ RTRC_BEGIN
 class BindingLayout;
 class BindingGroup;
 class BindingGroupLayout;
-class Compiler;
+class ShaderCompiler;
 class ComputePipeline;
 class ShaderCompiler;
 
@@ -31,7 +31,7 @@ public:
 private:
 
     friend class ShaderCompiler;
-    friend class Compiler;
+    friend class ShaderCompiler;
 
     std::vector<RHI::RayTracingRayGenShaderGroup> rayGenShaderGroups_;
     std::vector<RHI::RayTracingMissShaderGroup>   missShaderGroups_;
@@ -112,7 +112,7 @@ public:
 private:
 
     friend class ShaderCompiler;
-    friend class Compiler;
+    friend class ShaderCompiler;
 
     std::map<std::string, int, std::less<>> nameToBindingGroupLayoutIndex_;
     std::vector<RC<BindingGroupLayout>>     bindingGroupLayouts_;
@@ -191,9 +191,8 @@ public:
     const ShaderGroupInfo &GetShaderGroupInfo() const;
 
 private:
-
+    
     friend class ShaderCompiler;
-    friend class Compiler;
 
     Category category_ = Category::Graphics;
 
@@ -260,7 +259,7 @@ public:
 private:
     
     friend class ShaderCompiler;
-    friend class Compiler;
+    friend class ShaderCompiler;
 
     static constexpr int VS_INDEX = 0;
     static constexpr int FS_INDEX = 1;

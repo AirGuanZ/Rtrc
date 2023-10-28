@@ -19,7 +19,7 @@ set_property(TARGET Core PROPERTY CXX_STANDARD 23)
 #set_source_files_properties(${CORE_SRCS} PROPERTIES UNITY_GROUP "Core")
 
 if(MSVC)
-	target_compile_options(Core PUBLIC /Zc:preprocessor)
+	target_compile_options(Core PUBLIC /Zc:preprocessor /MP)
 	target_compile_definitions(Core PUBLIC _CRT_SECURE_NO_WARNINGS _SILENCE_CXX23_ALIGNED_STORAGE_DEPRECATION_WARNING)
 endif()
 

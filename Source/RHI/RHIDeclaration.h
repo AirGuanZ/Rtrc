@@ -1196,6 +1196,12 @@ struct BufferReadRange
 
 static constexpr BufferReadRange READ_WHOLE_BUFFER = { 0, (std::numeric_limits<size_t>::max)() };
 
+struct WarpSizeInfo
+{
+    uint32_t minSize;
+    uint32_t maxSize;
+};
+
 // =============================== rhi interfaces ===============================
 
 class RHIObject : public ReferenceCounted, public Uncopyable
@@ -1425,7 +1431,8 @@ public:
         const RayTracingInstanceArrayDesc        &instances,
         RayTracingAccelerationStructureBuildFlags flags) RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API const ShaderGroupRecordRequirements &GetShaderGroupRecordRequirements() RTRC_RHI_API_PURE;
+    RTRC_RHI_API const ShaderGroupRecordRequirements &GetShaderGroupRecordRequirements() const RTRC_RHI_API_PURE;
+    RTRC_RHI_API const WarpSizeInfo &GetWarpSizeInfo() const RTRC_RHI_API_PURE;
 };
 
 class BackBufferSemaphore : public RHIObject

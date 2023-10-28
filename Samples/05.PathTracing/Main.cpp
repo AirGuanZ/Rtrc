@@ -298,7 +298,7 @@ void Run()
             {
                 auto &commandBuffer = RG::GetCurrentCommandBuffer();
                 
-                StaticShaderInfo<"InitRng">::Variant::Pass bindingGroupData;
+                StaticShaderInfo<"InitRng">::Pass bindingGroupData;
                 bindingGroupData.RngTexture = rgRngTexture;
                 bindingGroupData.Resolution = rgRngTexture->GetSize();
                 auto bindingGroup = device->CreateBindingGroupWithCachedLayout(bindingGroupData);
@@ -320,7 +320,7 @@ void Run()
         ptPass->Use(rgRngTexture,        RG::CS_RWTexture);
         ptPass->SetCallback([&]
         {
-            StaticShaderInfo<"PathTracing">::Variant::Pass bindingGroupData;
+            StaticShaderInfo<"PathTracing">::Pass bindingGroupData;
             bindingGroupData.AccumulateTexture = rgAccumulateTexture;
             bindingGroupData.OutputTexture     = renderTarget;
             bindingGroupData.RngTexture        = rgRngTexture;

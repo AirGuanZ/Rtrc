@@ -82,7 +82,8 @@ public:
         const RayTracingInstanceArrayDesc        &instances,
         RayTracingAccelerationStructureBuildFlags flags) RTRC_RHI_OVERRIDE;
 
-    const ShaderGroupRecordRequirements &GetShaderGroupRecordRequirements() RTRC_RHI_OVERRIDE;
+    const ShaderGroupRecordRequirements &GetShaderGroupRecordRequirements() const RTRC_RHI_OVERRIDE;
+    const WarpSizeInfo &GetWarpSizeInfo() const RTRC_RHI_OVERRIDE;
 
     void _internalSetObjectName(VkObjectType objectType, uint64_t objectHandle, const char *name);
 
@@ -107,6 +108,7 @@ private:
     VmaAllocator allocator_;
 
     std::optional<ShaderGroupRecordRequirements> shaderGroupRecordRequirements_;
+    WarpSizeInfo warpSizeInfo_;
 };
 
 RTRC_RHI_VK_END

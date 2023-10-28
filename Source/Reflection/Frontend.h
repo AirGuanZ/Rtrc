@@ -44,10 +44,20 @@ struct Struct
     auto operator<=>(const Struct &) const = default;
 };
 
+struct Enum
+{
+    std::string                              qualifiedName;
+    bool                                     isScoped = false;
+    std::set<std::string>                    annotations;
+    std::vector<std::pair<std::string, int>> values;
+
+    auto operator<=>(const Enum &) const = default;
+};
+
 struct SourceInfo
 {
     std::vector<std::string> filenames;
     std::vector<std::string> includeDirs;
 };
 
-std::vector<Struct> ParseStructs(const SourceInfo &sourceInfo);
+void Parse(const SourceInfo &sourceInfo, std::vector<Struct> &outStructs, std::vector<Enum> &outEnums);

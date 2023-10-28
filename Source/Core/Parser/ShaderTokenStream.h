@@ -256,8 +256,17 @@ private:
 
             ++line;
         }
-        throw Exception(fmt::format(
-            "Invalid shader source file: '#line FILENAME' not found before the {}th character", nextPos_ + 1));
+
+        line = 1;
+        for(int i = 0; i < nextPos_; ++i)
+        {
+            if(source_[i] == '\n')
+            {
+                ++line;
+            }
+        }
+
+        throw Exception(fmt::format("Parsing error at line {}. {}", line, msg));
     }
 
     [[noreturn]] void ThrowInMaterialMode(std::string_view msg) const

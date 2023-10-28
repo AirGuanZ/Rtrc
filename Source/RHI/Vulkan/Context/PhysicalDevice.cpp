@@ -396,7 +396,12 @@ VkPhysicalDevice VulkanPhysicalDevice::GetNativeHandle() const
 
 const VkPhysicalDeviceProperties &VulkanPhysicalDevice::GetNativeProperties() const
 {
-    return properties_;
+    return properties_.properties;
+}
+
+const VkPhysicalDeviceSubgroupProperties &VulkanPhysicalDevice::_internalGetSubgroupProperties() const
+{
+    return subgroupProperties_;
 }
 
 const std::optional<VkPhysicalDeviceAccelerationStructurePropertiesKHR> &
@@ -412,16 +417,19 @@ const std::optional<VkPhysicalDeviceRayTracingPipelinePropertiesKHR> &
 }
 
 VulkanPhysicalDevice::VulkanPhysicalDevice()
-    : physicalDevice_(VK_NULL_HANDLE), properties_{}
+    : physicalDevice_(VK_NULL_HANDLE), properties_{}, subgroupProperties_{}
 {
     
 }
 
 VulkanPhysicalDevice::VulkanPhysicalDevice(VkPhysicalDevice device, bool enableRayTracing)
-    : physicalDevice_(device), properties_{}
+    : physicalDevice_(device), properties_{}, subgroupProperties_{}
 {
     assert(physicalDevice_);
-    vkGetPhysicalDeviceProperties(physicalDevice_, &properties_);
+    subgroupProperties_.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES;
+    properties_.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+    properties_.pNext = &subgroupProperties_;
+    vkGetPhysicalDeviceProperties2(physicalDevice_, &properties_);
 
     uint32_t queueFamilyCount;
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);

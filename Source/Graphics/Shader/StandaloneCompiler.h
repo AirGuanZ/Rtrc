@@ -17,8 +17,8 @@ public:
 
 private:
     
-    Compiler compiler_;
-    DXC      dxc_;
+    ShaderCompiler compiler_;
+    DXC            dxc_;
 };
 
 RTRC_END

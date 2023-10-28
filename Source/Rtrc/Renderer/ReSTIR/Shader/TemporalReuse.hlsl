@@ -18,6 +18,9 @@ rtrc_group(Pass, CS)
     rtrc_define(Texture2D<float>, PrevDepth)
     rtrc_define(Texture2D<float>, CurrDepth)
 
+    rtrc_define(Texture2D<float3>, PrevNormal)
+    rtrc_define(Texture2D<float3>, CurrNormal)
+
     rtrc_define(ConstantBuffer<CameraData>, PrevCamera)
     rtrc_define(ConstantBuffer<CameraData>, CurrCamera)
 
@@ -64,6 +67,11 @@ uint4 Reuse(uint2 tid, float deviceZ, float2 uv)
     const float absErr = abs(expectedPrevViewZ - actualPrevViewZ);
     const float relErr = absErr / max(expectedPrevViewZ, 0.01);
     if(absErr >= 0.2 || relErr >= 0.02)
+        return currEncodedState;
+    
+    const float3 prevNormal = 2 * PrevNormal[prevCoord] - 1;
+    const float3 currNormal = 2 * CurrNormal[tid] - 1;
+    if(dot(prevNormal, currNormal) < 0.95)
         return currEncodedState;
 
     // Load prev/curr states

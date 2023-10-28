@@ -190,7 +190,7 @@ std::string GenerateCppReflection(std::span<const Struct> structs)
     return ret;
 }
 
-std::string GenerateShaderHeader(std::span<const Struct> structs)
+std::string GenerateShaderHeader(std::span<const Struct> structs, std::span<const Enum> enums)
 {
     std::string ret = COMMON_HEADER;
     
@@ -243,6 +243,38 @@ std::string GenerateShaderHeader(std::span<const Struct> structs)
         ret += "\n";
     }
 
+    for(auto &e : enums)
+    {
+        if(!e.annotations.contains("shader"))
+            continue;
+
+        auto segs = std::string_view(e.qualifiedName)
+            | std::ranges::views::split(std::string_view("::"))
+            | std::ranges::views::transform([](auto &&s) { return std::string(std::string_view(s)); })
+            | std::ranges::to<std::vector<std::string>>();
+        for(size_t i = 0; i + 1 < segs.size(); ++i)
+            ret += "namespace " + segs[i] + " { ";
+        std::string indent;
+        if(segs.size() > 1)
+        {
+            ret += "\n";
+            indent += "    ";
+        }
+        if(e.isScoped)
+            ret += indent + "enum class " + segs.back() + "\n";
+        else
+            ret += indent + "enum " + segs.back() + "\n";
+        ret += indent + "{\n";
+        for(auto &[name, value] : e.values)
+        {
+            ret += indent + "    " + name + " = " + std::to_string(value) + ",\n";
+        }
+        ret += indent + "};\n";
+        for(size_t i = 0; i + 1 < segs.size(); ++i)
+            ret += "}";
+        ret += "\n";
+    }
+
     return ret;
 }
 
@@ -280,7 +312,7 @@ std::string GenerateStructToFileList(std::span<const Struct> structs)
     return ret;
 }
 
-int main(int argc, const char *argv[])
+int Run(int argc, const char *argv[])
 {
     auto options = ParseOptions(argc, argv);
     if(!options)
@@ -300,7 +332,7 @@ int main(int argc, const char *argv[])
     }
     else
         sourceStream = &std::cin;
-
+     
     SourceInfo sources;
     for(std::string line; std::getline(*sourceStream, line);)
     {
@@ -317,7 +349,8 @@ int main(int argc, const char *argv[])
         }
     }
 
-    auto structs = ParseStructs(sources);
+    std::vector<Struct> structs; std::vector<Enum> enums;
+    Parse(sources, structs, enums);
     structs.erase(std::remove_if(structs.begin(), structs.end(), [](const Struct &s)
     {
         return !s.annotations.contains("rtrc");
@@ -351,7 +384,7 @@ int main(int argc, const char *argv[])
     }
     if(!options->outputShaderHeaderFile.empty())
     {
-        const std::string content = GenerateShaderHeader(structs);
+        const std::string content = GenerateShaderHeader(structs, enums);
         WriteTxt(options->outputShaderHeaderFile, content);
     }
     if(!options->outputListFile.empty())
@@ -363,5 +396,19 @@ int main(int argc, const char *argv[])
     {
         const std::string content = GenerateStructToFileList(structs);
         WriteTxt(options->outputStructToFilenameFile, content);
+    }
+
+    return 0;
+}
+
+int main(int argc, const char *argv[])
+{
+    try
+    {
+        return Run(argc, argv);
+    }
+    catch(const std::exception &e)
+    {
+        std::cerr << e.what() << std::endl;
     }
 }

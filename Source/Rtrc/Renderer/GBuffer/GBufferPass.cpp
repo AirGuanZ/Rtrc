@@ -24,85 +24,21 @@ GBufferPass::GBufferPass(ObserverPtr<Device> device)
 
 }
 
-GBuffers GBufferPass::Render(
+void GBufferPass::Render(
     const RenderCamera      &sceneCamera,
     const RC<BindingGroup>  &bindlessTextureGroup,
-    RG::RenderGraph         &renderGraph,
-    const Vector2u          &rtSize)
+    RG::RenderGraph         &renderGraph)
 {
-    GBuffers ret = AllocateGBuffers(renderGraph, rtSize);
+    auto &gbuffers = sceneCamera.GetGBuffers();
     auto gbufferPass = renderGraph.CreatePass("Render GBuffers");
-    gbufferPass->Use(ret.normal, RG::ColorAttachmentWriteOnly);
-    gbufferPass->Use(ret.albedoMetallic, RG::ColorAttachmentWriteOnly);
-    gbufferPass->Use(ret.roughness, RG::ColorAttachmentWriteOnly);
-    gbufferPass->Use(ret.depthStencil, RG::DepthStencilAttachment);
-    gbufferPass->SetCallback([this, gbuffers = ret, &sceneCamera, bindlessTextureGroup]
+    gbufferPass->Use(gbuffers.currNormal, RG::ColorAttachmentWriteOnly);
+    gbufferPass->Use(gbuffers.albedoMetallic, RG::ColorAttachmentWriteOnly);
+    gbufferPass->Use(gbuffers.roughness, RG::ColorAttachmentWriteOnly);
+    gbufferPass->Use(gbuffers.depthStencil, RG::DepthStencilAttachment);
+    gbufferPass->SetCallback([this, gbuffers, &sceneCamera, bindlessTextureGroup]
     {
         DoRenderGBuffers(sceneCamera, bindlessTextureGroup, gbuffers);
     });
-    return ret;
-}
-
-GBuffers GBufferPass::AllocateGBuffers(RG::RenderGraph &renderGraph, const Vector2u &rtSize)
-{
-    GBuffers ret;
-    ret.normal = renderGraph.CreateTexture(RHI::TextureDesc
-    {
-        .dim                  = RHI::TextureDimension::Tex2D,
-        .format               = RHI::Format::A2R10G10B10_UNorm,
-        .width                = rtSize.x,
-        .height               = rtSize.y,
-        .arraySize            = 1,
-        .mipLevels            = 1,
-        .sampleCount          = 1,
-        .usage                = RHI::TextureUsage::RenderTarget | RHI::TextureUsage::ShaderResource,
-        .initialLayout        = RHI::TextureLayout::Undefined,
-        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive,
-        .clearValue           = RHI::ColorClearValue{ 0, 0, 0, 0 }
-    }, "GBufferA");
-    ret.albedoMetallic = renderGraph.CreateTexture(RHI::TextureDesc
-    {
-        .dim                  = RHI::TextureDimension::Tex2D,
-        .format               = RHI::Format::R8G8B8A8_UNorm,
-        .width                = rtSize.x,
-        .height               = rtSize.y,
-        .arraySize            = 1,
-        .mipLevels            = 1,
-        .sampleCount          = 1,
-        .usage                = RHI::TextureUsage::RenderTarget | RHI::TextureUsage::ShaderResource,
-        .initialLayout        = RHI::TextureLayout::Undefined,
-        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive,
-        .clearValue           = RHI::ColorClearValue{ 0, 0, 0, 0 }
-    }, "GBufferB");
-    ret.roughness = renderGraph.CreateTexture(RHI::TextureDesc
-    {
-        .dim                  = RHI::TextureDimension::Tex2D,
-        .format               = RHI::Format::R8G8B8A8_UNorm,
-        .width                = rtSize.x,
-        .height               = rtSize.y,
-        .arraySize            = 1,
-        .mipLevels            = 1,
-        .sampleCount          = 1,
-        .usage                = RHI::TextureUsage::RenderTarget | RHI::TextureUsage::ShaderResource,
-        .initialLayout        = RHI::TextureLayout::Undefined,
-        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive,
-        .clearValue           = RHI::ColorClearValue{ 0, 0, 0, 0 }
-    }, "GBufferC");
-    ret.depthStencil = renderGraph.CreateTexture(RHI::TextureDesc
-    {
-        .dim                  = RHI::TextureDimension::Tex2D,
-        .format               = RHI::Format::D24S8,
-        .width                = rtSize.x,
-        .height               = rtSize.y,
-        .arraySize            = 1,
-        .mipLevels            = 1,
-        .sampleCount          = 1,
-        .usage                = RHI::TextureUsage::DepthStencil | RHI::TextureUsage::ShaderResource,
-        .initialLayout        = RHI::TextureLayout::Undefined,
-        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive,
-        .clearValue           = RHI::DepthStencilClearValue{ 1, 0 }
-    }, "GBufferDepth");
-    return ret;
 }
 
 std::vector<GBufferPass::MaterialGroup> GBufferPass::CollectPipelineGroups(const RenderCamera &scene) const
@@ -184,7 +120,7 @@ void GBufferPass::DoRenderGBuffers(
     const RC<BindingGroup> &bindlessTextureGroup,
     const GBuffers         &gbuffers)
 {
-    auto gbufferA = gbuffers.normal;
+    auto gbufferA = gbuffers.currNormal;
     auto gbufferB = gbuffers.albedoMetallic;
     auto gbufferC = gbuffers.roughness;
     auto gbufferDepth = gbuffers.depthStencil;

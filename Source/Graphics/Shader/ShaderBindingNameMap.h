@@ -7,7 +7,7 @@
 
 RTRC_BEGIN
 
-class Compiler;
+class ShaderCompiler;
 
 class ShaderBindingNameMap : public Uncopyable
 {
@@ -21,9 +21,8 @@ public:
     const GeneralPooledString &GetPooledBindingName(int groupIndex, int indexInGroup) const;
 
 private:
-
+    
     friend class ShaderCompiler;
-    friend class Compiler;
 
     struct BindingIndexInfo
     {

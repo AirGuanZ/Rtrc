@@ -341,7 +341,7 @@ void GenerateKeywordAndBindingGroupsInShader(
                 [&](const Rtrc::EnumShaderKeyword &keyword)
                 {
                     sw("{} kw{}", keyword.name, keyword.name);
-                    templateArgsStr += keyword.name + "kw" + keyword.name;
+                    templateArgsStr += "kw" + keyword.name;
                 });
         }
         sw(">").NewLine();
@@ -350,6 +350,15 @@ void GenerateKeywordAndBindingGroupsInShader(
     sw(
         "using Variant = Rtrc::ShaderInfoDetail::{}::Variant{};",
         namespaceName, templateArgsStr).NewLine();
+
+    if(parsedShader.keywords.empty())
+    {
+        assert(parsedShader.variants.size() == 1);
+        for(auto &bindingGroup : parsedShader.variants[0].bindingGroups)
+        {
+            sw("using {} = Variant::{};", bindingGroup.name, bindingGroup.name).NewLine();
+        }
+    }
 
     --sw;
     sw("};").NewLine();

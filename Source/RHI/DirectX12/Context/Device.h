@@ -81,7 +81,8 @@ public:
         const RayTracingInstanceArrayDesc        &instances,
         RayTracingAccelerationStructureBuildFlags flags) RTRC_RHI_OVERRIDE;
 
-    const ShaderGroupRecordRequirements &GetShaderGroupRecordRequirements() RTRC_RHI_OVERRIDE;
+    const ShaderGroupRecordRequirements &GetShaderGroupRecordRequirements() const RTRC_RHI_OVERRIDE;
+    const WarpSizeInfo &GetWarpSizeInfo() const RTRC_RHI_OVERRIDE;
 
     ID3D12Device5 *_internalGetNativeDevice() const { return device_.Get(); }
 
@@ -134,12 +135,12 @@ private:
     Ptr<DirectX12Queue> graphicsQueue_;
     Ptr<DirectX12Queue> computeQueue_;
     Ptr<DirectX12Queue> copyQueue_;
-    // Ptr<DirectX12Queue> presentQueue_;
-
+    
     ComPtr<ID3D12CommandSignature> indirectDispatchCommandSignature_;
     ComPtr<ID3D12CommandSignature> indirectDrawIndexedCommandSignature_;
 
     ShaderGroupRecordRequirements shaderGroupRecordRequirements_;
+    WarpSizeInfo warpSizeInfo_;
 
     uint32_t srvUavCbvDescriptorSize_;
     uint32_t samplerDescriptorSize_;

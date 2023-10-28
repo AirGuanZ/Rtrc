@@ -80,6 +80,13 @@ namespace CameraUtils
         return CameraUtils::GetWorldRay(camera.worldRays, uv);
     }
 
+    float3 GetWorldPosition(CameraData camera, float2 uv, float deviceZ)
+    {
+        const float viewZ = DeviceZToViewZ(camera, deviceZ);
+        const float3 worldRay = GetWorldRay(camera, uv);
+        return viewZ * worldRay + camera.position;
+    }
+
 } // namespace namespace CameraUtils
 
 #endif // #ifndef RTRC_COMMON_SCENE_HLSL

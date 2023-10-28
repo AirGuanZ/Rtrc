@@ -12,6 +12,116 @@ RenderCamera::RenderCamera(ObserverPtr<Device> device, const RenderScene &scene,
 
 }
 
+void RenderCamera::CreateGBuffers(ObserverPtr<RG::RenderGraph> renderGraph, const Vector2u &framebufferSize)
+{
+    // Normal
+
+    assert(!gbuffers_.prevNormal && !gbuffers_.currNormal);
+    std::swap(prevNormal_, currNormal_);
+    if(prevNormal_ && prevNormal_->GetSize() != framebufferSize)
+    {
+        prevNormal_.reset();
+    }
+    if(prevNormal_)
+    {
+        gbuffers_.prevNormal = renderGraph->RegisterTexture(prevNormal_);
+    }
+    if(!currNormal_ || currNormal_->GetSize() != framebufferSize)
+    {
+        currNormal_ = device_->CreatePooledTexture(RHI::TextureDesc
+        {
+            .dim        = RHI::TextureDimension::Tex2D,
+            .format     = RHI::Format::A2R10G10B10_UNorm,
+            .width      = framebufferSize.x,
+            .height     = framebufferSize.y,
+            .usage      = RHI::TextureUsage::ShaderResource | RHI::TextureUsage::RenderTarget,
+            .clearValue = RHI::ColorClearValue{ 0, 0, 0, 0 }
+        });
+        currNormal_->SetName("GBuffer normal");
+    }
+    gbuffers_.currNormal = renderGraph->RegisterTexture(currNormal_);
+
+    // Others
+
+    gbuffers_.albedoMetallic = renderGraph->CreateTexture(RHI::TextureDesc
+    {
+        .dim                  = RHI::TextureDimension::Tex2D,
+        .format               = RHI::Format::R8G8B8A8_UNorm,
+        .width                = framebufferSize.x,
+        .height               = framebufferSize.y,
+        .arraySize            = 1,
+        .mipLevels            = 1,
+        .sampleCount          = 1,
+        .usage                = RHI::TextureUsage::RenderTarget | RHI::TextureUsage::ShaderResource,
+        .initialLayout        = RHI::TextureLayout::Undefined,
+        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive,
+        .clearValue           = RHI::ColorClearValue{ 0, 0, 0, 0 }
+    }, "GBufferAlbedoMetallic");
+    gbuffers_.roughness = renderGraph->CreateTexture(RHI::TextureDesc
+    {
+        .dim                  = RHI::TextureDimension::Tex2D,
+        .format               = RHI::Format::R8G8B8A8_UNorm,
+        .width                = framebufferSize.x,
+        .height               = framebufferSize.y,
+        .arraySize            = 1,
+        .mipLevels            = 1,
+        .sampleCount          = 1,
+        .usage                = RHI::TextureUsage::RenderTarget | RHI::TextureUsage::ShaderResource,
+        .initialLayout        = RHI::TextureLayout::Undefined,
+        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive,
+        .clearValue           = RHI::ColorClearValue{ 0, 0, 0, 0 }
+    }, "GBufferRoughness");
+    gbuffers_.depthStencil = renderGraph->CreateTexture(RHI::TextureDesc
+    {
+        .dim                  = RHI::TextureDimension::Tex2D,
+        .format               = RHI::Format::D24S8,
+        .width                = framebufferSize.x,
+        .height               = framebufferSize.y,
+        .arraySize            = 1,
+        .mipLevels            = 1,
+        .sampleCount          = 1,
+        .usage                = RHI::TextureUsage::DepthStencil | RHI::TextureUsage::ShaderResource,
+        .initialLayout        = RHI::TextureLayout::Undefined,
+        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive,
+        .clearValue           = RHI::DepthStencilClearValue{ 1, 0 }
+    }, "GBufferDepth");
+}
+
+void RenderCamera::ClearGBuffers()
+{
+    gbuffers_ = {};
+}
+
+void RenderCamera::CreateNormalTexture(RG::RenderGraph &renderGraph, const Vector2u &framebufferSize, GBuffers &gbuffers)
+{
+    assert(!gbuffers.prevNormal && !gbuffers.currNormal);
+    std::swap(prevNormal_, currNormal_);
+
+    if(prevNormal_ && prevNormal_->GetSize() != framebufferSize)
+    {
+        prevNormal_.reset();
+    }
+    if(prevNormal_)
+    {
+        gbuffers.prevNormal = renderGraph.RegisterTexture(prevNormal_);
+    }
+
+    if(!currNormal_ || currNormal_->GetSize() != framebufferSize)
+    {
+        currNormal_ = device_->CreatePooledTexture(RHI::TextureDesc
+        {
+            .dim        = RHI::TextureDimension::Tex2D,
+            .format     = RHI::Format::A2R10G10B10_UNorm,
+            .width      = framebufferSize.x,
+            .height     = framebufferSize.y,
+            .usage      = RHI::TextureUsage::ShaderResource | RHI::TextureUsage::RenderTarget,
+            .clearValue = RHI::ColorClearValue{ 0, 0, 0, 0 }
+        });
+        currNormal_->SetName("GBuffer normal");
+    }
+    gbuffers.currNormal = renderGraph.RegisterTexture(currNormal_);
+}
+
 void RenderCamera::Update(
     const MeshRenderingCacheManager     &cachedMeshes,
     const MaterialRenderingCacheManager &cachedMaterials,
@@ -60,19 +170,19 @@ void RenderCamera::Update(
     }
 }
 
-void RenderCamera::UpdateDepthTexture(RG::RenderGraph &renderGraph, GBuffers &gbuffers)
+void RenderCamera::ResolveDepthTexture(RG::RenderGraph &renderGraph)
 {
-    assert(!gbuffers.prevDepth && !gbuffers.currDepth);
+    assert(!gbuffers_.prevDepth && !gbuffers_.currDepth);
     std::swap(prevDepth_, currDepth_);
 
-    auto depthStencil = gbuffers.depthStencil;
+    auto depthStencil = gbuffers_.depthStencil;
     if(prevDepth_ && prevDepth_->GetSize() != depthStencil->GetSize())
     {
         prevDepth_ = nullptr;
     }
     if(prevDepth_)
     {
-        gbuffers.prevDepth = renderGraph.RegisterTexture(prevDepth_);
+        gbuffers_.prevDepth = renderGraph.RegisterTexture(prevDepth_);
     }
 
     if(!currDepth_ || currDepth_->GetSize() != depthStencil->GetSize())
@@ -87,8 +197,8 @@ void RenderCamera::UpdateDepthTexture(RG::RenderGraph &renderGraph, GBuffers &gb
         });
         currDepth_->SetName("Readonly depth");
     }
-    gbuffers.currDepth = renderGraph.RegisterTexture(currDepth_);
-    renderGraph.CreateBlitTexture2DPass("InitializeReadOnlyDepth", depthStencil, gbuffers.currDepth);
+    gbuffers_.currDepth = renderGraph.RegisterTexture(currDepth_);
+    renderGraph.CreateBlitTexture2DPass("ResolveDepth", depthStencil, gbuffers_.currDepth);
 }
 
 RenderCameraManager::RenderCameraManager(ObserverPtr<Device> device, ObserverPtr<RenderSceneManager> scenes)

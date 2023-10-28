@@ -35,7 +35,6 @@ public:
     void Render(
         RG::RenderGraph &renderGraph,
         RenderCamera    &camera,
-        const GBuffers  &gbuffers,
         bool             clearBeforeRender) const;
 
     void ClearFrameData(PerCameraData &data) const;

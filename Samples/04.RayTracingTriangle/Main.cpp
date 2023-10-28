@@ -182,7 +182,7 @@ void Run()
 
             commandBuffer.BindRayTracingPipeline(pipeline);
 
-            StaticShaderInfo<"RayTracingTriangle">::Variant::Pass bindingGroupData;
+            StaticShaderInfo<"RayTracingTriangle">::Pass bindingGroupData;
             bindingGroupData.OutputTextureRW = renderTarget;
             bindingGroupData.Scene = tlas;
             auto bindingGroup = device->CreateBindingGroup(bindingGroupData);
