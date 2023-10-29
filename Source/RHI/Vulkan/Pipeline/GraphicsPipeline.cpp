@@ -6,7 +6,7 @@
 
 RTRC_RHI_VK_BEGIN
 
-VulkanGraphicsPipeline::VulkanGraphicsPipeline(RPtr<BindingLayout> layout, VkDevice device, VkPipeline pipeline)
+VulkanGraphicsPipeline::VulkanGraphicsPipeline(OPtr<BindingLayout> layout, VkDevice device, VkPipeline pipeline)
     : layout_(std::move(layout)), device_(device), pipeline_(pipeline)
 {
     
@@ -18,7 +18,7 @@ VulkanGraphicsPipeline::~VulkanGraphicsPipeline()
     vkDestroyPipeline(device_, pipeline_, RTRC_VK_ALLOC);
 }
 
-const RPtr<BindingLayout> &VulkanGraphicsPipeline::GetBindingLayout() const
+const OPtr<BindingLayout> &VulkanGraphicsPipeline::GetBindingLayout() const
 {
     return layout_;
 }

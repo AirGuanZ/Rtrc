@@ -497,9 +497,9 @@ RC<BindingGroup> Device::CreateBindingGroup(const RC<BindingGroupLayout> &layout
     {
         LogError("Device::CreateBindingGroup: Unmatched binding group layout");
         LogError("Layout hint is");
-        DumpBindingGroupLayoutDesc(layoutHint->GetRHIObject()->GetDesc());
+        Rtrc::DumpBindingGroupLayoutDesc(layoutHint->GetRHIObject()->GetDesc());
         LogError("Layout created from type is");
-        DumpBindingGroupLayoutDesc(layout->GetRHIObject()->GetDesc());
+        Rtrc::DumpBindingGroupLayoutDesc(layout->GetRHIObject()->GetDesc());
         std::terminate();
     }
 #endif

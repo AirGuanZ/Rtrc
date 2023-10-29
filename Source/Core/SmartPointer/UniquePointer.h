@@ -38,7 +38,7 @@ public:
 
     T *Get() const { return ptr_; }
 
-    T &operator*() const { return ptr_; }
+    T &operator*() const { return *ptr_; }
 
     T *Release() { auto ret = ptr_; ptr_ = nullptr; return ret; }
 

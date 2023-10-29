@@ -111,7 +111,8 @@ void BindingGroupManager::CopyBindings(
     uint32_t count)
 {
     device_->CopyBindingGroup(
-        dst->GetRHIObject(), dstSlot, dstArrElem, src->GetRHIObject(), srcSlot, srcArrElem, count);
+        dst->GetRHIObject(), dstSlot, dstArrElem,
+        src->GetRHIObject(), srcSlot, srcArrElem, count);
 }
 
 void BindingGroupManager::_internalRelease(BindingGroup &group)

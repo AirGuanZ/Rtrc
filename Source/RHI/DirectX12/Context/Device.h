@@ -48,16 +48,15 @@ public:
     UPtr<RayTracingLibrary> CreateRayTracingLibrary(const RayTracingLibraryDesc &desc) RTRC_RHI_OVERRIDE;
 
     UPtr<BindingGroupLayout> CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc) RTRC_RHI_OVERRIDE;
-    RPtr<BindingGroup> CreateBindingGroup(
-        const OPtr<BindingGroupLayout> &bindingGroupLayout,
-        uint32_t                        variableArraySize) RTRC_RHI_OVERRIDE;
-    RPtr<BindingLayout> CreateBindingLayout(const BindingLayoutDesc &desc) RTRC_RHI_OVERRIDE;
+    UPtr<BindingGroup> CreateBindingGroup(
+        const OPtr<BindingGroupLayout> &bindingGroupLayout, uint32_t variableArraySize) RTRC_RHI_OVERRIDE;
+    UPtr<BindingLayout> CreateBindingLayout(const BindingLayoutDesc &desc) RTRC_RHI_OVERRIDE;
 
     void UpdateBindingGroups(const BindingGroupUpdateBatch &batch) RTRC_RHI_OVERRIDE;
 
     void CopyBindingGroup(
-        const BindingGroupPtr &dstGroup, uint32_t dstIndex, uint32_t dstArrayOffset,
-        const BindingGroupPtr &srcGroup, uint32_t srcIndex, uint32_t srcArrayOffset,
+        const BindingGroupOPtr &dstGroup, uint32_t dstIndex, uint32_t dstArrayOffset,
+        const BindingGroupOPtr &srcGroup, uint32_t srcIndex, uint32_t srcArrayOffset,
         uint32_t count) RTRC_RHI_OVERRIDE;
 
     RPtr<Texture> CreateTexture(const TextureDesc &desc) RTRC_RHI_OVERRIDE;

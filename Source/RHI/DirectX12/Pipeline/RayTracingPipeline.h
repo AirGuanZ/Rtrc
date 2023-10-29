@@ -10,11 +10,11 @@ public:
 
     DirectX12RayTracingPipeline(
         ComPtr<ID3D12StateObject>   pipelineStateObject,
-        RPtr<BindingLayout>          bindingLayout,
+        OPtr<BindingLayout>          bindingLayout,
         ComPtr<ID3D12RootSignature> rootSignature,
         std::vector<std::wstring>   groupExportedNames);
 
-    const RPtr<BindingLayout> &GetBindingLayout() const RTRC_RHI_OVERRIDE;
+    const OPtr<BindingLayout> &GetBindingLayout() const RTRC_RHI_OVERRIDE;
 
     void GetShaderGroupHandles(
         uint32_t                   startGroupIndex,
@@ -27,7 +27,7 @@ public:
 private:
 
     ComPtr<ID3D12StateObject>           pipelineStateObject_;
-    RPtr<BindingLayout>                  bindingLayout_;
+    OPtr<BindingLayout>                  bindingLayout_;
     ComPtr<ID3D12RootSignature>         rootSignature_;
     std::vector<std::wstring>           groupExportedNames_;
     ComPtr<ID3D12StateObjectProperties> properties_;

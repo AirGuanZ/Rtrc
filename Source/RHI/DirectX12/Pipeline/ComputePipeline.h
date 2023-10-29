@@ -11,7 +11,7 @@ public:
     RTRC_D3D12_IMPL_SET_NAME(pipelineState_)
 
     DirectX12ComputePipeline(
-        RPtr<BindingLayout>          bindingLayout,
+        OPtr<BindingLayout>          bindingLayout,
         ComPtr<ID3D12RootSignature> rootSignature,
         ComPtr<ID3D12PipelineState> pipelineState)
         : bindingLayout_(std::move(bindingLayout))
@@ -21,7 +21,7 @@ public:
         
     }
 
-    const RPtr<BindingLayout> &GetBindingLayout() const RTRC_RHI_OVERRIDE
+    const OPtr<BindingLayout> &GetBindingLayout() const RTRC_RHI_OVERRIDE
     {
         return bindingLayout_;
     }
@@ -35,7 +35,7 @@ public:
 
 private:
 
-    RPtr<BindingLayout>          bindingLayout_;
+    OPtr<BindingLayout>          bindingLayout_;
     ComPtr<ID3D12RootSignature> rootSignature_;
     ComPtr<ID3D12PipelineState> pipelineState_;
 };

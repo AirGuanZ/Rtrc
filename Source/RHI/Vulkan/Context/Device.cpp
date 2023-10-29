@@ -935,14 +935,14 @@ UPtr<BindingGroupLayout> VulkanDevice::CreateBindingGroupLayout(const BindingGro
     return MakeUPtr<VulkanBindingGroupLayout>(desc, std::move(descSetBindings), device_, layout, bindless);
 }
 
-RPtr<BindingGroup> VulkanDevice::CreateBindingGroup(
+UPtr<BindingGroup> VulkanDevice::CreateBindingGroup(
     const OPtr<BindingGroupLayout> &bindingGroupLayout, uint32_t variableArraySize)
 {
     auto vkBindingLayout = reinterpret_cast<const VulkanBindingGroupLayout *>(bindingGroupLayout.Get());
     return vkBindingLayout->_internalCreateBindingGroupImpl(variableArraySize);
 }
 
-RPtr<BindingLayout> VulkanDevice::CreateBindingLayout(const BindingLayoutDesc &desc)
+UPtr<BindingLayout> VulkanDevice::CreateBindingLayout(const BindingLayoutDesc &desc)
 {
     if(!desc.unboundedAliases.empty())
     {
@@ -980,7 +980,7 @@ RPtr<BindingLayout> VulkanDevice::CreateBindingLayout(const BindingLayoutDesc &d
         "Failed to create vulkan pipeline layout");
     RTRC_SCOPE_FAIL{ vkDestroyPipelineLayout(device_, layout, RTRC_VK_ALLOC); };
 
-    return MakeRPtr<VulkanBindingLayout>(desc, device_, layout);
+    return MakeUPtr<VulkanBindingLayout>(desc, device_, layout);
 }
 
 void VulkanDevice::UpdateBindingGroups(const BindingGroupUpdateBatch &batch)
@@ -1041,8 +1041,8 @@ void VulkanDevice::UpdateBindingGroups(const BindingGroupUpdateBatch &batch)
 }
 
 void VulkanDevice::CopyBindingGroup(
-    const BindingGroupPtr &dstGroup, uint32_t dstIndex, uint32_t dstArrayOffset,
-    const BindingGroupPtr &srcGroup, uint32_t srcIndex, uint32_t srcArrayOffset,
+    const BindingGroupOPtr &dstGroup, uint32_t dstIndex, uint32_t dstArrayOffset,
+    const BindingGroupOPtr &srcGroup, uint32_t srcIndex, uint32_t srcArrayOffset,
     uint32_t count)
 {
     const VkDescriptorSet vkDstSet = static_cast<VulkanBindingGroup *>(dstGroup.Get())->_internalGetNativeSet();

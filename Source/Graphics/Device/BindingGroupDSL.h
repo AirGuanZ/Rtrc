@@ -912,7 +912,8 @@ void ApplyBindingGroup(RHI::Device *device, ConstantBufferManagerInterface *cbMg
                 if(accessor(&value)->GetRtrcObject())
                 {
                     auto cbuffer = accessor(&value)->GetRtrcObject();
-                    batch.Append(*group.GetRHIObject(), index++, RHI::ConstantBufferUpdate{
+                    batch.Append(*group.GetRHIObject(), index++, RHI::ConstantBufferUpdate
+                    {
                         cbuffer->GetFullBufferRHIObject().Get(),
                         cbuffer->GetSubBufferOffset(),
                         cbuffer->GetSubBufferSize()
@@ -962,7 +963,8 @@ void ApplyBindingGroup(RHI::Device *device, ConstantBufferManagerInterface *cbMg
         
         const int actualIndex = swapUniformAndVariableSizedArray ? (index - 1) : index;
         auto cbuffer = cbMgr->CreateConstantBuffer(deviceData.data(), deviceData.size());
-        batch.Append(*group.GetRHIObject(), actualIndex, RHI::ConstantBufferUpdate{
+        batch.Append(*group.GetRHIObject(), actualIndex, RHI::ConstantBufferUpdate
+        {
             cbuffer->GetFullBufferRHIObject().Get(),
             cbuffer->GetSubBufferOffset(),
             cbuffer->GetSubBufferSize()

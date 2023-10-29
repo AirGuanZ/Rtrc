@@ -3,7 +3,7 @@
 
 RTRC_RHI_VK_BEGIN
 
-VulkanComputePipeline::VulkanComputePipeline(RPtr<BindingLayout> layout, VkDevice device, VkPipeline pipeline)
+VulkanComputePipeline::VulkanComputePipeline(OPtr<BindingLayout> layout, VkDevice device, VkPipeline pipeline)
     : layout_(std::move(layout)), device_(device), pipeline_(pipeline)
 {
     
@@ -15,7 +15,7 @@ VulkanComputePipeline::~VulkanComputePipeline()
     vkDestroyPipeline(device_, pipeline_, RTRC_VK_ALLOC);
 }
 
-const RPtr<BindingLayout> &VulkanComputePipeline::GetBindingLayout() const
+const OPtr<BindingLayout> &VulkanComputePipeline::GetBindingLayout() const
 {
     return layout_;
 }

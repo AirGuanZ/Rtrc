@@ -103,7 +103,7 @@ bool VulkanBindingGroupLayout::_internalIsSlotRWTexture(int index) const
     return desc_.bindings[index].type == BindingType::RWTexture;
 }
 
-RPtr<BindingGroup> VulkanBindingGroupLayout::_internalCreateBindingGroupImpl(uint32_t variableArraySize) const
+UPtr<BindingGroup> VulkanBindingGroupLayout::_internalCreateBindingGroupImpl(uint32_t variableArraySize) const
 {
     assert(!desc_.variableArraySize || variableArraySize != 0);
     if(!variableArraySize)
@@ -115,7 +115,7 @@ RPtr<BindingGroup> VulkanBindingGroupLayout::_internalCreateBindingGroupImpl(uin
         }
         auto set = freeSets_.back();
         freeSets_.pop_back();
-        return MakeRPtr<VulkanBindingGroup>(device_, this, 0, nullptr, set);
+        return MakeUPtr<VulkanBindingGroup>(device_, this, 0, nullptr, set);
     }
 
     std::vector<VkDescriptorPoolSize> poolSizes;
@@ -167,7 +167,7 @@ RPtr<BindingGroup> VulkanBindingGroupLayout::_internalCreateBindingGroupImpl(uin
         vkAllocateDescriptorSets(device_, &allocInfo, &set),
         "Failed to allocate vulkan descriptor set with variable descriptor count");
 
-    return MakeRPtr<VulkanBindingGroup>(device_, this, variableArraySize, pool, set);
+    return MakeUPtr<VulkanBindingGroup>(device_, this, variableArraySize, pool, set);
 }
 
 void VulkanBindingGroupLayout::TransferNode(

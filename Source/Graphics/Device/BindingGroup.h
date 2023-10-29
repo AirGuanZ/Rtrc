@@ -49,7 +49,7 @@ public:
     template<typename T>
     void Set(const T &value); // Impl in BindingGroupDSL.h
     
-    const RHI::BindingGroupPtr &GetRHIObject() const;
+    const RHI::BindingGroupUPtr &GetRHIObject() const;
 
 private:
 
@@ -58,7 +58,7 @@ private:
 
     BindingGroupManager         *manager_ = nullptr;
     RC<const BindingGroupLayout> layout_;
-    RHI::BindingGroupPtr         rhiGroup_;
+    RHI::BindingGroupUPtr        rhiGroup_;
 };
 
 class BindingGroupLayout : public InObjectCache, public std::enable_shared_from_this<BindingGroupLayout>
@@ -114,7 +114,7 @@ public:
 
     ~BindingLayout() override;
 
-    const RHI::BindingLayoutPtr &GetRHIObject() const;
+    const RHI::BindingLayoutUPtr &GetRHIObject() const;
 
 private:
 
@@ -122,7 +122,7 @@ private:
 
     BindingGroupManager *manager_ = nullptr;
     Desc desc; // Group layouts will not be released before the parent binding layout is released
-    RHI::BindingLayoutPtr rhiLayout_;
+    RHI::BindingLayoutUPtr rhiLayout_;
 };
 
 class BindingGroupManager : public Uncopyable
@@ -257,7 +257,7 @@ void BindingGroup::Set(int slot, int arrElem, T &&object)
     }
 }
 
-inline const RHI::BindingGroupPtr &BindingGroup::GetRHIObject() const
+inline const RHI::BindingGroupUPtr &BindingGroup::GetRHIObject() const
 {
     return rhiGroup_;
 }
@@ -288,7 +288,7 @@ inline BindingLayout::~BindingLayout()
     }
 }
 
-inline const RHI::BindingLayoutPtr &BindingLayout::GetRHIObject() const
+inline const RHI::BindingLayoutUPtr &BindingLayout::GetRHIObject() const
 {
     return rhiLayout_;
 }

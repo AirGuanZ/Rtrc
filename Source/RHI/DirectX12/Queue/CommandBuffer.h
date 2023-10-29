@@ -33,13 +33,13 @@ public:
     void BindPipeline(const OPtr<ComputePipeline>    &pipeline) RTRC_RHI_OVERRIDE;
     void BindPipeline(const OPtr<RayTracingPipeline> &pipeline) RTRC_RHI_OVERRIDE;
     
-    void BindGroupsToGraphicsPipeline  (int startIndex, Span<RPtr<BindingGroup>> groups) RTRC_RHI_OVERRIDE;
-    void BindGroupsToComputePipeline   (int startIndex, Span<RPtr<BindingGroup>> groups) RTRC_RHI_OVERRIDE;
-    void BindGroupsToRayTracingPipeline(int startIndex, Span<RPtr<BindingGroup>> groups) RTRC_RHI_OVERRIDE;
+    void BindGroupsToGraphicsPipeline  (int startIndex, Span<OPtr<BindingGroup>> groups) RTRC_RHI_OVERRIDE;
+    void BindGroupsToComputePipeline   (int startIndex, Span<OPtr<BindingGroup>> groups) RTRC_RHI_OVERRIDE;
+    void BindGroupsToRayTracingPipeline(int startIndex, Span<OPtr<BindingGroup>> groups) RTRC_RHI_OVERRIDE;
 
-    void BindGroupToGraphicsPipeline  (int index, const RPtr<BindingGroup> &group) RTRC_RHI_OVERRIDE;
-    void BindGroupToComputePipeline   (int index, const RPtr<BindingGroup> &group) RTRC_RHI_OVERRIDE;
-    void BindGroupToRayTracingPipeline(int index, const RPtr<BindingGroup> &group) RTRC_RHI_OVERRIDE;
+    void BindGroupToGraphicsPipeline  (int index, const OPtr<BindingGroup> &group) RTRC_RHI_OVERRIDE;
+    void BindGroupToComputePipeline   (int index, const OPtr<BindingGroup> &group) RTRC_RHI_OVERRIDE;
+    void BindGroupToRayTracingPipeline(int index, const OPtr<BindingGroup> &group) RTRC_RHI_OVERRIDE;
 
     void SetViewports(Span<Viewport> viewports) RTRC_RHI_OVERRIDE;
     void SetScissors(Span<Scissor> scissors) RTRC_RHI_OVERRIDE;

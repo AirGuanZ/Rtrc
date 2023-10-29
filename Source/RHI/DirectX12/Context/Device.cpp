@@ -532,7 +532,7 @@ UPtr<BindingGroupLayout> DirectX12Device::CreateBindingGroupLayout(const Binding
     return MakeUPtr<DirectX12BindingGroupLayout>(desc);
 }
 
-RPtr<BindingGroup> DirectX12Device::CreateBindingGroup(
+UPtr<BindingGroup> DirectX12Device::CreateBindingGroup(
     const OPtr<BindingGroupLayout> &bindingGroupLayout, uint32_t variableArraySize)
 {
     const auto &layoutDesc = bindingGroupLayout->GetDesc();
@@ -602,12 +602,12 @@ RPtr<BindingGroup> DirectX12Device::CreateBindingGroup(
         }
     }
 
-    return MakeRPtr<DirectX12BindingGroup>(this, d3dBindingGroupLayout, std::move(tables), variableArraySize);
+    return MakeUPtr<DirectX12BindingGroup>(this, d3dBindingGroupLayout, std::move(tables), variableArraySize);
 }
 
-RPtr<BindingLayout> DirectX12Device::CreateBindingLayout(const BindingLayoutDesc &desc)
+UPtr<BindingLayout> DirectX12Device::CreateBindingLayout(const BindingLayoutDesc &desc)
 {
-    return MakeRPtr<DirectX12BindingLayout>(this, desc);
+    return MakeUPtr<DirectX12BindingLayout>(this, desc);
 }
 
 void DirectX12Device::UpdateBindingGroups(const BindingGroupUpdateBatch &batch)
@@ -625,13 +625,13 @@ void DirectX12Device::UpdateBindingGroups(const BindingGroupUpdateBatch &batch)
 }
 
 void DirectX12Device::CopyBindingGroup(
-    const BindingGroupPtr &dstGroup,
-    uint32_t               dstIndex,
-    uint32_t               dstArrayOffset,
-    const BindingGroupPtr &srcGroup,
-    uint32_t               srcIndex,
-    uint32_t               srcArrayOffset,
-    uint32_t               count)
+    const BindingGroupOPtr &dstGroup,
+    uint32_t                dstIndex,
+    uint32_t                dstArrayOffset,
+    const BindingGroupOPtr &srcGroup,
+    uint32_t                srcIndex,
+    uint32_t                srcArrayOffset,
+    uint32_t                count)
 {
     auto d3dSrc = static_cast<DirectX12BindingGroup *>(srcGroup.Get());
     auto d3dDst = static_cast<DirectX12BindingGroup *>(dstGroup.Get());

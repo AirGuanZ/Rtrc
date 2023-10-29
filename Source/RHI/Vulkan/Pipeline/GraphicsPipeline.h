@@ -8,17 +8,17 @@ RTRC_RHI_IMPLEMENT(VulkanGraphicsPipeline, GraphicsPipeline)
 {
 public:
 
-    VulkanGraphicsPipeline(RPtr<BindingLayout> layout, VkDevice device, VkPipeline pipeline);
+    VulkanGraphicsPipeline(OPtr<BindingLayout> layout, VkDevice device, VkPipeline pipeline);
 
     ~VulkanGraphicsPipeline() override;
 
-    const RPtr<BindingLayout> &GetBindingLayout() const RTRC_RHI_OVERRIDE;
+    const OPtr<BindingLayout> &GetBindingLayout() const RTRC_RHI_OVERRIDE;
 
     VkPipeline _internalGetNativePipeline() const;
 
 private:
 
-    RPtr<BindingLayout> layout_;
+    OPtr<BindingLayout> layout_;
 
     VkDevice   device_;
     VkPipeline pipeline_;

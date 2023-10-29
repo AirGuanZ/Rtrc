@@ -8,11 +8,11 @@ RTRC_RHI_IMPLEMENT(VulkanRayTracingPipeline, RayTracingPipeline)
 {
 public:
 
-    VulkanRayTracingPipeline(RPtr<BindingLayout> layout, VulkanDevice *device, VkPipeline pipeline);
+    VulkanRayTracingPipeline(OPtr<BindingLayout> layout, VulkanDevice *device, VkPipeline pipeline);
 
     ~VulkanRayTracingPipeline() override;
 
-    const RPtr<BindingLayout> &GetBindingLayout() const RTRC_RHI_OVERRIDE;
+    const OPtr<BindingLayout> &GetBindingLayout() const RTRC_RHI_OVERRIDE;
 
     void GetShaderGroupHandles(
         uint32_t                   startGroupIndex,
@@ -23,7 +23,7 @@ public:
 
 private:
 
-    RPtr<BindingLayout> layout_;
+    OPtr<BindingLayout> layout_;
     VulkanDevice *device_;
     VkPipeline pipeline_;
 };

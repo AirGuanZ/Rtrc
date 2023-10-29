@@ -144,7 +144,7 @@ void DirectX12CommandBuffer::BindPipeline(const OPtr<RayTracingPipeline> &pipeli
     }
 }
 
-void DirectX12CommandBuffer::BindGroupsToGraphicsPipeline(int startIndex, Span<RPtr<BindingGroup>> groups)
+void DirectX12CommandBuffer::BindGroupsToGraphicsPipeline(int startIndex, Span<OPtr<BindingGroup>> groups)
 {
     for(auto &&[i, group] : Enumerate(groups))
     {
@@ -152,7 +152,7 @@ void DirectX12CommandBuffer::BindGroupsToGraphicsPipeline(int startIndex, Span<R
     }
 }
 
-void DirectX12CommandBuffer::BindGroupsToComputePipeline(int startIndex, Span<RPtr<BindingGroup>> groups)
+void DirectX12CommandBuffer::BindGroupsToComputePipeline(int startIndex, Span<OPtr<BindingGroup>> groups)
 {
     for(auto &&[i, group] : Enumerate(groups))
     {
@@ -160,7 +160,7 @@ void DirectX12CommandBuffer::BindGroupsToComputePipeline(int startIndex, Span<RP
     }
 }
 
-void DirectX12CommandBuffer::BindGroupsToRayTracingPipeline(int startIndex, Span<RPtr<BindingGroup>> groups)
+void DirectX12CommandBuffer::BindGroupsToRayTracingPipeline(int startIndex, Span<OPtr<BindingGroup>> groups)
 {
     for(auto &&[i, group] : Enumerate(groups))
     {
@@ -168,7 +168,7 @@ void DirectX12CommandBuffer::BindGroupsToRayTracingPipeline(int startIndex, Span
     }
 }
 
-void DirectX12CommandBuffer::BindGroupToGraphicsPipeline(int index, const RPtr<BindingGroup> &group)
+void DirectX12CommandBuffer::BindGroupToGraphicsPipeline(int index, const OPtr<BindingGroup> &group)
 {
     const auto bindingLayout = static_cast<DirectX12BindingLayout*>(currentGraphicsPipeline_->GetBindingLayout().Get());
     const auto d3dGroup = static_cast<DirectX12BindingGroup *>(group.Get());
@@ -186,7 +186,7 @@ void DirectX12CommandBuffer::BindGroupToGraphicsPipeline(int index, const RPtr<B
     }
 }
 
-void DirectX12CommandBuffer::BindGroupToComputePipeline(int index, const RPtr<BindingGroup> &group)
+void DirectX12CommandBuffer::BindGroupToComputePipeline(int index, const OPtr<BindingGroup> &group)
 {
     const auto bindingLayout = static_cast<DirectX12BindingLayout*>(currentComputePipeline_->GetBindingLayout().Get());
     const auto d3dGroup = static_cast<DirectX12BindingGroup *>(group.Get());
@@ -204,7 +204,7 @@ void DirectX12CommandBuffer::BindGroupToComputePipeline(int index, const RPtr<Bi
     }
 }
 
-void DirectX12CommandBuffer::BindGroupToRayTracingPipeline(int index, const RPtr<BindingGroup> &group)
+void DirectX12CommandBuffer::BindGroupToRayTracingPipeline(int index, const OPtr<BindingGroup> &group)
 {
     const auto bindingLayout = static_cast<DirectX12BindingLayout *>(currentRayTracingPipeline_->GetBindingLayout().Get());
     const auto d3dGroup = static_cast<DirectX12BindingGroup *>(group.Get());
