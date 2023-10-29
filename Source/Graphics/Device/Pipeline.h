@@ -8,7 +8,7 @@ RTRC_BEGIN
 
 class MeshLayout;
 
-class GraphicsPipeline : public GeneralGPUObject<RHI::GraphicsPipelinePtr>/*, public InObjectCache*/
+class GraphicsPipeline : public GeneralGPUObject<RHI::GraphicsPipelineUPtr>
 {
 public:
     
@@ -93,7 +93,7 @@ private:
     RC<const ShaderInfo> shaderInfo_;
 };
 
-class ComputePipeline : public GeneralGPUObject<RHI::ComputePipelinePtr>/*, public InObjectCache*/
+class ComputePipeline : public GeneralGPUObject<RHI::ComputePipelineUPtr>
 {
 public:
 
@@ -127,10 +127,10 @@ private:
 
     RC<ShaderBindingLayoutInfo> bindingLayoutInfo_;
     uint32_t                    shaderGroupCount_ = 0;
-    RHI::RayTracingLibraryPtr   library_;
+    RHI::RayTracingLibraryUPtr  library_;
 };
 
-class RayTracingPipeline : public GeneralGPUObject<RHI::RayTracingPipelinePtr>
+class RayTracingPipeline : public GeneralGPUObject<RHI::RayTracingPipelineUPtr>
 {
 public:
 

@@ -26,9 +26,9 @@ public:
         const RenderPassDepthStencilAttachment &depthStencilAttachment) RTRC_RHI_OVERRIDE;
     void EndRenderPass() RTRC_RHI_OVERRIDE;
 
-    void BindPipeline(const RPtr<GraphicsPipeline>   &pipeline) RTRC_RHI_OVERRIDE;
-    void BindPipeline(const RPtr<ComputePipeline>    &pipeline) RTRC_RHI_OVERRIDE;
-    void BindPipeline(const RPtr<RayTracingPipeline> &pipeline) RTRC_RHI_OVERRIDE;
+    void BindPipeline(const OPtr<GraphicsPipeline>   &pipeline) RTRC_RHI_OVERRIDE;
+    void BindPipeline(const OPtr<ComputePipeline>    &pipeline) RTRC_RHI_OVERRIDE;
+    void BindPipeline(const OPtr<RayTracingPipeline> &pipeline) RTRC_RHI_OVERRIDE;
     
     void BindGroupsToGraphicsPipeline  (int startIndex, Span<RPtr<BindingGroup>> groups) RTRC_RHI_OVERRIDE;
     void BindGroupsToComputePipeline   (int startIndex, Span<RPtr<BindingGroup>> groups) RTRC_RHI_OVERRIDE;
@@ -133,9 +133,9 @@ private:
     VkCommandPool   pool_;
     VkCommandBuffer commandBuffer_;
 
-    RPtr<GraphicsPipeline>   currentGraphicsPipeline_;
-    RPtr<ComputePipeline>    currentComputePipeline_;
-    RPtr<RayTracingPipeline> currentRayTracingPipeline_;
+    OPtr<GraphicsPipeline>   currentGraphicsPipeline_;
+    OPtr<ComputePipeline>    currentComputePipeline_;
+    OPtr<RayTracingPipeline> currentRayTracingPipeline_;
 };
 
 RTRC_RHI_VK_END

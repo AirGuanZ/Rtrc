@@ -151,14 +151,14 @@ RC<RayTracingPipeline> PipelineManager::CreateRayTracingPipeline(const RayTracin
         shaderGroupCount += library->GetShaderGroupCount();
     }
 
-    std::vector<RHI::RawShaderPtr> rhiShaders;
+    std::vector<RHI::RawShaderOPtr> rhiShaders;
     rhiShaders.reserve(desc.shaders.size());
     for(auto &rawShader : desc.shaders)
     {
         rhiShaders.push_back(rawShader->GetRawShader(RHI::ShaderType::RayTracingShader));
     }
 
-    std::vector<RHI::RayTracingLibraryPtr> rhiLibraries;
+    std::vector<RHI::RayTracingLibraryOPtr> rhiLibraries;
     rhiLibraries.reserve(desc.libraries.size());
     for(auto &library : desc.libraries)
     {
@@ -190,7 +190,7 @@ RC<RayTracingPipeline> PipelineManager::CreateRayTracingPipeline(const RayTracin
     else
     {
         assert(!desc.libraries.empty());
-        ret->bindingLayoutInfo_ = desc.libraries.front()->bindingLayoutInfo_;;
+        ret->bindingLayoutInfo_ = desc.libraries.front()->bindingLayoutInfo_;
     }
     for(auto &shader : desc.shaders)
     {

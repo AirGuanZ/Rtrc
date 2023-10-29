@@ -99,7 +99,7 @@ void DirectX12CommandBuffer::EndRenderPass()
     // Do nothing
 }
 
-void DirectX12CommandBuffer::BindPipeline(const RPtr<GraphicsPipeline> &pipeline)
+void DirectX12CommandBuffer::BindPipeline(const OPtr<GraphicsPipeline> &pipeline)
 {
     const auto d3dPipeline = static_cast<DirectX12GraphicsPipeline*>(pipeline.Get());
     currentGraphicsPipeline_ = pipeline;
@@ -120,7 +120,7 @@ void DirectX12CommandBuffer::BindPipeline(const RPtr<GraphicsPipeline> &pipeline
     commandList_->IASetPrimitiveTopology(d3dPipeline->_internalGetTopology());
 }
 
-void DirectX12CommandBuffer::BindPipeline(const RPtr<ComputePipeline> &pipeline)
+void DirectX12CommandBuffer::BindPipeline(const OPtr<ComputePipeline> &pipeline)
 {
     const auto d3dPipeline = static_cast<DirectX12ComputePipeline*>(pipeline.Get());
     currentComputePipeline_ = pipeline;
@@ -132,7 +132,7 @@ void DirectX12CommandBuffer::BindPipeline(const RPtr<ComputePipeline> &pipeline)
     }
 }
 
-void DirectX12CommandBuffer::BindPipeline(const RPtr<RayTracingPipeline> &pipeline)
+void DirectX12CommandBuffer::BindPipeline(const OPtr<RayTracingPipeline> &pipeline)
 {
     auto d3dPipeline = static_cast<DirectX12RayTracingPipeline*>(pipeline.Get());
     currentRayTracingPipeline_ = pipeline;

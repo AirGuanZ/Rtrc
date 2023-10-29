@@ -23,8 +23,15 @@ const RHI::QueuePtr &DeviceSynchronizer::GetQueue() const
 
 void DeviceSynchronizer::OnFrameComplete(std::move_only_function<void()> callback)
 {
-    std::lock_guard lock(currentFrameCallbacksMutex_);
-    currentFrameCallbacks_.push_back(std::move(callback));
+    if(isInDestruction_)
+    {
+        callback();
+    }
+    else
+    {
+        std::lock_guard lock(currentFrameCallbacksMutex_);
+        currentFrameCallbacks_.push_back(std::move(callback));
+    }
 }
 
 void DeviceSynchronizer::WaitIdle()
@@ -47,6 +54,7 @@ void DeviceSynchronizer::WaitIdle()
 
 void DeviceSynchronizer::PrepareDestruction()
 {
+    isInDestruction_ = true;
     if(!renderLoopFrames_.empty())
     {
         if(!std::uncaught_exceptions())

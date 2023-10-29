@@ -26,7 +26,7 @@ RTRC_RHI_D3D12_BEGIN
 namespace DirectX12DeviceDetail
 {
 
-    D3D12_SHADER_BYTECODE GetByteCode(const RPtr<RawShader> &shader)
+    D3D12_SHADER_BYTECODE GetByteCode(OPtr<RawShader> shader)
     {
         if(!shader)
         {
@@ -232,14 +232,14 @@ UPtr<Semaphore> DirectX12Device::CreateTimelineSemaphore(uint64_t initialValue)
     return MakeUPtr<DirectX12Semaphore>(std::move(fence));
 }
 
-RPtr<RawShader> DirectX12Device::CreateShader(const void *data, size_t size, std::vector<RawShaderEntry> entries)
+UPtr<RawShader> DirectX12Device::CreateShader(const void *data, size_t size, std::vector<RawShaderEntry> entries)
 {
     std::vector<std::byte> byteCode(size);
     std::memcpy(byteCode.data(), data, size);
-    return MakeRPtr<DirectX12RawShader>(std::move(byteCode), std::move(entries));
+    return MakeUPtr<DirectX12RawShader>(std::move(byteCode), std::move(entries));
 }
 
-RPtr<GraphicsPipeline> DirectX12Device::CreateGraphicsPipeline(const GraphicsPipelineDesc &desc)
+UPtr<GraphicsPipeline> DirectX12Device::CreateGraphicsPipeline(const GraphicsPipelineDesc &desc)
 {
     auto d3dBindingLayout = static_cast<DirectX12BindingLayout *>(desc.bindingLayout.Get());
     auto rootSignature = d3dBindingLayout->_internalGetRootSignature(!desc.vertexAttributs.empty());
@@ -367,12 +367,12 @@ RPtr<GraphicsPipeline> DirectX12Device::CreateGraphicsPipeline(const GraphicsPip
         vertexStrides[i] = desc.vertexBuffers[i].elementSize;
     }
 
-    return MakeRPtr<DirectX12GraphicsPipeline>(
+    return MakeUPtr<DirectX12GraphicsPipeline>(
         desc.bindingLayout, std::move(rootSignature), std::move(pipelineState),
         staticViewports, staticScissors, vertexStrides, TranslatePrimitiveTopology(desc.primitiveTopology));
 }
 
-RPtr<ComputePipeline> DirectX12Device::CreateComputePipeline(const ComputePipelineDesc &desc)
+UPtr<ComputePipeline> DirectX12Device::CreateComputePipeline(const ComputePipelineDesc &desc)
 {
     auto d3dBindingLayout = static_cast<DirectX12BindingLayout *>(desc.bindingLayout.Get());
     auto rootSignature = d3dBindingLayout->_internalGetRootSignature(false);
@@ -388,10 +388,10 @@ RPtr<ComputePipeline> DirectX12Device::CreateComputePipeline(const ComputePipeli
         device_->CreateComputePipelineState(&pipelineDesc, IID_PPV_ARGS(pipelineState.GetAddressOf())),
         "Fail to create directx12 compute pipeline state");
 
-    return MakeRPtr<DirectX12ComputePipeline>(desc.bindingLayout, std::move(rootSignature), std::move(pipelineState));
+    return MakeUPtr<DirectX12ComputePipeline>(desc.bindingLayout, std::move(rootSignature), std::move(pipelineState));
 }
 
-RPtr<RayTracingPipeline> DirectX12Device::CreateRayTracingPipeline(const RayTracingPipelineDesc &desc)
+UPtr<RayTracingPipeline> DirectX12Device::CreateRayTracingPipeline(const RayTracingPipelineDesc &desc)
 {
     CD3DX12_STATE_OBJECT_DESC pipelineDesc(D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE);
 
@@ -518,22 +518,22 @@ RPtr<RayTracingPipeline> DirectX12Device::CreateRayTracingPipeline(const RayTrac
         device_->CreateStateObject(pipelineDesc, IID_PPV_ARGS(stateObject.GetAddressOf())),
         "Fail to create directx12 ray tracing pipeline state object");
 
-    return MakeRPtr<DirectX12RayTracingPipeline>(
+    return MakeUPtr<DirectX12RayTracingPipeline>(
         std::move(stateObject), desc.bindingLayout, std::move(rootSignature), std::move(groupExportedNames));
 }
 
-RPtr<RayTracingLibrary> DirectX12Device::CreateRayTracingLibrary(const RayTracingLibraryDesc &desc)
+UPtr<RayTracingLibrary> DirectX12Device::CreateRayTracingLibrary(const RayTracingLibraryDesc &desc)
 {
-    return MakeRPtr<DirectX12RayTracingLibrary>(desc);
+    return MakeUPtr<DirectX12RayTracingLibrary>(desc);
 }
 
-RPtr<BindingGroupLayout> DirectX12Device::CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc)
+UPtr<BindingGroupLayout> DirectX12Device::CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc)
 {
-    return MakeRPtr<DirectX12BindingGroupLayout>(desc);
+    return MakeUPtr<DirectX12BindingGroupLayout>(desc);
 }
 
 RPtr<BindingGroup> DirectX12Device::CreateBindingGroup(
-    const RPtr<BindingGroupLayout> &bindingGroupLayout, uint32_t variableArraySize)
+    const OPtr<BindingGroupLayout> &bindingGroupLayout, uint32_t variableArraySize)
 {
     const auto &layoutDesc = bindingGroupLayout->GetDesc();
     assert(layoutDesc.variableArraySize == (variableArraySize > 0));
@@ -602,7 +602,7 @@ RPtr<BindingGroup> DirectX12Device::CreateBindingGroup(
         }
     }
 
-    return MakeRPtr<DirectX12BindingGroup>(this, RPtr(d3dBindingGroupLayout), std::move(tables), variableArraySize);
+    return MakeRPtr<DirectX12BindingGroup>(this, d3dBindingGroupLayout, std::move(tables), variableArraySize);
 }
 
 RPtr<BindingLayout> DirectX12Device::CreateBindingLayout(const BindingLayoutDesc &desc)

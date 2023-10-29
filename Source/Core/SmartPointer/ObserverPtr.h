@@ -30,6 +30,8 @@ public:
     T &operator*() const { return *pointer_; }
     T *operator->() const { return pointer_; }
     T *Get() const { return pointer_; }
+
+    auto operator<=>(const ObserverPtr &) const = default;
 };
 
 template<typename T>
@@ -62,6 +64,15 @@ public:
     const T &operator*() const { return *pointer_; }
     const T *operator->() const { return pointer_; }
     const T *Get() const { return pointer_; }
+
+    auto operator<=>(const ObserverPtr &) const = default;
 };
+
+template<typename U, typename T> requires std::is_base_of_v<T, U> || std::is_same_v<T, U>
+ObserverPtr<U> DynamicCast(const ObserverPtr<T> &ptr)
+{
+    auto castedPtr = dynamic_cast<U *>(ptr.Get());
+    return ObserverPtr<U>(castedPtr);
+}
 
 RTRC_END

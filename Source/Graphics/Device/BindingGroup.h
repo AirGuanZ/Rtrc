@@ -1,6 +1,5 @@
 #pragma once
 
-#include <any>
 #include <map>
 
 #include <Graphics/Device/AccelerationStructure.h>
@@ -89,7 +88,7 @@ public:
 
     ~BindingGroupLayout() override;
 
-    const RHI::BindingGroupLayoutPtr &GetRHIObject() const;
+    const RHI::BindingGroupLayoutUPtr &GetRHIObject() const;
 
     RC<BindingGroup> CreateBindingGroup(int variableBindingCount = 0) const;
 
@@ -98,7 +97,7 @@ private:
     friend class BindingGroupManager;
 
     BindingGroupManager *manager_ = nullptr;
-    RHI::BindingGroupLayoutPtr rhiLayout_;
+    RHI::BindingGroupLayoutUPtr rhiLayout_;
 };
 
 class BindingLayout : public InObjectCache
@@ -276,7 +275,7 @@ inline RC<BindingGroup> BindingGroupLayout::CreateBindingGroup(int variableBindi
     return manager_->CreateBindingGroup(shared_from_this(), variableBindingCount);
 }
 
-inline const RHI::BindingGroupLayoutPtr &BindingGroupLayout::GetRHIObject() const
+inline const RHI::BindingGroupLayoutUPtr &BindingGroupLayout::GetRHIObject() const
 {
     return rhiLayout_;
 }

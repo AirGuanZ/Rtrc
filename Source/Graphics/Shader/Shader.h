@@ -214,7 +214,7 @@ public:
     ~Shader();
     
     Category GetCategory() const;
-    const RHI::RawShaderPtr &GetRawShader(RHI::ShaderType type) const;
+    RHI::RawShaderOPtr GetRawShader(RHI::ShaderType type) const;
 
     const RC<ShaderInfo> &GetInfo() const;
 
@@ -266,7 +266,7 @@ private:
     static constexpr int CS_INDEX = 0;
     static constexpr int RT_INDEX = 0;
 
-    RHI::RawShaderPtr rawShaders_[2];
+    RHI::RawShaderUPtr rawShaders_[2];
     
     RC<ShaderInfo>      info_;
     RC<ComputePipeline> computePipeline_;
@@ -501,7 +501,7 @@ inline Shader::Category Shader::GetCategory() const
     return info_->GetCategory();
 }
 
-inline const RHI::RawShaderPtr &Shader::GetRawShader(RHI::ShaderType type) const
+inline RHI::RawShaderOPtr Shader::GetRawShader(RHI::ShaderType type) const
 {
     using enum RHI::ShaderType;
     using enum Category;

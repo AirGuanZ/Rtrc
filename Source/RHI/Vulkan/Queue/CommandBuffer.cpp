@@ -131,7 +131,7 @@ void VulkanCommandBuffer::EndRenderPass()
     vkCmdEndRendering(commandBuffer_);
 }
 
-void VulkanCommandBuffer::BindPipeline(const RPtr<GraphicsPipeline> &pipeline)
+void VulkanCommandBuffer::BindPipeline(const OPtr<GraphicsPipeline> &pipeline)
 {
     if(!pipeline)
     {
@@ -141,10 +141,10 @@ void VulkanCommandBuffer::BindPipeline(const RPtr<GraphicsPipeline> &pipeline)
     }
     auto vkPipeline = static_cast<VulkanGraphicsPipeline *>(pipeline.Get());
     vkCmdBindPipeline(commandBuffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, vkPipeline->_internalGetNativePipeline());
-    currentGraphicsPipeline_ = DynamicCast<VulkanGraphicsPipeline>(pipeline);
+    currentGraphicsPipeline_ = pipeline;
 }
 
-void VulkanCommandBuffer::BindPipeline(const RPtr<ComputePipeline> &pipeline)
+void VulkanCommandBuffer::BindPipeline(const OPtr<ComputePipeline> &pipeline)
 {
     if(!pipeline)
     {
@@ -154,10 +154,10 @@ void VulkanCommandBuffer::BindPipeline(const RPtr<ComputePipeline> &pipeline)
     }
     auto vkPipeline = static_cast<VulkanComputePipeline *>(pipeline.Get());
     vkCmdBindPipeline(commandBuffer_, VK_PIPELINE_BIND_POINT_COMPUTE, vkPipeline->_internalGetNativePipeline());
-    currentComputePipeline_ = DynamicCast<VulkanComputePipeline>(pipeline);
+    currentComputePipeline_ = pipeline;
 }
 
-void VulkanCommandBuffer::BindPipeline(const RPtr<RayTracingPipeline> &pipeline)
+void VulkanCommandBuffer::BindPipeline(const OPtr<RayTracingPipeline> &pipeline)
 {
     if(!pipeline)
     {
@@ -167,7 +167,7 @@ void VulkanCommandBuffer::BindPipeline(const RPtr<RayTracingPipeline> &pipeline)
     }
     auto vkPipeline = static_cast<VulkanRayTracingPipeline *>(pipeline.Get());
     vkCmdBindPipeline(commandBuffer_, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, vkPipeline->_internalGetNativePipeline());
-    currentRayTracingPipeline_ = DynamicCast<VulkanRayTracingPipeline>(pipeline);
+    currentRayTracingPipeline_ = pipeline;
 }
 
 void VulkanCommandBuffer::BindGroupsToGraphicsPipeline(int startIndex, Span<RPtr<BindingGroup>> groups)

@@ -670,7 +670,7 @@ struct UnboundedBindingArrayAliasing
 
 struct BindingLayoutDesc
 {
-    std::vector<RPtr<BindingGroupLayout>>      groups;
+    std::vector<OPtr<BindingGroupLayout>>      groups;
     std::vector<PushConstantRange>             pushConstantRanges;
     std::vector<UnboundedBindingArrayAliasing> unboundedAliases;
 
@@ -1029,8 +1029,8 @@ struct GraphicsPipelineDesc
         }
     };
 
-    RPtr<RawShader> vertexShader;
-    RPtr<RawShader> fragmentShader;
+    OPtr<RawShader> vertexShader;
+    OPtr<RawShader> fragmentShader;
 
     RPtr<BindingLayout> bindingLayout;
 
@@ -1076,7 +1076,7 @@ struct GraphicsPipelineDesc
 
 struct ComputePipelineDesc
 {
-    RPtr<RawShader>     computeShader;
+    OPtr<RawShader>     computeShader;
     RPtr<BindingLayout> bindingLayout;
 };
 
@@ -1101,7 +1101,7 @@ using RayTracingShaderGroup = Variant<
 
 struct RayTracingLibraryDesc
 {
-    RawShaderPtr                       rawShader;
+    RawShaderOPtr                      rawShader;
     std::vector<RayTracingShaderGroup> shaderGroups;
     uint32_t                           maxRayPayloadSize;
     uint32_t                           maxRayHitAttributeSize;
@@ -1110,9 +1110,9 @@ struct RayTracingLibraryDesc
 
 struct RayTracingPipelineDesc
 {
-    std::vector<RawShaderPtr>          rawShaders;
+    std::vector<RawShaderOPtr>         rawShaders;
     std::vector<RayTracingShaderGroup> shaderGroups;
-    std::vector<RayTracingLibraryPtr>  libraries;
+    std::vector<RayTracingLibraryOPtr> libraries;
     RPtr<BindingLayout>                bindingLayout;
     uint32_t                           maxRayPayloadSize;
     uint32_t                           maxRayHitAttributeSize;
@@ -1392,19 +1392,19 @@ public:
     RTRC_RHI_API UPtr<Fence>     CreateFence(bool signaled) RTRC_RHI_API_PURE;
     RTRC_RHI_API UPtr<Semaphore> CreateTimelineSemaphore(uint64_t initialValue) RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API RPtr<RawShader> CreateShader(
+    RTRC_RHI_API UPtr<RawShader> CreateShader(
         const void *data, size_t size, std::vector<RawShaderEntry> entries) RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API RPtr<GraphicsPipeline>   CreateGraphicsPipeline  (const GraphicsPipelineDesc &desc) RTRC_RHI_API_PURE;
-    RTRC_RHI_API RPtr<ComputePipeline>    CreateComputePipeline   (const ComputePipelineDesc &desc) RTRC_RHI_API_PURE;
-    RTRC_RHI_API RPtr<RayTracingPipeline> CreateRayTracingPipeline(const RayTracingPipelineDesc &desc) RTRC_RHI_API_PURE;
+    RTRC_RHI_API UPtr<GraphicsPipeline>   CreateGraphicsPipeline  (const GraphicsPipelineDesc &desc) RTRC_RHI_API_PURE;
+    RTRC_RHI_API UPtr<ComputePipeline>    CreateComputePipeline   (const ComputePipelineDesc &desc) RTRC_RHI_API_PURE;
+    RTRC_RHI_API UPtr<RayTracingPipeline> CreateRayTracingPipeline(const RayTracingPipelineDesc &desc) RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API RPtr<RayTracingLibrary> CreateRayTracingLibrary(const RayTracingLibraryDesc &desc) RTRC_RHI_API_PURE;
+    RTRC_RHI_API UPtr<RayTracingLibrary> CreateRayTracingLibrary(const RayTracingLibraryDesc &desc) RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API RPtr<BindingGroupLayout> CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc) RTRC_RHI_API_PURE;
+    RTRC_RHI_API UPtr<BindingGroupLayout> CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc) RTRC_RHI_API_PURE;
     RTRC_RHI_API RPtr<BindingGroup> CreateBindingGroup(
-        const RPtr<BindingGroupLayout> &bindingGroupLayout,
-        uint32_t                       variableArraySize = 0) RTRC_RHI_API_PURE;
+        const OPtr<BindingGroupLayout> &bindingGroupLayout,
+        uint32_t                        variableArraySize = 0) RTRC_RHI_API_PURE;
     RTRC_RHI_API RPtr<BindingLayout> CreateBindingLayout(const BindingLayoutDesc &desc) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void UpdateBindingGroups(const BindingGroupUpdateBatch &batch) RTRC_RHI_API_PURE;
@@ -1551,9 +1551,9 @@ public:
         const RenderPassDepthStencilAttachment &depthStencilAttachment) RTRC_RHI_API_PURE;
     RTRC_RHI_API void EndRenderPass() RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API void BindPipeline(const RPtr<GraphicsPipeline>   &pipeline) RTRC_RHI_API_PURE;
-    RTRC_RHI_API void BindPipeline(const RPtr<ComputePipeline>    &pipeline) RTRC_RHI_API_PURE;
-    RTRC_RHI_API void BindPipeline(const RPtr<RayTracingPipeline> &pipeline) RTRC_RHI_API_PURE;
+    RTRC_RHI_API void BindPipeline(const OPtr<GraphicsPipeline>   &pipeline) RTRC_RHI_API_PURE;
+    RTRC_RHI_API void BindPipeline(const OPtr<ComputePipeline>    &pipeline) RTRC_RHI_API_PURE;
+    RTRC_RHI_API void BindPipeline(const OPtr<RayTracingPipeline> &pipeline) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void BindGroupsToGraphicsPipeline  (int startIndex, Span<RPtr<BindingGroup>> groups) RTRC_RHI_API_PURE;
     RTRC_RHI_API void BindGroupsToComputePipeline   (int startIndex, Span<RPtr<BindingGroup>> groups) RTRC_RHI_API_PURE;

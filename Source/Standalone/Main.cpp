@@ -13,7 +13,8 @@ int main()
             .maximized         = true,
             .vsync             = true,
             .debug             = RTRC_DEBUG,
-            .backendType       = Rtrc::RHI::BackendType::DirectX12,
+            .rayTracing        = true,
+            .backendType       = Rtrc::RHI::BackendType::Default,
             .enableGPUCapturer = false
         });
     }

@@ -46,6 +46,8 @@ private:
 
     std::vector<RenderLoopFrame> renderLoopFrames_;
     int renderLoopFrameIndex_;
+
+    bool isInDestruction_ = false;
 };
 
 RTRC_END

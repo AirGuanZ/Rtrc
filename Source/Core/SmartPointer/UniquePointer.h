@@ -21,7 +21,7 @@ public:
     UPtr &operator=(const UPtr &) = delete;
     UPtr &operator=(UPtr &&other) noexcept { Swap(other); return *this; }
 
-    ~UPtr() { if(ptr_) delete ptr_; }
+    ~UPtr() { delete ptr_; }
 
     void Swap(UPtr &other) noexcept { std::swap(ptr_, other.ptr_); }
 
@@ -42,7 +42,7 @@ public:
 
     T *Release() { auto ret = ptr_; ptr_ = nullptr; return ret; }
 
-    RC<T> ToRC() { return RC<T>(this->Release()); }
+    ReferenceCountedPtr<T> ToRC() { return ReferenceCountedPtr<T>(this->Release()); }
 
 private:
 

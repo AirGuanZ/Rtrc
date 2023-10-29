@@ -39,18 +39,18 @@ public:
     UPtr<Fence>     CreateFence(bool signaled) RTRC_RHI_OVERRIDE;
     UPtr<Semaphore> CreateTimelineSemaphore(uint64_t initialValue) RTRC_RHI_OVERRIDE;
 
-    RPtr<RawShader> CreateShader(const void *data, size_t size, std::vector<RawShaderEntry> entries) RTRC_RHI_OVERRIDE;
+    UPtr<RawShader> CreateShader(const void *data, size_t size, std::vector<RawShaderEntry> entries) RTRC_RHI_OVERRIDE;
 
-    RPtr<GraphicsPipeline>   CreateGraphicsPipeline(const GraphicsPipelineDesc &desc) RTRC_RHI_OVERRIDE;
-    RPtr<ComputePipeline>    CreateComputePipeline(const ComputePipelineDesc &desc) RTRC_RHI_OVERRIDE;
-    RPtr<RayTracingPipeline> CreateRayTracingPipeline(const RayTracingPipelineDesc &desc) RTRC_RHI_OVERRIDE;
+    UPtr<GraphicsPipeline>   CreateGraphicsPipeline(const GraphicsPipelineDesc &desc) RTRC_RHI_OVERRIDE;
+    UPtr<ComputePipeline>    CreateComputePipeline(const ComputePipelineDesc &desc) RTRC_RHI_OVERRIDE;
+    UPtr<RayTracingPipeline> CreateRayTracingPipeline(const RayTracingPipelineDesc &desc) RTRC_RHI_OVERRIDE;
 
-    RPtr<RayTracingLibrary> CreateRayTracingLibrary(const RayTracingLibraryDesc &desc) RTRC_RHI_OVERRIDE;
+    UPtr<RayTracingLibrary> CreateRayTracingLibrary(const RayTracingLibraryDesc &desc) RTRC_RHI_OVERRIDE;
 
-    RPtr<BindingGroupLayout> CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc) RTRC_RHI_OVERRIDE;
+    UPtr<BindingGroupLayout> CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc) RTRC_RHI_OVERRIDE;
     RPtr<BindingGroup> CreateBindingGroup(
-        const RPtr<BindingGroupLayout> &bindingGroupLayout,
-        uint32_t                       variableArraySize) RTRC_RHI_OVERRIDE;
+        const OPtr<BindingGroupLayout> &bindingGroupLayout,
+        uint32_t                        variableArraySize) RTRC_RHI_OVERRIDE;
     RPtr<BindingLayout> CreateBindingLayout(const BindingLayoutDesc &desc) RTRC_RHI_OVERRIDE;
 
     void UpdateBindingGroups(const BindingGroupUpdateBatch &batch) RTRC_RHI_OVERRIDE;

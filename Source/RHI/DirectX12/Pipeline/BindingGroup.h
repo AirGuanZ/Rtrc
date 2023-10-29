@@ -14,10 +14,10 @@ public:
 #endif
 
     DirectX12BindingGroup(
-        DirectX12Device                 *device,
-        RPtr<DirectX12BindingGroupLayout> layout,
-        std::vector<DescriptorTable>     tables,
-        uint32_t                         variableArraySize);
+        DirectX12Device                  *device,
+        OPtr<DirectX12BindingGroupLayout> layout,
+        std::vector<DescriptorTable>      tables,
+        uint32_t                          variableArraySize);
 
     ~DirectX12BindingGroup() override;
 
@@ -41,10 +41,10 @@ private:
 
     BindingType GetBindingType(int index) const;
 
-    DirectX12Device                 *device_;
-    RPtr<DirectX12BindingGroupLayout> layout_;
-    std::vector<DescriptorTable>     tables_;
-    uint32_t                         variableArraySize_;
+    DirectX12Device                  *device_;
+    OPtr<DirectX12BindingGroupLayout> layout_;
+    std::vector<DescriptorTable>      tables_;
+    uint32_t                          variableArraySize_;
 };
 
 RTRC_RHI_D3D12_END

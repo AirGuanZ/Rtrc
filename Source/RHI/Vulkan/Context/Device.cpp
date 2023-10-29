@@ -491,7 +491,7 @@ UPtr<Semaphore> VulkanDevice::CreateTimelineSemaphore(uint64_t initialValue)
     return MakeUPtr<VulkanSemaphore>(device_, semaphore);
 }
 
-RPtr<RawShader> VulkanDevice::CreateShader(const void *data, size_t size, std::vector<RawShaderEntry> entries)
+UPtr<RawShader> VulkanDevice::CreateShader(const void *data, size_t size, std::vector<RawShaderEntry> entries)
 {
     const VkShaderModuleCreateInfo createInfo = {
         .sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
@@ -502,10 +502,10 @@ RPtr<RawShader> VulkanDevice::CreateShader(const void *data, size_t size, std::v
     RTRC_VK_FAIL_MSG(
         vkCreateShaderModule(device_, &createInfo, RTRC_VK_ALLOC, &shaderModule),
         "Failed to create vulkan shader module");
-    return MakeRPtr<VulkanRawShader>(device_, shaderModule, std::move(entries));
+    return MakeUPtr<VulkanRawShader>(device_, shaderModule, std::move(entries));
 }
 
-RPtr<GraphicsPipeline> VulkanDevice::CreateGraphicsPipeline(const GraphicsPipelineDesc &desc)
+UPtr<GraphicsPipeline> VulkanDevice::CreateGraphicsPipeline(const GraphicsPipelineDesc &desc)
 {
     assert(!desc.viewports.Is<std::monostate>());
     assert(!desc.scissors.Is<std::monostate>());
@@ -712,10 +712,10 @@ RPtr<GraphicsPipeline> VulkanDevice::CreateGraphicsPipeline(const GraphicsPipeli
         "Failed to create vulkan graphics pipeline");
     RTRC_SCOPE_FAIL{ vkDestroyPipeline(device_, pipeline, RTRC_VK_ALLOC); };
 
-    return MakeRPtr<VulkanGraphicsPipeline>(desc.bindingLayout, device_, pipeline);
+    return MakeUPtr<VulkanGraphicsPipeline>(desc.bindingLayout, device_, pipeline);
 }
 
-RPtr<ComputePipeline> VulkanDevice::CreateComputePipeline(const ComputePipelineDesc &desc)
+UPtr<ComputePipeline> VulkanDevice::CreateComputePipeline(const ComputePipelineDesc &desc)
 {
     const VkComputePipelineCreateInfo pipelineCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
@@ -727,10 +727,10 @@ RPtr<ComputePipeline> VulkanDevice::CreateComputePipeline(const ComputePipelineD
         vkCreateComputePipelines(device_, VK_NULL_HANDLE, 1, &pipelineCreateInfo, RTRC_VK_ALLOC, &pipeline),
         "Failed to create vulkan compute pipeline");
     RTRC_SCOPE_FAIL{ vkDestroyPipeline(device_, pipeline, RTRC_VK_ALLOC); };
-    return MakeRPtr<VulkanComputePipeline>(desc.bindingLayout, device_, pipeline);
+    return MakeUPtr<VulkanComputePipeline>(desc.bindingLayout, device_, pipeline);
 }
 
-RPtr<RayTracingPipeline> VulkanDevice::CreateRayTracingPipeline(const RayTracingPipelineDesc &desc)
+UPtr<RayTracingPipeline> VulkanDevice::CreateRayTracingPipeline(const RayTracingPipelineDesc &desc)
 {
     std::vector<VkPipelineShaderStageCreateInfo> vkStages;
     for(auto &rawShader : desc.rawShaders)
@@ -810,10 +810,10 @@ RPtr<RayTracingPipeline> VulkanDevice::CreateRayTracingPipeline(const RayTracing
         "Failed to create Vulkan ray tracing pipeline");
     RTRC_SCOPE_FAIL{ vkDestroyPipeline(device_, pipeline, RTRC_VK_ALLOC); };
 
-    return MakeRPtr<VulkanRayTracingPipeline>(desc.bindingLayout, this, pipeline);
+    return MakeUPtr<VulkanRayTracingPipeline>(desc.bindingLayout, this, pipeline);
 }
 
-RPtr<RayTracingLibrary> VulkanDevice::CreateRayTracingLibrary(const RayTracingLibraryDesc &desc)
+UPtr<RayTracingLibrary> VulkanDevice::CreateRayTracingLibrary(const RayTracingLibraryDesc &desc)
 {
     std::vector<VkPipelineShaderStageCreateInfo> vkStages;
     static_cast<const VulkanRawShader *>(desc.rawShader.Get())->_internalGetStageCreateInfos(std::back_inserter(vkStages));
@@ -840,10 +840,10 @@ RPtr<RayTracingLibrary> VulkanDevice::CreateRayTracingLibrary(const RayTracingLi
     RTRC_VK_FAIL_MSG(
         vkCreateRayTracingPipelinesKHR(device_, nullptr, nullptr, 1, &pipelineCreateInfo, RTRC_VK_ALLOC, &library),
         "Failed to create vulkan pipeline library");
-    return MakeRPtr<VulkanRayTracingLibrary>(this, library, desc.maxRayPayloadSize, desc.maxRayHitAttributeSize);
+    return MakeUPtr<VulkanRayTracingLibrary>(this, library, desc.maxRayPayloadSize, desc.maxRayHitAttributeSize);
 }
 
-RPtr<BindingGroupLayout> VulkanDevice::CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc)
+UPtr<BindingGroupLayout> VulkanDevice::CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc)
 {
     std::vector<VkSampler> samplers;
     for(auto &binding : desc.bindings)
@@ -932,11 +932,11 @@ RPtr<BindingGroupLayout> VulkanDevice::CreateBindingGroupLayout(const BindingGro
         "Failed to create vulkan descriptor set layout");
     RTRC_SCOPE_FAIL{ vkDestroyDescriptorSetLayout(device_, layout, RTRC_VK_ALLOC); };
 
-    return MakeRPtr<VulkanBindingGroupLayout>(desc, std::move(descSetBindings), device_, layout, bindless);
+    return MakeUPtr<VulkanBindingGroupLayout>(desc, std::move(descSetBindings), device_, layout, bindless);
 }
 
 RPtr<BindingGroup> VulkanDevice::CreateBindingGroup(
-    const RPtr<BindingGroupLayout> &bindingGroupLayout, uint32_t variableArraySize)
+    const OPtr<BindingGroupLayout> &bindingGroupLayout, uint32_t variableArraySize)
 {
     auto vkBindingLayout = reinterpret_cast<const VulkanBindingGroupLayout *>(bindingGroupLayout.Get());
     return vkBindingLayout->_internalCreateBindingGroupImpl(variableArraySize);
