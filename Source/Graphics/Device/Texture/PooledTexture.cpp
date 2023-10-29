@@ -2,7 +2,7 @@
 
 RTRC_BEGIN
 
-PooledTextureManager::PooledTextureManager(RHI::DevicePtr device, DeviceSynchronizer &sync)
+PooledTextureManager::PooledTextureManager(RHI::DeviceOPtr device, DeviceSynchronizer &sync)
     : device_(std::move(device)), sync_(sync)
 {
     

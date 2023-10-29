@@ -41,8 +41,8 @@ void DumpBindingGroupLayoutDesc(const RHI::BindingGroupLayoutDesc &desc)
 }
 
 BindingGroupManager::BindingGroupManager(
-    RHI::DevicePtr device, DeviceSynchronizer &sync, ConstantBufferManagerInterface *defaultConstantBufferManager)
-    : device_(std::move(device)), sync_(sync), defaultConstantBufferManager_(defaultConstantBufferManager)
+    RHI::DeviceOPtr device, DeviceSynchronizer &sync, ConstantBufferManagerInterface *defaultConstantBufferManager)
+    : device_(std::move(device)), sync_(&sync), defaultConstantBufferManager_(defaultConstantBufferManager)
 {
 
 }
@@ -116,17 +116,17 @@ void BindingGroupManager::CopyBindings(
 
 void BindingGroupManager::_internalRelease(BindingGroup &group)
 {
-    sync_.OnFrameComplete([group = std::move(group.rhiGroup_)] {});
+    sync_->OnFrameComplete([group = std::move(group.rhiGroup_)] {});
 }
 
 void BindingGroupManager::_internalRelease(BindingGroupLayout &layout)
 {
-    sync_.OnFrameComplete([layout = std::move(layout.rhiLayout_)] {});
+    sync_->OnFrameComplete([layout = std::move(layout.rhiLayout_)] {});
 }
 
 void BindingGroupManager::_internalRelease(BindingLayout &layout)
 {
-    sync_.OnFrameComplete([layout = std::move(layout.rhiLayout_)] {});
+    sync_->OnFrameComplete([layout = std::move(layout.rhiLayout_)] {});
 }
 
 ConstantBufferManagerInterface *BindingGroupManager::_internalGetDefaultConstantBufferManager()
@@ -134,7 +134,7 @@ ConstantBufferManagerInterface *BindingGroupManager::_internalGetDefaultConstant
     return defaultConstantBufferManager_;
 }
 
-const RHI::DevicePtr &BindingGroupManager::_internalGetRHIDevice()
+RHI::Device *BindingGroupManager::_internalGetRHIDevice()
 {
     return device_;
 }

@@ -3,7 +3,7 @@
 
 RTRC_BEGIN
 
-CopyContext::CopyContext(RHI::DevicePtr  device)
+CopyContext::CopyContext(RHI::DeviceOPtr device)
     : device_(std::move(device)), copyQueue_(device_->GetQueue(RHI::QueueType::Transfer))
 {
     

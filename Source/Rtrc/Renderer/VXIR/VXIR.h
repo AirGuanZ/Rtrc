@@ -10,13 +10,15 @@ namespace VXIRDetail
     rtrc_struct(HashTableKey)
     {
         uint key;
-        uint check;
     };
 
     rtrc_struct(HashTableValue)
     {
+        float3 position;
+        float3 normal;
+
         float3 irradiance;
-        float  pad0;
+        uint   valid;
 
         float3 fullWeightedSum;
         float  fullWeight;
@@ -39,9 +41,9 @@ public:
 
     struct Settings
     {
-        float maxDist;
-        float minVoxelSize;
-        float maxVoxelSize;
+        float    maxDist;
+        float    minVoxelSize;
+        float    maxVoxelSize;
         uint32_t hashTableSize;
     };
 

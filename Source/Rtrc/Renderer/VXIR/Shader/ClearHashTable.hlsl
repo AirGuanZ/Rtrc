@@ -17,7 +17,6 @@ void CSMain(uint tid : SV_DispatchThreadID)
 
     HashTableKey key;
     item.key = 0xffffffff;
-    item.check = 0xffffffff;
     HashTableKeyBuffer[tid] = item;
     HashTableValueBuffer[tid] = (HashTableValue)0;
 }

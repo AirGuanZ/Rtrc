@@ -21,7 +21,8 @@ public:
 
     struct Settings
     {
-        int spatialFilterIterations = 2;
+        float temporalFilterAlpha = 0.1f;
+        unsigned int spatialFilterIterations = 2;
     };
 
     using RenderAlgorithm::RenderAlgorithm;

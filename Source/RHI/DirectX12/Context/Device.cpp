@@ -26,7 +26,7 @@ RTRC_RHI_D3D12_BEGIN
 namespace DirectX12DeviceDetail
 {
 
-    D3D12_SHADER_BYTECODE GetByteCode(const Ptr<RawShader> &shader)
+    D3D12_SHADER_BYTECODE GetByteCode(const RPtr<RawShader> &shader)
     {
         if(!shader)
         {
@@ -74,17 +74,17 @@ DirectX12Device::DirectX12Device(
 
     if(queues.graphicsQueue)
     {
-        graphicsQueue_ = MakePtr<DirectX12Queue>(this, queues.graphicsQueue, QueueType::Graphics);
+        graphicsQueue_ = MakeRPtr<DirectX12Queue>(this, queues.graphicsQueue, QueueType::Graphics);
     }
     if(queues.computeQueue)
     {
-        computeQueue_ = MakePtr<DirectX12Queue>(this, queues.computeQueue, QueueType::Compute);
+        computeQueue_ = MakeRPtr<DirectX12Queue>(this, queues.computeQueue, QueueType::Compute);
     }
     if(queues.copyQueue)
     {
-        copyQueue_ = MakePtr<DirectX12Queue>(this, queues.copyQueue, QueueType::Transfer);
+        copyQueue_ = MakeRPtr<DirectX12Queue>(this, queues.copyQueue, QueueType::Transfer);
     }
-    // presentQueue_  = MakePtr<DirectX12Queue>(this, queues.presentQueue, QueueType::Graphics);
+    // presentQueue_  = MakeRPtr<DirectX12Queue>(this, queues.presentQueue, QueueType::Graphics);
 
     const D3D12_INDIRECT_ARGUMENT_DESC indirectDispatchArgDesc =
     {
@@ -139,7 +139,7 @@ DirectX12Device::~DirectX12Device()
     WaitIdle();
 }
 
-Ptr<Queue> DirectX12Device::GetQueue(QueueType type)
+RPtr<Queue> DirectX12Device::GetQueue(QueueType type)
 {
     switch (type)
     {
@@ -153,7 +153,7 @@ Ptr<Queue> DirectX12Device::GetQueue(QueueType type)
     Unreachable();
 }
 
-Ptr<CommandPool> DirectX12Device::CreateCommandPool(const Ptr<Queue> &queue)
+RPtr<CommandPool> DirectX12Device::CreateCommandPool(const RPtr<Queue> &queue)
 {
     ComPtr<ID3D12CommandAllocator> commandAllocator;
     RTRC_D3D12_FAIL_MSG(
@@ -161,10 +161,10 @@ Ptr<CommandPool> DirectX12Device::CreateCommandPool(const Ptr<Queue> &queue)
             TranslateCommandListType(queue->GetType()),
             IID_PPV_ARGS(commandAllocator.GetAddressOf())),
         "Fail to create directx12 command allocator");
-    return MakePtr<DirectX12CommandPool>(this, queue->GetType(), std::move(commandAllocator));
+    return MakeRPtr<DirectX12CommandPool>(this, queue->GetType(), std::move(commandAllocator));
 }
 
-Ptr<Swapchain> DirectX12Device::CreateSwapchain(const SwapchainDesc &desc, Window &window)
+RPtr<Swapchain> DirectX12Device::CreateSwapchain(const SwapchainDesc &desc, Window &window)
 {
     const HWND windowHandle = reinterpret_cast<HWND>(window.GetWin32WindowHandle());
     DXGI_SWAP_CHAIN_DESC swapChainDesc =
@@ -211,35 +211,35 @@ Ptr<Swapchain> DirectX12Device::CreateSwapchain(const SwapchainDesc &desc, Windo
         .initialLayout = TextureLayout::Undefined,
         .concurrentAccessMode = QueueConcurrentAccessMode::Exclusive
     };
-    return MakePtr<DirectX12Swapchain>(this, imageDesc, std::move(swapChain3), desc.vsync ? 1 : 0);
+    return MakeRPtr<DirectX12Swapchain>(this, imageDesc, std::move(swapChain3), desc.vsync ? 1 : 0);
 }
 
-Ptr<Fence> DirectX12Device::CreateFence(bool signaled)
+RPtr<Fence> DirectX12Device::CreateFence(bool signaled)
 {
     ComPtr<ID3D12Fence> fence;
     RTRC_D3D12_FAIL_MSG(
         device_->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(fence.GetAddressOf())),
         "DirectX12Device::CreateFence: fail to create directx12 fence");
-    return MakePtr<DirectX12Fence>(std::move(fence), signaled);
+    return MakeRPtr<DirectX12Fence>(std::move(fence), signaled);
 }
 
-Ptr<Semaphore> DirectX12Device::CreateTimelineSemaphore(uint64_t initialValue)
+RPtr<Semaphore> DirectX12Device::CreateTimelineSemaphore(uint64_t initialValue)
 {
     ComPtr<ID3D12Fence> fence;
     RTRC_D3D12_FAIL_MSG(
         device_->CreateFence(initialValue, D3D12_FENCE_FLAG_SHARED, IID_PPV_ARGS(fence.GetAddressOf())),
         "DirectX12Device::CreateTimelineSemaphore: fail to create directx12 fence");
-    return MakePtr<DirectX12Semaphore>(std::move(fence));
+    return MakeRPtr<DirectX12Semaphore>(std::move(fence));
 }
 
-Ptr<RawShader> DirectX12Device::CreateShader(const void *data, size_t size, std::vector<RawShaderEntry> entries)
+RPtr<RawShader> DirectX12Device::CreateShader(const void *data, size_t size, std::vector<RawShaderEntry> entries)
 {
     std::vector<std::byte> byteCode(size);
     std::memcpy(byteCode.data(), data, size);
-    return MakePtr<DirectX12RawShader>(std::move(byteCode), std::move(entries));
+    return MakeRPtr<DirectX12RawShader>(std::move(byteCode), std::move(entries));
 }
 
-Ptr<GraphicsPipeline> DirectX12Device::CreateGraphicsPipeline(const GraphicsPipelineDesc &desc)
+RPtr<GraphicsPipeline> DirectX12Device::CreateGraphicsPipeline(const GraphicsPipelineDesc &desc)
 {
     auto d3dBindingLayout = static_cast<DirectX12BindingLayout *>(desc.bindingLayout.Get());
     auto rootSignature = d3dBindingLayout->_internalGetRootSignature(!desc.vertexAttributs.empty());
@@ -367,12 +367,12 @@ Ptr<GraphicsPipeline> DirectX12Device::CreateGraphicsPipeline(const GraphicsPipe
         vertexStrides[i] = desc.vertexBuffers[i].elementSize;
     }
 
-    return MakePtr<DirectX12GraphicsPipeline>(
+    return MakeRPtr<DirectX12GraphicsPipeline>(
         desc.bindingLayout, std::move(rootSignature), std::move(pipelineState),
         staticViewports, staticScissors, vertexStrides, TranslatePrimitiveTopology(desc.primitiveTopology));
 }
 
-Ptr<ComputePipeline> DirectX12Device::CreateComputePipeline(const ComputePipelineDesc &desc)
+RPtr<ComputePipeline> DirectX12Device::CreateComputePipeline(const ComputePipelineDesc &desc)
 {
     auto d3dBindingLayout = static_cast<DirectX12BindingLayout *>(desc.bindingLayout.Get());
     auto rootSignature = d3dBindingLayout->_internalGetRootSignature(false);
@@ -388,10 +388,10 @@ Ptr<ComputePipeline> DirectX12Device::CreateComputePipeline(const ComputePipelin
         device_->CreateComputePipelineState(&pipelineDesc, IID_PPV_ARGS(pipelineState.GetAddressOf())),
         "Fail to create directx12 compute pipeline state");
 
-    return MakePtr<DirectX12ComputePipeline>(desc.bindingLayout, std::move(rootSignature), std::move(pipelineState));
+    return MakeRPtr<DirectX12ComputePipeline>(desc.bindingLayout, std::move(rootSignature), std::move(pipelineState));
 }
 
-Ptr<RayTracingPipeline> DirectX12Device::CreateRayTracingPipeline(const RayTracingPipelineDesc &desc)
+RPtr<RayTracingPipeline> DirectX12Device::CreateRayTracingPipeline(const RayTracingPipelineDesc &desc)
 {
     CD3DX12_STATE_OBJECT_DESC pipelineDesc(D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE);
 
@@ -518,22 +518,22 @@ Ptr<RayTracingPipeline> DirectX12Device::CreateRayTracingPipeline(const RayTraci
         device_->CreateStateObject(pipelineDesc, IID_PPV_ARGS(stateObject.GetAddressOf())),
         "Fail to create directx12 ray tracing pipeline state object");
 
-    return MakePtr<DirectX12RayTracingPipeline>(
+    return MakeRPtr<DirectX12RayTracingPipeline>(
         std::move(stateObject), desc.bindingLayout, std::move(rootSignature), std::move(groupExportedNames));
 }
 
-Ptr<RayTracingLibrary> DirectX12Device::CreateRayTracingLibrary(const RayTracingLibraryDesc &desc)
+RPtr<RayTracingLibrary> DirectX12Device::CreateRayTracingLibrary(const RayTracingLibraryDesc &desc)
 {
-    return MakePtr<DirectX12RayTracingLibrary>(desc);
+    return MakeRPtr<DirectX12RayTracingLibrary>(desc);
 }
 
-Ptr<BindingGroupLayout> DirectX12Device::CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc)
+RPtr<BindingGroupLayout> DirectX12Device::CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc)
 {
-    return MakePtr<DirectX12BindingGroupLayout>(desc);
+    return MakeRPtr<DirectX12BindingGroupLayout>(desc);
 }
 
-Ptr<BindingGroup> DirectX12Device::CreateBindingGroup(
-    const Ptr<BindingGroupLayout> &bindingGroupLayout, uint32_t variableArraySize)
+RPtr<BindingGroup> DirectX12Device::CreateBindingGroup(
+    const RPtr<BindingGroupLayout> &bindingGroupLayout, uint32_t variableArraySize)
 {
     const auto &layoutDesc = bindingGroupLayout->GetDesc();
     assert(layoutDesc.variableArraySize == (variableArraySize > 0));
@@ -602,12 +602,12 @@ Ptr<BindingGroup> DirectX12Device::CreateBindingGroup(
         }
     }
 
-    return MakePtr<DirectX12BindingGroup>(this, Ptr(d3dBindingGroupLayout), std::move(tables), variableArraySize);
+    return MakeRPtr<DirectX12BindingGroup>(this, RPtr(d3dBindingGroupLayout), std::move(tables), variableArraySize);
 }
 
-Ptr<BindingLayout> DirectX12Device::CreateBindingLayout(const BindingLayoutDesc &desc)
+RPtr<BindingLayout> DirectX12Device::CreateBindingLayout(const BindingLayoutDesc &desc)
 {
-    return MakePtr<DirectX12BindingLayout>(this, desc);
+    return MakeRPtr<DirectX12BindingLayout>(this, desc);
 }
 
 void DirectX12Device::UpdateBindingGroups(const BindingGroupUpdateBatch &batch)
@@ -657,7 +657,7 @@ void DirectX12Device::CopyBindingGroup(
     device_->CopyDescriptorsSimple(count, dstStart, srcStart, type);
 }
 
-Ptr<Texture> DirectX12Device::CreateTexture(const TextureDesc &desc)
+RPtr<Texture> DirectX12Device::CreateTexture(const TextureDesc &desc)
 {
     D3D12_RESOURCE_DIMENSION dimension;
     if(desc.dim == TextureDimension::Tex2D)
@@ -748,10 +748,10 @@ Ptr<Texture> DirectX12Device::CreateTexture(const TextureDesc &desc)
         "Fail to create directx12 texture resource");
     
     DirectX12MemoryAllocation alloc = { allocator_.Get(), std::move(rawAlloc) };
-    return MakePtr<DirectX12Texture>(desc, this, std::move(resource), std::move(alloc));
+    return MakeRPtr<DirectX12Texture>(desc, this, std::move(resource), std::move(alloc));
 }
 
-Ptr<Buffer> DirectX12Device::CreateBuffer(const BufferDesc &desc)
+RPtr<Buffer> DirectX12Device::CreateBuffer(const BufferDesc &desc)
 {
     D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
     if(desc.usage & (BufferUsage::ShaderRWBuffer | BufferUsage::ShaderRWStructuredBuffer))
@@ -807,12 +807,12 @@ Ptr<Buffer> DirectX12Device::CreateBuffer(const BufferDesc &desc)
         "Fail to create directx12 buffer resource");
 
     DirectX12MemoryAllocation alloc = { allocator_.Get(), std::move(rawAlloc) };
-    return MakePtr<DirectX12Buffer>(desc, this, std::move(resource), std::move(alloc));
+    return MakeRPtr<DirectX12Buffer>(desc, this, std::move(resource), std::move(alloc));
 }
 
-Ptr<Sampler> DirectX12Device::CreateSampler(const SamplerDesc &desc)
+RPtr<Sampler> DirectX12Device::CreateSampler(const SamplerDesc &desc)
 {
-    return MakePtr<DirectX12Sampler>(this, desc);
+    return MakeRPtr<DirectX12Sampler>(this, desc);
 }
 
 size_t DirectX12Device::GetConstantBufferAlignment() const
@@ -853,7 +853,7 @@ void DirectX12Device::WaitIdle()
 
 BlasPtr DirectX12Device::CreateBlas(const BufferPtr &buffer, size_t offset, size_t size)
 {
-    auto ret = MakePtr<DirectX12Blas>();
+    auto ret = MakeRPtr<DirectX12Blas>();
     auto d3dBuffer = static_cast<DirectX12Buffer *>(buffer.Get());
     auto address = d3dBuffer->GetDeviceAddress().address + offset;
     ret->_internalSetBuffer(BufferDeviceAddress{ address }, buffer);
@@ -875,19 +875,19 @@ TlasPtr DirectX12Device::CreateTlas(const BufferPtr &buffer, size_t offset, size
     srvDesc.RaytracingAccelerationStructure.Location = address;
     device_->CreateShaderResourceView(nullptr, &srvDesc, srv);
 
-    return MakePtr<DirectX12Tlas>(this, BufferDeviceAddress{ address }, buffer, srv);
+    return MakeRPtr<DirectX12Tlas>(this, BufferDeviceAddress{ address }, buffer, srv);
 }
 
 BlasPrebuildInfoPtr DirectX12Device::CreateBlasPrebuildInfo(
     Span<RayTracingGeometryDesc> geometries, RayTracingAccelerationStructureBuildFlags flags)
 {
-    return MakePtr<DirectX12BlasPrebuildInfo>(this, geometries, flags);
+    return MakeRPtr<DirectX12BlasPrebuildInfo>(this, geometries, flags);
 }
 
 TlasPrebuildInfoPtr DirectX12Device::CreateTlasPrebuildInfo(
     const RayTracingInstanceArrayDesc &instances, RayTracingAccelerationStructureBuildFlags flags)
 {
-    return MakePtr<DirectX12TlasPrebuildInfo>(this, instances, flags);
+    return MakeRPtr<DirectX12TlasPrebuildInfo>(this, instances, flags);
 }
 
 const ShaderGroupRecordRequirements &DirectX12Device::GetShaderGroupRecordRequirements() const

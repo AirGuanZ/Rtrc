@@ -65,7 +65,7 @@ ShaderBindingTableBuilder::SubtableBuilder *ShaderBindingTableBuilder::AddSubtab
 
 ShaderBindingTable ShaderBindingTableBuilder::CreateShaderBindingTable(bool useCopyCommand) const
 {
-    const RHI::DevicePtr &device = device_->GetRawDevice();
+    const RHI::DeviceOPtr device = device_->GetRawDevice();
     const uint32_t subtableAlignment = device->GetShaderGroupRecordRequirements().shaderGroupBaseAlignment;
 
     size_t bufferSize = 0;

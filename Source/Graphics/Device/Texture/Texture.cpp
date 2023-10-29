@@ -2,7 +2,7 @@
 
 RTRC_BEGIN
 
-TextureManager::TextureManager(RHI::DevicePtr device, DeviceSynchronizer &sync)
+TextureManager::TextureManager(RHI::DeviceOPtr device, DeviceSynchronizer &sync)
     : device_(std::move(device)), sync_(sync)
 {
     

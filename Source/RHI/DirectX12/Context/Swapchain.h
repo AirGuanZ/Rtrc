@@ -17,14 +17,14 @@ public:
 
     bool Acquire() RTRC_RHI_OVERRIDE;
 
-    Ptr<BackBufferSemaphore> GetAcquireSemaphore() RTRC_RHI_OVERRIDE;
-    Ptr<BackBufferSemaphore> GetPresentSemaphore() RTRC_RHI_OVERRIDE;
+    RPtr<BackBufferSemaphore> GetAcquireSemaphore() RTRC_RHI_OVERRIDE;
+    RPtr<BackBufferSemaphore> GetPresentSemaphore() RTRC_RHI_OVERRIDE;
 
     bool Present() RTRC_RHI_OVERRIDE;
 
     int                GetRenderTargetCount() const RTRC_RHI_OVERRIDE;
     const TextureDesc &GetRenderTargetDesc() const RTRC_RHI_OVERRIDE;
-    Ptr<Texture>       GetRenderTarget() const RTRC_RHI_OVERRIDE;
+    RPtr<Texture>       GetRenderTarget() const RTRC_RHI_OVERRIDE;
 
 private:
 
@@ -38,11 +38,11 @@ private:
     uint32_t frameIndex_;
 
     TextureDesc imageDesc_;
-    std::vector<Ptr<Texture>> images_;
+    std::vector<RPtr<Texture>> images_;
 
-    Ptr<DirectX12BackBufferSemaphore> acquireSemaphore_; // Dummy semaphore
-    Ptr<DirectX12BackBufferSemaphore> presentSemaphore_; // Dummy semaphore. TODO: optional separate present queue
-    //std::vector<Ptr<DirectX12BackBufferSemaphore>> presentSemaphores_;
+    RPtr<DirectX12BackBufferSemaphore> acquireSemaphore_; // Dummy semaphore
+    RPtr<DirectX12BackBufferSemaphore> presentSemaphore_; // Dummy semaphore. TODO: optional separate present queue
+    //std::vector<RPtr<DirectX12BackBufferSemaphore>> presentSemaphores_;
 };
 
 RTRC_RHI_D3D12_END

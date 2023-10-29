@@ -28,10 +28,10 @@ public:
 
     const TextureDesc &GetDesc() const RTRC_RHI_OVERRIDE { return desc_; }
 
-    Ptr<TextureRtv> CreateRtv(const TextureRtvDesc &desc) const RTRC_RHI_OVERRIDE;
-    Ptr<TextureSrv> CreateSrv(const TextureSrvDesc &desc) const RTRC_RHI_OVERRIDE;
-    Ptr<TextureUav> CreateUav(const TextureUavDesc &desc) const RTRC_RHI_OVERRIDE;
-    Ptr<TextureDsv> CreateDsv(const TextureDsvDesc &desc) const RTRC_RHI_OVERRIDE;
+    RPtr<TextureRtv> CreateRtv(const TextureRtvDesc &desc) const RTRC_RHI_OVERRIDE;
+    RPtr<TextureSrv> CreateSrv(const TextureSrvDesc &desc) const RTRC_RHI_OVERRIDE;
+    RPtr<TextureUav> CreateUav(const TextureUavDesc &desc) const RTRC_RHI_OVERRIDE;
+    RPtr<TextureDsv> CreateDsv(const TextureDsvDesc &desc) const RTRC_RHI_OVERRIDE;
 
     const ComPtr<ID3D12Resource> &_internalGetNativeTexture() const { return texture_; }
 

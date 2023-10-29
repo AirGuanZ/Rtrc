@@ -45,7 +45,7 @@ public:
     bool _internalIsSlotTexture(int index) const;
     bool _internalIsSlotRWTexture(int index) const;
 
-    Ptr<BindingGroup> _internalCreateBindingGroupImpl(uint32_t variableArraySize) const;
+    RPtr<BindingGroup> _internalCreateBindingGroupImpl(uint32_t variableArraySize) const;
 
 private:
 

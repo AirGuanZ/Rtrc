@@ -31,7 +31,7 @@ const RC<SubBuffer> &Tlas::GetBuffer() const
     return buffer_;
 }
 
-AccelerationStructureManager::AccelerationStructureManager(RHI::DevicePtr device, DeviceSynchronizer &sync)
+AccelerationStructureManager::AccelerationStructureManager(RHI::DeviceOPtr device, DeviceSynchronizer &sync)
     : GeneralGPUObjectManager(sync), rhiDevice_(std::move(device))
 {
     

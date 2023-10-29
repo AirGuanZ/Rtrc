@@ -111,7 +111,7 @@ void SVGF::Render(
         passData.PrevMoments     = prevMoments;
         passData.ResolvedMoments = temporalFilterOutputMoments;
         passData.resolution      = inputColor->GetSize();
-        passData.alpha           = 0.1f;
+        passData.alpha           = std::clamp(settings_.temporalFilterAlpha, 0.0f, 1.0f);
         
         renderGraph->CreateComputePassWithThreadCount(
             "TemporalFilter",
@@ -174,7 +174,7 @@ void SVGF::Render(
         auto color2 = renderGraph->CreateTexture(color1->GetDesc(), "SVGF Temporary Color B");
         auto color3 = currColor;
         
-        for(int i = 0; i < settings_.spatialFilterIterations; ++i)
+        for(unsigned i = 0; i < settings_.spatialFilterIterations; ++i)
         {
             PrefilterVariance(variance1, variancef);
 
@@ -221,11 +221,17 @@ void SVGF::Render(
                     passData);
             }
 
-            std::swap(color1, color2);
-            std::swap(variance1, variance2);
-
             finalColor = color3;
-            color3 = color1;
+
+            if(i == 0)
+            {
+                color3 = color1;
+                color1 = currColor;
+            }
+            else if(i == 1)
+            {
+                color1 = color3;
+            }
         }
     }
 

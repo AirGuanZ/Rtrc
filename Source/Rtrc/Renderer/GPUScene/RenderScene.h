@@ -14,7 +14,7 @@ public:
 
     struct Config
     {
-        bool opaqueTlas = false;
+        bool opaqueTlas;
     };
     
     struct TlasInstance

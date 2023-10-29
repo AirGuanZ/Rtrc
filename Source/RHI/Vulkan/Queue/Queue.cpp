@@ -28,10 +28,10 @@ void VulkanQueue::WaitIdle()
 void VulkanQueue::Submit(
     BackBufferSemaphoreDependency waitBackBufferSemaphore,
     Span<SemaphoreDependency>     waitSemaphores,
-    Span<Ptr<CommandBuffer>>      commandBuffers,
+    Span<RPtr<CommandBuffer>>      commandBuffers,
     BackBufferSemaphoreDependency signalBackBufferSemaphore,
     Span<SemaphoreDependency>     signalSemaphores,
-    const Ptr<Fence>             &signalFence)
+    const RPtr<Fence>             &signalFence)
 {
     std::vector<VkCommandBufferSubmitInfo> vkCommandBuffers(commandBuffers.size());
     for(auto &&[i, cb] : Enumerate(commandBuffers))
@@ -105,7 +105,7 @@ uint32_t VulkanQueue::_internalGetNativeFamilyIndex() const
     return queueFamilyIndex_;
 }
 
-Ptr<CommandPool> VulkanQueue::_internalCreateCommandPoolImpl() const
+RPtr<CommandPool> VulkanQueue::_internalCreateCommandPoolImpl() const
 {
     const VkCommandPoolCreateInfo createInfo = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
@@ -116,7 +116,7 @@ Ptr<CommandPool> VulkanQueue::_internalCreateCommandPoolImpl() const
         vkCreateCommandPool(device_->_internalGetNativeDevice(), &createInfo, RTRC_VK_ALLOC, &pool),
         "failed to create vulkan command pool");
     RTRC_SCOPE_FAIL{ vkDestroyCommandPool(device_->_internalGetNativeDevice(), pool, RTRC_VK_ALLOC); };
-    return MakePtr<VulkanCommandPool>(device_, GetType(), pool);
+    return MakeRPtr<VulkanCommandPool>(device_, GetType(), pool);
 }
 
 RTRC_RHI_VK_END

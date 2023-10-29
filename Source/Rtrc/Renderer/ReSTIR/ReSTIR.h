@@ -16,6 +16,9 @@ public:
 
         unsigned int N = 5; // N = 0 implies no spatial reuse
         float radius = 15;
+
+        float svgfTemporalFilterAlpha = 0.1f;
+        unsigned int svgfSpatialFilterIterations = 2;
     };
 
     struct PerCameraData

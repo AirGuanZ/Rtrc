@@ -21,10 +21,10 @@ public:
     void Submit(
         BackBufferSemaphoreDependency  waitBackBufferSemaphore,
         Span<SemaphoreDependency>      waitSemaphores,
-        Span<Ptr<CommandBuffer>>       commandBuffers,
+        Span<RPtr<CommandBuffer>>       commandBuffers,
          BackBufferSemaphoreDependency signalBackBufferSemaphore,
         Span<SemaphoreDependency>     signalSemaphores,
-        const Ptr<Fence>             &signalFence) RTRC_RHI_OVERRIDE;
+        const RPtr<Fence>             &signalFence) RTRC_RHI_OVERRIDE;
 
     ID3D12CommandQueue *_internalGetCommandQueue() const { return queue_.Get(); }
 

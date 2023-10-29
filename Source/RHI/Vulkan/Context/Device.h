@@ -29,29 +29,29 @@ public:
     bool IsGlobalBarrierWellSupported() const RTRC_RHI_OVERRIDE { return true; }
     BarrierMemoryModel GetBarrierMemoryModel() const RTRC_RHI_OVERRIDE { return BarrierMemoryModel::AvailableAndVisible; }
 
-    Ptr<Queue> GetQueue(QueueType type) RTRC_RHI_OVERRIDE;
+    RPtr<Queue> GetQueue(QueueType type) RTRC_RHI_OVERRIDE;
 
-    Ptr<CommandPool> CreateCommandPool(const Ptr<Queue> &queue) RTRC_RHI_OVERRIDE;
+    RPtr<CommandPool> CreateCommandPool(const RPtr<Queue> &queue) RTRC_RHI_OVERRIDE;
 
-    Ptr<Fence> CreateFence(bool signaled) RTRC_RHI_OVERRIDE;
+    RPtr<Fence> CreateFence(bool signaled) RTRC_RHI_OVERRIDE;
 
-    Ptr<Swapchain> CreateSwapchain(const SwapchainDesc &desc, Window &window) RTRC_RHI_OVERRIDE;
+    RPtr<Swapchain> CreateSwapchain(const SwapchainDesc &desc, Window &window) RTRC_RHI_OVERRIDE;
 
-    Ptr<Semaphore> CreateTimelineSemaphore(uint64_t initialValue) RTRC_RHI_OVERRIDE;
+    RPtr<Semaphore> CreateTimelineSemaphore(uint64_t initialValue) RTRC_RHI_OVERRIDE;
 
-    Ptr<RawShader> CreateShader(const void *data, size_t size, std::vector<RawShaderEntry> entries) RTRC_RHI_OVERRIDE;
+    RPtr<RawShader> CreateShader(const void *data, size_t size, std::vector<RawShaderEntry> entries) RTRC_RHI_OVERRIDE;
 
-    Ptr<GraphicsPipeline>   CreateGraphicsPipeline  (const GraphicsPipelineDesc &desc) RTRC_RHI_OVERRIDE;
-    Ptr<ComputePipeline>    CreateComputePipeline   (const ComputePipelineDesc &desc) RTRC_RHI_OVERRIDE;
-    Ptr<RayTracingPipeline> CreateRayTracingPipeline(const RayTracingPipelineDesc &desc) RTRC_RHI_OVERRIDE;
+    RPtr<GraphicsPipeline>   CreateGraphicsPipeline  (const GraphicsPipelineDesc &desc) RTRC_RHI_OVERRIDE;
+    RPtr<ComputePipeline>    CreateComputePipeline   (const ComputePipelineDesc &desc) RTRC_RHI_OVERRIDE;
+    RPtr<RayTracingPipeline> CreateRayTracingPipeline(const RayTracingPipelineDesc &desc) RTRC_RHI_OVERRIDE;
 
-    Ptr<RayTracingLibrary> CreateRayTracingLibrary(const RayTracingLibraryDesc &desc) RTRC_RHI_OVERRIDE;
+    RPtr<RayTracingLibrary> CreateRayTracingLibrary(const RayTracingLibraryDesc &desc) RTRC_RHI_OVERRIDE;
 
-    Ptr<BindingGroupLayout> CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc) RTRC_RHI_OVERRIDE;
-    Ptr<BindingGroup> CreateBindingGroup(
-        const Ptr<BindingGroupLayout> &bindingGroupLayout,
+    RPtr<BindingGroupLayout> CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc) RTRC_RHI_OVERRIDE;
+    RPtr<BindingGroup> CreateBindingGroup(
+        const RPtr<BindingGroupLayout> &bindingGroupLayout,
         uint32_t                       variableArraySize = 0) RTRC_RHI_OVERRIDE;
-    Ptr<BindingLayout> CreateBindingLayout(const BindingLayoutDesc &desc) RTRC_RHI_OVERRIDE;
+    RPtr<BindingLayout> CreateBindingLayout(const BindingLayoutDesc &desc) RTRC_RHI_OVERRIDE;
 
     void UpdateBindingGroups(const BindingGroupUpdateBatch &batch) RTRC_RHI_OVERRIDE;
     void CopyBindingGroup(
@@ -59,11 +59,11 @@ public:
         const BindingGroupPtr &srcGroup, uint32_t srcIndex, uint32_t srcArrayOffset,
         uint32_t count) RTRC_RHI_OVERRIDE;
 
-    Ptr<Texture> CreateTexture(const TextureDesc &desc) RTRC_RHI_OVERRIDE;
+    RPtr<Texture> CreateTexture(const TextureDesc &desc) RTRC_RHI_OVERRIDE;
 
-    Ptr<Buffer> CreateBuffer(const BufferDesc &desc) RTRC_RHI_OVERRIDE;
+    RPtr<Buffer> CreateBuffer(const BufferDesc &desc) RTRC_RHI_OVERRIDE;
 
-    Ptr<Sampler> CreateSampler(const SamplerDesc &desc) RTRC_RHI_OVERRIDE;
+    RPtr<Sampler> CreateSampler(const SamplerDesc &desc) RTRC_RHI_OVERRIDE;
 
     size_t GetConstantBufferAlignment() const RTRC_RHI_OVERRIDE;
     size_t GetConstantBufferSizeAlignment() const RTRC_RHI_OVERRIDE;
@@ -99,10 +99,10 @@ private:
     VulkanPhysicalDevice physicalDevice_;
     VkDevice             device_;
 
-    Ptr<VulkanQueue> graphicsQueue_;
-    Ptr<VulkanQueue> computeQueue_;
-    Ptr<VulkanQueue> transferQueue_;
-    Ptr<VulkanQueue> presentQueue_;
+    RPtr<VulkanQueue> graphicsQueue_;
+    RPtr<VulkanQueue> computeQueue_;
+    RPtr<VulkanQueue> transferQueue_;
+    RPtr<VulkanQueue> presentQueue_;
     QueueFamilyInfo queueFamilies_;
 
     VmaAllocator allocator_;

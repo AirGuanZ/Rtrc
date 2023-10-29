@@ -16,7 +16,7 @@ class PooledBufferManager : public Uncopyable, public BufferManagerInterface
 {
 public:
 
-    PooledBufferManager(RHI::DevicePtr device, DeviceSynchronizer &sync);
+    PooledBufferManager(RHI::DeviceOPtr device, DeviceSynchronizer &sync);
 
     RC<PooledBuffer> Create(const RHI::BufferDesc &desc);
 
@@ -30,7 +30,7 @@ private:
         BufferState state;
     };
 
-    RHI::DevicePtr device_;
+    RHI::DeviceOPtr device_;
     DeviceSynchronizer &sync_;
 
     ObjectPool<RHI::BufferDesc, PooledRecord, true, true> pool_;

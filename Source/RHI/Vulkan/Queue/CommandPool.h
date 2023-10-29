@@ -16,7 +16,7 @@ public:
 
     QueueType GetType() const RTRC_RHI_OVERRIDE;
 
-    Ptr<CommandBuffer> NewCommandBuffer() RTRC_RHI_OVERRIDE;
+    RPtr<CommandBuffer> NewCommandBuffer() RTRC_RHI_OVERRIDE;
 
 private:
 
@@ -26,7 +26,7 @@ private:
     QueueType type_;
     VkCommandPool pool_;
     size_t nextFreeBufferIndex_;
-    std::vector<Ptr<VulkanCommandBuffer>> commandBuffers_;
+    std::vector<RPtr<VulkanCommandBuffer>> commandBuffers_;
 };
 
 RTRC_RHI_VK_END

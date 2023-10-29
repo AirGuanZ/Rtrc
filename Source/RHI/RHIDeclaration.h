@@ -8,7 +8,9 @@
 #include <Core/Container/Span.h>
 #include <Core/EnumFlags.h>
 #include <Core/Hash.h>
+#include <Core/SmartPointer/ObserverPtr.h>
 #include <Core/SmartPointer/ReferenceCounted.h>
+#include <Core/SmartPointer/UniquePointer.h>
 #include <Core/StringPool.h>
 #include <Core/Uncopyable.h>
 #include <Core/Variant.h>
@@ -17,17 +19,20 @@
 RTRC_RHI_BEGIN
     
 template<typename T>
-using Ptr = ReferenceCountedPtr<T>;
+using RPtr = ReferenceCountedPtr<T>;
+
+template<typename T>
+using OPtr = ObserverPtr<T>;
 
 template<typename T, typename...Args>
-Ptr<T> MakePtr(Args&&...args)
+RPtr <T> MakeRPtr(Args&&...args)
 {
     T *object = new T(std::forward<Args>(args)...);
-    return Ptr<T>(object);
+    return RPtr<T>(object);
 }
 
 class RHIObject;
-using RHIObjectPtr = Ptr<RHIObject>;
+using RHIObjectPtr = RPtr <RHIObject>;
 
 #ifndef RTRC_STATIC_RHI
 
@@ -35,7 +40,11 @@ using RHIObjectPtr = Ptr<RHIObject>;
 #define RTRC_RHI_API_PURE = 0
 #define RTRC_RHI_OVERRIDE override
 #define RTRC_RHI_IMPLEMENT(DERIVED, BASE) class DERIVED final : public BASE
-#define RTRC_RHI_FORWARD_DECL(CLASS) class CLASS; using CLASS##Ptr = Ptr<CLASS>;
+#define RTRC_RHI_FORWARD_DECL(CLASS) \
+    class CLASS;                     \
+    using CLASS##Ptr = RPtr<CLASS>;  \
+    using CLASS##UPtr = UPtr<CLASS>; \
+    using CLASS##OPtr = OPtr<CLASS>;
 #define RTRC_RHI_IMPL_PREFIX(X) X
 
 #else // #ifndef RTRC_STATC_RHI
@@ -45,12 +54,20 @@ using RHIObjectPtr = Ptr<RHIObject>;
 #define RTRC_RHI_OVERRIDE
 #define RTRC_RHI_IMPLEMENT(DERIVED, BASE) class DERIVED final : public RHIObject
 #ifdef RTRC_RHI_VULKAN
-#define RTRC_RHI_FORWARD_DECL(CLASS) \
-    namespace Vk { class Vulkan##CLASS; } using CLASS = Vk::Vulkan##CLASS; using CLASS##Ptr = Ptr<CLASS>;
+#define RTRC_RHI_FORWARD_DECL(CLASS)      \
+    namespace Vk { class Vulkan##CLASS; } \
+    using CLASS = Vk::Vulkan##CLASS;      \
+    using CLASS##Ptr = RPtr<CLASS>;       \
+    using CLASS##UPtr = UPtr<CLASS>;      \
+    using CLASS##OPtr = OPtr<CLASS>;
 #define RTRC_RHI_IMPL_PREFIX(X) Vulkan##X
 #elif RTRC_RHI_DIRECTX12
-#define RTRC_RHI_FORWARD_DECL(CLASS) \
-    namespace D3D12 { class DirectX12##CLASS; } using CLASS = D3D12::DirectX12##CLASS; using CLASS##Ptr = Ptr<CLASS>;
+#define RTRC_RHI_FORWARD_DECL(CLASS)            \
+    namespace D3D12 { class DirectX12##CLASS; } \
+    using CLASS = D3D12::DirectX12##CLASS;      \
+    using CLASS##Ptr = RPtr<CLASS>;             \
+    using CLASS##UPtr = UPtr<CLASS>;            \
+    using CLASS##OPtr = OPtr<CLASS>;
 #else
 #error "No RHI backend is enabled"
 #endif
@@ -486,17 +503,6 @@ enum class QueueConcurrentAccessMode
     Concurrent // Concurrently accessed by graphics/compute queues
 };
 
-/*enum class TextureViewFlagBit
-{
-    None = 0,
-
-    // Removed because d3d12 backend doesn't support these usages
-    // DepthSrv_StencilAttachment         = 1 << 0,
-    // DepthSrv_StencilAttachmentReadOnly = 1 << 1,
-};
-RTRC_DEFINE_ENUM_FLAGS(TextureViewFlagBit)
-using TextureViewFlags = EnumFlagsTextureViewFlagBit;*/
-
 enum class RayTracingGeometryType
 {
     Triangles,
@@ -664,7 +670,7 @@ struct UnboundedBindingArrayAliasing
 
 struct BindingLayoutDesc
 {
-    std::vector<Ptr<BindingGroupLayout>>       groups;
+    std::vector<RPtr<BindingGroupLayout>>      groups;
     std::vector<PushConstantRange>             pushConstantRanges;
     std::vector<UnboundedBindingArrayAliasing> unboundedAliases;
 
@@ -809,8 +815,7 @@ struct TextureSrvDesc
     uint32_t         levelCount     = 0; // 0 means all levels
     uint32_t         baseArrayLayer = 0;
     uint32_t         layerCount     = 0; // 0 means all layers. only used when isArray == true
-    //TextureViewFlags flags          = 0;
-
+    
     auto operator<=>(const TextureSrvDesc &) const = default;
 };
 
@@ -830,8 +835,7 @@ struct TextureDsvDesc
     Format           format       = Format::Unknown;
     uint32_t         mipLevel     = 0;
     uint32_t         arrayLayer   = 0;
-    //TextureViewFlags flags        = 0;
-
+    
     auto operator<=>(const TextureDsvDesc &) const = default;
 };
 
@@ -1025,10 +1029,10 @@ struct GraphicsPipelineDesc
         }
     };
 
-    Ptr<RawShader> vertexShader;
-    Ptr<RawShader> fragmentShader;
+    RPtr<RawShader> vertexShader;
+    RPtr<RawShader> fragmentShader;
 
-    Ptr<BindingLayout> bindingLayout;
+    RPtr<BindingLayout> bindingLayout;
 
     Viewports viewports;
     Scissors  scissors;
@@ -1072,8 +1076,8 @@ struct GraphicsPipelineDesc
 
 struct ComputePipelineDesc
 {
-    Ptr<RawShader>     computeShader;
-    Ptr<BindingLayout> bindingLayout;
+    RPtr<RawShader>     computeShader;
+    RPtr<BindingLayout> bindingLayout;
 };
 
 static constexpr uint32_t RAY_TRACING_UNUSED_SHADER = (std::numeric_limits<uint32_t>::max)();
@@ -1109,7 +1113,7 @@ struct RayTracingPipelineDesc
     std::vector<RawShaderPtr>          rawShaders;
     std::vector<RayTracingShaderGroup> shaderGroups;
     std::vector<RayTracingLibraryPtr>  libraries;
-    Ptr<BindingLayout>                 bindingLayout;
+    RPtr<BindingLayout>                bindingLayout;
     uint32_t                           maxRayPayloadSize;
     uint32_t                           maxRayHitAttributeSize;
     uint32_t                           maxRecursiveDepth;
@@ -1229,13 +1233,13 @@ class BindingGroupUpdateBatch
 public:
 
     using UpdateData = Variant<
-        Ptr<BufferSrv>,
-        Ptr<BufferUav>,
-        Ptr<TextureSrv>,
-        Ptr<TextureUav>,
-        Ptr<Sampler>,
+        RPtr<BufferSrv>,
+        RPtr<BufferUav>,
+        RPtr<TextureSrv>,
+        RPtr<TextureUav>,
+        RPtr<Sampler>,
         ConstantBufferUpdate,
-        Ptr<Tlas>>;
+        RPtr<Tlas>>;
 
     struct Record
     {
@@ -1245,21 +1249,21 @@ public:
         UpdateData    data;
     };
 
-    void Append(BindingGroup &group, int index, Ptr<BufferSrv>              bufferSrv);
-    void Append(BindingGroup &group, int index, Ptr<BufferUav>              bufferUav);
-    void Append(BindingGroup &group, int index, Ptr<TextureSrv>             textureSrv);
-    void Append(BindingGroup &group, int index, Ptr<TextureUav>             textureUav);
-    void Append(BindingGroup &group, int index, Ptr<Sampler>                sampler);
+    void Append(BindingGroup &group, int index, RPtr<BufferSrv>             bufferSrv);
+    void Append(BindingGroup &group, int index, RPtr<BufferUav>             bufferUav);
+    void Append(BindingGroup &group, int index, RPtr<TextureSrv>            textureSrv);
+    void Append(BindingGroup &group, int index, RPtr<TextureUav>            textureUav);
+    void Append(BindingGroup &group, int index, RPtr<Sampler>               sampler);
     void Append(BindingGroup &group, int index, const ConstantBufferUpdate &cbuffer);
-    void Append(BindingGroup &group, int index, Ptr<Tlas>                   tlas);
+    void Append(BindingGroup &group, int index, RPtr<Tlas>                  tlas);
 
-    void Append(BindingGroup &group, int index, int arrayElem, Ptr<BufferSrv>              bufferSrv);
-    void Append(BindingGroup &group, int index, int arrayElem, Ptr<BufferUav>              bufferUav);
-    void Append(BindingGroup &group, int index, int arrayElem, Ptr<TextureSrv>             textureSrv);
-    void Append(BindingGroup &group, int index, int arrayElem, Ptr<TextureUav>             textureUav);
-    void Append(BindingGroup &group, int index, int arrayElem, Ptr<Sampler>                sampler);
+    void Append(BindingGroup &group, int index, int arrayElem, RPtr<BufferSrv>             bufferSrv);
+    void Append(BindingGroup &group, int index, int arrayElem, RPtr<BufferUav>             bufferUav);
+    void Append(BindingGroup &group, int index, int arrayElem, RPtr<TextureSrv>            textureSrv);
+    void Append(BindingGroup &group, int index, int arrayElem, RPtr<TextureUav>            textureUav);
+    void Append(BindingGroup &group, int index, int arrayElem, RPtr<Sampler>               sampler);
     void Append(BindingGroup &group, int index, int arrayElem, const ConstantBufferUpdate &cbuffer);
-    void Append(BindingGroup &group, int index, int arrayElem, Ptr<Tlas>                   tlas);
+    void Append(BindingGroup &group, int index, int arrayElem, RPtr<Tlas>                  tlas);
 
     Span<Record> GetRecords() const { return records_; }
 
@@ -1271,12 +1275,12 @@ private:
 #define RTRC_RHI_QUEUE_COMMON               \
     struct BackBufferSemaphoreDependency    \
     {                                       \
-        Ptr<BackBufferSemaphore> semaphore; \
+        RPtr<BackBufferSemaphore> semaphore; \
         PipelineStageFlag        stages;    \
     };                                      \
     struct SemaphoreDependency              \
     {                                       \
-        Ptr<Semaphore>    semaphore;        \
+        RPtr<Semaphore>    semaphore;        \
         PipelineStageFlag stages;           \
         uint64_t          value;            \
     };
@@ -1368,7 +1372,7 @@ class Instance : public RHIObject
 {
 public:
 
-    RTRC_RHI_API Ptr<Device> CreateDevice(const DeviceDesc &desc = {}) RTRC_RHI_API_PURE;
+    RTRC_RHI_API UPtr<Device> CreateDevice(const DeviceDesc &desc = {}) RTRC_RHI_API_PURE;
 };
 
 class Device : public RHIObject
@@ -1379,29 +1383,29 @@ public:
     RTRC_RHI_API bool IsGlobalBarrierWellSupported() const RTRC_RHI_API_PURE;
     RTRC_RHI_API BarrierMemoryModel GetBarrierMemoryModel() const RTRC_RHI_API_PURE;
     
-    RTRC_RHI_API Ptr<Queue> GetQueue(QueueType type) RTRC_RHI_API_PURE;
+    RTRC_RHI_API RPtr<Queue> GetQueue(QueueType type) RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API Ptr<CommandPool> CreateCommandPool(const Ptr<Queue> &queue) RTRC_RHI_API_PURE;
+    RTRC_RHI_API RPtr<CommandPool> CreateCommandPool(const RPtr<Queue> &queue) RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API Ptr<Swapchain> CreateSwapchain(const SwapchainDesc &desc, Window &window) RTRC_RHI_API_PURE;
+    RTRC_RHI_API RPtr<Swapchain> CreateSwapchain(const SwapchainDesc &desc, Window &window) RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API Ptr<Fence>     CreateFence(bool signaled) RTRC_RHI_API_PURE;
-    RTRC_RHI_API Ptr<Semaphore> CreateTimelineSemaphore(uint64_t initialValue) RTRC_RHI_API_PURE;
+    RTRC_RHI_API RPtr<Fence>     CreateFence(bool signaled) RTRC_RHI_API_PURE;
+    RTRC_RHI_API RPtr<Semaphore> CreateTimelineSemaphore(uint64_t initialValue) RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API Ptr<RawShader> CreateShader(
+    RTRC_RHI_API RPtr<RawShader> CreateShader(
         const void *data, size_t size, std::vector<RawShaderEntry> entries) RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API Ptr<GraphicsPipeline>   CreateGraphicsPipeline  (const GraphicsPipelineDesc &desc) RTRC_RHI_API_PURE;
-    RTRC_RHI_API Ptr<ComputePipeline>    CreateComputePipeline   (const ComputePipelineDesc &desc) RTRC_RHI_API_PURE;
-    RTRC_RHI_API Ptr<RayTracingPipeline> CreateRayTracingPipeline(const RayTracingPipelineDesc &desc) RTRC_RHI_API_PURE;
+    RTRC_RHI_API RPtr<GraphicsPipeline>   CreateGraphicsPipeline  (const GraphicsPipelineDesc &desc) RTRC_RHI_API_PURE;
+    RTRC_RHI_API RPtr<ComputePipeline>    CreateComputePipeline   (const ComputePipelineDesc &desc) RTRC_RHI_API_PURE;
+    RTRC_RHI_API RPtr<RayTracingPipeline> CreateRayTracingPipeline(const RayTracingPipelineDesc &desc) RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API Ptr<RayTracingLibrary> CreateRayTracingLibrary(const RayTracingLibraryDesc &desc) RTRC_RHI_API_PURE;
+    RTRC_RHI_API RPtr<RayTracingLibrary> CreateRayTracingLibrary(const RayTracingLibraryDesc &desc) RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API Ptr<BindingGroupLayout> CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc) RTRC_RHI_API_PURE;
-    RTRC_RHI_API Ptr<BindingGroup> CreateBindingGroup(
-        const Ptr<BindingGroupLayout> &bindingGroupLayout,
+    RTRC_RHI_API RPtr<BindingGroupLayout> CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc) RTRC_RHI_API_PURE;
+    RTRC_RHI_API RPtr<BindingGroup> CreateBindingGroup(
+        const RPtr<BindingGroupLayout> &bindingGroupLayout,
         uint32_t                       variableArraySize = 0) RTRC_RHI_API_PURE;
-    RTRC_RHI_API Ptr<BindingLayout> CreateBindingLayout(const BindingLayoutDesc &desc) RTRC_RHI_API_PURE;
+    RTRC_RHI_API RPtr<BindingLayout> CreateBindingLayout(const BindingLayoutDesc &desc) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void UpdateBindingGroups(const BindingGroupUpdateBatch &batch) RTRC_RHI_API_PURE;
 
@@ -1410,9 +1414,9 @@ public:
         const BindingGroupPtr &srcGroup, uint32_t srcIndex, uint32_t srcArrayOffset,
         uint32_t count) RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API Ptr<Texture> CreateTexture(const TextureDesc &desc) RTRC_RHI_API_PURE;
-    RTRC_RHI_API Ptr<Buffer>  CreateBuffer(const BufferDesc &desc) RTRC_RHI_API_PURE;
-    RTRC_RHI_API Ptr<Sampler> CreateSampler(const SamplerDesc &desc) RTRC_RHI_API_PURE;
+    RTRC_RHI_API RPtr<Texture> CreateTexture(const TextureDesc &desc) RTRC_RHI_API_PURE;
+    RTRC_RHI_API RPtr<Buffer>  CreateBuffer(const BufferDesc &desc) RTRC_RHI_API_PURE;
+    RTRC_RHI_API RPtr<Sampler> CreateSampler(const SamplerDesc &desc) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API size_t GetConstantBufferAlignment() const RTRC_RHI_API_PURE;
     RTRC_RHI_API size_t GetConstantBufferSizeAlignment() const RTRC_RHI_API_PURE;
@@ -1454,12 +1458,12 @@ public:
     RTRC_RHI_API bool Acquire() RTRC_RHI_API_PURE;
     RTRC_RHI_API bool Present() RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API Ptr<BackBufferSemaphore> GetAcquireSemaphore() RTRC_RHI_API_PURE;
-    RTRC_RHI_API Ptr<BackBufferSemaphore> GetPresentSemaphore() RTRC_RHI_API_PURE;
+    RTRC_RHI_API RPtr<BackBufferSemaphore> GetAcquireSemaphore() RTRC_RHI_API_PURE;
+    RTRC_RHI_API RPtr<BackBufferSemaphore> GetPresentSemaphore() RTRC_RHI_API_PURE;
 
     RTRC_RHI_API int                GetRenderTargetCount() const RTRC_RHI_API_PURE;
     RTRC_RHI_API const TextureDesc &GetRenderTargetDesc() const RTRC_RHI_API_PURE;
-    RTRC_RHI_API Ptr<Texture>       GetRenderTarget() const RTRC_RHI_API_PURE;
+    RTRC_RHI_API RPtr<Texture>      GetRenderTarget() const RTRC_RHI_API_PURE;
 };
 
 class BindingGroupLayout : public RHIObject
@@ -1505,10 +1509,10 @@ public:
     RTRC_RHI_API void Submit(
         BackBufferSemaphoreDependency waitBackBufferSemaphore,
         Span<SemaphoreDependency>     waitSemaphores,
-        Span<Ptr<CommandBuffer>>      commandBuffers,
+        Span<RPtr<CommandBuffer>>     commandBuffers,
         BackBufferSemaphoreDependency signalBackBufferSemaphore,
         Span<SemaphoreDependency>     signalSemaphores,
-        const Ptr<Fence>             &signalFence) RTRC_RHI_API_PURE;
+        const RPtr<Fence>             &signalFence) RTRC_RHI_API_PURE;
 };
 
 class Fence : public RHIObject
@@ -1528,7 +1532,7 @@ public:
 
     RTRC_RHI_API QueueType GetType() const RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API Ptr<CommandBuffer> NewCommandBuffer() RTRC_RHI_API_PURE;
+    RTRC_RHI_API RPtr<CommandBuffer> NewCommandBuffer() RTRC_RHI_API_PURE;
 };
 
 class CommandBuffer : public RHIObject
@@ -1547,17 +1551,17 @@ public:
         const RenderPassDepthStencilAttachment &depthStencilAttachment) RTRC_RHI_API_PURE;
     RTRC_RHI_API void EndRenderPass() RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API void BindPipeline(const Ptr<GraphicsPipeline>   &pipeline) RTRC_RHI_API_PURE;
-    RTRC_RHI_API void BindPipeline(const Ptr<ComputePipeline>    &pipeline) RTRC_RHI_API_PURE;
-    RTRC_RHI_API void BindPipeline(const Ptr<RayTracingPipeline> &pipeline) RTRC_RHI_API_PURE;
+    RTRC_RHI_API void BindPipeline(const RPtr<GraphicsPipeline>   &pipeline) RTRC_RHI_API_PURE;
+    RTRC_RHI_API void BindPipeline(const RPtr<ComputePipeline>    &pipeline) RTRC_RHI_API_PURE;
+    RTRC_RHI_API void BindPipeline(const RPtr<RayTracingPipeline> &pipeline) RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API void BindGroupsToGraphicsPipeline  (int startIndex, Span<Ptr<BindingGroup>> groups) RTRC_RHI_API_PURE;
-    RTRC_RHI_API void BindGroupsToComputePipeline   (int startIndex, Span<Ptr<BindingGroup>> groups) RTRC_RHI_API_PURE;
-    RTRC_RHI_API void BindGroupsToRayTracingPipeline(int startIndex, Span<Ptr<BindingGroup>> groups) RTRC_RHI_API_PURE;
+    RTRC_RHI_API void BindGroupsToGraphicsPipeline  (int startIndex, Span<RPtr<BindingGroup>> groups) RTRC_RHI_API_PURE;
+    RTRC_RHI_API void BindGroupsToComputePipeline   (int startIndex, Span<RPtr<BindingGroup>> groups) RTRC_RHI_API_PURE;
+    RTRC_RHI_API void BindGroupsToRayTracingPipeline(int startIndex, Span<RPtr<BindingGroup>> groups) RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API void BindGroupToGraphicsPipeline  (int index, const Ptr<BindingGroup> &group) RTRC_RHI_API_PURE;
-    RTRC_RHI_API void BindGroupToComputePipeline   (int index, const Ptr<BindingGroup> &group) RTRC_RHI_API_PURE;
-    RTRC_RHI_API void BindGroupToRayTracingPipeline(int index, const Ptr<BindingGroup> &group) RTRC_RHI_API_PURE;
+    RTRC_RHI_API void BindGroupToGraphicsPipeline  (int index, const RPtr<BindingGroup> &group) RTRC_RHI_API_PURE;
+    RTRC_RHI_API void BindGroupToComputePipeline   (int index, const RPtr<BindingGroup> &group) RTRC_RHI_API_PURE;
+    RTRC_RHI_API void BindGroupToRayTracingPipeline(int index, const RPtr<BindingGroup> &group) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void SetViewports(Span<Viewport> viewports) RTRC_RHI_API_PURE;
     RTRC_RHI_API void SetScissors (Span<Scissor> scissor)    RTRC_RHI_API_PURE;
@@ -1687,21 +1691,21 @@ class GraphicsPipeline : public RHIObject
 {
 public:
 
-    RTRC_RHI_API const Ptr<BindingLayout> &GetBindingLayout() const RTRC_RHI_API_PURE;
+    RTRC_RHI_API const RPtr<BindingLayout> &GetBindingLayout() const RTRC_RHI_API_PURE;
 };
 
 class ComputePipeline : public RHIObject
 {
 public:
 
-    RTRC_RHI_API const Ptr<BindingLayout> &GetBindingLayout() const RTRC_RHI_API_PURE;
+    RTRC_RHI_API const RPtr<BindingLayout> &GetBindingLayout() const RTRC_RHI_API_PURE;
 };
 
 class RayTracingPipeline : public RHIObject
 {
 public:
 
-    RTRC_RHI_API const Ptr<BindingLayout> &GetBindingLayout() const RTRC_RHI_API_PURE;
+    RTRC_RHI_API const RPtr<BindingLayout> &GetBindingLayout() const RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void GetShaderGroupHandles(
         uint32_t                   startGroupIndex,
@@ -1717,10 +1721,10 @@ public:
 
     RTRC_RHI_API const TextureDesc &GetDesc() const RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API Ptr<TextureRtv> CreateRtv(const TextureRtvDesc &desc = {}) const RTRC_RHI_API_PURE;
-    RTRC_RHI_API Ptr<TextureSrv> CreateSrv(const TextureSrvDesc &desc = {}) const RTRC_RHI_API_PURE;
-    RTRC_RHI_API Ptr<TextureUav> CreateUav(const TextureUavDesc &desc = {}) const RTRC_RHI_API_PURE;
-    RTRC_RHI_API Ptr<TextureDsv> CreateDsv(const TextureDsvDesc &desc = {}) const RTRC_RHI_API_PURE;
+    RTRC_RHI_API RPtr<TextureRtv> CreateRtv(const TextureRtvDesc &desc = {}) const RTRC_RHI_API_PURE;
+    RTRC_RHI_API RPtr<TextureSrv> CreateSrv(const TextureSrvDesc &desc = {}) const RTRC_RHI_API_PURE;
+    RTRC_RHI_API RPtr<TextureUav> CreateUav(const TextureUavDesc &desc = {}) const RTRC_RHI_API_PURE;
+    RTRC_RHI_API RPtr<TextureDsv> CreateDsv(const TextureDsvDesc &desc = {}) const RTRC_RHI_API_PURE;
 };
 
 class TextureRtv : public RHIObject
@@ -1757,8 +1761,8 @@ public:
 
     RTRC_RHI_API const BufferDesc &GetDesc() const RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API Ptr<BufferSrv> CreateSrv(const BufferSrvDesc &desc) const RTRC_RHI_API_PURE;
-    RTRC_RHI_API Ptr<BufferUav> CreateUav(const BufferUavDesc &desc) const RTRC_RHI_API_PURE;
+    RTRC_RHI_API RPtr<BufferSrv> CreateSrv(const BufferSrvDesc &desc) const RTRC_RHI_API_PURE;
+    RTRC_RHI_API RPtr<BufferUav> CreateUav(const BufferUavDesc &desc) const RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void *Map(size_t offset, size_t size, const BufferReadRange &readRange, bool invalidate = false) RTRC_RHI_API_PURE;
     RTRC_RHI_API void Unmap(size_t offset, size_t size, bool flush = false)     RTRC_RHI_API_PURE;
@@ -1832,7 +1836,7 @@ struct VulkanInstanceDesc
     bool debugMode = RTRC_DEBUG;
 };
 
-Ptr<Instance> CreateVulkanInstance(const VulkanInstanceDesc &desc);
+UPtr<Instance> CreateVulkanInstance(const VulkanInstanceDesc &desc);
 
 #endif
 
@@ -1848,7 +1852,7 @@ struct DirectX12InstanceDesc
     bool gpuValidation = RTRC_DEBUG;
 };
 
-Ptr<Instance> CreateDirectX12Instance(const DirectX12InstanceDesc &desc);
+UPtr<Instance> CreateDirectX12Instance(const DirectX12InstanceDesc &desc);
 
 #endif
 

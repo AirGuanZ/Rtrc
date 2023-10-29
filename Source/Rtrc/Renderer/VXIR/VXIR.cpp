@@ -12,7 +12,7 @@ void VXIR::Render(ObserverPtr<RG::RenderGraph> renderGraph, ObserverPtr<RenderCa
 
     PrepareHashTable(renderGraph, data);
 
-    auto hashTableKeyBuffer = renderGraph->RegisterBuffer(data.hashTableKeys);
+    auto hashTableKeys = renderGraph->RegisterBuffer(data.hashTableKeys);
     auto hashTableValues = renderGraph->RegisterBuffer(data.hashTableValues);
 
     // Update existing hash table items

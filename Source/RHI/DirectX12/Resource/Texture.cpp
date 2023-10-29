@@ -37,20 +37,20 @@ DirectX12Texture::~DirectX12Texture()
     }
 }
 
-Ptr<TextureRtv> DirectX12Texture::CreateRtv(const TextureRtvDesc &desc) const
+RPtr<TextureRtv> DirectX12Texture::CreateRtv(const TextureRtvDesc &desc) const
 {
     {
         std::shared_lock lock(viewMutex_);
         if(auto it = rtvs_.find(desc); it != rtvs_.end())
         {
-            return Ptr<TextureRtv>(new DirectX12TextureRtv(this, desc, it->second));
+            return RPtr<TextureRtv>(new DirectX12TextureRtv(this, desc, it->second));
         }
     }
 
     std::lock_guard lock(viewMutex_);
     if(auto it = rtvs_.find(desc); it != rtvs_.end())
     {
-        return Ptr<TextureRtv>(new DirectX12TextureRtv(this, desc, it->second));
+        return RPtr<TextureRtv>(new DirectX12TextureRtv(this, desc, it->second));
     }
     
     D3D12_RENDER_TARGET_VIEW_DESC viewDesc;
@@ -104,23 +104,23 @@ Ptr<TextureRtv> DirectX12Texture::CreateRtv(const TextureRtvDesc &desc) const
     auto handle = device_->_internalAllocateCPUDescriptorHandle_Rtv();
     device_->_internalGetNativeDevice()->CreateRenderTargetView(texture_.Get(), &viewDesc, handle);
     rtvs_.insert({ desc, handle });
-    return MakePtr<DirectX12TextureRtv>(this, desc, handle);
+    return MakeRPtr<DirectX12TextureRtv>(this, desc, handle);
 }
 
-Ptr<TextureSrv> DirectX12Texture::CreateSrv(const TextureSrvDesc &desc) const
+RPtr<TextureSrv> DirectX12Texture::CreateSrv(const TextureSrvDesc &desc) const
 {
     {
         std::shared_lock lock(viewMutex_);
         if(auto it = srvs_.find(desc); it != srvs_.end())
         {
-            return Ptr<TextureSrv>(new DirectX12TextureSrv(desc, it->second));
+            return RPtr<TextureSrv>(new DirectX12TextureSrv(desc, it->second));
         }
     }
 
     std::lock_guard lock(viewMutex_);
     if(auto it = srvs_.find(desc); it != srvs_.end())
     {
-        return Ptr<TextureSrv>(new DirectX12TextureSrv(desc, it->second));
+        return RPtr<TextureSrv>(new DirectX12TextureSrv(desc, it->second));
     }
 
     uint32_t mipLevels = desc.levelCount;
@@ -208,23 +208,23 @@ Ptr<TextureSrv> DirectX12Texture::CreateSrv(const TextureSrvDesc &desc) const
     auto handle = device_->_internalAllocateCPUDescriptorHandle_CbvSrvUav();
     device_->_internalGetNativeDevice()->CreateShaderResourceView(texture_.Get(), &viewDesc, handle);
     srvs_.insert({ desc, handle });
-    return MakePtr<DirectX12TextureSrv>(desc, handle);
+    return MakeRPtr<DirectX12TextureSrv>(desc, handle);
 }
 
-Ptr<TextureUav> DirectX12Texture::CreateUav(const TextureUavDesc &desc) const
+RPtr<TextureUav> DirectX12Texture::CreateUav(const TextureUavDesc &desc) const
 {
     {
         std::shared_lock lock(viewMutex_);
         if(auto it = uavs_.find(desc); it != uavs_.end())
         {
-            return Ptr<TextureUav>(new DirectX12TextureUav(desc, it->second));
+            return RPtr<TextureUav>(new DirectX12TextureUav(desc, it->second));
         }
     }
 
     std::lock_guard lock(viewMutex_);
     if(auto it = uavs_.find(desc); it != uavs_.end())
     {
-        return Ptr<TextureUav>(new DirectX12TextureUav(desc, it->second));
+        return RPtr<TextureUav>(new DirectX12TextureUav(desc, it->second));
     }
 
     uint32_t arraySize = desc.layerCount;
@@ -286,23 +286,23 @@ Ptr<TextureUav> DirectX12Texture::CreateUav(const TextureUavDesc &desc) const
     auto handle = device_->_internalAllocateCPUDescriptorHandle_CbvSrvUav();
     device_->_internalGetNativeDevice()->CreateUnorderedAccessView(texture_.Get(), nullptr, &viewDesc, handle);
     uavs_.insert({ desc, handle });
-    return MakePtr<DirectX12TextureUav>(desc, handle);
+    return MakeRPtr<DirectX12TextureUav>(desc, handle);
 }
 
-Ptr<TextureDsv> DirectX12Texture::CreateDsv(const TextureDsvDesc &desc) const
+RPtr<TextureDsv> DirectX12Texture::CreateDsv(const TextureDsvDesc &desc) const
 {
     {
         std::shared_lock lock(viewMutex_);
         if(auto it = dsvs_.find(desc); it != dsvs_.end())
         {
-            return Ptr<TextureDsv>(new DirectX12TextureDsv(this, desc, it->second));
+            return RPtr<TextureDsv>(new DirectX12TextureDsv(this, desc, it->second));
         }
     }
 
     std::lock_guard lock(viewMutex_);
     if(auto it = dsvs_.find(desc); it != dsvs_.end())
     {
-        return Ptr<TextureDsv>(new DirectX12TextureDsv(this, desc, it->second));
+        return RPtr<TextureDsv>(new DirectX12TextureDsv(this, desc, it->second));
     }
     
     D3D12_DEPTH_STENCIL_VIEW_DESC viewDesc;
@@ -345,7 +345,7 @@ Ptr<TextureDsv> DirectX12Texture::CreateDsv(const TextureDsvDesc &desc) const
     auto handle = device_->_internalAllocateCPUDescriptorHandle_Dsv();
     device_->_internalGetNativeDevice()->CreateDepthStencilView(texture_.Get(), &viewDesc, handle);
     dsvs_.insert({ desc, handle });
-    return MakePtr<DirectX12TextureDsv>(this, desc, handle);
+    return MakeRPtr<DirectX12TextureDsv>(this, desc, handle);
 }
 
 RTRC_RHI_D3D12_END

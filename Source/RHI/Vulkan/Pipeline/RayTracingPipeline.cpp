@@ -3,7 +3,7 @@
 
 RTRC_RHI_VK_BEGIN
 
-VulkanRayTracingPipeline::VulkanRayTracingPipeline(Ptr<BindingLayout> layout, VulkanDevice *device, VkPipeline pipeline)
+VulkanRayTracingPipeline::VulkanRayTracingPipeline(RPtr<BindingLayout> layout, VulkanDevice *device, VkPipeline pipeline)
     : layout_(std::move(layout)), device_(device), pipeline_(pipeline)
 {
     
@@ -17,7 +17,7 @@ VulkanRayTracingPipeline::~VulkanRayTracingPipeline()
     }
 }
 
-const Ptr<BindingLayout> &VulkanRayTracingPipeline::GetBindingLayout() const
+const RPtr<BindingLayout> &VulkanRayTracingPipeline::GetBindingLayout() const
 {
     return layout_;
 }

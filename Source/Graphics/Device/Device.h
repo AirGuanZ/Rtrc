@@ -46,17 +46,17 @@ public:
 
     // Creation & destructor
 
-    static Box<Device> CreateComputeDevice(RHI::DevicePtr rhiDevice);
+    static Box<Device> CreateComputeDevice(RHI::DeviceUPtr rhiDevice);
     static Box<Device> CreateComputeDevice(RHI::BackendType rhiType, bool debugMode = RTRC_DEBUG);
     static Box<Device> CreateComputeDevice(bool debugMode = RTRC_DEBUG);
 
     static Box<Device> CreateGraphicsDevice(
-        RHI::DevicePtr rhiDevice,
-        Window        &window,
-        RHI::Format    swapchainFormat     = RHI::Format::B8G8R8A8_UNorm,
-        int            swapchainImageCount = 3,
-        bool           vsync               = false,
-        Flags          flags               = {});
+        RHI::DeviceUPtr rhiDevice,
+        Window         &window,
+        RHI::Format     swapchainFormat     = RHI::Format::B8G8R8A8_UNorm,
+        int             swapchainImageCount = 3,
+        bool            vsync               = false,
+        Flags           flags               = {});
     static Box<Device> CreateGraphicsDevice(
         Window          &window,
         RHI::BackendType rhiType,
@@ -274,7 +274,7 @@ public:
     BufferManager           &GetBufferManager();
     BindingGroupManager     &GetBindingGroupManager();
     BindingGroupLayoutCache &GetBindingGroupCache();
-    const RHI::DevicePtr    &GetRawDevice() const;
+    const RHI::DeviceUPtr   &GetRawDevice() const;
 
     ClearBufferUtils  &GetClearBufferUtils()  { return *clearBufferUtils_; }
     ClearTextureUtils &GetClearTextureUtils() { return *clearTextureUtils_; }
@@ -286,16 +286,16 @@ private:
 
     Device() = default;
     
-    void InitializeInternal(Flags flags, RHI::DevicePtr device, bool isComputeOnly);
+    void InitializeInternal(Flags flags, RHI::DeviceUPtr device, bool isComputeOnly);
 
     template<typename...Args>
     void ExecuteBarrierImpl(Args&&...args);
 
     Flags flags_;
 
-    RHI::InstancePtr instance_;
-    RHI::DevicePtr   device_;
-    Queue            mainQueue_;
+    RHI::InstanceUPtr instance_;
+    RHI::DeviceUPtr   device_;
+    Queue             mainQueue_;
 
     Window           *window_              = nullptr;
     RHI::Format       swapchainFormat_     = RHI::Format::Unknown;
@@ -714,7 +714,7 @@ inline BindingGroupLayoutCache &Device::GetBindingGroupCache()
     return *bindingGroupLayoutCache_;
 }
 
-inline const RHI::DevicePtr &Device::GetRawDevice() const
+inline const RHI::DeviceUPtr &Device::GetRawDevice() const
 {
     return device_;
 }

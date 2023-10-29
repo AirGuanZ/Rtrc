@@ -170,7 +170,7 @@ class PipelineManager : public GeneralGPUObjectManager
 {
 public:
 
-    PipelineManager(RHI::DevicePtr device, DeviceSynchronizer &sync);
+    PipelineManager(RHI::DeviceOPtr device, DeviceSynchronizer &sync);
 
     RC<RayTracingLibrary> CreateRayTracingLibrary(const RayTracingLibrary::Desc &desc);
 
@@ -178,11 +178,11 @@ public:
     RC<ComputePipeline>    CreateComputePipeline   (const RC<Shader> &shader);
     RC<RayTracingPipeline> CreateRayTracingPipeline(const RayTracingPipeline::Desc &desc);
 
-    const RHI::DevicePtr &_internalGetRHIDevice() const;
+    const RHI::DeviceOPtr &_internalGetRHIDevice() const;
 
 private:
 
-    RHI::DevicePtr device_;
+    RHI::DeviceOPtr device_;
 };
 
 inline const RC<const ShaderInfo> &GraphicsPipeline::GetShaderInfo() const

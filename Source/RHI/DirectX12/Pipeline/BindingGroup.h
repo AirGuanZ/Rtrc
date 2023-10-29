@@ -15,7 +15,7 @@ public:
 
     DirectX12BindingGroup(
         DirectX12Device                 *device,
-        Ptr<DirectX12BindingGroupLayout> layout,
+        RPtr<DirectX12BindingGroupLayout> layout,
         std::vector<DescriptorTable>     tables,
         uint32_t                         variableArraySize);
 
@@ -42,7 +42,7 @@ private:
     BindingType GetBindingType(int index) const;
 
     DirectX12Device                 *device_;
-    Ptr<DirectX12BindingGroupLayout> layout_;
+    RPtr<DirectX12BindingGroupLayout> layout_;
     std::vector<DescriptorTable>     tables_;
     uint32_t                         variableArraySize_;
 };

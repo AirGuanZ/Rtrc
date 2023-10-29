@@ -71,7 +71,7 @@ RC<SubBuffer> SubBuffer::GetSubRange(RC<SubBuffer> buffer, size_t offset, size_t
     return MakeRC<BufferDetail::WrappedSubBuffer<SubBuffer>>(std::move(buffer), offset, size);
 }
 
-BufferManager::BufferManager(RHI::DevicePtr device, DeviceSynchronizer &sync)
+BufferManager::BufferManager(RHI::DeviceOPtr device, DeviceSynchronizer &sync)
     : device_(std::move(device)), sync_(sync)
 {
     

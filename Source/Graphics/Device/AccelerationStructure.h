@@ -78,7 +78,7 @@ class AccelerationStructureManager : public GeneralGPUObjectManager
 {
 public:
 
-    AccelerationStructureManager(RHI::DevicePtr device, DeviceSynchronizer &sync);
+    AccelerationStructureManager(RHI::DeviceOPtr device, DeviceSynchronizer &sync);
 
     BlasPrebuildInfo CreateBlasPrebuildinfo(
         Span<RHI::RayTracingGeometryDesc>              geometries,
@@ -95,7 +95,7 @@ public:
 
 private:
 
-    RHI::DevicePtr rhiDevice_;
+    RHI::DeviceOPtr rhiDevice_;
 };
 
 RTRC_END

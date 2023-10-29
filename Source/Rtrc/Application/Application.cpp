@@ -32,7 +32,7 @@ void Application::Run(const Config &config)
 {
     window_ = WindowBuilder()
         .SetTitle(config.title)
-        .SetSize(config.width, config.height)
+        .SetSize(static_cast<int>(config.width), static_cast<int>(config.height))
         .SetMaximized(config.maximized)
         .Create();
 
@@ -78,7 +78,6 @@ void Application::Run(const Config &config)
     };
     Initialize(initContext);
 
-    activeRenderSettings_.enableRayTracing = config.rayTracing;
     renderLoop_ = MakeBox<Renderer::RenderLoop>(resourceManager_, bindlessTextureManager_);
     renderLoop_->BeginRenderLoop();
 

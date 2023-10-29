@@ -9,3 +9,8 @@ bool IsValidHashTableKey(HashTableKey key)
 {
     return key.key != 0xffffffff;
 }
+
+bool IsValidHashTableValue(HashTableValue value)
+{
+    return value.valid != 0;
+}

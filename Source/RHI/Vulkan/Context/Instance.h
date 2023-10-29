@@ -14,7 +14,7 @@ public:
 
     ~VulkanInstance() override;
 
-    Ptr<Device> CreateDevice(const DeviceDesc &desc) RTRC_RHI_OVERRIDE;
+    UPtr<Device> CreateDevice(const DeviceDesc &desc) RTRC_RHI_OVERRIDE;
 
 private:
 

@@ -6,6 +6,8 @@
 #include <Rtrc/Renderer/DeferredLighting/DeferredLighting.h>
 #include <Rtrc/Renderer/GBuffer/GBufferPass.h>
 #include <Rtrc/Renderer/GPUScene/RenderCamera.h>
+#include <Rtrc/Renderer/PathTracer/PathTracer.h>
+#include <Rtrc/Renderer/ReSTIR/ReSTIR.h>
 #include <Rtrc/Renderer/RenderSettings.h>
 #include <Core/Timer.h>
 

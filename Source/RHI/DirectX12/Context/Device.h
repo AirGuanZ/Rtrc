@@ -30,28 +30,28 @@ public:
     bool IsGlobalBarrierWellSupported() const RTRC_RHI_OVERRIDE { return false; }
     BarrierMemoryModel GetBarrierMemoryModel() const RTRC_RHI_OVERRIDE { return BarrierMemoryModel::Undefined; }
 
-    Ptr<Queue> GetQueue(QueueType type) RTRC_RHI_OVERRIDE;
+    RPtr<Queue> GetQueue(QueueType type) RTRC_RHI_OVERRIDE;
 
-    Ptr<CommandPool> CreateCommandPool(const Ptr<Queue> &queue) RTRC_RHI_OVERRIDE;
+    RPtr<CommandPool> CreateCommandPool(const RPtr<Queue> &queue) RTRC_RHI_OVERRIDE;
 
-    Ptr<Swapchain> CreateSwapchain(const SwapchainDesc &desc, Window &window) RTRC_RHI_OVERRIDE;
+    RPtr<Swapchain> CreateSwapchain(const SwapchainDesc &desc, Window &window) RTRC_RHI_OVERRIDE;
 
-    Ptr<Fence> CreateFence(bool signaled) RTRC_RHI_OVERRIDE;
-    Ptr<Semaphore> CreateTimelineSemaphore(uint64_t initialValue) RTRC_RHI_OVERRIDE;
+    RPtr<Fence> CreateFence(bool signaled) RTRC_RHI_OVERRIDE;
+    RPtr<Semaphore> CreateTimelineSemaphore(uint64_t initialValue) RTRC_RHI_OVERRIDE;
 
-    Ptr<RawShader> CreateShader(const void *data, size_t size, std::vector<RawShaderEntry> entries) RTRC_RHI_OVERRIDE;
+    RPtr<RawShader> CreateShader(const void *data, size_t size, std::vector<RawShaderEntry> entries) RTRC_RHI_OVERRIDE;
 
-    Ptr<GraphicsPipeline>   CreateGraphicsPipeline(const GraphicsPipelineDesc &desc) RTRC_RHI_OVERRIDE;
-    Ptr<ComputePipeline>    CreateComputePipeline(const ComputePipelineDesc &desc) RTRC_RHI_OVERRIDE;
-    Ptr<RayTracingPipeline> CreateRayTracingPipeline(const RayTracingPipelineDesc &desc) RTRC_RHI_OVERRIDE;
+    RPtr<GraphicsPipeline>   CreateGraphicsPipeline(const GraphicsPipelineDesc &desc) RTRC_RHI_OVERRIDE;
+    RPtr<ComputePipeline>    CreateComputePipeline(const ComputePipelineDesc &desc) RTRC_RHI_OVERRIDE;
+    RPtr<RayTracingPipeline> CreateRayTracingPipeline(const RayTracingPipelineDesc &desc) RTRC_RHI_OVERRIDE;
 
-    Ptr<RayTracingLibrary> CreateRayTracingLibrary(const RayTracingLibraryDesc &desc) RTRC_RHI_OVERRIDE;
+    RPtr<RayTracingLibrary> CreateRayTracingLibrary(const RayTracingLibraryDesc &desc) RTRC_RHI_OVERRIDE;
 
-    Ptr<BindingGroupLayout> CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc) RTRC_RHI_OVERRIDE;
-    Ptr<BindingGroup> CreateBindingGroup(
-        const Ptr<BindingGroupLayout> &bindingGroupLayout,
+    RPtr<BindingGroupLayout> CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc) RTRC_RHI_OVERRIDE;
+    RPtr<BindingGroup> CreateBindingGroup(
+        const RPtr<BindingGroupLayout> &bindingGroupLayout,
         uint32_t                       variableArraySize) RTRC_RHI_OVERRIDE;
-    Ptr<BindingLayout> CreateBindingLayout(const BindingLayoutDesc &desc) RTRC_RHI_OVERRIDE;
+    RPtr<BindingLayout> CreateBindingLayout(const BindingLayoutDesc &desc) RTRC_RHI_OVERRIDE;
 
     void UpdateBindingGroups(const BindingGroupUpdateBatch &batch) RTRC_RHI_OVERRIDE;
 
@@ -60,9 +60,9 @@ public:
         const BindingGroupPtr &srcGroup, uint32_t srcIndex, uint32_t srcArrayOffset,
         uint32_t count) RTRC_RHI_OVERRIDE;
 
-    Ptr<Texture> CreateTexture(const TextureDesc &desc) RTRC_RHI_OVERRIDE;
-    Ptr<Buffer>  CreateBuffer(const BufferDesc &desc) RTRC_RHI_OVERRIDE;
-    Ptr<Sampler> CreateSampler(const SamplerDesc &desc) RTRC_RHI_OVERRIDE;
+    RPtr<Texture> CreateTexture(const TextureDesc &desc) RTRC_RHI_OVERRIDE;
+    RPtr<Buffer>  CreateBuffer(const BufferDesc &desc) RTRC_RHI_OVERRIDE;
+    RPtr<Sampler> CreateSampler(const SamplerDesc &desc) RTRC_RHI_OVERRIDE;
     
     size_t GetConstantBufferAlignment() const RTRC_RHI_OVERRIDE;
     size_t GetConstantBufferSizeAlignment() const RTRC_RHI_OVERRIDE;
@@ -132,9 +132,9 @@ private:
     Box<DescriptorHeap> gpuDescHeap_CbvSrvUav_;
     Box<DescriptorHeap> gpuDescHeap_Sampler_;
 
-    Ptr<DirectX12Queue> graphicsQueue_;
-    Ptr<DirectX12Queue> computeQueue_;
-    Ptr<DirectX12Queue> copyQueue_;
+    RPtr<DirectX12Queue> graphicsQueue_;
+    RPtr<DirectX12Queue> computeQueue_;
+    RPtr<DirectX12Queue> copyQueue_;
     
     ComPtr<ID3D12CommandSignature> indirectDispatchCommandSignature_;
     ComPtr<ID3D12CommandSignature> indirectDrawIndexedCommandSignature_;

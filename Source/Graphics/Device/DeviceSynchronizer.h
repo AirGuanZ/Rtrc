@@ -11,7 +11,7 @@ class DeviceSynchronizer : public Uncopyable
 {
 public:
 
-    DeviceSynchronizer(RHI::DevicePtr device, RHI::QueuePtr queue);
+    DeviceSynchronizer(RHI::DeviceOPtr device, RHI::QueuePtr queue);
     ~DeviceSynchronizer();
 
     const RHI::QueuePtr &GetQueue() const;
@@ -38,7 +38,7 @@ private:
         Callbacks callbacks;
     };
 
-    RHI::DevicePtr device_;
+    RHI::DeviceOPtr device_;
     RHI::QueuePtr queue_;
 
     Callbacks currentFrameCallbacks_;

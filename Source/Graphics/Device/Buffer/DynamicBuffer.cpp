@@ -3,7 +3,7 @@
 
 RTRC_BEGIN
 
-DynamicBufferManager::DynamicBufferManager(RHI::DevicePtr device, DeviceSynchronizer &sync, size_t chunkSize)
+DynamicBufferManager::DynamicBufferManager(RHI::DeviceOPtr device, DeviceSynchronizer &sync, size_t chunkSize)
     : device_(std::move(device)), sync_(sync)
 {
     chunkSize = (std::max)(MIN_SLAB_SIZE, chunkSize);

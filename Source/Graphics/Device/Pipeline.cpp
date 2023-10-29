@@ -119,7 +119,7 @@ const ShaderBindingLayoutInfo &RayTracingPipeline::GetBindingLayoutInfo() const
     return *bindingLayoutInfo_;
 }
 
-PipelineManager::PipelineManager(RHI::DevicePtr device, DeviceSynchronizer &sync)
+PipelineManager::PipelineManager(RHI::DeviceOPtr device, DeviceSynchronizer &sync)
     : GeneralGPUObjectManager(sync), device_(std::move(device))
 {
     
@@ -353,7 +353,7 @@ RC<ComputePipeline> PipelineManager::CreateComputePipeline(const RC<Shader> &sha
     return ret;
 }
 
-const RHI::DevicePtr &PipelineManager::_internalGetRHIDevice() const
+const RHI::DeviceOPtr &PipelineManager::_internalGetRHIDevice() const
 {
     return device_;
 }

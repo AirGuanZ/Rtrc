@@ -9,7 +9,7 @@ RTRC_RHI_D3D12_BEGIN
 
 DirectX12BindingGroup::DirectX12BindingGroup(
     DirectX12Device                 *device,
-    Ptr<DirectX12BindingGroupLayout> layout,
+    RPtr<DirectX12BindingGroupLayout> layout,
     std::vector<DescriptorTable>     tables,
     uint32_t                         variableArraySize)
     : device_           (device)

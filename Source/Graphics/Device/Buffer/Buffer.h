@@ -112,7 +112,7 @@ class BufferManager : public Uncopyable, public BufferManagerInterface
 {
 public:
 
-    BufferManager(RHI::DevicePtr device, DeviceSynchronizer &sync);
+    BufferManager(RHI::DeviceOPtr device, DeviceSynchronizer &sync);
 
     RC<Buffer> Create(const RHI::BufferDesc &desc);
 
@@ -120,7 +120,7 @@ public:
 
 private:
 
-    RHI::DevicePtr device_;
+    RHI::DeviceOPtr device_;
     DeviceSynchronizer &sync_;
 };
 

@@ -41,7 +41,7 @@ const TextureDesc & VulkanTexture::GetDesc() const
     return desc_;
 }
 
-Ptr<TextureRtv> VulkanTexture::CreateRtv(const TextureRtvDesc &desc) const
+RPtr<TextureRtv> VulkanTexture::CreateRtv(const TextureRtvDesc &desc) const
 {
     auto imageView = CreateImageView(ViewKey{
         .aspect         = VK_IMAGE_ASPECT_COLOR_BIT,
@@ -51,10 +51,10 @@ Ptr<TextureRtv> VulkanTexture::CreateRtv(const TextureRtvDesc &desc) const
         .baseArrayLayer = desc.arrayLayer,
         .layerCount     = 1
     });
-    return MakePtr<VulkanTextureRtv>(this, desc, imageView);
+    return MakeRPtr<VulkanTextureRtv>(this, desc, imageView);
 }
 
-Ptr<TextureSrv> VulkanTexture::CreateSrv(const TextureSrvDesc &desc) const
+RPtr<TextureSrv> VulkanTexture::CreateSrv(const TextureSrvDesc &desc) const
 {
     const VkImageAspectFlags aspect =
         HasDepthAspect(desc_.format) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
@@ -67,10 +67,10 @@ Ptr<TextureSrv> VulkanTexture::CreateSrv(const TextureSrvDesc &desc) const
         .baseArrayLayer = desc.baseArrayLayer,
         .layerCount     = desc.layerCount > 0 ? desc.layerCount : desc_.arraySize
     });
-    return MakePtr<VulkanTextureSrv>(desc, imageView);
+    return MakeRPtr<VulkanTextureSrv>(desc, imageView);
 }
 
-Ptr<TextureUav> VulkanTexture::CreateUav(const TextureUavDesc &desc) const
+RPtr<TextureUav> VulkanTexture::CreateUav(const TextureUavDesc &desc) const
 {
     auto imageView = CreateImageView(ViewKey{
         .isArray        = desc.isArray,
@@ -81,10 +81,10 @@ Ptr<TextureUav> VulkanTexture::CreateUav(const TextureUavDesc &desc) const
         .baseArrayLayer = desc.baseArrayLayer,
         .layerCount     = desc.layerCount > 0 ? desc.layerCount : desc_.arraySize
     });
-    return MakePtr<VulkanTextureUav>(desc, imageView);
+    return MakeRPtr<VulkanTextureUav>(desc, imageView);
 }
 
-Ptr<TextureDsv> VulkanTexture::CreateDsv(const TextureDsvDesc &desc) const
+RPtr<TextureDsv> VulkanTexture::CreateDsv(const TextureDsvDesc &desc) const
 {
     const VkImageAspectFlags aspect =
         (HasDepthAspect(desc_.format) ? VK_IMAGE_ASPECT_DEPTH_BIT : 0) |
@@ -98,7 +98,7 @@ Ptr<TextureDsv> VulkanTexture::CreateDsv(const TextureDsvDesc &desc) const
         .baseArrayLayer = desc.arrayLayer,
         .layerCount     = 1
     });
-    return MakePtr<VulkanTextureDsv>(this, desc, imageView);
+    return MakeRPtr<VulkanTextureDsv>(this, desc, imageView);
 }
 
 VkImage VulkanTexture::_internalGetNativeImage() const

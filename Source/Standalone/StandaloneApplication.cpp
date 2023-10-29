@@ -104,6 +104,8 @@ void StandaloneApplication::Update(const Rtrc::ApplicationUpdateContext &context
         imgui.DragUInt("ReSTIR N", &renderSettings.ReSTIR_N, 1, 512);
         imgui.DragFloat("ReSTIR Radius", &renderSettings.ReSTIR_Radius, 1, 0, 512);
         imgui.CheckBox("ReSTIR Enable Temporal Reuse", &renderSettings.ReSTIR_EnableTemporalReuse);
+        imgui.DragFloat("ReSTIR SVGF Alpha", &renderSettings.ReSTIR_SVGFTemporalFilterAlpha, 1, 0, 1);
+        imgui.DragUInt("ReSTIR SVGF Spatial Iterations", &renderSettings.ReSTIR_SVGFSpatialFilterIterations, 1, 10);
 
         imgui.CheckBox("Indirect Diffuse", &renderSettings.enableIndirectDiffuse);
 

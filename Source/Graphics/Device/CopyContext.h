@@ -11,7 +11,7 @@ class CopyContext : public Uncopyable
 {
 public:
 
-    explicit CopyContext(RHI::DevicePtr device);
+    explicit CopyContext(RHI::DeviceOPtr device);
 
     void UploadBuffer(
         const RC<Buffer> &buffer,
@@ -43,7 +43,7 @@ private:
 
     Batch GetBatch();
 
-    RHI::DevicePtr               device_;
+    RHI::DeviceOPtr              device_;
     RHI::QueuePtr                copyQueue_;
     tbb::concurrent_queue<Batch> batches_;
 };

@@ -1,4 +1,5 @@
 #include <Rtrc/Renderer/GPUScene/RenderCamera.h>
+#include <Rtrc/Renderer/ReSTIR/ReSTIR.h>
 #include <Rtrc/Renderer/Utility/PcgStateTexture.h>
 #include <Rtrc/Scene/Light/Light.h>
 
@@ -273,10 +274,22 @@ void ReSTIR::Render(RenderCamera &renderCamera, RG::RenderGraph &renderGraph)
 
     // SVGF
 
-    svgf_.Render(renderGraph, renderCamera, data.svgf, unfilteredIllum);
-
     assert(!data.directIllum);
-    data.directIllum = data.svgf.finalColor;
+    const bool enableSVGF = settings_.svgfTemporalFilterAlpha < 1 || settings_.svgfSpatialFilterIterations > 0;
+    if(enableSVGF)
+    {
+        SVGF::Settings svgfSettings;
+        svgfSettings.temporalFilterAlpha = settings_.svgfTemporalFilterAlpha;
+        svgfSettings.spatialFilterIterations = settings_.svgfSpatialFilterIterations;
+        svgf_.SetSettings(svgfSettings);
+
+        svgf_.Render(renderGraph, renderCamera, data.svgf, unfilteredIllum);
+        data.directIllum = data.svgf.finalColor;
+    }
+    else
+    {
+        data.directIllum = unfilteredIllum;
+    }
 }
 
 void ReSTIR::ClearFrameData(PerCameraData &data) const

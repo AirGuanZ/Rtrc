@@ -34,7 +34,7 @@ const BufferDesc &DirectX12Buffer::GetDesc() const
     return desc_;
 }
 
-Ptr<BufferSrv> DirectX12Buffer::CreateSrv(const BufferSrvDesc &desc) const
+RPtr<BufferSrv> DirectX12Buffer::CreateSrv(const BufferSrvDesc &desc) const
 {
     assert((desc.stride != 0) != (desc.format != Format::Unknown));
     assert(desc.stride == 0 || desc.offset % desc.stride == 0);
@@ -43,14 +43,14 @@ Ptr<BufferSrv> DirectX12Buffer::CreateSrv(const BufferSrvDesc &desc) const
         std::shared_lock lock(viewMutex_);
         if(auto it = srvs_.find(desc); it != srvs_.end())
         {
-            return MakePtr<DirectX12BufferSrv>(this, desc, it->second);
+            return MakeRPtr<DirectX12BufferSrv>(this, desc, it->second);
         }
     }
 
     std::lock_guard lock(viewMutex_);
     if(auto it = srvs_.find(desc); it != srvs_.end())
     {
-        return MakePtr<DirectX12BufferSrv>(this, desc, it->second);
+        return MakeRPtr<DirectX12BufferSrv>(this, desc, it->second);
     }
 
     const size_t actualStride = desc.stride != 0 ? desc.stride : GetTexelSize(desc.format);
@@ -67,10 +67,10 @@ Ptr<BufferSrv> DirectX12Buffer::CreateSrv(const BufferSrvDesc &desc) const
     auto handle = device_->_internalAllocateCPUDescriptorHandle_CbvSrvUav();
     device_->_internalGetNativeDevice()->CreateShaderResourceView(buffer_.Get(), &viewDesc, handle);
     srvs_.insert({ desc, handle });
-    return MakePtr<DirectX12BufferSrv>(this, desc, handle);
+    return MakeRPtr<DirectX12BufferSrv>(this, desc, handle);
 }
 
-Ptr<BufferUav> DirectX12Buffer::CreateUav(const BufferUavDesc &desc) const
+RPtr<BufferUav> DirectX12Buffer::CreateUav(const BufferUavDesc &desc) const
 {
     assert((desc.stride != 0) != (desc.format != Format::Unknown));
     assert(desc.stride == 0 || desc.offset % desc.stride == 0);
@@ -79,14 +79,14 @@ Ptr<BufferUav> DirectX12Buffer::CreateUav(const BufferUavDesc &desc) const
         std::shared_lock lock(viewMutex_);
         if(auto it = uavs_.find(desc); it != uavs_.end())
         {
-            return MakePtr<DirectX12BufferUav>(this, desc, it->second);
+            return MakeRPtr<DirectX12BufferUav>(this, desc, it->second);
         }
     }
 
     std::lock_guard lock(viewMutex_);
     if(auto it = uavs_.find(desc); it != uavs_.end())
     {
-        return MakePtr<DirectX12BufferUav>(this, desc, it->second);
+        return MakeRPtr<DirectX12BufferUav>(this, desc, it->second);
     }
 
     const size_t actualStride = desc.stride != 0 ? desc.stride : GetTexelSize(desc.format);
@@ -103,7 +103,7 @@ Ptr<BufferUav> DirectX12Buffer::CreateUav(const BufferUavDesc &desc) const
     auto handle = device_->_internalAllocateCPUDescriptorHandle_CbvSrvUav();
     device_->_internalGetNativeDevice()->CreateUnorderedAccessView(buffer_.Get(), nullptr, &viewDesc, handle);
     uavs_.insert({ desc, handle });
-    return MakePtr<DirectX12BufferUav>(this, desc, handle);
+    return MakeRPtr<DirectX12BufferUav>(this, desc, handle);
 }
 
 void *DirectX12Buffer::Map(size_t offset, size_t size, const BufferReadRange &range, bool invalidate)

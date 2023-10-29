@@ -97,7 +97,7 @@ class TextureManager : public Uncopyable, public TextureImpl::TextureManagerInte
 {
 public:
 
-    TextureManager(RHI::DevicePtr device, DeviceSynchronizer &sync);
+    TextureManager(RHI::DeviceOPtr device, DeviceSynchronizer &sync);
 
     RC<Texture> Create(const RHI::TextureDesc &desc);
 
@@ -105,7 +105,7 @@ public:
 
 private:
 
-    RHI::DevicePtr device_;
+    RHI::DeviceOPtr device_;
     DeviceSynchronizer &sync_;
 };
 

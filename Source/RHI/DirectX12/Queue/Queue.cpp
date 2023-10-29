@@ -37,10 +37,10 @@ void DirectX12Queue::WaitIdle()
 void DirectX12Queue::Submit(
     BackBufferSemaphoreDependency waitBackBufferSemaphore,
     Span<SemaphoreDependency>     waitSemaphores,
-    Span<Ptr<CommandBuffer>>      commandBuffers,
+    Span<RPtr<CommandBuffer>>      commandBuffers,
     BackBufferSemaphoreDependency signalBackBufferSemaphore,
     Span<SemaphoreDependency>     signalSemaphores,
-    const Ptr<Fence>             &signalFence)
+    const RPtr<Fence>             &signalFence)
 {
     /*assert(
         waitBackBufferSemaphore.semaphore == nullptr ||

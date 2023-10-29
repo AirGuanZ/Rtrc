@@ -16,17 +16,17 @@ class SamplerManager : public GeneralGPUObjectManager
 {
 public:
 
-    SamplerManager(RHI::DevicePtr device, DeviceSynchronizer &sync);
+    SamplerManager(RHI::Device *device, DeviceSynchronizer &sync);
 
     RC<Sampler> CreateSampler(const RHI::SamplerDesc &desc);
 
 private:
 
-    RHI::DevicePtr device_;
+    RHI::Device *device_;
     ObjectCache<RHI::SamplerDesc, Sampler, true, false> cache_;
 };
 
-inline SamplerManager::SamplerManager(RHI::DevicePtr device, DeviceSynchronizer &sync)
+inline SamplerManager::SamplerManager(RHI::Device *device, DeviceSynchronizer &sync)
     : GeneralGPUObjectManager(sync), device_(std::move(device))
 {
     

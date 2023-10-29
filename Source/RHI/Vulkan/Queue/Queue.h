@@ -21,16 +21,16 @@ public:
     void Submit(
         BackBufferSemaphoreDependency waitBackBufferSemaphore,
         Span<SemaphoreDependency>     waitSemaphores,
-        Span<Ptr<CommandBuffer>>      commandBuffers,
+        Span<RPtr<CommandBuffer>>      commandBuffers,
         BackBufferSemaphoreDependency signalBackBufferSemaphore,
         Span<SemaphoreDependency>     signalSemaphores,
-        const Ptr<Fence>             &signalFence) RTRC_RHI_OVERRIDE;
+        const RPtr<Fence>             &signalFence) RTRC_RHI_OVERRIDE;
 
     VkQueue _internalGetNativeQueue() const;
 
     uint32_t _internalGetNativeFamilyIndex() const;
 
-    Ptr<CommandPool> _internalCreateCommandPoolImpl() const;
+    RPtr<CommandPool> _internalCreateCommandPoolImpl() const;
 
 private:
 

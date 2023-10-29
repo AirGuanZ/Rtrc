@@ -131,7 +131,7 @@ class BindingGroupManager : public Uncopyable
 public:
 
     BindingGroupManager(
-        RHI::DevicePtr                  device,
+        RHI::DeviceOPtr                 device,
         DeviceSynchronizer             &sync,
         ConstantBufferManagerInterface *defaultConstantBufferManager);
 
@@ -148,12 +148,12 @@ public:
     void _internalRelease(BindingGroupLayout &layout);
     void _internalRelease(BindingLayout &layout);
     ConstantBufferManagerInterface *_internalGetDefaultConstantBufferManager();
-    const RHI::DevicePtr &_internalGetRHIDevice();
+    RHI::Device *_internalGetRHIDevice();
 
 private:
 
-    RHI::DevicePtr device_;
-    DeviceSynchronizer &sync_;
+    RHI::DeviceOPtr device_;
+    DeviceSynchronizer *sync_;
 
     ConstantBufferManagerInterface *defaultConstantBufferManager_;
 

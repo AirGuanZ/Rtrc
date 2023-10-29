@@ -10,7 +10,7 @@ public:
 
     explicit DirectX12Instance(DirectX12InstanceDesc desc);
 
-    Ptr<Device> CreateDevice(const DeviceDesc &desc) RTRC_RHI_OVERRIDE;
+    UPtr<Device> CreateDevice(const DeviceDesc &desc) RTRC_RHI_OVERRIDE;
 
 private:
 

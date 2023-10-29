@@ -63,7 +63,7 @@ class DynamicBufferManager : public Uncopyable, public BufferManagerInterface, p
 {
 public:
 
-    DynamicBufferManager(RHI::DevicePtr device, DeviceSynchronizer &sync, size_t chunkSize = 4 * 1024 * 1024);
+    DynamicBufferManager(RHI::DeviceOPtr device, DeviceSynchronizer &sync, size_t chunkSize = 4 * 1024 * 1024);
     ~DynamicBufferManager() override;
 
     RC<DynamicBuffer> Create();
@@ -105,7 +105,7 @@ private:
 
     void ComputeSlabIndex(size_t size, int &slabIndex, size_t &slabSize);
 
-    RHI::DevicePtr device_;
+    RHI::DeviceOPtr device_;
     DeviceSynchronizer &sync_;
 
     size_t chunkSize_;

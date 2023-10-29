@@ -72,7 +72,6 @@ bool Reproject(float viewZ, float3 worldPos, float3 worldNormal, out float3 prev
     const float2 prevCoord = prevUV * Pass.resolution;
     float4 prevDepth;
     SampleFourTexels(PrevDepth, prevCoord, prevDepth.x, prevDepth.y, prevDepth.z, prevDepth.w);
-    //const float4 prevDepth = PrevDepth.GatherRed(BilinearSampler, prevUV);
     if(all(prevDepth >= 1))
         return false;
 
@@ -90,12 +89,6 @@ bool Reproject(float viewZ, float3 worldPos, float3 worldNormal, out float3 prev
         invDistB.x * invDistB.y,
         invDistC.x * invDistC.y,
         invDistD.x * invDistD.y), 0.5);
-    //const float2 prevCoordT = frac(prevCoord + 0.5);
-    //const float2 distA = float2(1 - prevCoordT.x, 0 + prevCoordT.y);
-    //const float2 distB = float2(0 + prevCoordT.x, 0 + prevCoordT.y);
-    //const float2 distC = float2(0 + prevCoordT.x, 1 - prevCoordT.y);
-    //const float2 distD = float2(1 - prevCoordT.x, 1 - prevCoordT.y);
-    //const float4 prevDistWeights = pow(float4(distA.x * distA.y, distB.x * distB.y, distC.x * distC.y, distD.x * distD.y), 0.4);
 
     const bool4 prevValidMask = prevDepth < 1;
     const float4 prevViewZ = float4(
@@ -119,13 +112,6 @@ bool Reproject(float viewZ, float3 worldPos, float3 worldNormal, out float3 prev
     if(!prevValidMask[2]) normalC = 0;
     if(!prevValidMask[3]) normalD = 0;
 
-    //const float4 normalX = 2 * PrevNormal.GatherRed(BilinearSampler, prevUV) - 1;
-    //const float4 normalY = 2 * PrevNormal.GatherGreen(BilinearSampler, prevUV) - 1;
-    //const float4 normalZ = 2 * PrevNormal.GatherBlue(BilinearSampler, prevUV) - 1;
-    //const float3 normalA = prevValidMask[0] ? float3(normalX[0], normalY[0], normalZ[0]) : 0;
-    //const float3 normalB = prevValidMask[1] ? float3(normalX[1], normalY[1], normalZ[1]) : 0;
-    //const float3 normalC = prevValidMask[2] ? float3(normalX[2], normalY[2], normalZ[2]) : 0;
-    //const float3 normalD = prevValidMask[3] ? float3(normalX[3], normalY[3], normalZ[3]) : 0;
     const float4 norDot = float4(
         dot(normalA, worldNormal),
         dot(normalB, worldNormal),
@@ -149,24 +135,11 @@ bool Reproject(float viewZ, float3 worldPos, float3 worldNormal, out float3 prev
 
     float3 colorA, colorB, colorC, colorD;
     SampleFourTexels(PrevColor, prevCoord, colorA, colorB, colorC, colorD);
-
     prevColor = weights[0] * colorA + weights[1] * colorB + weights[2] * colorC + weights[3] * colorD;
-
-    //const float4 colorR = PrevColor.GatherRed(BilinearSampler, prevUV);
-    //const float4 colorG = PrevColor.GatherGreen(BilinearSampler, prevUV);
-    //const float4 colorB = PrevColor.GatherBlue(BilinearSampler, prevUV);
-    //prevColor.r = dot(weights, colorR);
-    //prevColor.g = dot(weights, colorG);
-    //prevColor.b = dot(weights, colorB);
 
     float2 momA, momB, momC, momD;
     SampleFourTexels(PrevMoments, prevCoord, momA, momB, momC, momD);
     prevMoments= weights[0] * momA + weights[1] * momB + weights[2] * momC + weights[3] * momD;
-
-    //const float4 momX = PrevMoments.GatherRed(BilinearSampler, prevUV);
-    //const float4 momY = PrevMoments.GatherGreen(BilinearSampler, prevUV);
-    //prevMoments.x = dot(weights, momX);
-    //prevMoments.y = dot(weights, momY);
 
     return true;
 }
@@ -194,8 +167,13 @@ void CSMain(uint2 tid : SV_DispatchThreadID)
     if(hasPrev)
     {
         const float alpha = Pass.alpha;
-        const float3 resolvedColor = lerp(prevColor, currColor, alpha);
-        const float2 resolvedMoments = lerp(prevMoments, currMoments, alpha);
+        float3 resolvedColor = lerp(prevColor, currColor, alpha);
+        float2 resolvedMoments = lerp(prevMoments, currMoments, alpha);
+        if(any(!isfinite(resolvedColor)) || any(!isfinite(resolvedMoments)))
+        {
+            resolvedColor = 0;
+            resolvedMoments = 0;
+        }
         ResolvedColor[tid] = float4(resolvedColor, 1);
         ResolvedMoments[tid] = resolvedMoments;
         return;

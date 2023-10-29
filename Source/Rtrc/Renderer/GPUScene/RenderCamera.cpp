@@ -1,4 +1,3 @@
-#include <Rtrc/Renderer/Common.h>
 #include <Rtrc/Renderer/GPUScene/RenderCamera.h>
 
 RTRC_RENDERER_BEGIN

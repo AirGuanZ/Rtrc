@@ -49,7 +49,7 @@ const BufferDesc &VulkanBuffer::GetDesc() const
     return desc_;
 }
 
-Ptr<BufferSrv> VulkanBuffer::CreateSrv(const BufferSrvDesc &desc) const
+RPtr<BufferSrv> VulkanBuffer::CreateSrv(const BufferSrvDesc &desc) const
 {
     VkBufferView view;
     if(desc.format != Format::Unknown)
@@ -64,10 +64,10 @@ Ptr<BufferSrv> VulkanBuffer::CreateSrv(const BufferSrvDesc &desc) const
     {
         view = VK_NULL_HANDLE;
     }
-    return MakePtr<VulkanBufferSrv>(this, desc, view);
+    return MakeRPtr<VulkanBufferSrv>(this, desc, view);
 }
 
-Ptr<BufferUav> VulkanBuffer::CreateUav(const BufferUavDesc &desc) const
+RPtr<BufferUav> VulkanBuffer::CreateUav(const BufferUavDesc &desc) const
 {
     VkBufferView view;
     if(desc.format != Format::Unknown)
@@ -82,7 +82,7 @@ Ptr<BufferUav> VulkanBuffer::CreateUav(const BufferUavDesc &desc) const
     {
         view = VK_NULL_HANDLE;
     }
-    return MakePtr<VulkanBufferUav>(this, desc, view);
+    return MakeRPtr<VulkanBufferUav>(this, desc, view);
 }
 
 void *VulkanBuffer::Map(size_t offset, size_t size, const BufferReadRange &readRange, bool invalidate)

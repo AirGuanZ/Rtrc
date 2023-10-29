@@ -4,7 +4,7 @@ RTRC_RHI_D3D12_BEGIN
 
 DirectX12RayTracingPipeline::DirectX12RayTracingPipeline(
     ComPtr<ID3D12StateObject>   pipelineStateObject,
-    Ptr<BindingLayout>          bindingLayout,
+    RPtr<BindingLayout>          bindingLayout,
     ComPtr<ID3D12RootSignature> rootSignature,
     std::vector<std::wstring>   groupExportedNames)
     : pipelineStateObject_(std::move(pipelineStateObject))
@@ -15,7 +15,7 @@ DirectX12RayTracingPipeline::DirectX12RayTracingPipeline(
     pipelineStateObject_.As(&properties_);
 }
 
-const Ptr<BindingLayout> &DirectX12RayTracingPipeline::GetBindingLayout() const
+const RPtr<BindingLayout> &DirectX12RayTracingPipeline::GetBindingLayout() const
 {
     return bindingLayout_;
 }

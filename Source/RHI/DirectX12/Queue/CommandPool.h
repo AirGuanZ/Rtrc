@@ -16,7 +16,7 @@ public:
 
     QueueType GetType() const RTRC_RHI_OVERRIDE;
 
-    Ptr<CommandBuffer> NewCommandBuffer() RTRC_RHI_OVERRIDE;
+    RPtr<CommandBuffer> NewCommandBuffer() RTRC_RHI_OVERRIDE;
 
     const ComPtr<ID3D12CommandAllocator> &_internalGetNativeAllocator() const { return allocator_; }
 

@@ -1,3 +1,5 @@
+#include <Rtrc/Renderer/PathTracer/PathTracer.h>
+#include <Rtrc/Renderer/ReSTIR/ReSTIR.h>
 #include <Rtrc/Renderer/RenderLoop.h>
 
 RTRC_RENDERER_BEGIN
@@ -101,7 +103,7 @@ void RenderLoop::RenderFrameImpl(const FrameInput &frame)
     auto &renderCamera = renderCameras_->GetRenderCamera(*frame.scene, *frame.camera);
 
     RenderScene::Config renderSceneConfig;
-    renderSceneConfig.opaqueTlas = renderSettings_.enableRayTracing;
+    renderSceneConfig.opaqueTlas = true;
     renderScene.FrameUpdate(renderSceneConfig, *renderGraph);
     RTRC_SCOPE_EXIT{ renderScene.ClearFrameData(); };
 
@@ -152,18 +154,25 @@ void RenderLoop::RenderFrameImpl(const FrameInput &frame)
     // ============= ReSTIR =============
 
     ReSTIR::Settings restirSettings;
-    restirSettings.M                   = renderSettings_.ReSTIR_M;
-    restirSettings.maxM                = renderSettings_.ReSTIR_MaxM;
-    restirSettings.N                   = renderSettings_.ReSTIR_N;
-    restirSettings.radius              = renderSettings_.ReSTIR_Radius;
-    restirSettings.enableTemporalReuse = renderSettings_.ReSTIR_EnableTemporalReuse;
+    restirSettings.M                           = renderSettings_.ReSTIR_M;
+    restirSettings.maxM                        = renderSettings_.ReSTIR_MaxM;
+    restirSettings.N                           = renderSettings_.ReSTIR_N;
+    restirSettings.radius                      = renderSettings_.ReSTIR_Radius;
+    restirSettings.enableTemporalReuse         = renderSettings_.ReSTIR_EnableTemporalReuse;
+    restirSettings.svgfTemporalFilterAlpha     = renderSettings_.ReSTIR_SVGFTemporalFilterAlpha;
+    restirSettings.svgfSpatialFilterIterations = renderSettings_.ReSTIR_SVGFSpatialFilterIterations;
     restir_->SetSettings(restirSettings);
     restir_->Render(renderCamera, *renderGraph);
     RTRC_SCOPE_EXIT{ restir_->ClearFrameData(renderCamera.GetReSTIRData()); };
 
     // ============= Lighting =============
 
-    deferredLighting_->Render(renderCamera, renderGraph, framebuffer);
+    deferredLighting_->Render(
+        renderCamera, 
+        renderGraph,
+        renderCamera.GetReSTIRData().directIllum, 
+        renderCamera.GetAtmosphereData().S, 
+        framebuffer);
     
     // ============= Blit =============
 

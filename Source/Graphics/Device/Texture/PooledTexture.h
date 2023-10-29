@@ -14,7 +14,7 @@ class PooledTextureManager : public Uncopyable, public TextureImpl::TextureManag
 {
 public:
 
-    PooledTextureManager(RHI::DevicePtr device, DeviceSynchronizer &sync);
+    PooledTextureManager(RHI::DeviceOPtr device, DeviceSynchronizer &sync);
 
     RC<PooledTexture> Create(const RHI::TextureDesc &desc);
 
@@ -28,7 +28,7 @@ private:
         TextureSubrscMap<TextureSubrscState> state;
     };
 
-    RHI::DevicePtr device_;
+    RHI::DeviceOPtr device_;
     DeviceSynchronizer &sync_;
 
     ObjectPool<RHI::TextureDesc, PooledRecord, true, true> pool_;

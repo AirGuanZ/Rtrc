@@ -2,7 +2,7 @@
 
 RTRC_BEGIN
 
-PooledBufferManager::PooledBufferManager(RHI::DevicePtr device, DeviceSynchronizer &sync)
+PooledBufferManager::PooledBufferManager(RHI::DeviceOPtr device, DeviceSynchronizer &sync)
     : device_(std::move(device)), sync_(sync)
 {
     

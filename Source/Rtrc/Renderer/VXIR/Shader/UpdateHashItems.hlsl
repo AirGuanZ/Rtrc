@@ -21,5 +21,11 @@ void CSMain(uint tid : SV_DispatchThreadID)
     if(!IsValidHashTableKey(key))
         return;
     
+    const HashTableValue value = HashTableValueBuffer[tid];
+    if(!IsValidHashTableValue(value))
+        return;
+    
+    
 
+    HashTableValueBuffer[tid] = value;
 }

@@ -27,7 +27,7 @@ QueueType VulkanCommandPool::GetType() const
     return type_;
 }
 
-Ptr<CommandBuffer> VulkanCommandPool::NewCommandBuffer()
+RPtr<CommandBuffer> VulkanCommandPool::NewCommandBuffer()
 {
     if(nextFreeBufferIndex_ >= commandBuffers_.size())
     {
@@ -49,7 +49,7 @@ void VulkanCommandPool::CreateCommandBuffer()
         vkAllocateCommandBuffers(device_->_internalGetNativeDevice(), &allocateInfo, &newBuffer),
         "failed to allocate new command buffer");
     RTRC_SCOPE_FAIL{ vkFreeCommandBuffers(device_->_internalGetNativeDevice(), pool_, 1, &newBuffer); };
-    commandBuffers_.push_back(MakePtr<VulkanCommandBuffer>(device_, pool_, newBuffer));
+    commandBuffers_.push_back(MakeRPtr<VulkanCommandBuffer>(device_, pool_, newBuffer));
 }
 
 RTRC_RHI_VK_END

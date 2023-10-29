@@ -252,7 +252,7 @@ VulkanDevice::VulkanDevice(
       allocator_()
 {
     std::map<uint32_t, uint32_t> familyIndexToNextQueueIndex;
-    auto getNextQueue = [&](const std::optional<uint32_t> &familyIndex, QueueType type) -> Ptr<VulkanQueue>
+    auto getNextQueue = [&](const std::optional<uint32_t> &familyIndex, QueueType type) -> RPtr<VulkanQueue>
     {
         if(!familyIndex)
         {
@@ -262,7 +262,7 @@ VulkanDevice::VulkanDevice(
         auto &queueIndex = familyIndexToNextQueueIndex[familyIndex.value()];
         vkGetDeviceQueue(device_, familyIndex.value(), queueIndex, &queue);
         ++queueIndex;
-        return MakePtr<VulkanQueue>(this, queue, type, familyIndex.value());
+        return MakeRPtr<VulkanQueue>(this, queue, type, familyIndex.value());
     };
 
     graphicsQueue_ = getNextQueue(queueFamilies_.graphicsFamilyIndex, QueueType::Graphics);
@@ -310,7 +310,7 @@ VulkanDevice::~VulkanDevice()
     vkDestroyDevice(device_, RTRC_VK_ALLOC);
 }
 
-Ptr<Queue> VulkanDevice::GetQueue(QueueType type)
+RPtr<Queue> VulkanDevice::GetQueue(QueueType type)
 {
     switch(type)
     {
@@ -321,13 +321,13 @@ Ptr<Queue> VulkanDevice::GetQueue(QueueType type)
     Unreachable();
 }
 
-Ptr<CommandPool> VulkanDevice::CreateCommandPool(const Ptr<Queue> &queue)
+RPtr<CommandPool> VulkanDevice::CreateCommandPool(const RPtr<Queue> &queue)
 {
     auto vkQueue = reinterpret_cast<const VulkanQueue *>(queue.Get());
     return vkQueue->_internalCreateCommandPoolImpl();
 }
 
-Ptr<Fence> VulkanDevice::CreateFence(bool signaled)
+RPtr<Fence> VulkanDevice::CreateFence(bool signaled)
 {
     const VkFenceCreateInfo createInfo = {
         .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
@@ -338,10 +338,10 @@ Ptr<Fence> VulkanDevice::CreateFence(bool signaled)
         vkCreateFence(device_, &createInfo, RTRC_VK_ALLOC, &fence),
         "Failed to create vulkan fence");
     RTRC_SCOPE_FAIL{ vkDestroyFence(device_, fence, RTRC_VK_ALLOC); };
-    return MakePtr<VulkanFence>(device_, fence);
+    return MakeRPtr<VulkanFence>(device_, fence);
 }
 
-Ptr<Swapchain> VulkanDevice::CreateSwapchain(const SwapchainDesc &desc, Window &window)
+RPtr<Swapchain> VulkanDevice::CreateSwapchain(const SwapchainDesc &desc, Window &window)
 {
     assert(presentQueue_);
     auto surface = DynamicCast<VulkanSurface>(window.CreateVulkanSurface(instance_));
@@ -358,7 +358,8 @@ Ptr<Swapchain> VulkanDevice::CreateSwapchain(const SwapchainDesc &desc, Window &
     // check format
 
     const auto requiredFormat = TranslateTexelFormat(desc.format);
-    if(!VkDeviceDetail::CheckFormatSupport(physicalDevice_.GetNativeHandle(), surface->_internalGetSurface(), requiredFormat))
+    if(!VkDeviceDetail::CheckFormatSupport(
+        physicalDevice_.GetNativeHandle(), surface->_internalGetSurface(), requiredFormat))
     {
         throw Exception(fmt::format("Surface format {} is not supported", GetFormatName(desc.format)));
     }
@@ -465,10 +466,10 @@ Ptr<Swapchain> VulkanDevice::CreateSwapchain(const SwapchainDesc &desc, Window &
         .initialLayout        = TextureLayout::Undefined,
         .concurrentAccessMode = QueueConcurrentAccessMode::Exclusive
     };
-    return MakePtr<VulkanSwapchain>(std::move(surface), presentQueue_, imageDescription, this, swapchain);
+    return MakeRPtr<VulkanSwapchain>(std::move(surface), presentQueue_, imageDescription, this, swapchain);
 }
 
-Ptr<Semaphore> VulkanDevice::CreateTimelineSemaphore(uint64_t initialValue)
+RPtr<Semaphore> VulkanDevice::CreateTimelineSemaphore(uint64_t initialValue)
 {
     const VkSemaphoreTypeCreateInfo typeCreateInfo = {
         .sType         = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
@@ -487,10 +488,10 @@ Ptr<Semaphore> VulkanDevice::CreateTimelineSemaphore(uint64_t initialValue)
         "Failed to create vulkan semaphore");
     RTRC_SCOPE_FAIL{ vkDestroySemaphore(device_, semaphore, RTRC_VK_ALLOC); };
 
-    return MakePtr<VulkanSemaphore>(device_, semaphore);
+    return MakeRPtr<VulkanSemaphore>(device_, semaphore);
 }
 
-Ptr<RawShader> VulkanDevice::CreateShader(const void *data, size_t size, std::vector<RawShaderEntry> entries)
+RPtr<RawShader> VulkanDevice::CreateShader(const void *data, size_t size, std::vector<RawShaderEntry> entries)
 {
     const VkShaderModuleCreateInfo createInfo = {
         .sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
@@ -501,10 +502,10 @@ Ptr<RawShader> VulkanDevice::CreateShader(const void *data, size_t size, std::ve
     RTRC_VK_FAIL_MSG(
         vkCreateShaderModule(device_, &createInfo, RTRC_VK_ALLOC, &shaderModule),
         "Failed to create vulkan shader module");
-    return MakePtr<VulkanRawShader>(device_, shaderModule, std::move(entries));
+    return MakeRPtr<VulkanRawShader>(device_, shaderModule, std::move(entries));
 }
 
-Ptr<GraphicsPipeline> VulkanDevice::CreateGraphicsPipeline(const GraphicsPipelineDesc &desc)
+RPtr<GraphicsPipeline> VulkanDevice::CreateGraphicsPipeline(const GraphicsPipelineDesc &desc)
 {
     assert(!desc.viewports.Is<std::monostate>());
     assert(!desc.scissors.Is<std::monostate>());
@@ -711,10 +712,10 @@ Ptr<GraphicsPipeline> VulkanDevice::CreateGraphicsPipeline(const GraphicsPipelin
         "Failed to create vulkan graphics pipeline");
     RTRC_SCOPE_FAIL{ vkDestroyPipeline(device_, pipeline, RTRC_VK_ALLOC); };
 
-    return MakePtr<VulkanGraphicsPipeline>(desc.bindingLayout, device_, pipeline);
+    return MakeRPtr<VulkanGraphicsPipeline>(desc.bindingLayout, device_, pipeline);
 }
 
-Ptr<ComputePipeline> VulkanDevice::CreateComputePipeline(const ComputePipelineDesc &desc)
+RPtr<ComputePipeline> VulkanDevice::CreateComputePipeline(const ComputePipelineDesc &desc)
 {
     const VkComputePipelineCreateInfo pipelineCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
@@ -726,10 +727,10 @@ Ptr<ComputePipeline> VulkanDevice::CreateComputePipeline(const ComputePipelineDe
         vkCreateComputePipelines(device_, VK_NULL_HANDLE, 1, &pipelineCreateInfo, RTRC_VK_ALLOC, &pipeline),
         "Failed to create vulkan compute pipeline");
     RTRC_SCOPE_FAIL{ vkDestroyPipeline(device_, pipeline, RTRC_VK_ALLOC); };
-    return MakePtr<VulkanComputePipeline>(desc.bindingLayout, device_, pipeline);
+    return MakeRPtr<VulkanComputePipeline>(desc.bindingLayout, device_, pipeline);
 }
 
-Ptr<RayTracingPipeline> VulkanDevice::CreateRayTracingPipeline(const RayTracingPipelineDesc &desc)
+RPtr<RayTracingPipeline> VulkanDevice::CreateRayTracingPipeline(const RayTracingPipelineDesc &desc)
 {
     std::vector<VkPipelineShaderStageCreateInfo> vkStages;
     for(auto &rawShader : desc.rawShaders)
@@ -809,10 +810,10 @@ Ptr<RayTracingPipeline> VulkanDevice::CreateRayTracingPipeline(const RayTracingP
         "Failed to create Vulkan ray tracing pipeline");
     RTRC_SCOPE_FAIL{ vkDestroyPipeline(device_, pipeline, RTRC_VK_ALLOC); };
 
-    return MakePtr<VulkanRayTracingPipeline>(desc.bindingLayout, this, pipeline);
+    return MakeRPtr<VulkanRayTracingPipeline>(desc.bindingLayout, this, pipeline);
 }
 
-Ptr<RayTracingLibrary> VulkanDevice::CreateRayTracingLibrary(const RayTracingLibraryDesc &desc)
+RPtr<RayTracingLibrary> VulkanDevice::CreateRayTracingLibrary(const RayTracingLibraryDesc &desc)
 {
     std::vector<VkPipelineShaderStageCreateInfo> vkStages;
     static_cast<const VulkanRawShader *>(desc.rawShader.Get())->_internalGetStageCreateInfos(std::back_inserter(vkStages));
@@ -839,10 +840,10 @@ Ptr<RayTracingLibrary> VulkanDevice::CreateRayTracingLibrary(const RayTracingLib
     RTRC_VK_FAIL_MSG(
         vkCreateRayTracingPipelinesKHR(device_, nullptr, nullptr, 1, &pipelineCreateInfo, RTRC_VK_ALLOC, &library),
         "Failed to create vulkan pipeline library");
-    return MakePtr<VulkanRayTracingLibrary>(this, library, desc.maxRayPayloadSize, desc.maxRayHitAttributeSize);
+    return MakeRPtr<VulkanRayTracingLibrary>(this, library, desc.maxRayPayloadSize, desc.maxRayHitAttributeSize);
 }
 
-Ptr<BindingGroupLayout> VulkanDevice::CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc)
+RPtr<BindingGroupLayout> VulkanDevice::CreateBindingGroupLayout(const BindingGroupLayoutDesc &desc)
 {
     std::vector<VkSampler> samplers;
     for(auto &binding : desc.bindings)
@@ -931,17 +932,17 @@ Ptr<BindingGroupLayout> VulkanDevice::CreateBindingGroupLayout(const BindingGrou
         "Failed to create vulkan descriptor set layout");
     RTRC_SCOPE_FAIL{ vkDestroyDescriptorSetLayout(device_, layout, RTRC_VK_ALLOC); };
 
-    return MakePtr<VulkanBindingGroupLayout>(desc, std::move(descSetBindings), device_, layout, bindless);
+    return MakeRPtr<VulkanBindingGroupLayout>(desc, std::move(descSetBindings), device_, layout, bindless);
 }
 
-Ptr<BindingGroup> VulkanDevice::CreateBindingGroup(
-    const Ptr<BindingGroupLayout> &bindingGroupLayout, uint32_t variableArraySize)
+RPtr<BindingGroup> VulkanDevice::CreateBindingGroup(
+    const RPtr<BindingGroupLayout> &bindingGroupLayout, uint32_t variableArraySize)
 {
     auto vkBindingLayout = reinterpret_cast<const VulkanBindingGroupLayout *>(bindingGroupLayout.Get());
     return vkBindingLayout->_internalCreateBindingGroupImpl(variableArraySize);
 }
 
-Ptr<BindingLayout> VulkanDevice::CreateBindingLayout(const BindingLayoutDesc &desc)
+RPtr<BindingLayout> VulkanDevice::CreateBindingLayout(const BindingLayoutDesc &desc)
 {
     if(!desc.unboundedAliases.empty())
     {
@@ -979,7 +980,7 @@ Ptr<BindingLayout> VulkanDevice::CreateBindingLayout(const BindingLayoutDesc &de
         "Failed to create vulkan pipeline layout");
     RTRC_SCOPE_FAIL{ vkDestroyPipelineLayout(device_, layout, RTRC_VK_ALLOC); };
 
-    return MakePtr<VulkanBindingLayout>(desc, device_, layout);
+    return MakeRPtr<VulkanBindingLayout>(desc, device_, layout);
 }
 
 void VulkanDevice::UpdateBindingGroups(const BindingGroupUpdateBatch &batch)
@@ -1060,7 +1061,7 @@ void VulkanDevice::CopyBindingGroup(
     vkUpdateDescriptorSets(device_, 0, nullptr, 1, &vkCopy);
 }
 
-Ptr<Texture> VulkanDevice::CreateTexture(const TextureDesc &desc)
+RPtr<Texture> VulkanDevice::CreateTexture(const TextureDesc &desc)
 {
     const auto imageCreateInfo = VkDeviceDetail::TranslateImageCreateInfo(desc, queueFamilies_);
     const VmaAllocationCreateInfo allocCreateInfo = { .usage = VMA_MEMORY_USAGE_AUTO };
@@ -1076,10 +1077,10 @@ Ptr<Texture> VulkanDevice::CreateTexture(const TextureDesc &desc)
         .allocation = alloc
     };
 
-    return MakePtr<VulkanTexture>(desc, this, image, memoryAlloc, ResourceOwnership::Allocation);
+    return MakeRPtr<VulkanTexture>(desc, this, image, memoryAlloc, ResourceOwnership::Allocation);
 }
 
-Ptr<Buffer> VulkanDevice::CreateBuffer(const BufferDesc &desc)
+RPtr<Buffer> VulkanDevice::CreateBuffer(const BufferDesc &desc)
 {
     const auto createInfo = VkDeviceDetail::TranslateBufferCreateInfo(desc, queueFamilies_);
     const VmaAllocationCreateInfo allocCreateInfo = {
@@ -1098,10 +1099,10 @@ Ptr<Buffer> VulkanDevice::CreateBuffer(const BufferDesc &desc)
         .allocation = alloc
     };
 
-    return MakePtr<VulkanBuffer>(desc, this, buffer, memoryAlloc, ResourceOwnership::Allocation);
+    return MakeRPtr<VulkanBuffer>(desc, this, buffer, memoryAlloc, ResourceOwnership::Allocation);
 }
 
-Ptr<Sampler> VulkanDevice::CreateSampler(const SamplerDesc &desc)
+RPtr<Sampler> VulkanDevice::CreateSampler(const SamplerDesc &desc)
 {
     VkSamplerCustomBorderColorCreateInfoEXT borderColor;
     VkSamplerCreateInfo createInfo = {
@@ -1154,7 +1155,7 @@ Ptr<Sampler> VulkanDevice::CreateSampler(const SamplerDesc &desc)
         "Failed to create vulkan sampler");
     RTRC_SCOPE_FAIL{ vkDestroySampler(device_, sampler, RTRC_VK_ALLOC); };
 
-    return MakePtr<VulkanSampler>(desc, this, sampler);
+    return MakeRPtr<VulkanSampler>(desc, this, sampler);
 }
 
 size_t VulkanDevice::GetConstantBufferAlignment() const
@@ -1200,7 +1201,7 @@ BlasPtr VulkanDevice::CreateBlas(const BufferPtr &buffer, size_t offset, size_t 
         "Failed to create vulkan blas");
     RTRC_SCOPE_FAIL{ vkDestroyAccelerationStructureKHR(device_, blas, RTRC_VK_ALLOC); };
 
-    return MakePtr<VulkanBlas>(this, blas, buffer);
+    return MakeRPtr<VulkanBlas>(this, blas, buffer);
 }
 
 TlasPtr VulkanDevice::CreateTlas(const BufferPtr &buffer, size_t offset, size_t size)
@@ -1221,19 +1222,19 @@ TlasPtr VulkanDevice::CreateTlas(const BufferPtr &buffer, size_t offset, size_t 
         "Failed to create vulkan tlas");
     RTRC_SCOPE_FAIL{ vkDestroyAccelerationStructureKHR(device_, tlas, RTRC_VK_ALLOC); };
 
-    return MakePtr<VulkanTlas>(this, tlas, buffer);
+    return MakeRPtr<VulkanTlas>(this, tlas, buffer);
 }
 
 BlasPrebuildInfoPtr VulkanDevice::CreateBlasPrebuildInfo(
     Span<RayTracingGeometryDesc> geometries, RayTracingAccelerationStructureBuildFlags flags)
 {
-    return MakePtr<VulkanBlasPrebuildInfo>(this, geometries, flags);
+    return MakeRPtr<VulkanBlasPrebuildInfo>(this, geometries, flags);
 }
 
 TlasPrebuildInfoPtr VulkanDevice::CreateTlasPrebuildInfo(
     const RayTracingInstanceArrayDesc &instances, RayTracingAccelerationStructureBuildFlags flags)
 {
-    return MakePtr<VulkanTlasPrebuildInfo>(this, instances, flags);
+    return MakeRPtr<VulkanTlasPrebuildInfo>(this, instances, flags);
 }
 
 const ShaderGroupRecordRequirements &VulkanDevice::GetShaderGroupRecordRequirements() const

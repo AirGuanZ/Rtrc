@@ -26,9 +26,8 @@ class Executer;
 class Compiler;
 
 template<typename T>
-concept RenderGraphBindingGroupInput =
-    BindingGroupDSL::RtrcGroupStruct<T> ||
-    std::is_same_v<T, RC<BindingGroup>>;
+concept RenderGraphBindingGroupInput = BindingGroupDSL::RtrcGroupStruct<T> ||
+                                       std::is_same_v<T, RC<BindingGroup>>;
 
 class RenderGraph : public Uncopyable
 {
@@ -241,7 +240,7 @@ private:
 
 #define RTRC_RG_SCOPED_PASS_GROUP(RENDERGRAPH, NAME)       \
     ::Rtrc::ObserverPtr(RENDERGRAPH)->PushPassGroup(NAME); \
-    RTRC_SCOPE_EXIT{ ::Rtrc::ObserverPtr(RENDERGRAPH)->PopPassGroup(); };
+    RTRC_SCOPE_EXIT{ ::Rtrc::ObserverPtr(RENDERGRAPH)->PopPassGroup(); }
 
 template<RenderGraphBindingGroupInput ... Ts>
 Pass *RenderGraph::CreateComputePass(

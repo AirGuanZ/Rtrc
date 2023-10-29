@@ -13,6 +13,8 @@ public:
     void Render(
         ObserverPtr<RenderCamera>    renderCamera,
         ObserverPtr<RG::RenderGraph> renderGraph,
+        RG::TextureResource         *directIllum,
+        RG::TextureResource         *sky,
         RG::TextureResource         *renderTarget) const;
 };
 

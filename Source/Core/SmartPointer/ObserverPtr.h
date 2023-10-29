@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Core/SmartPointer/CopyOnWritePtr.h>
+#include <Core/SmartPointer/UniquePointer.h>
 
 RTRC_BEGIN
 
@@ -18,6 +19,7 @@ public:
     ObserverPtr(T &data) : pointer_(&data) { }
     ObserverPtr(const Box<T> &pointer) : ObserverPtr(pointer.get()) { }
     ObserverPtr(const RC<T> &pointer) : ObserverPtr(pointer.get()) { }
+    ObserverPtr(const UPtr<T> &pointer) : ObserverPtr(pointer.Get()) { }
     ObserverPtr(const ReferenceCountedPtr<T> &pointer) : ObserverPtr(pointer.Get()) { }
     ObserverPtr(const CopyOnWritePtr<T> &pointer) : ObserverPtr(pointer.Get()) { }
 
@@ -44,6 +46,8 @@ public:
     ObserverPtr(const Box<const T> &pointer) : ObserverPtr(pointer.get()) { }
     ObserverPtr(const RC<T> &pointer) : ObserverPtr(pointer.get()) { }
     ObserverPtr(const RC<const T> &pointer) : ObserverPtr(pointer.get()) { }
+    ObserverPtr(const UPtr<T> &pointer) : ObserverPtr(pointer.Get()) { }
+    ObserverPtr(const UPtr<const T> &pointer) : ObserverPtr(pointer.Get()) { }
     ObserverPtr(const ReferenceCountedPtr<T> &pointer) : ObserverPtr(pointer.Get()) { }
     ObserverPtr(const ReferenceCountedPtr<const T> &pointer) : ObserverPtr(pointer.Get()) { }
     ObserverPtr(const CopyOnWritePtr<T> &pointer) : ObserverPtr(pointer.Get()) { }

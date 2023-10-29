@@ -15,7 +15,7 @@ void InitializeDirectX12Backend()
     // Do nothing
 }
 
-Ptr<Instance> CreateDirectX12Instance(const DirectX12InstanceDesc &desc)
+UPtr<Instance> CreateDirectX12Instance(const DirectX12InstanceDesc &desc)
 {
     using namespace D3D12;
 
@@ -47,7 +47,7 @@ Ptr<Instance> CreateDirectX12Instance(const DirectX12InstanceDesc &desc)
         }
     }
 
-    return MakePtr<DirectX12Instance>(desc);
+    return MakeUPtr<DirectX12Instance>(desc);
 }
 
 RTRC_RHI_END
@@ -60,7 +60,7 @@ DirectX12Instance::DirectX12Instance(DirectX12InstanceDesc desc)
     
 }
 
-Ptr<Device> DirectX12Instance::CreateDevice(const DeviceDesc &desc)
+UPtr<Device> DirectX12Instance::CreateDevice(const DeviceDesc &desc)
 {
     ComPtr<IDXGIFactory4> factory;
     RTRC_D3D12_FAIL_MSG(
@@ -89,9 +89,6 @@ Ptr<Device> DirectX12Instance::CreateDevice(const DeviceDesc &desc)
         RTRC_D3D12_FAIL_MSG(
             device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(queues.graphicsQueue.GetAddressOf())),
             "Fail to create directx12 graphics queue");
-        // RTRC_D3D12_FAIL_MSG(
-        //     device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(queues.presentQueue.GetAddressOf())),
-        //     "Fail to create directx12 graphics queue");
     }
     if(desc.computeQueue)
     {
@@ -108,7 +105,7 @@ Ptr<Device> DirectX12Instance::CreateDevice(const DeviceDesc &desc)
             "Fail to create directx12 copy queue");
     }
 
-    return MakePtr<DirectX12Device>(std::move(device), queues, std::move(factory), std::move(adapter));
+    return MakeUPtr<DirectX12Device>(std::move(device), queues, std::move(factory), std::move(adapter));
 }
 
 RTRC_RHI_D3D12_END

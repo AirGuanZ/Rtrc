@@ -20,7 +20,7 @@ DirectX12Swapchain::DirectX12Swapchain(
     swapchain_->GetDesc(&swapchainDesc);
     imageCount_ = swapchainDesc.BufferCount;
 
-    acquireSemaphore_ = MakePtr<DirectX12BackBufferSemaphore>();
+    acquireSemaphore_ = MakeRPtr<DirectX12BackBufferSemaphore>();
     presentSemaphore_ = acquireSemaphore_;
     //acquireSemaphore_->type = DirectX12BackBufferSemaphore::Acquire;
     //acquireSemaphore_->fenceValue = 0;
@@ -28,7 +28,7 @@ DirectX12Swapchain::DirectX12Swapchain(
     //presentSemaphores_.resize(imageCount_);
     //for(auto &s : presentSemaphores_)
     //{
-    //    s = MakePtr<DirectX12BackBufferSemaphore>();
+    //    s = MakeRPtr<DirectX12BackBufferSemaphore>();
     //    s->type = DirectX12BackBufferSemaphore::Present;
     //    s->fenceValue = 0;
     //    RTRC_D3D12_FAIL_MSG(
@@ -44,7 +44,7 @@ DirectX12Swapchain::DirectX12Swapchain(
         RTRC_D3D12_FAIL_MSG(
             swapchain_->GetBuffer(i, IID_PPV_ARGS(image.GetAddressOf())),
             "Fail to get directx12 swapchain image");
-        images_[i] = MakePtr<DirectX12Texture>(
+        images_[i] = MakeRPtr<DirectX12Texture>(
             imageDesc, device_, std::move(image), DirectX12MemoryAllocation{ nullptr, {} });
         images_[i]->SetName(fmt::format("SwapChainImage{}", i));
     }
@@ -59,12 +59,12 @@ bool DirectX12Swapchain::Acquire()
     return true;
 }
 
-Ptr<BackBufferSemaphore> DirectX12Swapchain::GetAcquireSemaphore()
+RPtr<BackBufferSemaphore> DirectX12Swapchain::GetAcquireSemaphore()
 {
     return acquireSemaphore_;
 }
 
-Ptr<BackBufferSemaphore> DirectX12Swapchain::GetPresentSemaphore()
+RPtr<BackBufferSemaphore> DirectX12Swapchain::GetPresentSemaphore()
 {
     return acquireSemaphore_;
     //return presentSemaphores_[frameIndex_];
@@ -86,7 +86,7 @@ const TextureDesc &DirectX12Swapchain::GetRenderTargetDesc() const
     return imageDesc_;
 }
 
-Ptr<Texture> DirectX12Swapchain::GetRenderTarget() const
+RPtr<Texture> DirectX12Swapchain::GetRenderTarget() const
 {
     return images_[imageIndex_];
 }
