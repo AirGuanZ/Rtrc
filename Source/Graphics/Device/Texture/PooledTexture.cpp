@@ -3,7 +3,7 @@
 RTRC_BEGIN
 
 PooledTextureManager::PooledTextureManager(RHI::DeviceOPtr device, DeviceSynchronizer &sync)
-    : device_(std::move(device)), sync_(sync)
+    : device_(device), sync_(sync)
 {
     
 }
@@ -21,7 +21,7 @@ RC<PooledTexture> PooledTextureManager::Create(const RHI::TextureDesc &desc)
     }
     else
     {
-        texData.rhiTexture_ = device_->CreateTexture(desc);
+        texData.rhiTexture_ = device_->CreateTexture(desc).ToRC();
         ret->state_ = TextureSubrscMap<TextureSubrscState>(desc);
     }
     return ret;

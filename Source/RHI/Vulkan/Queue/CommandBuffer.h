@@ -106,14 +106,14 @@ public:
     void EndDebugEvent() RTRC_RHI_OVERRIDE;
 
     void BuildBlas(
-        const BlasPrebuildInfoPtr   &buildInfo,
+        const BlasPrebuildInfoOPtr  &buildInfo,
         Span<RayTracingGeometryDesc> geometries,
-        const BlasPtr               &blas,
+        const BlasOPtr              &blas,
         BufferDeviceAddress          scratchBufferAddress) RTRC_RHI_OVERRIDE;
     void BuildTlas(
-        const TlasPrebuildInfoPtr         &buildInfo,
+        const TlasPrebuildInfoOPtr        &buildInfo,
         const RayTracingInstanceArrayDesc &instances,
-        const TlasPtr                     &tlas,
+        const TlasOPtr                    &tlas,
         BufferDeviceAddress                scratchBufferAddress) RTRC_RHI_OVERRIDE;
 
     VkCommandBuffer _internalGetNativeCommandBuffer() const;

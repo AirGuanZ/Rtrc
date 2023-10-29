@@ -22,7 +22,7 @@ public:
     void _internalBuildBlas(
         ID3D12GraphicsCommandList7   *commandList,
         Span<RayTracingGeometryDesc>  geometries,
-        const BlasPtr                &blas,
+        const BlasOPtr               &blas,
         BufferDeviceAddress           scratchBuffer);
 
 private:

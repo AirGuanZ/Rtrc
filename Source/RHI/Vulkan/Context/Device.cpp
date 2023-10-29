@@ -1061,7 +1061,7 @@ void VulkanDevice::CopyBindingGroup(
     vkUpdateDescriptorSets(device_, 0, nullptr, 1, &vkCopy);
 }
 
-RPtr<Texture> VulkanDevice::CreateTexture(const TextureDesc &desc)
+UPtr<Texture> VulkanDevice::CreateTexture(const TextureDesc &desc)
 {
     const auto imageCreateInfo = VkDeviceDetail::TranslateImageCreateInfo(desc, queueFamilies_);
     const VmaAllocationCreateInfo allocCreateInfo = { .usage = VMA_MEMORY_USAGE_AUTO };
@@ -1077,10 +1077,10 @@ RPtr<Texture> VulkanDevice::CreateTexture(const TextureDesc &desc)
         .allocation = alloc
     };
 
-    return MakeRPtr<VulkanTexture>(desc, this, image, memoryAlloc, ResourceOwnership::Allocation);
+    return MakeUPtr<VulkanTexture>(desc, this, image, memoryAlloc, ResourceOwnership::Allocation);
 }
 
-RPtr<Buffer> VulkanDevice::CreateBuffer(const BufferDesc &desc)
+UPtr<Buffer> VulkanDevice::CreateBuffer(const BufferDesc &desc)
 {
     const auto createInfo = VkDeviceDetail::TranslateBufferCreateInfo(desc, queueFamilies_);
     const VmaAllocationCreateInfo allocCreateInfo = {
@@ -1099,10 +1099,10 @@ RPtr<Buffer> VulkanDevice::CreateBuffer(const BufferDesc &desc)
         .allocation = alloc
     };
 
-    return MakeRPtr<VulkanBuffer>(desc, this, buffer, memoryAlloc, ResourceOwnership::Allocation);
+    return MakeUPtr<VulkanBuffer>(desc, this, buffer, memoryAlloc, ResourceOwnership::Allocation);
 }
 
-RPtr<Sampler> VulkanDevice::CreateSampler(const SamplerDesc &desc)
+UPtr<Sampler> VulkanDevice::CreateSampler(const SamplerDesc &desc)
 {
     VkSamplerCustomBorderColorCreateInfoEXT borderColor;
     VkSamplerCreateInfo createInfo = {
@@ -1155,7 +1155,7 @@ RPtr<Sampler> VulkanDevice::CreateSampler(const SamplerDesc &desc)
         "Failed to create vulkan sampler");
     RTRC_SCOPE_FAIL{ vkDestroySampler(device_, sampler, RTRC_VK_ALLOC); };
 
-    return MakeRPtr<VulkanSampler>(desc, this, sampler);
+    return MakeUPtr<VulkanSampler>(desc, this, sampler);
 }
 
 size_t VulkanDevice::GetConstantBufferAlignment() const
@@ -1183,7 +1183,7 @@ void VulkanDevice::WaitIdle()
     RTRC_VK_FAIL_MSG(vkDeviceWaitIdle(device_), "Failed to call vkDeviceWaitIdle");
 }
 
-BlasPtr VulkanDevice::CreateBlas(const BufferPtr &buffer, size_t offset, size_t size)
+BlasUPtr VulkanDevice::CreateBlas(const BufferPtr &buffer, size_t offset, size_t size)
 {
     auto vkBuffer = static_cast<VulkanBuffer *>(buffer.Get())->_internalGetNativeBuffer();
     const VkAccelerationStructureCreateInfoKHR createInfo =
@@ -1201,10 +1201,10 @@ BlasPtr VulkanDevice::CreateBlas(const BufferPtr &buffer, size_t offset, size_t 
         "Failed to create vulkan blas");
     RTRC_SCOPE_FAIL{ vkDestroyAccelerationStructureKHR(device_, blas, RTRC_VK_ALLOC); };
 
-    return MakeRPtr<VulkanBlas>(this, blas, buffer);
+    return MakeUPtr<VulkanBlas>(this, blas, buffer);
 }
 
-TlasPtr VulkanDevice::CreateTlas(const BufferPtr &buffer, size_t offset, size_t size)
+TlasUPtr VulkanDevice::CreateTlas(const BufferPtr &buffer, size_t offset, size_t size)
 {
     auto vkBuffer = static_cast<VulkanBuffer *>(buffer.Get())->_internalGetNativeBuffer();
     const VkAccelerationStructureCreateInfoKHR createInfo =
@@ -1222,7 +1222,7 @@ TlasPtr VulkanDevice::CreateTlas(const BufferPtr &buffer, size_t offset, size_t 
         "Failed to create vulkan tlas");
     RTRC_SCOPE_FAIL{ vkDestroyAccelerationStructureKHR(device_, tlas, RTRC_VK_ALLOC); };
 
-    return MakeRPtr<VulkanTlas>(this, tlas, buffer);
+    return MakeUPtr<VulkanTlas>(this, tlas, buffer);
 }
 
 BlasPrebuildInfoPtr VulkanDevice::CreateBlasPrebuildInfo(

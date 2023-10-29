@@ -30,14 +30,14 @@ private:
 
 template<typename T>
 TBufferView<T>::TBufferView(RC<Buffer> buffer, size_t byteOffset, RHI::Format format)
-    : TBufferView(std::move(buffer), 0, format, 0)
+    : TBufferView(std::move(buffer), byteOffset, format, 0)
 {
     
 }
 
 template<typename T>
 TBufferView<T>::TBufferView(RC<Buffer> buffer, size_t byteOffset, size_t structStride)
-    : TBufferView(std::move(buffer), 0, RHI::Format::Unknown, structStride)
+    : TBufferView(std::move(buffer), byteOffset, RHI::Format::Unknown, structStride)
 {
     
 }

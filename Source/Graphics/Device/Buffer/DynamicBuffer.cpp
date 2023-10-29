@@ -50,7 +50,7 @@ void DynamicBufferManager::_internalSetData(DynamicBuffer &buffer, const void *d
                      RHI::BufferUsage::IndexBuffer |
                      RHI::BufferUsage::ShaderConstantBuffer,
             .hostAccessType = RHI::BufferHostAccessType::Upload
-        });
+        }).ToRC();
         bufferData.size_ = size;
         buffer.buffer_->Upload(data, 0, size);
         return;
@@ -96,7 +96,7 @@ void DynamicBufferManager::_internalSetData(DynamicBuffer &buffer, const void *d
                          RHI::BufferUsage::IndexBuffer |
                          RHI::BufferUsage::ShaderConstantBuffer,
                 .hostAccessType = RHI::BufferHostAccessType::Upload
-            });
+            }).ToRC();
             newChunkBufferData.size_ = chunkSize_;
             newChunk.mappedBuffer = static_cast<unsigned char*>(newChunkBufferData.rhiBuffer_->Map(0, chunkSize_, {}));
 

@@ -1237,9 +1237,9 @@ public:
         RPtr<BufferUav>,
         RPtr<TextureSrv>,
         RPtr<TextureUav>,
-        RPtr<Sampler>,
+        OPtr<Sampler>,
         ConstantBufferUpdate,
-        RPtr<Tlas>>;
+        OPtr<Tlas>>;
 
     struct Record
     {
@@ -1253,17 +1253,17 @@ public:
     void Append(BindingGroup &group, int index, RPtr<BufferUav>             bufferUav);
     void Append(BindingGroup &group, int index, RPtr<TextureSrv>            textureSrv);
     void Append(BindingGroup &group, int index, RPtr<TextureUav>            textureUav);
-    void Append(BindingGroup &group, int index, RPtr<Sampler>               sampler);
+    void Append(BindingGroup &group, int index, OPtr<Sampler>               sampler);
     void Append(BindingGroup &group, int index, const ConstantBufferUpdate &cbuffer);
-    void Append(BindingGroup &group, int index, RPtr<Tlas>                  tlas);
+    void Append(BindingGroup &group, int index, OPtr<Tlas>                  tlas);
 
     void Append(BindingGroup &group, int index, int arrayElem, RPtr<BufferSrv>             bufferSrv);
     void Append(BindingGroup &group, int index, int arrayElem, RPtr<BufferUav>             bufferUav);
     void Append(BindingGroup &group, int index, int arrayElem, RPtr<TextureSrv>            textureSrv);
     void Append(BindingGroup &group, int index, int arrayElem, RPtr<TextureUav>            textureUav);
-    void Append(BindingGroup &group, int index, int arrayElem, RPtr<Sampler>               sampler);
+    void Append(BindingGroup &group, int index, int arrayElem, OPtr<Sampler>               sampler);
     void Append(BindingGroup &group, int index, int arrayElem, const ConstantBufferUpdate &cbuffer);
-    void Append(BindingGroup &group, int index, int arrayElem, RPtr<Tlas>                  tlas);
+    void Append(BindingGroup &group, int index, int arrayElem, OPtr<Tlas>                  tlas);
 
     Span<Record> GetRecords() const { return records_; }
 
@@ -1275,12 +1275,12 @@ private:
 #define RTRC_RHI_QUEUE_COMMON               \
     struct BackBufferSemaphoreDependency    \
     {                                       \
-        RPtr<BackBufferSemaphore> semaphore; \
+        RPtr<BackBufferSemaphore> semaphore;\
         PipelineStageFlag        stages;    \
     };                                      \
     struct SemaphoreDependency              \
     {                                       \
-        RPtr<Semaphore>    semaphore;        \
+        RPtr<Semaphore>    semaphore;       \
         PipelineStageFlag stages;           \
         uint64_t          value;            \
     };
@@ -1386,8 +1386,7 @@ public:
     RTRC_RHI_API RPtr<Queue> GetQueue(QueueType type) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API UPtr<CommandPool> CreateCommandPool(const RPtr<Queue> &queue) RTRC_RHI_API_PURE;
-
-    RTRC_RHI_API UPtr<Swapchain> CreateSwapchain(const SwapchainDesc &desc, Window &window) RTRC_RHI_API_PURE;
+    RTRC_RHI_API UPtr<Swapchain>   CreateSwapchain(const SwapchainDesc &desc, Window &window) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API UPtr<Fence>     CreateFence(bool signaled) RTRC_RHI_API_PURE;
     RTRC_RHI_API UPtr<Semaphore> CreateTimelineSemaphore(uint64_t initialValue) RTRC_RHI_API_PURE;
@@ -1413,9 +1412,9 @@ public:
         const BindingGroupOPtr &srcGroup, uint32_t srcIndex, uint32_t srcArrayOffset,
         uint32_t count) RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API RPtr<Texture> CreateTexture(const TextureDesc &desc) RTRC_RHI_API_PURE;
-    RTRC_RHI_API RPtr<Buffer>  CreateBuffer(const BufferDesc &desc) RTRC_RHI_API_PURE;
-    RTRC_RHI_API RPtr<Sampler> CreateSampler(const SamplerDesc &desc) RTRC_RHI_API_PURE;
+    RTRC_RHI_API UPtr<Texture> CreateTexture(const TextureDesc &desc) RTRC_RHI_API_PURE;
+    RTRC_RHI_API UPtr<Buffer>  CreateBuffer(const BufferDesc &desc) RTRC_RHI_API_PURE;
+    RTRC_RHI_API UPtr<Sampler> CreateSampler(const SamplerDesc &desc) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API size_t GetConstantBufferAlignment() const RTRC_RHI_API_PURE;
     RTRC_RHI_API size_t GetConstantBufferSizeAlignment() const RTRC_RHI_API_PURE;
@@ -1424,8 +1423,8 @@ public:
 
     RTRC_RHI_API void WaitIdle() RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API BlasPtr CreateBlas(const BufferPtr &buffer, size_t offset, size_t size) RTRC_RHI_API_PURE;
-    RTRC_RHI_API TlasPtr CreateTlas(const BufferPtr &buffer, size_t offset, size_t size) RTRC_RHI_API_PURE;
+    RTRC_RHI_API BlasUPtr CreateBlas(const BufferPtr &buffer, size_t offset, size_t size) RTRC_RHI_API_PURE;
+    RTRC_RHI_API TlasUPtr CreateTlas(const BufferPtr &buffer, size_t offset, size_t size) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API BlasPrebuildInfoPtr CreateBlasPrebuildInfo(
         Span<RayTracingGeometryDesc>              geometries,
@@ -1655,14 +1654,14 @@ public:
     // Tlas/blas will be accessed with [stage = BuildAS, access = WriteAS].
 
     RTRC_RHI_API void BuildBlas(
-        const BlasPrebuildInfoPtr   &buildInfo,
+        const BlasPrebuildInfoOPtr  &buildInfo,
         Span<RayTracingGeometryDesc> geometries,
-        const BlasPtr               &blas,
+        const BlasOPtr              &blas,
         BufferDeviceAddress          scratchBufferAddress) RTRC_RHI_API_PURE;
     RTRC_RHI_API void BuildTlas(
-        const TlasPrebuildInfoPtr         &buildInfo,
+        const TlasPrebuildInfoOPtr        &buildInfo,
         const RayTracingInstanceArrayDesc &instances,
-        const TlasPtr                     &tlas,
+        const TlasOPtr                    &tlas,
         BufferDeviceAddress                scratchBufferAddress) RTRC_RHI_API_PURE;
 
 protected:

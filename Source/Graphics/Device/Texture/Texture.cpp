@@ -13,7 +13,7 @@ RC<Texture> TextureManager::Create(const RHI::TextureDesc &desc)
     auto tex = MakeRC<Texture>();
     auto &texData = GetTextureData(*tex);
     texData.desc_ = desc;
-    texData.rhiTexture_ = device_->CreateTexture(desc);
+    texData.rhiTexture_ = device_->CreateTexture(desc).ToRC();
     texData.manager_ = this;
     return tex;
 }

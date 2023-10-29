@@ -18,7 +18,7 @@ public:
     void _internalBuildTlas(
         ID3D12GraphicsCommandList7        *commandList,
         const RayTracingInstanceArrayDesc &instances,
-        const TlasPtr                     &tlas,
+        const TlasOPtr                    &tlas,
         BufferDeviceAddress                scratchBuffer);
 
 private:

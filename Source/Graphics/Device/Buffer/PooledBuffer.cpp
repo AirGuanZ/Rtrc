@@ -21,7 +21,7 @@ RC<PooledBuffer> PooledBufferManager::Create(const RHI::BufferDesc &desc)
     }
     else
     {
-        bufferData.rhiBuffer_ = device_->CreateBuffer(desc);
+        bufferData.rhiBuffer_ = device_->CreateBuffer(desc).ToRC();
     }
     return ret;
 }

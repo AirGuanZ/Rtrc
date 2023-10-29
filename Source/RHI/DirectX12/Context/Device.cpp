@@ -657,7 +657,7 @@ void DirectX12Device::CopyBindingGroup(
     device_->CopyDescriptorsSimple(count, dstStart, srcStart, type);
 }
 
-RPtr<Texture> DirectX12Device::CreateTexture(const TextureDesc &desc)
+UPtr<Texture> DirectX12Device::CreateTexture(const TextureDesc &desc)
 {
     D3D12_RESOURCE_DIMENSION dimension;
     if(desc.dim == TextureDimension::Tex2D)
@@ -748,10 +748,10 @@ RPtr<Texture> DirectX12Device::CreateTexture(const TextureDesc &desc)
         "Fail to create directx12 texture resource");
     
     DirectX12MemoryAllocation alloc = { allocator_.Get(), std::move(rawAlloc) };
-    return MakeRPtr<DirectX12Texture>(desc, this, std::move(resource), std::move(alloc));
+    return MakeUPtr<DirectX12Texture>(desc, this, std::move(resource), std::move(alloc));
 }
 
-RPtr<Buffer> DirectX12Device::CreateBuffer(const BufferDesc &desc)
+UPtr<Buffer> DirectX12Device::CreateBuffer(const BufferDesc &desc)
 {
     D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
     if(desc.usage & (BufferUsage::ShaderRWBuffer | BufferUsage::ShaderRWStructuredBuffer))
@@ -807,12 +807,12 @@ RPtr<Buffer> DirectX12Device::CreateBuffer(const BufferDesc &desc)
         "Fail to create directx12 buffer resource");
 
     DirectX12MemoryAllocation alloc = { allocator_.Get(), std::move(rawAlloc) };
-    return MakeRPtr<DirectX12Buffer>(desc, this, std::move(resource), std::move(alloc));
+    return MakeUPtr<DirectX12Buffer>(desc, this, std::move(resource), std::move(alloc));
 }
 
-RPtr<Sampler> DirectX12Device::CreateSampler(const SamplerDesc &desc)
+UPtr<Sampler> DirectX12Device::CreateSampler(const SamplerDesc &desc)
 {
-    return MakeRPtr<DirectX12Sampler>(this, desc);
+    return MakeUPtr<DirectX12Sampler>(this, desc);
 }
 
 size_t DirectX12Device::GetConstantBufferAlignment() const
@@ -851,16 +851,16 @@ void DirectX12Device::WaitIdle()
     }
 }
 
-BlasPtr DirectX12Device::CreateBlas(const BufferPtr &buffer, size_t offset, size_t size)
+BlasUPtr DirectX12Device::CreateBlas(const BufferPtr &buffer, size_t offset, size_t size)
 {
-    auto ret = MakeRPtr<DirectX12Blas>();
+    auto ret = MakeUPtr<DirectX12Blas>();
     auto d3dBuffer = static_cast<DirectX12Buffer *>(buffer.Get());
     auto address = d3dBuffer->GetDeviceAddress().address + offset;
     ret->_internalSetBuffer(BufferDeviceAddress{ address }, buffer);
-    return ret;
+    return BlasUPtr(ret.Release());
 }
 
-TlasPtr DirectX12Device::CreateTlas(const BufferPtr &buffer, size_t offset, size_t size)
+TlasUPtr DirectX12Device::CreateTlas(const BufferPtr &buffer, size_t offset, size_t size)
 {
     auto d3dBuffer = static_cast<DirectX12Buffer *>(buffer.Get());
     auto address = d3dBuffer->GetDeviceAddress().address + offset;
@@ -875,7 +875,7 @@ TlasPtr DirectX12Device::CreateTlas(const BufferPtr &buffer, size_t offset, size
     srvDesc.RaytracingAccelerationStructure.Location = address;
     device_->CreateShaderResourceView(nullptr, &srvDesc, srv);
 
-    return MakeRPtr<DirectX12Tlas>(this, BufferDeviceAddress{ address }, buffer, srv);
+    return MakeUPtr<DirectX12Tlas>(this, BufferDeviceAddress{ address }, buffer, srv);
 }
 
 BlasPrebuildInfoPtr DirectX12Device::CreateBlasPrebuildInfo(

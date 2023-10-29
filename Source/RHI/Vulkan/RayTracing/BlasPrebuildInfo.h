@@ -22,7 +22,7 @@ public:
     void _internalBuildBlas(
         VulkanCommandBuffer         *commandBuffer,
         Span<RayTracingGeometryDesc> geometries,
-        const BlasPtr               &blas,
+        const BlasOPtr              &blas,
         BufferDeviceAddress          scratchBuffer);
 
 private:

@@ -505,9 +505,9 @@ void VulkanCommandBuffer::EndDebugEvent()
 }
 
 void VulkanCommandBuffer::BuildBlas(
-    const BlasPrebuildInfoPtr   &buildInfo,
+    const BlasPrebuildInfoOPtr  &buildInfo,
     Span<RayTracingGeometryDesc> geometries,
-    const BlasPtr               &blas,
+    const BlasOPtr              &blas,
     BufferDeviceAddress          scratchBufferAddress)
 {
     static_cast<VulkanBlasPrebuildInfo *>(buildInfo.Get())
@@ -515,9 +515,9 @@ void VulkanCommandBuffer::BuildBlas(
 }
 
 void VulkanCommandBuffer::BuildTlas(
-    const TlasPrebuildInfoPtr         &buildInfo,
+    const TlasPrebuildInfoOPtr        &buildInfo,
     const RayTracingInstanceArrayDesc &instances,
-    const TlasPtr                     &tlas,
+    const TlasOPtr                    &tlas,
     BufferDeviceAddress                scratchBufferAddress)
 {
     static_cast<VulkanTlasPrebuildInfo *>(buildInfo.Get())

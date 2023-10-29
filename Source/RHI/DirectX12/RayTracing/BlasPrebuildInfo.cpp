@@ -115,7 +115,7 @@ bool DirectX12BlasPrebuildInfo::_internalIsCompatiableWith(Span<RayTracingGeomet
 void DirectX12BlasPrebuildInfo::_internalBuildBlas(
     ID3D12GraphicsCommandList7  *commandList,
     Span<RayTracingGeometryDesc> geometries,
-    const BlasPtr               &blas,
+    const BlasOPtr              &blas,
     BufferDeviceAddress          scratchBuffer)
 {
 #if RTRC_DEBUG

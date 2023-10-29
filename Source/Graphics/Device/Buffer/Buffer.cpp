@@ -81,7 +81,7 @@ RC<Buffer> BufferManager::Create(const RHI::BufferDesc &desc)
 {
     auto buffer = MakeRC<Buffer>();
     auto &bufferData = GetBufferData(*buffer);
-    bufferData.rhiBuffer_ = device_->CreateBuffer(desc);
+    bufferData.rhiBuffer_ = device_->CreateBuffer(desc).ToRC();
     bufferData.size_ = desc.size;
     bufferData.manager_ = this;
     return buffer;

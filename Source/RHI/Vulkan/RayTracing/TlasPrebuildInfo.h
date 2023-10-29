@@ -24,7 +24,7 @@ public:
     void _internalBuildTlas(
         VulkanCommandBuffer               *commandBuffer,
         const RayTracingInstanceArrayDesc &instances,
-        const TlasPtr                     &tlas,
+        const TlasOPtr                    &tlas,
         BufferDeviceAddress                scratchBuffer);
 
 private:

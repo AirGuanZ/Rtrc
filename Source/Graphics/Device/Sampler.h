@@ -37,7 +37,7 @@ inline RC<Sampler> SamplerManager::CreateSampler(const RHI::SamplerDesc &desc)
     return cache_.GetOrCreate(desc, [&]
     {
         auto ret = MakeRC<Sampler>();
-        ret->rhiObject_ = device_->CreateSampler(desc);
+        ret->rhiObject_ = device_->CreateSampler(desc).ToRC();
         ret->manager_ = this;
         return ret;
     });

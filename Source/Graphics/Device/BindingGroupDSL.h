@@ -253,7 +253,7 @@ namespace BindingGroupDSL
         auto &operator=(const RG::BufferResourceUav &v)
         {
             data_ = v;
-            return v;
+            return *this;
         }
 
         auto &operator=(RG::BufferResource *buffer)
@@ -985,7 +985,7 @@ void BindingGroup::Set(const T &value)
 {
     static_assert(BindingGroupDSL::RtrcGroupStruct<T>);
     Rtrc::ApplyBindingGroup(
-        manager_->_internalGetRHIDevice().Get(), manager_->_internalGetDefaultConstantBufferManager(), *this, value);
+        manager_->_internalGetRHIDevice(), manager_->_internalGetDefaultConstantBufferManager(), *this, value);
 }
 
 RTRC_END

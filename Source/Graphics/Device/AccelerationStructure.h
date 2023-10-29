@@ -7,7 +7,7 @@ RTRC_BEGIN
 
 class AccelerationStructureManager;
 
-class Blas : public GeneralGPUObject<RHI::BlasPtr>
+class Blas : public GeneralGPUObject<RHI::BlasUPtr>
 {
 public:
     
@@ -24,7 +24,7 @@ private:
     RC<SubBuffer> buffer_;
 };
 
-class Tlas : public GeneralGPUObject<RHI::TlasPtr>
+class Tlas : public GeneralGPUObject<RHI::TlasUPtr>
 {
 public:
 

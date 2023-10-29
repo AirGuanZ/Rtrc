@@ -96,7 +96,7 @@ bool VulkanTlasPrebuildInfo::_internalIsCompatiableWith(const RayTracingInstance
 void VulkanTlasPrebuildInfo::_internalBuildTlas(
     VulkanCommandBuffer               *commandBuffer,
     const RayTracingInstanceArrayDesc &instances,
-    const TlasPtr                     &tlas,
+    const TlasOPtr                    &tlas,
     BufferDeviceAddress                scratchBuffer)
 {
 #if RTRC_DEBUG

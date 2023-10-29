@@ -57,11 +57,9 @@ public:
         const BindingGroupOPtr &srcGroup, uint32_t srcIndex, uint32_t srcArrayOffset,
         uint32_t count) RTRC_RHI_OVERRIDE;
 
-    RPtr<Texture> CreateTexture(const TextureDesc &desc) RTRC_RHI_OVERRIDE;
-
-    RPtr<Buffer> CreateBuffer(const BufferDesc &desc) RTRC_RHI_OVERRIDE;
-
-    RPtr<Sampler> CreateSampler(const SamplerDesc &desc) RTRC_RHI_OVERRIDE;
+    UPtr<Texture> CreateTexture(const TextureDesc &desc) RTRC_RHI_OVERRIDE;
+    UPtr<Buffer>  CreateBuffer(const BufferDesc &desc) RTRC_RHI_OVERRIDE;
+    UPtr<Sampler> CreateSampler(const SamplerDesc &desc) RTRC_RHI_OVERRIDE;
 
     size_t GetConstantBufferAlignment() const RTRC_RHI_OVERRIDE;
     size_t GetConstantBufferSizeAlignment() const RTRC_RHI_OVERRIDE;
@@ -70,8 +68,8 @@ public:
 
     void WaitIdle() RTRC_RHI_OVERRIDE;
 
-    BlasPtr CreateBlas(const BufferPtr &buffer, size_t offset, size_t size) RTRC_RHI_OVERRIDE;
-    TlasPtr CreateTlas(const BufferPtr &buffer, size_t offset, size_t size) RTRC_RHI_OVERRIDE;
+    BlasUPtr CreateBlas(const BufferPtr &buffer, size_t offset, size_t size) RTRC_RHI_OVERRIDE;
+    TlasUPtr CreateTlas(const BufferPtr &buffer, size_t offset, size_t size) RTRC_RHI_OVERRIDE;
 
     BlasPrebuildInfoPtr CreateBlasPrebuildInfo(
         Span<RayTracingGeometryDesc>              geometries,

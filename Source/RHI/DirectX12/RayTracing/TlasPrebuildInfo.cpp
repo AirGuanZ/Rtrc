@@ -35,7 +35,7 @@ const RayTracingAccelerationStructurePrebuildInfo &DirectX12TlasPrebuildInfo::Ge
 void DirectX12TlasPrebuildInfo::_internalBuildTlas(
     ID3D12GraphicsCommandList7        *commandList,
     const RayTracingInstanceArrayDesc &instances,
-    const TlasPtr                     &tlas,
+    const TlasOPtr                    &tlas,
     BufferDeviceAddress                scratchBuffer)
 {
 #if RTRC_DEBUG

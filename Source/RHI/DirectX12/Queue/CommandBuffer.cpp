@@ -493,9 +493,9 @@ void DirectX12CommandBuffer::EndDebugEvent()
 }
 
 void DirectX12CommandBuffer::BuildBlas(
-    const BlasPrebuildInfoPtr   &buildInfo,
+    const BlasPrebuildInfoOPtr  &buildInfo,
     Span<RayTracingGeometryDesc> geometries,
-    const BlasPtr               &blas,
+    const BlasOPtr              &blas,
     BufferDeviceAddress          scratchBufferAddress)
 {
     static_cast<DirectX12BlasPrebuildInfo *>(buildInfo.Get())
@@ -503,9 +503,9 @@ void DirectX12CommandBuffer::BuildBlas(
 }
 
 void DirectX12CommandBuffer::BuildTlas(
-    const TlasPrebuildInfoPtr         &buildInfo,
+    const TlasPrebuildInfoOPtr        &buildInfo,
     const RayTracingInstanceArrayDesc &instances,
-    const TlasPtr                     &tlas,
+    const TlasOPtr                    &tlas,
     BufferDeviceAddress                scratchBufferAddress)
 {
     static_cast<DirectX12TlasPrebuildInfo*>(buildInfo.Get())

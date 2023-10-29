@@ -153,7 +153,7 @@ bool VulkanBlasPrebuildInfo::_internalIsCompatiableWith(Span<RayTracingGeometryD
 void VulkanBlasPrebuildInfo::_internalBuildBlas(
     VulkanCommandBuffer         *commandBuffer,
     Span<RayTracingGeometryDesc> geometries,
-    const BlasPtr               &blas,
+    const BlasOPtr              &blas,
     BufferDeviceAddress          scratchBuffer)
 {
 #if RTRC_DEBUG
