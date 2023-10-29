@@ -40,7 +40,7 @@ void DirectX12Queue::Submit(
     Span<RPtr<CommandBuffer>>      commandBuffers,
     BackBufferSemaphoreDependency signalBackBufferSemaphore,
     Span<SemaphoreDependency>     signalSemaphores,
-    const RPtr<Fence>             &signalFence)
+    OPtr<Fence>                   signalFence)
 {
     /*assert(
         waitBackBufferSemaphore.semaphore == nullptr ||

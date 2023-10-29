@@ -21,7 +21,9 @@ public:
     ObserverPtr(const RC<T> &pointer) : ObserverPtr(pointer.get()) { }
     ObserverPtr(const UPtr<T> &pointer) : ObserverPtr(pointer.Get()) { }
     ObserverPtr(const ReferenceCountedPtr<T> &pointer) : ObserverPtr(pointer.Get()) { }
-    ObserverPtr(const CopyOnWritePtr<T> &pointer) : ObserverPtr(pointer.Get()) { }
+    ObserverPtr(const CopyOnWritePtr<T> &pointer) : ObserverPtr(pointer.Get()) { }\
+
+    void Swap(ObserverPtr &other) noexcept { std::swap(pointer_, other.pointer_); }
 
     operator bool() const { return pointer_ != nullptr; }
     operator T *() const { return pointer_; }
@@ -52,6 +54,8 @@ public:
     ObserverPtr(const ReferenceCountedPtr<const T> &pointer) : ObserverPtr(pointer.Get()) { }
     ObserverPtr(const CopyOnWritePtr<T> &pointer) : ObserverPtr(pointer.Get()) { }
     ObserverPtr(const CopyOnWritePtr<const T> &pointer) : ObserverPtr(pointer.Get()) { }
+
+    void Swap(ObserverPtr &other) noexcept { std::swap(pointer_, other.pointer_); }
 
     operator bool() const { return pointer_ != nullptr; }
     operator const T *() const { return pointer_; }

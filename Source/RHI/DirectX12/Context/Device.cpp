@@ -153,7 +153,7 @@ RPtr<Queue> DirectX12Device::GetQueue(QueueType type)
     Unreachable();
 }
 
-RPtr<CommandPool> DirectX12Device::CreateCommandPool(const RPtr<Queue> &queue)
+UPtr<CommandPool> DirectX12Device::CreateCommandPool(const RPtr<Queue> &queue)
 {
     ComPtr<ID3D12CommandAllocator> commandAllocator;
     RTRC_D3D12_FAIL_MSG(
@@ -161,10 +161,10 @@ RPtr<CommandPool> DirectX12Device::CreateCommandPool(const RPtr<Queue> &queue)
             TranslateCommandListType(queue->GetType()),
             IID_PPV_ARGS(commandAllocator.GetAddressOf())),
         "Fail to create directx12 command allocator");
-    return MakeRPtr<DirectX12CommandPool>(this, queue->GetType(), std::move(commandAllocator));
+    return MakeUPtr<DirectX12CommandPool>(this, queue->GetType(), std::move(commandAllocator));
 }
 
-RPtr<Swapchain> DirectX12Device::CreateSwapchain(const SwapchainDesc &desc, Window &window)
+UPtr<Swapchain> DirectX12Device::CreateSwapchain(const SwapchainDesc &desc, Window &window)
 {
     const HWND windowHandle = reinterpret_cast<HWND>(window.GetWin32WindowHandle());
     DXGI_SWAP_CHAIN_DESC swapChainDesc =
@@ -211,25 +211,25 @@ RPtr<Swapchain> DirectX12Device::CreateSwapchain(const SwapchainDesc &desc, Wind
         .initialLayout = TextureLayout::Undefined,
         .concurrentAccessMode = QueueConcurrentAccessMode::Exclusive
     };
-    return MakeRPtr<DirectX12Swapchain>(this, imageDesc, std::move(swapChain3), desc.vsync ? 1 : 0);
+    return MakeUPtr<DirectX12Swapchain>(this, imageDesc, std::move(swapChain3), desc.vsync ? 1 : 0);
 }
 
-RPtr<Fence> DirectX12Device::CreateFence(bool signaled)
+UPtr<Fence> DirectX12Device::CreateFence(bool signaled)
 {
     ComPtr<ID3D12Fence> fence;
     RTRC_D3D12_FAIL_MSG(
         device_->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(fence.GetAddressOf())),
         "DirectX12Device::CreateFence: fail to create directx12 fence");
-    return MakeRPtr<DirectX12Fence>(std::move(fence), signaled);
+    return MakeUPtr<DirectX12Fence>(std::move(fence), signaled);
 }
 
-RPtr<Semaphore> DirectX12Device::CreateTimelineSemaphore(uint64_t initialValue)
+UPtr<Semaphore> DirectX12Device::CreateTimelineSemaphore(uint64_t initialValue)
 {
     ComPtr<ID3D12Fence> fence;
     RTRC_D3D12_FAIL_MSG(
         device_->CreateFence(initialValue, D3D12_FENCE_FLAG_SHARED, IID_PPV_ARGS(fence.GetAddressOf())),
         "DirectX12Device::CreateTimelineSemaphore: fail to create directx12 fence");
-    return MakeRPtr<DirectX12Semaphore>(std::move(fence));
+    return MakeUPtr<DirectX12Semaphore>(std::move(fence));
 }
 
 RPtr<RawShader> DirectX12Device::CreateShader(const void *data, size_t size, std::vector<RawShaderEntry> entries)

@@ -37,8 +37,8 @@ private:
 
     struct Batch
     {
-        RHI::CommandPoolPtr commandPool;
-        RHI::FencePtr fence;
+        RHI::CommandPoolUPtr commandPool;
+        RHI::FenceUPtr fence;
     };
 
     Batch GetBatch();

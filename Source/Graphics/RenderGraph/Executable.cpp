@@ -81,7 +81,7 @@ void Executer::ExecuteImpl(const ExecutableGraph &graph)
 
         commandBuffer.End();
 
-        RHI::FencePtr fence = section.signalFence;
+        RHI::FenceOPtr fence = section.signalFence;
         if(!fence && isLastSection && graph.completeFence)
         {
             fence = graph.completeFence;

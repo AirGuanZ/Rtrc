@@ -138,13 +138,13 @@ TextureResource *RenderGraph::RegisterSwapchainTexture(
     return swapchainTexture_;
 }
 
-TextureResource *RenderGraph::RegisterSwapchainTexture(const RHI::SwapchainPtr &swapchain)
+TextureResource *RenderGraph::RegisterSwapchainTexture(RHI::SwapchainOPtr swapchain)
 {
     return RegisterSwapchainTexture(
         swapchain->GetRenderTarget(), swapchain->GetAcquireSemaphore(), swapchain->GetPresentSemaphore());
 }
 
-void RenderGraph::SetCompleteFence(RHI::FencePtr fence)
+void RenderGraph::SetCompleteFence(RHI::FenceOPtr  fence)
 {
     completeFence_.Swap(fence);
 }

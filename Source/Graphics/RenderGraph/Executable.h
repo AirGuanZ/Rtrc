@@ -49,7 +49,7 @@ struct ExecutableSection
     RHI::BackBufferSemaphorePtr signalPresentSemaphore;
     RHI::PipelineStageFlag      signalPresentSemaphoreStages;
 
-    RHI::FencePtr signalFence;
+    RHI::FenceOPtr signalFence;
 };
 
 struct ExecutableGraph
@@ -57,7 +57,7 @@ struct ExecutableGraph
     RHI::QueuePtr                  queue;
     ExecutableResources            resources;
     std::vector<ExecutableSection> sections;
-    RHI::FencePtr                  completeFence;
+    RHI::FenceOPtr                 completeFence;
 };
 
 class Executer

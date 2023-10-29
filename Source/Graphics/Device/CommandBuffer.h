@@ -320,7 +320,7 @@ private:
 
     struct Pool
     {
-        RHI::CommandPoolPtr rhiPool;
+        RHI::CommandPoolUPtr rhiPool;
         std::atomic<uint32_t> historyUserCount = 0;
         std::atomic<uint32_t> activeUserCount = 0;
     };
@@ -368,7 +368,7 @@ private:
 
     PerThreadPoolData &GetPerThreadPoolData();
 
-    RHI::CommandPoolPtr GetFreeCommandPool();
+    RHI::CommandPoolUPtr GetFreeCommandPool();
 
     Device *device_;
     DeviceSynchronizer &sync_;
@@ -376,7 +376,7 @@ private:
     std::map<std::thread::id, PerThreadPoolData> threadToActivePoolData_;
     tbb::spin_rw_mutex threadToActivePoolDataMutex_;
 
-    tbb::concurrent_queue<RHI::CommandPoolPtr> freePools_;
+    tbb::concurrent_queue<RHI::CommandPoolUPtr> freePools_;
 };
 
 template<typename T> requires std::is_trivially_copyable_v<T>

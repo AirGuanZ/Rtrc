@@ -127,7 +127,7 @@ void DeviceSynchronizer::BeginNewFrame()
     renderLoopFrames_[renderLoopFrameIndex_].fence->Reset();
 }
 
-const RHI::FencePtr &DeviceSynchronizer::GetFrameFence()
+const RHI::FenceUPtr &DeviceSynchronizer::GetFrameFence()
 {
     return renderLoopFrames_[renderLoopFrameIndex_].fence;
 }

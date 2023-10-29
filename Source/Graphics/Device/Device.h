@@ -96,8 +96,8 @@ public:
     Queue &GetQueue();
     DeviceSynchronizer &GetSynchronizer();
 
-    const RHI::SwapchainPtr &GetSwapchain() const;
-    const RHI::TextureDesc &GetSwapchainImageDesc() const;
+    const RHI::SwapchainUPtr &GetSwapchain() const;
+    const RHI::TextureDesc   &GetSwapchainImageDesc() const;
 
     // Frame synchronization
 
@@ -108,7 +108,7 @@ public:
     bool Present();
 
     bool BeginFrame(bool processWindowEvents = true);
-    const RHI::FencePtr &GetFrameFence();
+    const RHI::FenceUPtr &GetFrameFence();
 
     // Resource creation & upload
 
@@ -297,12 +297,12 @@ private:
     RHI::DeviceUPtr   device_;
     Queue             mainQueue_;
 
-    Window           *window_              = nullptr;
-    RHI::Format       swapchainFormat_     = RHI::Format::Unknown;
-    int               swapchainImageCount_ = 0;
-    bool              vsync_               = true;
-    bool              swapchainUav_        = false;
-    RHI::SwapchainPtr swapchain_;
+    Window            *window_              = nullptr;
+    RHI::Format        swapchainFormat_     = RHI::Format::Unknown;
+    int                swapchainImageCount_ = 0;
+    bool               vsync_               = true;
+    bool               swapchainUav_        = false;
+    RHI::SwapchainUPtr swapchain_;
 
     Box<DeviceSynchronizer> sync_;
 
@@ -366,7 +366,7 @@ inline DeviceSynchronizer &Device::GetSynchronizer()
     return *sync_;
 }
 
-inline const RHI::SwapchainPtr &Device::GetSwapchain() const
+inline const RHI::SwapchainUPtr &Device::GetSwapchain() const
 {
     return swapchain_;
 }
@@ -422,7 +422,7 @@ inline bool Device::BeginFrame(bool processWindowEvents)
     return true;
 }
 
-inline const RHI::FencePtr &Device::GetFrameFence()
+inline const RHI::FenceUPtr &Device::GetFrameFence()
 {
     return sync_->GetFrameFence();
 }

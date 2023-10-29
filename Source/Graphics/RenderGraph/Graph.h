@@ -75,9 +75,9 @@ public:
         RHI::TexturePtr             rhiTexture,
         RHI::BackBufferSemaphorePtr acquireSemaphore,
         RHI::BackBufferSemaphorePtr presentSemaphore);
-    TextureResource *RegisterSwapchainTexture(const RHI::SwapchainPtr &swapchain);
+    TextureResource *RegisterSwapchainTexture(RHI::SwapchainOPtr swapchain);
 
-    void SetCompleteFence(RHI::FencePtr fence);
+    void SetCompleteFence(RHI::FenceOPtr fence);
 
     void PushPassGroup(std::string name);
     void PopPassGroup();
@@ -235,7 +235,7 @@ private:
 
     std::vector<Box<Pass>> passes_;
 
-    RHI::FencePtr completeFence_;
+    RHI::FenceOPtr  completeFence_;
 };
 
 #define RTRC_RG_SCOPED_PASS_GROUP(RENDERGRAPH, NAME)       \

@@ -42,7 +42,7 @@ void CopyContext::UploadBuffer(
 
     auto batch = GetBatch();
     batch.fence->Reset();
-    RTRC_SCOPE_EXIT{ batches_.push(batch); };
+    RTRC_SCOPE_EXIT{ batches_.push(std::move(batch)); };
 
     auto commandBuffer = batch.commandPool->NewCommandBuffer();
     commandBuffer->Begin();
@@ -99,7 +99,7 @@ void CopyContext::UploadTexture2D(
 
     auto batch = GetBatch();
     batch.fence->Reset();
-    RTRC_SCOPE_EXIT{ batches_.push(batch); };
+    RTRC_SCOPE_EXIT{ batches_.push(std::move(batch)); };
 
     auto commandBuffer = batch.commandPool->NewCommandBuffer();
     commandBuffer->Begin();

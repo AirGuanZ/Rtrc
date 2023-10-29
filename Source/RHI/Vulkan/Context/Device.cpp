@@ -321,27 +321,13 @@ RPtr<Queue> VulkanDevice::GetQueue(QueueType type)
     Unreachable();
 }
 
-RPtr<CommandPool> VulkanDevice::CreateCommandPool(const RPtr<Queue> &queue)
+UPtr<CommandPool> VulkanDevice::CreateCommandPool(const RPtr<Queue> &queue)
 {
     auto vkQueue = reinterpret_cast<const VulkanQueue *>(queue.Get());
     return vkQueue->_internalCreateCommandPoolImpl();
 }
 
-RPtr<Fence> VulkanDevice::CreateFence(bool signaled)
-{
-    const VkFenceCreateInfo createInfo = {
-        .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-        .flags = signaled ? VK_FENCE_CREATE_SIGNALED_BIT : VkFenceCreateFlags{}
-    };
-    VkFence fence;
-    RTRC_VK_FAIL_MSG(
-        vkCreateFence(device_, &createInfo, RTRC_VK_ALLOC, &fence),
-        "Failed to create vulkan fence");
-    RTRC_SCOPE_FAIL{ vkDestroyFence(device_, fence, RTRC_VK_ALLOC); };
-    return MakeRPtr<VulkanFence>(device_, fence);
-}
-
-RPtr<Swapchain> VulkanDevice::CreateSwapchain(const SwapchainDesc &desc, Window &window)
+UPtr<Swapchain> VulkanDevice::CreateSwapchain(const SwapchainDesc &desc, Window &window)
 {
     assert(presentQueue_);
     auto surface = DynamicCast<VulkanSurface>(window.CreateVulkanSurface(instance_));
@@ -466,10 +452,24 @@ RPtr<Swapchain> VulkanDevice::CreateSwapchain(const SwapchainDesc &desc, Window 
         .initialLayout        = TextureLayout::Undefined,
         .concurrentAccessMode = QueueConcurrentAccessMode::Exclusive
     };
-    return MakeRPtr<VulkanSwapchain>(std::move(surface), presentQueue_, imageDescription, this, swapchain);
+    return MakeUPtr<VulkanSwapchain>(std::move(surface), presentQueue_, imageDescription, this, swapchain);
 }
 
-RPtr<Semaphore> VulkanDevice::CreateTimelineSemaphore(uint64_t initialValue)
+UPtr<Fence> VulkanDevice::CreateFence(bool signaled)
+{
+    const VkFenceCreateInfo createInfo = {
+        .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+        .flags = signaled ? VK_FENCE_CREATE_SIGNALED_BIT : VkFenceCreateFlags{}
+    };
+    VkFence fence;
+    RTRC_VK_FAIL_MSG(
+        vkCreateFence(device_, &createInfo, RTRC_VK_ALLOC, &fence),
+        "Failed to create vulkan fence");
+    RTRC_SCOPE_FAIL{ vkDestroyFence(device_, fence, RTRC_VK_ALLOC); };
+    return MakeUPtr<VulkanFence>(device_, fence);
+}
+
+UPtr<Semaphore> VulkanDevice::CreateTimelineSemaphore(uint64_t initialValue)
 {
     const VkSemaphoreTypeCreateInfo typeCreateInfo = {
         .sType         = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
@@ -488,7 +488,7 @@ RPtr<Semaphore> VulkanDevice::CreateTimelineSemaphore(uint64_t initialValue)
         "Failed to create vulkan semaphore");
     RTRC_SCOPE_FAIL{ vkDestroySemaphore(device_, semaphore, RTRC_VK_ALLOC); };
 
-    return MakeRPtr<VulkanSemaphore>(device_, semaphore);
+    return MakeUPtr<VulkanSemaphore>(device_, semaphore);
 }
 
 RPtr<RawShader> VulkanDevice::CreateShader(const void *data, size_t size, std::vector<RawShaderEntry> entries)

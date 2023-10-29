@@ -1385,12 +1385,12 @@ public:
     
     RTRC_RHI_API RPtr<Queue> GetQueue(QueueType type) RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API RPtr<CommandPool> CreateCommandPool(const RPtr<Queue> &queue) RTRC_RHI_API_PURE;
+    RTRC_RHI_API UPtr<CommandPool> CreateCommandPool(const RPtr<Queue> &queue) RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API RPtr<Swapchain> CreateSwapchain(const SwapchainDesc &desc, Window &window) RTRC_RHI_API_PURE;
+    RTRC_RHI_API UPtr<Swapchain> CreateSwapchain(const SwapchainDesc &desc, Window &window) RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API RPtr<Fence>     CreateFence(bool signaled) RTRC_RHI_API_PURE;
-    RTRC_RHI_API RPtr<Semaphore> CreateTimelineSemaphore(uint64_t initialValue) RTRC_RHI_API_PURE;
+    RTRC_RHI_API UPtr<Fence>     CreateFence(bool signaled) RTRC_RHI_API_PURE;
+    RTRC_RHI_API UPtr<Semaphore> CreateTimelineSemaphore(uint64_t initialValue) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API RPtr<RawShader> CreateShader(
         const void *data, size_t size, std::vector<RawShaderEntry> entries) RTRC_RHI_API_PURE;
@@ -1512,7 +1512,7 @@ public:
         Span<RPtr<CommandBuffer>>     commandBuffers,
         BackBufferSemaphoreDependency signalBackBufferSemaphore,
         Span<SemaphoreDependency>     signalSemaphores,
-        const RPtr<Fence>             &signalFence) RTRC_RHI_API_PURE;
+        OPtr<Fence>                   signalFence) RTRC_RHI_API_PURE;
 };
 
 class Fence : public RHIObject

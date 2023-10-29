@@ -24,7 +24,7 @@ public:
         Span<RPtr<CommandBuffer>>       commandBuffers,
          BackBufferSemaphoreDependency signalBackBufferSemaphore,
         Span<SemaphoreDependency>     signalSemaphores,
-        const RPtr<Fence>             &signalFence) RTRC_RHI_OVERRIDE;
+        OPtr<Fence>                   signalFence) RTRC_RHI_OVERRIDE;
 
     ID3D12CommandQueue *_internalGetCommandQueue() const { return queue_.Get(); }
 

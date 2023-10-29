@@ -31,13 +31,12 @@ public:
 
     RPtr<Queue> GetQueue(QueueType type) RTRC_RHI_OVERRIDE;
 
-    RPtr<CommandPool> CreateCommandPool(const RPtr<Queue> &queue) RTRC_RHI_OVERRIDE;
+    UPtr<CommandPool> CreateCommandPool(const RPtr<Queue> &queue) RTRC_RHI_OVERRIDE;
 
-    RPtr<Fence> CreateFence(bool signaled) RTRC_RHI_OVERRIDE;
+    UPtr<Swapchain> CreateSwapchain(const SwapchainDesc &desc, Window &window) RTRC_RHI_OVERRIDE;
 
-    RPtr<Swapchain> CreateSwapchain(const SwapchainDesc &desc, Window &window) RTRC_RHI_OVERRIDE;
-
-    RPtr<Semaphore> CreateTimelineSemaphore(uint64_t initialValue) RTRC_RHI_OVERRIDE;
+    UPtr<Fence>     CreateFence(bool signaled) RTRC_RHI_OVERRIDE;
+    UPtr<Semaphore> CreateTimelineSemaphore(uint64_t initialValue) RTRC_RHI_OVERRIDE;
 
     RPtr<RawShader> CreateShader(const void *data, size_t size, std::vector<RawShaderEntry> entries) RTRC_RHI_OVERRIDE;
 

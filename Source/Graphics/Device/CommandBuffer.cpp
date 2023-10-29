@@ -950,9 +950,9 @@ CommandBufferManager::PerThreadPoolData &CommandBufferManager::GetPerThreadPoolD
     return threadToActivePoolData_[id];
 }
 
-RHI::CommandPoolPtr CommandBufferManager::GetFreeCommandPool()
+RHI::CommandPoolUPtr CommandBufferManager::GetFreeCommandPool()
 {
-    RHI::CommandPoolPtr ret;
+    RHI::CommandPoolUPtr ret;
     if(!freePools_.try_pop(ret))
     {
         ret = device_->GetRawDevice()->CreateCommandPool(sync_.GetQueue());

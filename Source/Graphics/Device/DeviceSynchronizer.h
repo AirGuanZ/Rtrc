@@ -26,7 +26,7 @@ public:
 
     void WaitForOldFrame();
     void BeginNewFrame();
-    const RHI::FencePtr &GetFrameFence(); // Must be signaled if BeginNewFrame is called
+    const RHI::FenceUPtr &GetFrameFence(); // Must be signaled if BeginNewFrame is called
 
 private:
 
@@ -34,7 +34,7 @@ private:
 
     struct RenderLoopFrame
     {
-        RHI::FencePtr fence;
+        RHI::FenceUPtr fence;
         Callbacks callbacks;
     };
 

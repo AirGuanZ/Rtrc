@@ -24,13 +24,13 @@ public:
         Span<RPtr<CommandBuffer>>      commandBuffers,
         BackBufferSemaphoreDependency signalBackBufferSemaphore,
         Span<SemaphoreDependency>     signalSemaphores,
-        const RPtr<Fence>             &signalFence) RTRC_RHI_OVERRIDE;
+        OPtr<Fence>                   signalFence) RTRC_RHI_OVERRIDE;
 
     VkQueue _internalGetNativeQueue() const;
 
     uint32_t _internalGetNativeFamilyIndex() const;
 
-    RPtr<CommandPool> _internalCreateCommandPoolImpl() const;
+    UPtr<CommandPool> _internalCreateCommandPoolImpl() const;
 
 private:
 
