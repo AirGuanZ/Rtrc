@@ -37,21 +37,21 @@ AccelerationStructureManager::AccelerationStructureManager(RHI::DeviceOPtr devic
     
 }
 
-BlasPrebuildInfo AccelerationStructureManager::CreateBlasPrebuildinfo(
+Box<BlasPrebuildInfo> AccelerationStructureManager::CreateBlasPrebuildinfo(
     Span<RHI::RayTracingGeometryDesc>              geometries,
     RHI::RayTracingAccelerationStructureBuildFlags flags)
 {
-    BlasPrebuildInfo info;
-    info.info_ = rhiDevice_->CreateBlasPrebuildInfo(geometries, flags);
+    auto info = MakeBox<BlasPrebuildInfo>();
+    info->info_ = rhiDevice_->CreateBlasPrebuildInfo(geometries, flags);
     return info;
 }
 
-TlasPrebuildInfo AccelerationStructureManager::CreateTlasPrebuildInfo(
+Box<TlasPrebuildInfo> AccelerationStructureManager::CreateTlasPrebuildInfo(
     const RHI::RayTracingInstanceArrayDesc        &instances,
     RHI::RayTracingAccelerationStructureBuildFlags flags)
 {
-    TlasPrebuildInfo info;
-    info.info_ = rhiDevice_->CreateTlasPrebuildInfo(instances, flags);
+    auto info = MakeBox<TlasPrebuildInfo>();
+    info->info_ = rhiDevice_->CreateTlasPrebuildInfo(instances, flags);
     return info;
 }
 

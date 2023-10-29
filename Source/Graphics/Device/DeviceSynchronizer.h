@@ -11,10 +11,10 @@ class DeviceSynchronizer : public Uncopyable
 {
 public:
 
-    DeviceSynchronizer(RHI::DeviceOPtr device, RHI::QueuePtr queue);
+    DeviceSynchronizer(RHI::DeviceOPtr device, RHI::QueueRPtr queue);
     ~DeviceSynchronizer();
 
-    const RHI::QueuePtr &GetQueue() const;
+    const RHI::QueueRPtr &GetQueue() const;
 
     void OnFrameComplete(std::move_only_function<void()> callback);
 
@@ -39,7 +39,7 @@ private:
     };
 
     RHI::DeviceOPtr device_;
-    RHI::QueuePtr queue_;
+    RHI::QueueRPtr queue_;
 
     Callbacks currentFrameCallbacks_;
     std::mutex currentFrameCallbacksMutex_;

@@ -42,7 +42,7 @@ using RHIObjectPtr = RPtr <RHIObject>;
 #define RTRC_RHI_IMPLEMENT(DERIVED, BASE) class DERIVED final : public BASE
 #define RTRC_RHI_FORWARD_DECL(CLASS) \
     class CLASS;                     \
-    using CLASS##Ptr = RPtr<CLASS>;  \
+    using CLASS##RPtr = RPtr<CLASS>; \
     using CLASS##UPtr = UPtr<CLASS>; \
     using CLASS##OPtr = OPtr<CLASS>;
 #define RTRC_RHI_IMPL_PREFIX(X) X
@@ -57,7 +57,7 @@ using RHIObjectPtr = RPtr <RHIObject>;
 #define RTRC_RHI_FORWARD_DECL(CLASS)      \
     namespace Vk { class Vulkan##CLASS; } \
     using CLASS = Vk::Vulkan##CLASS;      \
-    using CLASS##Ptr = RPtr<CLASS>;       \
+    using CLASS##RPtr = RPtr<CLASS>;      \
     using CLASS##UPtr = UPtr<CLASS>;      \
     using CLASS##OPtr = OPtr<CLASS>;
 #define RTRC_RHI_IMPL_PREFIX(X) Vulkan##X
@@ -65,7 +65,7 @@ using RHIObjectPtr = RPtr <RHIObject>;
 #define RTRC_RHI_FORWARD_DECL(CLASS)            \
     namespace D3D12 { class DirectX12##CLASS; } \
     using CLASS = D3D12::DirectX12##CLASS;      \
-    using CLASS##Ptr = RPtr<CLASS>;             \
+    using CLASS##RPtr = RPtr<CLASS>;            \
     using CLASS##UPtr = UPtr<CLASS>;            \
     using CLASS##OPtr = OPtr<CLASS>;
 #else
@@ -630,11 +630,11 @@ struct RawShaderEntry
 
 struct BindingDesc
 {
-    BindingType             type;
-    ShaderStageFlags        shaderStages = ShaderStage::All;
-    std::optional<uint32_t> arraySize;
-    std::vector<SamplerPtr> immutableSamplers;
-    bool                    bindless = false;
+    BindingType              type;
+    ShaderStageFlags         shaderStages = ShaderStage::All;
+    std::optional<uint32_t>  arraySize;
+    std::vector<SamplerRPtr> immutableSamplers;
+    bool                     bindless = false;
 
     auto operator<=>(const BindingDesc &other) const = default;
     bool operator==(const BindingDesc &) const = default;
@@ -936,7 +936,7 @@ struct Viewport
         };
     }
 
-    static Viewport Create(const TexturePtr &tex, float minDepth = 0, float maxDepth = 1);
+    static Viewport Create(const TextureOPtr &tex, float minDepth = 0, float maxDepth = 1);
 };
 
 struct Scissor
@@ -953,7 +953,7 @@ struct Scissor
         return Scissor{ { 0, 0 }, { static_cast<int>(desc.width), static_cast<int>(desc.height) } };
     }
 
-    static Scissor Create(const TexturePtr &tex);
+    static Scissor Create(const TextureOPtr &tex);
 };
 
 struct RenderPassColorAttachment
@@ -1275,12 +1275,12 @@ private:
 #define RTRC_RHI_QUEUE_COMMON               \
     struct BackBufferSemaphoreDependency    \
     {                                       \
-        RPtr<BackBufferSemaphore> semaphore;\
+        OPtr<BackBufferSemaphore> semaphore;\
         PipelineStageFlag        stages;    \
     };                                      \
     struct SemaphoreDependency              \
     {                                       \
-        RPtr<Semaphore>    semaphore;       \
+        OPtr<Semaphore>    semaphore;       \
         PipelineStageFlag stages;           \
         uint64_t          value;            \
     };
@@ -1423,13 +1423,13 @@ public:
 
     RTRC_RHI_API void WaitIdle() RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API BlasUPtr CreateBlas(const BufferPtr &buffer, size_t offset, size_t size) RTRC_RHI_API_PURE;
-    RTRC_RHI_API TlasUPtr CreateTlas(const BufferPtr &buffer, size_t offset, size_t size) RTRC_RHI_API_PURE;
+    RTRC_RHI_API BlasUPtr CreateBlas(const BufferRPtr &buffer, size_t offset, size_t size) RTRC_RHI_API_PURE;
+    RTRC_RHI_API TlasUPtr CreateTlas(const BufferRPtr &buffer, size_t offset, size_t size) RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API BlasPrebuildInfoPtr CreateBlasPrebuildInfo(
+    RTRC_RHI_API BlasPrebuildInfoUPtr CreateBlasPrebuildInfo(
         Span<RayTracingGeometryDesc>              geometries,
         RayTracingAccelerationStructureBuildFlags flags) RTRC_RHI_API_PURE;
-    RTRC_RHI_API TlasPrebuildInfoPtr CreateTlasPrebuildInfo(
+    RTRC_RHI_API TlasPrebuildInfoUPtr CreateTlasPrebuildInfo(
         const RayTracingInstanceArrayDesc        &instances,
         RayTracingAccelerationStructureBuildFlags flags) RTRC_RHI_API_PURE;
 
@@ -1456,8 +1456,8 @@ public:
     RTRC_RHI_API bool Acquire() RTRC_RHI_API_PURE;
     RTRC_RHI_API bool Present() RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API RPtr<BackBufferSemaphore> GetAcquireSemaphore() RTRC_RHI_API_PURE;
-    RTRC_RHI_API RPtr<BackBufferSemaphore> GetPresentSemaphore() RTRC_RHI_API_PURE;
+    RTRC_RHI_API OPtr<BackBufferSemaphore> GetAcquireSemaphore() RTRC_RHI_API_PURE;
+    RTRC_RHI_API OPtr<BackBufferSemaphore> GetPresentSemaphore() RTRC_RHI_API_PURE;
 
     RTRC_RHI_API int                GetRenderTargetCount() const RTRC_RHI_API_PURE;
     RTRC_RHI_API const TextureDesc &GetRenderTargetDesc() const RTRC_RHI_API_PURE;
@@ -1567,11 +1567,15 @@ public:
     RTRC_RHI_API void SetViewportsWithCount(Span<Viewport> viewports) RTRC_RHI_API_PURE;
     RTRC_RHI_API void SetScissorsWithCount (Span<Scissor> scissors)   RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API void SetVertexBuffer(int slot, Span<BufferPtr> buffers, Span<size_t> byteOffsets, Span<size_t> byteStrides) RTRC_RHI_API_PURE;
+    RTRC_RHI_API void SetVertexBuffer(
+        int              slot,
+        Span<BufferRPtr> buffers,
+        Span<size_t>     byteOffsets,
+        Span<size_t>     byteStrides) RTRC_RHI_API_PURE;
     RTRC_RHI_API void SetIndexBuffer(
-        const BufferPtr  &buffer,
+        const BufferRPtr  &buffer,
         size_t            byteOffset,
-        IndexFormat format) RTRC_RHI_API_PURE;
+        IndexFormat       format) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void SetStencilReferenceValue(uint8_t value) RTRC_RHI_API_PURE;
     
@@ -1609,10 +1613,10 @@ public:
 
     // Indirect draw
 
-    RTRC_RHI_API void DispatchIndirect(const BufferPtr &buffer, size_t byteOffset) RTRC_RHI_API_PURE;
+    RTRC_RHI_API void DispatchIndirect(const BufferRPtr &buffer, size_t byteOffset) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void DrawIndexedIndirect(
-        const BufferPtr &buffer, uint32_t drawCount, size_t byteOffset, size_t byteStride) RTRC_RHI_API_PURE;
+        const BufferRPtr &buffer, uint32_t drawCount, size_t byteOffset, size_t byteStride) RTRC_RHI_API_PURE;
 
     // Copy
 

@@ -70,13 +70,13 @@ public:
 
     void WaitIdle() RTRC_RHI_OVERRIDE;
 
-    BlasUPtr CreateBlas(const BufferPtr &buffer, size_t offset, size_t size) RTRC_RHI_OVERRIDE;
-    TlasUPtr CreateTlas(const BufferPtr &buffer, size_t offset, size_t size) RTRC_RHI_OVERRIDE;
+    BlasUPtr CreateBlas(const BufferRPtr &buffer, size_t offset, size_t size) RTRC_RHI_OVERRIDE;
+    TlasUPtr CreateTlas(const BufferRPtr &buffer, size_t offset, size_t size) RTRC_RHI_OVERRIDE;
 
-    BlasPrebuildInfoPtr CreateBlasPrebuildInfo(
+    BlasPrebuildInfoUPtr CreateBlasPrebuildInfo(
         Span<RayTracingGeometryDesc>              geometries,
         RayTracingAccelerationStructureBuildFlags flags) RTRC_RHI_OVERRIDE;
-    TlasPrebuildInfoPtr CreateTlasPrebuildInfo(
+    TlasPrebuildInfoUPtr CreateTlasPrebuildInfo(
         const RayTracingInstanceArrayDesc        &instances,
         RayTracingAccelerationStructureBuildFlags flags) RTRC_RHI_OVERRIDE;
 

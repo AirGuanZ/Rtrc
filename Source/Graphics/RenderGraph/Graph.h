@@ -72,9 +72,9 @@ public:
     TlasResource    *RegisterTlas(RC<Tlas> tlas, BufferResource *internalBuffer);
 
     TextureResource *RegisterSwapchainTexture(
-        RHI::TexturePtr             rhiTexture,
-        RHI::BackBufferSemaphorePtr acquireSemaphore,
-        RHI::BackBufferSemaphorePtr presentSemaphore);
+        RHI::TextureRPtr             rhiTexture,
+        RHI::BackBufferSemaphoreOPtr acquireSemaphore,
+        RHI::BackBufferSemaphoreOPtr presentSemaphore);
     TextureResource *RegisterSwapchainTexture(RHI::SwapchainOPtr swapchain);
 
     void SetCompleteFence(RHI::FenceOPtr fence);
@@ -216,8 +216,8 @@ private:
 
         using ExternalTextureResource::ExternalTextureResource;
 
-        RHI::BackBufferSemaphorePtr acquireSemaphore;
-        RHI::BackBufferSemaphorePtr presentSemaphore;
+        RHI::BackBufferSemaphoreOPtr acquireSemaphore;
+        RHI::BackBufferSemaphoreOPtr presentSemaphore;
     };
 
     ObserverPtr<Device> device_;

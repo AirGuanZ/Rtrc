@@ -26,7 +26,7 @@ private:
 
     struct PooledRecord
     {
-        RHI::BufferPtr rhiBuffer;
+        RHI::BufferRPtr rhiBuffer;
         BufferState state;
     };
 

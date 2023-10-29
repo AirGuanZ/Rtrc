@@ -66,12 +66,12 @@
 
 RTRC_RHI_BEGIN
 
-inline Viewport Viewport::Create(const TexturePtr &tex, float minDepth, float maxDepth)
+inline Viewport Viewport::Create(const TextureOPtr &tex, float minDepth, float maxDepth)
 {
     return Create(tex->GetDesc(), minDepth, maxDepth);
 }
 
-inline Scissor Scissor::Create(const TexturePtr &tex)
+inline Scissor Scissor::Create(const TextureOPtr &tex)
 {
     return Create(tex->GetDesc());
 }

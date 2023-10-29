@@ -47,8 +47,8 @@ public:
     void SetViewportsWithCount(Span<Viewport> viewports) RTRC_RHI_OVERRIDE;
     void SetScissorsWithCount(Span<Scissor> scissors) RTRC_RHI_OVERRIDE;
 
-    void SetVertexBuffer(int slot, Span<BufferPtr> buffers, Span<size_t> byteOffsets, Span<size_t> byteStrides) RTRC_RHI_OVERRIDE;
-    void SetIndexBuffer(const BufferPtr &buffer, size_t byteOffset, IndexFormat format) RTRC_RHI_OVERRIDE;
+    void SetVertexBuffer(int slot, Span<BufferRPtr> buffers, Span<size_t> byteOffsets, Span<size_t> byteStrides) RTRC_RHI_OVERRIDE;
+    void SetIndexBuffer(const BufferRPtr &buffer, size_t byteOffset, IndexFormat format) RTRC_RHI_OVERRIDE;
 
     void SetStencilReferenceValue(uint8_t value) RTRC_RHI_OVERRIDE;
 
@@ -82,10 +82,10 @@ public:
         const ShaderBindingTableRegion &hitSbt,
         const ShaderBindingTableRegion &callableSbt) RTRC_RHI_OVERRIDE;
 
-    void DispatchIndirect(const BufferPtr &buffer, size_t byteOffset) RTRC_RHI_OVERRIDE;
+    void DispatchIndirect(const BufferRPtr &buffer, size_t byteOffset) RTRC_RHI_OVERRIDE;
 
     void DrawIndexedIndirect(
-        const BufferPtr &buffer, uint32_t drawCount, size_t byteOffset, size_t byteStride) RTRC_RHI_OVERRIDE;
+        const BufferRPtr &buffer, uint32_t drawCount, size_t byteOffset, size_t byteStride) RTRC_RHI_OVERRIDE;
 
     void CopyBuffer(Buffer *dst, size_t dstOffset, Buffer *src, size_t srcOffset, size_t range) RTRC_RHI_OVERRIDE;
     void CopyBufferToColorTexture2D(

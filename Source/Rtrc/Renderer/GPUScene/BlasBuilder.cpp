@@ -51,7 +51,7 @@ BlasBuilder::BuildInfo BlasBuilder::Prepare(
 
 void BlasBuilder::Build(CommandBuffer &commandBuffer, const BuildInfo &buildInfo)
 {
-    commandBuffer.BuildBlas(buildInfo.blas, buildInfo.geometryDesc, buildInfo.prebuildInfo, nullptr);
+    commandBuffer.BuildBlas(buildInfo.blas, buildInfo.geometryDesc, *buildInfo.prebuildInfo, nullptr);
     needBarrier_ = true;
 }
 

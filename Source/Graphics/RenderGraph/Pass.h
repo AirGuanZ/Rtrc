@@ -44,8 +44,8 @@ class Pass
 {
 public:
 
-    using Callback = std::function<void()>;
-    using LegacyCallback = std::function<void(PassContext &)>;
+    using Callback = std::move_only_function<void()>;
+    using LegacyCallback = std::move_only_function<void(PassContext &)>;
 
     friend void Connect(Pass *head, Pass *tail);
 
@@ -60,7 +60,7 @@ public:
     Pass *SetCallback(Callback callback);
     Pass *SetCallback(LegacyCallback callback);
 
-    Pass *SetSignalFence(RHI::FencePtr fence);
+    Pass *SetSignalFence(RHI::FenceRPtr fence);
 
 private:
 
@@ -74,9 +74,9 @@ private:
 
     Pass(int index, const LabelStack::Node *node);
     
-    int           index_;
-    Callback      callback_;
-    RHI::FencePtr signalFence_;
+    int            index_;
+    Callback       callback_;
+    RHI::FenceRPtr signalFence_;
 
     const LabelStack::Node *nameNode_;
 

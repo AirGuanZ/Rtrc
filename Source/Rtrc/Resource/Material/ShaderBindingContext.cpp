@@ -33,7 +33,8 @@ void ShaderBindingContext::ApplyGroupsToComputePipieline(const CommandBuffer &co
     ApplyGroupsToComputePipieline(commandBuffer.GetRHIObject(), shader);
 }
 
-void ShaderBindingContext::ApplyGroupsToGraphicsPipeline(const RHI::CommandBufferPtr &commandBuffer, const RC<Shader> &shader)
+void ShaderBindingContext::ApplyGroupsToGraphicsPipeline(
+    const RHI::CommandBufferRPtr &commandBuffer, const RC<Shader> &shader)
 {
     // TODO: local cache for already bound groups
 
@@ -59,7 +60,8 @@ void ShaderBindingContext::ApplyGroupsToGraphicsPipeline(const RHI::CommandBuffe
     }
 }
 
-void ShaderBindingContext::ApplyGroupsToComputePipieline(const RHI::CommandBufferPtr &commandBuffer, const RC<Shader> &shader)
+void ShaderBindingContext::ApplyGroupsToComputePipieline(
+    const RHI::CommandBufferRPtr &commandBuffer, const RC<Shader> &shader)
 {
     // TODO: local cache for already bound groups
 

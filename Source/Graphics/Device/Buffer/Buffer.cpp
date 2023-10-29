@@ -49,7 +49,7 @@ namespace BufferDetail
 
 } // namespace BufferDetail
 
-const RHI::BufferPtr &SubBuffer::GetFullBufferRHIObject()
+const RHI::BufferRPtr &SubBuffer::GetFullBufferRHIObject()
 {
     return GetFullBuffer()->GetRHIObject();
 }

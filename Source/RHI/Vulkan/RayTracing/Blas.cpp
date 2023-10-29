@@ -3,7 +3,7 @@
 
 RTRC_RHI_VK_BEGIN
 
-VulkanBlas::VulkanBlas(VulkanDevice *device, VkAccelerationStructureKHR blas, BufferPtr buffer)
+VulkanBlas::VulkanBlas(VulkanDevice *device, VkAccelerationStructureKHR blas, BufferRPtr buffer)
     : device_(device), blas_(blas), deviceAddress_{}, buffer_(std::move(buffer))
 {
     const VkAccelerationStructureDeviceAddressInfoKHR info =

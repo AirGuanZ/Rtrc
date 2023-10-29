@@ -10,18 +10,18 @@ class Queue
 {
 public:
 
-    explicit Queue(RHI::QueuePtr rhiQueue = nullptr);
+    explicit Queue(RHI::QueueRPtr rhiQueue = nullptr);
 
     void Submit(const CommandBuffer &commandBuffer);
 
-    const RHI::QueuePtr &GetRHIObject() const;
+    const RHI::QueueRPtr &GetRHIObject() const;
 
 private:
 
-    RHI::QueuePtr rhiQueue_;
+    RHI::QueueRPtr rhiQueue_;
 };
 
-inline Queue::Queue(RHI::QueuePtr rhiQueue)
+inline Queue::Queue(RHI::QueueRPtr rhiQueue)
     : rhiQueue_(std::move(rhiQueue))
 {
 
@@ -32,7 +32,7 @@ inline void Queue::Submit(const CommandBuffer &commandBuffer)
     rhiQueue_->Submit({}, {}, commandBuffer.GetRHIObject(), {}, {}, {});
 }
 
-inline const RHI::QueuePtr &Queue::GetRHIObject() const
+inline const RHI::QueueRPtr &Queue::GetRHIObject() const
 {
     return rhiQueue_;
 }

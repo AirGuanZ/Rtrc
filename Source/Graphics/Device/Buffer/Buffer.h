@@ -9,8 +9,8 @@ class Buffer;
 template<typename T>
 class TBufferView;
 
-using BufferSrv = TBufferView<RHI::BufferSrvPtr>;
-using BufferUav = TBufferView<RHI::BufferUavPtr>;
+using BufferSrv = TBufferView<RHI::BufferSrvRPtr>;
+using BufferUav = TBufferView<RHI::BufferUavRPtr>;
 
 class BufferManagerInterface;
 
@@ -20,7 +20,7 @@ namespace BufferImpl
     struct BufferData
     {
         size_t size_ = 0;
-        RHI::BufferPtr rhiBuffer_;
+        RHI::BufferRPtr rhiBuffer_;
 
         RHI::Format defaultViewTexelFormat_ = RHI::Format::Unknown;
         uint32_t defaultViewStructStride_ = 0;
@@ -53,7 +53,7 @@ public:
     virtual size_t GetSubBufferOffset() const = 0;
     virtual size_t GetSubBufferSize() const = 0;
 
-    virtual const RHI::BufferPtr &GetFullBufferRHIObject();
+    virtual const RHI::BufferRPtr &GetFullBufferRHIObject();
     RHI::BufferDeviceAddress GetDeviceAddress();
 
     static RC<SubBuffer> GetSubRange(RC<SubBuffer> buffer, size_t offset, size_t size);
@@ -82,7 +82,7 @@ public:
     
     ~Buffer() override;
 
-    const RHI::BufferPtr &GetRHIObject() const;
+    const RHI::BufferRPtr &GetRHIObject() const;
     void SetName(std::string name);
 
     size_t GetSize() const;
@@ -92,7 +92,7 @@ public:
     size_t GetSubBufferOffset() const override;
     size_t GetSubBufferSize() const override;
 
-    const RHI::BufferPtr &GetFullBufferRHIObject() override;
+    const RHI::BufferRPtr &GetFullBufferRHIObject() override;
 
     void SetDefaultTexelFormat(RHI::Format format);
     void SetDefaultStructStride(size_t stride);
@@ -137,7 +137,7 @@ inline Buffer::~Buffer()
     }
 }
 
-inline const RHI::BufferPtr &Buffer::GetRHIObject() const
+inline const RHI::BufferRPtr &Buffer::GetRHIObject() const
 {
     return rhiBuffer_;
 }
@@ -172,7 +172,7 @@ inline size_t Buffer::GetSubBufferSize() const
     return size_;
 }
 
-inline const RHI::BufferPtr &Buffer::GetFullBufferRHIObject()
+inline const RHI::BufferRPtr &Buffer::GetFullBufferRHIObject()
 {
     return rhiBuffer_;
 }

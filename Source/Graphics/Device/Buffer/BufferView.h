@@ -22,7 +22,7 @@ public:
 
 private:
 
-    static_assert(std::is_same_v<T, RHI::BufferSrvPtr> || std::is_same_v<T, RHI::BufferUavPtr>);
+    static_assert(std::is_same_v<T, RHI::BufferSrvRPtr> || std::is_same_v<T, RHI::BufferUavRPtr>);
 
     RC<Buffer> buffer_;
     T view_;
@@ -54,7 +54,7 @@ TBufferView<T>::TBufferView(RC<Buffer> buffer, size_t byteOffset, RHI::Format fo
         .range = static_cast<uint32_t>(buffer_->GetSize()),
         .stride = static_cast<uint32_t>(structStride)
     };
-    if constexpr(std::is_same_v<T, RHI::BufferSrvPtr>)
+    if constexpr(std::is_same_v<T, RHI::BufferSrvRPtr>)
     {
         view_ = buffer_->GetRHIObject()->CreateSrv(desc);
     }

@@ -19,7 +19,7 @@ public:
     struct BuildInfo
     {
         RC<Blas>                    blas;
-        BlasPrebuildInfo            prebuildInfo;
+        Box<BlasPrebuildInfo>       prebuildInfo;
         RHI::RayTracingGeometryDesc geometryDesc;
     };
 

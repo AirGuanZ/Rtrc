@@ -12,7 +12,7 @@ void DumpBindingGroupLayoutDesc(const RHI::BindingGroupLayoutDesc &desc)
         {
             LogError("    Immutable samplers");
             LogError("    {{");
-            for(const RHI::SamplerPtr &sampler : binding.immutableSamplers)
+            for(const RHI::SamplerRPtr &sampler : binding.immutableSamplers)
             {
                 const RHI::SamplerDesc &samplerDesc = sampler->GetDesc();
                 LogError("        Hash = {}", samplerDesc.Hash());

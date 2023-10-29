@@ -162,21 +162,23 @@ void CSMain(uint2 tid : SV_DispatchThreadID)
     const float currLum = RelativeLuminance(currColor);
     const float2 currMoments = float2(currLum, currLum * currLum);
 
-    float3 prevColor; float2 prevMoments;
-    const bool hasPrev = Reproject(viewZ, worldPos, currNormal, prevColor, prevMoments);
-    if(hasPrev)
+    if(Pass.alpha < 1)
     {
-        const float alpha = Pass.alpha;
-        float3 resolvedColor = lerp(prevColor, currColor, alpha);
-        float2 resolvedMoments = lerp(prevMoments, currMoments, alpha);
-        if(any(!isfinite(resolvedColor)) || any(!isfinite(resolvedMoments)))
+        float3 prevColor; float2 prevMoments;
+        const bool hasPrev = Reproject(viewZ, worldPos, currNormal, prevColor, prevMoments);
+        if(hasPrev)
         {
-            resolvedColor = 0;
-            resolvedMoments = 0;
+            float3 resolvedColor = lerp(prevColor, currColor, Pass.alpha);
+            float2 resolvedMoments = lerp(prevMoments, currMoments, Pass.alpha);
+            if(any(!isfinite(resolvedColor)) || any(!isfinite(resolvedMoments)))
+            {
+                resolvedColor = 0;
+                resolvedMoments = 0;
+            }
+            ResolvedColor[tid] = float4(resolvedColor, 1);
+            ResolvedMoments[tid] = resolvedMoments;
+            return;
         }
-        ResolvedColor[tid] = float4(resolvedColor, 1);
-        ResolvedMoments[tid] = resolvedMoments;
-        return;
     }
 
     ResolvedColor[tid] = float4(currColor, 1);

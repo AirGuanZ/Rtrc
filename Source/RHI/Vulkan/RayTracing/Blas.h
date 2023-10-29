@@ -8,7 +8,7 @@ RTRC_RHI_IMPLEMENT(VulkanBlas, Blas)
 {
 public:
 
-    VulkanBlas(VulkanDevice *device, VkAccelerationStructureKHR blas, BufferPtr buffer);
+    VulkanBlas(VulkanDevice *device, VkAccelerationStructureKHR blas, BufferRPtr buffer);
 
     ~VulkanBlas() override;
 
@@ -21,7 +21,7 @@ private:
     VulkanDevice *device_;
     VkAccelerationStructureKHR blas_;
     BufferDeviceAddress deviceAddress_;
-    BufferPtr buffer_;
+    BufferRPtr buffer_;
 };
 
 RTRC_RHI_VK_END

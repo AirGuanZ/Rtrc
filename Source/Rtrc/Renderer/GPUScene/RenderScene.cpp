@@ -74,12 +74,12 @@ void RenderScene::FrameUpdate(const Config &config, RG::RenderGraph &renderGraph
             std::memcpy(&rhiInstance.transform3x4, &localToWorld, sizeof(rhiInstance.transform3x4));
 
             auto &instance = instanceData.emplace_back();
-            instance.albedoTextureIndex = object.materialCache->albedoTextureEntry.GetOffset();
+            instance.albedoTextureIndex = static_cast<uint16_t>(object.materialCache->albedoTextureEntry.GetOffset());
             instance.albedoScale = object.materialCache->albedoScale;
 
             const uint32_t geometryBufferOffset = object.meshCache->geometryBufferEntry.GetOffset();
             const bool hasIndexBuffer = object.meshCache->hasIndexBuffer;
-            instance.encodedGeometryBufferInfo = geometryBufferOffset | (hasIndexBuffer << 15);
+            instance.encodedGeometryBufferInfo = static_cast<uint16_t>(geometryBufferOffset | (hasIndexBuffer << 15));
         }
 
         // Upload instance data
@@ -123,17 +123,17 @@ void RenderScene::FrameUpdate(const Config &config, RG::RenderGraph &renderGraph
             .instanceCount = static_cast<uint32_t>(rhiInstanceData.size()),
             .instanceData = rhiInstanceDataBuffer->GetDeviceAddress()
         };
-        TlasPrebuildInfo prebuildInfo = device_->CreateTlasPrebuildInfo(
+        Box<TlasPrebuildInfo> prebuildInfo = device_->CreateTlasPrebuildInfo(
             instanceArrayDesc, RHI::RayTracingAccelerationStructureBuildFlags::PreferFastBuild);
 
-        const size_t scratchBufferSize = prebuildInfo.GetBuildScratchBufferSize();
+        const size_t scratchBufferSize = prebuildInfo->GetBuildScratchBufferSize();
         auto scratchBuffer = renderGraph.CreateBuffer(RHI::BufferDesc
         {
             .size  = scratchBufferSize + device_->GetAccelerationStructureScratchBufferAlignment(),
             .usage = RHI::BufferUsage::AccelerationStructureScratch
         });
 
-        const size_t tlasBufferSize = prebuildInfo.GetAccelerationStructureBufferSize();
+        const size_t tlasBufferSize = prebuildInfo->GetAccelerationStructureBufferSize();
         if(!cachedOpaqueTlasBuffer_ || cachedOpaqueTlasBuffer_->GetSize() < tlasBufferSize)
         {
             auto newBuffer = device_->CreateBuffer(RHI::BufferDesc
@@ -154,7 +154,7 @@ void RenderScene::FrameUpdate(const Config &config, RG::RenderGraph &renderGraph
         buildTlasPass_->SetCallback([
             info = std::move(prebuildInfo), instanceArrayDesc, tlas = cachedOpaqueTlas_, scratchBuffer]
         {
-            RG::GetCurrentCommandBuffer().BuildTlas(tlas, instanceArrayDesc, info, scratchBuffer->Get());
+            RG::GetCurrentCommandBuffer().BuildTlas(tlas, instanceArrayDesc, *info, scratchBuffer->Get());
         });
     }
     else

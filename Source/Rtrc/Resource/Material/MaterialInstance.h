@@ -114,7 +114,7 @@ private:
 
     // return binding group index
     template<bool Graphics>
-    void BindPropertiesImpl(FastKeywordSetValue mask, const RHI::CommandBufferPtr &commandBuffer) const;
+    void BindPropertiesImpl(FastKeywordSetValue mask, const RHI::CommandBufferRPtr &commandBuffer) const;
 
     Device                 *device_ = nullptr;
     const MaterialInstance *materialInstance_ = nullptr;

@@ -59,15 +59,14 @@ bool DirectX12Swapchain::Acquire()
     return true;
 }
 
-RPtr<BackBufferSemaphore> DirectX12Swapchain::GetAcquireSemaphore()
+OPtr<BackBufferSemaphore> DirectX12Swapchain::GetAcquireSemaphore()
 {
-    return acquireSemaphore_;
+    return OPtr<BackBufferSemaphore>(acquireSemaphore_.Get());
 }
 
-RPtr<BackBufferSemaphore> DirectX12Swapchain::GetPresentSemaphore()
+OPtr<BackBufferSemaphore> DirectX12Swapchain::GetPresentSemaphore()
 {
-    return acquireSemaphore_;
-    //return presentSemaphores_[frameIndex_];
+    return OPtr<BackBufferSemaphore>(acquireSemaphore_.Get());
 }
 
 bool DirectX12Swapchain::Present()

@@ -40,11 +40,11 @@ private:
     RC<SubBuffer> buffer_;
 };
 
-class BlasPrebuildInfo
+class BlasPrebuildInfo : public Uncopyable
 {
 public:
 
-    const RHI::BlasPrebuildInfoPtr &GetRHIObject() const { return info_; }
+    const RHI::BlasPrebuildInfoUPtr &GetRHIObject() const { return info_; }
 
     size_t GetAccelerationStructureBufferSize() const { return info_->GetPrebuildInfo().accelerationStructureSize; }
     size_t GetUpdateScratchBufferSize()         const { return info_->GetPrebuildInfo().updateScratchSize; }
@@ -54,14 +54,14 @@ private:
 
     friend class AccelerationStructureManager;
 
-    RHI::BlasPrebuildInfoPtr info_;
+    RHI::BlasPrebuildInfoUPtr info_;
 };
 
-class TlasPrebuildInfo
+class TlasPrebuildInfo : public Uncopyable
 {
 public:
 
-    const RHI::TlasPrebuildInfoPtr &GetRHIObject() const { return info_; }
+    const RHI::TlasPrebuildInfoUPtr &GetRHIObject() const { return info_; }
 
     size_t GetAccelerationStructureBufferSize() const { return info_->GetPrebuildInfo().accelerationStructureSize; }
     size_t GetUpdateScratchBufferSize()         const { return info_->GetPrebuildInfo().updateScratchSize; }
@@ -71,7 +71,7 @@ private:
 
     friend class AccelerationStructureManager;
 
-    RHI::TlasPrebuildInfoPtr info_;
+    RHI::TlasPrebuildInfoUPtr info_;
 };
 
 class AccelerationStructureManager : public GeneralGPUObjectManager
@@ -80,10 +80,10 @@ public:
 
     AccelerationStructureManager(RHI::DeviceOPtr device, DeviceSynchronizer &sync);
 
-    BlasPrebuildInfo CreateBlasPrebuildinfo(
+    Box<BlasPrebuildInfo> CreateBlasPrebuildinfo(
         Span<RHI::RayTracingGeometryDesc>              geometries,
         RHI::RayTracingAccelerationStructureBuildFlags flags);
-    TlasPrebuildInfo CreateTlasPrebuildInfo(
+    Box<TlasPrebuildInfo> CreateTlasPrebuildInfo(
         const RHI::RayTracingInstanceArrayDesc        &instances,
         RHI::RayTracingAccelerationStructureBuildFlags flags);
 

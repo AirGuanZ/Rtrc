@@ -37,10 +37,10 @@ public:
 private:
 
     static_assert(
-        std::is_same_v<T, RHI::TextureSrvPtr> ||
-        std::is_same_v<T, RHI::TextureUavPtr> ||
-        std::is_same_v<T, RHI::TextureRtvPtr> ||
-        std::is_same_v<T, RHI::TextureDsvPtr>);
+        std::is_same_v<T, RHI::TextureSrvRPtr> ||
+        std::is_same_v<T, RHI::TextureUavRPtr> ||
+        std::is_same_v<T, RHI::TextureRtvRPtr> ||
+        std::is_same_v<T, RHI::TextureDsvRPtr>);
 
     RC<Texture> texture_;
     T view_;
@@ -77,7 +77,7 @@ TTextureView<T>::TTextureView(
     }
     assert(isArrayView || layerCount == 1);
     
-    if constexpr(std::is_same_v<T, RHI::TextureSrvPtr>)
+    if constexpr(std::is_same_v<T, RHI::TextureSrvRPtr>)
     {
         const RHI::TextureSrvDesc desc =
         {
@@ -90,7 +90,7 @@ TTextureView<T>::TTextureView(
         };
         view_ = texture_->GetRHIObject()->CreateSrv(desc);
     }
-    else if constexpr(std::is_same_v<T, RHI::TextureUavPtr>)
+    else if constexpr(std::is_same_v<T, RHI::TextureUavRPtr>)
     {
         assert(levelCount == 1);
         const RHI::TextureUavDesc desc =
@@ -103,7 +103,7 @@ TTextureView<T>::TTextureView(
         };
         view_ = texture_->GetRHIObject()->CreateUav(desc);
     }
-    else if constexpr(std::is_same_v<T, RHI::TextureRtvPtr>)
+    else if constexpr(std::is_same_v<T, RHI::TextureRtvRPtr>)
     {
         assert(levelCount == 1 && layerCount == 1 && !isArrayView);
         const RHI::TextureRtvDesc desc =
@@ -116,7 +116,7 @@ TTextureView<T>::TTextureView(
     }
     else
     {
-        static_assert(std::is_same_v<T, RHI::TextureDsvPtr>);
+        static_assert(std::is_same_v<T, RHI::TextureDsvRPtr>);
         assert(levelCount == 1 && layerCount == 1 && !isArrayView);
         const RHI::TextureDsvDesc desc =
         {

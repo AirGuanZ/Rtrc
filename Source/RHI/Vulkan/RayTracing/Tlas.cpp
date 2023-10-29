@@ -3,7 +3,7 @@
 
 RTRC_RHI_VK_BEGIN
 
-VulkanTlas::VulkanTlas(VulkanDevice *device, VkAccelerationStructureKHR tlas, BufferPtr buffer)
+VulkanTlas::VulkanTlas(VulkanDevice *device, VkAccelerationStructureKHR tlas, BufferRPtr buffer)
     : device_(device), tlas_(tlas), deviceAddress_{}, buffer_(std::move(buffer))
 {
     const VkAccelerationStructureDeviceAddressInfoKHR info =

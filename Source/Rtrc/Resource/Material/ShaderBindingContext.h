@@ -25,8 +25,8 @@ private:
         RC<BindingGroup> group;
     };
 
-    void ApplyGroupsToGraphicsPipeline(const RHI::CommandBufferPtr &commandBuffer, const RC<Shader> &shader);
-    void ApplyGroupsToComputePipieline(const RHI::CommandBufferPtr &commandBuffer, const RC<Shader> &shader);
+    void ApplyGroupsToGraphicsPipeline(const RHI::CommandBufferRPtr &commandBuffer, const RC<Shader> &shader);
+    void ApplyGroupsToComputePipieline(const RHI::CommandBufferRPtr &commandBuffer, const RC<Shader> &shader);
     
     std::map<std::string, Record, std::less<>> nameToRecord_;
 };

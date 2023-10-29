@@ -58,7 +58,7 @@ private:
         bool signalBackbufferSemaphore = false;
         RHI::PipelineStageFlag signalBackbufferSemaphoreStages = RHI::PipelineStage::None;
 
-        RHI::FencePtr signalFence;
+        RHI::FenceRPtr signalFence;
         std::optional<RHI::TextureTransitionBarrier> swapchainPresentBarrier;
     };
 
@@ -102,7 +102,7 @@ private:
     ObserverPtr<Device> device_;
     const RenderGraph  *graph_;
 
-    std::vector<const Pass*>      sortedPasses_;
+    std::vector<Pass*>            sortedPasses_;
     std::vector<Box<CompilePass>> sortedCompilePasses_;
     std::map<const Pass *, int>   passToSortedIndex_;
 

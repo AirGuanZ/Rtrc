@@ -11,7 +11,7 @@ public:
     DirectX12Tlas(
         DirectX12Device            *device,
         BufferDeviceAddress         deviceAddress,
-        BufferPtr                   buffer,
+        BufferRPtr                  buffer,
         D3D12_CPU_DESCRIPTOR_HANDLE srv)
     {
         device_        = device;
@@ -36,7 +36,7 @@ private:
 
     DirectX12Device            *device_;
     BufferDeviceAddress         deviceAddress_;
-    BufferPtr                   buffer_;
+    BufferRPtr                  buffer_;
     D3D12_CPU_DESCRIPTOR_HANDLE srv_ = {};
 };
 

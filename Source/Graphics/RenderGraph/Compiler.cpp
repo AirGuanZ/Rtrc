@@ -279,7 +279,7 @@ void Compiler::TopologySortPasses()
     sortedPasses_.resize(passes.size());
     for(size_t i = 0; i < sortedPassIndices.size(); ++i)
     {
-        const Pass *pass = passes[sortedPassIndices[i]].get();
+        Pass *pass = passes[sortedPassIndices[i]].get();
         sortedPasses_[i] = pass;
         passToSortedIndex_[pass] = static_cast<int>(i);
     }
@@ -798,7 +798,7 @@ void Compiler::FillSections(ExecutableGraph &output)
         section.passes.reserve(compileSection->passes.size());
         for(const int compilePassIndex : compileSection->passes)
         {
-            const Pass    *&rawPass     = sortedPasses_[compilePassIndex];
+            Pass          *&rawPass     = sortedPasses_[compilePassIndex];
             CompilePass    &compilePass = *sortedCompilePasses_[compilePassIndex];
             ExecutablePass &pass        = section.passes.emplace_back();
 

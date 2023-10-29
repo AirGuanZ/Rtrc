@@ -164,7 +164,7 @@ RG::Pass *MeshRenderingCacheManager::Build(RG::RenderGraph &renderGraph, int max
                 mesh->blas));
             mesh->blas->SetBuffer(device_->CreateBuffer(RHI::BufferDesc
             {
-                .size           = blasBuildInfo.back().prebuildInfo.GetAccelerationStructureBufferSize(),
+                .size           = blasBuildInfo.back().prebuildInfo->GetAccelerationStructureBufferSize(),
                 .usage          = RHI::BufferUsage::AccelerationStructure,
                 .hostAccessType = RHI::BufferHostAccessType::None
             }));

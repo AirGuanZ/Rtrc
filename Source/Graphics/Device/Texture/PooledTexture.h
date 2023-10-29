@@ -24,7 +24,7 @@ private:
 
     struct PooledRecord
     {
-        RHI::TexturePtr rhiTexture;
+        RHI::TextureRPtr rhiTexture;
         TextureSubrscMap<TextureSubrscState> state;
     };
 

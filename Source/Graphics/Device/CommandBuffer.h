@@ -132,7 +132,7 @@ public:
 
     RHI::QueueType GetQueueType() const;
 
-    const RHI::CommandBufferPtr &GetRHIObject() const;
+    const RHI::CommandBufferRPtr &GetRHIObject() const;
 
     // Once begin, the command buffer object is bound with current thread, and cannot be used in any other thread.
     void Begin();
@@ -330,7 +330,7 @@ private:
     Device *device_;
     CommandBufferManager *manager_;
     RHI::QueueType queueType_;
-    RHI::CommandBufferPtr rhiCommandBuffer_;
+    RHI::CommandBufferRPtr rhiCommandBuffer_;
     Pool *pool_;
 #if RTRC_DEBUG
     std::thread::id threadID_;

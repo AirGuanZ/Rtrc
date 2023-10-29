@@ -93,14 +93,14 @@ bool VulkanSwapchain::Acquire()
     throw Exception("Failed to acquire vulkan swapchain image");
 }
 
-RPtr<BackBufferSemaphore> VulkanSwapchain::GetAcquireSemaphore()
+OPtr<BackBufferSemaphore> VulkanSwapchain::GetAcquireSemaphore()
 {
-    return imageAcquireSemaphores_[frameIndex_];
+    return OPtr<BackBufferSemaphore>(imageAcquireSemaphores_[frameIndex_].Get());
 }
 
-RPtr<BackBufferSemaphore> VulkanSwapchain::GetPresentSemaphore()
+OPtr<BackBufferSemaphore> VulkanSwapchain::GetPresentSemaphore()
 {
-    return imagePresentSemaphores_[frameIndex_];
+    return OPtr<BackBufferSemaphore>(imagePresentSemaphores_[frameIndex_].Get());
 }
 
 bool VulkanSwapchain::Present()

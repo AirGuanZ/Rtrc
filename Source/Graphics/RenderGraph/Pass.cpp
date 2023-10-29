@@ -138,10 +138,10 @@ Pass *Pass::SetCallback(Callback callback)
 
 Pass *Pass::SetCallback(LegacyCallback callback)
 {
-    return SetCallback([c = std::move(callback)] { c(GetCurrentPassContext()); });
+    return SetCallback([c = std::move(callback)] () mutable { c(GetCurrentPassContext()); });
 }
 
-Pass *Pass::SetSignalFence(RHI::FencePtr fence)
+Pass *Pass::SetSignalFence(RHI::FenceRPtr fence)
 {
     signalFence_ = std::move(fence);
     return this;

@@ -44,7 +44,7 @@ private:
     Batch GetBatch();
 
     RHI::DeviceOPtr              device_;
-    RHI::QueuePtr                copyQueue_;
+    RHI::QueueRPtr               copyQueue_;
     tbb::concurrent_queue<Batch> batches_;
 };
 

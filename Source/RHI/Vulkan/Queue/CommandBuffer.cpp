@@ -279,7 +279,7 @@ void VulkanCommandBuffer::SetScissorsWithCount(Span<Scissor> scissors)
     vkCmdSetScissorWithCount(commandBuffer_, scissors.GetSize(), vkScissors.data());
 }
 
-void VulkanCommandBuffer::SetVertexBuffer(int slot, Span<BufferPtr> buffers, Span<size_t> byteOffsets, Span<size_t> byteStrides)
+void VulkanCommandBuffer::SetVertexBuffer(int slot, Span<BufferRPtr> buffers, Span<size_t> byteOffsets, Span<size_t> byteStrides)
 {
     std::vector<VkBuffer> vkBuffers(buffers.size());
     for(size_t i = 0; i < buffers.size(); ++i)
@@ -290,7 +290,7 @@ void VulkanCommandBuffer::SetVertexBuffer(int slot, Span<BufferPtr> buffers, Spa
         commandBuffer_, static_cast<uint32_t>(slot), buffers.GetSize(), vkBuffers.data(), byteOffsets.GetData());
 }
 
-void VulkanCommandBuffer::SetIndexBuffer(const BufferPtr &buffer, size_t byteOffset, IndexFormat format)
+void VulkanCommandBuffer::SetIndexBuffer(const BufferRPtr &buffer, size_t byteOffset, IndexFormat format)
 {
     VkBuffer vkBuffer = static_cast<const VulkanBuffer *>(buffer.Get())->_internalGetNativeBuffer();
     const VkIndexType indexType = TranslateIndexFormat(format);
@@ -383,14 +383,14 @@ void VulkanCommandBuffer::TraceRays(
         commandBuffer_, &vkRayGenSbt, &vkMissSbt, &vkHitSbt, &vkCallableSbt, rayCountX, rayCountY, rayCountZ);
 }
 
-void VulkanCommandBuffer::DispatchIndirect(const BufferPtr &buffer, size_t byteOffset)
+void VulkanCommandBuffer::DispatchIndirect(const BufferRPtr &buffer, size_t byteOffset)
 {
     auto vkBuffer = static_cast<VulkanBuffer *>(buffer.Get())->_internalGetNativeBuffer();
     vkCmdDispatchIndirect(commandBuffer_, vkBuffer, byteOffset);
 }
 
 void VulkanCommandBuffer::DrawIndexedIndirect(
-    const BufferPtr &buffer, uint32_t drawCount, size_t byteOffset, size_t byteStride)
+    const BufferRPtr &buffer, uint32_t drawCount, size_t byteOffset, size_t byteStride)
 {
     auto vkBuffer = static_cast<VulkanBuffer *>(buffer.Get())->_internalGetNativeBuffer();
     vkCmdDrawIndexedIndirect(commandBuffer_, vkBuffer, byteOffset, drawCount, static_cast<uint32_t>(byteStride));

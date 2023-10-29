@@ -202,10 +202,10 @@ public:
 
     // Acceleration structure
     
-    BlasPrebuildInfo CreateBlasPrebuildinfo(
+    Box<BlasPrebuildInfo> CreateBlasPrebuildinfo(
         Span<RHI::RayTracingGeometryDesc>              geometries,
         RHI::RayTracingAccelerationStructureBuildFlags flags);
-    TlasPrebuildInfo CreateTlasPrebuildInfo(
+    Box<TlasPrebuildInfo> CreateTlasPrebuildInfo(
         const RHI::RayTracingInstanceArrayDesc        &instances,
         RHI::RayTracingAccelerationStructureBuildFlags flags);
 
@@ -568,14 +568,14 @@ inline RC<Sampler> Device::CreateSampler(const RHI::SamplerDesc &desc)
     return samplerManager_->CreateSampler(desc);
 }
 
-inline BlasPrebuildInfo Device::CreateBlasPrebuildinfo(
+inline Box<BlasPrebuildInfo> Device::CreateBlasPrebuildinfo(
     Span<RHI::RayTracingGeometryDesc>              geometries,
     RHI::RayTracingAccelerationStructureBuildFlags flags)
 {
     return accelerationManager_->CreateBlasPrebuildinfo(geometries, flags);
 }
 
-inline TlasPrebuildInfo Device::CreateTlasPrebuildInfo(
+inline Box<TlasPrebuildInfo> Device::CreateTlasPrebuildInfo(
     const RHI::RayTracingInstanceArrayDesc        &instances,
     RHI::RayTracingAccelerationStructureBuildFlags flags)
 {

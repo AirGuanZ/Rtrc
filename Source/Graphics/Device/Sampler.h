@@ -7,7 +7,7 @@ RTRC_BEGIN
 
 class SamplerManager;
 
-class Sampler : public GeneralGPUObject<RHI::SamplerPtr>, public InObjectCache
+class Sampler : public GeneralGPUObject<RHI::SamplerRPtr>, public InObjectCache
 {
     friend class SamplerManager;
 };

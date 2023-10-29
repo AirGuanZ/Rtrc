@@ -21,7 +21,7 @@ public:
 
     }
 
-    explicit TextureSubrscMap(const RHI::TexturePtr &tex, const T &value = {})
+    explicit TextureSubrscMap(const RHI::TextureOPtr &tex, const T &value = {})
         : TextureSubrscMap(tex->GetDesc(), value)
     {
 

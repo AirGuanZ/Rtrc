@@ -851,7 +851,7 @@ void DirectX12Device::WaitIdle()
     }
 }
 
-BlasUPtr DirectX12Device::CreateBlas(const BufferPtr &buffer, size_t offset, size_t size)
+BlasUPtr DirectX12Device::CreateBlas(const BufferRPtr &buffer, size_t offset, size_t size)
 {
     auto ret = MakeUPtr<DirectX12Blas>();
     auto d3dBuffer = static_cast<DirectX12Buffer *>(buffer.Get());
@@ -860,7 +860,7 @@ BlasUPtr DirectX12Device::CreateBlas(const BufferPtr &buffer, size_t offset, siz
     return BlasUPtr(ret.Release());
 }
 
-TlasUPtr DirectX12Device::CreateTlas(const BufferPtr &buffer, size_t offset, size_t size)
+TlasUPtr DirectX12Device::CreateTlas(const BufferRPtr &buffer, size_t offset, size_t size)
 {
     auto d3dBuffer = static_cast<DirectX12Buffer *>(buffer.Get());
     auto address = d3dBuffer->GetDeviceAddress().address + offset;
@@ -878,16 +878,16 @@ TlasUPtr DirectX12Device::CreateTlas(const BufferPtr &buffer, size_t offset, siz
     return MakeUPtr<DirectX12Tlas>(this, BufferDeviceAddress{ address }, buffer, srv);
 }
 
-BlasPrebuildInfoPtr DirectX12Device::CreateBlasPrebuildInfo(
+BlasPrebuildInfoUPtr DirectX12Device::CreateBlasPrebuildInfo(
     Span<RayTracingGeometryDesc> geometries, RayTracingAccelerationStructureBuildFlags flags)
 {
-    return MakeRPtr<DirectX12BlasPrebuildInfo>(this, geometries, flags);
+    return MakeUPtr<DirectX12BlasPrebuildInfo>(this, geometries, flags);
 }
 
-TlasPrebuildInfoPtr DirectX12Device::CreateTlasPrebuildInfo(
+TlasPrebuildInfoUPtr DirectX12Device::CreateTlasPrebuildInfo(
     const RayTracingInstanceArrayDesc &instances, RayTracingAccelerationStructureBuildFlags flags)
 {
-    return MakeRPtr<DirectX12TlasPrebuildInfo>(this, instances, flags);
+    return MakeUPtr<DirectX12TlasPrebuildInfo>(this, instances, flags);
 }
 
 const ShaderGroupRecordRequirements &DirectX12Device::GetShaderGroupRecordRequirements() const

@@ -9,10 +9,10 @@ class Texture;
 template<typename T>
 class TTextureView;
 
-using TextureSrv = TTextureView<RHI::TextureSrvPtr>;
-using TextureUav = TTextureView<RHI::TextureUavPtr>;
-using TextureRtv = TTextureView<RHI::TextureRtvPtr>;
-using TextureDsv = TTextureView<RHI::TextureDsvPtr>;
+using TextureSrv = TTextureView<RHI::TextureSrvRPtr>;
+using TextureUav = TTextureView<RHI::TextureUavRPtr>;
+using TextureRtv = TTextureView<RHI::TextureRtvRPtr>;
+using TextureDsv = TTextureView<RHI::TextureDsvRPtr>;
 
 namespace TextureImpl
 {
@@ -22,7 +22,7 @@ namespace TextureImpl
     struct TextureData
     {
         RHI::TextureDesc desc_;
-        RHI::TexturePtr rhiTexture_;
+        RHI::TextureRPtr rhiTexture_;
 
         TextureManagerInterface *manager_ = nullptr;
         void *managerSpecificData_ = nullptr;
@@ -49,13 +49,13 @@ class Texture :
 {
 public:
 
-    static RC<Texture> FromRHIObject(RHI::TexturePtr rhiTexture);
+    static RC<Texture> FromRHIObject(RHI::TextureRPtr rhiTexture);
 
     ~Texture() override;
 
     void SetName(std::string name);
 
-    const RHI::TexturePtr &GetRHIObject() const;
+    const RHI::TextureRPtr &GetRHIObject() const;
     const RHI::TextureDesc &GetDesc() const;
 
     RHI::TextureDimension GetDimension() const;
@@ -114,7 +114,7 @@ inline TextureImpl::TextureData &TextureImpl::TextureManagerInterface::GetTextur
     return texture;
 }
 
-inline RC<Texture> Texture::FromRHIObject(RHI::TexturePtr rhiTexture)
+inline RC<Texture> Texture::FromRHIObject(RHI::TextureRPtr rhiTexture)
 {
     auto ret = MakeRC<Texture>();
     ret->desc_ = rhiTexture->GetDesc();
@@ -135,7 +135,7 @@ inline void Texture::SetName(std::string name)
     rhiTexture_->SetName(std::move(name));
 }
 
-inline const RHI::TexturePtr &Texture::GetRHIObject() const
+inline const RHI::TextureRPtr &Texture::GetRHIObject() const
 {
     return rhiTexture_;
 }

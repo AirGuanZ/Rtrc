@@ -1183,7 +1183,7 @@ void VulkanDevice::WaitIdle()
     RTRC_VK_FAIL_MSG(vkDeviceWaitIdle(device_), "Failed to call vkDeviceWaitIdle");
 }
 
-BlasUPtr VulkanDevice::CreateBlas(const BufferPtr &buffer, size_t offset, size_t size)
+BlasUPtr VulkanDevice::CreateBlas(const BufferRPtr &buffer, size_t offset, size_t size)
 {
     auto vkBuffer = static_cast<VulkanBuffer *>(buffer.Get())->_internalGetNativeBuffer();
     const VkAccelerationStructureCreateInfoKHR createInfo =
@@ -1204,7 +1204,7 @@ BlasUPtr VulkanDevice::CreateBlas(const BufferPtr &buffer, size_t offset, size_t
     return MakeUPtr<VulkanBlas>(this, blas, buffer);
 }
 
-TlasUPtr VulkanDevice::CreateTlas(const BufferPtr &buffer, size_t offset, size_t size)
+TlasUPtr VulkanDevice::CreateTlas(const BufferRPtr &buffer, size_t offset, size_t size)
 {
     auto vkBuffer = static_cast<VulkanBuffer *>(buffer.Get())->_internalGetNativeBuffer();
     const VkAccelerationStructureCreateInfoKHR createInfo =
@@ -1225,16 +1225,16 @@ TlasUPtr VulkanDevice::CreateTlas(const BufferPtr &buffer, size_t offset, size_t
     return MakeUPtr<VulkanTlas>(this, tlas, buffer);
 }
 
-BlasPrebuildInfoPtr VulkanDevice::CreateBlasPrebuildInfo(
+BlasPrebuildInfoUPtr VulkanDevice::CreateBlasPrebuildInfo(
     Span<RayTracingGeometryDesc> geometries, RayTracingAccelerationStructureBuildFlags flags)
 {
-    return MakeRPtr<VulkanBlasPrebuildInfo>(this, geometries, flags);
+    return MakeUPtr<VulkanBlasPrebuildInfo>(this, geometries, flags);
 }
 
-TlasPrebuildInfoPtr VulkanDevice::CreateTlasPrebuildInfo(
+TlasPrebuildInfoUPtr VulkanDevice::CreateTlasPrebuildInfo(
     const RayTracingInstanceArrayDesc &instances, RayTracingAccelerationStructureBuildFlags flags)
 {
-    return MakeRPtr<VulkanTlasPrebuildInfo>(this, instances, flags);
+    return MakeUPtr<VulkanTlasPrebuildInfo>(this, instances, flags);
 }
 
 const ShaderGroupRecordRequirements &VulkanDevice::GetShaderGroupRecordRequirements() const

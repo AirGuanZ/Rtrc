@@ -200,7 +200,7 @@ void MaterialPassInstance::BindComputeProperties(const CommandBuffer &commandBuf
 
 template <bool Graphics>
 void MaterialPassInstance::BindPropertiesImpl(
-    FastKeywordSetValue mask, const RHI::CommandBufferPtr &commandBuffer) const
+    FastKeywordSetValue mask, const RHI::CommandBufferRPtr &commandBuffer) const
 {
     auto subLayout = pass_->GetPropertyLayout(mask);
     const int bindingGroupIndex = subLayout->GetBindingGroupIndex();

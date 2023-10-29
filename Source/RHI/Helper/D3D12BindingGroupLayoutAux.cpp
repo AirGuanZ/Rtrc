@@ -41,7 +41,7 @@ namespace Helper
                 std::ranges::transform(
                     binding.immutableSamplers,
                     std::back_inserter(bindingAssignment.immutableSamplers),
-                    [&](const SamplerPtr &s)
+                    [&](const SamplerRPtr &s)
                     {
                         return D3D12BindingAssignment::StaticSamplerRecord{ s->GetDesc(), shaderVisibility };
                     });

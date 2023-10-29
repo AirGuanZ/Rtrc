@@ -29,8 +29,8 @@ struct ExecutablePass
     std::optional<RHI::GlobalMemoryBarrier>    preGlobalBarrier;
     std::vector<RHI::TextureTransitionBarrier> preTextureBarriers;
     std::vector<RHI::BufferTransitionBarrier>  preBufferBarriers;
-    const Pass::Callback                      *callback;
-    const LabelStack::Node             *nameNode;
+    Pass::Callback                            *callback;
+    const LabelStack::Node                    *nameNode;
 
 #if RTRC_RG_DEBUG
     std::set<const Resource *> declaredResources;
@@ -39,14 +39,14 @@ struct ExecutablePass
 
 struct ExecutableSection
 {
-    RHI::BackBufferSemaphorePtr waitAcquireSemaphore;
-    RHI::PipelineStageFlag      waitAcquireSemaphoreStages;
+    RHI::BackBufferSemaphoreOPtr waitAcquireSemaphore;
+    RHI::PipelineStageFlag       waitAcquireSemaphoreStages;
 
     std::vector<ExecutablePass> passes;
 
     StaticVector<RHI::TextureTransitionBarrier, 1> postTextureBarriers;
 
-    RHI::BackBufferSemaphorePtr signalPresentSemaphore;
+    RHI::BackBufferSemaphoreOPtr signalPresentSemaphore;
     RHI::PipelineStageFlag      signalPresentSemaphoreStages;
 
     RHI::FenceOPtr signalFence;
@@ -54,7 +54,7 @@ struct ExecutableSection
 
 struct ExecutableGraph
 {
-    RHI::QueuePtr                  queue;
+    RHI::QueueRPtr                 queue;
     ExecutableResources            resources;
     std::vector<ExecutableSection> sections;
     RHI::FenceOPtr                 completeFence;

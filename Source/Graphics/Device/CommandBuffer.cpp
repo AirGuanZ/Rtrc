@@ -230,7 +230,7 @@ RHI::QueueType CommandBuffer::GetQueueType() const
     return queueType_;
 }
 
-const RHI::CommandBufferPtr &CommandBuffer::GetRHIObject() const
+const RHI::CommandBufferRPtr &CommandBuffer::GetRHIObject() const
 {
     CheckThreadID();
     return rhiCommandBuffer_;
@@ -566,7 +566,7 @@ void CommandBuffer::SetVertexBuffer(int slot, const RC<SubBuffer> &buffer, size_
 void CommandBuffer::SetVertexBuffers(int slot, Span<RC<SubBuffer>> buffers, Span<size_t> byteStrides)
 {
     CheckThreadID();
-    std::vector<RHI::BufferPtr> rhiBuffers(buffers.size());
+    std::vector<RHI::BufferRPtr> rhiBuffers(buffers.size());
     std::vector<size_t> rhiByteOffsets(buffers.size());
     for(size_t i = 0; i < buffers.size(); ++i)
     {
@@ -722,7 +722,7 @@ void CommandBuffer::BuildBlas(
     const RC<SubBuffer>                           &scratchBuffer)
 {
     auto prebuildInfo = device_->CreateBlasPrebuildinfo(geometries, flags);
-    BuildBlas(blas, geometries, prebuildInfo, scratchBuffer);
+    BuildBlas(blas, geometries, *prebuildInfo, scratchBuffer);
 }
 
 void CommandBuffer::BuildBlas(
@@ -773,7 +773,7 @@ void CommandBuffer::BuildTlas(
     const RC<SubBuffer>                           &scratchBuffer)
 {
     auto prebuildInfo = device_->CreateTlasPrebuildInfo(instances, flags);
-    return BuildTlas(tlas, instances, prebuildInfo, scratchBuffer);
+    return BuildTlas(tlas, instances, *prebuildInfo, scratchBuffer);
 }
 
 void CommandBuffer::BuildTlas(

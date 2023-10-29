@@ -3,7 +3,7 @@
 
 RTRC_BEGIN
 
-DeviceSynchronizer::DeviceSynchronizer(RHI::DeviceOPtr device, RHI::QueuePtr queue)
+DeviceSynchronizer::DeviceSynchronizer(RHI::DeviceOPtr device, RHI::QueueRPtr queue)
     : device_(std::move(device))
     , queue_(std::move(queue))
     , renderLoopFrameIndex_(0)
@@ -16,7 +16,7 @@ DeviceSynchronizer::~DeviceSynchronizer()
     device_->WaitIdle();
 }
 
-const RHI::QueuePtr &DeviceSynchronizer::GetQueue() const
+const RHI::QueueRPtr &DeviceSynchronizer::GetQueue() const
 {
     return queue_;
 }

@@ -13,7 +13,7 @@ public:
         return deviceAddress_;
     }
 
-    void _internalSetBuffer(BufferDeviceAddress deviceAddress, BufferPtr buffer)
+    void _internalSetBuffer(BufferDeviceAddress deviceAddress, BufferRPtr buffer)
     {
         deviceAddress_ = deviceAddress;
         buffer_ = std::move(buffer);
@@ -22,7 +22,7 @@ public:
 private:
 
     BufferDeviceAddress deviceAddress_;
-    BufferPtr buffer_;
+    BufferRPtr buffer_;
 };
 
 RTRC_RHI_D3D12_END

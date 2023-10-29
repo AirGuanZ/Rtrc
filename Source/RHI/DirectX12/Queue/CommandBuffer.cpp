@@ -252,7 +252,7 @@ void DirectX12CommandBuffer::SetScissorsWithCount(Span<Scissor> scissors)
     SetScissors(scissors);
 }
 
-void DirectX12CommandBuffer::SetVertexBuffer(int slot, Span<BufferPtr> buffers, Span<size_t> byteOffsets, Span<size_t> byteStrides)
+void DirectX12CommandBuffer::SetVertexBuffer(int slot, Span<BufferRPtr> buffers, Span<size_t> byteOffsets, Span<size_t> byteStrides)
 {
     std::vector<D3D12_VERTEX_BUFFER_VIEW> views;
     views.reserve(buffers.size());
@@ -271,7 +271,7 @@ void DirectX12CommandBuffer::SetVertexBuffer(int slot, Span<BufferPtr> buffers, 
     commandList_->IASetVertexBuffers(slot, static_cast<UINT>(views.size()), views.data());
 }
 
-void DirectX12CommandBuffer::SetIndexBuffer(const BufferPtr &buffer, size_t byteOffset, IndexFormat format)
+void DirectX12CommandBuffer::SetIndexBuffer(const BufferRPtr &buffer, size_t byteOffset, IndexFormat format)
 {
     DXGI_FORMAT d3dFormat; size_t stride;
     if(format == IndexFormat::UInt16)
@@ -363,7 +363,7 @@ void DirectX12CommandBuffer::TraceRays(
     commandList_->DispatchRays(&desc);
 }
 
-void DirectX12CommandBuffer::DispatchIndirect(const BufferPtr &buffer, size_t byteOffset)
+void DirectX12CommandBuffer::DispatchIndirect(const BufferRPtr &buffer, size_t byteOffset)
 {
     auto d3dBuffer = static_cast<DirectX12Buffer*>(buffer.Get())->_internalGetNativeBuffer().Get();
     auto commandSignature = device_->_internalGetIndirectDispatchCommandSignature();
@@ -371,7 +371,7 @@ void DirectX12CommandBuffer::DispatchIndirect(const BufferPtr &buffer, size_t by
 }
 
 void DirectX12CommandBuffer::DrawIndexedIndirect(
-    const BufferPtr &buffer, uint32_t drawCount, size_t byteOffset, size_t byteStride)
+    const BufferRPtr &buffer, uint32_t drawCount, size_t byteOffset, size_t byteStride)
 {
     auto d3dBuffer = static_cast<DirectX12Buffer *>(buffer.Get())->_internalGetNativeBuffer().Get();
     auto commandSignature = device_->_internalGetIndirectDrawIndexedCommandSignature();

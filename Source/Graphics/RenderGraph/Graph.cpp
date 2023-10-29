@@ -121,9 +121,9 @@ TlasResource *RenderGraph::RegisterTlas(RC<Tlas> tlas, BufferResource *internalB
 }
 
 TextureResource *RenderGraph::RegisterSwapchainTexture(
-    RHI::TexturePtr             rhiTexture,
-    RHI::BackBufferSemaphorePtr acquireSemaphore,
-    RHI::BackBufferSemaphorePtr presentSemaphore)
+    RHI::TextureRPtr             rhiTexture,
+    RHI::BackBufferSemaphoreOPtr acquireSemaphore,
+    RHI::BackBufferSemaphoreOPtr presentSemaphore)
 {
     assert(!swapchainTexture_);
     const int index = static_cast<int>(textures_.size());

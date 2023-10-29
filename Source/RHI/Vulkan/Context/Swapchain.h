@@ -22,9 +22,8 @@ public:
 
     bool Acquire() RTRC_RHI_OVERRIDE;
 
-    RPtr<BackBufferSemaphore> GetAcquireSemaphore() RTRC_RHI_OVERRIDE;
-
-    RPtr<BackBufferSemaphore> GetPresentSemaphore() RTRC_RHI_OVERRIDE;
+    OPtr<BackBufferSemaphore> GetAcquireSemaphore() RTRC_RHI_OVERRIDE;
+    OPtr<BackBufferSemaphore> GetPresentSemaphore() RTRC_RHI_OVERRIDE;
 
     bool Present() RTRC_RHI_OVERRIDE;
 
