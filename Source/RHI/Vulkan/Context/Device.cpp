@@ -126,7 +126,7 @@ namespace VkDeviceDetail
             .mipLevels             = desc.mipLevels,
             .arrayLayers           = arrayLayers,
             .samples               = TranslateSampleCount(static_cast<int>(desc.sampleCount)),
-            .tiling                = VK_IMAGE_TILING_OPTIMAL,
+            .tiling                = desc.linearHint ? VK_IMAGE_TILING_LINEAR : VK_IMAGE_TILING_OPTIMAL,
             .usage                 = TranslateTextureUsageFlag(desc.usage),
             .sharingMode           = sharingMode,
             .queueFamilyIndexCount = static_cast<uint32_t>(ret.queueFamilyIndices.GetSize()),

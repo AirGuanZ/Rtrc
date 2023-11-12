@@ -84,8 +84,7 @@ DirectX12Device::DirectX12Device(
     {
         copyQueue_ = MakeRPtr<DirectX12Queue>(this, queues.copyQueue, QueueType::Transfer);
     }
-    // presentQueue_  = MakeRPtr<DirectX12Queue>(this, queues.presentQueue, QueueType::Graphics);
-
+    
     const D3D12_INDIRECT_ARGUMENT_DESC indirectDispatchArgDesc =
     {
         .Type = D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH,
@@ -132,6 +131,10 @@ DirectX12Device::DirectX12Device(
 
     srvUavCbvDescriptorSize_ = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
     samplerDescriptorSize_ = device_->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER);
+
+    RTRC_D3D12_FAIL_MSG(
+        device_->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &featureOptions_, sizeof(featureOptions_)),
+        "Fail to check d3d12 feature support of D3D12_FEATURE_D3D12_OPTIONS");
 }
 
 DirectX12Device::~DirectX12Device()
@@ -659,60 +662,7 @@ void DirectX12Device::CopyBindingGroup(
 
 UPtr<Texture> DirectX12Device::CreateTexture(const TextureDesc &desc)
 {
-    D3D12_RESOURCE_DIMENSION dimension;
-    if(desc.dim == TextureDimension::Tex2D)
-    {
-        dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-    }
-    else if(desc.dim == TextureDimension::Tex3D)
-    {
-        dimension = D3D12_RESOURCE_DIMENSION_TEXTURE3D;
-    }
-    else
-    {
-        Unreachable();
-    }
-
-    D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
-    if(desc.usage.Contains(TextureUsage::RenderTarget))
-    {
-        flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
-    }
-    if(desc.usage.Contains(TextureUsage::DepthStencil))
-    {
-        flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-    }
-    if(desc.usage.Contains(TextureUsage::UnorderAccess))
-    {
-        flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-    }
-    if(desc.concurrentAccessMode == QueueConcurrentAccessMode::Concurrent)
-    {
-        flags |= D3D12_RESOURCE_FLAG_ALLOW_SIMULTANEOUS_ACCESS;
-    }
-    if(!desc.usage.Contains(TextureUsage::ShaderResource) &&
-       desc.usage.Contains(TextureUsage::DepthStencil))
-    {
-        flags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
-    }
-    if(desc.usage.Contains(TextureUsage::ClearColor))
-    {
-        flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
-    }
-
-    const D3D12_RESOURCE_DESC resourceDesc =
-    {
-        .Dimension        = dimension,
-        .Alignment        = 0,
-        .Width            = desc.width,
-        .Height           = desc.height,
-        .DepthOrArraySize = static_cast<UINT16>(desc.dim == TextureDimension::Tex3D ? desc.depth : desc.arraySize),
-        .MipLevels        = static_cast<UINT16>(desc.mipLevels),
-        .Format           = TranslateFormat(desc.format),
-        .SampleDesc       = DXGI_SAMPLE_DESC{ desc.sampleCount, 0 },
-        .Layout           = D3D12_TEXTURE_LAYOUT_UNKNOWN,
-        .Flags            = flags
-    };
+    const D3D12_RESOURCE_DESC resourceDesc = TranslateTextureDesc(desc);
     const D3D12MA::ALLOCATION_DESC allocDesc =
     {
         .HeapType = D3D12_HEAP_TYPE_DEFAULT // Upload/readback are done using staging buffers
@@ -747,23 +697,12 @@ UPtr<Texture> DirectX12Device::CreateTexture(const TextureDesc &desc)
             rawAlloc.GetAddressOf(), IID_PPV_ARGS(resource.GetAddressOf())),
         "Fail to create directx12 texture resource");
     
-    DirectX12MemoryAllocation alloc = { allocator_.Get(), std::move(rawAlloc) };
+    DirectX12MemoryAllocation alloc = { std::move(rawAlloc) };
     return MakeUPtr<DirectX12Texture>(desc, this, std::move(resource), std::move(alloc));
 }
 
 UPtr<Buffer> DirectX12Device::CreateBuffer(const BufferDesc &desc)
 {
-    D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
-    if(desc.usage & (BufferUsage::ShaderRWBuffer | BufferUsage::ShaderRWStructuredBuffer))
-    {
-        flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-    }
-    if(desc.usage.Contains(BufferUsage::AccelerationStructure))
-    {
-        flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-        flags |= D3D12_RESOURCE_FLAG_RAYTRACING_ACCELERATION_STRUCTURE;
-    }
-
     D3D12_HEAP_TYPE heapType = D3D12_HEAP_TYPE_DEFAULT;
     if(desc.hostAccessType == BufferHostAccessType::Upload)
     {
@@ -773,24 +712,8 @@ UPtr<Buffer> DirectX12Device::CreateBuffer(const BufferDesc &desc)
     {
         heapType = D3D12_HEAP_TYPE_READBACK;
     }
-
-    const D3D12_RESOURCE_DESC resourceDesc =
-    {
-        .Dimension        = D3D12_RESOURCE_DIMENSION_BUFFER,
-        .Alignment        = 0,
-        .Width            = desc.size,
-        .Height           = 1,
-        .DepthOrArraySize = 1,
-        .MipLevels        = 1,
-        .Format           = DXGI_FORMAT_UNKNOWN,
-        .SampleDesc       = { 1, 0 },
-        .Layout           = D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
-        .Flags            = flags
-    };
-    const D3D12MA::ALLOCATION_DESC allocDesc =
-    {
-        .HeapType = heapType
-    };
+    const D3D12MA::ALLOCATION_DESC allocDesc = { .HeapType = heapType };
+    const D3D12_RESOURCE_DESC resourceDesc = TranslateBufferDesc(desc);
 
     D3D12_RESOURCE_STATES initialState = D3D12_RESOURCE_STATE_COMMON;
     if(desc.usage.Contains(BufferUsage::AccelerationStructure))
@@ -806,7 +729,7 @@ UPtr<Buffer> DirectX12Device::CreateBuffer(const BufferDesc &desc)
             rawAlloc.GetAddressOf(), IID_PPV_ARGS(resource.GetAddressOf())),
         "Fail to create directx12 buffer resource");
 
-    DirectX12MemoryAllocation alloc = { allocator_.Get(), std::move(rawAlloc) };
+    DirectX12MemoryAllocation alloc = { std::move(rawAlloc) };
     return MakeUPtr<DirectX12Buffer>(desc, this, std::move(resource), std::move(alloc));
 }
 
@@ -931,6 +854,11 @@ ID3D12CommandSignature *DirectX12Device::_internalGetIndirectDispatchCommandSign
 ID3D12CommandSignature *DirectX12Device::_internalGetIndirectDrawIndexedCommandSignature() const
 {
     return indirectDrawIndexedCommandSignature_.Get();
+}
+
+const D3D12_FEATURE_DATA_D3D12_OPTIONS &DirectX12Device::_internalGetFeatureOptions() const
+{
+    return featureOptions_;
 }
 
 RTRC_RHI_D3D12_END

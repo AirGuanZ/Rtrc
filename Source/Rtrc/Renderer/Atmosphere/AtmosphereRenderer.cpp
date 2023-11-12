@@ -1,5 +1,5 @@
-#include <Rtrc/Renderer/Atmosphere/AtmosphereRenderer.h>
 #include <Core/Math/LowDiscrepancy.h>
+#include <Rtrc/Renderer/Atmosphere/AtmosphereRenderer.h>
 
 #include <Rtrc/Renderer/Atmosphere/Shader/Atmosphere.shader.outh>
 

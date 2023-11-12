@@ -83,6 +83,8 @@ public:
     const ShaderGroupRecordRequirements &GetShaderGroupRecordRequirements() const RTRC_RHI_OVERRIDE;
     const WarpSizeInfo &GetWarpSizeInfo() const RTRC_RHI_OVERRIDE;
 
+    UPtr<TransientResourcePool> CreateTransientResourcePool() RTRC_RHI_OVERRIDE { return nullptr; }
+
     ID3D12Device5 *_internalGetNativeDevice() const { return device_.Get(); }
 
     D3D12_CPU_DESCRIPTOR_HANDLE _internalAllocateCPUDescriptorHandle_CbvSrvUav();
@@ -115,6 +117,10 @@ public:
     ID3D12CommandSignature *_internalGetIndirectDispatchCommandSignature() const;
     ID3D12CommandSignature *_internalGetIndirectDrawIndexedCommandSignature() const;
 
+    const D3D12_FEATURE_DATA_D3D12_OPTIONS &_internalGetFeatureOptions() const;
+
+    const ComPtr<D3D12MA::Allocator> &_internalGetAllocator() const { return allocator_; }
+
 private:
 
     ComPtr<ID3D12Device5>  device_;
@@ -143,6 +149,8 @@ private:
 
     uint32_t srvUavCbvDescriptorSize_;
     uint32_t samplerDescriptorSize_;
+
+    D3D12_FEATURE_DATA_D3D12_OPTIONS featureOptions_;
 };
 
 inline D3D12_CPU_DESCRIPTOR_HANDLE DirectX12Device::_internalAllocateCPUDescriptorHandle_CbvSrvUav()

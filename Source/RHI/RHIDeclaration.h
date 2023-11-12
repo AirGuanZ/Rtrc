@@ -32,7 +32,7 @@ RPtr <T> MakeRPtr(Args&&...args)
 }
 
 class RHIObject;
-using RHIObjectPtr = RPtr <RHIObject>;
+using RHIObjectPtr = RPtr<RHIObject>;
 
 #ifndef RTRC_STATIC_RHI
 
@@ -104,6 +104,7 @@ RTRC_RHI_FORWARD_DECL(BlasPrebuildInfo)
 RTRC_RHI_FORWARD_DECL(TlasPrebuildInfo)
 RTRC_RHI_FORWARD_DECL(Blas)
 RTRC_RHI_FORWARD_DECL(Tlas)
+RTRC_RHI_FORWARD_DECL(TransientResourcePool)
 
 #undef RTRC_RHI_FORWARD_DECL
 
@@ -402,10 +403,10 @@ enum class TextureLayout
 {
     Undefined,
     ColorAttachment,
-    DepthStencilAttachment,                       // Depth stencil attachment
-    DepthStencilReadOnlyAttachment,               // Depth stencil readonly attachment
-    ShaderTexture,                                // Read in shader (Texture<...>)
-    ShaderRWTexture,                              // Read in shader (RWTexture<...>)
+    DepthStencilAttachment,         // Depth stencil attachment
+    DepthStencilReadOnlyAttachment, // Depth stencil readonly attachment
+    ShaderTexture,                  // Read in shader (Texture<...>)
+    ShaderRWTexture,                // Read in shader (RWTexture<...>)
     CopySrc,
     CopyDst,
     ResolveSrc,
@@ -770,31 +771,32 @@ struct TextureDesc
     TextureLayout             initialLayout = TextureLayout::Undefined;
     QueueConcurrentAccessMode concurrentAccessMode = QueueConcurrentAccessMode::Exclusive;
     OptionalClearValue        clearValue;
+    bool                      linearHint = false;
 
     auto operator<=>(const TextureDesc &rhs) const
     {
         return std::make_tuple(
                     dim, format, width, height, arraySize, mipLevels,
-                    sampleCount, usage, initialLayout, concurrentAccessMode, clearValue)
+                    sampleCount, usage, initialLayout, concurrentAccessMode, clearValue, linearHint)
            <=> std::make_tuple(
                     rhs.dim, rhs.format, rhs.width, rhs.height, rhs.arraySize, rhs.mipLevels,
-                    rhs.sampleCount, rhs.usage, rhs.initialLayout, rhs.concurrentAccessMode, rhs.clearValue);
+                    rhs.sampleCount, rhs.usage, rhs.initialLayout, rhs.concurrentAccessMode, rhs.clearValue, linearHint);
     }
 
     bool operator==(const TextureDesc &rhs) const
     {
         return std::make_tuple(
                     dim, format, width, height, arraySize, mipLevels,
-                    sampleCount, usage, initialLayout, concurrentAccessMode, clearValue)
+                    sampleCount, usage, initialLayout, concurrentAccessMode, clearValue, linearHint)
            == std::make_tuple(
                     rhs.dim, rhs.format, rhs.width, rhs.height, rhs.arraySize, rhs.mipLevels,
-                    rhs.sampleCount, rhs.usage, rhs.initialLayout, rhs.concurrentAccessMode, rhs.clearValue);
+                    rhs.sampleCount, rhs.usage, rhs.initialLayout, rhs.concurrentAccessMode, rhs.clearValue, linearHint);
     }
 
     size_t Hash() const
     {
         return Rtrc::Hash(
-            dim, format, width, height, depth, mipLevels, sampleCount, usage, initialLayout, concurrentAccessMode);
+            dim, format, width, height, depth, mipLevels, sampleCount, usage, initialLayout, concurrentAccessMode, linearHint);
     }
 };
 
@@ -1206,6 +1208,37 @@ struct WarpSizeInfo
     uint32_t maxSize;
 };
 
+struct TransientResourcePoolDesc
+{
+    size_t chunkSizeHint;
+};
+
+struct TransientBufferDeclaration
+{
+    BufferDesc desc;
+    int beginPass;
+    int endPass;
+
+    BufferRPtr buffer;
+};
+
+struct TransientTextureDeclaration
+{
+    TextureDesc desc;
+    int beginPass;
+    int endPass;
+
+    TextureRPtr texture;
+};
+
+using TransientResourceDeclaration = Variant<TransientBufferDeclaration, TransientTextureDeclaration>;
+
+struct AliasedTransientResourcePair
+{
+    int first;
+    int second;
+};
+
 // =============================== rhi interfaces ===============================
 
 class RHIObject : public ReferenceCounted, public Uncopyable
@@ -1435,6 +1468,8 @@ public:
 
     RTRC_RHI_API const ShaderGroupRecordRequirements &GetShaderGroupRecordRequirements() const RTRC_RHI_API_PURE;
     RTRC_RHI_API const WarpSizeInfo &GetWarpSizeInfo() const RTRC_RHI_API_PURE;
+
+    RTRC_RHI_API UPtr<TransientResourcePool> CreateTransientResourcePool() RTRC_RHI_API_PURE;
 };
 
 class BackBufferSemaphore : public RHIObject
@@ -1821,6 +1856,19 @@ class Tlas : public RHIObject
 public:
 
     RTRC_RHI_API BufferDeviceAddress GetDeviceAddress() const RTRC_RHI_API_PURE;
+};
+
+class TransientResourcePool : public RHIObject
+{
+public:
+
+    virtual int StartHostSynchronizationSession() RTRC_RHI_API_PURE;
+
+    virtual void NotifyExternalHostSynchronization(int sessionIndex) RTRC_RHI_API_PURE;
+
+    virtual void Allocate(
+        MutableSpan<TransientResourceDeclaration> resources,
+        std::vector<AliasedTransientResourcePair> &aliasRelation) RTRC_RHI_API_PURE;
 };
 
 #endif // #ifndef RTRC_STATIC_RHI

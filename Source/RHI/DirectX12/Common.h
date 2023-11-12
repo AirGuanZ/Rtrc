@@ -49,7 +49,6 @@ std::string HResultToString(HRESULT hr);
 
 struct DirectX12MemoryAllocation
 {
-    D3D12MA::Allocator *allocator;
     ComPtr<D3D12MA::Allocation> allocation;
 };
 
@@ -97,5 +96,8 @@ DXGI_FORMAT TranslateRayTracingVertexFormat(RayTracingVertexFormat format);
 
 D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS
     TranslateRayTracingAccelerationStructureBuildFlags(RayTracingAccelerationStructureBuildFlags flags);
+
+D3D12_RESOURCE_DESC TranslateBufferDesc(const BufferDesc &desc);
+D3D12_RESOURCE_DESC TranslateTextureDesc(const TextureDesc &desc);
 
 RTRC_RHI_D3D12_END

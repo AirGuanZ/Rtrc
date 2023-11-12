@@ -533,4 +533,90 @@ D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS
     return ret;
 }
 
+D3D12_RESOURCE_DESC TranslateBufferDesc(const BufferDesc &desc)
+{
+    D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
+    if(desc.usage & (BufferUsage::ShaderRWBuffer | BufferUsage::ShaderRWStructuredBuffer))
+    {
+        flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+    }
+    if(desc.usage.Contains(BufferUsage::AccelerationStructure))
+    {
+        flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+        flags |= D3D12_RESOURCE_FLAG_RAYTRACING_ACCELERATION_STRUCTURE;
+    }
+
+    const D3D12_RESOURCE_DESC resourceDesc =
+    {
+        .Dimension        = D3D12_RESOURCE_DIMENSION_BUFFER,
+        .Alignment        = 0,
+        .Width            = desc.size,
+        .Height           = 1,
+        .DepthOrArraySize = 1,
+        .MipLevels        = 1,
+        .Format           = DXGI_FORMAT_UNKNOWN,
+        .SampleDesc       = { 1, 0 },
+        .Layout           = D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
+        .Flags            = flags
+    };
+    return resourceDesc;
+}
+
+D3D12_RESOURCE_DESC TranslateTextureDesc(const TextureDesc &desc)
+{
+    D3D12_RESOURCE_DIMENSION dimension;
+    if(desc.dim == TextureDimension::Tex2D)
+    {
+        dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+    }
+    else if(desc.dim == TextureDimension::Tex3D)
+    {
+        dimension = D3D12_RESOURCE_DIMENSION_TEXTURE3D;
+    }
+    else
+    {
+        Unreachable();
+    }
+    D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
+    if(desc.usage.Contains(TextureUsage::RenderTarget))
+    {
+        flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+    }
+    if(desc.usage.Contains(TextureUsage::DepthStencil))
+    {
+        flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+    }
+    if(desc.usage.Contains(TextureUsage::UnorderAccess))
+    {
+        flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+    }
+    if(desc.concurrentAccessMode == QueueConcurrentAccessMode::Concurrent)
+    {
+        flags |= D3D12_RESOURCE_FLAG_ALLOW_SIMULTANEOUS_ACCESS;
+    }
+    if(!desc.usage.Contains(TextureUsage::ShaderResource) &&
+       desc.usage.Contains(TextureUsage::DepthStencil))
+    {
+        flags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+    }
+    if(desc.usage.Contains(TextureUsage::ClearColor))
+    {
+        flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+    }
+    const D3D12_RESOURCE_DESC resourceDesc =
+    {
+        .Dimension        = dimension,
+        .Alignment        = 0,
+        .Width            = desc.width,
+        .Height           = desc.height,
+        .DepthOrArraySize = static_cast<UINT16>(desc.dim == TextureDimension::Tex3D ? desc.depth : desc.arraySize),
+        .MipLevels        = static_cast<UINT16>(desc.mipLevels),
+        .Format           = TranslateFormat(desc.format),
+        .SampleDesc       = DXGI_SAMPLE_DESC{ desc.sampleCount, 0 },
+        .Layout           = D3D12_TEXTURE_LAYOUT_UNKNOWN,
+        .Flags            = flags
+    };
+    return resourceDesc;
+}
+
 RTRC_RHI_D3D12_END

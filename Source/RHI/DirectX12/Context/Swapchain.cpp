@@ -22,20 +22,6 @@ DirectX12Swapchain::DirectX12Swapchain(
 
     acquireSemaphore_ = MakeRPtr<DirectX12BackBufferSemaphore>();
     presentSemaphore_ = acquireSemaphore_;
-    //acquireSemaphore_->type = DirectX12BackBufferSemaphore::Acquire;
-    //acquireSemaphore_->fenceValue = 0;
-
-    //presentSemaphores_.resize(imageCount_);
-    //for(auto &s : presentSemaphores_)
-    //{
-    //    s = MakeRPtr<DirectX12BackBufferSemaphore>();
-    //    s->type = DirectX12BackBufferSemaphore::Present;
-    //    s->fenceValue = 0;
-    //    RTRC_D3D12_FAIL_MSG(
-    //        device_->_internalGetNativeDevice()->CreateFence(
-    //            0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(s->fence.GetAddressOf())),
-    //        "Fail to create directx12 fence for swapchain image presentation");
-    //}
 
     images_.resize(imageCount_);
     for(uint32_t i = 0; i < imageCount_; ++i)
@@ -45,7 +31,7 @@ DirectX12Swapchain::DirectX12Swapchain(
             swapchain_->GetBuffer(i, IID_PPV_ARGS(image.GetAddressOf())),
             "Fail to get directx12 swapchain image");
         images_[i] = MakeRPtr<DirectX12Texture>(
-            imageDesc, device_, std::move(image), DirectX12MemoryAllocation{ nullptr, {} });
+            imageDesc, device_, std::move(image), DirectX12MemoryAllocation{ nullptr });
         images_[i]->SetName(fmt::format("SwapChainImage{}", i));
     }
 
@@ -61,12 +47,12 @@ bool DirectX12Swapchain::Acquire()
 
 OPtr<BackBufferSemaphore> DirectX12Swapchain::GetAcquireSemaphore()
 {
-    return OPtr<BackBufferSemaphore>(acquireSemaphore_.Get());
+    return { acquireSemaphore_.Get() };
 }
 
 OPtr<BackBufferSemaphore> DirectX12Swapchain::GetPresentSemaphore()
 {
-    return OPtr<BackBufferSemaphore>(acquireSemaphore_.Get());
+    return { acquireSemaphore_.Get() };
 }
 
 bool DirectX12Swapchain::Present()

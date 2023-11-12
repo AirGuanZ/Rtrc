@@ -33,7 +33,7 @@ struct RenderSettings
     float        ReSTIR_Radius = 25.0f;
     bool         ReSTIR_EnableTemporalReuse = true;
 
-    float        ReSTIR_SVGFTemporalFilterAlpha = 0.1f;
+    float        ReSTIR_SVGFTemporalFilterAlpha = 0.05f;
     unsigned int ReSTIR_SVGFSpatialFilterIterations = 2;
 };
 

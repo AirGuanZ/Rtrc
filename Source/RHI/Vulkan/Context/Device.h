@@ -81,6 +81,8 @@ public:
     const ShaderGroupRecordRequirements &GetShaderGroupRecordRequirements() const RTRC_RHI_OVERRIDE;
     const WarpSizeInfo &GetWarpSizeInfo() const RTRC_RHI_OVERRIDE;
 
+    UPtr<TransientResourcePool> CreateTransientResourcePool() RTRC_RHI_OVERRIDE { return nullptr; }
+
     void _internalSetObjectName(VkObjectType objectType, uint64_t objectHandle, const char *name);
 
     uint32_t _internalGetQueueFamilyIndex(QueueType type) const;

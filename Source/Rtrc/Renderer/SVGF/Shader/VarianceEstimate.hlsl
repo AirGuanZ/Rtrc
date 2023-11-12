@@ -15,6 +15,6 @@ void CSMain(uint2 tid : SV_DispatchThreadID)
 
     // TODO: use spatial color distribution to estimate variance when history info of moments is limited
     const float2 moments = Moments[tid];
-    const float variance = abs(moments.x * moments.x - moments.y);
+    const float variance = abs(moments.x * moments.x - moments.y) / max(moments.x, 1e-5);
     Variance[tid] = variance;
 }

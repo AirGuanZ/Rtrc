@@ -202,7 +202,7 @@ Box<RG::RenderGraph> Device::CreateRenderGraph()
     return MakeBox<RG::RenderGraph>(this, mainQueue_);
 }
 
-RC<Texture> Device::CreateColorTexture2D(uint8_t r, uint8_t g, uint8_t b, uint8_t a, const std::string &name)
+RC<Texture> Device::CreateColorTexture2D(uint8_t r, uint8_t g, uint8_t b, uint8_t a, std::string name)
 {
     auto tex = textureManager_->Create(RHI::TextureDesc
     {
@@ -219,7 +219,7 @@ RC<Texture> Device::CreateColorTexture2D(uint8_t r, uint8_t g, uint8_t b, uint8_
     });
     if(!name.empty())
     {
-        tex->SetName(name);
+        tex->SetName(std::move(name));
     }
     const Vector4b color(b, g, r, a);
     copyContext_->UploadTexture2D(tex, 0, 0, &color, RHI::TextureLayout::ShaderTexture);

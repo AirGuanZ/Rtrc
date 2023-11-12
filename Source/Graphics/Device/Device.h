@@ -112,12 +112,12 @@ public:
 
     // Resource creation & upload
 
-    RC<Buffer>         CreateBuffer(const RHI::BufferDesc &desc);
-    RC<StatefulBuffer> CreatePooledBuffer(const RHI::BufferDesc &desc);
+    RC<Buffer>         CreateBuffer(const RHI::BufferDesc &desc, std::string name = {});
+    RC<StatefulBuffer> CreatePooledBuffer(const RHI::BufferDesc &desc, std::string name = {});
 
-    RC<Texture>         CreateTexture(const RHI::TextureDesc &desc);
-    RC<StatefulTexture> CreatePooledTexture(const RHI::TextureDesc &desc);
-    RC<Texture>         CreateColorTexture2D(uint8_t r, uint8_t g, uint8_t b, uint8_t a, const std::string &name = {});
+    RC<Texture>         CreateTexture(const RHI::TextureDesc &desc, std::string name = {});
+    RC<StatefulTexture> CreatePooledTexture(const RHI::TextureDesc &desc, std::string name = {});
+    RC<Texture>         CreateColorTexture2D(uint8_t r, uint8_t g, uint8_t b, uint8_t a, std::string name = {});
 
     RC<DynamicBuffer> CreateDynamicBuffer();
 
@@ -427,24 +427,44 @@ inline const RHI::FenceUPtr &Device::GetFrameFence()
     return sync_->GetFrameFence();
 }
 
-inline RC<Buffer> Device::CreateBuffer(const RHI::BufferDesc &desc)
+inline RC<Buffer> Device::CreateBuffer(const RHI::BufferDesc &desc, std::string name)
 {
-    return bufferManager_->Create(desc);
+    auto ret = bufferManager_->Create(desc);
+    if(!name.empty())
+    {
+        ret->SetName(std::move(name));
+    }
+    return ret;
 }
 
-inline RC<StatefulBuffer> Device::CreatePooledBuffer(const RHI::BufferDesc &desc)
+inline RC<StatefulBuffer> Device::CreatePooledBuffer(const RHI::BufferDesc &desc, std::string name)
 {
-    return pooledBufferManager_->Create(desc);
+    auto ret = pooledBufferManager_->Create(desc);
+    if(!name.empty())
+    {
+        ret->SetName(std::move(name));
+    }
+    return ret;
 }
 
-inline RC<Texture> Device::CreateTexture(const RHI::TextureDesc &desc)
+inline RC<Texture> Device::CreateTexture(const RHI::TextureDesc &desc, std::string name)
 {
-    return textureManager_->Create(desc);
+    auto ret = textureManager_->Create(desc);
+    if(!name.empty())
+    {
+        ret->SetName(std::move(name));
+    }
+    return ret;
 }
 
-inline RC<StatefulTexture> Device::CreatePooledTexture(const RHI::TextureDesc &desc)
+inline RC<StatefulTexture> Device::CreatePooledTexture(const RHI::TextureDesc &desc, std::string name)
 {
-    return pooledTextureManager_->Create(desc);
+    auto ret = pooledTextureManager_->Create(desc);
+    if(!name.empty())
+    {
+        ret->SetName(std::move(name));
+    }
+    return ret;
 }
 
 inline RC<DynamicBuffer> Device::CreateDynamicBuffer()

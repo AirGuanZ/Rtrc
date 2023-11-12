@@ -14,7 +14,7 @@ rtrc_group(Pass)
     rtrc_define(Texture2D<float3>, PrevNormal)
     rtrc_define(Texture2D<float3>, CurrNormal)
 
-    rtrc_define(Texture2D<float3>, PrevColor)
+    rtrc_define(Texture2D<float4>, PrevColor)
     rtrc_define(Texture2D<float3>, CurrColor)
     rtrc_define(RWTexture2D<float4>, ResolvedColor)
 
@@ -32,6 +32,15 @@ float ComputePointPlaneDistance(float3 o, float3 d, float3 p)
 {
     const float3 op = p - o;
     return dot(op, d);
+}
+
+void SampleFourTexels(Texture2D<float4> tex, float2 coord, out float4 a, out float4 b, out float4 c, out float4 d)
+{
+    const int2 center = int2(floor(coord + 0.5));
+    a = tex[clamp(center - int2(0, 0), int2(0, 0), int2(Pass.resolution - 1))];
+    b = tex[clamp(center - int2(0, 1), int2(0, 0), int2(Pass.resolution - 1))];
+    c = tex[clamp(center - int2(1, 0), int2(0, 0), int2(Pass.resolution - 1))];
+    d = tex[clamp(center - int2(1, 1), int2(0, 0), int2(Pass.resolution - 1))];
 }
 
 void SampleFourTexels(Texture2D<float3> tex, float2 coord, out float3 a, out float3 b, out float3 c, out float3 d)
@@ -61,8 +70,10 @@ void SampleFourTexels(Texture2D<float2> tex, float2 coord, out float2 a, out flo
     d = tex[clamp(center - int2(1, 1), int2(0, 0), int2(Pass.resolution - 1))];
 }
 
-bool Reproject(float viewZ, float3 worldPos, float3 worldNormal, out float3 prevColor, out float2 prevMoments)
+bool Reproject(float viewZ, float3 worldPos, float3 worldNormal, out float3 prevColor, out float2 prevMoments, out float historyFrames)
 {
+    historyFrames = 0;
+
     const float4 prevClip = mul(PrevCamera.worldToClip, float4(worldPos, 1));
     const float2 prevScr = prevClip.xy / prevClip.w;
     if(prevClip.w <= 0 || any(abs(prevScr) >= 1))
@@ -133,9 +144,12 @@ bool Reproject(float viewZ, float3 worldPos, float3 worldNormal, out float3 prev
         unnormalizedWeights.xyz = 0;
     const float4 weights = unnormalizedWeights / max(dot(float4(1, 1, 1, 1), unnormalizedWeights), 1e-4);
 
-    float3 colorA, colorB, colorC, colorD;
+    float4 colorA, colorB, colorC, colorD;
     SampleFourTexels(PrevColor, prevCoord, colorA, colorB, colorC, colorD);
-    prevColor = weights[0] * colorA + weights[1] * colorB + weights[2] * colorC + weights[3] * colorD;
+    prevColor = weights[0] * colorA.xyz + weights[1] * colorB.xyz + weights[2] * colorC.xyz + weights[3] * colorD.xyz;
+    historyFrames = max(
+        max(step(0, weights[0]) * colorA.w, step(0, weights[1]) * colorB.w),
+        max(step(0, weights[2]) * colorC.w, step(0, weights[3]) * colorD.w));
 
     float2 momA, momB, momC, momD;
     SampleFourTexels(PrevMoments, prevCoord, momA, momB, momC, momD);
@@ -143,6 +157,8 @@ bool Reproject(float viewZ, float3 worldPos, float3 worldNormal, out float3 prev
 
     return true;
 }
+
+#define DELTA_HISTORY_FRAMES_T (1.0 / 100)
 
 [numthreads(8, 8, 1)]
 void CSMain(uint2 tid : SV_DispatchThreadID)
@@ -164,23 +180,26 @@ void CSMain(uint2 tid : SV_DispatchThreadID)
 
     if(Pass.alpha < 1)
     {
-        float3 prevColor; float2 prevMoments;
-        const bool hasPrev = Reproject(viewZ, worldPos, currNormal, prevColor, prevMoments);
+        float3 prevColor; float2 prevMoments; float historyFrames;
+        const bool hasPrev = Reproject(viewZ, worldPos, currNormal, prevColor, prevMoments, historyFrames);
         if(hasPrev)
         {
+            const float alpha = lerp(max(Pass.alpha, 0.5), Pass.alpha, historyFrames);
+            historyFrames = saturate(historyFrames + DELTA_HISTORY_FRAMES_T);
             float3 resolvedColor = lerp(prevColor, currColor, Pass.alpha);
             float2 resolvedMoments = lerp(prevMoments, currMoments, Pass.alpha);
             if(any(!isfinite(resolvedColor)) || any(!isfinite(resolvedMoments)))
             {
                 resolvedColor = 0;
                 resolvedMoments = 0;
+                historyFrames = 0;
             }
-            ResolvedColor[tid] = float4(resolvedColor, 1);
+            ResolvedColor[tid] = float4(resolvedColor, historyFrames);
             ResolvedMoments[tid] = resolvedMoments;
             return;
         }
     }
 
-    ResolvedColor[tid] = float4(currColor, 1);
+    ResolvedColor[tid] = float4(currColor, DELTA_HISTORY_FRAMES_T);
     ResolvedMoments[tid] = currMoments;
 }
