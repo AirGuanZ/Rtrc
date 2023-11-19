@@ -1,8 +1,8 @@
-#include <RHI/DirectX12/Resource/TransientResourcePool/MemorySegmentUsageTracker.h>
+#include <RHI/Helper/MemorySegmentUsageTracker.h>
 
-RTRC_RHI_D3D12_BEGIN
+RTRC_RHI_BEGIN
 
-std::vector<int> TransientResourcePoolDetail::MemorySegmentUsageTracker::AddNewUser(
+std::vector<int> MemorySegmentUsageTracker::AddNewUser(
     const void *memoryBlockKey, int resource, size_t offset, size_t size)
 {
     // Initialize new memory block if necessary
@@ -106,4 +106,4 @@ std::vector<int> TransientResourcePoolDetail::MemorySegmentUsageTracker::AddNewU
     return dependencies;
 }
 
-RTRC_RHI_D3D12_END
+RTRC_RHI_END

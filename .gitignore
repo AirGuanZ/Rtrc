@@ -1,15 +1,10 @@
 ﻿/Asset/RtrcGenerated/
 /Asset/
-/bin/
-/build/
 /Build/
 /BuildCMake/
 /External/mimalloc/build/
 /External/llvm16.0.6/install_debug/
 /External/llvm16.0.6/install_release/
-/External/mcpp-2.7.2
-/.xmake/
-/vsxmake2022/
 /GPUCapture.wpix
 *.shader.outh
 *.material.outh

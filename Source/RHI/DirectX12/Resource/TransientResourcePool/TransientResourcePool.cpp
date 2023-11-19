@@ -3,32 +3,40 @@
 #include <RHI/DirectX12/Resource/Buffer.h>
 #include <RHI/DirectX12/Resource/Texture.h>
 #include <RHI/DirectX12/Resource/TransientResourcePool/FreeMemorySegmentSet.h>
-#include <RHI/DirectX12/Resource/TransientResourcePool/MemorySegmentUsageTracker.h>
 #include <RHI/DirectX12/Resource/TransientResourcePool/TransientResourcePool.h>
+#include <RHI/Helper/MemorySegmentUsageTracker.h>
 
 RTRC_RHI_D3D12_BEGIN
 
 DirectX12TransientResourcePool::DirectX12TransientResourcePool(
     DirectX12Device *device, const TransientResourcePoolDesc &desc)
-    : device_(device), memoryBlocks_(device, desc.chunkSizeHint)
+    : device_(device), memoryBlocks_(device, desc.chunkSizeHint), currentSession_(-1)
 {
     resourceHeapTier_ = device->_internalGetFeatureOptions().ResourceHeapTier;
 }
 
 int DirectX12TransientResourcePool::StartHostSynchronizationSession()
 {
-    return memoryBlocks_.StartHostSynchronizationSession();
+    currentSession_ = memoryBlocks_.StartHostSynchronizationSession();
+    return currentSession_;
 }
 
 void DirectX12TransientResourcePool::NotifyExternalHostSynchronization(int session)
 {
     memoryBlocks_.CompleteHostSynchronizationSession(session);
+    auto [first, last] = std::ranges::remove_if(resources_, [&](const ResourceSlot &slot)
+    {
+        return slot.sessionIndex <= session;
+    });
+    resources_.erase(first, last);
 }
 
 void DirectX12TransientResourcePool::Allocate(
     MutableSpan<TransientResourceDeclaration>  resources,
     std::vector<AliasedTransientResourcePair> &aliasRelation)
 {
+    using namespace TransientResourcePoolDetail;
+
     auto d3dDevice = device_->_internalGetNativeDevice();
 
     // Translate resource requests to allocate/release events
@@ -37,7 +45,7 @@ void DirectX12TransientResourcePool::Allocate(
     {
         int       resource;
         Category  category;
-        Alignment heapAlignment;
+        HeapAlignment heapAlignment;
         size_t    size;
         size_t    alignment;
         int       sortKey;
@@ -66,7 +74,7 @@ void DirectX12TransientResourcePool::Allocate(
                 allocate.resource = static_cast<int>(resourceIndex);
                 allocate.category = resourceHeapTier_ == D3D12_RESOURCE_HEAP_TIER_2 ? Category::General
                                                                                     : Category::Buffer;
-                allocate.heapAlignment = Alignment::Regular;
+                allocate.heapAlignment = HeapAlignment::Regular;
                 allocate.size          = allocInfo.SizeInBytes;
                 allocate.alignment     = allocInfo.Alignment;
                 allocate.sortKey       = 2 * bufferDecl.beginPass;
@@ -109,13 +117,13 @@ void DirectX12TransientResourcePool::Allocate(
 
     // Execute all resource events
 
-    TransientResourcePoolDetail::MemorySegmentUsageTracker memorySegmentUsageTracker;
-    TransientResourcePoolDetail::FreeMemorySegmentSet freeMemorySegmentSet[4/*category*/][2/*alignment*/];
+    MemorySegmentUsageTracker memorySegmentUsageTracker;
+    FreeMemorySegmentSet freeMemorySegmentSet[4/*category*/][2/*alignment*/];
 
     struct ResourceAllocation
     {
         Category             category      = Category::General;
-        Alignment            heapAlignment = Alignment::Regular;
+        HeapAlignment            heapAlignment = HeapAlignment::Regular;
         D3D12MA::Allocation *allocation    = nullptr;
         size_t               offset        = 0;
         size_t               size          = 0;
@@ -151,14 +159,14 @@ void DirectX12TransientResourcePool::Allocate(
             return;
         }
 
-        if(allocate.heapAlignment == Alignment::Regular)
+        if(allocate.heapAlignment == HeapAlignment::Regular)
         {
-            const int fallbackHeapAlignmentIndex = std::to_underlying(Alignment::MSAA);
+            const int fallbackHeapAlignmentIndex = std::to_underlying(HeapAlignment::MSAA);
             auto &fallbackFreeBlocks = freeMemorySegmentSet[categoryIndex][fallbackHeapAlignmentIndex];
             mb = fallbackFreeBlocks.Allocate(allocate.size, allocate.alignment);
             if(mb)
             {
-                output.heapAlignment = Alignment::MSAA;
+                output.heapAlignment = HeapAlignment::MSAA;
                 output.allocation    = mb->allocation;
                 output.offset        = mb->offset;
                 output.size          = mb->size;
@@ -228,6 +236,7 @@ void DirectX12TransientResourcePool::Allocate(
                 bufferDecl.buffer = MakeRPtr<DirectX12Buffer>(
                     bufferDecl.desc, device_, std::move(d3d12Resource),
                     DirectX12MemoryAllocation{ nullptr });
+                resources_.push_back({ bufferDecl.buffer, currentSession_ });
             },
             [&](TransientTextureDeclaration &textureDecl)
             {
@@ -262,6 +271,7 @@ void DirectX12TransientResourcePool::Allocate(
 
                 textureDecl.texture = MakeRPtr<DirectX12Texture>(
                     textureDecl.desc, device_, std::move(d3d12Resource), DirectX12MemoryAllocation{ nullptr });
+                resources_.push_back({ textureDecl.texture, currentSession_ });
             });
     }
 }
@@ -278,10 +288,10 @@ DirectX12TransientResourcePool::Category DirectX12TransientResourcePool::GetText
     return isRTDS ? Category::RTDSTexture : Category::NonRTDSTexture;
 }
 
-DirectX12TransientResourcePool::Alignment DirectX12TransientResourcePool::GetTextureHeapAlignment(
+DirectX12TransientResourcePool::HeapAlignment DirectX12TransientResourcePool::GetTextureHeapAlignment(
     const TextureDesc &desc) const
 {
-    return desc.sampleCount != 1 ? Alignment::MSAA : Alignment::Regular;
+    return desc.sampleCount != 1 ? HeapAlignment::MSAA : HeapAlignment::Regular;
 }
 
 RTRC_RHI_D3D12_END

@@ -47,6 +47,11 @@ Compiler::Compiler(ObserverPtr<Device> device, Options options)
     }
 }
 
+void Compiler::SetTransientResourcePool(RHI::TransientResourcePoolOPtr pool)
+{
+    transientResourcePool_ = pool;
+}
+
 void Compiler::Compile(const RenderGraph &graph, ExecutableGraph &result)
 {
     graph_ = &graph;
@@ -59,8 +64,17 @@ void Compiler::Compile(const RenderGraph &graph, ExecutableGraph &result)
 
     result.resources.indexToBuffer.resize(graph_->buffers_.size());
     result.resources.indexToTexture.resize(graph_->textures_.size());
+    aliasedPrevs_.resize(graph.buffers_.size());
+
     FillExternalResources(result.resources);
-    AllocateInternalResources(result.resources);
+    if(transientResourcePool_)
+    {
+        AllocateInternalResources(result.resources, aliasedPrevs_);
+    }
+    else
+    {
+        AllocateInternalResourcesLegacy(result.resources);
+    }
 
     sortedCompilePasses_.resize(sortedPasses_.size());
     for(auto &p : sortedCompilePasses_)
@@ -490,7 +504,7 @@ void Compiler::FillExternalResources(ExecutableResources &output)
     }
 }
 
-void Compiler::AllocateInternalResources(ExecutableResources &output)
+void Compiler::AllocateInternalResourcesLegacy(ExecutableResources &output)
 {
     for(auto &buf : graph_->buffers_)
     {
@@ -530,6 +544,7 @@ void Compiler::AllocateInternalResources(ExecutableResources &output)
                 .usage = desc.usage,
                 .hostAccessType = desc.hostAccessType
             });
+            output.indexToBuffer[resourceIndex].buffer->SetName(std::move(intRsc->name));
         }
         else
         {
@@ -551,20 +566,17 @@ void Compiler::AllocateInternalResources(ExecutableResources &output)
         }
 
         const int resourceIndex = intRsc->GetResourceIndex();
-        auto intTex = TryCastResource<RenderGraph::InternalTextureResource>(intRsc);
-        assert(intTex);
-
-        auto &desc = intTex->rhiDesc;
+        auto &desc = intRsc->rhiDesc;
 
         auto &finalStates = output.indexToTexture[resourceIndex].finalState;
         finalStates = TextureSubrscMap<std::optional<TextureSubrscState>>(
-            intTex->GetMipLevels(), intTex->GetArraySize());
+            intRsc->GetMipLevels(), intRsc->GetArraySize());
         for(auto subrsc : EnumerateSubTextures(intRsc->GetMipLevels(), intRsc->GetArraySize()))
         {
             auto usersIt = subTexUsers_.find({ intRsc, subrsc });
             if(usersIt != subTexUsers_.end())
             {
-                auto &users = subTexUsers_.at({ intRsc, subrsc });
+                auto &users = usersIt->second;
                 const RHI::TextureLayout layout = users.back().usage.layout;
                 RHI::PipelineStageFlag stages = users.back().usage.stages;
                 RHI::ResourceAccessFlag accesses = users.back().usage.accesses;
@@ -584,7 +596,174 @@ void Compiler::AllocateInternalResources(ExecutableResources &output)
 
         output.indexToTexture[resourceIndex].texture = device_->CreatePooledTexture(desc);
         output.indexToTexture[resourceIndex].texture->SetLayoutToUndefined();
-        output.indexToTexture[resourceIndex].texture->SetName(std::move(intTex->name));
+        output.indexToTexture[resourceIndex].texture->SetName(std::move(intRsc->name));
+    }
+}
+
+void Compiler::AllocateInternalResources(ExecutableResources &output, std::vector<std::vector<int>> &aliasedPrevs)
+{
+    std::vector<int> tranasientResourceIndices;
+    std::vector<RHI::TransientResourceDeclaration> transientResourceDecls;
+
+    auto ComputeFinalState = [&]<typename T>(std::vector<ResourceUser<T>> &users)
+    {
+        assert(!users.empty());
+        T state = users.back().usage;
+        for(int j = static_cast<int>(users.size()) - 1;
+            j >= 0 && DontNeedBarrier(users[j].usage, users.back().usage); --j)
+        {
+            state.stages |= users[j].usage.stages;
+            state.accesses |= users[j].usage.accesses;
+        }
+        return state;
+    };
+
+    for(auto &buf : graph_->buffers_)
+    {
+        auto intRsc = TryCastResource<RenderGraph::InternalBufferResource>(buf.get());
+        if(!intRsc)
+        {
+            continue;
+        }
+
+        const int rscIdx = intRsc->GetResourceIndex();
+        auto userIt = bufferUsers_.find(intRsc);
+        if(userIt == bufferUsers_.end()) // skip this resource since no one use it
+        {
+            output.indexToBuffer[rscIdx].buffer = {};
+            output.indexToBuffer[rscIdx].finalState = BufferState{};
+            continue;
+        }
+
+        // Compute final state
+
+        auto &users = userIt->second;
+        output.indexToBuffer[rscIdx].finalState = ComputeFinalState(users);
+
+        // Usage through device address cannot be tracked by debug layer easily. Allocate it separately.
+
+        if(intRsc->rhiDesc.usage.Contains(RHI::BufferUsage::DeviceAddress))
+        {
+            auto &desc = intRsc->rhiDesc;
+            output.indexToBuffer[rscIdx].buffer = device_->CreatePooledBuffer(RHI::BufferDesc
+                {
+                    .size = desc.size,
+                    .usage = desc.usage,
+                    .hostAccessType = desc.hostAccessType
+                });
+            output.indexToBuffer[rscIdx].buffer->SetName(std::move(intRsc->name));
+            continue;
+        }
+
+        // Prepare transient resource declaration
+
+        RHI::TransientBufferDeclaration decl;
+        decl.desc      = intRsc->rhiDesc;
+        decl.beginPass = users.front().passIndex;
+        decl.endPass   = users.back().passIndex;
+        tranasientResourceIndices.push_back(rscIdx);
+        transientResourceDecls.emplace_back(std::move(decl));
+    }
+
+    for(auto& tex : graph_->textures_)
+    {
+        auto intRsc = TryCastResource<RenderGraph::InternalTextureResource>(tex.get());
+        if(!intRsc)
+        {
+            continue;
+        }
+
+        const int rscIdx = intRsc->GetResourceIndex();
+        int begPass = std::numeric_limits<int>::max();
+        int endPass = std::numeric_limits<int>::lowest();
+
+        auto &finalStates = output.indexToTexture[rscIdx].finalState;
+        finalStates = TextureSubrscMap<std::optional<TextureSubrscState>>(
+            intRsc->GetMipLevels(), intRsc->GetArraySize());
+
+        bool used = false;
+        for(auto subrsc : EnumerateSubTextures(intRsc->GetMipLevels(), intRsc->GetArraySize()))
+        {
+            auto userIt = subTexUsers_.find({ intRsc, subrsc });
+            if(userIt != subTexUsers_.end())
+            {
+                used = true;
+                auto &users = userIt->second;
+                begPass = (std::min)(begPass, users.front().passIndex);
+                endPass = (std::max)(endPass, users.back().passIndex);
+                finalStates(subrsc.mipLevel, subrsc.arrayLayer) = ComputeFinalState(users);
+            }
+            else
+            {
+                finalStates(subrsc.mipLevel, subrsc.arrayLayer) = TextureSubrscState{};
+            }
+        }
+
+        if(!used)
+        {
+            continue;
+        }
+
+        RHI::TransientTextureDeclaration decl;
+        decl.desc      = intRsc->rhiDesc;
+        decl.beginPass = begPass;
+        decl.endPass   = endPass;
+        tranasientResourceIndices.push_back(rscIdx);
+        transientResourceDecls.emplace_back(std::move(decl));
+    }
+
+    std::vector<RHI::AliasedTransientResourcePair> aliasedPairs;
+    transientResourcePool_->Allocate(transientResourceDecls, aliasedPairs);
+
+    class TransientBuffer : public Buffer
+    {
+    public:
+
+        TransientBuffer(RHI::BufferRPtr rhiBuffer, RHI::Format defaultTexelFormat, uint32_t defaultStride)
+        {
+            size_                    = rhiBuffer->GetDesc().size;
+            rhiBuffer_               = std::move(rhiBuffer);
+            defaultViewTexelFormat_  = defaultTexelFormat;
+            defaultViewStructStride_ = defaultStride;
+            manager_                 = nullptr;
+        }
+    };
+
+    class TransientTexture : public Texture
+    {
+    public:
+
+        explicit TransientTexture(RHI::TextureRPtr rhiTexture)
+        {
+            desc_       = rhiTexture->GetDesc();
+            rhiTexture_ = std::move(rhiTexture);
+            manager_    = nullptr;
+        }
+    };
+
+    for(auto &pair : aliasedPairs)
+    {
+        const int a = tranasientResourceIndices[pair.first];
+        const int b = tranasientResourceIndices[pair.second];
+        aliasedPrevs[b].push_back(a);
+    }
+
+    for(size_t i = 0; i < tranasientResourceIndices.size(); ++i)
+    {
+        const int rscIdx = tranasientResourceIndices[i];
+        transientResourceDecls[i].Match(
+            [&](RHI::TransientBufferDeclaration &decl)
+            {
+                auto rsc = TryCastResource<RenderGraph::InternalBufferResource>(graph_->buffers_[rscIdx].get());
+                output.indexToBuffer[rscIdx].buffer = StatefulBuffer::FromBuffer(MakeRC<TransientBuffer>(
+                    std::move(decl.buffer), rsc->defaultTexelFormat_, static_cast<uint32_t>(rsc->defaultStructStride_)));
+            },
+            [&](RHI::TransientTextureDeclaration &decl)
+            {
+                output.indexToTexture[rscIdx].texture = StatefulTexture::FromTexture(
+                    MakeRC<TransientTexture>(std::move(decl.texture)));
+            });
+
     }
 }
 
@@ -592,7 +771,38 @@ void Compiler::GenerateBarriers(const ExecutableResources &resources)
 {
     for(auto &[buffer, users] : bufferUsers_)
     {
-        BufferState lastState = resources.indexToBuffer[buffer->GetResourceIndex()].buffer->GetState();
+        const int rscIdx = buffer->GetResourceIndex();
+        if(!resources.indexToBuffer[rscIdx].buffer)
+        {
+            continue;
+        }
+
+        BufferState lastState = resources.indexToBuffer[rscIdx].buffer->GetState();
+        if(!aliasedPrevs_[rscIdx].empty())
+        {
+            assert(lastState.stages == RHI::PipelineStage::None);
+            assert(lastState.accesses == RHI::ResourceAccess::None);
+            for(int prev : aliasedPrevs_[rscIdx])
+            {
+                if(graph_->buffers_[prev])
+                {
+                    auto &prevFinalState = resources.indexToBuffer[prev].finalState;
+                    lastState.stages |= prevFinalState.stages;
+                    lastState.accesses |= prevFinalState.accesses;
+                }
+                else
+                {
+                    for(auto &prevFinalState : resources.indexToTexture[prev].finalState)
+                    {
+                        if(prevFinalState)
+                        {
+                            lastState.stages |= prevFinalState->stages;
+                            lastState.accesses |= prevFinalState->accesses;
+                        }
+                    }
+                }
+            }
+        }
 
         size_t userIndex = 0;
         while(userIndex < users.size())
@@ -645,9 +855,37 @@ void Compiler::GenerateBarriers(const ExecutableResources &resources)
     for(auto &[subTexKey, users] : subTexUsers_)
     {
         auto [tex, subrsc] = subTexKey;
+        const int rscIdx = tex->GetResourceIndex();
         const bool isSwapchainTex = TryCastResource<RenderGraph::SwapchainTexture>(tex);
-        TextureSubrscState lastState = resources.indexToTexture[tex->GetResourceIndex()].texture
+        TextureSubrscState lastState = resources.indexToTexture[rscIdx].texture
                                             ->GetState(subrsc.mipLevel, subrsc.arrayLayer);
+
+        if(!aliasedPrevs_[rscIdx].empty())
+        {
+            assert(lastState.layout == RHI::TextureLayout::Undefined);
+            assert(lastState.stages == RHI::PipelineStage::None);
+            assert(lastState.accesses == RHI::ResourceAccess::None);
+            for(int prev : aliasedPrevs_[rscIdx])
+            {
+                if(graph_->buffers_[prev])
+                {
+                    auto &prevFinalState = resources.indexToBuffer[prev].finalState;
+                    lastState.stages |= prevFinalState.stages;
+                    lastState.accesses |= prevFinalState.accesses;
+                }
+                else
+                {
+                    for(auto &prevFinalState : resources.indexToTexture[prev].finalState)
+                    {
+                        if(prevFinalState)
+                        {
+                            lastState.stages |= prevFinalState->stages;
+                            lastState.accesses |= prevFinalState->accesses;
+                        }
+                    }
+                }
+            }
+        }
 
         size_t userIndex = 0;
         while(userIndex < users.size())
@@ -757,6 +995,7 @@ void Compiler::GenerateBarriers(const ExecutableResources &resources)
 
 void Compiler::FillSections(ExecutableGraph &output)
 {
+    bool initialGlobalBarrierEmitted = false;
     const bool hasGoodBarrierMemoryModel =
         device_->GetRawDevice()->GetBarrierMemoryModel() == RHI::BarrierMemoryModel::AvailableAndVisible;
 
@@ -824,6 +1063,18 @@ void Compiler::FillSections(ExecutableGraph &output)
             if(options_.Contains(Options::PreferGlobalMemoryBarrier))
             {
                 GenerateGlobalMemoryBarriers(pass);
+            }
+
+            if(!initialGlobalBarrierEmitted)
+            {
+                initialGlobalBarrierEmitted = true;
+                pass.preGlobalBarrier = RHI::GlobalMemoryBarrier
+                {
+                    .beforeStages   = RHI::PipelineStage::All,
+                    .beforeAccesses = RHI::ResourceAccess::All,
+                    .afterStages    = RHI::PipelineStage::All,
+                    .afterAccesses  = RHI::ResourceAccess::All
+                };
             }
 
             pass.nameNode = rawPass->nameNode_;

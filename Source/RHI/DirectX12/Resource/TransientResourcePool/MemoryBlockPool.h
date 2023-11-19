@@ -19,7 +19,7 @@ namespace TransientResourcePoolDetail
             General,
         };
 
-        enum class Alignment
+        enum class HeapAlignment
         {
             Regular,
             MSAA
@@ -28,7 +28,7 @@ namespace TransientResourcePoolDetail
         struct MemoryBlock
         {
             ComPtr<D3D12MA::Allocation> allocation;
-            Alignment alignment;
+            HeapAlignment alignment;
             int lastActiveSession = -1;
             size_t size = 0;
         };
@@ -39,31 +39,20 @@ namespace TransientResourcePoolDetail
 
         void CompleteHostSynchronizationSession(int session);
 
-        const MemoryBlock &GetMemoryBlock(Category category, Alignment alignment, size_t leastSize);
+        const MemoryBlock &GetMemoryBlock(Category category, HeapAlignment alignment, size_t leastSize);
 
     private:
 
         struct MemoryBlockComp
         {
-            bool operator()(const MemoryBlock &lhs, const MemoryBlock &rhs) const
-            {
-                return lhs.size < rhs.size;
-            }
-
-            bool operator()(const MemoryBlock &lhs, size_t rhs) const
-            {
-                return lhs.size < rhs;
-            }
-
-            bool operator()(size_t lhs, const MemoryBlock &rhs) const
-            {
-                return lhs < rhs.size;
-            }
+            bool operator()(const MemoryBlock &lhs, const MemoryBlock &rhs) const { return lhs.size < rhs.size; }
+            bool operator()(const MemoryBlock &lhs, size_t             rhs) const { return lhs.size < rhs;      }
+            bool operator()(size_t lhs,             const MemoryBlock &rhs) const { return lhs      < rhs.size; }
         };
 
         static D3D12_HEAP_FLAGS TranslateHeapFlag(Category category);
 
-        const MemoryBlock &CreateAndUseNewMemoryBlock(Category category, Alignment alignment, size_t leastSize);
+        const MemoryBlock &CreateAndUseNewMemoryBlock(Category category, HeapAlignment alignment, size_t leastSize);
 
         void RecycleUnusedMemoryBlocks();
 

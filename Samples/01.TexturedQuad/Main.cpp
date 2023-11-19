@@ -82,6 +82,7 @@ void Run()
         {
             continue;
         }
+        executer.NewFrame();
 
         if(window.GetInput().IsKeyDown(KeyCode::Escape))
         {

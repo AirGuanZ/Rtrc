@@ -83,7 +83,7 @@ public:
     const ShaderGroupRecordRequirements &GetShaderGroupRecordRequirements() const RTRC_RHI_OVERRIDE;
     const WarpSizeInfo &GetWarpSizeInfo() const RTRC_RHI_OVERRIDE;
 
-    UPtr<TransientResourcePool> CreateTransientResourcePool() RTRC_RHI_OVERRIDE { return nullptr; }
+    UPtr<TransientResourcePool> CreateTransientResourcePool(const TransientResourcePoolDesc &desc) RTRC_RHI_OVERRIDE;
 
     ID3D12Device5 *_internalGetNativeDevice() const { return device_.Get(); }
 

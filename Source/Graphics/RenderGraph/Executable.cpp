@@ -6,16 +6,35 @@ RTRC_RG_BEGIN
 Executer::Executer(ObserverPtr<Device> device)
     : device_(device)
 {
-    
+    transientResourcePool_ = device_->GetRawDevice()->CreateTransientResourcePool({ 128 * 1024 * 1024 }).ToRC();
+}
+
+void Executer::NewFrame()
+{
+    if(transientResourcePool_)
+    {
+        const int session = transientResourcePool_->StartHostSynchronizationSession();
+        device_->GetSynchronizer().OnFrameComplete(
+            [session, pool = transientResourcePool_] { pool->NotifyExternalHostSynchronization(session); });
+    }
 }
 
 void Executer::Execute(ObserverPtr<const RenderGraph> graph)
 {
     ExecutableGraph compiledResult;
-    Compiler(device_).Compile(*graph, compiledResult);
-    graph->executableResource_ = &compiledResult.resources;
-    ExecuteImpl(compiledResult);
-    graph->executableResource_ = nullptr;
+    {
+        Compiler compiler(device_);
+        if(transientResourcePool_)
+        {
+            compiler.SetTransientResourcePool(transientResourcePool_);
+        }
+        compiler.Compile(*graph, compiledResult);
+    }
+    {
+        graph->executableResource_ = &compiledResult.resources;
+        ExecuteImpl(compiledResult);
+        graph->executableResource_ = nullptr;
+    }
 }
 
 void Executer::ExecuteImpl(const ExecutableGraph &graph)

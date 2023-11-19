@@ -18,6 +18,11 @@ public:
         deviceAddress_ = deviceAddress;
         buffer_ = std::move(buffer);
     }
+
+    BufferOPtr _internalGetBuffer() const
+    {
+        return buffer_;
+    }
     
 private:
 

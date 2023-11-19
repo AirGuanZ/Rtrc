@@ -18,6 +18,7 @@
 #include <RHI/DirectX12/Resource/Buffer.h>
 #include <RHI/DirectX12/Resource/Sampler.h>
 #include <RHI/DirectX12/Resource/Texture.h>
+#include <RHI/DirectX12/Resource/TransientResourcePool/TransientResourcePool.h>
 #include <Core/Enumerate.h>
 #include <Core/Unreachable.h>
 
@@ -821,6 +822,11 @@ const ShaderGroupRecordRequirements &DirectX12Device::GetShaderGroupRecordRequir
 const WarpSizeInfo &DirectX12Device::GetWarpSizeInfo() const
 {
     return warpSizeInfo_;
+}
+
+UPtr<TransientResourcePool> DirectX12Device::CreateTransientResourcePool(const TransientResourcePoolDesc &desc)
+{
+    return MakeUPtr<DirectX12TransientResourcePool>(this, desc);
 }
 
 void DirectX12Device::_internalFreeBindingGroup(DirectX12BindingGroup &bindingGroup)

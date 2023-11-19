@@ -25,7 +25,6 @@ namespace TextureImpl
         RHI::TextureRPtr rhiTexture_;
 
         TextureManagerInterface *manager_ = nullptr;
-        void *managerSpecificData_ = nullptr;
     };
 
     class TextureManagerInterface

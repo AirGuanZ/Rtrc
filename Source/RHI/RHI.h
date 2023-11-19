@@ -30,6 +30,7 @@
 #include <RHI/Vulkan/Resource/Sampler.h>
 #include <RHI/Vulkan/Resource/Texture.h>
 #include <RHI/Vulkan/Resource/TextureView.h>
+#include <RHI/Vulkan/Resource/TransientResourcePool/TransientResourcePool.h>
 #endif
 
 #if defined(RTRC_STATIC_RHI) && defined(RTRC_RHI_DIRECTX12)
@@ -60,6 +61,7 @@
 #include <RHI/DirectX12/Resource/Sampler.h>
 #include <RHI/DirectX12/Resource/Texture.h>
 #include <RHI/DirectX12/Resource/TextureView.h>
+#include <RHI/DirectX12/Resource/TransientResourcePool/TransientResourcePool.h>
 #endif
 
 // =============================== inlined implementation ===============================

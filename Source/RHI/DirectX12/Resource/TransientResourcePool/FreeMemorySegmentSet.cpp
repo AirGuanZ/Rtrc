@@ -10,6 +10,7 @@ std::optional<TransientResourcePoolDetail::FreeMemorySegmentSet::MemorySegment>
     {
         auto segmentIt = sizeIt->second;
         const Segment segment = segmentIt->second;
+        D3D12MA::Allocation *allocation = segmentIt->first.allocation;
         const size_t unalignedOffset = segmentIt->first.offsetInAllocation;
         const size_t alignedOffset = UpAlignTo(unalignedOffset, alignment);
         const size_t requiredEnd = alignedOffset + size;
@@ -19,13 +20,28 @@ std::optional<TransientResourcePoolDetail::FreeMemorySegmentSet::MemorySegment>
             RemoveSegment(segmentIt);
             if(alignedOffset > unalignedOffset)
             {
-                Free(MemorySegment{ .offset = unalignedOffset, .size = alignedOffset - unalignedOffset });
+                Free(MemorySegment
+                    {
+                        .allocation = allocation,
+                        .offset = unalignedOffset,
+                        .size = alignedOffset - unalignedOffset
+                    });
             }
             if(requiredEnd < segmentEnd)
             {
-                Free(MemorySegment{ .offset = requiredEnd, .size = segmentEnd - requiredEnd });
+                Free(MemorySegment
+                    {
+                        .allocation = allocation,
+                        .offset = requiredEnd,
+                        .size = segmentEnd - requiredEnd
+                    });
             }
-            return MemorySegment{ .offset = alignedOffset, .size = size };
+            return MemorySegment
+                {
+                    .allocation = allocation,
+                    .offset = alignedOffset,
+                    .size = size
+                };
         }
         ++sizeIt;
     }

@@ -81,13 +81,15 @@ public:
     const ShaderGroupRecordRequirements &GetShaderGroupRecordRequirements() const RTRC_RHI_OVERRIDE;
     const WarpSizeInfo &GetWarpSizeInfo() const RTRC_RHI_OVERRIDE;
 
-    UPtr<TransientResourcePool> CreateTransientResourcePool() RTRC_RHI_OVERRIDE { return nullptr; }
+    UPtr<TransientResourcePool> CreateTransientResourcePool(const TransientResourcePoolDesc &desc) RTRC_RHI_OVERRIDE;
 
     void _internalSetObjectName(VkObjectType objectType, uint64_t objectHandle, const char *name);
 
     uint32_t _internalGetQueueFamilyIndex(QueueType type) const;
 
     VkDevice _internalGetNativeDevice() const;
+
+    VmaAllocator _internalGetNativeAllocator() const;
 
 private:
 

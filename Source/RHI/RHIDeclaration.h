@@ -1469,7 +1469,8 @@ public:
     RTRC_RHI_API const ShaderGroupRecordRequirements &GetShaderGroupRecordRequirements() const RTRC_RHI_API_PURE;
     RTRC_RHI_API const WarpSizeInfo &GetWarpSizeInfo() const RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API UPtr<TransientResourcePool> CreateTransientResourcePool() RTRC_RHI_API_PURE;
+    RTRC_RHI_API UPtr<TransientResourcePool> CreateTransientResourcePool(
+        const TransientResourcePoolDesc &desc) RTRC_RHI_API_PURE;
 };
 
 class BackBufferSemaphore : public RHIObject

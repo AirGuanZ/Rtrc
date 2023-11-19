@@ -21,13 +21,22 @@ public:
 private:
 
     using Category = TransientResourcePoolDetail::MemoryBlockPool::Category;
-    using Alignment = TransientResourcePoolDetail::MemoryBlockPool::Alignment;
+    using HeapAlignment = TransientResourcePoolDetail::MemoryBlockPool::HeapAlignment;
+
+    struct ResourceSlot
+    {
+        RHIObjectPtr ptr;
+        int sessionIndex;
+    };
 
     Category GetTextureCategory(const TextureDesc &desc) const;
-    Alignment GetTextureHeapAlignment(const TextureDesc &desc) const;
+    HeapAlignment GetTextureHeapAlignment(const TextureDesc &desc) const;
 
     DirectX12Device *device_;
     TransientResourcePoolDetail::MemoryBlockPool memoryBlocks_;
+
+    int currentSession_;
+    std::vector<ResourceSlot> resources_;
 
     D3D12_RESOURCE_HEAP_TIER resourceHeapTier_;
 };

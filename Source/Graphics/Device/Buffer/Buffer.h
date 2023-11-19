@@ -26,7 +26,6 @@ namespace BufferImpl
         uint32_t defaultViewStructStride_ = 0;
 
         BufferManagerInterface *manager_ = nullptr;
-        void *managerSpecificData_ = nullptr;
     };
 
 } // namespace BufferImpl

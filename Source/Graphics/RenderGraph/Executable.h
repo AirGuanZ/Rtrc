@@ -66,6 +66,8 @@ public:
 
     explicit Executer(ObserverPtr<Device> device);
 
+    void NewFrame();
+
     void Execute(ObserverPtr<const RenderGraph> graph);
     
 private:
@@ -73,6 +75,7 @@ private:
     void ExecuteImpl(const ExecutableGraph &graph);
 
     ObserverPtr<Device> device_;
+    RHI::TransientResourcePoolRPtr transientResourcePool_;
 };
 
 RTRC_RG_END

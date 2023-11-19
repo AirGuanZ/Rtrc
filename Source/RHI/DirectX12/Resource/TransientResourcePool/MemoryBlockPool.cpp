@@ -1,9 +1,10 @@
 #include <RHI/DirectX12/Resource/TransientResourcePool/MemoryBlockPool.h>
 
-#include "RHI/DirectX12/Context/Device.h"
+#include <RHI/DirectX12/Context/Device.h>
 
 RTRC_RHI_D3D12_BEGIN
-    TransientResourcePoolDetail::MemoryBlockPool::MemoryBlockPool(
+
+TransientResourcePoolDetail::MemoryBlockPool::MemoryBlockPool(
     DirectX12Device *device, size_t memoryBlockSizeHint)
     : device_(device)
     , memoryBlockSizeHint_(memoryBlockSizeHint)
@@ -34,7 +35,7 @@ void TransientResourcePoolDetail::MemoryBlockPool::CompleteHostSynchronizationSe
 
 const TransientResourcePoolDetail::MemoryBlockPool::MemoryBlock &
     TransientResourcePoolDetail::MemoryBlockPool::GetMemoryBlock(
-        Category category, Alignment alignment, size_t leastSize)
+        Category category, HeapAlignment alignment, size_t leastSize)
 {
     const int categoryIndex = std::to_underlying(category);
     const int alignmentIndex = std::to_underlying(alignment);
@@ -48,12 +49,12 @@ const TransientResourcePoolDetail::MemoryBlockPool::MemoryBlock &
         return *usedMemoryBlocks_[categoryIndex][alignmentIndex].insert(mb);
     }
 
-    if(alignment == Alignment::Regular) // fallback to msaa block, if possible
+    if(alignment == HeapAlignment::Regular) // fallback to msaa block, if possible
     {
-        const int fallbackAlignmentIndex = std::to_underlying(Alignment::MSAA);
+        const int fallbackAlignmentIndex = std::to_underlying(HeapAlignment::MSAA);
         auto &fallbackBlocks = availableMemoryBlocks_[categoryIndex][fallbackAlignmentIndex];
         it = std::lower_bound(fallbackBlocks.begin(), fallbackBlocks.end(), leastSize, MemoryBlockComp{});
-        if(it != blocks.end())
+        if(it != fallbackBlocks.end())
         {
             auto mb = std::move(fallbackBlocks.extract(it).value());
             mb.lastActiveSession = currentHostSession_;
@@ -78,7 +79,7 @@ D3D12_HEAP_FLAGS TransientResourcePoolDetail::MemoryBlockPool::TranslateHeapFlag
 
 const TransientResourcePoolDetail::MemoryBlockPool::MemoryBlock &
     TransientResourcePoolDetail::MemoryBlockPool::CreateAndUseNewMemoryBlock(
-        Category category, Alignment alignment, size_t leastSize)
+        Category category, HeapAlignment alignment, size_t leastSize)
 {
     size_t size = memoryBlockSizeHint_;
     if(size < leastSize)
@@ -99,8 +100,8 @@ const TransientResourcePoolDetail::MemoryBlockPool::MemoryBlock &
 
     D3D12_RESOURCE_ALLOCATION_INFO allocInfo;
     allocInfo.SizeInBytes = size;
-    allocInfo.Alignment   = alignment == Alignment::MSAA ? D3D12_DEFAULT_MSAA_RESOURCE_PLACEMENT_ALIGNMENT
-                                                         : D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
+    allocInfo.Alignment   = alignment == HeapAlignment::MSAA ? D3D12_DEFAULT_MSAA_RESOURCE_PLACEMENT_ALIGNMENT
+                                                             : D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
 
     ComPtr<D3D12MA::Allocation> alloc;
     device_->_internalGetAllocator()->AllocateMemory(&allocDesc, &allocInfo, alloc.GetAddressOf());

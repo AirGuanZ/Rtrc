@@ -28,6 +28,7 @@
 #include <RHI/Vulkan/Resource/Sampler.h>
 #include <RHI/Vulkan/Resource/Texture.h>
 #include <RHI/Vulkan/Resource/TextureView.h>
+#include <RHI/Vulkan/Resource/TransientResourcePool/TransientResourcePool.h>
 
 #ifdef RTRC_STATIC_RHI
 #include <RHI/Vulkan/Queue/CommandPool.h>
@@ -1248,6 +1249,12 @@ const WarpSizeInfo &VulkanDevice::GetWarpSizeInfo() const
     return warpSizeInfo_;
 }
 
+UPtr<TransientResourcePool> VulkanDevice::CreateTransientResourcePool(const TransientResourcePoolDesc &desc)
+{
+    //return MakeUPtr<VulkanTransientResourcePool>(this, desc);
+    return nullptr;
+}
+
 void VulkanDevice::_internalSetObjectName(VkObjectType objectType, uint64_t objectHandle, const char* name)
 {
     if(enableDebug_ && vkSetDebugUtilsObjectNameEXT)
@@ -1277,6 +1284,11 @@ uint32_t VulkanDevice::_internalGetQueueFamilyIndex(QueueType type) const
 VkDevice VulkanDevice::_internalGetNativeDevice() const
 {
     return device_;
+}
+
+VmaAllocator VulkanDevice::_internalGetNativeAllocator() const
+{
+    return allocator_;
 }
 
 RTRC_RHI_VK_END

@@ -29,6 +29,8 @@ public:
         Options options = Options::ConnectPassesByDefinitionOrder |
                           Options::PreferGlobalMemoryBarrier);
 
+    void SetTransientResourcePool(RHI::TransientResourcePoolOPtr pool);
+
     void Compile(const RenderGraph &graph, ExecutableGraph &result);
 
 private:
@@ -91,7 +93,8 @@ private:
 
     void FillExternalResources(ExecutableResources &output);
 
-    void AllocateInternalResources(ExecutableResources &output);
+    void AllocateInternalResourcesLegacy(ExecutableResources &output);
+    void AllocateInternalResources(ExecutableResources &output, std::vector<std::vector<int>> &aliasedPrevs);
 
     void GenerateBarriers(const ExecutableResources &resources);
 
@@ -108,9 +111,12 @@ private:
 
     BufferUserMap bufferUsers_;
     SubTexUserMap subTexUsers_;
+    std::vector<std::vector<int>> aliasedPrevs_;
 
     std::vector<Box<CompileSection>> sections_;
     std::vector<CompileSection *>    passToSection_;
+
+    RHI::TransientResourcePoolOPtr transientResourcePool_;
 };
 
 RTRC_RG_END

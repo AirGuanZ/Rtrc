@@ -63,6 +63,7 @@ void RenderLoop::RenderFrame(const FrameInput &frame)
         isSwapchainInvalid_ = true;
         return;
     }
+    renderGraphExecuter_->NewFrame();
     ++frameIndex_;
     frameTimer_.BeginFrame();
     RenderFrameImpl(frame);
