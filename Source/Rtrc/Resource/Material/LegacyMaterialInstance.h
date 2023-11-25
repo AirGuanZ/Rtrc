@@ -1,22 +1,22 @@
 #pragma once
 
 #include <Rtrc/Resource/BindlessResourceManager.h>
-#include <Rtrc/Resource/Material/Material.h>
+#include <Rtrc/Resource/Material/LegacyMaterial.h>
 
 RTRC_BEGIN
 
 class CommandBuffer;
-class MaterialInstance;
+class LegacyMaterialInstance;
 
-class MaterialPropertySheet : public Uncopyable
+class LegacyMaterialPropertySheet : public Uncopyable
 {
 public:
 
-    using MaterialResource = MaterialPassPropertyLayout::MaterialResource;
+    using MaterialResource = LegacyMaterialPassPropertyLayout::MaterialResource;
 
-    explicit MaterialPropertySheet(RC<MaterialPropertyHostLayout> layout);
+    explicit LegacyMaterialPropertySheet(RC<MaterialPropertyHostLayout> layout);
 
-    void CopyFrom(const MaterialPropertySheet &other);
+    void CopyFrom(const LegacyMaterialPropertySheet &other);
 
 #define RTRC_DECL_SET(TYPE) \
     void Set(ShaderPropertyName name, TYPE value); \
@@ -83,14 +83,14 @@ private:
         TS(0)
             ParentMaterialInstance::Set
 */
-class MaterialPassInstance
+class LegacyMaterialPassInstance
 {
 public:
 
     RC<Shader> GetShader(const FastKeywordContext &keywordValues);
     RC<Shader> GetShader(FastKeywordSetValue keywordMask);
 
-    const MaterialPass *GetPass() const;
+    const LegacyMaterialPass *GetPass() const;
 
     void BindGraphicsProperties(const FastKeywordContext &keywordValues, const CommandBuffer &commandBuffer) const;
     void BindGraphicsProperties(FastKeywordSetValue mask, const CommandBuffer &commandBuffer) const;
@@ -102,7 +102,7 @@ public:
 
 private:
 
-    friend class MaterialInstance;
+    friend class LegacyMaterialInstance;
 
     struct Record
     {
@@ -117,31 +117,31 @@ private:
     void BindPropertiesImpl(FastKeywordSetValue mask, const RHI::CommandBufferRPtr &commandBuffer) const;
 
     Device                 *device_ = nullptr;
-    const MaterialInstance *materialInstance_ = nullptr;
-    MaterialPass           *pass_;
+    const LegacyMaterialInstance *materialInstance_ = nullptr;
+    LegacyMaterialPass           *pass_;
 
     int                       recordCount_;
     std::unique_ptr<Record[]> keywordMaskToRecord_;
 };
 
 void BindMaterialProperties(
-    const MaterialPassInstance &instance,
-    const FastKeywordContext       &keywords,
-    const CommandBuffer        &commandBuffer,
-    bool                        graphics);
+    const LegacyMaterialPassInstance &instance,
+    const FastKeywordContext         &keywords,
+    const CommandBuffer              &commandBuffer,
+    bool                              graphics);
 
-class MaterialInstance : public WithUniqueObjectID, public Uncopyable
+class LegacyMaterialInstance : public WithUniqueObjectID, public Uncopyable
 {
 public:
 
-    MaterialInstance(RC<const Material> material, Device *device);
+    LegacyMaterialInstance(RC<const LegacyMaterial> material, Device *device);
 
-    const RC<const Material> &GetMaterial() const { return material_; }
-    const MaterialPropertySheet &GetPropertySheet() const { return propertySheet_; }
+    const RC<const LegacyMaterial> &GetMaterial() const { return material_; }
+    const LegacyMaterialPropertySheet &GetPropertySheet() const { return propertySheet_; }
 
     // return nullptr when not found
-    MaterialPassInstance *GetPassInstance(MaterialPassTag tag) const;
-    MaterialPassInstance *GetPassInstance(size_t index) const;
+    LegacyMaterialPassInstance *GetPassInstance(MaterialPassTag tag) const;
+    LegacyMaterialPassInstance *GetPassInstance(size_t index) const;
     
     void SetFloat(ShaderPropertyName name, float value)      { SetPropertyImpl<true>(name, value); }
     void Set(ShaderPropertyName name, const Vector2f &value) { SetPropertyImpl<true>(name, value); }
@@ -187,9 +187,9 @@ private:
     void InvalidateConstantBuffers();
     void InvalidateBindingGroups();
 
-    RC<const Material>                     material_;
-    MaterialPropertySheet                  propertySheet_;
-    std::vector<Box<MaterialPassInstance>> passInstances_;
+    RC<const LegacyMaterial>                     material_;
+    LegacyMaterialPropertySheet                  propertySheet_;
+    std::vector<Box<LegacyMaterialPassInstance>> passInstances_;
 };
 
 RTRC_END

@@ -6,7 +6,7 @@ void MaterialRenderingCacheManager::Update(const Scene &scene)
 {
     struct MaterialRecord
     {
-        const MaterialInstance *materialInstance = nullptr;
+        const LegacyMaterialInstance *materialInstance = nullptr;
         const BindlessTextureEntry *albedoTextureIndex = nullptr;
         auto operator<=>(const MaterialRecord &rhs) const = default;
     };
@@ -72,7 +72,7 @@ void MaterialRenderingCacheManager::Update(const Scene &scene)
     cachedMaterials_ = std::move(newCachedMaterials);
 }
 
-const MaterialRenderingCache *MaterialRenderingCacheManager::FindMaterialRenderingCache(const MaterialInstance *material) const
+const MaterialRenderingCache *MaterialRenderingCacheManager::FindMaterialRenderingCache(const LegacyMaterialInstance *material) const
 {
     size_t beg = 0, end = cachedMaterials_.size();
     while(beg < end)

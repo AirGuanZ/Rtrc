@@ -8,30 +8,55 @@
 #include <Rtrc/Renderer/GPUScene/RenderCamera.h>
 #include <Rtrc/Renderer/PathTracer/PathTracer.h>
 #include <Rtrc/Renderer/ReSTIR/ReSTIR.h>
-#include <Rtrc/Renderer/RenderSettings.h>
+#include <Rtrc/Renderer/RenderLoop/RenderLoop.h>
 #include <Core/Timer.h>
 
 RTRC_RENDERER_BEGIN
 
-class RenderLoop : public Uncopyable
+class RealTimeRenderLoop : public RenderLoop, public Uncopyable
 {
 public:
-    
-    struct FrameInput
+
+    enum class VisualizationMode
     {
-        const Scene         *scene;
-        const Camera        *camera;
-        const ImGuiDrawData *imguiDrawData;
+        None,
+        IndirectDiffuse,
+        Normal,
+        ReSTIRDirectIllumination,
+        Count
     };
 
-    RenderLoop(ObserverPtr<ResourceManager> resources, ObserverPtr<BindlessTextureManager> bindlessTextures);
+    static const char *GetVisualizationModeName(VisualizationMode mode)
+    {
+        constexpr const char *ret[] = { "None", "IndirectDiffuse", "Normal", "ReSTIR", "Count" };
+        return ret[std::to_underlying(mode)];
+    }
+
+    struct RenderSettings
+    {
+        bool              enableIndirectDiffuse = false;
+        VisualizationMode visualizationMode = VisualizationMode::None;
+
+        unsigned int ReSTIR_M = 4;
+        unsigned int ReSTIR_MaxM = 64;
+
+        unsigned int ReSTIR_N = 8;
+        float        ReSTIR_Radius = 25.0f;
+        bool         ReSTIR_EnableTemporalReuse = true;
+
+        float        ReSTIR_SVGFTemporalFilterAlpha = 0.05f;
+        unsigned int ReSTIR_SVGFSpatialFilterIterations = 2;
+    };
+
+    RealTimeRenderLoop(ObserverPtr<ResourceManager> resources, ObserverPtr<BindlessTextureManager> bindlessTextures);
     
-    void BeginRenderLoop();
-    void EndRenderLoop();
+    void BeginRenderLoop() override;
+    void EndRenderLoop() override;
 
     void SetRenderSettings(const RenderSettings &settings);
-    void ResizeFramebuffer(uint32_t width, uint32_t height);
-    void RenderFrame(const FrameInput &frame);
+
+    void ResizeFramebuffer(uint32_t width, uint32_t height) override;
+    void RenderFrame(const FrameInput &frame) override;
 
 private:
 

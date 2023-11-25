@@ -2,42 +2,42 @@
 
 #include <Rtrc/Resource/LocalCache/LocalMaterialCache.h>
 #include <Rtrc/Resource/LocalCache/LocalShaderCache.h>
-#include <Rtrc/Resource/Material/Material.h>
+#include <Rtrc/Resource/Material/LegacyMaterial.h>
 #include <Graphics/Shader/Compiler.h>
 #include <Graphics/Shader/ShaderDatabase.h>
 
 RTRC_BEGIN
 
-class MaterialManager;
+class LegacyMaterialManager;
 
-void RegisterAllPreprocessedMaterialsInMaterialManager(MaterialManager &manager);
+void RegisterAllPreprocessedMaterialsInMaterialManager(LegacyMaterialManager &manager);
 
-class MaterialManager : public Uncopyable
+class LegacyMaterialManager : public Uncopyable
 {
 public:
 
-    MaterialManager();
+    LegacyMaterialManager();
 
     void SetDevice(ObserverPtr<Device> device);
     void SetDebug(bool debug);
 
     void AddMaterial(RawMaterialRecord rawMaterial);
 
-    RC<Material> GetMaterial(std::string_view name);
-    RC<Material> GetMaterial(GeneralPooledString name);
+    RC<LegacyMaterial> GetMaterial(std::string_view name);
+    RC<LegacyMaterial> GetMaterial(GeneralPooledString name);
 
     RC<ShaderTemplate> GetShaderTemplate(std::string_view name, bool persistent);
     RC<Shader>         GetShader(std::string_view name, bool persistent);
 
-    RC<MaterialInstance> CreateMaterialInstance(std::string_view name);
-    RC<MaterialInstance> CreateMaterialInstance(GeneralPooledString name);
+    RC<LegacyMaterialInstance> CreateMaterialInstance(std::string_view name);
+    RC<LegacyMaterialInstance> CreateMaterialInstance(GeneralPooledString name);
 
     LocalMaterialCache &GetLocalMaterialCache();
     LocalShaderCache   &GetLocalShaderCache();
 
     template<TemplateStringParameter ShaderName>   const RC<ShaderTemplate> &GetCachedShaderTemplate();
     template<TemplateStringParameter ShaderName>   RC<Shader>                GetCachedShader();
-    template<TemplateStringParameter MaterialName> RC<Material>              GetCachedMaterial();
+    template<TemplateStringParameter MaterialName> RC<LegacyMaterial>              GetCachedMaterial();
 
 private:
 
@@ -45,7 +45,7 @@ private:
     using MaterialRecordMap = std::map<GeneralPooledString, RawMaterialRecord>;
 
     ObserverPtr<Device>                                    device_;
-    ObjectCache<GeneralPooledString, Material, true, true> materialPool_;
+    ObjectCache<GeneralPooledString, LegacyMaterial, true, true> materialPool_;
     MaterialRecordMap                                      materialRecords_;
     ShaderDatabase                                         shaderDatabase_;
 
@@ -54,7 +54,7 @@ private:
 };
 
 template<TemplateStringParameter ShaderName>
-const RC<ShaderTemplate> &MaterialManager::GetCachedShaderTemplate()
+const RC<ShaderTemplate> &LegacyMaterialManager::GetCachedShaderTemplate()
 {
     static LocalCachedShaderStorage staticStorage;
     const LocalCachedShaderHandle handle{ this, &staticStorage, ShaderName.GetString()};
@@ -62,13 +62,13 @@ const RC<ShaderTemplate> &MaterialManager::GetCachedShaderTemplate()
 }
 
 template<TemplateStringParameter ShaderName>
-RC<Shader> MaterialManager::GetCachedShader()
+RC<Shader> LegacyMaterialManager::GetCachedShader()
 {
     return GetCachedShaderTemplate<ShaderName>()->GetVariant();
 }
 
 template<TemplateStringParameter MaterialName>
-RC<Material> MaterialManager::GetCachedMaterial()
+RC<LegacyMaterial> LegacyMaterialManager::GetCachedMaterial()
 {
     static LocalCachedMaterialStorage _staticMaterialStorage;
     const LocalCachedMaterialHandle handle{ this, &_staticMaterialStorage, MaterialName.GetString() };

@@ -6,8 +6,8 @@ RTRC_RENDERER_BEGIN
 
 struct MaterialRenderingCache
 {
-    const MaterialInstance *materialInstance = nullptr;
-    const Material *material = nullptr;
+    const LegacyMaterialInstance *materialInstance = nullptr;
+    const LegacyMaterial *material = nullptr;
 
     BindlessTextureEntry albedoTextureEntry;
     float albedoScale = 1;
@@ -22,7 +22,7 @@ public:
 
     void Update(const Scene &scene);
 
-    const MaterialRenderingCache *FindMaterialRenderingCache(const MaterialInstance *material) const;
+    const MaterialRenderingCache *FindMaterialRenderingCache(const LegacyMaterialInstance *material) const;
 
 private:
 

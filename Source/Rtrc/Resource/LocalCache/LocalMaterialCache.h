@@ -10,8 +10,8 @@
 
 RTRC_BEGIN
 
-class Material;
-class MaterialManager;
+class LegacyMaterial;
+class LegacyMaterialManager;
 class ResourceManager;
 
 class LocalCachedMaterialStorage : public Uncopyable
@@ -36,7 +36,7 @@ class LocalCachedMaterialHandle
 public:
 
     LocalCachedMaterialHandle(
-        ObserverPtr<MaterialManager> materialManager,
+        ObserverPtr<LegacyMaterialManager> materialManager,
         LocalCachedMaterialStorage  *storage,
         std::string_view             name)
         : materialManager_(materialManager), storage_(storage), name_(name)
@@ -49,21 +49,21 @@ public:
         LocalCachedMaterialStorage  *storage,
         std::string_view             name);
     
-    operator RC<Material>() const
+    operator RC<LegacyMaterial>() const
     {
         return Get();
     }
 
-    Material* operator->() const
+    LegacyMaterial* operator->() const
     {
         return Get().get();
     }
 
-    RC<Material> Get() const;
+    RC<LegacyMaterial> Get() const;
 
 private:
 
-    ObserverPtr<MaterialManager> materialManager_;
+    ObserverPtr<LegacyMaterialManager> materialManager_;
     LocalCachedMaterialStorage  *storage_;
     std::string_view             name_;
 };
@@ -72,19 +72,19 @@ class LocalMaterialCache : public Uncopyable
 {
 public:
 
-    explicit LocalMaterialCache(ObserverPtr<MaterialManager> materialManager)
+    explicit LocalMaterialCache(ObserverPtr<LegacyMaterialManager> materialManager)
         : materialManager_(materialManager)
     {
         
     }
 
-    RC<Material> Get(LocalCachedMaterialStorage *storage, std::string_view materialName);
+    RC<LegacyMaterial> Get(LocalCachedMaterialStorage *storage, std::string_view materialName);
 
 private:
 
-    ObserverPtr<MaterialManager> materialManager_;
+    ObserverPtr<LegacyMaterialManager> materialManager_;
     tbb::spin_rw_mutex mutex_;
-    std::vector<RC<Material>> materials_;
+    std::vector<RC<LegacyMaterial>> materials_;
 };
 
 RTRC_END

@@ -9,12 +9,12 @@ LocalCachedMaterialHandle::LocalCachedMaterialHandle(
     
 }
 
-RC<Material> LocalCachedMaterialHandle::Get() const
+RC<LegacyMaterial> LocalCachedMaterialHandle::Get() const
 {
     return materialManager_->GetLocalMaterialCache().Get(storage_, name_);
 }
 
-RC<Material> LocalMaterialCache::Get(LocalCachedMaterialStorage *storage, std::string_view materialName)
+RC<LegacyMaterial> LocalMaterialCache::Get(LocalCachedMaterialStorage *storage, std::string_view materialName)
 {
     const uint32_t index = storage->index_;
 

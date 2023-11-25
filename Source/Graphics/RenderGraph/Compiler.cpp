@@ -544,17 +544,16 @@ void Compiler::AllocateInternalResourcesLegacy(ExecutableResources &output)
                 .usage = desc.usage,
                 .hostAccessType = desc.hostAccessType
             });
-            output.indexToBuffer[resourceIndex].buffer->SetName(std::move(intRsc->name));
         }
         else
         {
             auto buffer = device_->CreateBuffer(desc);
             output.indexToBuffer[resourceIndex].buffer = MakeRC<WrappedStatefulBuffer>(std::move(buffer), BufferState{});
-            output.indexToBuffer[resourceIndex].buffer->SetName(std::move(intRsc->name));
         }
 
         output.indexToBuffer[resourceIndex].buffer->SetDefaultStructStride(intRsc->defaultStructStride_);
         output.indexToBuffer[resourceIndex].buffer->SetDefaultTexelFormat(intRsc->defaultTexelFormat_);
+        output.indexToBuffer[resourceIndex].buffer->SetName(std::move(intRsc->name));
     }
 
     for(auto &texture : graph_->textures_)
@@ -757,11 +756,14 @@ void Compiler::AllocateInternalResources(ExecutableResources &output, std::vecto
                 auto rsc = TryCastResource<RenderGraph::InternalBufferResource>(graph_->buffers_[rscIdx].get());
                 output.indexToBuffer[rscIdx].buffer = StatefulBuffer::FromBuffer(MakeRC<TransientBuffer>(
                     std::move(decl.buffer), rsc->defaultTexelFormat_, static_cast<uint32_t>(rsc->defaultStructStride_)));
+                output.indexToBuffer[rscIdx].buffer->SetName(rsc->name);
             },
             [&](RHI::TransientTextureDeclaration &decl)
             {
+                auto rsc = TryCastResource<RenderGraph::InternalTextureResource>(graph_->textures_[rscIdx].get());
                 output.indexToTexture[rscIdx].texture = StatefulTexture::FromTexture(
                     MakeRC<TransientTexture>(std::move(decl.texture)));
+                output.indexToTexture[rscIdx].texture->SetName(rsc->name);
             });
 
     }

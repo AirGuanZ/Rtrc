@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Core/SmartPointer/ObserverPtr.h>
-#include <Rtrc/Resource/MaterialManager.h>
+#include <Rtrc/Resource/LegacyMaterialManager.h>
 #include <Rtrc/Resource/MeshManager.h>
 
 RTRC_BEGIN
@@ -30,17 +30,17 @@ public:
 
     ObserverPtr<Device> GetDevice() const { return device_; }
     
-    ObserverPtr<MaterialManager> GetMaterialManager() { return materialManager_; }
+    ObserverPtr<LegacyMaterialManager> GetMaterialManager() { return materialManager_; }
     ObserverPtr<MeshManager>     GetMeshManager()     { return meshManager_;     }
     
     // General resource loading
 
-    RC<Material>       GetMaterial      (const std::string &name);
+    RC<LegacyMaterial>       GetMaterial      (const std::string &name);
     RC<ShaderTemplate> GetShaderTemplate(const std::string &name, bool persistent);
     RC<Shader>         GetShader        (const std::string &name, bool persistent); // Valid when no keyword is defined in corresponding shader template
     RC<Mesh>           GetMesh          (std::string_view name, MeshFlags flags = MeshFlags::None);
 
-    RC<MaterialInstance> CreateMaterialInstance(const std::string &name);
+    RC<LegacyMaterialInstance> CreateMaterialInstance(const std::string &name);
 
     // Builtin resources
     
@@ -53,7 +53,7 @@ private:
     void LoadBuiltinMeshes();
 
     ObserverPtr<Device> device_;
-    MaterialManager     materialManager_;
+    LegacyMaterialManager     materialManager_;
     MeshManager         meshManager_;
     
     std::array<RC<Texture>,  EnumCount<BuiltinTexture>> textures_;

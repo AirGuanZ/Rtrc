@@ -42,6 +42,8 @@ void Crius::Render(
 
     // Build acceleration structure
 
+
+
     // TODO
 }
 

@@ -1,26 +1,26 @@
-#include <Rtrc/Resource/Material/MaterialInstance.h>
+#include <Rtrc/Resource/Material/LegacyMaterialInstance.h>
 
 RTRC_BEGIN
 
 template <MaterialProperty::Type Type, typename T>
-void MaterialPropertySheet::SetImpl(ShaderPropertyName name, const T &value)
+void LegacyMaterialPropertySheet::SetImpl(ShaderPropertyName name, const T &value)
 {
     const int index = layout_->GetPropertyIndexByName(name);
     if(index < 0)
     {
         throw Exception(fmt::format("Unknown material property: {}", name));
     }
-    MaterialPropertySheet::SetImpl<Type>(index, value);
+    LegacyMaterialPropertySheet::SetImpl<Type>(index, value);
 }
 
 template<MaterialProperty::Type Type, typename T>
-void MaterialPropertySheet::SetImpl(int index, const T &value)
+void LegacyMaterialPropertySheet::SetImpl(int index, const T &value)
 {
     auto &prop = layout_->GetProperties()[index];
     if(prop.type != Type)
     {
         throw Exception(fmt::format(
-            "MaterialPropertySheet::Set: type of property {} (index {}) is unmatched. Given: {}, actual: {}",
+            "LegacyMaterialPropertySheet::Set: type of property {} (index {}) is unmatched. Given: {}, actual: {}",
             prop.name, index, MaterialProperty::GetTypeName(Type), MaterialProperty::GetTypeName(prop.type)));
     }
 
@@ -36,7 +36,7 @@ void MaterialPropertySheet::SetImpl(int index, const T &value)
     }
 }
 
-MaterialPropertySheet::MaterialPropertySheet(RC<MaterialPropertyHostLayout> layout)
+LegacyMaterialPropertySheet::LegacyMaterialPropertySheet(RC<MaterialPropertyHostLayout> layout)
     : layout_(std::move(layout))
 {
     valueBuffer_.resize(layout_->GetValueBufferSize());
@@ -44,14 +44,14 @@ MaterialPropertySheet::MaterialPropertySheet(RC<MaterialPropertyHostLayout> layo
     bindlessEntries_.resize(layout_->GetValuePropertyCount());
 }
 
-void MaterialPropertySheet::CopyFrom(const MaterialPropertySheet &other)
+void LegacyMaterialPropertySheet::CopyFrom(const LegacyMaterialPropertySheet &other)
 {
     assert(layout_ == other.layout_);
     valueBuffer_ = other.valueBuffer_;
     resources_ = other.resources_;
 }
 
-void MaterialPropertySheet::Set(ShaderPropertyName name, const BindlessTextureEntry &entry)
+void LegacyMaterialPropertySheet::Set(ShaderPropertyName name, const BindlessTextureEntry &entry)
 {
     const int index = layout_->GetPropertyIndexByName(name);
     if(index < 0)
@@ -61,7 +61,7 @@ void MaterialPropertySheet::Set(ShaderPropertyName name, const BindlessTextureEn
     Set(index, entry);
 }
 
-void MaterialPropertySheet::Set(int index, const BindlessTextureEntry &entry)
+void LegacyMaterialPropertySheet::Set(int index, const BindlessTextureEntry &entry)
 {
     auto &prop = layout_->GetProperties()[index];
     if(prop.type == MaterialProperty::Type::UInt)
@@ -69,7 +69,7 @@ void MaterialPropertySheet::Set(int index, const BindlessTextureEntry &entry)
         if(entry.GetCount() > 1)
         {
             throw Exception(fmt::format(
-                "Material property {} (index {}) can bind only one bindless texture index, "
+                "LegacyMaterial property {} (index {}) can bind only one bindless texture index, "
                 "which multiple indices are provided", prop.name, index));
         }
         const size_t offset = layout_->GetValueOffset(index);
@@ -85,21 +85,21 @@ void MaterialPropertySheet::Set(int index, const BindlessTextureEntry &entry)
     else
     {
         throw Exception(fmt::format(
-            "Material property {} (index {}) cannot be bound with bindless texture entry. Type must be "
+            "LegacyMaterial property {} (index {}) cannot be bound with bindless texture entry. Type must be "
             "UInt (offset) or UInt2 (offset & count).", prop.name, index));
     }
 
     bindlessEntries_[index] = entry;
 }
 
-#define RTRC_IMPL_SET(VALUE_TYPE, TYPE)                                          \
-    void MaterialPropertySheet::Set(ShaderPropertyName name, VALUE_TYPE value) \
-    {                                                                            \
-        this->SetImpl<MaterialProperty::Type::TYPE>(name, value);                \
-    }                                                                            \
-    void MaterialPropertySheet::Set(int index, VALUE_TYPE value)                 \
-    {                                                                            \
-        this->SetImpl<MaterialProperty::Type::TYPE>(index, value);               \
+#define RTRC_IMPL_SET(VALUE_TYPE, TYPE)                                              \
+    void LegacyMaterialPropertySheet::Set(ShaderPropertyName name, VALUE_TYPE value) \
+    {                                                                                \
+        this->SetImpl<MaterialProperty::Type::TYPE>(name, value);                    \
+    }                                                                                \
+    void LegacyMaterialPropertySheet::Set(int index, VALUE_TYPE value)               \
+    {                                                                                \
+        this->SetImpl<MaterialProperty::Type::TYPE>(index, value);                   \
     }
 
 RTRC_IMPL_SET(float,            Float)
@@ -125,81 +125,81 @@ RTRC_IMPL_SET(const RC<Tlas>    &, AccelerationStructure)
 
 #undef RTRC_IMPL_SET
 
-const unsigned char *MaterialPropertySheet::GetValue(ShaderPropertyName name) const
+const unsigned char *LegacyMaterialPropertySheet::GetValue(ShaderPropertyName name) const
 {
     const int index = layout_->GetPropertyIndexByName(name);
     return index >= 0 ? GetValue(index) : nullptr;
 }
 
-const unsigned char *MaterialPropertySheet::GetValue(int index) const
+const unsigned char *LegacyMaterialPropertySheet::GetValue(int index) const
 {
     return GetValueBuffer() + layout_->GetValueOffset(index);
 }
 
-const BindlessTextureEntry *MaterialPropertySheet::GetBindlessTextureEntry(ShaderPropertyName name) const
+const BindlessTextureEntry *LegacyMaterialPropertySheet::GetBindlessTextureEntry(ShaderPropertyName name) const
 {
     const int index = layout_->GetPropertyIndexByName(name);
     return index >= 0 ? GetBindlessTextureEntry(index) : nullptr;
 }
 
-const BindlessTextureEntry *MaterialPropertySheet::GetBindlessTextureEntry(int index) const
+const BindlessTextureEntry *LegacyMaterialPropertySheet::GetBindlessTextureEntry(int index) const
 {
     return bindlessEntries_[index] ? &bindlessEntries_[index] : nullptr;
 }
 
-RC<Shader> MaterialPassInstance::GetShader(const FastKeywordContext &keywordValues)
+RC<Shader> LegacyMaterialPassInstance::GetShader(const FastKeywordContext &keywordValues)
 {
     return pass_->GetShader(keywordValues);
 }
 
-RC<Shader> MaterialPassInstance::GetShader(FastKeywordSetValue keywordMask)
+RC<Shader> LegacyMaterialPassInstance::GetShader(FastKeywordSetValue keywordMask)
 {
     return pass_->GetShader(keywordMask);
 }
 
-const MaterialPass *MaterialPassInstance::GetPass() const
+const LegacyMaterialPass *LegacyMaterialPassInstance::GetPass() const
 {
     return pass_;
 }
 
-void MaterialPassInstance::BindGraphicsProperties(
+void LegacyMaterialPassInstance::BindGraphicsProperties(
     const FastKeywordContext &keywordValues, const CommandBuffer &commandBuffer) const
 {
     FastKeywordSetValue mask = pass_->ExtractKeywordValueMask(keywordValues);
     BindGraphicsProperties(mask, commandBuffer);
 }
 
-void MaterialPassInstance::BindGraphicsProperties(
+void LegacyMaterialPassInstance::BindGraphicsProperties(
     FastKeywordSetValue mask, const CommandBuffer &commandBuffer) const
 {
     BindPropertiesImpl<true>(mask, commandBuffer.GetRHIObject());
 }
 
-void MaterialPassInstance::BindGraphicsProperties(const CommandBuffer &commandBuffer) const
+void LegacyMaterialPassInstance::BindGraphicsProperties(const CommandBuffer &commandBuffer) const
 {
     BindGraphicsProperties(FastKeywordSetValue{}, commandBuffer);
 }
 
-void MaterialPassInstance::BindComputeProperties(
+void LegacyMaterialPassInstance::BindComputeProperties(
     const FastKeywordContext &keywordValues, const CommandBuffer &commandBuffer) const
 {
     FastKeywordSetValue mask = pass_->ExtractKeywordValueMask(keywordValues);
     BindComputeProperties(mask, commandBuffer);
 }
 
-void MaterialPassInstance::BindComputeProperties(
+void LegacyMaterialPassInstance::BindComputeProperties(
     FastKeywordSetValue mask, const CommandBuffer &commandBuffer) const
 {
     BindPropertiesImpl<false>(mask, commandBuffer.GetRHIObject());
 }
 
-void MaterialPassInstance::BindComputeProperties(const CommandBuffer &commandBuffer) const
+void LegacyMaterialPassInstance::BindComputeProperties(const CommandBuffer &commandBuffer) const
 {
     BindComputeProperties(FastKeywordSetValue{}, commandBuffer);
 }
 
 template <bool Graphics>
-void MaterialPassInstance::BindPropertiesImpl(
+void LegacyMaterialPassInstance::BindPropertiesImpl(
     FastKeywordSetValue mask, const RHI::CommandBufferRPtr &commandBuffer) const
 {
     auto subLayout = pass_->GetPropertyLayout(mask);
@@ -257,7 +257,7 @@ void MaterialPassInstance::BindPropertiesImpl(
 }
 
 void BindMaterialProperties(
-    const MaterialPassInstance &instance,
+    const LegacyMaterialPassInstance &instance,
     const FastKeywordContext       &keywords,
     const CommandBuffer        &commandBuffer,
     bool                        graphics)
@@ -272,18 +272,18 @@ void BindMaterialProperties(
     }
 }
 
-MaterialPassInstance *MaterialInstance::GetPassInstance(MaterialPassTag tag) const
+LegacyMaterialPassInstance *LegacyMaterialInstance::GetPassInstance(MaterialPassTag tag) const
 {
     const int index = material_->GetPassIndexByTag(tag);
     return index >= 0 ? passInstances_[index].get() : nullptr;
 }
 
-MaterialPassInstance *MaterialInstance::GetPassInstance(size_t index) const
+LegacyMaterialPassInstance *LegacyMaterialInstance::GetPassInstance(size_t index) const
 {
     return passInstances_[index].get();
 }
 
-MaterialInstance::MaterialInstance(RC<const Material> material, Device *device)
+LegacyMaterialInstance::LegacyMaterialInstance(RC<const LegacyMaterial> material, Device *device)
     : material_(material), propertySheet_(material->GetPropertyLayout())
 {
     auto passes = material_->GetPasses();
@@ -291,17 +291,18 @@ MaterialInstance::MaterialInstance(RC<const Material> material, Device *device)
     for(size_t i = 0; i < passes.size(); ++i)
     {
         auto &pass = passes[i];
-        auto matPassInst = MakeBox<MaterialPassInstance>();
+        auto matPassInst = MakeBox<LegacyMaterialPassInstance>();
         matPassInst->device_              = device;
         matPassInst->materialInstance_    = this;
         matPassInst->pass_                = pass.get();
         matPassInst->recordCount_         = 1 << pass->GetShaderTemplate()->GetKeywordSet().GetTotalBitCount();
-        matPassInst->keywordMaskToRecord_ = std::make_unique<MaterialPassInstance::Record[]>(matPassInst->recordCount_);
+        matPassInst->keywordMaskToRecord_ =
+            std::make_unique<LegacyMaterialPassInstance::Record[]>(matPassInst->recordCount_);
         passInstances_[i] = std::move(matPassInst);
     }
 }
 
-void MaterialInstance::InvalidateBindingGroups()
+void LegacyMaterialInstance::InvalidateBindingGroups()
 {
     for(auto &inst : passInstances_)
     {
@@ -313,7 +314,7 @@ void MaterialInstance::InvalidateBindingGroups()
     }
 }
 
-void MaterialInstance::InvalidateConstantBuffers()
+void LegacyMaterialInstance::InvalidateConstantBuffers()
 {
     for(auto &inst : passInstances_)
     {

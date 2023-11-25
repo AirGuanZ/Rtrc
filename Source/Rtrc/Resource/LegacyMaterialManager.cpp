@@ -1,10 +1,10 @@
 #include <Core/Serialization/TextSerializer.h>
-#include <Rtrc/Resource/MaterialManager.h>
+#include <Rtrc/Resource/LegacyMaterialManager.h>
 #include <Core/ReflectedStruct.h>
 
 RTRC_BEGIN
 
-MaterialManager::MaterialManager()
+LegacyMaterialManager::LegacyMaterialManager()
 {
     const auto workDir = absolute(std::filesystem::current_path()).lexically_normal();
     shaderDatabase_.AddIncludeDirectory(ReflectedStruct::GetGeneratedFilePath());
@@ -16,36 +16,36 @@ MaterialManager::MaterialManager()
     localMaterialCache_ = MakeBox<LocalMaterialCache>(this);
 }
 
-void MaterialManager::SetDevice(ObserverPtr<Device> device)
+void LegacyMaterialManager::SetDevice(ObserverPtr<Device> device)
 {
     device_ = device;
     shaderDatabase_.SetDevice(device);
 }
 
-void MaterialManager::SetDebug(bool debug)
+void LegacyMaterialManager::SetDebug(bool debug)
 {
     shaderDatabase_.SetDebug(debug);
 }
 
-void MaterialManager::AddMaterial(RawMaterialRecord rawMaterial)
+void LegacyMaterialManager::AddMaterial(RawMaterialRecord rawMaterial)
 {
     const GeneralPooledString pooledName(rawMaterial.name);
     materialRecords_.insert({ pooledName, std::move(rawMaterial) });
 }
 
-RC<Material> MaterialManager::GetMaterial(std::string_view name)
+RC<LegacyMaterial> LegacyMaterialManager::GetMaterial(std::string_view name)
 {
     return GetMaterial(GeneralPooledString(name));
 }
 
-RC<Material> MaterialManager::GetMaterial(GeneralPooledString name)
+RC<LegacyMaterial> LegacyMaterialManager::GetMaterial(GeneralPooledString name)
 {
     return materialPool_.GetOrCreate(name, [&]
     {
         auto it = materialRecords_.find(name);
         if(it == materialRecords_.end())
         {
-            throw Exception(fmt::format("MaterialManager: unknown material {}", name));
+            throw Exception(fmt::format("LegacyMaterialManager: unknown material {}", name));
         }
         auto &rawMaterial = it->second;
 
@@ -91,13 +91,13 @@ RC<Material> MaterialManager::GetMaterial(GeneralPooledString name)
 
         // Pass
 
-        std::vector<RC<MaterialPass>> passes(rawMaterial.passes.size());
+        std::vector<RC<LegacyMaterialPass>> passes(rawMaterial.passes.size());
         for(size_t i = 0; i < passes.size(); ++i)
         {
             auto &in = rawMaterial.passes[i];
             auto &out = passes[i];
 
-            out = MakeRC<MaterialPass>();
+            out = MakeRC<LegacyMaterialPass>();
             for(auto &tag : in.tags)
             {
                 out->tags_.push_back(tag);
@@ -112,7 +112,7 @@ RC<Material> MaterialManager::GetMaterial(GeneralPooledString name)
             out->materialPassPropertyLayouts_.resize(1 << out->shaderTemplate_->GetKeywordSet().GetTotalBitCount());
         }
 
-        auto ret = MakeRC<Material>();
+        auto ret = MakeRC<LegacyMaterial>();
         ret->device_         = device_;
         ret->name_           = rawMaterial.name;
         ret->passes_         = std::move(passes);
@@ -128,32 +128,32 @@ RC<Material> MaterialManager::GetMaterial(GeneralPooledString name)
     });
 }
 
-RC<ShaderTemplate> MaterialManager::GetShaderTemplate(std::string_view name, bool persistent)
+RC<ShaderTemplate> LegacyMaterialManager::GetShaderTemplate(std::string_view name, bool persistent)
 {
     return shaderDatabase_.GetShaderTemplate(name, persistent);
 }
 
-RC<Shader> MaterialManager::GetShader(std::string_view name, bool persistent)
+RC<Shader> LegacyMaterialManager::GetShader(std::string_view name, bool persistent)
 {
     return shaderDatabase_.GetShaderTemplate(name, persistent)->GetVariant(FastKeywordSetValue{}, persistent);
 }
 
-RC<MaterialInstance> MaterialManager::CreateMaterialInstance(std::string_view name)
+RC<LegacyMaterialInstance> LegacyMaterialManager::CreateMaterialInstance(std::string_view name)
 {
     return GetMaterial(name)->CreateInstance();
 }
 
-RC<MaterialInstance> MaterialManager::CreateMaterialInstance(GeneralPooledString name)
+RC<LegacyMaterialInstance> LegacyMaterialManager::CreateMaterialInstance(GeneralPooledString name)
 {
     return GetMaterial(name)->CreateInstance();
 }
 
-LocalMaterialCache &MaterialManager::GetLocalMaterialCache()
+LocalMaterialCache &LegacyMaterialManager::GetLocalMaterialCache()
 {
     return *localMaterialCache_;
 }
 
-LocalShaderCache &MaterialManager::GetLocalShaderCache()
+LocalShaderCache &LegacyMaterialManager::GetLocalShaderCache()
 {
     return *localShaderCache_;
 }

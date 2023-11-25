@@ -78,7 +78,7 @@ void Application::Run(const Config &config)
     };
     Initialize(initContext);
 
-    renderLoop_ = MakeBox<Renderer::RenderLoop>(resourceManager_, bindlessTextureManager_);
+    renderLoop_ = MakeBox<Renderer::RealTimeRenderLoop>(resourceManager_, bindlessTextureManager_);
     renderLoop_->BeginRenderLoop();
 
     RTRC_SCOPE_EXIT
@@ -196,7 +196,7 @@ void Application::UpdateLoop()
         auto imguiDrawData = imgui_->Render();
         activeScene_->PrepareRender();
 
-        Renderer::RenderLoop::FrameInput frameInput;
+        Renderer::RealTimeRenderLoop::FrameInput frameInput;
         frameInput.scene = activeScene_.get();
         frameInput.camera = &activeCamera_;
         frameInput.imguiDrawData = imguiDrawData.get();
@@ -206,12 +206,9 @@ void Application::UpdateLoop()
         {
             device_->WaitIdle();
             isCapturing_ = false;
-            if(gpuCapturer_)
+            if(gpuCapturer_ && !gpuCapturer_->End())
             {
-                if(!gpuCapturer_->End())
-                {
-                    LogWarning("Fail to end gpu capture");
-                }
+                LogWarning("Fail to end gpu capture");
             }
         }
     }

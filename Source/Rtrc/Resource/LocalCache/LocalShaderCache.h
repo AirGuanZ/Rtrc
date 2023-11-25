@@ -11,8 +11,8 @@
 
 RTRC_BEGIN
 
-class Material;
-class MaterialManager;
+class LegacyMaterial;
+class LegacyMaterialManager;
 class ResourceManager;
 class Shader;
 
@@ -38,7 +38,7 @@ class LocalCachedShaderHandle
 public:
 
     LocalCachedShaderHandle(
-        ObserverPtr<MaterialManager> materialManager,
+        ObserverPtr<LegacyMaterialManager> materialManager,
         LocalCachedShaderStorage    *storage,
         std::string_view             name)
         : materialManager_(materialManager), storage_(storage), name_(name)
@@ -65,7 +65,7 @@ public:
 
 private:
 
-    ObserverPtr<MaterialManager> materialManager_;
+    ObserverPtr<LegacyMaterialManager> materialManager_;
     LocalCachedShaderStorage *storage_;
     std::string_view name_;
 };
@@ -74,7 +74,7 @@ class LocalShaderCache : public Uncopyable
 {
 public:
 
-    explicit LocalShaderCache(ObserverPtr<MaterialManager> materialManager)
+    explicit LocalShaderCache(ObserverPtr<LegacyMaterialManager> materialManager)
         : materialManager_(materialManager)
     {
         
@@ -84,7 +84,7 @@ public:
 
 private:
 
-    ObserverPtr<MaterialManager> materialManager_;
+    ObserverPtr<LegacyMaterialManager> materialManager_;
     tbb::spin_rw_mutex mutex_;
     std::vector<RC<ShaderTemplate>> shaders_;
 };

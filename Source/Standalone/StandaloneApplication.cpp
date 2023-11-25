@@ -109,12 +109,14 @@ void StandaloneApplication::Update(const Rtrc::ApplicationUpdateContext &context
 
         imgui.CheckBox("Indirect Diffuse", &renderSettings.enableIndirectDiffuse);
 
-        if(imgui.BeginCombo("Visualization Mode", GetVisualizationModeName(renderSettings.visualizationMode)))
+        if(imgui.BeginCombo(
+            "Visualization Mode",
+            Rtrc::Renderer::RealTimeRenderLoop::GetVisualizationModeName(renderSettings.visualizationMode)))
         {
-            for(int i = 0; i < Rtrc::EnumCount<Rtrc::Renderer::VisualizationMode>; ++i)
+            for(int i = 0; i < Rtrc::EnumCount<Rtrc::Renderer::RealTimeRenderLoop::VisualizationMode>; ++i)
             {
-                const auto mode = static_cast<Rtrc::Renderer::VisualizationMode>(i);
-                const char *name = GetVisualizationModeName(mode);
+                const auto mode = static_cast<Rtrc::Renderer::RealTimeRenderLoop::VisualizationMode>(i);
+                const char *name = Rtrc::Renderer::RealTimeRenderLoop::GetVisualizationModeName(mode);
                 const bool selected = renderSettings.visualizationMode == mode;
                 if(imgui.Selectable(name, selected))
                 {

@@ -1,10 +1,10 @@
 #include <Rtrc/Renderer/PathTracer/PathTracer.h>
 #include <Rtrc/Renderer/ReSTIR/ReSTIR.h>
-#include <Rtrc/Renderer/RenderLoop.h>
+#include <Rtrc/Renderer/RenderLoop/RealTimeRenderLoop.h>
 
 RTRC_RENDERER_BEGIN
 
-RenderLoop::RenderLoop(ObserverPtr<ResourceManager> resources, ObserverPtr<BindlessTextureManager> bindlessTextures)
+RealTimeRenderLoop::RealTimeRenderLoop(ObserverPtr<ResourceManager> resources, ObserverPtr<BindlessTextureManager> bindlessTextures)
     : device_(resources->GetDevice())
     , resources_(resources)
     , bindlessTextures_(bindlessTextures)
@@ -27,22 +27,22 @@ RenderLoop::RenderLoop(ObserverPtr<ResourceManager> resources, ObserverPtr<Bindl
     deferredLighting_ = MakeBox<DeferredLighting>(resources_);
 }
 
-void RenderLoop::BeginRenderLoop()
+void RealTimeRenderLoop::BeginRenderLoop()
 {
     device_->BeginRenderLoop();
 }
 
-void RenderLoop::EndRenderLoop()
+void RealTimeRenderLoop::EndRenderLoop()
 {
     device_->EndRenderLoop();
 }
 
-void RenderLoop::SetRenderSettings(const RenderSettings &settings)
+void RealTimeRenderLoop::SetRenderSettings(const RenderSettings &settings)
 {
     renderSettings_ = settings;
 }
 
-void RenderLoop::ResizeFramebuffer(uint32_t width, uint32_t height)
+void RealTimeRenderLoop::ResizeFramebuffer(uint32_t width, uint32_t height)
 {
     if(width > 0 && height > 0)
     {
@@ -52,7 +52,7 @@ void RenderLoop::ResizeFramebuffer(uint32_t width, uint32_t height)
     }
 }
 
-void RenderLoop::RenderFrame(const FrameInput &frame)
+void RealTimeRenderLoop::RenderFrame(const FrameInput &frame)
 {
     if(isSwapchainInvalid_)
     {
@@ -73,7 +73,7 @@ void RenderLoop::RenderFrame(const FrameInput &frame)
     }
 }
 
-void RenderLoop::RenderFrameImpl(const FrameInput &frame)
+void RealTimeRenderLoop::RenderFrameImpl(const FrameInput &frame)
 {
     LinearAllocator linearAllocator;
     transientCBufferAllocator_->NewBatch();

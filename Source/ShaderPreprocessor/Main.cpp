@@ -417,7 +417,7 @@ void GenerateShaderRegistration(Rtrc::SourceWriter &sw, const Rtrc::ParsedShader
 void GenerateMaterialRegistration(Rtrc::SourceWriter &sw, const std::vector<Rtrc::RawMaterialRecord> &materials)
 {
     sw("template<>").NewLine();
-    sw("void _rtrcRegisterMaterial<__COUNTER__>(Rtrc::MaterialManager &manager)").NewLine();
+    sw("void _rtrcRegisterMaterial<__COUNTER__>(Rtrc::LegacyMaterialManager &manager)").NewLine();
     sw("{").NewLine();
     ++sw;
 

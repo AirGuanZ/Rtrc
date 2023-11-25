@@ -20,11 +20,11 @@ public:
 
     Span(std::initializer_list<T> initList) : Span(initList.begin(), initList.size()) { }
 
-    Span(const T *data, uint32_t count) : data_(data), size_(count) { }
+    Span(const T *data, size_t count) : data_(data), size_(count) { }
 
     Span(const T *begin, const T *end) : Span(begin, end - begin) { }
 
-    Span(const std::vector<T> &data) : Span(data.data(), static_cast<uint32_t>(data.size())) { }
+    Span(const std::vector<T> &data) : Span(data.data(), data.size()) { }
 
     template<size_t N>
     Span(const StaticVector<T, N> &data) : Span(data.GetData(), data.GetSize()) { }

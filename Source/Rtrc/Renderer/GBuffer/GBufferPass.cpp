@@ -45,7 +45,7 @@ std::vector<GBufferPass::MaterialGroup> GBufferPass::CollectPipelineGroups(const
 {
     std::vector<MaterialGroup> materialGroups;
 
-    const Material *lastMaterial = nullptr;
+    const LegacyMaterial *lastMaterial = nullptr;
     const MaterialRenderingCache *lastMaterialRenderingData = nullptr;
     const MeshRenderingCache *lastMeshRenderingData = nullptr;
 

@@ -21,7 +21,7 @@ ResourceManager::ResourceManager(ObserverPtr<Device> device, bool debugMode)
     LoadBuiltinTextures();
 }
 
-RC<Material> ResourceManager::GetMaterial(const std::string &name)
+RC<LegacyMaterial> ResourceManager::GetMaterial(const std::string &name)
 {
     return materialManager_.GetMaterial(name);
 }
@@ -41,7 +41,7 @@ RC<Mesh> ResourceManager::GetMesh(std::string_view name, MeshFlags flags)
     return meshManager_.GetMesh(name, flags);
 }
 
-RC<MaterialInstance> ResourceManager::CreateMaterialInstance(const std::string &name)
+RC<LegacyMaterialInstance> ResourceManager::CreateMaterialInstance(const std::string &name)
 {
     return materialManager_.CreateMaterialInstance(name);
 }

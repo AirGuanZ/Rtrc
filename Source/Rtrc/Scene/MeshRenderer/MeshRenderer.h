@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/Resource/Material/MaterialInstance.h>
+#include <Rtrc/Resource/Material/LegacyMaterialInstance.h>
 #include <Rtrc/Resource/Mesh/Mesh.h>
 #include <Rtrc/Scene/SceneObject.h>
 #include <Core/EnumFlags.h>
@@ -25,7 +25,7 @@ public:
     ~MeshRenderer() override;
 
     RTRC_SET_GET(Flags,                Flags,    flags_)
-    RTRC_SET_GET(RC<MaterialInstance>, Material, material_)
+    RTRC_SET_GET(RC<LegacyMaterialInstance>, Material, material_)
 
     const RC<Mesh> &GetMesh() const { return mesh_; }
     void SetMesh(RC<Mesh> mesh);
@@ -41,7 +41,7 @@ private:
 
     Flags                flags_ = MeshRendererFlagBit::None;
     RC<Mesh>             mesh_;
-    RC<MaterialInstance> material_;
+    RC<LegacyMaterialInstance> material_;
 };
 
 RTRC_END

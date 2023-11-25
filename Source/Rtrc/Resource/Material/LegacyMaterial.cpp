@@ -3,8 +3,8 @@
 
 #include <Core/Enumerate.h>
 #include <Core/Unreachable.h>
-#include <Rtrc/Resource/Material/Material.h>
-#include <Rtrc/Resource/Material/MaterialInstance.h>
+#include <Rtrc/Resource/Material/LegacyMaterial.h>
+#include <Rtrc/Resource/Material/LegacyMaterialInstance.h>
 
 RTRC_BEGIN
 
@@ -30,7 +30,7 @@ MaterialPropertyHostLayout::MaterialPropertyHostLayout(std::vector<MaterialPrope
     }
 }
 
-MaterialPassPropertyLayout::MaterialPassPropertyLayout(const MaterialPropertyHostLayout &materialPropertyLayout, const Shader &shader)
+LegacyMaterialPassPropertyLayout::LegacyMaterialPassPropertyLayout(const MaterialPropertyHostLayout &materialPropertyLayout, const Shader &shader)
     : constantBufferSize_(0), constantBufferIndexInBindingGroup_(-1), bindingGroupIndex_(-1)
 {
     // Constant buffer
@@ -190,7 +190,7 @@ MaterialPassPropertyLayout::MaterialPassPropertyLayout(const MaterialPropertyHos
     }
 }
 
-void MaterialPassPropertyLayout::FillConstantBufferContent(const void *valueBuffer, void *outputData) const
+void LegacyMaterialPassPropertyLayout::FillConstantBufferContent(const void *valueBuffer, void *outputData) const
 {
     auto input = static_cast<const unsigned char *>(valueBuffer);
     auto output = static_cast<unsigned char *>(outputData);
@@ -200,7 +200,7 @@ void MaterialPassPropertyLayout::FillConstantBufferContent(const void *valueBuff
     }
 }
 
-void MaterialPassPropertyLayout::FillBindingGroup(
+void LegacyMaterialPassPropertyLayout::FillBindingGroup(
     BindingGroup          &bindingGroup,
     Span<MaterialResource> materialResources,
     RC<DynamicBuffer>      cbuffer) const
@@ -244,9 +244,9 @@ void MaterialPassPropertyLayout::FillBindingGroup(
     }
 }
 
-RC<MaterialInstance> Material::CreateInstance() const
+RC<LegacyMaterialInstance> LegacyMaterial::CreateInstance() const
 {
-    return MakeRC<MaterialInstance>(shared_from_this(), device_);
+    return MakeRC<LegacyMaterialInstance>(shared_from_this(), device_);
 }
 
 RTRC_END

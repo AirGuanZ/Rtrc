@@ -34,7 +34,7 @@ private:
 
     struct MaterialGroup
     {
-        const Material                    *material          = nullptr;
+        const LegacyMaterial                    *material          = nullptr;
         ShaderTemplate                    *shaderTemplate    = nullptr;
         bool                               supportInstancing = false;
         int                                gbufferPassIndex  = 0;

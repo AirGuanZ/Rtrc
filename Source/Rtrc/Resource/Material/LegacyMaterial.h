@@ -9,24 +9,24 @@
 #include <Graphics/Shader/Keyword.h>
 #include <Graphics/Shader/ShaderDatabase.h>
 
-/* Material
-    Material:
+/* LegacyMaterial
+    LegacyMaterial:
         PropertyLayout
-        MaterialPass:
+        LegacyMaterialPass:
             ShaderTemplate
             PropertyReferenceLayout
-    MaterialInstance:
-        Material
+    LegacyMaterialInstance:
+        LegacyMaterial
         PropertySheet
-        MaterialPassInstance:
-            MaterialPass
+        LegacyMaterialPassInstance:
+            LegacyMaterialPass
             ConstantBuffer
             TempBindingGroup
 */
 
 RTRC_BEGIN
 
-class MaterialInstance;
+class LegacyMaterialInstance;
 
 using MaterialPassTag = GeneralPooledString;
 #define RTRC_MATERIAL_PASS_TAG(X) RTRC_GENERAL_POOLED_STRING(X)
@@ -108,7 +108,7 @@ private:
 };
 
 // Describe how to create constantBuffer/bindingGroup for a material pass instance
-class MaterialPassPropertyLayout
+class LegacyMaterialPassPropertyLayout
 {
 public:
 
@@ -130,7 +130,7 @@ public:
 
     using MaterialResource = Variant<BufferSrv, TextureSrv, RC<Texture>, RC<Sampler>, RC<Tlas>>;
 
-    MaterialPassPropertyLayout(const MaterialPropertyHostLayout &materialPropertyLayout, const Shader &shader);
+    LegacyMaterialPassPropertyLayout(const MaterialPropertyHostLayout &materialPropertyLayout, const Shader &shader);
 
     int GetBindingGroupIndex() const;
 
@@ -154,7 +154,7 @@ private:
     std::vector<ResourceReference> resourceReferences_;
 };
 
-class MaterialPass : public Uncopyable, public WithUniqueObjectID
+class LegacyMaterialPass : public Uncopyable, public WithUniqueObjectID
 {
 public:
     
@@ -166,14 +166,14 @@ public:
     RC<Shader> GetShader(FastKeywordSetValue mask = {});
     RC<Shader> GetShader(const FastKeywordContext &keywordValues);
 
-    const MaterialPassPropertyLayout *GetPropertyLayout(FastKeywordSetValue mask);
-    const MaterialPassPropertyLayout *GetPropertyLayout(const FastKeywordContext &keywordValues);
+    const LegacyMaterialPassPropertyLayout *GetPropertyLayout(FastKeywordSetValue mask);
+    const LegacyMaterialPassPropertyLayout *GetPropertyLayout(const FastKeywordContext &keywordValues);
 
     const RC<ShaderTemplate> &GetShaderTemplate() const;
 
 private:
 
-    friend class MaterialManager;
+    friend class LegacyMaterialManager;
 
     std::vector<std::string>     tags_;
     std::vector<MaterialPassTag> pooledTags_;
@@ -182,10 +182,10 @@ private:
 
     const MaterialPropertyHostLayout            *hostMaterialPropertyLayout_ = nullptr;
     tbb::spin_rw_mutex                           propertyLayoutsMutex_;
-    std::vector<Box<MaterialPassPropertyLayout>> materialPassPropertyLayouts_;
+    std::vector<Box<LegacyMaterialPassPropertyLayout>> materialPassPropertyLayouts_;
 };
 
-class Material : public std::enable_shared_from_this<Material>, public InObjectCache, public WithUniqueObjectID
+class LegacyMaterial : public std::enable_shared_from_this<LegacyMaterial>, public InObjectCache, public WithUniqueObjectID
 {
 public:
 
@@ -197,21 +197,21 @@ public:
     // return -1 when not found
     int GetPassIndexByTag(MaterialPassTag tag) const;
 
-    RC<MaterialPass> GetPassByIndex(int index);
-    RC<MaterialPass> GetPassByTag(MaterialPassTag tag);
+    RC<LegacyMaterialPass> GetPassByIndex(int index);
+    RC<LegacyMaterialPass> GetPassByTag(MaterialPassTag tag);
     
-    Span<RC<MaterialPass>> GetPasses() const;
+    Span<RC<LegacyMaterialPass>> GetPasses() const;
 
-    RC<MaterialInstance> CreateInstance() const;
+    RC<LegacyMaterialInstance> CreateInstance() const;
 
 private:
 
-    friend class MaterialManager;
+    friend class LegacyMaterialManager;
 
     Device *device_ = nullptr;
 
     std::string                                 name_;
-    std::vector<RC<MaterialPass>>               passes_;
+    std::vector<RC<LegacyMaterialPass>>               passes_;
     std::map<MaterialPassTag, int, std::less<>> tagToIndex_;
     RC<MaterialPropertyHostLayout>              propertyLayout_;
 };
@@ -234,7 +234,7 @@ inline size_t MaterialProperty::GetValueSize() const
         sizeof(uint32_t), sizeof(Vector2u), sizeof(Vector3u), sizeof(Vector4u),
         sizeof(int32_t),  sizeof(Vector2i), sizeof(Vector3i), sizeof(Vector4i),
     };
-    assert(static_cast<int>(type) < GetArraySize(sizes));
+    assert(static_cast<size_t>(type) < GetArraySize(sizes));
     return sizes[static_cast<int>(type)];
 }
 
@@ -247,7 +247,7 @@ inline const char *MaterialProperty::GetTypeName(Type type)
         "int",   "int2",   "int3",   "int4",
         "Buffer", "Texture2D", "Sampler"
     };
-    assert(static_cast<int>(type) < GetArraySize(names));
+    assert(static_cast<size_t>(type) < GetArraySize(names));
     return names[static_cast<int>(type)];
 }
 
@@ -325,47 +325,47 @@ inline const MaterialProperty &MaterialPropertyHostLayout::GetPropertyByName(Sha
     return GetProperties()[index];
 }
 
-inline int MaterialPassPropertyLayout::GetBindingGroupIndex() const
+inline int LegacyMaterialPassPropertyLayout::GetBindingGroupIndex() const
 {
     return bindingGroupIndex_;
 }
 
-inline size_t MaterialPassPropertyLayout::GetConstantBufferSize() const
+inline size_t LegacyMaterialPassPropertyLayout::GetConstantBufferSize() const
 {
     return constantBufferSize_;
 }
 
-inline const RC<BindingGroupLayout> &MaterialPassPropertyLayout::GetBindingGroupLayout() const
+inline const RC<BindingGroupLayout> &LegacyMaterialPassPropertyLayout::GetBindingGroupLayout() const
 {
     return bindingGroupLayout_;
 }
 
-inline const std::vector<std::string> &MaterialPass::GetTags() const
+inline const std::vector<std::string> &LegacyMaterialPass::GetTags() const
 {
     return tags_;
 }
 
-inline const std::vector<MaterialPassTag> &MaterialPass::GetPooledTags() const
+inline const std::vector<MaterialPassTag> &LegacyMaterialPass::GetPooledTags() const
 {
     return pooledTags_;
 }
 
-inline FastKeywordSetValue MaterialPass::ExtractKeywordValueMask(const FastKeywordContext &keywordValues) const
+inline FastKeywordSetValue LegacyMaterialPass::ExtractKeywordValueMask(const FastKeywordContext &keywordValues) const
 {
     return shaderTemplate_->GetKeywordSet().ExtractValue(keywordValues);
 }
 
-inline RC<Shader> MaterialPass::GetShader(FastKeywordSetValue mask)
+inline RC<Shader> LegacyMaterialPass::GetShader(FastKeywordSetValue mask)
 {
     return shaderTemplate_->GetVariant(mask, true);
 }
 
-inline RC<Shader> MaterialPass::GetShader(const FastKeywordContext &keywordValues)
+inline RC<Shader> LegacyMaterialPass::GetShader(const FastKeywordContext &keywordValues)
 {
     return GetShader(shaderTemplate_->GetKeywordSet().ExtractValue(keywordValues));
 }
 
-inline const MaterialPassPropertyLayout *MaterialPass::GetPropertyLayout(FastKeywordSetValue mask)
+inline const LegacyMaterialPassPropertyLayout *LegacyMaterialPass::GetPropertyLayout(FastKeywordSetValue mask)
 {
     {
         std::shared_lock readLock(propertyLayoutsMutex_);
@@ -378,38 +378,38 @@ inline const MaterialPassPropertyLayout *MaterialPass::GetPropertyLayout(FastKey
     std::unique_lock writeLock(propertyLayoutsMutex_);
     if(!materialPassPropertyLayouts_[mask.GetInternalValue()])
     {
-        auto newLayout = MakeBox<MaterialPassPropertyLayout>(*hostMaterialPropertyLayout_, *GetShader(mask));
+        auto newLayout = MakeBox<LegacyMaterialPassPropertyLayout>(*hostMaterialPropertyLayout_, *GetShader(mask));
         materialPassPropertyLayouts_[mask.GetInternalValue()] = std::move(newLayout);
     }
     return materialPassPropertyLayouts_[mask.GetInternalValue()].get();
 }
 
-inline const MaterialPassPropertyLayout *MaterialPass::GetPropertyLayout(const FastKeywordContext &keywordValues)
+inline const LegacyMaterialPassPropertyLayout *LegacyMaterialPass::GetPropertyLayout(const FastKeywordContext &keywordValues)
 {
     return GetPropertyLayout(shaderTemplate_->GetKeywordSet().ExtractValue(keywordValues));
 }
 
-inline const RC<ShaderTemplate> &MaterialPass::GetShaderTemplate() const
+inline const RC<ShaderTemplate> &LegacyMaterialPass::GetShaderTemplate() const
 {
     return shaderTemplate_;
 }
 
-inline const std::string &Material::GetName() const
+inline const std::string &LegacyMaterial::GetName() const
 {
     return name_;
 }
 
-inline Span<MaterialProperty> Material::GetProperties() const
+inline Span<MaterialProperty> LegacyMaterial::GetProperties() const
 {
     return propertyLayout_->GetProperties();
 }
 
-inline RC<MaterialPass> Material::GetPassByIndex(int index)
+inline RC<LegacyMaterialPass> LegacyMaterial::GetPassByIndex(int index)
 {
     return passes_[index];
 }
 
-inline RC<MaterialPass> Material::GetPassByTag(MaterialPassTag tag)
+inline RC<LegacyMaterialPass> LegacyMaterial::GetPassByTag(MaterialPassTag tag)
 {
     const int index = GetPassIndexByTag(tag);
     if(index < 0)
@@ -420,18 +420,18 @@ inline RC<MaterialPass> Material::GetPassByTag(MaterialPassTag tag)
 }
 
 // return -1 when not found
-inline int Material::GetPassIndexByTag(MaterialPassTag tag) const
+inline int LegacyMaterial::GetPassIndexByTag(MaterialPassTag tag) const
 {
     auto it = tagToIndex_.find(tag);
     return it != tagToIndex_.end() ? it->second : -1;
 }
 
-inline const RC<MaterialPropertyHostLayout> &Material::GetPropertyLayout() const
+inline const RC<MaterialPropertyHostLayout> &LegacyMaterial::GetPropertyLayout() const
 {
     return propertyLayout_;
 }
 
-inline Span<RC<MaterialPass>> Material::GetPasses() const
+inline Span<RC<LegacyMaterialPass>> LegacyMaterial::GetPasses() const
 {
     return passes_;
 }

@@ -1,5 +1,5 @@
 #include <Graphics/Shader/ShaderDatabase.h>
-#include <Rtrc/Resource/MaterialManager.h>
+#include <Rtrc/Resource/LegacyMaterialManager.h>
 
 #include "RegisterAllPreprocessedMaterials.inl"
 #include "RegisterAllPreprocessedShaders.inl"
@@ -11,7 +11,7 @@ void RegisterAllPreprocessedShadersInShaderDatabase(ShaderDatabase &database)
     RegisterAllPreprocessedShaders(database);
 }
 
-void RegisterAllPreprocessedMaterialsInMaterialManager(MaterialManager &manager)
+void RegisterAllPreprocessedMaterialsInMaterialManager(LegacyMaterialManager &manager)
 {
     RegisterAllPreprocessedMaterials(manager);
 }

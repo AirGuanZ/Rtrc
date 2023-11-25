@@ -12,7 +12,7 @@ namespace MaterialRegistrationDetail
 #if RTRC_SHOULD_ENABLE_MATERIAL_REGISTRATION
 
     template<int>
-    static void _rtrcRegisterMaterial(MaterialManager &) { }
+    static void _rtrcRegisterMaterial(LegacyMaterialManager &) { }
 
     static constexpr int materialCounterBegin = __COUNTER__;
 #define ENABLE_MATERIAL_REGISTRATION 1
@@ -21,18 +21,18 @@ namespace MaterialRegistrationDetail
     static constexpr int materialCounterEnd = __COUNTER__;
 
     template<int I>
-    static void RegisterSingleMaterial(MaterialManager &manager)
+    static void RegisterSingleMaterial(LegacyMaterialManager &manager)
     {
         _rtrcRegisterMaterial<I>(manager);
     }
 
     template<int Begin, int...Is>
-    static void RegisterAllPreprocessedMaterialsImpl(MaterialManager &manager, std::integer_sequence<int, Is...>)
+    static void RegisterAllPreprocessedMaterialsImpl(LegacyMaterialManager &manager, std::integer_sequence<int, Is...>)
     {
         (RegisterSingleMaterial<Begin + Is>(manager), ...);
     }
 
-    static void RegisterAllPreprocessedMaterials(MaterialManager &manager)
+    static void RegisterAllPreprocessedMaterials(LegacyMaterialManager &manager)
     {
         RegisterAllPreprocessedMaterialsImpl<materialCounterBegin>(
             manager, std::make_integer_sequence<int, materialCounterEnd - materialCounterBegin>());
@@ -40,7 +40,7 @@ namespace MaterialRegistrationDetail
 
 #else
 
-    static void RegisterAllPreprocessedMaterials(MaterialManager &manager)
+    static void RegisterAllPreprocessedMaterials(LegacyMaterialManager &manager)
     {
 
     }
