@@ -114,7 +114,7 @@ void RenderAtmosphere::Render(
 
     renderGraph.CreateComputePassWithThreadCount(
         "GenerateSkyLut",
-        resources_->GetMaterialManager()->GetCachedShader<"Atmosphere/GenerateSkyLut">(),
+        GetStaticShader<"Atmosphere/GenerateSkyLut">(),
         resS_,
         skyPassData);
 }
@@ -145,7 +145,7 @@ RG::TextureResource *RenderAtmosphere::GenerateT(RG::RenderGraph &renderGraph, c
     passData.atmosphere                       = props;
     renderGraph.CreateComputePassWithThreadCount(
         "GenerateTransmittanceLut",
-        resources_->GetMaterialManager()->GetCachedShader<"Atmosphere/GenerateTransmittanceLut">(),
+        GetStaticShader<"Atmosphere/GenerateTransmittanceLut">(),
         resT_,
         passData);
 
@@ -192,7 +192,7 @@ RG::TextureResource *RenderAtmosphere::GenerateM(RG::RenderGraph &renderGraph, c
 
     renderGraph.CreateComputePassWithThreadCount(
         "GenerateMultiScatteringLut",
-        resources_->GetMaterialManager()->GetCachedShader<"Atmosphere/GenerateMultiScatterLut">(),
+        GetStaticShader<"Atmosphere/GenerateMultiScatterLut">(),
         resM_,
         passData);
 

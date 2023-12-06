@@ -7,19 +7,23 @@
 RTRC_RG_BEGIN
 
 class BufferResource;
+class RenderGraph;
 class TextureResource;
 
 class Resource : public Uncopyable
 {
+    RenderGraph *graph_;
     int index_;
 
 public:
 
-    explicit Resource(int resourceIndex) : index_(resourceIndex) { }
+    Resource(RenderGraph* graph,int resourceIndex) : graph_(graph), index_(resourceIndex) { }
 
     virtual ~Resource() = default;
 
     int GetResourceIndex() const { return index_; }
+
+    RenderGraph *GetGraph() const { return graph_; }
 };
 
 template<typename T> const T *TryCastResource(const Resource *rsc) { return dynamic_cast<const T *>(rsc); }

@@ -13,7 +13,7 @@ void GBufferVisualizer::Render(
     RC<Shader> shader;
     if(mode == Mode::Normal)
     {
-        shader = resources_->GetMaterialManager()->GetCachedShader<"VisualizeNormal">();
+        shader = GetStaticShader<"VisualizeNormal">();
     }
     else
     {

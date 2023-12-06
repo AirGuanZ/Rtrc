@@ -2,7 +2,7 @@
 
 using namespace Rtrc;
 
-#include "Bindless.material.outh"
+#include "Bindless.shader.outh"
 
 void Run()
 {
@@ -22,7 +22,7 @@ void Run()
     // Pipeline
 
     auto material = resourceManager.GetMaterial("Bindless");
-    auto shader = material->GetPassByIndex(0)->GetShader();
+    auto shader = resourceManager.GetShader("Bindless", true);
     auto pipeline = device->CreateGraphicsPipeline(
     {
         .shader = shader,
@@ -53,7 +53,7 @@ void Run()
     constexpr int BINDING_GROUP_SIZE = 2048;
     RangeSet bindingSlotAllocator(BINDING_GROUP_SIZE);
 
-    StaticShaderInfo<"Bindless/pass0/shader">::Pass bindingGroupData;
+    StaticShaderInfo<"Bindless">::Pass bindingGroupData;
     bindingGroupData.alpha = 1;
     auto bindingGroup = device->CreateBindingGroup(bindingGroupData, BINDING_GROUP_SIZE);
 
@@ -96,7 +96,7 @@ void Run()
                 .renderTargetView = renderTarget->GetRtvImm(),
                 .loadOp           = AttachmentLoadOp::Clear,
                 .storeOp          = AttachmentStoreOp::Store,
-                .clearValue       = ColorClearValue(0, 0, 0, 0)
+                .clearValue       = { 0, 0, 0, 0 }
             });
             RTRC_SCOPE_EXIT{ commandBuffer.EndRenderPass(); };
 

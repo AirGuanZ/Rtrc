@@ -6,7 +6,6 @@
 #include <Rtrc/Renderer/PathTracer/PathTracer.h>
 #include <Rtrc/Renderer/ReSTIR/ReSTIR.h>
 #include <Rtrc/Renderer/Utility/UploadBufferPool.h>
-#include <Rtrc/Renderer/VXIR/VXIR.h>
 #include <Core/Memory/Arena.h>
 
 RTRC_RENDERER_BEGIN
@@ -28,9 +27,9 @@ public:
 
     RenderCamera(ObserverPtr<Device> device, const RenderScene &scene, const Camera &camera);
 
-    const RenderScene &GetScene() const { return scene_; }
+    const RenderScene &GetScene() const { return *scene_; }
 
-    const Camera        &GetCamera()        const { return camera_; }
+    const Camera        &GetCamera()        const { return *camera_; }
     const CameraData    &GetCameraData()    const { return currRenderCamera_; }
     const RC<SubBuffer> &GetCameraCBuffer() const { return currCameraCBuffer_; }
 
@@ -46,7 +45,6 @@ public:
     RenderAtmosphere::PerCameraData &GetAtmosphereData() { return atmosphereData_; }
     PathTracer::PerCameraData       &GetPathTracingData() { return pathTracingData_; }
     ReSTIR::PerCameraData           &GetReSTIRData() { return restirData_; }
-    VXIR::PerCameraData             &GetVXIRData() { return vxirData_; }
     Crius::PerCameraData            &GetCriusData() { return criusData_; }
 
     void CreateGBuffers(ObserverPtr<RG::RenderGraph> renderGraph, const Vector2u &framebufferSize);
@@ -68,8 +66,8 @@ private:
     
     ObserverPtr<Device> device_;
     
-    const RenderScene &scene_;
-    const Camera      &camera_;
+    const RenderScene *scene_;
+    const Camera      *camera_;
 
     CameraData currRenderCamera_;
     CameraData prevRenderCamera_;
@@ -86,7 +84,6 @@ private:
     RenderAtmosphere::PerCameraData atmosphereData_;
     PathTracer::PerCameraData       pathTracingData_;
     ReSTIR::PerCameraData           restirData_;
-    VXIR::PerCameraData             vxirData_;
     Crius::PerCameraData            criusData_;
 
     RC<StatefulTexture> prevDepth_;

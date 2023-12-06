@@ -23,7 +23,7 @@ void DeferredLighting::Render(
 
     renderGraph->CreateComputePassWithThreadCount(
         "DeferredLighting",
-        resources_->GetMaterialManager()->GetCachedShader<"DeferredLighting">(),
+        GetStaticShader<"DeferredLighting">(),
         renderTarget->GetSize(),
         passData);
 }

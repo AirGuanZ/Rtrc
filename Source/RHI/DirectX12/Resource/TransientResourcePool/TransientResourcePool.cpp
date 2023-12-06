@@ -43,12 +43,12 @@ void DirectX12TransientResourcePool::Allocate(
 
     struct AllocateEvent
     {
-        int       resource;
-        Category  category;
+        int           resource;
+        Category      category;
         HeapAlignment heapAlignment;
-        size_t    size;
-        size_t    alignment;
-        int       sortKey;
+        size_t        size;
+        size_t        alignment;
+        int           sortKey;
     };
 
     struct ReleaseEvent

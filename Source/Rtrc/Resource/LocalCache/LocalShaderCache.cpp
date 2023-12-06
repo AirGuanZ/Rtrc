@@ -1,18 +1,7 @@
 #include <Rtrc/Resource/ResourceManager.h>
+#include <Rtrc/Resource/ShaderManager.h>
 
 RTRC_BEGIN
-
-LocalCachedShaderHandle::LocalCachedShaderHandle(
-    ObserverPtr<ResourceManager> resources, LocalCachedShaderStorage *storage, std::string_view name)
-    : LocalCachedShaderHandle(resources->GetMaterialManager(), storage, name)
-{
-    
-}
-
-const RC<ShaderTemplate> &LocalCachedShaderHandle::Get() const
-{
-    return materialManager_->GetLocalShaderCache().Get(storage_, name_);
-}
 
 const RC<ShaderTemplate> &LocalShaderCache::Get(LocalCachedShaderStorage *storage, std::string_view materialName)
 {
@@ -38,7 +27,7 @@ const RC<ShaderTemplate> &LocalShaderCache::Get(LocalCachedShaderStorage *storag
     }
     if(!shaders_[index])
     {
-        shaders_[index] = materialManager_->GetShaderTemplate(materialName, false);
+        shaders_[index] = shaderManager_->GetShaderTemplate(materialName, true);
     }
     return shaders_[index];
 }

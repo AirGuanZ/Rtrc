@@ -45,13 +45,13 @@ protected:
     template<TemplateStringParameter S>
     RC<Shader> GetStaticShader() const
     {
-        return resources_->GetMaterialManager()->GetCachedShader<S>();
+        return resources_->GetShaderManager()->GetShader<S>();
     }
 
     template<TemplateStringParameter S>
     RC<Shader> GetStaticShader(const FastKeywordContext &context) const
     {
-        return resources_->GetMaterialManager()->GetCachedShaderTemplate<S>()->GetVariant(context);
+        return resources_->GetShaderManager()->GetShaderTemplate<S>()->GetVariant(context);
     }
 
     ObserverPtr<Device>          device_;

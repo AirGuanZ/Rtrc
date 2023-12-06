@@ -53,7 +53,7 @@ void PathTracer::Render(
     tracePassData.maxDepth                  = 5;
     renderGraph.CreateComputePassWithThreadCount(
         "Trace",
-        resources_->GetMaterialManager()->GetCachedShader<"PathTracing/Trace">(),
+        GetStaticShader<"PathTracing/Trace">(),
         framebufferSize,
         tracePassData,
         scene.GetBindlessGeometryBuffers(),
@@ -107,7 +107,7 @@ void PathTracer::Render(
     temporalPassData.resolution         = traceResult->GetSize();
     renderGraph.CreateComputePassWithThreadCount(
         "TemporalFilter",
-        resources_->GetMaterialManager()->GetCachedShader<"PathTracing/TemporalFilter">(),
+        GetStaticShader<"PathTracing/TemporalFilter">(),
         traceResult->GetSize(),
         temporalPassData);
 
@@ -119,9 +119,7 @@ void PathTracer::Render(
     {
         FastKeywordContext keywords;
         keywords.Set(RTRC_FAST_KEYWORD(IS_FILTER_DIRECTION_Y), isDirectionY ? 1 : 0);
-        auto shader = resources_->GetMaterialManager()
-                                ->GetCachedShaderTemplate<"PathTracing/SpatialFilter">()
-                                ->GetVariant(keywords);
+        auto shader = GetStaticShader<"PathTracing/SpatialFilter">(keywords);
 
         SpatialFilterGroup passData;
         FillBindingGroupGBuffers(passData, gbuffers);

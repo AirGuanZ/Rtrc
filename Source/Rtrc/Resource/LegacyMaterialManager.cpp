@@ -6,25 +6,18 @@ RTRC_BEGIN
 
 LegacyMaterialManager::LegacyMaterialManager()
 {
-    const auto workDir = absolute(std::filesystem::current_path()).lexically_normal();
-    shaderDatabase_.AddIncludeDirectory(ReflectedStruct::GetGeneratedFilePath());
-    shaderDatabase_.AddIncludeDirectory((workDir / "Source").string());
-
     RegisterAllPreprocessedMaterialsInMaterialManager(*this);
-
-    localShaderCache_ = MakeBox<LocalShaderCache>(this);
     localMaterialCache_ = MakeBox<LocalMaterialCache>(this);
 }
 
 void LegacyMaterialManager::SetDevice(ObserverPtr<Device> device)
 {
     device_ = device;
-    shaderDatabase_.SetDevice(device);
 }
 
-void LegacyMaterialManager::SetDebug(bool debug)
+void LegacyMaterialManager::SetShaderManager(ObserverPtr<ShaderManager> shaderManager)
 {
-    shaderDatabase_.SetDebug(debug);
+    shaderManager_ = shaderManager;
 }
 
 void LegacyMaterialManager::AddMaterial(RawMaterialRecord rawMaterial)
@@ -103,7 +96,7 @@ RC<LegacyMaterial> LegacyMaterialManager::GetMaterial(GeneralPooledString name)
                 out->tags_.push_back(tag);
                 out->pooledTags_.push_back(MaterialPassTag(tag));
             }
-            out->shaderTemplate_ = GetShaderTemplate(in.shaderName, false);
+            out->shaderTemplate_ = shaderManager_->GetShaderTemplate(in.shaderName, false);
             if(!out->shaderTemplate_)
             {
                 throw Exception("Unknown shader: " + in.shaderName);
@@ -128,16 +121,6 @@ RC<LegacyMaterial> LegacyMaterialManager::GetMaterial(GeneralPooledString name)
     });
 }
 
-RC<ShaderTemplate> LegacyMaterialManager::GetShaderTemplate(std::string_view name, bool persistent)
-{
-    return shaderDatabase_.GetShaderTemplate(name, persistent);
-}
-
-RC<Shader> LegacyMaterialManager::GetShader(std::string_view name, bool persistent)
-{
-    return shaderDatabase_.GetShaderTemplate(name, persistent)->GetVariant(FastKeywordSetValue{}, persistent);
-}
-
 RC<LegacyMaterialInstance> LegacyMaterialManager::CreateMaterialInstance(std::string_view name)
 {
     return GetMaterial(name)->CreateInstance();
@@ -151,11 +134,6 @@ RC<LegacyMaterialInstance> LegacyMaterialManager::CreateMaterialInstance(General
 LocalMaterialCache &LegacyMaterialManager::GetLocalMaterialCache()
 {
     return *localMaterialCache_;
-}
-
-LocalShaderCache &LegacyMaterialManager::GetLocalShaderCache()
-{
-    return *localShaderCache_;
 }
 
 RTRC_END

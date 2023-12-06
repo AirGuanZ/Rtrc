@@ -15,6 +15,7 @@ class LegacyMaterial;
 class LegacyMaterialManager;
 class ResourceManager;
 class Shader;
+class ShaderManager;
 
 class LocalCachedShaderStorage : public Uncopyable
 {
@@ -33,58 +34,21 @@ private:
     uint32_t index_;
 };
 
-class LocalCachedShaderHandle
-{
-public:
-
-    LocalCachedShaderHandle(
-        ObserverPtr<LegacyMaterialManager> materialManager,
-        LocalCachedShaderStorage    *storage,
-        std::string_view             name)
-        : materialManager_(materialManager), storage_(storage), name_(name)
-    {
-
-    }
-    
-    LocalCachedShaderHandle(
-        ObserverPtr<ResourceManager> resources,
-        LocalCachedShaderStorage    *storage,
-        std::string_view             name);
-    
-    operator const RC<ShaderTemplate>&() const
-    {
-        return Get();
-    }
-
-    ShaderTemplate *operator->() const
-    {
-        return Get().get();
-    }
-
-    const RC<ShaderTemplate> &Get() const;
-
-private:
-
-    ObserverPtr<LegacyMaterialManager> materialManager_;
-    LocalCachedShaderStorage *storage_;
-    std::string_view name_;
-};
-
 class LocalShaderCache : public Uncopyable
 {
 public:
 
-    explicit LocalShaderCache(ObserverPtr<LegacyMaterialManager> materialManager)
-        : materialManager_(materialManager)
+    explicit LocalShaderCache(ObserverPtr<ShaderManager> shaderManager)
+        : shaderManager_(shaderManager)
     {
-        
+
     }
 
     const RC<ShaderTemplate> &Get(LocalCachedShaderStorage *storage, std::string_view materialName);
 
 private:
 
-    ObserverPtr<LegacyMaterialManager> materialManager_;
+    ObserverPtr<ShaderManager> shaderManager_;
     tbb::spin_rw_mutex mutex_;
     std::vector<RC<ShaderTemplate>> shaders_;
 };

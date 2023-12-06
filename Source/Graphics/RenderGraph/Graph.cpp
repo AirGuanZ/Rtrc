@@ -33,7 +33,7 @@ RenderGraph::RenderGraph(ObserverPtr<Device> device, Queue queue)
 BufferResource *RenderGraph::CreateBuffer(const RHI::BufferDesc &desc, std::string name)
 {
     const int index = static_cast<int>(buffers_.size());
-    auto resource = MakeBox<InternalBufferResource>(index);
+    auto resource = MakeBox<InternalBufferResource>(this, index);
     resource->rhiDesc = desc;
     resource->name = std::move(name);
     buffers_.push_back(std::move(resource));
@@ -44,7 +44,7 @@ BufferResource *RenderGraph::CreateBuffer(const RHI::BufferDesc &desc, std::stri
 TextureResource *RenderGraph::CreateTexture(const RHI::TextureDesc &desc, std::string name)
 {
     const int index = static_cast<int>(textures_.size());
-    auto resource = MakeBox<InternalTextureResource>(index);
+    auto resource = MakeBox<InternalTextureResource>(this, index);
     resource->rhiDesc = desc;
     resource->name = std::move(name);
     textures_.push_back(std::move(resource));
@@ -60,7 +60,7 @@ BufferResource *RenderGraph::RegisterBuffer(RC<StatefulBuffer> buffer)
         return buffers_[it->second].get();
     }
     const int index = static_cast<int>(buffers_.size());
-    auto resource = MakeBox<ExternalBufferResource>(index);
+    auto resource = MakeBox<ExternalBufferResource>(this, index);
     resource->buffer = std::move(buffer);
     buffers_.push_back(std::move(resource));
     textures_.push_back(nullptr);
@@ -76,7 +76,7 @@ TextureResource *RenderGraph::RegisterTexture(RC<StatefulTexture> texture)
         return textures_[it->second].get();
     }
     const int index = static_cast<int>(textures_.size());
-    auto resource = MakeBox<ExternalTextureResource>(index);
+    auto resource = MakeBox<ExternalTextureResource>(this, index);
     resource->texture = std::move(texture);
     textures_.push_back(std::move(resource));
     buffers_.push_back(nullptr);
@@ -100,7 +100,7 @@ TextureResource *RenderGraph::RegisterReadOnlyTexture(RC<Texture> texture)
     }
 
     const int index = static_cast<int>(textures_.size());
-    auto resource = MakeBox<ExternalTextureResource>(index);
+    auto resource = MakeBox<ExternalTextureResource>(this, index);
     resource->texture = StatefulTexture::FromTexture(std::move(texture));
     textures_.push_back(std::move(resource));
     buffers_.push_back(nullptr);
@@ -127,7 +127,7 @@ TextureResource *RenderGraph::RegisterSwapchainTexture(
 {
     assert(!swapchainTexture_);
     const int index = static_cast<int>(textures_.size());
-    auto resource = MakeBox<SwapchainTexture>(index);
+    auto resource = MakeBox<SwapchainTexture>(this, index);
     resource->texture = MakeRC<WrappedStatefulTexture>(
         Texture::FromRHIObject(std::move(rhiTexture)), TextureSubrscState{});
     resource->acquireSemaphore = std::move(acquireSemaphore);

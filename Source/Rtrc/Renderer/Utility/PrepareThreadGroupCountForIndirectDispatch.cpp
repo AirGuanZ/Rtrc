@@ -22,8 +22,8 @@ RG::Pass *PrepareThreadGroupCount1D(
         FastKeywordContext keywordContext;
         keywordContext.Set(RTRC_FAST_KEYWORD(ThreadGroupSize), std::to_underlying(GroupSize));
         auto shader = resources
-            ->GetMaterialManager()
-            ->GetCachedShaderTemplate<SHADER>()
+            ->GetShaderManager()
+            ->GetShaderTemplate<SHADER>()
             ->GetVariant(keywordContext);
 
         using Variant = StaticShader::Variant<GroupSize>;

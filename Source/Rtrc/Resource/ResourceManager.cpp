@@ -14,8 +14,10 @@ ResourceManager::ResourceManager(ObserverPtr<Device> device, bool debugMode)
     : device_(device)
 {
     materialManager_.SetDevice(device);
-    materialManager_.SetDebug(debugMode);
+    materialManager_.SetShaderManager(shaderManager_);
     meshManager_.SetDevice(device);
+    shaderManager_.SetDevice(device);
+    shaderManager_.SetDebug(debugMode);
 
     LoadBuiltinMeshes();
     LoadBuiltinTextures();
@@ -28,12 +30,12 @@ RC<LegacyMaterial> ResourceManager::GetMaterial(const std::string &name)
 
 RC<ShaderTemplate> ResourceManager::GetShaderTemplate(const std::string &name, bool persistent)
 {
-    return materialManager_.GetShaderTemplate(name, persistent);
+    return shaderManager_.GetShaderTemplate(name, persistent);
 }
 
 RC<Shader> ResourceManager::GetShader(const std::string &name, bool persistent)
 {
-    return materialManager_.GetShader(name, persistent);
+    return shaderManager_.GetShader(name, persistent);
 }
 
 RC<Mesh> ResourceManager::GetMesh(std::string_view name, MeshFlags flags)

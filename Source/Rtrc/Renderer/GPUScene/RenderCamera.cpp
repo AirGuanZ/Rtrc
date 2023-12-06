@@ -4,8 +4,8 @@ RTRC_RENDERER_BEGIN
 
 RenderCamera::RenderCamera(ObserverPtr<Device> device, const RenderScene &scene, const Camera &camera)
     : device_(device)
-    , scene_(scene)
-    , camera_(camera)
+    , scene_(&scene)
+    , camera_(&camera)
     , perObjectDataBufferPool_(device, RHI::BufferUsage::ShaderStructuredBuffer)
 {
 
@@ -127,7 +127,7 @@ void RenderCamera::Update(
     LinearAllocator                     &linearAllocator)
 {
     prevRenderCamera_ = currRenderCamera_;
-    currRenderCamera_ = camera_.GetData();
+    currRenderCamera_ = camera_->GetData();
 
     {
         prevCameraCBuffer_ = currCameraCBuffer_;
@@ -135,7 +135,7 @@ void RenderCamera::Update(
     }
 
     objects_.clear();
-    scene_.GetScene().ForEachMeshRenderer([&](const MeshRenderer *renderer)
+    scene_->GetScene().ForEachMeshRenderer([&](const MeshRenderer *renderer)
     {
         PerObjectData perObjectData;
         perObjectData.localToWorld  = renderer->GetLocalToWorld();
