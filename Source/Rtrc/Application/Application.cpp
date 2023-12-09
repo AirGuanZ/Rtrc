@@ -65,7 +65,7 @@ void Application::Run(const Config &config)
     imgui_                  = MakeBox<ImGuiInstance>(device_, window_);
     resourceManager_        = MakeBox<ResourceManager>(device_);
     bindlessTextureManager_ = MakeBox<BindlessTextureManager>(device_);
-
+    
     Initialize();
     UpdateLoop();
     Destroy();

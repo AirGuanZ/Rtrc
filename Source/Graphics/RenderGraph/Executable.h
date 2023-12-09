@@ -68,7 +68,7 @@ public:
 
     void NewFrame();
 
-    void Execute(ObserverPtr<const RenderGraph> graph);
+    void Execute(ObserverPtr<const RenderGraph> graph, bool enableTransientResourcePool = true);
     
 private:
 

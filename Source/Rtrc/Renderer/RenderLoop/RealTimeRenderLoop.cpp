@@ -4,7 +4,9 @@
 
 RTRC_RENDERER_BEGIN
 
-RealTimeRenderLoop::RealTimeRenderLoop(ObserverPtr<ResourceManager> resources, ObserverPtr<BindlessTextureManager> bindlessTextures)
+RealTimeRenderLoop::RealTimeRenderLoop(
+    ObserverPtr<ResourceManager>        resources,
+    ObserverPtr<BindlessTextureManager> bindlessTextures)
     : device_(resources->GetDevice())
     , resources_(resources)
     , bindlessTextures_(bindlessTextures)
@@ -12,8 +14,8 @@ RealTimeRenderLoop::RealTimeRenderLoop(ObserverPtr<ResourceManager> resources, O
     , isSwapchainInvalid_(false)
 {
     imguiRenderer_ = MakeBox<ImGuiRenderer>(device_);
-    renderGraphExecuter_ = MakeBox<RG::Executer>(device_);
     transientCBufferAllocator_ = MakeBox<TransientConstantBufferAllocator>(*device_);
+    renderGraphExecuter_ = MakeBox<RG::Executer>(device_);
 
     cachedMeshes_ = MakeBox<MeshRenderingCacheManager>(device_);
     cachedMaterials_ = MakeBox<MaterialRenderingCacheManager>();

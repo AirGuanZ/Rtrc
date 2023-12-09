@@ -12,7 +12,9 @@
 #include <Graphics/RenderGraph/Executable.h>
 #include <RHI/Window/WindowInput.h>
 #include <RHI/Window/Window.h>
-#include <Rtrc/Application/BuiltinRenderLoopApplication.h>
+#include <Rtrc/Application/SimpleApplication.h>
 #include <Rtrc/Preprocess/DFDM.h>
+#include <Rtrc/Renderer/RenderLoop/RealTimeRenderLoop.h>
+#include <Rtrc/Resource/Material/LegacyMaterialInstance.h>
 #include <Rtrc/Resource/ResourceManager.h>
 #include <Rtrc/Scene/Camera/CameraController.h>

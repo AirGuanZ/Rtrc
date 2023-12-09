@@ -1,18 +1,21 @@
-#include <Standalone/StandaloneApplication.h>
+#include "StandaloneApplication.h"
 
-void StandaloneApplication::InitializeLogic()
+void StandaloneApplication::Initialize()
 {
-    auto activeCamera = GetActiveCamera();
-    auto activeScene = GetActiveScene();
+    using namespace Rtrc;
 
-    activeCamera->SetPosition({ -2, 2, -5 });
-    activeCamera->SetRotation({ 0.35f, 0.4f, 0 });
-    activeCamera->CalculateDerivedData();
+    activeScene_ = MakeBox<Scene>();
+    renderLoop_ = MakeBox<Renderer::RealTimeRenderLoop>(GetResourceManager(), GetBindlessTextureManager());
+    renderLoop_->BeginRenderLoop();
 
-    cameraController_.SetCamera(*activeCamera);
+    activeCamera_.SetPosition({ -2, 2, -5 });
+    activeCamera_.SetRotation({ 0.35f, 0.4f, 0 });
+    activeCamera_.CalculateDerivedData();
+
+    cameraController_.SetCamera(activeCamera_);
     GetWindowInput().LockCursor(true);
 
-    Rtrc::ResourceManager &resources = *GetResourceManager();
+    ResourceManager &resources = *GetResourceManager();
 
     {
         auto cubeMesh = resources.GetBuiltinMesh(Rtrc::BuiltinMesh::Cube);
@@ -25,7 +28,7 @@ void StandaloneApplication::InitializeLogic()
         matInst->Set("albedoTextureIndex", grayHandle);
 
         {
-            auto object = activeScene->CreateMeshRenderer();
+            auto object = activeScene_->CreateMeshRenderer();
             object->SetMesh(cubeMesh);
             object->SetMaterial(matInst);
             object->SetFlags(Rtrc::MeshRenderer::Flags::OpaqueTlas);
@@ -33,7 +36,7 @@ void StandaloneApplication::InitializeLogic()
         }
 
         {
-            auto object = activeScene->CreateMeshRenderer();
+            auto object = activeScene_->CreateMeshRenderer();
             object->SetMesh(cubeMesh);
             object->SetMaterial(matInst);
             object->SetFlags(Rtrc::MeshRenderer::Flags::OpaqueTlas);
@@ -43,7 +46,7 @@ void StandaloneApplication::InitializeLogic()
     }
     
     {
-        pointLight_ = activeScene->CreateLight();
+        pointLight_ = activeScene_->CreateLight();
         pointLight_->SetType(Rtrc::Light::Type::Point);
         pointLight_->SetPosition({ 0, 2, -3 });
         pointLight_->SetColor({ 0.2f, 1, 0.3f });
@@ -54,7 +57,7 @@ void StandaloneApplication::InitializeLogic()
     }
 }
 
-void StandaloneApplication::UpdateLogic()
+void StandaloneApplication::Update()
 {
     Rtrc::WindowInput &input = GetWindowInput();
     Rtrc::ImGuiInstance &imgui = *GetImGuiInstance();
@@ -78,10 +81,10 @@ void StandaloneApplication::UpdateLogic()
     {
         (void)cameraController_.UpdateCamera(input, GetFrameTimer());
     }
-    GetActiveCamera()->SetProjection(Rtrc::Deg2Rad(60), GetWindow().GetFramebufferWOverH(), 0.1f, 100.0f);
-    GetActiveCamera()->CalculateDerivedData();
+    activeCamera_.SetProjection(Rtrc::Deg2Rad(60), GetWindow().GetFramebufferWOverH(), 0.1f, 100.0f);
+    activeCamera_.CalculateDerivedData();
 
-    auto &renderSettings = GetRenderSettings();
+    auto &renderSettings = activeRenderSettings_;
     if(imgui.Begin("Rtrc Standalone Renderer", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
         imgui.Text("Press F1 to show/hide cursor");
@@ -132,5 +135,25 @@ void StandaloneApplication::UpdateLogic()
     imgui.End();
 
     const Rtrc::Vector3f sunDirection = -Rtrc::Vector3f(std::cos(sunAngle_), std::sin(sunAngle_), 0);
-    GetActiveScene()->GetSky().SetSunDirection(sunDirection);
+    activeScene_->GetSky().SetSunDirection(sunDirection);
+
+    auto imguiDrawData = GetImGuiInstance()->Render();
+    renderLoop_->SetRenderSettings(activeRenderSettings_);
+    activeScene_->PrepareRender();
+
+    Rtrc::Renderer::RealTimeRenderLoop::FrameInput frameInput;
+    frameInput.scene = activeScene_.get();
+    frameInput.camera = &activeCamera_;
+    frameInput.imguiDrawData = imguiDrawData.get();
+    renderLoop_->RenderFrame(frameInput);
+}
+
+void StandaloneApplication::Destroy()
+{
+    renderLoop_->EndRenderLoop();
+}
+
+void StandaloneApplication::ResizeFrameBuffer(uint32_t width, uint32_t height)
+{
+    renderLoop_->ResizeFramebuffer(width, height);
 }

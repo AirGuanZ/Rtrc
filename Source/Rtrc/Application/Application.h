@@ -46,7 +46,7 @@ protected:
     ObserverPtr<ResourceManager>        GetResourceManager()        const { return resourceManager_; }
     ObserverPtr<BindlessTextureManager> GetBindlessTextureManager() const { return bindlessTextureManager_; }
     ObserverPtr<ImGuiInstance>          GetImGuiInstance()          const { return imgui_; }
-
+    
     Window      &GetWindow();
     WindowInput &GetWindowInput();
 

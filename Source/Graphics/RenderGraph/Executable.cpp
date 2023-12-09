@@ -19,12 +19,12 @@ void Executer::NewFrame()
     }
 }
 
-void Executer::Execute(ObserverPtr<const RenderGraph> graph)
+void Executer::Execute(ObserverPtr<const RenderGraph> graph, bool enableTransientResourcePool)
 {
     ExecutableGraph compiledResult;
     {
         Compiler compiler(device_);
-        if(transientResourcePool_)
+        if(enableTransientResourcePool && transientResourcePool_)
         {
             compiler.SetTransientResourcePool(transientResourcePool_);
         }

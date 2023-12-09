@@ -42,10 +42,6 @@ set_property(TARGET Core               PROPERTY FOLDER "RtrcLibrary")
 set_property(TARGET Reflection         PROPERTY FOLDER "RtrcTool")
 set_property(TARGET ShaderPreprocessor PROPERTY FOLDER "RtrcTool")
 
-############## standalone
-
-add_subdirectory(Source/Standalone)
-
 ############## samples
 
 add_subdirectory(Samples)

@@ -56,6 +56,7 @@ public:
     ObserverPtr(const ReferenceCountedPtr<const T> &pointer) : ObserverPtr(pointer.Get()) { }
     ObserverPtr(const CopyOnWritePtr<T> &pointer) : ObserverPtr(pointer.Get()) { }
     ObserverPtr(const CopyOnWritePtr<const T> &pointer) : ObserverPtr(pointer.Get()) { }
+    ObserverPtr(ObserverPtr<T> pointer) : pointer_(pointer.Get()) { }
 
     void Swap(ObserverPtr &other) noexcept { std::swap(pointer_, other.pointer_); }
 

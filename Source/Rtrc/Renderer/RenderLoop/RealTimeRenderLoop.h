@@ -48,7 +48,9 @@ public:
         unsigned int ReSTIR_SVGFSpatialFilterIterations = 2;
     };
 
-    RealTimeRenderLoop(ObserverPtr<ResourceManager> resources, ObserverPtr<BindlessTextureManager> bindlessTextures);
+    RealTimeRenderLoop(
+        ObserverPtr<ResourceManager>        resources,
+        ObserverPtr<BindlessTextureManager> bindlessTextures);
     
     void BeginRenderLoop() override;
     void EndRenderLoop() override;
@@ -72,8 +74,8 @@ private:
     Timer   frameTimer_;
 
     Box<ImGuiRenderer>                    imguiRenderer_;
-    Box<RG::Executer>                     renderGraphExecuter_;
     Box<TransientConstantBufferAllocator> transientCBufferAllocator_;
+    Box<RG::Executer>                     renderGraphExecuter_;
 
     Box<MeshRenderingCacheManager>     cachedMeshes_;
     Box<MaterialRenderingCacheManager> cachedMaterials_;

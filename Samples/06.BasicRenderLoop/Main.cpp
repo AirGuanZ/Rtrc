@@ -1,4 +1,4 @@
-#include <Standalone/StandaloneApplication.h>
+#include "StandaloneApplication.h"
 
 int main()
 {
