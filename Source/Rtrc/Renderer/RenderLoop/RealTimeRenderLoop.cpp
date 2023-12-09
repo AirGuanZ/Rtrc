@@ -1,4 +1,3 @@
-#include <Rtrc/Renderer/PathTracer/PathTracer.h>
 #include <Rtrc/Renderer/ReSTIR/ReSTIR.h>
 #include <Rtrc/Renderer/RenderLoop/RealTimeRenderLoop.h>
 
@@ -23,7 +22,6 @@ RealTimeRenderLoop::RealTimeRenderLoop(
     renderCameras_ = MakeBox<RenderCameraManager>(device_, renderScenes_);
 
     gbufferPass_ = MakeBox<GBufferPass>(device_);
-    pathTracer_ = MakeBox<PathTracer>(resources_);
     gbufferVisualizer_ = MakeBox<GBufferVisualizer>(resources_);
     restir_ = MakeBox<ReSTIR>(resources_);
     deferredLighting_ = MakeBox<DeferredLighting>(resources_);
@@ -142,17 +140,6 @@ void RealTimeRenderLoop::RenderFrameImpl(const FrameInput &frame)
         frameTimer_.GetDeltaSecondsF(),
         cameraAtmosphereData);
     RTRC_SCOPE_EXIT{ atmosphere.ClearPerCameraFrameData(cameraAtmosphereData); };
-    
-    // ============= Indirect diffuse =============
-
-    const bool visIndirectDiffuse = renderSettings_.visualizationMode == VisualizationMode::IndirectDiffuse;
-    const bool renderIndirectDiffuse = visIndirectDiffuse || renderSettings_.enableIndirectDiffuse;
-    if(renderIndirectDiffuse)
-    {
-        pathTracer_->Render(*renderGraph, renderCamera, visIndirectDiffuse);
-    }
-    auto indirectDiffuse = renderCamera.GetPathTracingData().indirectDiffuse;
-    RTRC_SCOPE_EXIT{ pathTracer_->ClearFrameData(renderCamera.GetPathTracingData()); };
 
     // ============= ReSTIR =============
 
@@ -180,12 +167,7 @@ void RealTimeRenderLoop::RenderFrameImpl(const FrameInput &frame)
     // ============= Blit =============
 
     const bool blitUsePointSampling = framebuffer->GetSize() == swapchainImage->GetSize();
-    if(renderSettings_.visualizationMode == VisualizationMode::IndirectDiffuse)
-    {
-        renderGraph->CreateBlitTexture2DPass(
-            "DisplayIndirectDiffuse", indirectDiffuse, swapchainImage, blitUsePointSampling, 1 / 2.2f);
-    }
-    else if(renderSettings_.visualizationMode == VisualizationMode::Normal)
+    if(renderSettings_.visualizationMode == VisualizationMode::Normal)
     {
         gbufferVisualizer_->Render(
             GBufferVisualizer::Mode::Normal, *renderGraph, renderCamera.GetGBuffers(), framebuffer);

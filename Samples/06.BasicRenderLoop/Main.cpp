@@ -7,7 +7,7 @@ int main()
     {
         StandaloneApplication().Run(
         {
-            .title             = "Rtrc Standalone Renderer",
+            .title             = "Rtrc Sample: Basic render loop",
             .width             = 640,
             .height            = 480,
             .maximized         = true,

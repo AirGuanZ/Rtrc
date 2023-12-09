@@ -6,7 +6,6 @@
 #include <Rtrc/Renderer/DeferredLighting/DeferredLighting.h>
 #include <Rtrc/Renderer/GBuffer/GBufferPass.h>
 #include <Rtrc/Renderer/GPUScene/RenderCamera.h>
-#include <Rtrc/Renderer/PathTracer/PathTracer.h>
 #include <Rtrc/Renderer/ReSTIR/ReSTIR.h>
 #include <Rtrc/Renderer/RenderLoop/RenderLoop.h>
 #include <Core/Timer.h>
@@ -20,7 +19,6 @@ public:
     enum class VisualizationMode
     {
         None,
-        IndirectDiffuse,
         Normal,
         ReSTIRDirectIllumination,
         Count
@@ -28,7 +26,7 @@ public:
 
     static const char *GetVisualizationModeName(VisualizationMode mode)
     {
-        constexpr const char *ret[] = { "None", "IndirectDiffuse", "Normal", "ReSTIR", "Count" };
+        constexpr const char *ret[] = { "None", "Normal", "ReSTIR", "Count" };
         return ret[std::to_underlying(mode)];
     }
 
@@ -83,7 +81,6 @@ private:
     Box<RenderCameraManager>           renderCameras_;
 
     Box<GBufferPass>       gbufferPass_;
-    Box<PathTracer>        pathTracer_;
     Box<GBufferVisualizer> gbufferVisualizer_;
     Box<ReSTIR>            restir_;
     Box<DeferredLighting>  deferredLighting_;
