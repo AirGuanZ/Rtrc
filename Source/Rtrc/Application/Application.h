@@ -2,29 +2,11 @@
 
 #include <Graphics/ImGui/Instance.h>
 #include <RHI/Capture/GPUCapturer.h>
-#include <Rtrc/Renderer/RenderLoop/RealTimeRenderLoop.h>
+#include <Rtrc/Resource/BindlessResourceManager.h>
 #include <Rtrc/Resource/ResourceManager.h>
 #include <Core/Timer.h>
 
 RTRC_BEGIN
-
-struct ApplicationInitializeContext
-{
-    Device                 *device;
-    ResourceManager        *resourceManager;
-    BindlessTextureManager *bindlessTextureManager;
-
-    Scene  *activeScene;
-    Camera *activeCamera;
-};
-
-struct ApplicationUpdateContext
-{
-    Scene         *activeScene;
-    Camera        *activeCamera;
-    ImGuiInstance *imgui;
-    Timer         *frameTimer;
-};
 
 class Application : public Uncopyable
 {
@@ -52,20 +34,24 @@ public:
 
 protected:
 
-    virtual void Initialize(const ApplicationInitializeContext &context);
-    virtual void Update(const ApplicationUpdateContext &context);
-    virtual void Destroy();
+    virtual void Initialize() { }
+    virtual void Update() { }
+    virtual void Destroy() { }
+    virtual void ResizeFrameBuffer(uint32_t width, uint32_t height) = 0;
 
     bool GetExitFlag() const;
     void SetExitFlag(bool shouldExit);
 
-    BindlessTextureManager &GetBindlessTextureManager();
+    ObserverPtr<Device>                 GetDevice()                 const { return device_; }
+    ObserverPtr<ResourceManager>        GetResourceManager()        const { return resourceManager_; }
+    ObserverPtr<BindlessTextureManager> GetBindlessTextureManager() const { return bindlessTextureManager_; }
+    ObserverPtr<ImGuiInstance>          GetImGuiInstance()          const { return imgui_; }
 
     Window      &GetWindow();
     WindowInput &GetWindowInput();
 
-          Renderer::RealTimeRenderLoop::RenderSettings &GetRenderSettings()       { return activeRenderSettings_; }
-    const Renderer::RealTimeRenderLoop::RenderSettings &GetRenderSettings() const { return activeRenderSettings_; }
+          Timer &GetFrameTimer()       { return frameTimer_; }
+    const Timer &GetFrameTimer() const { return frameTimer_; }
 
     void SetGPUCaptureOutput(std::string prefix) { gpuCaptureOutputPrefix_ = std::move(prefix); }
     void AddPendingCaptureFrames(int frames) { pendingGPUCaptureFrames_ += frames; }
@@ -80,19 +66,13 @@ private:
     Box<ImGuiInstance>          imgui_;
     Box<ResourceManager>        resourceManager_;
     Box<BindlessTextureManager> bindlessTextureManager_;
-    Box<Renderer::RealTimeRenderLoop>   renderLoop_;
+
+    Timer frameTimer_;
 
     Box<RHI::GPUCapturer> gpuCapturer_;
     std::string           gpuCaptureOutputPrefix_ = "GPUCapture";
     int                   pendingGPUCaptureFrames_ = 0;
     bool                  isCapturing_ = false;
-
-    Box<Scene>                                   activeScene_;
-    Camera                                       activeCamera_;
-    Renderer::RealTimeRenderLoop::RenderSettings activeRenderSettings_;
-
-    Renderer::RealTimeRenderLoop::VisualizationMode visualizationMode_ =
-        Renderer::RealTimeRenderLoop::VisualizationMode::None;
 };
 
 RTRC_END

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <Rtrc/Renderer/Crius/Crius.h>
 #include <Rtrc/Renderer/GBufferBinding.h>
 #include <Rtrc/Renderer/GPUScene/RenderScene.h>
 #include <Rtrc/Renderer/PathTracer/PathTracer.h>
@@ -45,8 +44,7 @@ public:
     RenderAtmosphere::PerCameraData &GetAtmosphereData() { return atmosphereData_; }
     PathTracer::PerCameraData       &GetPathTracingData() { return pathTracingData_; }
     ReSTIR::PerCameraData           &GetReSTIRData() { return restirData_; }
-    Crius::PerCameraData            &GetCriusData() { return criusData_; }
-
+    
     void CreateGBuffers(ObserverPtr<RG::RenderGraph> renderGraph, const Vector2u &framebufferSize);
     void ClearGBuffers();
 
@@ -84,8 +82,7 @@ private:
     RenderAtmosphere::PerCameraData atmosphereData_;
     PathTracer::PerCameraData       pathTracingData_;
     ReSTIR::PerCameraData           restirData_;
-    Crius::PerCameraData            criusData_;
-
+    
     RC<StatefulTexture> prevDepth_;
     RC<StatefulTexture> currDepth_;
 

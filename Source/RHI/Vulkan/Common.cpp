@@ -58,6 +58,7 @@ VkFormat TranslateTexelFormat(Format format)
     case Format::R32_Float:          return VK_FORMAT_R32_SFLOAT;
     case Format::R32G32_Float:       return VK_FORMAT_R32G32_SFLOAT;
     case Format::R32G32B32A32_Float: return VK_FORMAT_R32G32B32A32_SFLOAT;
+    case Format::R32G32B32_Float:    return VK_FORMAT_R32G32B32_SFLOAT;
     case Format::R32G32B32A32_UInt:  return VK_FORMAT_R32G32B32A32_UINT;
     case Format::A2R10G10B10_UNorm:  return VK_FORMAT_A2R10G10B10_UNORM_PACK32;
     case Format::R16_UInt:           return VK_FORMAT_R16_UINT;

@@ -31,10 +31,6 @@ class LegacyMaterialInstance;
 using MaterialPassTag = GeneralPooledString;
 #define RTRC_MATERIAL_PASS_TAG(X) RTRC_GENERAL_POOLED_STRING(X)
 
-using FastKeywordSet      = FastKeywordSet;
-using FastKeywordSetValue = FastKeywordSetValue;
-using FastKeywordContext  = FastKeywordContext;
-
 // Property declared at material scope
 struct MaterialProperty
 {

@@ -168,6 +168,13 @@ void CopyContext::UploadTexture2D(
         UploadTexture2D(texture, arrayLayer, mipLevel, data.GetData(), postLayout);
         return;
     }
+    if(desc.format == RHI::Format::R32G32B32_Float)
+    {
+        auto tdata = image.To(ImageDynamic::F32x3);
+        auto &data = tdata.As<Image<Vector3f>>();
+        UploadTexture2D(texture, arrayLayer, mipLevel, data.GetData(), postLayout);
+        return;
+    }
     throw Exception(std::string("CopyContext: Unsupported texture format: ") + GetFormatName(desc.format));
 }
 

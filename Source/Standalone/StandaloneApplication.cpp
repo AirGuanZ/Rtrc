@@ -1,28 +1,31 @@
 #include <Standalone/StandaloneApplication.h>
 
-void StandaloneApplication::Initialize(const Rtrc::ApplicationInitializeContext &context)
+void StandaloneApplication::InitializeLogic()
 {
-    context.activeCamera->SetPosition({ -2, 2, -5 });
-    context.activeCamera->SetRotation({ 0.35f, 0.4f, 0 });
-    context.activeCamera->CalculateDerivedData();
+    auto activeCamera = GetActiveCamera();
+    auto activeScene = GetActiveScene();
 
-    cameraController_.SetCamera(*context.activeCamera);
+    activeCamera->SetPosition({ -2, 2, -5 });
+    activeCamera->SetRotation({ 0.35f, 0.4f, 0 });
+    activeCamera->CalculateDerivedData();
+
+    cameraController_.SetCamera(*activeCamera);
     GetWindowInput().LockCursor(true);
 
-    Rtrc::ResourceManager &resources = *context.resourceManager;
+    Rtrc::ResourceManager &resources = *GetResourceManager();
 
     {
         auto cubeMesh = resources.GetBuiltinMesh(Rtrc::BuiltinMesh::Cube);
         auto matInst = resources.CreateMaterialInstance("Surface/Diffuse");
 
-        auto gray = context.device->CreateColorTexture2D(180, 180, 180, 255, "Gray");
-        auto grayHandle = GetBindlessTextureManager().Allocate();
+        auto gray = GetDevice()->CreateColorTexture2D(180, 180, 180, 255, "Gray");
+        auto grayHandle = GetBindlessTextureManager()->Allocate();
         grayHandle.Set(gray);
 
         matInst->Set("albedoTextureIndex", grayHandle);
 
         {
-            auto object = context.activeScene->CreateMeshRenderer();
+            auto object = activeScene->CreateMeshRenderer();
             object->SetMesh(cubeMesh);
             object->SetMaterial(matInst);
             object->SetFlags(Rtrc::MeshRenderer::Flags::OpaqueTlas);
@@ -30,7 +33,7 @@ void StandaloneApplication::Initialize(const Rtrc::ApplicationInitializeContext 
         }
 
         {
-            auto object = context.activeScene->CreateMeshRenderer();
+            auto object = activeScene->CreateMeshRenderer();
             object->SetMesh(cubeMesh);
             object->SetMaterial(matInst);
             object->SetFlags(Rtrc::MeshRenderer::Flags::OpaqueTlas);
@@ -40,7 +43,7 @@ void StandaloneApplication::Initialize(const Rtrc::ApplicationInitializeContext 
     }
     
     {
-        pointLight_ = context.activeScene->CreateLight();
+        pointLight_ = activeScene->CreateLight();
         pointLight_->SetType(Rtrc::Light::Type::Point);
         pointLight_->SetPosition({ 0, 2, -3 });
         pointLight_->SetColor({ 0.2f, 1, 0.3f });
@@ -51,10 +54,10 @@ void StandaloneApplication::Initialize(const Rtrc::ApplicationInitializeContext 
     }
 }
 
-void StandaloneApplication::Update(const Rtrc::ApplicationUpdateContext &context)
+void StandaloneApplication::UpdateLogic()
 {
     Rtrc::WindowInput &input = GetWindowInput();
-    Rtrc::ImGuiInstance &imgui = *context.imgui;
+    Rtrc::ImGuiInstance &imgui = *GetImGuiInstance();
     if(input.IsKeyDown(Rtrc::KeyCode::Escape))
     {
         SetExitFlag(true);
@@ -73,10 +76,10 @@ void StandaloneApplication::Update(const Rtrc::ApplicationUpdateContext &context
 
     if(input.IsCursorLocked())
     {
-        (void)cameraController_.UpdateCamera(input, *context.frameTimer);
+        (void)cameraController_.UpdateCamera(input, GetFrameTimer());
     }
-    context.activeCamera->SetProjection(Rtrc::Deg2Rad(60), GetWindow().GetFramebufferWOverH(), 0.1f, 100.0f);
-    context.activeCamera->CalculateDerivedData();
+    GetActiveCamera()->SetProjection(Rtrc::Deg2Rad(60), GetWindow().GetFramebufferWOverH(), 0.1f, 100.0f);
+    GetActiveCamera()->CalculateDerivedData();
 
     auto &renderSettings = GetRenderSettings();
     if(imgui.Begin("Rtrc Standalone Renderer", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
@@ -129,5 +132,5 @@ void StandaloneApplication::Update(const Rtrc::ApplicationUpdateContext &context
     imgui.End();
 
     const Rtrc::Vector3f sunDirection = -Rtrc::Vector3f(std::cos(sunAngle_), std::sin(sunAngle_), 0);
-    context.activeScene->GetSky().SetSunDirection(sunDirection);
+    GetActiveScene()->GetSky().SetSunDirection(sunDirection);
 }

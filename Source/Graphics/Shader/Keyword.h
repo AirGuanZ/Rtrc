@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Core/Container/Span.h>
 #include <Core/Container/StaticVector.h>
 #include <Core/StringPool.h>
 

@@ -79,10 +79,20 @@ function(enable_rtrc_cpp_reflection_helper)
 	foreach(TGT ${TARGETS})
 		get_build_includes(TGT_INCS ${TGT})
 		list(APPEND ALL_INCLUDES ${TGT_INCS})
+		foreach(TGT_INC ${TGT_INCS})
+			if(${TGT_INC} MATCHES "\\.(hlsl|shader|material)$")
+				list(REMOVE_ITEM ALL_INCLUDES ${TGT_INC})
+			endif()
+		endforeach()
 		get_target_property(TGT_SRCS ${TGT} SOURCES)
 		list(APPEND ALL_SOURCES ${TGT_SRCS})
+		foreach(TGT_SRC ${TGT_SRCS})
+			if(${TGT_SRC} MATCHES "\\.(hlsl|shader|material)$")
+				list(REMOVE_ITEM ALL_SOURCES ${TGT_SRC})
+			endif()
+		endforeach()
 	endforeach()
-	
+
 	# generate reflection input
 
 	set(MAIN_TARGET ${ARGV0})

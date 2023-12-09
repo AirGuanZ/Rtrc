@@ -92,6 +92,8 @@ DXGI_FORMAT TranslateFormat(Format format)
         return DXGI_FORMAT_R32G32_FLOAT;
     case R32G32B32A32_Float:
         return DXGI_FORMAT_R32G32B32A32_FLOAT;
+    case R32G32B32_Float:
+        return DXGI_FORMAT_R32G32B32_FLOAT;
     case R32G32B32A32_UInt:
         return DXGI_FORMAT_R32G32B32A32_UINT;
     case A2R10G10B10_UNorm:

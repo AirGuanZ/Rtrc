@@ -2,13 +2,12 @@
 
 #include <Standalone/Common.h>
 
-class StandaloneApplication : public Rtrc::Application
+class StandaloneApplication : public Rtrc::BuiltinRenderLoopApplication
 {
 protected:
 
-    void Initialize(const Rtrc::ApplicationInitializeContext &context) override;
-
-    void Update(const Rtrc::ApplicationUpdateContext &context) override;
+    void InitializeLogic() override;
+    void UpdateLogic() override;
 
 private:
 

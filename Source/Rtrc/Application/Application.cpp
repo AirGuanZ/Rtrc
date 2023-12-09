@@ -66,57 +66,9 @@ void Application::Run(const Config &config)
     resourceManager_        = MakeBox<ResourceManager>(device_);
     bindlessTextureManager_ = MakeBox<BindlessTextureManager>(device_);
 
-    activeScene_ = MakeBox<Scene>();
-    
-    const ApplicationInitializeContext initContext =
-    {
-        .device                 = device_.get(),
-        .resourceManager        = resourceManager_.get(),
-        .bindlessTextureManager = bindlessTextureManager_.get(),
-        .activeScene            = activeScene_.get(),
-        .activeCamera           = &activeCamera_
-    };
-    Initialize(initContext);
-
-    renderLoop_ = MakeBox<Renderer::RealTimeRenderLoop>(resourceManager_, bindlessTextureManager_);
-    renderLoop_->BeginRenderLoop();
-
-    RTRC_SCOPE_EXIT
-    {
-        renderLoop_->EndRenderLoop();
-        renderLoop_.reset();
-    };
+    Initialize();
     UpdateLoop();
-}
-
-void Application::Initialize(const ApplicationInitializeContext &context)
-{
-    // Do nothing
-}
-
-void Application::Update(const ApplicationUpdateContext &context)
-{
-    SetExitFlag(false);
-    if(GetWindowInput().IsKeyDown(KeyCode::Escape))
-    {
-        SetExitFlag(true);
-    }
-
-    auto &imgui = *context.imgui;
-    imgui.SetNextWindowSize({ 200, 200 }, ImGuiCond_Once);
-    if(imgui.Begin("Rtrc Application"))
-    {
-        if(imgui.Button("Exit"))
-        {
-            SetExitFlag(true);
-        }
-    }
-    imgui.End();
-}
-
-void Application::Destroy()
-{
-    // Do nothing
+    Destroy();
 }
 
 bool Application::GetExitFlag() const
@@ -127,11 +79,6 @@ bool Application::GetExitFlag() const
 void Application::SetExitFlag(bool shouldExit)
 {
     window_.SetCloseFlag(shouldExit);
-}
-
-BindlessTextureManager &Application::GetBindlessTextureManager()
-{
-    return *bindlessTextureManager_;
 }
 
 Window &Application::GetWindow()
@@ -147,7 +94,8 @@ WindowInput &Application::GetWindowInput()
 void Application::UpdateLoop()
 {
     Vector2i framebufferSize = window_.GetFramebufferSize();
-    Timer timer;
+    frameTimer_.Restart();
+
     while(!window_.ShouldClose())
     {
         Window::DoEvents();
@@ -157,24 +105,10 @@ void Application::UpdateLoop()
         if(framebufferSize != window_.GetFramebufferSize() || framebufferSize.x == 0 || framebufferSize.y == 0)
         {
             framebufferSize = window_.GetFramebufferSize();
-            renderLoop_->ResizeFramebuffer(framebufferSize.x, framebufferSize.y);
+            ResizeFrameBuffer(framebufferSize.x, framebufferSize.y);
         }
 
-        // ImGui
-
-        imgui_->BeginFrame();
-
-        // Update
-
-        timer.BeginFrame();
-        const ApplicationUpdateContext updateContext =
-        {
-            .activeScene  = activeScene_.get(),
-            .activeCamera = &activeCamera_,
-            .imgui        = imgui_.get(),
-            .frameTimer   = &timer,
-        };
-        Update(updateContext);
+        // Begin capture
 
         if(!isCapturing_ && pendingGPUCaptureFrames_)
         {
@@ -189,18 +123,16 @@ void Application::UpdateLoop()
             }
         }
 
-        // Send render command
+        // ImGui
 
-        renderLoop_->SetRenderSettings(activeRenderSettings_);
+        imgui_->BeginFrame();
 
-        auto imguiDrawData = imgui_->Render();
-        activeScene_->PrepareRender();
+        // Update
 
-        Renderer::RealTimeRenderLoop::FrameInput frameInput;
-        frameInput.scene = activeScene_.get();
-        frameInput.camera = &activeCamera_;
-        frameInput.imguiDrawData = imguiDrawData.get();
-        renderLoop_->RenderFrame(frameInput);
+        frameTimer_.BeginFrame();
+        Update();
+
+        // End capture
 
         if(isCapturing_ && !--pendingGPUCaptureFrames_)
         {
