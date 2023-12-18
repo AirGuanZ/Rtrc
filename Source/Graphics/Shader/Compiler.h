@@ -57,7 +57,7 @@ class ShaderCompiler : public Uncopyable
 {
 public:
     
-    void SetDevice(ObserverPtr<Device> device);
+    void SetDevice(Ref<Device> device);
     
     RC<Shader> Compile(
         const ShaderCompileEnvironment &envir,
@@ -103,7 +103,7 @@ private:
         std::string_view             stage) const;
 
     DXC                 dxc_;
-    ObserverPtr<Device> device_;
+    Ref<Device> device_;
 };
 
 RTRC_END

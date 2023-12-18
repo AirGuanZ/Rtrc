@@ -4,8 +4,8 @@
 RTRC_RENDERER_BEGIN
 
 RealTimeRenderLoop::RealTimeRenderLoop(
-    ObserverPtr<ResourceManager>        resources,
-    ObserverPtr<BindlessTextureManager> bindlessTextures)
+    Ref<ResourceManager>        resources,
+    Ref<BindlessTextureManager> bindlessTextures)
     : device_(resources->GetDevice())
     , resources_(resources)
     , bindlessTextures_(bindlessTextures)

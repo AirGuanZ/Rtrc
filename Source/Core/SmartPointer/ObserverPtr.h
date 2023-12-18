@@ -76,4 +76,7 @@ ObserverPtr<U> DynamicCast(const ObserverPtr<T> &ptr)
     return ObserverPtr<U>(castedPtr);
 }
 
+template<typename T>
+using Ref = ObserverPtr<T>;
+
 RTRC_END

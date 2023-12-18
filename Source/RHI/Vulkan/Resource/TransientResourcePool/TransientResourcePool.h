@@ -15,7 +15,7 @@ public:
     void NotifyExternalHostSynchronization(int session) RTRC_RHI_OVERRIDE;
 
     void Allocate(
-        MutableSpan<TransientResourceDeclaration>  resources,
+        MutSpan<TransientResourceDeclaration> resources,
         std::vector<AliasedTransientResourcePair> &aliasRelation) RTRC_RHI_OVERRIDE;
 };
 

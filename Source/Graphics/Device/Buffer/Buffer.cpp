@@ -72,7 +72,7 @@ RC<SubBuffer> SubBuffer::GetSubRange(RC<SubBuffer> buffer, size_t offset, size_t
 }
 
 BufferManager::BufferManager(RHI::DeviceOPtr device, DeviceSynchronizer &sync)
-    : device_(std::move(device)), sync_(sync)
+    : device_(std::move(device)), sync_(&sync)
 {
     
 }
@@ -91,7 +91,7 @@ void BufferManager::_internalRelease(Buffer &buffer)
 {
     auto &bufferData = GetBufferData(buffer);
     assert(bufferData.manager_ == this);
-    sync_.OnFrameComplete([rhiBuffer = std::move(bufferData.rhiBuffer_)] {});
+    sync_->OnFrameComplete([rhiBuffer = std::move(bufferData.rhiBuffer_)] {});
 }
 
 RTRC_END

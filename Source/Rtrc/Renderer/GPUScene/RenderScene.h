@@ -35,10 +35,10 @@ public:
     };
     
     RenderScene(
-        ObserverPtr<ResourceManager>               resources,
-        ObserverPtr<MaterialRenderingCacheManager> cachedMaterials,
-        ObserverPtr<MeshRenderingCacheManager>     cachedMeshes,
-        ObserverPtr<BindlessTextureManager>        bindlessTextures,
+        Ref<ResourceManager>               resources,
+        Ref<MaterialRenderingCacheManager> cachedMaterials,
+        Ref<MeshRenderingCacheManager>     cachedMeshes,
+        Ref<BindlessTextureManager>        bindlessTextures,
         const Scene                               &scene);
 
     const Scene &GetScene() const { return scene_; }
@@ -58,11 +58,11 @@ public:
 private:
     
     const Scene                               &scene_;
-    ObserverPtr<Device>                        device_;
-    ObserverPtr<ResourceManager>               resources_;
-    ObserverPtr<MaterialRenderingCacheManager> cachedMaterials_;
-    ObserverPtr<MeshRenderingCacheManager>     cachedMeshes_;
-    ObserverPtr<BindlessTextureManager>        bindlessTextures_;
+    Ref<Device>                        device_;
+    Ref<ResourceManager>               resources_;
+    Ref<MaterialRenderingCacheManager> cachedMaterials_;
+    Ref<MeshRenderingCacheManager>     cachedMeshes_;
+    Ref<BindlessTextureManager>        bindlessTextures_;
     
     // Tlas scene
 
@@ -86,10 +86,10 @@ class RenderSceneManager : public Uncopyable
 public:
 
     explicit RenderSceneManager(
-        ObserverPtr<ResourceManager>               resources,
-        ObserverPtr<MaterialRenderingCacheManager> cachedMaterials,
-        ObserverPtr<MeshRenderingCacheManager>     cachedMeshes,
-        ObserverPtr<BindlessTextureManager>        bindlessTextures);
+        Ref<ResourceManager>               resources,
+        Ref<MaterialRenderingCacheManager> cachedMaterials,
+        Ref<MeshRenderingCacheManager>     cachedMeshes,
+        Ref<BindlessTextureManager>        bindlessTextures);
 
     ~RenderSceneManager();
 
@@ -103,10 +103,10 @@ private:
         Connection connection;
     };
 
-    ObserverPtr<ResourceManager>               resources_;
-    ObserverPtr<MaterialRenderingCacheManager> cachedMaterials_;
-    ObserverPtr<MeshRenderingCacheManager>     cachedMeshes_;
-    ObserverPtr<BindlessTextureManager>        bindlessTextures_;
+    Ref<ResourceManager>               resources_;
+    Ref<MaterialRenderingCacheManager> cachedMaterials_;
+    Ref<MeshRenderingCacheManager>     cachedMeshes_;
+    Ref<BindlessTextureManager>        bindlessTextures_;
 
     std::map<const Scene *, SceneRecord> renderScenes_;
 };

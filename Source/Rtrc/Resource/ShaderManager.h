@@ -13,7 +13,7 @@ public:
 
     ShaderManager();
 
-    void SetDevice(ObserverPtr<Device> device);
+    void SetDevice(Ref<Device> device);
     void SetDebug(bool debug);
 
     RC<ShaderTemplate> GetShaderTemplate(std::string_view name, bool persistent = true);
@@ -24,7 +24,7 @@ public:
 
 private:
 
-    ObserverPtr<Device> device_;
+    Ref<Device> device_;
     ShaderDatabase      shaderDatabase_;
     LocalShaderCache    localShaderCache_;
 };

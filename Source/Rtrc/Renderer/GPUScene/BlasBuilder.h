@@ -23,7 +23,7 @@ public:
         RHI::RayTracingGeometryDesc geometryDesc;
     };
 
-    explicit BlasBuilder(ObserverPtr<Device> device);
+    explicit BlasBuilder(Ref<Device> device);
 
     BuildInfo Prepare(
         const Mesh                                    *mesh,
@@ -46,7 +46,7 @@ private:
         RHI::BufferDeviceAddress    *indexData,
         uint32_t                    *vertexStride);
 
-    ObserverPtr<Device> device_;
+    Ref<Device> device_;
     bool                needBarrier_;
 };
 

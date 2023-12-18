@@ -31,7 +31,7 @@ class CachedBindingGroupLayoutHandle
 {
 public:
 
-    CachedBindingGroupLayoutHandle(ObserverPtr<Device> device, CachedBindingGroupLayoutStorage *storage)
+    CachedBindingGroupLayoutHandle(Ref<Device> device, CachedBindingGroupLayoutStorage *storage)
         : device_(device), storage_(storage)
     {
         
@@ -54,7 +54,7 @@ public:
 
 private:
 
-    ObserverPtr<Device> device_;
+    Ref<Device> device_;
     CachedBindingGroupLayoutStorage *storage_;
 };
 
@@ -62,7 +62,7 @@ class BindingGroupLayoutCache : public Uncopyable
 {
 public:
 
-    explicit BindingGroupLayoutCache(ObserverPtr<Device> device)
+    explicit BindingGroupLayoutCache(Ref<Device> device)
         : device_(device)
     {
         
@@ -73,7 +73,7 @@ public:
 
 private:
 
-    ObserverPtr<Device> device_;
+    Ref<Device> device_;
     tbb::spin_rw_mutex mutex_;
     std::vector<RC<BindingGroupLayout>> layouts_;
 };

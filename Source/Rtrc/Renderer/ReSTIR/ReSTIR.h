@@ -32,7 +32,7 @@ public:
         RG::TextureResource *directIllum = nullptr;
     };
 
-    explicit ReSTIR(ObserverPtr<ResourceManager> resources);
+    explicit ReSTIR(Ref<ResourceManager> resources);
 
     RTRC_SET_GET(Settings, Settings, settings_)
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Core/Hash.h>
+#include <Core/Archive/ArchiveInterface.h>
 
 RTRC_BEGIN
 
@@ -56,6 +57,42 @@ template<typename T>
 auto operator*(T a, const Vector2<T> &b);
 template<typename T>
 auto operator/(const Vector2<T> &a, T b);
+
+template<typename T>
+T Dot(const Vector2<T> &lhs, const Vector2<T> &rhs);
+template<typename T>
+T LengthSquare(const Vector2<T> &v);
+template<typename T>
+T Length(const Vector2<T> &v);
+template<typename T>
+Vector2<T> Normalize(const Vector2<T> &v);
+
+template<typename T>
+Vector2<T> Min(const Vector2<T> &a, const Vector2<T> &b);
+template<typename T>
+Vector2<T> Max(const Vector2<T> &a, const Vector2<T> &b);
+
+template<typename T>
+Vector2<T> Floor(const Vector2<T> &v);
+template<typename T>
+Vector2<T> Ceil(const Vector2<T> &v);
+template<typename T>
+Vector2<T> Round(const Vector2<T> &v);
+
+template<typename T>
+struct ArchiveTransferTrait<Vector2<T>>
+{
+    template<typename Archive>
+    static void Transfer(Archive &ar, std::string_view name, Vector2<T> &object)
+    {
+        if(ar.BeginTransferTuple(name, 2))
+        {
+            ar.Transfer("x", object.x);
+            ar.Transfer("y", object.y);
+            ar.EndTransferTuple();
+        }
+    }
+};
 
 template<typename T>
 constexpr Vector2<T>::Vector2()
@@ -161,6 +198,62 @@ template<typename T>
 auto operator/(const Vector2<T> &a, T b)
 {
     return Vector2<T>(a.x / b, a.y / b);
+}
+
+template<typename T>
+T Dot(const Vector2<T> &a, const Vector2<T> &b)
+{
+    return a.x * b.x + a.y * b.y;
+}
+
+template<typename T>
+T LengthSquare(const Vector2<T> &v)
+{
+    return Rtrc::Dot(v, v);
+}
+
+template<typename T>
+T Length(const Vector2<T> &v)
+{
+    static_assert(std::is_floating_point_v<T>);
+    return std::sqrt(Rtrc::LengthSquare(v));
+}
+
+template<typename T>
+Vector2<T> Normalize(const Vector2<T> &v)
+{
+    const T invLen = 1 / Rtrc::Length(v);
+    return invLen * v;
+}
+
+template<typename T>
+Vector2<T> Min(const Vector2<T> &a, const Vector2<T> &b)
+{
+    return Vector2<T>((std::min)(a.x, b.x), (std::min)(a.y, b.y));
+}
+
+template<typename T>
+Vector2<T> Max(const Vector2<T> &a, const Vector2<T> &b)
+{
+    return Vector2<T>((std::max)(a.x, b.x), (std::max)(a.y, b.y));
+}
+
+template<typename T>
+Vector2<T> Floor(const Vector2<T> &v)
+{
+    return Vector2<T>(std::floor(v.x), std::floor(v.y));
+}
+
+template<typename T>
+Vector2<T> Ceil(const Vector2<T> &v)
+{
+    return Vector2<T>(std::ceil(v.x), std::ceil(v.y));
+}
+
+template<typename T>
+Vector2<T> Round(const Vector2<T> &v)
+{
+    return Vector2<T>(std::round(v.x), std::round(v.y));
 }
 
 RTRC_END

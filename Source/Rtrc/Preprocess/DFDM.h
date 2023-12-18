@@ -17,7 +17,7 @@ public:
         Repeat
     };
 
-    RTRC_SET_GET(ObserverPtr<ResourceManager>, Resources,      resources_)
+    RTRC_SET_GET(Ref<ResourceManager>, Resources,      resources_)
     RTRC_SET_GET(WrapMode,                     WrapMode,       wrapMode_)
     RTRC_SET_GET(int,                          IterationCount, iterationCount_)
 
@@ -25,7 +25,7 @@ public:
 
 private:
 
-    ObserverPtr<ResourceManager> resources_;
+    Ref<ResourceManager> resources_;
     WrapMode                     wrapMode_       = WrapMode::Clamp;
     int                          iterationCount_ = 300;
 };

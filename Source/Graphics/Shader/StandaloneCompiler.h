@@ -8,7 +8,7 @@ class StandaloneShaderCompiler : public Uncopyable
 {
 public:
 
-    void SetDevice(ObserverPtr<Device> device);
+    void SetDevice(Ref<Device> device);
 
     RC<Shader> Compile(
         const std::string                        &source,

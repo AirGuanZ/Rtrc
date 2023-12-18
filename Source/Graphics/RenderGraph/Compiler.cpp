@@ -36,7 +36,7 @@ namespace CompilerDetail
 
 } // namespace CompilerDetail
 
-Compiler::Compiler(ObserverPtr<Device> device, Options options)
+Compiler::Compiler(Ref<Device> device, Options options)
     : options_(options)
     , device_(device)
     , graph_(nullptr)

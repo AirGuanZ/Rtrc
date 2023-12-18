@@ -23,7 +23,7 @@ public:
         uint32_t indexInPerObjectDataBuffer = 0;
     };
 
-    RenderCamera(ObserverPtr<Device> device, const RenderScene &scene, const Camera &camera);
+    RenderCamera(Ref<Device> device, const RenderScene &scene, const Camera &camera);
 
     const RenderScene &GetScene() const { return *scene_; }
 
@@ -43,7 +43,7 @@ public:
     RenderAtmosphere::PerCameraData &GetAtmosphereData() { return atmosphereData_; }
     ReSTIR::PerCameraData           &GetReSTIRData() { return restirData_; }
     
-    void CreateGBuffers(ObserverPtr<RG::RenderGraph> renderGraph, const Vector2u &framebufferSize);
+    void CreateGBuffers(Ref<RG::RenderGraph> renderGraph, const Vector2u &framebufferSize);
     void ClearGBuffers();
 
     template<typename T>
@@ -60,7 +60,7 @@ public:
 
 private:
     
-    ObserverPtr<Device> device_;
+    Ref<Device> device_;
     
     const RenderScene *scene_;
     const Camera      *camera_;
@@ -91,7 +91,7 @@ class RenderCameraManager : public Uncopyable
 {
 public:
 
-    RenderCameraManager(ObserverPtr<Device> device, ObserverPtr<RenderSceneManager> scenes);
+    RenderCameraManager(Ref<Device> device, Ref<RenderSceneManager> scenes);
 
     ~RenderCameraManager();
 
@@ -107,8 +107,8 @@ private:
         Connection sceneConnection;
     };
     
-    ObserverPtr<Device>             device_;
-    ObserverPtr<RenderSceneManager> scenes_;
+    Ref<Device>             device_;
+    Ref<RenderSceneManager> scenes_;
 
     std::map<const Camera *, CameraRecord> cameras_;
 };

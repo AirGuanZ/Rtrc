@@ -2,7 +2,7 @@
 
 RTRC_RENDERER_BEGIN
 
-RenderCamera::RenderCamera(ObserverPtr<Device> device, const RenderScene &scene, const Camera &camera)
+RenderCamera::RenderCamera(Ref<Device> device, const RenderScene &scene, const Camera &camera)
     : device_(device)
     , scene_(&scene)
     , camera_(&camera)
@@ -11,7 +11,7 @@ RenderCamera::RenderCamera(ObserverPtr<Device> device, const RenderScene &scene,
 
 }
 
-void RenderCamera::CreateGBuffers(ObserverPtr<RG::RenderGraph> renderGraph, const Vector2u &framebufferSize)
+void RenderCamera::CreateGBuffers(Ref<RG::RenderGraph> renderGraph, const Vector2u &framebufferSize)
 {
     // Normal
 
@@ -200,7 +200,7 @@ void RenderCamera::ResolveDepthTexture(RG::RenderGraph &renderGraph)
     renderGraph.CreateBlitTexture2DPass("ResolveDepth", depthStencil, gbuffers_.currDepth);
 }
 
-RenderCameraManager::RenderCameraManager(ObserverPtr<Device> device, ObserverPtr<RenderSceneManager> scenes)
+RenderCameraManager::RenderCameraManager(Ref<Device> device, Ref<RenderSceneManager> scenes)
     : device_(device), scenes_(scenes)
 {
     

@@ -42,10 +42,10 @@ protected:
     bool GetExitFlag() const;
     void SetExitFlag(bool shouldExit);
 
-    ObserverPtr<Device>                 GetDevice()                 const { return device_; }
-    ObserverPtr<ResourceManager>        GetResourceManager()        const { return resourceManager_; }
-    ObserverPtr<BindlessTextureManager> GetBindlessTextureManager() const { return bindlessTextureManager_; }
-    ObserverPtr<ImGuiInstance>          GetImGuiInstance()          const { return imgui_; }
+    Ref<Device>                 GetDevice()                 const { return device_; }
+    Ref<ResourceManager>        GetResourceManager()        const { return resourceManager_; }
+    Ref<BindlessTextureManager> GetBindlessTextureManager() const { return bindlessTextureManager_; }
+    Ref<ImGuiInstance>          GetImGuiInstance()          const { return imgui_; }
     
     Window      &GetWindow();
     WindowInput &GetWindowInput();

@@ -10,7 +10,7 @@ namespace ReflectedStruct
 
 } // namespace ReflectedStruct
 
-ResourceManager::ResourceManager(ObserverPtr<Device> device, bool debugMode)
+ResourceManager::ResourceManager(Ref<Device> device, bool debugMode)
     : device_(device)
 {
     materialManager_.SetDevice(device);

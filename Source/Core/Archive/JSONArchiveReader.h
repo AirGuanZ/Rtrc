@@ -1,0 +1,43 @@
+#pragma once
+
+#include <Core/Archive/ArchiveInterface.h>
+#include <Core/Uncopyable.h>
+
+RTRC_BEGIN
+
+class JSONArchiveReader : public Uncopyable, public ArchiveCommon<JSONArchiveReader>
+{
+public:
+
+    explicit JSONArchiveReader(const std::string &json);
+    ~JSONArchiveReader();
+
+    void SetVersion(int version);
+    int GetVersion() const;
+
+    bool IsWriting() const { return false; }
+    bool IsReading() const { return true; }
+    bool DidReadLastProperty() const;
+
+    bool BeginTransferObject(std::string_view name);
+    void EndTransferObject();
+
+    bool BeginTransferTuple(std::string_view name, int size);
+    void EndTransferTuple();
+
+    template<std::integral T>
+    void TransferBuiltin(std::string_view name, T &value);
+    template<std::floating_point T>
+    void TransferBuiltin(std::string_view name, T &value);
+    void TransferBuiltin(std::string_view name, std::string &value);
+
+private:
+
+    const void *GetChildJSON(std::string_view name);
+
+    struct Frame;
+    std::vector<Frame> frames_;
+    bool didReadLastProperty_ = false;
+};
+
+RTRC_END

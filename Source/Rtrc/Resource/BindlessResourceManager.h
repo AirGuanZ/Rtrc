@@ -76,7 +76,7 @@ public:
     using ResourceSrv = typename Entry::ResourceSrv;
 
     explicit BindlessResourceManager(
-        ObserverPtr<Device> device, uint32_t initialArraySize = 64, uint32_t maxArraySize = 4096);
+        Ref<Device> device, uint32_t initialArraySize = 64, uint32_t maxArraySize = 4096);
 
     Entry Allocate(uint32_t count = 1);
 
@@ -101,7 +101,7 @@ private:
 
     void Expand();
 
-    ObserverPtr<Device>    device_;
+    Ref<Device>    device_;
     RC<BindingGroupLayout> bindingGroupLayout_;
 
     // TODO: thread-local allocator
@@ -206,7 +206,7 @@ RC<BindingGroup> BindlessResourceManager<ResourceType>::GetBindingGroup() const
 
 template<BindlessResourceType ResourceType>
 BindlessResourceManager<ResourceType>::BindlessResourceManager(
-    ObserverPtr<Device> device, uint32_t initialArraySize, uint32_t maxArraySize)
+    Ref<Device> device, uint32_t initialArraySize, uint32_t maxArraySize)
     : device_(device)
 {
     sharedData_ = MakeRC<SharedData>();

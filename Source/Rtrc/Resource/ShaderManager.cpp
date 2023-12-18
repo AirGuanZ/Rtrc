@@ -10,7 +10,7 @@ ShaderManager::ShaderManager()
     shaderDatabase_.AddIncludeDirectory((workDir / "Source").string());
 }
 
-void ShaderManager::SetDevice(ObserverPtr<Device> device)
+void ShaderManager::SetDevice(Ref<Device> device)
 {
     assert(!device_);
     device_ = device;

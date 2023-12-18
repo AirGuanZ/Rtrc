@@ -187,8 +187,8 @@ float4 FSMain(VsToFs input) : SV_TARGET
 
 struct ImGuiInstance::Data
 {
-    ObserverPtr<Device> device = nullptr;
-    ObserverPtr<Window> window = nullptr;
+    Ref<Device> device = nullptr;
+    Ref<Window> window = nullptr;
     ImGuiContext *context = nullptr;
     Timer timer;
 
@@ -230,7 +230,7 @@ void ImGuiDrawData::BuildFromImDrawData(const ImDrawData *src)
     framebufferScale = { src->FramebufferScale.x, src->FramebufferScale.y };
 }
 
-ImGuiRenderer::ImGuiRenderer(ObserverPtr<Device> device)
+ImGuiRenderer::ImGuiRenderer(Ref<Device> device)
     : device_(device)
 {
     StandaloneShaderCompiler shaderCompiler;
@@ -459,7 +459,7 @@ RC<GraphicsPipeline> ImGuiRenderer::GetOrCreatePipeline(RHI::Format format)
     return pipeline;
 }
 
-ImGuiInstance::ImGuiInstance(ObserverPtr<Device> device, ObserverPtr<Window> window)
+ImGuiInstance::ImGuiInstance(Ref<Device> device, Ref<Window> window)
 {
     data_ = MakeBox<Data>();
     data_->device = device;
@@ -1141,7 +1141,7 @@ void ImGuiInstance::TextUnformatted(std::string_view text)
     ImGui::TextUnformatted(text.data(), text.data() + text.size());
 }
 
-bool ImGuiInstance::InputText(const char *label, MutableSpan<char> buffer, ImGuiInputTextFlags flags)
+bool ImGuiInstance::InputText(const char *label, MutSpan<char> buffer, ImGuiInputTextFlags flags)
 {
     IMGUI_CONTEXT;
     return ImGui::InputText(label, buffer.GetData(), buffer.GetSize(), flags);

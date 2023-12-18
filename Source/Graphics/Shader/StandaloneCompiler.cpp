@@ -2,7 +2,7 @@
 
 RTRC_BEGIN
 
-void StandaloneShaderCompiler::SetDevice(ObserverPtr<Device> device)
+void StandaloneShaderCompiler::SetDevice(Ref<Device> device)
 {
     compiler_.SetDevice(device);
 }

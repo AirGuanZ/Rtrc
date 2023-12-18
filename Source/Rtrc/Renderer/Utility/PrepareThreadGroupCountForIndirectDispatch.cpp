@@ -6,8 +6,8 @@
 RTRC_RENDERER_BEGIN
 
 RG::Pass *PrepareThreadGroupCount1D(
-    ObserverPtr<ResourceManager> resources,
-    ObserverPtr<RG::RenderGraph> renderGraph,
+    Ref<ResourceManager> resources,
+    Ref<RG::RenderGraph> renderGraph,
     const RG::BufferResourceSrv &threadCountBuffer,
     const RG::BufferResourceUav &threadGroupCountBuffer,
     int                          threadGroupSize)

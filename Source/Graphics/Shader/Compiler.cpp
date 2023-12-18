@@ -6,7 +6,7 @@
 
 RTRC_BEGIN
 
-void ShaderCompiler::SetDevice(ObserverPtr<Device> device)
+void ShaderCompiler::SetDevice(Ref<Device> device)
 {
     device_ = device;
 }

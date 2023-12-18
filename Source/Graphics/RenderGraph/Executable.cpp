@@ -3,7 +3,7 @@
 
 RTRC_RG_BEGIN
 
-Executer::Executer(ObserverPtr<Device> device)
+Executer::Executer(Ref<Device> device)
     : device_(device)
 {
     transientResourcePool_ = device_->GetRawDevice()->CreateTransientResourcePool({ 128 * 1024 * 1024 }).ToRC();
@@ -19,7 +19,7 @@ void Executer::NewFrame()
     }
 }
 
-void Executer::Execute(ObserverPtr<const RenderGraph> graph, bool enableTransientResourcePool)
+void Executer::Execute(Ref<const RenderGraph> graph, bool enableTransientResourcePool)
 {
     ExecutableGraph compiledResult;
     {

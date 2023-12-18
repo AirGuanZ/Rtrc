@@ -15,7 +15,7 @@ public:
         Linear
     };
 
-    explicit CopyTextureUtils(ObserverPtr<Device> device);
+    explicit CopyTextureUtils(Ref<Device> device);
 
     void RenderFullscreenTriangle(
         CommandBuffer    &commandBuffer,
@@ -37,7 +37,7 @@ private:
 
     const RC<GraphicsPipeline> &GetPipeline(const Key &key);
 
-    ObserverPtr<Device> device_;
+    Ref<Device> device_;
     RC<Shader> shaderPointSampling_;
     RC<Shader> shaderLinearSampling_;
     RC<Shader> shaderPointSamplingGamma_;

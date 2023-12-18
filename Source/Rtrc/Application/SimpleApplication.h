@@ -13,10 +13,10 @@ public:
 protected:
 
     virtual void InitializeSimpleApplication() { }
-    virtual void UpdateSimpleApplication(ObserverPtr<RG::RenderGraph> renderGraph) { }
+    virtual void UpdateSimpleApplication(Ref<RG::RenderGraph> renderGraph) { }
     virtual void DestroySimpleApplication() { }
 
-    void ExecuteStandaloneRenderGraph(ObserverPtr<RG::RenderGraph> graph, bool enableTransientResourcePool = false);
+    void ExecuteStandaloneRenderGraph(Ref<RG::RenderGraph> graph, bool enableTransientResourcePool = false);
 
 private:
 

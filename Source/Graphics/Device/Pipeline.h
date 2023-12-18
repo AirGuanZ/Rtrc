@@ -149,9 +149,9 @@ public:
     };
     
     void GetShaderGroupHandles(
-        uint32_t                   startGroupIndex,
-        uint32_t                   groupCount,
-        MutableSpan<unsigned char> outputData) const;
+        uint32_t               startGroupIndex,
+        uint32_t               groupCount,
+        MutSpan<unsigned char> outputData) const;
 
     uint32_t GetShaderGroupCount() const;
     uint32_t GetShaderGroupHandleSize() const;

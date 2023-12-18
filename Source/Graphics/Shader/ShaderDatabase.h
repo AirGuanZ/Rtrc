@@ -45,7 +45,7 @@ public:
 
     ShaderDatabase();
 
-    void SetDevice(ObserverPtr<Device> device);
+    void SetDevice(Ref<Device> device);
     void SetDebug(bool debug);
     void AddIncludeDirectory(std::string dir);
     

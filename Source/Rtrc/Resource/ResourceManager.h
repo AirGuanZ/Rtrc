@@ -27,13 +27,13 @@ public:
     
     using MeshFlags = MeshManager::Flags;
 
-    explicit ResourceManager(ObserverPtr<Device> device, bool debugMode = RTRC_DEBUG);
+    explicit ResourceManager(Ref<Device> device, bool debugMode = RTRC_DEBUG);
 
-    ObserverPtr<Device> GetDevice() const { return device_; }
+    Ref<Device> GetDevice() const { return device_; }
     
-    ObserverPtr<LegacyMaterialManager> GetMaterialManager() { return materialManager_; }
-    ObserverPtr<MeshManager>           GetMeshManager()     { return meshManager_;     }
-    ObserverPtr<ShaderManager>         GetShaderManager()   { return shaderManager_; }
+    Ref<LegacyMaterialManager> GetMaterialManager() { return materialManager_; }
+    Ref<MeshManager>           GetMeshManager()     { return meshManager_;     }
+    Ref<ShaderManager>         GetShaderManager()   { return shaderManager_; }
     
     // General resource loading
 
@@ -57,7 +57,7 @@ private:
     void LoadBuiltinTextures();
     void LoadBuiltinMeshes();
 
-    ObserverPtr<Device>   device_;
+    Ref<Device>   device_;
     LegacyMaterialManager materialManager_;
     MeshManager           meshManager_;
     ShaderManager         shaderManager_;

@@ -9,7 +9,7 @@ class ClearTextureUtils
 {
 public:
 
-    explicit ClearTextureUtils(ObserverPtr<Device> device);
+    explicit ClearTextureUtils(Ref<Device> device);
 
     void ClearRWTexture2D(CommandBuffer &commandBuffer, const TextureUav &uav, const Vector4f &value) const;
     void ClearRWTexture2D(CommandBuffer &commandBuffer, const TextureUav &uav, const Vector4u &value) const;
@@ -24,13 +24,14 @@ private:
         const TextureUav &uav,
         const ValueType  &value) const;
 
-    ObserverPtr<Device> device_;
+    Ref<Device> device_;
     RC<Shader> clearFloat4Shader_;
     RC<Shader> clearFloat2Shader_;
     RC<Shader> clearFloatShader_;
     RC<Shader> clearUIntShader_;
     RC<Shader> clearUInt4Shader_;
     RC<Shader> clearUNorm4Shader_;
+    RC<Shader> clearUNorm2Shader_;
     RC<Shader> clearUNormShader_;
 };
 

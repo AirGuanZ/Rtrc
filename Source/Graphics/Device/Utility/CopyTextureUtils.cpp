@@ -53,7 +53,7 @@ float4 PSMain(Vs2Ps input) : SV_Target
 
 } // namespace namespace CopyTextureUtilsDetail
 
-CopyTextureUtils::CopyTextureUtils(ObserverPtr<Device> device)
+CopyTextureUtils::CopyTextureUtils(Ref<Device> device)
     : device_(device)
 {
     StandaloneShaderCompiler shaderCompiler;

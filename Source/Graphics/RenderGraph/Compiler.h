@@ -25,7 +25,7 @@ public:
     using Options = CompilerDetail::Options;
 
     explicit Compiler(
-        ObserverPtr<Device> device,
+        Ref<Device> device,
         Options options = Options::ConnectPassesByDefinitionOrder |
                           Options::PreferGlobalMemoryBarrier);
 
@@ -102,7 +102,7 @@ private:
 
     Options options_;
 
-    ObserverPtr<Device> device_;
+    Ref<Device> device_;
     const RenderGraph  *graph_;
 
     std::vector<Pass*>            sortedPasses_;

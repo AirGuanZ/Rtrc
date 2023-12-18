@@ -3,7 +3,7 @@
 RTRC_BEGIN
 
 LocalCachedMaterialHandle::LocalCachedMaterialHandle(
-    ObserverPtr<ResourceManager> resources, LocalCachedMaterialStorage *storage, std::string_view name)
+    Ref<ResourceManager> resources, LocalCachedMaterialStorage *storage, std::string_view name)
     : LocalCachedMaterialHandle(resources->GetMaterialManager(), storage, name)
 {
     

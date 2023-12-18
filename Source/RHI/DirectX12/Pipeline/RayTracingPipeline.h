@@ -17,9 +17,9 @@ public:
     const OPtr<BindingLayout> &GetBindingLayout() const RTRC_RHI_OVERRIDE;
 
     void GetShaderGroupHandles(
-        uint32_t                   startGroupIndex,
-        uint32_t                   groupCount,
-        MutableSpan<unsigned char> outputData) const RTRC_RHI_OVERRIDE;
+        uint32_t               startGroupIndex,
+        uint32_t               groupCount,
+        MutSpan<unsigned char> outputData) const RTRC_RHI_OVERRIDE;
 
     const ComPtr<ID3D12StateObject> &_internalGetStateObject() const { return pipelineStateObject_; }
     const ComPtr<ID3D12RootSignature> &_internalGetRootSignature() const { return rootSignature_; }

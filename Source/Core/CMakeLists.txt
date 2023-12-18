@@ -14,9 +14,6 @@ foreach(SRC IN ITEMS ${CORE_SRCS})
 endforeach()
 
 set_property(TARGET Core PROPERTY CXX_STANDARD 23)
-#set_property(TARGET Core PROPERTY UNITY_BUILD ON)
-#set_property(TARGET Core PROPERTY UNITY_BUILD_MODE GROUP)
-#set_source_files_properties(${CORE_SRCS} PROPERTIES UNITY_GROUP "Core")
 
 if(MSVC)
 	target_compile_options(Core PUBLIC /Zc:preprocessor /MP)
@@ -26,5 +23,5 @@ endif()
 target_include_directories(Core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..")
 target_link_libraries(
 	Core PUBLIC
-	mimalloc-static spdlog fmt tbbinterface stb tinyexr
+	mimalloc-static spdlog fmt tbbinterface stb tinyexr nlohmann-json
 	half tinyobjloader sigslot avir cy smhasher cista magic_enum)

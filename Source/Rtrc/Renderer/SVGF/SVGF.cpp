@@ -6,8 +6,8 @@
 RTRC_RENDERER_BEGIN
 
 void SVGF::Render(
-    ObserverPtr<RG::RenderGraph> renderGraph,
-    ObserverPtr<RenderCamera>    renderCamera,
+    Ref<RG::RenderGraph> renderGraph,
+    Ref<RenderCamera>    renderCamera,
     PerCameraData               &data,
     RG::TextureResource         *inputColor) const
 {

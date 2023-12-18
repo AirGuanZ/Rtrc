@@ -27,7 +27,7 @@ public:
 
     static constexpr int GLOBAL_BINDLESS_GEOMETRY_BUFFER_MAX_SIZE = 2048;
 
-    explicit MeshRenderingCacheManager(ObserverPtr<Device> device);
+    explicit MeshRenderingCacheManager(Ref<Device> device);
 
     // Update records for all meshes in the scene
     void Update(const Scene &scene, const Camera &camera);
@@ -42,7 +42,7 @@ private:
 
     static float ComputeBlasSortKey(const Vector3f &eye, const MeshRenderer *meshRenderer);
 
-    ObserverPtr<Device>        device_;
+    Ref<Device>        device_;
     Box<BindlessBufferManager> bindlessBuffers_;
 
     BlasBuilder blasBuilder_;

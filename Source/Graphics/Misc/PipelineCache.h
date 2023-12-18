@@ -16,7 +16,7 @@ class PipelineCache
 {
 public:
 
-    explicit PipelineCache(ObserverPtr<Device> device);
+    explicit PipelineCache(Ref<Device> device);
 
     RC<GraphicsPipeline> GetGraphicsPipeline(const GraphicsPipeline::Desc &desc);
 
@@ -36,7 +36,7 @@ private:
         std::vector<UniqueId> invalidatedShaders;
     };
     
-    ObserverPtr<Device> device_;
+    Ref<Device> device_;
 
     ankerl::unordered_dense::map<GraphicsPipeline::Desc, Record, HashOperator<>> staticCache_;
 

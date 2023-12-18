@@ -36,7 +36,7 @@ class ImGuiRenderer : public Uncopyable
 {
 public:
 
-    explicit ImGuiRenderer(ObserverPtr<Device> device);
+    explicit ImGuiRenderer(Ref<Device> device);
     
     RG::Pass *Render(
         const ImGuiDrawData *drawData,
@@ -55,7 +55,7 @@ private:
 
     RC<GraphicsPipeline> GetOrCreatePipeline(RHI::Format format);
 
-    ObserverPtr<Device>                         device_;
+    Ref<Device>                         device_;
     RC<Shader>                                  shader_;
     RC<BindingGroupLayout>                      cbufferBindingGroupLayout_;
     RC<BindingGroupLayout>                      passBindingGroupLayout_;
@@ -67,7 +67,7 @@ class ImGuiInstance : public Uncopyable
 public:
 
     ImGuiInstance() = default;
-    ImGuiInstance(ObserverPtr<Device> device, ObserverPtr<Window> window);
+    ImGuiInstance(Ref<Device> device, Ref<Window> window);
     ~ImGuiInstance();
 
     ImGuiInstance(ImGuiInstance &&other) noexcept;
@@ -177,7 +177,7 @@ public:
     template<typename...Args>
     void Text(fmt::format_string<Args...> fmt, Args&&...args);
     void TextUnformatted(std::string_view text);
-    bool InputText(const char *label, MutableSpan<char> buffer, ImGuiInputTextFlags flags = 0);
+    bool InputText(const char *label, MutSpan<char> buffer, ImGuiInputTextFlags flags = 0);
 
     bool IsAnyItemActive() const;
 

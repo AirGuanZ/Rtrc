@@ -56,6 +56,23 @@ T Length(const Vector4<T> &v);
 template<typename T>
 Vector4<T> Normalize(const Vector4<T> &v);
 
+template<typename T>
+struct ArchiveTransferTrait<Vector4<T>>
+{
+    template<typename Archive>
+    static void Transfer(Archive &ar, std::string_view name, Vector4<T> &object)
+    {
+        if(ar.BeginTransferTuple(name, 4))
+        {
+            ar.Transfer("x", object.x);
+            ar.Transfer("y", object.y);
+            ar.Transfer("y", object.z);
+            ar.Transfer("w", object.w);
+            ar.EndTransferTuple();
+        }
+    }
+};
+
 template <typename T>
 Vector4<T>::Vector4()
     : Vector4(0, 0, 0, 0)

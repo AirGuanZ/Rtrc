@@ -27,6 +27,7 @@ SOFTWARE.
 */
 
 #include <algorithm>
+#include <span>
 #include <string>
 
 namespace base64 {
@@ -38,38 +39,43 @@ inline std::string get_base64_chars() {
     return base64_chars;
 }
 
+inline std::string to_base64(std::span<const unsigned char> data) {
+    int counter = 0;
+    uint32_t bit_stream = 0;
+    const std::string base64_chars = get_base64_chars();
+    std::string encoded;
+    int offset = 0;
+    for(unsigned char c : data) {
+        auto num_val = static_cast<unsigned int>(c);
+        offset = 16 - counter % 3 * 8;
+        bit_stream += num_val << offset;
+        if(offset == 16) {
+            encoded += base64_chars.at(bit_stream >> 18 & 0x3f);
+        }
+        if(offset == 8) {
+            encoded += base64_chars.at(bit_stream >> 12 & 0x3f);
+        }
+        if(offset == 0 && counter != 3) {
+            encoded += base64_chars.at(bit_stream >> 6 & 0x3f);
+            encoded += base64_chars.at(bit_stream & 0x3f);
+            bit_stream = 0;
+        }
+        counter++;
+    }
+    if(offset == 16) {
+        encoded += base64_chars.at(bit_stream >> 12 & 0x3f);
+        encoded += "==";
+    }
+    if(offset == 8) {
+        encoded += base64_chars.at(bit_stream >> 6 & 0x3f);
+        encoded += '=';
+    }
+    return encoded;
+}
+
 inline std::string to_base64(std::string const &data) {
-  int counter = 0;
-  uint32_t bit_stream = 0;
-  const std::string base64_chars = get_base64_chars();
-  std::string encoded;
-  int offset = 0;
-  for (unsigned char c : data) {
-    auto num_val = static_cast<unsigned int>(c);
-    offset = 16 - counter % 3 * 8;
-    bit_stream += num_val << offset;
-    if (offset == 16) {
-      encoded += base64_chars.at(bit_stream >> 18 & 0x3f);
-    }
-    if (offset == 8) {
-      encoded += base64_chars.at(bit_stream >> 12 & 0x3f);
-    }
-    if (offset == 0 && counter != 3) {
-      encoded += base64_chars.at(bit_stream >> 6 & 0x3f);
-      encoded += base64_chars.at(bit_stream & 0x3f);
-      bit_stream = 0;
-    }
-    counter++;
-  }
-  if (offset == 16) {
-    encoded += base64_chars.at(bit_stream >> 12 & 0x3f);
-    encoded += "==";
-  }
-  if (offset == 8) {
-    encoded += base64_chars.at(bit_stream >> 6 & 0x3f);
-    encoded += '=';
-  }
-  return encoded;
+    return to_base64(std::span(
+            reinterpret_cast<const unsigned char*>(data.data()), data.size()));
 }
 
 inline std::string from_base64(std::string const &data) {
@@ -103,9 +109,14 @@ inline std::string from_base64(std::string const &data) {
 
 }
 
-#include <Core/Common.h>
+#include <Core/Container/Span.h>
 
 RTRC_BEGIN
+
+inline std::string ToBase64(CSpan<unsigned char> data)
+{
+    return base64::to_base64(data);
+}
 
 inline std::string ToBase64(const std::string &data)
 {

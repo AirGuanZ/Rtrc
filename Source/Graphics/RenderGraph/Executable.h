@@ -64,17 +64,17 @@ class Executer
 {
 public:
 
-    explicit Executer(ObserverPtr<Device> device);
+    explicit Executer(Ref<Device> device);
 
     void NewFrame();
 
-    void Execute(ObserverPtr<const RenderGraph> graph, bool enableTransientResourcePool = true);
+    void Execute(Ref<const RenderGraph> graph, bool enableTransientResourcePool = true);
     
 private:
 
     void ExecuteImpl(const ExecutableGraph &graph);
 
-    ObserverPtr<Device> device_;
+    Ref<Device> device_;
     RHI::TransientResourcePoolRPtr transientResourcePool_;
 };
 

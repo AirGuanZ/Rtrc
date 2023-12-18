@@ -4,10 +4,10 @@
 RTRC_RENDERER_BEGIN
 
 RenderScene::RenderScene(
-    ObserverPtr<ResourceManager>               resources,
-    ObserverPtr<MaterialRenderingCacheManager> cachedMaterials,
-    ObserverPtr<MeshRenderingCacheManager>     cachedMeshes,
-    ObserverPtr<BindlessTextureManager>        bindlessTextures,
+    Ref<ResourceManager>               resources,
+    Ref<MaterialRenderingCacheManager> cachedMaterials,
+    Ref<MeshRenderingCacheManager>     cachedMeshes,
+    Ref<BindlessTextureManager>        bindlessTextures,
     const Scene                               &scene)
     : scene_(scene)
     , device_(resources->GetDevice())
@@ -179,10 +179,10 @@ void RenderScene::ClearFrameData()
 }
 
 RenderSceneManager::RenderSceneManager(
-    ObserverPtr<ResourceManager>               resources,
-    ObserverPtr<MaterialRenderingCacheManager> cachedMaterials,
-    ObserverPtr<MeshRenderingCacheManager>     cachedMeshes,
-    ObserverPtr<BindlessTextureManager>        bindlessTextures)
+    Ref<ResourceManager>               resources,
+    Ref<MaterialRenderingCacheManager> cachedMaterials,
+    Ref<MeshRenderingCacheManager>     cachedMeshes,
+    Ref<BindlessTextureManager>        bindlessTextures)
     : resources_(resources)
     , cachedMaterials_(cachedMaterials)
     , cachedMeshes_(cachedMeshes)

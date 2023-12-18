@@ -38,7 +38,7 @@ class LocalShaderCache : public Uncopyable
 {
 public:
 
-    explicit LocalShaderCache(ObserverPtr<ShaderManager> shaderManager)
+    explicit LocalShaderCache(Ref<ShaderManager> shaderManager)
         : shaderManager_(shaderManager)
     {
 
@@ -48,7 +48,7 @@ public:
 
 private:
 
-    ObserverPtr<ShaderManager> shaderManager_;
+    Ref<ShaderManager> shaderManager_;
     tbb::spin_rw_mutex mutex_;
     std::vector<RC<ShaderTemplate>> shaders_;
 };

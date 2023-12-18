@@ -18,7 +18,7 @@ void VulkanTransientResourcePool::NotifyExternalHostSynchronization(int session)
 }
 
 void VulkanTransientResourcePool::Allocate(
-    MutableSpan<TransientResourceDeclaration> resources,
+    MutSpan<TransientResourceDeclaration> resources,
     std::vector<AliasedTransientResourcePair> &aliasRelation)
 {
 

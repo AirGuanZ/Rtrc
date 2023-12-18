@@ -9,7 +9,7 @@ class ClearBufferUtils
 {
 public:
 
-    explicit ClearBufferUtils(ObserverPtr<Device> device);
+    explicit ClearBufferUtils(Ref<Device> device);
 
     void ClearRWBuffer(
         CommandBuffer       &commandBuffer,
@@ -23,7 +23,7 @@ public:
 
 private:
 
-    ObserverPtr<Device> device_;
+    Ref<Device> device_;
 
     RC<Shader>             clearRWBufferShader_;
     RC<BindingGroupLayout> clearRWBufferBindingGroupLayout_;

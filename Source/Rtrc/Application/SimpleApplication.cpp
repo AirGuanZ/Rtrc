@@ -5,7 +5,7 @@
 RTRC_BEGIN
 
 void SimpleApplication::ExecuteStandaloneRenderGraph(
-    ObserverPtr<RG::RenderGraph> graph, bool enableTransientResourcePool)
+    Ref<RG::RenderGraph> graph, bool enableTransientResourcePool)
 {
     renderGraphExecuter_->Execute(graph, enableTransientResourcePool);
 }
@@ -42,6 +42,7 @@ void SimpleApplication::Update()
     auto imguiDrawData = GetImGuiInstance()->Render();
     imguiRenderer_->Render(imguiDrawData.get(), renderTarget, graph.get());
 
+    graph->SetCompleteFence(GetDevice()->GetFrameFence());
     renderGraphExecuter_->Execute(graph);
 
     if(!GetDevice()->Present())

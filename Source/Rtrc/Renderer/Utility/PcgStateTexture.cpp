@@ -8,7 +8,7 @@ RTRC_RENDERER_BEGIN
 
 RG::TextureResource *Prepare2DPcgStateTexture(
     RG::RenderGraph             &renderGraph,
-    ObserverPtr<ResourceManager> resources,
+    Ref<ResourceManager> resources,
     RC<StatefulTexture>         &tex,
     const Vector2u              &size)
 {

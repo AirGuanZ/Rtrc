@@ -3,7 +3,7 @@
 RTRC_BEGIN
 
 template<UploadBufferPoolPolicy Policy>
-UploadBufferPool<Policy>::UploadBufferPool(ObserverPtr<Device> device, RHI::BufferUsageFlag usages)
+UploadBufferPool<Policy>::UploadBufferPool(Ref<Device> device, RHI::BufferUsageFlag usages)
     : device_(device), usages_(usages)
 {
     sharedData_ = MakeRC<SharedData>();

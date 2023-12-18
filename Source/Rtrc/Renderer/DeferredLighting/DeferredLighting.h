@@ -11,8 +11,8 @@ public:
     using RenderAlgorithm::RenderAlgorithm;
 
     void Render(
-        ObserverPtr<RenderCamera>    renderCamera,
-        ObserverPtr<RG::RenderGraph> renderGraph,
+        Ref<RenderCamera>    renderCamera,
+        Ref<RG::RenderGraph> renderGraph,
         RG::TextureResource         *directIllum,
         RG::TextureResource         *sky,
         RG::TextureResource         *renderTarget) const;

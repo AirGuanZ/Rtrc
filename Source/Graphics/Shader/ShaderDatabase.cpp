@@ -52,7 +52,7 @@ bool ShaderDatabase::ShaderTemplate::HasBuiltinKeyword(BuiltinKeyword keyword) c
     return record_->hasBuiltinKeyword[std::to_underlying(keyword)];
 }
 
-void ShaderDatabase::SetDevice(ObserverPtr<Device> device)
+void ShaderDatabase::SetDevice(Ref<Device> device)
 {
     compiler_.SetDevice(device);
 }

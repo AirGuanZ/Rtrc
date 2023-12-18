@@ -18,7 +18,7 @@ namespace GBufferPassDetail
 
 } // namespace GBufferPassDetail
 
-GBufferPass::GBufferPass(ObserverPtr<Device> device)
+GBufferPass::GBufferPass(Ref<Device> device)
     : device_(device), gbufferPipelineCache_(device)
 {
 

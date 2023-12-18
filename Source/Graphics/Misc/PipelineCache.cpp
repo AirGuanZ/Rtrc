@@ -3,7 +3,7 @@
 
 RTRC_BEGIN
 
-PipelineCache::PipelineCache(ObserverPtr<Device> device)
+PipelineCache::PipelineCache(Ref<Device> device)
     : device_(std::move(device))
 {
     sharedData_ = MakeRC<SharedData>();

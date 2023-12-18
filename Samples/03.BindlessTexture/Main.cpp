@@ -21,7 +21,6 @@ void Run()
 
     // Pipeline
 
-    auto material = resourceManager.GetMaterial("Bindless");
     auto shader = resourceManager.GetShader("Bindless", true);
     auto pipeline = device->CreateGraphicsPipeline(
     {
@@ -29,8 +28,6 @@ void Run()
         .meshLayout = mesh->GetLayout(),
         .colorAttachmentFormats = { device->GetSwapchainImageDesc().format }
     });
-    auto matInst = material->CreateInstance();
-    auto matPassInst = matInst->GetPassInstance(0);
 
     // Textures
 
@@ -61,7 +58,7 @@ void Run()
     for(int i = 0; i < 4; ++i)
     {
         slots[i] = bindingSlotAllocator.Allocate(1);
-        bindingGroup->Set(1, slots[i], textures[i]->GetSrv());
+        bindingGroup->Set(1, static_cast<int>(slots[i]), textures[i]->GetSrv());
     }
 
     RG::Executer renderGraphExecuter(device);
@@ -102,11 +99,10 @@ void Run()
 
             commandBuffer.BindGraphicsPipeline(pipeline);
             mesh->Bind(commandBuffer);
-            matPassInst->BindGraphicsProperties(commandBuffer);
             commandBuffer.BindGraphicsGroup(0, bindingGroup);
             commandBuffer.SetViewports(renderTarget->GetViewport());
             commandBuffer.SetScissors(renderTarget->GetScissor());
-            commandBuffer.SetGraphicsPushConstants(0, Vector4i(slots[0], slots[1], slots[2], slots[3]));
+            commandBuffer.SetGraphicsPushConstants(0, Vector4u(slots[0], slots[1], slots[2], slots[3]));
             commandBuffer.DrawIndexed(6, 1, 0, 0, 0);
         });
         

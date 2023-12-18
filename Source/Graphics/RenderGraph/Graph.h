@@ -56,9 +56,9 @@ public:
         std::string name;
     };
 
-    explicit RenderGraph(ObserverPtr<Device> device, Queue queue = Queue(nullptr));
+    explicit RenderGraph(Ref<Device> device, Queue queue = Queue(nullptr));
 
-    ObserverPtr<Device> GetDevice() const { return device_; }
+    Ref<Device> GetDevice() const { return device_; }
 
     const Queue &GetQueue() const { return queue_; }
     void SetQueue(Queue queue) { queue_ = std::move(queue); }
@@ -220,7 +220,7 @@ private:
         RHI::BackBufferSemaphoreOPtr presentSemaphore;
     };
 
-    ObserverPtr<Device> device_;
+    Ref<Device> device_;
     Queue               queue_;
 
     LabelStack labelStack_;
@@ -239,8 +239,8 @@ private:
 };
 
 #define RTRC_RG_SCOPED_PASS_GROUP(RENDERGRAPH, NAME)       \
-    ::Rtrc::ObserverPtr(RENDERGRAPH)->PushPassGroup(NAME); \
-    RTRC_SCOPE_EXIT{ ::Rtrc::ObserverPtr(RENDERGRAPH)->PopPassGroup(); }
+    ::Rtrc::Ref(RENDERGRAPH)->PushPassGroup(NAME); \
+    RTRC_SCOPE_EXIT{ ::Rtrc::Ref(RENDERGRAPH)->PopPassGroup(); }
 
 template<RenderGraphBindingGroupInput ... Ts>
 Pass *RenderGraph::CreateComputePass(

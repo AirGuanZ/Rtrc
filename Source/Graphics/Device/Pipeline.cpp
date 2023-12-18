@@ -94,9 +94,9 @@ size_t GraphicsPipeline::Desc::Hash() const
 }
 
 void RayTracingPipeline::GetShaderGroupHandles(
-    uint32_t                   startGroupIndex,
-    uint32_t                   groupCount,
-    MutableSpan<unsigned char> outputData) const
+    uint32_t               startGroupIndex,
+    uint32_t               groupCount,
+    MutSpan<unsigned char> outputData) const
 {
     assert(rhiObject_);
     rhiObject_->GetShaderGroupHandles(startGroupIndex, groupCount, outputData);

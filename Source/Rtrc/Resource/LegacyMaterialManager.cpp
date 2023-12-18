@@ -10,12 +10,12 @@ LegacyMaterialManager::LegacyMaterialManager()
     localMaterialCache_ = MakeBox<LocalMaterialCache>(this);
 }
 
-void LegacyMaterialManager::SetDevice(ObserverPtr<Device> device)
+void LegacyMaterialManager::SetDevice(Ref<Device> device)
 {
     device_ = device;
 }
 
-void LegacyMaterialManager::SetShaderManager(ObserverPtr<ShaderManager> shaderManager)
+void LegacyMaterialManager::SetShaderManager(Ref<ShaderManager> shaderManager)
 {
     shaderManager_ = shaderManager;
 }

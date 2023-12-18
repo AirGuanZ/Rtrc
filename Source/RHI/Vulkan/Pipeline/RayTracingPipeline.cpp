@@ -23,9 +23,9 @@ const OPtr<BindingLayout> &VulkanRayTracingPipeline::GetBindingLayout() const
 }
 
 void VulkanRayTracingPipeline::GetShaderGroupHandles(
-    uint32_t                   startGroupIndex,
-    uint32_t                   groupCount,
-    MutableSpan<unsigned char> outputData) const
+    uint32_t               startGroupIndex,
+    uint32_t               groupCount,
+    MutSpan<unsigned char> outputData) const
 {
     RTRC_VK_FAIL_MSG(
         vkGetRayTracingShaderGroupHandlesKHR(

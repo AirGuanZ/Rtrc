@@ -16,8 +16,8 @@ public:
 
     LegacyMaterialManager();
 
-    void SetDevice(ObserverPtr<Device> device);
-    void SetShaderManager(ObserverPtr<ShaderManager> shaderManager);
+    void SetDevice(Ref<Device> device);
+    void SetShaderManager(Ref<ShaderManager> shaderManager);
 
     void AddMaterial(RawMaterialRecord rawMaterial);
 
@@ -36,8 +36,8 @@ private:
     using MaterialRecord = RawMaterialRecord;
     using MaterialRecordMap = std::map<GeneralPooledString, RawMaterialRecord>;
 
-    ObserverPtr<Device>        device_;
-    ObserverPtr<ShaderManager> shaderManager_;
+    Ref<Device>        device_;
+    Ref<ShaderManager> shaderManager_;
 
     ObjectCache<GeneralPooledString, LegacyMaterial, true, true> materialPool_;
     MaterialRecordMap                                            materialRecords_;

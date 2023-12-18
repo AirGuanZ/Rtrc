@@ -22,7 +22,7 @@ template<typename T>
 using RPtr = ReferenceCountedPtr<T>;
 
 template<typename T>
-using OPtr = ObserverPtr<T>;
+using OPtr = Ref<T>;
 
 template<typename T, typename...Args>
 RPtr <T> MakeRPtr(Args&&...args)
@@ -153,6 +153,8 @@ enum class Format : uint32_t
     R16_UInt,
     R32_UInt,
     R8_UNorm,
+    R16_UNorm,
+    R16G16_UNorm,
     R16G16_Float,
 
     D24S8,
@@ -1747,9 +1749,9 @@ public:
     RTRC_RHI_API const OPtr<BindingLayout> &GetBindingLayout() const RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void GetShaderGroupHandles(
-        uint32_t                   startGroupIndex,
-        uint32_t                   groupCount,
-        MutableSpan<unsigned char> outputData) const RTRC_RHI_API_PURE;
+        uint32_t               startGroupIndex,
+        uint32_t               groupCount,
+        MutSpan<unsigned char> outputData) const RTRC_RHI_API_PURE;
 };
 
 class Texture : public RHIObject
@@ -1869,7 +1871,7 @@ public:
     virtual void NotifyExternalHostSynchronization(int sessionIndex) RTRC_RHI_API_PURE;
 
     virtual void Allocate(
-        MutableSpan<TransientResourceDeclaration> resources,
+        MutSpan<TransientResourceDeclaration> resources,
         std::vector<AliasedTransientResourcePair> &aliasRelation) RTRC_RHI_API_PURE;
 };
 

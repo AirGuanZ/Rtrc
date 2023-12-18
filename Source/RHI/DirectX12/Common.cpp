@@ -80,36 +80,23 @@ DXGI_FORMAT TranslateFormat(Format format)
     using enum Format;
     switch(format)
     {
-    case Unknown:
-        return DXGI_FORMAT_UNKNOWN;
-    case B8G8R8A8_UNorm:
-        return DXGI_FORMAT_B8G8R8A8_UNORM;
-    case R8G8B8A8_UNorm:
-        return DXGI_FORMAT_R8G8B8A8_UNORM;
-    case R32_Float:
-        return DXGI_FORMAT_R32_FLOAT;
-    case R32G32_Float:
-        return DXGI_FORMAT_R32G32_FLOAT;
-    case R32G32B32A32_Float:
-        return DXGI_FORMAT_R32G32B32A32_FLOAT;
-    case R32G32B32_Float:
-        return DXGI_FORMAT_R32G32B32_FLOAT;
-    case R32G32B32A32_UInt:
-        return DXGI_FORMAT_R32G32B32A32_UINT;
-    case A2R10G10B10_UNorm:
-        return DXGI_FORMAT_R10G10B10A2_UNORM;
-    case R16_UInt:
-        return DXGI_FORMAT_R16_UINT;
-    case R32_UInt:
-        return DXGI_FORMAT_R32_UINT;
-    case R8_UNorm:
-        return DXGI_FORMAT_R8_UNORM;
-    case R16G16_Float:
-        return DXGI_FORMAT_R16G16_FLOAT;
-    case D24S8:
-        return DXGI_FORMAT_D24_UNORM_S8_UINT;
-    case D32:
-        return DXGI_FORMAT_D32_FLOAT;
+    case Unknown:            return DXGI_FORMAT_UNKNOWN;
+    case B8G8R8A8_UNorm:     return DXGI_FORMAT_B8G8R8A8_UNORM;
+    case R8G8B8A8_UNorm:     return DXGI_FORMAT_R8G8B8A8_UNORM;
+    case R32_Float:          return DXGI_FORMAT_R32_FLOAT;
+    case R32G32_Float:       return DXGI_FORMAT_R32G32_FLOAT;
+    case R32G32B32A32_Float: return DXGI_FORMAT_R32G32B32A32_FLOAT;
+    case R32G32B32_Float:    return DXGI_FORMAT_R32G32B32_FLOAT;
+    case R32G32B32A32_UInt:  return DXGI_FORMAT_R32G32B32A32_UINT;
+    case A2R10G10B10_UNorm:  return DXGI_FORMAT_R10G10B10A2_UNORM;
+    case R16_UInt:           return DXGI_FORMAT_R16_UINT;
+    case R32_UInt:           return DXGI_FORMAT_R32_UINT;
+    case R8_UNorm:           return DXGI_FORMAT_R8_UNORM;
+    case R16_UNorm:          return DXGI_FORMAT_R16_UNORM;
+    case R16G16_UNorm:       return DXGI_FORMAT_R16G16_UNORM;
+    case R16G16_Float:       return DXGI_FORMAT_R16G16_FLOAT;
+    case D24S8:              return DXGI_FORMAT_D24_UNORM_S8_UINT;
+    case D32:                return DXGI_FORMAT_D32_FLOAT;
     }
     Unreachable();
 }

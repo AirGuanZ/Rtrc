@@ -34,7 +34,7 @@ class RenderAlgorithm : public Uncopyable
 {
 public:
 
-    explicit RenderAlgorithm(ObserverPtr<ResourceManager> resources)
+    explicit RenderAlgorithm(Ref<ResourceManager> resources)
         : device_(resources->GetDevice()), resources_(resources)
     {
         
@@ -54,8 +54,8 @@ protected:
         return resources_->GetShaderManager()->GetShaderTemplate<S>()->GetVariant(context);
     }
 
-    ObserverPtr<Device>          device_;
-    ObserverPtr<ResourceManager> resources_;
+    Ref<Device>          device_;
+    Ref<ResourceManager> resources_;
 };
 
 RTRC_RENDERER_END

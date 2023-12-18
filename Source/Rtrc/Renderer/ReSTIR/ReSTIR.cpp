@@ -68,7 +68,7 @@ namespace ReSTIRDetail
 
 } // namespace ReSTIRDetail
 
-ReSTIR::ReSTIR(ObserverPtr<ResourceManager> resources)
+ReSTIR::ReSTIR(Ref<ResourceManager> resources)
     : RenderAlgorithm(resources), svgf_(resources)
 {
     

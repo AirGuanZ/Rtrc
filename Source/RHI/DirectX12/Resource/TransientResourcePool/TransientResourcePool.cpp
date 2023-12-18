@@ -32,7 +32,7 @@ void DirectX12TransientResourcePool::NotifyExternalHostSynchronization(int sessi
 }
 
 void DirectX12TransientResourcePool::Allocate(
-    MutableSpan<TransientResourceDeclaration>  resources,
+    MutSpan<TransientResourceDeclaration> resources,
     std::vector<AliasedTransientResourcePair> &aliasRelation)
 {
     using namespace TransientResourcePoolDetail;

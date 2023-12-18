@@ -31,7 +31,7 @@ void CSMain(uint2 tid : SV_DispatchThreadID)
 
 }
 
-ClearTextureUtils::ClearTextureUtils(ObserverPtr<Device> device)
+ClearTextureUtils::ClearTextureUtils(Ref<Device> device)
     : device_(device)
 {
     StandaloneShaderCompiler shaderCompiler;
@@ -50,6 +50,8 @@ ClearTextureUtils::ClearTextureUtils(ObserverPtr<Device> device)
         source, { { "OUTPUT_TYPE", "uint4" }, { "VALUE_TYPE", "uint4" } }, RTRC_DEBUG);
     clearUNorm4Shader_ = shaderCompiler.Compile(
         source, { { "OUTPUT_TYPE", "unorm float4" }, { "VALUE_TYPE", "float4" } }, RTRC_DEBUG);
+    clearUNorm2Shader_ = shaderCompiler.Compile(
+        source, { { "OUTPUT_TYPE", "unorm float2" }, { "VALUE_TYPE", "float2" } }, RTRC_DEBUG);
     clearUNormShader_ = shaderCompiler.Compile(
         source, { { "OUTPUT_TYPE", "unorm float" }, { "VALUE_TYPE", "float" } }, RTRC_DEBUG);
 }
@@ -76,7 +78,10 @@ void ClearTextureUtils::ClearRWTexture2D(
     case RHI::Format::R16G16_Float:
         return ClearRWTexture2DImpl(clearFloat2Shader_, commandBuffer, uav, Vector2f(value.x, value.y));
     case RHI::Format::R8_UNorm:
+    case RHI::Format::R16_UNorm:
         return ClearRWTexture2DImpl(clearUNormShader_, commandBuffer, uav, value.x);
+    case RHI::Format::R16G16_UNorm:
+        return ClearRWTexture2DImpl(clearUNorm2Shader_, commandBuffer, uav, Vector2f(value.x, value.y));
     default:
         throw Exception(fmt::format(
             "ClearTextureUtils::ClearRWTexture2D(float): unsupported uav format {}", GetFormatName(format)));

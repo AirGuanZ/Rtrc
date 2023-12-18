@@ -126,8 +126,6 @@ rtrc_shader("Rtrc/Builtin/DFDM")
 		Node currentNode;
 		LoadNode(coord, currentNode);
 
-		// Collect neighbor nodes
-
 		const int2 neighborOffsets[6] =
 		{
 			int2(-1, +0),

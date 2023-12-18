@@ -21,6 +21,8 @@ const char *GetFormatName(Format format)
     ADD_CASE(R16_UInt)
     ADD_CASE(R32_UInt)
     ADD_CASE(R8_UNorm)
+    ADD_CASE(R16_UNorm)
+    ADD_CASE(R16G16_UNorm)
     ADD_CASE(R16G16_Float)
     ADD_CASE(D24S8)
     ADD_CASE(D32)
@@ -47,9 +49,11 @@ size_t GetTexelSize(Format format)
     case Format::R32_Float:
     case Format::R32_UInt:
     case Format::R16G16_Float:
+    case Format::R16G16_UNorm:
         return 4;
     case Format::A2R10G10B10_UNorm:
     case Format::R16_UInt:
+    case Format::R16_UNorm:
         return 2;
     case Format::R8_UNorm:
         return 1;
@@ -82,7 +86,9 @@ bool NeedUNormAsTypedUAV(Format format)
     return format == Format::B8G8R8A8_UNorm ||
            format == Format::R8G8B8A8_UNorm ||
            format == Format::A2R10G10B10_UNorm ||
-           format == Format::R8_UNorm;
+           format == Format::R8_UNorm ||
+           format == Format::R16_UNorm ||
+           format == Format::R16G16_UNorm;
 }
 
 bool NeedSNormAsTypedUAV(Format format)

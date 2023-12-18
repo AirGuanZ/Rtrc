@@ -10,7 +10,7 @@ class GBufferPass : public Uncopyable
 {
 public:
 
-    explicit GBufferPass(ObserverPtr<Device> device);
+    explicit GBufferPass(Ref<Device> device);
 
     void Render(
         const RenderCamera     &sceneCamera,
@@ -48,7 +48,7 @@ private:
         const RC<BindingGroup> &bindlessTextureGroup,
         const GBuffers         &gbuffers);
 
-    ObserverPtr<Device> device_;
+    Ref<Device> device_;
     PipelineCache       gbufferPipelineCache_;
 };
 

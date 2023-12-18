@@ -76,6 +76,22 @@ template<typename T>
 Vector3<T> Max(const Vector3<T> &lhs, const Vector3<T> &rhs);
 
 template<typename T>
+struct ArchiveTransferTrait<Vector3<T>>
+{
+    template<typename Archive>
+    static void Transfer(Archive &ar, std::string_view name, Vector3<T> &object)
+    {
+        if(ar.BeginTransferTuple(name, 3))
+        {
+            ar.Transfer("x", object.x);
+            ar.Transfer("y", object.y);
+            ar.Transfer("z", object.z);
+            ar.EndTransferTuple();
+        }
+    }
+};
+
+template<typename T>
 Vector3<T>::Vector3()
     : Vector3(T{})
 {

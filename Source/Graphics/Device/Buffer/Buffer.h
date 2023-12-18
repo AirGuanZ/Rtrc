@@ -120,7 +120,7 @@ public:
 private:
 
     RHI::DeviceOPtr device_;
-    DeviceSynchronizer &sync_;
+    DeviceSynchronizer *sync_;
 };
 
 inline BufferImpl::BufferData &BufferManagerInterface::GetBufferData(Buffer &buffer)

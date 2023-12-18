@@ -44,7 +44,7 @@ class UploadBufferPool : public UploadBufferPoolDetail::UploadBufferPoolPolicyDa
 {
 public:
     
-    UploadBufferPool(ObserverPtr<Device> device, RHI::BufferUsageFlag usages);
+    UploadBufferPool(Ref<Device> device, RHI::BufferUsageFlag usages);
 
     RC<Buffer> Acquire(size_t leastSize);
 
@@ -57,7 +57,7 @@ private:
 
     void RegisterReleaseCallback(RC<Buffer> buffer);
 
-    ObserverPtr<Device>  device_;
+    Ref<Device>  device_;
     RHI::BufferUsageFlag usages_;
     RC<SharedData>       sharedData_;
 };

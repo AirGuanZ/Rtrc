@@ -55,7 +55,7 @@ void CSMain(uint tid : SV_DispatchThreadID)
 
 } // namespace ClearBufferUtilsDetail
 
-ClearBufferUtils::ClearBufferUtils(ObserverPtr<Device> device)
+ClearBufferUtils::ClearBufferUtils(Ref<Device> device)
     : device_(device)
 {
     StandaloneShaderCompiler shaderCompiler;

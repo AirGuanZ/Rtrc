@@ -47,8 +47,8 @@ public:
     };
 
     RealTimeRenderLoop(
-        ObserverPtr<ResourceManager>        resources,
-        ObserverPtr<BindlessTextureManager> bindlessTextures);
+        Ref<ResourceManager>        resources,
+        Ref<BindlessTextureManager> bindlessTextures);
     
     void BeginRenderLoop() override;
     void EndRenderLoop() override;
@@ -64,9 +64,9 @@ private:
     
     RenderSettings renderSettings_;
 
-    ObserverPtr<Device>                 device_;
-    ObserverPtr<ResourceManager>        resources_;
-    ObserverPtr<BindlessTextureManager> bindlessTextures_;
+    Ref<Device>                 device_;
+    Ref<ResourceManager>        resources_;
+    Ref<BindlessTextureManager> bindlessTextures_;
 
     int32_t frameIndex_;
     Timer   frameTimer_;

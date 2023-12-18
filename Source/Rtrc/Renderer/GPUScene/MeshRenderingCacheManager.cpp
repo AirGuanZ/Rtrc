@@ -2,7 +2,7 @@
 
 RTRC_RENDERER_BEGIN
 
-MeshRenderingCacheManager::MeshRenderingCacheManager(ObserverPtr<Device> device)
+MeshRenderingCacheManager::MeshRenderingCacheManager(Ref<Device> device)
     : device_(device), blasBuilder_(device)
 {
     bindlessBuffers_ = MakeBox<BindlessBufferManager>(device, 64, GLOBAL_BINDLESS_GEOMETRY_BUFFER_MAX_SIZE);

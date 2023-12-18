@@ -21,9 +21,9 @@ const OPtr<BindingLayout> &DirectX12RayTracingPipeline::GetBindingLayout() const
 }
 
 void DirectX12RayTracingPipeline::GetShaderGroupHandles(
-    uint32_t                   startGroupIndex,
-    uint32_t                   groupCount,
-    MutableSpan<unsigned char> outputData) const
+    uint32_t               startGroupIndex,
+    uint32_t               groupCount,
+    MutSpan<unsigned char> outputData) const
 {
     for(uint32_t i = 0; i < groupCount; ++i)
     {

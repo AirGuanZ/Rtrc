@@ -3,7 +3,7 @@
 
 RTRC_RENDERER_BEGIN
 
-BlasBuilder::BlasBuilder(ObserverPtr<Device> device)
+BlasBuilder::BlasBuilder(Ref<Device> device)
     : device_(std::move(device)), needBarrier_(false)
 {
     

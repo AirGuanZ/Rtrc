@@ -30,8 +30,8 @@ public:
     RTRC_SET_GET(Settings, Settings, settings_)
 
     void Render(
-        ObserverPtr<RG::RenderGraph> renderGraph,
-        ObserverPtr<RenderCamera>    renderCamera,
+        Ref<RG::RenderGraph> renderGraph,
+        Ref<RenderCamera>    renderCamera,
         PerCameraData               &data,
         RG::TextureResource         *inputColor) const;
 

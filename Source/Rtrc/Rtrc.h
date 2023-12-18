@@ -1,8 +1,10 @@
 #pragma once
 
+#include <Core/Archive/Archive.h>
 #include <Core/Container/RangeSet.h>
 #include <Core/Filesystem/DirectoryFilter.h>
 #include <Core/Filesystem/File.h>
+#include <Core/Math/Intersection.h>
 #include <Core/Memory/Malloc.h>
 #include <Core/Resource/Image.h>
 #include <Core/Resource/MeshData.h>

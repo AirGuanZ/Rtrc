@@ -36,7 +36,7 @@ class LocalCachedMaterialHandle
 public:
 
     LocalCachedMaterialHandle(
-        ObserverPtr<LegacyMaterialManager> materialManager,
+        Ref<LegacyMaterialManager> materialManager,
         LocalCachedMaterialStorage  *storage,
         std::string_view             name)
         : materialManager_(materialManager), storage_(storage), name_(name)
@@ -45,7 +45,7 @@ public:
     }
     
     LocalCachedMaterialHandle(
-        ObserverPtr<ResourceManager> resources,
+        Ref<ResourceManager> resources,
         LocalCachedMaterialStorage  *storage,
         std::string_view             name);
     
@@ -63,7 +63,7 @@ public:
 
 private:
 
-    ObserverPtr<LegacyMaterialManager> materialManager_;
+    Ref<LegacyMaterialManager> materialManager_;
     LocalCachedMaterialStorage  *storage_;
     std::string_view             name_;
 };
@@ -72,7 +72,7 @@ class LocalMaterialCache : public Uncopyable
 {
 public:
 
-    explicit LocalMaterialCache(ObserverPtr<LegacyMaterialManager> materialManager)
+    explicit LocalMaterialCache(Ref<LegacyMaterialManager> materialManager)
         : materialManager_(materialManager)
     {
         
@@ -82,7 +82,7 @@ public:
 
 private:
 
-    ObserverPtr<LegacyMaterialManager> materialManager_;
+    Ref<LegacyMaterialManager> materialManager_;
     tbb::spin_rw_mutex mutex_;
     std::vector<RC<LegacyMaterial>> materials_;
 };

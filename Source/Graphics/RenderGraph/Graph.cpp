@@ -24,7 +24,7 @@ RHI::Format RenderGraph::InternalBufferResource::GetDefaultTexelFormat() const
     return defaultTexelFormat_;
 }
 
-RenderGraph::RenderGraph(ObserverPtr<Device> device, Queue queue)
+RenderGraph::RenderGraph(Ref<Device> device, Queue queue)
     : device_(device), queue_(std::move(queue)), swapchainTexture_(nullptr), executableResource_(nullptr)
 {
     
