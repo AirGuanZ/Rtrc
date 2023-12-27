@@ -11,13 +11,13 @@ public:
 
     using Component = T;
 
-    Vector3();
+    constexpr Vector3();
 
-    explicit Vector3(T value);
+    explicit constexpr Vector3(T value);
 
-    Vector3(T x, T y, T z);
+    constexpr Vector3(T x, T y, T z);
 
-    Vector3(const Vector2<T> &xy, T z);
+    constexpr Vector3(const Vector2<T> &xy, T z);
 
     T operator[](size_t i) const;
 
@@ -26,6 +26,9 @@ public:
     std::tuple<T, T, T> ToTuple() const;
 
     size_t Hash() const { return Rtrc::Hash(x, y, z); }
+
+    Vector3 &operator+=(const Vector3 &rhs) { return *this = *this + rhs; }
+    Vector3 &operator-=(const Vector3 &rhs) { return *this = *this - rhs; }
 
     T x, y, z;
 };
@@ -69,6 +72,10 @@ template<typename T>
 T Length(const Vector3<T> &v);
 template<typename T>
 Vector3<T> Normalize(const Vector3<T> &v);
+template<typename T>
+Vector3<T> NormalizeIfNotZero(const Vector3<T> &v);
+template<typename T>
+T Distance(const Vector3<T> &a, const Vector3<T> &b);
 
 template<typename T>
 Vector3<T> Min(const Vector3<T> &lhs, const Vector3<T> &rhs);
@@ -92,28 +99,28 @@ struct ArchiveTransferTrait<Vector3<T>>
 };
 
 template<typename T>
-Vector3<T>::Vector3()
+constexpr Vector3<T>::Vector3()
     : Vector3(T{})
 {
     
 }
 
 template<typename T>
-Vector3<T>::Vector3(T value)
+constexpr Vector3<T>::Vector3(T value)
     : Vector3(value, value, value)
 {
     
 }
 
 template<typename T>
-Vector3<T>::Vector3(T x, T y, T z)
+constexpr Vector3<T>::Vector3(T x, T y, T z)
     : x(x), y(y), z(z)
 {
     
 }
 
 template<typename T>
-Vector3<T>::Vector3(const Vector2<T> &xy, T z)
+constexpr Vector3<T>::Vector3(const Vector2<T> &xy, T z)
     : Vector3(xy.x, xy.y, z)
 {
     
@@ -228,6 +235,25 @@ Vector3<T> Normalize(const Vector3<T> &v)
     static_assert(std::is_floating_point_v<T>);
     const T invLen = 1 / Length(v);
     return Vector3<T>(invLen * v.x, invLen * v.y, invLen * v.z);
+}
+
+template<typename T>
+Vector3<T> NormalizeIfNotZero(const Vector3<T> &v)
+{
+    static_assert(std::is_floating_point_v<T>);
+    const T len = Length(v);
+    if(len == 0)
+    {
+        return Vector3<T>();
+    }
+    const T invLen = 1 / len;
+    return Vector3<T>(invLen * v.x, invLen * v.y, invLen * v.z);
+}
+
+template<typename T>
+T Distance(const Vector3<T> &a, const Vector3<T> &b)
+{
+    return Rtrc::Length(a - b);
 }
 
 template<typename T>

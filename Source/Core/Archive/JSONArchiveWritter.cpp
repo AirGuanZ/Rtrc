@@ -21,10 +21,8 @@ JSONArchiveWritter::JSONArchiveWritter()
     frames_[0].json = nlohmann::json::object();
 }
 
-JSONArchiveWritter::~JSONArchiveWritter()
-{
-    
-}
+// Define this here for hiding definition of JSONArchiveWritter::Frame.
+JSONArchiveWritter::~JSONArchiveWritter() = default;
 
 void JSONArchiveWritter::SetVersion(int version)
 {

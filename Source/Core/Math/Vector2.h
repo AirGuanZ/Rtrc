@@ -52,6 +52,9 @@ template<typename T>
 auto operator/(const Vector2<T> &a, const Vector2<T> &b);
 
 template<typename T>
+auto operator-(const Vector2<T> &a);
+
+template<typename T>
 auto operator*(const Vector2<T> &a, T b);
 template<typename T>
 auto operator*(T a, const Vector2<T> &b);
@@ -180,6 +183,13 @@ template<typename T>
 auto operator/(const Vector2<T> &a, const Vector2<T> &b)
 {
     return Vector2<T>(a.x / b.x, a.y / b.y);
+}
+
+template<typename T>
+auto operator-(const Vector2<T> &a)
+{
+    static_assert(std::is_signed_v<T>);
+    return Vector2<T>(-a.x, -a.y);
 }
 
 template<typename T>

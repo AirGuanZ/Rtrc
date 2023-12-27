@@ -17,6 +17,7 @@
 #include <Rtrc/Application/SimpleApplication.h>
 #include <Rtrc/Preprocess/DFDM.h>
 #include <Rtrc/Renderer/RenderLoop/RealTimeRenderLoop.h>
+#include <Rtrc/Renderer/Utility/PrepareThreadGroupCountForIndirectDispatch.h>
 #include <Rtrc/Resource/Material/LegacyMaterialInstance.h>
 #include <Rtrc/Resource/ResourceManager.h>
 #include <Rtrc/Scene/Camera/CameraController.h>

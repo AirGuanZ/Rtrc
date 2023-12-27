@@ -11,13 +11,13 @@ public:
 
     using Component = T;
 
-    Vector4();
+    constexpr Vector4();
 
-    explicit Vector4(T value);
+    explicit constexpr Vector4(T value);
 
-    Vector4(T x, T y, T z, T w);
+    constexpr Vector4(T x, T y, T z, T w);
 
-    Vector4(const Vector3<T> &xyz, T w);
+    constexpr Vector4(const Vector3<T> &xyz, T w);
 
     const T &operator[](size_t i) const;
 
@@ -74,28 +74,28 @@ struct ArchiveTransferTrait<Vector4<T>>
 };
 
 template <typename T>
-Vector4<T>::Vector4()
+constexpr Vector4<T>::Vector4()
     : Vector4(0, 0, 0, 0)
 {
     
 }
 
 template<typename T>
-Vector4<T>::Vector4(T value)
+constexpr Vector4<T>::Vector4(T value)
     : Vector4(value, value, value, value)
 {
 
 }
 
 template<typename T>
-Vector4<T>::Vector4(T x, T y, T z, T w)
+constexpr Vector4<T>::Vector4(T x, T y, T z, T w)
     : x(x), y(y), z(z), w(w)
 {
 
 }
 
 template<typename T>
-Vector4<T>::Vector4(const Vector3<T> &xyz, T w)
+constexpr Vector4<T>::Vector4(const Vector3<T> &xyz, T w)
     : Vector4(xyz.x, xyz.y, xyz.z, w)
 {
     

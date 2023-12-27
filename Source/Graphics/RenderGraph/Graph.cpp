@@ -125,7 +125,12 @@ TextureResource *RenderGraph::RegisterSwapchainTexture(
     RHI::BackBufferSemaphoreOPtr acquireSemaphore,
     RHI::BackBufferSemaphoreOPtr presentSemaphore)
 {
-    assert(!swapchainTexture_);
+    if(swapchainTexture_)
+    {
+        assert(swapchainTexture_->texture->GetRHIObject() == rhiTexture);
+        return swapchainTexture_;
+    }
+
     const int index = static_cast<int>(textures_.size());
     auto resource = MakeBox<SwapchainTexture>(this, index);
     resource->texture = MakeRC<WrappedStatefulTexture>(
@@ -269,7 +274,7 @@ Pass *RenderGraph::CreateBlitTexture2DPass(
     auto pass = CreatePass(std::move(name));
     pass->Use(src, PS_Texture);
     pass->Use(dst, ColorAttachmentWriteOnly);
-    pass->SetCallback([=](PassContext &context)
+    pass->SetCallback([=, this](PassContext &context)
     {
         device_->GetCopyTextureUtils().RenderFullscreenTriangle(
             context.GetCommandBuffer(),
