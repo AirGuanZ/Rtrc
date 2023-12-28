@@ -3,8 +3,11 @@
 /Build/
 /BuildCMake/
 /External/mimalloc/build/
+/External/llvm16.0.6/build_debug/
+/External/llvm16.0.6/build_release/
 /External/llvm16.0.6/install_debug/
 /External/llvm16.0.6/install_release/
+/External/llvm16.0.6/llvm-project-16.0.6.src/
 /GPUCapture.wpix
 *.shader.outh
 *.material.outh

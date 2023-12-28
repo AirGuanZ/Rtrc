@@ -272,10 +272,10 @@ std::vector<ShaderKeywordValue> ExtractKeywordValues(Span<ShaderKeyword> keyword
 {
     std::vector<ShaderKeywordValue> values;
     values.resize(keywords.size());
-    for(int i = keywords.size() - 1; i >= 0; --i)
+    for(int i = static_cast<int>(keywords.size()) - 1; i >= 0; --i)
     {
         const int valueCount = ShaderParserDetail::GetValueCount(keywords[i]);
-        values[i].value = variantIndex % valueCount;
+        values[i].value = static_cast<int>(variantIndex) % valueCount;
         variantIndex /= valueCount;
     }
     return values;
