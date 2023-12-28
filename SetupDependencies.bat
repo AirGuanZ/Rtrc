@@ -1,3 +1,12 @@
+:: ====================================== tbb ======================================
+
+cd ./External/
+if exist "./oneapi-tbb-2021.11.0/" rmdir /s /q "./oneapi-tbb-2021.11.0/"
+"C:/Program Files/7-Zip/7z.exe" x -y oneapi-tbb-2021.11.0.7z
+cd ../
+
+:: ====================================== llvm ======================================
+
 cd ./External/llvm16.0.6
 
 if exist "./llvm-project-16.0.6.src/" rmdir /s /q "./llvm-project-16.0.6.src"
@@ -30,7 +39,4 @@ if exist "./build_release/" rmdir /s /q "./build_release"
 
 if exist "./llvm-project-16.0.6.src/" rmdir /s /q "./llvm-project-16.0.6.src"
 
-cd ../
-
-if exist "./oneapi-tbb-2021.11.0/" rmdir /s /q "./oneapi-tbb-2021.11.0/"
-"C:/Program Files/7-Zip/7z.exe" x -y oneapi-tbb-2021.11.0.7z
+cd ../../
