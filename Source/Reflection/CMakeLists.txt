@@ -16,6 +16,7 @@ foreach(SRC IN ITEMS ${CPP_REFL_SRCS})
 endforeach()
 
 set_property(TARGET Reflection PROPERTY CXX_STANDARD 23)
+set_property(TARGET Reflection PROPERTY MSVC_RUNTIME_LIBRARY MultiThreaded)
 
 if(MSVC)
 	target_link_options(Reflection PUBLIC "/STACK:10485760") # Default 4MB stack is not enough for cista x libtooling

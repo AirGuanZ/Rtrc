@@ -9,10 +9,10 @@ file(GLOB LLVM_RELEASE_LIBS "${CMAKE_CURRENT_SOURCE_DIR}/install_release/lib/*.l
 
 target_include_directories(
 	LLVM INTERFACE
-	$<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/install_debug/include>
+	$<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/install_release/include>
 	$<$<CONFIG:Release>:${CMAKE_CURRENT_SOURCE_DIR}/install_release/include>)
 
 target_link_libraries(
 	LLVM INTERFACE
-	$<$<CONFIG:Debug>:${LLVM_DEBUG_LIBS}>
+	$<$<CONFIG:Debug>:${LLVM_RELEASE_LIBS}>
 	$<$<CONFIG:Release>:${LLVM_RELEASE_LIBS}>)
