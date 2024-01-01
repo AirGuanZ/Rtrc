@@ -27,18 +27,19 @@ add_subdirectory(External)
 
 ############## core
 
-add_subdirectory(Source/Core)
-add_subdirectory(Source/Reflection)
-add_subdirectory(Source/RHI)
-add_subdirectory(Source/Graphics)
-add_subdirectory(Source/ShaderCommon)
-add_subdirectory(Source/ShaderPreprocessor)
-add_subdirectory(Source/Rtrc)
+add_subdirectory(Source/Rtrc/Core)
+add_subdirectory(Source/Rtrc/Reflection)
+add_subdirectory(Source/Rtrc/RHI)
+add_subdirectory(Source/Rtrc/Graphics)
+add_subdirectory(Source/Rtrc/ShaderCommon)
+add_subdirectory(Source/Rtrc/ShaderPreprocessor)
+add_subdirectory(Source/Rtrc/ToolKit)
 
 set_property(TARGET RHI                PROPERTY FOLDER "RtrcLibrary/RHI")
 set_property(TARGET Graphics           PROPERTY FOLDER "RtrcLibrary/RHI")
 set_property(TARGET ShaderCommon       PROPERTY FOLDER "RtrcLibrary/Shader")
 set_property(TARGET Core               PROPERTY FOLDER "RtrcLibrary")
+set_property(TARGET ToolKit            PROPERTY FOLDER "RtrcLibrary")
 set_property(TARGET Reflection         PROPERTY FOLDER "RtrcTool")
 set_property(TARGET ShaderPreprocessor PROPERTY FOLDER "RtrcTool")
 

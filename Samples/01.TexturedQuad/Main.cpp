@@ -1,10 +1,16 @@
 #include <iostream>
 
-#include <Rtrc/Rtrc.h>
-
-#include <Graphics/RenderGraph/Compiler.h>
+#include <Rtrc/ToolKit/ToolKit.h>
 
 using namespace Rtrc;
+
+rtrc_group(Material)
+{
+    rtrc_define(Texture2D, MainTexture);
+    rtrc_define(SamplerState, MainSampler);
+    rtrc_uniform(float, scale);
+    rtrc_uniform(float, mipLevel);
+};
 
 void Run()
 {
@@ -28,9 +34,7 @@ void Run()
     FastKeywordContext keywords;
     keywords.Set(RTRC_FAST_KEYWORD(DADADA), 1);
 
-    auto material = resourceManager.GetMaterial("Sample01/Quad");
-    auto matPass = material->GetPassByTag(RTRC_MATERIAL_PASS_TAG(Default));
-    auto shader = matPass->GetShader(keywords);
+    auto shader = resourceManager.GetShaderTemplate("Sample01/Quad", true)->GetVariant(keywords);
 
     auto pipeline = device->CreateGraphicsPipeline({
         .shader = shader,
@@ -62,12 +66,12 @@ void Run()
 
     // Material
 
-    auto materialInstance = material->CreateInstance();
-    auto matPassInst = materialInstance->GetPassInstance(0);
-    materialInstance->Set("MainTexture", mainTex->GetSrv(0, 0, 0));
-    materialInstance->Set("MainSampler", mainSampler);
-    materialInstance->SetFloat("scale", 1);
-    materialInstance->SetFloat("mipLevel", 0);
+    Material materialPass;
+    materialPass.MainTexture = mainTex;
+    materialPass.MainSampler = mainSampler;
+    materialPass.scale = 1;
+    materialPass.mipLevel = 0;
+    auto materialPassGroup = device->CreateBindingGroup(materialPass);
 
     window.SetFocus();
 
@@ -106,7 +110,7 @@ void Run()
             });
             commandBuffer.BindGraphicsPipeline(pipeline);
             mesh->Bind(commandBuffer);
-            matPassInst->BindGraphicsProperties(keywords, commandBuffer);
+            commandBuffer.BindGraphicsGroup(0, materialPassGroup);
             commandBuffer.SetViewports(renderTarget->GetViewport());
             commandBuffer.SetScissors(renderTarget->GetScissor());
             commandBuffer.DrawIndexed(6, 1, 0, 0, 0);
