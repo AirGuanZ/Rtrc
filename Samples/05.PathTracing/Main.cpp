@@ -1,4 +1,4 @@
-#include <Rtrc/ToolKit/ToolKit.h>
+#include <Rtrc/Rtrc.h>
 
 using namespace Rtrc;
 
@@ -182,18 +182,17 @@ void Run()
     // Camera
 
     Camera camera;
-    camera.SetPosition({ 1.2f, 1.5f, -3 });
-    camera.SetLookAt({ 0, 1, 0 }, { 0, 0, 0 });
+    camera.SetLookAt({ 1.2f, 1.5f, -3 }, { 0, 1, 0 }, { 0, 0, 0 });
+    camera.SetFovYDeg(60);
 
-    FreeCameraController cameraController;
-    cameraController.SetCamera(camera);
+    EditorCameraController cameraController;
+    cameraController.SetCamera(&camera);
 
     // Render loop
 
     RG::Executer executer(device);
 
     window.SetFocus();
-    window.GetInput().LockCursor(true);
     RTRC_SCOPE_EXIT{ window.GetInput().LockCursor(false); };
 
     device->BeginRenderLoop();
@@ -216,6 +215,8 @@ void Run()
             window.SetCloseFlag(true);
         }
 
+        window.GetInput().LockCursor(!window.GetInput().IsKeyPressed(KeyCode::LeftAlt));
+
         timer.BeginFrame();
         if(timer.GetFps() != fps)
         {
@@ -223,14 +224,13 @@ void Run()
             window.SetTitle(std::format("Rtrc Sample: PathTracing. FPS: {}", timer.GetFps()));
         }
 
-        const float wOverH = static_cast<float>(window.GetFramebufferSize().x) / window.GetFramebufferSize().y;
-        camera.SetProjection(Deg2Rad(60), wOverH, 0.1f, 1000.0f);
+        camera.SetAspectRatio(window.GetWindowWOverH());
         bool needClear = false;
-        if(window.GetInput().IsCursorLocked())
+        if(window.GetInput().IsCursorLocked() || window.GetInput().IsKeyPressed(KeyCode::LeftAlt))
         {
-            needClear = cameraController.UpdateCamera(window.GetInput(), timer);
+            needClear = cameraController.Update(window.GetInput(), timer.GetDeltaSecondsF());
         }
-        camera.CalculateDerivedData();
+        camera.UpdateDerivedData();
 
         auto graph = device->CreateRenderGraph();
         auto rgSwapchain = graph->RegisterSwapchainTexture(device->GetSwapchain());

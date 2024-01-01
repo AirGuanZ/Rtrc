@@ -2,53 +2,14 @@
 
 #include <Rtrc/Core/Math/Angle.h>
 #include <Rtrc/Core/Math/Matrix4x4.h>
-#include <Rtrc/Core/SignalSlot.h>
 
 RTRC_BEGIN
 
-rtrc_struct(CameraData)
-{
-    float3 position;
-    float3 rotation;
-    float3 front;
-    float3 left;
-    float3 up;
-
-    float4x4 worldToCamera;
-    float4x4 cameraToWorld;
-
-    float4x4 worldToClip;
-    float4x4 clipToWorld;
-
-    float4x4 cameraToClip;
-    float4x4 clipToCamera;
-
-    float3 cameraRays[4];
-    float3 worldRays[4];
-
-    float fovYRad   = Deg2Rad(50);
-    float wOverH    = 1;
-    float nearPlane = 0.1f;
-    float farPlane  = 100.0f;
-};
-
-class Camera : public WithUniqueObjectID, CameraData
+class Camera
 {
 public:
 
-    Camera();
-
-    const Vector3f &GetRotation() const;
-    const Vector3f &GetPosition() const;
-
-    float GetFOVYRad() const;
-    float GetWOverH() const;
-    float GetNearPlane() const;
-    float GetFarPlane() const;
-    
-    const Vector3f &GetLeft() const;
-    const Vector3f &GetForward() const;
-    const Vector3f &GetUp() const;
+    void SetPosition(const Vector3f &position) { position_ = position; }
 
     // (0, 0, 0):
     //     forward <- +z
@@ -56,144 +17,73 @@ public:
     //     left    <- +x
     // (rotAlongX, rotAlongY, rotAlongZ):
     //     Z -> X -> Y
-    void SetRotation(const Vector3f &rotation);
-    void SetLookAt(const Vector3f &up, const Vector3f &destination);
-    void SetPosition(const Vector3f &position);
-    void SetProjection(float fovYRad, float wOverH, float nearPlane, float farPlane);
-    void CalculateDerivedData();
+    void SetRotation(const Vector3f &rotation) { rotation_ = rotation; }
 
-    const Matrix4x4f &GetWorldToCameraMatrix() const;
-    const Matrix4x4f &GetCameraToWorldMatrix() const;
-    const Matrix4x4f &GetCameraToClipMatrix() const;
-    const Matrix4x4f &GetClipToCameraMatrix() const;
-    const Matrix4x4f &GetWorldToClipMatrix() const;
-    const Matrix4x4f &GetClipToWorldMatrix() const;
+    void SetLookAt(const Vector3f &position, const Vector3f &up, const Vector3f &target);
 
-    using CornerRays = Vector3f[4];
-    const CornerRays &GetWorldRays() const;
-    const CornerRays &GetCameraRays() const;
+    void SetOrtho      (bool orthoMode)    { ortho_       = orthoMode;       }
+    void SetAspectRatio(float aspectRatio) { aspectRatio_ = aspectRatio;     }
+    void SetFovYRad    (float fovRad)      { fovYRad_     = fovRad;          }
+    void SetFovYDeg    (float fovDeg)      { fovYRad_     = Deg2Rad(fovDeg); }
+    void SetNear       (float _near)       { near_       = _near;            }
+    void SetFar        (float _far)        { far_        = _far;             }
+    void SetOrthoWidth (float orthoWidth)  { orthoWidth_  = orthoWidth;      }
 
-    const CameraData &GetData() const;
+    const Vector3f &GetPosition() const { return position_; }
+    const Vector3f &GetRotation() const { return rotation_; }
 
-    template<typename...Args>
-    Connection OnDestroy(Args&&...args) const { return onDestroy_.Connect(std::forward<Args>(args)...); }
+    bool  GetOrtho()       const { return ortho_; }
+    float GetAspectRatio() const { return aspectRatio_; }
+    float GetFovYRad()     const { return fovYRad_; }
+    float GetNear()        const { return near_; }
+    float GetFar()         const { return far_; }
+    float GetOrthoWidth()  const { return orthoWidth_; }
+
+    void UpdateDerivedData();
+
+    const Vector3f &GetFront() const { return front_; }
+    const Vector3f &GetLeft()  const { return left_;    }
+    const Vector3f &GetUp()    const { return up_;      }
+
+    const Matrix4x4f &GetWorldToCamera() const { return worldToCamera_; }
+    const Matrix4x4f &GetCameraToWorld() const { return cameraToWorld_; }
+    const Matrix4x4f &GetWorldToClip()   const { return worldToClip_;   }
+    const Matrix4x4f &GetClipToWorld()   const { return clipToWorld_;   }
+    const Matrix4x4f &GetCameraToClip()  const { return cameraToClip_;  }
+    const Matrix4x4f &GetClipToCamera()  const { return clipToCamera_;  }
+
+    const Vector3f *GetCameraRays() const { return cameraRays_; }
+    const Vector3f *GetWorldRays()  const { return worldRays_;  }
 
 private:
 
-    mutable Signal<SignalThreadPolicy::SpinLock> onDestroy_;
+    // Basic
+
+    Vector3f position_;
+    Vector3f rotation_;
+
+    bool  ortho_       = true;
+    float aspectRatio_ = 1;
+    float fovYRad_     = Deg2Rad(60);
+    float near_        = 0.1f;
+    float far_         = 1000.0f;
+    float orthoWidth_  = 1;
+
+    // Derived
+
+    Vector3f front_;
+    Vector3f left_;
+    Vector3f up_;
+
+    Matrix4x4f worldToCamera_;
+    Matrix4x4f cameraToWorld_;
+    Matrix4x4f worldToClip_;
+    Matrix4x4f clipToWorld_;
+    Matrix4x4f cameraToClip_;
+    Matrix4x4f clipToCamera_;
+
+    Vector3f cameraRays_[4];
+    Vector3f worldRays_[4];
 };
-
-inline Camera::Camera()
-{
-    CalculateDerivedData();
-}
-
-inline const Vector3f &Camera::GetRotation() const
-{
-    return rotation;
-}
-
-inline const Vector3f &Camera::GetPosition() const
-{
-    return position;
-}
-
-inline float Camera::GetFOVYRad() const
-{
-    return fovYRad;
-}
-
-inline float Camera::GetWOverH() const
-{
-    return wOverH;
-}
-
-inline float Camera::GetNearPlane() const
-{
-    return nearPlane;
-}
-
-inline float Camera::GetFarPlane() const
-{
-    return farPlane;
-}
-
-inline const Vector3f &Camera::GetLeft() const
-{
-    return left;
-}
-
-inline const Vector3f &Camera::GetForward() const
-{
-    return front;
-}
-
-inline const Vector3f &Camera::GetUp() const
-{
-    return up;
-}
-
-inline void Camera::SetRotation(const Vector3f &_rotation)
-{
-    rotation = _rotation;
-}
-
-inline void Camera::SetPosition(const Vector3f &_position)
-{
-    position = _position;
-}
-
-inline void Camera::SetProjection(float _fovYRad, float _wOverH, float _nearPlane, float _farPlane)
-{
-    fovYRad = _fovYRad;
-    wOverH = _wOverH;
-    nearPlane = _nearPlane;
-    farPlane = _farPlane;
-}
-
-inline const Matrix4x4f &Camera::GetWorldToCameraMatrix() const
-{
-    return worldToCamera;
-}
-
-inline const Matrix4x4f &Camera::GetCameraToWorldMatrix() const
-{
-    return cameraToWorld;
-}
-
-inline const Matrix4x4f &Camera::GetCameraToClipMatrix() const
-{
-    return cameraToClip;
-}
-
-inline const Matrix4x4f &Camera::GetClipToCameraMatrix() const
-{
-    return clipToCamera;
-}
-
-inline const Matrix4x4f &Camera::GetWorldToClipMatrix() const
-{
-    return worldToClip;
-}
-
-inline const Matrix4x4f &Camera::GetClipToWorldMatrix() const
-{
-    return clipToWorld;
-}
-
-inline const Camera::CornerRays &Camera::GetWorldRays() const
-{
-    return worldRays;
-}
-
-inline const Camera::CornerRays &Camera::GetCameraRays() const
-{
-    return cameraRays;
-}
-
-inline const CameraData &Camera::GetData() const
-{
-    return *this;
-}
 
 RTRC_END
