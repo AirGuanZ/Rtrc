@@ -47,7 +47,7 @@ private:
         uint32_t                    *vertexStride);
 
     Ref<Device> device_;
-    bool                needBarrier_;
+    bool        needBarrier_;
 };
 
 RTRC_RENDERER_END

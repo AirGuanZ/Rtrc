@@ -57,7 +57,7 @@ public:
     
 private:
     
-    const Scene                               &scene_;
+    const Scene                       &scene_;
     Ref<Device>                        device_;
     Ref<ResourceManager>               resources_;
     Ref<MaterialRenderingCacheManager> cachedMaterials_;

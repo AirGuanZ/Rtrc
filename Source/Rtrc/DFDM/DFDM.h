@@ -26,8 +26,8 @@ public:
 private:
 
     Ref<ResourceManager> resources_;
-    WrapMode                     wrapMode_       = WrapMode::Clamp;
-    int                          iterationCount_ = 300;
+    WrapMode             wrapMode_       = WrapMode::Clamp;
+    int                  iterationCount_ = 300;
 };
 
 RTRC_END

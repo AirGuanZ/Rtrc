@@ -2,7 +2,7 @@
 
 #include <Graphics/Shader/Keyword.h>
 #include <Graphics/RenderGraph/Executable.h>
-#include <Rtrc/Preprocess/DFDM.h>
+#include <Rtrc/DFDM/DFDM.h>
 
 #include "DFDM.shader.outh"
 
