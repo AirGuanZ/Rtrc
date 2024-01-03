@@ -4,7 +4,6 @@ rtrc_shader("Rtrc/Builtin/DFDM")
 	rtrc_comp(CSMain)
 
 	rtrc_keyword(WRAP_MODE, CLAMP, REPEAT)
-	rtrc_keyword(ITERATION, i0, i1, i2, i3)
 	
 	rtrc_group(Pass)
 	{
@@ -12,10 +11,9 @@ rtrc_shader("Rtrc/Builtin/DFDM")
 		rtrc_define(Texture2D<float2>,   OldCorrectionMap)
 		rtrc_define(RWTexture2D<float2>, NewCorrectionMap)
 
-		rtrc_uniform(int2, resolution)
+		rtrc_uniform(int2,  resolution)
 		rtrc_uniform(float, areaPreservation)
-		rtrc_uniform(float3, displacementScale)
-		rtrc_uniform(float2, correctionScale)
+		rtrc_uniform(uint,  iteration)
 	};
 
 	bool IsOnBoundary(int2 coord)
@@ -51,7 +49,7 @@ rtrc_shader("Rtrc/Builtin/DFDM")
 			LengthSquare(dntex2) * dot(dnpos1, dnpos1 - dnpos2);
 		const float areaPreservationFactor = adpos / adtex + adtex / adpos;
 		const float energy3 = pow(areaPreservationFactor, Pass.areaPreservation);
-		energy = energy1 + energy2 * energy3;
+		energy = energy1 * energy2 * energy3;
 
 		return
 			energy3 * (
@@ -65,13 +63,13 @@ rtrc_shader("Rtrc/Builtin/DFDM")
 				AreaPreservePowDeriv(areaPreservationFactor) *
 				float2(dntex2.y - dntex1.y, dntex1.x - dntex2.x) *
 				(1.0 / adpos - adpos / (adtex * adtex))
-			)
+			);
 	}
 
 	float ComputeEnergy(float3 dnpos1, float3 dnpos2, float2 dntex1, float2 dntex2)
 	{
 		float energy;
-		ComputeGradient(energy);
+		ComputeGradient(dnpos1, dnpos2, dntex1, dntex2, energy);
 		return energy;
 	}
 	
@@ -89,31 +87,17 @@ rtrc_shader("Rtrc/Builtin/DFDM")
 		coord -= int2(floor(float2(coord) / Pass.resolution)) * Pass.resolution;
 	}
 
-	bool LoadNode(int2 coord, out Node node)
+	void LoadNode(int2 coord, int2 offset, out Node node)
 	{
-		WrapCoord(coord);
+		int2 wrappedCoord = coord + offset;
+		WrapCoord(wrappedCoord);
 
-		const float3 displacementVector = Pass.displacementScale * DisplacementMap[coord];
-		const float2 positionXZ = float2(coord) / Pass.resolution;
-		const float3 position = float3(positionXZ.x, 0, positionXZ.z) + displacementVector;
+		const float3 displacementVector = DisplacementMap[wrappedCoord];
+		const float2 correction = OldCorrectionMap[wrappedCoord];
 
-		const float2 correction = Pass.correctionScale * OldCorrectionMap[coord];
-		const float2 uv = positionXZ + correction;
-
-		node.position    = position;
-		node.correction  = correction;
-		node.uv			 = uv;
-		
-		return true;
-	}
-
-	uint GetIterationIndex()
-	{
-		return
-			ITERATION == ITERATION_i0 ? 0 :
-			ITERATION == ITERATION_i1 ? 1 :
-			ITERATION == ITERATION_i2 ? 2 :
-			ITERATION == ITERATION_i3 ? 3 ;
+		node.position   = float3(offset.x, 0, offset.y) + displacementVector;
+		node.correction = correction;
+		node.uv			= offset + correction;
 	}
 
 	[numthreads(8, 8, 1)]
@@ -124,16 +108,16 @@ rtrc_shader("Rtrc/Builtin/DFDM")
 			return;
 
 		Node currentNode;
-		LoadNode(coord, currentNode);
+		LoadNode(coord, int2(0, 0), currentNode);
 
 		const int2 neighborOffsets[6] =
 		{
-			int2(-1, +0),
-			int2(-1, +1),
 			int2(+0, -1),
-			int2(+0, +1),
 			int2(+1, -1),
+			int2(-1, +0),
 			int2(+1, +0),
+			int2(-1, +1),
+			int2(+0, +1),
 		};
 		const int neighborIndices[6] =
 		{
@@ -148,17 +132,18 @@ rtrc_shader("Rtrc/Builtin/DFDM")
 		for(int i = 0; i < 6; ++i)
 		{
 			const int neighborIndex = neighborIndices[i];
-			const Node neighborNode = LoadNode(coord + neighborOffsets[i]);
+			Node neighborNode;
+			LoadNode(coord, neighborOffsets[i], neighborNode);
 			dnpos[neighborIndex] = currentNode.position - neighborNode.position;
 			dntex[neighborIndex] = currentNode.uv - neighborNode.uv;
 		}
 
 		float energy = 0;
 		float2 gradient = 0;
-		for(int i = 0; j = 5; i < 6; j = i++)
+		for(int i = 0, j = 5; i < 6; j = i++)
 		{
 			float neighborEnergy;
-			gradient += ComputeGradient(dnpos[i], dnpos[j], dntex[i], dntex[j], neighborEnergy);
+			gradient += ComputeGradient(dnpos[j], dnpos[i], dntex[j], dntex[i], neighborEnergy);
 			energy += neighborEnergy;
 		}
 		energy *= 0.5 / 6;
@@ -210,9 +195,8 @@ rtrc_shader("Rtrc/Builtin/DFDM")
 		if(IsOnBoundary(coord))
 			stepSize = 0;
 
-		const uint iterationIndex == GetIterationIndex();
 		float2 newCorrection = currentNode.correction;
-		if((tid.x & 1) == (iterationIndex & 1) && (tid.y & 1) == ((iterationIndex >> 1) & 1))
+		if((tid.x & 1) == (Pass.iteration & 1) && (tid.y & 1) == ((Pass.iteration >> 1) & 1))
 		   newCorrection -= stepSize * gradient;
 		NewCorrectionMap[tid] = newCorrection;
 	}

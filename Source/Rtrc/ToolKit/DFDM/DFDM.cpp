@@ -33,6 +33,7 @@ Image<Vector2f> DFDM::GenerateCorrectionMap(const Image<Vector3f> &displacementM
             .width = displacementMap.GetWidth(),
             .height = displacementMap.GetHeight(),
             .usage = RHI::TextureUsage::ShaderResource,
+            .linearHint = true,
         },
         ImageDynamic(displacementMap),
         RHI::TextureLayout::ShaderTexture));
@@ -40,10 +41,15 @@ Image<Vector2f> DFDM::GenerateCorrectionMap(const Image<Vector3f> &displacementM
         RHI::TextureLayout::ShaderTexture,
         RHI::PipelineStage::None,
         RHI::ResourceAccess::None));
+    displacementMapTexture->SetName("DisplacementMap");
+
+    const size_t rowAlignment = device->GetTextureBufferCopyRowPitchAlignment(RHI::Format::R32G32_Float);
+    const size_t rowSize = UpAlignTo(sizeof(Vector2f) * displacementMap.GetWidth(), rowAlignment);
+    const size_t bufferSize = rowSize * displacementMap.GetHeight();
 
     auto readBackBuffer = device->CreateBuffer(RHI::BufferDesc
     {
-        .size = sizeof(Vector2f) * displacementMap.GetWidth() * displacementMap.GetHeight(),
+        .size = bufferSize,
         .usage = RHI::BufferUsage::TransferDst,
         .hostAccessType = RHI::BufferHostAccessType::Readback
     });
@@ -70,19 +76,17 @@ Image<Vector2f> DFDM::GenerateCorrectionMap(const Image<Vector3f> &displacementM
     {
         FastKeywordContext keywords;
         keywords.Set(RTRC_FAST_KEYWORD(WRAP_MODE), static_cast<int>(wrapMode_));
-        keywords.Set(RTRC_FAST_KEYWORD(ITERATION), i % 4);
         auto shader = resources_->GetShaderTemplate<"Rtrc/Builtin/DFDM">()->GetVariant(keywords);
 
         using ShaderInfo = StaticShaderInfo<"Rtrc/Builtin/DFDM">;
-        ShaderInfo::Variant<ShaderInfo::WRAP_MODE::CLAMP, ShaderInfo::ITERATION::i0>::Pass passData;
-        passData.DisplacementMap = input;
+        ShaderInfo::Variant<ShaderInfo::WRAP_MODE::CLAMP>::Pass passData;
+        passData.DisplacementMap  = input;
         passData.OldCorrectionMap = correctionA;
         passData.NewCorrectionMap = correctionB;
 
-        passData.resolution        = input->GetSize().To<int>();
-        passData.areaPreservation  = 3;
-        passData.displacementScale = Vector3f(1);
-        passData.correctionScale   = Vector2f(1);
+        passData.resolution       = input->GetSize().To<int>();
+        passData.areaPreservation = 3;
+        passData.iteration        = i;
 
         graph->CreateComputePassWithThreadCount(
             fmt::format("Optimize iteration {}", i),
@@ -98,7 +102,7 @@ Image<Vector2f> DFDM::GenerateCorrectionMap(const Image<Vector3f> &displacementM
     {
         RG::GetCurrentCommandBuffer().CopyColorTexture2DToBuffer(
             *rgReadbackBuffer->Get(),
-            0, sizeof(Vector2f) * input->GetWidth(),
+            0, rowSize,
             *correctionA->Get(), 0, 0);
     });
 
@@ -107,8 +111,16 @@ Image<Vector2f> DFDM::GenerateCorrectionMap(const Image<Vector3f> &displacementM
 
     // Read back result
 
+    std::vector<unsigned char> resultData(bufferSize);
+    readBackBuffer->Download(resultData.data(), 0, readBackBuffer->GetSize());
+
     Image<Vector2f> result(input->GetWidth(), input->GetHeight());
-    readBackBuffer->Download(result.GetData(), 0, readBackBuffer->GetSize());
+    for(uint32_t y = 0; y < result.GetHeight(); ++y)
+    {
+        const unsigned char *src = resultData.data() + y * rowSize;
+        void *dst = result.GetData() + y * result.GetWidth();
+        std::memcpy(dst, src, sizeof(Vector2f) * result.GetWidth());
+    }
 
     LogInfo("Finished");
 

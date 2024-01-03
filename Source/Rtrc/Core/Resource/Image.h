@@ -86,6 +86,7 @@ public:
         U8x3,
         U8x4,
         F32x1,
+        F32x2,
         F32x3,
         F32x4
     };
@@ -144,6 +145,7 @@ private:
         Image<Vector3b>,
         Image<Vector4b>,
         Image<float>,
+        Image<Vector2f>,
         Image<Vector3f>,
         Image<Vector4f>> image_ = std::monostate{};
 };
@@ -178,6 +180,12 @@ namespace ImageDetail
     {
         using Component = float;
         static constexpr int ComponentCount = 1;
+    };
+    template<>
+    struct Trait<Vector2f>
+    {
+        using Component = float;
+        static constexpr int ComponentCount = 2;
     };
     template<>
     struct Trait<Vector3f>
@@ -226,13 +234,31 @@ namespace ImageDetail
         }
         else if constexpr(SrcComps == 1)
         {
-            static_assert(DstComps == 3 || DstComps == 4);
+            static_assert(DstComps == 2 || DstComps == 3 || DstComps == 4);
             ret[0] = src[0];
             ret[1] = src[0];
-            ret[2] = src[0];
-            if constexpr(DstComps == 4)
+            if constexpr(DstComps > 2)
+            {
+                ret[2] = src[0];
+            }
+            if constexpr(DstComps > 3)
             {
                 ret[3] = DEFAULT_ALPHA;
+            }
+        }
+        else if constexpr(SrcComps == 2)
+        {
+            ret[0] = src[0];
+            if constexpr(DstComps == 3)
+            {
+                ret[1] = src[0];
+                ret[2] = src[1];
+            }
+            else if constexpr(DstComps == 4)
+            {
+                ret[1] = src[0];
+                ret[2] = src[0];
+                ret[3] = src[1];
             }
         }
         else if constexpr(SrcComps == 3)
@@ -240,6 +266,13 @@ namespace ImageDetail
             if constexpr(DstComps == 1)
             {
                 ret[0] = src[0];
+            }
+            else if constexpr(DstComps == 2)
+            {
+                ret[0] = src[0];
+                ret[1] = src[1];
+                ret[2] = src[2];
+                ret[3] = DEFAULT_ALPHA;
             }
             else
             {
@@ -253,9 +286,12 @@ namespace ImageDetail
         else
         {
             static_assert(SrcComps == 4);
-            static_assert(DstComps == 1 || DstComps == 3);
             ret[0] = src[0];
-            if constexpr(DstComps == 3)
+            if constexpr(DstComps == 2)
+            {
+                ret[1] = src[1];
+            }
+            else if constexpr(DstComps == 3)
             {
                 ret[1] = src[1];
                 ret[2] = src[2];
@@ -510,6 +546,10 @@ void Image<T>::Save(const std::string &filename, ImageFormat format) const
         if constexpr(std::is_same_v<T, float>)
         {
             To<uint8_t>().Save(filename, format);
+        }
+        else if constexpr(std::is_same_v<T, Vector2f>)
+        {
+            To<Vector4b>().Save(filename, format);
         }
         else if constexpr(std::is_same_v<T, Vector3f>)
         {

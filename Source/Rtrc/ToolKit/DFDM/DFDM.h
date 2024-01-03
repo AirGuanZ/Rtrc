@@ -18,8 +18,8 @@ public:
     };
 
     RTRC_SET_GET(Ref<ResourceManager>, Resources,      resources_)
-    RTRC_SET_GET(WrapMode,                     WrapMode,       wrapMode_)
-    RTRC_SET_GET(int,                          IterationCount, iterationCount_)
+    RTRC_SET_GET(WrapMode,             WrapMode,       wrapMode_)
+    RTRC_SET_GET(int,                  IterationCount, iterationCount_)
 
     Image<Vector2f> GenerateCorrectionMap(const Image<Vector3f>& displacementMap) const;
 

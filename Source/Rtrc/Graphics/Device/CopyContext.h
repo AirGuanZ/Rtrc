@@ -27,11 +27,11 @@ public:
         RHI::TextureLayout postLayout = RHI::TextureLayout::CopyDst);
 
     void UploadTexture2D(
-        const RC<Texture> &texture,
-        uint32_t             arrayLayer,
-        uint32_t             mipLevel,
-        const ImageDynamic  &image,
-        RHI::TextureLayout   postLayout = RHI::TextureLayout::CopyDst);
+        const RC<Texture>  &texture,
+        uint32_t            arrayLayer,
+        uint32_t            mipLevel,
+        const ImageDynamic &image,
+        RHI::TextureLayout  postLayout = RHI::TextureLayout::CopyDst);
 
 private:
 

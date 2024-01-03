@@ -248,6 +248,7 @@ ImageDynamic ImageDynamic::To(TexelType newTexelType) const
         case U8x3:  return ImageDynamic(image.template To<Vector3b>());
         case U8x4:  return ImageDynamic(image.template To<Vector4b>());
         case F32x1: return ImageDynamic(image.template To<float>());
+        case F32x2: return ImageDynamic(image.template To<Vector2f>());
         case F32x3: return ImageDynamic(image.template To<Vector3f>());
         case F32x4: return ImageDynamic(image.template To<Vector4f>());
         }

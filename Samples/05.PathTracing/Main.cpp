@@ -359,10 +359,12 @@ int main()
     {
         Run();
     }
+#if RTRC_ENABLE_EXCEPTION_STACKTRACE
     catch(const Exception &e)
     {
         LogError("{}\n{}", e.what(), e.stacktrace());
     }
+#endif
     catch(const std::exception &e)
     {
         LogError(e.what());

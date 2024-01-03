@@ -177,8 +177,8 @@ std::vector<unsigned char> DXC::Compile(
             arguments.push_back(L"-O0");
 
             // Temporarily disable debug info for vulkan shader to work around ice of dxc
-            // arguments.push_back(L"-fspv-extension=SPV_KHR_non_semantic_info");
-            // arguments.push_back(L"-fspv-debug=vulkan-with-source");
+            arguments.push_back(L"-fspv-extension=SPV_KHR_non_semantic_info");
+            arguments.push_back(L"-fspv-debug=vulkan-with-source");
         }
         else
         {

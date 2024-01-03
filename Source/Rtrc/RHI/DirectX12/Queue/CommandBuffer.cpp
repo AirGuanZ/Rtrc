@@ -598,6 +598,13 @@ void DirectX12CommandBuffer::ExecuteBarriersInternal(
         {
             d3dBarrier.Flags |= D3D12_TEXTURE_BARRIER_FLAG_DISCARD;
         }
+
+        if(b.texture->GetConcurrentAccessMode() == QueueConcurrentAccessMode::Concurrent)
+        {
+            if(d3dBarrier.LayoutBefore != D3D12_BARRIER_LAYOUT_UNDEFINED)
+                d3dBarrier.LayoutBefore = D3D12_BARRIER_LAYOUT_COMMON;
+            d3dBarrier.LayoutAfter = D3D12_BARRIER_LAYOUT_COMMON;
+        }
     }
 
     std::vector<D3D12_BUFFER_BARRIER> d3dBufferBarriers;
@@ -652,6 +659,13 @@ void DirectX12CommandBuffer::ExecuteBarriersInternal(
         {
             d3dBarrier.Flags |= D3D12_TEXTURE_BARRIER_FLAG_DISCARD;
         }
+
+        if(b.texture->GetConcurrentAccessMode() == QueueConcurrentAccessMode::Concurrent)
+        {
+            if(d3dBarrier.LayoutBefore != D3D12_BARRIER_LAYOUT_UNDEFINED)
+                d3dBarrier.LayoutBefore = D3D12_BARRIER_LAYOUT_COMMON;
+            d3dBarrier.LayoutAfter = D3D12_BARRIER_LAYOUT_COMMON;
+        }
     }
 
     for(auto &b : textureAcquireBarriers)
@@ -683,6 +697,13 @@ void DirectX12CommandBuffer::ExecuteBarriersInternal(
         if(d3dBarrier.LayoutBefore == D3D12_BARRIER_LAYOUT_UNDEFINED)
         {
             d3dBarrier.Flags |= D3D12_TEXTURE_BARRIER_FLAG_DISCARD;
+        }
+
+        if(b.texture->GetConcurrentAccessMode() == QueueConcurrentAccessMode::Concurrent)
+        {
+            if(d3dBarrier.LayoutBefore != D3D12_BARRIER_LAYOUT_UNDEFINED)
+                d3dBarrier.LayoutBefore = D3D12_BARRIER_LAYOUT_COMMON;
+            d3dBarrier.LayoutAfter = D3D12_BARRIER_LAYOUT_COMMON;
         }
     }
 
