@@ -169,7 +169,8 @@ bool IsReadOnly(ResourceAccessFlag access)
       | ResolveRead
       | ReadAS
       | ReadSBT
-      | ReadForBuildAS;
+      | ReadForBuildAS
+      | IndirectCommandRead;
     return (access & READONLY_MASK) == access;
 }
 

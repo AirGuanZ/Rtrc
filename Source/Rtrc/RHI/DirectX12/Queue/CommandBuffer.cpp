@@ -726,7 +726,7 @@ void DirectX12CommandBuffer::ExecuteBarriersInternal(
             .pTextureBarriers = d3dTextureBarriers.data()
         });
     }
-    if(!d3dTextureBarriers.empty())
+    if(!d3dBufferBarriers.empty())
     {
         barrierGroups.PushBack(D3D12_BARRIER_GROUP
         {

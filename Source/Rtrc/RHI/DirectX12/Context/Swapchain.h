@@ -24,7 +24,7 @@ public:
 
     int                GetRenderTargetCount() const RTRC_RHI_OVERRIDE;
     const TextureDesc &GetRenderTargetDesc() const RTRC_RHI_OVERRIDE;
-    RPtr<Texture>       GetRenderTarget() const RTRC_RHI_OVERRIDE;
+    RPtr<Texture>      GetRenderTarget() const RTRC_RHI_OVERRIDE;
 
 private:
 
