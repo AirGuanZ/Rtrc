@@ -105,7 +105,7 @@ void Run()
         .Create();
 
     Box<Device> device = Device::CreateGraphicsDevice(
-        window, RHI::Format::B8G8R8A8_UNorm, 3, RTRC_DEBUG,
+        window, RHI::BackendType::Default, RHI::Format::B8G8R8A8_UNorm, 3, RTRC_DEBUG,
         false, Device::EnableRayTracing);
 
     ResourceManager resourceManager(device);
@@ -187,6 +187,7 @@ void Run()
 
     EditorCameraController cameraController;
     cameraController.SetCamera(&camera);
+    cameraController.SetTrackballDistance(Length(camera.GetPosition()));
 
     // Render loop
 

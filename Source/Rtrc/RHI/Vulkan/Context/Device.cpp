@@ -28,7 +28,6 @@
 #include <Rtrc/RHI/Vulkan/Resource/Sampler.h>
 #include <Rtrc/RHI/Vulkan/Resource/Texture.h>
 #include <Rtrc/RHI/Vulkan/Resource/TextureView.h>
-#include <Rtrc/RHI/Vulkan/Resource/TransientResourcePool/TransientResourcePool.h>
 
 #ifdef RTRC_STATIC_RHI
 #include <Rtrc/RHI/Vulkan/Queue/CommandPool.h>

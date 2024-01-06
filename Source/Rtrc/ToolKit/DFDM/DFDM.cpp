@@ -85,7 +85,7 @@ Image<Vector2f> DFDM::GenerateCorrectionMap(const Image<Vector3f> &displacementM
         passData.NewCorrectionMap = correctionB;
 
         passData.resolution       = input->GetSize().To<int>();
-        passData.areaPreservation = 3;
+        passData.areaPreservation = areaPreservation_;
         passData.iteration        = i;
 
         graph->CreateComputePassWithThreadCount(

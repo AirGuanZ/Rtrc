@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/Core/Variant.h>
+#include <Rtrc/Core/SmartPointer/ObserverPtr.h>
 #include <Rtrc/RHI/Window/WindowInput.h>
 #include <Rtrc/ToolKit/Camera/Camera.h>
 
@@ -10,7 +10,9 @@ class EditorCameraController
 {
 public:
 
-    void SetCamera(Camera *camera);
+    void SetCamera(Ref<Camera> camera);
+
+    void SetTrackballDistance(float distance);
 
     void ClearInputStates();
 

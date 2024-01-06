@@ -17,7 +17,7 @@ public:
         const RC<Buffer> &buffer,
         const void       *initData,
         size_t            offset = 0,
-        size_t            size   = 0);
+        size_t            size = 0);
 
     void UploadTexture2D(
         const RC<Texture> &texture,

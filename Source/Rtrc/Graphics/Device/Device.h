@@ -157,11 +157,11 @@ public:
         Span<ImageDynamic>      images,
         RHI::TextureLayout      postLayout = RHI::TextureLayout::CopyDst);
     RC<Texture> LoadTexture2D(
-        const std::string    &filename,
-        RHI::Format           format,
+        const std::string     &filename,
+        RHI::Format            format,
         RHI::TextureUsageFlags usages,
-        bool                  generateMipLevels,
-        RHI::TextureLayout    postLayout = RHI::TextureLayout::CopyDst);
+        bool                   generateMipLevels,
+        RHI::TextureLayout     postLayout = RHI::TextureLayout::CopyDst);
 
     // Pipeline object creation
 

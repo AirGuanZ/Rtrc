@@ -430,12 +430,11 @@ void WriteTxt(const std::string &filename, const std::string &content)
                 std::istreambuf_iterator<char>()
             };
             if(oldContent == content)
-            {
                 return;
-            }
         }
     }
 
+    std::cout << "Writing to " << filename << std::endl;
     std::ofstream fout(filename, std::ofstream::out | std::ofstream::trunc);
     if(fout)
     {

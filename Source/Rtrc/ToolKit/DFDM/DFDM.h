@@ -17,17 +17,19 @@ public:
         Repeat
     };
 
-    RTRC_SET_GET(Ref<ResourceManager>, Resources,      resources_)
-    RTRC_SET_GET(WrapMode,             WrapMode,       wrapMode_)
-    RTRC_SET_GET(int,                  IterationCount, iterationCount_)
+    RTRC_SET_GET(Ref<ResourceManager>, Resources,        resources_)
+    RTRC_SET_GET(WrapMode,             WrapMode,         wrapMode_)
+    RTRC_SET_GET(float,                AreaPreservation, areaPreservation_)
+    RTRC_SET_GET(int,                  IterationCount,   iterationCount_)
 
     Image<Vector2f> GenerateCorrectionMap(const Image<Vector3f>& displacementMap) const;
 
 private:
 
     Ref<ResourceManager> resources_;
-    WrapMode             wrapMode_       = WrapMode::Clamp;
-    int                  iterationCount_ = 300;
+    WrapMode             wrapMode_         = WrapMode::Clamp;
+    float                areaPreservation_ = 3;
+    int                  iterationCount_   = 300;
 };
 
 RTRC_END

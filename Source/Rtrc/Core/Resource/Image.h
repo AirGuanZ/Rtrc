@@ -45,6 +45,9 @@ public:
     uint32_t GetWidth() const;
     uint32_t GetHeight() const;
 
+    int32_t GetSignedWidth() const { return static_cast<int32_t>(GetWidth()); }
+    int32_t GetSignedHeight() const { return static_cast<int32_t>(GetHeight()); }
+
           Texel &operator()(uint32_t x, uint32_t y);
     const Texel &operator()(uint32_t x, uint32_t y) const;
 

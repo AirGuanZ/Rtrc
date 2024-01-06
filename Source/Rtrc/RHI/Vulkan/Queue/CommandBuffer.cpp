@@ -610,8 +610,6 @@ void VulkanCommandBuffer::ExecuteBarriersInternal(
             continue;
         }
 
-        // assert(release.texture->GetDesc().concurrentAccessMode == QueueConcurrentAccessMode::Exclusive);
-
         const uint32_t beforeQueueFamilyIndex = device_->_internalGetQueueFamilyIndex(release.beforeQueue);
         const uint32_t afterQueueFamilyIndex = device_->_internalGetQueueFamilyIndex(release.afterQueue);
         bool shouldEmitBarrier = true;
@@ -620,7 +618,7 @@ void VulkanCommandBuffer::ExecuteBarriersInternal(
         if(beforeQueueFamilyIndex == afterQueueFamilyIndex)
         {
             // graphics < compute < copy
-            // use fronter queue to submit the barrier
+            // use front queue to submit the barrier
             shouldEmitBarrier = release.beforeQueue <= release.afterQueue;
         }
 

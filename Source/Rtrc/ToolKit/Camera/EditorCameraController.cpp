@@ -2,11 +2,16 @@
 
 RTRC_BEGIN
 
-void EditorCameraController::SetCamera(Camera *camera)
+void EditorCameraController::SetCamera(Ref<Camera> camera)
 {
     assert(!camera_);
     camera_ = camera;
     ClearInputStates();
+}
+
+void EditorCameraController::SetTrackballDistance(float distance)
+{
+    trackballDistance_ = distance;
 }
 
 void EditorCameraController::ClearInputStates()
@@ -113,7 +118,7 @@ bool EditorCameraController::UpdateWalkMode(const WindowInput &input, float dt)
     if(input.GetCursorRelativePositionY() != 0)
     {
         yawPitch.y -= rotatingSpeed_ * input.GetCursorRelativePositionY();
-        yawPitch.y = std::clamp(yawPitch.y, -PI / 2 + 0.01f, PI / 2 - 0.01f);
+        yawPitch.y = std::clamp(yawPitch.y, -PI / 2 + 0.02f, PI / 2 - 0.02f);
         isDirty = true;
     }
 
