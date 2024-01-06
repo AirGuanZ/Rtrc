@@ -6,9 +6,9 @@ using namespace Rtrc;
 
 class DFDMDemo : public SimpleApplication
 {
-    static constexpr int N = 512;
+    static constexpr int N = 2048;
     static constexpr float WorldSize = 10.0f;
-    static constexpr float HeightScale = 3.0f;
+    static constexpr float HeightScale = 2.0f;
 
     void InitializeSimpleApplication() override
     {
@@ -16,8 +16,9 @@ class DFDMDemo : public SimpleApplication
         InitializeGeometryMaps();
         InitializeRenderPipeline();
 
-        camera_.SetLookAt({ -4, 10, -4 }, { 0, 1, 0 }, { 5, 2, 5 });
+        camera_.SetLookAt({ -2, 5, -2 }, { 0, 1, 0 }, { 5, 1, 5 });
         cameraController_.SetCamera(camera_);
+        cameraController_.SetTrackballDistance(Length(camera_.GetPosition() - Vector3f(5, 1, 5)));
     }
 
     void UpdateSimpleApplication(Ref<RenderGraph> renderGraph) override
@@ -243,7 +244,8 @@ class DFDMDemo : public SimpleApplication
 
         color_ = GetDevice()->LoadTexture2D(
             "Asset/Sample/06.DistortionFreeDisplacementMap/Color.png",
-            RHI::Format::R8G8B8A8_UNorm, RHI::TextureUsage::ShaderResource, false, RHI::TextureLayout::ShaderTexture);
+            RHI::Format::R8G8B8A8_UNorm, RHI::TextureUsage::ShaderResource,
+            true, RHI::TextureLayout::ShaderTexture);
     }
 
     void InitializeRenderPipeline()
@@ -253,6 +255,8 @@ class DFDMDemo : public SimpleApplication
         {
             .shader                 = GetResourceManager()->GetShader<"DFDM/Render">(),
             .meshLayout             = layout,
+            .cullMode               = RHI::CullMode::CullBack,
+            .frontFaceMode          = RHI::FrontFaceMode::CounterClockwise,
             .enableDepthTest        = true,
             .enableDepthWrite       = true,
             .depthCompareOp         = RHI::CompareOp::Less,

@@ -18,7 +18,7 @@ rtrc_shader("DFDM/Render")
 	};
 	
     rtrc_sampler(Sampler, filter = linear, address_u = clamp, address_v = clamp)
-    rtrc_sampler(SamplerRepeat, filter = linear, address_u = repeat, address_v = repeat)
+    rtrc_sampler(SamplerColor, anisotropy = 16, address_u = repeat, address_v = repeat)
 
 	struct VSInput
 	{
@@ -58,7 +58,7 @@ rtrc_shader("DFDM/Render")
 		if(Pass.Checkboard)
 			color = CheckboardColor(correctedUV);
 		else
-			color = ColorMap.SampleLevel(SamplerRepeat, 10 * correctedUV, 0);
+			color = ColorMap.Sample(SamplerColor, 16 * correctedUV);
 
 		const float3 normal = NormalMap.SampleLevel(Sampler, input.uv, 0);
 		return float4(pow(color * max(0.2 + normal.y * 0.8, 0), 1 / 2.2), 1);
