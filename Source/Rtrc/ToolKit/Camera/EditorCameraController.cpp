@@ -173,19 +173,23 @@ bool EditorCameraController::UpdateTrackballMode(const WindowInput &input)
 
     if(isRotating && input.IsKeyPressed(KeyCode::MouseLeft))
     {
-        const float dx = input.GetCursorAbsolutePositionX() - mousePosWhenStartRotating_.x;
-        const float dy = input.GetCursorAbsolutePositionY() - mousePosWhenStartRotating_.y;
-        if(std::abs(dx) > 1e-3f || std::abs(dy) > 1e-3f)
+        Vector2f oldYawPitch = yawPitch;
+        if(input.GetCursorRelativePositionX() != 0 || input.GetCursorRelativePositionY() != 0)
         {
-            yawPitch.x = trackballCenterToEyeWhenStartRotating_.x + dx * rotatingSpeed_;
-            yawPitch.y = trackballCenterToEyeWhenStartRotating_.y + dy * rotatingSpeed_;
-            while(yawPitch.x > 2 * PI)
-                yawPitch.x -= 2 * PI;
-            while(yawPitch.x < 0)
-                yawPitch.x += 2 * PI;
-            yawPitch.y = std::clamp(yawPitch.y, -PI / 2 + 0.01f, PI / 2 - 0.01f);
-            isDirty = true;
+            const float dx = input.GetCursorAbsolutePositionX() - mousePosWhenStartRotating_.x;
+            const float dy = input.GetCursorAbsolutePositionY() - mousePosWhenStartRotating_.y;
+            if(std::abs(dx) > 1e-3f || std::abs(dy) > 1e-3f)
+            {
+                yawPitch.x = trackballCenterToEyeWhenStartRotating_.x + dx * rotatingSpeed_;
+                yawPitch.y = trackballCenterToEyeWhenStartRotating_.y + dy * rotatingSpeed_;
+                while(yawPitch.x > 2 * PI)
+                    yawPitch.x -= 2 * PI;
+                while(yawPitch.x < 0)
+                    yawPitch.x += 2 * PI;
+                yawPitch.y = std::clamp(yawPitch.y, -PI / 2 + 0.01f, PI / 2 - 0.01f);
+            }
         }
+        isDirty |= oldYawPitch != yawPitch;
     }
     else
     {

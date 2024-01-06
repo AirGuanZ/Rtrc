@@ -21,7 +21,7 @@ void Camera::SetLookAt(const Vector3f &position, const Vector3f &up, const Vecto
     //   [ -SyCz + SxSzCy SySz + SxCyCz  CxCy ]
 
     const float sx = -ez.y;
-    if(std::abs(std::abs(sx) - 1) > 1e-3f)
+    if(std::abs(std::abs(sx) - 1) > 1e-4f)
     {
         const float x1 = std::asin(std::clamp(sx, -1.0f, 1.0f));
         const float cx1 = std::cos(x1);
