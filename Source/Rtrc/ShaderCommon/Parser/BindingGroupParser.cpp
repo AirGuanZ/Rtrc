@@ -235,6 +235,11 @@ namespace BindingGroupParserDetail
             {
                 desc.magFilter = desc.minFilter = desc.mipFilter = TranslateFilterMode(propertyValue);
             }
+            else if(propertyName == "anisotropy")
+            {
+                desc.enableAnisotropy = true;
+                desc.maxAnisotropy = std::stoi(propertyValue);
+            }
             else if(propertyName == "address_u")
             {
                 desc.addressModeU = TranslateAddressMode(propertyValue);
