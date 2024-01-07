@@ -233,7 +233,7 @@ class DFDMDemo : public SimpleApplication
 
         normal_ = GetDevice()->CreateAndUploadTexture2D(RHI::TextureDesc
         {
-            .format = RHI::Format::R32G32B32_Float,
+            .format = RHI::Format::R32G32B32A32_Float,
             .width  = normalMap.GetWidth(),
             .height = normalMap.GetHeight(),
             .usage  = RHI::TextureUsage::ShaderResource

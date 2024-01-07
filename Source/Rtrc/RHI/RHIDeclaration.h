@@ -503,8 +503,9 @@ enum class AttachmentStoreOp
 
 enum class QueueConcurrentAccessMode
 {
-    Exclusive, // Exclusively accessed by one queue
-    Concurrent // Concurrently accessed by graphics/compute queues
+    Exclusive,  // Exclusively owned by one queue
+    Shared,     // Exclusively accessed by one queue
+    Concurrent, // Concurrently accessed by graphics/compute queues
 };
 
 enum class RayTracingGeometryType

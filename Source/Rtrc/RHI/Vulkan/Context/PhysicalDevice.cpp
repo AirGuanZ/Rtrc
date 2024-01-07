@@ -371,6 +371,7 @@ VkPhysicalDeviceFeatures2 VulkanPhysicalDevice::GetRequiredFeatures(
     ret.pNext = EnablePhysicalDeviceFeatures(
         VkPhysicalDeviceDetail::GetRequiredPhysicalDeviceFeatures(desc.enableRayTracing), storage);
     ret.features.shaderInt16 = true;
+    ret.features.samplerAnisotropy = true;
     return ret;
 }
 

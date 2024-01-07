@@ -643,7 +643,7 @@ void ImGuiInstance::RecreateFontTexture()
             .sampleCount          = 1,
             .usage                = RHI::TextureUsage::ShaderResource,
             .initialLayout        = RHI::TextureLayout::Undefined,
-            .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Concurrent
+            .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Shared
         }, data, RHI::TextureLayout::ShaderTexture);
     data_->fontTextureBindingGroup = data_->passBindingGroupLayout->CreateBindingGroup();
     data_->fontTextureBindingGroup->Set(0, data_->fontTexture->GetSrv());

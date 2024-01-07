@@ -215,7 +215,7 @@ RC<Texture> Device::CreateColorTexture2D(uint8_t r, uint8_t g, uint8_t b, uint8_
         .sampleCount          = 1,
         .usage                = RHI::TextureUsage::TransferDst | RHI::TextureUsage::ShaderResource,
         .initialLayout        = RHI::TextureLayout::Undefined,
-        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Concurrent
+        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Shared
     });
     if(!name.empty())
     {
@@ -297,7 +297,7 @@ RC<Texture> Device::CreateAndUploadTexture2D(
     RHI::TextureLayout      postLayout)
 {
     RHI::TextureDesc desc = _desc;
-    desc.concurrentAccessMode = RHI::QueueConcurrentAccessMode::Concurrent;
+    desc.concurrentAccessMode = RHI::QueueConcurrentAccessMode::Shared;
     desc.usage |= RHI::TextureUsage::TransferDst;
     assert(imageData.size() == desc.mipLevels * desc.arraySize);
     auto ret = CreateTexture(desc);
@@ -317,7 +317,7 @@ RC<Texture> Device::CreateAndUploadTexture2D(
     RHI::TextureLayout      postLayout)
 {
     RHI::TextureDesc desc = _desc;
-    desc.concurrentAccessMode = RHI::QueueConcurrentAccessMode::Concurrent;
+    desc.concurrentAccessMode = RHI::QueueConcurrentAccessMode::Shared;
     desc.usage |= RHI::TextureUsage::TransferDst;
     assert(images.size() == desc.mipLevels * desc.arraySize);
     auto ret = CreateTexture(desc);
@@ -361,7 +361,7 @@ RC<Texture> Device::LoadTexture2D(
         .sampleCount   = 1,
         .usage         = usages,
         .initialLayout = RHI::TextureLayout::Undefined,
-        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Concurrent
+        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Shared
     };
     return CreateAndUploadTexture2D(desc, images, postLayout);
 }

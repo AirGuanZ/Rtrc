@@ -61,9 +61,9 @@ void CopyContext::UploadTexture2D(
 {
     auto &texDesc = texture->GetDesc();
 
-    if(texDesc.concurrentAccessMode != RHI::QueueConcurrentAccessMode::Concurrent)
+    if(texDesc.concurrentAccessMode == RHI::QueueConcurrentAccessMode::Exclusive)
     {
-        throw Exception("CopyContext::UploadTexture2D: texture must be concurrent accessible");
+        throw Exception("CopyContext::UploadTexture2D: texture cannot be used on transfer queue");
     }
 
     const uint32_t width = texDesc.width >> mipLevel;
