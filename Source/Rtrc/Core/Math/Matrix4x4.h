@@ -45,7 +45,7 @@ public:
     static Matrix4x4f Scale(const Vector3f &scale);
 
     static Matrix4x4f LookAt(const Vector3f &eye, const Vector3f &dst, const Vector3f &up);
-    static Matrix4x4f Perspective(float fovYRad, float wOverH, float nearPlane, float farPlane);
+    static Matrix4x4f Perspective(float fovYRad, float wOverH, float nearPlane, float farPlane, bool reverseZ = false);
 
     Matrix4x4f();
 
@@ -251,16 +251,18 @@ inline Matrix4x4f Matrix4x4f::LookAt(const Vector3f &eye, const Vector3f &dst, c
     };
 }
 
-inline Matrix4x4f Matrix4x4f::Perspective(float fovYRad, float wOverH, float nearPlane, float farPlane)
+inline Matrix4x4f Matrix4x4f::Perspective(float fovYRad, float wOverH, float nearPlane, float farPlane, bool reverseZ)
 {
     const float invDis = 1.0f / (farPlane - nearPlane);
     const float y_rad = 0.5f * fovYRad;
     const float cot = std::cos(y_rad) / std::sin(y_rad);
+    const float a = (reverseZ ? -nearPlane : farPlane) * invDis;
+    const float b = (reverseZ ? nearPlane : -nearPlane) * farPlane * invDis;
     return {
-        -cot / wOverH, 0,   0,                 0,
-        0,             cot, 0,                 0,
-        0,             0,   farPlane * invDis, -farPlane * nearPlane * invDis,
-        0,             0,   1,                 0
+        -cot / wOverH, 0,   0, 0,
+        0,             cot, 0, 0,
+        0,             0,   a, b,
+        0,             0,   1, 0
     };
 }
 
