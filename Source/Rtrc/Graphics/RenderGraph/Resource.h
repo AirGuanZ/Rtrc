@@ -100,6 +100,9 @@ public:
     virtual RHI::Format GetDefaultTexelFormat() const = 0;
     virtual size_t GetDefaultStructStride() const = 0;
 
+    virtual void SetDefaultTexelFormat(RHI::Format format) = 0;
+    virtual void SetDefaultStructStride(size_t stride) = 0;
+
     BufferResourceSrv GetStructuredSrv() const;
     BufferResourceSrv GetStructuredSrv(size_t structStride) const;
     BufferResourceSrv GetStructuredSrv(size_t byteOffset, size_t structStride) const;

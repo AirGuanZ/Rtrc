@@ -52,6 +52,30 @@ TextureResource *RenderGraph::CreateTexture(const RHI::TextureDesc &desc, std::s
     return textures_.back().get();
 }
 
+BufferResource *RenderGraph::CreateTexelBuffer(
+    size_t count, RHI::Format format, RHI::BufferUsageFlag usages, std::string name)
+{
+    auto ret = this->CreateBuffer(RHI::BufferDesc
+    {
+        .size = count * RHI::GetTexelSize(format),
+        .usage = usages
+    }, std::move(name));
+    ret->SetDefaultTexelFormat(format);
+    return ret;
+}
+
+BufferResource *RenderGraph::CreateStructuredBuffer(
+    size_t count, size_t stride, RHI::BufferUsageFlag usages, std::string name)
+{
+    auto ret = this->CreateBuffer(RHI::BufferDesc
+    {
+        .size = count * stride,
+        .usage = usages
+    }, std::move(name));
+    ret->SetDefaultStructStride(stride);
+    return ret;
+}
+
 BufferResource *RenderGraph::RegisterBuffer(RC<StatefulBuffer> buffer)
 {
     const void *rhiPtr = buffer->GetRHIObject().Get();
@@ -304,6 +328,16 @@ size_t RenderGraph::ExternalBufferResource::GetDefaultStructStride() const
 RHI::Format RenderGraph::ExternalBufferResource::GetDefaultTexelFormat() const
 {
     return buffer->GetDefaultTexelFormat();
+}
+
+void RenderGraph::ExternalBufferResource::SetDefaultTexelFormat(RHI::Format format)
+{
+    buffer->SetDefaultTexelFormat(format);
+}
+
+void RenderGraph::ExternalBufferResource::SetDefaultStructStride(size_t stride)
+{
+    buffer->SetDefaultStructStride(stride);
 }
 
 const RHI::TextureDesc &RenderGraph::ExternalTextureResource::GetDesc() const

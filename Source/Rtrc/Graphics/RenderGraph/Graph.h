@@ -49,8 +49,8 @@ public:
 
         using BufferResource::BufferResource;
 
-        void SetDefaultStructStride(size_t stride);
-        void SetDefaultTexelFormat(RHI::Format format);
+        void SetDefaultStructStride(size_t stride) override;
+        void SetDefaultTexelFormat(RHI::Format format) override;
 
         size_t GetDefaultStructStride() const override;
         RHI::Format GetDefaultTexelFormat() const override;
@@ -75,6 +75,11 @@ public:
 
     BufferResource  *CreateBuffer(const RHI::BufferDesc &desc, std::string name = {});
     TextureResource *CreateTexture(const RHI::TextureDesc &desc, std::string name = {});
+
+    BufferResource *CreateTexelBuffer(
+        size_t count, RHI::Format format, RHI::BufferUsageFlag usages, std::string name = {});
+    BufferResource *CreateStructuredBuffer(
+        size_t count, size_t stride, RHI::BufferUsageFlag usages, std::string name = {});
 
     BufferResource  *RegisterBuffer(RC<StatefulBuffer> buffer);
     TextureResource *RegisterTexture(RC<StatefulTexture> texture);
@@ -192,6 +197,9 @@ private:
 
         size_t GetDefaultStructStride() const override;
         RHI::Format GetDefaultTexelFormat() const override;
+
+        void SetDefaultTexelFormat(RHI::Format format) override;
+        void SetDefaultStructStride(size_t stride) override;
 
         RC<StatefulBuffer> buffer;
     };

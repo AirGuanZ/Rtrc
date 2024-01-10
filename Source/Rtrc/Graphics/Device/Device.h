@@ -115,6 +115,12 @@ public:
     RC<Buffer>         CreateBuffer(const RHI::BufferDesc &desc, std::string name = {});
     RC<StatefulBuffer> CreatePooledBuffer(const RHI::BufferDesc &desc, std::string name = {});
 
+    RC<Buffer> CreateTexelBuffer(size_t count, RHI::Format format, RHI::BufferUsageFlag usages, std::string name = {});
+    RC<Buffer> CreateStructuredBuffer(size_t count, size_t stride, RHI::BufferUsageFlag usages, std::string name = {});
+
+    RC<Buffer> CreatePooledTexelBuffer(size_t count, RHI::Format format, RHI::BufferUsageFlag usages, std::string name = {});
+    RC<Buffer> CreatePooledStructuredBuffer(size_t count, size_t stride, RHI::BufferUsageFlag usages, std::string name = {});
+
     RC<Texture>         CreateTexture(const RHI::TextureDesc &desc, std::string name = {});
     RC<StatefulTexture> CreatePooledTexture(const RHI::TextureDesc &desc, std::string name = {});
     RC<Texture>         CreateColorTexture2D(uint8_t r, uint8_t g, uint8_t b, uint8_t a, std::string name = {});
@@ -143,6 +149,10 @@ public:
         const ImageDynamic  &image,
         RHI::TextureLayout   postLayout = RHI::TextureLayout::CopyDst);
 
+    template<typename T>
+    RC<Buffer> CreateAndUploadTexelBuffer(RHI::BufferUsageFlag usages, Span<T> data, RHI::Format format);
+    template<typename T>
+    RC<Buffer> CreateAndUploadStructuredBuffer(RHI::BufferUsageFlag usages, Span<T> data);
     RC<Buffer> CreateAndUploadBuffer(
         const RHI::BufferDesc &desc,
         const void            *initData,
@@ -447,6 +457,54 @@ inline RC<StatefulBuffer> Device::CreatePooledBuffer(const RHI::BufferDesc &desc
     return ret;
 }
 
+inline RC<Buffer> Device::CreateTexelBuffer(
+    size_t count, RHI::Format format, RHI::BufferUsageFlag usages, std::string name)
+{
+    auto buffer = this->CreateBuffer(RHI::BufferDesc
+    {
+        .size = count * RHI::GetTexelSize(format),
+        .usage = usages
+    }, std::move(name));
+    buffer->SetDefaultTexelFormat(format);
+    return buffer;
+}
+
+inline RC<Buffer> Device::CreateStructuredBuffer(
+    size_t count, size_t stride, RHI::BufferUsageFlag usages, std::string name)
+{
+    auto buffer = this->CreateBuffer(RHI::BufferDesc
+    {
+        .size = count * stride,
+        .usage = usages
+    }, std::move(name));
+    buffer->SetDefaultStructStride(stride);
+    return buffer;
+}
+
+inline RC<Buffer> Device::CreatePooledTexelBuffer(
+    size_t count, RHI::Format format, RHI::BufferUsageFlag usages, std::string name)
+{
+    auto buffer = this->CreatePooledBuffer(RHI::BufferDesc
+    {
+        .size = count * RHI::GetTexelSize(format),
+        .usage = usages
+    }, std::move(name));
+    buffer->SetDefaultTexelFormat(format);
+    return buffer;
+}
+
+inline RC<Buffer> Device::CreatePooledStructuredBuffer(
+    size_t count, size_t stride, RHI::BufferUsageFlag usages, std::string name)
+{
+    auto buffer = this->CreatePooledBuffer(RHI::BufferDesc
+    {
+        .size = count * stride,
+        .usage = usages
+    }, std::move(name));
+    buffer->SetDefaultStructStride(stride);
+    return buffer;
+}
+
 inline RC<Texture> Device::CreateTexture(const RHI::TextureDesc &desc, std::string name)
 {
     auto ret = textureManager_->Create(desc);
@@ -483,6 +541,31 @@ RC<SubBuffer> Device::CreateConstantBuffer(const T &data)
     auto ret = this->CreateDynamicBuffer();
     ret->SetData(data);
     return ret;
+}
+
+template<typename T>
+RC<Buffer> Device::CreateAndUploadTexelBuffer(RHI::BufferUsageFlag usages, Span<T> data, RHI::Format format)
+{
+    assert(RHI::GetTexelSize(format) == sizeof(T));
+    auto buffer = this->CreateAndUploadBuffer(RHI::BufferDesc
+        {
+            .size = data.GetSize() * sizeof(T),
+            .usage = usages
+        });
+    buffer->SetDefaultTexelFormat(format);
+    return buffer;
+}
+
+template<typename T>
+RC<Buffer> Device::CreateAndUploadStructuredBuffer(RHI::BufferUsageFlag usages, Span<T> data)
+{
+    auto buffer = this->CreateAndUploadBuffer(RHI::BufferDesc
+        {
+            .size = data.GetSize() * sizeof(T),
+            .usage = usages
+        });
+    buffer->SetDefaultStructStride(sizeof(T));
+    return buffer;
 }
 
 template<BindingGroupDSL::RtrcGroupStruct T>
