@@ -49,6 +49,8 @@ public:
 
         using BufferResource::BufferResource;
 
+        const RHI::BufferDesc& GetDesc() const override { return rhiDesc; }
+
         void SetDefaultStructStride(size_t stride) override;
         void SetDefaultTexelFormat(RHI::Format format) override;
 
@@ -194,6 +196,8 @@ private:
     public:
 
         using BufferResource::BufferResource;
+
+        const RHI::BufferDesc& GetDesc() const override { return buffer->GetDesc(); }
 
         size_t GetDefaultStructStride() const override;
         RHI::Format GetDefaultTexelFormat() const override;

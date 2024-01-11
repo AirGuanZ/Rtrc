@@ -118,8 +118,8 @@ public:
     RC<Buffer> CreateTexelBuffer(size_t count, RHI::Format format, RHI::BufferUsageFlag usages, std::string name = {});
     RC<Buffer> CreateStructuredBuffer(size_t count, size_t stride, RHI::BufferUsageFlag usages, std::string name = {});
 
-    RC<Buffer> CreatePooledTexelBuffer(size_t count, RHI::Format format, RHI::BufferUsageFlag usages, std::string name = {});
-    RC<Buffer> CreatePooledStructuredBuffer(size_t count, size_t stride, RHI::BufferUsageFlag usages, std::string name = {});
+    RC<StatefulBuffer> CreatePooledTexelBuffer(size_t count, RHI::Format format, RHI::BufferUsageFlag usages, std::string name = {});
+    RC<StatefulBuffer> CreatePooledStructuredBuffer(size_t count, size_t stride, RHI::BufferUsageFlag usages, std::string name = {});
 
     RC<Texture>         CreateTexture(const RHI::TextureDesc &desc, std::string name = {});
     RC<StatefulTexture> CreatePooledTexture(const RHI::TextureDesc &desc, std::string name = {});
@@ -481,7 +481,7 @@ inline RC<Buffer> Device::CreateStructuredBuffer(
     return buffer;
 }
 
-inline RC<Buffer> Device::CreatePooledTexelBuffer(
+inline RC<StatefulBuffer> Device::CreatePooledTexelBuffer(
     size_t count, RHI::Format format, RHI::BufferUsageFlag usages, std::string name)
 {
     auto buffer = this->CreatePooledBuffer(RHI::BufferDesc
@@ -493,7 +493,7 @@ inline RC<Buffer> Device::CreatePooledTexelBuffer(
     return buffer;
 }
 
-inline RC<Buffer> Device::CreatePooledStructuredBuffer(
+inline RC<StatefulBuffer> Device::CreatePooledStructuredBuffer(
     size_t count, size_t stride, RHI::BufferUsageFlag usages, std::string name)
 {
     auto buffer = this->CreatePooledBuffer(RHI::BufferDesc

@@ -95,6 +95,9 @@ public:
 
     using Resource::Resource;
 
+    virtual const RHI::BufferDesc& GetDesc() const = 0;
+    size_t GetSize() const { return this->GetDesc().size; }
+
     RC<Buffer> Get() const;
 
     virtual RHI::Format GetDefaultTexelFormat() const = 0;
