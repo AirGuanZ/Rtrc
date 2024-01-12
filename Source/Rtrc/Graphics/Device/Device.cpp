@@ -246,7 +246,7 @@ void Device::InitializeInternal(Flags flags, RHI::DeviceUPtr device, bool isComp
     pipelineManager_ = MakeBox<PipelineManager>(device_, *sync_);
     samplerManager_ = MakeBox<SamplerManager>(device_, *sync_);
 
-    copyContext_ = MakeBox<CopyContext>(device_);
+    copyContext_ = MakeBox<UploadContext>(device_);
     accelerationManager_ = MakeBox<AccelerationStructureManager>(device_, *sync_);
 
     clearBufferUtils_  = MakeBox<ClearBufferUtils>(this);

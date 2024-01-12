@@ -160,7 +160,7 @@ class DFDMDemo : public SimpleApplication
         // Height map
 
         constexpr char heightMapFilename[] = "Asset/Sample/06.DistortionFreeDisplacementMap/Height.png";
-        auto heightMap = ImageDynamic::Load(heightMapFilename).To<float>().As<Image<float>>();
+        auto heightMap = ImageDynamic::Load(heightMapFilename).To<float>();
         for(float& height : heightMap)
         {
             height *= HeightScale;
@@ -209,15 +209,15 @@ class DFDMDemo : public SimpleApplication
 
         auto GetHeight = [&](int x, int y)
         {
-            x = std::clamp<int>(x, 0, heightMap.GetSignedWidth() - 1);
-            y = std::clamp<int>(y, 0, heightMap.GetSignedHeight() - 1);
+            x = std::clamp<int>(x, 0, heightMap.GetSWidth() - 1);
+            y = std::clamp<int>(y, 0, heightMap.GetSHeight() - 1);
             return heightMap(x, y);
         };
 
         Image<Vector3f> normalMap(heightMap.GetWidth(), heightMap.GetHeight());
-        for(int y = 0; y < normalMap.GetSignedHeight(); ++y)
+        for(int y = 0; y < normalMap.GetSHeight(); ++y)
         {
-            for(int x = 0; x < normalMap.GetSignedWidth(); ++x)
+            for(int x = 0; x < normalMap.GetSWidth(); ++x)
             {
                 const float dx = 2.0f * (GetHeight(x + 1, y + 0) - GetHeight(x - 1, y + 0)) +
                                  1.0f * (GetHeight(x + 1, y + 1) - GetHeight(x - 1, y + 1)) +

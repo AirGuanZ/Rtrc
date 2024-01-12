@@ -7,11 +7,11 @@
 
 RTRC_BEGIN
 
-class CopyContext : public Uncopyable
+class UploadContext : public Uncopyable
 {
 public:
 
-    explicit CopyContext(RHI::DeviceOPtr device);
+    explicit UploadContext(RHI::DeviceOPtr device);
 
     void UploadBuffer(
         const RC<Buffer> &buffer,

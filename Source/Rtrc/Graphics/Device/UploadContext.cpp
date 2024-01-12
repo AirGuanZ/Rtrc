@@ -1,15 +1,15 @@
-#include <Rtrc/Graphics/Device/CopyContext.h>
+#include <Rtrc/Graphics/Device/UploadContext.h>
 #include <Rtrc/Core/Resource/Image.h>
 
 RTRC_BEGIN
 
-CopyContext::CopyContext(RHI::DeviceOPtr device)
+UploadContext::UploadContext(RHI::DeviceOPtr device)
     : device_(std::move(device)), copyQueue_(device_->GetQueue(RHI::QueueType::Transfer))
 {
     
 }
 
-void CopyContext::UploadBuffer(
+void UploadContext::UploadBuffer(
     const RC<Buffer> &buffer,
     const void       *initData,
     size_t            offset,
@@ -52,7 +52,7 @@ void CopyContext::UploadBuffer(
     batch.fence->Wait();
 }
 
-void CopyContext::UploadTexture2D(
+void UploadContext::UploadTexture2D(
     const RC<Texture> &texture,
     uint32_t           arrayLayer,
     uint32_t           mipLevel,
@@ -63,7 +63,7 @@ void CopyContext::UploadTexture2D(
 
     if(texDesc.concurrentAccessMode == RHI::QueueConcurrentAccessMode::Exclusive)
     {
-        throw Exception("CopyContext::UploadTexture2D: texture cannot be used on transfer queue");
+        throw Exception("UploadContext::UploadTexture2D: texture cannot be used on transfer queue");
     }
 
     const uint32_t width = texDesc.width >> mipLevel;
@@ -135,7 +135,7 @@ void CopyContext::UploadTexture2D(
     batch.fence->Wait();
 }
 
-void CopyContext::UploadTexture2D(
+void UploadContext::UploadTexture2D(
     const RC<Texture>  &texture,
     uint32_t            arrayLayer,
     uint32_t            mipLevel,
@@ -189,10 +189,10 @@ void CopyContext::UploadTexture2D(
         UploadTexture2D(texture, arrayLayer, mipLevel, data.GetData(), postLayout);
         return;
     }
-    throw Exception(std::string("CopyContext: Unsupported texture format: ") + GetFormatName(desc.format));
+    throw Exception(std::string("UploadContext: Unsupported texture format: ") + GetFormatName(desc.format));
 }
 
-CopyContext::Batch CopyContext::GetBatch()
+UploadContext::Batch UploadContext::GetBatch()
 {
     Batch result;
     if(batches_.try_pop(result))

@@ -45,8 +45,20 @@ public:
     uint32_t GetWidth() const;
     uint32_t GetHeight() const;
 
-    int32_t GetSignedWidth() const { return static_cast<int32_t>(GetWidth()); }
-    int32_t GetSignedHeight() const { return static_cast<int32_t>(GetHeight()); }
+    int32_t GetSWidth() const { return static_cast<int32_t>(GetWidth()); }
+    int32_t GetSHeight() const { return static_cast<int32_t>(GetHeight()); }
+
+    Vector2u GetSize() const { return { this->GetWidth(), this->GetHeight() }; }
+    Vector2i GetSSize() const { return { this->GetSWidth(), this->GetSHeight() }; }
+
+    uint32_t GetWidthMinusOne() const { return widthMinusOne_; }
+    uint32_t GetHeightMinusOne() const { return heightMinusOne_; }
+
+    int32_t GetSWidthMinusOne() const { return static_cast<int32_t>(GetWidthMinusOne()); }
+    int32_t GetSHeightMinusOne() const { return static_cast<int32_t>(GetHeightMinusOne()); }
+
+    Vector2u GetSizeMinusOne() const { return { this->GetWidthMinusOne(), this->GetHeightMinusOne() }; }
+    Vector2i GetSSizeMinusOne() const { return { this->GetSWidthMinusOne(), this->GetSHeightMinusOne() }; }
 
           Texel &operator()(uint32_t x, uint32_t y);
     const Texel &operator()(uint32_t x, uint32_t y) const;
@@ -76,6 +88,8 @@ private:
 
     uint32_t width_;
     uint32_t height_;
+    uint32_t widthMinusOne_;
+    uint32_t heightMinusOne_;
     std::vector<Texel> data_;
 };
 
@@ -124,7 +138,7 @@ public:
     ImageDynamic To(TexelType newTexelType) const;
 
     template<typename T>
-    ImageDynamic To() const;
+    Image<T> To() const;
 
     uint32_t GetWidth() const;
 
@@ -412,14 +426,14 @@ namespace ImageDetail
 
 template<typename T>
 Image<T>::Image()
-    : width_(0), height_(0)
+    : width_(0), height_(0), widthMinusOne_(0), heightMinusOne_(0)
 {
 
 }
 
 template<typename T>
 Image<T>::Image(uint32_t width, uint32_t height)
-    : width_(width), height_(height)
+    : width_(width), height_(height), widthMinusOne_(width - 1), heightMinusOne_(height - 1)
 {
     assert(width > 0 && height > 0);
     data_.resize(width * height);
@@ -428,6 +442,7 @@ Image<T>::Image(uint32_t width, uint32_t height)
 template<typename T>
 Image<T>::Image(const Image &other)
     : width_(other.width_), height_(other.height_)
+    , widthMinusOne_(other.widthMinusOne_), heightMinusOne_(other.heightMinusOne_)
 {
     data_ = other.data_;
 }
@@ -459,6 +474,8 @@ void Image<T>::Swap(Image &other) noexcept
 {
     std::swap(width_, other.width_);
     std::swap(height_, other.height_);
+    std::swap(widthMinusOne_, other.widthMinusOne_);
+    std::swap(heightMinusOne_, other.heightMinusOne_);
     data_.swap(other.data_);
 }
 
@@ -688,16 +705,16 @@ const T *ImageDynamic::AsIf() const
 }
 
 template<typename T>
-ImageDynamic ImageDynamic::To() const
+Image<T> ImageDynamic::To() const
 {
     return image_.Match(
-        [](std::monostate) -> ImageDynamic
+        [](std::monostate) -> Image<T>
         {
             throw Exception("ImageDynamic::to: empty source image");
         },
         [](auto &image)
         {
-            return ImageDynamic(image.template To<T>());
+            return image.template To<T>();
         });
 }
 

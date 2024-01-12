@@ -4,7 +4,7 @@
 #include <Rtrc/Graphics/Device/BindingGroup.h>
 #include <Rtrc/Graphics/Device/BindingGroupDSL.h>
 #include <Rtrc/Graphics/Device/Buffer.h>
-#include <Rtrc/Graphics/Device/CopyContext.h>
+#include <Rtrc/Graphics/Device/UploadContext.h>
 #include <Rtrc/Graphics/Device/LocalBindingGroupLayoutCache.h>
 #include <Rtrc/Graphics/Device/Pipeline.h>
 #include <Rtrc/Graphics/Device/Queue.h>
@@ -280,7 +280,7 @@ public:
 
     // Internal helper classes
 
-    CopyContext             &GetCopyContext();
+    UploadContext             &GetCopyContext();
     BufferManager           &GetBufferManager();
     BindingGroupManager     &GetBindingGroupManager();
     BindingGroupLayoutCache &GetBindingGroupCache();
@@ -325,7 +325,7 @@ private:
     Box<SamplerManager>               samplerManager_;
     Box<TextureManager>               textureManager_;
     Box<PooledTextureManager>         pooledTextureManager_;
-    Box<CopyContext>                  copyContext_;
+    Box<UploadContext>                  copyContext_;
     Box<AccelerationStructureManager> accelerationManager_;
     Box<ClearBufferUtils>             clearBufferUtils_;
     Box<ClearTextureUtils>            clearTextureUtils_;
@@ -797,7 +797,7 @@ inline void Device::ExecuteBarrier(
     ExecuteBarrierImpl(texture, prevLayout, succLayout);
 }
 
-inline CopyContext &Device::GetCopyContext()
+inline UploadContext &Device::GetCopyContext()
 {
     return *copyContext_;
 }
