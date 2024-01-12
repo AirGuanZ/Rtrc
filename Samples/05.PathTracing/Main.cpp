@@ -194,8 +194,7 @@ void Run()
     RG::Executer executer(device);
 
     window.SetFocus();
-    RTRC_SCOPE_EXIT{ window.GetInput().LockCursor(false); };
-
+    
     device->BeginRenderLoop();
     RTRC_SCOPE_EXIT{ device->EndRenderLoop(); };
 
@@ -216,8 +215,6 @@ void Run()
             window.SetCloseFlag(true);
         }
 
-        window.GetInput().LockCursor(!window.GetInput().IsKeyPressed(KeyCode::LeftAlt));
-
         timer.BeginFrame();
         if(timer.GetFps() != fps)
         {
@@ -226,11 +223,7 @@ void Run()
         }
 
         camera.SetAspectRatio(window.GetWindowWOverH());
-        bool needClear = false;
-        if(window.GetInput().IsCursorLocked() || window.GetInput().IsKeyPressed(KeyCode::LeftAlt))
-        {
-            needClear = cameraController.Update(window.GetInput(), timer.GetDeltaSecondsF());
-        }
+        bool needClear = cameraController.Update(window.GetInput(), timer.GetDeltaSecondsF());
         camera.UpdateDerivedData();
 
         auto graph = device->CreateRenderGraph();
