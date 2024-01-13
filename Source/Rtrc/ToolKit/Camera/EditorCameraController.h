@@ -15,7 +15,9 @@ public:
 
     void UpdateControlDataFromCamera();
 
-    RTRC_SET_GET(float, TrackballDistance, trackballDistance_)
+    float GetTrackballDistance() const;
+    void SetTrackballDistance(float value);
+
     RTRC_SET_GET(float, PanningSpeed,      panningSpeed_)
     RTRC_SET_GET(float, RotatingSpeed,     rotatingSpeed_)
     RTRC_SET_GET(float, MoveSpeed,         moveSpeed_)
@@ -31,16 +33,18 @@ private:
     static Vector2f DirectionToYawPitch(const Vector3f &direction);
 
     bool UpdateWalkMode(const WindowInput &input, float dt);
-    bool UpdateTrackballMode(const WindowInput &input);
+    bool UpdateTrackballMode(const WindowInput &input, float dt);
 
     struct WalkModeState
     {
-        Vector3f position;
+        Vector3f targetPosition;
+        Vector3f currentPosition;
     };
 
     struct TrackModeState
     {
-        Vector3f center;
+        Vector3f targetCenter;
+        Vector3f currentCenter;
     };
 
     using State = Variant<WalkModeState, TrackModeState>;
@@ -53,10 +57,11 @@ private:
     float zoomSpeed_ = 0.05f;
 
     State    state_;
-    Vector2f yawPitch_ = Vector2f(0, 0);
-    float    trackballDistance_ = 1.0f;
-    Vector3f trackballCenter_;
-
+    Vector2f targetYawPitch_ = Vector2f(0, 0);
+    Vector2f currentYawPitch_ = Vector2f(0, 0);
+    float    targetTrackballDistance_ = 1.0f;
+    float    currentTrackballDistance_ = 1.0f;
+    
     bool isPanning = false;
     bool isRotating = false;
     Vector3f trackballCenterWhenStartPanning_;

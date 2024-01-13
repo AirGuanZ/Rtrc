@@ -10,13 +10,25 @@ void EditorCameraController::SetCamera(Ref<Camera> camera)
     ClearInputStates();
 }
 
+void EditorCameraController::SetTrackballDistance(float value)
+{
+    targetTrackballDistance_ = value;
+    currentTrackballDistance_ = value;
+}
+
+float EditorCameraController::GetTrackballDistance() const
+{
+    return targetTrackballDistance_;
+}
+
 void EditorCameraController::UpdateControlDataFromCamera()
 {
     if(camera_)
     {
         camera_->UpdateDerivedData();
-        state_ = WalkModeState{ camera_->GetPosition() };
-        yawPitch_ = DirectionToYawPitch(camera_->GetFront());
+        state_ = WalkModeState{ camera_->GetPosition(), camera_->GetPosition() };
+        targetYawPitch_ = DirectionToYawPitch(camera_->GetFront());
+        currentYawPitch_ = targetYawPitch_;
     }
 }
 
@@ -53,19 +65,23 @@ bool EditorCameraController::Update(const WindowInput &input, float dt)
     if(mode == Trackball && state_.Is<WalkModeState>())
     {
         TrackModeState newState;
-        newState.center = state_.As<WalkModeState>().position + YawPitchToDirection(yawPitch_) * trackballDistance_;
+        newState.targetCenter = state_.As<WalkModeState>().targetPosition + YawPitchToDirection(targetYawPitch_) * targetTrackballDistance_;
+        newState.currentCenter = state_.As<WalkModeState>().currentPosition + YawPitchToDirection(currentYawPitch_) * currentTrackballDistance_;
+        currentTrackballDistance_ = targetTrackballDistance_;
         state_ = newState;
     }
     else if(mode == Walk && state_.Is<TrackModeState>())
     {
         WalkModeState newState;
-        newState.position = state_.As<TrackModeState>().center - YawPitchToDirection(yawPitch_) * trackballDistance_;
+        newState.targetPosition = state_.As<TrackModeState>().targetCenter - YawPitchToDirection(targetYawPitch_) * targetTrackballDistance_;
+        newState.currentPosition = state_.As<TrackModeState>().currentCenter - YawPitchToDirection(currentYawPitch_) * currentTrackballDistance_;
+        currentTrackballDistance_ = targetTrackballDistance_;
         state_ = newState;
     }
 
     if(mode == Trackball)
     {
-        return UpdateTrackballMode(input);
+        return UpdateTrackballMode(input, dt);
     }
     return UpdateWalkMode(input, dt);
 }
@@ -128,13 +144,13 @@ bool EditorCameraController::UpdateWalkMode(const WindowInput &input, float dt)
         moveDirection = Normalize(moveDirection);
         isDirty = true;
     }
-    const Vector3f position = state.position + moveDirection * moveSpeed_ * dt;
+    const Vector3f position = state.targetPosition + moveDirection * moveSpeed_ * dt;
     
-    Vector2f yawPitch = yawPitch_;
+    Vector2f yawPitch = targetYawPitch_;
     if(input.GetCursorRelativePositionX() != 0)
     {
         yawPitch.x += rotatingSpeed_ * input.GetCursorRelativePositionX();
-        yawPitch.x -= std::floor(yawPitch.x / (2 * PI)) * (2 * PI);
+        //yawPitch.x -= std::floor(yawPitch.x / (2 * PI)) * (2 * PI);
         isDirty = true;
     }
     if(input.GetCursorRelativePositionY() != 0)
@@ -146,21 +162,33 @@ bool EditorCameraController::UpdateWalkMode(const WindowInput &input, float dt)
 
     if(isDirty)
     {
-        state.position = position;
-        yawPitch_ = yawPitch;
-        camera_->SetLookAt(position, Vector3f(0, 1, 0), position + YawPitchToDirection(yawPitch));
+        state.targetPosition = position;
+        targetYawPitch_ = yawPitch;
     }
+
+    const auto oldCurrentPosition = state.currentPosition;
+    const auto oldCurrentYawPitch = currentYawPitch_;
+
+    state.currentPosition += (state.targetPosition - state.currentPosition) * (1 - std::exp(-moveSpeed_ * 10000 * dt));
+    currentYawPitch_ += (targetYawPitch_ - currentYawPitch_) * (1 - std::exp(-rotatingSpeed_ * 6000 * dt));
+    camera_->SetLookAt(
+        state.currentPosition,
+        Vector3f(0, 1, 0),
+        state.currentPosition + YawPitchToDirection(currentYawPitch_));
+
+    isDirty |= oldCurrentPosition != state.currentPosition || oldCurrentYawPitch != currentYawPitch_;
+
     return isDirty;
 }
 
-bool EditorCameraController::UpdateTrackballMode(const WindowInput &input)
+bool EditorCameraController::UpdateTrackballMode(const WindowInput &input, float dt)
 {
     auto &state = state_.As<TrackModeState>();
 
     // Move
 
     bool isDirty = false;
-    Vector3f center = state.center;
+    Vector3f center = state.targetCenter;
 
     if(input.IsKeyDown(KeyCode::MouseMiddle))
     {
@@ -178,7 +206,7 @@ bool EditorCameraController::UpdateTrackballMode(const WindowInput &input)
             const Vector3f dstToEye = -camera_->GetFront();
             const Vector3f ex = -Normalize(Cross(Vector3f(0, 1, 0), dstToEye));
             const Vector3f ey = -Normalize(Cross(dstToEye, ex));
-            center = trackballCenterWhenStartPanning_ + panningSpeed_ * trackballDistance_ * (dx * ex + dy * ey);
+            center = trackballCenterWhenStartPanning_ + panningSpeed_ * targetTrackballDistance_ * (dx * ex + dy * ey);
             isDirty = true;
         }
     }
@@ -187,7 +215,7 @@ bool EditorCameraController::UpdateTrackballMode(const WindowInput &input)
 
     // Rotate
 
-    Vector2f yawPitch = yawPitch_;
+    Vector2f yawPitch = targetYawPitch_;
 
     if(input.IsKeyDown(KeyCode::MouseLeft))
     {
@@ -206,7 +234,7 @@ bool EditorCameraController::UpdateTrackballMode(const WindowInput &input)
             if(std::abs(dx) > 1e-3f)
             {
                 yawPitch.x = yawPitchWhenStartRotating_.x + dx * rotatingSpeed_;
-                yawPitch.x -= std::floor(yawPitch.x / (2 * PI)) * (2 * PI);
+                //yawPitch.x -= std::floor(yawPitch.x / (2 * PI)) * (2 * PI);
             }
             if(std::abs(dy) > 1e-3f)
             {
@@ -226,26 +254,40 @@ bool EditorCameraController::UpdateTrackballMode(const WindowInput &input)
     const int scroll = input.GetRelativeWheelScrollOffset();
     if(scroll < 0)
     {
-        trackballDistance_ *= (1 + zoomSpeed_);
+        targetTrackballDistance_ *= (1 + zoomSpeed_);
         isDirty = true;
     }
     else if(scroll > 0)
     {
-        trackballDistance_ *= (1 - zoomSpeed_);
+        targetTrackballDistance_ *= (1 - zoomSpeed_);
         isDirty = true;
     }
-    trackballDistance_ = std::max(trackballDistance_, 0.01f);
+    targetTrackballDistance_ = std::max(targetTrackballDistance_, 0.01f);
 
     // Apply
 
     if(isDirty)
     {
-        state.center = center;
-        yawPitch_ = yawPitch;
-
-        const Vector3f back = -YawPitchToDirection(yawPitch);
-        camera_->SetLookAt(center + trackballDistance_ * back, Vector3f(0, 1, 0), center);
+        state.targetCenter = center;
+        targetYawPitch_ = yawPitch;
     }
+
+    const auto oldCurrentCenter = state.currentCenter;
+    const auto oldCurrentYawPitch = currentYawPitch_;
+    const auto oldCurrentTrackballDistance = currentTrackballDistance_;
+
+    state.currentCenter += (state.targetCenter - state.currentCenter) * (1 - std::exp(-panningSpeed_ * 20000 * dt));
+    currentYawPitch_ += (targetYawPitch_ - currentYawPitch_) * (1 - std::exp(-rotatingSpeed_ * 6000 * dt));
+    currentTrackballDistance_ += (targetTrackballDistance_ - currentTrackballDistance_) * (1 - std::exp(-zoomSpeed_ * 1000 * dt));
+
+    const Vector3f back = -YawPitchToDirection(currentYawPitch_);
+    camera_->SetLookAt(
+        state.currentCenter + currentTrackballDistance_ * back, Vector3f(0, 1, 0), state.currentCenter);
+
+    isDirty |= oldCurrentCenter != state.currentCenter ||
+               oldCurrentYawPitch != currentYawPitch_ ||
+               oldCurrentTrackballDistance != currentTrackballDistance_;
+
     return isDirty;
 }
 

@@ -39,12 +39,12 @@ private:
     static std::vector<Vertex> ExtractVertices(Span<GizmoBuilder::Triangle> triangles);
 
     void RenderImpl(
-        Span<Vertex>        vertices,
-        CommandBuffer      &commandBuffer,
-        const Matrix4x4f   &worldToClip,
-        bool                reverseZ,
-        float               rcpGamma,
-        bool                isLine);
+        Span<Vertex>      vertices,
+        CommandBuffer    &commandBuffer,
+        const Matrix4x4f &worldToClip,
+        bool              reverseZ,
+        float             rcpGamma,
+        bool              isLine);
 
     void RenderColoredPrimitives(
         const RC<GraphicsPipeline> &pipeline,

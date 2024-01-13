@@ -29,6 +29,9 @@ public:
 
     size_t Hash() const;
 
+    Vector2 &operator+=(const Vector2 &rhs) { return *this = *this + rhs; }
+    Vector2 &operator-=(const Vector2 &rhs) { return *this = *this - rhs; }
+
     T x, y;
 };
 

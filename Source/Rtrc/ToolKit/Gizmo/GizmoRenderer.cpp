@@ -69,6 +69,9 @@ void GizmoRenderer::AddRenderPass(
         }
         RTRC_SCOPE_EXIT{ cmds.EndRenderPass(); };
 
+        cmds.SetViewports(framebuffer->GetViewport());
+        cmds.SetScissors(framebuffer->GetScissor());
+
         if(!lv.empty())
         {
             this->RenderImpl(lv, cmds, worldToClip, reverseZ, rcpGamma, true);

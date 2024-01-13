@@ -7,6 +7,11 @@ GizmoBuilder::GizmoBuilder()
     colors_.push({ 1, 1, 1 });
 }
 
+void GizmoBuilder::SetColor(const Vector3f &color)
+{
+    colors_.top() = color;
+}
+
 void GizmoBuilder::PushColor(const Vector3f &color)
 {
     colors_.push(color);
@@ -31,6 +36,68 @@ void GizmoBuilder::DrawQuad(const Vector3f &a, const Vector3f &b, const Vector3f
 {
     DrawTriangle(a, b, c);
     DrawTriangle(a, c, d);
+}
+
+void GizmoBuilder::DrawWireCuboid(const Vector3f &o, const Vector3f &x, const Vector3f &y, const Vector3f &z)
+{
+    const Vector3f a0 = o;
+    const Vector3f b0 = o + x;
+    const Vector3f c0 = o + x + y;
+    const Vector3f d0 = o + y;
+
+    const Vector3f a1 = a0 + z;
+    const Vector3f b1 = b0 + z;
+    const Vector3f c1 = c0 + z;
+    const Vector3f d1 = d0 + z;
+
+    DrawLine(a0, b0);
+    DrawLine(b0, c0);
+    DrawLine(c0, d0);
+    DrawLine(d0, a0);
+
+    DrawLine(a1, b1);
+    DrawLine(b1, c1);
+    DrawLine(c1, d1);
+    DrawLine(d1, a1);
+
+    DrawLine(a0, a1);
+    DrawLine(b0, b1);
+    DrawLine(c0, c1);
+    DrawLine(d0, d1);
+}
+
+void GizmoBuilder::DrawCuboid(const Vector3f &o, const Vector3f &x, const Vector3f &y, const Vector3f &z)
+{
+    const Vector3f a0 = o;
+    const Vector3f b0 = o + x;
+    const Vector3f c0 = o + x + y;
+    const Vector3f d0 = o + y;
+
+    const Vector3f a1 = a0 + z;
+    const Vector3f b1 = b0 + z;
+    const Vector3f c1 = c0 + z;
+    const Vector3f d1 = d0 + z;
+
+    DrawQuad(a0, b0, c0, d0);
+    DrawQuad(a1, b1, c1, d1);
+    DrawQuad(a0, a1, b1, b0);
+    DrawQuad(b0, b1, c1, c0);
+    DrawQuad(c0, c1, d1, d0);
+    DrawQuad(d0, d1, a1, a0);
+}
+
+void GizmoBuilder::DrawWireCube(const Vector3f &o, float sidelen)
+{
+    DrawWireCuboid(
+        o - Vector3f(0.5f * sidelen),
+        { sidelen, 0, 0 }, { 0, sidelen, 0 }, { 0, 0, sidelen });
+}
+
+void GizmoBuilder::DrawCube(const Vector3f &o, float sidelen)
+{
+    DrawCuboid(
+        o - Vector3f(0.5f * sidelen),
+        { sidelen, 0, 0 }, { 0, sidelen, 0 }, { 0, 0, sidelen });
 }
 
 RTRC_END
