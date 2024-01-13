@@ -73,6 +73,7 @@ size_t GraphicsPipeline::Desc::Hash() const
         depthBiasConstFactor,
         depthBiasSlopeFactor,
         depthBiasClampValue,
+        enableDepthClip,
         multisampleCount,
         enableDepthTest,
         enableDepthWrite,
@@ -301,6 +302,8 @@ RC<GraphicsPipeline> PipelineManager::CreateGraphicsPipeline(const GraphicsPipel
     rhiDesc.depthBiasConstFactor = desc.depthBiasConstFactor;
     rhiDesc.depthBiasSlopeFactor = desc.depthBiasSlopeFactor;
     rhiDesc.depthBiasClampValue  = desc.depthBiasClampValue;
+
+    rhiDesc.enableDepthClip = desc.enableDepthClip;
     
     rhiDesc.multisampleCount = desc.multisampleCount;
     

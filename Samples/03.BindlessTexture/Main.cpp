@@ -11,7 +11,7 @@ void Run()
         .SetTitle("Rtrc Sample: Bindless")
         .Create();
 
-    auto device = Device::CreateGraphicsDevice(window);
+    auto device = Device::CreateGraphicsDevice(window, RHI::BackendType::Default);
 
     ResourceManager resourceManager(device);
 

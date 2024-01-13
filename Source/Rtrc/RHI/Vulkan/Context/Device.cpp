@@ -516,12 +516,20 @@ UPtr<GraphicsPipeline> VulkanDevice::CreateGraphicsPipeline(const GraphicsPipeli
         colorAttachments.push_back(TranslateTexelFormat(f));
     }
 
+    const VkPipelineRasterizationDepthClipStateCreateInfoEXT depthClipState =
+    {
+        .sType           = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_DEPTH_CLIP_STATE_CREATE_INFO_EXT,
+        .pNext           = nullptr,
+        .flags           = {},
+        .depthClipEnable = desc.enableDepthClip
+    };
+
     const VkPipelineRenderingCreateInfo renderingCreateInfo = {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
-        .viewMask = 0,
-        .colorAttachmentCount = static_cast<uint32_t>(colorAttachments.size()),
+        .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+        .viewMask                = 0,
+        .colorAttachmentCount    = static_cast<uint32_t>(colorAttachments.size()),
         .pColorAttachmentFormats = colorAttachments.data(),
-        .depthAttachmentFormat = HasDepthAspect(desc.depthStencilFormat) ?
+        .depthAttachmentFormat   = HasDepthAspect(desc.depthStencilFormat) ?
             TranslateTexelFormat(desc.depthStencilFormat) : VK_FORMAT_UNDEFINED,
         .stencilAttachmentFormat = HasStencilAspect(desc.depthStencilFormat) ?
             TranslateTexelFormat(desc.depthStencilFormat) : VK_FORMAT_UNDEFINED
@@ -546,17 +554,17 @@ UPtr<GraphicsPipeline> VulkanDevice::CreateGraphicsPipeline(const GraphicsPipeli
     {
         auto &output = inputAttributeDescs.emplace_back();
         output.location = attrib.location;
-        output.binding = attrib.inputBufferIndex;
-        output.format = TranslateInputAttributeType(attrib.type);
-        output.offset = attrib.byteOffsetInBuffer;
+        output.binding  = attrib.inputBufferIndex;
+        output.format   = TranslateInputAttributeType(attrib.type);
+        output.offset   = attrib.byteOffsetInBuffer;
     }
 
     const VkPipelineVertexInputStateCreateInfo vertexInputState = {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-        .vertexBindingDescriptionCount = static_cast<uint32_t>(inputBindingDescs.size()),
-        .pVertexBindingDescriptions = inputBindingDescs.data(),
+        .sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+        .vertexBindingDescriptionCount   = static_cast<uint32_t>(inputBindingDescs.size()),
+        .pVertexBindingDescriptions      = inputBindingDescs.data(),
         .vertexAttributeDescriptionCount = static_cast<uint32_t>(inputAttributeDescs.size()),
-        .pVertexAttributeDescriptions = inputAttributeDescs.data()
+        .pVertexAttributeDescriptions    = inputAttributeDescs.data()
     };
 
     const VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = {
@@ -577,7 +585,7 @@ UPtr<GraphicsPipeline> VulkanDevice::CreateGraphicsPipeline(const GraphicsPipeli
             vkViewports[i] = TranslateViewport(v);
         }
         viewportState.viewportCount = static_cast<uint32_t>(vkViewports.size());
-        viewportState.pViewports = vkViewports.data();
+        viewportState.pViewports    = vkViewports.data();
     }
     else if(auto c = desc.viewports.AsIf<int>())
     {
@@ -593,7 +601,7 @@ UPtr<GraphicsPipeline> VulkanDevice::CreateGraphicsPipeline(const GraphicsPipeli
             vkScissors[i] = TranslateScissor(s);
         }
         viewportState.scissorCount = static_cast<uint32_t>(vkScissors.size());
-        viewportState.pScissors = vkScissors.data();
+        viewportState.pScissors    = vkScissors.data();
     }
     else if(auto c = desc.scissors.AsIf<int>())
     {
@@ -601,15 +609,16 @@ UPtr<GraphicsPipeline> VulkanDevice::CreateGraphicsPipeline(const GraphicsPipeli
     }
 
     const VkPipelineRasterizationStateCreateInfo rasterizationState = {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
-        .polygonMode = TranslateFillMode(desc.fillMode),
-        .cullMode = TranslateCullMode(desc.cullMode),
-        .frontFace = TranslateFrontFaceMode(desc.frontFaceMode),
-        .depthBiasEnable = desc.enableDepthBias,
+        .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+        .pNext                   = &depthClipState,
+        .polygonMode             = TranslateFillMode(desc.fillMode),
+        .cullMode                = TranslateCullMode(desc.cullMode),
+        .frontFace               = TranslateFrontFaceMode(desc.frontFaceMode),
+        .depthBiasEnable         = desc.enableDepthBias,
         .depthBiasConstantFactor = desc.depthBiasConstFactor,
-        .depthBiasClamp = desc.depthBiasClampValue,
-        .depthBiasSlopeFactor = desc.depthBiasSlopeFactor,
-        .lineWidth = 1
+        .depthBiasClamp          = desc.depthBiasClampValue,
+        .depthBiasSlopeFactor    = desc.depthBiasSlopeFactor,
+        .lineWidth               = 1
     };
 
     const VkPipelineMultisampleStateCreateInfo multisampleState = {
@@ -618,51 +627,51 @@ UPtr<GraphicsPipeline> VulkanDevice::CreateGraphicsPipeline(const GraphicsPipeli
     };
 
     const VkStencilOpState frontStencilOp = {
-        .failOp = TranslateStencilOp(desc.frontStencilOp.failOp),
-        .passOp = TranslateStencilOp(desc.frontStencilOp.passOp),
+        .failOp      = TranslateStencilOp(desc.frontStencilOp.failOp),
+        .passOp      = TranslateStencilOp(desc.frontStencilOp.passOp),
         .depthFailOp = TranslateStencilOp(desc.frontStencilOp.depthFailOp),
-        .compareOp = TranslateCompareOp(desc.frontStencilOp.compareOp),
+        .compareOp   = TranslateCompareOp(desc.frontStencilOp.compareOp),
         .compareMask = desc.stencilReadMask,
-        .writeMask = desc.stencilWriteMask,
-        .reference = 0
+        .writeMask   = desc.stencilWriteMask,
+        .reference   = 0
     };
 
     const VkStencilOpState backStencilOp = {
-        .failOp = TranslateStencilOp(desc.backStencilOp.failOp),
-        .passOp = TranslateStencilOp(desc.backStencilOp.passOp),
+        .failOp      = TranslateStencilOp(desc.backStencilOp.failOp),
+        .passOp      = TranslateStencilOp(desc.backStencilOp.passOp),
         .depthFailOp = TranslateStencilOp(desc.backStencilOp.depthFailOp),
-        .compareOp = TranslateCompareOp(desc.backStencilOp.compareOp),
+        .compareOp   = TranslateCompareOp(desc.backStencilOp.compareOp),
         .compareMask = desc.stencilReadMask,
-        .writeMask = desc.stencilWriteMask,
-        .reference = 0
+        .writeMask   = desc.stencilWriteMask,
+        .reference   = 0
     };
 
     const VkPipelineDepthStencilStateCreateInfo depthStencilState = {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-        .depthTestEnable = desc.enableDepthTest,
-        .depthWriteEnable = desc.enableDepthWrite,
-        .depthCompareOp = TranslateCompareOp(desc.depthCompareOp),
+        .sType             = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+        .depthTestEnable   = desc.enableDepthTest,
+        .depthWriteEnable  = desc.enableDepthWrite,
+        .depthCompareOp    = TranslateCompareOp(desc.depthCompareOp),
         .stencilTestEnable = desc.enableStencilTest,
-        .front = frontStencilOp,
-        .back = backStencilOp
+        .front             = frontStencilOp,
+        .back              = backStencilOp
     };
 
     const auto blendAttachment = VkPipelineColorBlendAttachmentState{
-        .blendEnable = desc.enableBlending,
+        .blendEnable         = desc.enableBlending,
         .srcColorBlendFactor = TranslateBlendFactor(desc.blendingSrcColorFactor),
         .dstColorBlendFactor = TranslateBlendFactor(desc.blendingDstColorFactor),
-        .colorBlendOp = TranslateBlendOp(desc.blendingColorOp),
+        .colorBlendOp        = TranslateBlendOp(desc.blendingColorOp),
         .srcAlphaBlendFactor = TranslateBlendFactor(desc.blendingSrcAlphaFactor),
         .dstAlphaBlendFactor = TranslateBlendFactor(desc.blendingDstAlphaFactor),
-        .alphaBlendOp = TranslateBlendOp(desc.blendingAlphaOp),
-        .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT
-                        | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
+        .alphaBlendOp        = TranslateBlendOp(desc.blendingAlphaOp),
+        .colorWriteMask      = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT
+                             | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
     };
     std::vector blendAttachments(colorAttachments.size(), blendAttachment);
     const VkPipelineColorBlendStateCreateInfo colorBlendState = {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+        .sType           = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
         .attachmentCount = static_cast<uint32_t>(colorAttachments.size()),
-        .pAttachments = blendAttachments.data()
+        .pAttachments    = blendAttachments.data()
     };
     
     StaticVector<VkDynamicState, 3> dynamicStates;
@@ -691,19 +700,19 @@ UPtr<GraphicsPipeline> VulkanDevice::CreateGraphicsPipeline(const GraphicsPipeli
 
     auto vkBindingLayout = static_cast<VulkanBindingLayout *>(desc.bindingLayout.Get());
     const VkGraphicsPipelineCreateInfo pipelineCreateInfo = {
-        .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-        .pNext = &renderingCreateInfo,
-        .stageCount = 2,
-        .pStages = stages,
-        .pVertexInputState = &vertexInputState,
+        .sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+        .pNext               = &renderingCreateInfo,
+        .stageCount          = 2,
+        .pStages             = stages,
+        .pVertexInputState   = &vertexInputState,
         .pInputAssemblyState = &inputAssemblyState,
-        .pViewportState = &viewportState,
+        .pViewportState      = &viewportState,
         .pRasterizationState = &rasterizationState,
-        .pMultisampleState = &multisampleState,
-        .pDepthStencilState = &depthStencilState,
-        .pColorBlendState = &colorBlendState,
-        .pDynamicState = &dynamicState,
-        .layout = vkBindingLayout->_internalGetNativeLayout()
+        .pMultisampleState   = &multisampleState,
+        .pDepthStencilState  = &depthStencilState,
+        .pColorBlendState    = &colorBlendState,
+        .pDynamicState       = &dynamicState,
+        .layout              = vkBindingLayout->_internalGetNativeLayout()
     };
 
     VkPipeline pipeline;

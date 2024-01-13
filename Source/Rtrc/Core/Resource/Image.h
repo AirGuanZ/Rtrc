@@ -141,8 +141,13 @@ public:
     Image<T> To() const;
 
     uint32_t GetWidth() const;
-
     uint32_t GetHeight() const;
+
+    int32_t GetSWidth() const { return static_cast<int32_t>(GetWidth()); }
+    int32_t GetSHeight() const { return static_cast<int32_t>(GetHeight()); }
+
+    Vector2u GetSize() const { return { this->GetWidth(), this->GetHeight() }; }
+    Vector2i GetSSize() const { return { this->GetSWidth(), this->GetSHeight() }; }
 
     template<typename...Vs>
     auto Match(Vs &&...vs) const;

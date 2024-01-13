@@ -2,6 +2,7 @@
 
 #include <map>
 
+#include <Rtrc/Core/Container/ObjectCache.h>
 #include <Rtrc/Core/SignalSlot.h>
 #include <Rtrc/Core/Unreachable.h>
 #include <Rtrc/Graphics/Shader/ShaderBindingNameMap.h>
@@ -45,6 +46,7 @@ struct ShaderUniformBlock
         Int,   Int2,   Int3,   Int4,
         UInt,  UInt2,  UInt3,  UInt4,
         Float, Float2, Float3, Float4,
+        Float4x4,
         Unknown,
     };
 
@@ -294,20 +296,21 @@ inline ShaderUniformBlock::UniformType ShaderUniformBlock::GetTypeFromTypeName(s
     using enum UniformType;
     static const std::map<std::string, UniformType, std::less<>> m =
     {
-        { "int",    Int    },
-        { "int2",   Int2   },
-        { "int3",   Int3   },
-        { "int4",   Int4   },
-        { "uint",   UInt   },
-        { "uint2",  UInt2  },
-        { "uint3",  UInt3  },
-        { "uint4",  UInt4  },
-        { "float",  Float  },
-        { "float2", Float2 },
-        { "float3", Float3 },
-        { "float4", Float4 },
+        { "int",      Int    },
+        { "int2",     Int2   },
+        { "int3",     Int3   },
+        { "int4",     Int4   },
+        { "uint",     UInt   },
+        { "uint2",    UInt2  },
+        { "uint3",    UInt3  },
+        { "uint4",    UInt4  },
+        { "float",    Float  },
+        { "float2",   Float2 },
+        { "float3",   Float3 },
+        { "float4",   Float4 },
+        { "float4x4", Float4x4 }
     };
-    auto it = m.find(name);
+    const auto it = m.find(name);
     return it != m.end() ? it->second : Unknown;
 }
 
@@ -318,6 +321,7 @@ inline size_t ShaderUniformBlock::GetTypeSize(UniformType type)
         4, 8, 12, 16,
         4, 8, 12, 16,
         4, 8, 12, 16,
+        64,
         0
     };
     return ret[std::to_underlying(type)];
@@ -330,7 +334,7 @@ inline const RC<BindingLayout> &ShaderBindingLayoutInfo::GetBindingLayout() cons
 
 inline int ShaderBindingLayoutInfo::GetBindingGroupCount() const
 {
-    return bindingGroupLayouts_.size();
+    return static_cast<int>(bindingGroupLayouts_.size());
 }
 
 inline const std::string &ShaderBindingLayoutInfo::GetBindingGroupNameByIndex(int index) const

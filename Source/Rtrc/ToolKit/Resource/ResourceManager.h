@@ -47,7 +47,7 @@ public:
     const RC<Mesh>    &GetBuiltinMesh   (BuiltinMesh     mesh)     const;
     const RC<Texture> &GetBuiltinTexture(BuiltinTexture  texture)  const;
 
-    const RC<Buffer> GetPoissonDiskSamples2048() const;
+    const RC<Buffer> &GetPoissonDiskSamples2048() const;
 
 private:
 
@@ -85,6 +85,11 @@ inline const RC<Mesh> &ResourceManager::GetBuiltinMesh(BuiltinMesh mesh) const
 inline const RC<Texture> &ResourceManager::GetBuiltinTexture(BuiltinTexture texture) const
 {
     return textures_[std::to_underlying(texture)];
+}
+
+inline const RC<Buffer> &ResourceManager::GetPoissonDiskSamples2048() const
+{
+    return poissonDiskSamples2048_;
 }
 
 RTRC_END

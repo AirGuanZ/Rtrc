@@ -2,7 +2,6 @@
 
 #include <Rtrc/Graphics/Device/GeneralGPUObject.h>
 #include <Rtrc/Graphics/Shader/Shader.h>
-/*#include <Rtrc/Core/ObjectCache.h>*/
 
 RTRC_BEGIN
 
@@ -52,6 +51,8 @@ public:
         float depthBiasConstFactor = 0.0f;
         float depthBiasSlopeFactor = 0.0f;
         float depthBiasClampValue  = 0.0f;
+
+        bool enableDepthClip = true;
 
         int multisampleCount = 1;
 

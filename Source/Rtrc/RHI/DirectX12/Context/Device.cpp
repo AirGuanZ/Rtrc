@@ -303,7 +303,7 @@ UPtr<GraphicsPipeline> DirectX12Device::CreateGraphicsPipeline(const GraphicsPip
             .DepthBias             = static_cast<INT>(desc.depthBiasConstFactor),
             .DepthBiasClamp        = desc.depthBiasClampValue,
             .SlopeScaledDepthBias  = desc.depthBiasSlopeFactor,
-            .DepthClipEnable       = false,
+            .DepthClipEnable       = desc.enableDepthClip,
             .MultisampleEnable     = false,
             .AntialiasedLineEnable = false,
             .ForcedSampleCount     = 0,

@@ -1056,6 +1056,8 @@ struct GraphicsPipelineDesc
     float depthBiasSlopeFactor = 0;
     float depthBiasClampValue  = 0;
 
+    bool enableDepthClip = true;
+
     int multisampleCount = 1;
 
     bool      enableDepthTest  = false;

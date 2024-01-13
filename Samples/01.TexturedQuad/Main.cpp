@@ -21,7 +21,7 @@ void Run()
         .SetTitle("Rtrc Sample: TexturedQuad")
         .Create();
 
-    auto device = Device::CreateGraphicsDevice(window);
+    auto device = Device::CreateGraphicsDevice(window, RHI::BackendType::Default);
 
     ResourceManager resourceManager(device);
     
@@ -104,9 +104,9 @@ void Run()
             commandBuffer.BeginRenderPass(ColorAttachment
             {
                 .renderTargetView = renderTarget->GetRtvImm(),
-                .loadOp       = AttachmentLoadOp::Clear,
-                .storeOp      = AttachmentStoreOp::Store,
-                .clearValue   = ColorClearValue{ 0, 1, 1, 1 }
+                .loadOp           = AttachmentLoadOp::Clear,
+                .storeOp          = AttachmentStoreOp::Store,
+                .clearValue       = ColorClearValue{ 0, 1, 1, 1 }
             });
             commandBuffer.BindGraphicsPipeline(pipeline);
             mesh->Bind(commandBuffer);

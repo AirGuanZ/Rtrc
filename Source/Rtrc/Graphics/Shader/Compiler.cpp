@@ -309,7 +309,6 @@ RC<Shader> ShaderCompiler::Compile(
         macros.insert({ groupLeft, std::move(groupRight) });
 
         macros[groupLeft] = groupDefinition + macros[groupLeft];
-        //macros["_rtrc_generated_shader_prefix"] += groupDefinition;
     }
 
     // Macros for push constant ranges
