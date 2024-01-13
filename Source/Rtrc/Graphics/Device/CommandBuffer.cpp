@@ -248,6 +248,7 @@ void CommandBuffer::End()
     CheckThreadID();
     rhiCommandBuffer_->End();
 
+    assert(!isInRenderPass_);
     currentGraphicsPipeline_ = {};
     currentComputePipeline_ = {};
     currentRayTracingPipeline_ = {};
@@ -308,12 +309,29 @@ void CommandBuffer::BeginRenderPass(
 {
     CheckThreadID();
     rhiCommandBuffer_->BeginRenderPass(colorAttachments, depthStencilAttachment);
+
+    currentPassColorFormats_.Resize(colorAttachments.size());
+    for(size_t i = 0; i < colorAttachments.size(); ++i)
+    {
+        auto rtv = colorAttachments[i].renderTargetView;
+        currentPassColorFormats_[i] = rtv->GetDesc().format;
+    }
+
+    if(depthStencilAttachment.depthStencilView)
+        currentPassDepthStencilFormat_ = depthStencilAttachment.depthStencilView->GetDesc().format;
+    else
+        currentPassDepthStencilFormat_ = RHI::Format::Unknown;
+
+    assert(!isInRenderPass_);
+    isInRenderPass_ = true;
 }
 
 void CommandBuffer::EndRenderPass()
 {
     CheckThreadID();
     rhiCommandBuffer_->EndRenderPass();
+    assert(isInRenderPass_);
+    isInRenderPass_ = false;
 }
 
 void CommandBuffer::BindGraphicsPipeline(const RC<GraphicsPipeline> &graphicsPipeline)

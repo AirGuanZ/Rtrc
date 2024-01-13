@@ -6,6 +6,7 @@
 #include <Rtrc/ToolKit/BufferPool/UploadBufferPool.h>
 #include <Rtrc/ToolKit/Camera/EditorCameraController.h>
 #include <Rtrc/ToolKit/DFDM/DFDM.h>
+#include <Rtrc/ToolKit/Gizmo/GizmoRenderer.h>
 #include <Rtrc/ToolKit/IndirectArg/PrepareThreadGroupCountForIndirectDispatch.h>
 #include <Rtrc/ToolKit/PcgState/PcgStateTexture.h>
 #include <Rtrc/ToolKit/Resource/BindlessResourceManager.h>

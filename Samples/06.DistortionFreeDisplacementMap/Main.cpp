@@ -19,6 +19,8 @@ class DFDMDemo : public SimpleApplication
         camera_.SetLookAt({ -2, 5, -2 }, { 0, 1, 0 }, { 5, 1, 5 });
         cameraController_.SetCamera(camera_);
         cameraController_.SetTrackballDistance(Length(camera_.GetPosition() - Vector3f(5, 1, 5)));
+
+        gizmoRenderer_ = MakeBox<GizmoRenderer>(GetResourceManager());
     }
 
     void UpdateSimpleApplication(Ref<RenderGraph> renderGraph) override
@@ -110,6 +112,39 @@ class DFDMDemo : public SimpleApplication
                 cmds.SetIndexBuffer(indexBuffer_, RHI::IndexFormat::UInt32);
                 cmds.DrawIndexed(static_cast<uint32_t>(indexBuffer_->GetSize() / sizeof(uint32_t)), 1, 0, 0, 0);
             });
+        }
+
+        {
+            GizmoBuilder gizmo;
+            const Vector3f l = { 0, 0, 0 };
+            const Vector3f u = { WorldSize, HeightScale, WorldSize };
+            
+            const Vector3f p000 = { l.x, l.y, l.z };
+            const Vector3f p001 = { l.x, l.y, u.z };
+            const Vector3f p010 = { l.x, u.y, l.z };
+            const Vector3f p011 = { l.x, u.y, u.z };
+            const Vector3f p100 = { u.x, l.y, l.z };
+            const Vector3f p101 = { u.x, l.y, u.z };
+            const Vector3f p110 = { u.x, u.y, l.z };
+            const Vector3f p111 = { u.x, u.y, u.z };
+
+            gizmo.DrawLine(p000, p001);
+            gizmo.DrawLine(p001, p011);
+            gizmo.DrawLine(p011, p010);
+            gizmo.DrawLine(p010, p000);
+
+            gizmo.DrawLine(p100, p101);
+            gizmo.DrawLine(p101, p111);
+            gizmo.DrawLine(p111, p110);
+            gizmo.DrawLine(p110, p100);
+
+            gizmo.DrawLine(p000, p100);
+            gizmo.DrawLine(p001, p101);
+            gizmo.DrawLine(p010, p110);
+            gizmo.DrawLine(p011, p111);
+
+            gizmoRenderer_->AddRenderPass(
+                gizmo, renderGraph, framebuffer, depthBuffer, camera_.GetWorldToClip(), false, 2.2f);
         }
 
         renderGraph->CreateBlitTexture2DPass("BlitToSwapchainTexture", framebuffer, swapchainTexture);
@@ -282,6 +317,8 @@ class DFDMDemo : public SimpleApplication
     float areaPreservation_ = 3.0f;
     bool enableCorrection_ = true;
     bool enableCheckboard_ = true;
+
+    Box<GizmoRenderer> gizmoRenderer_;
 };
 
 int main()

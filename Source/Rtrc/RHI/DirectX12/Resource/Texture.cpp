@@ -37,8 +37,14 @@ DirectX12Texture::~DirectX12Texture()
     }
 }
 
-RPtr<TextureRtv> DirectX12Texture::CreateRtv(const TextureRtvDesc &desc) const
+RPtr<TextureRtv> DirectX12Texture::CreateRtv(const TextureRtvDesc &_desc) const
 {
+    auto desc = _desc;
+    if(desc.format == Format::Unknown)
+    {
+        desc.format = desc_.format;
+    }
+
     {
         std::shared_lock lock(viewMutex_);
         if(auto it = rtvs_.find(desc); it != rtvs_.end())
@@ -54,15 +60,15 @@ RPtr<TextureRtv> DirectX12Texture::CreateRtv(const TextureRtvDesc &desc) const
     }
     
     D3D12_RENDER_TARGET_VIEW_DESC viewDesc;
-    viewDesc.Format = TranslateFormat(desc.format != Format::Unknown ? desc.format : desc_.format);
+    viewDesc.Format = TranslateFormat(desc.format);
     if(desc_.dim == TextureDimension::Tex2D)
     {
         if(desc_.sampleCount == 1)
         {
             if(desc_.arraySize == 1)
             {
-                viewDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-                viewDesc.Texture2D.MipSlice = desc.mipLevel;
+                viewDesc.ViewDimension        = D3D12_RTV_DIMENSION_TEXTURE2D;
+                viewDesc.Texture2D.MipSlice   = desc.mipLevel;
                 viewDesc.Texture2D.PlaneSlice = 0;
             }
             else
@@ -78,14 +84,14 @@ RPtr<TextureRtv> DirectX12Texture::CreateRtv(const TextureRtvDesc &desc) const
         {
             if(desc_.arraySize == 1)
             {
-                viewDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2DMS;
+                viewDesc.ViewDimension                           = D3D12_RTV_DIMENSION_TEXTURE2DMS;
                 viewDesc.Texture2DMS.UnusedField_NothingToDefine = 0;
             }
             else
             {
                 // d3d12 doesn't support non-zero mipmap level in multi-sampled texture2d array rtv
                 assert(desc.mipLevel == 0);
-                viewDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2DMSARRAY;
+                viewDesc.ViewDimension                    = D3D12_RTV_DIMENSION_TEXTURE2DMSARRAY;
                 viewDesc.Texture2DMSArray.FirstArraySlice = desc.arrayLayer;
                 viewDesc.Texture2DMSArray.ArraySize       = 1;
             }
@@ -95,7 +101,7 @@ RPtr<TextureRtv> DirectX12Texture::CreateRtv(const TextureRtvDesc &desc) const
     {
         assert(desc_.dim == TextureDimension::Tex3D);
         assert(desc_.sampleCount == 1);
-        viewDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE3D;
+        viewDesc.ViewDimension         = D3D12_RTV_DIMENSION_TEXTURE3D;
         viewDesc.Texture3D.MipSlice    = desc.mipLevel;
         viewDesc.Texture3D.FirstWSlice = 0;
         viewDesc.Texture3D.WSize       = desc_.depth;
@@ -107,8 +113,14 @@ RPtr<TextureRtv> DirectX12Texture::CreateRtv(const TextureRtvDesc &desc) const
     return MakeRPtr<DirectX12TextureRtv>(this, desc, handle);
 }
 
-RPtr<TextureSrv> DirectX12Texture::CreateSrv(const TextureSrvDesc &desc) const
+RPtr<TextureSrv> DirectX12Texture::CreateSrv(const TextureSrvDesc &_desc) const
 {
+    auto desc = _desc;
+    if(desc.format == Format::Unknown)
+    {
+        desc.format = desc_.format;
+    }
+
     {
         std::shared_lock lock(viewMutex_);
         if(auto it = srvs_.find(desc); it != srvs_.end())
@@ -136,7 +148,7 @@ RPtr<TextureSrv> DirectX12Texture::CreateSrv(const TextureSrvDesc &desc) const
     }
 
     D3D12_SHADER_RESOURCE_VIEW_DESC viewDesc;
-    viewDesc.Format = TranslateFormat(desc.format != Format::Unknown ? desc.format : desc_.format);
+    viewDesc.Format = TranslateFormat(desc.format);
     if(viewDesc.Format == DXGI_FORMAT_D24_UNORM_S8_UINT)
     {
         viewDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
@@ -211,8 +223,14 @@ RPtr<TextureSrv> DirectX12Texture::CreateSrv(const TextureSrvDesc &desc) const
     return MakeRPtr<DirectX12TextureSrv>(desc, handle);
 }
 
-RPtr<TextureUav> DirectX12Texture::CreateUav(const TextureUavDesc &desc) const
+RPtr<TextureUav> DirectX12Texture::CreateUav(const TextureUavDesc &_desc) const
 {
+    auto desc = _desc;
+    if(desc.format == Format::Unknown)
+    {
+        desc.format = desc_.format;
+    }
+
     {
         std::shared_lock lock(viewMutex_);
         if(auto it = uavs_.find(desc); it != uavs_.end())
@@ -234,7 +252,7 @@ RPtr<TextureUav> DirectX12Texture::CreateUav(const TextureUavDesc &desc) const
     }
 
     D3D12_UNORDERED_ACCESS_VIEW_DESC viewDesc;
-    viewDesc.Format = TranslateFormat(desc.format != Format::Unknown ? desc.format : desc_.format);
+    viewDesc.Format = TranslateFormat(desc.format);
     if(desc_.dim == TextureDimension::Tex2D)
     {
         if(desc_.sampleCount == 1)
@@ -289,8 +307,14 @@ RPtr<TextureUav> DirectX12Texture::CreateUav(const TextureUavDesc &desc) const
     return MakeRPtr<DirectX12TextureUav>(desc, handle);
 }
 
-RPtr<TextureDsv> DirectX12Texture::CreateDsv(const TextureDsvDesc &desc) const
+RPtr<TextureDsv> DirectX12Texture::CreateDsv(const TextureDsvDesc &_desc) const
 {
+    auto desc = _desc;
+    if(desc.format == Format::Unknown)
+    {
+        desc.format = desc_.format;
+    }
+
     {
         std::shared_lock lock(viewMutex_);
         if(auto it = dsvs_.find(desc); it != dsvs_.end())
@@ -306,7 +330,7 @@ RPtr<TextureDsv> DirectX12Texture::CreateDsv(const TextureDsvDesc &desc) const
     }
     
     D3D12_DEPTH_STENCIL_VIEW_DESC viewDesc;
-    viewDesc.Format = TranslateFormat(desc.format != Format::Unknown ? desc.format : desc_.format);
+    viewDesc.Format = TranslateFormat(desc.format);
     viewDesc.Flags = D3D12_DSV_FLAG_NONE;
 
     assert(desc_.dim == TextureDimension::Tex2D);

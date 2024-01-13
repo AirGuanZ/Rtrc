@@ -41,11 +41,17 @@ const TextureDesc & VulkanTexture::GetDesc() const
     return desc_;
 }
 
-RPtr<TextureRtv> VulkanTexture::CreateRtv(const TextureRtvDesc &desc) const
+RPtr<TextureRtv> VulkanTexture::CreateRtv(const TextureRtvDesc &_desc) const
 {
+    auto desc = _desc;
+    if(desc.format == Format::Unknown)
+    {
+        desc.format = desc_.format;
+    }
+
     auto imageView = CreateImageView(ViewKey{
         .aspect         = VK_IMAGE_ASPECT_COLOR_BIT,
-        .format         = TranslateTexelFormat(desc.format == Format::Unknown ? desc_.format : desc.format),
+        .format         = TranslateTexelFormat(desc.format),
         .baseMipLevel   = desc.mipLevel,
         .levelCount     = 1,
         .baseArrayLayer = desc.arrayLayer,
@@ -54,14 +60,20 @@ RPtr<TextureRtv> VulkanTexture::CreateRtv(const TextureRtvDesc &desc) const
     return MakeRPtr<VulkanTextureRtv>(this, desc, imageView);
 }
 
-RPtr<TextureSrv> VulkanTexture::CreateSrv(const TextureSrvDesc &desc) const
+RPtr<TextureSrv> VulkanTexture::CreateSrv(const TextureSrvDesc &_desc) const
 {
+    auto desc = _desc;
+    if(desc.format == Format::Unknown)
+    {
+        desc.format = desc_.format;
+    }
+
     const VkImageAspectFlags aspect =
         HasDepthAspect(desc_.format) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
     auto imageView = CreateImageView(ViewKey{
         .isArray        = desc.isArray,
         .aspect         = aspect,
-        .format         = TranslateTexelFormat(desc.format == Format::Unknown ? desc_.format : desc.format),
+        .format         = TranslateTexelFormat(desc.format),
         .baseMipLevel   = desc.baseMipLevel,
         .levelCount     = desc.levelCount > 0 ? desc.levelCount : desc_.mipLevels,
         .baseArrayLayer = desc.baseArrayLayer,
@@ -70,12 +82,18 @@ RPtr<TextureSrv> VulkanTexture::CreateSrv(const TextureSrvDesc &desc) const
     return MakeRPtr<VulkanTextureSrv>(desc, imageView);
 }
 
-RPtr<TextureUav> VulkanTexture::CreateUav(const TextureUavDesc &desc) const
+RPtr<TextureUav> VulkanTexture::CreateUav(const TextureUavDesc &_desc) const
 {
+    auto desc = _desc;
+    if(desc.format == Format::Unknown)
+    {
+        desc.format = desc_.format;
+    }
+
     auto imageView = CreateImageView(ViewKey{
         .isArray        = desc.isArray,
         .aspect         = VK_IMAGE_ASPECT_COLOR_BIT,
-        .format         = TranslateTexelFormat(desc.format == Format::Unknown ? desc_.format : desc.format),
+        .format         = TranslateTexelFormat(desc.format),
         .baseMipLevel   = desc.mipLevel,
         .levelCount     = 1,
         .baseArrayLayer = desc.baseArrayLayer,
@@ -84,15 +102,21 @@ RPtr<TextureUav> VulkanTexture::CreateUav(const TextureUavDesc &desc) const
     return MakeRPtr<VulkanTextureUav>(desc, imageView);
 }
 
-RPtr<TextureDsv> VulkanTexture::CreateDsv(const TextureDsvDesc &desc) const
+RPtr<TextureDsv> VulkanTexture::CreateDsv(const TextureDsvDesc &_desc) const
 {
+    auto desc = _desc;
+    if(desc.format == Format::Unknown)
+    {
+        desc.format = desc_.format;
+    }
+
     const VkImageAspectFlags aspect =
         (HasDepthAspect(desc_.format) ? VK_IMAGE_ASPECT_DEPTH_BIT : 0) |
         (HasStencilAspect(desc_.format) ? VK_IMAGE_ASPECT_STENCIL_BIT : 0);
     auto imageView = CreateImageView(ViewKey
     {
         .aspect         = aspect,
-        .format         = TranslateTexelFormat(desc.format == Format::Unknown ? desc_.format : desc.format),
+        .format         = TranslateTexelFormat(desc.format),
         .baseMipLevel   = desc.mipLevel,
         .levelCount     = 1,
         .baseArrayLayer = desc.arrayLayer,

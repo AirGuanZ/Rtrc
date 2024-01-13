@@ -66,6 +66,15 @@ public:
         this->Swap(other);
     }
 
+    StaticVector(const T *begin, const T *end)
+        : StaticVector()
+    {
+        while(begin < end)
+        {
+            this->PushBack(*begin++);
+        }
+    }
+
     StaticVector &operator=(const StaticVector &other)
     {
         StaticVector temp(other);

@@ -157,6 +157,9 @@ public:
     void BeginRenderPass(Span<ColorAttachment> colorAttachments, const DepthStencilAttachment &depthStencilAttachment);
     void EndRenderPass();
 
+    Span<RHI::Format> GetCurrentRenderPassColorFormats() const { assert(isInRenderPass_); return currentPassColorFormats_; }
+    RHI::Format GetCurrentRenderPassDepthStencilFormat() const { assert(isInRenderPass_); return currentPassDepthStencilFormat_; }
+
     void BindGraphicsPipeline(const RC<GraphicsPipeline> &graphicsPipeline);
     void BindComputePipeline(const RC<ComputePipeline> &computePipeline);
     void BindRayTracingPipeline(const RC<RayTracingPipeline> &rayTracingPipeline);
@@ -327,20 +330,25 @@ private:
 
     void CheckThreadID() const;
 
-    Device *device_;
-    CommandBufferManager *manager_;
-    RHI::QueueType queueType_;
+    Device                *device_;
+    CommandBufferManager  *manager_;
+    RHI::QueueType         queueType_;
     RHI::CommandBufferRPtr rhiCommandBuffer_;
-    Pool *pool_;
+    Pool                  *pool_;
+
 #if RTRC_DEBUG
     std::thread::id threadID_;
 #endif
 
     // Temporary data
 
-    RC<GraphicsPipeline> currentGraphicsPipeline_;
-    RC<ComputePipeline> currentComputePipeline_;
+    RC<GraphicsPipeline>   currentGraphicsPipeline_;
+    RC<ComputePipeline>    currentComputePipeline_;
     RC<RayTracingPipeline> currentRayTracingPipeline_;
+
+    bool                         isInRenderPass_ = false;
+    StaticVector<RHI::Format, 8> currentPassColorFormats_;
+    RHI::Format                  currentPassDepthStencilFormat_ = RHI::Format::Unknown;
 };
 
 class CommandBufferManager : public Uncopyable

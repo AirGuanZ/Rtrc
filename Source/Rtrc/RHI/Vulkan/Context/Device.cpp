@@ -693,9 +693,9 @@ UPtr<GraphicsPipeline> VulkanDevice::CreateGraphicsPipeline(const GraphicsPipeli
     }
     dynamicStates.PushBack(VK_DYNAMIC_STATE_STENCIL_REFERENCE);
     const VkPipelineDynamicStateCreateInfo dynamicState = {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        .sType             = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
         .dynamicStateCount = static_cast<uint32_t>(dynamicStates.GetSize()),
-        .pDynamicStates = dynamicStates.GetData()
+        .pDynamicStates    = dynamicStates.GetData()
     };
 
     auto vkBindingLayout = static_cast<VulkanBindingLayout *>(desc.bindingLayout.Get());
