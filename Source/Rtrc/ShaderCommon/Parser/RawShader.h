@@ -51,31 +51,6 @@ struct RawShaderDatabase
     std::vector<RawShader> rawShaders;
 };
 
-/*
-    rtrc_material("MaterialName")
-    {
-        rtrc_pass("PassName")
-        {
-            rtrc_shader("ShaderName")
-            {
-                ...
-            }
-        }
-        rtrc_pass("AnotherPassName")
-        {
-            rtrc_shader_ref("AnotherShaderName")
-        }
-    }
-    rtrc_shader("AnotherShaderName")
-    {
-        ...
-    }
-*/
-void ParseRawMaterials(
-    const std::string              &rawSource,
-    std::vector<RawMaterialRecord> &rawMaterials,
-    std::vector<RawShader>         &rawShaders); // Note that rawShader.filename is not filled
-
 RawShaderDatabase CreateRawShaderDatabase(const std::set<std::filesystem::path> &filenames);
 
 RTRC_END

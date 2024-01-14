@@ -1,4 +1,4 @@
-rtrc_shader("PrepareThreadGroupCountForIndirectDispatch_1D")
+rtrc_shader("Builtin/PrepareThreadGroupCountForIndirectDispatch_1D")
 {
     rtrc_keyword(ThreadGroupSize, s32, s64, s128, s256, Others)
 

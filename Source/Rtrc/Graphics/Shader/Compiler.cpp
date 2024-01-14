@@ -170,17 +170,18 @@ RC<Shader> ShaderCompiler::Compile(
 
     // rtrc_* macros
 
-    macros["rtrc_vertex(...)"]     = "";
-    macros["rtrc_vert(...)"]       = "";
-    macros["rtrc_pixel(...)"]      = "";
-    macros["rtrc_fragment(...)"]   = "";
-    macros["rtrc_frag(...)"]       = "";
-    macros["rtrc_compute(...)"]    = "";
-    macros["rtrc_comp(...)"]       = "";
-    macros["rtrc_raytracing(...)"] = "";
-    macros["rtrc_rt(...)"]         = "";
-    macros["rtrc_rt_group(...)"]   = "";
-    macros["rtrc_keyword(...)"]    = "";
+    macros["rtrc_symbol_name(...)"] = "";
+    macros["rtrc_vertex(...)"]      = "";
+    macros["rtrc_vert(...)"]        = "";
+    macros["rtrc_pixel(...)"]       = "";
+    macros["rtrc_fragment(...)"]    = "";
+    macros["rtrc_frag(...)"]        = "";
+    macros["rtrc_compute(...)"]     = "";
+    macros["rtrc_comp(...)"]        = "";
+    macros["rtrc_raytracing(...)"]  = "";
+    macros["rtrc_rt(...)"]          = "";
+    macros["rtrc_rt_group(...)"]    = "";
+    macros["rtrc_keyword(...)"]     = "";
 
     macros["rtrc_group(NAME, ...)"]                  = "_rtrc_group_##NAME";
     macros["rtrc_define(TYPE, NAME, ...)"]           = "_rtrc_define_##NAME";

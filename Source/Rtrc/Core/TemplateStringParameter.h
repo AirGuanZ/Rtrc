@@ -21,9 +21,22 @@ struct TemplateStringParameter
         return std::string_view(data);
     }
 
+    constexpr operator std::string() const
+    {
+        return std::string(data);
+    }
+
+    constexpr operator std::string_view() const
+    {
+        return std::string_view(data);
+    }
+
+    constexpr operator const char*() const
+    {
+        return data;
+    }
+
     char data[N];
 };
-
-template<int N> TemplateStringParameter(const char(&)[N]) -> TemplateStringParameter<N>;
 
 RTRC_END

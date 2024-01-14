@@ -28,16 +28,17 @@ RG::TextureResource *Prepare2DPcgStateTexture(
     tex->SetName("PcgState");
     auto ret = renderGraph.RegisterTexture(tex);
 
-    auto initPass = renderGraph.CreatePass("InitializePcgState");
+    using Shader = RtrcShader::Builtin::InitializePcgState2D;
+    auto initPass = renderGraph.CreatePass(Shader::Name);
     initPass->Use(ret, RG::CS_RWTexture_WriteOnly);
     initPass->SetCallback([ret, size, device, resources]
     {
-        StaticShaderInfo<"InitializePcgState2D">::Pass passData;
+        Shader::Pass passData;
         passData.Output = ret;
         passData.resolution = size;
         auto passGroup = device->CreateBindingGroupWithCachedLayout(passData);
 
-        auto shader = resources->GetStaticShader<"InitializePcgState2D">();
+        auto shader = resources->GetStaticShader<Shader::Name>();
 
         auto &commandBuffer = RG::GetCurrentCommandBuffer();
         commandBuffer.BindComputePipeline(shader->GetComputePipeline());

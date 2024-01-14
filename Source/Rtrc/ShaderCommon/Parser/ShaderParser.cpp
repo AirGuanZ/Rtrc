@@ -1,4 +1,5 @@
 #include <Rtrc/Core/Filesystem/File.h>
+#include <Rtrc/Core/String.h>
 #include <Rtrc/Core/Parser/ShaderTokenStream.h>
 #include <Rtrc/ShaderCommon/DXC/DXC.h>
 #include <Rtrc/ShaderCommon/Parser/ParserHelper.h>
@@ -285,6 +286,40 @@ std::vector<ShaderKeyword> CollectKeywords(const std::string &source)
     return ret;
 }
 
+std::vector<std::string> GetCppSymbolName(const std::string &source)
+{
+    constexpr std::string_view keyword = "rtrc_symbol_name";
+    const size_t p = FindKeyword(source, keyword, 0);
+    if(p == std::string::npos)
+    {
+        return {};
+    }
+    ShaderTokenStream tokens(source, p + keyword.size());
+    tokens.ConsumeOrThrow("(");
+    std::vector<std::string> ret;
+    while(true)
+    {
+        std::string name = tokens.GetCurrentToken();
+        if(!ShaderTokenStream::IsIdentifier(name))
+        {
+            tokens.Throw("Symbol name identifier expected");
+        }
+        ret.push_back(std::move(name));
+        tokens.Next();
+
+        if(tokens.GetCurrentToken() != "::")
+        {
+            break;
+        }
+        tokens.Next();
+    }
+    if(tokens.GetCurrentToken() != ")")
+    {
+        tokens.Throw("')' expected");
+    }
+    return ret;
+}
+
 int ComputeVariantIndex(Span<ShaderKeyword> keywords, Span<ShaderKeywordValue> values)
 {
     assert(keywords.size() == values.size());
@@ -351,7 +386,7 @@ ParsedShader ParseShader(
     
     // Collect keywords
 
-    const auto keywords = CollectKeywords(source);
+    auto keywords = CollectKeywords(source);
 
     size_t totalVariantCount = 1;
     for(auto &kw : keywords)
@@ -363,8 +398,17 @@ ParsedShader ParseShader(
 
     ParsedShader ret;
     ret.name           = std::move(shaderName);
+    ret.cppSymbolName  = GetCppSymbolName(source);
     ret.sourceFilename = std::filesystem::relative(filename).string();
     ret.keywords       = std::move(keywords);
+
+    if(ret.cppSymbolName.empty())
+    {
+        std::string name = ret.name;
+        Replace_(name, "\\", "/");
+        Replace_(name, ":", "/");
+        ret.cppSymbolName = Split(name, "/");
+    }
 
     ret.variants.resize(totalVariantCount);
     ShaderParserDetail::ForEachKeywordCombination(ret.keywords, [&](Span<ShaderKeywordValue> values)

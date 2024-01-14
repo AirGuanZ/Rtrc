@@ -9,14 +9,16 @@ void GenerateT(
     const AtmosphereProperties &atmosphere,
     RG::TextureResource        *T)
 {
-    StaticShaderInfo<"Atmosphere/GenerateTransmittanceLut">::Pass passData;
+    using Shader = RtrcShader::Builtin::Atmosphere::GenerateTransmittanceLut;
+
+    Shader::Pass passData;
     passData.outputResolution                 = T->GetSize();
     passData.TransmittanceTextureRW           = T;
     passData.TransmittanceTextureRW.writeOnly = true;
     passData.atmosphere                       = atmosphere;
     T->GetGraph()->CreateComputePassWithThreadCount(
-        "GenerateTransmittanceLut",
-        resources->GetStaticShader<"Atmosphere/GenerateTransmittanceLut">(),
+        Shader::Name,
+        resources->GetStaticShader<Shader::Name>(),
         T->GetSize(),
         passData);
 }
@@ -28,7 +30,9 @@ void GenerateM(
     RG::TextureResource        *M,
     uint32_t                    distSamples)
 {
-    StaticShaderInfo<"Atmosphere/GenerateMultiScatterLut">::Pass passData;
+    using Shader = RtrcShader::Builtin::Atmosphere::GenerateMultiScatterLut;
+
+    Shader::Pass passData;
     passData.MultiScatterTextureRW           = M;
     passData.MultiScatterTextureRW.writeOnly = true;
     passData.RawDirSamples                   = resources->GetPoissonDiskSamples2048();
@@ -39,8 +43,8 @@ void GenerateM(
     passData.atmosphere                      = atmosphere;
 
     M->GetGraph()->CreateComputePassWithThreadCount(
-        "GenerateMultiScatteringLut",
-        resources->GetStaticShader<"Atmosphere/GenerateMultiScatterLut">(),
+        Shader::Name,
+        resources->GetStaticShader<Shader::Name>(),
         M->GetSize(),
         passData);
 }
@@ -58,7 +62,9 @@ void GenerateS(
     float                       randomNumber01,
     int                         distSamples)
 {
-    StaticShaderInfo<"Atmosphere/GenerateSkyLut">::Pass skyPassData;
+    using Shader = RtrcShader::Builtin::Atmosphere::GenerateSkyLut;
+
+    Shader::Pass skyPassData;
     skyPassData.SkyLutTextureRW           = S;
     skyPassData.SkyLutTextureRW.writeOnly = true;
     skyPassData.TransmittanceLutTexture   = T;
@@ -73,8 +79,8 @@ void GenerateS(
     skyPassData.sunIntensity              = sunColor;
 
     S->GetGraph()->CreateComputePassWithThreadCount(
-        "GenerateSkyLut",
-        resources->GetStaticShader<"Atmosphere/GenerateSkyLut">(),
+        Shader::Name,
+        resources->GetStaticShader<Shader::Name>(),
         S->GetSize(),
         skyPassData);
 }

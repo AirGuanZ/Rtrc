@@ -1,4 +1,4 @@
-rtrc_shader("Rtrc/Builtin/DFDM")
+rtrc_shader("Builtin/DFDM")
 {
 
 	rtrc_comp(CSMain)

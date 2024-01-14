@@ -1,4 +1,4 @@
-rtrc_shader("InitializePcgState2D")
+rtrc_shader("Builtin/InitializePcgState2D")
 {
     rtrc_compute(CSMain)
 

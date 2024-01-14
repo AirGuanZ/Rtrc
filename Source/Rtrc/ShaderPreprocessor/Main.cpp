@@ -3,7 +3,6 @@
 
 #include <cxxopts.hpp>
 
-#include <Rtrc/Core/Filesystem/File.h>
 #include <Rtrc/Core/Serialization/TextSerializer.h>
 #include <Rtrc/Core/SourceWriter.h>
 #include <Rtrc/Core/String.h>
@@ -310,6 +309,8 @@ void GenerateKeywordAndBindingGroupsInShader(
     sw("{").NewLine();
     ++sw;
 
+    sw("inline static constexpr TemplateStringParameter Name = \"{}\";", rawShader.shaderName).NewLine();
+
     for(auto &keyword : parsedShader.keywords)
     {
         if(auto kw = keyword.AsIf<Rtrc::EnumShaderKeyword>())
@@ -361,10 +362,40 @@ void GenerateKeywordAndBindingGroupsInShader(
     }
 
     --sw;
-    sw("};").NewLine();
+    sw("};").NewLine(); // struct StaticShaderInfo
 
     --sw;
-    sw("}").NewLine();
+    sw("}").NewLine(); // namespace Rtrc
+
+    sw("namespace RtrcShader").NewLine();
+    sw("{").NewLine();
+    ++sw;
+    
+    if(!parsedShader.cppSymbolName.empty())
+    {
+        if(parsedShader.cppSymbolName.size() > 1)
+        {
+            std::string name = parsedShader.cppSymbolName[0];
+            for(size_t i = 1; i < parsedShader.cppSymbolName.size() - 1; ++i)
+            {
+                name += "::" + parsedShader.cppSymbolName[i];
+            }
+            sw("namespace {}", name).NewLine();
+            sw("{").NewLine();
+            ++sw;
+        }
+        sw(
+            "using {} = ::Rtrc::StaticShaderInfo<::Rtrc::TemplateStringParameter(\"{}\")>;",
+            parsedShader.cppSymbolName.back(), rawShader.shaderName).NewLine();
+        if(parsedShader.cppSymbolName.size() > 1)
+        {
+            --sw;
+            sw("}").NewLine();
+        }
+    }
+
+    --sw;
+    sw("}").NewLine(); // namespace RtrcShader
 
     sw("#endif // #ifndef RTRC_STATIC_SHADER_INFO_{}", namespaceName).NewLine();
 }

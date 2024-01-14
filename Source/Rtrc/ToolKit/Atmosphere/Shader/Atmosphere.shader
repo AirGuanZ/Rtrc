@@ -1,4 +1,4 @@
-rtrc_shader("Atmosphere/GenerateTransmittanceLut")
+rtrc_shader("Builtin/Atmosphere/GenerateTransmittanceLut")
 {
 
     rtrc_comp(CSMain)
@@ -47,7 +47,7 @@ rtrc_shader("Atmosphere/GenerateTransmittanceLut")
 
 } // Shader "Atmosphere/GenerateTransmittanceLut"
 
-rtrc_shader("Atmosphere/GenerateMultiScatterLut")
+rtrc_shader("Builtin/Atmosphere/GenerateMultiScatterLut")
 {
 
     rtrc_comp(CSMain)
@@ -178,7 +178,7 @@ rtrc_shader("Atmosphere/GenerateMultiScatterLut")
 
 } // Shader "Atmosphere/GenerateMultiScatterLut"
 
-rtrc_shader("Atmosphere/GenerateSkyLut")
+rtrc_shader("Builtin/Atmosphere/GenerateSkyLut")
 {
 
     rtrc_comp(CSMain)

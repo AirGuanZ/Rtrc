@@ -271,7 +271,7 @@ class DFDMDemo : public SimpleApplication
         auto layout = RTRC_MESH_LAYOUT(Buffer(Attribute("Position", 0, Float2)));
         const GraphicsPipeline::Desc pipelineDesc =
         {
-            .shader                 = GetResourceManager()->GetStaticShader<"DFDM/Render">(),
+            .shader                 = GetResourceManager()->GetStaticShader<RtrcShader::DFDM::Render::Name>(),
             .meshLayout             = layout,
             .cullMode               = RHI::CullMode::CullBack,
             .frontFaceMode          = RHI::FrontFaceMode::CounterClockwise,

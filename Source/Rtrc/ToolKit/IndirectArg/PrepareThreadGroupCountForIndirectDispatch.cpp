@@ -12,10 +12,8 @@ RG::Pass *PrepareThreadGroupCount1D(
     const RG::BufferResourceUav &threadGroupCountBuffer,
     int                          threadGroupSize)
 {
-    constexpr char SHADER[] = "PrepareThreadGroupCountForIndirectDispatch_1D";
-
-    using StaticShader = StaticShaderInfo<SHADER>;
-    using ThreadGroupSize = StaticShader::ThreadGroupSize;
+    using Shader = RtrcShader::Builtin::PrepareThreadGroupCountForIndirectDispatch_1D;
+    using ThreadGroupSize = Shader::ThreadGroupSize;
 
     auto Dispatch = [&]<ThreadGroupSize GroupSize>()
     {
@@ -23,10 +21,10 @@ RG::Pass *PrepareThreadGroupCount1D(
         keywordContext.Set(RTRC_FAST_KEYWORD(ThreadGroupSize), std::to_underlying(GroupSize));
         auto shader = resources
             ->GetShaderManager()
-            ->GetShaderTemplate<SHADER>()
+            ->GetShaderTemplate<Shader::Name>()
             ->GetVariant(keywordContext);
 
-        using Variant = StaticShader::Variant<GroupSize>;
+        using Variant = Shader::Variant<GroupSize>;
         typename Variant::Pass passData;
         passData.ThreadCountBuffer = threadCountBuffer;
         passData.ThreadGroupCountBuffer = threadGroupCountBuffer;
@@ -36,7 +34,7 @@ RG::Pass *PrepareThreadGroupCount1D(
         }
 
         return renderGraph->CreateComputePassWithThreadCount(
-            SHADER, shader, 1, passData);
+            Shader::Name, shader, 1, passData);
     };
 
     RG::Pass *pass;

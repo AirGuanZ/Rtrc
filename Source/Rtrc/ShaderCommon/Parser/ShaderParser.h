@@ -71,6 +71,7 @@ struct ParsedShaderVariant
 struct ParsedShader
 {
     std::string                      name;
+    std::vector<std::string>         cppSymbolName;
     std::string                      sourceFilename;
     std::vector<ShaderKeyword>       keywords;
     std::vector<ParsedShaderVariant> variants;
@@ -81,7 +82,7 @@ struct ParsedShader
 
     const std::string &GetCachedSource() const;
 
-    RTRC_AUTO_SERIALIZE(name, sourceFilename, keywords, variants);
+    RTRC_AUTO_SERIALIZE(name, cppSymbolName, sourceFilename, keywords, variants);
 
 private:
 
@@ -90,6 +91,8 @@ private:
 };
 
 std::vector<ShaderKeyword> CollectKeywords(const std::string &source);
+
+std::vector<std::string> GetCppSymbolName(const std::string &source);
 
 int ComputeVariantIndex(Span<ShaderKeyword> keywords, Span<ShaderKeywordValue> values);
 
