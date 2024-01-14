@@ -150,7 +150,6 @@ bool EditorCameraController::UpdateWalkMode(const WindowInput &input, float dt)
     if(input.GetCursorRelativePositionX() != 0)
     {
         yawPitch.x += rotatingSpeed_ * input.GetCursorRelativePositionX();
-        //yawPitch.x -= std::floor(yawPitch.x / (2 * PI)) * (2 * PI);
         isDirty = true;
     }
     if(input.GetCursorRelativePositionY() != 0)
@@ -177,6 +176,12 @@ bool EditorCameraController::UpdateWalkMode(const WindowInput &input, float dt)
         state.currentPosition + YawPitchToDirection(currentYawPitch_));
 
     isDirty |= oldCurrentPosition != state.currentPosition || oldCurrentYawPitch != currentYawPitch_;
+
+    {
+        const float delta = currentYawPitch_.x - targetYawPitch_.x;
+        targetYawPitch_.x -= std::floor(targetYawPitch_.x / (2 * PI)) * (2 * PI);
+        currentYawPitch_.x = targetYawPitch_.x + delta;
+    }
 
     return isDirty;
 }
@@ -234,7 +239,6 @@ bool EditorCameraController::UpdateTrackballMode(const WindowInput &input, float
             if(std::abs(dx) > 1e-3f)
             {
                 yawPitch.x = yawPitchWhenStartRotating_.x + dx * rotatingSpeed_;
-                //yawPitch.x -= std::floor(yawPitch.x / (2 * PI)) * (2 * PI);
             }
             if(std::abs(dy) > 1e-3f)
             {
@@ -270,6 +274,15 @@ bool EditorCameraController::UpdateTrackballMode(const WindowInput &input, float
     {
         state.targetCenter = center;
         targetYawPitch_ = yawPitch;
+    }
+
+    if(const float t = std::floor(targetYawPitch_.x / (2 * PI)); t != 0)
+    {
+        const float delta1 = currentYawPitch_.x - targetYawPitch_.x;
+        const float delta2 = yawPitchWhenStartRotating_.x - targetYawPitch_.x;
+        targetYawPitch_.x -= t * (2 * PI);
+        currentYawPitch_.x = targetYawPitch_.x + delta1;
+        yawPitchWhenStartRotating_.x = targetYawPitch_.x + delta2;
     }
 
     const auto oldCurrentCenter = state.currentCenter;
