@@ -77,7 +77,7 @@ Image<Vector2f> DFDM::GenerateCorrectionMap(const Image<Vector3f> &displacementM
     {
         FastKeywordContext keywords;
         keywords.Set(RTRC_FAST_KEYWORD(WRAP_MODE), static_cast<int>(wrapMode_));
-        auto shader = resources_->GetShaderTemplate<"Rtrc/Builtin/DFDM">()->GetVariant(keywords);
+        auto shader = resources_->GetStaticShaderTemplate<"Rtrc/Builtin/DFDM">()->GetVariant(keywords);
 
         using ShaderInfo = StaticShaderInfo<"Rtrc/Builtin/DFDM">;
         ShaderInfo::Variant<ShaderInfo::WRAP_MODE::CLAMP>::Pass passData;

@@ -16,7 +16,7 @@ void GenerateT(
     passData.atmosphere                       = atmosphere;
     T->GetGraph()->CreateComputePassWithThreadCount(
         "GenerateTransmittanceLut",
-        resources->GetShader<"Atmosphere/GenerateTransmittanceLut">(),
+        resources->GetStaticShader<"Atmosphere/GenerateTransmittanceLut">(),
         T->GetSize(),
         passData);
 }
@@ -40,7 +40,7 @@ void GenerateM(
 
     M->GetGraph()->CreateComputePassWithThreadCount(
         "GenerateMultiScatteringLut",
-        resources->GetShader<"Atmosphere/GenerateMultiScatterLut">(),
+        resources->GetStaticShader<"Atmosphere/GenerateMultiScatterLut">(),
         M->GetSize(),
         passData);
 }
@@ -74,7 +74,7 @@ void GenerateS(
 
     S->GetGraph()->CreateComputePassWithThreadCount(
         "GenerateSkyLut",
-        resources->GetShader<"Atmosphere/GenerateSkyLut">(),
+        resources->GetStaticShader<"Atmosphere/GenerateSkyLut">(),
         S->GetSize(),
         skyPassData);
 }

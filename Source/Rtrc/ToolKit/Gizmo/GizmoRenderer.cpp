@@ -122,7 +122,7 @@ void GizmoRenderer::RenderImpl(
 
     auto pipeline = pipelineCache_.GetGraphicsPipeline(GraphicsPipeline::Desc
     {
-        .shader                 = resources_->GetShader<"Rtrc/GizmoRenderer/RenderColoredPrimitives">(),
+        .shader                 = resources_->GetStaticShader<"Rtrc/GizmoRenderer/RenderColoredPrimitives">(),
         .meshLayout             = RTRC_MESH_LAYOUT(Buffer(Attribute("POSITION", 0, Float3),
                                                           Attribute("COLOR", 0, Float3))),
         .primitiveTopology      = isLine ? RHI::PrimitiveTopology::LineList : RHI::PrimitiveTopology::TriangleList,

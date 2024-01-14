@@ -39,8 +39,8 @@ public:
     RC<Shader>         GetShader        (const std::string &name, bool persistent); // Valid when no keyword is defined in corresponding shader template
     RC<Mesh>           GetMesh          (std::string_view name, MeshFlags flags = MeshFlags::None);
 
-    template<TemplateStringParameter Name> RC<ShaderTemplate> GetShaderTemplate();
-    template<TemplateStringParameter Name> RC<Shader>         GetShader();
+    template<TemplateStringParameter Name> RC<ShaderTemplate> GetStaticShaderTemplate();
+    template<TemplateStringParameter Name> RC<Shader>         GetStaticShader();
 
     // Builtin resources
     
@@ -66,13 +66,13 @@ private:
 };
 
 template<TemplateStringParameter Name>
-RC<ShaderTemplate> ResourceManager::GetShaderTemplate()
+RC<ShaderTemplate> ResourceManager::GetStaticShaderTemplate()
 {
     return shaderManager_.GetShaderTemplate<Name>();
 }
 
 template<TemplateStringParameter Name>
-RC<Shader> ResourceManager::GetShader()
+RC<Shader> ResourceManager::GetStaticShader()
 {
     return shaderManager_.GetShader<Name>();
 }

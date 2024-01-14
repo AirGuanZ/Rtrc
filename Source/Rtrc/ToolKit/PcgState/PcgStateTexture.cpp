@@ -37,7 +37,7 @@ RG::TextureResource *Prepare2DPcgStateTexture(
         passData.resolution = size;
         auto passGroup = device->CreateBindingGroupWithCachedLayout(passData);
 
-        auto shader = resources->GetShader<"InitializePcgState2D">();
+        auto shader = resources->GetStaticShader<"InitializePcgState2D">();
 
         auto &commandBuffer = RG::GetCurrentCommandBuffer();
         commandBuffer.BindComputePipeline(shader->GetComputePipeline());
