@@ -13,6 +13,7 @@ Box<Device> Device::CreateComputeDevice(RHI::DeviceUPtr rhiDevice)
 
 Box<Device> Device::CreateComputeDevice(RHI::BackendType rhiType, bool debugMode)
 {
+    rhiType = DebugOverrideBackendType(rhiType);
     Box<Device> ret{ new Device };
 #if RTRC_RHI_VULKAN
     if(rhiType == RHI::BackendType::Vulkan)
@@ -88,6 +89,7 @@ Box<Device> Device::CreateGraphicsDevice(
 {
     Box<Device> ret{ new Device };
 
+    rhiType = DebugOverrideBackendType(rhiType);
 #if RTRC_RHI_VULKAN
     if(rhiType == RHI::BackendType::Vulkan)
     {
@@ -185,7 +187,7 @@ Device::~Device()
     clearBufferUtils_.reset();
     accelerationManager_.reset();
     bindingLayoutManager_.reset();
-    copyContext_.reset();
+    uploader_.reset();
     bufferManager_.reset();
     pooledBufferManager_.reset();
     commandBufferManager_.reset();
@@ -222,8 +224,13 @@ RC<Texture> Device::CreateColorTexture2D(uint8_t r, uint8_t g, uint8_t b, uint8_
         tex->SetName(std::move(name));
     }
     const Vector4b color(b, g, r, a);
-    copyContext_->UploadTexture2D(tex, 0, 0, &color, RHI::TextureLayout::ShaderTexture);
+    Upload(tex, { 0, 0 }, &color, 0, RHI::TextureLayout::ShaderTexture);
     return tex;
+}
+
+RHI::BackendType Device::DebugOverrideBackendType(RHI::BackendType type)
+{
+    return type;
 }
 
 void Device::InitializeInternal(Flags flags, RHI::DeviceUPtr device, bool isComputeOnly)
@@ -246,7 +253,7 @@ void Device::InitializeInternal(Flags flags, RHI::DeviceUPtr device, bool isComp
     pipelineManager_ = MakeBox<PipelineManager>(device_, *sync_);
     samplerManager_ = MakeBox<SamplerManager>(device_, *sync_);
 
-    copyContext_ = MakeBox<UploadContext>(device_);
+    uploader_ = MakeBox<Uploader>(device_, mainQueue_.GetRHIObject());
     accelerationManager_ = MakeBox<AccelerationStructureManager>(device_, *sync_);
 
     clearBufferUtils_  = MakeBox<ClearBufferUtils>(this);
@@ -256,25 +263,6 @@ void Device::InitializeInternal(Flags flags, RHI::DeviceUPtr device, bool isComp
     bindingGroupLayoutCache_ = MakeBox<BindingGroupLayoutCache>(this);
 }
 
-void Device::UploadBuffer(const RC<Buffer> &buffer, const void *initData, size_t offset, size_t size)
-{
-    copyContext_->UploadBuffer(buffer, initData, offset, size);
-}
-
-void Device::UploadTexture2D(
-    const RC<Texture> &texture, uint32_t arrayLayer, uint32_t mipLevel,
-    const ImageDynamic &image, RHI::TextureLayout postLayout)
-{
-    copyContext_->UploadTexture2D(texture, arrayLayer, mipLevel, image, postLayout);
-}
-
-void Device::UploadTexture2D(
-    const RC<Texture> &texture, uint32_t arrayLayer, uint32_t mipLevel,
-    const void *data, RHI::TextureLayout postLayout)
-{
-    copyContext_->UploadTexture2D(texture, arrayLayer, mipLevel, data, postLayout);
-}
-
 RC<Buffer> Device::CreateAndUploadBuffer(
     const RHI::BufferDesc    &_desc,
     const void               *initData,
@@ -282,22 +270,18 @@ RC<Buffer> Device::CreateAndUploadBuffer(
     size_t                    initDataSize)
 {
     RHI::BufferDesc desc = _desc;
-    if(desc.hostAccessType == RHI::BufferHostAccessType::None)
-    {
-        desc.usage |= RHI::BufferUsage::TransferDst;
-    }
+    desc.usage |= RHI::BufferUsage::TransferDst;
     auto ret = CreateBuffer(desc);
-    copyContext_->UploadBuffer(ret, initData, initDataOffset, initDataSize);
+    this->Upload(ret, initData, initDataOffset, initDataSize);
     return ret;
 }
 
 RC<Texture> Device::CreateAndUploadTexture2D(
     const RHI::TextureDesc &_desc,
     Span<const void *>      imageData,
-    RHI::TextureLayout      postLayout)
+    RHI::TextureLayout      afterLayout)
 {
     RHI::TextureDesc desc = _desc;
-    desc.concurrentAccessMode = RHI::QueueConcurrentAccessMode::Shared;
     desc.usage |= RHI::TextureUsage::TransferDst;
     assert(imageData.size() == desc.mipLevels * desc.arraySize);
     auto ret = CreateTexture(desc);
@@ -305,7 +289,7 @@ RC<Texture> Device::CreateAndUploadTexture2D(
     {
         for(uint32_t m = 0; m < desc.mipLevels; ++m)
         {
-            copyContext_->UploadTexture2D(ret, a, m, imageData[i++], postLayout);
+            Upload(ret, { m, a }, imageData[i++], 0, afterLayout);
         }
     }
     return ret;
@@ -314,10 +298,9 @@ RC<Texture> Device::CreateAndUploadTexture2D(
 RC<Texture> Device::CreateAndUploadTexture2D(
     const RHI::TextureDesc &_desc,
     Span<ImageDynamic>      images,
-    RHI::TextureLayout      postLayout)
+    RHI::TextureLayout      afterLayout)
 {
     RHI::TextureDesc desc = _desc;
-    desc.concurrentAccessMode = RHI::QueueConcurrentAccessMode::Shared;
     desc.usage |= RHI::TextureUsage::TransferDst;
     assert(images.size() == desc.mipLevels * desc.arraySize);
     auto ret = CreateTexture(desc);
@@ -325,7 +308,7 @@ RC<Texture> Device::CreateAndUploadTexture2D(
     {
         for(uint32_t m = 0; m < desc.mipLevels; ++m)
         {
-            copyContext_->UploadTexture2D(ret, a, m, images[i++], postLayout);
+            Upload(ret, { m, a }, images[i++], afterLayout);
         }
     }
     return ret;
@@ -352,16 +335,16 @@ RC<Texture> Device::LoadTexture2D(
     }
     const RHI::TextureDesc desc =
     {
-        .dim           = RHI::TextureDimension::Tex2D,
-        .format        = format,
-        .width         = images[0].GetWidth(),
-        .height        = images[0].GetHeight(),
-        .arraySize     = 1,
-        .mipLevels     = mipLevels,
-        .sampleCount   = 1,
-        .usage         = usages,
-        .initialLayout = RHI::TextureLayout::Undefined,
-        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Shared
+        .dim                  = RHI::TextureDimension::Tex2D,
+        .format               = format,
+        .width                = images[0].GetWidth(),
+        .height               = images[0].GetHeight(),
+        .arraySize            = 1,
+        .mipLevels            = mipLevels,
+        .sampleCount          = 1,
+        .usage                = usages,
+        .initialLayout        = RHI::TextureLayout::Undefined,
+        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
     };
     return CreateAndUploadTexture2D(desc, images, postLayout);
 }

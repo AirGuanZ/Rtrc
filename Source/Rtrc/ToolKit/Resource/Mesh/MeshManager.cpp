@@ -1,3 +1,5 @@
+#include <filesystem>
+
 #include <Rtrc/Core/Math/Frame.h>
 #include <Rtrc/Core/Resource/MeshData.h>
 #include <Rtrc/Core/String.h>

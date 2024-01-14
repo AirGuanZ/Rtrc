@@ -130,9 +130,9 @@ public:
 
     void Swap(CommandBuffer &other) noexcept;
 
-    RHI::QueueType GetQueueType() const;
-
+    RHI::QueueType                GetQueueType() const;
     const RHI::CommandBufferRPtr &GetRHIObject() const;
+    Ref<Device>                   GetDevice() const;
 
     // Once begin, the command buffer object is bound with current thread, and cannot be used in any other thread.
     void Begin();

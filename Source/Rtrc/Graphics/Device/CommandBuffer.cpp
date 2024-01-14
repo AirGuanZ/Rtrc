@@ -236,6 +236,11 @@ const RHI::CommandBufferRPtr &CommandBuffer::GetRHIObject() const
     return rhiCommandBuffer_;
 }
 
+Ref<Device> CommandBuffer::GetDevice() const
+{
+    return device_;
+}
+
 void CommandBuffer::Begin()
 {
     manager_->_internalAllocate(*this);

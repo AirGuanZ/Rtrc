@@ -1,5 +1,6 @@
 #include <magic_enum.hpp>
 
+#include <Rtrc/Core/Resource/Image.h>
 #include <Rtrc/Graphics/Shader/Keyword.h>
 #include <Rtrc/Graphics/RenderGraph/Executable.h>
 #include <Rtrc/ToolKit/DFDM/DFDM.h>

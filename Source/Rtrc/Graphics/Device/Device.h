@@ -4,7 +4,7 @@
 #include <Rtrc/Graphics/Device/BindingGroup.h>
 #include <Rtrc/Graphics/Device/BindingGroupDSL.h>
 #include <Rtrc/Graphics/Device/Buffer.h>
-#include <Rtrc/Graphics/Device/UploadContext.h>
+#include <Rtrc/Graphics/Device/CopyContext/Uploader.h>
 #include <Rtrc/Graphics/Device/LocalBindingGroupLayoutCache.h>
 #include <Rtrc/Graphics/Device/Pipeline.h>
 #include <Rtrc/Graphics/Device/Queue.h>
@@ -29,8 +29,8 @@ namespace DeviceDetail
     {
         None                         = 0,
         EnableRayTracing             = 1 << 0,
-        DisableAutoSwapchainRecreate = 1 << 1, // Don't recreate swapchain when window size changes
-                                               // Usually required when render thread differs from window event thread
+        DisableAutoSwapchainRecreate = 1 << 1, // Don't recreate swapchain when window size changes.
+                                               // In that case, swapchain must be manually recreated by calling Device::RecreateSwapchain().
     };
     RTRC_DEFINE_ENUM_FLAGS(FlagBit)
     using Flags = EnumFlagsFlagBit;
@@ -130,24 +130,36 @@ public:
     RC<SubBuffer> CreateConstantBuffer(const void *data, size_t bytes);
     template<RtrcReflShaderStruct T>
     RC<SubBuffer> CreateConstantBuffer(const T &data);
+
+    Uploader &GetUploader();
     
-    void UploadBuffer(
+    void Upload(
         const RC<Buffer> &buffer,
-        const void       *initData,
+        const void       *data,
         size_t            offset = 0,
-        size_t            size   = 0);
-    void UploadTexture2D(
-        const RC<Texture> &texture,
-        uint32_t           arrayLayer,
-        uint32_t           mipLevel,
-        const void        *data,
-        RHI::TextureLayout postLayout = RHI::TextureLayout::CopyDst);
-    void UploadTexture2D(
-        const RC<Texture> &texture,
-        uint32_t             arrayLayer,
-        uint32_t             mipLevel,
-        const ImageDynamic  &image,
-        RHI::TextureLayout   postLayout = RHI::TextureLayout::CopyDst);
+        size_t            size = 0);
+    void Upload(
+        const RC<Texture>      &texture,
+        RHI::TextureSubresource subrsc,
+        const void             *data,
+        size_t                  dataRowBytes,
+        RHI::TextureLayout      afterLayout);
+    void Upload(
+        const RC<StatefulTexture> &texture,
+        RHI::TextureSubresource    subrsc,
+        const void                *data,
+        size_t                     dataRowBytes,
+        RHI::TextureLayout         afterLayout);
+    void Upload(
+        const RC<Texture>       &texture,
+        RHI::TextureSubresource  subrsc,
+        const ImageDynamic      &image,
+        RHI::TextureLayout       afterLayout);
+    void Upload(
+        const RC<StatefulTexture> &texture,
+        RHI::TextureSubresource    subrsc,
+        const ImageDynamic        &image,
+        RHI::TextureLayout         afterLayout);
 
     template<typename T>
     RC<Buffer> CreateAndUploadTexelBuffer(RHI::BufferUsageFlag usages, Span<T> data, RHI::Format format);
@@ -160,18 +172,19 @@ public:
         size_t                 initDataSize = 0);
     RC<Texture> CreateAndUploadTexture2D(
         const RHI::TextureDesc &desc,
-        Span<const void *>      imageData,
-        RHI::TextureLayout      postLayout = RHI::TextureLayout::CopyDst);
+        Span<const void *>      imageData, // 'data of layer a, mip m' is in imageData[a * M + m]
+        RHI::TextureLayout      afterLayout);
     RC<Texture> CreateAndUploadTexture2D(
         const RHI::TextureDesc &desc,
         Span<ImageDynamic>      images,
-        RHI::TextureLayout      postLayout = RHI::TextureLayout::CopyDst);
+        RHI::TextureLayout      afterLayout);
+
     RC<Texture> LoadTexture2D(
         const std::string     &filename,
         RHI::Format            format,
         RHI::TextureUsageFlags usages,
         bool                   generateMipLevels,
-        RHI::TextureLayout     postLayout = RHI::TextureLayout::CopyDst);
+        RHI::TextureLayout     afterLayout);
 
     // Pipeline object creation
 
@@ -280,7 +293,6 @@ public:
 
     // Internal helper classes
 
-    UploadContext             &GetCopyContext();
     BufferManager           &GetBufferManager();
     BindingGroupManager     &GetBindingGroupManager();
     BindingGroupLayoutCache &GetBindingGroupCache();
@@ -293,6 +305,8 @@ public:
     operator DynamicBufferManager &();
 
 private:
+
+    static RHI::BackendType DebugOverrideBackendType(RHI::BackendType type);
 
     Device() = default;
     
@@ -325,7 +339,7 @@ private:
     Box<SamplerManager>               samplerManager_;
     Box<TextureManager>               textureManager_;
     Box<PooledTextureManager>         pooledTextureManager_;
-    Box<UploadContext>                  copyContext_;
+    Box<Uploader>                     uploader_;
     Box<AccelerationStructureManager> accelerationManager_;
     Box<ClearBufferUtils>             clearBufferUtils_;
     Box<ClearTextureUtils>            clearTextureUtils_;
@@ -541,6 +555,58 @@ RC<SubBuffer> Device::CreateConstantBuffer(const T &data)
     auto ret = this->CreateDynamicBuffer();
     ret->SetData(data);
     return ret;
+}
+
+inline Uploader &Device::GetUploader()
+{
+    return *uploader_;
+}
+
+inline void Device::Upload(
+    const RC<Buffer> &buffer,
+    const void       *data,
+    size_t            offset,
+    size_t            size)
+{
+    uploader_->Upload(buffer, data, offset, size);
+}
+
+inline void Device::Upload(
+    const RC<Texture>      &texture,
+    RHI::TextureSubresource subrsc,
+    const void             *data,
+    size_t                  dataRowBytes,
+    RHI::TextureLayout      afterLayout)
+{
+    uploader_->Upload(texture, subrsc, data, dataRowBytes, afterLayout);
+}
+
+inline void Device::Upload(
+    const RC<StatefulTexture> &texture,
+    RHI::TextureSubresource    subrsc,
+    const void                *data,
+    size_t                     dataRowBytes,
+    RHI::TextureLayout         afterLayout)
+{
+    uploader_->Upload(texture, subrsc, data, dataRowBytes, afterLayout);
+}
+
+inline void Device::Upload(
+    const RC<Texture>       &texture,
+    RHI::TextureSubresource  subrsc,
+    const ImageDynamic      &image,
+    RHI::TextureLayout       afterLayout)
+{
+    uploader_->Upload(texture, subrsc, image, afterLayout);
+}
+
+inline void Device::Upload(
+    const RC<StatefulTexture> &texture,
+    RHI::TextureSubresource    subrsc,
+    const ImageDynamic        &image,
+    RHI::TextureLayout         afterLayout)
+{
+    uploader_->Upload(texture, subrsc, image, afterLayout);
 }
 
 template<typename T>
@@ -795,11 +861,6 @@ inline void Device::ExecuteBarrier(
     RHI::TextureLayout         succLayout)
 {
     ExecuteBarrierImpl(texture, prevLayout, succLayout);
-}
-
-inline UploadContext &Device::GetCopyContext()
-{
-    return *copyContext_;
 }
 
 inline BufferManager &Device::GetBufferManager()

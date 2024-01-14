@@ -1,4 +1,5 @@
 #include <Rtrc/Core/Math/LowDiscrepancy.h>
+#include <Rtrc/Core/Resource/Image.h>
 #include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/ToolKit/Resource/ResourceManager.h>
 
@@ -76,21 +77,14 @@ void ResourceManager::LoadBuiltinTextures()
     if(std::filesystem::is_regular_file(blueNoiseFilename))
     {
         auto blueNoise256 = Image<uint8_t>::Load(blueNoiseFilename);
-        textures_[std::to_underlying(BuiltinTexture::BlueNoise256)] =
-            device_->CreateAndUploadTexture2D(
-                RHI::TextureDesc
-                {
-                    .dim                  = RHI::TextureDimension::Tex2D,
-                    .format               = RHI::Format::R8_UNorm,
-                    .width                = blueNoise256.GetWidth(),
-                    .height               = blueNoise256.GetHeight(),
-                    .depth                = 1,
-                    .mipLevels            = 1,
-                    .sampleCount          = 1,
-                    .usage                = RHI::TextureUsage::ShaderResource,
-                    .initialLayout        = RHI::TextureLayout::Undefined,
-                    .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
-                }, blueNoise256.GetData(), RHI::TextureLayout::ShaderTexture);
+        textures_[std::to_underlying(BuiltinTexture::BlueNoise256)] = device_->CreateAndUploadTexture2D(
+            RHI::TextureDesc
+            {
+                .format = RHI::Format::R8_UNorm,
+                .width  = blueNoise256.GetWidth(),
+                .height = blueNoise256.GetHeight(),
+                .usage  = RHI::TextureUsage::ShaderResource,
+            }, blueNoise256.GetData(), RHI::TextureLayout::ShaderTexture);
     }
 }
 
@@ -98,11 +92,10 @@ void ResourceManager::GeneratePoissonDiskSamples()
 {
     auto data = Rtrc::GeneratePoissonDiskSamples<Vector2f>(2048, 42);
     poissonDiskSamples2048_ = device_->CreateAndUploadBuffer(RHI::BufferDesc
-        {
-            .size = sizeof(Vector2f) * 2048,
-            .usage = RHI::BufferUsage::ShaderStructuredBuffer,
-            .hostAccessType = RHI::BufferHostAccessType::Upload
-        }, data.data());
+    {
+        .size = sizeof(Vector2f) * 2048,
+        .usage = RHI::BufferUsage::ShaderStructuredBuffer
+    }, data.data());
     poissonDiskSamples2048_->SetName("MultiScatterDirSamples2048");
     poissonDiskSamples2048_->SetDefaultStructStride(sizeof(Vector2f));
 }
