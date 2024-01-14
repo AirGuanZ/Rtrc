@@ -1,9 +1,9 @@
+#include <Rtrc/Core/Resource/Image.h>
 #include <Rtrc/Graphics/Device/CopyContext/Uploader.h>
 
-#include "Rtrc/Core/Resource/Image.h"
-
 RTRC_BEGIN
-    UploadBatch::UploadBatch(Ref<Uploader> uploader)
+
+UploadBatch::UploadBatch(Ref<Uploader> uploader)
     : uploader_(uploader)
 {
     
@@ -234,22 +234,29 @@ void UploadBatch::SubmitAndWait()
     std::vector<RHI::TextureTransitionBarrier> beforeTextureBarriers, afterTextureBarriers;
     for(auto &task : textureTasks_)
     {
-        auto &b = beforeTextureBarriers.emplace_back();
         auto &prevState = task.texture->GetState(task.subrsc.mipLevel, task.subrsc.arrayLayer);
-        b.texture = task.texture->GetRHIObject().Get();
-        b.subresources = RHI::TextureSubresources
+
+        const bool skipBeforeBarrier = prevState.layout == RHI::TextureLayout::CopyDst &&
+                                       prevState.stages == RHI::PipelineStage::None &&
+                                       prevState.accesses == RHI::ResourceAccess::None;
+        if(!skipBeforeBarrier)
         {
-            .mipLevel = task.subrsc.mipLevel,
-            .levelCount = 1,
-            .arrayLayer = task.subrsc.arrayLayer,
-            .layerCount = 1
-        };
-        b.beforeStages = prevState.stages;
-        b.beforeAccesses = prevState.accesses;
-        b.beforeLayout = RHI::TextureLayout::Undefined;
-        b.afterStages = RHI::PipelineStage::Copy;
-        b.afterAccesses = RHI::ResourceAccess::CopyWrite;
-        b.afterLayout = RHI::TextureLayout::CopyDst;
+            auto &b = beforeTextureBarriers.emplace_back();
+            b.texture = task.texture->GetRHIObject().Get();
+            b.subresources = RHI::TextureSubresources
+            {
+                .mipLevel = task.subrsc.mipLevel,
+                .levelCount = 1,
+                .arrayLayer = task.subrsc.arrayLayer,
+                .layerCount = 1
+            };
+            b.beforeStages = prevState.stages;
+            b.beforeAccesses = prevState.accesses;
+            b.beforeLayout = RHI::TextureLayout::Undefined;
+            b.afterStages = RHI::PipelineStage::Copy;
+            b.afterAccesses = RHI::ResourceAccess::CopyWrite;
+            b.afterLayout = RHI::TextureLayout::CopyDst;
+        }
 
         if(task.afterLayout != RHI::TextureLayout::CopyDst)
         {
@@ -296,14 +303,14 @@ void UploadBatch::SubmitAndWait()
         stagingBuffer->Unmap(0, size, true);
 
         stagingBuffers.push_back(std::move(stagingBuffer));
-        return RHI::OPtr(stagingBuffers.back());
+        return RHI::OPtr(stagingBuffers.back().Get());
     };
 
     for(auto &task : bufferTasks_)
     {
         auto stagingBuffer = GetStagingBuffer(task.size, task.data);
         commandBuffer->CopyBuffer(
-            task.buffer->GetRHIObject().Get(), task.offset, stagingBuffer->Get(), 0, task.size);
+            task.buffer->GetRHIObject().Get(), task.offset, stagingBuffer.Get(), 0, task.size);
     }
 
     for(auto& task : textureTasks_)
@@ -313,7 +320,7 @@ void UploadBatch::SubmitAndWait()
         commandBuffer->CopyBufferToColorTexture2D(
             task.texture->GetRHIObject().Get(),
             task.subrsc.mipLevel, task.subrsc.arrayLayer,
-            stagingBuffer->Get(), 0, task.dataRowBytes);
+            stagingBuffer.Get(), 0, task.dataRowBytes);
     }
 
     if(!afterTextureBarriers.empty())

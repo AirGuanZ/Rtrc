@@ -187,6 +187,7 @@ Device::~Device()
     clearBufferUtils_.reset();
     accelerationManager_.reset();
     bindingLayoutManager_.reset();
+    downloader_.reset();
     uploader_.reset();
     bufferManager_.reset();
     pooledBufferManager_.reset();
@@ -230,6 +231,8 @@ RC<Texture> Device::CreateColorTexture2D(uint8_t r, uint8_t g, uint8_t b, uint8_
 
 RHI::BackendType Device::DebugOverrideBackendType(RHI::BackendType type)
 {
+    //return RHI::BackendType::DirectX12;
+    //return RHI::BackendType::Vulkan;
     return type;
 }
 
@@ -253,6 +256,7 @@ void Device::InitializeInternal(Flags flags, RHI::DeviceUPtr device, bool isComp
     pipelineManager_ = MakeBox<PipelineManager>(device_, *sync_);
     samplerManager_ = MakeBox<SamplerManager>(device_, *sync_);
 
+    downloader_ = MakeBox<Downloader>(device_, mainQueue_.GetRHIObject());
     uploader_ = MakeBox<Uploader>(device_, mainQueue_.GetRHIObject());
     accelerationManager_ = MakeBox<AccelerationStructureManager>(device_, *sync_);
 

@@ -396,6 +396,29 @@ void DirectX12CommandBuffer::CopyBuffer(Buffer *dst, size_t dstOffset, Buffer *s
     commandList_->CopyBufferRegion(d3dDst, dstOffset, d3dSrc, srcOffset, range);
 }
 
+void DirectX12CommandBuffer::CopyColorTexture(
+    Texture *dst, uint32_t dstMipLevel, uint32_t dstArrayLayer,
+    Texture *src, uint32_t srcMipLevel, uint32_t srcArrayLayer)
+{
+    auto d3dDst = static_cast<DirectX12Texture *>(dst)->_internalGetNativeTexture().Get();
+    auto d3dSrc = static_cast<DirectX12Texture *>(src)->_internalGetNativeTexture().Get();
+    const D3D12_TEXTURE_COPY_LOCATION dstLoc =
+    {
+        .pResource        = d3dDst,
+        .Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
+        .SubresourceIndex = D3D12CalcSubresource(
+                                dstMipLevel, dstArrayLayer, 0, dst->GetMipLevels(), dst->GetArraySize())
+    };
+    const D3D12_TEXTURE_COPY_LOCATION srcLoc =
+    {
+        .pResource = d3dSrc,
+        .Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
+        .SubresourceIndex = D3D12CalcSubresource(
+                                srcMipLevel, srcArrayLayer, 0, src->GetMipLevels(), src->GetArraySize())
+    };
+    commandList_->CopyTextureRegion(&dstLoc, 0, 0, 0, &srcLoc, nullptr);
+}
+
 void DirectX12CommandBuffer::CopyBufferToColorTexture2D(
     Texture *dst, uint32_t mipLevel, uint32_t arrayLayer, Buffer *src, size_t srcOffset, size_t srcRowBytes)
 {

@@ -4,6 +4,9 @@
 
 RTRC_BEGIN
 
+using RHI::TextureSubresource;
+using RHI::TextureSubresources;
+
 template<typename T>
 class TextureSubrscMap
 {

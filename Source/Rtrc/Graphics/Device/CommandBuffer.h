@@ -142,12 +142,18 @@ public:
     void EndDebugEvent();
 
     void CopyBuffer(const Buffer &dst, size_t dstOffset, const Buffer &src, size_t srcOffset, size_t size);
+    void CopyColorTexture(
+        const Texture &dst, uint32_t dstMipLevel, uint32_t dstArrayLayer,
+        const Texture &src, uint32_t srcMipLevel, uint32_t srcArrayLayer);
     void CopyColorTexture2DToBuffer(
         Buffer &dst, size_t dstOffset, size_t dstRowBytes, Texture &src, uint32_t arrayLayer, uint32_t mipLevel);
 
     void CopyBuffer(
         const RG::BufferResource *dst, size_t dstOffset,
         const RG::BufferResource *src, size_t srcOffset, size_t size);
+    void CopyColorTexture(
+        RG::TextureResource *dst, uint32_t dstMipLevel, uint32_t dstArrayLayer,
+        RG::TextureResource *src, uint32_t srcMipLevel, uint32_t srcArrayLayer);
     void CopyColorTexture2DToBuffer(
         RG::BufferResource *dst, size_t dstOffset, size_t dstRowBytes,
         RG::TextureResource *src, uint32_t arrayLayer, uint32_t mipLevel);

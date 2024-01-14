@@ -130,6 +130,21 @@ public:
         BufferResource *src,
         BufferResource *dst,
         size_t          size);
+    Pass *CreateCopyColorTexturePass(
+        std::string      name,
+        TextureResource *src,
+        TextureResource *dst);
+    Pass *CreateCopyColorTexturePass(
+        std::string                name,
+        TextureResource           *src,
+        TextureResource           *dst,
+        const TextureSubresources &subrscs);
+    Pass *CreateCopyColorTexturePass(
+        std::string                name,
+        TextureResource           *src,
+        const TextureSubresources &srcSubrscs,
+        TextureResource           *dst,
+        const TextureSubresources &dstSubrscs);
 
     Pass *CreateClearRWTexture2DPass(std::string name, TextureResource *tex2D, const Vector4f &value);
     Pass *CreateClearRWTexture2DPass(std::string name, TextureResource *tex2D, const Vector4u &value);

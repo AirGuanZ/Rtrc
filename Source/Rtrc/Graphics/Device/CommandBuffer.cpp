@@ -278,6 +278,15 @@ void CommandBuffer::CopyBuffer(const Buffer &dst, size_t dstOffset, const Buffer
     rhiCommandBuffer_->CopyBuffer(dst.GetRHIObject(), dstOffset, src.GetRHIObject(), srcOffset, size);
 }
 
+void CommandBuffer::CopyColorTexture(
+    const Texture &dst, uint32_t dstMipLevel, uint32_t dstArrayLayer,
+    const Texture &src, uint32_t srcMipLevel, uint32_t srcArrayLayer)
+{
+    CheckThreadID();
+    rhiCommandBuffer_->CopyColorTexture(
+        dst.GetRHIObject(), dstMipLevel, dstArrayLayer, src.GetRHIObject(), srcMipLevel, srcArrayLayer);
+}
+
 void CommandBuffer::CopyColorTexture2DToBuffer(
     Buffer &dst, size_t dstOffset, size_t dstRowBytes, Texture &src, uint32_t arrayLayer, uint32_t mipLevel)
 {
@@ -290,6 +299,13 @@ void CommandBuffer::CopyBuffer(
     const RG::BufferResource *dst, size_t dstOffset, const RG::BufferResource *src, size_t srcOffset, size_t size)
 {
     CopyBuffer(*dst->Get(), dstOffset, *src->Get(), srcOffset, size);
+}
+
+void CommandBuffer::CopyColorTexture(
+    RG::TextureResource *dst, uint32_t dstMipLevel, uint32_t dstArrayLayer,
+    RG::TextureResource *src, uint32_t srcMipLevel, uint32_t srcArrayLayer)
+{
+    CopyColorTexture(*dst->Get(), dstMipLevel, dstArrayLayer, *src->Get(), srcMipLevel, srcArrayLayer);
 }
 
 void CommandBuffer::CopyColorTexture2DToBuffer(

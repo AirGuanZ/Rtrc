@@ -4,6 +4,7 @@
 #include <Rtrc/Graphics/Device/BindingGroup.h>
 #include <Rtrc/Graphics/Device/BindingGroupDSL.h>
 #include <Rtrc/Graphics/Device/Buffer.h>
+#include <Rtrc/Graphics/Device/CopyContext/Downloader.h>
 #include <Rtrc/Graphics/Device/CopyContext/Uploader.h>
 #include <Rtrc/Graphics/Device/LocalBindingGroupLayoutCache.h>
 #include <Rtrc/Graphics/Device/Pipeline.h>
@@ -132,6 +133,7 @@ public:
     RC<SubBuffer> CreateConstantBuffer(const T &data);
 
     Uploader &GetUploader();
+    Downloader &GetDownloader();
     
     void Upload(
         const RC<Buffer> &buffer,
@@ -160,6 +162,16 @@ public:
         RHI::TextureSubresource    subrsc,
         const ImageDynamic        &image,
         RHI::TextureLayout         afterLayout);
+    
+    void Download(const RC<StatefulBuffer> &buffer,
+                  void                     *data,
+                  size_t                    offset = 0,
+                  size_t                    size = 0);
+
+    void Download(const RC<StatefulTexture> &texture,
+                  TextureSubresource         subrsc,
+                  void                      *outputData,
+                  size_t                     dataRowBytes = 0);
 
     template<typename T>
     RC<Buffer> CreateAndUploadTexelBuffer(RHI::BufferUsageFlag usages, Span<T> data, RHI::Format format);
@@ -339,6 +351,7 @@ private:
     Box<SamplerManager>               samplerManager_;
     Box<TextureManager>               textureManager_;
     Box<PooledTextureManager>         pooledTextureManager_;
+    Box<Downloader>                   downloader_;
     Box<Uploader>                     uploader_;
     Box<AccelerationStructureManager> accelerationManager_;
     Box<ClearBufferUtils>             clearBufferUtils_;
@@ -562,6 +575,11 @@ inline Uploader &Device::GetUploader()
     return *uploader_;
 }
 
+inline Downloader &Device::GetDownloader()
+{
+    return *downloader_;
+}
+
 inline void Device::Upload(
     const RC<Buffer> &buffer,
     const void       *data,
@@ -607,6 +625,17 @@ inline void Device::Upload(
     RHI::TextureLayout         afterLayout)
 {
     uploader_->Upload(texture, subrsc, image, afterLayout);
+}
+
+inline void Device::Download(const RC<StatefulBuffer> &buffer, void *data, size_t offset, size_t size)
+{
+    downloader_->Download(buffer, data, offset, size);
+}
+
+inline void Device::Download(
+    const RC<StatefulTexture> &texture, TextureSubresource subrsc, void *outputData, size_t dataRowBytes)
+{
+    downloader_->Download(texture, subrsc, outputData, dataRowBytes);
 }
 
 template<typename T>

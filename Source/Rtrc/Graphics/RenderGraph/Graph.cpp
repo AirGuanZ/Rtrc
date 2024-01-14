@@ -256,6 +256,78 @@ Pass *RenderGraph::CreateCopyBufferPass(std::string name, BufferResource *src, B
     return CreateCopyBufferPass(std::move(name), src, 0, dst, 0, size);
 }
 
+Pass *RenderGraph::CreateCopyColorTexturePass(std::string name, TextureResource *src, TextureResource *dst)
+{
+    assert(src->GetArraySize() == dst->GetArraySize());
+    assert(src->GetMipLevels() == dst->GetMipLevels());
+    assert(src->GetSize() == dst->GetSize());
+    return CreateCopyColorTexturePass(std::move(name), src, dst, TextureSubresources
+    {
+        .mipLevel = 0,
+        .levelCount = src->GetMipLevels(),
+        .arrayLayer = 0,
+        .layerCount = dst->GetArraySize()
+    });
+}
+
+Pass *RenderGraph::CreateCopyColorTexturePass(
+    std::string                name,
+    TextureResource           *src,
+    TextureResource           *dst,
+    const TextureSubresources &subrscs)
+{
+    return CreateCopyColorTexturePass(std::move(name), src, subrscs, dst, subrscs);
+}
+
+Pass *RenderGraph::CreateCopyColorTexturePass(
+    std::string                name,
+    TextureResource           *src,
+    const TextureSubresources &srcSubrscs,
+    TextureResource           *dst,
+    const TextureSubresources &dstSubrscs)
+{
+    assert(srcSubrscs.layerCount == dstSubrscs.layerCount);
+    assert(srcSubrscs.levelCount == dstSubrscs.levelCount);
+    auto pass = CreatePass(std::move(name));
+    for(unsigned a = srcSubrscs.arrayLayer; a < srcSubrscs.arrayLayer + srcSubrscs.layerCount; ++a)
+    {
+        assert(a < src->GetArraySize());
+        for(unsigned m = srcSubrscs.mipLevel; m < srcSubrscs.mipLevel + srcSubrscs.levelCount; ++m)
+        {
+            assert(m < src->GetMipLevels());
+            pass->Use(src, TextureSubresource{ m, a }, CopySrc);
+        }
+    }
+    for(unsigned a = dstSubrscs.arrayLayer; a < dstSubrscs.arrayLayer + dstSubrscs.layerCount; ++a)
+    {
+        assert(a < dst->GetArraySize());
+        for(unsigned m = dstSubrscs.mipLevel; m < dstSubrscs.mipLevel + dstSubrscs.levelCount; ++m)
+        {
+            assert(m < dst->GetMipLevels());
+            pass->Use(dst, TextureSubresource{ m, a }, CopyDst);
+        }
+    }
+    pass->SetCallback([src, srcSubrscs, dst, dstSubrscs]
+    {
+        auto &cmds = GetCurrentCommandBuffer();
+        auto tsrc = src->Get();
+        auto tdst = dst->Get();
+        for(unsigned ai = 0; ai < srcSubrscs.layerCount; ++ai)
+        {
+            const unsigned srcArrayLayer = srcSubrscs.arrayLayer + ai;
+            const unsigned dstArrayLayer = dstSubrscs.arrayLayer + ai;
+            for(unsigned mi = 0; mi < srcSubrscs.levelCount; ++mi)
+            {
+                const unsigned srcMipLevel = srcSubrscs.mipLevel + mi;
+                const unsigned dstMipLevel = dstSubrscs.mipLevel + mi;
+                assert(tsrc->GetSize(srcMipLevel) == tdst->GetSize(dstMipLevel));
+                cmds.CopyColorTexture(*tdst, dstMipLevel, dstArrayLayer, *tsrc, srcMipLevel, srcArrayLayer);
+            }
+        }
+    });
+    return pass;
+}
+
 Pass *RenderGraph::CreateClearRWTexture2DPass(std::string name, TextureResource *tex2D, const Vector4f &value)
 {
     auto pass = CreatePass(std::move(name));

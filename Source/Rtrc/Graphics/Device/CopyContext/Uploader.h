@@ -37,28 +37,28 @@ public:
         size_t                    size = 0);
 
     void Record(
-        const RC<Texture>      &texture, // Prev accesses to texture should be externally synchronized
-        RHI::TextureSubresource subrsc,
-        const void             *data,
-        size_t                  dataRowBytes, // Specify 0 to use packed row bytes
-        RHI::TextureLayout      afterLayout,
-        bool                    takeCopyOfData);
+        const RC<Texture> &texture, // Prev accesses to texture should be externally synchronized
+        TextureSubresource subrsc,
+        const void        *data,
+        size_t             dataRowBytes, // Specify 0 to use packed row bytes
+        RHI::TextureLayout afterLayout,
+        bool               takeCopyOfData);
     void Record(
         const RC<StatefulTexture> &texture,
-        RHI::TextureSubresource    subrsc,
+        TextureSubresource         subrsc,
         const void                *data,
         size_t                     dataRowBytes,
         RHI::TextureLayout         afterLayout,
         bool                       takeCopyOfData);
 
     void Record(
-        const RC<Texture>       &texture,
-        RHI::TextureSubresource  subrsc,
-        const ImageDynamic      &image,
-        RHI::TextureLayout       afterLayout);
+        const RC<Texture>  &texture,
+        TextureSubresource  subrsc,
+        const ImageDynamic &image,
+        RHI::TextureLayout  afterLayout);
     void Record(
         const RC<StatefulTexture> &texture,
-        RHI::TextureSubresource    subrsc,
+        TextureSubresource         subrsc,
         const ImageDynamic        &image,
         RHI::TextureLayout         afterLayout);
 

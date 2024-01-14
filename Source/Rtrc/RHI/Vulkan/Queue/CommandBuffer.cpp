@@ -410,6 +410,44 @@ void VulkanCommandBuffer::CopyBuffer(
     vkCmdCopyBuffer(commandBuffer_, vkSrc, vkDst, 1, &copy);
 }
 
+void VulkanCommandBuffer::CopyColorTexture(
+    Texture *dst, uint32_t dstMipLevel, uint32_t dstArrayLayer,
+    Texture *src, uint32_t srcMipLevel, uint32_t srcArrayLayer)
+{
+    const VkImageCopy copy =
+    {
+        .srcSubresource = VkImageSubresourceLayers
+        {
+            .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+            .mipLevel       = srcMipLevel,
+            .baseArrayLayer = srcArrayLayer,
+            .layerCount     = 1
+        },
+        .srcOffset = { 0, 0, 0 },
+        .dstSubresource = VkImageSubresourceLayers
+        {
+            .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+            .mipLevel       = dstMipLevel,
+            .baseArrayLayer = dstArrayLayer,
+            .layerCount     = 1
+        },
+        .dstOffset = { 0, 0, 0 },
+        .extent =
+        {
+            dst->GetDesc().width,
+            dst->GetDesc().height,
+            dst->GetDimension() == TextureDimension::Tex3D ? dst->GetDepth() : 1
+        }
+    };
+    auto vkSrc = CommandBufferDetail::GetVulkanImage(src);
+    auto vkDst = CommandBufferDetail::GetVulkanImage(dst);
+    vkCmdCopyImage(
+        commandBuffer_,
+        vkSrc, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        vkDst, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        1, &copy);
+}
+
 void VulkanCommandBuffer::CopyBufferToColorTexture2D(
     Texture *dst, uint32_t mipLevel, uint32_t arrayLayer, Buffer *src, size_t srcOffset, size_t srcRowBytes)
 {

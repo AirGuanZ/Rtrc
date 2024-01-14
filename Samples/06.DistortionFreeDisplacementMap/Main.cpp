@@ -26,7 +26,9 @@ class DFDMDemo : public SimpleApplication
     void UpdateSimpleApplication(Ref<RenderGraph> renderGraph) override
     {
         if(GetWindowInput().IsKeyDown(KeyCode::Escape))
+        {
             SetExitFlag(true);
+        }
 
         bool reinitGeometryImage = false;
 
@@ -42,7 +44,9 @@ class DFDMDemo : public SimpleApplication
         }
 
         if(reinitGeometryImage)
+        {
             InitializeGeometryMaps();
+        }
 
         cameraController_.Update(GetWindowInput(), GetFrameTimer().GetDeltaSecondsF());
         camera_.SetAspectRatio(GetWindow().GetFramebufferWOverH());

@@ -25,8 +25,10 @@ public:
 
     void SetState(const TextureSubrscState &state);
     void SetState(uint32_t mipLevel, uint32_t arrayLayer, const TextureSubrscState &state);
+    void SetState(const TextureSubresource &subrsc, const TextureSubrscState &state);
     void SetLayoutToUndefined();
     const TextureSubrscState &GetState(uint32_t mipLevel, uint32_t arrayLayer) const;
+    const TextureSubrscState &GetState(const TextureSubresource &subrsc) const;
 
 protected:
 
@@ -75,6 +77,11 @@ inline void StatefulTexture::SetState(uint32_t mipLevel, uint32_t arrayLayer, co
     state_(mipLevel, arrayLayer) = state;
 }
 
+inline void StatefulTexture::SetState(const TextureSubresource &subrsc, const TextureSubrscState &state)
+{
+    this->SetState(subrsc.mipLevel, subrsc.arrayLayer, state);
+}
+
 inline void StatefulTexture::SetLayoutToUndefined()
 {
     for(auto &state : state_)
@@ -86,6 +93,11 @@ inline void StatefulTexture::SetLayoutToUndefined()
 inline const TextureSubrscState &StatefulTexture::GetState(uint32_t mipLevel, uint32_t arrayLayer) const
 {
     return state_(mipLevel, arrayLayer);
+}
+
+inline const TextureSubrscState &StatefulTexture::GetState(const TextureSubresource &subrsc) const
+{
+    return this->GetState(subrsc.mipLevel, subrsc.arrayLayer);
 }
 
 inline WrappedStatefulTexture::WrappedStatefulTexture(RC<Texture> texture, const TextureSubrscState &state)

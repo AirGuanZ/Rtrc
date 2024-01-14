@@ -85,6 +85,9 @@ public:
         const BufferRPtr &buffer, uint32_t drawCount, size_t byteOffset, size_t byteStride) RTRC_RHI_OVERRIDE;
 
     void CopyBuffer(Buffer *dst, size_t dstOffset, Buffer *src, size_t srcOffset, size_t range) RTRC_RHI_OVERRIDE;
+    void CopyColorTexture(
+        Texture *dst, uint32_t dstMipLevel, uint32_t dstArrayLayer,
+        Texture *src, uint32_t srcMipLevel, uint32_t srcArrayLayer) RTRC_RHI_OVERRIDE;
     void CopyBufferToColorTexture2D(
         Texture *dst,
         uint32_t mipLevel,
