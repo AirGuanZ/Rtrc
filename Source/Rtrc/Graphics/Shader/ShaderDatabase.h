@@ -83,7 +83,7 @@ private:
     ankerl::unordered_dense::map<GeneralPooledString, Box<ShaderRecord>> records_;
 
     bool                     debug_ = RTRC_DEBUG;
-    ShaderCompiler                 compiler_;
+    ShaderCompiler           compiler_;
     ShaderCompileEnvironment envir_;
 };
 

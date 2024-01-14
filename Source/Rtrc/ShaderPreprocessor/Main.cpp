@@ -407,8 +407,7 @@ void GenerateShaderRegistration(Rtrc::SourceWriter &sw, const Rtrc::ParsedShader
     sw("Rtrc::ParsedShader shader;").NewLine();
     sw("shaderDeser.SetSource(std::string(SERIALIZED_SHADER));").NewLine();
     sw("shaderDeser(shader, \"shader\");").NewLine();
-
-    sw("database.AddShader(shader);").NewLine();
+    sw("database.AddShader(std::move(shader));").NewLine();
     
     --sw;
     sw("}").NewLine();

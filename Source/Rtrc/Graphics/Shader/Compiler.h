@@ -102,7 +102,7 @@ private:
         const Box<ShaderReflection> &refl,
         std::string_view             stage) const;
 
-    DXC                 dxc_;
+    DXC         dxc_;
     Ref<Device> device_;
 };
 

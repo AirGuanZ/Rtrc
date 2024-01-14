@@ -23,7 +23,7 @@ RC<Shader> ShaderDatabase::ShaderTemplate::GetVariant(const FastKeywordSetValue 
 {
     if(persistent)
     {
-        const int persistentIndex = keywords.GetInternalValue();
+        const uint32_t persistentIndex = keywords.GetInternalValue();
         {
             std::shared_lock lock(record_->shaderTemplateMutex);
             if(persistentShaders[persistentIndex])
@@ -165,7 +165,7 @@ RC<Shader> ShaderDatabase::GetShaderImpl(ShaderRecord *record, FastKeywordSetVal
         {
             const ParsedShader &parsedShader = record->parsedShader;
 
-            assert(parsedShader.keywords.size() == record->keywordSet.GetKeywordCount());
+            assert(static_cast<int>(parsedShader.keywords.size()) == record->keywordSet.GetKeywordCount());
             std::vector<ShaderKeywordValue> keywordValues(parsedShader.keywords.size());
             for(size_t i = 0; i < parsedShader.keywords.size(); ++i)
             {
@@ -176,7 +176,7 @@ RC<Shader> ShaderDatabase::GetShaderImpl(ShaderRecord *record, FastKeywordSetVal
 
             CompilableShader compilableShader;
             compilableShader.name                    = parsedShader.name;
-            compilableShader.source                  = variant.source;
+            compilableShader.source                  = parsedShader.GetCachedSource();
             compilableShader.sourceFilename          = parsedShader.sourceFilename;
             compilableShader.keywords                = parsedShader.keywords;
             compilableShader.keywordValues           = keywordValues;

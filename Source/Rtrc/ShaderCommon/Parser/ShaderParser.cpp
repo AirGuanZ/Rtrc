@@ -146,7 +146,7 @@ namespace ShaderParserDetail
         Span<ShaderKeywordValue>        keywordValues,
         const std::string              &source)
     {
-        const size_t variantIndex = ComputeVariantIndex(shader.keywords, keywordValues);
+        const int variantIndex = ComputeVariantIndex(shader.keywords, keywordValues);
         ParsedShaderVariant &variant = shader.variants[variantIndex];
 
         // Macros
@@ -207,11 +207,40 @@ namespace ShaderParserDetail
         ParseBindingAliases(preprocessedSource, preprocessedSouceWithoutString, variant.aliases);
         ParseInlineSamplers(preprocessedSource, preprocessedSouceWithoutString, variant.inlineSamplerDescs, variant.inlineSamplerNameToDesc);
         ParsePushConstantRanges(preprocessedSource, preprocessedSouceWithoutString, variant.pushConstantRanges);
-
-        variant.source = source;
     }
 
 } // namespace ShaderParserDetail
+
+ParsedShader::ParsedShader()
+{
+    cachedSourceMutex = MakeBox<std::shared_mutex>();
+}
+
+const std::string &ParsedShader::GetCachedSource() const
+{
+    {
+        std::shared_lock lock(*cachedSourceMutex);
+        if(!cachedSource.empty())
+        {
+            return cachedSource;
+        }
+    }
+
+    std::unique_lock lock(*cachedSourceMutex);
+    if(!cachedSource.empty())
+    {
+        return cachedSource;
+    }
+
+    std::string fileContent = File::ReadTextFile(sourceFilename);
+    std::string fileContentWithoutComments = fileContent;
+    RemoveComments(fileContentWithoutComments);
+
+    cachedSource = ReadShaderSource(fileContent, fileContentWithoutComments, name);
+    cachedSource = "_rtrc_generated_shader_prefix " + cachedSource;
+
+    return cachedSource;
+}
 
 std::vector<ShaderKeyword> CollectKeywords(const std::string &source)
 {
@@ -256,10 +285,10 @@ std::vector<ShaderKeyword> CollectKeywords(const std::string &source)
     return ret;
 }
 
-size_t ComputeVariantIndex(Span<ShaderKeyword> keywords, Span<ShaderKeywordValue> values)
+int ComputeVariantIndex(Span<ShaderKeyword> keywords, Span<ShaderKeywordValue> values)
 {
     assert(keywords.size() == values.size());
-    size_t ret = 0;
+    int ret = 0;
     for(size_t i = 0; i < keywords.size(); ++i)
     {
         const int valueCount = ShaderParserDetail::GetValueCount(keywords[i]);
@@ -279,6 +308,36 @@ std::vector<ShaderKeywordValue> ExtractKeywordValues(Span<ShaderKeyword> keyword
         variantIndex /= valueCount;
     }
     return values;
+}
+
+std::string ReadShaderSource(
+    std::string_view fileContent,
+    std::string      fileContentWithoutComments,
+    std::string_view shaderName)
+{
+    const std::string key = fmt::format("rtrc_shader(\"{}\")", shaderName);
+    const size_t p = fileContentWithoutComments.find(key);
+    if(p == std::string_view::npos)
+    {
+        throw Exception(fmt::format("Cannot find shader \"{}\" in given file", shaderName));
+    }
+
+    ShaderTokenStream tokens(
+        fileContentWithoutComments, p + key.size(), ShaderTokenStream::ErrorMode::Material);
+
+    if(tokens.GetCurrentToken() != "{")
+    {
+        tokens.Throw("{ expected");
+    }
+
+    const size_t charBegin = tokens.GetCurrentPosition();
+    const size_t charEnd = FindMatchedRightBracket(fileContentWithoutComments, charBegin);
+    if(charEnd == std::string_view::npos)
+    {
+        tokens.Throw("Matched '}' is not found");
+    }
+
+    return std::string(fileContent.substr(charBegin + 1, charEnd - (charBegin + 1)));
 }
 
 ParsedShader ParseShader(
@@ -304,7 +363,7 @@ ParsedShader ParseShader(
 
     ParsedShader ret;
     ret.name           = std::move(shaderName);
-    ret.sourceFilename = std::move(filename);
+    ret.sourceFilename = std::filesystem::relative(filename).string();
     ret.keywords       = std::move(keywords);
 
     ret.variants.resize(totalVariantCount);
@@ -319,14 +378,14 @@ ParsedShader ParseShader(
 ParsedShader ParseShader(const ShaderCompileEnvironment &envir, DXC *dxc, const RawShader &rawShader)
 {
     std::string source = File::ReadTextFile(rawShader.filename);
-    for(size_t i = 0; i < rawShader.charBegin; ++i)
+    for(int i = 0; i < rawShader.charBegin; ++i)
     {
         if(!std::isspace(source[i]))
         {
             source[i] = ' ';
         }
     }
-    for(size_t i = rawShader.charEnd; i < source.size(); ++i)
+    for(int i = rawShader.charEnd; i < static_cast<int>(source.size()); ++i)
     {
         if(!std::isspace(source[i]))
         {

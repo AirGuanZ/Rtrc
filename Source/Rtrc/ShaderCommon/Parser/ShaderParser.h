@@ -1,5 +1,7 @@
 #pragma once
 
+#include <shared_mutex>
+
 #include <Rtrc/Core/Serialization/Serialize.h>
 #include <Rtrc/ShaderCommon/Parser/RawShader.h>
 
@@ -39,8 +41,6 @@ struct ShaderCompileEnvironment
 
 struct ParsedShaderVariant
 {
-    std::string source;
-
     std::string vertexEntry;
     std::string fragmentEntry;
     std::string computeEntry;
@@ -56,7 +56,6 @@ struct ParsedShaderVariant
     std::vector<ParsedPushConstantRange> pushConstantRanges;
 
     RTRC_AUTO_SERIALIZE_WITH_MEMBER_COUNT_CHECK(
-        source,
         vertexEntry,
         fragmentEntry,
         computeEntry,
@@ -76,14 +75,30 @@ struct ParsedShader
     std::vector<ShaderKeyword>       keywords;
     std::vector<ParsedShaderVariant> variants;
 
-    RTRC_AUTO_SERIALIZE_WITH_MEMBER_COUNT_CHECK(name, sourceFilename, keywords, variants);
+    ParsedShader();
+    ParsedShader(ParsedShader &&other) noexcept = default;
+    ParsedShader &operator=(ParsedShader &&other) noexcept = default;
+
+    const std::string &GetCachedSource() const;
+
+    RTRC_AUTO_SERIALIZE(name, sourceFilename, keywords, variants);
+
+private:
+
+    mutable std::string    cachedSource;
+    Box<std::shared_mutex> cachedSourceMutex;
 };
 
 std::vector<ShaderKeyword> CollectKeywords(const std::string &source);
 
-size_t ComputeVariantIndex(Span<ShaderKeyword> keywords, Span<ShaderKeywordValue> values);
+int ComputeVariantIndex(Span<ShaderKeyword> keywords, Span<ShaderKeywordValue> values);
 
 std::vector<ShaderKeywordValue> ExtractKeywordValues(Span<ShaderKeyword> keywords, size_t variantIndex);
+
+std::string ReadShaderSource(
+    std::string_view fileContent,
+    std::string      fileContentWithoutComments,
+    std::string_view shaderName);
 
 // dxc is optional
 ParsedShader ParseShader(

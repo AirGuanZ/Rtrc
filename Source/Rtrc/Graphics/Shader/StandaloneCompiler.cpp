@@ -21,7 +21,7 @@ RC<Shader> StandaloneShaderCompiler::Compile(
 
     CompilableShader compilableShader;
     compilableShader.name                    = parsedShader.name;
-    compilableShader.source                  = variant.source;
+    compilableShader.source                  = "_rtrc_generated_shader_prefix " + source;
     compilableShader.sourceFilename          = parsedShader.sourceFilename;
     compilableShader.vertexEntry             = variant.vertexEntry;
     compilableShader.fragmentEntry           = variant.fragmentEntry;

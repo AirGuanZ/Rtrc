@@ -58,8 +58,8 @@ namespace ShaderDatabaseDetail
             auto &shader = database.rawShaders.emplace_back();
             shader.shaderName = std::move(shaderName);
             shader.filename   = filename;
-            shader.charBegin  = charBegin + 1;
-            shader.charEnd    = charEnd;
+            shader.charBegin  = static_cast<int>(charBegin) + 1;
+            shader.charEnd    = static_cast<int>(charEnd);
         }
     }
     
