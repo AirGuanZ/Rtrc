@@ -1,6 +1,7 @@
 #include <magic_enum.hpp>
 
 #include <Rtrc/Core/Resource/Image.h>
+#include <Rtrc/Core/Timer.h>
 #include <Rtrc/Graphics/Shader/Keyword.h>
 #include <Rtrc/Graphics/RenderGraph/Executable.h>
 #include <Rtrc/ToolKit/DFDM/DFDM.h>
@@ -8,8 +9,7 @@
 #include "DFDM.shader.outh"
 
 RTRC_BEGIN
-
-Image<Vector2f> DFDM::GenerateCorrectionMap(const Image<Vector3f> &displacementMapData) const
+    Image<Vector2f> DFDM::GenerateCorrectionMap(const Image<Vector3f> &displacementMapData) const
 {
     if(!resources_)
     {
@@ -21,6 +21,9 @@ Image<Vector2f> DFDM::GenerateCorrectionMap(const Image<Vector3f> &displacementM
     LogInfo("   Input displacement map resolution: {}x{}", displacementMapData.GetWidth(), displacementMapData.GetHeight());
     LogInfo("   Wrap mode:                         {}",    magic_enum::enum_name(wrapMode_));
     LogInfo("   Number of iterations:              {}",    iterationCount_);
+
+    Timer timer;
+    timer.Restart();
 
     auto device = resources_->GetDevice();
 
@@ -44,7 +47,7 @@ Image<Vector2f> DFDM::GenerateCorrectionMap(const Image<Vector3f> &displacementM
         RHI::ResourceAccess::None));
     displacementMap->SetName("DisplacementMap");
 
-    auto correctionMap = device->CreatePooledTexture(RHI::TextureDesc
+    auto correctionMap = device->CreateStatefulTexture(RHI::TextureDesc
     {
         .format = RHI::Format::R32G32_Float,
         .width = displacementMap->GetWidth(),
@@ -102,7 +105,9 @@ Image<Vector2f> DFDM::GenerateCorrectionMap(const Image<Vector3f> &displacementM
 
     Image<Vector2f> result(input->GetWidth(), input->GetHeight());
     device->Download(correctionMap, { 0, 0 }, result.GetData());
-    LogInfo("Finished");
+
+    timer.BeginFrame();
+    LogInfo("Finished in {}s", timer.GetDeltaSecondsF());
 
     return result;
 }
