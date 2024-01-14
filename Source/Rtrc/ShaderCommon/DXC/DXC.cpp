@@ -12,7 +12,7 @@
 #define NOMINMAX
 #endif
 #include <Windows.h>
-#include <dxc/dxcapi.h>
+#include <rtrc_dxc/dxcapi.h>
 #include <wrl/client.h>
 
 #include <Rtrc/Core/ScopeGuard.h>

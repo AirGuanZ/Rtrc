@@ -538,7 +538,7 @@ void Compiler::AllocateInternalResourcesLegacy(ExecutableResources &output)
 
         if(desc.hostAccessType == RHI::BufferHostAccessType::None)
         {
-            output.indexToBuffer[resourceIndex].buffer = device_->CreatePooledBuffer(RHI::BufferDesc
+            output.indexToBuffer[resourceIndex].buffer = device_->CreateStatefulBuffer(RHI::BufferDesc
             {
                 .size = desc.size,
                 .usage = desc.usage,
@@ -593,7 +593,7 @@ void Compiler::AllocateInternalResourcesLegacy(ExecutableResources &output)
             }
         }
 
-        output.indexToTexture[resourceIndex].texture = device_->CreatePooledTexture(desc);
+        output.indexToTexture[resourceIndex].texture = device_->CreateStatefulTexture(desc);
         output.indexToTexture[resourceIndex].texture->SetLayoutToUndefined();
         output.indexToTexture[resourceIndex].texture->SetName(std::move(intRsc->name));
     }
@@ -644,7 +644,7 @@ void Compiler::AllocateInternalResources(ExecutableResources &output, std::vecto
         if(intRsc->rhiDesc.usage.Contains(RHI::BufferUsage::DeviceAddress))
         {
             auto &desc = intRsc->rhiDesc;
-            output.indexToBuffer[rscIdx].buffer = device_->CreatePooledBuffer(RHI::BufferDesc
+            output.indexToBuffer[rscIdx].buffer = device_->CreateStatefulBuffer(RHI::BufferDesc
                 {
                     .size = desc.size,
                     .usage = desc.usage,

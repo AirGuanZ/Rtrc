@@ -29,7 +29,7 @@ void SetLogLevel(LogLevel level)
         spdlog::set_level(spdlog::level::debug);
         break;
     case LogLevel::Release:
-        spdlog::set_level(spdlog::level::warn);
+        spdlog::set_level(spdlog::level::info);
         break;
     }
 }

@@ -17,7 +17,7 @@ RG::TextureResource *Prepare2DPcgStateTexture(
     }
 
     auto device = renderGraph.GetDevice();
-    tex = device->CreatePooledTexture(RHI::TextureDesc
+    tex = device->CreateStatefulTexture(RHI::TextureDesc
     {
         .dim    = RHI::TextureDimension::Tex2D,
         .format = RHI::Format::R32_UInt,

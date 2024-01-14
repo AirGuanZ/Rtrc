@@ -114,16 +114,16 @@ public:
     // Resource creation & upload
 
     RC<Buffer>         CreateBuffer(const RHI::BufferDesc &desc, std::string name = {});
-    RC<StatefulBuffer> CreatePooledBuffer(const RHI::BufferDesc &desc, std::string name = {});
+    RC<StatefulBuffer> CreateStatefulBuffer(const RHI::BufferDesc &desc, std::string name = {});
 
     RC<Buffer> CreateTexelBuffer(size_t count, RHI::Format format, RHI::BufferUsageFlag usages, std::string name = {});
     RC<Buffer> CreateStructuredBuffer(size_t count, size_t stride, RHI::BufferUsageFlag usages, std::string name = {});
 
-    RC<StatefulBuffer> CreatePooledTexelBuffer(size_t count, RHI::Format format, RHI::BufferUsageFlag usages, std::string name = {});
-    RC<StatefulBuffer> CreatePooledStructuredBuffer(size_t count, size_t stride, RHI::BufferUsageFlag usages, std::string name = {});
+    RC<StatefulBuffer> CreateStatefulTexelBuffer(size_t count, RHI::Format format, RHI::BufferUsageFlag usages, std::string name = {});
+    RC<StatefulBuffer> CreateStatefulStructuredBuffer(size_t count, size_t stride, RHI::BufferUsageFlag usages, std::string name = {});
 
     RC<Texture>         CreateTexture(const RHI::TextureDesc &desc, std::string name = {});
-    RC<StatefulTexture> CreatePooledTexture(const RHI::TextureDesc &desc, std::string name = {});
+    RC<StatefulTexture> CreateStatefulTexture(const RHI::TextureDesc &desc, std::string name = {});
     RC<Texture>         CreateColorTexture2D(uint8_t r, uint8_t g, uint8_t b, uint8_t a, std::string name = {});
 
     RC<DynamicBuffer> CreateDynamicBuffer();
@@ -474,7 +474,7 @@ inline RC<Buffer> Device::CreateBuffer(const RHI::BufferDesc &desc, std::string 
     return ret;
 }
 
-inline RC<StatefulBuffer> Device::CreatePooledBuffer(const RHI::BufferDesc &desc, std::string name)
+inline RC<StatefulBuffer> Device::CreateStatefulBuffer(const RHI::BufferDesc &desc, std::string name)
 {
     auto ret = pooledBufferManager_->Create(desc);
     if(!name.empty())
@@ -508,10 +508,10 @@ inline RC<Buffer> Device::CreateStructuredBuffer(
     return buffer;
 }
 
-inline RC<StatefulBuffer> Device::CreatePooledTexelBuffer(
+inline RC<StatefulBuffer> Device::CreateStatefulTexelBuffer(
     size_t count, RHI::Format format, RHI::BufferUsageFlag usages, std::string name)
 {
-    auto buffer = this->CreatePooledBuffer(RHI::BufferDesc
+    auto buffer = this->CreateStatefulBuffer(RHI::BufferDesc
     {
         .size = count * RHI::GetTexelSize(format),
         .usage = usages
@@ -520,10 +520,10 @@ inline RC<StatefulBuffer> Device::CreatePooledTexelBuffer(
     return buffer;
 }
 
-inline RC<StatefulBuffer> Device::CreatePooledStructuredBuffer(
+inline RC<StatefulBuffer> Device::CreateStatefulStructuredBuffer(
     size_t count, size_t stride, RHI::BufferUsageFlag usages, std::string name)
 {
-    auto buffer = this->CreatePooledBuffer(RHI::BufferDesc
+    auto buffer = this->CreateStatefulBuffer(RHI::BufferDesc
     {
         .size = count * stride,
         .usage = usages
@@ -542,7 +542,7 @@ inline RC<Texture> Device::CreateTexture(const RHI::TextureDesc &desc, std::stri
     return ret;
 }
 
-inline RC<StatefulTexture> Device::CreatePooledTexture(const RHI::TextureDesc &desc, std::string name)
+inline RC<StatefulTexture> Device::CreateStatefulTexture(const RHI::TextureDesc &desc, std::string name)
 {
     auto ret = pooledTextureManager_->Create(desc);
     if(!name.empty())

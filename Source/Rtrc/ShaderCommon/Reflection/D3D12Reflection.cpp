@@ -2,8 +2,8 @@
 #define NOMINMAX
 #endif
 #include <Windows.h>
-#include <dxc/dxcapi.h>
-#include <dxc/d3d12shader.h>
+#include <rtrc_dxc/dxcapi.h>
+#include <rtrc_dxc/d3d12shader.h>
 #include <wrl/client.h>
 
 #include <Rtrc/ShaderCommon/Reflection/D3D12Reflection.h>

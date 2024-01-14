@@ -22,6 +22,6 @@ add_custom_target(
 		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<IF:$<CONFIG:Debug>,Debug,Release>/dxil.dll")
 
 add_library(dxc INTERFACE)
-target_include_directories(dxc INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_include_directories(dxc INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/inc")
 target_link_libraries(dxc INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/lib/dxcompiler.lib")
 add_dependencies(dxc CopyDXCDlls)

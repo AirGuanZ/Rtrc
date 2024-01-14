@@ -251,7 +251,7 @@ void Run()
         RG::Pass *initializePass = graph->CreatePass("Clear history texture");
         if(!accumulateTexture)
         {
-            accumulateTexture = device->CreatePooledTexture(RHI::TextureDesc
+            accumulateTexture = device->CreateStatefulTexture(RHI::TextureDesc
             {
                 .dim                  = RHI::TextureDimension::Tex2D,
                 .format               = RHI::Format::R32G32B32A32_Float,
@@ -268,7 +268,7 @@ void Run()
             });
             accumulateTexture->SetName("AccumulateTexture");
 
-            rngTexture = device->CreatePooledTexture(RHI::TextureDesc
+            rngTexture = device->CreateStatefulTexture(RHI::TextureDesc
             {
                 .dim                  = RHI::TextureDimension::Tex2D,
                 .format               = RHI::Format::R32_UInt,
