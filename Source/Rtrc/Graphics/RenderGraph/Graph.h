@@ -39,6 +39,9 @@ template<typename T>
 concept RenderGraphBindingGroupInput = BindingGroupDSL::RtrcGroupStruct<T> ||
                                        std::is_same_v<T, RC<BindingGroup>>;
 
+template<typename T>
+concept RenderGraphStaticShader = requires { std::string(T::Name); };
+
 class RenderGraph : public Uncopyable
 {
 public:
@@ -167,19 +170,27 @@ public:
         bool             usePointSampling = true,
         float            gamma = 1.0f);
     
-#define DECLARE_CREATE_COMPUTE_PASS_WITH_THREAD_COUNT(...) \
-    template<RenderGraphBindingGroupInput...Ts>            \
-    Pass *CreateComputePass(                               \
-        std::string     name,                              \
-        RC<Shader>      shader,                            \
-        __VA_ARGS__,                                       \
-        const Ts&...    bindingGroups);                    \
-    template<RenderGraphBindingGroupInput...Ts>            \
-    Pass *CreateComputePassWithThreadCount(                \
-        std::string     name,                              \
-        RC<Shader>      shader,                            \
-        __VA_ARGS__,                                       \
-        const Ts&...    bindingGroups);
+#define DECLARE_CREATE_COMPUTE_PASS_WITH_THREAD_COUNT(...)                 \
+    template<RenderGraphBindingGroupInput...Ts>                            \
+    Pass *CreateComputePass(                                               \
+        std::string     name,                                              \
+        RC<Shader>      shader,                                            \
+        __VA_ARGS__,                                                       \
+        const Ts&...    bindingGroups);                                    \
+    template<RenderGraphBindingGroupInput...Ts>                            \
+    Pass *CreateComputePassWithThreadCount(                                \
+        std::string     name,                                              \
+        RC<Shader>      shader,                                            \
+        __VA_ARGS__,                                                       \
+        const Ts&...    bindingGroups);                                    \
+    template<RenderGraphStaticShader S, RenderGraphBindingGroupInput...Ts> \
+    Pass *CreateComputePass(                                               \
+        __VA_ARGS__,                                                       \
+        const Ts&...bindingGroups);                                        \
+    template<RenderGraphStaticShader S, RenderGraphBindingGroupInput...Ts> \
+    Pass *CreateComputePassWithThreadCount(                                \
+        __VA_ARGS__,                                                       \
+        const Ts&...bindingGroups);
 
     DECLARE_CREATE_COMPUTE_PASS_WITH_THREAD_COUNT(const Vector3i &threadCount)
     DECLARE_CREATE_COMPUTE_PASS_WITH_THREAD_COUNT(const Vector3u &threadCount)
@@ -195,6 +206,12 @@ public:
     Pass *CreateIndirectComputePass(
         std::string     name,
         RC<Shader>      shader,
+        BufferResource *indirectBuffer,
+        size_t          indirectBufferOffset,
+        const Ts&...    bindnigGroups);
+
+    template<RenderGraphStaticShader S, RenderGraphBindingGroupInput...Ts>
+    Pass *CreateIndirectComputePass(
         BufferResource *indirectBuffer,
         size_t          indirectBufferOffset,
         const Ts&...    bindnigGroups);
@@ -330,6 +347,19 @@ Pass *RenderGraph::CreateComputePassWithThreadCount(
     return this->CreateComputePass(std::move(name), std::move(shader), groupCount, bindingGroups...);
 }
 
+template<RenderGraphStaticShader S, RenderGraphBindingGroupInput ... Ts>
+Pass *RenderGraph::CreateComputePass(const Vector3i &threadGroupCount, const Ts &... bindingGroups)
+{
+    return this->CreateComputePass(S::Name, device_->GetShader<S::Name>(), threadGroupCount, bindingGroups...);
+}
+
+template<RenderGraphStaticShader S, RenderGraphBindingGroupInput ... Ts>
+Pass *RenderGraph::CreateComputePassWithThreadCount(const Vector3i &threadCount, const Ts &... bindingGroups)
+{
+    return this->CreateComputePassWithThreadCount(
+        S::Name, device_->GetShader<S::Name>(), threadCount, bindingGroups...);
+}
+
 #define DEFINE_CREATE_COMPUTE_PASS_WITH_THREAD_COUNT(EXPR, ...)                                                \
 template<RenderGraphBindingGroupInput ... Ts>                                                                  \
 Pass *RenderGraph::CreateComputePass(                                                                          \
@@ -348,6 +378,20 @@ Pass *RenderGraph::CreateComputePassWithThreadCount(                            
     const Ts &...   bindingGroups)                                                                             \
 {                                                                                                              \
     return this->CreateComputePassWithThreadCount(std::move(name), std::move(shader), EXPR, bindingGroups...); \
+}                                                                                                              \
+template<RenderGraphStaticShader S, RenderGraphBindingGroupInput...Ts>                                         \
+Pass *RenderGraph::CreateComputePass(                                                                          \
+    __VA_ARGS__,                                                                                               \
+    const Ts&...bindingGroups)                                                                                 \
+{                                                                                                              \
+    return this->CreateComputePass<S>(EXPR, bindingGroups...);                                                 \
+}                                                                                                              \
+template<RenderGraphStaticShader S, RenderGraphBindingGroupInput...Ts>                                         \
+Pass *RenderGraph::CreateComputePassWithThreadCount(                                                           \
+    __VA_ARGS__,                                                                                               \
+    const Ts&...bindingGroups)                                                                                 \
+{                                                                                                              \
+    return this->CreateComputePassWithThreadCount<S>(EXPR, bindingGroups...);                                  \
 }
 
 DEFINE_CREATE_COMPUTE_PASS_WITH_THREAD_COUNT(Vector3i(t.x, t.y, t.z), const Vector3u &t)
@@ -400,6 +444,16 @@ Pass *RenderGraph::CreateIndirectComputePass(
         commandBuffer.DispatchIndirect(indirectBuffer->Get(), indirectBufferOffset);
     });
     return pass;
+}
+
+template<RenderGraphStaticShader S, RenderGraphBindingGroupInput ... Ts>
+Pass *RenderGraph::CreateIndirectComputePass(
+    BufferResource *indirectBuffer,
+    size_t          indirectBufferOffset,
+    const Ts &...   bindnigGroups)
+{
+    return this->CreateIndirectComputePass(
+        S::Name, device_->GetShader<S::Name>(), indirectBuffer, indirectBufferOffset, bindnigGroups...);
 }
 
 RTRC_RG_END

@@ -2,8 +2,8 @@
 
 #include <Rtrc/Core/SmartPointer/ObserverPtr.h>
 #include <Rtrc/Graphics/Shader/Compiler.h>
+#include <Rtrc/Graphics/Shader/LocalShaderCache.h>
 #include <Rtrc/Graphics/Shader/ShaderDatabase.h>
-#include <Rtrc/ToolKit/Resource/Shader/LocalShaderCache.h>
 
 RTRC_BEGIN
 

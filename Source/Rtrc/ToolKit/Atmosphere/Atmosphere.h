@@ -36,7 +36,6 @@ rtrc_struct(AtmosphereProperties)
 };
 
 void GenerateT(
-    Ref<ResourceManager>        resources,
     const AtmosphereProperties &atmosphere,
     RG::TextureResource        *T);
 
@@ -48,7 +47,6 @@ void GenerateM(
     uint32_t                    distSamples = 24);
 
 void GenerateS(
-    Ref<ResourceManager>        resources,
     const AtmosphereProperties &atmosphere,
     RG::TextureResource        *T,
     RG::TextureResource        *M,

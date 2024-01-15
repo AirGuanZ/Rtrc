@@ -6,8 +6,7 @@
 RTRC_RENDERER_BEGIN
 
 RG::Pass *PrepareThreadGroupCount1D(
-    Ref<ResourceManager> resources,
-    Ref<RG::RenderGraph> renderGraph,
+    Ref<RG::RenderGraph>         renderGraph,
     const RG::BufferResourceSrv &threadCountBuffer,
     const RG::BufferResourceUav &threadGroupCountBuffer,
     int                          threadGroupSize)
@@ -19,8 +18,7 @@ RG::Pass *PrepareThreadGroupCount1D(
     {
         FastKeywordContext keywordContext;
         keywordContext.Set(RTRC_FAST_KEYWORD(ThreadGroupSize), std::to_underlying(GroupSize));
-        auto shader = resources
-            ->GetShaderManager()
+        auto shader = renderGraph->GetDevice()
             ->GetShaderTemplate<Shader::Name>()
             ->GetVariant(keywordContext);
 

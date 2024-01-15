@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ankerl/unordered_dense.h>
+#include <tbb/spin_rw_mutex.h>
 
 #include <Rtrc/Graphics/Shader/Compiler.h>
 #include <Rtrc/Graphics/Shader/Keyword.h>

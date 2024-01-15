@@ -11,7 +11,6 @@
 
 RTRC_BEGIN
 
-class ResourceManager;
 class Shader;
 class ShaderManager;
 

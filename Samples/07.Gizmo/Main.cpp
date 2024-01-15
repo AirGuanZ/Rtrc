@@ -6,7 +6,7 @@ class GizmoDemo : public SimpleApplication
 {
     void InitializeSimpleApplication() override
     {
-        gizmoRenderer_ = MakeBox<GizmoRenderer>(GetResourceManager());
+        gizmoRenderer_ = MakeBox<GizmoRenderer>(GetDevice());
         camera_.SetLookAt({ 0, 0, 7 }, { 0, 1, 0 }, { 0, 0, 0 });
         cameraController_.SetCamera(camera_);
         cameraController_.SetTrackballDistance(Length(camera_.GetPosition()));

@@ -1,4 +1,5 @@
-#include <Rtrc/ToolKit/Resource/Shader/ShaderManager.h>
+#include <Rtrc/Core/ReflectedStruct.h>
+#include <Rtrc/Graphics/Shader/ShaderManager.h>
 
 RTRC_BEGIN
 

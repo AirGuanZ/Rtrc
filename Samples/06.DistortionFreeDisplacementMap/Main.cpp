@@ -20,7 +20,7 @@ class DFDMDemo : public SimpleApplication
         cameraController_.SetCamera(camera_);
         cameraController_.SetTrackballDistance(Length(camera_.GetPosition() - Vector3f(5, 1, 5)));
 
-        gizmoRenderer_ = MakeBox<GizmoRenderer>(GetResourceManager());
+        gizmoRenderer_ = MakeBox<GizmoRenderer>(GetDevice());
     }
 
     void UpdateSimpleApplication(Ref<RenderGraph> renderGraph) override
@@ -205,7 +205,7 @@ class DFDMDemo : public SimpleApplication
         }
 
         DFDM dfdm;
-        dfdm.SetResources(GetResourceManager());
+        dfdm.SetDevice(GetDevice());
         dfdm.SetIterationCount(600);
         dfdm.SetAreaPreservation(areaPreservation_);
         auto correctionMap = dfdm.GenerateCorrectionMap(displacementMap);
@@ -271,7 +271,7 @@ class DFDMDemo : public SimpleApplication
         auto layout = RTRC_MESH_LAYOUT(Buffer(Attribute("Position", 0, Float2)));
         const GraphicsPipeline::Desc pipelineDesc =
         {
-            .shader                 = GetResourceManager()->GetStaticShader<RtrcShader::DFDM::Render::Name>(),
+            .shader                 = GetDevice()->GetShader<RtrcShader::DFDM::Render::Name>(),
             .meshLayout             = layout,
             .cullMode               = RHI::CullMode::CullBack,
             .frontFaceMode          = RHI::FrontFaceMode::CounterClockwise,

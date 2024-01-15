@@ -168,10 +168,10 @@ void Run()
 
     // Pipeline
 
-    auto traceShader = resourceManager.GetShader("PathTracing", true);
+    auto traceShader = device->GetShader("PathTracing", true);
     auto tracePipeline = traceShader->GetComputePipeline();
 
-    auto initRngShader = resourceManager.GetShader("InitRng", true);
+    auto initRngShader = device->GetShader("InitRng", true);
     auto initRngPipeline = initRngShader->GetComputePipeline();
 
     // Render target

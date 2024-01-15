@@ -5,8 +5,8 @@
 
 RTRC_BEGIN
 
-GizmoRenderer::GizmoRenderer(Ref<ResourceManager> resources)
-    : resources_(resources), pipelineCache_(resources->GetDevice())
+GizmoRenderer::GizmoRenderer(Ref<Device> device)
+    : device_(device), pipelineCache_(device)
 {
 
 }
@@ -122,7 +122,7 @@ void GizmoRenderer::RenderImpl(
 
     auto pipeline = pipelineCache_.GetGraphicsPipeline(GraphicsPipeline::Desc
     {
-        .shader                 = resources_->GetStaticShader<"Rtrc/GizmoRenderer/RenderColoredPrimitives">(),
+        .shader                 = device_->GetShader<"Rtrc/GizmoRenderer/RenderColoredPrimitives">(),
         .meshLayout             = RTRC_MESH_LAYOUT(Buffer(Attribute("POSITION", 0, Float3),
                                                           Attribute("COLOR", 0, Float3))),
         .primitiveTopology      = isLine ? RHI::PrimitiveTopology::LineList : RHI::PrimitiveTopology::TriangleList,
@@ -133,7 +133,7 @@ void GizmoRenderer::RenderImpl(
         .depthStencilFormat     = depthFormat
     });
 
-    auto vertexBuffer = resources_->GetDevice()->CreateBuffer(RHI::BufferDesc
+    auto vertexBuffer = device_->CreateBuffer(RHI::BufferDesc
     {
         .size = sizeof(Vertex) * vertices.size(),
         .usage = RHI::BufferUsage::VertexBuffer,
@@ -154,7 +154,7 @@ void GizmoRenderer::RenderColoredPrimitives(
     StaticShaderInfo<"Rtrc/GizmoRenderer/RenderColoredPrimitives">::Pass passData;
     passData.WorldToClip = worldToClip;
     passData.gamma = 1.0f / rcpGamma;
-    auto passGroup = resources_->GetDevice()->CreateBindingGroupWithCachedLayout(passData);
+    auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
 
     commandBuffer.BindGraphicsPipeline(pipeline);
     commandBuffer.BindGraphicsGroup(0, passGroup);

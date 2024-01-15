@@ -14,6 +14,7 @@
 #include <Rtrc/Graphics/Device/Utility/ClearBufferUtils.h>
 #include <Rtrc/Graphics/Device/Utility/ClearTextureUtils.h>
 #include <Rtrc/Graphics/Device/Utility/CopyTextureUtils.h>
+#include <Rtrc/Graphics/Shader/ShaderManager.h>
 
 RTRC_RG_BEGIN
 
@@ -47,7 +48,7 @@ public:
 
     // Creation & destructor
 
-    static Box<Device> CreateComputeDevice(RHI::DeviceUPtr rhiDevice);
+    static Box<Device> CreateComputeDevice(RHI::DeviceUPtr rhiDevice, bool debugMode = RTRC_DEBUG);
     static Box<Device> CreateComputeDevice(RHI::BackendType rhiType, bool debugMode = RTRC_DEBUG);
     static Box<Device> CreateComputeDevice(bool debugMode = RTRC_DEBUG);
 
@@ -57,7 +58,8 @@ public:
         RHI::Format     swapchainFormat     = RHI::Format::B8G8R8A8_UNorm,
         int             swapchainImageCount = 3,
         bool            vsync               = false,
-        Flags           flags               = {});
+        Flags           flags               = {},
+        bool            debugMode           = RTRC_DEBUG);
     static Box<Device> CreateGraphicsDevice(
         Window          &window,
         RHI::BackendType rhiType,
@@ -110,6 +112,16 @@ public:
 
     bool BeginFrame(bool processWindowEvents = true);
     const RHI::FenceUPtr &GetFrameFence();
+
+    // Shader
+
+    ShaderManager &GetShaderManager();
+
+    RC<Shader>         GetShader(std::string_view name, bool persistent);
+    RC<ShaderTemplate> GetShaderTemplate(std::string_view name, bool persistent);
+
+    template<TemplateStringParameter Name> RC<Shader>         GetShader();
+    template<TemplateStringParameter Name> RC<ShaderTemplate> GetShaderTemplate();
 
     // Resource creation & upload
 
@@ -322,7 +334,7 @@ private:
 
     Device() = default;
     
-    void InitializeInternal(Flags flags, RHI::DeviceUPtr device, bool isComputeOnly);
+    void InitializeInternal(Flags flags, RHI::DeviceUPtr device, bool isComputeOnly, bool debugMode);
 
     template<typename...Args>
     void ExecuteBarrierImpl(Args&&...args);
@@ -358,6 +370,7 @@ private:
     Box<ClearTextureUtils>            clearTextureUtils_;
     Box<CopyTextureUtils>             copyTextureUtils_;
     Box<BindingGroupLayoutCache>      bindingGroupLayoutCache_;
+    Box<ShaderManager>                shaderManager_;
 };
 
 inline const RHI::ShaderGroupRecordRequirements &Device::GetShaderGroupRecordRequirements() const
@@ -462,6 +475,33 @@ inline bool Device::BeginFrame(bool processWindowEvents)
 inline const RHI::FenceUPtr &Device::GetFrameFence()
 {
     return sync_->GetFrameFence();
+}
+
+inline ShaderManager &Device::GetShaderManager()
+{
+    return *shaderManager_;
+}
+
+inline RC<Shader> Device::GetShader(std::string_view name, bool persistent)
+{
+    return shaderManager_->GetShader(name, persistent);
+}
+
+inline RC<ShaderTemplate> Device::GetShaderTemplate(std::string_view name, bool persistent)
+{
+    return shaderManager_->GetShaderTemplate(name, persistent);
+}
+
+template<TemplateStringParameter Name>
+RC<Shader> Device::GetShader()
+{
+    return shaderManager_->GetShader<Name>();
+}
+
+template<TemplateStringParameter Name>
+RC<ShaderTemplate> Device::GetShaderTemplate()
+{
+    return shaderManager_->GetShaderTemplate<Name>();
 }
 
 inline RC<Buffer> Device::CreateBuffer(const RHI::BufferDesc &desc, std::string name)

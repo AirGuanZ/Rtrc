@@ -9,7 +9,7 @@ class GizmoRenderer : public Uncopyable
 {
 public:
 
-    explicit GizmoRenderer(Ref<ResourceManager> resources);
+    explicit GizmoRenderer(Ref<Device> device);
 
     void RenderImmediately(
         const GizmoBuilder &builder,
@@ -53,7 +53,7 @@ private:
         const Matrix4x4f           &worldToClip,
         float                       rcpGamma) const;
 
-    Ref<ResourceManager> resources_;
+    Ref<Device> device_;
     PipelineCache pipelineCache_;
 };
 

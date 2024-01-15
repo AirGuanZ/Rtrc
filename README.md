@@ -2,7 +2,7 @@
 
 Real-time rendering playground
 
-- [ ] Move ResourceManager into Device
+- [x] Move ShaderManager into Device
 - [ ] Support UAV overlapping
 
 ![](./Gallery/00.png)

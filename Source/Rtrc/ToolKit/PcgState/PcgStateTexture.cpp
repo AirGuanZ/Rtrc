@@ -7,7 +7,6 @@ RTRC_RENDERER_BEGIN
 
 RG::TextureResource *Prepare2DPcgStateTexture(
     RG::RenderGraph     &renderGraph,
-    Ref<ResourceManager> resources,
     RC<StatefulTexture> &tex,
     const Vector2u      &size)
 {
@@ -31,14 +30,14 @@ RG::TextureResource *Prepare2DPcgStateTexture(
     using Shader = RtrcShader::Builtin::InitializePcgState2D;
     auto initPass = renderGraph.CreatePass(Shader::Name);
     initPass->Use(ret, RG::CS_RWTexture_WriteOnly);
-    initPass->SetCallback([ret, size, device, resources]
+    initPass->SetCallback([ret, size, device]
     {
         Shader::Pass passData;
         passData.Output = ret;
         passData.resolution = size;
         auto passGroup = device->CreateBindingGroupWithCachedLayout(passData);
 
-        auto shader = resources->GetStaticShader<Shader::Name>();
+        auto shader = device->GetShader<Shader::Name>();
 
         auto &commandBuffer = RG::GetCurrentCommandBuffer();
         commandBuffer.BindComputePipeline(shader->GetComputePipeline());

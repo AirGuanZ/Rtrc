@@ -10,7 +10,7 @@ void Run()
 
     ResourceManager resourceManager(device);
     
-    auto shader = resourceManager.GetShader("Compute", true);
+    auto shader = device->GetShader("Compute", true);
     auto pipeline = shader->GetComputePipeline();
 
     auto inputTexture = device->LoadTexture2D(

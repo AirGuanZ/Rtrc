@@ -2,11 +2,13 @@
 
 #include <Rtrc/Core/Serialization/Serialize.h>
 #include <Rtrc/Core/SmartPointer/ObserverPtr.h>
-#include <Rtrc/Graphics/Device/Device.h>
+#include <Rtrc/Graphics/Shader/Shader.h>
 #include <Rtrc/ShaderCommon/DXC/DXC.h>
 #include <Rtrc/ShaderCommon/Parser/ShaderParser.h>
 
 RTRC_BEGIN
+
+class Device;
 
 struct CompilableShader
 {

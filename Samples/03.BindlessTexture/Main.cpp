@@ -21,7 +21,7 @@ void Run()
 
     // Pipeline
 
-    auto shader = resourceManager.GetShader("Bindless", true);
+    auto shader = device->GetShader("Bindless", true);
     auto pipeline = device->CreateGraphicsPipeline(
     {
         .shader = shader,

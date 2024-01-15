@@ -18,7 +18,7 @@ void GenerateT(
     passData.atmosphere                       = atmosphere;
     T->GetGraph()->CreateComputePassWithThreadCount(
         Shader::Name,
-        resources->GetStaticShader<Shader::Name>(),
+        T->GetGraph()->GetDevice()->GetShader<Shader::Name>(),
         T->GetSize(),
         passData);
 }
@@ -44,13 +44,12 @@ void GenerateM(
 
     M->GetGraph()->CreateComputePassWithThreadCount(
         Shader::Name,
-        resources->GetStaticShader<Shader::Name>(),
+        T->GetGraph()->GetDevice()->GetShader<Shader::Name>(),
         M->GetSize(),
         passData);
 }
 
 void GenerateS(
-    Ref<ResourceManager>        resources,
     const AtmosphereProperties &atmosphere,
     RG::TextureResource        *T,
     RG::TextureResource        *M,
@@ -80,7 +79,7 @@ void GenerateS(
 
     S->GetGraph()->CreateComputePassWithThreadCount(
         Shader::Name,
-        resources->GetStaticShader<Shader::Name>(),
+        T->GetGraph()->GetDevice()->GetShader<Shader::Name>(),
         S->GetSize(),
         skyPassData);
 }

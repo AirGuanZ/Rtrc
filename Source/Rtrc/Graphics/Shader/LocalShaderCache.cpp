@@ -1,5 +1,4 @@
-#include <Rtrc/ToolKit/Resource/ResourceManager.h>
-#include <Rtrc/ToolKit/Resource/Shader/ShaderManager.h>
+#include <Rtrc/Graphics/Shader/ShaderManager.h>
 
 RTRC_BEGIN
 

@@ -1,10 +1,12 @@
 #include <Rtrc/Graphics/Device/Utility/ClearTextureUtils.h>
+#include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/Graphics/Shader/StandaloneCompiler.h>
 
 RTRC_BEGIN
 
 namespace ClearTextureUtilsDetail
 {
+
     const char *SHADER_SOURCE_CLEAR = R"___(
 rtrc_comp(CSMain)
 rtrc_group(Pass)

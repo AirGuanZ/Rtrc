@@ -34,7 +34,7 @@ void Run()
     FastKeywordContext keywords;
     keywords.Set(RTRC_FAST_KEYWORD(DADADA), 1);
 
-    auto shader = resourceManager.GetShaderTemplate("Sample01/Quad", true)->GetVariant(keywords);
+    auto shader = device->GetShaderTemplate("Sample01/Quad", true)->GetVariant(keywords);
 
     auto pipeline = device->CreateGraphicsPipeline({
         .shader = shader,

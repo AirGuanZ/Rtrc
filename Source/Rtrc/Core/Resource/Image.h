@@ -51,8 +51,8 @@ public:
     Vector2u GetSize() const { return { this->GetWidth(), this->GetHeight() }; }
     Vector2i GetSSize() const { return { this->GetSWidth(), this->GetSHeight() }; }
 
-    uint32_t GetWidthMinusOne() const { return widthMinusOne_; }
-    uint32_t GetHeightMinusOne() const { return heightMinusOne_; }
+    uint32_t GetWidthMinusOne() const { return width_ - 1; }
+    uint32_t GetHeightMinusOne() const { return height_ - 1; }
 
     int32_t GetSWidthMinusOne() const { return static_cast<int32_t>(GetWidthMinusOne()); }
     int32_t GetSHeightMinusOne() const { return static_cast<int32_t>(GetHeightMinusOne()); }
@@ -88,8 +88,6 @@ private:
 
     uint32_t width_;
     uint32_t height_;
-    uint32_t widthMinusOne_;
-    uint32_t heightMinusOne_;
     std::vector<Texel> data_;
 };
 
@@ -431,14 +429,14 @@ namespace ImageDetail
 
 template<typename T>
 Image<T>::Image()
-    : width_(0), height_(0), widthMinusOne_(0), heightMinusOne_(0)
+    : width_(0), height_(0)
 {
 
 }
 
 template<typename T>
 Image<T>::Image(uint32_t width, uint32_t height)
-    : width_(width), height_(height), widthMinusOne_(width - 1), heightMinusOne_(height - 1)
+    : width_(width), height_(height)
 {
     assert(width > 0 && height > 0);
     data_.resize(width * height);
@@ -447,7 +445,6 @@ Image<T>::Image(uint32_t width, uint32_t height)
 template<typename T>
 Image<T>::Image(const Image &other)
     : width_(other.width_), height_(other.height_)
-    , widthMinusOne_(other.widthMinusOne_), heightMinusOne_(other.heightMinusOne_)
 {
     data_ = other.data_;
 }
@@ -479,8 +476,6 @@ void Image<T>::Swap(Image &other) noexcept
 {
     std::swap(width_, other.width_);
     std::swap(height_, other.height_);
-    std::swap(widthMinusOne_, other.widthMinusOne_);
-    std::swap(heightMinusOne_, other.heightMinusOne_);
     data_.swap(other.data_);
 }
 
@@ -527,6 +522,10 @@ template<typename U>
 Image<U> Image<T>::To() const
 {
     assert(!!*this);
+    if constexpr(std::is_same_v<T, U>)
+    {
+        return *this;
+    }
     Image<U> result(width_, height_);
     for(uint32_t i = 0; i < width_ * height_; ++i)
     {

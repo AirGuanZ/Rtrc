@@ -5,65 +5,17 @@
 
 RTRC_BEGIN
 
-namespace ReflectedStruct
-{
-
-    const char *GetGeneratedFilePath();
-
-} // namespace ReflectedStruct
-
-ResourceManager::ResourceManager(Ref<Device> device, bool debugMode)
+ResourceManager::ResourceManager(Ref<Device> device)
     : device_(device)
 {
     meshManager_.SetDevice(device);
-    shaderManager_.SetDevice(device);
-    shaderManager_.SetDebug(debugMode);
-
-    LoadBuiltinMeshes();
     LoadBuiltinTextures();
     GeneratePoissonDiskSamples();
-}
-
-RC<ShaderTemplate> ResourceManager::GetShaderTemplate(const std::string &name, bool persistent)
-{
-    return shaderManager_.GetShaderTemplate(name, persistent);
-}
-
-RC<Shader> ResourceManager::GetShader(const std::string &name, bool persistent)
-{
-    return shaderManager_.GetShader(name, persistent);
 }
 
 RC<Mesh> ResourceManager::GetMesh(std::string_view name, MeshFlags flags)
 {
     return meshManager_.GetMesh(name, flags);
-}
-
-void ResourceManager::LoadBuiltinMeshes()
-{
-    MeshManager::Flags flags = MeshManagerDetail::LoadMeshFlagBit::GenerateTangentIfNotPresent;
-    if(device_->IsRayTracingEnabled())
-    {
-        flags |= MeshManagerDetail::LoadMeshFlagBit::AllowBlas;
-    }
-
-#define LOAD_BUILTIN_MESH(NAME)                                     \
-    ([&]                                                            \
-    {                                                               \
-        auto filename = "Asset/Builtin/Mesh/" #NAME ".obj";         \
-        try                                                         \
-        {                                                           \
-            meshes_[std::to_underlying(BuiltinMesh::NAME)] =        \
-                ToRC(MeshManager::Load(device_, filename, flags));  \
-        }                                                           \
-        catch(...)                                                  \
-        {                                                           \
-            LogWarning("Fail to load builtin mesh {}", filename);   \
-        }                                                           \
-    }())
-    LOAD_BUILTIN_MESH(Cube);
-
-#undef LOAD_BUILTIN_MESH
 }
 
 void ResourceManager::LoadBuiltinTextures()

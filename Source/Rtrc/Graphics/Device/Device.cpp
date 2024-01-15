@@ -4,10 +4,10 @@
 
 RTRC_BEGIN
 
-Box<Device> Device::CreateComputeDevice(RHI::DeviceUPtr rhiDevice)
+Box<Device> Device::CreateComputeDevice(RHI::DeviceUPtr rhiDevice, bool debugMode)
 {
     Box<Device> ret{ new Device };
-    ret->InitializeInternal(None, std::move(rhiDevice), true);
+    ret->InitializeInternal(None, std::move(rhiDevice), true, debugMode);
     return ret;
 }
 
@@ -39,7 +39,7 @@ Box<Device> Device::CreateComputeDevice(RHI::BackendType rhiType, bool debugMode
         .supportSwapchain = false
     };
     auto rhiDevice = ret->instance_->CreateDevice(deviceDesc);
-    ret->InitializeInternal(None, std::move(rhiDevice), true);
+    ret->InitializeInternal(None, std::move(rhiDevice), true, debugMode);
     return ret;
 }
 
@@ -54,10 +54,11 @@ Box<Device> Device::CreateGraphicsDevice(
     RHI::Format     swapchainFormat,
     int             swapchainImageCount,
     bool            vsync,
-    Flags           flags)
+    Flags           flags,
+    bool            debugMode)
 {
     Box<Device> ret{ new Device };
-    ret->InitializeInternal(flags, std::move(rhiDevice), false);
+    ret->InitializeInternal(flags, std::move(rhiDevice), false, debugMode);
     ret->window_              = &window;
     ret->swapchainFormat_     = swapchainFormat;
     ret->swapchainImageCount_ = swapchainImageCount;
@@ -128,7 +129,7 @@ Box<Device> Device::CreateGraphicsDevice(
         .enableRayTracing = flags.Contains(EnableRayTracing)
     };
     auto rhiDevice = ret->instance_->CreateDevice(deviceDesc);
-    ret->InitializeInternal(flags, std::move(rhiDevice), false);
+    ret->InitializeInternal(flags, std::move(rhiDevice), false, debugMode);
     ret->window_              = &window;
     ret->swapchainFormat_     = swapchainFormat;
     ret->swapchainImageCount_ = swapchainImageCount;
@@ -181,6 +182,7 @@ Device::~Device()
         sync_->PrepareDestruction();
     }
 
+    shaderManager_.reset();
     bindingGroupLayoutCache_.reset();
     copyTextureUtils_.reset();
     clearTextureUtils_.reset();
@@ -236,7 +238,7 @@ RHI::BackendType Device::DebugOverrideBackendType(RHI::BackendType type)
     return type;
 }
 
-void Device::InitializeInternal(Flags flags, RHI::DeviceUPtr device, bool isComputeOnly)
+void Device::InitializeInternal(Flags flags, RHI::DeviceUPtr device, bool isComputeOnly, bool debugMode)
 {
     flags_ = flags;
 
@@ -265,6 +267,10 @@ void Device::InitializeInternal(Flags flags, RHI::DeviceUPtr device, bool isComp
     copyTextureUtils_  = MakeBox<CopyTextureUtils>(this);
 
     bindingGroupLayoutCache_ = MakeBox<BindingGroupLayoutCache>(this);
+
+    shaderManager_ = MakeBox<ShaderManager>();
+    shaderManager_->SetDevice(this);
+    shaderManager_->SetDebug(debugMode);
 }
 
 RC<Buffer> Device::CreateAndUploadBuffer(

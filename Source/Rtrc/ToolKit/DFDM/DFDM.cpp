@@ -11,9 +11,9 @@
 RTRC_BEGIN
     Image<Vector2f> DFDM::GenerateCorrectionMap(const Image<Vector3f> &displacementMapData) const
 {
-    if(!resources_)
+    if(!device_)
     {
-        LogError("Rtrc::DFDM::GenerateCorrectionMap: resources manager is not set");
+        LogError("Rtrc::DFDM::GenerateCorrectionMap: device is not set");
         return {};
     }
 
@@ -25,11 +25,9 @@ RTRC_BEGIN
     Timer timer;
     timer.Restart();
 
-    auto device = resources_->GetDevice();
-
     // Initialize resources
 
-    auto displacementMap = StatefulTexture::FromTexture(device->CreateAndUploadTexture2D(
+    auto displacementMap = StatefulTexture::FromTexture(device_->CreateAndUploadTexture2D(
         RHI::TextureDesc
         {
             .dim = RHI::TextureDimension::Tex2D,
@@ -47,7 +45,7 @@ RTRC_BEGIN
         RHI::ResourceAccess::None));
     displacementMap->SetName("DisplacementMap");
 
-    auto correctionMap = device->CreateStatefulTexture(RHI::TextureDesc
+    auto correctionMap = device_->CreateStatefulTexture(RHI::TextureDesc
     {
         .format = RHI::Format::R32G32_Float,
         .width = displacementMap->GetWidth(),
@@ -58,8 +56,8 @@ RTRC_BEGIN
 
     // Build & execute render graph
 
-    RG::Executer graphExecuter(device);
-    auto graph = device->CreateRenderGraph();
+    RG::Executer graphExecuter(device_);
+    auto graph = device_->CreateRenderGraph();
 
     auto input = graph->RegisterTexture(displacementMap);
     auto correctionA = graph->CreateTexture(RHI::TextureDesc
@@ -80,7 +78,7 @@ RTRC_BEGIN
         keywords.Set(RTRC_FAST_KEYWORD(WRAP_MODE), static_cast<int>(wrapMode_));
 
         using Shader = RtrcShader::Builtin::DFDM;
-        auto shader = resources_->GetStaticShaderTemplate<Shader::Name>()->GetVariant(keywords);
+        auto shader = device_->GetShaderTemplate<Shader::Name>()->GetVariant(keywords);
 
         Shader::Variant<Shader::WRAP_MODE::CLAMP>::Pass passData;
         passData.DisplacementMap  = input;
@@ -105,7 +103,7 @@ RTRC_BEGIN
     // Read back result
 
     Image<Vector2f> result(input->GetWidth(), input->GetHeight());
-    device->Download(correctionMap, { 0, 0 }, result.GetData());
+    device_->Download(correctionMap, { 0, 0 }, result.GetData());
 
     timer.BeginFrame();
     LogInfo("Finished in {}s", timer.GetDeltaSecondsF());

@@ -93,7 +93,7 @@ void Run()
 
     // Pipeline
 
-    auto shader = resourceManager.GetShader("RayTracingTriangle", true);
+    auto shader = device->GetShader("RayTracingTriangle", true);
 
     assert(shader->GetRayGenShaderGroups().size() == 1);
     assert(shader->GetMissShaderGroups().size() == 1);
