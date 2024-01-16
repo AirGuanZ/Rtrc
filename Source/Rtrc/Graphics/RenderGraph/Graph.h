@@ -40,7 +40,7 @@ concept RenderGraphBindingGroupInput = BindingGroupDSL::RtrcGroupStruct<T> ||
                                        std::is_same_v<T, RC<BindingGroup>>;
 
 template<typename T>
-concept RenderGraphStaticShader = requires { std::string(T::Name); };
+concept RenderGraphStaticShader = requires { std::string(T::Name.GetString()); };
 
 class RenderGraph : public Uncopyable
 {

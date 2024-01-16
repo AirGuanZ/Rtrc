@@ -196,6 +196,40 @@ namespace ImageDetail
         return result;
     }
 
+    std::vector<Vector3f> LoadEXR(
+        const std::string &filename,
+        int *width,
+        int *height)
+    {
+        const char *err = nullptr;
+        float* out; int twidth, theight;
+        const int errCode = ::LoadEXR(&out, &twidth, &theight, filename.c_str(), &err);
+        if(errCode != TINYEXR_SUCCESS)
+        {
+            std::string errMsg = err;
+            FreeEXRErrorMessage(err);
+            throw Exception(std::move(errMsg));
+        }
+        std::vector<Vector3f> ret(twidth * theight);
+        for(int y = 0; y < theight; ++y)
+        {
+            for(int x = 0; x < twidth; ++x)
+            {
+                const float *src = out + 4 * (y * twidth + x);
+                float *dst = &ret[y * twidth + x].x;
+                dst[0] = src[0];
+                dst[1] = src[1];
+                dst[2] = src[2];
+            }
+        }
+        std::free(out);
+        if(width)
+            *width = twidth;
+        if(height)
+            *height = theight;
+        return ret;
+    }
+
     ImageFormat InferFormat(const std::string &filename)
     {
         auto ext = std::filesystem::path(filename).extension().string();
@@ -330,7 +364,13 @@ ImageDynamic ImageDynamic::Load(const std::string &filename, ImageFormat format)
         return ImageDynamic(image);
     }
     case ImageFormat::EXR:
-        throw Exception("ImageDynamic::load: EXR is not supported");
+    {
+        int width, height;
+        auto data = LoadEXR(filename, &width, &height);
+        auto image = Image<Vector3f>(width, height);
+        std::memcpy(image.GetData(), data.data(), sizeof(Vector3f) * data.size());
+        return ImageDynamic(image);
+    }
     case ImageFormat::Auto:
         Unreachable();
     }

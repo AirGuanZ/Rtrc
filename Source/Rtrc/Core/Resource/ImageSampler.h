@@ -27,7 +27,7 @@ public:
     };
 
     template<WrapMode WM, FilterMode FM, typename P, typename F>
-    static void Sample(const Image<P> &image, const Vector2<F> &uv)
+    static P Sample(const Image<P> &image, const Vector2<F> &uv)
     {
         if constexpr(FM == Point)
         {
