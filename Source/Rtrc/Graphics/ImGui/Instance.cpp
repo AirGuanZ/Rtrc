@@ -722,6 +722,12 @@ void ImGuiInstance::SetNextWindowSize(const Vector2f &size, ImGuiCond cond)
     ImGui::SetNextWindowSize({ size.x, size.y }, cond);
 }
 
+void ImGuiInstance::SameLine()
+{
+    IMGUI_CONTEXT;
+    ImGui::SameLine();
+}
+
 bool ImGuiInstance::Begin(const char *label, bool *open, ImGuiWindowFlags flags)
 {
     IMGUI_CONTEXT;
