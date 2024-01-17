@@ -1,3 +1,5 @@
+#include <Rtrc/Core/Math/Angle.h>
+#include <Rtrc/Core/Math/Frame.h>
 #include <Rtrc/ToolKit/Gizmo/GizmoBuilder.h>
 
 RTRC_BEGIN
@@ -98,6 +100,27 @@ void GizmoBuilder::DrawCube(const Vector3f &o, float sidelen)
     DrawCuboid(
         o - Vector3f(0.5f * sidelen),
         { sidelen, 0, 0 }, { 0, sidelen, 0 }, { 0, 0, sidelen });
+}
+
+void GizmoBuilder::DrawWireDisk(const Vector3f &o, const Vector3f &nor, float radius, int subdiv)
+{
+    const Frame frame = Frame::FromZ(nor);
+    const float step = 2 * PI / subdiv;
+    auto GetPoint = [&](int i)
+    {
+        const float phi = i * step;
+        const Vector2f hp = { std::cos(phi), std::sin(phi) };
+        const Vector3f p = o + radius * frame.LocalToGlobal({ hp.x, hp.y, 0 });
+        return p;
+    };
+
+    Vector3f prev = GetPoint(0);
+    for(int i = 0; i < subdiv; ++i)
+    {
+        const Vector3f curr = GetPoint(i + 1);
+        DrawLine(prev, curr);
+        prev = curr;
+    }
 }
 
 RTRC_END

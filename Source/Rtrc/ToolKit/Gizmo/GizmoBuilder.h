@@ -24,6 +24,7 @@ public:
     void DrawCuboid(const Vector3f &o, const Vector3f &x, const Vector3f &y, const Vector3f &z);
     void DrawWireCube(const Vector3f &o, float sidelen);
     void DrawCube(const Vector3f &o, float sidelen);
+    void DrawWireDisk(const Vector3f &o, const Vector3f &nor, float radius, int subdiv = 256);
 
 private:
 
