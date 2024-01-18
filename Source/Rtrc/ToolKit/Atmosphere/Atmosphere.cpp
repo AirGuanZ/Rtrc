@@ -1,11 +1,15 @@
 #include <Rtrc/ToolKit/Atmosphere/Atmosphere.h>
 
+namespace Atmosphere
+{
+    using Properties = Rtrc::AtmosphereProperties;
+}
+
 #include <Rtrc/ToolKit/Atmosphere/Shader/Atmosphere.shader.outh>
 
 RTRC_BEGIN
 
 void GenerateT(
-    Ref<ResourceManager>        resources,
     const AtmosphereProperties &atmosphere,
     RG::TextureResource        *T)
 {

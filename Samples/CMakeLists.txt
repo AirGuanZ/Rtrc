@@ -21,7 +21,6 @@ function(add_rtrc_sample SAMPLE_NAME)
 	set_property(TARGET ${SAMPLE_NAME} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
     set_property(TARGET ${SAMPLE_NAME} PROPERTY FOLDER "Samples")
 	target_link_libraries(${SAMPLE_NAME} PUBLIC ToolKit)
-	enable_rtrc_cpp_reflection(${SAMPLE_NAME})
 	enable_preprocessed_shaders(${SAMPLE_NAME} "${SHADERS}")
 endfunction()
 

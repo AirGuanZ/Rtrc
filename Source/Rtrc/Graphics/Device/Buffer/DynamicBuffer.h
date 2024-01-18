@@ -4,7 +4,7 @@
 #include <tbb/spin_rw_mutex.h>
 
 #include <Rtrc/Graphics/Device/Buffer/Buffer.h>
-#include <Rtrc/Core/ReflectedStruct.h>
+#include <Rtrc/Graphics/Device/Buffer/CBufferStruct.h>
 #include <Rtrc/Core/Container/SlotVector.h>
 #include <Rtrc/Core/Swap.h>
 
@@ -17,8 +17,8 @@ public:
     virtual ~ConstantBufferManagerInterface() = default;
 
     virtual RC<SubBuffer> CreateConstantBuffer(const void *data, size_t size) = 0;
-    
-    template<RtrcReflShaderStruct T>
+
+    template<RtrcStruct T>
     RC<SubBuffer> CreateConstantBuffer(const T &data);
 };
 
@@ -35,8 +35,8 @@ public:
     DynamicBuffer &operator=(DynamicBuffer &&other) noexcept;
 
     void Swap(DynamicBuffer &other) noexcept;
-    
-    template<RtrcReflShaderStruct T>
+
+    template<RtrcStruct T>
     void SetData(const T &data); // For constant buffer
     void SetData(const void *data, size_t size, bool isConstantBuffer);
 
@@ -118,22 +118,22 @@ private:
     RC<SharedData> sharedData_;
 };
 
-template<RtrcReflShaderStruct T, typename Func>
-decltype(auto) FlattenConstantBufferStruct(const T &data, Func &&func)
+template<RtrcStruct T, typename F>
+decltype(auto) FlattenConstantBufferStruct(const T &data, F &&f)
 {
-    const size_t deviceSize = 4 * ReflectedStruct::GetDeviceDWordCount<T>();
+    constexpr size_t deviceSize = 4 * Rtrc::GetDeviceDWordCount<T>();
     if(deviceSize <= 1024)
     {
         unsigned char flattenData[1024];
-        ReflectedStruct::ToDeviceLayout<T>(&data, flattenData);
-        return std::invoke(std::forward<Func>(func), flattenData, deviceSize);
+        Rtrc::ToDeviceLayout<T>(&data, flattenData);
+        return std::invoke(std::forward<F>(f), flattenData, deviceSize);
     }
     std::vector<unsigned char> flattenData(deviceSize);
-    ReflectedStruct::ToDeviceLayout<T>(&data, flattenData.data());
-    return std::invoke(std::forward<Func>(func), flattenData.data(), deviceSize);
+    Rtrc::ToDeviceLayout<T>(&data, flattenData.data());
+    return std::invoke(std::forward<F>(f), flattenData.data(), deviceSize);
 }
 
-template<RtrcReflShaderStruct T>
+template<RtrcStruct T>
 RC<SubBuffer> ConstantBufferManagerInterface::CreateConstantBuffer(const T &data)
 {
     return Rtrc::FlattenConstantBufferStruct(data, [this](const void *flattenData, size_t size)
@@ -157,7 +157,7 @@ inline void DynamicBuffer::Swap(DynamicBuffer &other) noexcept
         buffer_, offset_, size_, manager_, chunkIndex_, slabIndex_);
 }
 
-template<RtrcReflShaderStruct T>
+template<RtrcStruct T>
 void DynamicBuffer::SetData(const T &data)
 {
     Rtrc::FlattenConstantBufferStruct(data, [&](const void *flattenData, size_t size)

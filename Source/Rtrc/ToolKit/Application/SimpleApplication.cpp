@@ -1,4 +1,3 @@
-
 #include <Rtrc/Graphics/RenderGraph/Executable.h>
 #include <Rtrc/ToolKit/Application/SimpleApplication.h>
 

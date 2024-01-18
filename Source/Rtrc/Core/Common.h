@@ -56,57 +56,6 @@ template<typename T> class Vector3;
 template<typename T> class Vector4;
 class Matrix4x4f;
 
-struct _rtrcReflStructBaseSuffix { auto operator<=>(const _rtrcReflStructBaseSuffix &) const = default; };
-struct _rtrcReflStructBase_rtrc { auto operator<=>(const _rtrcReflStructBase_rtrc &) const = default; };
-struct _rtrcReflStructBase_shader
-{
-    struct _rtrcReflStructBaseShaderTag {};
-    using float2   = Vector2<float>;
-    using float3   = Vector3<float>;
-    using float4   = Vector4<float>;
-    using float4x4 = Matrix4x4f;
-    using int2     = Vector2<int>;
-    using int3     = Vector3<int>;
-    using int4     = Vector4<int>;
-    using uint     = unsigned int;
-    using uint2    = Vector2<unsigned int>;
-    using uint3    = Vector3<unsigned int>;
-    using uint4    = Vector4<unsigned int>;
-    auto operator<=>(const _rtrcReflStructBase_shader &) const = default;
-};
-template<typename T>
-concept RtrcReflShaderStruct = requires { typename T::_rtrcReflStructBaseShaderTag; };
-
-#define rtrc_derive_from_refl_base_impl(name) ::Rtrc::_rtrcReflStructBase_##name,
-#define rtrc_derive_from_refl_base(name) rtrc_derive_from_refl_base_impl(name)
-#define rtrc_derive_from_refl_bases(...) \
-    RTRC_MACRO_FOREACH_1(rtrc_derive_from_refl_base, __VA_ARGS__) ::Rtrc::_rtrcReflStructBaseSuffix
-
-#if RTRC_REFLECTION_TOOL
-#define rtrc_apply_refl(name) __attribute__((annotate(#name)))
-#define rtrc_refl_impl(...) RTRC_MACRO_FOREACH_1(rtrc_apply_refl, __VA_ARGS__)
-#define rtrc_struct(NAME, ...)                                         \
-    struct rtrc_refl_impl(rtrc, shader __VA_OPT__(,) __VA_ARGS__) NAME \
-        : rtrc_derive_from_refl_bases(rtrc, shader __VA_OPT__(,) __VA_ARGS__)
-#define rtrc_enum(NAME) \
-    enum __attribute__((annotate("rtrc"))) __attribute__((annotate("shader"))) NAME
-#define rtrc_enum_class(NAME) \
-    enum class __attribute__((annotate("rtrc"))) __attribute__((annotate("shader"))) NAME
-#else
-#if _MSC_VER
-// Use '__declspec(empty_bases)' to fix EBO in msvc.
-// See https://devblogs.microsoft.com/cppblog/optimizing-the-layout-of-empty-base-classes-in-vs2015-update-2-3/
-#define rtrc_struct(NAME, ...)          \
-    struct __declspec(empty_bases) NAME \
-        : rtrc_derive_from_refl_bases(rtrc, shader __VA_OPT__(,) __VA_ARGS__)
-#else
-#define rtrc_refl_struct(NAME, ...) \
-    struct NAME : rtrc_derive_from_refl_bases(rtrc, shader __VA_OPT__(,) __VA_ARGS__)
-#endif
-#define rtrc_enum(NAME) enum NAME
-#define rtrc_enum_class(NAME) enum class NAME
-#endif
-
 class Exception : public std::runtime_error
 {
 #if RTRC_ENABLE_EXCEPTION_STACKTRACE

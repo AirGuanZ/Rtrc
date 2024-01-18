@@ -9,9 +9,9 @@ rtrc_shader("Builtin/Atmosphere/GenerateTransmittanceLut")
 
     rtrc_group(Pass, CS)
     {
-        rtrc_define(RWTexture2D<float4>,         TransmittanceTextureRW)
-        rtrc_uniform(uint2,                      outputResolution)
-        rtrc_uniform(Rtrc::AtmosphereProperties, atmosphere)
+        rtrc_define(RWTexture2D<float4>,     TransmittanceTextureRW)
+        rtrc_uniform(uint2,                  outputResolution)
+        rtrc_uniform(Atmosphere::Properties, atmosphere)
     };
 
     [numthreads(16, 16, 1)]
@@ -56,13 +56,13 @@ rtrc_shader("Builtin/Atmosphere/GenerateMultiScatterLut")
 
     rtrc_group(Pass, CS)
     {
-        rtrc_define(RWTexture2D<float4>,         MultiScatterTextureRW)
-        rtrc_define(StructuredBuffer<float2>,    RawDirSamples)
-        rtrc_define(Texture2D<float3>,           TransmittanceLutTexture)
-        rtrc_uniform(uint2,                      outputResolution)
-        rtrc_uniform(uint,                       dirSampleCount)
-        rtrc_uniform(uint,                       rayMarchStepCount)
-        rtrc_uniform(Rtrc::AtmosphereProperties, atmosphere)
+        rtrc_define(RWTexture2D<float4>,      MultiScatterTextureRW)
+        rtrc_define(StructuredBuffer<float2>, RawDirSamples)
+        rtrc_define(Texture2D<float3>,        TransmittanceLutTexture)
+        rtrc_uniform(uint2,                   outputResolution)
+        rtrc_uniform(uint,                    dirSampleCount)
+        rtrc_uniform(uint,                    rayMarchStepCount)
+        rtrc_uniform(Atmosphere::Properties,  atmosphere)
     };
 
     rtrc_sampler(TransmittanceLutSampler, filter = linear, address = clamp)
@@ -187,17 +187,17 @@ rtrc_shader("Builtin/Atmosphere/GenerateSkyLut")
 
     rtrc_group(Pass, CS)
     {
-        rtrc_define(RWTexture2D<float4>,         SkyLutTextureRW)
-        rtrc_define(Texture2D<float3>,           TransmittanceLutTexture)
-        rtrc_define(Texture2D<float3>,           MultiScatterLutTexture)
-        rtrc_uniform(Rtrc::AtmosphereProperties, atmosphere)
-        rtrc_uniform(uint2,                      outputResolution)
-        rtrc_uniform(uint,                       rayMarchStepCount)
-        rtrc_uniform(float,                      frameRandom01)
-        rtrc_uniform(float,                      eyePosY)
-        rtrc_uniform(float3,                     sunDirection)
-        rtrc_uniform(float,                      lerpFactor)
-        rtrc_uniform(float3,                     sunIntensity)
+        rtrc_define(RWTexture2D<float4>,     SkyLutTextureRW)
+        rtrc_define(Texture2D<float3>,       TransmittanceLutTexture)
+        rtrc_define(Texture2D<float3>,       MultiScatterLutTexture)
+        rtrc_uniform(Atmosphere::Properties, atmosphere)
+        rtrc_uniform(uint2,                  outputResolution)
+        rtrc_uniform(uint,                   rayMarchStepCount)
+        rtrc_uniform(float,                  frameRandom01)
+        rtrc_uniform(float,                  eyePosY)
+        rtrc_uniform(float3,                 sunDirection)
+        rtrc_uniform(float,                  lerpFactor)
+        rtrc_uniform(float3,                 sunIntensity)
     };
 
     rtrc_sampler(LutSampler, filter = linear, address = clamp)

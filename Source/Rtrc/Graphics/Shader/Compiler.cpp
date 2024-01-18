@@ -1,5 +1,4 @@
 #include <Rtrc/Core/Enumerate.h>
-#include <Rtrc/Core/ReflectedStruct.h>
 #include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/Graphics/Shader/Compiler.h>
 #include <Rtrc/ShaderCommon/Reflection/D3D12Reflection.h>

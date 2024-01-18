@@ -1,20 +1,46 @@
 #pragma once
 
-#include "Generated/Reflection.hlsl"
-
 namespace Atmosphere
 {
 
+    struct Properties
+    {
+        // Rayleigh
+
+        float3 scatterRayleigh ;
+        float  hDensityRayleigh;
+
+        // Mie
+
+        float scatterMie;
+        float asymmetryMie;
+        float absorbMie;
+        float hDensityMie;
+
+        // Ozone
+
+        float3 absorbOzone;
+        float  ozoneCenterHeight;
+        float  ozoneThickness;
+
+        // Geometry
+
+        float planetRadius;
+        float atmosphereRadius;
+
+        float3 terrainAlbedo;
+    };
+
     static float PI = 3.14159265;
 
-    float3 GetSigmaS(Rtrc::AtmosphereProperties properties, float h)
+    float3 GetSigmaS(Properties properties, float h)
     {
         float3 rayleigh = properties.scatterRayleigh * exp(-h / properties.hDensityRayleigh);
         float mie = properties.scatterMie * exp(-h / properties.hDensityMie);
         return rayleigh + mie;
     }
 
-    float3 GetSigmaT(Rtrc::AtmosphereProperties properties, float h)
+    float3 GetSigmaT(Properties properties, float h)
     {
         float3 rayleigh = properties.scatterRayleigh * exp(-h / properties.hDensityRayleigh);
         float mie = (properties.scatterMie + properties.absorbMie) * exp(-h / properties.hDensityMie);
@@ -23,7 +49,7 @@ namespace Atmosphere
         return 0;
     }
 
-    void GetSigmaST(Rtrc::AtmosphereProperties properties, float h, out float3 sigmaS, out float3 sigmaT)
+    void GetSigmaST(Properties properties, float h, out float3 sigmaS, out float3 sigmaT)
     {    
         float3 rayleigh = properties.scatterRayleigh * exp(-h / properties.hDensityRayleigh);
         float mieDensity = exp(-h / properties.hDensityMie);
@@ -34,7 +60,7 @@ namespace Atmosphere
         sigmaT = rayleigh + mieT + ozone;
     }
 
-    float3 EvaluatePhaseFunction(Rtrc::AtmosphereProperties properties, float h, float u)
+    float3 EvaluatePhaseFunction(Properties properties, float h, float u)
     {
         float3 sRayleigh = properties.scatterRayleigh * exp(-h / properties.hDensityRayleigh);
         float sMie = properties.scatterMie * exp(-h / properties.hDensityMie);
@@ -50,7 +76,7 @@ namespace Atmosphere
         return result;
     }
 
-    float3 SampleTransmittanceLut(Texture2D<float3> lut, SamplerState s, Rtrc::AtmosphereProperties atmosphere, float h, float theta)
+    float3 SampleTransmittanceLut(Texture2D<float3> lut, SamplerState s, Properties atmosphere, float h, float theta)
     {
         float u = h / (atmosphere.atmosphereRadius - atmosphere.planetRadius);
         float v = 0.5 + 0.5 * sin(theta);

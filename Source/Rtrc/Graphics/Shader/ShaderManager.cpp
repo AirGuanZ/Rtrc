@@ -1,4 +1,3 @@
-#include <Rtrc/Core/ReflectedStruct.h>
 #include <Rtrc/Graphics/Shader/ShaderManager.h>
 
 RTRC_BEGIN
@@ -7,7 +6,6 @@ ShaderManager::ShaderManager()
     : localShaderCache_(this)
 {
     const auto workDir = absolute(std::filesystem::current_path()).lexically_normal();
-    shaderDatabase_.AddIncludeDirectory(ReflectedStruct::GetGeneratedFilePath());
     shaderDatabase_.AddIncludeDirectory((workDir / "Source").string());
 }
 

@@ -156,10 +156,10 @@ float4 FSMain(VsToFs input) : SV_TARGET
     return input.color * Texture.Sample(Sampler, input.uv);
 }
 )___";
-    
+
     rtrc_struct(CBuffer)
     {
-        float4x4 Matrix;
+        rtrc_var(float4x4, Matrix);
     };
 
     class ImGuiContextGuard : public Uncopyable

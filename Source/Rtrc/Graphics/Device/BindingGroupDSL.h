@@ -504,7 +504,7 @@ namespace BindingGroupDSL
         const F &f, RHI::ShaderStageFlags stageMask = RHI::ShaderStage::All, const A &accessor = {})
     {
         StructDetail::ForEachMember<T>([&]<bool IsUniform, typename M>
-            (M T:: * ptr, const char *name, RHI::ShaderStageFlags stages, BindingFlags flags)
+            (M T::* ptr, const char *name, RHI::ShaderStageFlags stages, BindingFlags flags)
         {
             if constexpr(!RtrcGroupDummyMember<M>)
             {
@@ -550,17 +550,9 @@ namespace BindingGroupDSL
         {
             if constexpr(IsUniform)
             {
-                size_t memSize;
-                if constexpr(RtrcReflShaderStruct<M>)
-                {
-                    memSize = ReflectedStruct::GetDeviceDWordCount<M>();
-                }
-                else
-                {
-                    memSize = ConstantBufferDetail::GetConstantBufferDWordCount<M>();
-                }
+                const size_t memSize = GetDeviceDWordCount<M>();
                 bool needNewLine;
-                if constexpr(std::is_array_v<M> || RtrcReflShaderStruct<M>)
+                if constexpr(std::is_array_v<M> || RtrcStruct<M>)
                 {
                     needNewLine = true;
                 }
@@ -588,10 +580,10 @@ namespace BindingGroupDSL
         {
             if constexpr(IsUniform)
             {
-                const size_t memberSize = ConstantBufferDetail::GetConstantBufferDWordCount<M>();
+                const size_t memberSize = GetDeviceDWordCount<M>();;
 
                 bool needNewLine;
-                if constexpr(std::is_array_v<M> || RtrcReflShaderStruct<M>)
+                if constexpr(std::is_array_v<M> || RtrcStruct<M>)
                 {
                     needNewLine = true;
                 }
@@ -608,7 +600,7 @@ namespace BindingGroupDSL
                 const size_t hostOffset = reinterpret_cast<size_t>(accessor(nullT));
                 assert(hostOffset % 4 == 0);
 
-                ConstantBufferDetail::FlattenToConstantBufferData<M>(&data, output, hostOffset / 4, deviceDWordOffset);
+                Rtrc::ToDeviceLayout<M>(&data, output, hostOffset / 4, deviceDWordOffset);
                 
                 deviceDWordOffset += memberSize;
             }

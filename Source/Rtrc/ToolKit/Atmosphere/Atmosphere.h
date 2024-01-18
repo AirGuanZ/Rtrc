@@ -7,30 +7,50 @@ RTRC_BEGIN
 
 rtrc_struct(AtmosphereProperties)
 {
+    AtmosphereProperties()
+    {
+        scatterRayleigh  = 1e-6f * float3(5.802f, 13.558f, 33.1f);
+        hDensityRayleigh = 1e3f * 8;
+
+        scatterMie   = 1e-6f * 3.996f;
+        asymmetryMie = 0.8f;
+        absorbMie    = 1e-6f * 4.4f;
+        hDensityMie  = 1e3f * 1.2f;
+
+        absorbOzone       = 1e-6f * float3(0.65f, 1.881f, 0.085f);
+        ozoneCenterHeight = 1e3f * 25;
+        ozoneThickness    = 1e3f * 30;
+
+        planetRadius     = 1e3f * 6360;
+        atmosphereRadius = 1e3f * 6460;
+
+        terrainAlbedo = { 0.3f, 0.3f, 0.3f };
+    }
+
     // Rayleigh
 
-    float3 scatterRayleigh = 1e-6f * Vector3f(5.802f, 13.558f, 33.1f);
-    float  hDensityRayleigh = 1e3f * 8;
+    rtrc_var(float3, scatterRayleigh);
+    rtrc_var(float, hDensityRayleigh);
 
     // Mie
 
-    float scatterMie = 1e-6f * 3.996f;
-    float asymmetryMie = 0.8f;
-    float absorbMie = 1e-6f * 4.4f;
-    float hDensityMie = 1e3f * 1.2f;
+    rtrc_var(float, scatterMie);
+    rtrc_var(float, asymmetryMie);
+    rtrc_var(float, absorbMie);
+    rtrc_var(float, hDensityMie);
 
     // Ozone
 
-    float3 absorbOzone = 1e-6f * Vector3f(0.65f, 1.881f, 0.085f);
-    float  ozoneCenterHeight = 1e3f * 25;
-    float  ozoneThickness = 1e3f * 30;
+    rtrc_var(float3, absorbOzone);
+    rtrc_var(float, ozoneCenterHeight);
+    rtrc_var(float, ozoneThickness);
 
     // Geometry
 
-    float planetRadius = 1e3f * 6360;
-    float atmosphereRadius = 1e3f * 6460;
+    rtrc_var(float, planetRadius);
+    rtrc_var(float, atmosphereRadius);
 
-    float3 terrainAlbedo = { 0.3f, 0.3f, 0.3f };
+    rtrc_var(float3, terrainAlbedo);
 
     auto operator<=>(const AtmosphereProperties &) const = default;
 };

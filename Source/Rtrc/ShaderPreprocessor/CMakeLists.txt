@@ -40,7 +40,6 @@ foreach(SHADER_FILE IN ITEMS ${ALL_SHADER_FILES})
             ShaderPreprocessor -i "${IN}"
                                -o "${OUT}"
                                -r "${CMAKE_SOURCE_DIR}/Source"
-                               -r "${CMAKE_CURRENT_SOURCE_DIR}/DummyShader"
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         COMMAND
             ${CMAKE_COMMAND} -E touch "${TS}"

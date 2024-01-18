@@ -24,7 +24,7 @@ public:
 
     Record NewRecord(const void *cbufferData, size_t bytes = 0);
     
-    template<RtrcReflShaderStruct T>
+    template<RtrcStruct T>
     Record NewRecord(const T &cbufferData);
 
     void Flush();
@@ -66,7 +66,7 @@ private:
     size_t unflushedOffset_;
 };
 
-template<RtrcReflShaderStruct T>
+template<RtrcStruct T>
 FixedSizedTransientConstantBufferBindingGroupPool::Record
     FixedSizedTransientConstantBufferBindingGroupPool::NewRecord(const T &cbufferData)
 {
