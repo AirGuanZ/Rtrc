@@ -31,6 +31,7 @@ public:
 };
 
 using Vector4f = Vector4<float>;
+using Vector4d = Vector4<double>;
 using Vector4i = Vector4<int32_t>;
 using Vector4u = Vector4<uint32_t>;
 using Vector4b = Vector4<uint8_t>;
@@ -46,6 +47,18 @@ template<typename T>
 Vector4<T> operator-(const Vector4<T> &a, const Vector4<T> &b);
 template<typename T>
 Vector4<T> operator*(const Vector4<T> &a, const Vector4<T> &b);
+template<typename T>
+Vector4<T> operator/(const Vector4<T>& a, const Vector4<T>& b);
+
+template<typename T>
+Vector4<T> operator-(const Vector4<T>& v);
+
+template<typename T>
+Vector4<T> operator*(const Vector4<T>& a, T b);
+template<typename T>
+Vector4<T> operator*(T a, const Vector4<T>& b);
+template<typename T>
+Vector4<T> operator/(const Vector4<T>& a, T b);
 
 template<typename T>
 T Dot(const Vector4<T> &a, const Vector4<T> &b);
@@ -159,6 +172,46 @@ template<typename T>
 Vector4<T> operator*(const Vector4<T> &a, const Vector4<T> &b)
 {
 #define RTRC_ELEM(COMP) (a.COMP * b.COMP)
+    return RTRC_CREATE_FOR_EACH_ELEM(RTRC_ELEM);
+#undef RTRC_ELEM
+}
+
+template<typename T>
+Vector4<T> operator/(const Vector4<T>& a, const Vector4<T>& b)
+{
+#define RTRC_ELEM(COMP) (a.COMP / b.COMP)
+    return RTRC_CREATE_FOR_EACH_ELEM(RTRC_ELEM);
+#undef RTRC_ELEM
+}
+
+template<typename T>
+Vector4<T> operator-(const Vector4<T>& v)
+{
+#define RTRC_ELEM(COMP) (-v.COMP)
+    return RTRC_CREATE_FOR_EACH_ELEM(RTRC_ELEM);
+#undef RTRC_ELEM
+}
+
+template<typename T>
+Vector4<T> operator*(const Vector4<T>& a, T b)
+{
+#define RTRC_ELEM(COMP) (a.COMP * b)
+    return RTRC_CREATE_FOR_EACH_ELEM(RTRC_ELEM);
+#undef RTRC_ELEM
+}
+
+template<typename T>
+Vector4<T> operator*(T a, const Vector4<T>& b)
+{
+#define RTRC_ELEM(COMP) (a * b.COMP)
+    return RTRC_CREATE_FOR_EACH_ELEM(RTRC_ELEM);
+#undef RTRC_ELEM
+}
+
+template<typename T>
+Vector4<T> operator/(const Vector4<T>& a, T b)
+{
+#define RTRC_ELEM(COMP) (a.COMP / b)
     return RTRC_CREATE_FOR_EACH_ELEM(RTRC_ELEM);
 #undef RTRC_ELEM
 }

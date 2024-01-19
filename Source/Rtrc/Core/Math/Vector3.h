@@ -25,6 +25,9 @@ public:
 
     std::tuple<T, T, T> ToTuple() const;
 
+    template<typename U>
+    constexpr Vector3<U> To() const;
+
     size_t Hash() const { return Rtrc::Hash(x, y, z); }
 
     Vector3 &operator+=(const Vector3 &rhs) { return *this = *this + rhs; }
@@ -34,6 +37,7 @@ public:
 };
 
 using Vector3f = Vector3<float>;
+using Vector3d = Vector3<double>;
 using Vector3i = Vector3<int32_t>;
 using Vector3u = Vector3<uint32_t>;
 using Vector3b = Vector3<uint8_t>;
@@ -142,6 +146,16 @@ template<typename T>
 std::tuple<T, T, T> Vector3<T>::ToTuple() const
 {
     return std::make_tuple(x, y, z);
+}
+
+template <typename T>
+template <typename U>
+constexpr Vector3<U> Vector3<T>::To() const
+{
+    return Vector3<U>(
+        static_cast<U>(x),
+        static_cast<U>(y),
+        static_cast<U>(z));
 }
 
 template<typename T>
