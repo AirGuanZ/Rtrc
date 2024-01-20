@@ -207,21 +207,22 @@ public:
         return std::find(begin(), end(), val) != end();
     }
 
+    auto operator<=>(const StaticVector &rhs) const
+    {
+        return std::lexicographical_compare_three_way(begin(), end(), rhs.begin(), rhs.end());
+    }
+
     bool operator==(const StaticVector &rhs) const
     {
-        if(size_ != rhs.size_)
-        {
-            return false;
-        }
-        for(size_t i = 0; i < size_; ++i)
-        {
-            if(At(i) != rhs.At(i))
-            {
-                return false;
-            }
-        }
-        return true;
+        return std::equal(begin(), end(), rhs.begin(), rhs.end());
     }
+
+    bool operator!=(const StaticVector &rhs) const
+    {
+        return !(*this == rhs);
+    }
+
+    size_t size() const { return GetSize(); }
 
     auto begin() { return std::launder(reinterpret_cast<T *>(&data_)); }
     auto end() { return begin() + size_; }

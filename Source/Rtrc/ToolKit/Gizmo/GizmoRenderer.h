@@ -53,8 +53,8 @@ private:
         const Matrix4x4f           &worldToClip,
         float                       rcpGamma) const;
 
-    Ref<Device> device_;
-    PipelineCache pipelineCache_;
+    Ref<Device>           device_;
+    GraphicsPipelineCache pipelineCache_;
 };
 
 RTRC_END

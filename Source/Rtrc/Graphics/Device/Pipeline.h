@@ -12,7 +12,7 @@ class GraphicsPipeline : public GeneralGPUObject<RHI::GraphicsPipelineUPtr>
 public:
     
     using StencilOp  = RHI::StencilOp;
-    using StencilOps = RHI::GraphicsPipelineDesc::StencilOps;
+    using StencilOps = RHI::StencilOps;
 
     using Viewport  = RHI::Viewport;
     using Viewports = RHI::Viewports;

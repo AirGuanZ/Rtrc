@@ -994,10 +994,10 @@ struct DynamicScissorCount
 };
 
 // Fixed viewports; dynamic viewports with fixed count; dynamic count
-using Viewports = Variant<std::monostate, std::vector<Viewport>, int, DynamicViewportCount>;
+using Viewports = Variant<std::monostate, StaticVector<Viewport, 4>, int, DynamicViewportCount>;
 
 // Fixed viewports; dynamic viewports with fixed count; dynamic count
-using Scissors = Variant<std::monostate, std::vector<Scissor>, int, DynamicScissorCount>;
+using Scissors = Variant<std::monostate, StaticVector<Scissor, 4>, int, DynamicScissorCount>;
 
 struct VertexInputBuffer
 {
@@ -1021,22 +1021,23 @@ struct DebugLabel
     std::optional<Vector4f> color;
 };
 
+struct StencilOps
+{
+    StencilOp depthFailOp = StencilOp::Keep;
+    StencilOp failOp      = StencilOp::Keep;
+    StencilOp passOp      = StencilOp::Keep;
+    CompareOp compareOp   = CompareOp::Always;
+
+    auto operator<=>(const StencilOps &) const = default;
+
+    size_t Hash() const
+    {
+        return ::Rtrc::Hash(depthFailOp, failOp, passOp, compareOp);
+    }
+};
+
 struct GraphicsPipelineDesc
 {
-    struct StencilOps
-    {
-        StencilOp depthFailOp = StencilOp::Keep;
-        StencilOp failOp      = StencilOp::Keep;
-        StencilOp passOp      = StencilOp::Keep;
-        CompareOp compareOp   = CompareOp::Always;
-
-        auto operator<=>(const StencilOps &) const = default;
-
-        size_t Hash() const
-        {
-            return ::Rtrc::Hash(depthFailOp, failOp, passOp, compareOp);
-        }
-    };
 
     OPtr<RawShader> vertexShader;
     OPtr<RawShader> fragmentShader;

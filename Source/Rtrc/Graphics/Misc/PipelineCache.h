@@ -1,49 +1,231 @@
 #pragma once
 
-#include <shared_mutex>
-
-#include <tbb/spin_mutex.h>
 #include <ankerl/unordered_dense.h>
 
-#include <Rtrc/Graphics/Device/Pipeline.h>
-#include <Rtrc/Core/SmartPointer/ObserverPtr.h>
+#include <Rtrc/Core/Hash.h>
+#include <Rtrc/Graphics/Device/Device.h>
+#include <Rtrc/Graphics/Misc/PipelineStateCacheCommon.h>
+#include <Rtrc/RHI/RHIDeclaration.h>
 
 RTRC_BEGIN
 
-class Device;
+struct DepthStencilStateDesc
+{
+    // depth bias const/slope/clamp factors are not included here
 
-class PipelineCache
+    bool enableDepthClip = true;
+    bool enableDepthBias = false;
+    
+    bool           enableDepthTest  = false;
+    bool           enableDepthWrite = false;
+    RHI::CompareOp depthCompareOp   = RHI::CompareOp::Always;
+
+    bool            enableStencilTest = false;
+    uint8_t         stencilReadMask   = 0;
+    uint8_t         stencilWriteMask  = 0;
+    RHI::StencilOps frontStencil;
+    RHI::StencilOps backStencil;
+
+    auto operator<=>(const DepthStencilStateDesc &) const = default;
+};
+
+struct RasterizerStateDesc
+{
+    RHI::PrimitiveTopology primitiveTopology = RHI::PrimitiveTopology::TriangleList;
+    RHI::FillMode          fillMode          = RHI::FillMode::Fill;
+    RHI::CullMode          cullMode          = RHI::CullMode::DontCull;
+    RHI::FrontFaceMode     frontFaceMode     = RHI::FrontFaceMode::Clockwise;
+
+    auto operator<=>(const RasterizerStateDesc &) const = default;
+};
+
+struct BlendStateDesc
+{
+    bool             enableBlending = false;
+    RHI::BlendFactor blendingSrcColorFactor = RHI::BlendFactor::One;
+    RHI::BlendFactor blendingDstColorFactor = RHI::BlendFactor::Zero;
+    RHI::BlendOp     blendingColorOp        = RHI::BlendOp::Add;
+    RHI::BlendFactor blendingSrcAlphaFactor = RHI::BlendFactor::One;
+    RHI::BlendFactor blendingDstAlphaFactor = RHI::BlendFactor::Zero;
+    RHI::BlendOp     blendingAlphaOp        = RHI::BlendOp::Add;
+
+    auto operator<=>(const BlendStateDesc &) const = default;
+};
+
+struct AttachmentStateDesc
+{
+    int                          multisampleCount = 1;
+    StaticVector<RHI::Format, 8> colorAttachmentFormats;
+    RHI::Format                  depthStencilFormat = RHI::Format::Unknown;
+
+    auto operator<=>(const AttachmentStateDesc &) const = default;
+};
+
+#define DEFINE_PIPELINE_STATE(STATE)                            \
+    using STATE        = PipelineStateCacheKey<STATE##Desc>;    \
+    using STATE##Cache = PipelineStateCache<STATE##Desc>;       \
+    class STATE##Builder                                        \
+    {                                                           \
+    public:                                                     \
+        STATE operator+(const STATE##Desc &desc) const          \
+        {                                                       \
+            return STATE##Cache::GetInstance().Register(desc);  \
+        }                                                       \
+    };
+
+DEFINE_PIPELINE_STATE(DepthStencilState)
+DEFINE_PIPELINE_STATE(RasterizerState)
+DEFINE_PIPELINE_STATE(BlendState)
+DEFINE_PIPELINE_STATE(AttachmentState)
+
+#define RTRC_DEPTH_STENCIL_STATE ::Rtrc::DepthStencilStateBuilder()+Rtrc::DepthStencilStateDesc
+#define RTRC_RASTERIZER_STATE    ::Rtrc::RasterizerStateBuilder()+Rtrc::RasterizerStateDesc
+#define RTRC_BLEND_STATE         ::Rtrc::BlendStateBuilder()+Rtrc::BlendStateDesc
+#define RTRC_ATTACHMENT_STATE    ::Rtrc::AttachmentStateBuilder()+Rtrc::AttachmentStateDesc
+
+class GraphicsPipelineCache
 {
 public:
 
-    explicit PipelineCache(Ref<Device> device);
+    struct Key
+    {
+        mutable RC<Shader>       shader;
+        mutable Shader::UniqueId shaderId; // Reserved for caching. Don't use it.
 
-    RC<GraphicsPipeline> GetGraphicsPipeline(const GraphicsPipeline::Desc &desc);
+        RHI::Viewports viewports = 1;
+        RHI::Scissors  scissors = 1;
 
-    // Thread safety: exclusive with GetGraphicsPipeline
-    void CommitChanges();
+        const MeshLayout *meshLayout = nullptr;
+
+        DepthStencilState depthStencilState;
+        float depthBiasConstFactor = 0.0f;
+        float depthBiasSlopeFactor = 0.0f;
+        float depthBiasClampValue  = 0.0f;
+
+        RasterizerState rasterizerState;
+        BlendState      blendState;
+        AttachmentState attachmentState;
+
+        Shader::UniqueId GetShaderUniqueId() const
+        {
+            return shader ? shader->GetUniqueID() : shaderId;
+        }
+
+        bool operator==(const Key &rhs) const
+        {
+            return
+                GetShaderUniqueId() == rhs.GetShaderUniqueId() &&
+                viewports == rhs.viewports &&
+                scissors == rhs.scissors &&
+                meshLayout == rhs.meshLayout &&
+                depthStencilState == rhs.depthStencilState &&
+                depthBiasConstFactor == rhs.depthBiasConstFactor &&
+                depthBiasSlopeFactor == rhs.depthBiasSlopeFactor &&
+                depthBiasClampValue == rhs.depthBiasClampValue &&
+                rasterizerState == rhs.rasterizerState &&
+                blendState == rhs.blendState &&
+                attachmentState == rhs.attachmentState;
+        }
+
+        size_t Hash() const
+        {
+            return ::Rtrc::Hash(
+                GetShaderUniqueId(),
+                viewports,
+                scissors,
+                meshLayout,
+                depthStencilState,
+                depthBiasConstFactor,
+                depthBiasSlopeFactor,
+                depthBiasClampValue,
+                rasterizerState,
+                blendState,
+                attachmentState);
+        }
+    };
+
+    void SetDevice(Ref<Device> device)
+    {
+        this->SetPipelineManager(device->GetPipelineManager());
+    }
+
+    void SetPipelineManager(Ref<PipelineManager> pipelineManager)
+    {
+        pipelineManager_ = pipelineManager;
+        pipelines_.clear();
+    }
+
+    RC<GraphicsPipeline> Get(const Key &key)
+    {
+        assert(pipelineManager_);
+
+        {
+            std::shared_lock lock(mutex_);
+            if(auto it = pipelines_.find(key); it != pipelines_.end())
+            {
+                return it->second;
+            }
+        }
+
+        std::unique_lock lock(mutex_);
+        if(auto it = pipelines_.find(key); it != pipelines_.end())
+        {
+            return it->second;
+        }
+
+        auto &rasterizerStateDesc   = key.rasterizerState.GetDesc();
+        auto &depthStencilStateDesc = key.depthStencilState.GetDesc();
+        auto &blendStateDesc        = key.blendState.GetDesc();
+        auto &attachmentStateDesc   = key.attachmentState.GetDesc();
+
+        auto pipeline = pipelineManager_->CreateGraphicsPipeline(GraphicsPipeline::Desc
+        {
+            .shader                 = key.shader,
+            .viewports              = key.viewports,
+            .scissors               = key.scissors,
+            .meshLayout             = key.meshLayout,
+            .primitiveTopology      = rasterizerStateDesc.primitiveTopology,
+            .fillMode               = rasterizerStateDesc.fillMode,
+            .cullMode               = rasterizerStateDesc.cullMode,
+            .frontFaceMode          = rasterizerStateDesc.frontFaceMode,
+            .enableDepthBias        = depthStencilStateDesc.enableDepthBias,
+            .depthBiasConstFactor   = key.depthBiasConstFactor,
+            .depthBiasSlopeFactor   = key.depthBiasSlopeFactor,
+            .depthBiasClampValue    = key.depthBiasClampValue,
+            .enableDepthClip        = depthStencilStateDesc.enableDepthClip,
+            .multisampleCount       = attachmentStateDesc.multisampleCount,
+            .enableDepthTest        = depthStencilStateDesc.enableDepthTest,
+            .enableDepthWrite       = depthStencilStateDesc.enableDepthWrite,
+            .depthCompareOp         = depthStencilStateDesc.depthCompareOp,
+            .enableStencilTest      = depthStencilStateDesc.enableStencilTest,
+            .stencilReadMask        = depthStencilStateDesc.stencilReadMask,
+            .stencilWriteMask       = depthStencilStateDesc.stencilWriteMask,
+            .frontStencil           = depthStencilStateDesc.frontStencil,
+            .backStencil            = depthStencilStateDesc.backStencil,
+            .enableBlending         = blendStateDesc.enableBlending,
+            .blendingSrcColorFactor = blendStateDesc.blendingSrcColorFactor,
+            .blendingDstColorFactor = blendStateDesc.blendingDstColorFactor,
+            .blendingColorOp        = blendStateDesc.blendingColorOp,
+            .blendingSrcAlphaFactor = blendStateDesc.blendingSrcAlphaFactor,
+            .blendingDstAlphaFactor = blendStateDesc.blendingDstAlphaFactor,
+            .blendingAlphaOp        = blendStateDesc.blendingAlphaOp,
+            .colorAttachmentFormats = attachmentStateDesc.colorAttachmentFormats,
+            .depthStencilFormat     = attachmentStateDesc.depthStencilFormat,
+        });
+
+        auto it = pipelines_.insert({ key, pipeline }).first;
+        it->first.shader.reset();
+        it->first.shaderId = key.shader->GetUniqueID();
+        return it->second;
+    }
 
 private:
 
-    struct Record
-    {
-        RC<GraphicsPipeline> pipeline;
-    };
+    using HashMap = ankerl::unordered_dense::map<Key, RC<GraphicsPipeline>, HashOperator<Key>>;
 
-    struct SharedData
-    {
-        tbb::spin_mutex       mutex;
-        std::vector<UniqueId> invalidatedShaders;
-    };
-    
-    Ref<Device> device_;
-
-    ankerl::unordered_dense::map<GraphicsPipeline::Desc, Record, HashOperator<>> staticCache_;
-
-    std::shared_mutex dynamicCacheMutex_;
-    ankerl::unordered_dense::map<GraphicsPipeline::Desc, Record, HashOperator<>> dynamicCache_;
-
-    RC<SharedData> sharedData_;
+    Ref<PipelineManager> pipelineManager_;
+    std::shared_mutex    mutex_;
+    HashMap              pipelines_;
 };
 
 RTRC_END

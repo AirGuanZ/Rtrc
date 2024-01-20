@@ -577,9 +577,9 @@ UPtr<GraphicsPipeline> VulkanDevice::CreateGraphicsPipeline(const GraphicsPipeli
     };
 
     std::vector<VkViewport> vkViewports;
-    if(auto vs = desc.viewports.AsIf<std::vector<Viewport>>())
+    if(auto vs = desc.viewports.AsIf<StaticVector<Viewport, 4>>())
     {
-        vkViewports.resize(vs->size());
+        vkViewports.resize(vs->GetSize());
         for(auto &&[i, v] : Enumerate(*vs))
         {
             vkViewports[i] = TranslateViewport(v);
@@ -593,9 +593,9 @@ UPtr<GraphicsPipeline> VulkanDevice::CreateGraphicsPipeline(const GraphicsPipeli
     }
 
     std::vector<VkRect2D> vkScissors;
-    if(auto ss = desc.scissors.AsIf<std::vector<Scissor>>())
+    if(auto ss = desc.scissors.AsIf<StaticVector<Scissor, 4>>())
     {
-        vkScissors.resize(ss->size());
+        vkScissors.resize(ss->GetSize());
         for(auto &&[i, s] : Enumerate(*ss))
         {
             vkScissors[i] = TranslateScissor(s);

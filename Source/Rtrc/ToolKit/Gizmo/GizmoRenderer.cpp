@@ -6,9 +6,9 @@
 RTRC_BEGIN
 
 GizmoRenderer::GizmoRenderer(Ref<Device> device)
-    : device_(device), pipelineCache_(device)
+    : device_(device)
 {
-
+    pipelineCache_.SetDevice(device);
 }
 
 void GizmoRenderer::RenderImmediately(
@@ -120,17 +120,34 @@ void GizmoRenderer::RenderImpl(
     const auto colorFormats = commandBuffer.GetCurrentRenderPassColorFormats();
     const RHI::Format depthFormat = commandBuffer.GetCurrentRenderPassDepthStencilFormat();
 
-    auto pipeline = pipelineCache_.GetGraphicsPipeline(GraphicsPipeline::Desc
+    const static auto meshLayout = RTRC_MESH_LAYOUT(Buffer(Attribute("POSITION", 0, Float3),
+                                                           Attribute("COLOR", 0, Float3)));
+
+    auto depthStencilState = RTRC_DEPTH_STENCIL_STATE
     {
-        .shader                 = device_->GetShader<"Rtrc/GizmoRenderer/RenderColoredPrimitives">(),
-        .meshLayout             = RTRC_MESH_LAYOUT(Buffer(Attribute("POSITION", 0, Float3),
-                                                          Attribute("COLOR", 0, Float3))),
-        .primitiveTopology      = isLine ? RHI::PrimitiveTopology::LineList : RHI::PrimitiveTopology::TriangleList,
-        .enableDepthTest        = depthFormat != RHI::Format::Unknown,
-        .enableDepthWrite       = true,
-        .depthCompareOp         = reverseZ ? RHI::CompareOp::GreaterEqual : RHI::CompareOp::LessEqual,
+        .enableDepthTest  = depthFormat != RHI::Format::Unknown,
+        .enableDepthWrite = true,
+        .depthCompareOp   = reverseZ ? RHI::CompareOp::GreaterEqual : RHI::CompareOp::LessEqual
+    };
+
+    auto rasterizerState = RTRC_RASTERIZER_STATE
+    {
+        .primitiveTopology = isLine ? RHI::PrimitiveTopology::LineList : RHI::PrimitiveTopology::TriangleList
+    };
+
+    auto attachmentState = RTRC_ATTACHMENT_STATE
+    {
         .colorAttachmentFormats = { colorFormats.begin(), colorFormats.end() },
         .depthStencilFormat     = depthFormat
+    };
+
+    auto pipeline = pipelineCache_.Get(GraphicsPipelineCache::Key
+    {
+        .shader            = device_->GetShader<"Rtrc/GizmoRenderer/RenderColoredPrimitives">(),
+        .meshLayout        = meshLayout,
+        .depthStencilState = depthStencilState,
+        .rasterizerState   = rasterizerState,
+        .attachmentState   = attachmentState
     });
 
     auto vertexBuffer = device_->CreateBuffer(RHI::BufferDesc

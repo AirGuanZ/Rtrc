@@ -320,6 +320,7 @@ public:
     BufferManager           &GetBufferManager();
     BindingGroupManager     &GetBindingGroupManager();
     BindingGroupLayoutCache &GetBindingGroupCache();
+    PipelineManager         &GetPipelineManager();
     const RHI::DeviceUPtr   &GetRawDevice() const;
 
     ClearBufferUtils  &GetClearBufferUtils()  { return *clearBufferUtils_; }
@@ -945,6 +946,11 @@ inline BindingGroupManager &Device::GetBindingGroupManager()
 inline BindingGroupLayoutCache &Device::GetBindingGroupCache()
 {
     return *bindingGroupLayoutCache_;
+}
+
+inline PipelineManager &Device::GetPipelineManager()
+{
+    return *pipelineManager_;
 }
 
 inline const RHI::DeviceUPtr &Device::GetRawDevice() const

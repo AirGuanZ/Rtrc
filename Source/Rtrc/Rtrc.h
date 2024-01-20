@@ -12,6 +12,7 @@
 
 #include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/Graphics/ImGui/Instance.h>
+#include <Rtrc/Graphics/Misc/PipelineCache.h>
 #include <Rtrc/Graphics/Misc/ShaderBindingTableBuilder.h>
 #include <Rtrc/Graphics/RenderGraph/Executable.h>
 

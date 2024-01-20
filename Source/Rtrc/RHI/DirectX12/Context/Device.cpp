@@ -354,15 +354,15 @@ UPtr<GraphicsPipeline> DirectX12Device::CreateGraphicsPipeline(const GraphicsPip
         "Fail to create directx12 graphics pipeline state");
 
     std::optional<Span<Viewport>> staticViewports;
-    if(desc.viewports.Is<std::vector<Viewport>>())
+    if(desc.viewports.Is<StaticVector<Viewport, 4>>())
     {
-        staticViewports = desc.viewports.As<std::vector<Viewport>>();
+        staticViewports = desc.viewports.As<StaticVector<Viewport, 4>>();
     }
 
     std::optional<Span<Scissor>> staticScissors;
-    if(desc.scissors.Is<std::vector<Scissor>>())
+    if(desc.scissors.Is<StaticVector<Scissor, 4>>())
     {
-        staticScissors = desc.scissors.As<std::vector<Scissor>>();
+        staticScissors = desc.scissors.As<StaticVector<Scissor, 4>>();
     }
 
     std::vector<size_t> vertexStrides(desc.vertexBuffers.size());
@@ -489,7 +489,7 @@ UPtr<RayTracingPipeline> DirectX12Device::CreateRayTracingPipeline(const RayTrac
                 }
                 // groupName: HitGroup_{libraryIndex}_{groupIndex}
                 groupExportedNames.push_back(Utf8ToWin32W(fmt::format(
-"HitGroup_{}_{}", (std::numeric_limits<int>::max)(), groupIndex)));
+                    "HitGroup_{}_{}", (std::numeric_limits<int>::max)(), groupIndex)));
                 dxilGroup->SetHitGroupExport(groupExportedNames.back().c_str());
             },
             [&](const RayTracingRayGenShaderGroup &rayGenGroup)
