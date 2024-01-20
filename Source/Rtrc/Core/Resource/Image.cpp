@@ -20,7 +20,7 @@ namespace ImageDetail
         int                width,
         int                height,
         int                dataChannels,
-        const uint8_t *data)
+        const uint8_t     *data)
     {
         if(!stbi_write_png(filename.c_str(), width, height, dataChannels, data, 0))
         {
@@ -198,8 +198,8 @@ namespace ImageDetail
 
     std::vector<Vector3f> LoadEXR(
         const std::string &filename,
-        int *width,
-        int *height)
+        int               *width,
+        int               *height)
     {
         const char *err = nullptr;
         float* out; int twidth, theight;

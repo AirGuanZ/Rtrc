@@ -206,7 +206,7 @@ class DFDMDemo : public SimpleApplication
 
         DFDM dfdm;
         dfdm.SetDevice(GetDevice());
-        dfdm.SetIterationCount(600);
+        dfdm.SetIterationCount(300);
         dfdm.SetAreaPreservation(areaPreservation_);
         auto correctionMap = dfdm.GenerateCorrectionMap(displacementMap);
         const float offsetScale = 1.0f / static_cast<float>(correctionMap.GetWidth());

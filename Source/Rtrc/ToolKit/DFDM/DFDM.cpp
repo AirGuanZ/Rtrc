@@ -9,7 +9,8 @@
 #include "DFDM.shader.outh"
 
 RTRC_BEGIN
-    Image<Vector2f> DFDM::GenerateCorrectionMap(const Image<Vector3f> &displacementMapData) const
+
+Image<Vector2f> DFDM::GenerateCorrectionMap(const Image<Vector3f> &displacementMapData) const
 {
     if(!device_)
     {
