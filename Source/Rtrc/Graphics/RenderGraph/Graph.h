@@ -52,7 +52,7 @@ public:
 
         using BufferResource::BufferResource;
 
-        const RHI::BufferDesc& GetDesc() const override { return rhiDesc; }
+        const RHI::BufferDesc& GetDesc() const override { return rhiDesc_; }
 
         void SetDefaultStructStride(size_t stride) override;
         void SetDefaultTexelFormat(RHI::Format format) override;
@@ -65,10 +65,10 @@ public:
         friend class RenderGraph;
         friend class Compiler;
 
-        size_t defaultStructStride_ = 0;
-        RHI::Format defaultTexelFormat_ = RHI::Format::Unknown;
-        RHI::BufferDesc rhiDesc;
-        std::string name;
+        size_t          defaultStructStride_ = 0;
+        RHI::Format     defaultTexelFormat_ = RHI::Format::Unknown;
+        RHI::BufferDesc rhiDesc_;
+        std::string     name_;
     };
 
     explicit RenderGraph(Ref<Device> device, Queue queue = Queue(nullptr));
@@ -101,6 +101,9 @@ public:
 
     void PushPassGroup(std::string name);
     void PopPassGroup();
+
+    void BeginUAVOverlap();
+    void EndUAVOverlap();
 
     Pass *CreatePass(std::string name);
 
@@ -275,7 +278,7 @@ private:
     };
 
     Ref<Device> device_;
-    Queue               queue_;
+    Queue       queue_;
 
     LabelStack labelStack_;
     
@@ -290,6 +293,10 @@ private:
     std::vector<Box<Pass>> passes_;
 
     RHI::FenceOPtr  completeFence_;
+
+    size_t currentUAVOverlapGroupDepth_ = 0;
+    uint32_t nextUAVOverlapGroupIndex_ = 0;
+    UAVOverlapGroup currentUAVOverlapGroup_;
 };
 
 #define RTRC_RG_SCOPED_PASS_GROUP(RENDERGRAPH, NAME)       \

@@ -167,10 +167,11 @@ void Compiler::GenerateConnectionsByDefinitionOrder(
 {
     struct UserRecord
     {
-        std::set<Pass *> prevUsers;
-        std::set<Pass *> users;
+        std::set<Pass *>   prevUsers;
+        std::set<Pass *>   users;
         RHI::TextureLayout layout = RHI::TextureLayout::Undefined;
-        bool isReadOnly = false;
+        bool               isReadOnly = false;
+        UAVOverlapGroup    uavOverlapGroup;
     };
 
     std::map<uint64_t, UserRecord> resourceIndexToUsers;
@@ -181,7 +182,9 @@ void Compiler::GenerateConnectionsByDefinitionOrder(
 
         for(auto &&[buffer, usage] : pass->bufferUsages_)
         {
+            assert(!HasUAVAccess(usage.accesses) || IsUAVOnly(usage.accesses));
             const bool isCurrReadOnly = IsReadOnly(usage.accesses);
+
             auto &userRecord = resourceIndexToUsers[buffer->GetResourceIndex()];
             if(optimizeConnection && userRecord.isReadOnly && isCurrReadOnly)
             {
@@ -189,9 +192,19 @@ void Compiler::GenerateConnectionsByDefinitionOrder(
             }
             else
             {
-                userRecord.prevUsers = userRecord.users;
-                userRecord.users = { curr };
-                userRecord.isReadOnly = isCurrReadOnly;
+                const bool isUAVOnly = IsUAVOnly(usage.accesses);
+                if(pass->uavOverlapGroup_.IsValid() && isUAVOnly &&
+                   userRecord.uavOverlapGroup == pass->uavOverlapGroup_)
+                {
+                    userRecord.users.insert(curr);
+                }
+                else
+                {
+                    userRecord.prevUsers       = userRecord.users;
+                    userRecord.users           = { curr };
+                    userRecord.isReadOnly      = isCurrReadOnly;
+                    userRecord.uavOverlapGroup = isUAVOnly ? pass->uavOverlapGroup_ : UAVOverlapGroup{};
+                }
             }
             for(auto prev : userRecord.prevUsers)
             {
@@ -207,6 +220,7 @@ void Compiler::GenerateConnectionsByDefinitionOrder(
             {
                 if(subrscUsage.has_value())
                 {
+                    assert(!HasUAVAccess(subrscUsage->accesses) || IsUAVOnly(subrscUsage->accesses));
                     const bool isCurrReadOnly = IsReadOnly(subrscUsage->accesses);
 
                     auto& userRecord = resourceIndexToUsers[tex->GetResourceIndex() | (subrscIndex << 32)];
@@ -217,10 +231,21 @@ void Compiler::GenerateConnectionsByDefinitionOrder(
                     }
                     else
                     {
-                        userRecord.prevUsers = userRecord.users;
-                        userRecord.users = { curr };
-                        userRecord.layout = subrscUsage->layout;
-                        userRecord.isReadOnly = isCurrReadOnly;
+                        const bool isUAVOnly = IsUAVOnly(subrscUsage->accesses);
+                        if(pass->uavOverlapGroup_.IsValid() &&
+                           userRecord.uavOverlapGroup == pass->uavOverlapGroup_ &&
+                           isUAVOnly &&  userRecord.layout == subrscUsage->layout)
+                        {
+                            userRecord.users.insert(curr);
+                        }
+                        else
+                        {
+                            userRecord.prevUsers       = userRecord.users;
+                            userRecord.users           = { curr };
+                            userRecord.layout          = subrscUsage->layout;
+                            userRecord.isReadOnly      = isCurrReadOnly;
+                            userRecord.uavOverlapGroup = isUAVOnly ? pass->uavOverlapGroup_ : UAVOverlapGroup{};
+                        }
                     }
                     for(auto prev : userRecord.prevUsers)
                     {
@@ -309,8 +334,9 @@ void Compiler::CollectResourceUsers()
         {
             bufferUsers_[bufferResource].push_back(BufferUser
             {
-                .passIndex = static_cast<int>(passIndex),
-                .usage = bufferUsage
+                .passIndex       = static_cast<int>(passIndex),
+                .usage           = bufferUsage,
+                .uavOverlapGroup = IsUAVOnly(bufferUsage.accesses) ? pass.uavOverlapGroup_ : UAVOverlapGroup{}
             });
         }
 
@@ -326,10 +352,11 @@ void Compiler::CollectResourceUsers()
                 const Pass::SubTexUsage &subTexUsage = textureUsage(mipLevel, arrayLayer).value();
                 const SubTexKey key = { textureResource, RHI::TextureSubresource{ mipLevel, arrayLayer } };
                 subTexUsers_[key].push_back(SubTexUser
-                    {
-                        .passIndex = static_cast<int>(passIndex),
-                        .usage = subTexUsage
-                    });
+                {
+                    .passIndex       = static_cast<int>(passIndex),
+                    .usage           = subTexUsage,
+                    .uavOverlapGroup = IsUAVOnly(subTexUsage.accesses) ? pass.uavOverlapGroup_ : UAVOverlapGroup{}
+                });
             }
 
 #if RTRC_DEBUG
@@ -514,7 +541,7 @@ void Compiler::AllocateInternalResourcesLegacy(ExecutableResources &output)
             continue;
         }
 
-        const RHI::BufferDesc &desc = intRsc->rhiDesc;
+        const RHI::BufferDesc &desc = intRsc->rhiDesc_;
         const int resourceIndex = intRsc->GetResourceIndex();
 
         auto usersIt = bufferUsers_.find(intRsc);
@@ -553,7 +580,7 @@ void Compiler::AllocateInternalResourcesLegacy(ExecutableResources &output)
 
         output.indexToBuffer[resourceIndex].buffer->SetDefaultStructStride(intRsc->defaultStructStride_);
         output.indexToBuffer[resourceIndex].buffer->SetDefaultTexelFormat(intRsc->defaultTexelFormat_);
-        output.indexToBuffer[resourceIndex].buffer->SetName(std::move(intRsc->name));
+        output.indexToBuffer[resourceIndex].buffer->SetName(std::move(intRsc->name_));
     }
 
     for(auto &texture : graph_->textures_)
@@ -641,23 +668,23 @@ void Compiler::AllocateInternalResources(ExecutableResources &output, std::vecto
 
         // Usage through device address cannot be tracked by debug layer easily. Allocate it separately.
 
-        if(intRsc->rhiDesc.usage.Contains(RHI::BufferUsage::DeviceAddress))
+        if(intRsc->rhiDesc_.usage.Contains(RHI::BufferUsage::DeviceAddress))
         {
-            auto &desc = intRsc->rhiDesc;
+            auto &desc = intRsc->rhiDesc_;
             output.indexToBuffer[rscIdx].buffer = device_->CreateStatefulBuffer(RHI::BufferDesc
                 {
                     .size = desc.size,
                     .usage = desc.usage,
                     .hostAccessType = desc.hostAccessType
                 });
-            output.indexToBuffer[rscIdx].buffer->SetName(std::move(intRsc->name));
+            output.indexToBuffer[rscIdx].buffer->SetName(std::move(intRsc->name_));
             continue;
         }
 
         // Prepare transient resource declaration
 
         RHI::TransientBufferDeclaration decl;
-        decl.desc      = intRsc->rhiDesc;
+        decl.desc      = intRsc->rhiDesc_;
         decl.beginPass = users.front().passIndex;
         decl.endPass   = users.back().passIndex;
         tranasientResourceIndices.push_back(rscIdx);
@@ -756,7 +783,7 @@ void Compiler::AllocateInternalResources(ExecutableResources &output, std::vecto
                 auto rsc = TryCastResource<RenderGraph::InternalBufferResource>(graph_->buffers_[rscIdx].get());
                 output.indexToBuffer[rscIdx].buffer = StatefulBuffer::FromBuffer(MakeRC<TransientBuffer>(
                     std::move(decl.buffer), rsc->defaultTexelFormat_, static_cast<uint32_t>(rsc->defaultStructStride_)));
-                output.indexToBuffer[rscIdx].buffer->SetName(rsc->name);
+                output.indexToBuffer[rscIdx].buffer->SetName(rsc->name_);
             },
             [&](RHI::TransientTextureDeclaration &decl)
             {
@@ -806,11 +833,25 @@ void Compiler::GenerateBarriers(const ExecutableResources &resources)
             }
         }
 
-        size_t userIndex = 0;
+        uint32_t userIndex = 0;
         while(userIndex < users.size())
         {
-            size_t nextUserIndex = userIndex + 1;
-            while(nextUserIndex < users.size() && DontNeedBarrier(users[userIndex].usage, users[nextUserIndex].usage))
+            auto CanMerge = [&](uint32_t ai, uint32_t bi)
+            {
+                auto &ua = users[ai], &ub = users[bi];
+                if(DontNeedBarrier(ua.usage, ub.usage))
+                {
+                    return true;
+                }
+                if(ua.uavOverlapGroup.IsValid() && ua.uavOverlapGroup == ub.uavOverlapGroup)
+                {
+                    return true;
+                }
+                return false;
+            };
+
+            uint32_t nextUserIndex = userIndex + 1;
+            while(nextUserIndex < users.size() && CanMerge(userIndex, nextUserIndex))
             {
                 ++nextUserIndex;
             }
@@ -826,6 +867,8 @@ void Compiler::GenerateBarriers(const ExecutableResources &resources)
 
             if(DontNeedBarrier(lastState, currState))
             {
+                currState.stages |= lastState.stages;
+                currState.accesses |= lastState.accesses;
                 continue;
             }
 
@@ -860,7 +903,7 @@ void Compiler::GenerateBarriers(const ExecutableResources &resources)
         const int rscIdx = tex->GetResourceIndex();
         const bool isSwapchainTex = TryCastResource<RenderGraph::SwapchainTexture>(tex);
         TextureSubrscState lastState = resources.indexToTexture[rscIdx].texture
-                                            ->GetState(subrsc.mipLevel, subrsc.arrayLayer);
+                                        ->GetState(subrsc.mipLevel, subrsc.arrayLayer);
 
         if(!aliasedPrevs_[rscIdx].empty())
         {
@@ -889,11 +932,27 @@ void Compiler::GenerateBarriers(const ExecutableResources &resources)
             }
         }
 
-        size_t userIndex = 0;
+        uint32_t userIndex = 0;
         while(userIndex < users.size())
         {
-            size_t nextUserIndex = userIndex + 1;
-            while(nextUserIndex < users.size() && DontNeedBarrier(users[userIndex].usage, users[nextUserIndex].usage))
+            auto CanMerge = [&](uint32_t ai, uint32_t bi)
+            {
+                auto &ua = users[ai], &ub = users[bi];
+                if(DontNeedBarrier(ua.usage, ub.usage))
+                {
+                    return true;
+                }
+                if(ua.uavOverlapGroup.IsValid() &&
+                   ua.usage.layout == ub.usage.layout &&
+                   ua.uavOverlapGroup == ub.uavOverlapGroup)
+                {
+                    return true;
+                }
+                return false;
+            };
+
+            uint32_t nextUserIndex = userIndex + 1;
+            while(nextUserIndex < users.size() && CanMerge(userIndex, nextUserIndex))
             {
                 ++nextUserIndex;
             }
@@ -910,6 +969,8 @@ void Compiler::GenerateBarriers(const ExecutableResources &resources)
 
             if(DontNeedBarrier(lastState, currState))
             {
+                currState.stages |= lastState.stages;
+                currState.accesses |= lastState.accesses;
                 continue;
             }
 

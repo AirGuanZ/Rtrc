@@ -12,12 +12,12 @@ namespace GraphDetail
 
 CommandBuffer &PassContext::GetCommandBuffer()
 {
-    return commandBuffer_;
+    return *commandBuffer_;
 }
 
 RC<Buffer> PassContext::Get(const BufferResource *resource)
 {
-    auto &result = resources_.indexToBuffer[resource->GetResourceIndex()].buffer;
+    auto &result = resources_->indexToBuffer[resource->GetResourceIndex()].buffer;
     assert(result);
 #if RTRC_RG_DEBUG
     if(!declaredResources_->contains(resource))
@@ -36,7 +36,7 @@ const RC<Tlas> &PassContext::Get(const TlasResource *resource)
 
 RC<Texture> PassContext::Get(const TextureResource *resource)
 {
-    auto &result = resources_.indexToTexture[resource->GetResourceIndex()].texture;
+    auto &result = resources_->indexToTexture[resource->GetResourceIndex()].texture;
     assert(result);
 #if RTRC_RG_DEBUG
     if(!declaredResources_->contains(resource))

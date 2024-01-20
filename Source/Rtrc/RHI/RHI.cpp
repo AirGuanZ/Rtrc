@@ -190,4 +190,24 @@ bool IsWriteOnly(ResourceAccessFlag access)
     return (access & WRITEONLY_MASK) == access;
 }
 
+bool IsUAVOnly(ResourceAccessFlag access)
+{
+    return !RemoveUAVAccesses(access);
+}
+
+bool HasUAVAccess(ResourceAccessFlag access)
+{
+    return RemoveUAVAccesses(access) != access;
+}
+
+ResourceAccessFlag RemoveUAVAccesses(ResourceAccessFlag access)
+{
+    using enum ResourceAccess;
+    constexpr ResourceAccessFlag UAV_MASK =
+        RWBufferRead | RWBufferWrite |
+        RWStructuredBufferRead | RWStructuredBufferWrite |
+        RWTextureRead | RWTextureWrite;
+    return access & ~UAV_MASK;
+}
+
 RTRC_RHI_END

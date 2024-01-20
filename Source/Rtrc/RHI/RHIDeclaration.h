@@ -487,6 +487,9 @@ using ResourceAccessFlag = EnumFlagsResourceAccess;
 
 bool IsReadOnly(ResourceAccessFlag access);
 bool IsWriteOnly(ResourceAccessFlag access);
+bool IsUAVOnly(ResourceAccessFlag access);
+bool HasUAVAccess(ResourceAccessFlag access);
+ResourceAccessFlag RemoveUAVAccesses(ResourceAccessFlag access);
 
 enum class AttachmentLoadOp
 {

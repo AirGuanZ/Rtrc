@@ -27,8 +27,8 @@ private:
     PassContext(const ExecutableResources &resources, CommandBuffer &commandBuffer);
     ~PassContext();
 
-    const ExecutableResources &resources_;
-    CommandBuffer &commandBuffer_;
+    Ref<const ExecutableResources> resources_;
+    Ref<CommandBuffer> commandBuffer_;
 
 #if RTRC_RG_DEBUG
     const std::set<const Resource *> *declaredResources_ = nullptr;
@@ -39,6 +39,25 @@ PassContext   &GetCurrentPassContext();
 CommandBuffer &GetCurrentCommandBuffer();
 
 void Connect(Pass *head, Pass *tail);
+
+class UAVOverlapGroup
+{
+public:
+
+    auto operator<=>(const UAVOverlapGroup &) const = default;
+
+    bool IsValid() const { return groupIndex != InvalidGroupIndex; }
+
+    bool DontNeedUAVBarrier(const UAVOverlapGroup &other) const { return IsValid() && *this == other; }
+
+private:
+
+    friend class RenderGraph;
+
+    static constexpr uint32_t InvalidGroupIndex = (std::numeric_limits<uint32_t>::max)();
+
+    uint32_t groupIndex = InvalidGroupIndex;
+};
 
 class Pass
 {
@@ -85,6 +104,8 @@ private:
 
     std::set<Pass *> prevs_;
     std::set<Pass *> succs_;
+
+    UAVOverlapGroup uavOverlapGroup_;
 };
 
 RTRC_RG_END

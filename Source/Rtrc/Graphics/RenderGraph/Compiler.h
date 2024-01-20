@@ -38,8 +38,9 @@ private:
     template<typename T>
     struct ResourceUser
     {
-        int passIndex;
-        T   usage;
+        int             passIndex;
+        T               usage;
+        UAVOverlapGroup uavOverlapGroup;
     };
 
     using BufferUser    = ResourceUser<Pass::BufferUsage>;

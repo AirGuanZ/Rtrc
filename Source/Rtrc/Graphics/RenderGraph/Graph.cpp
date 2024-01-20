@@ -34,8 +34,8 @@ BufferResource *RenderGraph::CreateBuffer(const RHI::BufferDesc &desc, std::stri
 {
     const int index = static_cast<int>(buffers_.size());
     auto resource = MakeBox<InternalBufferResource>(this, index);
-    resource->rhiDesc = desc;
-    resource->name = std::move(name);
+    resource->rhiDesc_ = desc;
+    resource->name_ = std::move(name);
     buffers_.push_back(std::move(resource));
     textures_.push_back(nullptr);
     return buffers_.back().get();
@@ -97,6 +97,13 @@ TextureResource *RenderGraph::RegisterTexture(RC<StatefulTexture> texture)
     const void *rhiPtr = texture->GetRHIObject().Get();
     if(auto it = externalResourceMap_.find(rhiPtr); it != externalResourceMap_.end())
     {
+        auto extRsc = static_cast<ExternalTextureResource *>(textures_[it->second].get());
+        if(extRsc->isReadOnlySampledTexture)
+        {
+            throw Exception(
+                "RenderGraph::RegisterReadOnlyTexture: "
+                "given texture is already registered as read-only external texture");
+        }
         return textures_[it->second].get();
     }
     const int index = static_cast<int>(textures_.size());
@@ -188,6 +195,28 @@ void RenderGraph::PopPassGroup()
     labelStack_.Pop();
 }
 
+void RenderGraph::BeginUAVOverlap()
+{
+    if(currentUAVOverlapGroupDepth_ > 0)
+    {
+        ++currentUAVOverlapGroupDepth_;
+    }
+    else
+    {
+        currentUAVOverlapGroup_.groupIndex = nextUAVOverlapGroupIndex_++;
+        currentUAVOverlapGroupDepth_ = 1;
+    }
+}
+
+void RenderGraph::EndUAVOverlap()
+{
+    assert(currentUAVOverlapGroupDepth_);
+    if(!--currentUAVOverlapGroupDepth_)
+    {
+        currentUAVOverlapGroup_.groupIndex = UAVOverlapGroup::InvalidGroupIndex;
+    }
+}
+
 Pass *RenderGraph::CreatePass(std::string name)
 {
     labelStack_.Push(std::move(name));
@@ -196,6 +225,8 @@ Pass *RenderGraph::CreatePass(std::string name)
 
     const int index = static_cast<int>(passes_.size());
     auto pass = Box<Pass>(new Pass(index, node));
+    pass->uavOverlapGroup_ = currentUAVOverlapGroup_;
+
     passes_.push_back(std::move(pass));
     return passes_.back().get();
 }

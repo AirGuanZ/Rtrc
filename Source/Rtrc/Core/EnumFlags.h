@@ -61,6 +61,10 @@ RTRC_BEGIN
     constexpr EnumFlags##Enum &operator|=(EnumFlags##Enum &a, EnumFlags##Enum b)                                            \
     {                                                                                                                       \
         return a = a | b;                                                                                                   \
+    }                                                                                                                       \
+    constexpr EnumFlags##Enum operator~(EnumFlags##Enum v)                                                                  \
+    {                                                                                                                       \
+        return EnumFlags##Enum(~v.value);                                                                                   \
     }
 
 RTRC_END

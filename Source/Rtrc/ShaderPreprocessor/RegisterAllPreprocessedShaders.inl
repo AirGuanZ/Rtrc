@@ -4,12 +4,8 @@
 
 RTRC_BEGIN
 
-#define RTRC_SHOULD_ENABLE_SHADER_REGISTRATION __has_include("Generated/PreprocessedShaderFiles.inl")
-
 namespace ShaderRegistrationDetail
 {
-
-#if RTRC_SHOULD_ENABLE_SHADER_REGISTRATION
 
     template<int>
     static void _rtrcRegisterShaderInfo(ShaderDatabase &) { }
@@ -37,15 +33,6 @@ namespace ShaderRegistrationDetail
         RegisterAllPreprocessedShadersImpl<shaderCounterBegin>(
             database, std::make_integer_sequence<int, shaderCounterEnd - shaderCounterBegin>());
     }
-
-#else
-
-    static void RegisterAllPreprocessedShaders(ShaderDatabase &database)
-    {
-
-    }
-
-#endif
 
 } // namespace ShaderRegistrationDetail
 
