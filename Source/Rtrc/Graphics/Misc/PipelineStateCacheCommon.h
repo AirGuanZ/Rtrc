@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cassert>
 #include <map>
 
 #include <tbb/concurrent_vector.h>

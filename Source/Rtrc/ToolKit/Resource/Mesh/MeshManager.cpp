@@ -19,7 +19,7 @@ Mesh MeshManager::Load(Device *device, const std::string &filename, Flags flags)
                                flags.Contains(Flags::GenerateTangentIfNotPresent);
     if(noIndexBuffer && !meshData.indexData.empty())
     {
-        meshData = meshData.RemoveIndexData();
+        meshData.RemoveIndexData();
     }
 
     std::vector<Vector3f> tangentData;
