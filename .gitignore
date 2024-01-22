@@ -1,6 +1,7 @@
 ﻿/Asset/RtrcGenerated/
 /Build/
 /BuildCMake/
+/External/eigen-3.4.0/
 /External/mimalloc/build/
 /External/llvm16.0.6/build_debug/
 /External/llvm16.0.6/build_release/
