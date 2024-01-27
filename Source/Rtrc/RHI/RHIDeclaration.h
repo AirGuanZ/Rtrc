@@ -34,7 +34,7 @@ RPtr <T> MakeRPtr(Args&&...args)
 class RHIObject;
 using RHIObjectPtr = RPtr<RHIObject>;
 
-#ifndef RTRC_STATIC_RHI
+#if !RTRC_STATIC_RHI
 
 #define RTRC_RHI_API virtual
 #define RTRC_RHI_API_PURE = 0
@@ -47,13 +47,13 @@ using RHIObjectPtr = RPtr<RHIObject>;
     using CLASS##OPtr = OPtr<CLASS>;
 #define RTRC_RHI_IMPL_PREFIX(X) X
 
-#else // #ifndef RTRC_STATC_RHI
+#else // #if !RTRC_STATC_RHI
 
 #define RTRC_RHI_API
 #define RTRC_RHI_API_PURE
 #define RTRC_RHI_OVERRIDE
 #define RTRC_RHI_IMPLEMENT(DERIVED, BASE) class DERIVED final : public RHIObject
-#ifdef RTRC_RHI_VULKAN
+#if RTRC_RHI_VULKAN
 #define RTRC_RHI_FORWARD_DECL(CLASS)      \
     namespace Vk { class Vulkan##CLASS; } \
     using CLASS = Vk::Vulkan##CLASS;      \
@@ -1406,7 +1406,7 @@ private:
     void ModifyMember(int index, const ConstantBufferUpdate &cbuffer) { this->ModifyMember(index, 0, cbuffer);    } \
     void ModifyMember(int index, Tlas *tlas)                          { this->ModifyMember(index, 0, tlas);       }
 
-#ifndef RTRC_STATIC_RHI
+#if !RTRC_STATIC_RHI
 
 class Surface : public RHIObject
 {
@@ -1892,11 +1892,11 @@ public:
         std::vector<AliasedTransientResourcePair> &aliasRelation) RTRC_RHI_API_PURE;
 };
 
-#endif // #ifndef RTRC_STATIC_RHI
+#endif // #if !RTRC_STATIC_RHI
 
 // =============================== vulkan backend ===============================
 
-#ifdef RTRC_RHI_VULKAN
+#if RTRC_RHI_VULKAN
 
 // Can be called multiple times
 void InitializeVulkanBackend();
@@ -1913,7 +1913,7 @@ UPtr<Instance> CreateVulkanInstance(const VulkanInstanceDesc &desc);
 
 // =============================== directx12 backend ===============================
 
-#ifdef RTRC_RHI_DIRECTX12
+#if RTRC_RHI_DIRECTX12
 
 void InitializeDirectX12Backend();
 

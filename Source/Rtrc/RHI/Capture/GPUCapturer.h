@@ -2,7 +2,7 @@
 
 #include <Rtrc/Core/Common.h>
 
-#if defined(RTRC_RHI_DIRECTX12)
+#if RTRC_RHI_DIRECTX12
 #define RTRC_PIX_CAPTURER 1
 #endif
 

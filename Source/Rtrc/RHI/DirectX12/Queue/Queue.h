@@ -8,7 +8,7 @@ RTRC_RHI_IMPLEMENT(DirectX12Queue, Queue)
 {
 public:
 
-#ifdef RTRC_STATIC_RHI
+#if RTRC_STATIC_RHI
     RTRC_RHI_QUEUE_COMMON
 #endif
 

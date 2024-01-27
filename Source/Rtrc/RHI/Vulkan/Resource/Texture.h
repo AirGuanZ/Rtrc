@@ -12,7 +12,7 @@ RTRC_RHI_IMPLEMENT(VulkanTexture, Texture)
 {
 public:
 
-#ifdef RTRC_STATIC_RHI
+#if RTRC_STATIC_RHI
     RTRC_RHI_TEXTURE_COMMON
 #endif
 

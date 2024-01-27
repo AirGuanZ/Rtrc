@@ -1,4 +1,4 @@
-#ifdef RTRC_RHI_VULKAN
+#if RTRC_RHI_VULKAN
 #include <volk.h>
 #endif
 #include <GLFW/glfw3.h>

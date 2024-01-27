@@ -9,7 +9,7 @@ RTRC_RHI_IMPLEMENT(DirectX12BindingGroup, BindingGroup)
 {
 public:
 
-#ifdef RTRC_STATIC_RHI
+#if RTRC_STATIC_RHI
     RTRC_RHI_BINDING_GROUP_COMMON
 #endif
 

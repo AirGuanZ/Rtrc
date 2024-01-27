@@ -2,8 +2,6 @@
 
 #include <Rtrc/RHI/RHI.h>
 
-struct SpvReflectShaderModule;
-
 RTRC_BEGIN
 
 struct ShaderIOVar

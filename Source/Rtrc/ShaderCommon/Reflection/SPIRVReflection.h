@@ -2,6 +2,8 @@
 
 #include <Rtrc/ShaderCommon/Reflection/ShaderReflection.h>
 
+struct SpvReflectShaderModule;
+
 RTRC_BEGIN
 
 class SPIRVReflection : public ShaderReflection, public Uncopyable

@@ -12,7 +12,7 @@ RTRC_RHI_IMPLEMENT(DirectX12CommandBuffer, CommandBuffer)
 {
 public:
     
-#ifdef RTRC_STATIC_RHI
+#if RTRC_STATIC_RHI
     RTRC_RHI_COMMAND_BUFFER_COMMON_METHODS
 #endif
 

@@ -2,12 +2,12 @@
 #include <atomic>
 #include <cassert>
 
-#ifdef RTRC_RHI_VULKAN
+#if RTRC_RHI_VULKAN
 #include <volk.h>
 #endif
 #include <GLFW/glfw3.h>
 
-#ifdef RTRC_RHI_VULKAN
+#if RTRC_RHI_VULKAN
 #include <Rtrc/RHI/Vulkan/Context/Surface.h>
 #endif
 #include <Rtrc/Core/ScopeGuard.h>
@@ -150,7 +150,7 @@ namespace WindowDetail
 
     void InitGLFWVulkan()
     {
-#ifdef RTRC_RHI_VULKAN
+#if RTRC_RHI_VULKAN
         RHI::InitializeVulkanBackend();
         glfwInitVulkanLoader(vkGetInstanceProcAddr);
 #endif
@@ -280,7 +280,7 @@ void Window::DoEvents()
 
 std::vector<std::string> Window::GetRequiredVulkanInstanceExtensions()
 {
-#ifdef RTRC_RHI_VULKAN
+#if RTRC_RHI_VULKAN
     WindowDetail::InitGLFW();
     WindowDetail::InitGLFWVulkan();
 
@@ -397,7 +397,7 @@ void Window::SetFocus()
 
 ReferenceCountedPtr<RHI::Surface> Window::CreateVulkanSurface(void *vkInstance)
 {
-#ifdef RTRC_RHI_VULKAN
+#if RTRC_RHI_VULKAN
     WindowDetail::InitGLFW();
     WindowDetail::InitGLFWVulkan();
 

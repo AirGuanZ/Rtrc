@@ -2,7 +2,7 @@
 
 #include <Rtrc/RHI/RHIDeclaration.h>
 
-#if defined(RTRC_STATIC_RHI) && defined(RTRC_RHI_VULKAN)
+#if RTRC_STATIC_RHI && RTRC_RHI_VULKAN
 #include <Rtrc/RHI/Vulkan/Context/BackBufferSemaphore.h>
 #include <Rtrc/RHI/Vulkan/Context/Device.h>
 #include <Rtrc/RHI/Vulkan/Context/Instance.h>
@@ -33,7 +33,7 @@
 #include <Rtrc/RHI/Vulkan/Resource/TransientResourcePool/TransientResourcePool.h>
 #endif
 
-#if defined(RTRC_STATIC_RHI) && defined(RTRC_RHI_DIRECTX12)
+#if RTRC_STATIC_RHI && RTRC_RHI_DIRECTX12
 #include <Rtrc/RHI/DirectX12/Context/BackBufferSemaphore.h>
 #include <Rtrc/RHI/DirectX12/Context/Device.h>
 #include <Rtrc/RHI/DirectX12/Context/Instance.h>

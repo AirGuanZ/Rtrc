@@ -17,7 +17,7 @@ RTRC_RHI_IMPLEMENT(VulkanBindingGroup, BindingGroup)
 {
 public:
 
-#ifdef RTRC_STATIC_RHI
+#if RTRC_STATIC_RHI
     RTRC_RHI_BINDING_GROUP_COMMON
 #endif
 

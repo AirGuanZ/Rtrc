@@ -29,7 +29,7 @@
 #include <Rtrc/RHI/Vulkan/Resource/Texture.h>
 #include <Rtrc/RHI/Vulkan/Resource/TextureView.h>
 
-#ifdef RTRC_STATIC_RHI
+#if RTRC_STATIC_RHI
 #include <Rtrc/RHI/Vulkan/Queue/CommandPool.h>
 #endif
 
