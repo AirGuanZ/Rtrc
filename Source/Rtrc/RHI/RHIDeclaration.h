@@ -557,6 +557,10 @@ inline BufferDeviceAddress operator+(std::ptrdiff_t lhs, const BufferDeviceAddre
 
 // =============================== rhi descriptions ===============================
 
+using QueueSessionID = uint64_t;
+
+constexpr QueueSessionID INITIAL_QUEUE_SESSION_ID = 0;
+
 class VertexSemantic
 {
 
@@ -1561,8 +1565,8 @@ public:
         Span<SemaphoreDependency>     signalSemaphores,
         OPtr<Fence>                   signalFence) RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API uint64_t GetCurrentSessionID() RTRC_RHI_API_PURE;
-    RTRC_RHI_API uint64_t GetSynchronizedSessionID() RTRC_RHI_API_PURE;
+    RTRC_RHI_API QueueSessionID GetCurrentSessionID() RTRC_RHI_API_PURE;
+    RTRC_RHI_API QueueSessionID GetSynchronizedSessionID() RTRC_RHI_API_PURE;
 };
 
 class Fence : public RHIObject

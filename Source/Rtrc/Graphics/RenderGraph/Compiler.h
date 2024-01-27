@@ -84,6 +84,8 @@ private:
 
     bool IsInSection(int passIndex, const CompileSection *section) const;
 
+    void ProcessSynchronizedResourceStates();
+
     void TopologySortPasses();
 
     void CollectResourceUsers();

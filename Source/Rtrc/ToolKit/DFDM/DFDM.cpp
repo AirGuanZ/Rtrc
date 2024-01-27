@@ -41,6 +41,7 @@ Image<Vector2f> DFDM::GenerateCorrectionMap(const Image<Vector3f> &displacementM
         ImageDynamic(displacementMapData),
         RHI::TextureLayout::ShaderTexture));
     displacementMap->SetState(TexSubrscState(
+        RHI::INITIAL_QUEUE_SESSION_ID,
         RHI::TextureLayout::ShaderTexture,
         RHI::PipelineStage::None,
         RHI::ResourceAccess::None));

@@ -86,12 +86,12 @@ void DirectX12Queue::Submit(
     }
 }
 
-uint64_t DirectX12Queue::GetCurrentSessionID()
+QueueSessionID DirectX12Queue::GetCurrentSessionID()
 {
     return currentSessionID_;
 }
 
-uint64_t DirectX12Queue::GetSynchronizedSessionID()
+QueueSessionID DirectX12Queue::GetSynchronizedSessionID()
 {
     return synchronizedSessionID_;
 }

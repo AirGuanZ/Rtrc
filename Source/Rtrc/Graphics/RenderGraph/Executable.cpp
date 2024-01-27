@@ -128,11 +128,15 @@ void Executer::ExecuteImpl(const ExecutableGraph &graph)
         graph.queue->Submit({}, {}, {}, {}, {}, graph.completeFence);
     }
 
+    const RHI::QueueSessionID queueSessionID = graph.queue->GetCurrentSessionID();
+
     for(auto &record : graph.resources.indexToBuffer)
     {
         if(record.buffer)
         {
-            record.buffer->SetState(record.finalState);
+            auto state = record.finalState;
+            state.queueSessionID = queueSessionID;
+            record.buffer->SetState(state);
         }
     }
 
@@ -144,7 +148,9 @@ void Executer::ExecuteImpl(const ExecutableGraph &graph)
             {
                 if(auto &optionalState = record.finalState(subrsc.mipLevel, subrsc.arrayLayer))
                 {
-                    record.texture->SetState(subrsc.mipLevel, subrsc.arrayLayer, *optionalState);
+                    auto state = *optionalState;
+                    state.queueSessionID = queueSessionID;
+                    record.texture->SetState(subrsc.mipLevel, subrsc.arrayLayer, state);
                 }
             }
         }

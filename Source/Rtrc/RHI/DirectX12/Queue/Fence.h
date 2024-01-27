@@ -46,8 +46,8 @@ private:
     ComPtr<ID3D12Fence> fence_;
     uint64_t            signalValue_;
 
-    uint64_t               syncSessionID_;
-    std::atomic<uint64_t> *syncSessionIDRecevier_;
+    QueueSessionID               syncSessionID_;
+    std::atomic<QueueSessionID> *syncSessionIDRecevier_;
 };
 
 RTRC_RHI_D3D12_END

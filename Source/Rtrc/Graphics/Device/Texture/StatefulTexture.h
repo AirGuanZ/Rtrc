@@ -7,12 +7,17 @@ RTRC_BEGIN
 
 struct TexSubrscState
 {
-    RHI::TextureLayout      layout   = RHI::TextureLayout::Undefined;
-    RHI::PipelineStageFlag  stages   = RHI::PipelineStage::None;
-    RHI::ResourceAccessFlag accesses = RHI::ResourceAccess::None;
+    RHI::QueueSessionID     queueSessionID = RHI::INITIAL_QUEUE_SESSION_ID;
+    RHI::TextureLayout      layout         = RHI::TextureLayout::Undefined;
+    RHI::PipelineStageFlag  stages         = RHI::PipelineStage::None;
+    RHI::ResourceAccessFlag accesses       = RHI::ResourceAccess::None;
 
     TexSubrscState() = default;
-    TexSubrscState(RHI::TextureLayout layout, RHI::PipelineStageFlag stages, RHI::ResourceAccessFlag accesses);
+    TexSubrscState(
+        RHI::QueueSessionID     queueSessionID,
+        RHI::TextureLayout      layout,
+        RHI::PipelineStageFlag  stages,
+        RHI::ResourceAccessFlag accesses);
 };
 
 class StatefulTexture : public Texture
@@ -47,8 +52,11 @@ private:
 };
 
 inline TexSubrscState::TexSubrscState(
-    RHI::TextureLayout layout, RHI::PipelineStageFlag stages, RHI::ResourceAccessFlag accesses)
-    : layout(layout), stages(stages), accesses(accesses)
+    RHI::QueueSessionID     queueSessionID,
+    RHI::TextureLayout      layout,
+    RHI::PipelineStageFlag  stages,
+    RHI::ResourceAccessFlag accesses)
+    : queueSessionID(queueSessionID), layout(layout), stages(stages), accesses(accesses)
 {
     
 }

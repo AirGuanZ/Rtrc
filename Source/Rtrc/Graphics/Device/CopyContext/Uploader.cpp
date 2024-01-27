@@ -228,7 +228,7 @@ void UploadBatch::SubmitAndWait()
         b.afterStages = RHI::PipelineStage::Copy;
         b.afterAccesses = RHI::ResourceAccess::CopyWrite;
 
-        task.buffer->SetState(RHI::PipelineStage::None, RHI::ResourceAccess::None);
+        task.buffer->SetState(RHI::INITIAL_QUEUE_SESSION_ID, RHI::PipelineStage::None, RHI::ResourceAccess::None);
     }
 
     std::vector<RHI::TextureTransitionBarrier> beforeTextureBarriers, afterTextureBarriers;
@@ -279,7 +279,7 @@ void UploadBatch::SubmitAndWait()
 
         task.texture->SetState(
             task.subrsc.mipLevel, task.subrsc.arrayLayer, TexSubrscState(
-                task.afterLayout, RHI::PipelineStage::None, RHI::ResourceAccess::None));
+                RHI::INITIAL_QUEUE_SESSION_ID, task.afterLayout, RHI::PipelineStage::None, RHI::ResourceAccess::None));
     }
 
     if(!beforeBufferBarriers.empty() || !beforeTextureBarriers.empty())

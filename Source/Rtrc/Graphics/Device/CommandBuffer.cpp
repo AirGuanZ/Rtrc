@@ -32,57 +32,6 @@ BarrierBatch &BarrierBatch::operator()(
 }
 
 BarrierBatch &BarrierBatch::operator()(
-    const RC<StatefulBuffer> &buffer,
-    RHI::PipelineStageFlag    stages,
-    RHI::ResourceAccessFlag   accesses)
-{
-    BT_.push_back(RHI::BufferTransitionBarrier
-    {
-        .buffer         = buffer->GetRHIObject().Get(),
-        .beforeStages   = buffer->GetState().stages,
-        .beforeAccesses = buffer->GetState().accesses,
-        .afterStages    = stages,
-        .afterAccesses  = accesses
-    });
-    buffer->SetState({ stages, accesses });
-    return *this;
-}
-
-BarrierBatch &BarrierBatch::operator()(
-    const RC<StatefulTexture> &texture,
-    RHI::TextureLayout         layout,
-    RHI::PipelineStageFlag     stages,
-    RHI::ResourceAccessFlag    accesses)
-{
-    for(auto [m, a] : EnumerateSubTextures(texture->GetDesc()))
-        operator()(texture, a, m, layout, stages, accesses);
-    return *this;
-}
-
-BarrierBatch &BarrierBatch::operator()(
-    const RC<StatefulTexture> &texture,
-    uint32_t                   arrayLayer,
-    uint32_t                   mipLevel,
-    RHI::TextureLayout         layout,
-    RHI::PipelineStageFlag     stages,
-    RHI::ResourceAccessFlag    accesses)
-{
-    TT_.push_back(RHI::TextureTransitionBarrier
-    {
-        .texture        = texture->GetRHIObject().Get(),
-        .subresources   = TexSubrscs{ mipLevel, 1, arrayLayer, 1 },
-        .beforeStages   = texture->GetState(mipLevel, arrayLayer).stages,
-        .beforeAccesses = texture->GetState(mipLevel, arrayLayer).accesses,
-        .beforeLayout   = texture->GetState(mipLevel, arrayLayer).layout,
-        .afterStages    = stages,
-        .afterAccesses  = accesses,
-        .afterLayout    = layout
-    });
-    texture->SetState(mipLevel, arrayLayer, { layout, stages, accesses });
-    return *this;
-}
-
-BarrierBatch &BarrierBatch::operator()(
     const RC<Buffer>       &buffer,
     RHI::PipelineStageFlag  prevStages,
     RHI::ResourceAccessFlag prevAccesses,

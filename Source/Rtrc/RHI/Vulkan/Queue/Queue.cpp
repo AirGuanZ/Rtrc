@@ -109,12 +109,12 @@ void VulkanQueue::Submit(
     }
 }
 
-uint64_t VulkanQueue::GetCurrentSessionID()
+QueueSessionID VulkanQueue::GetCurrentSessionID()
 {
     return currentSessionID_;
 }
 
-uint64_t VulkanQueue::GetSynchronizedSessionID()
+QueueSessionID VulkanQueue::GetSynchronizedSessionID()
 {
     return synchronizedSessionID_;
 }

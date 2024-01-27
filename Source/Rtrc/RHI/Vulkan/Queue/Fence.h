@@ -27,8 +27,8 @@ private:
     VkDevice device_;
     VkFence fence_;
 
-    uint64_t               syncSessionID_;
-    std::atomic<uint64_t> *syncSessionIDRecevier_;
+    QueueSessionID               syncSessionID_;
+    std::atomic<QueueSessionID> *syncSessionIDRecevier_;
 };
 
 RTRC_RHI_VK_END

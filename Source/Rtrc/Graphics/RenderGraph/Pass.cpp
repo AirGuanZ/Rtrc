@@ -115,7 +115,7 @@ Pass *Pass::Use(const TextureResource *texture, const TexSubrsc &subrsc, const U
     }
     else
     {
-        usage = SubTexUsage(info.layout, info.stages, info.accesses);
+        usage = SubTexUsage(RHI::INITIAL_QUEUE_SESSION_ID, info.layout, info.stages, info.accesses);
     }
     return this;
 }

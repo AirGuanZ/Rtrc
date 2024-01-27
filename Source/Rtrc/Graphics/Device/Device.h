@@ -267,22 +267,6 @@ public:
     void ExecuteAndWait(F &&f);
 
     void ExecuteBarrier(
-        const RC<StatefulBuffer> &buffer,
-        RHI::PipelineStageFlag    stages,
-        RHI::ResourceAccessFlag   accesses);
-    void ExecuteBarrier(
-        const RC<StatefulTexture> &texture,
-        RHI::TextureLayout         layout,
-        RHI::PipelineStageFlag     stages,
-        RHI::ResourceAccessFlag    accesses);
-    void ExecuteBarrier(
-        const RC<StatefulTexture> &texture,
-        uint32_t                   arrayLayer,
-        uint32_t                   mipLevel,
-        RHI::TextureLayout         layout,
-        RHI::PipelineStageFlag     stages,
-        RHI::ResourceAccessFlag    accesses);
-    void ExecuteBarrier(
         const RC<Buffer>       &buffer,
         RHI::PipelineStageFlag  prevStages,
         RHI::ResourceAccessFlag prevAccesses,
@@ -310,10 +294,6 @@ public:
         const RC<Texture> &texture,
         RHI::TextureLayout prevLayout,
         RHI::TextureLayout succLayout);
-    void ExecuteBarrier(
-        const RC<StatefulTexture> &texture,
-        RHI::TextureLayout         prevLayout,
-        RHI::TextureLayout         succLayout);
 
     // Internal helper classes
 
@@ -851,34 +831,6 @@ void Device::ExecuteAndWait(F &&f)
 }
 
 inline void Device::ExecuteBarrier(
-    const RC<StatefulBuffer> &buffer,
-    RHI::PipelineStageFlag    stages,
-    RHI::ResourceAccessFlag   accesses)
-{
-    ExecuteBarrierImpl(buffer, stages, accesses);
-}
-
-inline void Device::ExecuteBarrier(
-    const RC<StatefulTexture> &texture,
-    RHI::TextureLayout         layout,
-    RHI::PipelineStageFlag     stages,
-    RHI::ResourceAccessFlag    accesses)
-{
-    ExecuteBarrierImpl(texture, layout, stages, accesses);
-}
-
-inline void Device::ExecuteBarrier(
-    const RC<StatefulTexture> &texture,
-    uint32_t                   arrayLayer,
-    uint32_t                   mipLevel,
-    RHI::TextureLayout         layout,
-    RHI::PipelineStageFlag     stages,
-    RHI::ResourceAccessFlag    accesses)
-{
-    ExecuteBarrierImpl(texture, arrayLayer, mipLevel, layout, stages, accesses);
-}
-
-inline void Device::ExecuteBarrier(
     const RC<Buffer>       &buffer,
     RHI::PipelineStageFlag  prevStages,
     RHI::ResourceAccessFlag prevAccesses,
@@ -921,14 +873,6 @@ inline void Device::ExecuteBarrier(
     const RC<Texture> &texture,
     RHI::TextureLayout prevLayout,
     RHI::TextureLayout succLayout)
-{
-    ExecuteBarrierImpl(texture, prevLayout, succLayout);
-}
-
-inline void Device::ExecuteBarrier(
-    const RC<StatefulTexture> &texture,
-    RHI::TextureLayout         prevLayout,
-    RHI::TextureLayout         succLayout)
 {
     ExecuteBarrierImpl(texture, prevLayout, succLayout);
 }

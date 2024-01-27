@@ -56,6 +56,8 @@ void Compiler::Compile(const RenderGraph &graph, ExecutableGraph &result)
 {
     graph_ = &graph;
 
+    ProcessSynchronizedResourceStates();
+
     TopologySortPasses();
     CollectResourceUsers();
 
@@ -262,6 +264,38 @@ void Compiler::GenerateConnectionsByDefinitionOrder(
 bool Compiler::IsInSection(int passIndex, const CompileSection *section) const
 {
     return passToSection_.at(passIndex) == section;
+}
+
+void Compiler::ProcessSynchronizedResourceStates()
+{
+    const RHI::QueueSessionID synchronizedSessionID = graph_->GetQueue().GetRHIObject()->GetSynchronizedSessionID();
+
+    for(auto &buffer : graph_->buffers_)
+    {
+        if(auto extBuf = TryCastResource<RenderGraph::ExternalBufferResource>(buffer.get());
+           extBuf && extBuf->buffer->GetState().queueSessionID <= synchronizedSessionID)
+        {
+            extBuf->buffer->SetState(BufferState(
+                RHI::INITIAL_QUEUE_SESSION_ID, RHI::PipelineStage::None, RHI::ResourceAccess::None));
+        }
+    }
+
+    for(auto &texture : graph_->textures_)
+    {
+        if(auto extTex = TryCastResource<RenderGraph::ExternalTextureResource>(texture.get()))
+        {
+            for(auto &&subrsc : EnumerateSubTextures(extTex->GetDesc()))
+            {
+                auto &state = extTex->texture->GetState(subrsc);
+                if(state.queueSessionID <= synchronizedSessionID)
+                {
+                    extTex->texture->SetState(subrsc, TexSubrscState(
+                        RHI::INITIAL_QUEUE_SESSION_ID, state.layout,
+                        RHI::PipelineStage::None, RHI::ResourceAccess::None));
+                }
+            }
+        }
+    }
 }
 
 void Compiler::TopologySortPasses()
@@ -478,7 +512,7 @@ void Compiler::FillExternalResources(ExecutableResources &output)
                     stages |= users[j].usage.stages;
                     accesses |= users[j].usage.accesses;
                 }
-                output.indexToBuffer[index].finalState = BufferState(stages, accesses);
+                output.indexToBuffer[index].finalState = BufferState(RHI::INITIAL_QUEUE_SESSION_ID, stages, accesses);
             }
             else
             {
@@ -499,7 +533,8 @@ void Compiler::FillExternalResources(ExecutableResources &output)
             if(TryCastResource<RenderGraph::SwapchainTexture>(ext))
             {
                 finalStates(0, 0) = TexSubrscState(
-                    RHI::TextureLayout::Present, RHI::PipelineStage::None, RHI::ResourceAccess::None);
+                    RHI::INITIAL_QUEUE_SESSION_ID, RHI::TextureLayout::Present,
+                    RHI::PipelineStage::None, RHI::ResourceAccess::None);
             }
             else
             {
@@ -518,7 +553,8 @@ void Compiler::FillExternalResources(ExecutableResources &output)
                             stages |= users[j].usage.stages;
                             accesses |= users[j].usage.accesses;
                         }
-                        finalStates(subrsc.mipLevel, subrsc.arrayLayer) = TexSubrscState(layout, stages, accesses);
+                        finalStates(subrsc.mipLevel, subrsc.arrayLayer) = TexSubrscState(
+                            RHI::INITIAL_QUEUE_SESSION_ID, layout, stages, accesses);
                     }
                     else
                     {
@@ -556,7 +592,8 @@ void Compiler::AllocateInternalResourcesLegacy(ExecutableResources &output)
                 stages |= users[j].usage.stages;
                 accesses |= users[j].usage.accesses;
             }
-            output.indexToBuffer[resourceIndex].finalState = BufferState(stages, accesses);
+            output.indexToBuffer[resourceIndex].finalState = BufferState(
+                RHI::INITIAL_QUEUE_SESSION_ID, stages, accesses);
         }
         else
         {
@@ -612,7 +649,8 @@ void Compiler::AllocateInternalResourcesLegacy(ExecutableResources &output)
                     stages |= users[j].usage.stages;
                     accesses |= users[j].usage.accesses;
                 }
-                finalStates(subrsc.mipLevel, subrsc.arrayLayer) = TexSubrscState(layout, stages, accesses);
+                finalStates(subrsc.mipLevel, subrsc.arrayLayer) = TexSubrscState(
+                    RHI::INITIAL_QUEUE_SESSION_ID, layout, stages, accesses);
             }
             else
             {
@@ -857,7 +895,8 @@ void Compiler::GenerateBarriers(const ExecutableResources &resources)
             }
             RTRC_SCOPE_EXIT{ userIndex = nextUserIndex; };
 
-            BufferState currState = BufferState(RHI::PipelineStage::None, RHI::ResourceAccess::None);
+            BufferState currState = BufferState(
+                RHI::INITIAL_QUEUE_SESSION_ID, RHI::PipelineStage::None, RHI::ResourceAccess::None);
             RTRC_SCOPE_EXIT{ lastState = currState; };
             for(size_t i = userIndex; i < nextUserIndex; ++i)
             {

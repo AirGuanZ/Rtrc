@@ -88,7 +88,7 @@ void DownloadBatch::SubmitAndWait()
         b.beforeAccesses = prevState.accesses;
         b.afterStages = RHI::PipelineStage::Copy;
         b.afterAccesses = RHI::ResourceAccess::CopyRead;
-        task.buffer->SetState({ RHI::PipelineStage::None, RHI::ResourceAccess::None });
+        task.buffer->SetState({ RHI::INITIAL_QUEUE_SESSION_ID, RHI::PipelineStage::None, RHI::ResourceAccess::None });
     }
 
     std::vector<RHI::TextureTransitionBarrier> beforeTextureTransitions;
@@ -99,7 +99,8 @@ void DownloadBatch::SubmitAndWait()
         {
             assert(RHI::IsReadOnly(prevState.accesses));
             task.texture->SetState(task.subrsc, TexSubrscState(
-                RHI::TextureLayout::CopySrc, RHI::PipelineStage::None, RHI::ResourceAccess::None));
+                RHI::INITIAL_QUEUE_SESSION_ID, RHI::TextureLayout::CopySrc,
+                RHI::PipelineStage::None, RHI::ResourceAccess::None));
         }
         else
         {
@@ -120,7 +121,8 @@ void DownloadBatch::SubmitAndWait()
             b.afterAccesses = RHI::ResourceAccess::CopyRead;
 
             task.texture->SetState(task.subrsc, TexSubrscState(
-                RHI::TextureLayout::CopySrc, RHI::PipelineStage::None, RHI::ResourceAccess::None));
+                RHI::INITIAL_QUEUE_SESSION_ID, RHI::TextureLayout::CopySrc,
+                RHI::PipelineStage::None, RHI::ResourceAccess::None));
         }
     }
 

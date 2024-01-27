@@ -6,11 +6,12 @@ RTRC_BEGIN
 
 struct BufferState
 {
-    RHI::PipelineStageFlag  stages   = RHI::PipelineStage::None;
-    RHI::ResourceAccessFlag accesses = RHI::ResourceAccess::None;
+    RHI::QueueSessionID     queueSessionID = RHI::INITIAL_QUEUE_SESSION_ID;
+    RHI::PipelineStageFlag  stages         = RHI::PipelineStage::None;
+    RHI::ResourceAccessFlag accesses       = RHI::ResourceAccess::None;
 
     BufferState() = default;
-    BufferState(RHI::PipelineStageFlag stages, RHI::ResourceAccessFlag accesses);
+    BufferState(RHI::QueueSessionID queueSessionID, RHI::PipelineStageFlag stages, RHI::ResourceAccessFlag accesses);
 };
 
 class StatefulBuffer : public Buffer
@@ -20,7 +21,7 @@ public:
     static RC<StatefulBuffer> FromBuffer(RC<Buffer> buffer);
 
     void SetState(const BufferState &state);
-    void SetState(RHI::PipelineStageFlag stages, RHI::ResourceAccessFlag accesses);
+    void SetState(RHI::QueueSessionID queueSessionID, RHI::PipelineStageFlag stages, RHI::ResourceAccessFlag accesses);
     const BufferState &GetState() const;
 
 private:
@@ -39,8 +40,9 @@ private:
     RC<Buffer> buffer_;
 };
 
-inline BufferState::BufferState(RHI::PipelineStageFlag stages, RHI::ResourceAccessFlag accesses)
-    : stages(stages), accesses(accesses)
+inline BufferState::BufferState(
+    RHI::QueueSessionID queueSessionID, RHI::PipelineStageFlag stages, RHI::ResourceAccessFlag accesses)
+    : queueSessionID(queueSessionID), stages(stages), accesses(accesses)
 {
     
 }
@@ -55,9 +57,10 @@ inline void StatefulBuffer::SetState(const BufferState &state)
     state_ = state;
 }
 
-inline void StatefulBuffer::SetState(RHI::PipelineStageFlag stages, RHI::ResourceAccessFlag accesses)
+inline void StatefulBuffer::SetState(
+    RHI::QueueSessionID queueSessionID, RHI::PipelineStageFlag stages, RHI::ResourceAccessFlag accesses)
 {
-    state_ = { stages, accesses };
+    state_ = { queueSessionID, stages, accesses };
 }
 
 inline const BufferState &StatefulBuffer::GetState() const

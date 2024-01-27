@@ -51,25 +51,6 @@ public:
         RHI::ResourceAccessFlag prevAccesses,
         RHI::PipelineStageFlag  succStages,
         RHI::ResourceAccessFlag succAccesses);
-
-    BarrierBatch &operator()(
-        const RC<StatefulBuffer> &buffer,
-        RHI::PipelineStageFlag    stages,
-        RHI::ResourceAccessFlag   accesses);
-
-    BarrierBatch &operator()(
-        const RC<StatefulTexture> &texture,
-        RHI::TextureLayout         layout,
-        RHI::PipelineStageFlag     stages,
-        RHI::ResourceAccessFlag    accesses);
-
-    BarrierBatch &operator()(
-        const RC<StatefulTexture> &texture,
-        uint32_t                   arrayLayer,
-        uint32_t                   mipLevel,
-        RHI::TextureLayout         layout,
-        RHI::PipelineStageFlag     stages,
-        RHI::ResourceAccessFlag    accesses);
     
     BarrierBatch &operator()(
         const RC<Buffer>       &buffer,
@@ -275,22 +256,6 @@ public:
         RHI::PipelineStageFlag  succStages,
         RHI::ResourceAccessFlag succAccesses);
     void ExecuteBarrier(
-        const RC<StatefulBuffer> &buffer,
-        RHI::PipelineStageFlag    stages,
-        RHI::ResourceAccessFlag   accesses);
-    void ExecuteBarrier(
-        const RC<StatefulTexture> &texture,
-        RHI::TextureLayout         layout,
-        RHI::PipelineStageFlag     stages,
-        RHI::ResourceAccessFlag    accesses);
-    void ExecuteBarrier(
-        const RC<StatefulTexture> &texture,
-        uint32_t                   arrayLayer,
-        uint32_t                   mipLevel,
-        RHI::TextureLayout         layout,
-        RHI::PipelineStageFlag     stages,
-        RHI::ResourceAccessFlag    accesses);
-    void ExecuteBarrier(
         const RC<Buffer>       &buffer,
         RHI::PipelineStageFlag  prevStages,
         RHI::ResourceAccessFlag prevAccesses,
@@ -412,34 +377,6 @@ inline void CommandBuffer::ExecuteBarrier(
     RHI::ResourceAccessFlag succAccesses)
 {
     this->ExecuteBarriers(BarrierBatch(prevStages, prevAccesses, succStages, succAccesses));
-}
-
-inline void CommandBuffer::ExecuteBarrier(
-    const RC<StatefulBuffer> &buffer,
-    RHI::PipelineStageFlag    stages,
-    RHI::ResourceAccessFlag   accesses)
-{
-    this->ExecuteBarriers(BarrierBatch{}(buffer, stages, accesses));
-}
-
-inline void CommandBuffer::ExecuteBarrier(
-    const RC<StatefulTexture> &texture,
-    RHI::TextureLayout         layout,
-    RHI::PipelineStageFlag     stages,
-    RHI::ResourceAccessFlag    accesses)
-{
-    this->ExecuteBarriers(BarrierBatch{}(texture, layout, stages, accesses));
-}
-
-inline void CommandBuffer::ExecuteBarrier(
-    const RC<StatefulTexture> &texture,
-    uint32_t                   arrayLayer,
-    uint32_t                   mipLevel,
-    RHI::TextureLayout         layout,
-    RHI::PipelineStageFlag     stages,
-    RHI::ResourceAccessFlag    accesses)
-{
-    this->ExecuteBarriers(BarrierBatch{}(texture, arrayLayer, mipLevel, layout, stages, accesses));
 }
 
 inline void CommandBuffer::ExecuteBarrier(

@@ -18,7 +18,7 @@ void Run()
         RHI::TextureUsage::ShaderResource, false, RHI::TextureLayout::ShaderTexture);
     auto inputTextureSrv = inputTexture->GetSrv();
 
-    auto outputTexture = StatefulTexture::FromTexture(device->CreateTexture(RHI::TextureDesc
+    auto outputTexture = device->CreateTexture(RHI::TextureDesc
         {
             .dim = RHI::TextureDimension::Tex2D,
             .format = RHI::Format::B8G8R8A8_UNorm,
@@ -30,7 +30,7 @@ void Run()
             .usage = RHI::TextureUsage::TransferSrc | RHI::TextureUsage::UnorderAccess,
             .initialLayout = RHI::TextureLayout::Undefined,
             .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
-        }));
+        });
     auto outputTextureUav = outputTexture->GetUav();
 
     const size_t rowDataSize = outputTexture->GetDesc().width * GetTexelSize(outputTexture->GetFormat());
@@ -56,6 +56,9 @@ void Run()
     {
         cmd.ExecuteBarrier(
             outputTexture,
+            RHI::TextureLayout::Undefined,
+            RHI::PipelineStage::None,
+            RHI::ResourceAccess::None,
             RHI::TextureLayout::ShaderRWTexture,
             RHI::PipelineStage::ComputeShader,
             RHI::ResourceAccess::RWTextureWrite);
@@ -72,8 +75,11 @@ void Run()
 
         cmd.ExecuteBarrier(
             outputTexture,
+            RHI::TextureLayout::ShaderRWTexture,
+            RHI::PipelineStage::ComputeShader,
+            RHI::ResourceAccess::RWTextureWrite,
             RHI::TextureLayout::CopySrc,
-            RHI::PipelineStage::Copy, 
+            RHI::PipelineStage::Copy,
             RHI::ResourceAccess::CopyRead);
         cmd.CopyColorTexture2DToBuffer(*readbackBuffer, 0, alignedRowSize, *outputTexture, 0, 0);
     });

@@ -28,7 +28,7 @@ void VulkanFence::Wait()
     if(syncSessionIDRecevier_)
     {
         auto &maxv = *syncSessionIDRecevier_;
-        uint64_t prevValue = maxv;
+        QueueSessionID prevValue = maxv;
         while(prevValue < syncSessionID_ && !maxv.compare_exchange_weak(prevValue, syncSessionID_))
         {
 
