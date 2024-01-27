@@ -28,7 +28,7 @@ void VulkanQueue::WaitIdle()
 void VulkanQueue::Submit(
     BackBufferSemaphoreDependency waitBackBufferSemaphore,
     Span<SemaphoreDependency>     waitSemaphores,
-    Span<RPtr<CommandBuffer>>      commandBuffers,
+    Span<RPtr<CommandBuffer>>     commandBuffers,
     BackBufferSemaphoreDependency signalBackBufferSemaphore,
     Span<SemaphoreDependency>     signalSemaphores,
     OPtr<Fence>                   signalFence)

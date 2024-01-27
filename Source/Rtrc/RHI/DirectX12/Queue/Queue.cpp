@@ -37,16 +37,11 @@ void DirectX12Queue::WaitIdle()
 void DirectX12Queue::Submit(
     BackBufferSemaphoreDependency waitBackBufferSemaphore,
     Span<SemaphoreDependency>     waitSemaphores,
-    Span<RPtr<CommandBuffer>>      commandBuffers,
+    Span<RPtr<CommandBuffer>>     commandBuffers,
     BackBufferSemaphoreDependency signalBackBufferSemaphore,
     Span<SemaphoreDependency>     signalSemaphores,
     OPtr<Fence>                   signalFence)
 {
-    /*assert(
-        waitBackBufferSemaphore.semaphore == nullptr ||
-        static_cast<const DirectX12BackBufferSemaphore *>(waitBackBufferSemaphore.semaphore.Get())
-            ->type == DirectX12BackBufferSemaphore::Acquire);*/
-
     for(auto &s : waitSemaphores)
     {
         auto ds = static_cast<DirectX12Semaphore *>(s.semaphore.Get());

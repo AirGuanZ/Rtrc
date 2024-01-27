@@ -539,7 +539,7 @@ VkImageLayout TranslateImageLayout(TextureLayout layout)
     Unreachable();
 }
 
-VkImageSubresourceRange TranslateImageSubresources(Format format, const TextureSubresources &subresources)
+VkImageSubresourceRange TranslateImageSubresources(Format format, const TexSubrscs &subresources)
 {
     return VkImageSubresourceRange{
         .aspectMask     = GetAllAspects(format),

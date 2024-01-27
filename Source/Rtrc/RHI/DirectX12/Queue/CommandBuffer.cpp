@@ -542,7 +542,7 @@ void DirectX12CommandBuffer::ExecuteBarriersInternal(
     Span<TextureReleaseBarrier>    textureReleaseBarriers,
     Span<TextureAcquireBarrier>    textureAcquireBarriers)
 {
-    auto TranslateBarrierSubresources = [](const TextureSubresources &subrscs, Format format)
+    auto TranslateBarrierSubresources = [](const TexSubrscs &subrscs, Format format)
     {
         D3D12_BARRIER_SUBRESOURCE_RANGE ret;
         ret.IndexOrFirstMipLevel = subrscs.mipLevel;

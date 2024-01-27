@@ -1,6 +1,10 @@
 #pragma once
 
-#include <Rtrc/RHI/DirectX12/Common.h>
+#include <map>
+#include <set>
+#include <vector>
+
+#include <Rtrc/Core/Common.h>
 
 RTRC_RHI_BEGIN
 

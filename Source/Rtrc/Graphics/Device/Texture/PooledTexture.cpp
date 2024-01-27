@@ -22,7 +22,7 @@ RC<PooledTexture> PooledTextureManager::Create(const RHI::TextureDesc &desc)
     else
     {
         texData.rhiTexture_ = device_->CreateTexture(desc).ToRC();
-        ret->state_ = TextureSubrscMap<TextureSubrscState>(desc);
+        ret->state_ = TextureSubrscMap<TexSubrscState>(desc);
     }
     return ret;
 }

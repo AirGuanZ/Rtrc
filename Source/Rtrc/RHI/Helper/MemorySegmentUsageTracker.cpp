@@ -1,3 +1,6 @@
+#include <cassert>
+
+#include <Rtrc/Core/Container/StaticVector.h>
 #include <Rtrc/RHI/Helper/MemorySegmentUsageTracker.h>
 
 RTRC_RHI_BEGIN

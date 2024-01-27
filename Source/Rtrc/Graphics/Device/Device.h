@@ -153,25 +153,25 @@ public:
         size_t            offset = 0,
         size_t            size = 0);
     void Upload(
-        const RC<Texture>      &texture,
-        RHI::TextureSubresource subrsc,
-        const void             *data,
-        size_t                  dataRowBytes,
-        RHI::TextureLayout      afterLayout);
+        const RC<Texture> &texture,
+        TexSubrsc          subrsc,
+        const void        *data,
+        size_t             dataRowBytes,
+        RHI::TextureLayout afterLayout);
     void Upload(
         const RC<StatefulTexture> &texture,
-        RHI::TextureSubresource    subrsc,
+        TexSubrsc                  subrsc,
         const void                *data,
         size_t                     dataRowBytes,
         RHI::TextureLayout         afterLayout);
     void Upload(
-        const RC<Texture>       &texture,
-        RHI::TextureSubresource  subrsc,
-        const ImageDynamic      &image,
-        RHI::TextureLayout       afterLayout);
+        const RC<Texture>  &texture,
+        TexSubrsc           subrsc,
+        const ImageDynamic &image,
+        RHI::TextureLayout  afterLayout);
     void Upload(
         const RC<StatefulTexture> &texture,
-        RHI::TextureSubresource    subrsc,
+        TexSubrsc                  subrsc,
         const ImageDynamic        &image,
         RHI::TextureLayout         afterLayout);
     
@@ -181,9 +181,9 @@ public:
                   size_t                    size = 0);
 
     void Download(const RC<StatefulTexture> &texture,
-                  TextureSubresource         subrsc,
-                  void                      *outputData,
-                  size_t                     dataRowBytes = 0);
+                  TexSubrsc         subrsc,
+                  void             *outputData,
+                  size_t            dataRowBytes = 0);
 
     template<typename T>
     RC<Buffer> CreateAndUploadTexelBuffer(RHI::BufferUsageFlag usages, Span<T> data, RHI::Format format);
@@ -632,7 +632,7 @@ inline void Device::Upload(
 
 inline void Device::Upload(
     const RC<Texture>      &texture,
-    RHI::TextureSubresource subrsc,
+    TexSubrsc subrsc,
     const void             *data,
     size_t                  dataRowBytes,
     RHI::TextureLayout      afterLayout)
@@ -642,7 +642,7 @@ inline void Device::Upload(
 
 inline void Device::Upload(
     const RC<StatefulTexture> &texture,
-    RHI::TextureSubresource    subrsc,
+    TexSubrsc                  subrsc,
     const void                *data,
     size_t                     dataRowBytes,
     RHI::TextureLayout         afterLayout)
@@ -651,17 +651,17 @@ inline void Device::Upload(
 }
 
 inline void Device::Upload(
-    const RC<Texture>       &texture,
-    RHI::TextureSubresource  subrsc,
-    const ImageDynamic      &image,
-    RHI::TextureLayout       afterLayout)
+    const RC<Texture>  &texture,
+    TexSubrsc           subrsc,
+    const ImageDynamic &image,
+    RHI::TextureLayout  afterLayout)
 {
     uploader_->Upload(texture, subrsc, image, afterLayout);
 }
 
 inline void Device::Upload(
     const RC<StatefulTexture> &texture,
-    RHI::TextureSubresource    subrsc,
+    TexSubrsc                  subrsc,
     const ImageDynamic        &image,
     RHI::TextureLayout         afterLayout)
 {
@@ -674,7 +674,7 @@ inline void Device::Download(const RC<StatefulBuffer> &buffer, void *data, size_
 }
 
 inline void Device::Download(
-    const RC<StatefulTexture> &texture, TextureSubresource subrsc, void *outputData, size_t dataRowBytes)
+    const RC<StatefulTexture> &texture, TexSubrsc subrsc, void *outputData, size_t dataRowBytes)
 {
     downloader_->Download(texture, subrsc, outputData, dataRowBytes);
 }

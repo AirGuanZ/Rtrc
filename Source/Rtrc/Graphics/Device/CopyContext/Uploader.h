@@ -38,14 +38,14 @@ public:
 
     void Record(
         const RC<Texture> &texture, // Prev accesses to texture should be externally synchronized
-        TextureSubresource subrsc,
+        TexSubrsc          subrsc,
         const void        *data,
         size_t             dataRowBytes, // Specify 0 to use packed row bytes
         RHI::TextureLayout afterLayout,
         bool               takeCopyOfData);
     void Record(
         const RC<StatefulTexture> &texture,
-        TextureSubresource         subrsc,
+        TexSubrsc                  subrsc,
         const void                *data,
         size_t                     dataRowBytes,
         RHI::TextureLayout         afterLayout,
@@ -53,12 +53,12 @@ public:
 
     void Record(
         const RC<Texture>  &texture,
-        TextureSubresource  subrsc,
+        TexSubrsc           subrsc,
         const ImageDynamic &image,
         RHI::TextureLayout  afterLayout);
     void Record(
         const RC<StatefulTexture> &texture,
-        TextureSubresource         subrsc,
+        TexSubrsc                  subrsc,
         const ImageDynamic        &image,
         RHI::TextureLayout         afterLayout);
 
@@ -81,7 +81,7 @@ private:
     struct TextureTask
     {
         RC<StatefulTexture>        texture;
-        RHI::TextureSubresource    subrsc;
+        TexSubrsc                  subrsc;
         const void                *data;
         size_t                     dataRowBytes;
         std::vector<unsigned char> ownedData;
@@ -107,25 +107,25 @@ public:
         size_t            offset = 0,
         size_t            size = 0);
     void Upload(
-        const RC<Texture>      &texture,
-        RHI::TextureSubresource subrsc,
-        const void             *data,
-        size_t                  dataRowBytes,
-        RHI::TextureLayout      afterLayout);
+        const RC<Texture> &texture,
+        TexSubrsc          subrsc,
+        const void        *data,
+        size_t             dataRowBytes,
+        RHI::TextureLayout afterLayout);
     void Upload(
         const RC<StatefulTexture> &texture,
-        RHI::TextureSubresource    subrsc,
+        TexSubrsc                  subrsc,
         const void                *data,
         size_t                     dataRowBytes,
         RHI::TextureLayout         afterLayout);
     void Upload(
-        const RC<Texture>       &texture,
-        RHI::TextureSubresource  subrsc,
-        const ImageDynamic      &image,
-        RHI::TextureLayout       afterLayout);
+        const RC<Texture>  &texture,
+        TexSubrsc           subrsc,
+        const ImageDynamic &image,
+        RHI::TextureLayout  afterLayout);
     void Upload(
         const RC<StatefulTexture> &texture,
-        RHI::TextureSubresource    subrsc,
+        TexSubrsc                  subrsc,
         const ImageDynamic        &image,
         RHI::TextureLayout         afterLayout);
 

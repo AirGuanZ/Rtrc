@@ -3,8 +3,8 @@ cmake_minimum_required(VERSION 3.10)
 project(RtrcRHI)
 
 file(GLOB_RECURSE NON_BACKEND_SRCS "*.cpp" "*.h")
-file(GLOB_RECURSE DIRECTX12_SRCS   "Graphics/RHI/DirectX12/*.cpp" "Graphics/RHI/DirectX12/*.h")
-file(GLOB_RECURSE VULKAN_SRCS      "Graphics/RHI/Vulkan/*.cpp" "Graphics/RHI/Vulkan/*.h")
+file(GLOB_RECURSE DIRECTX12_SRCS   "DirectX12/*.cpp" "DirectX12/*.h")
+file(GLOB_RECURSE VULKAN_SRCS      "Vulkan/*.cpp" "Vulkan/*.h")
 
 list(REMOVE_ITEM NON_BACKEND_SRCS ${DIRECTX12_SRCS})
 list(REMOVE_ITEM NON_BACKEND_SRCS ${VULKAN_SRCS})

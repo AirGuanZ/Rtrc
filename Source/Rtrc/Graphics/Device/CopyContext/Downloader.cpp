@@ -38,8 +38,7 @@ void DownloadBatch::Record(const RC<StatefulBuffer> &buffer, void *data, size_t 
     bufferTasks_.push_back({ buffer, data, offset, size });
 }
 
-void DownloadBatch::Record(
-    const RC<StatefulTexture> &texture, TextureSubresource subrsc, void *outputData, size_t dataRowBytes)
+void DownloadBatch::Record(const RC<StatefulTexture> &texture, TexSubrsc subrsc, void *outputData, size_t dataRowBytes)
 {
     const size_t packedRowBytes = texture->GetWidth(subrsc.mipLevel) * GetTexelSize(texture->GetFormat());
     if(dataRowBytes == 0)
@@ -99,7 +98,7 @@ void DownloadBatch::SubmitAndWait()
         if(prevState.layout == RHI::TextureLayout::CopySrc)
         {
             assert(RHI::IsReadOnly(prevState.accesses));
-            task.texture->SetState(task.subrsc, TextureSubrscState(
+            task.texture->SetState(task.subrsc, TexSubrscState(
                 RHI::TextureLayout::CopySrc, RHI::PipelineStage::None, RHI::ResourceAccess::None));
         }
         else
@@ -120,7 +119,7 @@ void DownloadBatch::SubmitAndWait()
             b.afterStages = RHI::PipelineStage::Copy;
             b.afterAccesses = RHI::ResourceAccess::CopyRead;
 
-            task.texture->SetState(task.subrsc, TextureSubrscState(
+            task.texture->SetState(task.subrsc, TexSubrscState(
                 RHI::TextureLayout::CopySrc, RHI::PipelineStage::None, RHI::ResourceAccess::None));
         }
     }
@@ -219,8 +218,7 @@ void Downloader::Download(const RC<StatefulBuffer> &buffer, void *outputData, si
     batch.SubmitAndWait();
 }
 
-void Downloader::Download(
-    const RC<StatefulTexture> &texture, TextureSubresource subrsc, void *outputData, size_t dataRowBytes)
+void Downloader::Download(const RC<StatefulTexture> &texture, TexSubrsc subrsc, void *outputData, size_t dataRowBytes)
 {
     auto batch = CreateBatch();
     batch.Record(texture, subrsc, outputData, dataRowBytes);

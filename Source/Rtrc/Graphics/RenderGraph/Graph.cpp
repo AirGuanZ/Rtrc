@@ -164,8 +164,7 @@ TextureResource *RenderGraph::RegisterSwapchainTexture(
 
     const int index = static_cast<int>(textures_.size());
     auto resource = MakeBox<SwapchainTexture>(this, index);
-    resource->texture = MakeRC<WrappedStatefulTexture>(
-        Texture::FromRHIObject(std::move(rhiTexture)), TextureSubrscState{});
+    resource->texture = MakeRC<WrappedStatefulTexture>(Texture::FromRHIObject(std::move(rhiTexture)), TexSubrscState{});
     resource->acquireSemaphore = std::move(acquireSemaphore);
     resource->presentSemaphore = std::move(presentSemaphore);
     swapchainTexture_ = resource.get();
@@ -242,11 +241,6 @@ Pass *RenderGraph::CreateClearTexture2DPass(std::string name, TextureResource *t
     return pass;
 }
 
-Pass *RenderGraph::CreateDummyPass(std::string name)
-{
-    return CreatePass(std::move(name));
-}
-
 Pass *RenderGraph::CreateClearRWBufferPass(std::string name, BufferResource *buffer, uint32_t value)
 {
     auto pass = CreatePass(std::move(name));
@@ -292,7 +286,7 @@ Pass *RenderGraph::CreateCopyColorTexturePass(std::string name, TextureResource 
     assert(src->GetArraySize() == dst->GetArraySize());
     assert(src->GetMipLevels() == dst->GetMipLevels());
     assert(src->GetSize() == dst->GetSize());
-    return CreateCopyColorTexturePass(std::move(name), src, dst, TextureSubresources
+    return CreateCopyColorTexturePass(std::move(name), src, dst, TexSubrscs
     {
         .mipLevel = 0,
         .levelCount = src->GetMipLevels(),
@@ -305,17 +299,17 @@ Pass *RenderGraph::CreateCopyColorTexturePass(
     std::string                name,
     TextureResource           *src,
     TextureResource           *dst,
-    const TextureSubresources &subrscs)
+    const TexSubrscs &subrscs)
 {
     return CreateCopyColorTexturePass(std::move(name), src, subrscs, dst, subrscs);
 }
 
 Pass *RenderGraph::CreateCopyColorTexturePass(
-    std::string                name,
-    TextureResource           *src,
-    const TextureSubresources &srcSubrscs,
-    TextureResource           *dst,
-    const TextureSubresources &dstSubrscs)
+    std::string       name,
+    TextureResource  *src,
+    const TexSubrscs &srcSubrscs,
+    TextureResource  *dst,
+    const TexSubrscs &dstSubrscs)
 {
     assert(srcSubrscs.layerCount == dstSubrscs.layerCount);
     assert(srcSubrscs.levelCount == dstSubrscs.levelCount);
@@ -326,7 +320,7 @@ Pass *RenderGraph::CreateCopyColorTexturePass(
         for(unsigned m = srcSubrscs.mipLevel; m < srcSubrscs.mipLevel + srcSubrscs.levelCount; ++m)
         {
             assert(m < src->GetMipLevels());
-            pass->Use(src, TextureSubresource{ m, a }, CopySrc);
+            pass->Use(src, TexSubrsc{ m, a }, CopySrc);
         }
     }
     for(unsigned a = dstSubrscs.arrayLayer; a < dstSubrscs.arrayLayer + dstSubrscs.layerCount; ++a)
@@ -335,7 +329,7 @@ Pass *RenderGraph::CreateCopyColorTexturePass(
         for(unsigned m = dstSubrscs.mipLevel; m < dstSubrscs.mipLevel + dstSubrscs.levelCount; ++m)
         {
             assert(m < dst->GetMipLevels());
-            pass->Use(dst, TextureSubresource{ m, a }, CopyDst);
+            pass->Use(dst, TexSubrsc{ m, a }, CopyDst);
         }
     }
     pass->SetCallback([src, srcSubrscs, dst, dstSubrscs]

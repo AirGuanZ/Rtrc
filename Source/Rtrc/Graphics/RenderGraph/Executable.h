@@ -17,7 +17,7 @@ struct ExecutableResources
     struct Texture2DRecord
     {
         RC<StatefulTexture> texture;
-        TextureSubrscMap<std::optional<TextureSubrscState>> finalState;
+        TextureSubrscMap<std::optional<TexSubrscState>> finalState;
     };
 
     std::vector<BufferRecord> indexToBuffer;

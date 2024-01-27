@@ -48,7 +48,7 @@ private:
     using BufferUserMap = std::map<const BufferResource *, BufferUsers, std::less<>>;
     using SubTexUser    = ResourceUser<Pass::SubTexUsage>;
     using SubTexUsers   = std::vector<SubTexUser>;
-    using SubTexKey     = std::pair<const TextureResource*, RHI::TextureSubresource>;
+    using SubTexKey     = std::pair<const TextureResource*, TexSubrsc>;
     using SubTexUserMap = std::map<SubTexKey, SubTexUsers, std::less<>>;
 
     struct CompileSection

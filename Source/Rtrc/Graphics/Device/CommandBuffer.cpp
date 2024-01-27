@@ -70,7 +70,7 @@ BarrierBatch &BarrierBatch::operator()(
     TT_.push_back(RHI::TextureTransitionBarrier
     {
         .texture        = texture->GetRHIObject().Get(),
-        .subresources   = RHI::TextureSubresources{ mipLevel, 1, arrayLayer, 1 },
+        .subresources   = TexSubrscs{ mipLevel, 1, arrayLayer, 1 },
         .beforeStages   = texture->GetState(mipLevel, arrayLayer).stages,
         .beforeAccesses = texture->GetState(mipLevel, arrayLayer).accesses,
         .beforeLayout   = texture->GetState(mipLevel, arrayLayer).layout,
@@ -130,7 +130,7 @@ BarrierBatch &BarrierBatch::operator()(
     TT_.push_back(RHI::TextureTransitionBarrier
     {
         .texture        = texture->GetRHIObject().Get(),
-        .subresources   = RHI::TextureSubresources{ mipLevel, 1, arrayLayer, 1 },
+        .subresources   = TexSubrscs{ mipLevel, 1, arrayLayer, 1 },
         .beforeStages   = prevStages,
         .beforeAccesses = prevAccesses,
         .beforeLayout   = prevLayout,

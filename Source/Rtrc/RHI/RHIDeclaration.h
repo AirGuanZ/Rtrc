@@ -723,16 +723,16 @@ struct SamplerDesc
     }
 };
 
-struct TextureSubresource
+struct TexSubrsc
 {
     uint32_t mipLevel;
     uint32_t arrayLayer;
 
-    auto operator<=>(const TextureSubresource &) const = default;
-    bool operator==(const TextureSubresource &) const = default;
+    auto operator<=>(const TexSubrsc &) const = default;
+    bool operator==(const TexSubrsc &) const = default;
 };
 
-struct TextureSubresources
+struct TexSubrscs
 {
     uint32_t mipLevel   = 0;
     uint32_t levelCount = 1;
@@ -795,15 +795,17 @@ struct TextureDesc
         return std::make_tuple(
                     dim, format, width, height, arraySize, mipLevels,
                     sampleCount, usage, initialLayout, concurrentAccessMode, clearValue, linearHint)
-           == std::make_tuple(
-                    rhs.dim, rhs.format, rhs.width, rhs.height, rhs.arraySize, rhs.mipLevels,
-                    rhs.sampleCount, rhs.usage, rhs.initialLayout, rhs.concurrentAccessMode, rhs.clearValue, linearHint);
+            == std::make_tuple(
+                     rhs.dim, rhs.format, rhs.width, rhs.height, rhs.arraySize,
+                     rhs.mipLevels, rhs.sampleCount, rhs.usage, rhs.initialLayout,
+                     rhs.concurrentAccessMode, rhs.clearValue, linearHint);
     }
 
     size_t Hash() const
     {
         return Rtrc::Hash(
-            dim, format, width, height, depth, mipLevels, sampleCount, usage, initialLayout, concurrentAccessMode, linearHint);
+            dim, format, width, height, depth, mipLevels,
+            sampleCount, usage, initialLayout, concurrentAccessMode, linearHint);
     }
 };
 
@@ -881,7 +883,7 @@ struct GlobalMemoryBarrier
 struct TextureTransitionBarrier
 {
     Texture            *texture;
-    TextureSubresources subresources;
+    TexSubrscs          subresources;
     PipelineStageFlag   beforeStages;
     ResourceAccessFlag  beforeAccesses;
     TextureLayout       beforeLayout;
@@ -894,7 +896,7 @@ struct TextureTransitionBarrier
 struct TextureReleaseBarrier
 {
     Texture            *texture;
-    TextureSubresources subresources;
+    TexSubrscs          subresources;
     PipelineStageFlag   beforeStages;
     ResourceAccessFlag  beforeAccesses;
     TextureLayout       beforeLayout;
@@ -906,7 +908,7 @@ struct TextureReleaseBarrier
 struct TextureAcquireBarrier
 {
     Texture            *texture;
-    TextureSubresources subresources;
+    TexSubrscs          subresources;
     TextureLayout       beforeLayout;
     PipelineStageFlag   afterStages;
     ResourceAccessFlag  afterAccesses;
@@ -1550,6 +1552,7 @@ public:
 
     RTRC_RHI_API void WaitIdle() RTRC_RHI_API_PURE;
 
+    // Fence (if not null) must be in unsignaled state.
     RTRC_RHI_API void Submit(
         BackBufferSemaphoreDependency waitBackBufferSemaphore,
         Span<SemaphoreDependency>     waitSemaphores,

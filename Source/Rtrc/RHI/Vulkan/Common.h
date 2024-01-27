@@ -62,7 +62,7 @@ VkSamplerMipmapMode      TranslateSamplerMipmapMode     (FilterMode mode);
 VkSamplerAddressMode     TranslateSamplerAddressMode    (AddressMode mode);
 VkAccessFlags2           TranslateAccessFlag            (ResourceAccessFlag flag);
 VkImageLayout            TranslateImageLayout           (TextureLayout layout);
-VkImageSubresourceRange  TranslateImageSubresources     (Format format, const TextureSubresources &subresources);
+VkImageSubresourceRange  TranslateImageSubresources     (Format format, const TexSubrscs &subresources);
 VkFormat                 TranslateInputAttributeType    (VertexAttributeType type);
 VkIndexType              TranslateIndexFormat           (IndexFormat format);
 

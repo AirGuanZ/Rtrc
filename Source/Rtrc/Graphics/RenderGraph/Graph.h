@@ -11,19 +11,9 @@
 #include <Rtrc/Graphics/RenderGraph/Label.h>
 #include <Rtrc/Graphics/RenderGraph/Pass.h>
 
-RTRC_RG_BEGIN
-
-class Executer;
-class RenderGraph;
-
-RTRC_RG_END
-
 RTRC_BEGIN
 
 class Device;
-
-using RenderGraph = RG::RenderGraph;
-using RenderGraphExecutor = RG::Executer;
 
 RTRC_END
 
@@ -113,8 +103,7 @@ public:
         std::string      name,
         TextureResource *tex2D,
         const Vector4f  &clearValue);
-    Pass *CreateDummyPass(std::string name);
-
+    
     Pass *CreateClearRWBufferPass(
         std::string     name,
         BufferResource *buffer,
@@ -141,16 +130,16 @@ public:
         TextureResource *src,
         TextureResource *dst);
     Pass *CreateCopyColorTexturePass(
-        std::string                name,
-        TextureResource           *src,
-        TextureResource           *dst,
-        const TextureSubresources &subrscs);
+        std::string       name,
+        TextureResource  *src,
+        TextureResource  *dst,
+        const TexSubrscs &subrscs);
     Pass *CreateCopyColorTexturePass(
-        std::string                name,
-        TextureResource           *src,
-        const TextureSubresources &srcSubrscs,
-        TextureResource           *dst,
-        const TextureSubresources &dstSubrscs);
+        std::string       name,
+        TextureResource  *src,
+        const TexSubrscs &srcSubrscs,
+        TextureResource  *dst,
+        const TexSubrscs &dstSubrscs);
 
     Pass *CreateClearRWTexture2DPass(std::string name, TextureResource *tex2D, const Vector4f &value);
     Pass *CreateClearRWTexture2DPass(std::string name, TextureResource *tex2D, const Vector4u &value);
@@ -464,3 +453,29 @@ Pass *RenderGraph::CreateIndirectComputePass(
 }
 
 RTRC_RG_END
+
+RTRC_BEGIN
+
+using RenderGraph         = RG::RenderGraph;
+using RenderGraphRef      = Ref<RenderGraph>;
+using RenderGraphExecutor = RG::Executer;
+using RenderGraphPass     = RG::Pass;
+using RenderGraphPassRef  = Ref<RenderGraphPass>;
+
+using Graph         = RG::RenderGraph;
+using GraphRef      = Ref<Graph>;
+using GraphExecutor = RG::Executer;
+
+using RGPass = RenderGraphPassRef;
+
+using RGTexture    = Ref<RG::TextureResource>;
+using RGTextureSrv = RG::TextureResourceSrv;
+using RGTextureUav = RG::TextureResourceUav;
+
+using RGBuffer    = Ref<RG::BufferResource>;
+using RGBufferSrv = RG::BufferResourceSrv;
+using RGBufferUav = RG::BufferResourceUav;
+
+RTRC_END
+
+#include <Rtrc/Graphics/RenderGraph/GraphUtility.inl>

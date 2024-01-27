@@ -350,7 +350,7 @@ void Compiler::CollectResourceUsers()
                     continue;
                 }
                 const Pass::SubTexUsage &subTexUsage = textureUsage(mipLevel, arrayLayer).value();
-                const SubTexKey key = { textureResource, RHI::TextureSubresource{ mipLevel, arrayLayer } };
+                const SubTexKey key = { textureResource, TexSubrsc{ mipLevel, arrayLayer } };
                 subTexUsers_[key].push_back(SubTexUser
                 {
                     .passIndex       = static_cast<int>(passIndex),
@@ -495,10 +495,10 @@ void Compiler::FillExternalResources(ExecutableResources &output)
             output.indexToTexture[index].texture = ext->texture;
 
             auto &finalStates = output.indexToTexture[index].finalState;
-            finalStates = TextureSubrscMap<std::optional<TextureSubrscState>>(ext->texture->GetDesc());
+            finalStates = TextureSubrscMap<std::optional<TexSubrscState>>(ext->texture->GetDesc());
             if(TryCastResource<RenderGraph::SwapchainTexture>(ext))
             {
-                finalStates(0, 0) = TextureSubrscState(
+                finalStates(0, 0) = TexSubrscState(
                     RHI::TextureLayout::Present, RHI::PipelineStage::None, RHI::ResourceAccess::None);
             }
             else
@@ -518,7 +518,7 @@ void Compiler::FillExternalResources(ExecutableResources &output)
                             stages |= users[j].usage.stages;
                             accesses |= users[j].usage.accesses;
                         }
-                        finalStates(subrsc.mipLevel, subrsc.arrayLayer) = TextureSubrscState(layout, stages, accesses);
+                        finalStates(subrsc.mipLevel, subrsc.arrayLayer) = TexSubrscState(layout, stages, accesses);
                     }
                     else
                     {
@@ -595,7 +595,7 @@ void Compiler::AllocateInternalResourcesLegacy(ExecutableResources &output)
         auto &desc = intRsc->rhiDesc;
 
         auto &finalStates = output.indexToTexture[resourceIndex].finalState;
-        finalStates = TextureSubrscMap<std::optional<TextureSubrscState>>(
+        finalStates = TextureSubrscMap<std::optional<TexSubrscState>>(
             intRsc->GetMipLevels(), intRsc->GetArraySize());
         for(auto subrsc : EnumerateSubTextures(intRsc->GetMipLevels(), intRsc->GetArraySize()))
         {
@@ -612,11 +612,11 @@ void Compiler::AllocateInternalResourcesLegacy(ExecutableResources &output)
                     stages |= users[j].usage.stages;
                     accesses |= users[j].usage.accesses;
                 }
-                finalStates(subrsc.mipLevel, subrsc.arrayLayer) = TextureSubrscState(layout, stages, accesses);
+                finalStates(subrsc.mipLevel, subrsc.arrayLayer) = TexSubrscState(layout, stages, accesses);
             }
             else
             {
-                finalStates(subrsc.mipLevel, subrsc.arrayLayer) = TextureSubrscState{};
+                finalStates(subrsc.mipLevel, subrsc.arrayLayer) = TexSubrscState{};
             }
         }
 
@@ -704,7 +704,7 @@ void Compiler::AllocateInternalResources(ExecutableResources &output, std::vecto
         int endPass = std::numeric_limits<int>::lowest();
 
         auto &finalStates = output.indexToTexture[rscIdx].finalState;
-        finalStates = TextureSubrscMap<std::optional<TextureSubrscState>>(
+        finalStates = TextureSubrscMap<std::optional<TexSubrscState>>(
             intRsc->GetMipLevels(), intRsc->GetArraySize());
 
         bool used = false;
@@ -721,7 +721,7 @@ void Compiler::AllocateInternalResources(ExecutableResources &output, std::vecto
             }
             else
             {
-                finalStates(subrsc.mipLevel, subrsc.arrayLayer) = TextureSubrscState{};
+                finalStates(subrsc.mipLevel, subrsc.arrayLayer) = TexSubrscState{};
             }
         }
 
@@ -902,7 +902,7 @@ void Compiler::GenerateBarriers(const ExecutableResources &resources)
         auto [tex, subrsc] = subTexKey;
         const int rscIdx = tex->GetResourceIndex();
         const bool isSwapchainTex = TryCastResource<RenderGraph::SwapchainTexture>(tex);
-        TextureSubrscState lastState = resources.indexToTexture[rscIdx].texture
+        TexSubrscState lastState = resources.indexToTexture[rscIdx].texture
                                         ->GetState(subrsc.mipLevel, subrsc.arrayLayer);
 
         if(!aliasedPrevs_[rscIdx].empty())
@@ -958,7 +958,7 @@ void Compiler::GenerateBarriers(const ExecutableResources &resources)
             }
             RTRC_SCOPE_EXIT{ userIndex = nextUserIndex; };
 
-            TextureSubrscState currState;
+            TexSubrscState currState;
             RTRC_SCOPE_EXIT{ lastState = currState; };
             currState.layout = users[userIndex].usage.layout;
             for(size_t i = userIndex; i < nextUserIndex; ++i)
@@ -1003,7 +1003,7 @@ void Compiler::GenerateBarriers(const ExecutableResources &resources)
                 sortedCompilePasses_[barrierPass]->preTextureTransitions.push_back(RHI::TextureTransitionBarrier
                 {
                     .texture      = resources.indexToTexture[tex->GetResourceIndex()].texture->GetRHIObject(),
-                    .subresources = RHI::TextureSubresources
+                    .subresources = TexSubrscs
                     {
                         .mipLevel = subrsc.mipLevel,
                         .levelCount = 1,
@@ -1023,7 +1023,7 @@ void Compiler::GenerateBarriers(const ExecutableResources &resources)
                 sortedCompilePasses_[barrierPass]->preTextureTransitions.push_back(RHI::TextureTransitionBarrier
                 {
                     .texture      = resources.indexToTexture[tex->GetResourceIndex()].texture->GetRHIObject(),
-                    .subresources = RHI::TextureSubresources
+                    .subresources = TexSubrscs
                     {
                         .mipLevel   = subrsc.mipLevel,
                         .levelCount = 1,

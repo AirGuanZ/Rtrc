@@ -25,7 +25,7 @@ private:
     struct PooledRecord
     {
         RHI::TextureRPtr rhiTexture;
-        TextureSubrscMap<TextureSubrscState> state;
+        TextureSubrscMap<TexSubrscState> state;
     };
 
     RHI::DeviceOPtr device_;

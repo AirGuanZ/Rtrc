@@ -5,14 +5,14 @@
 
 RTRC_BEGIN
 
-struct TextureSubrscState
+struct TexSubrscState
 {
     RHI::TextureLayout      layout   = RHI::TextureLayout::Undefined;
     RHI::PipelineStageFlag  stages   = RHI::PipelineStage::None;
     RHI::ResourceAccessFlag accesses = RHI::ResourceAccess::None;
 
-    TextureSubrscState() = default;
-    TextureSubrscState(RHI::TextureLayout layout, RHI::PipelineStageFlag stages, RHI::ResourceAccessFlag accesses);
+    TexSubrscState() = default;
+    TexSubrscState(RHI::TextureLayout layout, RHI::PipelineStageFlag stages, RHI::ResourceAccessFlag accesses);
 };
 
 class StatefulTexture : public Texture
@@ -23,30 +23,30 @@ public:
 
     ~StatefulTexture() override;
 
-    void SetState(const TextureSubrscState &state);
-    void SetState(uint32_t mipLevel, uint32_t arrayLayer, const TextureSubrscState &state);
-    void SetState(const TextureSubresource &subrsc, const TextureSubrscState &state);
+    void SetState(const TexSubrscState &state);
+    void SetState(uint32_t mipLevel, uint32_t arrayLayer, const TexSubrscState &state);
+    void SetState(const TexSubrsc &subrsc, const TexSubrscState &state);
     void SetLayoutToUndefined();
-    const TextureSubrscState &GetState(uint32_t mipLevel, uint32_t arrayLayer) const;
-    const TextureSubrscState &GetState(const TextureSubresource &subrsc) const;
+    const TexSubrscState &GetState(uint32_t mipLevel, uint32_t arrayLayer) const;
+    const TexSubrscState &GetState(const TexSubrsc &subrsc) const;
 
 protected:
 
-    TextureSubrscMap<TextureSubrscState> state_;
+    TextureSubrscMap<TexSubrscState> state_;
 };
 
 class WrappedStatefulTexture : public StatefulTexture
 {
 public:
 
-    explicit WrappedStatefulTexture(RC<Texture> texture = {}, const TextureSubrscState &state = {});
+    explicit WrappedStatefulTexture(RC<Texture> texture = {}, const TexSubrscState &state = {});
 
 private:
 
     RC<Texture> texture_;
 };
 
-inline TextureSubrscState::TextureSubrscState(
+inline TexSubrscState::TexSubrscState(
     RHI::TextureLayout layout, RHI::PipelineStageFlag stages, RHI::ResourceAccessFlag accesses)
     : layout(layout), stages(stages), accesses(accesses)
 {
@@ -55,7 +55,7 @@ inline TextureSubrscState::TextureSubrscState(
 
 inline RC<StatefulTexture> StatefulTexture::FromTexture(RC<Texture> tex)
 {
-    return MakeRC<WrappedStatefulTexture>(std::move(tex), TextureSubrscState{});
+    return MakeRC<WrappedStatefulTexture>(std::move(tex), TexSubrscState{});
 }
 
 inline StatefulTexture::~StatefulTexture()
@@ -67,17 +67,17 @@ inline StatefulTexture::~StatefulTexture()
     }
 }
 
-inline void StatefulTexture::SetState(const TextureSubrscState &state)
+inline void StatefulTexture::SetState(const TexSubrscState &state)
 {
     state_.Fill(state);
 }
 
-inline void StatefulTexture::SetState(uint32_t mipLevel, uint32_t arrayLayer, const TextureSubrscState &state)
+inline void StatefulTexture::SetState(uint32_t mipLevel, uint32_t arrayLayer, const TexSubrscState &state)
 {
     state_(mipLevel, arrayLayer) = state;
 }
 
-inline void StatefulTexture::SetState(const TextureSubresource &subrsc, const TextureSubrscState &state)
+inline void StatefulTexture::SetState(const TexSubrsc &subrsc, const TexSubrscState &state)
 {
     this->SetState(subrsc.mipLevel, subrsc.arrayLayer, state);
 }
@@ -90,20 +90,20 @@ inline void StatefulTexture::SetLayoutToUndefined()
     }
 }
 
-inline const TextureSubrscState &StatefulTexture::GetState(uint32_t mipLevel, uint32_t arrayLayer) const
+inline const TexSubrscState &StatefulTexture::GetState(uint32_t mipLevel, uint32_t arrayLayer) const
 {
     return state_(mipLevel, arrayLayer);
 }
 
-inline const TextureSubrscState &StatefulTexture::GetState(const TextureSubresource &subrsc) const
+inline const TexSubrscState &StatefulTexture::GetState(const TexSubrsc &subrsc) const
 {
     return this->GetState(subrsc.mipLevel, subrsc.arrayLayer);
 }
 
-inline WrappedStatefulTexture::WrappedStatefulTexture(RC<Texture> texture, const TextureSubrscState &state)
+inline WrappedStatefulTexture::WrappedStatefulTexture(RC<Texture> texture, const TexSubrscState &state)
     : texture_(std::move(texture))
 {
-    state_ = TextureSubrscMap<TextureSubrscState>(texture_->GetDesc());
+    state_ = TextureSubrscMap<TexSubrscState>(texture_->GetDesc());
     state_.Fill(state);
 
     rhiTexture_ = texture_->GetRHIObject();

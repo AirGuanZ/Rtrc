@@ -384,7 +384,7 @@ void TextureResourceSrv::ForEachSubresourceAccess(const F &f) const
 {
     auto fimpl = [&](int m, int a)
         {
-            const RHI::TextureSubresource subrsc
+            const TexSubrsc subrsc
             {
                 .mipLevel = static_cast<uint32_t>(m),
                 .arrayLayer = static_cast<uint32_t>(a)
@@ -416,7 +416,7 @@ void TextureResourceUav::ForEachSubresourceAccess(const F &f, bool writeOnly) co
 {
     auto fimpl = [&](int m, int a)
         {
-            const RHI::TextureSubresource subrsc
+            const TexSubrsc subrsc
             {
                 .mipLevel = static_cast<uint32_t>(m),
                 .arrayLayer = static_cast<uint32_t>(a)

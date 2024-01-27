@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 
 project(RtrcGraphics)
 
-file(GLOB_RECURSE SRCS CONFIGURE_DEPENDS "*.cpp" "*.h")
+file(GLOB_RECURSE SRCS CONFIGURE_DEPENDS "*.cpp" "*.h" "*.inl")
 
 add_library(Graphics STATIC ${SRCS})
 

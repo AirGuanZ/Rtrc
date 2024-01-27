@@ -93,13 +93,13 @@ Pass *Pass::Use(const TextureResource *texture, const UseInfo &info)
     {
         for(uint32_t ai = 0; ai < arraySize; ++ai)
         {
-            Use(texture, RHI::TextureSubresource{ mi, ai }, info);
+            Use(texture, TexSubrsc{ mi, ai }, info);
         }
     }
     return this;
 }
 
-Pass *Pass::Use(const TextureResource *texture, const RHI::TextureSubresource &subrsc, const UseInfo &info)
+Pass *Pass::Use(const TextureResource *texture, const TexSubrsc &subrsc, const UseInfo &info)
 {
     TextureUsage &usageMap = textureUsages_[texture];
     if(!usageMap.GetArrayLayerCount())
@@ -123,11 +123,6 @@ Pass *Pass::Use(const TextureResource *texture, const RHI::TextureSubresource &s
 Pass *Pass::Use(const TlasResource *tlas, const UseInfo &info)
 {
     return Use(tlas->GetInternalBuffer(), info);
-}
-
-Pass *Pass::Build(const TlasResource *tlas)
-{
-    return Use(tlas, BuildAS_Output);
 }
 
 Pass *Pass::SetCallback(Callback callback)

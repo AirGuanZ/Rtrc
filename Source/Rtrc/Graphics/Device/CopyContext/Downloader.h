@@ -29,7 +29,7 @@ public:
                 size_t                    size = 0);
 
     void Record(const RC<StatefulTexture> &texture,
-                TextureSubresource         subrsc,
+                TexSubrsc                  subrsc,
                 void                      *outputData,
                 size_t                     dataRowBytes = 0);
 
@@ -51,18 +51,18 @@ private:
     struct TextureTask
     {
         RC<StatefulTexture> texture;
-        TextureSubresource  subrsc;
-        void               *outputData;
-        size_t              dataRowBytes;
-        size_t              stagingRowBytes;
-        size_t              packedRowBytes;
+        TexSubrsc  subrsc;
+        void      *outputData;
+        size_t     dataRowBytes;
+        size_t     stagingRowBytes;
+        size_t     packedRowBytes;
     };
 
     explicit DownloadBatch(Ref<Downloader> downloader);
 
-    std::vector<BufferTask>   bufferTasks_;
-    std::vector<TextureTask>  textureTasks_;
-    Ref<Downloader>           downloader_;
+    std::vector<BufferTask>  bufferTasks_;
+    std::vector<TextureTask> textureTasks_;
+    Ref<Downloader>          downloader_;
 };
 
 class Downloader : public Uncopyable
@@ -77,9 +77,9 @@ public:
                   size_t                    size = 0);
 
     void Download(const RC<StatefulTexture> &texture,
-                  TextureSubresource         subrsc,
-                  void                      *outputData,
-                  size_t                     dataRowBytes = 0);
+                  TexSubrsc         subrsc,
+                  void             *outputData,
+                  size_t            dataRowBytes = 0);
 
     DownloadBatch CreateBatch();
 

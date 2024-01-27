@@ -63,19 +63,19 @@ void UploadBatch::Record(
 }
 
 void UploadBatch::Record(
-    const RC<Texture>      &texture,
-    RHI::TextureSubresource subrsc,
-    const void             *data,
-    size_t                  dataRowBytes,
-    RHI::TextureLayout      afterLayout,
-    bool                    takeCopyOfData)
+    const RC<Texture> &texture,
+    TexSubrsc          subrsc,
+    const void        *data,
+    size_t             dataRowBytes,
+    RHI::TextureLayout afterLayout,
+    bool               takeCopyOfData)
 {
     Record(StatefulTexture::FromTexture(texture), subrsc, data, dataRowBytes, afterLayout, takeCopyOfData);
 }
 
 void UploadBatch::Record(
     const RC<StatefulTexture> &texture,
-    RHI::TextureSubresource    subrsc,
+    RHI::TexSubrsc    subrsc,
     const void                *data,
     size_t                     dataRowBytes,
     RHI::TextureLayout         afterLayout,
@@ -127,17 +127,17 @@ void UploadBatch::Record(
 }
 
 void UploadBatch::Record(
-    const RC<Texture>      &texture,
-    RHI::TextureSubresource subrsc,
-    const ImageDynamic     &image,
-    RHI::TextureLayout      afterLayout)
+    const RC<Texture>  &texture,
+    TexSubrsc           subrsc,
+    const ImageDynamic &image,
+    RHI::TextureLayout  afterLayout)
 {
     Record(StatefulTexture::FromTexture(texture), subrsc, image, afterLayout);
 }
 
 void UploadBatch::Record(
     const RC<StatefulTexture> &texture,
-    RHI::TextureSubresource    subrsc,
+    RHI::TexSubrsc    subrsc,
     const ImageDynamic        &image,
     RHI::TextureLayout         afterLayout)
 {
@@ -243,7 +243,7 @@ void UploadBatch::SubmitAndWait()
         {
             auto &b = beforeTextureBarriers.emplace_back();
             b.texture = task.texture->GetRHIObject().Get();
-            b.subresources = RHI::TextureSubresources
+            b.subresources = TexSubrscs
             {
                 .mipLevel = task.subrsc.mipLevel,
                 .levelCount = 1,
@@ -262,7 +262,7 @@ void UploadBatch::SubmitAndWait()
         {
             auto &a = afterTextureBarriers.emplace_back();
             a.texture = task.texture->GetRHIObject().Get();
-            a.subresources = RHI::TextureSubresources
+            a.subresources = TexSubrscs
             {
                 .mipLevel = task.subrsc.mipLevel,
                 .levelCount = 1,
@@ -278,7 +278,7 @@ void UploadBatch::SubmitAndWait()
         }
 
         task.texture->SetState(
-            task.subrsc.mipLevel, task.subrsc.arrayLayer, TextureSubrscState(
+            task.subrsc.mipLevel, task.subrsc.arrayLayer, TexSubrscState(
                 task.afterLayout, RHI::PipelineStage::None, RHI::ResourceAccess::None));
     }
 
@@ -351,7 +351,7 @@ void Uploader::Upload(const RC<Buffer> &buffer, const void *data, size_t offset,
 }
 
 void Uploader::Upload(
-    const RC<Texture> &texture, RHI::TextureSubresource subrsc,
+    const RC<Texture> &texture, TexSubrsc subrsc,
     const void *data, size_t dataRowBytes, RHI::TextureLayout afterLayout)
 {
     auto batch = CreateBatch();
@@ -360,7 +360,7 @@ void Uploader::Upload(
 }
 
 void Uploader::Upload(
-    const RC<StatefulTexture> &texture, RHI::TextureSubresource subrsc,
+    const RC<StatefulTexture> &texture, TexSubrsc subrsc,
     const void *data, size_t dataRowBytes, RHI::TextureLayout afterLayout)
 {
     auto batch = CreateBatch();
@@ -369,7 +369,7 @@ void Uploader::Upload(
 }
 
 void Uploader::Upload(
-    const RC<Texture> &texture, RHI::TextureSubresource subrsc,
+    const RC<Texture> &texture, TexSubrsc subrsc,
     const ImageDynamic &image, RHI::TextureLayout afterLayout)
 {
     auto batch = CreateBatch();
@@ -378,7 +378,7 @@ void Uploader::Upload(
 }
 
 void Uploader::Upload(
-    const RC<StatefulTexture> &texture, RHI::TextureSubresource subrsc,
+    const RC<StatefulTexture> &texture, TexSubrsc subrsc,
     const ImageDynamic &image, RHI::TextureLayout afterLayout)
 {
     auto batch = CreateBatch();

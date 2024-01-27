@@ -68,13 +68,10 @@ public:
 
     friend void Connect(Pass *head, Pass *tail);
 
-    Pass *Use(const BufferResource *buffer, const UseInfo &info);
-
+    Pass *Use(const BufferResource  *buffer,  const UseInfo &info);
     Pass *Use(const TextureResource *texture, const UseInfo &info);
-    Pass *Use(const TextureResource *texture, const RHI::TextureSubresource &subrsc, const UseInfo &info);
-
-    Pass *Use(const TlasResource *tlas, const UseInfo &info);
-    Pass *Build(const TlasResource *tlas);
+    Pass *Use(const TextureResource *texture, const TexSubrsc &subrsc, const UseInfo &info);
+    Pass *Use(const TlasResource    *tlas,    const UseInfo &info);
 
     Pass *SetCallback(Callback callback);
     Pass *SetCallback(LegacyCallback callback);
@@ -83,7 +80,7 @@ public:
 
 private:
 
-    using SubTexUsage = TextureSubrscState;
+    using SubTexUsage = TexSubrscState;
     using BufferUsage = BufferState;
 
     using TextureUsage = TextureSubrscMap<std::optional<SubTexUsage>>;

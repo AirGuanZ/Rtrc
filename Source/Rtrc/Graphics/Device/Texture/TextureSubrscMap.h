@@ -4,8 +4,8 @@
 
 RTRC_BEGIN
 
-using RHI::TextureSubresource;
-using RHI::TextureSubresources;
+using RHI::TexSubrsc;
+using RHI::TexSubrscs;
 
 template<typename T>
 class TextureSubrscMap
@@ -114,7 +114,7 @@ class EnumerateSubTextures
             
         }
 
-        RHI::TextureSubresource operator*() const
+        TexSubrsc operator*() const
         {
             return { currentMipLevel_, currentArrayLayer_ };
         }

@@ -46,9 +46,9 @@ namespace BindingGroupDSL
             {
                 d->ForEachSubresourceAccess(
                     [&](
-                        const RHI::TextureSubresource &subrsc,
-                        RHI::TextureLayout             layout,
-                        RHI::ResourceAccessFlag        access)
+                        const TexSubrsc        &subrsc,
+                        RHI::TextureLayout      layout,
+                        RHI::ResourceAccessFlag access)
                     {
                         pass->Use(
                             d->GetResource(),
@@ -109,9 +109,9 @@ namespace BindingGroupDSL
             {
                 d->ForEachSubresourceAccess(
                     [&](
-                        const RHI::TextureSubresource &subrsc,
-                        RHI::TextureLayout             layout,
-                        RHI::ResourceAccessFlag        access)
+                        const TexSubrsc        &subrsc,
+                        RHI::TextureLayout      layout,
+                        RHI::ResourceAccessFlag access)
                     {
                         pass->Use(
                             d->GetResource(),
