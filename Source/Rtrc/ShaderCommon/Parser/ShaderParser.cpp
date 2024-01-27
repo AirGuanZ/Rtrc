@@ -372,7 +372,22 @@ std::string ReadShaderSource(
         tokens.Throw("Matched '}' is not found");
     }
 
-    return std::string(fileContent.substr(charBegin + 1, charEnd - (charBegin + 1)));
+    std::string result(fileContent);
+    for(size_t i = 0; i < charBegin + 1; ++i)
+    {
+        if(result[i] != '\n' && result[i] != '\r')
+        {
+            result[i] = ' ';
+        }
+    }
+    for(size_t i = charEnd; i < fileContent.size(); ++i)
+    {
+        if(result[i] != '\n' && result[i] != '\r')
+        {
+            result[i] = ' ';
+        }
+    }
+    return result;
 }
 
 ParsedShader ParseShader(
