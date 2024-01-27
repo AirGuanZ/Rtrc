@@ -26,18 +26,25 @@ public:
         Span<SemaphoreDependency>     signalSemaphores,
         OPtr<Fence>                   signalFence) RTRC_RHI_OVERRIDE;
 
+    uint64_t GetCurrentSessionID() RTRC_RHI_OVERRIDE;
+    uint64_t GetSynchronizedSessionID() RTRC_RHI_OVERRIDE;
+
     VkQueue _internalGetNativeQueue() const;
 
     uint32_t _internalGetNativeFamilyIndex() const;
 
     UPtr<CommandPool> _internalCreateCommandPoolImpl() const;
 
+    void _internalOnExternalHostDeviceSynchronization();
+
 private:
 
-    VulkanDevice *device_;
-    VkQueue queue_;
-    QueueType type_;
-    uint32_t queueFamilyIndex_;
+    VulkanDevice         *device_;
+    VkQueue               queue_;
+    QueueType             type_;
+    uint32_t              queueFamilyIndex_;
+    std::atomic<uint64_t> currentSessionID_;
+    std::atomic<uint64_t> synchronizedSessionID_;
 };
 
 RTRC_RHI_VK_END

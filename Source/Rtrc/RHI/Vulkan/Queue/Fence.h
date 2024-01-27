@@ -4,6 +4,8 @@
 
 RTRC_RHI_VK_BEGIN
 
+class VulkanQueue;
+
 RTRC_RHI_IMPLEMENT(VulkanFence, Fence)
 {
 public:
@@ -20,8 +22,13 @@ public:
 
 private:
 
+    friend class VulkanQueue;
+
     VkDevice device_;
     VkFence fence_;
+
+    uint64_t               syncSessionID_;
+    std::atomic<uint64_t> *syncSessionIDRecevier_;
 };
 
 RTRC_RHI_VK_END

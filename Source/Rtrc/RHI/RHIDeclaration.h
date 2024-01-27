@@ -446,7 +446,7 @@ inline PipelineStageFlag ShaderStagesToPipelineStages(ShaderStageFlags stages)
     if(stages.Contains(ShaderStage::VertexShader))   { ret |= PipelineStage::VertexShader; }
     if(stages.Contains(ShaderStage::FragmentShader)) { ret |= PipelineStage::FragmentShader; }
     if(stages.Contains(ShaderStage::ComputeShader))  { ret |= PipelineStage::ComputeShader; }
-    if(stages | ShaderStage::AllRT)                          { ret |= PipelineStage::RayTracingShader; }
+    if(stages | ShaderStage::AllRT)                  { ret |= PipelineStage::RayTracingShader; }
     return ret;
 }
 
@@ -1560,6 +1560,9 @@ public:
         BackBufferSemaphoreDependency signalBackBufferSemaphore,
         Span<SemaphoreDependency>     signalSemaphores,
         OPtr<Fence>                   signalFence) RTRC_RHI_API_PURE;
+
+    RTRC_RHI_API uint64_t GetCurrentSessionID() RTRC_RHI_API_PURE;
+    RTRC_RHI_API uint64_t GetSynchronizedSessionID() RTRC_RHI_API_PURE;
 };
 
 class Fence : public RHIObject

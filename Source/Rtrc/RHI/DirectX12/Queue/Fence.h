@@ -4,6 +4,8 @@
 
 RTRC_RHI_D3D12_BEGIN
 
+class DirectX12Queue;
+
 RTRC_RHI_IMPLEMENT(DirectX12Fence, Fence)
 {
 public:
@@ -12,12 +14,16 @@ public:
 
     explicit DirectX12Fence(ComPtr<ID3D12Fence> fence, bool signaled)
         : fence_(std::move(fence))
+        , syncSessionID_(0)
+        , syncSessionIDRecevier_(nullptr)
     {
         signalValue_ = signaled ? 0 : 1;
     }
 
     void Reset() RTRC_RHI_OVERRIDE
     {
+        syncSessionID_ = 0;
+        syncSessionIDRecevier_ = nullptr;
         ++signalValue_;
     }
 
@@ -34,9 +40,14 @@ public:
     }
 
 private:
+
+    friend class DirectX12Queue;
     
     ComPtr<ID3D12Fence> fence_;
     uint64_t            signalValue_;
+
+    uint64_t               syncSessionID_;
+    std::atomic<uint64_t> *syncSessionIDRecevier_;
 };
 
 RTRC_RHI_D3D12_END

@@ -10,7 +10,12 @@
 RTRC_RHI_VK_BEGIN
 
 VulkanQueue::VulkanQueue(VulkanDevice *device, VkQueue queue, QueueType type, uint32_t queueFamilyIndex)
-    : device_(device), queue_(queue), type_(type), queueFamilyIndex_(queueFamilyIndex)
+    : device_(device)
+    , queue_(queue)
+    , type_(type)
+    , queueFamilyIndex_(queueFamilyIndex)
+    , currentSessionID_(1)
+    , synchronizedSessionID_(0)
 {
 
 }
@@ -23,6 +28,7 @@ QueueType VulkanQueue::GetType() const
 void VulkanQueue::WaitIdle()
 {
     RTRC_VK_FAIL_MSG(vkQueueWaitIdle(queue_), "failed to wait queue idle");
+    synchronizedSessionID_ = currentSessionID_++;
 }
 
 void VulkanQueue::Submit(
@@ -93,6 +99,24 @@ void VulkanQueue::Submit(
     RTRC_VK_FAIL_MSG(
         vkQueueSubmit2(queue_, 1, &submitInfo, fence),
         "failed to submit to vulkan queue");
+
+    if(signalFence)
+    {
+        auto vkFence = static_cast<VulkanFence *>(signalFence.Get());
+        assert(!vkFence->syncSessionIDRecevier_);
+        vkFence->syncSessionIDRecevier_ = &synchronizedSessionID_;
+        vkFence->syncSessionID_ = currentSessionID_++;
+    }
+}
+
+uint64_t VulkanQueue::GetCurrentSessionID()
+{
+    return currentSessionID_;
+}
+
+uint64_t VulkanQueue::GetSynchronizedSessionID()
+{
+    return synchronizedSessionID_;
 }
 
 VkQueue VulkanQueue::_internalGetNativeQueue() const
@@ -117,6 +141,11 @@ UPtr<CommandPool> VulkanQueue::_internalCreateCommandPoolImpl() const
         "failed to create vulkan command pool");
     RTRC_SCOPE_FAIL{ vkDestroyCommandPool(device_->_internalGetNativeDevice(), pool, RTRC_VK_ALLOC); };
     return MakeUPtr<VulkanCommandPool>(device_, GetType(), pool);
+}
+
+void VulkanQueue::_internalOnExternalHostDeviceSynchronization()
+{
+    synchronizedSessionID_ = currentSessionID_++;
 }
 
 RTRC_RHI_VK_END

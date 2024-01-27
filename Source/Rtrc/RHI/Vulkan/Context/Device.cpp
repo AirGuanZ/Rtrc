@@ -1190,6 +1190,22 @@ size_t VulkanDevice::GetTextureBufferCopyRowPitchAlignment(Format texelFormat) c
 void VulkanDevice::WaitIdle()
 {
     RTRC_VK_FAIL_MSG(vkDeviceWaitIdle(device_), "Failed to call vkDeviceWaitIdle");
+    if(graphicsQueue_)
+    {
+        graphicsQueue_->_internalOnExternalHostDeviceSynchronization();
+    }
+    if(computeQueue_ && computeQueue_ != graphicsQueue_)
+    {
+        computeQueue_->_internalOnExternalHostDeviceSynchronization();
+    }
+    if(transferQueue_ && transferQueue_ != graphicsQueue_ && transferQueue_ != computeQueue_)
+    {
+        transferQueue_->_internalOnExternalHostDeviceSynchronization();
+    }
+    if(presentQueue_ && presentQueue_ != graphicsQueue_)
+    {
+        presentQueue_->_internalOnExternalHostDeviceSynchronization();
+    }
 }
 
 BlasUPtr VulkanDevice::CreateBlas(const BufferRPtr &buffer, size_t offset, size_t size)

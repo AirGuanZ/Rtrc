@@ -26,6 +26,9 @@ public:
         Span<SemaphoreDependency>     signalSemaphores,
         OPtr<Fence>                   signalFence) RTRC_RHI_OVERRIDE;
 
+    uint64_t GetCurrentSessionID() RTRC_RHI_OVERRIDE;
+    uint64_t GetSynchronizedSessionID() RTRC_RHI_OVERRIDE;
+
     ID3D12CommandQueue *_internalGetCommandQueue() const { return queue_.Get(); }
 
 private:
@@ -33,8 +36,11 @@ private:
     DirectX12Device           *device_;
     ComPtr<ID3D12CommandQueue> queue_;
     QueueType                  type_;
-    ComPtr<ID3D12Fence>        fence_;
-    uint64_t                   fenceValue_;
+    std::mutex                 waitIdleMutex_;
+    ComPtr<ID3D12Fence>        waitIdleFence_;
+    uint64_t                   waitIdleFenceValue_;
+    std::atomic<uint64_t>      currentSessionID_;
+    std::atomic<uint64_t>      synchronizedSessionID_;
 };
 
 RTRC_RHI_D3D12_END
