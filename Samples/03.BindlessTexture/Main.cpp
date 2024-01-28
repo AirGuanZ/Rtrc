@@ -71,7 +71,7 @@ void Run()
         {
             continue;
         }
-        renderGraphExecuter.NewFrame();
+        renderGraphExecuter.Recycle();
 
         if(window.GetInput().IsKeyDown(KeyCode::Escape))
         {

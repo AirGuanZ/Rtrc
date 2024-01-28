@@ -152,7 +152,7 @@ void Run()
         {
             continue;
         }
-        executer.NewFrame();
+        executer.Recycle();
 
         if(window.GetInput().IsKeyDown(KeyCode::Escape))
         {
