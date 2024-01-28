@@ -68,10 +68,13 @@ public:
 
     void NewFrame();
 
-    // Execute recorded graph passes immediately. Note that this function doesn't handle special external
-    // resource synchronizations like transitioning swapchain image into present state. Therefore, a non-partial
-    // execution is still needed even if no new pass is created after the partial execution.
-    // Typical usage:
+    // Execute recorded graph passes immediately.
+    // * Note that this function doesn't handle special external resource synchronizations like transitioning swapchain
+    //   image into present state. Therefore, a non-partial execution is still needed even if no new pass is created
+    //   after the partial execution.
+    // * Any touched transient resource will be allocated and converted to a registered external resource, to ensure
+    //   its content to be preserved for later execution(s).
+    // * Typical usage:
     //    CreatePasses0(graph);
     //    executer->ExecutePartially(graph);
     //    CreatePasses1(graph);
@@ -85,7 +88,7 @@ public:
     
 private:
 
-    void ExecuteInternal(Ref<RenderGraph> graph, bool enableTransientResourcePool, bool lastSubmit);
+    void ExecuteInternal(Ref<RenderGraph> graph, bool enableTransientResourcePool, bool partialExecution);
 
     void ExecuteImpl(const ExecutableGraph &graph);
 

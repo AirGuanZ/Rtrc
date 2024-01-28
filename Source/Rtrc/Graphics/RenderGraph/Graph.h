@@ -36,31 +36,6 @@ class RenderGraph : public Uncopyable
 {
 public:
 
-    class InternalBufferResource : public BufferResource
-    {
-    public:
-
-        using BufferResource::BufferResource;
-
-        const RHI::BufferDesc& GetDesc() const override { return rhiDesc_; }
-
-        void SetDefaultStructStride(size_t stride) override;
-        void SetDefaultTexelFormat(RHI::Format format) override;
-
-        size_t GetDefaultStructStride() const override;
-        RHI::Format GetDefaultTexelFormat() const override;
-
-    private:
-
-        friend class RenderGraph;
-        friend class Compiler;
-
-        size_t          defaultStructStride_ = 0;
-        RHI::Format     defaultTexelFormat_ = RHI::Format::Unknown;
-        RHI::BufferDesc rhiDesc_;
-        std::string     name_;
-    };
-
     explicit RenderGraph(Ref<Device> device, Queue queue = Queue(nullptr));
 
     Ref<Device> GetDevice() const { return device_; }
@@ -143,8 +118,31 @@ private:
 
         const RHI::TextureDesc &GetDesc() const override;
 
-        RHI::TextureDesc rhiDesc;
-        std::string name;
+        RHI::TextureDesc    rhiDesc;
+        std::string         name;
+        RC<StatefulTexture> crossExecutionResource; // Internal resource must preserve its content across executions.
+                                                    // See comments of Executer::ExecutePartially.
+    };
+
+    class InternalBufferResource : public BufferResource
+    {
+    public:
+
+        using BufferResource::BufferResource;
+
+        const RHI::BufferDesc& GetDesc() const override { return rhiDesc; }
+
+        void SetDefaultStructStride(size_t stride) override;
+        void SetDefaultTexelFormat(RHI::Format format) override;
+
+        size_t GetDefaultStructStride() const override;
+        RHI::Format GetDefaultTexelFormat() const override;
+
+        size_t             defaultStructStride = 0;
+        RHI::Format        defaultTexelFormat = RHI::Format::Unknown;
+        RHI::BufferDesc    rhiDesc;
+        std::string        name;
+        RC<StatefulBuffer> crossExecutionResource;
     };
 
     class SwapchainTexture : public ExternalTextureResource

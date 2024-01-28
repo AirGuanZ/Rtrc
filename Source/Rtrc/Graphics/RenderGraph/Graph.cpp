@@ -6,22 +6,22 @@ RTRC_RG_BEGIN
 
 void RenderGraph::InternalBufferResource::SetDefaultStructStride(size_t stride)
 {
-    defaultStructStride_ = stride;
+    defaultStructStride = stride;
 }
 
 void RenderGraph::InternalBufferResource::SetDefaultTexelFormat(RHI::Format format)
 {
-    defaultTexelFormat_ = format;
+    defaultTexelFormat = format;
 }
 
 size_t RenderGraph::InternalBufferResource::GetDefaultStructStride() const
 {
-    return defaultStructStride_;
+    return defaultStructStride;
 }
 
 RHI::Format RenderGraph::InternalBufferResource::GetDefaultTexelFormat() const
 {
-    return defaultTexelFormat_;
+    return defaultTexelFormat;
 }
 
 RenderGraph::RenderGraph(Ref<Device> device, Queue queue)
@@ -36,8 +36,8 @@ BufferResource *RenderGraph::CreateBuffer(const RHI::BufferDesc &desc, std::stri
     assert(recording_);
     const int index = static_cast<int>(buffers_.size());
     auto resource = MakeBox<InternalBufferResource>(this, index);
-    resource->rhiDesc_ = desc;
-    resource->name_ = std::move(name);
+    resource->rhiDesc = desc;
+    resource->name = std::move(name);
     buffers_.push_back(std::move(resource));
     textures_.push_back(nullptr);
     return buffers_.back().get();

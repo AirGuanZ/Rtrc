@@ -68,10 +68,10 @@ public:
 
     friend void Connect(Pass *head, Pass *tail);
 
-    Pass *Use(const BufferResource  *buffer,  const UseInfo &info);
-    Pass *Use(const TextureResource *texture, const UseInfo &info);
-    Pass *Use(const TextureResource *texture, const TexSubrsc &subrsc, const UseInfo &info);
-    Pass *Use(const TlasResource    *tlas,    const UseInfo &info);
+    Pass *Use(BufferResource  *buffer,  const UseInfo &info);
+    Pass *Use(TextureResource *texture, const UseInfo &info);
+    Pass *Use(TextureResource *texture, const TexSubrsc &subrsc, const UseInfo &info);
+    Pass *Use(TlasResource    *tlas,    const UseInfo &info);
 
     Pass *SetCallback(Callback callback);
     Pass *SetCallback(LegacyCallback callback);
@@ -96,8 +96,8 @@ private:
 
     const LabelStack::Node *nameNode_;
 
-    std::map<const BufferResource *, BufferUsage, std::less<>> bufferUsages_;
-    std::map<const TextureResource *, TextureUsage, std::less<>> textureUsages_;
+    std::map<BufferResource *, BufferUsage, std::less<>> bufferUsages_;
+    std::map<TextureResource *, TextureUsage, std::less<>> textureUsages_;
 
     std::set<Pass *> prevs_;
     std::set<Pass *> succs_;

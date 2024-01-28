@@ -82,7 +82,7 @@ void Connect(Pass *head, Pass *tail)
     tail->prevs_.insert(head);
 }
 
-Pass *Pass::Use(const BufferResource *buffer, const UseInfo &info)
+Pass *Pass::Use(BufferResource *buffer, const UseInfo &info)
 {
     assert(!isExecuted_ && "Can not setup already executed pass");
     auto &usage = bufferUsages_[buffer];
@@ -91,7 +91,7 @@ Pass *Pass::Use(const BufferResource *buffer, const UseInfo &info)
     return this;
 }
 
-Pass *Pass::Use(const TextureResource *texture, const UseInfo &info)
+Pass *Pass::Use(TextureResource *texture, const UseInfo &info)
 {
     assert(!isExecuted_ && "Can not setup already executed pass");
     const uint32_t mipLevels = texture->GetMipLevels();
@@ -106,7 +106,7 @@ Pass *Pass::Use(const TextureResource *texture, const UseInfo &info)
     return this;
 }
 
-Pass *Pass::Use(const TextureResource *texture, const TexSubrsc &subrsc, const UseInfo &info)
+Pass *Pass::Use(TextureResource *texture, const TexSubrsc &subrsc, const UseInfo &info)
 {
     assert(!isExecuted_ && "Can not setup already executed pass");
     TextureUsage &usageMap = textureUsages_[texture];
@@ -128,7 +128,7 @@ Pass *Pass::Use(const TextureResource *texture, const TexSubrsc &subrsc, const U
     return this;
 }
 
-Pass *Pass::Use(const TlasResource *tlas, const UseInfo &info)
+Pass *Pass::Use(TlasResource *tlas, const UseInfo &info)
 {
     return Use(tlas->GetInternalBuffer(), info);
 }

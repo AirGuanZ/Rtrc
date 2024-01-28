@@ -90,12 +90,12 @@ void TransientResourcePoolDetail::FreeMemorySegmentSet::Free(const MemorySegment
 
     auto sizeIt = sizeToOffset_.insert({ size, blockIt });
     blockIt->second.size                 = size;
-    blockIt->second.sizeToIffsetIterator = sizeIt;
+    blockIt->second.sizeToOffsetIterator = sizeIt;
 }
 
 void TransientResourcePoolDetail::FreeMemorySegmentSet::RemoveSegment(OffsetToSegment::iterator it)
 {
-    auto sizeIt = it->second.sizeToIffsetIterator;
+    auto sizeIt = it->second.sizeToOffsetIterator;
     offsetToSegment_.erase(it);
     sizeToOffset_.erase(sizeIt);
 }

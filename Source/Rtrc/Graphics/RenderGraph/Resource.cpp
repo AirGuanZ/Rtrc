@@ -26,7 +26,7 @@ TextureSrv TextureResourceSrv::GetSrv() const
         });
 }
 
-const TextureResource *TextureResourceSrv::GetResource() const
+TextureResource *TextureResourceSrv::GetResource() const
 {
     return resource_;
 }
@@ -44,7 +44,7 @@ TextureUav TextureResourceUav::GetUav() const
         });
 }
 
-const TextureResource *TextureResourceUav::GetResource() const
+TextureResource *TextureResourceUav::GetResource() const
 {
     return resource_;
 }
@@ -74,7 +74,7 @@ RC<Texture> TextureResource::Get() const
     return GetCurrentPassContext().Get(this);
 }
 
-TextureResourceSrv TextureResource::GetSrv() const
+TextureResourceSrv TextureResource::GetSrv()
 {
     auto &desc = GetDesc();
     if(desc.arraySize > 1)
@@ -84,7 +84,7 @@ TextureResourceSrv TextureResource::GetSrv() const
     return GetSrv(0, desc.mipLevels, 0);
 }
 
-TextureResourceSrv TextureResource::GetSrv(uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer) const
+TextureResourceSrv TextureResource::GetSrv(uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer)
 {
     TextureResourceSrv ret;
     ret.resource_ = this;
@@ -93,7 +93,7 @@ TextureResourceSrv TextureResource::GetSrv(uint32_t mipLevel, uint32_t levelCoun
 }
 
 TextureResourceSrv TextureResource::GetSrv(
-    uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, uint32_t layerCount) const
+    uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, uint32_t layerCount)
 {
     TextureResourceSrv ret;
     ret.resource_ = this;
@@ -101,7 +101,7 @@ TextureResourceSrv TextureResource::GetSrv(
     return ret;
 }
 
-TextureResourceUav TextureResource::GetUav() const
+TextureResourceUav TextureResource::GetUav()
 {
     auto &desc = GetDesc();
     if(desc.arraySize > 1)
@@ -111,7 +111,7 @@ TextureResourceUav TextureResource::GetUav() const
     return GetUav(0, 0);
 }
 
-TextureResourceUav TextureResource::GetUav(uint32_t mipLevel, uint32_t arrayLayer) const
+TextureResourceUav TextureResource::GetUav(uint32_t mipLevel, uint32_t arrayLayer)
 {
     TextureResourceUav ret;
     ret.resource_ = this;
@@ -119,7 +119,7 @@ TextureResourceUav TextureResource::GetUav(uint32_t mipLevel, uint32_t arrayLaye
     return ret;
 }
 
-TextureResourceUav TextureResource::GetUav(uint32_t mipLevel, uint32_t arrayLayer, uint32_t layerCount) const
+TextureResourceUav TextureResource::GetUav(uint32_t mipLevel, uint32_t arrayLayer, uint32_t layerCount)
 {
     TextureResourceUav ret;
     ret.resource_ = this;
@@ -127,7 +127,7 @@ TextureResourceUav TextureResource::GetUav(uint32_t mipLevel, uint32_t arrayLaye
     return ret;
 }
 
-TextureResourceRtv TextureResource::GetRtv(uint32_t mipLevel, uint32_t arrayLayer) const
+TextureResourceRtv TextureResource::GetRtv(uint32_t mipLevel, uint32_t arrayLayer)
 {
     TextureResourceRtv ret;
     ret.resource_ = this;
@@ -136,7 +136,7 @@ TextureResourceRtv TextureResource::GetRtv(uint32_t mipLevel, uint32_t arrayLaye
     return ret;
 }
 
-TextureResourceDsv TextureResource::GetDsv(uint32_t mipLevel, uint32_t arrayLayer) const
+TextureResourceDsv TextureResource::GetDsv(uint32_t mipLevel, uint32_t arrayLayer)
 {
     TextureResourceDsv ret;
     ret.resource_ = this;

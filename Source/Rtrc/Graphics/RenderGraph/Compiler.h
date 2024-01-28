@@ -29,7 +29,7 @@ public:
         Options     options = Options::ConnectPassesByDefinitionOrder |
                               Options::PreferGlobalMemoryBarrier);
 
-    void SetLastSubmit(bool value);
+    void SetPartialExecution(bool value);
 
     void SetTransientResourcePool(RHI::TransientResourcePoolOPtr pool);
 
@@ -88,6 +88,8 @@ private:
 
     void ProcessSynchronizedResourceStates();
 
+    void AllocateInternalResourcesCrossExecutions();
+
     void TopologySortPasses();
 
     void CollectResourceUsers();
@@ -106,7 +108,7 @@ private:
     void FillSections(ExecutableGraph &output);
 
     Options options_;
-    bool    lastSubmit_;
+    bool    forPartialExecution_;
 
     Ref<Device>        device_;
     const RenderGraph *graph_;

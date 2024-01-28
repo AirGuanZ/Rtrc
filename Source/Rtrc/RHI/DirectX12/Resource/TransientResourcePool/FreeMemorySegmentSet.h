@@ -39,7 +39,7 @@ namespace TransientResourcePoolDetail
         struct Segment
         {
             size_t size;
-            SizeToOffset::iterator sizeToIffsetIterator;
+            SizeToOffset::iterator sizeToOffsetIterator;
         };
 
         void RemoveSegment(OffsetToSegment::iterator it);

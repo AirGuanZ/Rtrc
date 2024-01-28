@@ -22,15 +22,15 @@ void Executer::NewFrame()
 
 void Executer::ExecutePartially(Ref<RenderGraph> graph, bool enableTransientResourcePool)
 {
-    ExecuteInternal(graph, enableTransientResourcePool, false);
+    ExecuteInternal(graph, enableTransientResourcePool, true);
 }
 
 void Executer::Execute(Ref<RenderGraph> graph, bool enableTransientResourcePool)
 {
-    ExecuteInternal(graph, enableTransientResourcePool, true);
+    ExecuteInternal(graph, enableTransientResourcePool, false);
 }
 
-void Executer::ExecuteInternal(Ref<RenderGraph> graph, bool enableTransientResourcePool, bool lastSubmit)
+void Executer::ExecuteInternal(Ref<RenderGraph> graph, bool enableTransientResourcePool, bool partialExecution)
 {
     ExecutableGraph compiledResult;
     assert(graph->recording_);
@@ -40,10 +40,7 @@ void Executer::ExecuteInternal(Ref<RenderGraph> graph, bool enableTransientResou
         {
             compiler.SetTransientResourcePool(transientResourcePool_);
         }
-        if(lastSubmit)
-        {
-            compiler.SetLastSubmit(true);
-        }
+        compiler.SetPartialExecution(partialExecution);
         compiler.Compile(*graph, compiledResult);
     }
     {
@@ -59,7 +56,7 @@ void Executer::ExecuteInternal(Ref<RenderGraph> graph, bool enableTransientResou
         }
         graph->passes_.clear();
     }
-    if(lastSubmit)
+    if(!partialExecution)
     {
         graph->recording_ = false;
     }
