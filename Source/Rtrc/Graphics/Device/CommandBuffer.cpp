@@ -686,6 +686,22 @@ void CommandBuffer::Trace(
     rhiCommandBuffer_->TraceRays(rayCountX, rayCountY, rayCountZ, raygenSbt, missSbt, hitSbt, callableSbt);
 }
 
+void CommandBuffer::Trace(
+    unsigned int                         rayCountX,
+    unsigned int                         rayCountY,
+    unsigned int                         rayCountZ,
+    const RHI::ShaderBindingTableRegion &raygenSbt,
+    const RHI::ShaderBindingTableRegion &missSbt,
+    const RHI::ShaderBindingTableRegion &hitSbt,
+    const RHI::ShaderBindingTableRegion &callableSbt)
+{
+    this->Trace(
+        static_cast<int>(rayCountX),
+        static_cast<int>(rayCountY),
+        static_cast<int>(rayCountZ),
+        raygenSbt, missSbt, hitSbt, callableSbt);
+}
+
 void CommandBuffer::DispatchIndirect(const RC<SubBuffer> &buffer, size_t byteOffset)
 {
     CheckThreadID();

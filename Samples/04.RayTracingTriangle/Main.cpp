@@ -190,7 +190,7 @@ void Run()
             commandBuffer.BindRayTracingGroup(0, bindingGroup);
 
             commandBuffer.Trace(
-                renderTarget->GetWidth(), renderTarget->GetHeight(), 1,
+                renderTarget->GetWidth(), renderTarget->GetHeight(), 1u,
                 sbt.GetSubtable(0),
                 sbt.GetSubtable(1),
                 sbt.GetSubtable(2),

@@ -204,6 +204,14 @@ public:
         const RHI::ShaderBindingTableRegion &missSbt,
         const RHI::ShaderBindingTableRegion &hitSbt,
         const RHI::ShaderBindingTableRegion &callableSbt);
+    void Trace(
+        unsigned int                         rayCountX,
+        unsigned int                         rayCountY,
+        unsigned int                         rayCountZ,
+        const RHI::ShaderBindingTableRegion &raygenSbt,
+        const RHI::ShaderBindingTableRegion &missSbt,
+        const RHI::ShaderBindingTableRegion &hitSbt,
+        const RHI::ShaderBindingTableRegion &callableSbt);
     
     void DispatchIndirect(const RC<SubBuffer> &buffer, size_t byteOffset);
 
