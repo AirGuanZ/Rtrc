@@ -101,7 +101,8 @@ private:
     void FillExternalResources(ExecutableResources &output);
 
     void AllocateInternalResourcesLegacy(ExecutableResources &output);
-    void AllocateInternalResources(ExecutableResources &output, std::vector<std::vector<int>> &aliasedPrevs);
+    RC<RHI::QueueSyncQuery> AllocateInternalResources(
+        ExecutableResources &output, std::vector<std::vector<int>> &aliasedPrevs);
 
     void GenerateBarriers(const ExecutableResources &resources);
 

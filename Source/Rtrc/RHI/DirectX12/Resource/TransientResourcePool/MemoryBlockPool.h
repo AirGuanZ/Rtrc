@@ -28,18 +28,23 @@ namespace TransientResourcePoolDetail
         struct MemoryBlock
         {
             ComPtr<D3D12MA::Allocation> allocation;
-            HeapAlignment alignment;
-            int lastActiveSession = -1;
-            size_t size = 0;
+            HeapAlignment               alignment;
+            size_t                      size = 0;
+            RC<QueueSyncQuery>          queueSync;
         };
 
         MemoryBlockPool(DirectX12Device *device, size_t memoryBlockSizeHint);
 
-        int StartHostSynchronizationSession();
+        const MemoryBlock &GetMemoryBlock(
+            QueueOPtr          queue,
+            RC<QueueSyncQuery> sync,
+            Category           category,
+            HeapAlignment      alignment,
+            size_t             leastSize);
 
-        void CompleteHostSynchronizationSession(int session);
+        void RecycleAvailableMemoryBlocks();
 
-        const MemoryBlock &GetMemoryBlock(Category category, HeapAlignment alignment, size_t leastSize);
+        void FreeUnusedMemoryBlocks();
 
     private:
 
@@ -50,20 +55,25 @@ namespace TransientResourcePoolDetail
             bool operator()(size_t lhs,             const MemoryBlock &rhs) const { return lhs      < rhs.size; }
         };
 
+        struct QueueRecord
+        {
+            std::multiset<MemoryBlock, MemoryBlockComp> availableMemoryBlocks_[4/*category*/][2/*alignment*/];
+            std::multiset<MemoryBlock, MemoryBlockComp> usedMemoryBlocks_[4][2];
+        };
+
         static D3D12_HEAP_FLAGS TranslateHeapFlag(Category category);
 
-        const MemoryBlock &CreateAndUseNewMemoryBlock(Category category, HeapAlignment alignment, size_t leastSize);
-
-        void RecycleUnusedMemoryBlocks();
+        const MemoryBlock &CreateAndUseNewMemoryBlock(
+            QueueRecord       &queueRecord,
+            RC<QueueSyncQuery> sync,
+            Category           category,
+            HeapAlignment      alignment,
+            size_t             leastSize);
 
         DirectX12Device *device_;
         size_t memoryBlockSizeHint_;
 
-        int synchronizedHostSession_;
-        int currentHostSession_;
-
-        std::multiset<MemoryBlock, MemoryBlockComp> availableMemoryBlocks_[4/*category*/][2/*alignment*/];
-        std::multiset<MemoryBlock, MemoryBlockComp> usedMemoryBlocks_[4][2];
+        std::map<QueueOPtr, QueueRecord> queueRecords_;
     };
 
 } // namespace TransientResourcePoolDetail

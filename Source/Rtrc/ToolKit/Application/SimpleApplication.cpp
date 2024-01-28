@@ -32,8 +32,8 @@ void SimpleApplication::Update()
         return;
     }
 
-    renderGraphExecuter_->NewFrame();
-
+    renderGraphExecuter_->Recycle();
+    
     auto graph = GetDevice()->CreateRenderGraph();
     UpdateSimpleApplication(graph);
 

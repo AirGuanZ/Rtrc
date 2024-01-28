@@ -10,34 +10,31 @@ RTRC_RHI_D3D12_BEGIN
 
 DirectX12TransientResourcePool::DirectX12TransientResourcePool(
     DirectX12Device *device, const TransientResourcePoolDesc &desc)
-    : device_(device), memoryBlocks_(device, desc.chunkSizeHint), currentSession_(-1)
+    : device_(device), memoryBlocks_(device, desc.chunkSizeHint)
 {
     resourceHeapTier_ = device->_internalGetFeatureOptions().ResourceHeapTier;
 }
 
-int DirectX12TransientResourcePool::StartHostSynchronizationSession()
+void DirectX12TransientResourcePool::Recycle()
 {
-    currentSession_ = memoryBlocks_.StartHostSynchronizationSession();
-    return currentSession_;
-}
-
-void DirectX12TransientResourcePool::NotifyExternalHostSynchronization(int session)
-{
-    memoryBlocks_.CompleteHostSynchronizationSession(session);
     auto [first, last] = std::ranges::remove_if(resources_, [&](const ResourceSlot &slot)
     {
-        return slot.sessionIndex <= session;
+        return slot.queueSync->IsSynchronized();
     });
     resources_.erase(first, last);
+    memoryBlocks_.FreeUnusedMemoryBlocks();
 }
 
-void DirectX12TransientResourcePool::Allocate(
-    MutSpan<TransientResourceDeclaration> resources,
+RC<QueueSyncQuery> DirectX12TransientResourcePool::Allocate(
+    QueueOPtr                                  queue,
+    MutSpan<TransientResourceDeclaration>      resources,
     std::vector<AliasedTransientResourcePair> &aliasRelation)
 {
     using namespace TransientResourcePoolDetail;
 
+    auto queueSync = MakeRC<QueueSyncQuery>();
     auto d3dDevice = device_->_internalGetNativeDevice();
+    memoryBlocks_.RecycleAvailableMemoryBlocks();
 
     // Translate resource requests to allocate/release events
 
@@ -60,7 +57,7 @@ void DirectX12TransientResourcePool::Allocate(
     using Event = Variant<AllocateEvent, ReleaseEvent>;
 
     std::vector<Event> events;
-    events.reserve(2u * resources.size());
+    events.reserve(resources.size() << 1);
 
     for(auto &&[resourceIndex, resource] : Enumerate(resources))
     {
@@ -174,7 +171,8 @@ void DirectX12TransientResourcePool::Allocate(
             }
         }
 
-        auto memoryBlock = memoryBlocks_.GetMemoryBlock(allocate.category, allocate.heapAlignment, allocate.size);
+        auto memoryBlock = memoryBlocks_.GetMemoryBlock(
+            queue, queueSync, allocate.category, allocate.heapAlignment, allocate.size);
         assert(memoryBlock.size >= allocate.size);
 
         output.heapAlignment = memoryBlock.alignment;
@@ -236,7 +234,7 @@ void DirectX12TransientResourcePool::Allocate(
                 bufferDecl.buffer = MakeRPtr<DirectX12Buffer>(
                     bufferDecl.desc, device_, std::move(d3d12Resource),
                     DirectX12MemoryAllocation{ nullptr });
-                resources_.push_back({ bufferDecl.buffer, currentSession_ });
+                resources_.push_back({ bufferDecl.buffer, queueSync });
             },
             [&](TransientTextureDeclaration &textureDecl)
             {
@@ -271,9 +269,11 @@ void DirectX12TransientResourcePool::Allocate(
 
                 textureDecl.texture = MakeRPtr<DirectX12Texture>(
                     textureDecl.desc, device_, std::move(d3d12Resource), DirectX12MemoryAllocation{ nullptr });
-                resources_.push_back({ textureDecl.texture, currentSession_ });
+                resources_.push_back({ textureDecl.texture, queueSync });
             });
     }
+
+    return queueSync;
 }
 
 DirectX12TransientResourcePool::Category DirectX12TransientResourcePool::GetTextureCategory(

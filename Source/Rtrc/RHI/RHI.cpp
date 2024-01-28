@@ -1,6 +1,5 @@
 #include <Rtrc/RHI/RHI.h>
 #include <Rtrc/Core/String.h>
-#include <Rtrc/Core/Unreachable.h>
 
 RTRC_RHI_BEGIN
 
@@ -208,6 +207,19 @@ ResourceAccessFlag RemoveUAVAccesses(ResourceAccessFlag access)
         RWStructuredBufferRead | RWStructuredBufferWrite |
         RWTextureRead | RWTextureWrite;
     return access & ~UAV_MASK;
+}
+
+void QueueSyncQuery::Set(QueueOPtr queue)
+{
+    assert(queue && !queue_);
+    queue_ = queue;
+    sessionID_ = queue_->GetCurrentSessionID();
+}
+
+bool QueueSyncQuery::IsSynchronized() const
+{
+    assert(queue_);
+    return sessionID_ <= queue_->GetSynchronizedSessionID();
 }
 
 RTRC_RHI_END

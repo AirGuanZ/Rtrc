@@ -1321,6 +1321,20 @@ private:
     std::vector<Record> records_;
 };
 
+class QueueSyncQuery
+{
+public:
+
+    void Set(QueueOPtr queue);
+
+    bool IsSynchronized() const;
+
+private:
+
+    QueueOPtr      queue_;
+    QueueSessionID sessionID_ = 0;
+};
+
 #define RTRC_RHI_QUEUE_COMMON               \
     struct BackBufferSemaphoreDependency    \
     {                                       \
@@ -1890,12 +1904,11 @@ class TransientResourcePool : public RHIObject
 {
 public:
 
-    virtual int StartHostSynchronizationSession() RTRC_RHI_API_PURE;
+    virtual void Recycle() RTRC_RHI_API_PURE;
 
-    virtual void NotifyExternalHostSynchronization(int sessionIndex) RTRC_RHI_API_PURE;
-
-    virtual void Allocate(
-        MutSpan<TransientResourceDeclaration> resources,
+    virtual RC<QueueSyncQuery> Allocate(
+        QueueOPtr                                  queue,
+        MutSpan<TransientResourceDeclaration>      resources,
         std::vector<AliasedTransientResourcePair> &aliasRelation) RTRC_RHI_API_PURE;
 };
 

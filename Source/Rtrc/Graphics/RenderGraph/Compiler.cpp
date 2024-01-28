@@ -76,9 +76,10 @@ void Compiler::Compile(const RenderGraph &graph, ExecutableGraph &result)
     aliasedPrevs_.resize(graph.buffers_.size());
 
     FillExternalResources(result.resources);
+    RC<RHI::QueueSyncQuery> syncQuery;
     if(transientResourcePool_)
     {
-        AllocateInternalResources(result.resources, aliasedPrevs_);
+        syncQuery = AllocateInternalResources(result.resources, aliasedPrevs_);
     }
     else
     {
@@ -96,6 +97,7 @@ void Compiler::Compile(const RenderGraph &graph, ExecutableGraph &result)
     FillSections(result);
 
     result.completeFence = graph.completeFence_;
+    result.queueSyncForTransientResourcePool = std::move(syncQuery);
 }
 
 bool Compiler::DontNeedBarrier(const Pass::BufferUsage &a, const Pass::BufferUsage &b)
@@ -715,7 +717,7 @@ void Compiler::AllocateInternalResourcesLegacy(ExecutableResources &output)
     }
 }
 
-void Compiler::AllocateInternalResources(ExecutableResources &output, std::vector<std::vector<int>> &aliasedPrevs)
+RC<RHI::QueueSyncQuery> Compiler::AllocateInternalResources(ExecutableResources &output, std::vector<std::vector<int>> &aliasedPrevs)
 {
     std::vector<int> tranasientResourceIndices;
     std::vector<RHI::TransientResourceDeclaration> transientResourceDecls;
@@ -842,7 +844,8 @@ void Compiler::AllocateInternalResources(ExecutableResources &output, std::vecto
     }
 
     std::vector<RHI::AliasedTransientResourcePair> aliasedPairs;
-    transientResourcePool_->Allocate(transientResourceDecls, aliasedPairs);
+    auto syncQuery = transientResourcePool_->Allocate(
+        graph_->queue_.GetRHIObject(), transientResourceDecls, aliasedPairs);
 
     class TransientBuffer : public Buffer
     {
@@ -897,6 +900,8 @@ void Compiler::AllocateInternalResources(ExecutableResources &output, std::vecto
             });
 
     }
+
+    return syncQuery;
 }
 
 void Compiler::GenerateBarriers(const ExecutableResources &resources)

@@ -1,6 +1,5 @@
-#include <Rtrc/RHI/DirectX12/Resource/TransientResourcePool/MemoryBlockPool.h>
-
 #include <Rtrc/RHI/DirectX12/Context/Device.h>
+#include <Rtrc/RHI/DirectX12/Resource/TransientResourcePool/MemoryBlockPool.h>
 
 RTRC_RHI_D3D12_BEGIN
 
@@ -8,61 +7,46 @@ TransientResourcePoolDetail::MemoryBlockPool::MemoryBlockPool(
     DirectX12Device *device, size_t memoryBlockSizeHint)
     : device_(device)
     , memoryBlockSizeHint_(memoryBlockSizeHint)
-    , synchronizedHostSession_(-1)
-    , currentHostSession_(0)
 {
 
-}
-
-int TransientResourcePoolDetail::MemoryBlockPool::StartHostSynchronizationSession()
-{
-    for(int i = 0; i < 4; ++i)
-    {
-        for(int j = 0; j < 2; ++j)
-        {
-            availableMemoryBlocks_[i][j].merge(usedMemoryBlocks_[i][j]);
-            usedMemoryBlocks_[i][j].clear();
-        }
-    }
-    return ++currentHostSession_;
-}
-
-void TransientResourcePoolDetail::MemoryBlockPool::CompleteHostSynchronizationSession(int session)
-{
-    synchronizedHostSession_ = session;
-    RecycleUnusedMemoryBlocks();
 }
 
 const TransientResourcePoolDetail::MemoryBlockPool::MemoryBlock &
     TransientResourcePoolDetail::MemoryBlockPool::GetMemoryBlock(
-        Category category, HeapAlignment alignment, size_t leastSize)
+        QueueOPtr          queue,
+        RC<QueueSyncQuery> sync,
+        Category           category,
+        HeapAlignment      alignment,
+        size_t             leastSize)
 {
+    auto &queueRecord = queueRecords_[queue];
+
     const int categoryIndex = std::to_underlying(category);
     const int alignmentIndex = std::to_underlying(alignment);
-    auto &blocks = availableMemoryBlocks_[categoryIndex][alignmentIndex];
+    auto &blocks = queueRecord.availableMemoryBlocks_[categoryIndex][alignmentIndex];
 
     auto it = std::lower_bound(blocks.begin(), blocks.end(), leastSize, MemoryBlockComp{});
     if(it != blocks.end())
     {
         auto mb = std::move(blocks.extract(it).value());
-        mb.lastActiveSession = currentHostSession_;
-        return *usedMemoryBlocks_[categoryIndex][alignmentIndex].insert(mb);
+        mb.queueSync = std::move(sync);
+        return *queueRecord.usedMemoryBlocks_[categoryIndex][alignmentIndex].insert(mb);
     }
 
     if(alignment == HeapAlignment::Regular) // fallback to msaa block, if possible
     {
         const int fallbackAlignmentIndex = std::to_underlying(HeapAlignment::MSAA);
-        auto &fallbackBlocks = availableMemoryBlocks_[categoryIndex][fallbackAlignmentIndex];
+        auto &fallbackBlocks = queueRecord.availableMemoryBlocks_[categoryIndex][fallbackAlignmentIndex];
         it = std::lower_bound(fallbackBlocks.begin(), fallbackBlocks.end(), leastSize, MemoryBlockComp{});
         if(it != fallbackBlocks.end())
         {
             auto mb = std::move(fallbackBlocks.extract(it).value());
-            mb.lastActiveSession = currentHostSession_;
-            return *usedMemoryBlocks_[categoryIndex][fallbackAlignmentIndex].insert(mb);
+            mb.queueSync = std::move(sync);
+            return *queueRecord.usedMemoryBlocks_[categoryIndex][fallbackAlignmentIndex].insert(mb);
         }
     }
 
-    return CreateAndUseNewMemoryBlock(category, alignment, leastSize);
+    return CreateAndUseNewMemoryBlock(queueRecord, std::move(sync), category, alignment, leastSize);
 }
 
 D3D12_HEAP_FLAGS TransientResourcePoolDetail::MemoryBlockPool::TranslateHeapFlag(Category category)
@@ -79,7 +63,11 @@ D3D12_HEAP_FLAGS TransientResourcePoolDetail::MemoryBlockPool::TranslateHeapFlag
 
 const TransientResourcePoolDetail::MemoryBlockPool::MemoryBlock &
     TransientResourcePoolDetail::MemoryBlockPool::CreateAndUseNewMemoryBlock(
-        Category category, HeapAlignment alignment, size_t leastSize)
+        QueueRecord       &queueRecord,
+        RC<QueueSyncQuery> sync,
+        Category           category,
+        HeapAlignment      alignment,
+        size_t             leastSize)
 {
     size_t size = memoryBlockSizeHint_;
     if(size < leastSize)
@@ -107,29 +95,50 @@ const TransientResourcePoolDetail::MemoryBlockPool::MemoryBlock &
     device_->_internalGetAllocator()->AllocateMemory(&allocDesc, &allocInfo, alloc.GetAddressOf());
 
     MemoryBlock mb;
-    mb.lastActiveSession = currentHostSession_;
-    mb.size              = alloc->GetSize();
-    mb.allocation        = std::move(alloc);
-    mb.alignment         = alignment;
-    return *usedMemoryBlocks_[std::to_underlying(category)][std::to_underlying(alignment)].insert(mb);
+    mb.queueSync          = std::move(sync);
+    mb.size               = alloc->GetSize();
+    mb.allocation         = std::move(alloc);
+    mb.alignment          = alignment;
+    return *queueRecord.usedMemoryBlocks_[std::to_underlying(category)][std::to_underlying(alignment)].insert(mb);
 }
 
-void TransientResourcePoolDetail::MemoryBlockPool::RecycleUnusedMemoryBlocks()
+void TransientResourcePoolDetail::MemoryBlockPool::RecycleAvailableMemoryBlocks()
 {
-    for(int i = 0; i < 4; ++i)
+    for(auto &queueRecord : std::ranges::views::values(queueRecords_))
     {
-        for(int j = 0; j < 2; ++j)
+        // Alias barrier between previous uses of these memory blocks are unnecessary as the subsequent access will
+        // be performed in different ExecuteCommandLists scope(s).
+        // See https://microsoft.github.io/DirectX-Specs/d3d/D3D12EnhancedBarriers.html#resource-aliasing
+        for(int i = 0; i < 4; ++i)
         {
-            auto &blocks = availableMemoryBlocks_[i][j];
-            for(auto it = blocks.begin(); it != blocks.end();)
+            for(int j = 0; j < 2; ++j)
             {
-                if(it->lastActiveSession <= synchronizedHostSession_)
+                queueRecord.availableMemoryBlocks_[i][j].merge(queueRecord.usedMemoryBlocks_[i][j]);
+                queueRecord.usedMemoryBlocks_[i][j].clear();
+            }
+        }
+    }
+}
+
+void TransientResourcePoolDetail::MemoryBlockPool::FreeUnusedMemoryBlocks()
+{
+    for(auto &queueRecord : std::ranges::views::values(queueRecords_))
+    {
+        for(int i = 0; i < 4; ++i)
+        {
+            for(int j = 0; j < 2; ++j)
+            {
+                auto &blocks = queueRecord.availableMemoryBlocks_[i][j];
+                for(auto it = blocks.begin(); it != blocks.end();)
                 {
-                    it = blocks.erase(it);
-                }
-                else
-                {
-                    ++it;
+                    if(it->queueSync->IsSynchronized())
+                    {
+                        it = blocks.erase(it);
+                    }
+                    else
+                    {
+                        ++it;
+                    }
                 }
             }
         }

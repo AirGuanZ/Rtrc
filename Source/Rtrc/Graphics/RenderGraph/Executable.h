@@ -58,6 +58,7 @@ struct ExecutableGraph
     ExecutableResources            resources;
     std::vector<ExecutableSection> sections;
     RHI::FenceOPtr                 completeFence;
+    RC<RHI::QueueSyncQuery>        queueSyncForTransientResourcePool;
 };
 
 class Executer
@@ -66,7 +67,7 @@ public:
 
     explicit Executer(Ref<Device> device);
 
-    void NewFrame();
+    void Recycle();
 
     // Execute recorded graph passes immediately.
     // * Note that this function doesn't handle special external resource synchronizations like transitioning swapchain

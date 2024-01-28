@@ -1275,7 +1275,6 @@ const WarpSizeInfo &VulkanDevice::GetWarpSizeInfo() const
 
 UPtr<TransientResourcePool> VulkanDevice::CreateTransientResourcePool(const TransientResourcePoolDesc &desc)
 {
-    //return MakeUPtr<VulkanTransientResourcePool>(this, desc);
     return nullptr;
 }
 

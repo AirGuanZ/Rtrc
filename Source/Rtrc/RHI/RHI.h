@@ -30,7 +30,6 @@
 #include <Rtrc/RHI/Vulkan/Resource/Sampler.h>
 #include <Rtrc/RHI/Vulkan/Resource/Texture.h>
 #include <Rtrc/RHI/Vulkan/Resource/TextureView.h>
-#include <Rtrc/RHI/Vulkan/Resource/TransientResourcePool/TransientResourcePool.h>
 #endif
 
 #if RTRC_STATIC_RHI && RTRC_RHI_DIRECTX12

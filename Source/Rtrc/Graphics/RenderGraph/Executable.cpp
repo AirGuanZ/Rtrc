@@ -10,13 +10,11 @@ Executer::Executer(Ref<Device> device)
     transientResourcePool_ = device_->GetRawDevice()->CreateTransientResourcePool({ chunkSizeHint }).ToRC();
 }
 
-void Executer::NewFrame()
+void Executer::Recycle()
 {
     if(transientResourcePool_)
     {
-        const int session = transientResourcePool_->StartHostSynchronizationSession();
-        device_->GetSynchronizer().OnFrameComplete(
-            [session, pool = transientResourcePool_] { pool->NotifyExternalHostSynchronization(session); });
+        transientResourcePool_->Recycle();
     }
 }
 
@@ -179,6 +177,11 @@ void Executer::ExecuteImpl(const ExecutableGraph &graph)
                 }
             }
         }
+    }
+
+    if(graph.queueSyncForTransientResourcePool)
+    {
+        graph.queueSyncForTransientResourcePool->Set(graph.queue);
     }
 }
 

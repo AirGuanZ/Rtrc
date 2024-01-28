@@ -10,12 +10,11 @@ public:
 
     DirectX12TransientResourcePool(DirectX12Device *device, const TransientResourcePoolDesc &desc);
 
-    int StartHostSynchronizationSession() RTRC_RHI_OVERRIDE;
+    void Recycle() RTRC_RHI_OVERRIDE;
 
-    void NotifyExternalHostSynchronization(int session) RTRC_RHI_OVERRIDE;
-
-    void Allocate(
-        MutSpan<TransientResourceDeclaration> resources,
+    RC<QueueSyncQuery> Allocate(
+        QueueOPtr                                  queue,
+        MutSpan<TransientResourceDeclaration>      resources,
         std::vector<AliasedTransientResourcePair> &aliasRelation) RTRC_RHI_OVERRIDE;
 
 private:
@@ -26,7 +25,7 @@ private:
     struct ResourceSlot
     {
         RHIObjectPtr ptr;
-        int sessionIndex;
+        RC<QueueSyncQuery> queueSync;
     };
 
     Category GetTextureCategory(const TextureDesc &desc) const;
@@ -35,7 +34,6 @@ private:
     DirectX12Device *device_;
     TransientResourcePoolDetail::MemoryBlockPool memoryBlocks_;
 
-    int currentSession_;
     std::vector<ResourceSlot> resources_;
 
     D3D12_RESOURCE_HEAP_TIER resourceHeapTier_;
