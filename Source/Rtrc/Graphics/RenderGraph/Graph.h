@@ -66,7 +66,7 @@ public:
     Ref<Device> GetDevice() const { return device_; }
 
     const Queue &GetQueue() const { return queue_; }
-    void SetQueue(Queue queue) { queue_ = std::move(queue); }
+    void SetQueue(Queue queue) { assert(recording_); queue_ = std::move(queue); }
 
     BufferResource  *CreateBuffer(const RHI::BufferDesc &desc, std::string name = {});
     TextureResource *CreateTexture(const RHI::TextureDesc &desc, std::string name = {});
@@ -81,11 +81,13 @@ public:
     TextureResource *RegisterReadOnlyTexture(RC<Texture> texture);
     TlasResource    *RegisterTlas(RC<Tlas> tlas, BufferResource *internalBuffer);
 
+    // It is assumed that the swapchain texture has no external access before this graph.
+    // Therefore, swapchain texture can only be registered in at most one render graph in each frame.
+    TextureResource *RegisterSwapchainTexture(RHI::SwapchainOPtr swapchain);
     TextureResource *RegisterSwapchainTexture(
         RHI::TextureRPtr             rhiTexture,
         RHI::BackBufferSemaphoreOPtr acquireSemaphore,
         RHI::BackBufferSemaphoreOPtr presentSemaphore);
-    TextureResource *RegisterSwapchainTexture(RHI::SwapchainOPtr swapchain);
 
     void SetCompleteFence(RHI::FenceOPtr fence);
 
@@ -96,117 +98,6 @@ public:
     void EndUAVOverlap();
 
     Pass *CreatePass(std::string name);
-
-    // ====================== Common functional passes ======================
-
-    Pass *CreateClearTexture2DPass(
-        std::string      name,
-        TextureResource *tex2D,
-        const Vector4f  &clearValue);
-    
-    Pass *CreateClearRWBufferPass(
-        std::string     name,
-        BufferResource *buffer,
-        uint32_t        value);
-    Pass *CreateClearRWStructuredBufferPass(
-        std::string     name,
-        BufferResource *buffer,
-        uint32_t        value);
-
-    Pass* CreateCopyBufferPass(
-        std::string     name,
-        BufferResource *src,
-        size_t          srcOffset,
-        BufferResource *dst,
-        size_t          dstOffset,
-        size_t          size);
-    Pass *CreateCopyBufferPass(
-        std::string     name,
-        BufferResource *src,
-        BufferResource *dst,
-        size_t          size);
-    Pass *CreateCopyColorTexturePass(
-        std::string      name,
-        TextureResource *src,
-        TextureResource *dst);
-    Pass *CreateCopyColorTexturePass(
-        std::string       name,
-        TextureResource  *src,
-        TextureResource  *dst,
-        const TexSubrscs &subrscs);
-    Pass *CreateCopyColorTexturePass(
-        std::string       name,
-        TextureResource  *src,
-        const TexSubrscs &srcSubrscs,
-        TextureResource  *dst,
-        const TexSubrscs &dstSubrscs);
-
-    Pass *CreateClearRWTexture2DPass(std::string name, TextureResource *tex2D, const Vector4f &value);
-    Pass *CreateClearRWTexture2DPass(std::string name, TextureResource *tex2D, const Vector4u &value);
-    Pass *CreateClearRWTexture2DPass(std::string name, TextureResource *tex2D, const Vector4i &value);
-
-    Pass *CreateBlitTexture2DPass(
-        std::string      name,
-        TextureResource *src,
-        uint32_t         srcArrayLayer,
-        uint32_t         srcMipLevel,
-        TextureResource *dst,
-        uint32_t         dstArrayLayer,
-        uint32_t         dstMipLevel,
-        bool             usePointSampling = true,
-        float            gamma = 1.0f);
-    Pass *CreateBlitTexture2DPass(
-        std::string      name,
-        TextureResource *src,
-        TextureResource *dst,
-        bool             usePointSampling = true,
-        float            gamma = 1.0f);
-    
-#define DECLARE_CREATE_COMPUTE_PASS_WITH_THREAD_COUNT(...)                 \
-    template<RenderGraphBindingGroupInput...Ts>                            \
-    Pass *CreateComputePass(                                               \
-        std::string     name,                                              \
-        RC<Shader>      shader,                                            \
-        __VA_ARGS__,                                                       \
-        const Ts&...    bindingGroups);                                    \
-    template<RenderGraphBindingGroupInput...Ts>                            \
-    Pass *CreateComputePassWithThreadCount(                                \
-        std::string     name,                                              \
-        RC<Shader>      shader,                                            \
-        __VA_ARGS__,                                                       \
-        const Ts&...    bindingGroups);                                    \
-    template<RenderGraphStaticShader S, RenderGraphBindingGroupInput...Ts> \
-    Pass *CreateComputePass(                                               \
-        __VA_ARGS__,                                                       \
-        const Ts&...bindingGroups);                                        \
-    template<RenderGraphStaticShader S, RenderGraphBindingGroupInput...Ts> \
-    Pass *CreateComputePassWithThreadCount(                                \
-        __VA_ARGS__,                                                       \
-        const Ts&...bindingGroups);
-
-    DECLARE_CREATE_COMPUTE_PASS_WITH_THREAD_COUNT(const Vector3i &threadCount)
-    DECLARE_CREATE_COMPUTE_PASS_WITH_THREAD_COUNT(const Vector3u &threadCount)
-    DECLARE_CREATE_COMPUTE_PASS_WITH_THREAD_COUNT(const Vector2i &threadCount)
-    DECLARE_CREATE_COMPUTE_PASS_WITH_THREAD_COUNT(const Vector2u &threadCount)
-    DECLARE_CREATE_COMPUTE_PASS_WITH_THREAD_COUNT(unsigned int threadCountX)
-    DECLARE_CREATE_COMPUTE_PASS_WITH_THREAD_COUNT(unsigned int threadCountX, unsigned int threadCountY)
-    DECLARE_CREATE_COMPUTE_PASS_WITH_THREAD_COUNT(unsigned int threadCountX, unsigned int threadCountY, unsigned int threadCountZ)
-
-#undef DECLARE_CREATE_COMPUTE_PASS_WITH_THREAD_COUNT
-
-    template<RenderGraphBindingGroupInput...Ts>
-    Pass *CreateIndirectComputePass(
-        std::string     name,
-        RC<Shader>      shader,
-        BufferResource *indirectBuffer,
-        size_t          indirectBufferOffset,
-        const Ts&...    bindnigGroups);
-
-    template<RenderGraphStaticShader S, RenderGraphBindingGroupInput...Ts>
-    Pass *CreateIndirectComputePass(
-        BufferResource *indirectBuffer,
-        size_t          indirectBufferOffset,
-        const Ts&...    bindnigGroups);
 
 private:
 
@@ -268,6 +159,7 @@ private:
 
     Ref<Device> device_;
     Queue       queue_;
+    bool        recording_;
 
     LabelStack labelStack_;
     
@@ -280,19 +172,20 @@ private:
     std::map<const BufferResource *, Box<TlasResource>> tlasResources_;
 
     std::vector<Box<Pass>> passes_;
+    std::vector<Box<Pass>> executedPasses_;
 
-    RHI::FenceOPtr  completeFence_;
+    RHI::FenceOPtr completeFence_;
 
-    size_t currentUAVOverlapGroupDepth_ = 0;
-    uint32_t nextUAVOverlapGroupIndex_ = 0;
+    size_t          currentUAVOverlapGroupDepth_ = 0;
+    uint32_t        nextUAVOverlapGroupIndex_ = 0;
     UAVOverlapGroup currentUAVOverlapGroup_;
 };
 
-#define RTRC_RG_SCOPED_PASS_GROUP(RENDERGRAPH, NAME)       \
-    ::Rtrc::Ref(RENDERGRAPH)->PushPassGroup(NAME); \
+#define RTRC_RG_SCOPED_PASS_GROUP(RENDERGRAPH, NAME) \
+    ::Rtrc::Ref(RENDERGRAPH)->PushPassGroup(NAME);   \
     RTRC_SCOPE_EXIT{ ::Rtrc::Ref(RENDERGRAPH)->PopPassGroup(); }
 
-template<RenderGraphBindingGroupInput ... Ts>
+/*template<RenderGraphBindingGroupInput ... Ts>
 Pass *RenderGraph::CreateComputePass(
     std::string     name,
     RC<Shader>      shader,
@@ -450,7 +343,7 @@ Pass *RenderGraph::CreateIndirectComputePass(
 {
     return this->CreateIndirectComputePass(
         S::Name, device_->GetShader<S::Name>(), indirectBuffer, indirectBufferOffset, bindnigGroups...);
-}
+}*/
 
 RTRC_RG_END
 

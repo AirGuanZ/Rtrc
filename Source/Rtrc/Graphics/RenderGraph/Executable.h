@@ -11,16 +11,16 @@ struct ExecutableResources
     struct BufferRecord
     {
         RC<StatefulBuffer> buffer;
-        BufferState finalState;
+        BufferState        finalState;
     };
 
     struct Texture2DRecord
     {
-        RC<StatefulTexture> texture;
+        RC<StatefulTexture>                             texture;
         TextureSubrscMap<std::optional<TexSubrscState>> finalState;
     };
 
-    std::vector<BufferRecord> indexToBuffer;
+    std::vector<BufferRecord>    indexToBuffer;
     std::vector<Texture2DRecord> indexToTexture;
 };
 
@@ -47,7 +47,7 @@ struct ExecutableSection
     StaticVector<RHI::TextureTransitionBarrier, 1> postTextureBarriers;
 
     RHI::BackBufferSemaphoreOPtr signalPresentSemaphore;
-    RHI::PipelineStageFlag      signalPresentSemaphoreStages;
+    RHI::PipelineStageFlag       signalPresentSemaphoreStages;
 
     RHI::FenceOPtr signalFence;
 };
@@ -68,9 +68,24 @@ public:
 
     void NewFrame();
 
-    void Execute(Ref<const RenderGraph> graph, bool enableTransientResourcePool = true);
+    // Execute recorded graph passes immediately. Note that this function doesn't handle special external
+    // resource synchronizations like transitioning swapchain image into present state. Therefore, a non-partial
+    // execution is still needed even if no new pass is created after the partial execution.
+    // Typical usage:
+    //    CreatePasses0(graph);
+    //    executer->ExecutePartially(graph);
+    //    CreatePasses1(graph);
+    //    executer->ExecutePartially(graph);
+    //    CreatePasses2(graph);
+    //    executer->Execute(graph);
+    void ExecutePartially(Ref<RenderGraph> graph, bool enableTransientResourcePool = true);
+
+    // Execute recorded graph passes. The graph can't record new passes after this function is called.
+    void Execute(Ref<RenderGraph> graph, bool enableTransientResourcePool = true);
     
 private:
+
+    void ExecuteInternal(Ref<RenderGraph> graph, bool enableTransientResourcePool, bool lastSubmit);
 
     void ExecuteImpl(const ExecutableGraph &graph);
 

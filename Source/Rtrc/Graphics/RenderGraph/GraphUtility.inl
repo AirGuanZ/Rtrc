@@ -234,8 +234,8 @@ inline Pass *BlitTexture(
     const TexSubrsc &srcSubrsc,
     RGTexture        dst,
     const TexSubrsc &dstSubrsc,
-    bool             usePointSampling,
-    float            gamma)
+    bool             usePointSampling = false,
+    float            gamma = 1.0f)
 {
     auto pass = graph->CreatePass(std::move(name));
     pass->Use(src, PS_Texture);
@@ -257,8 +257,8 @@ inline Pass *BlitTexture(
     std::string    name,
     RGTexture      src,
     RGTexture      dst,
-    bool           usePointSampling,
-    float          gamma)
+    bool           usePointSampling = false,
+    float          gamma = 1.0f)
 {
     assert(src->GetArraySize() == 1);
     assert(src->GetMipLevels() == 1);

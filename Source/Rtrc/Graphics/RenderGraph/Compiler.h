@@ -26,8 +26,10 @@ public:
 
     explicit Compiler(
         Ref<Device> device,
-        Options options = Options::ConnectPassesByDefinitionOrder |
-                          Options::PreferGlobalMemoryBarrier);
+        Options     options = Options::ConnectPassesByDefinitionOrder |
+                              Options::PreferGlobalMemoryBarrier);
+
+    void SetLastSubmit(bool value);
 
     void SetTransientResourcePool(RHI::TransientResourcePoolOPtr pool);
 
@@ -104,9 +106,10 @@ private:
     void FillSections(ExecutableGraph &output);
 
     Options options_;
+    bool    lastSubmit_;
 
-    Ref<Device> device_;
-    const RenderGraph  *graph_;
+    Ref<Device>        device_;
+    const RenderGraph *graph_;
 
     std::vector<Pass*>            sortedPasses_;
     std::vector<Box<CompilePass>> sortedCompilePasses_;

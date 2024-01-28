@@ -73,12 +73,18 @@ CommandBuffer &GetCurrentCommandBuffer()
 
 void Connect(Pass *head, Pass *tail)
 {
+    assert(head->isExecuted_ || !tail->isExecuted_);
+    if(head->isExecuted_)
+    {
+        return;
+    }
     head->succs_.insert(tail);
     tail->prevs_.insert(head);
 }
 
 Pass *Pass::Use(const BufferResource *buffer, const UseInfo &info)
 {
+    assert(!isExecuted_ && "Can not setup already executed pass");
     auto &usage = bufferUsages_[buffer];
     usage.stages |= info.stages;
     usage.accesses |= info.accesses;
@@ -87,6 +93,7 @@ Pass *Pass::Use(const BufferResource *buffer, const UseInfo &info)
 
 Pass *Pass::Use(const TextureResource *texture, const UseInfo &info)
 {
+    assert(!isExecuted_ && "Can not setup already executed pass");
     const uint32_t mipLevels = texture->GetMipLevels();
     const uint32_t arraySize = texture->GetArraySize();
     for(uint32_t mi = 0; mi < mipLevels; ++mi)
@@ -101,6 +108,7 @@ Pass *Pass::Use(const TextureResource *texture, const UseInfo &info)
 
 Pass *Pass::Use(const TextureResource *texture, const TexSubrsc &subrsc, const UseInfo &info)
 {
+    assert(!isExecuted_ && "Can not setup already executed pass");
     TextureUsage &usageMap = textureUsages_[texture];
     if(!usageMap.GetArrayLayerCount())
     {
@@ -127,6 +135,7 @@ Pass *Pass::Use(const TlasResource *tlas, const UseInfo &info)
 
 Pass *Pass::SetCallback(Callback callback)
 {
+    assert(!isExecuted_ && "Can not setup already executed pass");
     callback_ = std::move(callback);
     return this;
 }
@@ -138,14 +147,15 @@ Pass *Pass::SetCallback(LegacyCallback callback)
 
 Pass *Pass::SetSignalFence(RHI::FenceRPtr fence)
 {
+    assert(!isExecuted_ && "Can not setup already executed pass");
     signalFence_ = std::move(fence);
     return this;
 }
 
 Pass::Pass(int index, const LabelStack::Node *node)
-    : index_(index), nameNode_(node)
+    : index_(index), nameNode_(node), isExecuted_(false)
 {
-    
+
 }
 
 RTRC_RG_END

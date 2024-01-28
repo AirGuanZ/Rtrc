@@ -31,8 +31,7 @@ RG::Pass *PrepareThreadGroupCount1D(
             passData.threadGroupSize = threadGroupSize;
         }
 
-        return renderGraph->CreateComputePassWithThreadCount(
-            Shader::Name, shader, 1, passData);
+        return DispatchWithThreadCount(renderGraph, Shader::Name, shader, 1, passData);
     };
 
     RG::Pass *pass;

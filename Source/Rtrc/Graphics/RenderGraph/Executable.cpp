@@ -6,7 +6,8 @@ RTRC_RG_BEGIN
 Executer::Executer(Ref<Device> device)
     : device_(device)
 {
-    transientResourcePool_ = device_->GetRawDevice()->CreateTransientResourcePool({ 128 * 1024 * 1024 }).ToRC();
+    constexpr int chunkSizeHint = 128 * 1024 * 1024;
+    transientResourcePool_ = device_->GetRawDevice()->CreateTransientResourcePool({ chunkSizeHint }).ToRC();
 }
 
 void Executer::NewFrame()
@@ -19,14 +20,29 @@ void Executer::NewFrame()
     }
 }
 
-void Executer::Execute(Ref<const RenderGraph> graph, bool enableTransientResourcePool)
+void Executer::ExecutePartially(Ref<RenderGraph> graph, bool enableTransientResourcePool)
+{
+    ExecuteInternal(graph, enableTransientResourcePool, false);
+}
+
+void Executer::Execute(Ref<RenderGraph> graph, bool enableTransientResourcePool)
+{
+    ExecuteInternal(graph, enableTransientResourcePool, true);
+}
+
+void Executer::ExecuteInternal(Ref<RenderGraph> graph, bool enableTransientResourcePool, bool lastSubmit)
 {
     ExecutableGraph compiledResult;
+    assert(graph->recording_);
     {
         Compiler compiler(device_);
         if(enableTransientResourcePool && transientResourcePool_)
         {
             compiler.SetTransientResourcePool(transientResourcePool_);
+        }
+        if(lastSubmit)
+        {
+            compiler.SetLastSubmit(true);
         }
         compiler.Compile(*graph, compiledResult);
     }
@@ -34,6 +50,18 @@ void Executer::Execute(Ref<const RenderGraph> graph, bool enableTransientResourc
         graph->executableResource_ = &compiledResult.resources;
         ExecuteImpl(compiledResult);
         graph->executableResource_ = nullptr;
+    }
+    {
+        graph->executedPasses_.reserve(graph->executedPasses_.size() + graph->passes_.size());
+        for(auto &pass : graph->passes_)
+        {
+            graph->executedPasses_.push_back(std::move(pass));
+        }
+        graph->passes_.clear();
+    }
+    if(lastSubmit)
+    {
+        graph->recording_ = false;
     }
 }
 

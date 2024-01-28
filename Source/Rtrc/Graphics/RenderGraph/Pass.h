@@ -89,7 +89,7 @@ private:
     friend class Compiler;
 
     Pass(int index, const LabelStack::Node *node);
-    
+
     int            index_;
     Callback       callback_;
     RHI::FenceRPtr signalFence_;
@@ -103,6 +103,8 @@ private:
     std::set<Pass *> succs_;
 
     UAVOverlapGroup uavOverlapGroup_;
+
+    bool isExecuted_;
 };
 
 RTRC_RG_END

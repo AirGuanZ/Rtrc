@@ -71,9 +71,9 @@ Image<Vector2f> DFDM::GenerateCorrectionMap(const Image<Vector3f> &displacementM
     });
     auto correctionB = graph->CreateTexture(correctionA->GetDesc());
     auto rgCorrectionMap = graph->RegisterTexture(correctionMap);
-    
-    graph->CreateClearRWTexture2DPass("Clear correction texture", correctionA, Vector4f(0, 0, 0, 0));
 
+    ClearRWTexture2D(graph, "Clear correction texture", correctionA, Vector4f(0, 0, 0, 0));
+    
     for(int i = 0; i < iterationCount_; ++i)
     {
         FastKeywordContext keywords;
@@ -91,14 +91,13 @@ Image<Vector2f> DFDM::GenerateCorrectionMap(const Image<Vector3f> &displacementM
         passData.areaPreservation = areaPreservation_;
         passData.iteration        = i;
 
-        graph->CreateComputePassWithThreadCount(
-            fmt::format("Optimize iteration {}", i),
-            shader, input->GetSize(), passData);
+        DispatchWithThreadCount(
+            graph, fmt::format("Optimize iteration {}", i), shader, input->GetSize(), passData);
 
         std::swap(correctionA, correctionB);
     }
 
-    graph->CreateCopyColorTexturePass("CopyToFinalCorrectionMap", correctionA, rgCorrectionMap);
+    CopyColorTexture(graph, "CopyToFinalCorrectionMap", correctionA, rgCorrectionMap);
 
     graphExecuter.Execute(graph);
 

@@ -286,7 +286,7 @@ void Run()
             rgAccumulateTexture = graph->RegisterTexture(accumulateTexture);
             rgRngTexture = graph->RegisterTexture(rngTexture);
 
-            graph->CreateClearRWTexture2DPass("ClearAccumulationTexture", rgAccumulateTexture, Vector4f(0));
+            ClearRWTexture2D(graph, "ClearAccumulationTexture", rgAccumulateTexture, Vector4f(0));
 
             initializePass->Use(rgRngTexture, RG::CS_RWTexture_WriteOnly);
             initializePass->SetCallback(
@@ -338,7 +338,7 @@ void Run()
             commandBuffer.DispatchWithThreadCount(renderTarget->GetWidth(), renderTarget->GetHeight());
         });
 
-        graph->CreateBlitTexture2DPass("Blit", renderTarget, rgSwapchain, true);
+        BlitTexture(graph, "Blit", renderTarget, rgSwapchain, true);
         
         graph->SetCompleteFence(device->GetFrameFence());
         executer.Execute(graph);

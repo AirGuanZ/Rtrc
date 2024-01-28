@@ -9,8 +9,6 @@
 #include <stdexcept>
 #include <version>
 
-#include <Rtrc/Core/Macro/MacroForEach.h>
-
 #if defined(__cpp_lib_stacktrace)
 #include <stacktrace>
 #define RTRC_ENABLE_EXCEPTION_STACKTRACE RTRC_DEBUG
@@ -26,7 +24,6 @@
 
 #define RTRC_RG_BEGIN RTRC_BEGIN namespace RG {
 #define RTRC_RG_END } RTRC_END
-#define RTRC_RG_DEBUG RTRC_DEBUG
 
 #define RTRC_RENDERER_BEGIN RTRC_BEGIN namespace Renderer {
 #define RTRC_RENDERER_END   } RTRC_END
@@ -35,6 +32,13 @@
 #define RTRC_DEBUG 1
 #else
 #define RTRC_DEBUG 0
+#endif
+
+#define RTRC_RG_DEBUG RTRC_DEBUG
+#if RTRC_RG_DEBUG
+#define RTRC_IF_RG_DEBUG(X) X
+#else
+#define RTRC_IF_RG_DEBUG(X) 
 #endif
 
 #define RTRC_MAYBE_UNUSED(X) ((void)(X))

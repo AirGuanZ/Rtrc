@@ -60,7 +60,7 @@ void DirectX12TransientResourcePool::Allocate(
     using Event = Variant<AllocateEvent, ReleaseEvent>;
 
     std::vector<Event> events;
-    events.reserve(2 * resources.size());
+    events.reserve(2u * resources.size());
 
     for(auto &&[resourceIndex, resource] : Enumerate(resources))
     {

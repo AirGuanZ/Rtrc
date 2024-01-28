@@ -130,7 +130,7 @@ class DFDMDemo : public SimpleApplication
                 gizmo, renderGraph, framebuffer, depthBuffer, camera_.GetWorldToClip(), false, 2.2f);
         }
 
-        renderGraph->CreateBlitTexture2DPass("BlitToSwapchainTexture", framebuffer, swapchainTexture);
+        BlitTexture(renderGraph, "BlitToSwapchainTexture", framebuffer, swapchainTexture);
     }
 
     void InitializeGeometryBuffers()

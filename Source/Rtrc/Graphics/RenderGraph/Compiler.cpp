@@ -38,6 +38,7 @@ namespace CompilerDetail
 
 Compiler::Compiler(Ref<Device> device, Options options)
     : options_(options)
+    , lastSubmit_(false)
     , device_(device)
     , graph_(nullptr)
 {
@@ -45,6 +46,11 @@ Compiler::Compiler(Ref<Device> device, Options options)
     {
         options_.value &= ~std::to_underlying(Options::PreferGlobalMemoryBarrier);
     }
+}
+
+void Compiler::SetLastSubmit(bool value)
+{
+    lastSubmit_ = value;
 }
 
 void Compiler::SetTransientResourcePool(RHI::TransientResourcePoolOPtr pool)
@@ -530,7 +536,7 @@ void Compiler::FillExternalResources(ExecutableResources &output)
 
             auto &finalStates = output.indexToTexture[index].finalState;
             finalStates = TextureSubrscMap<std::optional<TexSubrscState>>(ext->texture->GetDesc());
-            if(TryCastResource<RenderGraph::SwapchainTexture>(ext))
+            if(lastSubmit_ && TryCastResource<RenderGraph::SwapchainTexture>(ext))
             {
                 finalStates(0, 0) = TexSubrscState(
                     RHI::INITIAL_QUEUE_SESSION_ID, RHI::TextureLayout::Present,
@@ -936,11 +942,13 @@ void Compiler::GenerateBarriers(const ExecutableResources &resources)
         }
     }
 
+    bool hasUseSwapchainTexture = false;
     for(auto &[subTexKey, users] : subTexUsers_)
     {
         auto [tex, subrsc] = subTexKey;
         const int rscIdx = tex->GetResourceIndex();
         const bool isSwapchainTex = TryCastResource<RenderGraph::SwapchainTexture>(tex);
+        hasUseSwapchainTexture |= isSwapchainTex;
         TexSubrscState lastState = resources.indexToTexture[rscIdx].texture
                                         ->GetState(subrsc.mipLevel, subrsc.arrayLayer);
 
@@ -1035,7 +1043,10 @@ void Compiler::GenerateBarriers(const ExecutableResources &resources)
                 }
             }
 
-            if(isSwapchainTex && userIndex == 0)
+            const bool isFirstUseOfSwapchainTex = isSwapchainTex && userIndex == 0 &&
+                                                  lastState.stages == RHI::PipelineStage::None &&
+                                                  lastState.accesses == RHI::ResourceAccess::None;
+            if(isFirstUseOfSwapchainTex)
             {
                 assert(lastState.accesses == RHI::ResourceAccess::None);
                 assert(lastState.layout == RHI::TextureLayout::Undefined);
@@ -1079,7 +1090,8 @@ void Compiler::GenerateBarriers(const ExecutableResources &resources)
             }
         }
 
-        if(isSwapchainTex)
+
+        if(isSwapchainTex && lastSubmit_)
         {
             passToSection_[users.back().passIndex]->swapchainPresentBarrier = RHI::TextureTransitionBarrier
             {
@@ -1087,6 +1099,30 @@ void Compiler::GenerateBarriers(const ExecutableResources &resources)
                 .beforeStages   = lastState.stages,
                 .beforeAccesses = IsReadOnly(lastState.accesses) ? RHI::ResourceAccess::None : lastState.accesses,
                 .beforeLayout   = lastState.layout,
+                .afterStages    = RHI::PipelineStage::None,
+                .afterAccesses  = RHI::ResourceAccess::None,
+                .afterLayout    = RHI::TextureLayout::Present
+            };
+        }
+    }
+
+    // Swapchain texture must be transitioned to present layout in the final submission. If previous passes have never
+    // touched swapchain texture, we need to explicitly add a barrier here.
+    if(lastSubmit_ && !hasUseSwapchainTexture)
+    {
+        auto swapchainTex = graph_->swapchainTexture_ ? graph_->swapchainTexture_->texture : nullptr;
+        if(swapchainTex && swapchainTex->GetState(0, 0).layout != RHI::TextureLayout::Present)
+        {
+            if(sections_.empty())
+            {
+                sections_.push_back(MakeBox<CompileSection>());
+            }
+            sections_.back()->swapchainPresentBarrier = RHI::TextureTransitionBarrier
+            {
+                .texture        = swapchainTex->GetRHIObject(),
+                .beforeStages   = RHI::PipelineStage::None,
+                .beforeAccesses = RHI::ResourceAccess::None,
+                .beforeLayout   = swapchainTex->GetState(0, 0).layout,
                 .afterStages    = RHI::PipelineStage::None,
                 .afterAccesses  = RHI::ResourceAccess::None,
                 .afterLayout    = RHI::TextureLayout::Present
