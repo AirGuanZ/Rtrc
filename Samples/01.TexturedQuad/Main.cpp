@@ -77,7 +77,7 @@ void Run()
 
     // Render loop
 
-    RG::Executer executer(device);
+    RGExecuter executer(device);
 
     device->BeginRenderLoop();
     while(!window.ShouldClose())
@@ -95,27 +95,24 @@ void Run()
 
         auto graph = device->CreateRenderGraph();
         auto renderTarget = graph->RegisterSwapchainTexture(device->GetSwapchain());
-        
-        auto quadPass = graph->CreatePass("DrawQuad");
-        quadPass->Use(renderTarget, RG::ColorAttachment);
-        quadPass->SetCallback([&]
-        {
-            auto &commandBuffer = RG::GetCurrentCommandBuffer();
-            commandBuffer.BeginRenderPass(ColorAttachment
+
+        AddRenderPass(
+            graph, "DrawQuad", RGColorAttachment
             {
-                .renderTargetView = renderTarget->GetRtvImm(),
-                .loadOp           = AttachmentLoadOp::Clear,
-                .storeOp          = AttachmentStoreOp::Store,
-                .clearValue       = ColorClearValue{ 0, 1, 1, 1 }
+                .rtv        = renderTarget->GetRtv(),
+                .loadOp     = RHI::AttachmentLoadOp::Clear,
+                .clearValue = RHI::ColorClearValue{ 0, 1, 1, 1 }
+            },
+            [&]
+            {
+                auto &commandBuffer = RGGetCommandBuffer();
+                commandBuffer.BindGraphicsPipeline(pipeline);
+                mesh->Bind(commandBuffer);
+                commandBuffer.BindGraphicsGroup(0, materialPassGroup);
+                commandBuffer.SetViewports(renderTarget->GetViewport());
+                commandBuffer.SetScissors(renderTarget->GetScissor());
+                commandBuffer.DrawIndexed(6, 1, 0, 0, 0);
             });
-            commandBuffer.BindGraphicsPipeline(pipeline);
-            mesh->Bind(commandBuffer);
-            commandBuffer.BindGraphicsGroup(0, materialPassGroup);
-            commandBuffer.SetViewports(renderTarget->GetViewport());
-            commandBuffer.SetScissors(renderTarget->GetScissor());
-            commandBuffer.DrawIndexed(6, 1, 0, 0, 0);
-            commandBuffer.EndRenderPass();
-        });
         
         graph->SetCompleteFence(device->GetFrameFence());
         executer.Execute(graph);

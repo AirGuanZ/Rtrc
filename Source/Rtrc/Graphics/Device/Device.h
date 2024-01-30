@@ -16,13 +16,10 @@
 #include <Rtrc/Graphics/Device/Utility/CopyTextureUtils.h>
 #include <Rtrc/Graphics/Shader/ShaderManager.h>
 
-RTRC_RG_BEGIN
+RTRC_BEGIN
 
 class RenderGraph;
-
-RTRC_RG_END
-
-RTRC_BEGIN
+using GraphRef = Ref<RenderGraph>;
 
 namespace DeviceDetail
 {
@@ -212,7 +209,7 @@ public:
 
     // Pipeline object creation
 
-    Box<RG::RenderGraph> CreateRenderGraph();
+    Box<RenderGraph> CreateRenderGraph();
 
     template<BindingGroupDSL::RtrcGroupStruct T>
     RC<BindingGroupLayout> CreateBindingGroupLayout();

@@ -6,9 +6,9 @@
 
 #include <Rtrc/Core/Memory/Arena.h>
 
-RTRC_RG_BEGIN
+RTRC_BEGIN
 
-class LabelStack
+class RGLabelStack
 {
 public:
 
@@ -34,7 +34,7 @@ private:
     std::stack<const Node *> nodeStack_;
 };
 
-inline void LabelStack::Push(std::string name)
+inline void RGLabelStack::Push(std::string name)
 {
     auto node = nodeAlloc_.Create<Node>();
     node->name = std::move(name);
@@ -43,19 +43,19 @@ inline void LabelStack::Push(std::string name)
     nodeStack_.push(node);
 }
 
-inline void LabelStack::Pop()
+inline void RGLabelStack::Pop()
 {
     assert(!nodeStack_.empty());
     nodeStack_.pop();
 }
 
-inline const LabelStack::Node *LabelStack::GetCurrentNode() const
+inline const RGLabelStack::Node *RGLabelStack::GetCurrentNode() const
 {
     return nodeStack_.empty() ? nullptr : nodeStack_.top();
 }
 
 template<typename PushOperation, typename PopOperation>
-void LabelStack::Transfer(const Node *from, const Node *to, const PushOperation &push, const PopOperation &pop)
+void RGLabelStack::Transfer(const Node *from, const Node *to, const PushOperation &push, const PopOperation &pop)
 {
     if(!from && !to)
     {
@@ -107,4 +107,4 @@ void LabelStack::Transfer(const Node *from, const Node *to, const PushOperation 
     }
 }
 
-RTRC_RG_END
+RTRC_END

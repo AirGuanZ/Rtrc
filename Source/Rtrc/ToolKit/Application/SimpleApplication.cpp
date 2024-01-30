@@ -3,8 +3,7 @@
 
 RTRC_BEGIN
 
-void SimpleApplication::ExecuteStandaloneRenderGraph(
-    Ref<RG::RenderGraph> graph, bool enableTransientResourcePool)
+void SimpleApplication::ExecuteStandaloneRenderGraph(GraphRef graph, bool enableTransientResourcePool)
 {
     renderGraphExecuter_->Execute(graph, enableTransientResourcePool);
 }
@@ -12,7 +11,7 @@ void SimpleApplication::ExecuteStandaloneRenderGraph(
 void SimpleApplication::Initialize()
 {
     auto device = GetDevice();
-    renderGraphExecuter_ = MakeBox<RG::Executer>(device);
+    renderGraphExecuter_ = MakeBox<RGExecuter>(device);
     imguiRenderer_ = MakeBox<ImGuiRenderer>(device);
     isSwapchainInvalid = false;
     InitializeSimpleApplication();

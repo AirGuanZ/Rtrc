@@ -28,7 +28,7 @@ public:
 
     const T &GetRHIObject() const;
 
-    operator typename T::ElementType *() const;
+    operator T() const;
 
     const RC<Texture> &GetTexture() const { return texture_; }
 
@@ -135,9 +135,9 @@ const T &TTextureView<T>::GetRHIObject() const
 }
 
 template<typename T>
-TTextureView<T>::operator typename T::ElementType *() const
+TTextureView<T>::operator T() const
 {
-    return view_.Get();
+    return view_;
 }
 
 template<typename T>

@@ -1,16 +1,16 @@
 #include <Rtrc/Graphics/RenderGraph/Compiler.h>
 #include <Rtrc/Graphics/RenderGraph/Executable.h>
 
-RTRC_RG_BEGIN
+RTRC_BEGIN
 
-Executer::Executer(Ref<Device> device)
+RGExecuter::RGExecuter(Ref<Device> device)
     : device_(device)
 {
     constexpr int chunkSizeHint = 128 * 1024 * 1024;
     transientResourcePool_ = device_->GetRawDevice()->CreateTransientResourcePool({ chunkSizeHint }).ToRC();
 }
 
-void Executer::Recycle()
+void RGExecuter::Recycle()
 {
     if(transientResourcePool_)
     {
@@ -18,22 +18,22 @@ void Executer::Recycle()
     }
 }
 
-void Executer::ExecutePartially(Ref<RenderGraph> graph, bool enableTransientResourcePool)
+void RGExecuter::ExecutePartially(Ref<RenderGraph> graph, bool enableTransientResourcePool)
 {
     ExecuteInternal(graph, enableTransientResourcePool, true);
 }
 
-void Executer::Execute(Ref<RenderGraph> graph, bool enableTransientResourcePool)
+void RGExecuter::Execute(Ref<RenderGraph> graph, bool enableTransientResourcePool)
 {
     ExecuteInternal(graph, enableTransientResourcePool, false);
 }
 
-void Executer::ExecuteInternal(Ref<RenderGraph> graph, bool enableTransientResourcePool, bool partialExecution)
+void RGExecuter::ExecuteInternal(Ref<RenderGraph> graph, bool enableTransientResourcePool, bool partialExecution)
 {
-    ExecutableGraph compiledResult;
+    RGExecutableGraph compiledResult;
     assert(graph->recording_);
     {
-        Compiler compiler(device_);
+        RGCompiler compiler(device_);
         if(enableTransientResourcePool && transientResourcePool_)
         {
             compiler.SetTransientResourcePool(transientResourcePool_);
@@ -60,20 +60,20 @@ void Executer::ExecuteInternal(Ref<RenderGraph> graph, bool enableTransientResou
     }
 }
 
-void Executer::ExecuteImpl(const ExecutableGraph &graph)
+void RGExecuter::ExecuteImpl(const RGExecutableGraph &graph)
 {
-    const LabelStack::Node *nameNode = nullptr;
+    const RGLabelStack::Node *nameNode = nullptr;
 
     for(auto &section : graph.sections)
     {
         auto commandBuffer = device_->CreateCommandBuffer();
         commandBuffer.Begin();
 
-        auto PushNameNode = [&](const LabelStack::Node *node)
+        auto PushNameNode = [&](const RGLabelStack::Node *node)
         {
             commandBuffer.GetRHIObject()->BeginDebugEvent(RHI::DebugLabel{ .name = node->name });
         };
-        auto PopNameNode = [&](const LabelStack::Node *)
+        auto PopNameNode = [&](const RGLabelStack::Node *)
         {
             commandBuffer.GetRHIObject()->EndDebugEvent();
         };
@@ -96,13 +96,13 @@ void Executer::ExecuteImpl(const ExecutableGraph &graph)
             const bool emitDebugLabel = pass.callback;
             if(emitDebugLabel)
             {
-                LabelStack::Transfer(nameNode, pass.nameNode, PushNameNode, PopNameNode);
+                RGLabelStack::Transfer(nameNode, pass.nameNode, PushNameNode, PopNameNode);
                 nameNode = pass.nameNode;
             }
 
             if(pass.callback)
             {
-                PassContext passContext(graph.resources, commandBuffer);
+                RGPassContext passContext(graph.resources, commandBuffer);
 #if RTRC_RG_DEBUG
                 passContext.declaredResources_ = &pass.declaredResources;
 #endif
@@ -118,7 +118,7 @@ void Executer::ExecuteImpl(const ExecutableGraph &graph)
         const bool isLastSection = &section == &graph.sections.back();
         if(isLastSection)
         {
-            LabelStack::Transfer(nameNode, nullptr, PushNameNode, PopNameNode);
+            RGLabelStack::Transfer(nameNode, nullptr, PushNameNode, PopNameNode);
         }
 
         commandBuffer.End();
@@ -185,4 +185,4 @@ void Executer::ExecuteImpl(const ExecutableGraph &graph)
     }
 }
 
-RTRC_RG_END
+RTRC_END

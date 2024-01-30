@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Rtrc/Graphics/Misc/PipelineCache.h>
+#include <Rtrc/Graphics/RenderGraph/Graph.h>
 #include <Rtrc/ToolKit/Gizmo/GizmoBuilder.h>
 
 RTRC_BEGIN
@@ -20,9 +21,9 @@ public:
 
     void AddRenderPass(
         const GizmoBuilder  &builder,
-        Ref<RG::RenderGraph> renderGraph,
-        RG::TextureResource* framebuffer,
-        RG::TextureResource* depthBuffer, // depth buffer is optional
+        GraphRef             renderGraph,
+        RGTexture            framebuffer,
+        RGTexture            depthBuffer, // depth buffer is optional
         const Matrix4x4f&    worldToClip,
         bool                 reverseZ = false,
         float                rcpGamma = 1 /* 2.2 */);

@@ -3,9 +3,9 @@
 #include <Rtrc/Graphics/RenderGraph/Compiler.h>
 #include <Rtrc/Graphics/RenderGraph/Graph.h>
 
-RTRC_RG_BEGIN
+RTRC_BEGIN
 
-namespace CompilerDetail
+namespace RGCompilerDetail
 {
 
     void RemoveUnnecessaryBufferAccessMask(RHI::ResourceAccessFlag &beforeAccess, RHI::ResourceAccessFlag &afterAccess)
@@ -34,9 +34,9 @@ namespace CompilerDetail
         }
     }
 
-} // namespace CompilerDetail
+} // namespace RGCompilerDetail
 
-Compiler::Compiler(Ref<Device> device, Options options)
+RGCompiler::RGCompiler(Ref<Device> device, Options options)
     : options_(options)
     , forPartialExecution_(false)
     , device_(device)
@@ -48,17 +48,17 @@ Compiler::Compiler(Ref<Device> device, Options options)
     }
 }
 
-void Compiler::SetPartialExecution(bool value)
+void RGCompiler::SetPartialExecution(bool value)
 {
     forPartialExecution_ = value;
 }
 
-void Compiler::SetTransientResourcePool(RHI::TransientResourcePoolOPtr pool)
+void RGCompiler::SetTransientResourcePool(RHI::TransientResourcePoolOPtr pool)
 {
     transientResourcePool_ = pool;
 }
 
-void Compiler::Compile(const RenderGraph &graph, ExecutableGraph &result)
+void RGCompiler::Compile(const RenderGraph &graph, RGExecutableGraph &result)
 {
     graph_ = &graph;
 
@@ -100,12 +100,12 @@ void Compiler::Compile(const RenderGraph &graph, ExecutableGraph &result)
     result.queueSyncForTransientResourcePool = std::move(syncQuery);
 }
 
-bool Compiler::DontNeedBarrier(const Pass::BufferUsage &a, const Pass::BufferUsage &b)
+bool RGCompiler::DontNeedBarrier(const RGPassImpl::BufferUsage &a, const RGPassImpl::BufferUsage &b)
 {
     return IsReadOnly(a.accesses) && IsReadOnly(b.accesses);
 }
 
-bool Compiler::DontNeedBarrier(const Pass::SubTexUsage &a, const Pass::SubTexUsage &b)
+bool RGCompiler::DontNeedBarrier(const RGPassImpl::SubTexUsage &a, const RGPassImpl::SubTexUsage &b)
 {
     if(a.layout != b.layout)
     {
@@ -126,7 +126,7 @@ bool Compiler::DontNeedBarrier(const Pass::SubTexUsage &a, const Pass::SubTexUsa
     return IsReadOnly(a.accesses) && IsReadOnly(b.accesses);
 }
 
-void Compiler::GenerateGlobalMemoryBarriers(ExecutablePass &pass)
+void RGCompiler::GenerateGlobalMemoryBarriers(RGExecutablePass &pass)
 {
     RHI::GlobalMemoryBarrier globalMemoryBarrier =
     {
@@ -170,26 +170,26 @@ void Compiler::GenerateGlobalMemoryBarriers(ExecutablePass &pass)
     }
 }
 
-void Compiler::GenerateConnectionsByDefinitionOrder(
+void RGCompiler::GenerateConnectionsByDefinitionOrder(
     bool                          optimizeConnection,
-    Span<Box<Pass>>               passes,
-    std::vector<std::set<Pass*>> &outPrevs,
-    std::vector<std::set<Pass*>> &outSuccs)
+    Span<Box<RGPassImpl>>               passes,
+    std::vector<std::set<RGPassImpl*>> &outPrevs,
+    std::vector<std::set<RGPassImpl*>> &outSuccs)
 {
     struct UserRecord
     {
-        std::set<Pass *>   prevUsers;
-        std::set<Pass *>   users;
+        std::set<RGPassImpl *>   prevUsers;
+        std::set<RGPassImpl *>   users;
         RHI::TextureLayout layout = RHI::TextureLayout::Undefined;
         bool               isReadOnly = false;
-        UAVOverlapGroup    uavOverlapGroup;
+        RGUavOverlapGroup    uavOverlapGroup;
     };
 
     std::map<uint64_t, UserRecord> resourceIndexToUsers;
 
-    for(const Box<Pass> &pass : passes)
+    for(const Box<RGPassImpl> &pass : passes)
     {
-        Pass *curr = pass.get();
+        RGPassImpl *curr = pass.get();
 
         for(auto &&[buffer, usage] : pass->bufferUsages_)
         {
@@ -214,7 +214,7 @@ void Compiler::GenerateConnectionsByDefinitionOrder(
                     userRecord.prevUsers       = userRecord.users;
                     userRecord.users           = { curr };
                     userRecord.isReadOnly      = isCurrReadOnly;
-                    userRecord.uavOverlapGroup = isUAVOnly ? pass->uavOverlapGroup_ : UAVOverlapGroup{};
+                    userRecord.uavOverlapGroup = isUAVOnly ? pass->uavOverlapGroup_ : RGUavOverlapGroup{};
                 }
             }
             for(auto prev : userRecord.prevUsers)
@@ -255,7 +255,7 @@ void Compiler::GenerateConnectionsByDefinitionOrder(
                             userRecord.users           = { curr };
                             userRecord.layout          = subrscUsage->layout;
                             userRecord.isReadOnly      = isCurrReadOnly;
-                            userRecord.uavOverlapGroup = isUAVOnly ? pass->uavOverlapGroup_ : UAVOverlapGroup{};
+                            userRecord.uavOverlapGroup = isUAVOnly ? pass->uavOverlapGroup_ : RGUavOverlapGroup{};
                         }
                     }
                     for(auto prev : userRecord.prevUsers)
@@ -270,12 +270,12 @@ void Compiler::GenerateConnectionsByDefinitionOrder(
     }
 }
 
-bool Compiler::IsInSection(int passIndex, const CompileSection *section) const
+bool RGCompiler::IsInSection(int passIndex, const CompileSection *section) const
 {
     return passToSection_.at(passIndex) == section;
 }
 
-void Compiler::AllocateInternalResourcesCrossExecutions()
+void RGCompiler::AllocateInternalResourcesCrossExecutions()
 {
     if(!forPartialExecution_)
     {
@@ -307,7 +307,7 @@ void Compiler::AllocateInternalResourcesCrossExecutions()
     }
 }
 
-void Compiler::ProcessSynchronizedResourceStates()
+void RGCompiler::ProcessSynchronizedResourceStates()
 {
     const RHI::QueueSessionID synchronizedSessionID = graph_->GetQueue().GetRHIObject()->GetSynchronizedSessionID();
 
@@ -339,12 +339,12 @@ void Compiler::ProcessSynchronizedResourceStates()
     }
 }
 
-void Compiler::TopologySortPasses()
+void RGCompiler::TopologySortPasses()
 {
     assert(graph_);
-    const std::vector<Box<Pass>> &passes = graph_->passes_;
+    const std::vector<Box<RGPassImpl>> &passes = graph_->passes_;
 
-    std::vector<std::set<Pass *>> prevs(passes.size()), succs(passes.size());
+    std::vector<std::set<RGPassImpl *>> prevs(passes.size()), succs(passes.size());
     for(size_t i = 0; i < passes.size(); ++i)
     {
         prevs[i] = passes[i]->prevs_;
@@ -353,7 +353,7 @@ void Compiler::TopologySortPasses()
 
     if(options_.Contains(Options::ConnectPassesByDefinitionOrder))
     {
-        const bool optimize = options_.Contains(CompilerDetail::OptionBit::OptimizePassConnection);
+        const bool optimize = options_.Contains(RGCompilerDetail::OptionBit::OptimizePassConnection);
         GenerateConnectionsByDefinitionOrder(optimize, passes, prevs, succs);
     }
 
@@ -375,7 +375,7 @@ void Compiler::TopologySortPasses()
         const int passIndex = availablePasses.front();
         availablePasses.pop();
         sortedPassIndices.push_back(passIndex);
-        for(Pass *succ : succs[passIndex])
+        for(RGPassImpl *succ : succs[passIndex])
         {
             const int succIndex = succ->index_;
             assert(passToUnprocessedPrevCount[succIndex]);
@@ -393,17 +393,17 @@ void Compiler::TopologySortPasses()
     sortedPasses_.resize(passes.size());
     for(size_t i = 0; i < sortedPassIndices.size(); ++i)
     {
-        Pass *pass = passes[sortedPassIndices[i]].get();
+        RGPassImpl *pass = passes[sortedPassIndices[i]].get();
         sortedPasses_[i] = pass;
         passToSortedIndex_[pass] = static_cast<int>(i);
     }
 }
 
-void Compiler::CollectResourceUsers()
+void RGCompiler::CollectResourceUsers()
 {
     for(size_t passIndex = 0; passIndex != sortedPasses_.size(); ++passIndex)
     {
-        const Pass &pass = *sortedPasses_[passIndex];
+        const RGPassImpl &pass = *sortedPasses_[passIndex];
 
         for(auto &[bufferResource, bufferUsage] : pass.bufferUsages_)
         {
@@ -411,7 +411,7 @@ void Compiler::CollectResourceUsers()
             {
                 .passIndex       = static_cast<int>(passIndex),
                 .usage           = bufferUsage,
-                .uavOverlapGroup = IsUAVOnly(bufferUsage.accesses) ? pass.uavOverlapGroup_ : UAVOverlapGroup{}
+                .uavOverlapGroup = IsUAVOnly(bufferUsage.accesses) ? pass.uavOverlapGroup_ : RGUavOverlapGroup{}
             });
         }
 
@@ -424,13 +424,13 @@ void Compiler::CollectResourceUsers()
                 {
                     continue;
                 }
-                const Pass::SubTexUsage &subTexUsage = textureUsage(mipLevel, arrayLayer).value();
+                const RGPassImpl::SubTexUsage &subTexUsage = textureUsage(mipLevel, arrayLayer).value();
                 const SubTexKey key = { textureResource, TexSubrsc{ mipLevel, arrayLayer } };
                 subTexUsers_[key].push_back(SubTexUser
                 {
                     .passIndex       = static_cast<int>(passIndex),
                     .usage           = subTexUsage,
-                    .uavOverlapGroup = IsUAVOnly(subTexUsage.accesses) ? pass.uavOverlapGroup_ : UAVOverlapGroup{}
+                    .uavOverlapGroup = IsUAVOnly(subTexUsage.accesses) ? pass.uavOverlapGroup_ : RGUavOverlapGroup{}
                 });
             }
 
@@ -444,7 +444,7 @@ void Compiler::CollectResourceUsers()
                     {
                         continue;
                     }
-                    const Pass::SubTexUsage &subTexUsage = textureUsage(mipLevel, arrayLayer).value();
+                    const RGPassImpl::SubTexUsage &subTexUsage = textureUsage(mipLevel, arrayLayer).value();
                     if(subTexUsage.layout != RHI::TextureLayout::ShaderTexture)
                     {
                         throw Exception("External readonly texture is used in non ShaderTexture layout");
@@ -456,7 +456,7 @@ void Compiler::CollectResourceUsers()
     }
 }
 
-void Compiler::GenerateSections()
+void RGCompiler::GenerateSections()
 {
     // need splitting when:
     //      signaling fence is not nil
@@ -475,7 +475,7 @@ void Compiler::GenerateSections()
     bool needNewSection = true;
     for(int passIndex = 0; passIndex < static_cast<int>(sortedPasses_.size()); ++passIndex)
     {
-        const Pass *pass = sortedPasses_[passIndex];
+        const RGPassImpl *pass = sortedPasses_[passIndex];
         if(needNewSection)
         {
             sections_.push_back(MakeBox<CompileSection>());
@@ -497,7 +497,7 @@ void Compiler::GenerateSections()
     }
 }
 
-void Compiler::GenerateSemaphores()
+void RGCompiler::GenerateSemaphores()
 {
     const SubTexUsers *swapchainTextureUsers = nullptr;
     for(auto &[subTexKey, users] : subTexUsers_)
@@ -532,7 +532,7 @@ void Compiler::GenerateSemaphores()
     }
 }
 
-void Compiler::FillExternalResources(ExecutableResources &output)
+void RGCompiler::FillExternalResources(RGExecutableResources &output)
 {
     for(auto &buffer : graph_->buffers_)
     {
@@ -608,7 +608,7 @@ void Compiler::FillExternalResources(ExecutableResources &output)
     }
 }
 
-void Compiler::AllocateInternalResourcesLegacy(ExecutableResources &output)
+void RGCompiler::AllocateInternalResourcesLegacy(RGExecutableResources &output)
 {
     for(auto &buf : graph_->buffers_)
     {
@@ -717,7 +717,7 @@ void Compiler::AllocateInternalResourcesLegacy(ExecutableResources &output)
     }
 }
 
-RC<RHI::QueueSyncQuery> Compiler::AllocateInternalResources(ExecutableResources &output, std::vector<std::vector<int>> &aliasedPrevs)
+RC<RHI::QueueSyncQuery> RGCompiler::AllocateInternalResources(RGExecutableResources &output, std::vector<std::vector<int>> &aliasedPrevs)
 {
     std::vector<int> tranasientResourceIndices;
     std::vector<RHI::TransientResourceDeclaration> transientResourceDecls;
@@ -904,7 +904,7 @@ RC<RHI::QueueSyncQuery> Compiler::AllocateInternalResources(ExecutableResources 
     return syncQuery;
 }
 
-void Compiler::GenerateBarriers(const ExecutableResources &resources)
+void RGCompiler::GenerateBarriers(const RGExecutableResources &resources)
 {
     for(auto &[buffer, users] : bufferUsers_)
     {
@@ -1195,7 +1195,7 @@ void Compiler::GenerateBarriers(const ExecutableResources &resources)
     }
 }
 
-void Compiler::FillSections(ExecutableGraph &output)
+void RGCompiler::FillSections(RGExecutableGraph &output)
 {
     bool initialGlobalBarrierEmitted = false;
     const bool hasGoodBarrierMemoryModel =
@@ -1205,7 +1205,7 @@ void Compiler::FillSections(ExecutableGraph &output)
     output.sections.reserve(sections_.size());
     for(const auto &compileSection : sections_)
     {
-        ExecutableSection &section = output.sections.emplace_back();
+        RGExecutableSection &section = output.sections.emplace_back();
 
         if(compileSection->waitBackbufferSemaphore)
         {
@@ -1239,16 +1239,16 @@ void Compiler::FillSections(ExecutableGraph &output)
         section.passes.reserve(compileSection->passes.size());
         for(const int compilePassIndex : compileSection->passes)
         {
-            Pass          *&rawPass     = sortedPasses_[compilePassIndex];
+            RGPassImpl          *&rawPass     = sortedPasses_[compilePassIndex];
             CompilePass    &compilePass = *sortedCompilePasses_[compilePassIndex];
-            ExecutablePass &pass        = section.passes.emplace_back();
+            RGExecutablePass &pass        = section.passes.emplace_back();
 
             pass.preBufferBarriers = std::move(compilePass.preBufferTransitions);
             if(hasGoodBarrierMemoryModel)
             {
                 for(RHI::BufferTransitionBarrier &b : pass.preBufferBarriers)
                 {
-                    CompilerDetail::RemoveUnnecessaryBufferAccessMask(b.beforeAccesses, b.afterAccesses);
+                    RGCompilerDetail::RemoveUnnecessaryBufferAccessMask(b.beforeAccesses, b.afterAccesses);
                 }
             }
 
@@ -1257,7 +1257,7 @@ void Compiler::FillSections(ExecutableGraph &output)
             {
                 for(RHI::TextureTransitionBarrier &b : pass.preTextureBarriers)
                 {
-                    CompilerDetail::RemoveUnnecessaryTextureAccessMask(
+                    RGCompilerDetail::RemoveUnnecessaryTextureAccessMask(
                         b.beforeLayout, b.afterLayout, b.beforeAccesses, b.afterAccesses);
                 }
             }
@@ -1304,4 +1304,4 @@ void Compiler::FillSections(ExecutableGraph &output)
     }
 }
 
-RTRC_RG_END
+RTRC_END

@@ -2,7 +2,7 @@
 #include <Rtrc/Graphics/RenderGraph/Executable.h>
 #include <Rtrc/Graphics/RenderGraph/Graph.h>
 
-RTRC_RG_BEGIN
+RTRC_BEGIN
 
 void RenderGraph::InternalBufferResource::SetDefaultStructStride(size_t stride)
 {
@@ -31,7 +31,7 @@ RenderGraph::RenderGraph(Ref<Device> device, Queue queue)
     
 }
 
-BufferResource *RenderGraph::CreateBuffer(const RHI::BufferDesc &desc, std::string name)
+RGBufImpl *RenderGraph::CreateBuffer(const RHI::BufferDesc &desc, std::string name)
 {
     assert(recording_);
     const int index = static_cast<int>(buffers_.size());
@@ -43,7 +43,7 @@ BufferResource *RenderGraph::CreateBuffer(const RHI::BufferDesc &desc, std::stri
     return buffers_.back().get();
 }
 
-TextureResource *RenderGraph::CreateTexture(const RHI::TextureDesc &desc, std::string name)
+RGTexImpl *RenderGraph::CreateTexture(const RHI::TextureDesc &desc, std::string name)
 {
     assert(recording_);
     const int index = static_cast<int>(textures_.size());
@@ -55,7 +55,7 @@ TextureResource *RenderGraph::CreateTexture(const RHI::TextureDesc &desc, std::s
     return textures_.back().get();
 }
 
-BufferResource *RenderGraph::CreateTexelBuffer(
+RGBufImpl *RenderGraph::CreateTexelBuffer(
     size_t count, RHI::Format format, RHI::BufferUsageFlag usages, std::string name)
 {
     auto ret = this->CreateBuffer(RHI::BufferDesc
@@ -67,7 +67,7 @@ BufferResource *RenderGraph::CreateTexelBuffer(
     return ret;
 }
 
-BufferResource *RenderGraph::CreateStructuredBuffer(
+RGBufImpl *RenderGraph::CreateStructuredBuffer(
     size_t count, size_t stride, RHI::BufferUsageFlag usages, std::string name)
 {
     auto ret = this->CreateBuffer(RHI::BufferDesc
@@ -79,7 +79,7 @@ BufferResource *RenderGraph::CreateStructuredBuffer(
     return ret;
 }
 
-BufferResource *RenderGraph::RegisterBuffer(RC<StatefulBuffer> buffer)
+RGBufImpl *RenderGraph::RegisterBuffer(RC<StatefulBuffer> buffer)
 {
     assert(recording_);
     const void *rhiPtr = buffer->GetRHIObject().Get();
@@ -96,7 +96,7 @@ BufferResource *RenderGraph::RegisterBuffer(RC<StatefulBuffer> buffer)
     return buffers_.back().get();
 }
 
-TextureResource *RenderGraph::RegisterTexture(RC<StatefulTexture> texture)
+RGTexImpl *RenderGraph::RegisterTexture(RC<StatefulTexture> texture)
 {
     assert(recording_);
     const void *rhiPtr = texture->GetRHIObject().Get();
@@ -120,7 +120,7 @@ TextureResource *RenderGraph::RegisterTexture(RC<StatefulTexture> texture)
     return textures_.back().get();
 }
 
-TextureResource *RenderGraph::RegisterReadOnlyTexture(RC<Texture> texture)
+RGTexImpl *RenderGraph::RegisterReadOnlyTexture(RC<Texture> texture)
 {
     assert(recording_);
     const void *rhiPtr = texture->GetRHIObject().Get();
@@ -145,20 +145,20 @@ TextureResource *RenderGraph::RegisterReadOnlyTexture(RC<Texture> texture)
     return textures_.back().get();
 }
 
-TlasResource *RenderGraph::RegisterTlas(RC<Tlas> tlas, BufferResource *internalBuffer)
+RGTlasImpl *RenderGraph::RegisterTlas(RC<Tlas> tlas, RGBufImpl *internalBuffer)
 {
     assert(recording_);
     if(auto it = tlasResources_.find(internalBuffer); it != tlasResources_.end())
     {
         return it->second.get();
     }
-    auto ret = new TlasResource(std::move(tlas), internalBuffer);
-    auto rsc = Box<TlasResource>(ret);
+    auto ret = new RGTlasImpl(std::move(tlas), internalBuffer);
+    auto rsc = Box<RGTlasImpl>(ret);
     tlasResources_.insert({ internalBuffer, std::move(rsc) });
     return ret;
 }
 
-TextureResource *RenderGraph::RegisterSwapchainTexture(
+RGTexImpl *RenderGraph::RegisterSwapchainTexture(
     RHI::TextureRPtr             rhiTexture,
     RHI::BackBufferSemaphoreOPtr acquireSemaphore,
     RHI::BackBufferSemaphoreOPtr presentSemaphore)
@@ -181,7 +181,7 @@ TextureResource *RenderGraph::RegisterSwapchainTexture(
     return swapchainTexture_;
 }
 
-TextureResource *RenderGraph::RegisterSwapchainTexture(RHI::SwapchainOPtr swapchain)
+RGTexImpl *RenderGraph::RegisterSwapchainTexture(RHI::SwapchainOPtr swapchain)
 {
     return RegisterSwapchainTexture(
         swapchain->GetRenderTarget(), swapchain->GetAcquireSemaphore(), swapchain->GetPresentSemaphore());
@@ -225,11 +225,11 @@ void RenderGraph::EndUAVOverlap()
     assert(currentUAVOverlapGroupDepth_);
     if(!--currentUAVOverlapGroupDepth_)
     {
-        currentUAVOverlapGroup_.groupIndex = UAVOverlapGroup::InvalidGroupIndex;
+        currentUAVOverlapGroup_.groupIndex = RGUavOverlapGroup::InvalidGroupIndex;
     }
 }
 
-Pass *RenderGraph::CreatePass(std::string name)
+RGPassImpl *RenderGraph::CreatePass(std::string name)
 {
     assert(recording_);
     labelStack_.Push(std::move(name));
@@ -237,7 +237,7 @@ Pass *RenderGraph::CreatePass(std::string name)
     labelStack_.Pop();
 
     const int index = static_cast<int>(passes_.size());
-    auto pass = Box<Pass>(new Pass(index, node));
+    auto pass = Box<RGPassImpl>(new RGPassImpl(index, node));
     pass->uavOverlapGroup_ = currentUAVOverlapGroup_;
 
     passes_.push_back(std::move(pass));
@@ -274,4 +274,4 @@ const RHI::TextureDesc &RenderGraph::InternalTextureResource::GetDesc() const
     return rhiDesc;
 }
 
-RTRC_RG_END
+RTRC_END

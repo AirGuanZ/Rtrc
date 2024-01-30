@@ -245,37 +245,37 @@ void CommandBuffer::CopyColorTexture2DToBuffer(
 }
 
 void CommandBuffer::CopyBuffer(
-    const RG::BufferResource *dst, size_t dstOffset, const RG::BufferResource *src, size_t srcOffset, size_t size)
+    RGBuffer dst, size_t dstOffset, RGBuffer src, size_t srcOffset, size_t size)
 {
     CopyBuffer(*dst->Get(), dstOffset, *src->Get(), srcOffset, size);
 }
 
 void CommandBuffer::CopyColorTexture(
-    RG::TextureResource *dst, uint32_t dstMipLevel, uint32_t dstArrayLayer,
-    RG::TextureResource *src, uint32_t srcMipLevel, uint32_t srcArrayLayer)
+    RGTexture dst, uint32_t dstMipLevel, uint32_t dstArrayLayer,
+    RGTexture src, uint32_t srcMipLevel, uint32_t srcArrayLayer)
 {
     CopyColorTexture(*dst->Get(), dstMipLevel, dstArrayLayer, *src->Get(), srcMipLevel, srcArrayLayer);
 }
 
 void CommandBuffer::CopyColorTexture2DToBuffer(
-    RG::BufferResource *dst, size_t dstOffset, size_t dstRowBytes,
-    RG::TextureResource *src, uint32_t arrayLayer, uint32_t mipLevel)
+    RGBuffer dst, size_t dstOffset, size_t dstRowBytes,
+    RGTexture src, uint32_t arrayLayer, uint32_t mipLevel)
 {
     CopyColorTexture2DToBuffer(*dst->Get(), dstOffset, dstRowBytes, *src->Get(), arrayLayer, mipLevel);
 }
 
-void CommandBuffer::BeginRenderPass(Span<ColorAttachment> colorAttachments)
+void CommandBuffer::BeginRenderPass(Span<RHI::ColorAttachment> colorAttachments)
 {
     BeginRenderPass(colorAttachments, {});
 }
 
-void CommandBuffer::BeginRenderPass(const DepthStencilAttachment &depthStencilAttachment)
+void CommandBuffer::BeginRenderPass(const RHI::DepthStencilAttachment &depthStencilAttachment)
 {
     BeginRenderPass({}, depthStencilAttachment);
 }
 
 void CommandBuffer::BeginRenderPass(
-    Span<ColorAttachment> colorAttachments, const DepthStencilAttachment &depthStencilAttachment)
+    Span<RHI::ColorAttachment> colorAttachments, const RHI::DepthStencilAttachment &depthStencilAttachment)
 {
     CheckThreadID();
     rhiCommandBuffer_->BeginRenderPass(colorAttachments, depthStencilAttachment);
@@ -534,13 +534,13 @@ void CommandBuffer::BindRayTracingGroups(Span<RC<BindingGroup>> groups)
     }
 }
 
-void CommandBuffer::SetViewports(Span<Viewport> viewports)
+void CommandBuffer::SetViewports(Span<RHI::Viewport> viewports)
 {
     CheckThreadID();
     rhiCommandBuffer_->SetViewports(viewports);
 }
 
-void CommandBuffer::SetScissors(Span<Scissor> scissors)
+void CommandBuffer::SetScissors(Span<RHI::Scissor> scissors)
 {
     CheckThreadID();
     rhiCommandBuffer_->SetScissors(scissors);
@@ -610,7 +610,7 @@ void CommandBuffer::ClearColorTexture2D(const RC<Texture> &tex, const Vector4f &
 {
     CheckThreadID();
     rhiCommandBuffer_->ClearColorTexture2D(
-        tex->GetRHIObject().Get(), ColorClearValue{ color.x, color.y, color.z, color.w });
+        tex->GetRHIObject().Get(), RHI::ColorClearValue{ color.x, color.y, color.z, color.w });
 }
 
 void CommandBuffer::Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance)

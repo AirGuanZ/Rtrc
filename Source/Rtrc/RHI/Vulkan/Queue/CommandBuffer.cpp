@@ -55,15 +55,15 @@ void VulkanCommandBuffer::End()
 }
 
 void VulkanCommandBuffer::BeginRenderPass(
-    Span<RenderPassColorAttachment> colorAttachments, const RenderPassDepthStencilAttachment &depthStencilAttachment)
+    Span<ColorAttachment> colorAttachments, const DepthStencilAttachment &depthStencilAttachment)
 {
     assert(!colorAttachments.IsEmpty());
-    std::vector<VkRenderingAttachmentInfo> vkColorAttachments(colorAttachments.GetSize());
+    StaticVector<VkRenderingAttachmentInfo, 8> vkColorAttachments(colorAttachments.GetSize());
     for(auto &&[i, a] : Enumerate(colorAttachments))
     {
         vkColorAttachments[i] = VkRenderingAttachmentInfo{
             .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-            .imageView   = static_cast<VulkanTextureRtv *>(a.renderTargetView)->_internalGetNativeImageView(),
+            .imageView   = static_cast<VulkanTextureRtv *>(a.renderTargetView.Get())->_internalGetNativeImageView(),
             .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             .resolveMode = VK_RESOLVE_MODE_NONE,
             .loadOp      = TranslateLoadOp(a.loadOp),
@@ -75,7 +75,7 @@ void VulkanCommandBuffer::BeginRenderPass(
     VkRenderingAttachmentInfo dsAttachments[2], *depthAttachment = nullptr, *stencilAttachment = nullptr;
     if(depthStencilAttachment.depthStencilView)
     {
-        auto dsv = static_cast<VulkanTextureDsv *>(depthStencilAttachment.depthStencilView);
+        auto dsv = static_cast<VulkanTextureDsv *>(depthStencilAttachment.depthStencilView.Get());
         if(HasDepthAspect(dsv->GetDesc().format))
         {
             dsAttachments[0] = VkRenderingAttachmentInfo
@@ -108,17 +108,18 @@ void VulkanCommandBuffer::BeginRenderPass(
     }
 
     const auto &attachment0Desc = static_cast<VulkanTextureRtv *>(
-        colorAttachments[0].renderTargetView)->_internalGetTexture()->GetDesc();
-    const VkRect2D renderArea = {
-            .offset = { 0, 0 },
-            .extent = { attachment0Desc.width, attachment0Desc.height }
+        colorAttachments[0].renderTargetView.Get())->_internalGetTexture()->GetDesc();
+    const VkRect2D renderArea =
+    {
+        .offset = { 0, 0 },
+        .extent = { attachment0Desc.width, attachment0Desc.height }
     };
     const VkRenderingInfo renderingInfo = {
         .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
         .renderArea           = renderArea,
         .layerCount           = 1,
         .colorAttachmentCount = colorAttachments.GetSize(),
-        .pColorAttachments    = vkColorAttachments.data(),
+        .pColorAttachments    = vkColorAttachments.GetData(),
         .pDepthAttachment     = depthAttachment,
         .pStencilAttachment   = stencilAttachment
     };

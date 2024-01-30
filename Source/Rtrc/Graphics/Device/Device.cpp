@@ -202,9 +202,9 @@ Device::~Device()
     sync_.reset();
 }
 
-Box<RG::RenderGraph> Device::CreateRenderGraph()
+Box<RenderGraph> Device::CreateRenderGraph()
 {
-    return MakeBox<RG::RenderGraph>(this, mainQueue_);
+    return MakeBox<RenderGraph>(this, mainQueue_);
 }
 
 RC<Texture> Device::CreateColorTexture2D(uint8_t r, uint8_t g, uint8_t b, uint8_t a, std::string name)

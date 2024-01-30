@@ -1,35 +1,42 @@
 #pragma once
 
+#include <Rtrc/Graphics/Device/AccelerationStructure.h>
 #include <Rtrc/Graphics/Device/Buffer.h>
 #include <Rtrc/Graphics/Device/Texture.h>
 #include <Rtrc/Graphics/RenderGraph/UseInfo.h>
 
-RTRC_RG_BEGIN
+RTRC_BEGIN
 
-class BufferResource;
 class RenderGraph;
-class TextureResource;
 
-class Resource : public Uncopyable
+class RGBufImpl;
+class RGTexImpl;
+class RGTlasImpl;
+
+using RGBuffer = RGBufImpl *;
+using RGTexture = RGTexImpl *;
+using RGTlas = RGTlasImpl *;
+
+class RGResource : public Uncopyable
 {
     RenderGraph *graph_;
     int index_;
 
 public:
 
-    Resource(RenderGraph* graph,int resourceIndex) : graph_(graph), index_(resourceIndex) { }
+    RGResource(RenderGraph* graph,int resourceIndex) : graph_(graph), index_(resourceIndex) { }
 
-    virtual ~Resource() = default;
+    virtual ~RGResource() = default;
 
     int GetResourceIndex() const { return index_; }
 
     RenderGraph *GetGraph() const { return graph_; }
 };
 
-template<typename T> const T *TryCastResource(const Resource *rsc) { return dynamic_cast<const T *>(rsc); }
-template<typename T>       T *TryCastResource(      Resource *rsc) { return dynamic_cast<T *>(rsc); }
+template<typename T> const T *TryCastResource(const RGResource *rsc) { return dynamic_cast<const T *>(rsc); }
+template<typename T>       T *TryCastResource(      RGResource *rsc) { return dynamic_cast<T *>(rsc); }
 
-class BufferResourceSrv
+class RGBufSrv
 {
 public:
 
@@ -37,11 +44,11 @@ public:
 
     RHI::ResourceAccessFlag GetResourceAccess() const;
 
-    BufferResource *GetResource() const;
+    RGBuffer GetResource() const;
 
 private:
 
-    friend class BufferResource;
+    friend class RGBufImpl;
 
     struct StructuredView
     {
@@ -55,11 +62,11 @@ private:
         size_t byteOffset = 0;
     };
 
-    BufferResource *resource_ = nullptr;
+    RGBufImpl *resource_ = nullptr;
     Variant<StructuredView, TexelView> desc_;
 };
 
-class BufferResourceUav
+class RGBufUav
 {
 public:
 
@@ -67,11 +74,11 @@ public:
 
     RHI::ResourceAccessFlag GetResourceAccess(bool writeOnly) const;
 
-    BufferResource *GetResource() const;
+    RGBuffer GetResource() const;
 
 private:
 
-    friend class BufferResource;
+    friend class RGBufImpl;
 
     struct StructuredView
     {
@@ -85,15 +92,15 @@ private:
         size_t byteOffset = 0;
     };
 
-    BufferResource *resource_ = nullptr;
+    RGBufImpl *resource_ = nullptr;
     Variant<StructuredView, TexelView> desc_;
 };
 
-class BufferResource : public Resource
+class RGBufImpl : public RGResource
 {
 public:
 
-    using Resource::Resource;
+    using RGResource::RGResource;
 
     virtual const RHI::BufferDesc& GetDesc() const = 0;
     size_t GetSize() const { return this->GetDesc().size; }
@@ -106,21 +113,21 @@ public:
     virtual void SetDefaultTexelFormat(RHI::Format format) = 0;
     virtual void SetDefaultStructStride(size_t stride) = 0;
 
-    BufferResourceSrv GetStructuredSrv();
-    BufferResourceSrv GetStructuredSrv(size_t structStride);
-    BufferResourceSrv GetStructuredSrv(size_t byteOffset, size_t structStride);
+    RGBufSrv GetStructuredSrv();
+    RGBufSrv GetStructuredSrv(size_t structStride);
+    RGBufSrv GetStructuredSrv(size_t byteOffset, size_t structStride);
 
-    BufferResourceSrv GetTexelSrv();
-    BufferResourceSrv GetTexelSrv(RHI::Format texelFormat);
-    BufferResourceSrv GetTexelSrv(size_t byteOffset, RHI::Format texelFormat);
+    RGBufSrv GetTexelSrv();
+    RGBufSrv GetTexelSrv(RHI::Format texelFormat);
+    RGBufSrv GetTexelSrv(size_t byteOffset, RHI::Format texelFormat);
 
-    BufferResourceUav GetStructuredUav();
-    BufferResourceUav GetStructuredUav(size_t structStride);
-    BufferResourceUav GetStructuredUav(size_t byteOffset, size_t structStride);
+    RGBufUav GetStructuredUav();
+    RGBufUav GetStructuredUav(size_t structStride);
+    RGBufUav GetStructuredUav(size_t byteOffset, size_t structStride);
 
-    BufferResourceUav GetTexelUav();
-    BufferResourceUav GetTexelUav(RHI::Format texelFormat);
-    BufferResourceUav GetTexelUav(size_t byteOffset, RHI::Format texelFormat);
+    RGBufUav GetTexelUav();
+    RGBufUav GetTexelUav(RHI::Format texelFormat);
+    RGBufUav GetTexelUav(size_t byteOffset, RHI::Format texelFormat);
 
     // Helper methods available when executing pass callback function:
 
@@ -142,29 +149,29 @@ public:
 
 private:
 
-    BufferResourceSrv GetSrvImpl(size_t stride, size_t offset);
-    BufferResourceSrv GetSrvImpl(RHI::Format format, size_t offset);
-    BufferResourceUav GetUavImpl(size_t stride, size_t offset);
-    BufferResourceUav GetUavImpl(RHI::Format format, size_t offset);
+    RGBufSrv GetSrvImpl(size_t stride, size_t offset);
+    RGBufSrv GetSrvImpl(RHI::Format format, size_t offset);
+    RGBufUav GetUavImpl(size_t stride, size_t offset);
+    RGBufUav GetUavImpl(RHI::Format format, size_t offset);
 };
 
-class TlasResource
+class RGTlasImpl
 {
     friend class RenderGraph;
 
-    RC<Tlas>        tlas_;
-    BufferResource *tlasBuffer_;
+    RC<Tlas> tlas_;
+    RGBuffer tlasBuffer_;
 
-    TlasResource(RC<Tlas> tlas, BufferResource *tlasBuffer): tlas_(std::move(tlas)), tlasBuffer_(tlasBuffer) { }
+    RGTlasImpl(RC<Tlas> tlas, RGBufImpl *tlasBuffer): tlas_(std::move(tlas)), tlasBuffer_(tlasBuffer) { }
 
 public:
 
-    BufferResource *GetInternalBuffer() const { return tlasBuffer_; }
+    RGBufImpl *GetInternalBuffer() const { return tlasBuffer_; }
 
     const RC<Tlas> &Get() const;
 };
 
-class TextureResourceSrv
+class RGTexSrv
 {
 public:
 
@@ -174,11 +181,13 @@ public:
     template<typename F>
     void ForEachSubresourceAccess(const F &f) const;
 
-    TextureResource *GetResource() const;
+    RGTexture GetResource() const;
+
+    operator bool() const { return resource_ != nullptr; }
 
 private:
 
-    friend class TextureResource;
+    friend class RGTexImpl;
 
     struct NonArrayView
     {
@@ -195,11 +204,11 @@ private:
         uint32_t layerCount = 0;
     };
 
-    TextureResource *resource_ = nullptr;
+    RGTexImpl *resource_ = nullptr;
     Variant<NonArrayView, ArrayView> desc_;
 };
 
-class TextureResourceUav
+class RGTexUav
 {
 public:
 
@@ -209,11 +218,13 @@ public:
     template<typename F>
     void ForEachSubresourceAccess(const F &f, bool writeOnly = false) const;
 
-    TextureResource *GetResource() const;
+    RGTexture GetResource() const;
+
+    operator bool() const { return resource_ != nullptr; }
 
 private:
 
-    friend class TextureResource;
+    friend class RGTexImpl;
 
     struct NonArrayView
     {
@@ -228,45 +239,53 @@ private:
         uint32_t layerCount = 0;
     };
 
-    TextureResource *resource_ = nullptr;
+    RGTexImpl *resource_ = nullptr;
     Variant<NonArrayView, ArrayView> desc_;
 };
 
-class TextureResourceRtv
+class RGTexRtv
 {
 public:
 
     TextureRtv GetRtv() const;
 
+    RGTexture GetResource() const;
+
+    operator bool() const { return resource_ != nullptr; }
+
 private:
 
-    friend class TextureResource;
+    friend class RGTexImpl;
 
-    const TextureResource *resource_ = nullptr;
+    RGTexImpl *resource_ = nullptr;
     uint32_t mipLevel_ = 0;
     uint32_t arrayLayer_ = 0;
 };
 
-class TextureResourceDsv
+class RGTexDsv
 {
 public:
 
     TextureDsv GetDsv() const;
 
+    RGTexture GetResource() const;
+
+    operator bool() const { return resource_ != nullptr; }
+
 private:
 
-    friend class TextureResource;
+    friend class RGTexImpl;
 
-    const TextureResource *resource_ = nullptr;
+    RGTexImpl *resource_ = nullptr;
     uint32_t mipLevel_ = 0;
     uint32_t arrayLayer_ = 0;
 };
 
-class TextureResource : public Resource
+class RGTexImpl : public RGResource
 {
 public:
 
-    using Resource::Resource;
+    using RGResource::RGResource;
 
     virtual const RHI::TextureDesc &GetDesc() const = 0;
 
@@ -285,21 +304,21 @@ public:
     RC<Texture> Get() const;
 
     // non-array view for single-layer texture, array view for multi-layer texture
-    TextureResourceSrv GetSrv();
+    RGTexSrv GetSrv();
     // non-array view
-    TextureResourceSrv GetSrv(uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer);
+    RGTexSrv GetSrv(uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer);
     // array view
-    TextureResourceSrv GetSrv(uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, uint32_t layerCount);
+    RGTexSrv GetSrv(uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, uint32_t layerCount);
 
     // non-array view for single-layer texture, array view for multi-layer texture
-    TextureResourceUav GetUav();
+    RGTexUav GetUav();
     // non-array view
-    TextureResourceUav GetUav(uint32_t mipLevel, uint32_t arrayLayer);
+    RGTexUav GetUav(uint32_t mipLevel, uint32_t arrayLayer);
     // array view
-    TextureResourceUav GetUav(uint32_t mipLevel, uint32_t arrayLayer, uint32_t layerCount);
+    RGTexUav GetUav(uint32_t mipLevel, uint32_t arrayLayer, uint32_t layerCount);
 
-    TextureResourceRtv GetRtv(uint32_t mipLevel = 0, uint32_t arrayLayer = 0);
-    TextureResourceDsv GetDsv(uint32_t mipLevel = 0, uint32_t arrayLayer = 0);
+    RGTexRtv GetRtv(uint32_t mipLevel = 0, uint32_t arrayLayer = 0);
+    RGTexDsv GetDsv(uint32_t mipLevel = 0, uint32_t arrayLayer = 0);
 
     // ========= Helper methods available when executing pass callback function =========
 
@@ -321,7 +340,7 @@ public:
     TextureDsv GetDsvImm(uint32_t mipLevel = 0, uint32_t arrayLayer = 0) const;
 };
 
-inline BufferSrv BufferResourceSrv::GetSrv() const
+inline BufferSrv RGBufSrv::GetSrv() const
 {
     return desc_.Match(
         [&](const StructuredView &v)
@@ -334,19 +353,19 @@ inline BufferSrv BufferResourceSrv::GetSrv() const
         });
 }
 
-inline RHI::ResourceAccessFlag BufferResourceSrv::GetResourceAccess() const
+inline RHI::ResourceAccessFlag RGBufSrv::GetResourceAccess() const
 {
     return desc_.Match(
         [&](const StructuredView &v) { return RHI::ResourceAccess::StructuredBufferRead; },
         [&](const TexelView &v) { return RHI::ResourceAccess::BufferRead; });
 }
 
-inline BufferResource *BufferResourceSrv::GetResource() const
+inline RGBufImpl *RGBufSrv::GetResource() const
 {
     return resource_;
 }
 
-inline BufferUav BufferResourceUav::GetUav() const
+inline BufferUav RGBufUav::GetUav() const
 {
     return desc_.Match(
         [&](const StructuredView &v)
@@ -359,7 +378,7 @@ inline BufferUav BufferResourceUav::GetUav() const
         });
 }
 
-inline RHI::ResourceAccessFlag BufferResourceUav::GetResourceAccess(bool writeOnly) const
+inline RHI::ResourceAccessFlag RGBufUav::GetResourceAccess(bool writeOnly) const
 {
     return desc_.Match(
         [&](const StructuredView &v)
@@ -374,13 +393,13 @@ inline RHI::ResourceAccessFlag BufferResourceUav::GetResourceAccess(bool writeOn
         });
 }
 
-inline BufferResource *BufferResourceUav::GetResource() const
+inline RGBufImpl *RGBufUav::GetResource() const
 {
     return resource_;
 }
 
 template<typename F>
-void TextureResourceSrv::ForEachSubresourceAccess(const F &f) const
+void RGTexSrv::ForEachSubresourceAccess(const F &f) const
 {
     auto fimpl = [&](int m, int a)
         {
@@ -412,7 +431,7 @@ void TextureResourceSrv::ForEachSubresourceAccess(const F &f) const
 }
 
 template<typename F>
-void TextureResourceUav::ForEachSubresourceAccess(const F &f, bool writeOnly) const
+void RGTexUav::ForEachSubresourceAccess(const F &f, bool writeOnly) const
 {
     auto fimpl = [&](int m, int a)
         {
@@ -442,197 +461,197 @@ void TextureResourceUav::ForEachSubresourceAccess(const F &f, bool writeOnly) co
         });
 }
 
-inline BufferResourceSrv BufferResource::GetStructuredSrv()
+inline RGBufSrv RGBufImpl::GetStructuredSrv()
 {
     return GetSrvImpl(GetDefaultStructStride(), 0);
 }
 
-inline BufferResourceSrv BufferResource::GetStructuredSrv(size_t structStride)
+inline RGBufSrv RGBufImpl::GetStructuredSrv(size_t structStride)
 {
     return GetSrvImpl(structStride, 0);
 }
 
-inline BufferResourceSrv BufferResource::GetStructuredSrv(size_t byteOffset, size_t structStride)
+inline RGBufSrv RGBufImpl::GetStructuredSrv(size_t byteOffset, size_t structStride)
 {
     return GetSrvImpl(structStride, byteOffset);
 }
 
-inline BufferResourceSrv BufferResource::GetTexelSrv()
+inline RGBufSrv RGBufImpl::GetTexelSrv()
 {
     return GetSrvImpl(GetDefaultTexelFormat(), 0);
 }
 
-inline BufferResourceSrv BufferResource::GetTexelSrv(RHI::Format texelFormat)
+inline RGBufSrv RGBufImpl::GetTexelSrv(RHI::Format texelFormat)
 {
     return GetSrvImpl(texelFormat, 0);
 }
 
-inline BufferResourceSrv BufferResource::GetTexelSrv(size_t byteOffset, RHI::Format texelFormat)
+inline RGBufSrv RGBufImpl::GetTexelSrv(size_t byteOffset, RHI::Format texelFormat)
 {
     return GetSrvImpl(texelFormat, byteOffset);
 }
 
-inline BufferResourceUav BufferResource::GetStructuredUav()
+inline RGBufUav RGBufImpl::GetStructuredUav()
 {
     return GetUavImpl(GetDefaultStructStride(), 0);
 }
 
-inline BufferResourceUav BufferResource::GetStructuredUav(size_t structStride)
+inline RGBufUav RGBufImpl::GetStructuredUav(size_t structStride)
 {
     return GetUavImpl(structStride, 0);
 }
 
-inline BufferResourceUav BufferResource::GetStructuredUav(size_t byteOffset, size_t structStride)
+inline RGBufUav RGBufImpl::GetStructuredUav(size_t byteOffset, size_t structStride)
 {
     return GetUavImpl(structStride, byteOffset);
 }
 
-inline BufferResourceUav BufferResource::GetTexelUav()
+inline RGBufUav RGBufImpl::GetTexelUav()
 {
     return GetUavImpl(GetDefaultTexelFormat(), 0);
 }
 
-inline BufferResourceUav BufferResource::GetTexelUav(RHI::Format texelFormat)
+inline RGBufUav RGBufImpl::GetTexelUav(RHI::Format texelFormat)
 {
     return GetUavImpl(texelFormat, 0);
 }
 
-inline BufferResourceUav BufferResource::GetTexelUav(size_t byteOffset, RHI::Format texelFormat)
+inline RGBufUav RGBufImpl::GetTexelUav(size_t byteOffset, RHI::Format texelFormat)
 {
     return GetUavImpl(texelFormat, byteOffset);
 }
 
-inline BufferResourceSrv BufferResource::GetSrvImpl(size_t stride, size_t offset)
+inline RGBufSrv RGBufImpl::GetSrvImpl(size_t stride, size_t offset)
 {
-    BufferResourceSrv ret;
+    RGBufSrv ret;
     ret.resource_ = this;
-    ret.desc_ = BufferResourceSrv::StructuredView{ stride, offset };
+    ret.desc_ = RGBufSrv::StructuredView{ stride, offset };
     return ret;
 }
 
-inline BufferResourceSrv BufferResource::GetSrvImpl(RHI::Format format, size_t offset)
+inline RGBufSrv RGBufImpl::GetSrvImpl(RHI::Format format, size_t offset)
 {
-    BufferResourceSrv ret;
+    RGBufSrv ret;
     ret.resource_ = this;
-    ret.desc_ = BufferResourceSrv::TexelView{ format, offset };
+    ret.desc_ = RGBufSrv::TexelView{ format, offset };
     return ret;
 }
 
-inline BufferResourceUav BufferResource::GetUavImpl(size_t stride, size_t offset)
+inline RGBufUav RGBufImpl::GetUavImpl(size_t stride, size_t offset)
 {
-    BufferResourceUav ret;
+    RGBufUav ret;
     ret.resource_ = this;
-    ret.desc_ = BufferResourceUav::StructuredView{ stride, offset };
+    ret.desc_ = RGBufUav::StructuredView{ stride, offset };
     return ret;
 }
 
-inline BufferResourceUav BufferResource::GetUavImpl(RHI::Format format, size_t offset)
+inline RGBufUav RGBufImpl::GetUavImpl(RHI::Format format, size_t offset)
 {
-    BufferResourceUav ret;
+    RGBufUav ret;
     ret.resource_ = this;
-    ret.desc_ = BufferResourceUav::TexelView{ format, offset };
+    ret.desc_ = RGBufUav::TexelView{ format, offset };
     return ret;
 }
 
-inline BufferSrv BufferResource::GetStructuredSrvImm() const
+inline BufferSrv RGBufImpl::GetStructuredSrvImm() const
 {
     return Get()->GetStructuredSrv();
 }
 
-inline BufferSrv BufferResource::GetStructuredSrvImm(size_t structStride) const
+inline BufferSrv RGBufImpl::GetStructuredSrvImm(size_t structStride) const
 {
     return Get()->GetStructuredSrv(structStride);
 }
 
-inline BufferSrv BufferResource::GetStructuredSrvImm(size_t byteOffset, size_t structStride) const
+inline BufferSrv RGBufImpl::GetStructuredSrvImm(size_t byteOffset, size_t structStride) const
 {
     return Get()->GetStructuredSrv(byteOffset, structStride);
 }
 
-inline BufferSrv BufferResource::GetTexelSrvImm() const
+inline BufferSrv RGBufImpl::GetTexelSrvImm() const
 {
     return Get()->GetTexelSrv();
 }
 
-inline BufferSrv BufferResource::GetTexelSrvImm(RHI::Format texelFormat) const
+inline BufferSrv RGBufImpl::GetTexelSrvImm(RHI::Format texelFormat) const
 {
     return Get()->GetTexelSrv(texelFormat);
 }
 
-inline BufferSrv BufferResource::GetTexelSrvImm(size_t byteOffset, RHI::Format texelFormat) const
+inline BufferSrv RGBufImpl::GetTexelSrvImm(size_t byteOffset, RHI::Format texelFormat) const
 {
     return Get()->GetTexelSrv(byteOffset, texelFormat);
 }
 
-inline BufferUav BufferResource::GetStructuredUavImm() const
+inline BufferUav RGBufImpl::GetStructuredUavImm() const
 {
     return Get()->GetStructuredUav();
 }
 
-inline BufferUav BufferResource::GetStructuredUavImm(size_t structStride) const
+inline BufferUav RGBufImpl::GetStructuredUavImm(size_t structStride) const
 {
     return Get()->GetStructuredUav(structStride);
 }
 
-inline BufferUav BufferResource::GetStructuredUavImm(size_t byteOffset, size_t structStride) const
+inline BufferUav RGBufImpl::GetStructuredUavImm(size_t byteOffset, size_t structStride) const
 {
     return Get()->GetStructuredUav(byteOffset, structStride);
 }
 
-inline BufferUav BufferResource::GetTexelUavImm() const
+inline BufferUav RGBufImpl::GetTexelUavImm() const
 {
     return Get()->GetTexelUav();
 }
 
-inline BufferUav BufferResource::GetTexelUavImm(RHI::Format texelFormat) const
+inline BufferUav RGBufImpl::GetTexelUavImm(RHI::Format texelFormat) const
 {
     return Get()->GetTexelUav(texelFormat);
 }
 
-inline BufferUav BufferResource::GetTexelUavImm(size_t byteOffset, RHI::Format texelFormat) const
+inline BufferUav RGBufImpl::GetTexelUavImm(size_t byteOffset, RHI::Format texelFormat) const
 {
     return Get()->GetTexelUav(byteOffset, texelFormat);
 }
 
-inline TextureSrv TextureResource::GetSrvImm() const
+inline TextureSrv RGTexImpl::GetSrvImm() const
 {
     return Get()->GetSrv();
 }
 
-inline TextureSrv TextureResource::GetSrvImm(uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer) const
+inline TextureSrv RGTexImpl::GetSrvImm(uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer) const
 {
     return Get()->GetSrv(mipLevel, levelCount, arrayLayer);
 }
 
-inline TextureSrv TextureResource::GetSrvImm(
+inline TextureSrv RGTexImpl::GetSrvImm(
     uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, uint32_t layerCount) const
 {
     return Get()->GetSrv(mipLevel, levelCount, arrayLayer, layerCount);
 }
 
-inline TextureUav TextureResource::GetUavImm() const
+inline TextureUav RGTexImpl::GetUavImm() const
 {
     return Get()->GetUav();
 }
 
-inline TextureUav TextureResource::GetUavImm(uint32_t mipLevel, uint32_t arrayLayer) const
+inline TextureUav RGTexImpl::GetUavImm(uint32_t mipLevel, uint32_t arrayLayer) const
 {
     return Get()->GetUav(mipLevel, arrayLayer);
 }
 
-inline TextureUav TextureResource::GetUavImm(uint32_t mipLevel, uint32_t arrayLayer, uint32_t layerCount) const
+inline TextureUav RGTexImpl::GetUavImm(uint32_t mipLevel, uint32_t arrayLayer, uint32_t layerCount) const
 {
     return Get()->GetUav(mipLevel, arrayLayer, layerCount);
 }
 
-inline TextureDsv TextureResource::GetDsvImm(uint32_t mipLevel, uint32_t arrayLayer) const
+inline TextureDsv RGTexImpl::GetDsvImm(uint32_t mipLevel, uint32_t arrayLayer) const
 {
     return Get()->GetDsv(mipLevel, arrayLayer);
 }
 
-inline TextureRtv TextureResource::GetRtvImm(uint32_t mipLevel, uint32_t arrayLayer) const
+inline TextureRtv RGTexImpl::GetRtvImm(uint32_t mipLevel, uint32_t arrayLayer) const
 {
     return Get()->GetRtv(mipLevel, arrayLayer);
 }
 
-RTRC_RG_END
+RTRC_END

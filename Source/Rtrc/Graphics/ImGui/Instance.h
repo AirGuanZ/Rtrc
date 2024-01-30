@@ -4,6 +4,7 @@
 
 #include <Rtrc/RHI/Window/WindowInput.h>
 #include <Rtrc/Graphics/Device/Device.h>
+#include <Rtrc/Graphics/RenderGraph/Graph.h>
 
 RTRC_BEGIN
 
@@ -38,10 +39,10 @@ public:
 
     explicit ImGuiRenderer(Ref<Device> device);
     
-    RG::Pass *Render(
+    RGPass Render(
         const ImGuiDrawData *drawData,
-        RG::TextureResource *renderTarget,
-        RG::RenderGraph     *renderGraph);
+        RGTexture                renderTarget,
+        GraphRef             renderGraph);
 
     // rt must be externally synchronized
     // assert(rtv.size == frameBufferSize)

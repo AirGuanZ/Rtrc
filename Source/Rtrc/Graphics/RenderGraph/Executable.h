@@ -4,9 +4,9 @@
 #include <Rtrc/Graphics/RenderGraph/Graph.h>
 #include <Rtrc/Core/SmartPointer/ObserverPtr.h>
 
-RTRC_RG_BEGIN
+RTRC_BEGIN
 
-struct ExecutableResources
+struct RGExecutableResources
 {
     struct BufferRecord
     {
@@ -24,25 +24,25 @@ struct ExecutableResources
     std::vector<Texture2DRecord> indexToTexture;
 };
 
-struct ExecutablePass
+struct RGExecutablePass
 {
     std::optional<RHI::GlobalMemoryBarrier>    preGlobalBarrier;
     std::vector<RHI::TextureTransitionBarrier> preTextureBarriers;
     std::vector<RHI::BufferTransitionBarrier>  preBufferBarriers;
-    Pass::Callback                            *callback;
-    const LabelStack::Node                    *nameNode;
+    RGPassImpl::Callback                      *callback;
+    const RGLabelStack::Node                    *nameNode;
 
 #if RTRC_RG_DEBUG
-    std::set<const Resource *> declaredResources;
+    std::set<const RGResource *> declaredResources;
 #endif
 };
 
-struct ExecutableSection
+struct RGExecutableSection
 {
     RHI::BackBufferSemaphoreOPtr waitAcquireSemaphore;
     RHI::PipelineStageFlag       waitAcquireSemaphoreStages;
 
-    std::vector<ExecutablePass> passes;
+    std::vector<RGExecutablePass> passes;
 
     StaticVector<RHI::TextureTransitionBarrier, 1> postTextureBarriers;
 
@@ -52,20 +52,20 @@ struct ExecutableSection
     RHI::FenceOPtr signalFence;
 };
 
-struct ExecutableGraph
+struct RGExecutableGraph
 {
-    RHI::QueueRPtr                 queue;
-    ExecutableResources            resources;
-    std::vector<ExecutableSection> sections;
-    RHI::FenceOPtr                 completeFence;
-    RC<RHI::QueueSyncQuery>        queueSyncForTransientResourcePool;
+    RHI::QueueRPtr                   queue;
+    RGExecutableResources            resources;
+    std::vector<RGExecutableSection> sections;
+    RHI::FenceOPtr                   completeFence;
+    RC<RHI::QueueSyncQuery>          queueSyncForTransientResourcePool;
 };
 
-class Executer
+class RGExecuter
 {
 public:
 
-    explicit Executer(Ref<Device> device);
+    explicit RGExecuter(Ref<Device> device);
 
     void Recycle();
 
@@ -91,10 +91,10 @@ private:
 
     void ExecuteInternal(Ref<RenderGraph> graph, bool enableTransientResourcePool, bool partialExecution);
 
-    void ExecuteImpl(const ExecutableGraph &graph);
+    void ExecuteImpl(const RGExecutableGraph &graph);
 
     Ref<Device> device_;
     RHI::TransientResourcePoolRPtr transientResourcePool_;
 };
 
-RTRC_RG_END
+RTRC_END

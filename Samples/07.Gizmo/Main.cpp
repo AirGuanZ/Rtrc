@@ -12,7 +12,7 @@ class GizmoDemo : public SimpleApplication
         cameraController_.SetTrackballDistance(Length(camera_.GetPosition()));
     }
 
-    void UpdateSimpleApplication(Ref<RG::RenderGraph> renderGraph) override
+    void UpdateSimpleApplication(GraphRef renderGraph) override
     {
         if(GetWindowInput().IsKeyDown(KeyCode::Escape))
         {
@@ -38,17 +38,17 @@ class GizmoDemo : public SimpleApplication
         clearPass->Use(depthBuffer, RG::DepthStencilAttachment);
         clearPass->SetCallback([=]
         {
-            auto &cmds = RG::GetCurrentCommandBuffer();
+            auto &cmds = RGGetCommandBuffer();
             cmds.BeginRenderPass(
-                ColorAttachment{
+                RHI::ColorAttachment{
                     .renderTargetView = framebuffer->GetRtvImm(),
-                    .loadOp = AttachmentLoadOp::Clear,
+                    .loadOp = RHI::AttachmentLoadOp::Clear,
                     .clearValue = { 0, 0, 0, 0 }
                 },
-                DepthStencilAttachment
+                RHI::DepthStencilAttachment
                 {
                     .depthStencilView = depthBuffer->GetDsvImm(),
-                    .loadOp = AttachmentLoadOp::Clear,
+                    .loadOp = RHI::AttachmentLoadOp::Clear,
                     .clearValue = { 1, 0 }
                 });
             cmds.EndRenderPass();

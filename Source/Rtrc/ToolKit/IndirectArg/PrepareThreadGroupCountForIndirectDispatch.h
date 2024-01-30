@@ -4,10 +4,10 @@
 
 RTRC_RENDERER_BEGIN
 
-RG::Pass *PrepareThreadGroupCount1D(
-    Ref<RG::RenderGraph>         renderGraph,
-    const RG::BufferResourceSrv &threadCountBuffer,
-    const RG::BufferResourceUav &threadGroupCountBuffer,
-    int                          threadGroupSize);
+RGPass PrepareThreadGroupCount1D(
+    GraphRef        renderGraph,
+    const RGBufSrv &threadCountBuffer,
+    const RGBufUav &threadGroupCountBuffer,
+    int             threadGroupSize);
 
 RTRC_RENDERER_END

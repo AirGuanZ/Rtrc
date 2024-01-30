@@ -5,11 +5,11 @@
 
 RTRC_RENDERER_BEGIN
 
-RG::Pass *PrepareThreadGroupCount1D(
-    Ref<RG::RenderGraph>         renderGraph,
-    const RG::BufferResourceSrv &threadCountBuffer,
-    const RG::BufferResourceUav &threadGroupCountBuffer,
-    int                          threadGroupSize)
+RGPass PrepareThreadGroupCount1D(
+    GraphRef        renderGraph,
+    const RGBufSrv &threadCountBuffer,
+    const RGBufUav &threadGroupCountBuffer,
+    int             threadGroupSize)
 {
     using Shader = RtrcShader::Builtin::PrepareThreadGroupCountForIndirectDispatch_1D;
     using ThreadGroupSize = Shader::ThreadGroupSize;
@@ -34,7 +34,7 @@ RG::Pass *PrepareThreadGroupCount1D(
         return DispatchWithThreadCount(renderGraph, Shader::Name, shader, 1, passData);
     };
 
-    RG::Pass *pass;
+    RGPassImpl *pass;
     if(threadGroupSize == 32)
     {
         pass = Dispatch.operator()<ThreadGroupSize::s32>();

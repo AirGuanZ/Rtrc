@@ -72,11 +72,11 @@ void CopyTextureUtils::RenderFullscreenTriangle(
     SamplingMethod    samplingMethod,
     float             gamma)
 {
-    commandBuffer.BeginRenderPass(ColorAttachment
+    commandBuffer.BeginRenderPass(RHI::ColorAttachment
     {
         .renderTargetView = dst,
-        .loadOp           = AttachmentLoadOp::DontCare,
-        .storeOp          = AttachmentStoreOp::Store
+        .loadOp           = RHI::AttachmentLoadOp::DontCare,
+        .storeOp          = RHI::AttachmentStoreOp::Store
     });
     RTRC_SCOPE_EXIT{ commandBuffer.EndRenderPass(); };
 

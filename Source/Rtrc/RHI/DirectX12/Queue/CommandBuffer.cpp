@@ -61,13 +61,13 @@ void DirectX12CommandBuffer::End()
 }
 
 void DirectX12CommandBuffer::BeginRenderPass(
-    Span<RenderPassColorAttachment>         colorAttachments,
-    const RenderPassDepthStencilAttachment &depthStencilAttachment)
+    Span<ColorAttachment>         colorAttachments,
+    const DepthStencilAttachment &depthStencilAttachment)
 {
-    std::vector<D3D12_CPU_DESCRIPTOR_HANDLE> rtvs(colorAttachments.size());
+    StaticVector<D3D12_CPU_DESCRIPTOR_HANDLE, 8> rtvs(colorAttachments.size());
     for(size_t i = 0; i < rtvs.size(); ++i)
     {
-        const auto view = static_cast<DirectX12TextureRtv*>(colorAttachments[i].renderTargetView);
+        const auto view = static_cast<DirectX12TextureRtv*>(colorAttachments[i].renderTargetView.Get());
         rtvs[i] = view->_internalGetDescriptorHandle();
         if(colorAttachments[i].loadOp == AttachmentLoadOp::Clear)
         {
@@ -78,7 +78,7 @@ void DirectX12CommandBuffer::BeginRenderPass(
     D3D12_CPU_DESCRIPTOR_HANDLE dsv;
     if(depthStencilAttachment.depthStencilView)
     {
-        const auto view = static_cast<DirectX12TextureDsv *>(depthStencilAttachment.depthStencilView);
+        const auto view = static_cast<DirectX12TextureDsv *>(depthStencilAttachment.depthStencilView.Get());
         dsv = view->_internalGetDescriptorHandle();
         if(depthStencilAttachment.loadOp == AttachmentLoadOp::Clear)
         {
@@ -90,7 +90,7 @@ void DirectX12CommandBuffer::BeginRenderPass(
     }
 
     commandList_->OMSetRenderTargets(
-        static_cast<UINT>(rtvs.size()), rtvs.data(), false,
+        static_cast<UINT>(rtvs.size()), rtvs.GetData(), false,
         depthStencilAttachment.depthStencilView ? &dsv : nullptr);
 }
 

@@ -140,7 +140,7 @@ void Run()
 
     // Render loop
 
-    RG::Executer executer(device);
+    RGExecuter executer(device);
 
     window.SetFocus();
     device->BeginRenderLoop();
@@ -179,7 +179,7 @@ void Run()
         trianglePass->Use(renderTarget, RG::CS_RWTexture_WriteOnly);
         trianglePass->SetCallback([&]
         {
-            auto &commandBuffer = RG::GetCurrentCommandBuffer();
+            auto &commandBuffer = RGGetCommandBuffer();
 
             commandBuffer.BindRayTracingPipeline(pipeline);
 

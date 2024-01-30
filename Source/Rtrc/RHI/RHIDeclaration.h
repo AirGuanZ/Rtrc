@@ -971,19 +971,19 @@ struct Scissor
     static Scissor Create(const TextureOPtr &tex);
 };
 
-struct RenderPassColorAttachment
+struct ColorAttachment
 {
-    TextureRtv       *renderTargetView = nullptr;
-    AttachmentLoadOp  loadOp           = AttachmentLoadOp::Load;
-    AttachmentStoreOp storeOp          = AttachmentStoreOp::Store;
+    TextureRtvRPtr    renderTargetView;
+    AttachmentLoadOp  loadOp = AttachmentLoadOp::Load;
+    AttachmentStoreOp storeOp = AttachmentStoreOp::Store;
     ColorClearValue   clearValue;
 };
 
-struct RenderPassDepthStencilAttachment
+struct DepthStencilAttachment
 {
-    TextureDsv            *depthStencilView = nullptr;
-    AttachmentLoadOp       loadOp           = AttachmentLoadOp::Load;
-    AttachmentStoreOp      storeOp          = AttachmentStoreOp::Store;
+    TextureDsvRPtr         depthStencilView;
+    AttachmentLoadOp       loadOp = AttachmentLoadOp::Load;
+    AttachmentStoreOp      storeOp = AttachmentStoreOp::Store;
     DepthStencilClearValue clearValue;
 };
 
@@ -1615,8 +1615,8 @@ public:
     // Pipeline states
     
     RTRC_RHI_API void BeginRenderPass(
-        Span<RenderPassColorAttachment>         colorAttachments,
-        const RenderPassDepthStencilAttachment &depthStencilAttachment) RTRC_RHI_API_PURE;
+        Span<ColorAttachment>         colorAttachments,
+        const DepthStencilAttachment &depthStencilAttachment) RTRC_RHI_API_PURE;
     RTRC_RHI_API void EndRenderPass() RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void BindPipeline(const OPtr<GraphicsPipeline>   &pipeline) RTRC_RHI_API_PURE;

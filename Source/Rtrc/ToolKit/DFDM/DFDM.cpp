@@ -58,7 +58,7 @@ Image<Vector2f> DFDM::GenerateCorrectionMap(const Image<Vector3f> &displacementM
 
     // Build & execute render graph
 
-    RG::Executer graphExecuter(device_);
+    RGExecuter graphExecuter(device_);
     auto graph = device_->CreateRenderGraph();
 
     auto input = graph->RegisterTexture(displacementMap);

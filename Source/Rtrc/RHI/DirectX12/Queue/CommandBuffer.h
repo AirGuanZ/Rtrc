@@ -25,8 +25,8 @@ public:
     void End()   RTRC_RHI_OVERRIDE;
 
     void BeginRenderPass(
-        Span<RenderPassColorAttachment>         colorAttachments,
-        const RenderPassDepthStencilAttachment &depthStencilAttachment) RTRC_RHI_OVERRIDE;
+        Span<ColorAttachment>         colorAttachments,
+        const DepthStencilAttachment &depthStencilAttachment) RTRC_RHI_OVERRIDE;
     void EndRenderPass() RTRC_RHI_OVERRIDE;
 
     void BindPipeline(const OPtr<GraphicsPipeline>   &pipeline) RTRC_RHI_OVERRIDE;

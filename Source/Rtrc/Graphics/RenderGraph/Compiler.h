@@ -2,9 +2,9 @@
 
 #include <Rtrc/Graphics/RenderGraph/Executable.h>
 
-RTRC_RG_BEGIN
+RTRC_BEGIN
 
-namespace CompilerDetail
+namespace RGCompilerDetail
 {
 
     enum class OptionBit : uint32_t
@@ -16,15 +16,15 @@ namespace CompilerDetail
     RTRC_DEFINE_ENUM_FLAGS(OptionBit)
     using Options = EnumFlagsOptionBit;
 
-} // namespace CompilerDetail
+} // namespace RGCompilerDetail
 
-class Compiler : public Uncopyable
+class RGCompiler : public Uncopyable
 {
 public:
 
-    using Options = CompilerDetail::Options;
+    using Options = RGCompilerDetail::Options;
 
-    explicit Compiler(
+    explicit RGCompiler(
         Ref<Device> device,
         Options     options = Options::ConnectPassesByDefinitionOrder |
                               Options::PreferGlobalMemoryBarrier);
@@ -33,7 +33,7 @@ public:
 
     void SetTransientResourcePool(RHI::TransientResourcePoolOPtr pool);
 
-    void Compile(const RenderGraph &graph, ExecutableGraph &result);
+    void Compile(const RenderGraph &graph, RGExecutableGraph &result);
 
 private:
 
@@ -42,15 +42,15 @@ private:
     {
         int             passIndex;
         T               usage;
-        UAVOverlapGroup uavOverlapGroup;
+        RGUavOverlapGroup uavOverlapGroup;
     };
 
-    using BufferUser    = ResourceUser<Pass::BufferUsage>;
+    using BufferUser    = ResourceUser<RGPassImpl::BufferUsage>;
     using BufferUsers   = std::vector<BufferUser>;
-    using BufferUserMap = std::map<const BufferResource *, BufferUsers, std::less<>>;
-    using SubTexUser    = ResourceUser<Pass::SubTexUsage>;
+    using BufferUserMap = std::map<const RGBufImpl *, BufferUsers, std::less<>>;
+    using SubTexUser    = ResourceUser<RGPassImpl::SubTexUsage>;
     using SubTexUsers   = std::vector<SubTexUser>;
-    using SubTexKey     = std::pair<const TextureResource*, TexSubrsc>;
+    using SubTexKey     = std::pair<const RGTexImpl*, TexSubrsc>;
     using SubTexUserMap = std::map<SubTexKey, SubTexUsers, std::less<>>;
 
     struct CompileSection
@@ -73,16 +73,16 @@ private:
         std::vector<RHI::BufferTransitionBarrier>  preBufferTransitions;
     };
 
-    static bool DontNeedBarrier(const Pass::BufferUsage &a, const Pass::BufferUsage &b);
-    static bool DontNeedBarrier(const Pass::SubTexUsage &a, const Pass::SubTexUsage &b);
+    static bool DontNeedBarrier(const RGPassImpl::BufferUsage &a, const RGPassImpl::BufferUsage &b);
+    static bool DontNeedBarrier(const RGPassImpl::SubTexUsage &a, const RGPassImpl::SubTexUsage &b);
 
-    static void GenerateGlobalMemoryBarriers(ExecutablePass &pass);
+    static void GenerateGlobalMemoryBarriers(RGExecutablePass &pass);
 
     static void GenerateConnectionsByDefinitionOrder(
         bool                           optimizeConnection,
-        Span<Box<Pass>>                passes,
-        std::vector<std::set<Pass *>> &outPrevs,
-        std::vector<std::set<Pass *>> &outSuccs);
+        Span<Box<RGPassImpl>>                passes,
+        std::vector<std::set<RGPassImpl *>> &outPrevs,
+        std::vector<std::set<RGPassImpl *>> &outSuccs);
 
     bool IsInSection(int passIndex, const CompileSection *section) const;
 
@@ -98,15 +98,15 @@ private:
 
     void GenerateSemaphores();
 
-    void FillExternalResources(ExecutableResources &output);
+    void FillExternalResources(RGExecutableResources &output);
 
-    void AllocateInternalResourcesLegacy(ExecutableResources &output);
+    void AllocateInternalResourcesLegacy(RGExecutableResources &output);
     RC<RHI::QueueSyncQuery> AllocateInternalResources(
-        ExecutableResources &output, std::vector<std::vector<int>> &aliasedPrevs);
+        RGExecutableResources &output, std::vector<std::vector<int>> &aliasedPrevs);
 
-    void GenerateBarriers(const ExecutableResources &resources);
+    void GenerateBarriers(const RGExecutableResources &resources);
 
-    void FillSections(ExecutableGraph &output);
+    void FillSections(RGExecutableGraph &output);
 
     Options options_;
     bool    forPartialExecution_;
@@ -114,9 +114,9 @@ private:
     Ref<Device>        device_;
     const RenderGraph *graph_;
 
-    std::vector<Pass*>            sortedPasses_;
+    std::vector<RGPassImpl*>            sortedPasses_;
     std::vector<Box<CompilePass>> sortedCompilePasses_;
-    std::map<const Pass *, int>   passToSortedIndex_;
+    std::map<const RGPassImpl *, int>   passToSortedIndex_;
 
     BufferUserMap bufferUsers_;
     SubTexUserMap subTexUsers_;
@@ -128,4 +128,4 @@ private:
     RHI::TransientResourcePoolOPtr transientResourcePool_;
 };
 
-RTRC_RG_END
+RTRC_END

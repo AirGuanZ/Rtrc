@@ -1,21 +1,21 @@
 #include <Rtrc/Graphics/RenderGraph/Executable.h>
 #include <Rtrc/Graphics/RenderGraph/Pass.h>
 
-RTRC_RG_BEGIN
+RTRC_BEGIN
 
 namespace GraphDetail
 {
 
-    thread_local PassContext *gCurrentPassContext = nullptr;
+    thread_local RGPassContext *gCurrentPassContext = nullptr;
 
 } // namespace GraphDetail
 
-CommandBuffer &PassContext::GetCommandBuffer()
+CommandBuffer &RGPassContext::GetCommandBuffer()
 {
     return *commandBuffer_;
 }
 
-RC<Buffer> PassContext::Get(const BufferResource *resource)
+RC<Buffer> RGPassContext::Get(const RGBufImpl *resource)
 {
     auto &result = resources_->indexToBuffer[resource->GetResourceIndex()].buffer;
     assert(result);
@@ -29,12 +29,12 @@ RC<Buffer> PassContext::Get(const BufferResource *resource)
     return result;
 }
 
-const RC<Tlas> &PassContext::Get(const TlasResource *resource)
+const RC<Tlas> &RGPassContext::Get(const RGTlasImpl *resource)
 {
     return resource->Get();
 }
 
-RC<Texture> PassContext::Get(const TextureResource *resource)
+RC<Texture> RGPassContext::Get(const RGTexImpl *resource)
 {
     auto &result = resources_->indexToTexture[resource->GetResourceIndex()].texture;
     assert(result);
@@ -48,30 +48,30 @@ RC<Texture> PassContext::Get(const TextureResource *resource)
     return result;
 }
 
-PassContext::PassContext(const ExecutableResources &resources, CommandBuffer &commandBuffer)
+RGPassContext::RGPassContext(const RGExecutableResources &resources, CommandBuffer &commandBuffer)
     : resources_(resources), commandBuffer_(commandBuffer)
 {
     assert(!GraphDetail::gCurrentPassContext);
     GraphDetail::gCurrentPassContext = this;
 }
 
-PassContext::~PassContext()
+RGPassContext::~RGPassContext()
 {
     assert(GraphDetail::gCurrentPassContext == this);
     GraphDetail::gCurrentPassContext = nullptr;
 }
 
-PassContext &GetCurrentPassContext()
+RGPassContext &RGGetPassContext()
 {
     return *GraphDetail::gCurrentPassContext;
 }
 
-CommandBuffer &GetCurrentCommandBuffer()
+CommandBuffer &RGGetCommandBuffer()
 {
-    return GetCurrentPassContext().GetCommandBuffer();
+    return RGGetPassContext().GetCommandBuffer();
 }
 
-void Connect(Pass *head, Pass *tail)
+void Connect(RGPassImpl *head, RGPassImpl *tail)
 {
     assert(head->isExecuted_ || !tail->isExecuted_);
     if(head->isExecuted_)
@@ -82,7 +82,7 @@ void Connect(Pass *head, Pass *tail)
     tail->prevs_.insert(head);
 }
 
-Pass *Pass::Use(BufferResource *buffer, const UseInfo &info)
+RGPassImpl *RGPassImpl::Use(RGBufImpl *buffer, const RGUseInfo &info)
 {
     assert(!isExecuted_ && "Can not setup already executed pass");
     auto &usage = bufferUsages_[buffer];
@@ -91,7 +91,7 @@ Pass *Pass::Use(BufferResource *buffer, const UseInfo &info)
     return this;
 }
 
-Pass *Pass::Use(TextureResource *texture, const UseInfo &info)
+RGPassImpl *RGPassImpl::Use(RGTexImpl *texture, const RGUseInfo &info)
 {
     assert(!isExecuted_ && "Can not setup already executed pass");
     const uint32_t mipLevels = texture->GetMipLevels();
@@ -106,7 +106,7 @@ Pass *Pass::Use(TextureResource *texture, const UseInfo &info)
     return this;
 }
 
-Pass *Pass::Use(TextureResource *texture, const TexSubrsc &subrsc, const UseInfo &info)
+RGPassImpl *RGPassImpl::Use(RGTexImpl *texture, const TexSubrsc &subrsc, const RGUseInfo &info)
 {
     assert(!isExecuted_ && "Can not setup already executed pass");
     TextureUsage &usageMap = textureUsages_[texture];
@@ -128,34 +128,34 @@ Pass *Pass::Use(TextureResource *texture, const TexSubrsc &subrsc, const UseInfo
     return this;
 }
 
-Pass *Pass::Use(TlasResource *tlas, const UseInfo &info)
+RGPassImpl *RGPassImpl::Use(RGTlasImpl *tlas, const RGUseInfo &info)
 {
     return Use(tlas->GetInternalBuffer(), info);
 }
 
-Pass *Pass::SetCallback(Callback callback)
+RGPassImpl *RGPassImpl::SetCallback(Callback callback)
 {
     assert(!isExecuted_ && "Can not setup already executed pass");
     callback_ = std::move(callback);
     return this;
 }
 
-Pass *Pass::SetCallback(LegacyCallback callback)
+RGPassImpl *RGPassImpl::SetCallback(LegacyCallback callback)
 {
-    return SetCallback([c = std::move(callback)] () mutable { c(GetCurrentPassContext()); });
+    return SetCallback([c = std::move(callback)] () mutable { c(RGGetPassContext()); });
 }
 
-Pass *Pass::SetSignalFence(RHI::FenceRPtr fence)
+RGPassImpl *RGPassImpl::SetSignalFence(RHI::FenceRPtr fence)
 {
     assert(!isExecuted_ && "Can not setup already executed pass");
     signalFence_ = std::move(fence);
     return this;
 }
 
-Pass::Pass(int index, const LabelStack::Node *node)
+RGPassImpl::RGPassImpl(int index, const RGLabelStack::Node *node)
     : index_(index), nameNode_(node), isExecuted_(false)
 {
 
 }
 
-RTRC_RG_END
+RTRC_END

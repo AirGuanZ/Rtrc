@@ -22,9 +22,6 @@
 #define RTRC_RHI_BEGIN RTRC_BEGIN namespace RHI {
 #define RTRC_RHI_END } RTRC_END
 
-#define RTRC_RG_BEGIN RTRC_BEGIN namespace RG {
-#define RTRC_RG_END } RTRC_END
-
 #define RTRC_RENDERER_BEGIN RTRC_BEGIN namespace Renderer {
 #define RTRC_RENDERER_END   } RTRC_END
 

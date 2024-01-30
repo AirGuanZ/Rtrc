@@ -33,9 +33,9 @@ void GizmoRenderer::RenderImmediately(
 
 void GizmoRenderer::AddRenderPass(
     const GizmoBuilder  &builder,
-    Ref<RG::RenderGraph> renderGraph,
-    RG::TextureResource *framebuffer,
-    RG::TextureResource *depthBuffer,
+    GraphRef             renderGraph,
+    RGTexture            framebuffer,
+    RGTexture            depthBuffer,
     const Matrix4x4f    &worldToClip,
     bool                 reverseZ,
     float                rcpGamma)
@@ -56,16 +56,16 @@ void GizmoRenderer::AddRenderPass(
         lv = std::move(lineVertices), tv = std::move(triangleVertices), this,
         framebuffer, depthBuffer, worldToClip, reverseZ, rcpGamma]
     {
-        auto &cmds = RG::GetCurrentCommandBuffer();
+        auto &cmds = RGGetCommandBuffer();
         if(depthBuffer)
         {
             cmds.BeginRenderPass(
-                ColorAttachment{ .renderTargetView = framebuffer->GetRtvImm() },
-                DepthStencilAttachment{ .depthStencilView = depthBuffer->GetDsvImm() });
+                RHI::ColorAttachment{ .renderTargetView = framebuffer->GetRtvImm() },
+                RHI::DepthStencilAttachment{ .depthStencilView = depthBuffer->GetDsvImm() });
         }
         else
         {
-            cmds.BeginRenderPass(ColorAttachment{ .renderTargetView = framebuffer->GetRtvImm() });
+            cmds.BeginRenderPass(RHI::ColorAttachment{ .renderTargetView = framebuffer->GetRtvImm() });
         }
         RTRC_SCOPE_EXIT{ cmds.EndRenderPass(); };
 

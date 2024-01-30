@@ -1,19 +1,19 @@
 #include <Rtrc/Graphics/RenderGraph/Graph.h>
 
-RTRC_RG_BEGIN
+RTRC_BEGIN
 
-RC<Buffer> BufferResource::Get() const
+RC<Buffer> RGBufImpl::Get() const
 {
-    return GetCurrentPassContext().Get(this);
+    return RGGetPassContext().Get(this);
 }
 
-const RC<Tlas> &TlasResource::Get() const
+const RC<Tlas> &RGTlasImpl::Get() const
 {
-    assert(GetCurrentPassContext().Get(tlasBuffer_));
+    assert(RGGetPassContext().Get(tlasBuffer_));
     return tlas_;
 }
 
-TextureSrv TextureResourceSrv::GetSrv() const
+TextureSrv RGTexSrv::GetSrv() const
 {
     return desc_.Match(
         [&](const NonArrayView &v)
@@ -26,12 +26,12 @@ TextureSrv TextureResourceSrv::GetSrv() const
         });
 }
 
-TextureResource *TextureResourceSrv::GetResource() const
+RGTexImpl *RGTexSrv::GetResource() const
 {
     return resource_;
 }
 
-TextureUav TextureResourceUav::GetUav() const
+TextureUav RGTexUav::GetUav() const
 {
     return desc_.Match(
         [&](const NonArrayView &v)
@@ -44,37 +44,47 @@ TextureUav TextureResourceUav::GetUav() const
         });
 }
 
-TextureResource *TextureResourceUav::GetResource() const
+RGTexImpl *RGTexUav::GetResource() const
 {
     return resource_;
 }
 
-TextureRtv TextureResourceRtv::GetRtv() const
+TextureRtv RGTexRtv::GetRtv() const
 {
     return resource_->GetRtvImm(mipLevel_, arrayLayer_);
 }
 
-TextureDsv TextureResourceDsv::GetDsv() const
+RGTexImpl* RGTexRtv::GetResource() const
+{
+    return resource_;
+}
+
+TextureDsv RGTexDsv::GetDsv() const
 {
     return resource_->GetDsvImm(mipLevel_, arrayLayer_);
 }
 
-RHI::Viewport TextureResource::GetViewport(float minDepth, float maxDepth) const
+RGTexImpl* RGTexDsv::GetResource() const
+{
+    return resource_;
+}
+
+RHI::Viewport RGTexImpl::GetViewport(float minDepth, float maxDepth) const
 {
     return RHI::Viewport::Create(GetDesc(), minDepth, maxDepth);
 }
 
-RHI::Scissor TextureResource::GetScissor() const
+RHI::Scissor RGTexImpl::GetScissor() const
 {
     return RHI::Scissor::Create(GetDesc());
 }
 
-RC<Texture> TextureResource::Get() const
+RC<Texture> RGTexImpl::Get() const
 {
-    return GetCurrentPassContext().Get(this);
+    return RGGetPassContext().Get(this);
 }
 
-TextureResourceSrv TextureResource::GetSrv()
+RGTexSrv RGTexImpl::GetSrv()
 {
     auto &desc = GetDesc();
     if(desc.arraySize > 1)
@@ -84,24 +94,24 @@ TextureResourceSrv TextureResource::GetSrv()
     return GetSrv(0, desc.mipLevels, 0);
 }
 
-TextureResourceSrv TextureResource::GetSrv(uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer)
+RGTexSrv RGTexImpl::GetSrv(uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer)
 {
-    TextureResourceSrv ret;
+    RGTexSrv ret;
     ret.resource_ = this;
-    ret.desc_ = TextureResourceSrv::NonArrayView{ mipLevel, levelCount, arrayLayer };
+    ret.desc_ = RGTexSrv::NonArrayView{ mipLevel, levelCount, arrayLayer };
     return ret;
 }
 
-TextureResourceSrv TextureResource::GetSrv(
+RGTexSrv RGTexImpl::GetSrv(
     uint32_t mipLevel, uint32_t levelCount, uint32_t arrayLayer, uint32_t layerCount)
 {
-    TextureResourceSrv ret;
+    RGTexSrv ret;
     ret.resource_ = this;
-    ret.desc_ = TextureResourceSrv::ArrayView{ mipLevel, levelCount, arrayLayer, layerCount };
+    ret.desc_ = RGTexSrv::ArrayView{ mipLevel, levelCount, arrayLayer, layerCount };
     return ret;
 }
 
-TextureResourceUav TextureResource::GetUav()
+RGTexUav RGTexImpl::GetUav()
 {
     auto &desc = GetDesc();
     if(desc.arraySize > 1)
@@ -111,38 +121,38 @@ TextureResourceUav TextureResource::GetUav()
     return GetUav(0, 0);
 }
 
-TextureResourceUav TextureResource::GetUav(uint32_t mipLevel, uint32_t arrayLayer)
+RGTexUav RGTexImpl::GetUav(uint32_t mipLevel, uint32_t arrayLayer)
 {
-    TextureResourceUav ret;
+    RGTexUav ret;
     ret.resource_ = this;
-    ret.desc_ = TextureResourceUav::NonArrayView{ mipLevel, arrayLayer };
+    ret.desc_ = RGTexUav::NonArrayView{ mipLevel, arrayLayer };
     return ret;
 }
 
-TextureResourceUav TextureResource::GetUav(uint32_t mipLevel, uint32_t arrayLayer, uint32_t layerCount)
+RGTexUav RGTexImpl::GetUav(uint32_t mipLevel, uint32_t arrayLayer, uint32_t layerCount)
 {
-    TextureResourceUav ret;
+    RGTexUav ret;
     ret.resource_ = this;
-    ret.desc_ = TextureResourceUav::ArrayView{ mipLevel, arrayLayer, layerCount };
+    ret.desc_ = RGTexUav::ArrayView{ mipLevel, arrayLayer, layerCount };
     return ret;
 }
 
-TextureResourceRtv TextureResource::GetRtv(uint32_t mipLevel, uint32_t arrayLayer)
+RGTexRtv RGTexImpl::GetRtv(uint32_t mipLevel, uint32_t arrayLayer)
 {
-    TextureResourceRtv ret;
-    ret.resource_ = this;
-    ret.mipLevel_ = mipLevel;
-    ret.arrayLayer_ = arrayLayer;
-    return ret;
-}
-
-TextureResourceDsv TextureResource::GetDsv(uint32_t mipLevel, uint32_t arrayLayer)
-{
-    TextureResourceDsv ret;
+    RGTexRtv ret;
     ret.resource_ = this;
     ret.mipLevel_ = mipLevel;
     ret.arrayLayer_ = arrayLayer;
     return ret;
 }
 
-RTRC_RG_END
+RGTexDsv RGTexImpl::GetDsv(uint32_t mipLevel, uint32_t arrayLayer)
+{
+    RGTexDsv ret;
+    ret.resource_ = this;
+    ret.mipLevel_ = mipLevel;
+    ret.arrayLayer_ = arrayLayer;
+    return ret;
+}
+
+RTRC_END

@@ -61,7 +61,7 @@ void Run()
         bindingGroup->Set(1, static_cast<int>(slots[i]), textures[i]->GetSrv());
     }
 
-    RG::Executer renderGraphExecuter(device);
+    RGExecuter renderGraphExecuter(device);
 
     window.SetFocus();
     device->BeginRenderLoop();
@@ -86,13 +86,13 @@ void Run()
         quadPass->Use(renderTarget, RG::ColorAttachment);
         quadPass->SetCallback([&]
         {
-            auto &commandBuffer = RG::GetCurrentCommandBuffer();
+            auto &commandBuffer = RGGetCommandBuffer();
 
-            commandBuffer.BeginRenderPass(ColorAttachment
+            commandBuffer.BeginRenderPass(RHI::ColorAttachment
             {
                 .renderTargetView = renderTarget->GetRtvImm(),
-                .loadOp           = AttachmentLoadOp::Clear,
-                .storeOp          = AttachmentStoreOp::Store,
+                .loadOp           = RHI::AttachmentLoadOp::Clear,
+                .storeOp          = RHI::AttachmentStoreOp::Store,
                 .clearValue       = { 0, 0, 0, 0 }
             });
             RTRC_SCOPE_EXIT{ commandBuffer.EndRenderPass(); };

@@ -5,17 +5,17 @@
 
 RTRC_RENDERER_BEGIN
 
-RG::TextureResource *Prepare2DPcgStateTexture(
-    RG::RenderGraph     &renderGraph,
+RGTexture Prepare2DPcgStateTexture(
+    GraphRef             renderGraph,
     RC<StatefulTexture> &tex,
     const Vector2u      &size)
 {
     if(tex && tex->GetSize() == size)
     {
-        return renderGraph.RegisterTexture(tex);
+        return renderGraph->RegisterTexture(tex);
     }
 
-    auto device = renderGraph.GetDevice();
+    auto device = renderGraph->GetDevice();
     tex = device->CreateStatefulTexture(RHI::TextureDesc
     {
         .dim    = RHI::TextureDimension::Tex2D,
@@ -25,10 +25,10 @@ RG::TextureResource *Prepare2DPcgStateTexture(
         .usage  = RHI::TextureUsage::UnorderAccess | RHI::TextureUsage::ShaderResource
     });
     tex->SetName("PcgState");
-    auto ret = renderGraph.RegisterTexture(tex);
+    auto ret = renderGraph->RegisterTexture(tex);
 
     using Shader = RtrcShader::Builtin::InitializePcgState2D;
-    auto initPass = renderGraph.CreatePass(Shader::Name);
+    auto initPass = renderGraph->CreatePass(Shader::Name);
     initPass->Use(ret, RG::CS_RWTexture_WriteOnly);
     initPass->SetCallback([ret, size, device]
     {
@@ -39,7 +39,7 @@ RG::TextureResource *Prepare2DPcgStateTexture(
 
         auto shader = device->GetShader<Shader::Name>();
 
-        auto &commandBuffer = RG::GetCurrentCommandBuffer();
+        auto &commandBuffer = RGGetCommandBuffer();
         commandBuffer.BindComputePipeline(shader->GetComputePipeline());
         commandBuffer.BindComputeGroup(0, passGroup);
         commandBuffer.DispatchWithThreadCount(size);

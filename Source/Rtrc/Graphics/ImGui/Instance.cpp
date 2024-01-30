@@ -241,16 +241,16 @@ ImGuiRenderer::ImGuiRenderer(Ref<Device> device)
     passBindingGroupLayout_ = shader_->GetBindingGroupLayoutByName("Pass");
 }
 
-RG::Pass *ImGuiRenderer::Render(
+RGPass ImGuiRenderer::Render(
     const ImGuiDrawData *drawData,
-    RG::TextureResource *renderTarget,
-    RG::RenderGraph     *renderGraph)
+    RGTexture                renderTarget,
+    GraphRef             renderGraph)
 {
     auto pass = renderGraph->CreatePass("Render ImGui");
     pass->Use(renderTarget, RG::ColorAttachment);
     pass->SetCallback([this, drawData, renderTarget]
     {
-        RenderImmediately(drawData, renderTarget->GetRtvImm(), RG::GetCurrentCommandBuffer(), false);
+        RenderImmediately(drawData, renderTarget->GetRtvImm(), RGGetCommandBuffer(), false);
     });
     return pass;
 }
@@ -327,11 +327,11 @@ void ImGuiRenderer::RenderImmediately(
     const RHI::Format format = rtv.GetRHIObject()->GetDesc().format;
     RC<GraphicsPipeline> pipeline = GetOrCreatePipeline(format);
 
-    commandBuffer.BeginRenderPass(ColorAttachment
+    commandBuffer.BeginRenderPass(RHI::ColorAttachment
     {
         .renderTargetView = rtv,
-        .loadOp = AttachmentLoadOp::Load,
-        .storeOp = AttachmentStoreOp::Store
+        .loadOp = RHI::AttachmentLoadOp::Load,
+        .storeOp = RHI::AttachmentStoreOp::Store
     });
     RTRC_SCOPE_EXIT{ commandBuffer.EndRenderPass(); };
 
@@ -398,7 +398,7 @@ void ImGuiRenderer::RenderImmediately(
             {
                 continue;
             }
-            commandBuffer.SetScissors(Scissor{
+            commandBuffer.SetScissors(RHI::Scissor{
                 { static_cast<int>(clipMin.x), static_cast<int>(clipMin.y) },
                 { static_cast<int>(clipMax.x - clipMin.x), static_cast<int>(clipMax.y - clipMin.y) }
             });

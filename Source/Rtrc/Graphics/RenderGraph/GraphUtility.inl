@@ -1,6 +1,6 @@
 #pragma once
 
-RTRC_RG_BEGIN
+RTRC_BEGIN
 
 /**
  * ClearTexture
@@ -15,94 +15,94 @@ RTRC_RG_BEGIN
  * DispatchIndirect
  */
 
-inline Pass *ClearTexture(
-    RenderGraphRef  graph,
-    std::string     name,
-    RGTexture       tex,
+inline RGPass ClearTexture(
+    GraphRef    graph,
+    std::string name,
+    RGTexture   tex,
     const Vector4f &clearValue)
 {
     auto pass = graph->CreatePass(std::move(name));
-    pass->Use(tex, ClearDst);
-    pass->SetCallback([tex, clearValue](PassContext &context)
+    pass->Use(tex, RG::ClearDst);
+    pass->SetCallback([tex, clearValue]
     {
-        context.GetCommandBuffer().ClearColorTexture2D(tex->Get(), clearValue);
+        RGGetCommandBuffer().ClearColorTexture2D(tex->Get(), clearValue);
     });
     return pass;
 }
 
-inline Pass *ClearRWBuffer(
-    RenderGraphRef graph,
-    std::string    name,
-    RGBuffer       buffer,
-    uint32_t       value)
+inline RGPass ClearRWBuffer(
+    GraphRef    graph,
+    std::string name,
+    RGBuffer    buffer,
+    uint32_t    value)
 {
     auto pass = graph->CreatePass(std::move(name));
-    pass->Use(buffer, CS_RWBuffer_WriteOnly);
+    pass->Use(buffer, RG::CS_RWBuffer_WriteOnly);
     pass->SetCallback([buffer, value]
     {
-        auto &cmds = GetCurrentCommandBuffer();
+        auto &cmds = RGGetCommandBuffer();
         cmds.GetDevice()->GetClearBufferUtils().ClearRWBuffer(cmds, buffer->Get(), value);
     });
     return pass;
 }
 
-inline Pass *ClearRWStructuredBuffer(
-    RenderGraphRef graph,
-    std::string    name,
-    RGBuffer       buffer,
-    uint32_t       value)
+inline RGPass ClearRWStructuredBuffer(
+    GraphRef    graph,
+    std::string name,
+    RGBuffer    buffer,
+    uint32_t    value)
 {
     auto pass = graph->CreatePass(std::move(name));
-    pass->Use(buffer, CS_RWStructuredBuffer_WriteOnly);
+    pass->Use(buffer, RG::CS_RWStructuredBuffer_WriteOnly);
     pass->SetCallback([buffer, value]
     {
-        auto &cmds = GetCurrentCommandBuffer();
+        auto &cmds = RGGetCommandBuffer();
         cmds.GetDevice()->GetClearBufferUtils().ClearRWStructuredBuffer(cmds, buffer->Get(), value);
     });
     return pass;
 }
 
-inline Pass *CopyBuffer(
-    RenderGraphRef graph,
-    std::string    name,
-    RGBuffer       src,
-    size_t         srcOffset,
-    RGBuffer       dst,
-    size_t         dstOffset,
-    size_t         size)
+inline RGPass CopyBuffer(
+    GraphRef    graph,
+    std::string name,
+    RGBuffer    src,
+    size_t      srcOffset,
+    RGBuffer    dst,
+    size_t      dstOffset,
+    size_t      size)
 {
     auto pass = graph->CreatePass(std::move(name));
-    pass->Use(src, CopySrc);
-    pass->Use(dst, CopyDst);
+    pass->Use(src, RG::CopySrc);
+    pass->Use(dst, RG::CopyDst);
     pass->SetCallback([=]
     {
-        GetCurrentCommandBuffer().CopyBuffer(dst, dstOffset, src, srcOffset, size);
+        RGGetCommandBuffer().CopyBuffer(dst, dstOffset, src, srcOffset, size);
     });
     return pass;
 }
 
-inline Pass *CopyBuffer(
-    RenderGraphRef graph,
-    std::string    name,
-    RGBuffer       src,
-    RGBuffer       dst,
-    size_t         size)
+inline RGPass CopyBuffer(
+    GraphRef    graph,
+    std::string name,
+    RGBuffer    src,
+    RGBuffer    dst,
+    size_t      size)
 {
     return CopyBuffer(graph, std::move(name), src, 0, dst, 0, size);
 }
 
-inline Pass *CopyBuffer(
-    RenderGraphRef graph,
-    std::string    name,
-    RGBuffer       src,
-    RGBuffer       dst)
+inline RGPass CopyBuffer(
+    GraphRef    graph,
+    std::string name,
+    RGBuffer    src,
+    RGBuffer    dst)
 {
     assert(src->GetSize() == dst->GetSize());
     return CopyBuffer(graph, std::move(name), src, dst, src->GetSize());
 }
 
-inline Pass *CopyColorTexture(
-    RenderGraphRef    graph,
+inline RGPass CopyColorTexture(
+    GraphRef          graph,
     std::string       name,
     RGTexture         src,
     const TexSubrscs &srcSubrscs,
@@ -118,7 +118,7 @@ inline Pass *CopyColorTexture(
         for(unsigned m = srcSubrscs.mipLevel; m < srcSubrscs.mipLevel + srcSubrscs.levelCount; ++m)
         {
             assert(m < src->GetMipLevels());
-            pass->Use(src, TexSubrsc{ m, a }, CopySrc);
+            pass->Use(src, TexSubrsc{ m, a }, RG::CopySrc);
         }
     }
     for(unsigned a = dstSubrscs.arrayLayer; a < dstSubrscs.arrayLayer + dstSubrscs.layerCount; ++a)
@@ -127,12 +127,12 @@ inline Pass *CopyColorTexture(
         for(unsigned m = dstSubrscs.mipLevel; m < dstSubrscs.mipLevel + dstSubrscs.levelCount; ++m)
         {
             assert(m < dst->GetMipLevels());
-            pass->Use(dst, TexSubrsc{ m, a }, CopyDst);
+            pass->Use(dst, TexSubrsc{ m, a }, RG::CopyDst);
         }
     }
     pass->SetCallback([src, srcSubrscs, dst, dstSubrscs]
     {
-        auto &cmds = GetCurrentCommandBuffer();
+        auto &cmds = RGGetCommandBuffer();
         auto tsrc = src->Get();
         auto tdst = dst->Get();
         for(unsigned ai = 0; ai < srcSubrscs.layerCount; ++ai)
@@ -151,8 +151,8 @@ inline Pass *CopyColorTexture(
     return pass;
 }
 
-inline Pass *CopyColorTexture(
-    RenderGraphRef    graph,
+inline RGPass CopyColorTexture(
+    GraphRef          graph,
     std::string       name,
     RGTexture         src,
     RGTexture         dst,
@@ -161,11 +161,11 @@ inline Pass *CopyColorTexture(
     return CopyColorTexture(graph, std::move(name), src, subrscs, dst, subrscs);
 }
 
-inline Pass *CopyColorTexture(
-    RenderGraphRef graph,
-    std::string    name,
-    RGTexture      src,
-    RGTexture      dst)
+inline RGPass CopyColorTexture(
+    GraphRef    graph,
+    std::string name,
+    RGTexture   src,
+    RGTexture   dst)
 {
     assert(src->GetArraySize() == dst->GetArraySize());
     assert(src->GetMipLevels() == dst->GetMipLevels());
@@ -179,56 +179,56 @@ inline Pass *CopyColorTexture(
                             });
 }
 
-inline Pass *ClearRWTexture2D(
-    RenderGraphRef  graph,
+inline RGPass ClearRWTexture2D(
+    GraphRef        graph,
     std::string     name,
     RGTexture       tex2D,
     const Vector4f &value)
 {
     auto pass = graph->CreatePass(std::move(name));
-    pass->Use(tex2D, CS_RWTexture);
+    pass->Use(tex2D, RG::CS_RWTexture);
     pass->SetCallback([tex2D, value]
     {
-        auto& cmds = GetCurrentCommandBuffer();
+        auto& cmds = RGGetCommandBuffer();
         cmds.GetDevice()->GetClearTextureUtils().ClearRWTexture2D(cmds, tex2D->GetUavImm(), value);
     });
     return pass;
 }
 
-inline Pass *ClearRWTexture2D(
-    RenderGraphRef  graph,
+inline RGPass ClearRWTexture2D(
+    GraphRef        graph,
     std::string     name,
     RGTexture       tex2D,
     const Vector4u &value)
 {
     auto pass = graph->CreatePass(std::move(name));
-    pass->Use(tex2D, CS_RWTexture);
+    pass->Use(tex2D, RG::CS_RWTexture);
     pass->SetCallback([tex2D, value]
     {
-        auto& cmds = GetCurrentCommandBuffer();
+        auto& cmds = RGGetCommandBuffer();
         cmds.GetDevice()->GetClearTextureUtils().ClearRWTexture2D(cmds, tex2D->GetUavImm(), value);
     });
     return pass;
 }
 
-inline Pass *ClearRWTexture2D(
-    RenderGraphRef  graph,
+inline RGPass ClearRWTexture2D(
+    GraphRef        graph,
     std::string     name,
     RGTexture       tex2D,
     const Vector4i &value)
 {
     auto pass = graph->CreatePass(std::move(name));
-    pass->Use(tex2D, CS_RWTexture);
+    pass->Use(tex2D, RG::CS_RWTexture);
     pass->SetCallback([tex2D, value]
     {
-        auto& cmds = GetCurrentCommandBuffer();
+        auto& cmds = RGGetCommandBuffer();
         cmds.GetDevice()->GetClearTextureUtils().ClearRWTexture2D(cmds, tex2D->GetUavImm(), value);
     });
     return pass;
 }
 
-inline Pass *BlitTexture(
-    RenderGraphRef   graph,
+inline RGPass BlitTexture(
+    GraphRef         graph,
     std::string      name,
     RGTexture        src,
     const TexSubrsc &srcSubrsc,
@@ -238,13 +238,13 @@ inline Pass *BlitTexture(
     float            gamma = 1.0f)
 {
     auto pass = graph->CreatePass(std::move(name));
-    pass->Use(src, PS_Texture);
-    pass->Use(dst, ColorAttachmentWriteOnly);
-    pass->SetCallback([=](PassContext &context)
+    pass->Use(src, RG::PS_Texture);
+    pass->Use(dst, RG::ColorAttachmentWriteOnly);
+    pass->SetCallback([=]
     {
-        auto& cmds = GetCurrentCommandBuffer();
+        auto& cmds = RGGetCommandBuffer();
         cmds.GetDevice()->GetCopyTextureUtils().RenderFullscreenTriangle(
-            context.GetCommandBuffer(),
+            cmds,
             src->GetSrvImm(srcSubrsc.mipLevel, 1, srcSubrsc.arrayLayer),
             dst->GetRtvImm(dstSubrsc.mipLevel, dstSubrsc.arrayLayer),
             usePointSampling ? CopyTextureUtils::Point : CopyTextureUtils::Linear, gamma);
@@ -252,13 +252,13 @@ inline Pass *BlitTexture(
     return pass;
 }
 
-inline Pass *BlitTexture(
-    RenderGraphRef graph,
-    std::string    name,
-    RGTexture      src,
-    RGTexture      dst,
-    bool           usePointSampling = false,
-    float          gamma = 1.0f)
+inline RGPass BlitTexture(
+    GraphRef    graph,
+    std::string name,
+    RGTexture   src,
+    RGTexture   dst,
+    bool        usePointSampling = false,
+    float       gamma = 1.0f)
 {
     assert(src->GetArraySize() == 1);
     assert(src->GetMipLevels() == 1);
@@ -267,16 +267,16 @@ inline Pass *BlitTexture(
     return BlitTexture(graph, std::move(name), src, { 0, 0 }, dst, { 0, 0 }, usePointSampling, gamma);
 }
 
-template<RenderGraphBindingGroupInput...Ts>
-Pass *DispatchWithThreadGroupCount(
-    RenderGraphRef  graph,
+template<RGBindingGroupInput...Ts>
+RGPass DispatchWithThreadGroupCount(
+    GraphRef        graph,
     std::string     name,
     RC<Shader>      shader,
     const Vector3i &threadGroupCount,
     const Ts&...    bindingGroups)
 {
     auto pass = graph->CreatePass(std::move(name));
-    auto DeclareUse = [&]<RenderGraphBindingGroupInput T>(const T &group)
+    auto DeclareUse = [&]<RGBindingGroupInput T>(const T &group)
     {
         if constexpr(BindingGroupDSL::RtrcGroupStruct<T>)
         {
@@ -286,11 +286,11 @@ Pass *DispatchWithThreadGroupCount(
     (DeclareUse(bindingGroups), ...);
     pass->SetCallback([s = std::move(shader), threadGroupCount, ...bindingGroups = bindingGroups]
     {
-        auto &commandBuffer = GetCurrentCommandBuffer();
+        auto &commandBuffer = RGGetCommandBuffer();
         auto device = commandBuffer.GetDevice();
 
         std::vector<RC<BindingGroup>> finalGroups;
-        auto BindGroup = [&]<RenderGraphBindingGroupInput T>(const T &group)
+        auto BindGroup = [&]<RGBindingGroupInput T>(const T &group)
         {
             if constexpr(BindingGroupDSL::RtrcGroupStruct<T>)
             {
@@ -310,41 +310,41 @@ Pass *DispatchWithThreadGroupCount(
     return pass;
 }
 
-template<RenderGraphStaticShader S, RenderGraphBindingGroupInput...Ts>
-Pass *DispatchWithThreadGroupCount(
-    RenderGraphRef  graph,
+template<RGStaticShader S, RGBindingGroupInput...Ts>
+RGPass DispatchWithThreadGroupCount(
+    GraphRef        graph,
     const Vector3i &threadGroupCount,
     const Ts&...    bindingGroups)
 {
-    return RG::DispatchWithThreadGroupCount(
+    return DispatchWithThreadGroupCount(
         graph, S::Name, graph->GetDevice()->GetShader<S::Name>(), threadGroupCount, bindingGroups...);
 }
 
-template<RenderGraphBindingGroupInput...Ts>
-Pass *DispatchWithThreadCount(
-    RenderGraphRef  graph,
+template<RGBindingGroupInput...Ts>
+RGPass DispatchWithThreadCount(
+    GraphRef        graph,
     std::string     name,
     RC<Shader>      shader,
     const Vector3i &threadCount,
     const Ts&...    bindingGroups)
 {
     const Vector3i groupCount = shader->ComputeThreadGroupCount(threadCount);
-    return RG::DispatchWithThreadGroupCount(graph, std::move(name), std::move(shader), groupCount, bindingGroups...);
+    return DispatchWithThreadGroupCount(graph, std::move(name), std::move(shader), groupCount, bindingGroups...);
 }
 
-template<RenderGraphStaticShader S, RenderGraphBindingGroupInput...Ts>
-Pass *DispatchWithThreadCount(
-    RenderGraphRef  graph,
+template<RGStaticShader S, RGBindingGroupInput...Ts>
+RGPass DispatchWithThreadCount(
+    GraphRef        graph,
     const Vector3i &threadCount,
     const Ts&...    bindingGroups)
 {
-    return RG::DispatchWithThreadCount(
+    return DispatchWithThreadCount(
         graph, S::Name, graph->GetDevice()->GetShader<S::Name>(), threadCount, bindingGroups...);
 }
 
-template<RenderGraphBindingGroupInput...Ts>
-Pass *DispatchIndirect(
-    RenderGraphRef graph,
+template<RGBindingGroupInput...Ts>
+RGPass DispatchIndirect(
+    GraphRef       graph,
     std::string    name,
     RC<Shader>     shader,
     RGBuffer       indirectBuffer,
@@ -352,7 +352,7 @@ Pass *DispatchIndirect(
     const Ts&...   bindingGroups)
 {
     auto pass = graph->CreatePass(std::move(name));
-    auto DeclareUse = [&]<RenderGraphBindingGroupInput T>(const T & group)
+    auto DeclareUse = [&]<RGBindingGroupInput T>(const T & group)
     {
         if constexpr(BindingGroupDSL::RtrcGroupStruct<T>)
         {
@@ -360,15 +360,15 @@ Pass *DispatchIndirect(
         }
     };
     (DeclareUse(bindingGroups), ...);
-    pass->Use(indirectBuffer, IndirectDispatchRead);
+    pass->Use(indirectBuffer, RG::IndirectDispatchRead);
     pass->SetCallback(
         [s = std::move(shader), indirectBuffer, indirectBufferOffset, ...bindingGroups = bindingGroups]
     {
-        auto &commandBuffer = GetCurrentCommandBuffer();
+        auto &commandBuffer = RGGetCommandBuffer();
         auto device = commandBuffer.GetDevice();
 
         std::vector<RC<BindingGroup>> finalGroups;
-        auto BindGroup = [&]<RenderGraphBindingGroupInput T>(const T &group)
+        auto BindGroup = [&]<RGBindingGroupInput T>(const T &group)
         {
             if constexpr(BindingGroupDSL::RtrcGroupStruct<T>)
             {
@@ -388,22 +388,22 @@ Pass *DispatchIndirect(
     return pass;
 }
 
-template<RenderGraphStaticShader S, RenderGraphBindingGroupInput...Ts>
-Pass *DispatchIndirect(
-    RenderGraphRef graph,
-    RGBuffer       indirectBuffer,
-    size_t         indirectBufferOffset,
-    const Ts&...   bindingGroups)
+template<RGStaticShader S, RGBindingGroupInput...Ts>
+RGPass DispatchIndirect(
+    GraphRef     graph,
+    RGBuffer     indirectBuffer,
+    size_t       indirectBufferOffset,
+    const Ts&... bindingGroups)
 {
-    return RG::DispatchIndirect(
+    return DispatchIndirect(
         graph, S::Name, graph->GetDevice()->GetShader<S::Name>(),
         indirectBuffer, indirectBufferOffset, bindingGroups...);
 }
 
 #define DEFINE_DISPATCH(EXPR, ...)                                                  \
-    template<RenderGraphBindingGroupInput...Ts>                                     \
-    Pass *DispatchWithThreadGroupCount(                                             \
-        RenderGraphRef  graph,                                                      \
+    template<RGBindingGroupInput...Ts>                                              \
+    RGPass DispatchWithThreadGroupCount(                                            \
+        GraphRef  graph,                                                            \
         std::string     name,                                                       \
         RC<Shader>      shader,                                                     \
         __VA_ARGS__,                                                                \
@@ -412,9 +412,9 @@ Pass *DispatchIndirect(
             return DispatchWithThreadGroupCount(                                    \
                 graph, std::move(name), std::move(shader), EXPR, bindingGroups...); \
         }                                                                           \
-    template<RenderGraphBindingGroupInput...Ts>                                     \
-    Pass *DispatchWithThreadCount(                                                  \
-        RenderGraphRef  graph,                                                      \
+    template<RGBindingGroupInput...Ts>                                              \
+    RGPass DispatchWithThreadCount(                                                 \
+        GraphRef  graph,                                                            \
         std::string     name,                                                       \
         RC<Shader>      shader,                                                     \
         __VA_ARGS__,                                                                \
@@ -423,18 +423,18 @@ Pass *DispatchIndirect(
             return DispatchWithThreadCount(                                         \
                 graph, std::move(name), std::move(shader), EXPR, bindingGroups...); \
         }                                                                           \
-    template<RenderGraphStaticShader S, RenderGraphBindingGroupInput...Ts>          \
-    Pass *DispatchWithThreadGroupCount(                                             \
-        RenderGraphRef  graph,                                                      \
+    template<RGStaticShader S, RGBindingGroupInput...Ts>                            \
+    RGPass DispatchWithThreadGroupCount(                                            \
+        GraphRef  graph,                                                            \
         __VA_ARGS__,                                                                \
         const Ts&...    bindingGroups)                                              \
         {                                                                           \
             return DispatchWithThreadGroupCount<S>(                                 \
                 graph, EXPR, bindingGroups...);                                     \
         }                                                                           \
-    template<RenderGraphStaticShader S, RenderGraphBindingGroupInput...Ts>          \
-    Pass *DispatchWithThreadCount(                                                  \
-        RenderGraphRef  graph,                                                      \
+    template<RGStaticShader S, RGBindingGroupInput...Ts>                            \
+    RGPass DispatchWithThreadCount(                                                 \
+        GraphRef  graph,                                                            \
         __VA_ARGS__,                                                                \
         const Ts&...    bindingGroups)                                              \
         {                                                                           \
@@ -451,4 +451,104 @@ DEFINE_DISPATCH(Vector3i(x, y, z), unsigned int x, unsigned int y, unsigned int 
 
 #undef DEFINE_DISPATCH
 
-RTRC_RG_END
+struct RGColorAttachment
+{
+    RGTexRtv               rtv;
+    RHI::AttachmentLoadOp  loadOp = RHI::AttachmentLoadOp::Load;
+    RHI::AttachmentStoreOp storeOp = RHI::AttachmentStoreOp::Store;
+    RHI::ColorClearValue   clearValue;
+    bool                   isWriteOnly = false;
+};
+
+struct RGDepthStencilAttachment
+{
+    RGTexDsv                    dsv;
+    RHI::AttachmentLoadOp       loadOp = RHI::AttachmentLoadOp::Load;
+    RHI::AttachmentStoreOp      storeOp = RHI::AttachmentStoreOp::Store;
+    RHI::DepthStencilClearValue clearValue;
+    bool                        isWriteOnly = false;
+};
+
+template<typename Callback>
+RGPass AddRenderPass(
+    GraphRef                 graph,
+    std::string              name,
+    Span<RGColorAttachment>  colorAttachments,
+    RGDepthStencilAttachment depthStencilAttachment,
+    Callback                 callback)
+{
+    auto pass = graph->CreatePass(std::move(name));
+    for(auto &ca : colorAttachments)
+    {
+        pass->Use(
+            ca.rtv.GetResource(),
+            ca.isWriteOnly ? RG::ColorAttachmentWriteOnly : RG::ColorAttachment);
+    }
+    if(depthStencilAttachment.dsv.GetResource())
+    {
+        pass->Use(
+            depthStencilAttachment.dsv.GetResource(),
+            depthStencilAttachment.isWriteOnly ? RG::DepthStencilAttachmentWriteOnly : RG::DepthStencilAttachment);
+    }
+    StaticVector<RGColorAttachment, 8> clonedColorAttachments;
+    for(auto &c : colorAttachments)
+    {
+        clonedColorAttachments.PushBack(c);
+    }
+    pass->SetCallback([c = std::move(callback), cas = std::move(clonedColorAttachments), d = depthStencilAttachment]
+    {
+        auto &cmds = RGGetCommandBuffer();
+
+        StaticVector<RHI::ColorAttachment, 8> colorAttachments;
+        for(auto &ca : cas)
+        {
+            colorAttachments.PushBack(RHI::ColorAttachment
+            {
+                .renderTargetView = ca.rtv.GetRtv().GetRHIObject(),
+                .loadOp           = ca.loadOp,
+                .storeOp          = ca.storeOp,
+                .clearValue       = ca.clearValue
+            });
+        }
+        cmds.BeginRenderPass(colorAttachments, RHI::DepthStencilAttachment
+        {
+            .depthStencilView = d.dsv ? d.dsv.GetDsv().GetRHIObject() : nullptr,
+            .loadOp           = d.loadOp,
+            .storeOp          = d.storeOp,
+            .clearValue       = d.clearValue
+        });
+        RTRC_SCOPE_EXIT{ cmds.EndRenderPass(); };
+
+        if constexpr(requires{ RGPassImpl::Callback(std::move(c)); })
+        {
+            c();
+        }
+        else
+        {
+            c(RGGetPassContext());
+        }
+    });
+    return pass;
+}
+
+template<typename Callback>
+RGPass AddRenderPass(
+    GraphRef                 graph,
+    std::string              name,
+    Span<RGColorAttachment>  colorAttachments,
+    Callback                 callback)
+{
+    return AddRenderPass(graph, std::move(name), colorAttachments, RGDepthStencilAttachment{}, std::move(callback));
+}
+
+template<typename Callback>
+RGPass AddRenderPass(
+    GraphRef                 graph,
+    std::string              name,
+    RGDepthStencilAttachment depthStencilAttachment,
+    Callback                 callback)
+{
+    return AddRenderPass(graph, std::move(name), {}, std::move(depthStencilAttachment), std::move(callback));
+}
+
+RTRC_END

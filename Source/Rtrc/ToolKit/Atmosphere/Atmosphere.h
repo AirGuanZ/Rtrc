@@ -57,20 +57,20 @@ rtrc_struct(AtmosphereProperties)
 
 void GenerateT(
     const AtmosphereProperties &atmosphere,
-    RG::TextureResource        *T);
+    RGTexture                   T);
 
 void GenerateM(
     Ref<ResourceManager>        resources,
     const AtmosphereProperties &atmosphere,
-    RG::TextureResource        *T,
-    RG::TextureResource        *M,
+    RGTexture                   T,
+    RGTexture                   M,
     uint32_t                    distSamples = 24);
 
 void GenerateS(
     const AtmosphereProperties &atmosphere,
-    RG::TextureResource        *T,
-    RG::TextureResource        *M,
-    RG::TextureResource        *S,
+    RGTexture                   T,
+    RGTexture                   M,
+    RGTexture                   S,
     const Vector3f&             sunDir,
     const Vector3f&             sunColor,
     float                       eyeAltitude,

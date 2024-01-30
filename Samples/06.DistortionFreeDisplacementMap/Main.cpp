@@ -78,20 +78,20 @@ class DFDMDemo : public SimpleApplication
             renderPass->Use(depthBuffer, RG::DepthStencilAttachment);
             renderPass->SetCallback([framebuffer, depthBuffer, this]
             {
-                auto &cmds = RG::GetCurrentCommandBuffer();
+                auto &cmds = RGGetCommandBuffer();
                 cmds.BeginRenderPass(
-                    ColorAttachment
+                    RHI::ColorAttachment
                     {
                         .renderTargetView = framebuffer->GetRtvImm(),
-                        .loadOp           = AttachmentLoadOp::Clear,
-                        .storeOp          = AttachmentStoreOp::Store,
+                        .loadOp           = RHI::AttachmentLoadOp::Clear,
+                        .storeOp          = RHI::AttachmentStoreOp::Store,
                         .clearValue       = RHI::ColorClearValue{ 0, 0, 0, 0 }
                     },
-                    DepthStencilAttachment
+                    RHI::DepthStencilAttachment
                     {
                         .depthStencilView = depthBuffer->GetDsvImm(),
-                        .loadOp           = AttachmentLoadOp::Clear,
-                        .storeOp          = AttachmentStoreOp::Store,
+                        .loadOp           = RHI::AttachmentLoadOp::Clear,
+                        .storeOp          = RHI::AttachmentStoreOp::Store,
                         .clearValue       = RHI::DepthStencilClearValue{ 1, 0 }
                     });
                 RTRC_SCOPE_EXIT{ cmds.EndRenderPass(); };
@@ -114,7 +114,7 @@ class DFDMDemo : public SimpleApplication
                 cmds.SetScissors(framebuffer->GetScissor());
                 cmds.SetVertexBuffer(0, vertexBuffer_, sizeof(Vector2f));
                 cmds.SetIndexBuffer(indexBuffer_, RHI::IndexFormat::UInt32);
-                cmds.DrawIndexed(static_cast<uint32_t>(indexBuffer_->GetSize() / sizeof(uint32_t)), 1, 0, 0, 0);
+                cmds.DrawIndexed(static_cast<int>(indexBuffer_->GetSize() / sizeof(uint32_t)), 1, 0, 0, 0);
             });
         }
 

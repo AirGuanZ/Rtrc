@@ -191,7 +191,7 @@ void Run()
 
     // Render loop
 
-    RG::Executer executer(device);
+    RGExecuter executer(device);
 
     window.SetFocus();
     
@@ -247,8 +247,8 @@ void Run()
             accumulateTexture = nullptr;
         }
 
-        RG::TextureResource *rgAccumulateTexture, *rgRngTexture;
-        RG::Pass *initializePass = graph->CreatePass("Clear history texture");
+        RGTexture rgAccumulateTexture, rgRngTexture;
+        RGPass initializePass = graph->CreatePass("Clear history texture");
         if(!accumulateTexture)
         {
             accumulateTexture = device->CreateStatefulTexture(RHI::TextureDesc
@@ -292,7 +292,7 @@ void Run()
             initializePass->SetCallback(
                 [rgRngTexture, &initRngPipeline, &device]
             {
-                auto &commandBuffer = RG::GetCurrentCommandBuffer();
+                auto &commandBuffer = RGGetCommandBuffer();
                 
                 StaticShaderInfo<"InitRng">::Pass bindingGroupData;
                 bindingGroupData.RngTexture = rgRngTexture;
@@ -312,8 +312,8 @@ void Run()
 
         auto ptPass = graph->CreatePass("Trace");
         ptPass->Use(renderTarget,         RG::CS_RWTexture_WriteOnly);
-        ptPass->Use(rgAccumulateTexture, RG::CS_RWTexture);
-        ptPass->Use(rgRngTexture,        RG::CS_RWTexture);
+        ptPass->Use(rgAccumulateTexture,  RG::CS_RWTexture);
+        ptPass->Use(rgRngTexture,         RG::CS_RWTexture);
         ptPass->SetCallback([&]
         {
             StaticShaderInfo<"PathTracing">::Pass bindingGroupData;
@@ -332,7 +332,7 @@ void Run()
             bindingGroupData.Resolution        = rgAccumulateTexture->GetSize();
             auto bindingGroup = device->CreateBindingGroupWithCachedLayout(bindingGroupData);
 
-            auto &commandBuffer = RG::GetCurrentCommandBuffer();
+            auto &commandBuffer = RGGetCommandBuffer();
             commandBuffer.BindComputePipeline(tracePipeline);
             commandBuffer.BindComputeGroup(0, bindingGroup);
             commandBuffer.DispatchWithThreadCount(renderTarget->GetWidth(), renderTarget->GetHeight());

@@ -4,7 +4,6 @@
 #include <tbb/spin_rw_mutex.h>
 
 #include <Rtrc/Graphics/Device/BindingGroup.h>
-#include <Rtrc/Graphics/Device/Buffer.h>
 #include <Rtrc/Graphics/Device/DeviceSynchronizer.h>
 #include <Rtrc/Graphics/Device/Pipeline.h>
 #include <Rtrc/Graphics/Device/Texture.h>
@@ -22,17 +21,6 @@ class Blas;
 class Tlas;
 class BlasPrebuildInfo;
 class TlasPrebuildInfo;
-
-using AttachmentLoadOp = RHI::AttachmentLoadOp;
-using AttachmentStoreOp = RHI::AttachmentStoreOp;
-using ColorClearValue = RHI::ColorClearValue;
-using DepthStencilClearValue = RHI::DepthStencilClearValue;
-
-using Viewport = RHI::Viewport;
-using Scissor = RHI::Scissor;
-
-using ColorAttachment = RHI::RenderPassColorAttachment;
-using DepthStencilAttachment = RHI::RenderPassDepthStencilAttachment;
 
 class BarrierBatch
 {
@@ -130,18 +118,19 @@ public:
         Buffer &dst, size_t dstOffset, size_t dstRowBytes, Texture &src, uint32_t arrayLayer, uint32_t mipLevel);
 
     void CopyBuffer(
-        const RG::BufferResource *dst, size_t dstOffset,
-        const RG::BufferResource *src, size_t srcOffset, size_t size);
+        RGBuffer dst, size_t dstOffset,
+        RGBuffer src, size_t srcOffset, size_t size);
     void CopyColorTexture(
-        RG::TextureResource *dst, uint32_t dstMipLevel, uint32_t dstArrayLayer,
-        RG::TextureResource *src, uint32_t srcMipLevel, uint32_t srcArrayLayer);
+        RGTexture dst, uint32_t dstMipLevel, uint32_t dstArrayLayer,
+        RGTexture src, uint32_t srcMipLevel, uint32_t srcArrayLayer);
     void CopyColorTexture2DToBuffer(
-        RG::BufferResource *dst, size_t dstOffset, size_t dstRowBytes,
-        RG::TextureResource *src, uint32_t arrayLayer, uint32_t mipLevel);
+        RGBuffer dst, size_t dstOffset, size_t dstRowBytes,
+        RGTexture src, uint32_t arrayLayer, uint32_t mipLevel);
 
-    void BeginRenderPass(Span<ColorAttachment> colorAttachments);
-    void BeginRenderPass(const DepthStencilAttachment &depthStencilAttachment);
-    void BeginRenderPass(Span<ColorAttachment> colorAttachments, const DepthStencilAttachment &depthStencilAttachment);
+    void BeginRenderPass(Span<RHI::ColorAttachment> colorAttachments);
+    void BeginRenderPass(const RHI::DepthStencilAttachment &depthStencilAttachment);
+    void BeginRenderPass(
+        Span<RHI::ColorAttachment> colorAttachments, const RHI::DepthStencilAttachment &depthStencilAttachment);
     void EndRenderPass();
 
     Span<RHI::Format> GetCurrentRenderPassColorFormats() const { assert(isInRenderPass_); return currentPassColorFormats_; }
@@ -163,8 +152,8 @@ public:
     void BindComputeGroups(Span<RC<BindingGroup>> groups);
     void BindRayTracingGroups(Span<RC<BindingGroup>> groups);
     
-    void SetViewports(Span<Viewport> viewports);
-    void SetScissors(Span<Scissor> scissors);
+    void SetViewports(Span<RHI::Viewport> viewports);
+    void SetScissors(Span<RHI::Scissor> scissors);
 
     void SetVertexBuffer(int slot, const RC<SubBuffer> &buffer, size_t stride);
     void SetVertexBuffers(int slot, Span<RC<SubBuffer>> buffers, Span<size_t> strides);

@@ -11,7 +11,7 @@ RTRC_BEGIN
 
 void GenerateT(
     const AtmosphereProperties &atmosphere,
-    RG::TextureResource        *T)
+    RGTexture                   T)
 {
     using Shader = RtrcShader::Builtin::Atmosphere::GenerateTransmittanceLut;
 
@@ -20,7 +20,7 @@ void GenerateT(
     passData.TransmittanceTextureRW           = T;
     passData.TransmittanceTextureRW.writeOnly = true;
     passData.atmosphere                       = atmosphere;
-    RG::DispatchWithThreadCount(
+    DispatchWithThreadCount(
         T->GetGraph(),
         Shader::Name,
         T->GetGraph()->GetDevice()->GetShader<Shader::Name>(),
@@ -31,8 +31,8 @@ void GenerateT(
 void GenerateM(
     Ref<ResourceManager>        resources,
     const AtmosphereProperties &atmosphere,
-    RG::TextureResource        *T,
-    RG::TextureResource        *M,
+    RGTexture                   T,
+    RGTexture                   M,
     uint32_t                    distSamples)
 {
     using Shader = RtrcShader::Builtin::Atmosphere::GenerateMultiScatterLut;
@@ -57,9 +57,9 @@ void GenerateM(
 
 void GenerateS(
     const AtmosphereProperties &atmosphere,
-    RG::TextureResource        *T,
-    RG::TextureResource        *M,
-    RG::TextureResource        *S,
+    RGTexture                   T,
+    RGTexture                   M,
+    RGTexture                   S,
     const Vector3f&             sunDir,
     const Vector3f&             sunColor,
     float                       eyeAltitude,

@@ -27,7 +27,7 @@ namespace BindingGroupDSL
 
     class MemberProxy_Texture2D
     {
-        Variant<TextureSrv, RG::TextureResourceSrv> data_;
+        Variant<TextureSrv, RGTexSrv> data_;
 
     public:
 
@@ -37,12 +37,12 @@ namespace BindingGroupDSL
         {
             return data_.Match(
                 [&](const TextureSrv &v) { return v; },
-                [&](const RG::TextureResourceSrv &v) { return v.GetSrv(); });
+                [&](const RGTexSrv &v) { return v.GetSrv(); });
         }
 
-        void DeclareRenderGraphResourceUsage(RG::Pass *pass, RHI::PipelineStageFlag stages) const
+        void DeclareRenderGraphResourceUsage(RGPass pass, RHI::PipelineStageFlag stages) const
         {
-            if(auto d = data_.AsIf<RG::TextureResourceSrv>())
+            if(auto d = data_.AsIf<RGTexSrv>())
             {
                 d->ForEachSubresourceAccess(
                     [&](
@@ -53,7 +53,7 @@ namespace BindingGroupDSL
                         pass->Use(
                             d->GetResource(),
                             subrsc,
-                            RG::UseInfo
+                            RGUseInfo
                             {
                                 .layout = layout,
                                 .stages = stages,
@@ -74,13 +74,13 @@ namespace BindingGroupDSL
             return *this = tex->GetSrv(0, 0, 0);
         }
 
-        auto &operator=(const RG::TextureResourceSrv &srv)
+        auto &operator=(const RGTexSrv &srv)
         {
             data_ = srv;
             return *this;
         }
 
-        auto &operator=(RG::TextureResource *tex)
+        auto &operator=(RGTexImpl *tex)
         {
             return *this = tex->GetSrv();
         }
@@ -88,7 +88,7 @@ namespace BindingGroupDSL
     
     class MemberProxy_RWTexture2D
     {
-        Variant<TextureUav, RG::TextureResourceUav> data_;
+        Variant<TextureUav, RGTexUav> data_;
 
     public:
 
@@ -100,12 +100,12 @@ namespace BindingGroupDSL
         {
             return data_.Match(
                 [&](const TextureUav &v) { return v; },
-                [&](const RG::TextureResourceUav &v) { return v.GetUav(); });
+                [&](const RGTexUav &v) { return v.GetUav(); });
         }
 
-        void DeclareRenderGraphResourceUsage(RG::Pass *pass, RHI::PipelineStageFlag stages) const
+        void DeclareRenderGraphResourceUsage(RGPassImpl *pass, RHI::PipelineStageFlag stages) const
         {
-            if(auto d = data_.AsIf<RG::TextureResourceUav>())
+            if(auto d = data_.AsIf<RGTexUav>())
             {
                 d->ForEachSubresourceAccess(
                     [&](
@@ -116,7 +116,7 @@ namespace BindingGroupDSL
                         pass->Use(
                             d->GetResource(),
                             subrsc,
-                            RG::UseInfo
+                            RGUseInfo
                             {
                                 .layout = layout,
                                 .stages = stages,
@@ -137,13 +137,13 @@ namespace BindingGroupDSL
             return *this = tex->GetUav(0, 0);
         }
 
-        auto &operator=(const RG::TextureResourceUav &v)
+        auto &operator=(const RGTexUav &v)
         {
             data_ = v;
             return *this;
         }
 
-        auto &operator=(RG::TextureResource *tex)
+        auto &operator=(RGTexImpl *tex)
         {
             return *this = tex->GetUav();
         }
@@ -160,7 +160,7 @@ namespace BindingGroupDSL
     
     class MemberProxy_Buffer
     {
-        Variant<BufferSrv, RG::BufferResourceSrv> data_;
+        Variant<BufferSrv, RGBufSrv> data_;
 
     public:
 
@@ -170,14 +170,14 @@ namespace BindingGroupDSL
         {
             return data_.Match(
                 [&](const BufferSrv &v) { return v; },
-                [&](const RG::BufferResourceSrv &v) { return v.GetSrv(); });
+                [&](const RGBufSrv &v) { return v.GetSrv(); });
         }
 
-        void DeclareRenderGraphResourceUsage(RG::Pass *pass, RHI::PipelineStageFlag stages) const
+        void DeclareRenderGraphResourceUsage(RGPassImpl *pass, RHI::PipelineStageFlag stages) const
         {
-            if(auto d = data_.AsIf<RG::BufferResourceSrv>())
+            if(auto d = data_.AsIf<RGBufSrv>())
             {
-                pass->Use(d->GetResource(), RG::UseInfo
+                pass->Use(d->GetResource(), RGUseInfo
                     {
                         .layout = RHI::TextureLayout::Undefined,
                         .stages = stages,
@@ -198,13 +198,13 @@ namespace BindingGroupDSL
             return *this = buffer->GetTexelSrv();
         }
 
-        auto &operator=(const RG::BufferResourceSrv &v)
+        auto &operator=(const RGBufSrv &v)
         {
             data_ = v;
             return *this;
         }
 
-        auto &operator=(RG::BufferResource *buffer)
+        auto &operator=(RGBufImpl *buffer)
         {
             return *this = buffer->GetTexelSrv();
         }
@@ -222,14 +222,14 @@ namespace BindingGroupDSL
         {
             return data_.Match(
                 [&](const BufferUav &v) { return v; },
-                [&](const RG::BufferResourceUav &v) { return v.GetUav(); });
+                [&](const RGBufUav &v) { return v.GetUav(); });
         }
 
-        void DeclareRenderGraphResourceUsage(RG::Pass *pass, RHI::PipelineStageFlag stages) const
+        void DeclareRenderGraphResourceUsage(RGPassImpl *pass, RHI::PipelineStageFlag stages) const
         {
-            if(auto d = data_.AsIf<RG::BufferResourceUav>())
+            if(auto d = data_.AsIf<RGBufUav>())
             {
-                pass->Use(d->GetResource(), RG::UseInfo
+                pass->Use(d->GetResource(), RGUseInfo
                     {
                         .layout = RHI::TextureLayout::Undefined,
                         .stages = stages,
@@ -250,25 +250,25 @@ namespace BindingGroupDSL
             return *this = buffer->GetTexelUav();
         }
 
-        auto &operator=(const RG::BufferResourceUav &v)
+        auto &operator=(const RGBufUav &v)
         {
             data_ = v;
             return *this;
         }
 
-        auto &operator=(RG::BufferResource *buffer)
+        auto &operator=(RGBufImpl *buffer)
         {
             return *this = buffer->GetTexelUav();
         }
 
     private:
 
-        Variant<BufferUav, RG::BufferResourceUav> data_;
+        Variant<BufferUav, RGBufUav> data_;
     };
     
     class MemberProxy_StructuredBuffer
     {
-        Variant<BufferSrv, RG::BufferResourceSrv> data_;
+        Variant<BufferSrv, RGBufSrv> data_;
 
     public:
 
@@ -278,14 +278,14 @@ namespace BindingGroupDSL
         {
             return data_.Match(
                 [&](const BufferSrv &v) { return v; },
-                [&](const RG::BufferResourceSrv &v) { return v.GetSrv(); });
+                [&](const RGBufSrv &v) { return v.GetSrv(); });
         }
 
-        void DeclareRenderGraphResourceUsage(RG::Pass *pass, RHI::PipelineStageFlag stages) const
+        void DeclareRenderGraphResourceUsage(RGPassImpl *pass, RHI::PipelineStageFlag stages) const
         {
-            if(auto d = data_.AsIf<RG::BufferResourceSrv>())
+            if(auto d = data_.AsIf<RGBufSrv>())
             {
-                pass->Use(d->GetResource(), RG::UseInfo
+                pass->Use(d->GetResource(), RGUseInfo
                     {
                         .layout = RHI::TextureLayout::Undefined,
                         .stages = stages,
@@ -306,13 +306,13 @@ namespace BindingGroupDSL
             return *this = buffer->GetStructuredSrv();
         }
 
-        auto &operator=(const RG::BufferResourceSrv &v)
+        auto &operator=(const RGBufSrv &v)
         {
             data_ = v;
             return *this;
         }
 
-        auto &operator=(RG::BufferResource *buffer)
+        auto &operator=(RGBufImpl *buffer)
         {
             return *this = buffer->GetStructuredSrv();
         }
@@ -330,14 +330,14 @@ namespace BindingGroupDSL
         {
             return data_.Match(
                 [&](const BufferUav &v) { return v; },
-                [&](const RG::BufferResourceUav &v) { return v.GetUav(); });
+                [&](const RGBufUav &v) { return v.GetUav(); });
         }
 
-        void DeclareRenderGraphResourceUsage(RG::Pass *pass, RHI::PipelineStageFlag stages) const
+        void DeclareRenderGraphResourceUsage(RGPassImpl *pass, RHI::PipelineStageFlag stages) const
         {
-            if(auto d = data_.AsIf<RG::BufferResourceUav>())
+            if(auto d = data_.AsIf<RGBufUav>())
             {
-                pass->Use(d->GetResource(), RG::UseInfo
+                pass->Use(d->GetResource(), RGUseInfo
                     {
                         .layout = RHI::TextureLayout::Undefined,
                         .stages = stages,
@@ -358,20 +358,20 @@ namespace BindingGroupDSL
             return *this = buffer->GetStructuredUav();
         }
 
-        auto &operator=(const RG::BufferResourceUav &v)
+        auto &operator=(const RGBufUav &v)
         {
             data_ = v;
             return *this;
         }
 
-        auto &operator=(RG::BufferResource *buffer)
+        auto &operator=(RGBufImpl *buffer)
         {
             return *this = buffer->GetStructuredUav();
         }
 
     private:
 
-        Variant<BufferUav, RG::BufferResourceUav> data_;
+        Variant<BufferUav, RGBufUav> data_;
     };
 
     template<typename T>
@@ -437,7 +437,7 @@ namespace BindingGroupDSL
 
     class MemberProxy_RaytracingAccelerationStructure
     {
-        Variant<RC<Tlas>, RG::TlasResource *> data_;
+        Variant<RC<Tlas>, RGTlasImpl *> data_;
 
     public:
 
@@ -447,15 +447,15 @@ namespace BindingGroupDSL
         {
             return data_.Match(
                 [&](const RC<Tlas> &t) { return t; },
-                [&](RG::TlasResource *t) { return t->Get(); });
+                [&](RGTlasImpl *t) { return t->Get(); });
         }
 
-        void DeclareRenderGraphResourceUsage(RG::Pass *pass, RHI::PipelineStageFlag stages) const
+        void DeclareRenderGraphResourceUsage(RGPassImpl *pass, RHI::PipelineStageFlag stages) const
         {
-            if(auto d = data_.AsIf<RG::TlasResource*>())
+            if(auto d = data_.AsIf<RGTlasImpl*>())
             {
                 auto buffer = (*d)->GetInternalBuffer();
-                pass->Use(buffer, RG::UseInfo
+                pass->Use(buffer, RGUseInfo
                     {
                         .layout = RHI::TextureLayout::Undefined,
                         .stages = stages,
@@ -470,7 +470,7 @@ namespace BindingGroupDSL
             return *this;
         }
 
-        auto &operator=(RG::TlasResource *tlas)
+        auto &operator=(RGTlasImpl *tlas)
         {
             data_ = tlas;
             return *this;
@@ -808,7 +808,7 @@ const BindingGroupLayout::Desc &GetBindingGroupLayoutDesc()
 }
 
 template<BindingGroupDSL::RtrcGroupStruct T>
-void DeclareRenderGraphResourceUses(RG::Pass *pass, const T &value, RHI::PipelineStageFlag stages)
+void DeclareRenderGraphResourceUses(RGPassImpl *pass, const T &value, RHI::PipelineStageFlag stages)
 {
     BindingGroupDSL::ForEachFlattenMember<T>(
         [&]<bool IsUniform, typename M, typename A>
