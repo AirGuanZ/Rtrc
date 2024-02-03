@@ -96,7 +96,7 @@ void Run()
         auto graph = device->CreateRenderGraph();
         auto renderTarget = graph->RegisterSwapchainTexture(device->GetSwapchain());
 
-        AddRenderPass(
+        RGAddRenderPass(
             graph, "DrawQuad", RGColorAttachment
             {
                 .rtv        = renderTarget->GetRtv(),

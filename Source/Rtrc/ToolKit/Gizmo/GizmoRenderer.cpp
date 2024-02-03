@@ -51,10 +51,10 @@ void GizmoRenderer::AddRenderPass(
     auto pass = renderGraph->CreatePass("RenderGizmo");
     pass->Use(framebuffer, RG::ColorAttachmentWriteOnly);
     if(depthBuffer)
+    {
         pass->Use(depthBuffer, RG::DepthStencilAttachment);
-    pass->SetCallback([
-        lv = std::move(lineVertices), tv = std::move(triangleVertices), this,
-        framebuffer, depthBuffer, worldToClip, reverseZ, rcpGamma]
+    }
+    pass->SetCallback([=, this, lv = std::move(lineVertices), tv = std::move(triangleVertices)]
     {
         auto &cmds = RGGetCommandBuffer();
         if(depthBuffer)
@@ -123,19 +123,19 @@ void GizmoRenderer::RenderImpl(
     const static auto meshLayout = RTRC_MESH_LAYOUT(Buffer(Attribute("POSITION", 0, Float3),
                                                            Attribute("COLOR", 0, Float3)));
 
-    auto depthStencilState = RTRC_DEPTH_STENCIL_STATE
+    const auto depthStencilState = RTRC_DEPTH_STENCIL_STATE
     {
         .enableDepthTest  = depthFormat != RHI::Format::Unknown,
         .enableDepthWrite = true,
         .depthCompareOp   = reverseZ ? RHI::CompareOp::GreaterEqual : RHI::CompareOp::LessEqual
     };
 
-    auto rasterizerState = RTRC_RASTERIZER_STATE
+    const auto rasterizerState = RTRC_RASTERIZER_STATE
     {
         .primitiveTopology = isLine ? RHI::PrimitiveTopology::LineList : RHI::PrimitiveTopology::TriangleList
     };
 
-    auto attachmentState = RTRC_ATTACHMENT_STATE
+    const auto attachmentState = RTRC_ATTACHMENT_STATE
     {
         .colorAttachmentFormats = { colorFormats.begin(), colorFormats.end() },
         .depthStencilFormat     = depthFormat

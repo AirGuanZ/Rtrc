@@ -1,6 +1,5 @@
 #pragma once
 
-#include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/ToolKit/Resource/ResourceManager.h>
 
 RTRC_BEGIN

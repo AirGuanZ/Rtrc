@@ -72,7 +72,7 @@ Image<Vector2f> DFDM::GenerateCorrectionMap(const Image<Vector3f> &displacementM
     auto correctionB = graph->CreateTexture(correctionA->GetDesc());
     auto rgCorrectionMap = graph->RegisterTexture(correctionMap);
 
-    ClearRWTexture2D(graph, "Clear correction texture", correctionA, Vector4f(0, 0, 0, 0));
+    RGClearRWTexture2D(graph, "Clear correction texture", correctionA, Vector4f(0, 0, 0, 0));
     
     for(int i = 0; i < iterationCount_; ++i)
     {
@@ -91,13 +91,13 @@ Image<Vector2f> DFDM::GenerateCorrectionMap(const Image<Vector3f> &displacementM
         passData.areaPreservation = areaPreservation_;
         passData.iteration        = i;
 
-        DispatchWithThreadCount(
+        RGDispatchWithThreadCount(
             graph, fmt::format("Optimize iteration {}", i), shader, input->GetSize(), passData);
 
         std::swap(correctionA, correctionB);
     }
 
-    CopyColorTexture(graph, "CopyToFinalCorrectionMap", correctionA, rgCorrectionMap);
+    RGCopyColorTexture(graph, "CopyToFinalCorrectionMap", correctionA, rgCorrectionMap);
 
     graphExecuter.Execute(graph);
 

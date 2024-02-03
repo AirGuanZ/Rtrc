@@ -42,7 +42,7 @@ void ResourceManager::LoadBuiltinTextures()
 
 void ResourceManager::GeneratePoissonDiskSamples()
 {
-    auto data = Rtrc::GeneratePoissonDiskSamples<Vector2f>(2048, 42);
+    const auto data = Rtrc::GeneratePoissonDiskSamples<Vector2f>(2048, 42);
     poissonDiskSamples2048_ = device_->CreateAndUploadBuffer(RHI::BufferDesc
     {
         .size = sizeof(Vector2f) * 2048,

@@ -8,6 +8,7 @@
 #include <Rtrc/ToolKit/DFDM/DFDM.h>
 #include <Rtrc/ToolKit/Gizmo/GizmoRenderer.h>
 #include <Rtrc/ToolKit/IndirectArg/PrepareThreadGroupCountForIndirectDispatch.h>
+#include <Rtrc/ToolKit/Mesh/UniformGrid.h>
 #include <Rtrc/ToolKit/PcgState/PcgStateTexture.h>
 #include <Rtrc/ToolKit/Resource/BindlessResourceManager.h>
 #include <Rtrc/ToolKit/Resource/ResourceManager.h>

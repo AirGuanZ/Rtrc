@@ -47,7 +47,7 @@ namespace ShaderParserDetail
         ShaderParserDetail::ForEachKeywordCombinationHelper(allKeywords, values, func);
     }
 
-    void ParseEntries(const std::string &source, const std::string sourceWithoutString, ParsedShaderVariant &variant)
+    void ParseEntries(const std::string &source, const std::string &sourceWithoutString, ParsedShaderVariant &variant)
     {
         size_t beginPos = 0;
         while(true)
@@ -346,9 +346,9 @@ std::vector<ShaderKeywordValue> ExtractKeywordValues(Span<ShaderKeyword> keyword
 }
 
 std::string ReadShaderSource(
-    std::string_view fileContent,
-    std::string      fileContentWithoutComments,
-    std::string_view shaderName)
+    std::string_view   fileContent,
+    const std::string &fileContentWithoutComments,
+    std::string_view   shaderName)
 {
     const std::string key = fmt::format("rtrc_shader(\"{}\")", shaderName);
     const size_t p = fileContentWithoutComments.find(key);
@@ -395,7 +395,7 @@ ParsedShader ParseShader(
     const DXC                      *dxc,
     std::string                     source,
     std::string                     shaderName,
-    std::string                     filename)
+    const std::string              &filename)
 {
     source = "_rtrc_generated_shader_prefix " + source;
     

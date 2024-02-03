@@ -3,19 +3,20 @@
 RTRC_BEGIN
 
 /**
- * ClearTexture
- * ClearRWBuffer
- * ClearRWStructuredBuffer
- * CopyBuffer
- * CopyColorTexture
- * ClearRWTexture2D
- * BlitTexture
- * DispatchWithThreadGroupCount
- * DispatchWithThreadCount
- * DispatchIndirect
+ * RGClearTexture
+ * RGClearRWBuffer
+ * RGClearRWStructuredBuffer
+ * RGCopyBuffer
+ * RGCopyColorTexture
+ * RGClearRWTexture2D
+ * RGBlitTexture
+ * RGDispatchWithThreadGroupCount
+ * RGDispatchWithThreadCount
+ * RGDispatchIndirect
+ * RGAddRenderPass
  */
 
-inline RGPass ClearTexture(
+inline RGPass RGClearTexture(
     GraphRef    graph,
     std::string name,
     RGTexture   tex,
@@ -30,7 +31,7 @@ inline RGPass ClearTexture(
     return pass;
 }
 
-inline RGPass ClearRWBuffer(
+inline RGPass RGClearRWBuffer(
     GraphRef    graph,
     std::string name,
     RGBuffer    buffer,
@@ -46,7 +47,7 @@ inline RGPass ClearRWBuffer(
     return pass;
 }
 
-inline RGPass ClearRWStructuredBuffer(
+inline RGPass RGClearRWStructuredBuffer(
     GraphRef    graph,
     std::string name,
     RGBuffer    buffer,
@@ -62,7 +63,7 @@ inline RGPass ClearRWStructuredBuffer(
     return pass;
 }
 
-inline RGPass CopyBuffer(
+inline RGPass RGCopyBuffer(
     GraphRef    graph,
     std::string name,
     RGBuffer    src,
@@ -81,27 +82,27 @@ inline RGPass CopyBuffer(
     return pass;
 }
 
-inline RGPass CopyBuffer(
+inline RGPass RGCopyBuffer(
     GraphRef    graph,
     std::string name,
     RGBuffer    src,
     RGBuffer    dst,
     size_t      size)
 {
-    return CopyBuffer(graph, std::move(name), src, 0, dst, 0, size);
+    return RGCopyBuffer(graph, std::move(name), src, 0, dst, 0, size);
 }
 
-inline RGPass CopyBuffer(
+inline RGPass RGCopyBuffer(
     GraphRef    graph,
     std::string name,
     RGBuffer    src,
     RGBuffer    dst)
 {
     assert(src->GetSize() == dst->GetSize());
-    return CopyBuffer(graph, std::move(name), src, dst, src->GetSize());
+    return RGCopyBuffer(graph, std::move(name), src, dst, src->GetSize());
 }
 
-inline RGPass CopyColorTexture(
+inline RGPass RGCopyColorTexture(
     GraphRef          graph,
     std::string       name,
     RGTexture         src,
@@ -151,17 +152,17 @@ inline RGPass CopyColorTexture(
     return pass;
 }
 
-inline RGPass CopyColorTexture(
+inline RGPass RGCopyColorTexture(
     GraphRef          graph,
     std::string       name,
     RGTexture         src,
     RGTexture         dst,
     const TexSubrscs &subrscs)
 {
-    return CopyColorTexture(graph, std::move(name), src, subrscs, dst, subrscs);
+    return RGCopyColorTexture(graph, std::move(name), src, subrscs, dst, subrscs);
 }
 
-inline RGPass CopyColorTexture(
+inline RGPass RGCopyColorTexture(
     GraphRef    graph,
     std::string name,
     RGTexture   src,
@@ -170,7 +171,7 @@ inline RGPass CopyColorTexture(
     assert(src->GetArraySize() == dst->GetArraySize());
     assert(src->GetMipLevels() == dst->GetMipLevels());
     assert(src->GetSize() == dst->GetSize());
-    return CopyColorTexture(graph, std::move(name), src, dst, TexSubrscs
+    return RGCopyColorTexture(graph, std::move(name), src, dst, TexSubrscs
                             {
                                 .mipLevel = 0,
                                 .levelCount = src->GetMipLevels(),
@@ -179,7 +180,7 @@ inline RGPass CopyColorTexture(
                             });
 }
 
-inline RGPass ClearRWTexture2D(
+inline RGPass RGClearRWTexture2D(
     GraphRef        graph,
     std::string     name,
     RGTexture       tex2D,
@@ -195,7 +196,7 @@ inline RGPass ClearRWTexture2D(
     return pass;
 }
 
-inline RGPass ClearRWTexture2D(
+inline RGPass RGClearRWTexture2D(
     GraphRef        graph,
     std::string     name,
     RGTexture       tex2D,
@@ -211,7 +212,7 @@ inline RGPass ClearRWTexture2D(
     return pass;
 }
 
-inline RGPass ClearRWTexture2D(
+inline RGPass RGClearRWTexture2D(
     GraphRef        graph,
     std::string     name,
     RGTexture       tex2D,
@@ -227,7 +228,7 @@ inline RGPass ClearRWTexture2D(
     return pass;
 }
 
-inline RGPass BlitTexture(
+inline RGPass RGBlitTexture(
     GraphRef         graph,
     std::string      name,
     RGTexture        src,
@@ -252,7 +253,7 @@ inline RGPass BlitTexture(
     return pass;
 }
 
-inline RGPass BlitTexture(
+inline RGPass RGBlitTexture(
     GraphRef    graph,
     std::string name,
     RGTexture   src,
@@ -264,11 +265,11 @@ inline RGPass BlitTexture(
     assert(src->GetMipLevels() == 1);
     assert(dst->GetArraySize() == 1);
     assert(dst->GetMipLevels() == 1);
-    return BlitTexture(graph, std::move(name), src, { 0, 0 }, dst, { 0, 0 }, usePointSampling, gamma);
+    return RGBlitTexture(graph, std::move(name), src, { 0, 0 }, dst, { 0, 0 }, usePointSampling, gamma);
 }
 
 template<RGBindingGroupInput...Ts>
-RGPass DispatchWithThreadGroupCount(
+RGPass RGDispatchWithThreadGroupCount(
     GraphRef        graph,
     std::string     name,
     RC<Shader>      shader,
@@ -311,17 +312,17 @@ RGPass DispatchWithThreadGroupCount(
 }
 
 template<RGStaticShader S, RGBindingGroupInput...Ts>
-RGPass DispatchWithThreadGroupCount(
+RGPass RGDispatchWithThreadGroupCount(
     GraphRef        graph,
     const Vector3i &threadGroupCount,
     const Ts&...    bindingGroups)
 {
-    return DispatchWithThreadGroupCount(
+    return RGDispatchWithThreadGroupCount(
         graph, S::Name, graph->GetDevice()->GetShader<S::Name>(), threadGroupCount, bindingGroups...);
 }
 
 template<RGBindingGroupInput...Ts>
-RGPass DispatchWithThreadCount(
+RGPass RGDispatchWithThreadCount(
     GraphRef        graph,
     std::string     name,
     RC<Shader>      shader,
@@ -329,21 +330,21 @@ RGPass DispatchWithThreadCount(
     const Ts&...    bindingGroups)
 {
     const Vector3i groupCount = shader->ComputeThreadGroupCount(threadCount);
-    return DispatchWithThreadGroupCount(graph, std::move(name), std::move(shader), groupCount, bindingGroups...);
+    return RGDispatchWithThreadGroupCount(graph, std::move(name), std::move(shader), groupCount, bindingGroups...);
 }
 
 template<RGStaticShader S, RGBindingGroupInput...Ts>
-RGPass DispatchWithThreadCount(
+RGPass RGDispatchWithThreadCount(
     GraphRef        graph,
     const Vector3i &threadCount,
     const Ts&...    bindingGroups)
 {
-    return DispatchWithThreadCount(
+    return RGDispatchWithThreadCount(
         graph, S::Name, graph->GetDevice()->GetShader<S::Name>(), threadCount, bindingGroups...);
 }
 
 template<RGBindingGroupInput...Ts>
-RGPass DispatchIndirect(
+RGPass RGDispatchIndirect(
     GraphRef       graph,
     std::string    name,
     RC<Shader>     shader,
@@ -389,56 +390,56 @@ RGPass DispatchIndirect(
 }
 
 template<RGStaticShader S, RGBindingGroupInput...Ts>
-RGPass DispatchIndirect(
+RGPass RGDispatchIndirect(
     GraphRef     graph,
     RGBuffer     indirectBuffer,
     size_t       indirectBufferOffset,
     const Ts&... bindingGroups)
 {
-    return DispatchIndirect(
+    return RGDispatchIndirect(
         graph, S::Name, graph->GetDevice()->GetShader<S::Name>(),
         indirectBuffer, indirectBufferOffset, bindingGroups...);
 }
 
 #define DEFINE_DISPATCH(EXPR, ...)                                                  \
     template<RGBindingGroupInput...Ts>                                              \
-    RGPass DispatchWithThreadGroupCount(                                            \
+    RGPass RGDispatchWithThreadGroupCount(                                          \
         GraphRef  graph,                                                            \
         std::string     name,                                                       \
         RC<Shader>      shader,                                                     \
         __VA_ARGS__,                                                                \
         const Ts&...    bindingGroups)                                              \
         {                                                                           \
-            return DispatchWithThreadGroupCount(                                    \
+            return RGDispatchWithThreadGroupCount(                                  \
                 graph, std::move(name), std::move(shader), EXPR, bindingGroups...); \
         }                                                                           \
     template<RGBindingGroupInput...Ts>                                              \
-    RGPass DispatchWithThreadCount(                                                 \
+    RGPass RGDispatchWithThreadCount(                                               \
         GraphRef  graph,                                                            \
         std::string     name,                                                       \
         RC<Shader>      shader,                                                     \
         __VA_ARGS__,                                                                \
         const Ts&...    bindingGroups)                                              \
         {                                                                           \
-            return DispatchWithThreadCount(                                         \
+            return RGDispatchWithThreadCount(                                       \
                 graph, std::move(name), std::move(shader), EXPR, bindingGroups...); \
         }                                                                           \
     template<RGStaticShader S, RGBindingGroupInput...Ts>                            \
-    RGPass DispatchWithThreadGroupCount(                                            \
+    RGPass RGDispatchWithThreadGroupCount(                                          \
         GraphRef  graph,                                                            \
         __VA_ARGS__,                                                                \
         const Ts&...    bindingGroups)                                              \
         {                                                                           \
-            return DispatchWithThreadGroupCount<S>(                                 \
+            return RGDispatchWithThreadGroupCount<S>(                               \
                 graph, EXPR, bindingGroups...);                                     \
         }                                                                           \
     template<RGStaticShader S, RGBindingGroupInput...Ts>                            \
-    RGPass DispatchWithThreadCount(                                                 \
+    RGPass RGDispatchWithThreadCount(                                               \
         GraphRef  graph,                                                            \
         __VA_ARGS__,                                                                \
         const Ts&...    bindingGroups)                                              \
         {                                                                           \
-            return DispatchWithThreadCount<S>(                                      \
+            return RGDispatchWithThreadCount<S>(                                    \
                 graph, EXPR, bindingGroups...);                                     \
         }
 
@@ -470,7 +471,7 @@ struct RGDepthStencilAttachment
 };
 
 template<typename Callback>
-RGPass AddRenderPass(
+RGPass RGAddRenderPass(
     GraphRef                 graph,
     std::string              name,
     Span<RGColorAttachment>  colorAttachments,
@@ -532,23 +533,23 @@ RGPass AddRenderPass(
 }
 
 template<typename Callback>
-RGPass AddRenderPass(
-    GraphRef                 graph,
-    std::string              name,
-    Span<RGColorAttachment>  colorAttachments,
-    Callback                 callback)
+RGPass RGAddRenderPass(
+    GraphRef                graph,
+    std::string             name,
+    Span<RGColorAttachment> colorAttachments,
+    Callback                callback)
 {
-    return AddRenderPass(graph, std::move(name), colorAttachments, RGDepthStencilAttachment{}, std::move(callback));
+    return RGAddRenderPass(graph, std::move(name), colorAttachments, RGDepthStencilAttachment{}, std::move(callback));
 }
 
 template<typename Callback>
-RGPass AddRenderPass(
+RGPass RGAddRenderPass(
     GraphRef                 graph,
     std::string              name,
     RGDepthStencilAttachment depthStencilAttachment,
     Callback                 callback)
 {
-    return AddRenderPass(graph, std::move(name), {}, std::move(depthStencilAttachment), std::move(callback));
+    return RGAddRenderPass(graph, std::move(name), {}, std::move(depthStencilAttachment), std::move(callback));
 }
 
 RTRC_END

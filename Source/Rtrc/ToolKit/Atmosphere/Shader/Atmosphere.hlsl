@@ -46,7 +46,6 @@ namespace Atmosphere
         float mie = (properties.scatterMie + properties.absorbMie) * exp(-h / properties.hDensityMie);
         float3 ozone = properties.absorbOzone * max(0.0f, 1 - 0.5 * abs(h - properties.ozoneCenterHeight) / properties.ozoneThickness);
         return rayleigh + mie + ozone;
-        return 0;
     }
 
     void GetSigmaST(Properties properties, float h, out float3 sigmaS, out float3 sigmaT)

@@ -676,7 +676,7 @@ RC<Buffer> Device::CreateAndUploadStructuredBuffer(RHI::BufferUsageFlag usages, 
         {
             .size = data.GetSize() * sizeof(T),
             .usage = usages
-        });
+        }, data.GetData());
     buffer->SetDefaultStructStride(sizeof(T));
     return buffer;
 }

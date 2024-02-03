@@ -197,7 +197,7 @@ void Run()
                 {});
         });
 
-        BlitTexture(graph, "BlitToSwapchainImage", renderTarget, swapchainImage, true);
+        RGBlitTexture(graph, "BlitToSwapchainImage", renderTarget, swapchainImage, true);
 
         graph->SetCompleteFence(device->GetFrameFence());
         executer.Execute(graph);

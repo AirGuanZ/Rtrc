@@ -20,7 +20,7 @@ void GenerateT(
     passData.TransmittanceTextureRW           = T;
     passData.TransmittanceTextureRW.writeOnly = true;
     passData.atmosphere                       = atmosphere;
-    DispatchWithThreadCount(
+    RGDispatchWithThreadCount(
         T->GetGraph(),
         Shader::Name,
         T->GetGraph()->GetDevice()->GetShader<Shader::Name>(),
@@ -47,7 +47,7 @@ void GenerateM(
     passData.rayMarchStepCount               = distSamples;
     passData.atmosphere                      = atmosphere;
 
-    DispatchWithThreadCount(
+    RGDispatchWithThreadCount(
         M->GetGraph(),
         Shader::Name,
         T->GetGraph()->GetDevice()->GetShader<Shader::Name>(),
@@ -83,7 +83,7 @@ void GenerateS(
     skyPassData.sunDirection              = sunDir;
     skyPassData.sunIntensity              = sunColor;
 
-    DispatchWithThreadCount(
+    RGDispatchWithThreadCount(
         S->GetGraph(),
         Shader::Name,
         T->GetGraph()->GetDevice()->GetShader<Shader::Name>(),
