@@ -371,7 +371,7 @@ D3D12_STATIC_SAMPLER_DESC TranslateStaticSamplerDesc(const SamplerDesc &desc, D3
     return ret;
 }
 
-D3D12_BARRIER_SYNC TranslateBarrierSync(PipelineStageFlag stages)
+D3D12_BARRIER_SYNC TranslateBarrierSync(PipelineStageFlag stages, Format format)
 {
     constexpr D3D12_BARRIER_SYNC syncs[] =
     {
@@ -391,12 +391,43 @@ D3D12_BARRIER_SYNC TranslateBarrierSync(PipelineStageFlag stages)
         D3D12_BARRIER_SYNC_EXECUTE_INDIRECT,                        // IndirectCommand
         D3D12_BARRIER_SYNC_ALL                                      // All
     };
-    D3D12_BARRIER_SYNC ret = D3D12_BARRIER_SYNC_NONE;
-    for(size_t i = 0; i < GetArraySize(syncs); ++i)
+    constexpr D3D12_BARRIER_SYNC syncsForDepthStencil[] =
     {
-        if(stages.Contains(1 << i))
+        D3D12_BARRIER_SYNC_INDEX_INPUT,                             // VertexInput
+        D3D12_BARRIER_SYNC_VERTEX_SHADING,                          // IndexInput
+        D3D12_BARRIER_SYNC_VERTEX_SHADING,                          // VertexShader
+        D3D12_BARRIER_SYNC_PIXEL_SHADING,                           // FragmentShader
+        D3D12_BARRIER_SYNC_COMPUTE_SHADING,                         // ComputeShader
+        D3D12_BARRIER_SYNC_RAYTRACING,                              // RayTracingShader
+        D3D12_BARRIER_SYNC_DEPTH_STENCIL,                           // DepthStencil
+        D3D12_BARRIER_SYNC_RENDER_TARGET,                           // RenderTarget
+        D3D12_BARRIER_SYNC_COPY,                                    // Copy
+        D3D12_BARRIER_SYNC_DEPTH_STENCIL,                           // Clear
+        D3D12_BARRIER_SYNC_RESOLVE,                                 // Resolve
+        D3D12_BARRIER_SYNC_BUILD_RAYTRACING_ACCELERATION_STRUCTURE, // BuildAS
+        D3D12_BARRIER_SYNC_COPY_RAYTRACING_ACCELERATION_STRUCTURE,  // CopyAS
+        D3D12_BARRIER_SYNC_EXECUTE_INDIRECT,                        // IndirectCommand
+        D3D12_BARRIER_SYNC_ALL                                      // All
+    };
+    D3D12_BARRIER_SYNC ret = D3D12_BARRIER_SYNC_NONE;
+    if(HasDepthAspect(format))
+    {
+        for(size_t i = 0; i < GetArraySize(syncsForDepthStencil); ++i)
         {
-            ret |= syncs[i];
+            if(stages.Contains(1 << i))
+            {
+                ret |= syncsForDepthStencil[i];
+            }
+        }
+    }
+    else
+    {
+        for(size_t i = 0; i < GetArraySize(syncs); ++i)
+        {
+            if(stages.Contains(1 << i))
+            {
+                ret |= syncs[i];
+            }
         }
     }
     return ret;
@@ -426,7 +457,8 @@ D3D12_BARRIER_ACCESS TranslateBarrierAccess(ResourceAccessFlag accesses)
         D3D12_BARRIER_ACCESS_COPY_DEST,                               // CopyWrite
         D3D12_BARRIER_ACCESS_RESOLVE_SOURCE,                          // ResolveRead
         D3D12_BARRIER_ACCESS_RESOLVE_DEST,                            // ResolveWrite
-        D3D12_BARRIER_ACCESS_RENDER_TARGET,                           // ClearWrite
+        D3D12_BARRIER_ACCESS_RENDER_TARGET,                           // ClearColorWrite
+        D3D12_BARRIER_ACCESS_DEPTH_STENCIL_WRITE,                     // ClearDepthStencilWrite
         D3D12_BARRIER_ACCESS_RAYTRACING_ACCELERATION_STRUCTURE_READ,  // ReadAS
         D3D12_BARRIER_ACCESS_RAYTRACING_ACCELERATION_STRUCTURE_WRITE, // WriteAS
         D3D12_BARRIER_ACCESS_UNORDERED_ACCESS,                        // BuildASScratch
@@ -454,7 +486,7 @@ D3D12_BARRIER_ACCESS TranslateBarrierAccess(ResourceAccessFlag accesses)
     return ret;
 }
 
-D3D12_BARRIER_LAYOUT TranslateTextureLayout(TextureLayout layout)
+D3D12_BARRIER_LAYOUT TranslateTextureLayout(TextureLayout layout, Format format)
 {
     using enum TextureLayout;
     switch(layout)
@@ -469,7 +501,8 @@ D3D12_BARRIER_LAYOUT TranslateTextureLayout(TextureLayout layout)
     case CopyDst:                        return D3D12_BARRIER_LAYOUT_COPY_DEST;
     case ResolveSrc:                     return D3D12_BARRIER_LAYOUT_RESOLVE_SOURCE;
     case ResolveDst:                     return D3D12_BARRIER_LAYOUT_RESOLVE_DEST;
-    case ClearDst:                       return D3D12_BARRIER_LAYOUT_RENDER_TARGET;
+    case ClearDst:                       return HasDepthAspect(format) ? D3D12_BARRIER_LAYOUT_DEPTH_STENCIL_WRITE
+                                                                       : D3D12_BARRIER_LAYOUT_RENDER_TARGET;
     case Present:                        return D3D12_BARRIER_LAYOUT_PRESENT;
     }
     Unreachable();
@@ -588,9 +621,16 @@ D3D12_RESOURCE_DESC TranslateTextureDesc(const TextureDesc &desc)
     {
         flags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
     }
-    if(desc.usage.Contains(TextureUsage::ClearColor))
+    if(desc.usage.Contains(TextureUsage::ClearDst))
     {
-        flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+        if(HasDepthAspect(desc.format))
+        {
+            flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+        }
+        else
+        {
+            flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+        }
     }
     const D3D12_RESOURCE_DESC resourceDesc =
     {

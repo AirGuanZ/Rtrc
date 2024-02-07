@@ -3,7 +3,8 @@
 RTRC_BEGIN
 
 /**
- * RGClearTexture
+ * RGClearColor
+ * RGClearDepthStencil
  * RGClearRWBuffer
  * RGClearRWStructuredBuffer
  * RGCopyBuffer
@@ -16,17 +17,42 @@ RTRC_BEGIN
  * RGAddRenderPass
  */
 
-inline RGPass RGClearTexture(
+inline RGPass RGClearColor(
     GraphRef    graph,
     std::string name,
     RGTexture   tex,
     const Vector4f &clearValue)
 {
     auto pass = graph->CreatePass(std::move(name));
-    pass->Use(tex, RG::ClearDst);
+    pass->Use(tex, RG::ClearColor);
     pass->SetCallback([tex, clearValue]
     {
         RGGetCommandBuffer().ClearColorTexture2D(tex->Get(), clearValue);
+    });
+    return pass;
+}
+
+inline RGPass RGClearDepthStencil(
+    GraphRef    graph,
+    std::string name,
+    RGTexture   tex,
+    float       depth,
+    uint8_t     stencil)
+{
+    assert(HasDepthAspect(tex->GetFormat()));
+    auto pass = graph->CreatePass(std::move(name));
+    pass->Use(tex, RG::ClearDepthStencil);
+    pass->SetCallback([tex, depth, stencil]
+    {
+        auto &cmds = RGGetCommandBuffer();
+        if(HasStencilAspect(tex->GetFormat()))
+        {
+            cmds.ClearDepthStencil(tex->Get(), depth, stencil);
+        }
+        else
+        {
+            cmds.ClearDepth(tex->Get(), depth);
+        }
     });
     return pass;
 }
@@ -457,7 +483,7 @@ struct RGColorAttachment
     RGTexRtv               rtv;
     RHI::AttachmentLoadOp  loadOp = RHI::AttachmentLoadOp::Load;
     RHI::AttachmentStoreOp storeOp = RHI::AttachmentStoreOp::Store;
-    RHI::ColorClearValue   clearValue;
+    RHI::ColorClearValue   clearValue = {};
     bool                   isWriteOnly = false;
 };
 
@@ -466,11 +492,11 @@ struct RGDepthStencilAttachment
     RGTexDsv                    dsv;
     RHI::AttachmentLoadOp       loadOp = RHI::AttachmentLoadOp::Load;
     RHI::AttachmentStoreOp      storeOp = RHI::AttachmentStoreOp::Store;
-    RHI::DepthStencilClearValue clearValue;
+    RHI::DepthStencilClearValue clearValue = {};
     bool                        isWriteOnly = false;
 };
 
-template<typename Callback>
+template<bool AutoViewportScissor, typename Callback>
 RGPass RGAddRenderPass(
     GraphRef                 graph,
     std::string              name,
@@ -520,6 +546,11 @@ RGPass RGAddRenderPass(
         });
         RTRC_SCOPE_EXIT{ cmds.EndRenderPass(); };
 
+        if constexpr(AutoViewportScissor)
+        {
+            cmds.SetViewportAndScissorAutomatically();
+        }
+
         if constexpr(requires{ RGPassImpl::Callback(std::move(c)); })
         {
             c();
@@ -532,6 +563,40 @@ RGPass RGAddRenderPass(
     return pass;
 }
 
+template<bool AutoViewportScissor, typename Callback>
+RGPass RGAddRenderPass(
+    GraphRef                graph,
+    std::string             name,
+    Span<RGColorAttachment> colorAttachments,
+    Callback                callback)
+{
+    return RGAddRenderPass<AutoViewportScissor>(
+        graph, std::move(name), colorAttachments, RGDepthStencilAttachment{}, std::move(callback));
+}
+
+template<bool AutoViewportScissor, typename Callback>
+RGPass RGAddRenderPass(
+    GraphRef                 graph,
+    std::string              name,
+    RGDepthStencilAttachment depthStencilAttachment,
+    Callback                 callback)
+{
+    return RGAddRenderPass<AutoViewportScissor>(
+        graph, std::move(name), {}, std::move(depthStencilAttachment), std::move(callback));
+}
+
+template<typename Callback>
+RGPass RGAddRenderPass(
+    GraphRef                 graph,
+    std::string              name,
+    Span<RGColorAttachment>  colorAttachments,
+    RGDepthStencilAttachment depthStencilAttachment,
+    Callback                 callback)
+{
+    return RGAddRenderPass<false>(
+        graph, std::move(name), colorAttachments, depthStencilAttachment, std::move(callback));
+}
+
 template<typename Callback>
 RGPass RGAddRenderPass(
     GraphRef                graph,
@@ -539,7 +604,8 @@ RGPass RGAddRenderPass(
     Span<RGColorAttachment> colorAttachments,
     Callback                callback)
 {
-    return RGAddRenderPass(graph, std::move(name), colorAttachments, RGDepthStencilAttachment{}, std::move(callback));
+    return RGAddRenderPass<false>(
+        graph, std::move(name), colorAttachments, RGDepthStencilAttachment{}, std::move(callback));
 }
 
 template<typename Callback>
@@ -549,7 +615,8 @@ RGPass RGAddRenderPass(
     RGDepthStencilAttachment depthStencilAttachment,
     Callback                 callback)
 {
-    return RGAddRenderPass(graph, std::move(name), {}, std::move(depthStencilAttachment), std::move(callback));
+    return RGAddRenderPass<false>(
+        graph, std::move(name), {}, std::move(depthStencilAttachment), std::move(callback));
 }
 
 RTRC_END

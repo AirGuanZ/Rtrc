@@ -491,12 +491,30 @@ void DirectX12CommandBuffer::ClearColorTexture2D(Texture *dst, const ColorClearV
         .mipLevel   = 0,
         .arrayLayer = 0
     };
-    assert(dst->GetDesc().usage.Contains(TextureUsage::ClearColor));
+    assert(dst->GetDesc().usage.Contains(TextureUsage::ClearDst));
     auto rtv = dst->CreateRtv(rtvDesc);
     auto d3dRtv = static_cast<DirectX12TextureRtv*>(rtv.Get())->_internalGetDescriptorHandle();
     const float rgba[4] = { clearValue.r, clearValue.g, clearValue.b, clearValue.a };
     const D3D12_RECT rect = { 0, 0, static_cast<LONG>(dst->GetWidth()), static_cast<LONG>(dst->GetHeight()) };
     commandList_->ClearRenderTargetView(d3dRtv, rgba, 1, &rect);
+}
+
+void DirectX12CommandBuffer::ClearDepthStencilTexture(
+    Texture *dst, const DepthStencilClearValue &clearValue, bool depth, bool stencil)
+{
+    assert(depth || stencil);
+    auto dsv = dst->CreateDsv();
+    auto d3dDsv = static_cast<DirectX12TextureDsv*>(dsv.Get())->_internalGetDescriptorHandle();
+    D3D12_CLEAR_FLAGS flags = {};
+    if(depth)
+    {
+        flags |= D3D12_CLEAR_FLAG_DEPTH;
+    }
+    if(stencil)
+    {
+        flags |= D3D12_CLEAR_FLAG_STENCIL;
+    }
+    commandList_->ClearDepthStencilView(d3dDsv, flags, clearValue.depth, clearValue.stencil, 0, nullptr);
 }
 
 void DirectX12CommandBuffer::BeginDebugEvent(const DebugLabel &label)
@@ -568,8 +586,8 @@ void DirectX12CommandBuffer::ExecuteBarriersInternal(
     for(auto &b : globalMemoryBarriers)
     {
         auto &d3dBarrier = d3dGlobalBarriers.emplace_back();
-        d3dBarrier.SyncBefore   = TranslateBarrierSync(b.beforeStages);
-        d3dBarrier.SyncAfter    = TranslateBarrierSync(b.afterStages);
+        d3dBarrier.SyncBefore   = TranslateBarrierSync(b.beforeStages, Format::Unknown);
+        d3dBarrier.SyncAfter    = TranslateBarrierSync(b.afterStages, Format::Unknown);
         d3dBarrier.AccessBefore = TranslateBarrierAccess(b.beforeAccesses);
         d3dBarrier.AccessAfter  = TranslateBarrierAccess(b.afterAccesses);
     }
@@ -577,15 +595,17 @@ void DirectX12CommandBuffer::ExecuteBarriersInternal(
     std::vector<D3D12_TEXTURE_BARRIER> d3dTextureBarriers;
     for(auto &b : textureTransitions)
     {
+        const Format format = b.texture->GetFormat();
+
         auto &d3dBarrier = d3dTextureBarriers.emplace_back();
         d3dBarrier.pResource    = static_cast<DirectX12Texture *>(b.texture)->_internalGetNativeTexture().Get();
-        d3dBarrier.LayoutBefore = TranslateTextureLayout(b.beforeLayout);
-        d3dBarrier.LayoutAfter  = TranslateTextureLayout(b.afterLayout);
-        d3dBarrier.SyncBefore   = TranslateBarrierSync(b.beforeStages);
-        d3dBarrier.SyncAfter    = TranslateBarrierSync(b.afterStages);
+        d3dBarrier.LayoutBefore = TranslateTextureLayout(b.beforeLayout, format);
+        d3dBarrier.LayoutAfter  = TranslateTextureLayout(b.afterLayout, format);
+        d3dBarrier.SyncBefore   = TranslateBarrierSync(b.beforeStages, format);
+        d3dBarrier.SyncAfter    = TranslateBarrierSync(b.afterStages, format);
         d3dBarrier.AccessBefore = TranslateBarrierAccess(b.beforeAccesses);
         d3dBarrier.AccessAfter  = TranslateBarrierAccess(b.afterAccesses);
-        d3dBarrier.Subresources = TranslateBarrierSubresources(b.subresources, b.texture->GetFormat());
+        d3dBarrier.Subresources = TranslateBarrierSubresources(b.subresources, format);
         d3dBarrier.Flags        = D3D12_TEXTURE_BARRIER_FLAG_NONE;
 
         if(b.beforeLayout == TextureLayout::Present)
@@ -637,8 +657,8 @@ void DirectX12CommandBuffer::ExecuteBarriersInternal(
         d3dBarrier.pResource    = static_cast<DirectX12Buffer *>(b.buffer)->_internalGetNativeBuffer().Get();
         d3dBarrier.Size         = b.buffer->GetDesc().size;
         d3dBarrier.Offset       = 0;
-        d3dBarrier.SyncBefore   = TranslateBarrierSync(b.beforeStages);
-        d3dBarrier.SyncAfter    = TranslateBarrierSync(b.afterStages);
+        d3dBarrier.SyncBefore   = TranslateBarrierSync(b.beforeStages, Format::Unknown);
+        d3dBarrier.SyncAfter    = TranslateBarrierSync(b.afterStages, Format::Unknown);
         d3dBarrier.AccessBefore = TranslateBarrierAccess(b.beforeAccesses);
         d3dBarrier.AccessAfter  = TranslateBarrierAccess(b.afterAccesses);
 
@@ -661,15 +681,17 @@ void DirectX12CommandBuffer::ExecuteBarriersInternal(
             continue;
         }
 
+        const Format format = b.texture->GetFormat();
+
         auto &d3dBarrier = d3dTextureBarriers.emplace_back();
         d3dBarrier.pResource    = static_cast<DirectX12Texture *>(b.texture)->_internalGetNativeTexture().Get();
-        d3dBarrier.LayoutBefore = TranslateTextureLayout(b.beforeLayout);
-        d3dBarrier.LayoutAfter  = TranslateTextureLayout(b.afterLayout);
-        d3dBarrier.SyncBefore   = TranslateBarrierSync(b.beforeStages);
-        d3dBarrier.SyncAfter    = TranslateBarrierSync(D3D12_BARRIER_SYNC_ALL);
+        d3dBarrier.LayoutBefore = TranslateTextureLayout(b.beforeLayout, format);
+        d3dBarrier.LayoutAfter  = TranslateTextureLayout(b.afterLayout, format);
+        d3dBarrier.SyncBefore   = TranslateBarrierSync(b.beforeStages, format);
+        d3dBarrier.SyncAfter    = TranslateBarrierSync(D3D12_BARRIER_SYNC_ALL, format);
         d3dBarrier.AccessBefore = TranslateBarrierAccess(b.beforeAccesses);
         d3dBarrier.AccessAfter  = TranslateBarrierAccess(D3D12_BARRIER_ACCESS_COMMON);
-        d3dBarrier.Subresources = TranslateBarrierSubresources(b.subresources, b.texture->GetFormat());
+        d3dBarrier.Subresources = TranslateBarrierSubresources(b.subresources, format);
         d3dBarrier.Flags        = D3D12_TEXTURE_BARRIER_FLAG_NONE;
 
         assert(b.beforeQueue != QueueType::Transfer);
@@ -700,12 +722,14 @@ void DirectX12CommandBuffer::ExecuteBarriersInternal(
             continue;
         }
 
+        const Format format = b.texture->GetFormat();
+
         auto &d3dBarrier = d3dTextureBarriers.emplace_back();
         d3dBarrier.pResource    = static_cast<DirectX12Texture *>(b.texture)->_internalGetNativeTexture().Get();
-        d3dBarrier.LayoutBefore = TranslateTextureLayout(b.beforeLayout);
-        d3dBarrier.LayoutAfter  = TranslateTextureLayout(b.afterLayout);
-        d3dBarrier.SyncBefore   = TranslateBarrierSync(D3D12_BARRIER_SYNC_ALL);
-        d3dBarrier.SyncAfter    = TranslateBarrierSync(b.afterStages);
+        d3dBarrier.LayoutBefore = TranslateTextureLayout(b.beforeLayout, format);
+        d3dBarrier.LayoutAfter  = TranslateTextureLayout(b.afterLayout, format);
+        d3dBarrier.SyncBefore   = TranslateBarrierSync(D3D12_BARRIER_SYNC_ALL, format);
+        d3dBarrier.SyncAfter    = TranslateBarrierSync(b.afterStages, format);
         d3dBarrier.AccessBefore = TranslateBarrierAccess(D3D12_BARRIER_ACCESS_COMMON);
         d3dBarrier.AccessAfter  = TranslateBarrierAccess(b.afterAccesses);
         d3dBarrier.Subresources = TranslateBarrierSubresources(b.subresources, b.texture->GetFormat());

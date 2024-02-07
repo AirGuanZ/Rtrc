@@ -87,9 +87,9 @@ DXGI_FORMAT TranslateVertexAttributeType(VertexAttributeType type);
 // Register is set to (0, 0)
 D3D12_STATIC_SAMPLER_DESC  TranslateStaticSamplerDesc(const SamplerDesc &desc, D3D12_SHADER_VISIBILITY vis);
 
-D3D12_BARRIER_SYNC   TranslateBarrierSync(PipelineStageFlag stages);
+D3D12_BARRIER_SYNC   TranslateBarrierSync(PipelineStageFlag stages, Format format);
 D3D12_BARRIER_ACCESS TranslateBarrierAccess(ResourceAccessFlag accesses);
-D3D12_BARRIER_LAYOUT TranslateTextureLayout(TextureLayout layout);
+D3D12_BARRIER_LAYOUT TranslateTextureLayout(TextureLayout layout, Format format);
 
 DXGI_FORMAT TranslateRayTracingIndexType(RayTracingIndexFormat type);
 DXGI_FORMAT TranslateRayTracingVertexFormat(RayTracingVertexFormat format);

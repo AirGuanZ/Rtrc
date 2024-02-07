@@ -264,18 +264,22 @@ void CommandBuffer::CopyColorTexture2DToBuffer(
     CopyColorTexture2DToBuffer(*dst->Get(), dstOffset, dstRowBytes, *src->Get(), arrayLayer, mipLevel);
 }
 
-void CommandBuffer::BeginRenderPass(Span<RHI::ColorAttachment> colorAttachments)
+void CommandBuffer::BeginRenderPass(Span<RHI::ColorAttachment> colorAttachments,
+                                    bool                       setViewportAndScissor)
 {
-    BeginRenderPass(colorAttachments, {});
+    BeginRenderPass(colorAttachments, {}, setViewportAndScissor);
 }
 
-void CommandBuffer::BeginRenderPass(const RHI::DepthStencilAttachment &depthStencilAttachment)
+void CommandBuffer::BeginRenderPass(const RHI::DepthStencilAttachment &depthStencilAttachment,
+                                    bool                               setViewportAndScissor)
 {
-    BeginRenderPass({}, depthStencilAttachment);
+    BeginRenderPass({}, depthStencilAttachment, setViewportAndScissor);
 }
 
 void CommandBuffer::BeginRenderPass(
-    Span<RHI::ColorAttachment> colorAttachments, const RHI::DepthStencilAttachment &depthStencilAttachment)
+    Span<RHI::ColorAttachment>         colorAttachments,
+    const RHI::DepthStencilAttachment &depthStencilAttachment,
+    bool                               setViewportAndScissor)
 {
     CheckThreadID();
     rhiCommandBuffer_->BeginRenderPass(colorAttachments, depthStencilAttachment);
@@ -286,6 +290,18 @@ void CommandBuffer::BeginRenderPass(
         auto rtv = colorAttachments[i].renderTargetView;
         currentPassColorFormats_[i] = rtv->GetDesc().format;
     }
+    if(!colorAttachments.IsEmpty())
+    {
+        currentPassRenderTargetSize_ = colorAttachments[0].renderTargetView->GetSize();
+    }
+    else if(depthStencilAttachment.depthStencilView)
+    {
+        currentPassRenderTargetSize_ = depthStencilAttachment.depthStencilView->GetSize();
+    }
+    else
+    {
+        currentPassRenderTargetSize_ = {};
+    }
 
     if(depthStencilAttachment.depthStencilView)
         currentPassDepthStencilFormat_ = depthStencilAttachment.depthStencilView->GetDesc().format;
@@ -294,6 +310,11 @@ void CommandBuffer::BeginRenderPass(
 
     assert(!isInRenderPass_);
     isInRenderPass_ = true;
+
+    if(setViewportAndScissor)
+    {
+        SetViewportAndScissorAutomatically();
+    }
 }
 
 void CommandBuffer::EndRenderPass()
@@ -546,6 +567,24 @@ void CommandBuffer::SetScissors(Span<RHI::Scissor> scissors)
     rhiCommandBuffer_->SetScissors(scissors);
 }
 
+void CommandBuffer::SetViewportAndScissorAutomatically()
+{
+    CheckThreadID();
+    assert(isInRenderPass_);
+    SetViewports(RHI::Viewport
+                 {
+                     .topLeftCorner = {},
+                     .size = currentPassRenderTargetSize_.To<float>(),
+                     .minDepth = 0,
+                     .maxDepth = 1,
+                 });
+    SetScissors(RHI::Scissor
+                {
+                    .topLeftCorner = {},
+                    .size = currentPassRenderTargetSize_.To<int>(),
+                });
+}
+
 void CommandBuffer::SetVertexBuffer(int slot, const RC<SubBuffer> &buffer, size_t stride)
 {
     SetVertexBuffers(slot, Span(buffer), Span(stride));
@@ -611,6 +650,27 @@ void CommandBuffer::ClearColorTexture2D(const RC<Texture> &tex, const Vector4f &
     CheckThreadID();
     rhiCommandBuffer_->ClearColorTexture2D(
         tex->GetRHIObject().Get(), RHI::ColorClearValue{ color.x, color.y, color.z, color.w });
+}
+
+void CommandBuffer::ClearDepthStencil(const RC<Texture>& tex, float depth, uint8_t stencil)
+{
+    CheckThreadID();
+    rhiCommandBuffer_->ClearDepthStencilTexture(
+        tex->GetRHIObject().Get(), RHI::DepthStencilClearValue{ depth, stencil }, true, true);
+}
+
+void CommandBuffer::ClearDepth(const RC<Texture>& tex, float depth)
+{
+    CheckThreadID();
+    rhiCommandBuffer_->ClearDepthStencilTexture(
+        tex->GetRHIObject().Get(), RHI::DepthStencilClearValue{ depth, 0 }, true, false);
+}
+
+void CommandBuffer::ClearStencil(const RC<Texture>& tex, uint8_t stencil)
+{
+    CheckThreadID();
+    rhiCommandBuffer_->ClearDepthStencilTexture(
+        tex->GetRHIObject().Get(), RHI::DepthStencilClearValue{ 0, stencil }, false, true);
 }
 
 void CommandBuffer::Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance)

@@ -353,7 +353,7 @@ enum class TextureUsage : uint32_t
     UnorderAccess  = 1 << 3,
     RenderTarget   = 1 << 4,
     DepthStencil   = 1 << 5,
-    ClearColor     = 1 << 6, // vulkan -> TransferDst; directx12 -> RenderTarget
+    ClearDst     = 1 << 6, // vulkan -> TransferDst; directx12 -> RenderTarget
 };
 RTRC_DEFINE_ENUM_FLAGS(TextureUsage)
 using TextureUsageFlags = EnumFlagsTextureUsage;
@@ -473,14 +473,15 @@ enum class ResourceAccess : uint32_t
     CopyWrite               = 1 << 17,
     ResolveRead             = 1 << 18,
     ResolveWrite            = 1 << 19,
-    ClearWrite              = 1 << 20,
-    ReadAS                  = 1 << 21,
-    WriteAS                 = 1 << 22,
-    BuildASScratch          = 1 << 23,
-    ReadSBT                 = 1 << 24,
-    ReadForBuildAS          = 1 << 25,
-    IndirectCommandRead     = 1 << 26,
-    All                     = 1 << 27
+    ClearColorWrite         = 1 << 20,
+    ClearDepthStencilWrite  = 1 << 21,
+    ReadAS                  = 1 << 22,
+    WriteAS                 = 1 << 23,
+    BuildASScratch          = 1 << 24,
+    ReadSBT                 = 1 << 25,
+    ReadForBuildAS          = 1 << 26,
+    IndirectCommandRead     = 1 << 27,
+    All                     = 1 << 28
 };
 RTRC_DEFINE_ENUM_FLAGS(ResourceAccess)
 using ResourceAccessFlag = EnumFlagsResourceAccess;
@@ -587,6 +588,29 @@ public:
         assert(pooledString.GetIndex() < 0xffffff);
         assert(semanticIndex < 0xff);
         key_ = (semanticIndex << 24) | pooledString.GetIndex();
+    }
+    VertexSemantic(std::string_view semanticString)
+    {
+        assert(!semanticString.empty());
+        size_t i = semanticString.size();
+        while(i > 0 && std::isdigit(semanticString[i - 1]))
+        {
+            --i;
+        }
+        assert(i > 0);
+        const std::string_view semanticName = semanticString.substr(0, i);
+        int semanticIndex = 0;
+        if(i != semanticString.size())
+        {
+            const char *end = semanticString.data() + semanticString.size();
+            const auto parseResult = std::from_chars(
+                semanticString.data() + i, end, semanticIndex);
+            if(parseResult.ec != std::errc() || parseResult.ptr != end)
+            {
+                throw Exception(fmt::format("Fail to parse semantic index in {}", semanticString));
+            }
+        }
+        key_ = (semanticIndex << 24) | PooledSemanticName(semanticName).GetIndex();
     }
 
     bool IsValid() const { return key_ != INVALID_KEY; }
@@ -1722,6 +1746,8 @@ public:
     // Clear
 
     RTRC_RHI_API void ClearColorTexture2D(Texture *dst, const ColorClearValue &clearValue) RTRC_RHI_API_PURE;
+    RTRC_RHI_API void ClearDepthStencilTexture(
+        Texture *dst, const DepthStencilClearValue &clearValue, bool depth, bool stencil) RTRC_RHI_API_PURE;
     
     // Debug
 
@@ -1810,6 +1836,7 @@ class TextureRtv : public RHIObject
 {
 public:
 
+    RTRC_RHI_API const Vector2u GetSize() const RTRC_RHI_API_PURE;
     RTRC_RHI_API const TextureRtvDesc &GetDesc() const RTRC_RHI_API_PURE;
 };
 
@@ -1831,6 +1858,7 @@ class TextureDsv : public RHIObject
 {
 public:
 
+    RTRC_RHI_API const Vector2u GetSize() const RTRC_RHI_API_PURE;
     RTRC_RHI_API const TextureDsvDesc &GetDesc() const RTRC_RHI_API_PURE;
 };
 

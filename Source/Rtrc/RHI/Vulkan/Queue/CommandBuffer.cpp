@@ -497,7 +497,7 @@ void VulkanCommandBuffer::CopyColorTexture2DToBuffer(
 
 void VulkanCommandBuffer::ClearColorTexture2D(Texture *dst, const ColorClearValue &clearValue)
 {
-    assert(dst->GetDesc().usage.Contains(TextureUsage::ClearColor));
+    assert(dst->GetDesc().usage.Contains(TextureUsage::ClearDst));
     auto vkTexture = static_cast<VulkanTexture *>(dst);
     const VkClearColorValue vkClearValue = TranslateClearColorValue(clearValue);
     const VkImageSubresourceRange range =
@@ -509,6 +509,36 @@ void VulkanCommandBuffer::ClearColorTexture2D(Texture *dst, const ColorClearValu
         .layerCount     = 1
     };
     vkCmdClearColorImage(
+        commandBuffer_,
+        vkTexture->_internalGetNativeImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        &vkClearValue, 1, &range);
+}
+
+void VulkanCommandBuffer::ClearDepthStencilTexture(
+    Texture* dst, const DepthStencilClearValue& clearValue, bool depth, bool stencil)
+{
+    assert(depth || stencil);
+    assert(dst->GetDesc().usage.Contains(TextureUsage::ClearDst));
+    auto vkTexture = static_cast<VulkanTexture *>(dst);
+    const VkClearDepthStencilValue vkClearValue = { clearValue.depth, clearValue.stencil };
+    VkImageAspectFlags aspects = VK_IMAGE_ASPECT_NONE;
+    if(depth)
+    {
+        aspects |= VK_IMAGE_ASPECT_DEPTH_BIT;
+    }
+    if(stencil)
+    {
+        aspects |= VK_IMAGE_ASPECT_STENCIL_BIT;
+    }
+    const VkImageSubresourceRange range =
+    {
+        .aspectMask     = aspects,
+        .baseMipLevel   = 0,
+        .levelCount     = 1,
+        .baseArrayLayer = 0,
+        .layerCount     = 1
+    };
+    vkCmdClearDepthStencilImage(
         commandBuffer_,
         vkTexture->_internalGetNativeImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
         &vkClearValue, 1, &range);

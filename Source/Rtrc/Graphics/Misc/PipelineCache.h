@@ -83,6 +83,20 @@ DEFINE_PIPELINE_STATE(AttachmentState)
 #define RTRC_BLEND_STATE         ::Rtrc::BlendStateBuilder()+Rtrc::BlendStateDesc
 #define RTRC_ATTACHMENT_STATE    ::Rtrc::AttachmentStateBuilder()+Rtrc::AttachmentStateDesc
 
+#define RTRC_DEFINE_STATIC_DEPTH_STENCIL_STATE(NAME) static const auto NAME = RTRC_DEPTH_STENCIL_STATE
+#define RTRC_DEFINE_STATIC_RASTERIZER_STATE(NAME)    static const auto NAME = RTRC_RASTERIZER_STATE
+#define RTRC_DEFINE_STATIC_BLEND_STATE(NAME)         static const auto NAME = RTRC_BLEND_STATE
+#define RTRC_DEFINE_STATIC_ATTACHMENT_STATE(NAME)    static const auto NAME = RTRC_ATTACHMENT_STATE
+
+#define RTRC_STATIC_DEPTH_STENCIL_STATE(...) \
+    ([](){ RTRC_DEFINE_STATIC_DEPTH_STENCIL_STATE(state) __VA_ARGS__ ; return state; }())
+#define RTRC_STATIC_RASTERIZER_STATE(...) \
+    ([](){ RTRC_DEFINE_STATIC_RASTERIZER_STATE(state) __VA_ARGS__ ; return state; }())
+#define RTRC_GET_STATIC_BLEND_STATE(...) \
+    ([](){ RTRC_DEFINE_STATIC_BLEND_STATE(state) __VA_ARGS__ ; return state; }())
+#define RTRC_GET_STATIC_ATTACHMENT_STATE(...) \
+    ([](){ RTRC_DEFINE_STATIC_ATTACHMENT_STATE(state) __VA_ARGS__ ; return state; }())
+
 class GraphicsPipelineCache
 {
 public:

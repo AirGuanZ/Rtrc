@@ -40,6 +40,13 @@ namespace MeshLayoutDSL
         {
             
         }
+
+        Attribute(std::string_view semanticString, RHI::VertexAttributeType type)
+            : semantic(RHI::VertexSemantic(semanticString)), type(type)
+        {
+
+        }
+
         auto operator<=>(const Attribute &) const = default;
 
         RHI::VertexSemantic      semantic;
@@ -167,5 +174,7 @@ private:
         using ::Rtrc::MeshLayoutDSL::Attribute; \
         return LayoutDesc(__VA_ARGS__);         \
     }()))
+#define RTRC_STATIC_MESH_LAYOUT(...) \
+    ([](){ static const auto ret = RTRC_MESH_LAYOUT(__VA_ARGS__); return ret; }())
 
 RTRC_END

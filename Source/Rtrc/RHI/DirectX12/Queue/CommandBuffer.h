@@ -107,6 +107,8 @@ public:
         uint32_t arrayLayer) RTRC_RHI_OVERRIDE;
 
     void ClearColorTexture2D(Texture *dst, const ColorClearValue &clearValue) RTRC_RHI_OVERRIDE;
+    void ClearDepthStencilTexture(
+        Texture* dst, const DepthStencilClearValue& clearValue, bool depth, bool stencil) RTRC_RHI_OVERRIDE;
     
     void BeginDebugEvent(const DebugLabel &label) RTRC_RHI_OVERRIDE;
     void EndDebugEvent() RTRC_RHI_OVERRIDE;

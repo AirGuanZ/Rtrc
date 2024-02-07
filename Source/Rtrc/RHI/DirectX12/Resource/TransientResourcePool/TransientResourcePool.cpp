@@ -284,7 +284,7 @@ DirectX12TransientResourcePool::Category DirectX12TransientResourcePool::GetText
         return Category::General;
     }
     const bool isRTDS =
-        desc.usage & (TextureUsage::RenderTarget | TextureUsage::ClearColor | TextureUsage::DepthStencil);
+        desc.usage & (TextureUsage::RenderTarget | TextureUsage::ClearDst | TextureUsage::DepthStencil);
     return isRTDS ? Category::RTDSTexture : Category::NonRTDSTexture;
 }
 

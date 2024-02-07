@@ -740,6 +740,12 @@ void ImGuiInstance::End()
     return ImGui::End();
 }
 
+void ImGuiInstance::LabelUnformatted(const char *label, const std::string &text)
+{
+    IMGUI_CONTEXT;
+    ImGui::LabelText(label, "%s", text.c_str());
+}
+
 bool ImGuiInstance::Button(const char *label, const Vector2f &size)
 {
     IMGUI_CONTEXT;

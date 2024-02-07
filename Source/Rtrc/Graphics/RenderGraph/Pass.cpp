@@ -23,7 +23,7 @@ RC<Buffer> RGPassContext::Get(const RGBufImpl *resource)
     if(!declaredResources_->contains(resource))
     {
         throw Exception(fmt::format(
-            "Cannot use rg buffer resource {} without declaring usage", result->GetRHIObject()->GetName()));
+            "Cannot use rg buffer resource '{}' without declaring usage", result->GetRHIObject()->GetName()));
     }
 #endif
     return result;
@@ -39,10 +39,10 @@ RC<Texture> RGPassContext::Get(const RGTexImpl *resource)
     auto &result = resources_->indexToTexture[resource->GetResourceIndex()].texture;
     assert(result);
 #if RTRC_RG_DEBUG
-    if(!declaredResources_->contains(resource))
+    if(!resource->SkipDeclarationCheck() && !declaredResources_->contains(resource))
     {
         throw Exception(fmt::format(
-            "Cannot use rg texture resource {} without declaring usage", result->GetRHIObject()->GetName()));
+            "Cannot use rg texture resource '{}' without declaring usage", result->GetRHIObject()->GetName()));
     }
 #endif
     return result;

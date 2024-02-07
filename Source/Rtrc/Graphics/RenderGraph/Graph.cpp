@@ -139,6 +139,7 @@ RGTexImpl *RenderGraph::RegisterReadOnlyTexture(RC<Texture> texture)
     const int index = static_cast<int>(textures_.size());
     auto resource = MakeBox<ExternalTextureResource>(this, index);
     resource->texture = StatefulTexture::FromTexture(std::move(texture));
+    resource->isReadOnlySampledTexture = true;
     textures_.push_back(std::move(resource));
     buffers_.push_back(nullptr);
     externalResourceMap_.insert({ rhiPtr, index });

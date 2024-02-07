@@ -210,7 +210,7 @@ UPtr<Swapchain> DirectX12Device::CreateSwapchain(const SwapchainDesc &desc, Wind
         .arraySize     = 1,
         .mipLevels     = 1,
         .sampleCount   = 1,
-        .usage         = TextureUsage::RenderTarget | TextureUsage::ClearColor |
+        .usage         = TextureUsage::RenderTarget | TextureUsage::ClearDst |
                          (desc.allowUav ? TextureUsage::UnorderAccess : TextureUsage::None),
         .initialLayout = TextureLayout::Undefined,
         .concurrentAccessMode = QueueConcurrentAccessMode::Exclusive

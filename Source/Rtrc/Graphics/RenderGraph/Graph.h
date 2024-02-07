@@ -95,6 +95,8 @@ private:
 
         using RGTexImpl::RGTexImpl;
 
+        bool SkipDeclarationCheck() const override { return isReadOnlySampledTexture; }
+
         const RHI::TextureDesc &GetDesc() const override;
 
         bool isReadOnlySampledTexture = false;

@@ -72,6 +72,12 @@ public:
         }
     }
 
+    const Vector2u GetSize() const RTRC_RHI_OVERRIDE
+    {
+        auto &desc = tex_->GetDesc();
+        return { desc.width, desc.height };
+    }
+
     const TextureRtvDesc &GetDesc() const RTRC_RHI_OVERRIDE
     {
         return desc_;
@@ -109,6 +115,12 @@ public:
         {
             desc_.format = tex_->GetDesc().format;
         }
+    }
+
+    const Vector2u GetSize() const RTRC_RHI_OVERRIDE
+    {
+        auto &desc = tex_->GetDesc();
+        return { desc.width, desc.height };
     }
 
     const TextureDsvDesc &GetDesc() const RTRC_RHI_OVERRIDE

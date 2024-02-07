@@ -75,4 +75,40 @@ private:
     bool                  isCapturing_ = false;
 };
 
+class RunWithExceptionHandlingHelper
+{
+public:
+
+    template<typename F>
+    void operator+(F &&f) const
+    {
+        try
+        {
+            std::invoke(std::forward<F>(f));
+        }
+#if RTRC_ENABLE_EXCEPTION_STACKTRACE
+        catch(const Exception &e)
+        {
+            LogError("{}\n{}", e.what(), e.stacktrace());
+        }
+#endif
+        catch(const std::exception &e)
+        {
+            LogError(e.what());
+        }
+    }
+};
+
+#define RTRC_RUN_WITH_EXCEPTION_HANDLING ::Rtrc::RunWithExceptionHandlingHelper{}+[&]
+
+#define RTRC_APPLICATION_MAIN(APP, ...)             \
+    int main()                                      \
+    {                                               \
+        EnableMemoryLeakReporter();                 \
+        RTRC_RUN_WITH_EXCEPTION_HANDLING            \
+        {                                           \
+            APP().Run(APP::Config { __VA_ARGS__ }); \
+        };                                          \
+    }
+
 RTRC_END

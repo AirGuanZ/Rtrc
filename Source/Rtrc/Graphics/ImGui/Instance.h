@@ -96,6 +96,10 @@ public:
     bool Begin(const char *label, bool *open = nullptr, ImGuiWindowFlags flags = 0);
     void End();
 
+    template<typename...Args>
+    void Label(const char *label, fmt::format_string<Args...> fmt, Args&&...args);
+    void LabelUnformatted(const char *label, const std::string &text);
+
     bool Button(const char *label, const Vector2f &size = {});
     bool SmallButton(const char *label);
     bool ArrowButton(const char *strId, ImGuiDir dir);
@@ -221,6 +225,12 @@ private:
 
     Box<Data> data_;
 };
+
+template <typename... Args>
+void ImGuiInstance::Label(const char* label, fmt::format_string<Args...> fmt, Args&&... args)
+{
+    this->LabelUnformatted(label, fmt::format(fmt, std::forward<Args>(args)...));
+}
 
 template<typename... Args>
 void ImGuiInstance::Text(fmt::format_string<Args...> fmt, Args &&... args)

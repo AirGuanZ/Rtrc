@@ -184,7 +184,8 @@ bool IsWriteOnly(ResourceAccessFlag access)
       | RWStructuredBufferWrite
       | CopyWrite
       | ResolveWrite
-      | ClearWrite
+      | ClearColorWrite
+      | ClearDepthStencilWrite
       | WriteAS;
     return (access & WRITEONLY_MASK) == access;
 }

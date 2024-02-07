@@ -67,11 +67,18 @@ namespace RG
         .accesses = RHI::ResourceAccess::DepthStencilRead
     };
 
-    inline constexpr RGUseInfo ClearDst =
+    inline constexpr RGUseInfo ClearColor =
     {
         .layout   = RHI::TextureLayout::ClearDst,
         .stages   = RHI::PipelineStage::Clear,
-        .accesses = RHI::ResourceAccess::ClearWrite
+        .accesses = RHI::ResourceAccess::ClearColorWrite
+    };
+
+    inline constexpr RGUseInfo ClearDepthStencil =
+    {
+        .layout   = RHI::TextureLayout::ClearDst,
+        .stages   = RHI::PipelineStage::Clear,
+        .accesses = RHI::ResourceAccess::ClearDepthStencilWrite
     };
 
     inline constexpr RGUseInfo PS_Texture =

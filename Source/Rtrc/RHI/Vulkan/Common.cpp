@@ -287,7 +287,7 @@ VkImageUsageFlags TranslateTextureUsageFlag(TextureUsageFlags flags)
     {
         result |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
     }
-    if(flags.Contains(TextureUsage::ClearColor))
+    if(flags.Contains(TextureUsage::ClearDst))
     {
         result |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
     }
@@ -498,7 +498,8 @@ VkAccessFlags2 TranslateAccessFlag(ResourceAccessFlag flag)
         VK_ACCESS_2_TRANSFER_WRITE_BIT,                                                                     // CopyWrite
         VK_ACCESS_2_TRANSFER_READ_BIT,                                                                      // ResolveRead
         VK_ACCESS_2_TRANSFER_WRITE_BIT,                                                                     // ResolveWrite
-        VK_ACCESS_2_TRANSFER_WRITE_BIT,                                                                     // ClearWrite
+        VK_ACCESS_2_TRANSFER_WRITE_BIT,                                                                     // ClearColorWrite
+        VK_ACCESS_2_TRANSFER_WRITE_BIT,                                                                     // ClearDepthStencilWrite
         VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR,                                                    // ReadAS
         VK_ACCESS_2_ACCELERATION_STRUCTURE_WRITE_BIT_KHR,                                                   // WriteAS
         VK_ACCESS_2_ACCELERATION_STRUCTURE_READ_BIT_KHR | VK_ACCESS_2_ACCELERATION_STRUCTURE_WRITE_BIT_KHR, // BuildASScratch

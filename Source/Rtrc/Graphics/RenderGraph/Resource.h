@@ -28,6 +28,8 @@ public:
 
     virtual ~RGResource() = default;
 
+    virtual bool SkipDeclarationCheck() const { return false; }
+
     int GetResourceIndex() const { return index_; }
 
     RenderGraph *GetGraph() const { return graph_; }

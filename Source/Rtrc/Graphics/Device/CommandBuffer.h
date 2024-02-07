@@ -127,10 +127,16 @@ public:
         RGBuffer dst, size_t dstOffset, size_t dstRowBytes,
         RGTexture src, uint32_t arrayLayer, uint32_t mipLevel);
 
-    void BeginRenderPass(Span<RHI::ColorAttachment> colorAttachments);
-    void BeginRenderPass(const RHI::DepthStencilAttachment &depthStencilAttachment);
     void BeginRenderPass(
-        Span<RHI::ColorAttachment> colorAttachments, const RHI::DepthStencilAttachment &depthStencilAttachment);
+        Span<RHI::ColorAttachment> colorAttachments,
+        bool                       setViewportAndScissor = false);
+    void BeginRenderPass(
+        const RHI::DepthStencilAttachment &depthStencilAttachment,
+        bool                               setViewportAndScissor = false);
+    void BeginRenderPass(
+        Span<RHI::ColorAttachment>         colorAttachments,
+        const RHI::DepthStencilAttachment &depthStencilAttachment,
+        bool                               setViewportAndScissor = false);
     void EndRenderPass();
 
     Span<RHI::Format> GetCurrentRenderPassColorFormats() const { assert(isInRenderPass_); return currentPassColorFormats_; }
@@ -154,6 +160,7 @@ public:
     
     void SetViewports(Span<RHI::Viewport> viewports);
     void SetScissors(Span<RHI::Scissor> scissors);
+    void SetViewportAndScissorAutomatically(); // Automatically set viewport and scissor with current RT size
 
     void SetVertexBuffer(int slot, const RC<SubBuffer> &buffer, size_t stride);
     void SetVertexBuffers(int slot, Span<RC<SubBuffer>> buffers, Span<size_t> strides);
@@ -173,6 +180,9 @@ public:
     void SetComputePushConstants(uint32_t rangeIndex, const T &data);
 
     void ClearColorTexture2D(const RC<Texture> &tex, const Vector4f &color);
+    void ClearDepthStencil(const RC<Texture> &tex, float depth, uint8_t stencil);
+    void ClearDepth(const RC<Texture> &tex, float depth);
+    void ClearStencil(const RC<Texture> &tex, uint8_t stencil);
     
     void Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance);
     void DrawIndexed(int indexCount, int instanceCount, int firstIndex, int firstVertex, int firstInstance);
@@ -315,6 +325,7 @@ private:
     RC<RayTracingPipeline> currentRayTracingPipeline_;
 
     bool                         isInRenderPass_ = false;
+    Vector2u                     currentPassRenderTargetSize_;
     StaticVector<RHI::Format, 8> currentPassColorFormats_;
     RHI::Format                  currentPassDepthStencilFormat_ = RHI::Format::Unknown;
 };

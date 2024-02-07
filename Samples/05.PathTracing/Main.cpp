@@ -262,7 +262,7 @@ void Run()
                 .sampleCount          = 1,
                 .usage                = RHI::TextureUsage::ShaderResource |
                                         RHI::TextureUsage::UnorderAccess |
-                                        RHI::TextureUsage::ClearColor,
+                                        RHI::TextureUsage::ClearDst,
                 .initialLayout        = RHI::TextureLayout::Undefined,
                 .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
             });
