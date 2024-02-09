@@ -8,18 +8,24 @@ namespace GenerateMipmapDetail
 {
 
     template<typename Texel, typename Component, int Channels>
-    Image<Texel> GenerateImpl(const Image<Texel> &input)
+    Image<Texel> ResizeImpl(const Image<Texel> &input, const Vector2u &targetSize)
     {
-        const uint32_t newWidth = (input.GetWidth() + 1) >> 1;
-        const uint32_t newHeight = (input.GetHeight() + 1) >> 1;
-        Image<Texel> ret(newWidth, newHeight);
+        Image<Texel> ret(targetSize.x, targetSize.y);
         avir::CImageResizer imageResizer;
         imageResizer.resizeImage(
             reinterpret_cast<const Component *>(input.GetData()),
             static_cast<int>(input.GetWidth()), static_cast<int>(input.GetHeight()), 0,
             reinterpret_cast<Component *>(ret.GetData()),
-            static_cast<int>(newWidth), static_cast<int>(newHeight), Channels, 0);
+            static_cast<int>(targetSize.x), static_cast<int>(targetSize.y), Channels, 0);
         return ret;
+    }
+
+    template<typename Texel, typename Component, int Channels>
+    Image<Texel> GenerateImpl(const Image<Texel> &input)
+    {
+        const uint32_t newWidth = (input.GetWidth() + 1) >> 1;
+        const uint32_t newHeight = (input.GetHeight() + 1) >> 1;
+        return ResizeImpl<Texel, Component, Channels>(input, { newWidth, newHeight });
     }
 
 } // namespace GenerateMipmapDetail
@@ -34,6 +40,14 @@ Image<T> GenerateNextImageMipmapLevel(const Image<T> &image)
     using Component = typename ImageDetail::Trait<T>::Component;
     constexpr int Channels = ImageDetail::Trait<T>::ComponentCount;
     return GenerateMipmapDetail::GenerateImpl<T, Component, Channels>(image);
+}
+
+template<typename T>
+Image<T> Resize(const Image<T> &image, const Vector2u &targetSize)
+{
+    using Component = typename ImageDetail::Trait<T>::Component;
+    constexpr int Channels = ImageDetail::Trait<T>::ComponentCount;
+    return GenerateMipmapDetail::ResizeImpl<T, Component, Channels>(image, targetSize);
 }
 
 ImageDynamic GenerateNextImageMipmapLevel(const ImageDynamic &image)
@@ -61,7 +75,9 @@ uint32_t ComputeFullMipmapChainSize(uint32_t width, uint32_t height)
     return ret;
 }
 
-#define RTRC_EXPLICIT_INSTANTIATE(T) template Image<T> GenerateNextImageMipmapLevel<T>(const Image<T> &);
+#define RTRC_EXPLICIT_INSTANTIATE(T) \
+    template Image<T> GenerateNextImageMipmapLevel<T>(const Image<T> &); \
+    template Image<T> Resize<T>(const Image<T> &, const Vector2u&);
 
 RTRC_EXPLICIT_INSTANTIATE(uint8_t)
 RTRC_EXPLICIT_INSTANTIATE(Vector3b)
