@@ -462,6 +462,7 @@ void RGCompiler::GenerateSections()
     //      signaling fence is not nil
     //      be the last user of swapchain texture
     //      next pass is the first user of swapchain texture (disabled)
+    //      next pass requires sync
 
     const SubTexUsers *swapchainTexUsers = nullptr;
     if(graph_->swapchainTexture_)
@@ -473,7 +474,8 @@ void RGCompiler::GenerateSections()
     }
 
     bool needNewSection = true;
-    for(int passIndex = 0; passIndex < static_cast<int>(sortedPasses_.size()); ++passIndex)
+    const int passCount = static_cast<int>(sortedPasses_.size());
+    for(int passIndex = 0; passIndex < passCount; ++passIndex)
     {
         const RGPassImpl *pass = sortedPasses_[passIndex];
         if(needNewSection)
@@ -490,10 +492,9 @@ void RGCompiler::GenerateSections()
         section->signalFence = pass->signalFence_;
         needNewSection = pass->signalFence_ != nullptr;
 
-        if(swapchainTexUsers)
-        {
-            needNewSection |= passIndex == swapchainTexUsers->back().passIndex;
-        }
+        needNewSection |= swapchainTexUsers && passIndex == swapchainTexUsers->back().passIndex;
+
+        needNewSection |= passIndex + 1 < passCount && sortedPasses_[passIndex + 1]->syncBeforeExec_;
     }
 }
 

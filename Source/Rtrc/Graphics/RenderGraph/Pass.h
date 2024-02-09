@@ -78,7 +78,14 @@ public:
     RGPass SetCallback(Callback callback);
     RGPass SetCallback(LegacyCallback callback);
 
+    // Wait graph queue to be idle before executing this pass.
+    // RenderGraph compiler will not take this into consideration when optimizing device synchronizations.
+    // Use this only in editor and tools.
+    RGPass SyncQueueBeforeExecution();
+
     RGPass SetSignalFence(RHI::FenceRPtr fence);
+
+    RGPass ClearUAVOverlapGroup();
 
 private:
 
@@ -106,6 +113,7 @@ private:
 
     RGUavOverlapGroup uavOverlapGroup_;
 
+    bool syncBeforeExec_;
     bool isExecuted_;
 };
 

@@ -66,6 +66,11 @@ void RGExecuter::ExecuteImpl(const RGExecutableGraph &graph)
 
     for(auto &section : graph.sections)
     {
+        if(section.syncBeforeExec)
+        {
+            graph.queue->WaitIdle();
+        }
+
         auto commandBuffer = device_->CreateCommandBuffer();
         commandBuffer.Begin();
 

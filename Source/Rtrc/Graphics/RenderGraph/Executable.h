@@ -30,7 +30,7 @@ struct RGExecutablePass
     std::vector<RHI::TextureTransitionBarrier> preTextureBarriers;
     std::vector<RHI::BufferTransitionBarrier>  preBufferBarriers;
     RGPassImpl::Callback                      *callback;
-    const RGLabelStack::Node                    *nameNode;
+    const RGLabelStack::Node                  *nameNode;
 
 #if RTRC_RG_DEBUG
     std::set<const RGResource *> declaredResources;
@@ -49,6 +49,7 @@ struct RGExecutableSection
     RHI::BackBufferSemaphoreOPtr signalPresentSemaphore;
     RHI::PipelineStageFlag       signalPresentSemaphoreStages;
 
+    bool syncBeforeExec = false;
     RHI::FenceOPtr signalFence;
 };
 

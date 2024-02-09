@@ -7,6 +7,7 @@
 #include <Rtrc/Core/Math/Angle.h>
 #include <Rtrc/Core/Math/Intersection.h>
 #include <Rtrc/Core/Memory/Malloc.h>
+#include <Rtrc/Core/Resource/GenerateMipmap.h>
 #include <Rtrc/Core/Resource/ImageSampler.h>
 #include <Rtrc/Core/Resource/MeshData.h>
 

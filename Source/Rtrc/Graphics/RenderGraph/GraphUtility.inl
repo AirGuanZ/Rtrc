@@ -15,6 +15,8 @@ RTRC_BEGIN
  * RGDispatchWithThreadCount
  * RGDispatchIndirect
  * RGAddRenderPass
+ * RGReadbackBuffer
+ * RGReadbackTexture
  */
 
 inline RGPass RGClearColor(
@@ -617,6 +619,104 @@ RGPass RGAddRenderPass(
 {
     return RGAddRenderPass<false>(
         graph, std::move(name), {}, std::move(depthStencilAttachment), std::move(callback));
+}
+
+inline void RGReadbackBuffer(
+    GraphRef    graph,
+    std::string name,
+    RGBuffer    buffer,
+    void       *output,
+    size_t      offset,
+    size_t      size)
+{
+    RTRC_RG_SCOPED_PASS_GROUP(graph, std::move(name));
+
+    if(!size)
+    {
+        return;
+    }
+    assert(offset + size <= buffer->GetSize());
+    assert(buffer->GetDesc().hostAccessType == RHI::BufferHostAccessType::Readback ||
+           buffer->GetDesc().usage.Contains(RHI::BufferUsage::TransferSrc));
+
+    auto stagingBuffer = buffer;
+    if(stagingBuffer->GetDesc().hostAccessType != RHI::BufferHostAccessType::Readback)
+    {
+        stagingBuffer = graph->CreateBuffer(RHI::BufferDesc
+        {
+            .size = size,
+            .usage = RHI::BufferUsage::TransferDst,
+            .hostAccessType = RHI::BufferHostAccessType::Readback
+        }, "RGReadbackBuffer-StagingBuffer");
+        RGCopyBuffer(graph, "RGReadbackBuffer-CopyToStagingBuffer", buffer, offset, stagingBuffer, 0, size);
+        offset = 0;
+    }
+
+    auto pass = graph->CreatePass("RGReadbackBuffer-ReadbackStagingBuffer");
+    pass->SyncQueueBeforeExecution();
+    pass->ClearUAVOverlapGroup();
+    pass->Use(stagingBuffer, RGUseInfo // Add dummy use info to make sure this pass is executed after copy pass
+    {
+        .stages = RHI::PipelineStage::ComputeShader,
+        .accesses = RHI::ResourceAccess::RWBufferRead | RHI::ResourceAccess::RWBufferWrite
+    });
+    pass->SetCallback([stagingBuffer, output, offset, size]
+    {
+        stagingBuffer->Get()->Download(output, offset, size);
+    });
+}
+
+inline void RGReadbackTexture(
+    GraphRef    graph,
+    std::string name,
+    RGTexture   texture,
+    uint32_t    arrayLayer,
+    uint32_t    mipLevel,
+    void       *output)
+{
+    assert(texture->GetDesc().usage.Contains(RHI::TextureUsage::TransferSrc));
+
+    const size_t rowAlignment = graph->GetDevice()->GetTextureBufferCopyRowPitchAlignment(texture->GetFormat());
+    const size_t unalignedRowSize = GetTexelSize(texture->GetFormat()) * texture->GetWidth();
+    const size_t alignedRowSize = UpAlignTo(unalignedRowSize, rowAlignment);
+    const size_t stagingBufferSize = texture->GetHeight() * alignedRowSize;
+
+    auto stagingBuffer = graph->CreateBuffer(RHI::BufferDesc
+    {
+        .size = stagingBufferSize,
+        .usage = RHI::BufferUsage::TransferDst,
+        .hostAccessType = RHI::BufferHostAccessType::Readback
+    }, "RGReadbackTexture-StagingBuffer");
+
+    auto copyPass = graph->CreatePass("RGReadbackTexture-CopyToStagingBuffer");
+    copyPass->Use(texture, RG::CopySrc);
+    copyPass->Use(stagingBuffer, RG::CopyDst);
+    copyPass->ClearUAVOverlapGroup();
+    copyPass->SetCallback([texture, stagingBuffer, alignedRowSize, arrayLayer, mipLevel]
+    {
+        RGGetCommandBuffer().CopyColorTexture2DToBuffer(
+            stagingBuffer, 0, alignedRowSize, texture, arrayLayer, mipLevel);
+    });
+
+    auto readbackPass = graph->CreatePass("RGReadbackTexture-ReadbackStagingBuffer");
+    readbackPass->SyncQueueBeforeExecution();
+    readbackPass->ClearUAVOverlapGroup();
+    readbackPass->Use(stagingBuffer, RGUseInfo
+    {
+        .stages = RHI::PipelineStage::ComputeShader,
+        .accesses = RHI::ResourceAccess::RWBufferRead | RHI::ResourceAccess::RWBufferWrite
+    });
+    readbackPass->SetCallback([stagingBuffer, texture, output, unalignedRowSize, alignedRowSize, stagingBufferSize]
+    {
+        std::vector<unsigned char> data(stagingBufferSize);
+        stagingBuffer->Get()->Download(data.data(), 0, data.size());
+        for(unsigned y = 0; y < texture->GetHeight(); ++y)
+        {
+            auto src = data.data() + y * alignedRowSize;
+            auto dst = reinterpret_cast<unsigned char *>(output) + y * unalignedRowSize;
+            std::memcpy(dst, src, unalignedRowSize);
+        }
+    });
 }
 
 RTRC_END

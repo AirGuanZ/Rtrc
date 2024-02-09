@@ -145,6 +145,13 @@ RGPassImpl *RGPassImpl::SetCallback(LegacyCallback callback)
     return SetCallback([c = std::move(callback)] () mutable { c(RGGetPassContext()); });
 }
 
+RGPass RGPassImpl::SyncQueueBeforeExecution()
+{
+    assert(!syncBeforeExec_ && "SyncQueueBeforeExecution can only be called once on each render graph pass");
+    syncBeforeExec_ = true;
+    return this;
+}
+
 RGPassImpl *RGPassImpl::SetSignalFence(RHI::FenceRPtr fence)
 {
     assert(!isExecuted_ && "Can not setup already executed pass");
@@ -152,8 +159,15 @@ RGPassImpl *RGPassImpl::SetSignalFence(RHI::FenceRPtr fence)
     return this;
 }
 
+RGPassImpl *RGPassImpl::ClearUAVOverlapGroup()
+{
+    assert(!isExecuted_ && "Can not setup already executed pass");
+    uavOverlapGroup_ = {};
+    return this;
+}
+
 RGPassImpl::RGPassImpl(int index, const RGLabelStack::Node *node)
-    : index_(index), nameNode_(node), isExecuted_(false)
+    : index_(index), nameNode_(node), syncBeforeExec_(false), isExecuted_(false)
 {
 
 }
