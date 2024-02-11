@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.15)
 
 project(Rtrc)
 
-set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 set(RTRC_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "RTRC_SOURCE_DIR" FORCE)
