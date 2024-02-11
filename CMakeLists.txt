@@ -7,11 +7,13 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 set(RTRC_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "RTRC_SOURCE_DIR" FORCE)
 
-############## optional submodules
+############## optional modules
 
-option(ENABLE_DIRECTX12_BACKEND "Enable DirectX12 backend"        ON)
-option(ENABLE_VULKAN_BACKEND    "Enable Vulkan backend"	          ON)
-option(ENABLE_STATIC_RHI        "Enable static backend selection" OFF)
+option(RTRC_ENABLE_DIRECTX12_BACKEND "Enable DirectX12 backend"        ON)
+option(RTRC_ENABLE_VULKAN_BACKEND    "Enable Vulkan backend"	       ON)
+option(RTRC_ENABLE_STATIC_RHI        "Enable static backend selection" OFF)
+
+option(RTRC_BUILD_SAMPLES "Build Rtrc samples" ON)
 
 ############## build type
 
@@ -56,4 +58,6 @@ set_property(TARGET ToolKit            PROPERTY FOLDER "RtrcLibrary")
 
 ############## samples
 
-add_subdirectory(Samples)
+if(RTRC_BUILD_SAMPLES)
+    add_subdirectory(Samples)
+endif()

@@ -1,5 +1,5 @@
 #if RTRC_RHI_DIRECTX12 && RTRC_STATIC_RHI
-// Include this earlier than win32 and dxc headers to workaround ce when ENABLE_STATIC_RHI is ON
+// Include this earlier than win32 and dxc headers to workaround ce when RTRC_ENABLE_STATIC_RHI is ON
 #include <Rtrc/ShaderCommon/Reflection/D3D12Reflection.h>
 #endif
 
