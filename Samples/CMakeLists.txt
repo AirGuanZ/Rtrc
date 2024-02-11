@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.22)
 
 function(add_rtrc_sample SAMPLE_NAME)
 	file(
@@ -21,7 +21,7 @@ function(add_rtrc_sample SAMPLE_NAME)
 	set_property(TARGET ${SAMPLE_NAME} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
     set_property(TARGET ${SAMPLE_NAME} PROPERTY FOLDER "Samples")
 	target_link_libraries(${SAMPLE_NAME} PUBLIC ToolKit)
-	enable_preprocessed_shaders(${SAMPLE_NAME} "${SHADERS}")
+	rtrc_register_target(${SAMPLE_NAME})
 endfunction()
 
 add_rtrc_sample(01.TexturedQuad)

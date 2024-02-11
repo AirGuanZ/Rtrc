@@ -667,7 +667,7 @@ struct RawShaderEntry
 struct BindingDesc
 {
     BindingType              type;
-    ShaderStageFlags         shaderStages = ShaderStage::All;
+    ShaderStageFlags         stages = ShaderStage::All;
     std::optional<uint32_t>  arraySize;
     std::vector<SamplerRPtr> immutableSamplers;
     bool                     bindless = false;

@@ -20,6 +20,7 @@ RC<Shader> StandaloneShaderCompiler::Compile(
     assert(parsedShader.keywords.empty());
 
     CompilableShader compilableShader;
+    compilableShader.envir                   = std::move(envir);
     compilableShader.name                    = parsedShader.name;
     compilableShader.source                  = "_rtrc_generated_shader_prefix " + source;
     compilableShader.sourceFilename          = parsedShader.sourceFilename;
@@ -37,7 +38,7 @@ RC<Shader> StandaloneShaderCompiler::Compile(
     compilableShader.inlineSamplerNameToDesc = variant.inlineSamplerNameToDesc;
     compilableShader.pushConstantRanges      = variant.pushConstantRanges;
     
-    return compiler_.Compile(envir, compilableShader, debug);
+    return compiler_.Compile(compilableShader, debug);
 }
 
 RTRC_END

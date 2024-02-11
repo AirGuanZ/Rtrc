@@ -52,6 +52,7 @@ public:
         Target                  target,
         bool                    debugMode,
         std::string            *preprocessOutput,
+        std::string            *dependencyOutput,
         std::vector<std::byte> *reflectionData) const;
 
     IDxcUtils *GetDxcUtils() const;

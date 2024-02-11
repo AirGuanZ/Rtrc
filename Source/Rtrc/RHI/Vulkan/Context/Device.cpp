@@ -890,7 +890,7 @@ UPtr<BindingGroupLayout> VulkanDevice::CreateBindingGroupLayout(const BindingGro
             .binding            = static_cast<uint32_t>(descSetBindings.size()),
             .descriptorType     = vkType,
             .descriptorCount    = binding.arraySize.value_or(1),
-            .stageFlags         = TranslateShaderStageFlag(binding.shaderStages),
+            .stageFlags         = TranslateShaderStageFlag(binding.stages),
             .pImmutableSamplers = binding.immutableSamplers.empty() ? nullptr : &samplers[samplerOffset]
         });
         samplerOffset += binding.immutableSamplers.size();

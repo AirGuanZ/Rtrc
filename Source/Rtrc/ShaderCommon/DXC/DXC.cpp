@@ -74,6 +74,7 @@ std::vector<unsigned char> DXC::Compile(
     Target                  target,
     bool                    debugMode,
     std::string            *preprocessOutput,
+    std::string            *dependencyOutput,
     std::vector<std::byte> *reflectionData) const
 {
     ComPtr<IDxcBlobEncoding> sourceBlob;
@@ -215,6 +216,11 @@ std::vector<unsigned char> DXC::Compile(
         arguments.push_back(L"~");
     }
 
+    if(dependencyOutput)
+    {
+        arguments.push_back(L"-M");
+    }
+
     const DxcBuffer sourceBuffer = { sourceBlob->GetBufferPointer(), sourceBlob->GetBufferSize(), 0 };
     ComPtr<IDxcResult> compileResult;
     if(FAILED(impl_->compiler->Compile(
@@ -267,13 +273,23 @@ std::vector<unsigned char> DXC::Compile(
         return {};
     }
 
+    if(dependencyOutput)
+    {
+        ComPtr<IDxcBlobUtf8> dependencies;
+        if(FAILED(compileResult->GetOutput(DXC_OUT_TEXT, IID_PPV_ARGS(dependencies.GetAddressOf()), nullptr)))
+        {
+            throw Exception("Fail to get dependency output from DXC");
+        }
+        *dependencyOutput = dependencies->GetStringPointer();
+        return {};
+    }
+
     if(reflectionData)
     {
         assert(!preprocessOutput);
         assert(std::to_underlying(target) >= std::to_underlying(Target::DirectX12_VS_6_6));
         ComPtr<IDxcBlob> reflectionBlob;
-        if(FAILED(compileResult->GetOutput(
-            DXC_OUT_REFLECTION, IID_PPV_ARGS(reflectionBlob.GetAddressOf()), nullptr)))
+        if(FAILED(compileResult->GetOutput(DXC_OUT_REFLECTION, IID_PPV_ARGS(reflectionBlob.GetAddressOf()), nullptr)))
         {
             throw Exception("Fail to get dxc reflection result");
         }

@@ -3,7 +3,7 @@ rtrc_shader("InitRng")
 
 rtrc_compute(CSMain)
 
-#include "Random.hlsl"
+#include "Rtrc/Toolkit/Shader/Common/Random.hlsl"
 
 rtrc_group(Pass)
 {
@@ -17,7 +17,7 @@ void CSMain(uint2 tid : SV_DispatchThreadID)
     if(any(tid >= Pass.Resolution))
         return;
     uint state = 1 + tid.y * Pass.Resolution.x + tid.x;
-    PcgNext(state);
+    Pcg::Next(state);
     RngTexture[tid] = state;
 }
 

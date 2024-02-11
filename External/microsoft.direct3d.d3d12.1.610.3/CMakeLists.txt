@@ -2,33 +2,31 @@ cmake_minimum_required(VERSION 3.10)
 
 project(d3d12_1610)
 
-add_custom_command(
-	OUTPUT
-		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<IF:$<CONFIG:Debug>,Debug,Release>/D3D12/D3D12Core.dll"
-		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<IF:$<CONFIG:Debug>,Debug,Release>/D3D12/D3D12Core.pdb"
-		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<IF:$<CONFIG:Debug>,Debug,Release>/D3D12/d3d12SDKLayers.dll"
-		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<IF:$<CONFIG:Debug>,Debug,Release>/D3D12/d3d12SDKLayers.pdb"
-	COMMAND
-		${CMAKE_COMMAND} -E copy
-		"${CMAKE_CURRENT_SOURCE_DIR}/build/native/bin/x64/D3D12Core.dll"
-		"${CMAKE_CURRENT_SOURCE_DIR}/build/native/bin/x64/D3D12Core.pdb"
-		"${CMAKE_CURRENT_SOURCE_DIR}/build/native/bin/x64/d3d12SDKLayers.dll"
-		"${CMAKE_CURRENT_SOURCE_DIR}/build/native/bin/x64/d3d12SDKLayers.pdb"
-		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<IF:$<CONFIG:Debug>,Debug,Release>/D3D12"
-	DEPENDS
-		"${CMAKE_CURRENT_SOURCE_DIR}/build/native/bin/x64/D3D12Core.dll"
-		"${CMAKE_CURRENT_SOURCE_DIR}/build/native/bin/x64/D3D12Core.pdb"
-		"${CMAKE_CURRENT_SOURCE_DIR}/build/native/bin/x64/d3d12SDKLayers.dll"
-		"${CMAKE_CURRENT_SOURCE_DIR}/build/native/bin/x64/d3d12SDKLayers.pdb")
-
-add_custom_target(
-	CopyD3D12Dlls
-	DEPENDS
-		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<IF:$<CONFIG:Debug>,Debug,Release>/D3D12/D3D12Core.dll"
-		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<IF:$<CONFIG:Debug>,Debug,Release>/D3D12/D3D12Core.pdb"
-		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<IF:$<CONFIG:Debug>,Debug,Release>/D3D12/d3d12SDKLayers.dll"
-		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<IF:$<CONFIG:Debug>,Debug,Release>/D3D12/d3d12SDKLayers.pdb")
-
 add_library(d3d12_1610 INTERFACE)
 target_include_directories(d3d12_1610 INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/build/native/include")
-add_dependencies(d3d12_1610 CopyD3D12Dlls)
+
+set(RTRC_D3D12_SDK_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "d3d12 sdk dir")
+
+function(rtrc_deploy_d3d12_sdk TARGET_NAME)
+	set(STAMP_FILE "${CMAKE_BINARY_DIR}/${TARGET_NAME}_deploy_d3d12_sdk_timestamp")
+	add_custom_command(
+		OUTPUT ${STAMP_FILE}
+		COMMAND
+			${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${TARGET_NAME}>/D3D12"
+		COMMAND
+			${CMAKE_COMMAND} -E copy
+			"${RTRC_D3D12_SDK_DIR}/build/native/bin/x64/D3D12Core.dll"
+			"${RTRC_D3D12_SDK_DIR}/build/native/bin/x64/D3D12Core.pdb"
+			"${RTRC_D3D12_SDK_DIR}/build/native/bin/x64/d3d12SDKLayers.dll"
+			"${RTRC_D3D12_SDK_DIR}/build/native/bin/x64/d3d12SDKLayers.pdb"
+			"$<TARGET_FILE_DIR:${TARGET_NAME}>/D3D12"
+		COMMAND ${CMAKE_COMMAND} -E touch "${STAMP_FILE}"
+		DEPENDS
+			"${RTRC_D3D12_SDK_DIR}/build/native/bin/x64/D3D12Core.dll"
+			"${RTRC_D3D12_SDK_DIR}/build/native/bin/x64/D3D12Core.pdb"
+			"${RTRC_D3D12_SDK_DIR}/build/native/bin/x64/d3d12SDKLayers.dll"
+			"${RTRC_D3D12_SDK_DIR}/build/native/bin/x64/d3d12SDKLayers.pdb")
+	add_custom_target(CopyD3D12DllsFor${TARGET_NAME} DEPENDS ${STAMP_FILE})
+	add_dependencies(${TARGET_NAME} CopyD3D12DllsFor${TARGET_NAME})
+	set_property(TARGET CopyD3D12DllsFor${TARGET_NAME} PROPERTY FOLDER "Generated")
+endfunction()

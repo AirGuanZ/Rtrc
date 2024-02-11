@@ -3,7 +3,7 @@ rtrc_shader("PathTracing")
 
 rtrc_compute(CSMain)
 
-#include "Random.hlsl"
+#include "Rtrc/Toolkit/Shader/Common/Random.hlsl"
 
 #define MAX_INSTANCE_COUNT 128
 #define GAMMA_CORRECTION 1
@@ -81,8 +81,8 @@ float3 GetSkyColor(float3 toSky)
 float3 ComputePixelColor(uint2 tid, inout uint rngState)
 {
     float2 uv;
-    uv.x = (tid.x + PcgNextFloat(rngState)) / Pass.Resolution.x;
-    uv.y = (tid.y + PcgNextFloat(rngState)) / Pass.Resolution.y;
+    uv.x = (tid.x + Pcg::NextFloat(rngState)) / Pass.Resolution.x;
+    uv.y = (tid.y + Pcg::NextFloat(rngState)) / Pass.Resolution.y;
 
     float3 frustumAB = lerp(Pass.FrustumA, Pass.FrustumB, uv.x);
     float3 frustumCD = lerp(Pass.FrustumC, Pass.FrustumD, uv.x);
@@ -99,10 +99,10 @@ float3 ComputePixelColor(uint2 tid, inout uint rngState)
         Intersection intersection;
         if(!FindClosestIntersection(ray, intersection))
             return beta * GetSkyColor(ray.Direction);
-        float u1 = PcgNextFloat(rngState);
-        float u2 = PcgNextFloat(rngState);
+        float u1 = Pcg::NextFloat(rngState);
+        float u2 = Pcg::NextFloat(rngState);
         ray.Origin = intersection.position + 0.01 * intersection.normal;
-        ray.Direction = normalize(intersection.normal + 0.999 * UniformOnUnitSphere(float2(u1, u2)));
+        ray.Direction = normalize(intersection.normal + 0.999 * Distribution::UniformOnUnitSphere(float2(u1, u2)));
         beta *= intersection.color;
     }
 

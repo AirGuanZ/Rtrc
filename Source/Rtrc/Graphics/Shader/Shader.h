@@ -5,7 +5,7 @@
 #include <Rtrc/Core/Container/ObjectCache.h>
 #include <Rtrc/Core/SignalSlot.h>
 #include <Rtrc/Core/Unreachable.h>
-#include <Rtrc/Graphics/Shader/ShaderBindingNameMap.h>
+#include <Rtrc/ShaderCommon/Preprocess/ShaderPreprocessing.h>
 #include <Rtrc/ShaderCommon/Reflection/ShaderReflection.h>
 
 RTRC_BEGIN
@@ -37,33 +37,6 @@ private:
     std::vector<RHI::RayTracingRayGenShaderGroup> rayGenShaderGroups_;
     std::vector<RHI::RayTracingMissShaderGroup>   missShaderGroups_;
     std::vector<RHI::RayTracingHitShaderGroup>    hitShaderGroups_;
-};
-
-struct ShaderUniformBlock
-{
-    enum UniformType
-    {
-        Int,   Int2,   Int3,   Int4,
-        UInt,  UInt2,  UInt3,  UInt4,
-        Float, Float2, Float3, Float4,
-        Float4x4,
-        Unknown,
-    };
-
-    struct UniformVariable
-    {
-        UniformType type;
-        std::string name;
-        ShaderPropertyName pooledName;
-    };
-
-    static UniformType GetTypeFromTypeName(std::string_view name);
-    static size_t GetTypeSize(UniformType type);
-
-    std::string                  name;
-    uint32_t                     group;
-    uint32_t                     indexInGroup;
-    std::vector<UniformVariable> variables;
 };
 
 class ShaderBindingLayoutInfo : public Uncopyable
@@ -114,7 +87,6 @@ public:
 private:
 
     friend class ShaderCompiler;
-    friend class ShaderCompiler;
 
     std::map<std::string, int, std::less<>> nameToBindingGroupLayoutIndex_;
     std::vector<RC<BindingGroupLayout>>     bindingGroupLayouts_;
@@ -135,13 +107,6 @@ class ShaderInfo : public Uncopyable
 {
 public:
 
-    enum class Category
-    {
-        Graphics,
-        Compute,
-        RayTracing
-    };
-
     using BuiltinBindingGroup = ShaderBindingLayoutInfo::BuiltinBindingGroup;
     using PushConstantRange = ShaderBindingLayoutInfo::PushConstantRange;
 
@@ -149,7 +114,7 @@ public:
 
     const RC<ShaderBindingLayoutInfo> &GetBindingLayoutInfo() const;
 
-    Category GetCategory() const;
+    ShaderCategory GetCategory() const;
 
     const RC<BindingLayout> &GetBindingLayout() const;
 
@@ -196,7 +161,7 @@ private:
     
     friend class ShaderCompiler;
 
-    Category category_ = Category::Graphics;
+    ShaderCategory category_ = ShaderCategory::Graphics;
 
     std::vector<ShaderIOVar> VSInput_;
 
@@ -209,13 +174,12 @@ class Shader : public WithUniqueObjectID, public InObjectCache
 {
 public:
 
-    using Category            = ShaderInfo::Category;
     using BuiltinBindingGroup = ShaderInfo::BuiltinBindingGroup;
     using PushConstantRange   = ShaderInfo::PushConstantRange;
 
     ~Shader();
     
-    Category GetCategory() const;
+    ShaderCategory GetCategory() const;
     RHI::RawShaderOPtr GetRawShader(RHI::ShaderType type) const;
 
     const RC<ShaderInfo> &GetInfo() const;
@@ -291,42 +255,6 @@ inline Span<RHI::RayTracingHitShaderGroup> ShaderGroupInfo::GetHitShaderGroups()
     return hitShaderGroups_;
 }
 
-inline ShaderUniformBlock::UniformType ShaderUniformBlock::GetTypeFromTypeName(std::string_view name)
-{
-    using enum UniformType;
-    static const std::map<std::string, UniformType, std::less<>> m =
-    {
-        { "int",      Int    },
-        { "int2",     Int2   },
-        { "int3",     Int3   },
-        { "int4",     Int4   },
-        { "uint",     UInt   },
-        { "uint2",    UInt2  },
-        { "uint3",    UInt3  },
-        { "uint4",    UInt4  },
-        { "float",    Float  },
-        { "float2",   Float2 },
-        { "float3",   Float3 },
-        { "float4",   Float4 },
-        { "float4x4", Float4x4 }
-    };
-    const auto it = m.find(name);
-    return it != m.end() ? it->second : Unknown;
-}
-
-inline size_t ShaderUniformBlock::GetTypeSize(UniformType type)
-{
-    static constexpr size_t ret[] =
-    {
-        4, 8, 12, 16,
-        4, 8, 12, 16,
-        4, 8, 12, 16,
-        64,
-        0
-    };
-    return ret[std::to_underlying(type)];
-}
-
 inline const RC<BindingLayout> &ShaderBindingLayoutInfo::GetBindingLayout() const
 {
     return bindingLayout_;
@@ -400,7 +328,7 @@ inline const RC<ShaderBindingLayoutInfo> &ShaderInfo::GetBindingLayoutInfo() con
     return shaderBindingLayoutInfo_;
 }
 
-inline ShaderInfo::Category ShaderInfo::GetCategory() const
+inline ShaderCategory ShaderInfo::GetCategory() const
 {
     return category_;
 }
@@ -500,7 +428,7 @@ inline Shader::~Shader()
     onDestroyCallbacks_.Emit();
 }
 
-inline Shader::Category Shader::GetCategory() const
+inline ShaderCategory Shader::GetCategory() const
 {
     return info_->GetCategory();
 }
@@ -508,14 +436,13 @@ inline Shader::Category Shader::GetCategory() const
 inline RHI::RawShaderOPtr Shader::GetRawShader(RHI::ShaderType type) const
 {
     using enum RHI::ShaderType;
-    using enum Category;
+    using enum ShaderCategory;
     switch(type)
     {
     case VertexShader:     assert(GetCategory() == Graphics);   return rawShaders_[VS_INDEX];
     case FragmentShader:   assert(GetCategory() == Graphics);   return rawShaders_[FS_INDEX];
     case ComputeShader:    assert(GetCategory() == Compute);    return rawShaders_[CS_INDEX];
     case RayTracingShader: assert(GetCategory() == RayTracing); return rawShaders_[RT_INDEX];
-    default: break;
     }
     Unreachable();
 }

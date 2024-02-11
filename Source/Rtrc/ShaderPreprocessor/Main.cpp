@@ -8,27 +8,30 @@
 #include <Rtrc/Core/String.h>
 #include <Rtrc/ShaderCommon/DXC/DXC.h>
 #include <Rtrc/ShaderCommon/Parser/ShaderParser.h>
+#include <Rtrc/ShaderCommon/Preprocess/ShaderPreprocessing.h>
 
 struct CommandArguments
 {
     std::vector<std::string> includeDirectory;
     std::string inputFilename;
     std::string outputFilename;
+    std::string dependentFilename;
 };
 
 std::optional<CommandArguments> ParseCommandArguments(int argc, const char *argv[])
 {
     cxxopts::Options options("Rtrc.ShaderPreprocessor");
     options.add_options()
-        ("i,input",  "Input directory",   cxxopts::value<std::string>())
-        ("o,output", "Output directory",  cxxopts::value<std::string>())
-        ("r,root",   "Include directory", cxxopts::value<std::vector<std::string>>())
-        ("h,help",   "Print usage");
+        ("i,input",   "Input filename",    cxxopts::value<std::string>())
+        ("o,output",  "Output filename",   cxxopts::value<std::string>())
+        ("d,depfile", "Dependent file",    cxxopts::value<std::string>())
+        ("r,include", "Include directory", cxxopts::value<std::vector<std::string>>())
+        ("h,help",    "Print usage");
 
     auto parseResult = options.parse(argc, argv);
     if(parseResult.count("help"))
     {
-        std::cout << options.help() << std::endl;
+        std::cout << options.help() << "\n";
         return std::nullopt;
     }
 
@@ -39,7 +42,7 @@ std::optional<CommandArguments> ParseCommandArguments(int argc, const char *argv
     }
     else
     {
-        std::cout << options.help() << std::endl;
+        std::cout << options.help() << "\n";
         return std::nullopt;
     }
     if(parseResult.count("output"))
@@ -48,17 +51,21 @@ std::optional<CommandArguments> ParseCommandArguments(int argc, const char *argv
     }
     else
     {
-        std::cout << options.help() << std::endl;
+        std::cout << options.help() << "\n";
         return std::nullopt;
     }
-    if(parseResult.count("root"))
+    if(parseResult.count("include"))
     {
-        ret.includeDirectory = parseResult["root"].as<std::vector<std::string>>();
+        ret.includeDirectory = parseResult["include"].as<std::vector<std::string>>();
     }
     else
     {
-        std::cout << options.help() << std::endl;
+        std::cout << options.help() << "\n";
         return std::nullopt;
+    }
+    if(parseResult.count("depfile"))
+    {
+        ret.dependentFilename = parseResult["depfile"].as<std::string>();
     }
     return ret;
 }
@@ -165,7 +172,6 @@ void GenerateKeywordAndBindingGroupsInShader(
     const Rtrc::RawShader    &rawShader,
     const Rtrc::ParsedShader &parsedShader)
 {
-    std::cout << "Preprocessing shader " << rawShader.shaderName << std::endl;
     const std::string namespaceName = ShaderNameToNamespaceName(parsedShader.name);
 
     sw("#ifndef RTRC_STATIC_SHADER_INFO_{}", namespaceName).NewLine();
@@ -450,6 +456,7 @@ void WriteTxt(const std::string &filename, const std::string &content)
     if(!exists(parentDir))
         create_directories(parentDir);
 
+    // Do not touch the output file if its content doesn't change.
     {
         std::ifstream fin(filename, std::ifstream::in);
         if(fin)
@@ -464,7 +471,7 @@ void WriteTxt(const std::string &filename, const std::string &content)
         }
     }
 
-    std::cout << "Writing to " << filename << std::endl;
+    std::cout << "    Write to " << filename << "\n";
     std::ofstream fout(filename, std::ofstream::out | std::ofstream::trunc);
     if(fout)
     {
@@ -480,48 +487,113 @@ void Run(int argc, const char *argv[])
         return;
     }
 
-    Rtrc::SourceWriter sw;
-    
-    {
-        const auto rawShaderDatabase = Rtrc::CreateRawShaderDatabase({ args->inputFilename });
+    const std::string inputFilename = Rtrc::Replace(
+        std::filesystem::absolute(args->inputFilename).lexically_normal().string(),
+        "\\", "/");
+    const auto rawShaderDatabase = Rtrc::CreateRawShaderDatabase({ inputFilename });
 
-        Rtrc::DXC dxc;
-        Rtrc::ShaderCompileEnvironment envir;
+    std::cout << "Preprocess file " << inputFilename << "\n";
+    
+    std::vector<Rtrc::ParsedShader> parsedShaders;
+    Rtrc::DXC dxc;
+    Rtrc::ShaderCompileEnvironment envir;
+
+    {
         for(auto &inc : args->includeDirectory)
         {
             envir.includeDirs.push_back(std::filesystem::absolute(inc).lexically_normal().string());
         }
+        envir.includeDirs.push_back(
+            std::filesystem::path(inputFilename).parent_path().lexically_normal().string());
 
-        std::vector<Rtrc::ParsedShader> parsedShaders;
         for(const Rtrc::RawShader &rawShader : rawShaderDatabase.rawShaders)
         {
+            std::cout << "    Preprocess shader " << rawShader.shaderName << "\n";
             parsedShaders.push_back(ParseShader(envir, &dxc, rawShader));
         }
-
-        sw("/*=============================================================================").NewLine();
-        sw("    Generated by Rtrc shader preprocessor. Don't modify this file directly.").NewLine();
-        sw("=============================================================================*/").NewLine();
-        sw.NewLine();
-
-        sw("#if !RTRC_REFLECTION_TOOL").NewLine();
-
-        sw("#if !ENABLE_SHADER_REGISTRATION").NewLine();
-        sw("#include <Rtrc/Core/TemplateStringParameter.h>").NewLine();
-        sw("#include <Rtrc/Graphics/Device/BindingGroupDSL.h>").NewLine();
-        sw("#include <Rtrc/Graphics/Shader/ShaderInfo.h>").NewLine();
-        for(size_t i = 0; i < parsedShaders.size(); ++i)
-        {
-            GenerateKeywordAndBindingGroupsInShader(sw, rawShaderDatabase.rawShaders[i], parsedShaders[i]);
-        }
-        sw("#endif // #if !ENABLE_SHADER_REGISTRATION").NewLine();
-
-        sw("#if ENABLE_SHADER_REGISTRATION").NewLine();
-        for(size_t i = 0; i < parsedShaders.size(); ++i)
-        {
-            GenerateShaderRegistration(sw, parsedShaders[i]);
-        }
-        sw("#endif // #if ENABLE_SHADER_REGISTRATION").NewLine();
     }
+
+    std::set<std::string> dependencies;
+    dependencies.insert(inputFilename);
+
+    for(auto &parsedShader : parsedShaders)
+    {
+        const Rtrc::ParsedShaderVariant variant = parsedShader.variants[0];
+        Rtrc::ShaderPreprocessingInput shaderPreprocessInput;
+        shaderPreprocessInput.envir                   = envir;
+        shaderPreprocessInput.name                    = parsedShader.name;
+        shaderPreprocessInput.source                  = parsedShader.GetCachedSource();
+        shaderPreprocessInput.sourceFilename          = parsedShader.sourceFilename;
+        shaderPreprocessInput.keywords                = parsedShader.keywords;
+        shaderPreprocessInput.vertexEntry             = variant.vertexEntry;
+        shaderPreprocessInput.fragmentEntry           = variant.fragmentEntry;
+        shaderPreprocessInput.computeEntry            = variant.computeEntry;
+        shaderPreprocessInput.isRayTracingShader      = variant.vertexEntry.empty() &&
+                                                        variant.fragmentEntry.empty() &&
+                                                        variant.computeEntry.empty();
+        shaderPreprocessInput.entryGroups             = variant.entryGroups;
+        shaderPreprocessInput.bindingGroups           = variant.bindingGroups;
+        shaderPreprocessInput.ungroupedBindings       = variant.ungroupedBindings;
+        shaderPreprocessInput.aliases                 = variant.aliases;
+        shaderPreprocessInput.inlineSamplerDescs      = variant.inlineSamplerDescs;
+        shaderPreprocessInput.inlineSamplerNameToDesc = variant.inlineSamplerNameToDesc;
+        shaderPreprocessInput.pushConstantRanges      = variant.pushConstantRanges;
+        shaderPreprocessInput.keywordValues.resize(parsedShader.keywords.size());
+
+        auto shaderPreprocessOutput = PreprocessShader(shaderPreprocessInput, Rtrc::RHI::BackendType::Default);
+        auto dependenciesInParsedShader =
+            GetDependentFiles(&dxc, shaderPreprocessOutput, Rtrc::RHI::BackendType::Default);
+
+        dependencies.merge(dependenciesInParsedShader);
+    }
+
+    {
+        std::cout << fmt::format("    Dependencies:\n", args->inputFilename);
+        for(auto &x : dependencies)
+        {
+            std::cout << fmt::format("        {}\n", x);
+        }
+    }
+
+    if(!args->dependentFilename.empty())
+    {
+        std::cout << "    Generate " << args->dependentFilename << "\n";
+        std::ofstream fout(args->dependentFilename, std::ofstream::trunc);
+        if(fout)
+        {
+            fout << inputFilename << " : ";
+            for(auto &d : dependencies)
+            {
+                fout << d << " ";
+            }
+        }
+    }
+
+    Rtrc::SourceWriter sw;
+
+    sw("/*=============================================================================").NewLine();
+    sw("    Generated by Rtrc shader preprocessor. Don't manually modify this file.").NewLine();
+    sw("=============================================================================*/").NewLine();
+    sw.NewLine();
+
+    sw("#if !RTRC_REFLECTION_TOOL").NewLine();
+
+    sw("#if !ENABLE_SHADER_REGISTRATION").NewLine();
+    sw("#include <Rtrc/Core/TemplateStringParameter.h>").NewLine();
+    sw("#include <Rtrc/Graphics/Device/BindingGroupDSL.h>").NewLine();
+    sw("#include <Rtrc/Graphics/Shader/ShaderInfo.h>").NewLine();
+    for(size_t i = 0; i < parsedShaders.size(); ++i)
+    {
+        GenerateKeywordAndBindingGroupsInShader(sw, rawShaderDatabase.rawShaders[i], parsedShaders[i]);
+    }
+    sw("#endif // #if !ENABLE_SHADER_REGISTRATION").NewLine();
+
+    sw("#if ENABLE_SHADER_REGISTRATION").NewLine();
+    for(size_t i = 0; i < parsedShaders.size(); ++i)
+    {
+        GenerateShaderRegistration(sw, parsedShaders[i]);
+    }
+    sw("#endif // #if ENABLE_SHADER_REGISTRATION").NewLine();
 
     sw("#endif // #if !RTRC_REFLECTION_TOOL").NewLine();
 

@@ -169,12 +169,14 @@ RC<Shader> ShaderDatabase::GetShaderImpl(ShaderRecord *record, FastKeywordSetVal
             std::vector<ShaderKeywordValue> keywordValues(parsedShader.keywords.size());
             for(size_t i = 0; i < parsedShader.keywords.size(); ++i)
             {
-                keywordValues[i].value = record->keywordSet.ExtractSingleKeywordValue(i, fastKeywordValues);
+                const int value = record->keywordSet.ExtractSingleKeywordValue(static_cast<int>(i), fastKeywordValues);
+                keywordValues[i].value = value;
             }
             const int variantIndex = ComputeVariantIndex(parsedShader.keywords, keywordValues);
             const ParsedShaderVariant variant = parsedShader.variants[variantIndex];
 
             CompilableShader compilableShader;
+            compilableShader.envir                   = envir_;
             compilableShader.name                    = parsedShader.name;
             compilableShader.source                  = parsedShader.GetCachedSource();
             compilableShader.sourceFilename          = parsedShader.sourceFilename;
@@ -194,7 +196,7 @@ RC<Shader> ShaderDatabase::GetShaderImpl(ShaderRecord *record, FastKeywordSetVal
             compilableShader.inlineSamplerNameToDesc = variant.inlineSamplerNameToDesc;
             compilableShader.pushConstantRanges      = variant.pushConstantRanges;
             
-            return compiler_.Compile(envir_, compilableShader, debug_);
+            return compiler_.Compile(compilableShader, debug_);
         });
     };
 

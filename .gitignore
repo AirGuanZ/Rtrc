@@ -13,3 +13,4 @@
 *.shader.outh
 *.material.outh
 *.outh.timestamp
+*.outh.depfile

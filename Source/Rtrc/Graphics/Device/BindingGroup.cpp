@@ -22,7 +22,7 @@ void DumpBindingGroupLayoutDesc(const RHI::BindingGroupLayoutDesc &desc)
         }
 
         std::string line = fmt::format(
-            "[{}] {}", GetShaderStageFlagsName(binding.shaderStages), GetBindingTypeName(binding.type));
+            "[{}] {}", GetShaderStageFlagsName(binding.stages), GetBindingTypeName(binding.type));
         if(binding.arraySize)
         {
             line += fmt::format(" [{}]", *binding.arraySize);
@@ -56,7 +56,7 @@ RC<BindingGroupLayout> BindingGroupManager::CreateBindingGroupLayout(const Bindi
             {
                 RHI::BindingDesc rhiBinding;
                 rhiBinding.type = binding.type;
-                rhiBinding.shaderStages = binding.stages;
+                rhiBinding.stages = binding.stages;
                 rhiBinding.arraySize = binding.arraySize;
                 for(auto &s : binding.immutableSamplers)
                 {

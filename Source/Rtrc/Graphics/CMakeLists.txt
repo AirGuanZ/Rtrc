@@ -15,4 +15,4 @@ endforeach()
 
 set_property(TARGET Graphics PROPERTY CXX_STANDARD 23)
 
-target_link_libraries(Graphics PUBLIC RtrcPreprocessedShader RHI ShaderCommon unordered_dense imgui)
+target_link_libraries(Graphics PUBLIC RHI ShaderCommon unordered_dense imgui)

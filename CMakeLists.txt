@@ -5,10 +5,6 @@ project(Rtrc)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-
 ############## optional submodules
 
 option(ENABLE_DIRECTX12_BACKEND "Enable DirectX12 backend"        ON)
@@ -32,14 +28,29 @@ add_subdirectory(Source/Rtrc/RHI)
 add_subdirectory(Source/Rtrc/Graphics)
 add_subdirectory(Source/Rtrc/ShaderCommon)
 add_subdirectory(Source/Rtrc/ShaderPreprocessor)
+
+function(rtrc_register_target TARGET_NAME)
+    rtrc_register_shaders(${TARGET_NAME})
+    get_target_property(TARGET_TYPE ${TARGET_NAME} TYPE)
+    if (TARGET_TYPE STREQUAL "EXECUTABLE")
+        rtrc_deploy_d3d12_sdk(${TARGET_NAME})
+	    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+	        COMMAND
+                ${CMAKE_COMMAND} -E copy_if_different
+                $<TARGET_RUNTIME_DLLS:${TARGET_NAME}>
+                $<TARGET_FILE_DIR:${TARGET_NAME}>
+	        COMMAND_EXPAND_LISTS)
+    endif()
+endfunction()
+
 add_subdirectory(Source/Rtrc/ToolKit)
 
+set_property(TARGET Core               PROPERTY FOLDER "RtrcLibrary")
 set_property(TARGET RHI                PROPERTY FOLDER "RtrcLibrary")
 set_property(TARGET Graphics           PROPERTY FOLDER "RtrcLibrary")
 set_property(TARGET ShaderCommon       PROPERTY FOLDER "RtrcLibrary")
-set_property(TARGET Core               PROPERTY FOLDER "RtrcLibrary")
-set_property(TARGET ToolKit            PROPERTY FOLDER "RtrcLibrary")
 set_property(TARGET ShaderPreprocessor PROPERTY FOLDER "RtrcLibrary")
+set_property(TARGET ToolKit            PROPERTY FOLDER "RtrcLibrary")
 
 ############## samples
 

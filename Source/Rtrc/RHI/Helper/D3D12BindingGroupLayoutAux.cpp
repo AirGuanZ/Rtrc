@@ -28,8 +28,8 @@ namespace Helper
             D3D12BindingAssignment &bindingAssignment = bindingAssignments[bindingIndex];
 
             const D3D12DescTable::ShaderVisibility shaderVisibility =
-                binding.shaderStages == ShaderStage::VS ? D3D12DescTable::VS :
-                binding.shaderStages == ShaderStage::FS ? D3D12DescTable::PS : D3D12DescTable::All;
+                binding.stages == ShaderStage::VS ? D3D12DescTable::VS :
+                binding.stages == ShaderStage::FS ? D3D12DescTable::PS : D3D12DescTable::All;
 
             // Handle immutable samplers
 

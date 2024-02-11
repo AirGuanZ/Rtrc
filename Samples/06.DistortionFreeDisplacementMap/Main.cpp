@@ -23,7 +23,7 @@ class DFDMDemo : public SimpleApplication
         gizmoRenderer_ = MakeBox<GizmoRenderer>(GetDevice());
     }
 
-    void UpdateSimpleApplication(Ref<RenderGraph> renderGraph) override
+    void UpdateSimpleApplication(GraphRef renderGraph) override
     {
         if(GetWindowInput().IsKeyDown(KeyCode::Escape))
         {
