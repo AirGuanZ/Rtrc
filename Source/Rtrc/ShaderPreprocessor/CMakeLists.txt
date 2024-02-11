@@ -16,7 +16,7 @@ foreach(SRC IN ITEMS ${SRCS})
 endforeach()
 
 set_property(TARGET ShaderPreprocessor PROPERTY CXX_STANDARD 23)
-set_property(TARGET ShaderPreprocessor PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
+set_property(TARGET ShaderPreprocessor PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${RTRC_SOURCE_DIR}")
 
 target_link_libraries(ShaderPreprocessor PUBLIC ShaderCommon cxxopts)
 
@@ -125,7 +125,6 @@ function(get_all_dependencies target output_list)
 endfunction()
 
 function(rtrc_generate_custom_target_for_preprocessing_shaders FILE_LIST_NAME CUSTOM_TARGET_NAME)
-    #set(SHADER_OUT_FILE_LIST)
     set(FILE_LIST ${${FILE_LIST_NAME}})
     set(SHADER_TIMESTAMP_FILE_LIST)
     foreach(SHADER_FILE IN LISTS FILE_LIST)
@@ -139,9 +138,9 @@ function(rtrc_generate_custom_target_for_preprocessing_shaders FILE_LIST_NAME CU
             COMMAND
                 ShaderPreprocessor -i "${IN}"
                                    -o "${OUT}"
-                                   -r "${CMAKE_SOURCE_DIR}/Source"
+                                   -r "${RTRC_SOURCE_DIR}/Source"
                                    -d "${DF}"
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+            WORKING_DIRECTORY ${RTRC_SOURCE_DIR}
             COMMAND
                 ${CMAKE_COMMAND} -E touch "${TS}"
             DEPFILE ${DF}
@@ -180,7 +179,7 @@ function(rtrc_register_shaders TARGET_NAME)
             "${CMAKE_BINARY_DIR}/RtrcGenerated/${TARGET_NAME}/Generated/PreprocessedShaderFiles.inl"
             "${INCLUDE_CONTENT}")
         target_include_directories(${TARGET_NAME} PUBLIC "${CMAKE_BINARY_DIR}/RtrcGenerated/${TARGET_NAME}")
-        target_sources(${TARGET_NAME} PUBLIC "${CMAKE_SOURCE_DIR}/Source/Rtrc/ShaderPreprocessor/RegisterShaders.cpp")
-        source_group("Generated" FILES "${CMAKE_SOURCE_DIR}/Source/Rtrc/ShaderPreprocessor/RegisterShaders.cpp")
+        target_sources(${TARGET_NAME} PUBLIC "${RTRC_SOURCE_DIR}/Source/Rtrc/ShaderPreprocessor/RegisterShaders.cpp")
+        source_group("Generated" FILES "${RTRC_SOURCE_DIR}/Source/Rtrc/ShaderPreprocessor/RegisterShaders.cpp")
     endif()
 endfunction()
