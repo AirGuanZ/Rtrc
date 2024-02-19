@@ -4,10 +4,11 @@
 #include <optional>
 #include <vector>
 
-#include <Rtrc/Core/Math/Vector4.h>
 #include <Rtrc/Core/Container/Span.h>
 #include <Rtrc/Core/EnumFlags.h>
 #include <Rtrc/Core/Hash.h>
+#include <Rtrc/Core/Math/Rect.h>
+#include <Rtrc/Core/Math/Vector4.h>
 #include <Rtrc/Core/SmartPointer/ObserverPtr.h>
 #include <Rtrc/Core/SmartPointer/ReferenceCounted.h>
 #include <Rtrc/Core/SmartPointer/UniquePointer.h>
@@ -976,6 +977,9 @@ struct Viewport
     }
 
     static Viewport Create(const TextureOPtr &tex, float minDepth = 0, float maxDepth = 1);
+
+    template<typename T>
+    static Viewport Create(const Rect<T> &viewportRect, float minDepth = 0, float maxDepth = 1);
 };
 
 struct Scissor

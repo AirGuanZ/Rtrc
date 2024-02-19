@@ -23,7 +23,8 @@ RC<Buffer> RGPassContext::Get(const RGBufImpl *resource)
     if(!declaredResources_->contains(resource))
     {
         throw Exception(fmt::format(
-            "Cannot use rg buffer resource '{}' without declaring usage", result->GetRHIObject()->GetName()));
+            "Cannot use rg buffer resource '{}' without declaring usage in pass {}",
+            result->GetRHIObject()->GetName(), passName_));
     }
 #endif
     return result;
@@ -42,7 +43,8 @@ RC<Texture> RGPassContext::Get(const RGTexImpl *resource)
     if(!resource->SkipDeclarationCheck() && !declaredResources_->contains(resource))
     {
         throw Exception(fmt::format(
-            "Cannot use rg texture resource '{}' without declaring usage", result->GetRHIObject()->GetName()));
+            "Cannot use rg texture resource '{}' without declaring usage in pass {}",
+            result->GetRHIObject()->GetName(), passName_));
     }
 #endif
     return result;

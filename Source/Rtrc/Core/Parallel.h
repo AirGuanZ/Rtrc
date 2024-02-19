@@ -11,9 +11,9 @@ void ParallelFor(I begin, I end, const F &f)
 {
     tbb::parallel_for(tbb::blocked_range<I>(begin, end), [&](tbb::blocked_range<I> range)
     {
-        for(I i : range)
+        for(I it = range.begin(); it != range.end(); ++it)
         {
-            f(i);
+            f(it);
         }
     });
 }

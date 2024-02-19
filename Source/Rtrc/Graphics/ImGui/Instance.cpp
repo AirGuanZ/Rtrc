@@ -710,6 +710,18 @@ void ImGuiInstance::EventReceiver::Handle(const CharInputEvent &e)
     data_->Char(e.charCode);
 }
 
+void ImGuiInstance::UseDarkTheme()
+{
+    IMGUI_CONTEXT;
+    ImGui::StyleColorsDark();
+}
+
+void ImGuiInstance::UseLightTheme()
+{
+    IMGUI_CONTEXT;
+    ImGui::StyleColorsLight();
+}
+
 void ImGuiInstance::SetNextWindowPos(const Vector2f &position, ImGuiCond cond)
 {
     IMGUI_CONTEXT;

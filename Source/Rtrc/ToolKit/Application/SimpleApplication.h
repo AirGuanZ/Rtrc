@@ -12,8 +12,8 @@ public:
 
 protected:
 
-    virtual void InitializeSimpleApplication() { }
-    virtual void UpdateSimpleApplication(GraphRef renderGraph) { }
+    virtual void InitializeSimpleApplication(GraphRef graph) { }
+    virtual void UpdateSimpleApplication(GraphRef graph) { }
     virtual void DestroySimpleApplication() { }
 
     void ExecuteStandaloneRenderGraph(GraphRef graph, bool enableTransientResourcePool = false);

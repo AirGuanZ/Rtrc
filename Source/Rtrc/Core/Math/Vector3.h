@@ -25,6 +25,9 @@ public:
 
     std::tuple<T, T, T> ToTuple() const;
 
+    Vector2<T> xz() const { return Vector2<T>(x, z); }
+    Vector2<T> xy() const { return Vector2<T>(x, y); }
+
     template<typename U>
     constexpr Vector3<U> To() const;
 
@@ -56,6 +59,8 @@ auto operator*(const Vector3<T> &a, const Vector3<T> &b);
 template<typename T>
 auto operator/(const Vector3<T> &a, const Vector3<T> &b);
 
+template<typename T>
+auto operator+(const Vector3<T> &v);
 template<typename T>
 auto operator-(const Vector3<T> &v);
 
@@ -192,6 +197,12 @@ template<typename T>
 auto operator/(const Vector3<T> &a, const Vector3<T> &b)
 {
     return Vector3<T>(a.x / b.x, a.y / b.y, a.z / b.z);
+}
+
+template<typename T>
+auto operator+(const Vector3<T> &v)
+{
+    return v;
 }
 
 template<typename T>

@@ -104,7 +104,7 @@ void GizmoBuilder::DrawCube(const Vector3f &o, float sidelen)
 
 void GizmoBuilder::DrawWireDisk(const Vector3f &o, const Vector3f &nor, float radius, int subdiv)
 {
-    const Frame frame = Frame::FromZ(nor);
+    const Framef frame = Framef::FromZ(nor);
     const float step = 2 * PI / subdiv;
     auto GetPoint = [&](int i)
     {

@@ -65,6 +65,8 @@ private:
 
         RHI::FenceRPtr signalFence;
         std::optional<RHI::TextureTransitionBarrier> swapchainPresentBarrier;
+
+        bool syncBeforeExec = false;
     };
 
     struct CompilePass

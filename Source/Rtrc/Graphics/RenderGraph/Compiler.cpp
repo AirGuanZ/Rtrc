@@ -474,6 +474,8 @@ void RGCompiler::GenerateSections()
     }
 
     bool needNewSection = true;
+    bool needSyncBeforeExec = false;
+
     const int passCount = static_cast<int>(sortedPasses_.size());
     for(int passIndex = 0; passIndex < passCount; ++passIndex)
     {
@@ -481,6 +483,10 @@ void RGCompiler::GenerateSections()
         if(needNewSection)
         {
             sections_.push_back(MakeBox<CompileSection>());
+            if(needSyncBeforeExec)
+            {
+                sections_.back()->syncBeforeExec = true;
+            }
         }
 
         assert(!sections_.empty());
@@ -494,7 +500,8 @@ void RGCompiler::GenerateSections()
 
         needNewSection |= swapchainTexUsers && passIndex == swapchainTexUsers->back().passIndex;
 
-        needNewSection |= passIndex + 1 < passCount && sortedPasses_[passIndex + 1]->syncBeforeExec_;
+        needSyncBeforeExec = passIndex + 1 < passCount && sortedPasses_[passIndex + 1]->syncBeforeExec_;
+        needNewSection |= needSyncBeforeExec;
     }
 }
 
@@ -1236,6 +1243,7 @@ void RGCompiler::FillSections(RGExecutableGraph &output)
         }
 
         section.signalFence = compileSection->signalFence;
+        section.syncBeforeExec = compileSection->syncBeforeExec;
 
         section.passes.reserve(compileSection->passes.size());
         for(const int compilePassIndex : compileSection->passes)

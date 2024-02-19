@@ -34,6 +34,11 @@ RenderGraph::RenderGraph(Ref<Device> device, Queue queue)
 RGBufImpl *RenderGraph::CreateBuffer(const RHI::BufferDesc &desc, std::string name)
 {
     assert(recording_);
+    if(desc.hostAccessType != RHI::BufferHostAccessType::None)
+    {
+        auto actualBuffer = device_->CreateBuffer(desc, std::move(name));
+        return RegisterBuffer(StatefulBuffer::FromBuffer(std::move(actualBuffer)));
+    }
     const int index = static_cast<int>(buffers_.size());
     auto resource = MakeBox<InternalBufferResource>(this, index);
     resource->rhiDesc = desc;

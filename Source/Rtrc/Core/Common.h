@@ -16,6 +16,8 @@
 #define RTRC_ENABLE_EXCEPTION_STACKTRACE 0
 #endif
 
+#include <Rtrc/Core/Macro/AnonymousName.h>
+
 #define RTRC_BEGIN namespace Rtrc {
 #define RTRC_END   }
 
@@ -88,10 +90,14 @@ public:
 #endif
 };
 
+// =============================================== fp16 ===============================================
+
 using float16 = half_float::half;
 
 inline float16 operator "" _f16(long double f) { return float16(static_cast<float>(f)); }
 inline float16 operator "" _f16(unsigned long long f) { return float16(static_cast<float>(f)); }
+
+// =============================================== smart pointer ===============================================
 
 template<typename T>
 using Box = std::unique_ptr<T>;
@@ -141,43 +147,16 @@ Box<T> MakeBox(Args&&...args)
     return std::make_unique<T>(std::forward<Args>(args)...);
 }
 
-template<typename R = size_t, typename T, size_t N>
-constexpr R GetArraySize(const T (&arr)[N])
-{
-    return static_cast<R>(N);
-}
-
-template<typename C, typename M>
-constexpr size_t GetMemberOffset(M C::*p)
-{
-    return reinterpret_cast<size_t>(&(static_cast<C*>(nullptr)->*p));
-}
+template<typename T>
+struct IsRCImpl : std::false_type { };
 
 template<typename T>
-constexpr T UpAlignTo(T v, T align)
-{
-    return (v + (align - 1)) / align * align;
-}
+struct IsRCImpl<RC<T>> : std::true_type { };
 
 template<typename T>
-T *AddToPointer(T *pointer, std::ptrdiff_t offsetInBytes)
-{
-    static_assert(sizeof(size_t) == sizeof(T *));
-    return reinterpret_cast<T *>(reinterpret_cast<size_t>(pointer) + offsetInBytes);
-}
+constexpr bool IsRC = IsRCImpl<T>::value;
 
-template<typename T>
-T *AddToPointer(T *pointer, size_t offsetInBytes)
-{
-    static_assert(sizeof(size_t) == sizeof(T *));
-    return reinterpret_cast<T *>(reinterpret_cast<size_t>(pointer) + offsetInBytes);
-}
-
-template<typename T> requires std::is_scoped_enum_v<T>
-constexpr auto EnumCount = std::to_underlying(T::Count);
-
-template<typename T>
-constexpr bool AlwaysFalse = false;
+// =============================================== object id ===============================================
 
 class WithUniqueObjectID
 {
@@ -211,6 +190,8 @@ private:
 
 using UniqueId = WithUniqueObjectID::UniqueId;
 
+// =============================================== log ===============================================
+
 enum class LogLevel
 {
     Debug = 0,
@@ -224,6 +205,15 @@ void LogVerboseUnformatted(std::string_view msg);
 void LogInfoUnformatted(std::string_view msg);
 void LogWarningUnformatted(std::string_view msg);
 void LogErrorUnformatted(std::string_view msg);
+
+void SetLogIndentSize(unsigned size);
+unsigned GetLogIndentSize();
+void SetLogIndentLevel(unsigned level);
+unsigned GetLogIndentLevel();
+void PushLogIndent();
+void PopLogIndent();
+
+std::string_view GetLogIndentString();
 
 template<typename...Args>
 void LogVerbose(fmt::format_string<Args...> fmtStr, Args&&...args)
@@ -273,14 +263,66 @@ void LogError(const T &msg)
     Rtrc::LogError("{}", msg);
 }
 
-template<typename T>
-struct IsRCImpl : std::false_type { };
+class RtrcLogIndentScope
+{
+public:
+
+    RtrcLogIndentScope(int dummy = 0) { PushLogIndent(); }
+    ~RtrcLogIndentScope() { PopLogIndent(); }
+    RtrcLogIndentScope(const RtrcLogIndentScope &) = delete;
+    RtrcLogIndentScope &operator=(const RtrcLogIndentScope &) = delete;
+};
+
+#define RTRC_LOG_SCOPE() ::Rtrc::RtrcLogIndentScope RTRC_ANONYMOUS_NAME(_rtrcLogIndentScope)
+
+#define RTRC_LOG_VERBOSE_SCOPE(...) \
+    ::Rtrc::RtrcLogIndentScope RTRC_ANONYMOUS_NAME(_rtrcLogIndentScope)((::Rtrc::LogVerbose(__VA_ARGS__), 0))
+#define RTRC_LOG_INFO_SCOPE(...) \
+    ::Rtrc::RtrcLogIndentScope RTRC_ANONYMOUS_NAME(_rtrcLogIndentScope)((::Rtrc::LogInfo(__VA_ARGS__), 0))
+#define RTRC_LOG_WARN_SCOPE(...) \
+    ::Rtrc::RtrcLogIndentScope RTRC_ANONYMOUS_NAME(_rtrcLogIndentScope)((::Rtrc::LogWarn(__VA_ARGS__), 0))
+#define RTRC_LOG_ERROR_SCOPE(...) \
+    ::Rtrc::RtrcLogIndentScope RTRC_ANONYMOUS_NAME(_rtrcLogIndentScope)((::Rtrc::LogError(__VA_ARGS__), 0))
+
+// =============================================== misc ===============================================
+
+template<typename R = size_t, typename T, size_t N>
+constexpr R GetArraySize(const T(&arr)[N])
+{
+    return static_cast<R>(N);
+}
+
+template<typename C, typename M>
+constexpr size_t GetMemberOffset(M C:: *p)
+{
+    return reinterpret_cast<size_t>(&(static_cast<C *>(nullptr)->*p));
+}
 
 template<typename T>
-struct IsRCImpl<RC<T>> : std::true_type { };
+constexpr T UpAlignTo(T v, T align)
+{
+    return (v + (align - 1)) / align * align;
+}
 
 template<typename T>
-constexpr bool IsRC = IsRCImpl<T>::value;
+T *AddToPointer(T *pointer, std::ptrdiff_t offsetInBytes)
+{
+    static_assert(sizeof(size_t) == sizeof(T *));
+    return reinterpret_cast<T *>(reinterpret_cast<size_t>(pointer) + offsetInBytes);
+}
+
+template<typename T>
+T *AddToPointer(T *pointer, size_t offsetInBytes)
+{
+    static_assert(sizeof(size_t) == sizeof(T *));
+    return reinterpret_cast<T *>(reinterpret_cast<size_t>(pointer) + offsetInBytes);
+}
+
+template<typename T> requires std::is_scoped_enum_v<T>
+constexpr auto EnumCount = std::to_underlying(T::Count);
+
+template<typename T>
+constexpr bool AlwaysFalse = false;
 
 template<typename T>
 constexpr size_t GetContainerSize(const T &container)

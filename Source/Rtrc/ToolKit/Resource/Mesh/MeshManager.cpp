@@ -215,7 +215,7 @@ Vector3f MeshManager::ComputeTangent(
     const float det = m00 * m11 - m01 * m10;
     if(det == 0.0f)
     {
-        return Frame::FromZ(nor).x;
+        return Framef::FromZ(nor).x;
     }
     const float invDet = 1 / det;
     return Normalize(m11 * invDet * B_A - m01 * invDet * C_A);

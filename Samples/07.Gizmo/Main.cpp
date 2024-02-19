@@ -4,7 +4,7 @@ using namespace Rtrc;
 
 class GizmoDemo : public SimpleApplication
 {
-    void InitializeSimpleApplication() override
+    void InitializeSimpleApplication(GraphRef graph) override
     {
         gizmoRenderer_ = MakeBox<GizmoRenderer>(GetDevice());
         camera_.SetLookAt({ 0, 0, 7 }, { 0, 1, 0 }, { 0, 0, 0 });

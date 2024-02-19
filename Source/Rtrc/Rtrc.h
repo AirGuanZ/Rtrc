@@ -2,11 +2,14 @@
 
 #include <Rtrc/Core/Archive/Archive.h>
 #include <Rtrc/Core/Container/RangeSet.h>
+#include <Rtrc/Core/Enumerate.h>
 #include <Rtrc/Core/Filesystem/DirectoryFilter.h>
 #include <Rtrc/Core/Filesystem/File.h>
 #include <Rtrc/Core/Math/Angle.h>
 #include <Rtrc/Core/Math/Intersection.h>
+#include <Rtrc/Core/Math/Rect.h>
 #include <Rtrc/Core/Memory/Malloc.h>
+#include <Rtrc/Core/Parallel.h>
 #include <Rtrc/Core/Resource/GenerateMipmap.h>
 #include <Rtrc/Core/Resource/ImageSampler.h>
 #include <Rtrc/Core/Resource/MeshData.h>

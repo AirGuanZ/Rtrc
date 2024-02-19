@@ -36,6 +36,9 @@ namespace DeviceDetail
 
 } // namespace DeviceDetail
 
+class Device;
+using DeviceRef = Ref<Device>;
+
 class Device : public Uncopyable, public WithUniqueObjectID
 {
 public:
@@ -185,7 +188,11 @@ public:
     template<typename T>
     RC<Buffer> CreateAndUploadTexelBuffer(RHI::BufferUsageFlag usages, Span<T> data, RHI::Format format);
     template<typename T>
+    RC<Buffer> CreateAndUploadTexelBuffer(Span<T> data, RHI::Format format); // usages is RHI::BufferUsage::ShaderBuffer
+    template<typename T>
     RC<Buffer> CreateAndUploadStructuredBuffer(RHI::BufferUsageFlag usages, Span<T> data);
+    template<typename T>
+    RC<Buffer> CreateAndUploadStructuredBuffer(Span<T> data); // usages is RHI::BufferUsage::ShaderStructuredBuffer
     RC<Buffer> CreateAndUploadBuffer(
         const RHI::BufferDesc &desc,
         const void            *initData,
@@ -669,6 +676,12 @@ RC<Buffer> Device::CreateAndUploadTexelBuffer(RHI::BufferUsageFlag usages, Span<
     return buffer;
 }
 
+template <typename T>
+RC<Buffer> Device::CreateAndUploadTexelBuffer(Span<T> data, RHI::Format format)
+{
+    return this->CreateAndUploadTexelBuffer(RHI::BufferUsage::ShaderBuffer, data, format);
+}
+
 template<typename T>
 RC<Buffer> Device::CreateAndUploadStructuredBuffer(RHI::BufferUsageFlag usages, Span<T> data)
 {
@@ -679,6 +692,12 @@ RC<Buffer> Device::CreateAndUploadStructuredBuffer(RHI::BufferUsageFlag usages, 
         }, data.GetData());
     buffer->SetDefaultStructStride(sizeof(T));
     return buffer;
+}
+
+template <typename T>
+RC<Buffer> Device::CreateAndUploadStructuredBuffer(Span<T> data)
+{
+    return this->CreateAndUploadStructuredBuffer(RHI::BufferUsage::ShaderStructuredBuffer, data);
 }
 
 template<BindingGroupDSL::RtrcGroupStruct T>

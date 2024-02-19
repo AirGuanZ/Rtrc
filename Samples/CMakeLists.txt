@@ -31,3 +31,8 @@ add_rtrc_sample(04.RayTracingTriangle)
 add_rtrc_sample(05.PathTracing)
 add_rtrc_sample(06.DistortionFreeDisplacementMap)
 add_rtrc_sample(07.Gizmo)
+
+if(EXISTS "${RTRC_SOURCE_DIR}/Samples/Experimental.FADM")
+	add_rtrc_sample(Experimental.FADM)
+	target_link_libraries(Experimental.FADM PUBLIC libigl)
+endif()

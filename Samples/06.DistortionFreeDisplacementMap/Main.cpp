@@ -10,7 +10,7 @@ class DFDMDemo : public SimpleApplication
     static constexpr float WorldSize = 10.0f;
     static constexpr float HeightScale = 2.0f;
 
-    void InitializeSimpleApplication() override
+    void InitializeSimpleApplication(GraphRef graph) override
     {
         InitializeGeometryBuffers();
         InitializeGeometryMaps();

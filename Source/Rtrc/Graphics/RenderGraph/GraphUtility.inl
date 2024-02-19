@@ -674,6 +674,8 @@ inline void RGReadbackTexture(
     uint32_t    mipLevel,
     void       *output)
 {
+    RTRC_RG_SCOPED_PASS_GROUP(graph, std::move(name));
+
     assert(texture->GetDesc().usage.Contains(RHI::TextureUsage::TransferSrc));
 
     const size_t rowAlignment = graph->GetDevice()->GetTextureBufferCopyRowPitchAlignment(texture->GetFormat());

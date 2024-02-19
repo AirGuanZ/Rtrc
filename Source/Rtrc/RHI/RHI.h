@@ -72,6 +72,18 @@ inline Viewport Viewport::Create(const TextureOPtr &tex, float minDepth, float m
     return Create(tex->GetDesc(), minDepth, maxDepth);
 }
 
+template <typename T>
+Viewport Viewport::Create(const Rect<T>& viewportRect, float minDepth, float maxDepth)
+{
+    return Viewport
+    {
+        .topLeftCorner = viewportRect.lower.template To<float>(),
+        .size = viewportRect.GetExtent().template To<float>(),
+        .minDepth = minDepth,
+        .maxDepth = maxDepth
+    };
+}
+
 inline Scissor Scissor::Create(const TextureOPtr &tex)
 {
     return Create(tex->GetDesc());

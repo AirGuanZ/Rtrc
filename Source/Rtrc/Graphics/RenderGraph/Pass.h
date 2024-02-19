@@ -33,6 +33,7 @@ private:
     Ref<CommandBuffer> commandBuffer_;
 
 #if RTRC_RG_DEBUG
+    std::string passName_;
     const std::set<const RGResource *> *declaredResources_ = nullptr;
 #endif
 };

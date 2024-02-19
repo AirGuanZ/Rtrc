@@ -14,7 +14,11 @@ void SimpleApplication::Initialize()
     renderGraphExecuter_ = MakeBox<RGExecuter>(device);
     imguiRenderer_ = MakeBox<ImGuiRenderer>(device);
     isSwapchainInvalid = false;
-    InitializeSimpleApplication();
+    {
+        auto graph = device->CreateRenderGraph();
+        InitializeSimpleApplication(graph);
+        RGExecuter(device).Execute(graph);
+    }
     device->BeginRenderLoop();
 }
 

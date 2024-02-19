@@ -10,8 +10,8 @@ RTRC_BEGIN
 template<typename F>
 void GenerateUniformGridVertices(int width, int height, const F &f)
 {
-    const float rcpW = 1.0f / width;
-    const float rcpH = 1.0f / height;
+    const float rcpW = 1.0f / static_cast<float>(width);
+    const float rcpH = 1.0f / static_cast<float>(height);
     for(int y = 0; y <= height; ++y)
     {
         for(int x = 0; x <= width; ++x)

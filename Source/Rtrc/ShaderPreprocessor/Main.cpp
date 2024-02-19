@@ -454,9 +454,11 @@ void WriteTxt(const std::string &filename, const std::string &content)
 {
     auto parentDir = absolute(std::filesystem::path(filename)).parent_path();
     if(!exists(parentDir))
+    {
         create_directories(parentDir);
+    }
 
-    // Do not touch the output file if its content doesn't change.
+    // Do not touch the output file if its content haven't been changed.
     {
         std::ifstream fin(filename, std::ifstream::in);
         if(fin)
@@ -467,7 +469,9 @@ void WriteTxt(const std::string &filename, const std::string &content)
                 std::istreambuf_iterator<char>()
             };
             if(oldContent == content)
+            {
                 return;
+            }
         }
     }
 
@@ -503,8 +507,7 @@ void Run(int argc, const char *argv[])
         {
             envir.includeDirs.push_back(std::filesystem::absolute(inc).lexically_normal().string());
         }
-        envir.includeDirs.push_back(
-            std::filesystem::path(inputFilename).parent_path().lexically_normal().string());
+        envir.includeDirs.push_back(std::filesystem::path(inputFilename).parent_path().string());
 
         for(const Rtrc::RawShader &rawShader : rawShaderDatabase.rawShaders)
         {

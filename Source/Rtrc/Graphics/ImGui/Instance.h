@@ -88,6 +88,9 @@ public:
     
     // =========== GUI ===========
 
+    void UseDarkTheme();
+    void UseLightTheme();
+
     void SetNextWindowPos(const Vector2f &position, ImGuiCond cond = 0);
     void SetNextWindowSize(const Vector2f &size, ImGuiCond cond = 0);
 

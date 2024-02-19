@@ -83,7 +83,7 @@ public:
     //    executer->ExecutePartially(graph);
     //    CreatePasses2(graph);
     //    executer->Execute(graph);
-    void ExecutePartially(Ref<RenderGraph> graph, bool enableTransientResourcePool = true);
+    void ExecutePartially(Ref<RenderGraph> graph);
 
     // Execute recorded graph passes. The graph can't record new passes after this function is called.
     void Execute(Ref<RenderGraph> graph, bool enableTransientResourcePool = true);

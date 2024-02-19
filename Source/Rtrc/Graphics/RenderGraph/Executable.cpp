@@ -18,9 +18,9 @@ void RGExecuter::Recycle()
     }
 }
 
-void RGExecuter::ExecutePartially(Ref<RenderGraph> graph, bool enableTransientResourcePool)
+void RGExecuter::ExecutePartially(Ref<RenderGraph> graph)
 {
-    ExecuteInternal(graph, enableTransientResourcePool, true);
+    ExecuteInternal(graph, false, true);
 }
 
 void RGExecuter::Execute(Ref<RenderGraph> graph, bool enableTransientResourcePool)
@@ -109,6 +109,7 @@ void RGExecuter::ExecuteImpl(const RGExecutableGraph &graph)
             {
                 RGPassContext passContext(graph.resources, commandBuffer);
 #if RTRC_RG_DEBUG
+                passContext.passName_ = pass.nameNode->name;
                 passContext.declaredResources_ = &pass.declaredResources;
 #endif
                 (*pass.callback)();
