@@ -2,8 +2,7 @@
 
 Real-time rendering playground
 
-- [x] Move ShaderManager into Device
-- [x] Support UAV overlapping
+- [ ] Mesh shader
 
 ![](./Gallery/00.png)
 ![](./Gallery/01.png)
