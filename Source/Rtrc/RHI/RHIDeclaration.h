@@ -203,6 +203,8 @@ enum class ShaderType : uint8_t
     FragmentShader   = 1u << 1,
     ComputeShader    = 1u << 2,
     RayTracingShader = 1u << 3,
+    TaskShader       = 1u << 4,
+    MeshShader       = 1u << 5,
 };
 
 enum class ShaderStage : uint32_t
@@ -218,10 +220,14 @@ enum class ShaderStage : uint32_t
     RT_IntersectionShader = 1u << 6,
     RT_AnyHitShader       = 1u << 7,
     CallableShader        = 1u << 8,
+    TaskShader            = 1u << 9,
+    MeshShader            = 1u << 10,
 
     VS = VertexShader,
     FS = FragmentShader,
     CS = ComputeShader,
+    TS = TaskShader,
+    MS = MeshShader,
 
     RT_RGS = RT_RayGenShader,
     RT_CHS = RT_ClosestHitShader,
@@ -229,11 +235,12 @@ enum class ShaderStage : uint32_t
     RT_IS  = RT_IntersectionShader,
     RT_AHS = RT_AnyHitShader,
 
-    AllGraphics = VS | FS,
-    AllRTCommon = RT_RGS | RT_MS,
-    AllRTHit    = RT_CHS | RT_IS | RT_AHS,
-    AllRT       = AllRTCommon | AllRTHit | CallableShader,
-    All         = AllGraphics | AllRT | CS
+    AllClassical = VS | FS,
+    AllMesh      = TS | MS | FS,
+    AllRTCommon  = RT_RGS | RT_MS,
+    AllRTHit     = RT_CHS | RT_IS | RT_AHS,
+    AllRT        = AllRTCommon | AllRTHit | CallableShader,
+    All          = AllClassical | AllMesh | AllRT | CS
 };
 RTRC_DEFINE_ENUM_FLAGS(ShaderStage)
 using ShaderStageFlags = EnumFlagsShaderStage;
@@ -428,15 +435,17 @@ enum class PipelineStage : uint32_t
     FragmentShader   = 1 << 3,
     ComputeShader    = 1 << 4,
     RayTracingShader = 1 << 5,
-    DepthStencil     = 1 << 6,
-    RenderTarget     = 1 << 7,
-    Copy             = 1 << 8,
-    Clear            = 1 << 9,
-    Resolve          = 1 << 10,
-    BuildAS          = 1 << 11,
-    CopyAS           = 1 << 12,
-    IndirectCommand  = 1 << 13,
-    All              = 1 << 14
+    TaskShader       = 1 << 6,
+    MeshShader       = 1 << 7,
+    DepthStencil     = 1 << 8,
+    RenderTarget     = 1 << 9,
+    Copy             = 1 << 10,
+    Clear            = 1 << 11,
+    Resolve          = 1 << 12,
+    BuildAS          = 1 << 13,
+    CopyAS           = 1 << 14,
+    IndirectCommand  = 1 << 15,
+    All              = 1 << 16
 };
 RTRC_DEFINE_ENUM_FLAGS(PipelineStage)
 using PipelineStageFlag = EnumFlagsPipelineStage;
@@ -447,6 +456,8 @@ inline PipelineStageFlag ShaderStagesToPipelineStages(ShaderStageFlags stages)
     if(stages.Contains(ShaderStage::VertexShader))   { ret |= PipelineStage::VertexShader; }
     if(stages.Contains(ShaderStage::FragmentShader)) { ret |= PipelineStage::FragmentShader; }
     if(stages.Contains(ShaderStage::ComputeShader))  { ret |= PipelineStage::ComputeShader; }
+    if(stages.Contains(ShaderStage::TaskShader))     { ret |= PipelineStage::TaskShader; }
+    if(stages.Contains(ShaderStage::MeshShader))     { ret |= PipelineStage::MeshShader; }
     if(stages | ShaderStage::AllRT)                  { ret |= PipelineStage::RayTracingShader; }
     return ret;
 }
@@ -1072,8 +1083,9 @@ struct StencilOps
 
 struct GraphicsPipelineDesc
 {
-
     OPtr<RawShader> vertexShader;
+    OPtr<RawShader> taskShader;
+    OPtr<RawShader> meshShader;
     OPtr<RawShader> fragmentShader;
 
     OPtr<BindingLayout> bindingLayout;

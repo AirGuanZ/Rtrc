@@ -81,6 +81,8 @@ VkShaderStageFlagBits TranslateShaderType(ShaderType type)
     case VertexShader:     return VK_SHADER_STAGE_VERTEX_BIT;
     case FragmentShader:   return VK_SHADER_STAGE_FRAGMENT_BIT;
     case ComputeShader:    return VK_SHADER_STAGE_COMPUTE_BIT;
+    case TaskShader:       return VK_SHADER_STAGE_TASK_BIT_EXT;
+    case MeshShader:       return VK_SHADER_STAGE_MESH_BIT_EXT;
     case RayTracingShader: Unreachable();
     }
     Unreachable();
@@ -100,6 +102,8 @@ VkShaderStageFlagBits TranslateShaderStage(ShaderStage type)
     case RT_IntersectionShader: return VK_SHADER_STAGE_INTERSECTION_BIT_KHR;
     case RT_AnyHitShader:       return VK_SHADER_STAGE_ANY_HIT_BIT_KHR;
     case CallableShader:        return VK_SHADER_STAGE_CALLABLE_BIT_KHR;
+    case TaskShader:            return VK_SHADER_STAGE_TASK_BIT_EXT;
+    case MeshShader:            return VK_SHADER_STAGE_MESH_BIT_EXT;
     default:
         throw Exception(fmt::format("Single shader stage expected. Actual: {0:x}", std::to_underlying(type)));
     }
@@ -117,6 +121,8 @@ VkShaderStageFlags TranslateShaderStageFlag(ShaderStageFlags flags)
     result |= flags.Contains(ShaderStage::RT_IntersectionShader) ? VK_SHADER_STAGE_INTERSECTION_BIT_KHR : 0;
     result |= flags.Contains(ShaderStage::RT_AnyHitShader)       ? VK_SHADER_STAGE_ANY_HIT_BIT_KHR      : 0;
     result |= flags.Contains(ShaderStage::CallableShader)        ? VK_SHADER_STAGE_CALLABLE_BIT_KHR     : 0;
+    result |= flags.Contains(ShaderStage::TaskShader)            ? VK_SHADER_STAGE_TASK_BIT_EXT         : 0;
+    result |= flags.Contains(ShaderStage::MeshShader)            ? VK_SHADER_STAGE_MESH_BIT_EXT         : 0;
     return result;
 }
 
@@ -453,6 +459,8 @@ VkPipelineStageFlags2 TranslatePipelineStageFlag(PipelineStageFlag flag)
         VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
         VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
         VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR,
+        VK_PIPELINE_STAGE_2_TASK_SHADER_BIT_EXT,
+        VK_PIPELINE_STAGE_2_MESH_SHADER_BIT_EXT,
         VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
         VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
         VK_PIPELINE_STAGE_2_COPY_BIT,
@@ -556,18 +564,18 @@ VkFormat TranslateInputAttributeType(VertexAttributeType type)
     using enum VertexAttributeType;
     switch(type)
     {
-    case Int:  return VK_FORMAT_R32_SINT;
-    case Int2: return VK_FORMAT_R32G32_SINT;
-    case Int3: return VK_FORMAT_R32G32B32_SINT;
-    case Int4: return VK_FORMAT_R32G32B32A32_SINT;
-    case UInt:  return VK_FORMAT_R32_UINT;
-    case UInt2: return VK_FORMAT_R32G32_UINT;
-    case UInt3: return VK_FORMAT_R32G32B32_UINT;
-    case UInt4: return VK_FORMAT_R32G32B32A32_UINT;
-    case Float:  return VK_FORMAT_R32_SFLOAT;
-    case Float2: return VK_FORMAT_R32G32_SFLOAT;
-    case Float3: return VK_FORMAT_R32G32B32_SFLOAT;
-    case Float4: return VK_FORMAT_R32G32B32A32_SFLOAT;
+    case Int:        return VK_FORMAT_R32_SINT;
+    case Int2:       return VK_FORMAT_R32G32_SINT;
+    case Int3:       return VK_FORMAT_R32G32B32_SINT;
+    case Int4:       return VK_FORMAT_R32G32B32A32_SINT;
+    case UInt:       return VK_FORMAT_R32_UINT;
+    case UInt2:      return VK_FORMAT_R32G32_UINT;
+    case UInt3:      return VK_FORMAT_R32G32B32_UINT;
+    case UInt4:      return VK_FORMAT_R32G32B32A32_UINT;
+    case Float:      return VK_FORMAT_R32_SFLOAT;
+    case Float2:     return VK_FORMAT_R32G32_SFLOAT;
+    case Float3:     return VK_FORMAT_R32G32B32_SFLOAT;
+    case Float4:     return VK_FORMAT_R32G32B32A32_SFLOAT;
     case UChar4Norm: return VK_FORMAT_R8G8B8A8_UNORM;
     }
     Unreachable();

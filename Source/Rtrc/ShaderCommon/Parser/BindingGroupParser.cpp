@@ -69,7 +69,7 @@ namespace BindingGroupParserDetail
             }
             else if(tokens.GetCurrentToken() == "Graphics")
             {
-                stages |= RHI::ShaderStage::AllGraphics;
+                stages |= RHI::ShaderStage::AllClassical;
             }
             else if(tokens.GetCurrentToken() == "Callable")
             {

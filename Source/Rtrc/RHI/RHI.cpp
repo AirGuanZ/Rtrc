@@ -107,46 +107,31 @@ bool HasStencilAspect(Format format)
 
 std::string GetShaderStageFlagsName(ShaderStageFlags flags)
 {
-#define ADD_COMPOSED_STAGES(STAGE)         \
+#define ADD_ATOMIC_STAGE(STAGE, NAME)      \
     if(flags.Contains(ShaderStage::STAGE)) \
     {                                      \
-        names.push_back(#STAGE);           \
-    }                                      \
-    else
-#define ADD_ATOMIC_STAGE(STAGE) ADD_COMPOSED_STAGES(STAGE) { }
+        names.push_back(NAME);             \
+    }
 
     std::vector<std::string> names;
-    ADD_COMPOSED_STAGES(All)
     {
-        ADD_COMPOSED_STAGES(AllGraphics)
-        {
-            ADD_ATOMIC_STAGE(VS)
-            ADD_ATOMIC_STAGE(FS)
-        }
+        ADD_ATOMIC_STAGE(VS, "VS")
+        ADD_ATOMIC_STAGE(FS, "FS")
 
-        ADD_COMPOSED_STAGES(AllRT)
-        {
-            ADD_COMPOSED_STAGES(AllRTHit)
-            {
-                ADD_ATOMIC_STAGE(RT_CHS)
-                ADD_ATOMIC_STAGE(RT_IS)
-                ADD_ATOMIC_STAGE(RT_AHS)
-            }
+        ADD_ATOMIC_STAGE(TS, "TS")
+        ADD_ATOMIC_STAGE(MS, "MS")
 
-            ADD_COMPOSED_STAGES(AllRTCommon)
-            {
-                ADD_ATOMIC_STAGE(RT_RGS)
-                ADD_ATOMIC_STAGE(RT_MS)
-            }
+        ADD_ATOMIC_STAGE(RT_CHS,         "RT_CHS")
+        ADD_ATOMIC_STAGE(RT_IS,          "RT_IS")
+        ADD_ATOMIC_STAGE(RT_AHS,         "RT_AHS")
+        ADD_ATOMIC_STAGE(RT_RGS,         "RT_RGS")
+        ADD_ATOMIC_STAGE(RT_MS,          "RT_MS")
+        ADD_ATOMIC_STAGE(CallableShader, "Callable")
 
-            ADD_ATOMIC_STAGE(CallableShader)
-        }
-
-        ADD_ATOMIC_STAGE(CS)
+        ADD_ATOMIC_STAGE(CS, "CS")
     }
     return Join('|', names.begin(), names.end());
 
-#undef ADD_COMPOSED_STAGES
 #undef ADD_ATOMIC_STAGE
 }
 

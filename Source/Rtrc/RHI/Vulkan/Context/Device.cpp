@@ -535,10 +535,24 @@ UPtr<GraphicsPipeline> VulkanDevice::CreateGraphicsPipeline(const GraphicsPipeli
             TranslateTexelFormat(desc.depthStencilFormat) : VK_FORMAT_UNDEFINED
     };
 
-    const VkPipelineShaderStageCreateInfo stages[] = {
-        static_cast<VulkanRawShader *>(desc.vertexShader.Get())->_internalGetStageCreateInfo(),
-        static_cast<VulkanRawShader *>(desc.fragmentShader.Get())->_internalGetStageCreateInfo()
-    };
+    StaticVector<VkPipelineShaderStageCreateInfo, 3> stages;
+    if(desc.vertexShader)
+    {
+        stages.PushBack(static_cast<VulkanRawShader *>(desc.vertexShader.Get())->_internalGetStageCreateInfo());
+    }
+    else
+    {
+        assert(desc.meshShader);
+        if(desc.taskShader)
+        {
+            stages.PushBack(static_cast<VulkanRawShader *>(desc.taskShader.Get())->_internalGetStageCreateInfo());
+        }
+        stages.PushBack(static_cast<VulkanRawShader *>(desc.meshShader.Get())->_internalGetStageCreateInfo());
+    }
+    if(desc.fragmentShader)
+    {
+        stages.PushBack(static_cast<VulkanRawShader *>(desc.fragmentShader.Get())->_internalGetStageCreateInfo());
+    }
 
     std::vector<VkVertexInputBindingDescription> inputBindingDescs;
     for(auto &&[index, buffer] : Enumerate(desc.vertexBuffers))
@@ -702,8 +716,8 @@ UPtr<GraphicsPipeline> VulkanDevice::CreateGraphicsPipeline(const GraphicsPipeli
     const VkGraphicsPipelineCreateInfo pipelineCreateInfo = {
         .sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
         .pNext               = &renderingCreateInfo,
-        .stageCount          = 2,
-        .pStages             = stages,
+        .stageCount          = static_cast<uint32_t>(stages.GetSize()),
+        .pStages             = stages.GetData(),
         .pVertexInputState   = &vertexInputState,
         .pInputAssemblyState = &inputAssemblyState,
         .pViewportState      = &viewportState,

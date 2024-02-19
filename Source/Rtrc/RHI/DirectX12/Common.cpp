@@ -154,6 +154,14 @@ D3D12_SHADER_VISIBILITY TranslateShaderVisibility(ShaderStageFlags vis)
     {
         return D3D12_SHADER_VISIBILITY_PIXEL;
     }
+    if(vis == ShaderStage::TaskShader)
+    {
+        return D3D12_SHADER_VISIBILITY_AMPLIFICATION;
+    }
+    if(vis == ShaderStage::MeshShader)
+    {
+        return D3D12_SHADER_VISIBILITY_MESH;
+    }
     return D3D12_SHADER_VISIBILITY_ALL;
 }
 
@@ -381,6 +389,8 @@ D3D12_BARRIER_SYNC TranslateBarrierSync(PipelineStageFlag stages, Format format)
         D3D12_BARRIER_SYNC_PIXEL_SHADING,                           // FragmentShader
         D3D12_BARRIER_SYNC_COMPUTE_SHADING,                         // ComputeShader
         D3D12_BARRIER_SYNC_RAYTRACING,                              // RayTracingShader
+        D3D12_BARRIER_SYNC_VERTEX_SHADING,                          // TaskShader
+        D3D12_BARRIER_SYNC_VERTEX_SHADING,                          // MeshShader
         D3D12_BARRIER_SYNC_DEPTH_STENCIL,                           // DepthStencil
         D3D12_BARRIER_SYNC_RENDER_TARGET,                           // RenderTarget
         D3D12_BARRIER_SYNC_COPY,                                    // Copy
@@ -399,6 +409,8 @@ D3D12_BARRIER_SYNC TranslateBarrierSync(PipelineStageFlag stages, Format format)
         D3D12_BARRIER_SYNC_PIXEL_SHADING,                           // FragmentShader
         D3D12_BARRIER_SYNC_COMPUTE_SHADING,                         // ComputeShader
         D3D12_BARRIER_SYNC_RAYTRACING,                              // RayTracingShader
+        D3D12_BARRIER_SYNC_VERTEX_SHADING,                          // TaskShader
+        D3D12_BARRIER_SYNC_VERTEX_SHADING,                          // MeshShader
         D3D12_BARRIER_SYNC_DEPTH_STENCIL,                           // DepthStencil
         D3D12_BARRIER_SYNC_RENDER_TARGET,                           // RenderTarget
         D3D12_BARRIER_SYNC_COPY,                                    // Copy

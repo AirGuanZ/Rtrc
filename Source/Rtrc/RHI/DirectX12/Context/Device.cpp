@@ -36,6 +36,13 @@ namespace DirectX12DeviceDetail
         return static_cast<DirectX12RawShader *>(shader.Get())->_internalGetShaderByteCode();
     }
 
+    template<D3D12_PIPELINE_STATE_SUBOBJECT_TYPE Type, typename SubObject>
+    struct alignas(void *) PipelineStateSubobject
+    {
+        D3D12_PIPELINE_STATE_SUBOBJECT_TYPE type = Type;
+        SubObject subObject;
+    };
+
 } // namespace DirectX12DeviceDetail
 
 DirectX12Device::DirectX12Device(
@@ -284,74 +291,145 @@ UPtr<GraphicsPipeline> DirectX12Device::CreateGraphicsPipeline(const GraphicsPip
         }
     }
 
-    D3D12_GRAPHICS_PIPELINE_STATE_DESC pipelineDesc =
-    {
-        .pRootSignature  = rootSignature.Get(),
-        .VS              = DirectX12DeviceDetail::GetByteCode(desc.vertexShader),
-        .PS              = DirectX12DeviceDetail::GetByteCode(desc.fragmentShader),
-        .DS              = {},
-        .HS              = {},
-        .GS              = {},
-        .StreamOutput    = {},
-        .BlendState      = blendDesc,
-        .SampleMask      = 0xffffffff,
-        .RasterizerState = D3D12_RASTERIZER_DESC
-        {
-            .FillMode              = TranslateFillMode(desc.fillMode),
-            .CullMode              = TranslateCullMode(desc.cullMode),
-            .FrontCounterClockwise = desc.frontFaceMode == FrontFaceMode::CounterClockwise ? true : false,
-            .DepthBias             = static_cast<INT>(desc.depthBiasConstFactor),
-            .DepthBiasClamp        = desc.depthBiasClampValue,
-            .SlopeScaledDepthBias  = desc.depthBiasSlopeFactor,
-            .DepthClipEnable       = desc.enableDepthClip,
-            .MultisampleEnable     = false,
-            .AntialiasedLineEnable = false,
-            .ForcedSampleCount     = 0,
-            .ConservativeRaster    = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF
-        },
-        .DepthStencilState = D3D12_DEPTH_STENCIL_DESC
-        {
-            .DepthEnable      = desc.enableDepthTest || desc.enableDepthWrite,
-            .DepthWriteMask   = desc.enableDepthWrite ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO,
-            .DepthFunc        = TranslateCompareOp(desc.depthCompareOp),
-            .StencilEnable    = desc.enableStencilTest,
-            .StencilReadMask  = desc.stencilReadMask,
-            .StencilWriteMask = desc.stencilWriteMask,
-            .FrontFace = D3D12_DEPTH_STENCILOP_DESC
-            {
-                .StencilFailOp      = TranslateStencilOp(desc.frontStencilOp.failOp),
-                .StencilDepthFailOp = TranslateStencilOp(desc.frontStencilOp.depthFailOp),
-                .StencilPassOp      = TranslateStencilOp(desc.frontStencilOp.passOp),
-                .StencilFunc        = TranslateCompareOp(desc.frontStencilOp.compareOp)
-            },
-            .BackFace = D3D12_DEPTH_STENCILOP_DESC
-            {
-                .StencilFailOp      = TranslateStencilOp(desc.backStencilOp.failOp),
-                .StencilDepthFailOp = TranslateStencilOp(desc.backStencilOp.depthFailOp),
-                .StencilPassOp      = TranslateStencilOp(desc.backStencilOp.passOp),
-                .StencilFunc        = TranslateCompareOp(desc.backStencilOp.compareOp)
-            }
-        },
-        .InputLayout = D3D12_INPUT_LAYOUT_DESC
-        {
-            .pInputElementDescs = inputElements.data(),
-            .NumElements        = static_cast<UINT>(inputElements.size())
-        },
-        .IBStripCutValue       = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED,
-        .PrimitiveTopologyType = TranslatePrimitiveTopologyType(desc.primitiveTopology),
-        .NumRenderTargets      = static_cast<UINT>(desc.colorAttachments.GetSize()),
-        .DSVFormat             = TranslateFormat(desc.depthStencilFormat),
-        .SampleDesc            = DXGI_SAMPLE_DESC{ static_cast<UINT>(desc.multisampleCount), 0 }
-    };
-    for(uint32_t i = 0; i < desc.colorAttachments.GetSize(); ++i)
-    {
-        pipelineDesc.RTVFormats[i] = TranslateFormat(desc.colorAttachments[i]);
-    }
-
     ComPtr<ID3D12PipelineState> pipelineState;
-    RTRC_D3D12_FAIL_MSG(
-        device_->CreateGraphicsPipelineState(&pipelineDesc, IID_PPV_ARGS(pipelineState.GetAddressOf())),
-        "Fail to create directx12 graphics pipeline state");
+
+    if(desc.meshShader)
+    {
+        D3DX12_MESH_SHADER_PIPELINE_STATE_DESC pipelineDesc =
+        {
+            .pRootSignature  = rootSignature.Get(),
+            .AS              = DirectX12DeviceDetail::GetByteCode(desc.taskShader),
+            .MS              = DirectX12DeviceDetail::GetByteCode(desc.meshShader),
+            .PS              = DirectX12DeviceDetail::GetByteCode(desc.fragmentShader),
+            .BlendState      = blendDesc,
+            .SampleMask      = 0xffffffff,
+            .RasterizerState = D3D12_RASTERIZER_DESC
+            {
+                .FillMode              = TranslateFillMode(desc.fillMode),
+                .CullMode              = TranslateCullMode(desc.cullMode),
+                .FrontCounterClockwise = desc.frontFaceMode == FrontFaceMode::CounterClockwise ? true : false,
+                .DepthBias             = static_cast<INT>(desc.depthBiasConstFactor),
+                .DepthBiasClamp        = desc.depthBiasClampValue,
+                .SlopeScaledDepthBias  = desc.depthBiasSlopeFactor,
+                .DepthClipEnable       = desc.enableDepthClip,
+                .MultisampleEnable     = false,
+                .AntialiasedLineEnable = false,
+                .ForcedSampleCount     = 0,
+                .ConservativeRaster    = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF
+            },
+            .DepthStencilState = D3D12_DEPTH_STENCIL_DESC
+            {
+                .DepthEnable      = desc.enableDepthTest || desc.enableDepthWrite,
+                .DepthWriteMask   = desc.enableDepthWrite ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO,
+                .DepthFunc        = TranslateCompareOp(desc.depthCompareOp),
+                .StencilEnable    = desc.enableStencilTest,
+                .StencilReadMask  = desc.stencilReadMask,
+                .StencilWriteMask = desc.stencilWriteMask,
+                .FrontFace = D3D12_DEPTH_STENCILOP_DESC
+                {
+                    .StencilFailOp      = TranslateStencilOp(desc.frontStencilOp.failOp),
+                    .StencilDepthFailOp = TranslateStencilOp(desc.frontStencilOp.depthFailOp),
+                    .StencilPassOp      = TranslateStencilOp(desc.frontStencilOp.passOp),
+                    .StencilFunc        = TranslateCompareOp(desc.frontStencilOp.compareOp)
+                },
+                .BackFace = D3D12_DEPTH_STENCILOP_DESC
+                {
+                    .StencilFailOp      = TranslateStencilOp(desc.backStencilOp.failOp),
+                    .StencilDepthFailOp = TranslateStencilOp(desc.backStencilOp.depthFailOp),
+                    .StencilPassOp      = TranslateStencilOp(desc.backStencilOp.passOp),
+                    .StencilFunc        = TranslateCompareOp(desc.backStencilOp.compareOp)
+                }
+            },
+            .PrimitiveTopologyType = TranslatePrimitiveTopologyType(desc.primitiveTopology),
+            .NumRenderTargets      = static_cast<UINT>(desc.colorAttachments.GetSize()),
+            .DSVFormat             = TranslateFormat(desc.depthStencilFormat),
+            .SampleDesc            = DXGI_SAMPLE_DESC{ static_cast<UINT>(desc.multisampleCount), 0 }
+        };
+        for(uint32_t i = 0; i < desc.colorAttachments.GetSize(); ++i)
+        {
+            pipelineDesc.RTVFormats[i] = TranslateFormat(desc.colorAttachments[i]);
+        }
+
+        auto pipelineStream = CD3DX12_PIPELINE_MESH_STATE_STREAM(pipelineDesc);
+
+        D3D12_PIPELINE_STATE_STREAM_DESC streamDesc;
+        streamDesc.SizeInBytes = sizeof(pipelineStream);
+        streamDesc.pPipelineStateSubobjectStream = &pipelineStream;
+
+        RTRC_D3D12_FAIL_MSG(
+            device_->CreatePipelineState(&streamDesc, IID_PPV_ARGS(pipelineState.GetAddressOf())),
+            "Fail to create directx12 graphics pipeline state");
+    }
+    else // Classical graphics pipeline using vertex shader
+    {
+        D3D12_GRAPHICS_PIPELINE_STATE_DESC pipelineDesc =
+        {
+            .pRootSignature  = rootSignature.Get(),
+            .VS              = DirectX12DeviceDetail::GetByteCode(desc.vertexShader),
+            .PS              = DirectX12DeviceDetail::GetByteCode(desc.fragmentShader),
+            .DS              = {},
+            .HS              = {},
+            .GS              = {},
+            .StreamOutput    = {},
+            .BlendState      = blendDesc,
+            .SampleMask      = 0xffffffff,
+            .RasterizerState = D3D12_RASTERIZER_DESC
+            {
+                .FillMode              = TranslateFillMode(desc.fillMode),
+                .CullMode              = TranslateCullMode(desc.cullMode),
+                .FrontCounterClockwise = desc.frontFaceMode == FrontFaceMode::CounterClockwise ? true : false,
+                .DepthBias             = static_cast<INT>(desc.depthBiasConstFactor),
+                .DepthBiasClamp        = desc.depthBiasClampValue,
+                .SlopeScaledDepthBias  = desc.depthBiasSlopeFactor,
+                .DepthClipEnable       = desc.enableDepthClip,
+                .MultisampleEnable     = false,
+                .AntialiasedLineEnable = false,
+                .ForcedSampleCount     = 0,
+                .ConservativeRaster    = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF
+            },
+            .DepthStencilState = D3D12_DEPTH_STENCIL_DESC
+            {
+                .DepthEnable      = desc.enableDepthTest || desc.enableDepthWrite,
+                .DepthWriteMask   = desc.enableDepthWrite ? D3D12_DEPTH_WRITE_MASK_ALL : D3D12_DEPTH_WRITE_MASK_ZERO,
+                .DepthFunc        = TranslateCompareOp(desc.depthCompareOp),
+                .StencilEnable    = desc.enableStencilTest,
+                .StencilReadMask  = desc.stencilReadMask,
+                .StencilWriteMask = desc.stencilWriteMask,
+                .FrontFace = D3D12_DEPTH_STENCILOP_DESC
+                {
+                    .StencilFailOp      = TranslateStencilOp(desc.frontStencilOp.failOp),
+                    .StencilDepthFailOp = TranslateStencilOp(desc.frontStencilOp.depthFailOp),
+                    .StencilPassOp      = TranslateStencilOp(desc.frontStencilOp.passOp),
+                    .StencilFunc        = TranslateCompareOp(desc.frontStencilOp.compareOp)
+                },
+                .BackFace = D3D12_DEPTH_STENCILOP_DESC
+                {
+                    .StencilFailOp      = TranslateStencilOp(desc.backStencilOp.failOp),
+                    .StencilDepthFailOp = TranslateStencilOp(desc.backStencilOp.depthFailOp),
+                    .StencilPassOp      = TranslateStencilOp(desc.backStencilOp.passOp),
+                    .StencilFunc        = TranslateCompareOp(desc.backStencilOp.compareOp)
+                }
+            },
+            .InputLayout = D3D12_INPUT_LAYOUT_DESC
+            {
+                .pInputElementDescs = inputElements.data(),
+                .NumElements        = static_cast<UINT>(inputElements.size())
+            },
+            .IBStripCutValue       = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED,
+            .PrimitiveTopologyType = TranslatePrimitiveTopologyType(desc.primitiveTopology),
+            .NumRenderTargets      = static_cast<UINT>(desc.colorAttachments.GetSize()),
+            .DSVFormat             = TranslateFormat(desc.depthStencilFormat),
+            .SampleDesc            = DXGI_SAMPLE_DESC{ static_cast<UINT>(desc.multisampleCount), 0 }
+        };
+        for(uint32_t i = 0; i < desc.colorAttachments.GetSize(); ++i)
+        {
+            pipelineDesc.RTVFormats[i] = TranslateFormat(desc.colorAttachments[i]);
+        }
+
+        RTRC_D3D12_FAIL_MSG(
+            device_->CreateGraphicsPipelineState(&pipelineDesc, IID_PPV_ARGS(pipelineState.GetAddressOf())),
+            "Fail to create directx12 graphics pipeline state");
+    }
 
     std::optional<Span<Viewport>> staticViewports;
     if(desc.viewports.Is<StaticVector<Viewport, 4>>())

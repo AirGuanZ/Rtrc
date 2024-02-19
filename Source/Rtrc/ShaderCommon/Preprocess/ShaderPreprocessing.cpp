@@ -20,7 +20,7 @@ namespace ShaderPreprocessingDetail
     {
         switch(category)
         {
-        case ShaderCategory::Graphics:   return RHI::ShaderStage::AllGraphics;
+        case ShaderCategory::Graphics:   return RHI::ShaderStage::AllClassical;
         case ShaderCategory::Compute:    return RHI::ShaderStage::CS;
         case ShaderCategory::RayTracing: return RHI::ShaderStage::AllRT;
         }
