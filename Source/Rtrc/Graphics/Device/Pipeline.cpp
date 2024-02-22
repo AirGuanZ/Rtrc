@@ -28,14 +28,35 @@ void GraphicsPipeline::Desc::Validate() const
         VALIDATE_FAIL("'shader' is not set");
     }
 
-    if(!shader->GetRawShader(RHI::ShaderType::VertexShader))
+    if(shader->GetCategory() == ShaderCategory::ClassicalGraphics)
     {
-        VALIDATE_FAIL("'shader' doesn't contain vertex shader");
+        if(!shader->GetRawShader(RHI::ShaderType::VertexShader))
+        {
+            VALIDATE_FAIL("'shader' doesn't contain vertex shader");
+        }
+        if(!shader->GetRawShader(RHI::ShaderType::FragmentShader))
+        {
+            VALIDATE_FAIL("'shader' doesn't contain fragment shader");
+        }
     }
-
-    if(!shader->GetRawShader(RHI::ShaderType::FragmentShader))
+    else if(shader->GetCategory() == ShaderCategory::MeshGraphics)
     {
-        VALIDATE_FAIL("'shader' doesn't contain fragment shader");
+        if(!shader->GetRawShader(RHI::ShaderType::MeshShader))
+        {
+            VALIDATE_FAIL("'shader doesn't contain mesh shader");
+        }
+        if(!shader->GetRawShader(RHI::ShaderType::FragmentShader))
+        {
+            VALIDATE_FAIL("'shader' doesn't contain fragment shader");
+        }
+        if(meshLayout)
+        {
+            VALIDATE_FAIL("'meshLayout' must be empty for mesh pipeline");
+        }
+    }
+    else
+    {
+        VALIDATE_FAIL("invalid shader category");
     }
 
     if(viewports.Is<std::monostate>())
@@ -60,7 +81,7 @@ void GraphicsPipeline::Desc::Validate() const
 
 size_t GraphicsPipeline::Desc::Hash() const
 {
-    return ::Rtrc::Hash(
+    return Rtrc::Hash(
         shader ? shader->GetUniqueID() : shaderId,
         viewports,
         scissors,
@@ -212,8 +233,16 @@ RC<GraphicsPipeline> PipelineManager::CreateGraphicsPipeline(const GraphicsPipel
 #endif
 
     RHI::GraphicsPipelineDesc rhiDesc;
-    
-    rhiDesc.vertexShader   = desc.shader->GetRawShader(RHI::ShaderType::VertexShader);
+
+    if(desc.shader->GetCategory() == ShaderCategory::ClassicalGraphics)
+    {
+        rhiDesc.vertexShader = desc.shader->GetRawShader(RHI::ShaderType::VertexShader);
+    }
+    else
+    {
+        rhiDesc.taskShader = desc.shader->GetRawShader(RHI::ShaderType::TaskShader);
+        rhiDesc.meshShader = desc.shader->GetRawShader(RHI::ShaderType::MeshShader);
+    }
     rhiDesc.fragmentShader = desc.shader->GetRawShader(RHI::ShaderType::FragmentShader);
     rhiDesc.bindingLayout  = desc.shader->GetBindingLayout()->GetRHIObject();
     rhiDesc.viewports      = desc.viewports;

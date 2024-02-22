@@ -531,6 +531,8 @@ void Run(int argc, const char *argv[])
         shaderPreprocessInput.vertexEntry             = variant.vertexEntry;
         shaderPreprocessInput.fragmentEntry           = variant.fragmentEntry;
         shaderPreprocessInput.computeEntry            = variant.computeEntry;
+        shaderPreprocessInput.taskEntry               = variant.taskEntry;
+        shaderPreprocessInput.meshEntry               = variant.meshEntry;
         shaderPreprocessInput.isRayTracingShader      = variant.vertexEntry.empty() &&
                                                         variant.fragmentEntry.empty() &&
                                                         variant.computeEntry.empty();

@@ -29,6 +29,8 @@ RC<Shader> ShaderCompiler::Compile(
     const bool FS = !shader.fragmentEntry.empty();
     const bool CS = !shader.computeEntry.empty();
     const bool RT = shader.isRayTracingShader;
+    const bool TS = !shader.taskEntry.empty();
+    const bool MS = !shader.meshEntry.empty();
 
     DXC::ShaderInfo shaderInfo;
     shaderInfo.source         = shader.source;
@@ -61,8 +63,8 @@ RC<Shader> ShaderCompiler::Compile(
         shaderInfo.rayQuery = HasASBinding();
     }
 
-    std::vector<unsigned char> vsData, fsData, csData, rtData;
-    Box<ShaderReflection> vsRefl, fsRefl, csRefl, rtRefl;
+    std::vector<unsigned char> vsData, fsData, csData, rtData, tsData, msData;
+    Box<ShaderReflection> vsRefl, fsRefl, csRefl, rtRefl, tsRefl, msRefl;
     if(VS)
     {
         shaderInfo.entryPoint = shader.vertexEntry;
@@ -82,6 +84,16 @@ RC<Shader> ShaderCompiler::Compile(
     {
         DoCompilation(shaderInfo, CompileStage::RT, debug, rtData, rtRefl);
     }
+    if(TS)
+    {
+        shaderInfo.entryPoint = shader.taskEntry;
+        DoCompilation(shaderInfo, CompileStage::TS, debug, tsData, tsRefl);
+    }
+    if(MS)
+    {
+        shaderInfo.entryPoint = shader.meshEntry;
+        DoCompilation(shaderInfo, CompileStage::MS, debug, msData, msRefl);
+    }
 
     // Check uses of ungrouped bindings
 
@@ -89,6 +101,8 @@ RC<Shader> ShaderCompiler::Compile(
     EnsureAllUsedBindingsAreGrouped(shader, fsRefl, "fragment shader");
     EnsureAllUsedBindingsAreGrouped(shader, csRefl, "compute shader");
     EnsureAllUsedBindingsAreGrouped(shader, rtRefl, "ray tracing shader");
+    EnsureAllUsedBindingsAreGrouped(shader, tsRefl, "task shader");
+    EnsureAllUsedBindingsAreGrouped(shader, msRefl, "mesh shader");
 
     // Binding layout
 
@@ -153,6 +167,16 @@ RC<Shader> ShaderCompiler::Compile(
     {
         ret->rawShaders_[Shader::CS_INDEX] = device_->GetRawDevice()->CreateShader(
             csData.data(), csData.size(), { { RHI::ShaderStage::ComputeShader, shader.computeEntry } });
+    }
+    if(TS)
+    {
+        ret->rawShaders_[Shader::TS_INDEX] = device_->GetRawDevice()->CreateShader(
+            tsData.data(), tsData.size(), { { RHI::ShaderStage::TaskShader, shader.taskEntry } });
+    }
+    if(MS)
+    {
+        ret->rawShaders_[Shader::MS_INDEX] = device_->GetRawDevice()->CreateShader(
+            msData.data(), msData.size(), { { RHI::ShaderStage::MeshShader, shader.meshEntry } });
     }
     if(RT)
     {
@@ -262,10 +286,10 @@ RC<Shader> ShaderCompiler::Compile(
             const int index = ret->GetBindingGroupIndexByName(name);
             layoutInfo->builtinBindingGroupIndices_[std::to_underlying(group)] = index;
         };
-        SetBuiltinBindingGroupIndex(Pass, "Pass");
-        SetBuiltinBindingGroupIndex(Material, "Material");
-        SetBuiltinBindingGroupIndex(Object, "Object");
-        SetBuiltinBindingGroupIndex(BindlessTexture, "GlobalBindlessTextureGroup");
+        SetBuiltinBindingGroupIndex(Pass,                   "Pass");
+        SetBuiltinBindingGroupIndex(Material,               "Material");
+        SetBuiltinBindingGroupIndex(Object,                 "Object");
+        SetBuiltinBindingGroupIndex(BindlessTexture,        "GlobalBindlessTextureGroup");
         SetBuiltinBindingGroupIndex(BindlessGeometryBuffer, "GlobalBindlessGeometryBufferGroup");
     }
 
@@ -302,6 +326,8 @@ void ShaderCompiler::DoCompilation(
     case CompileStage::FS: target = isVulkan ? DXC::Target::Vulkan_1_3_FS_6_6 : DXC::Target::DirectX12_FS_6_6; break;
     case CompileStage::CS: target = isVulkan ? DXC::Target::Vulkan_1_3_CS_6_6 : DXC::Target::DirectX12_CS_6_6; break;
     case CompileStage::RT: target = isVulkan ? DXC::Target::Vulkan_1_3_RT_6_6 : DXC::Target::DirectX12_RT_6_6; break;
+    case CompileStage::TS: target = isVulkan ? DXC::Target::Vulkan_1_3_TS_6_6 : DXC::Target::DirectX12_TS_6_6; break;
+    case CompileStage::MS: target = isVulkan ? DXC::Target::Vulkan_1_3_MS_6_6 : DXC::Target::DirectX12_MS_6_6; break;
     }
 
     if(isVulkan)

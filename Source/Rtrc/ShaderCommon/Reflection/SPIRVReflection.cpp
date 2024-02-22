@@ -188,6 +188,8 @@ std::vector<RHI::RawShaderEntry> SPIRVReflection::GetEntries() const
         case SPV_REFLECT_SHADER_STAGE_VERTEX_BIT:           entry.stage = VertexShader;          break;
         case SPV_REFLECT_SHADER_STAGE_FRAGMENT_BIT:         entry.stage = FragmentShader;        break;
         case SPV_REFLECT_SHADER_STAGE_COMPUTE_BIT:          entry.stage = ComputeShader;         break;
+        case SPV_REFLECT_SHADER_STAGE_TASK_BIT_EXT:         entry.stage = TaskShader;            break;
+        case SPV_REFLECT_SHADER_STAGE_MESH_BIT_EXT:         entry.stage = MeshShader;            break;
         case SPV_REFLECT_SHADER_STAGE_RAYGEN_BIT_KHR:       entry.stage = RT_RayGenShader;       break;
         case SPV_REFLECT_SHADER_STAGE_ANY_HIT_BIT_KHR:      entry.stage = RT_AnyHitShader;       break;
         case SPV_REFLECT_SHADER_STAGE_CLOSEST_HIT_BIT_KHR:  entry.stage = RT_ClosestHitShader;   break;

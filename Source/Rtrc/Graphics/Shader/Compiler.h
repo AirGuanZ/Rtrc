@@ -30,7 +30,9 @@ private:
         VS,
         FS,
         CS,
-        RT
+        RT,
+        TS,
+        MS
     };
 
     void DoCompilation(

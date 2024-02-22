@@ -27,6 +27,8 @@ RC<Shader> StandaloneShaderCompiler::Compile(
     compilableShader.vertexEntry             = variant.vertexEntry;
     compilableShader.fragmentEntry           = variant.fragmentEntry;
     compilableShader.computeEntry            = variant.computeEntry;
+    compilableShader.taskEntry               = variant.taskEntry;
+    compilableShader.meshEntry               = variant.meshEntry;
     compilableShader.isRayTracingShader      = variant.vertexEntry.empty() &&
                                                variant.fragmentEntry.empty() &&
                                                variant.computeEntry.empty();

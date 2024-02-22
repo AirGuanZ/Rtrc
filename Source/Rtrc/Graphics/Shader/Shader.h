@@ -161,7 +161,7 @@ private:
     
     friend class ShaderCompiler;
 
-    ShaderCategory category_ = ShaderCategory::Graphics;
+    ShaderCategory category_ = ShaderCategory::ClassicalGraphics;
 
     std::vector<ShaderIOVar> VSInput_;
 
@@ -231,8 +231,10 @@ private:
     static constexpr int FS_INDEX = 1;
     static constexpr int CS_INDEX = 0;
     static constexpr int RT_INDEX = 0;
+    static constexpr int MS_INDEX = 0;
+    static constexpr int TS_INDEX = 2;
 
-    RHI::RawShaderUPtr rawShaders_[2];
+    RHI::RawShaderUPtr rawShaders_[3];
     
     RC<ShaderInfo>      info_;
     RC<ComputePipeline> computePipeline_;
@@ -439,10 +441,24 @@ inline RHI::RawShaderOPtr Shader::GetRawShader(RHI::ShaderType type) const
     using enum ShaderCategory;
     switch(type)
     {
-    case VertexShader:     assert(GetCategory() == Graphics);   return rawShaders_[VS_INDEX];
-    case FragmentShader:   assert(GetCategory() == Graphics);   return rawShaders_[FS_INDEX];
-    case ComputeShader:    assert(GetCategory() == Compute);    return rawShaders_[CS_INDEX];
-    case RayTracingShader: assert(GetCategory() == RayTracing); return rawShaders_[RT_INDEX];
+    case VertexShader:
+        assert(GetCategory() == ClassicalGraphics);
+        return rawShaders_[VS_INDEX];
+    case FragmentShader:
+        assert(GetCategory() == ClassicalGraphics || GetCategory() == MeshGraphics);
+        return rawShaders_[FS_INDEX];
+    case ComputeShader:
+        assert(GetCategory() == Compute);
+        return rawShaders_[CS_INDEX];
+    case RayTracingShader:
+        assert(GetCategory() == RayTracing);
+        return rawShaders_[RT_INDEX];
+    case TaskShader:
+        assert(GetCategory() == MeshGraphics);
+        return rawShaders_[TS_INDEX];
+    case MeshShader:
+        assert(GetCategory() == MeshGraphics);
+        return rawShaders_[MS_INDEX];
     }
     Unreachable();
 }

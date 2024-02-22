@@ -20,11 +20,15 @@ public:
         Vulkan_1_3_FS_6_6,
         Vulkan_1_3_CS_6_6,
         Vulkan_1_3_RT_6_6,
+        Vulkan_1_3_TS_6_6,
+        Vulkan_1_3_MS_6_6,
 
         DirectX12_VS_6_6,
         DirectX12_FS_6_6,
         DirectX12_CS_6_6,
         DirectX12_RT_6_6,
+        DirectX12_TS_6_6,
+        DirectX12_MS_6_6,
     };
 
     struct ShaderInfo

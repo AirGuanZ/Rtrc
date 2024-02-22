@@ -180,6 +180,8 @@ void D3D12Reflection::InitializeLibraryReflection(IDxcUtils *dxcUtils, Span<std:
         case D3D12_SHVER_PIXEL_SHADER:          stage = RHI::ShaderStage::FragmentShader;        break;
         case D3D12_SHVER_VERTEX_SHADER:         stage = RHI::ShaderStage::VertexShader;          break;
         case D3D12_SHVER_COMPUTE_SHADER:        stage = RHI::ShaderStage::ComputeShader;         break;
+        case D3D12_SHVER_AMPLIFICATION_SHADER:  stage = RHI::ShaderStage::TaskShader;            break;
+        case D3D12_SHVER_MESH_SHADER:           stage = RHI::ShaderStage::MeshShader;            break;
         case D3D12_SHVER_RAY_GENERATION_SHADER: stage = RHI::ShaderStage::RT_RayGenShader;       break;
         case D3D12_SHVER_INTERSECTION_SHADER:   stage = RHI::ShaderStage::RT_IntersectionShader; break;
         case D3D12_SHVER_ANY_HIT_SHADER:        stage = RHI::ShaderStage::RT_AnyHitShader;       break;

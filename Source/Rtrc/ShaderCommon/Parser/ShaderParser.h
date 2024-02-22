@@ -44,6 +44,8 @@ struct ParsedShaderVariant
     std::string vertexEntry;
     std::string fragmentEntry;
     std::string computeEntry;
+    std::string taskEntry;
+    std::string meshEntry;
     std::vector<std::vector<std::string>> entryGroups;
 
     std::vector<ParsedBindingGroup> bindingGroups;
@@ -59,6 +61,8 @@ struct ParsedShaderVariant
         vertexEntry,
         fragmentEntry,
         computeEntry,
+        taskEntry,
+        meshEntry,
         entryGroups,
         bindingGroups,
         ungroupedBindings,

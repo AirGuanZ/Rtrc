@@ -63,7 +63,9 @@ namespace ShaderParserDetail
                 "rtrc_comp",
                 "rtrc_raytracing",
                 "rtrc_rt",
-                "rtrc_rt_group"
+                "rtrc_rt_group",
+                "rtrc_task",
+                "rtrc_mesh",
             };
             std::string_view keyword;
             const size_t pos = FindFirstKeyword(sourceWithoutString, KEYWORDS, beginPos, keyword);
@@ -105,6 +107,26 @@ namespace ShaderParserDetail
                 }
                 tokens.Next();
                 variant.computeEntry = std::move(entryName);
+            }
+            else if(keyword == "rtrc_task")
+            {
+                std::string entryName = tokens.GetCurrentToken();
+                if(!ShaderTokenStream::IsIdentifier(entryName))
+                {
+                    tokens.Throw("Invalid task shader entry name: " + entryName);
+                }
+                tokens.Next();
+                variant.taskEntry = std::move(entryName);
+            }
+            else if(keyword == "rtrc_mesh")
+            {
+                std::string entryName = tokens.GetCurrentToken();
+                if(!ShaderTokenStream::IsIdentifier(entryName))
+                {
+                    tokens.Throw("Invalid mesh shader entry name: " + entryName);
+                }
+                tokens.Next();
+                variant.meshEntry = std::move(entryName);
             }
             else if(keyword == "rtrc_raytracing" || keyword == "rtrc_rt")
             {

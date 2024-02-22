@@ -20,9 +20,10 @@ namespace ShaderPreprocessingDetail
     {
         switch(category)
         {
-        case ShaderCategory::Graphics:   return RHI::ShaderStage::AllClassical;
-        case ShaderCategory::Compute:    return RHI::ShaderStage::CS;
-        case ShaderCategory::RayTracing: return RHI::ShaderStage::AllRT;
+        case ShaderCategory::ClassicalGraphics:   return RHI::ShaderStage::AllClassical;
+        case ShaderCategory::MeshGraphics:        return RHI::ShaderStage::AllMesh;
+        case ShaderCategory::Compute:             return RHI::ShaderStage::CS;
+        case ShaderCategory::RayTracing:          return RHI::ShaderStage::AllRT;
         }
         Unreachable();
     }
@@ -69,26 +70,32 @@ ShaderPreprocessingOutput PreprocessShader(const ShaderPreprocessingInput &input
     const bool VS = !input.vertexEntry.empty();
     const bool FS = !input.fragmentEntry.empty();
     const bool CS = !input.computeEntry.empty();
+    const bool TS = !input.taskEntry.empty();
+    const bool MS = !input.meshEntry.empty();
     const bool RT = input.isRayTracingShader;
 
     ShaderCategory category;
-    if(VS && FS && !CS && !RT)
+    if(VS && FS && !CS && !RT && !TS && !MS)
     {
-        category = ShaderCategory::Graphics;
+        category = ShaderCategory::ClassicalGraphics;
     }
-    else if(!VS && !FS && CS && !RT)
+    else if(!VS && !FS && CS && !RT && !TS && !MS)
     {
         category = ShaderCategory::Compute;
     }
-    else if(!VS && !FS && !CS && RT)
+    else if(!VS && !FS && !CS && RT && !TS && !MS)
     {
         category = ShaderCategory::RayTracing;
+    }
+    else if(!VS && FS && !CS && !RT && MS)
+    {
+        category = ShaderCategory::MeshGraphics;
     }
     else
     {
         throw Exception(fmt::format(
-            "Invalid shader category. Shader name: {}; VS: {}, FS: {}, CS: {}, RT: {}",
-            input.name, VS, FS, CS, RT));
+            "Invalid shader category. Shader name: {}; VS: {}, FS: {}, CS: {}, RT: {}, TS: {}, MS: {}",
+            input.name, VS, FS, CS, RT, TS, MS));
     }
 
     struct BindingSlot
@@ -218,6 +225,8 @@ ShaderPreprocessingOutput PreprocessShader(const ShaderPreprocessingInput &input
     macros["rtrc_comp(...)"] = "";
     macros["rtrc_raytracing(...)"] = "";
     macros["rtrc_rt(...)"] = "";
+    macros["rtrc_task(...)"] = "";
+    macros["rtrc_mesh(...)"] = "";
     macros["rtrc_rt_group(...)"] = "";
     macros["rtrc_keyword(...)"] = "";
 
@@ -522,7 +531,6 @@ ShaderPreprocessingOutput PreprocessShader(const ShaderPreprocessingInput &input
         macros.insert({ std::move(left), std::move(right) });
     }
 
-    
     // Macros for aliased bindings
 
     for(auto &&[aliasIndex, alias] : Enumerate(input.aliases))
@@ -637,6 +645,8 @@ ShaderPreprocessingOutput PreprocessShader(const ShaderPreprocessingInput &input
     output.vertexEntry = input.vertexEntry;
     output.fragmentEntry = input.fragmentEntry;
     output.computeEntry = input.computeEntry;
+    output.taskEntry = input.taskEntry;
+    output.meshEntry = input.meshEntry;
     output.rayTracingEntryGroups = input.entryGroups;
 
     output.includeDirs = std::move(includeDirs);
@@ -696,10 +706,15 @@ std::set<std::string> GetDependentFiles(
 
     DXC::Target target;
     const bool isVulkan = backend == RHI::BackendType::Vulkan;
-    if(shader.category == ShaderCategory::Graphics)
+    if(shader.category == ShaderCategory::ClassicalGraphics)
     {
         shaderInfo.entryPoint = shader.vertexEntry;
         target = isVulkan ? DXC::Target::Vulkan_1_3_VS_6_6 : DXC::Target::DirectX12_VS_6_6;
+    }
+    else if(shader.category == ShaderCategory::MeshGraphics)
+    {
+        shaderInfo.entryPoint = shader.meshEntry;
+        target = isVulkan ? DXC::Target::Vulkan_1_3_MS_6_6 : DXC::Target::DirectX12_MS_6_6;
     }
     else if(shader.category == ShaderCategory::Compute)
     {

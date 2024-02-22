@@ -29,7 +29,7 @@ namespace BindingGroupParserDetail
     };
 
     // STAGES := STAGE (\|STAGE)*
-    // STAGE := VS|FS|PS|CS|RT_RGS|RT_MS|RT_CHS|RT_IS|RT_AHS|Graphics|Callable|RT|RayTracing|All
+    // STAGE := VS|FS|PS|CS|TS|MS|RT_RGS|RT_MS|RT_CHS|RT_IS|RT_AHS|Classical|Mesh|Callable|RT|RayTracing|All
     RHI::ShaderStageFlags ParseShaderStages(ShaderTokenStream &tokens)
     {
         RHI::ShaderStageFlags stages;
@@ -46,6 +46,14 @@ namespace BindingGroupParserDetail
             else if(tokens.GetCurrentToken() == "CS")
             {
                 stages |= RHI::ShaderStage::CS;
+            }
+            else if(tokens.GetCurrentToken() == "TS")
+            {
+                stages |= RHI::ShaderStage::TS;
+            }
+            else if(tokens.GetCurrentToken() == "MS")
+            {
+                stages |= RHI::ShaderStage::MS;
             }
             else if(tokens.GetCurrentToken() == "RT_RGS")
             {
@@ -67,9 +75,13 @@ namespace BindingGroupParserDetail
             {
                 stages |= RHI::ShaderStage::RT_AHS;
             }
-            else if(tokens.GetCurrentToken() == "Graphics")
+            else if(tokens.GetCurrentToken() == "Classical")
             {
                 stages |= RHI::ShaderStage::AllClassical;
+            }
+            else if(tokens.GetCurrentToken() == "Mesh")
+            {
+                stages |= RHI::ShaderStage::AllMesh;
             }
             else if(tokens.GetCurrentToken() == "Callable")
             {
