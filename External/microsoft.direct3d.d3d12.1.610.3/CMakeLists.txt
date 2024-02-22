@@ -8,7 +8,7 @@ target_include_directories(d3d12_1610 INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/bui
 set(RTRC_D3D12_SDK_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "d3d12 sdk dir")
 
 function(rtrc_deploy_d3d12_sdk TARGET_NAME)
-	set(STAMP_FILE "${CMAKE_BINARY_DIR}/${TARGET_NAME}_deploy_d3d12_sdk_timestamp")
+	set(STAMP_FILE "${CMAKE_BINARY_DIR}/DeployD3D12SDK/${TARGET_NAME}_deploy_d3d12_sdk_timestamp")
 	add_custom_command(
 		OUTPUT ${STAMP_FILE}
 		COMMAND

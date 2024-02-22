@@ -167,6 +167,8 @@ namespace VkPhysicalDeviceDetail
         feature2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
         feature2.pNext = last;
         feature2.features.shaderInt16 = true;
+        feature2.features.samplerAnisotropy = true;
+        feature2.features.fillModeNonSolid = true;
         vkGetPhysicalDeviceFeatures2(device, &feature2);
 
         if(!feature2.features.shaderInt16)
@@ -378,6 +380,7 @@ VkPhysicalDeviceFeatures2 VulkanPhysicalDevice::GetRequiredFeatures(
         VkPhysicalDeviceDetail::GetRequiredPhysicalDeviceFeatures(desc.enableRayTracing), storage);
     ret.features.shaderInt16 = true;
     ret.features.samplerAnisotropy = true;
+    ret.features.fillModeNonSolid = true;
     return ret;
 }
 

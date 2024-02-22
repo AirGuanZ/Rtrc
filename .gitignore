@@ -11,8 +11,6 @@
 /External/llvm16.0.6/llvm-project-16.0.6.src/
 /External/oneapi-tbb-2021.11.0/
 /GPUCapture.wpix
-/Asset/Sample/Experimental.FADM/
-/Samples/Experimental.FADM/
 *.shader.outh
 *.material.outh
 *.outh.timestamp
