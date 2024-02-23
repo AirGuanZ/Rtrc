@@ -6,6 +6,7 @@ rtrc_shader("MeshShader/UniformGrid")
 
 	rtrc_group(Pass)
 	{
+		rtrc_define(StructuredBuffer<uint>, DiagonalDirectionBuffer)
 		rtrc_uniform(float2, clipLower)
 		rtrc_uniform(float2, clipUpper)
 	};
@@ -43,14 +44,29 @@ rtrc_shader("MeshShader/UniformGrid")
 			outputVertices[9 * 8 + 8].position =  float4(lerp(Pass.clipLower, Pass.clipUpper, float2(u1, v1)), 0, 1);
 		}
 
-		outputTriangles[2 * (8 * tid.y + tid.x) + 0] = uint3(
-			9 * (tid.y + 0) + (tid.x + 0),
-			9 * (tid.y + 1) + (tid.x + 0),
-			9 * (tid.y + 1) + (tid.x + 1));
-		outputTriangles[2 * (8 * tid.y + tid.x) + 1] = uint3(
-			9 * (tid.y + 0) + (tid.x + 0),
-			9 * (tid.y + 1) + (tid.x + 1),
-			9 * (tid.y + 0) + (tid.x + 1));
+		const uint direction = DiagonalDirectionBuffer[8 * tid.y + tid.x];
+		if(direction)
+		{
+			outputTriangles[2 * (8 * tid.y + tid.x) + 0] = uint3(
+				9 * (tid.y + 0) + (tid.x + 0),
+				9 * (tid.y + 1) + (tid.x + 0),
+				9 * (tid.y + 0) + (tid.x + 1));
+			outputTriangles[2 * (8 * tid.y + tid.x) + 1] = uint3(
+				9 * (tid.y + 0) + (tid.x + 1),
+				9 * (tid.y + 1) + (tid.x + 0),
+				9 * (tid.y + 1) + (tid.x + 1));
+		}
+		else
+		{
+			outputTriangles[2 * (8 * tid.y + tid.x) + 0] = uint3(
+				9 * (tid.y + 0) + (tid.x + 0),
+				9 * (tid.y + 1) + (tid.x + 0),
+				9 * (tid.y + 1) + (tid.x + 1));
+			outputTriangles[2 * (8 * tid.y + tid.x) + 1] = uint3(
+				9 * (tid.y + 0) + (tid.x + 0),
+				9 * (tid.y + 1) + (tid.x + 1),
+				9 * (tid.y + 0) + (tid.x + 1));
+		}
 	}
 
 	float4 FSMain() : SV_Target

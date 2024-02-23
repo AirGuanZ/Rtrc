@@ -1,3 +1,5 @@
+#include <random>
+
 #include <Rtrc/Rtrc.h>
 
 #include "UniformGrid.shader.outh"
@@ -9,6 +11,14 @@ class MeshShaderDemo : public SimpleApplication
     void InitializeSimpleApplication(GraphRef graph) override
     {
         pipelineCache_.SetDevice(GetDevice());
+
+        diagonalDirectionData_.resize(8 * 8, 0);
+        std::default_random_engine rng{ std::random_device{}() };
+        for(uint32_t &v : diagonalDirectionData_)
+        {
+            v = std::uniform_int_distribution<int>(0, 1)(rng) ? 1 : 0;
+        }
+        diagonalDirectionBuffer_ = GetDevice()->CreateAndUploadStructuredBuffer(Span<uint32_t>(diagonalDirectionData_));
     }
 
     void UpdateSimpleApplication(GraphRef graph) override
@@ -43,6 +53,7 @@ class MeshShaderDemo : public SimpleApplication
 
             using Shader = RtrcShader::MeshShader::UniformGrid;
             Shader::Pass passData;
+            passData.DiagonalDirectionBuffer = diagonalDirectionBuffer_;
             passData.clipLower = -0.5f * clipRectSize;
             passData.clipUpper = +0.5f * clipRectSize;
             auto passGroup = GetDevice()->CreateBindingGroupWithCachedLayout(passData);
@@ -68,6 +79,9 @@ class MeshShaderDemo : public SimpleApplication
     }
 
     GraphicsPipelineCache pipelineCache_;
+
+    std::vector<uint32_t> diagonalDirectionData_;
+    RC<Buffer> diagonalDirectionBuffer_;
 };
 
 RTRC_APPLICATION_MAIN(
