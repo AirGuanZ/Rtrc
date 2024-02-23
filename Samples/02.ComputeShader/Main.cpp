@@ -6,7 +6,7 @@ using namespace Rtrc;
 
 void Run()
 {
-    auto device = Device::CreateComputeDevice();
+    auto device = Device::CreateComputeDevice({});
 
     ResourceManager resourceManager(device);
     

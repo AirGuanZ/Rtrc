@@ -3,31 +3,6 @@
 
 RTRC_BEGIN
 
-namespace ApplicationDetail
-{
-
-    Application *appInst = nullptr;
-
-} // namespace ApplicationDetail
-
-Application &Application::GetInstance()
-{
-    assert(ApplicationDetail::appInst);
-    return *ApplicationDetail::appInst;
-}
-
-Application::Application()
-{
-    assert(!ApplicationDetail::appInst);
-    ApplicationDetail::appInst = this;
-}
-
-Application::~Application()
-{
-    assert(ApplicationDetail::appInst == this);
-    ApplicationDetail::appInst = nullptr;
-}
-
 void Application::Run(const Config &config)
 {
     window_ = WindowBuilder()
@@ -50,13 +25,15 @@ void Application::Run(const Config &config)
     }
 
     device_ = Device::CreateGraphicsDevice(
-        window_,
-        config.backendType,
-        RHI::Format::B8G8R8A8_UNorm,
-        2,
-        config.debug,
-        config.vsync,
-        deviceFlags);
+    {
+        .window              = window_,
+        .rhiType             = config.backendType,
+        .swapchainFormat     = RHI::Format::B8G8R8A8_UNorm,
+        .swapchainImageCount = 3,
+        .debugMode           = config.debug,
+        .vsync               = config.vsync,
+        .flags               = deviceFlags
+    });
     RTRC_SCOPE_EXIT{ device_->WaitIdle(); };
 
     window_.SetFocus();

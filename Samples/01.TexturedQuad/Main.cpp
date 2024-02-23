@@ -4,7 +4,7 @@
 
 using namespace Rtrc;
 
-rtrc_group(Material)
+rtrc_group(TexturedQuadBindingGroup)
 {
     rtrc_define(Texture2D, MainTexture);
     rtrc_define(SamplerState, MainSampler);
@@ -21,7 +21,7 @@ void Run()
         .SetTitle("Rtrc Sample: TexturedQuad")
         .Create();
 
-    auto device = Device::CreateGraphicsDevice(window, RHI::BackendType::Default);
+    auto device = Device::CreateGraphicsDevice({ .window = window });
 
     ResourceManager resourceManager(device);
     
@@ -34,10 +34,8 @@ void Run()
     FastKeywordContext keywords;
     keywords.Set(RTRC_FAST_KEYWORD(DADADA), 1);
 
-    auto shader = device->GetShaderTemplate("Sample01/Quad", true)->GetVariant(keywords);
-
     auto pipeline = device->CreateGraphicsPipeline({
-        .shader = shader,
+        .shader = device->GetShaderTemplate("Sample01/Quad", true)->GetVariant(keywords),
         .meshLayout = mesh->GetLayout(),
         .colorAttachmentFormats = { device->GetSwapchainImageDesc().format }
     });
@@ -64,14 +62,14 @@ void Run()
     });
     mainSampler->SetName("MainSampler");
 
-    // Material
+    // Binding group
 
-    Material materialPass;
-    materialPass.MainTexture = mainTex;
-    materialPass.MainSampler = mainSampler;
-    materialPass.scale = 1;
-    materialPass.mipLevel = 0;
-    auto materialPassGroup = device->CreateBindingGroup(materialPass);
+    TexturedQuadBindingGroup bindingGroupData;
+    bindingGroupData.MainTexture = mainTex;
+    bindingGroupData.MainSampler = mainSampler;
+    bindingGroupData.scale = 1;
+    bindingGroupData.mipLevel = 0;
+    auto bindingGroup = device->CreateBindingGroup(bindingGroupData);
 
     window.SetFocus();
 
@@ -108,7 +106,7 @@ void Run()
                 auto &commandBuffer = RGGetCommandBuffer();
                 commandBuffer.BindGraphicsPipeline(pipeline);
                 mesh->Bind(commandBuffer);
-                commandBuffer.BindGraphicsGroup(0, materialPassGroup);
+                commandBuffer.BindGraphicsGroup(0, bindingGroup);
                 commandBuffer.SetViewports(renderTarget->GetViewport());
                 commandBuffer.SetScissors(renderTarget->GetScissor());
                 commandBuffer.DrawIndexed(6, 1, 0, 0, 0);

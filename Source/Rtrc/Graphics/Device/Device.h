@@ -46,35 +46,27 @@ public:
     using Flags = DeviceDetail::Flags;
     using enum Flags::Bits;
 
+    struct ComputeDeviceDesc
+    {
+        RHI::BackendType rhiType   = RHI::BackendType::Default;
+        bool             debugMode = RTRC_DEBUG;
+    };
+
+    struct GraphicsDeviceDesc
+    {
+        Ref<Window>      window;
+        RHI::BackendType rhiType             = RHI::BackendType::Default;
+        RHI::Format      swapchainFormat     = RHI::Format::B8G8R8A8_UNorm;
+        int              swapchainImageCount = 3;
+        bool             debugMode           = RTRC_DEBUG;
+        bool             vsync               = false;
+        Flags            flags               = {};
+    };
+
     // Creation & destructor
 
-    static Box<Device> CreateComputeDevice(RHI::DeviceUPtr rhiDevice, bool debugMode = RTRC_DEBUG);
-    static Box<Device> CreateComputeDevice(RHI::BackendType rhiType, bool debugMode = RTRC_DEBUG);
-    static Box<Device> CreateComputeDevice(bool debugMode = RTRC_DEBUG);
-
-    static Box<Device> CreateGraphicsDevice(
-        RHI::DeviceUPtr rhiDevice,
-        Window         &window,
-        RHI::Format     swapchainFormat     = RHI::Format::B8G8R8A8_UNorm,
-        int             swapchainImageCount = 3,
-        bool            vsync               = false,
-        Flags           flags               = {},
-        bool            debugMode           = RTRC_DEBUG);
-    static Box<Device> CreateGraphicsDevice(
-        Window          &window,
-        RHI::BackendType rhiType,
-        RHI::Format      swapchainFormat     = RHI::Format::B8G8R8A8_UNorm,
-        int              swapchainImageCount = 3,
-        bool             debugMode           = RTRC_DEBUG,
-        bool             vsync               = false,
-        Flags            flags               = {});
-    static Box<Device> CreateGraphicsDevice(
-        Window     &window,
-        RHI::Format swapchainFormat     = RHI::Format::B8G8R8A8_UNorm,
-        int         swapchainImageCount = 3,
-        bool        debugMode           = RTRC_DEBUG,
-        bool        vsync               = false,
-        Flags       flags               = {});
+    static Box<Device> CreateComputeDevice(const ComputeDeviceDesc &desc);
+    static Box<Device> CreateGraphicsDevice(const GraphicsDeviceDesc &desc);
 
     ~Device();
 

@@ -4,100 +4,50 @@
 
 RTRC_BEGIN
 
-Box<Device> Device::CreateComputeDevice(RHI::DeviceUPtr rhiDevice, bool debugMode)
+Box<Device> Device::CreateComputeDevice(const ComputeDeviceDesc& desc)
 {
-    Box<Device> ret{ new Device };
-    ret->InitializeInternal(None, std::move(rhiDevice), true, debugMode);
-    return ret;
-}
-
-Box<Device> Device::CreateComputeDevice(RHI::BackendType rhiType, bool debugMode)
-{
-    rhiType = DebugOverrideBackendType(rhiType);
+    const auto rhiType = DebugOverrideBackendType(desc.rhiType);
     Box<Device> ret{ new Device };
 #if RTRC_RHI_VULKAN
     if(rhiType == RHI::BackendType::Vulkan)
     {
-        ret->instance_ = RHI::CreateVulkanInstance({ .debugMode = debugMode });
+        ret->instance_ = RHI::CreateVulkanInstance({ .debugMode = desc.debugMode });
     }
 #endif
 #if RTRC_RHI_DIRECTX12
     if(rhiType == RHI::BackendType::DirectX12)
     {
-        ret->instance_ = RHI::CreateDirectX12Instance({ .debugMode = debugMode, .gpuValidation = false });
+        ret->instance_ = RHI::CreateDirectX12Instance({ .debugMode = desc.debugMode, .gpuValidation = false });
     }
 #endif
     if(!ret->instance_)
     {
         throw Exception("No valid rhi instance is created");
     }
-    const RHI::DeviceDesc deviceDesc =
+    constexpr RHI::DeviceDesc deviceDesc =
     {
-        .graphicsQueue    = false,
-        .computeQueue     = true,
-        .transferQueue    = true,
+        .graphicsQueue = false,
+        .computeQueue = true,
+        .transferQueue = true,
         .supportSwapchain = false
     };
     auto rhiDevice = ret->instance_->CreateDevice(deviceDesc);
-    ret->InitializeInternal(None, std::move(rhiDevice), true, debugMode);
+    ret->InitializeInternal(None, std::move(rhiDevice), true, desc.debugMode);
     return ret;
 }
 
-Box<Device> Device::CreateComputeDevice(bool debugMode)
-{
-    return CreateComputeDevice(RHI::BackendType::Default, debugMode);
-}
-
-Box<Device> Device::CreateGraphicsDevice(
-    RHI::DeviceUPtr rhiDevice,
-    Window         &window,
-    RHI::Format     swapchainFormat,
-    int             swapchainImageCount,
-    bool            vsync,
-    Flags           flags,
-    bool            debugMode)
-{
-    Box<Device> ret{ new Device };
-    ret->InitializeInternal(flags, std::move(rhiDevice), false, debugMode);
-    ret->window_              = &window;
-    ret->swapchainFormat_     = swapchainFormat;
-    ret->swapchainImageCount_ = swapchainImageCount;
-    ret->vsync_               = vsync;
-    ret->swapchainUav_        = false; // d3d12 doesn't support swapchain uav
-    ret->RecreateSwapchain();
-    if(!flags.Contains(DisableAutoSwapchainRecreate))
-    {
-        ret->window_->Attach([d = ret.get()](const WindowResizeEvent &e)
-        {
-            if(e.width > 0 && e.height > 0)
-            {
-                d->device_->WaitIdle();
-                d->RecreateSwapchain();
-            }
-        });
-    }
-    return ret;
-}
-
-Box<Device> Device::CreateGraphicsDevice(
-    Window          &window,
-    RHI::BackendType rhiType,
-    RHI::Format      swapchainFormat,
-    int              swapchainImageCount,
-    bool             debugMode,
-    bool             vsync,
-    Flags            flags)
+Box<Device> Device::CreateGraphicsDevice(const GraphicsDeviceDesc& desc)
 {
     Box<Device> ret{ new Device };
 
-    rhiType = DebugOverrideBackendType(rhiType);
+    const auto rhiType = DebugOverrideBackendType(desc.rhiType);
 #if RTRC_RHI_VULKAN
     if(rhiType == RHI::BackendType::Vulkan)
     {
         ret->instance_ = CreateVulkanInstance(RHI::VulkanInstanceDesc
             {
                 .extensions = Window::GetRequiredVulkanInstanceExtensions(),
-                .debugMode = debugMode
+                .debugMode = desc.debugMode
             });
     }
 #endif
@@ -106,7 +56,7 @@ Box<Device> Device::CreateGraphicsDevice(
     {
         ret->instance_ = CreateDirectX12Instance(RHI::DirectX12InstanceDesc
         {
-            .debugMode = debugMode,
+            .debugMode = desc.debugMode,
 #if RTRC_DEBUG
             .gpuValidation = false /*debugMode*/ // gpu validation cause serious ram leak. disable it for now.
 #else
@@ -126,17 +76,17 @@ Box<Device> Device::CreateGraphicsDevice(
         .computeQueue     = true,
         .transferQueue    = true,
         .supportSwapchain = true,
-        .enableRayTracing = flags.Contains(EnableRayTracing)
+        .enableRayTracing = desc.flags.Contains(EnableRayTracing)
     };
     auto rhiDevice = ret->instance_->CreateDevice(deviceDesc);
-    ret->InitializeInternal(flags, std::move(rhiDevice), false, debugMode);
-    ret->window_              = &window;
-    ret->swapchainFormat_     = swapchainFormat;
-    ret->swapchainImageCount_ = swapchainImageCount;
-    ret->vsync_               = vsync;
+    ret->InitializeInternal(desc.flags, std::move(rhiDevice), false, desc.debugMode);
+    ret->window_              = desc.window;
+    ret->swapchainFormat_     = desc.swapchainFormat;
+    ret->swapchainImageCount_ = desc.swapchainImageCount;
+    ret->vsync_               = desc.vsync;
     ret->swapchainUav_        = false;
     ret->RecreateSwapchain();
-    if(!flags.Contains(DisableAutoSwapchainRecreate))
+    if(!desc.flags.Contains(DisableAutoSwapchainRecreate))
     {
         ret->window_->Attach([d = ret.get()](const WindowResizeEvent &e)
         {
@@ -148,18 +98,6 @@ Box<Device> Device::CreateGraphicsDevice(
         });
     }
     return ret;
-}
-
-Box<Device> Device::CreateGraphicsDevice(
-    Window     &window,
-    RHI::Format swapchainFormat,
-    int         swapchainImageCount,
-    bool        debugMode,
-    bool        vsync,
-    Flags       flags)
-{
-    return CreateGraphicsDevice(
-        window, RHI::BackendType::Default, swapchainFormat, swapchainImageCount, debugMode, vsync, flags);
 }
 
 Device::~Device()

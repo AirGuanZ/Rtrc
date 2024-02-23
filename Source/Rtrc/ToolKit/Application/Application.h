@@ -24,11 +24,6 @@ public:
         RHI::BackendType backendType       = RHI::BackendType::Default;
         bool             enableGPUCapturer = false;
     };
-
-    static Application &GetInstance();
-    
-    Application();
-    virtual ~Application();
     
     void Run(const Config &config);
 
