@@ -71,6 +71,8 @@ public:
         int firstVertex,
         int firstInstance) RTRC_RHI_OVERRIDE;
 
+    void DispatchMesh(int groupCountX, int groupCountY, int groupCountZ) RTRC_RHI_OVERRIDE;
+
     void Dispatch(int groupCountX, int groupCountY, int groupCountZ) RTRC_RHI_OVERRIDE;
 
     void TraceRays(

@@ -685,6 +685,12 @@ void CommandBuffer::DrawIndexed(int indexCount, int instanceCount, int firstInde
     rhiCommandBuffer_->DrawIndexed(indexCount, instanceCount, firstIndex, firstVertex, firstInstance);
 }
 
+void CommandBuffer::DispatchMesh(int groupCountX, int groupCountY, int groupCountZ)
+{
+    CheckThreadID();
+    rhiCommandBuffer_->DispatchMesh(groupCountX, groupCountY, groupCountZ);
+}
+
 void CommandBuffer::Dispatch(int groupCountX, int groupCountY, int groupCountZ)
 {
     CheckThreadID();

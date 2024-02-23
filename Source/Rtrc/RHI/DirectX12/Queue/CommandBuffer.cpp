@@ -331,6 +331,11 @@ void DirectX12CommandBuffer::DrawIndexed(int indexCount, int instanceCount, int 
     commandList_->DrawIndexedInstanced(indexCount, instanceCount, firstIndex, firstVertex, firstInstance);
 }
 
+void DirectX12CommandBuffer::DispatchMesh(int groupCountX, int groupCountY, int groupCountZ)
+{
+    commandList_->DispatchMesh(groupCountX, groupCountY, groupCountZ);
+}
+
 void DirectX12CommandBuffer::Dispatch(int groupCountX, int groupCountY, int groupCountZ)
 {
     commandList_->Dispatch(groupCountX, groupCountY, groupCountZ);

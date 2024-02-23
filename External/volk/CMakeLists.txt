@@ -1,10 +1,10 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.5)
 cmake_policy(PUSH)
 cmake_policy(SET CMP0048 NEW) # project(... VERSION ...) support
 
 project(volk VERSION 
 # VOLK_GENERATE_VERSION
-211
+270
 # VOLK_GENERATE_VERSION
   LANGUAGES C
 )
@@ -22,6 +22,9 @@ if(NOT DEFINED VOLK_INSTALL)
 endif()
 if(NOT DEFINED VOLK_HEADERS_ONLY)
   option(VOLK_HEADERS_ONLY "Add interface library only" OFF)
+endif()
+if(NOT DEFINED VULKAN_HEADERS_INSTALL_DIR)
+  option(VULKAN_HEADERS_INSTALL_DIR "Where to get the Vulkan headers" "")
 endif()
 
 # -----------------------------------------------------
@@ -60,20 +63,27 @@ endif()
 
 if(VOLK_PULL_IN_VULKAN)
   # If CMake has the FindVulkan module and it works, use it.
-  # Otherwise try the environment variable.
   find_package(Vulkan QUIET)
-  if(TARGET Vulkan::Vulkan)
-    message(" Vulkan as target")
-    if(TARGET volk)
-      target_link_libraries(volk PUBLIC Vulkan::Vulkan)
-    endif()
-    target_link_libraries(volk_headers INTERFACE Vulkan::Vulkan)
+
+  # Try an explicit CMake variable first, then any Vulkan paths
+  # discovered by FindVulkan.cmake, then the $VULKAN_SDK environment
+  # variable if nothing else works.
+  if(VULKAN_HEADERS_INSTALL_DIR)
+    message("volk: using VULKAN_HEADERS_INSTALL_DIR option")
+    set(VOLK_INCLUDES "${VULKAN_HEADERS_INSTALL_DIR}/include")
+  elseif(Vulkan_INCLUDE_DIRS)
+    message("volk: using Vulkan_INCLUDE_DIRS from FindVulkan module")
+    set(VOLK_INCLUDES "${Vulkan_INCLUDE_DIRS}")
   elseif(DEFINED ENV{VULKAN_SDK})
-    message(" Vulkan as path")
+    message("volk: using VULKAN_SDK environment variable")
+    set(VOLK_INCLUDES "$ENV{VULKAN_SDK}/include")
+  endif()
+
+  if(VOLK_INCLUDES)
     if(TARGET volk)
-      target_include_directories(volk PUBLIC "$ENV{VULKAN_SDK}/include")
+      target_include_directories(volk PUBLIC "${VOLK_INCLUDES}")
     endif()
-    target_include_directories(volk_headers INTERFACE "$ENV{VULKAN_SDK}/include")
+    target_include_directories(volk_headers INTERFACE "${VOLK_INCLUDES}")
   endif()
 endif()
 

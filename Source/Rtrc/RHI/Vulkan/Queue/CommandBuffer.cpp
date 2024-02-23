@@ -349,6 +349,11 @@ void VulkanCommandBuffer::DrawIndexed(
         static_cast<uint32_t>(firstInstance));
 }
 
+void VulkanCommandBuffer::DispatchMesh(int groupCountX, int groupCountY, int groupCountZ)
+{
+    vkCmdDrawMeshTasksEXT(commandBuffer_, groupCountX, groupCountY, groupCountZ);
+}
+
 void VulkanCommandBuffer::Dispatch(int groupCountX, int groupCountY, int groupCountZ)
 {
     vkCmdDispatch(

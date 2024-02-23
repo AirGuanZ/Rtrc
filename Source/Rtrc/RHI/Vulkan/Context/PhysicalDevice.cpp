@@ -95,6 +95,12 @@ namespace VkPhysicalDeviceDetail
             VkPhysicalDeviceDepthClipEnableFeaturesEXT,
             VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLIP_ENABLE_FEATURES_EXT,
             depthClipEnable);
+
+        ADD_PHYSICAL_DEVICE_FEATURE(
+            VkPhysicalDeviceMeshShaderFeaturesEXT,
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT,
+            taskShader,
+            meshShader);
         
         if(enableRayTracing)
         {
@@ -349,8 +355,9 @@ std::vector<const char*> VulkanPhysicalDevice::GetRequiredExtensions(const Devic
 {
     std::vector<const char*> requiredExtensions =
     {
-        // The following extensions have been promoted to core 1.2/1.3, so they are not required anymore
+        VK_EXT_MESH_SHADER_EXTENSION_NAME,
 
+        // The following extensions have been promoted to core 1.2/1.3, so they are not explicitly required
         // VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
         // VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
         // VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME

@@ -217,6 +217,11 @@ std::vector<unsigned char> DXC::Compile(
         }
     }
 
+    if(target == Target::Vulkan_1_3_TS_6_6 || target == Target::Vulkan_1_3_MS_6_6)
+    {
+        arguments.push_back(L"-fspv-extension=SPV_EXT_mesh_shader");
+    }
+
     if(preprocessOutput)
     {
         arguments.push_back(L"-P");

@@ -186,6 +186,7 @@ public:
     
     void Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance);
     void DrawIndexed(int indexCount, int instanceCount, int firstIndex, int firstVertex, int firstInstance);
+    void DispatchMesh(int groupCountX, int groupCountY, int groupCountZ);
     void Dispatch(int groupCountX, int groupCountY, int groupCountZ);
     void Dispatch(const Vector3i &groupCount);
     void DispatchWithThreadCount(unsigned int countX, unsigned int countY, unsigned int countZ);
