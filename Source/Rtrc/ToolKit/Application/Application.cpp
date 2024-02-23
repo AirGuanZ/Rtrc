@@ -85,6 +85,15 @@ void Application::UpdateLoop()
             ResizeFrameBuffer(framebufferSize.x, framebufferSize.y);
         }
 
+        if(!isCapturing_ && !pendingGPUCaptureFrames_)
+        {
+            auto &input = window_.GetInput();
+            if(input.IsKeyPressed(KeyCode::LeftShift) && input.IsKeyDown(KeyCode::F11))
+            {
+                pendingGPUCaptureFrames_ = 1;
+            }
+        }
+
         // Begin capture
 
         if(!isCapturing_ && pendingGPUCaptureFrames_)
@@ -96,6 +105,8 @@ void Application::UpdateLoop()
                 if(!gpuCapturer_->Begin(gpuCaptureOutputPrefix_))
                 {
                     LogWarning("Fail to begin gpu capture");
+                    isCapturing_ = false;
+                    pendingGPUCaptureFrames_ = 0;
                 }
             }
         }

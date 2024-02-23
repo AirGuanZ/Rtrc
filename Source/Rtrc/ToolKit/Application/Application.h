@@ -24,6 +24,8 @@ public:
         RHI::BackendType backendType       = RHI::BackendType::Default;
         bool             enableGPUCapturer = false;
     };
+
+    ~Application() = default;
     
     void Run(const Config &config);
 
