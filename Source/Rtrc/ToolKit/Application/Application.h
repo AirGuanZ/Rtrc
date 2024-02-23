@@ -25,7 +25,7 @@ public:
         bool             enableGPUCapturer = false;
     };
 
-    ~Application() = default;
+    virtual ~Application() = default;
     
     void Run(const Config &config);
 
