@@ -14,7 +14,7 @@ function(rtrc_deploy_d3d12_sdk TARGET_NAME)
 		COMMAND
 			${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${TARGET_NAME}>/D3D12"
 		COMMAND
-			${CMAKE_COMMAND} -E copy
+			${CMAKE_COMMAND} -E copy_if_different
 			"${RTRC_D3D12_SDK_DIR}/build/native/bin/x64/D3D12Core.dll"
 			"${RTRC_D3D12_SDK_DIR}/build/native/bin/x64/D3D12Core.pdb"
 			"${RTRC_D3D12_SDK_DIR}/build/native/bin/x64/d3d12SDKLayers.dll"

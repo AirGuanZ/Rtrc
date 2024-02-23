@@ -1,8 +1,8 @@
 #pragma once
 
 #include <Rtrc/Core/Timer.h>
-#include <Rtrc/Graphics/ImGui/Instance.h>
 #include <Rtrc/RHI/Capture/GPUCapturer.h>
+#include <Rtrc/ToolKit/ImGui/Instance.h>
 #include <Rtrc/ToolKit/Resource/BindlessResourceManager.h>
 #include <Rtrc/ToolKit/Resource/ResourceManager.h>
 
