@@ -294,4 +294,66 @@ namespace GridAlignment
         }, uvData.GetData(), RHI::TextureLayout::ShaderTexture);
     }
 
+    RC<Buffer> GenerateIndexBufferForGrid(DeviceRef device, const InputMesh &inputMesh, const Image<GridPoint>& grid)
+    {
+        auto &edges = inputMesh.sharpFeatures.edges;
+        const int w = grid.GetSWidth(), h = grid.GetSHeight();
+        Image<uint32_t> direction(w - 1, h - 1);
+        for(int y = 0; y < h - 1; ++y)
+        {
+            for(int x = 0; x < w - 1; ++x)
+            {
+                auto IsCornerAndEdgeConnected = [&](int corner, int edge)
+                {
+                    if(corner < 0 || edge < 0)
+                    {
+                        return false;
+                    }
+                    return edges[edge].v0 == corner || edges[edge].v1 == corner;
+                };
+
+                const GridPoint &x0y1 = grid(x + 0, y + 1);
+                const GridPoint &x1y0 = grid(x + 1, y + 0);
+                if((x1y0.corner >= 0 && x0y1.corner >= 0) ||
+                   IsCornerAndEdgeConnected(x0y1.corner, x1y0.edge) ||
+                   IsCornerAndEdgeConnected(x1y0.corner, x0y1.edge) ||
+                   (x1y0.edge >= 0 && x1y0.edge == x0y1.edge))
+                {
+                    direction(x, y) = 1;
+                }
+            }
+        }
+
+        std::vector<uint32_t> indices;
+        indices.reserve((w - 1) * (h - 1) * 6);
+        for(int y = 0; y < h - 1; ++y)
+        {
+            for(int x = 0; x < w - 1; ++x)
+            {
+                if(direction(x, y))
+                {
+                    indices.push_back(w * (y + 0) + (x + 0));
+                    indices.push_back(w * (y + 1) + (x + 0));
+                    indices.push_back(w * (y + 0) + (x + 1));
+
+                    indices.push_back(w * (y + 0) + (x + 1));
+                    indices.push_back(w * (y + 1) + (x + 0));
+                    indices.push_back(w * (y + 1) + (x + 1));
+                }
+                else
+                {
+                    indices.push_back(w * (y + 0) + (x + 0));
+                    indices.push_back(w * (y + 1) + (x + 0));
+                    indices.push_back(w * (y + 1) + (x + 1));
+
+                    indices.push_back(w * (y + 0) + (x + 0));
+                    indices.push_back(w * (y + 1) + (x + 1));
+                    indices.push_back(w * (y + 0) + (x + 1));
+                }
+            }
+        }
+
+        return device->CreateAndUploadStructuredBuffer(RHI::BufferUsage::IndexBuffer, Span<uint32_t>(indices));
+    }
+
 } // namespace GridAlignment

@@ -87,12 +87,14 @@ class FADMDemo : public SimpleApplication
                     alignedGrid_ = {};
                     alignedGridUVTexture_ = {};
                     vdmGridAlignment_ = {};
+                    alignedGridIndexBuffer_ = {};
                 }
                 if(imgui.CheckBox("Align Edge", &alignEdge_))
                 {
                     alignedGrid_ = {};
                     alignedGridUVTexture_ = {};
                     vdmGridAlignment_ = {};
+                    alignedGridIndexBuffer_ = {};
                 }
                 imgui.CheckBox("Draw Input Mesh", &drawInputMeshWhenVisualizingAlignedGrid_);
                 if(imgui.SliderAngle("Sharp Edge Angle Threshold", &sharpEdgeAngleThreshold_, 0, 180))
@@ -102,6 +104,7 @@ class FADMDemo : public SimpleApplication
                     alignedGrid_ = {};
                     alignedGridUVTexture_ = {};
                     vdmGridAlignment_ = {};
+                    alignedGridIndexBuffer_ = {};
                 }
             }
 
@@ -172,12 +175,13 @@ class FADMDemo : public SimpleApplication
                     AlignSegments(alignedGrid_, inputMesh_);
                 }
                 alignedGridUVTexture_ = UploadGrid(GetDevice(), alignedGrid_);
+                alignedGridIndexBuffer_ = GenerateIndexBufferForGrid(GetDevice(), inputMesh_, alignedGrid_);
             }
             if(!vdmGridAlignment_)
             {
                 vdmGridAlignment_ = vdmBaker_->BakeAlignedVDM(graph, inputMesh_, alignedGrid_, alignedGridUVTexture_);
             }
-            RenderVDM(framebuffer, vdmGridAlignment_);
+            RenderVDM(framebuffer, vdmGridAlignment_, alignedGridIndexBuffer_);
         }
 
         RGBlitTexture(graph, "BlitToSwapchainTexture", framebuffer, swapchainTexture);
@@ -287,9 +291,10 @@ class FADMDemo : public SimpleApplication
         vdmGridAlignment_.reset();
         alignedGrid_ = {};
         alignedGridUVTexture_ = {};
+        alignedGridIndexBuffer_ = {};
     }
 
-    void RenderVDM(RGTexture renderTarget, RC<StatefulTexture> vdm)
+    void RenderVDM(RGTexture renderTarget, RC<StatefulTexture> vdm, const RC<Buffer> &overrideIndexBuffer = {})
     {
         auto graph = renderTarget->GetGraph();
         auto rgVDM = graph->RegisterTexture(vdm);
@@ -317,7 +322,7 @@ class FADMDemo : public SimpleApplication
                 .loadOp = RHI::AttachmentLoadOp::Clear,
                 .clearValue = RHI::DepthStencilClearValue{ 1, 0 }
             },
-            [renderTarget, depthBuffer, rgVDM, this]
+            [renderTarget, depthBuffer, rgVDM, overrideIndexBuffer, this]
             {
                 using Shader = RtrcShader::FADM::RenderVDM;
                 Shader::Pass passData;
@@ -349,12 +354,14 @@ class FADMDemo : public SimpleApplication
                     }
                 });
 
+                auto &indexBuffer = overrideIndexBuffer ? overrideIndexBuffer : gridIndexBuffer_;
+
                 auto &commandBuffer = RGGetCommandBuffer();
                 commandBuffer.BindGraphicsPipeline(pipeline);
                 commandBuffer.BindGraphicsGroups(passGroup);
                 commandBuffer.SetVertexBuffer(0, gridVertexBuffer_, sizeof(Vector2i));
-                commandBuffer.SetIndexBuffer(gridIndexBuffer_, RHI::IndexFormat::UInt32);
-                commandBuffer.DrawIndexed(gridIndexBuffer_->GetSize() / sizeof(uint32_t), 1, 0, 0, 0);
+                commandBuffer.SetIndexBuffer(indexBuffer, RHI::IndexFormat::UInt32);
+                commandBuffer.DrawIndexed(indexBuffer->GetSize() / sizeof(uint32_t), 1, 0, 0, 0);
             });
         pass->Use(rgVDM, RGUseInfo
         {
@@ -375,6 +382,7 @@ class FADMDemo : public SimpleApplication
                 AlignSegments(alignedGrid_, inputMesh_);
             }
             alignedGridUVTexture_ = UploadGrid(GetDevice(), alignedGrid_);
+            alignedGridIndexBuffer_ = GenerateIndexBufferForGrid(GetDevice(), inputMesh_, alignedGrid_);
         }
 
         auto graph = renderTarget->GetGraph();
@@ -429,8 +437,9 @@ class FADMDemo : public SimpleApplication
                 commandBuffer.BindGraphicsPipeline(pipeline);
                 commandBuffer.BindGraphicsGroups(passGroup);
                 commandBuffer.SetVertexBuffer(0, gridVertexBuffer_, sizeof(Vector2i));
-                commandBuffer.SetIndexBuffer(gridIndexBuffer_, RHI::IndexFormat::UInt32);
-                commandBuffer.DrawIndexed(static_cast<int>(gridIndexBuffer_->GetSize() / sizeof(uint32_t)), 1, 0, 0, 0);
+                commandBuffer.SetIndexBuffer(alignedGridIndexBuffer_, RHI::IndexFormat::UInt32);
+                commandBuffer.DrawIndexed(
+                    static_cast<int>(alignedGridIndexBuffer_->GetSize() / sizeof(uint32_t)), 1, 0, 0, 0);
             });
     }
 
@@ -456,6 +465,7 @@ class FADMDemo : public SimpleApplication
     float sharpEdgeAngleThreshold_ = Deg2Rad(40);
     Image<GridAlignment::GridPoint> alignedGrid_;
     RC<Texture> alignedGridUVTexture_;
+    RC<Buffer> alignedGridIndexBuffer_;
 
     bool adaptiveGrid_ = true;
     bool alignEdge_ = true;

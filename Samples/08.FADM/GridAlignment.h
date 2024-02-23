@@ -20,4 +20,6 @@ namespace GridAlignment
 
     RC<Texture> UploadGrid(DeviceRef device, const Image<GridPoint> &grid);
 
+    RC<Buffer> GenerateIndexBufferForGrid(DeviceRef device, const InputMesh &inputMesh, const Image<GridPoint> &grid);
+
 } // namespace GridAlignment
