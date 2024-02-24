@@ -1,6 +1,9 @@
 #pragma once
 
+#include <concepts>
+
 #include <imgui.h>
+#include <imfilebrowser.h>
 
 #include <Rtrc/RHI/Window/WindowInput.h>
 #include <Rtrc/Graphics/Device/Device.h>
@@ -63,6 +66,9 @@ private:
     std::map<RHI::Format, RC<GraphicsPipeline>> rtFormatToPipeline_;
 };
 
+template<typename T>
+concept ImGuiScalar = std::integral<T> || std::floating_point<T>;
+
 class ImGuiInstance : public Uncopyable
 {
 public:
@@ -122,62 +128,74 @@ public:
 
     bool Selectable(const char *label, bool selected, ImGuiSelectableFlags flags = 0, const Vector2f &size = {});
 
-    bool DragFloat (const char *label, float    *v, float vSpeed = 1.0f, float vMin = 0.0f, float vMax = 0.0f, const char *format = "%.3f", ImGuiSliderFlags flags = 0);
-    bool DragFloat2(const char *label, float    *v, float vSpeed = 1.0f, float vMin = 0.0f, float vMax = 0.0f, const char *format = "%.3f", ImGuiSliderFlags flags = 0);
-    bool DragFloat3(const char *label, float    *v, float vSpeed = 1.0f, float vMin = 0.0f, float vMax = 0.0f, const char *format = "%.3f", ImGuiSliderFlags flags = 0);
-    bool DragFloat4(const char *label, float    *v, float vSpeed = 1.0f, float vMin = 0.0f, float vMax = 0.0f, const char *format = "%.3f", ImGuiSliderFlags flags = 0);
-    bool DragFloat2(const char *label, Vector2f *v, float vSpeed = 1.0f, float vMin = 0.0f, float vMax = 0.0f, const char *format = "%.3f", ImGuiSliderFlags flags = 0);
-    bool DragFloat3(const char *label, Vector3f *v, float vSpeed = 1.0f, float vMin = 0.0f, float vMax = 0.0f, const char *format = "%.3f", ImGuiSliderFlags flags = 0);
-    bool DragFloat4(const char *label, Vector4f *v, float vSpeed = 1.0f, float vMin = 0.0f, float vMax = 0.0f, const char *format = "%.3f", ImGuiSliderFlags flags = 0);
-    
-    bool DragInt (const char *label, int      *v, float vSpeed = 1.0f, int vMin = 0, int vMax = 0, const char *format = "%d", ImGuiSliderFlags flags = 0);
-    bool DragInt2(const char *label, int      *v, float vSpeed = 1.0f, int vMin = 0, int vMax = 0, const char *format = "%d", ImGuiSliderFlags flags = 0);
-    bool DragInt3(const char *label, int      *v, float vSpeed = 1.0f, int vMin = 0, int vMax = 0, const char *format = "%d", ImGuiSliderFlags flags = 0);
-    bool DragInt4(const char *label, int      *v, float vSpeed = 1.0f, int vMin = 0, int vMax = 0, const char *format = "%d", ImGuiSliderFlags flags = 0);
-    bool DragInt2(const char *label, Vector2i *v, float vSpeed = 1.0f, int vMin = 0, int vMax = 0, const char *format = "%d", ImGuiSliderFlags flags = 0);
-    bool DragInt3(const char *label, Vector3i *v, float vSpeed = 1.0f, int vMin = 0, int vMax = 0, const char *format = "%d", ImGuiSliderFlags flags = 0);
-    bool DragInt4(const char *label, Vector4i *v, float vSpeed = 1.0f, int vMin = 0, int vMax = 0, const char *format = "%d", ImGuiSliderFlags flags = 0);
+    // Set 'format' to nullptr to use the default format string.
+    // Default format strings for following types are defined in ImGui::DataTypeGetInfo:
+    //     { S8, S16, S32, S64, U8, U16, U32, U64, F32, F64 }
+    template<ImGuiScalar T>
+    bool Drag(const char *label, T *value, float vSpeed = 1.0f, T vMin = 0, T vMax = 0, const char *format = nullptr, ImGuiSliderFlags flags = 0);
 
-    bool DragUInt (const char *label, unsigned *v, float vSpeed = 1.0f, int vMax = 0, const char *format = "%d", ImGuiSliderFlags flags = 0);
+    template<ImGuiScalar T>
+    bool DragVector2(const char *label, T *value, float vSpeed = 1.0f, T vMin = 0, T vMax = 0, const char *format = nullptr, ImGuiSliderFlags flags = 0);
+    template<ImGuiScalar T>
+    bool DragVector3(const char *label, T *value, float vSpeed = 1.0f, T vMin = 0, T vMax = 0, const char *format = nullptr, ImGuiSliderFlags flags = 0);
+    template<ImGuiScalar T>
+    bool DragVector4(const char *label, T *value, float vSpeed = 1.0f, T vMin = 0, T vMax = 0, const char *format = nullptr, ImGuiSliderFlags flags = 0);
+
+    template<ImGuiScalar T>
+    bool DragVector2(const char *label, Vector2<T> &value, float vSpeed = 1.0f, T vMin = 0, T vMax = 0, const char *format = nullptr, ImGuiSliderFlags flags = 0);
+    template<ImGuiScalar T>
+    bool DragVector3(const char *label, Vector3<T> &value, float vSpeed = 1.0f, T vMin = 0, T vMax = 0, const char *format = nullptr, ImGuiSliderFlags flags = 0);
+    template<ImGuiScalar T>
+    bool DragVector4(const char *label, Vector4<T> &value, float vSpeed = 1.0f, T vMin = 0, T vMax = 0, const char *format = nullptr, ImGuiSliderFlags flags = 0);
 
     bool DragFloatRange2(const char *label, float *currMin, float *currMax, float vSpeed = 1.0f, float vMin = 0.0f, float vMax = 0.0f, const char *format = "%.3f", const char *formatMax = nullptr, ImGuiSliderFlags flags = 0);
     bool DragIntRange2  (const char *label, int   *currMin, int   *currMax, float vSpeed = 1.0f, int   vMin = 0.0f, int   vMax = 0.0f, const char *format = "%.3f", const char *formatMax = nullptr, ImGuiSliderFlags flags = 0);
 
-    bool SliderFloat (const char *label, float    *v, float vMin, float vMax, const char *format = "%.3f", ImGuiSliderFlags flags = 0);
-    bool SliderFloat2(const char *label, float    *v, float vMin, float vMax, const char *format = "%.3f", ImGuiSliderFlags flags = 0);
-    bool SliderFloat3(const char *label, float    *v, float vMin, float vMax, const char *format = "%.3f", ImGuiSliderFlags flags = 0);
-    bool SliderFloat4(const char *label, float    *v, float vMin, float vMax, const char *format = "%.3f", ImGuiSliderFlags flags = 0);
-    bool SliderFloat2(const char *label, Vector2f *v, float vMin, float vMax, const char *format = "%.3f", ImGuiSliderFlags flags = 0);
-    bool SliderFloat3(const char *label, Vector3f *v, float vMin, float vMax, const char *format = "%.3f", ImGuiSliderFlags flags = 0);
-    bool SliderFloat4(const char *label, Vector4f *v, float vMin, float vMax, const char *format = "%.3f", ImGuiSliderFlags flags = 0);
-
-    bool SliderInt (const char *label, int      *v, int vMin, int vMax, const char *format = "%d", ImGuiSliderFlags flags = 0);
-    bool SliderInt2(const char *label, int      *v, int vMin, int vMax, const char *format = "%d", ImGuiSliderFlags flags = 0);
-    bool SliderInt3(const char *label, int      *v, int vMin, int vMax, const char *format = "%d", ImGuiSliderFlags flags = 0);
-    bool SliderInt4(const char *label, int      *v, int vMin, int vMax, const char *format = "%d", ImGuiSliderFlags flags = 0);
-    bool SliderInt2(const char *label, Vector2i *v, int vMin, int vMax, const char *format = "%d", ImGuiSliderFlags flags = 0);
-    bool SliderInt3(const char *label, Vector3i *v, int vMin, int vMax, const char *format = "%d", ImGuiSliderFlags flags = 0);
-    bool SliderInt4(const char *label, Vector4i *v, int vMin, int vMax, const char *format = "%d", ImGuiSliderFlags flags = 0);
+    template<ImGuiScalar T>
+    bool Slider(const char *label, T *value, T vMin, T vMax, const char *format = nullptr, ImGuiSliderFlags flags = 0);
+    template<ImGuiScalar T>
+    bool SliderVector2(const char *label, T *value, T vMin, T vMax, const char *format = nullptr, ImGuiSliderFlags flags = 0);
+    template<ImGuiScalar T>
+    bool SliderVector3(const char *label, T *value, T vMin, T vMax, const char *format = nullptr, ImGuiSliderFlags flags = 0);
+    template<ImGuiScalar T>
+    bool SliderVector4(const char *label, T *value, T vMin, T vMax, const char *format = nullptr, ImGuiSliderFlags flags = 0);
+    template<ImGuiScalar T>
+    bool SliderVector2(const char *label, Vector2<T> &value, T vMin, T vMax, const char *format = nullptr, ImGuiSliderFlags flags = 0);
+    template<ImGuiScalar T>
+    bool SliderVector3(const char *label, Vector3<T> &value, T vMin, T vMax, const char *format = nullptr, ImGuiSliderFlags flags = 0);
+    template<ImGuiScalar T>
+    bool SliderVector4(const char *label, Vector4<T> &value, T vMin, T vMax, const char *format = nullptr, ImGuiSliderFlags flags = 0);
 
     bool SliderAngle(const char *label, float *vRad, float vDegreeMin = -360.0f, float vDegreeMax = +360.0f, const char *format = "%.0f deg", ImGuiSliderFlags flags = 0);
 
-    bool InputFloat (const char *label, float  *v, float  step = 0.0f, float  stepFast = 0.0f, const char *format = "%.3f", ImGuiInputTextFlags flags = 0);
-    bool InputDouble(const char *label, double *v, double step = 0.0,  double stepFast = 0.0,  const char *format = "%.6f", ImGuiInputTextFlags flags = 0);
-    bool InputInt   (const char *label, int    *v, int    step = 1,    int    stepFast = 100, ImGuiInputTextFlags flags = 0);
-
-    bool InputFloat2(const char *label, float    *v, const char *format = "%.3f", ImGuiInputTextFlags flags = 0);
-    bool InputFloat3(const char *label, float    *v, const char *format = "%.3f", ImGuiInputTextFlags flags = 0);
-    bool InputFloat4(const char *label, float    *v, const char *format = "%.3f", ImGuiInputTextFlags flags = 0);
-    bool InputFloat2(const char *label, Vector2f *v, const char *format = "%.3f", ImGuiInputTextFlags flags = 0);
-    bool InputFloat3(const char *label, Vector3f *v, const char *format = "%.3f", ImGuiInputTextFlags flags = 0);
-    bool InputFloat4(const char *label, Vector4f *v, const char *format = "%.3f", ImGuiInputTextFlags flags = 0);
-    
-    bool InputInt2(const char *label, int      *v, ImGuiInputTextFlags flags = 0);
-    bool InputInt3(const char *label, int      *v, ImGuiInputTextFlags flags = 0);
-    bool InputInt4(const char *label, int      *v, ImGuiInputTextFlags flags = 0);
-    bool InputInt2(const char *label, Vector2i *v, ImGuiInputTextFlags flags = 0);
-    bool InputInt3(const char *label, Vector3i *v, ImGuiInputTextFlags flags = 0);
-    bool InputInt4(const char *label, Vector4i *v, ImGuiInputTextFlags flags = 0);
+    template<ImGuiScalar T>
+    bool Input(const char *label, T *value, const char *format = nullptr, ImGuiInputFlags flags = 0);
+    template<ImGuiScalar T>
+    bool Input(const char *label, T *value, T step, T stepFast, const char *format = nullptr, ImGuiInputFlags flags = 0);
+    template<ImGuiScalar T>
+    bool InputVector2(const char *label, T *value, const char *format = nullptr, ImGuiInputFlags flags = 0);
+    template<ImGuiScalar T>
+    bool InputVector2(const char *label, T *value, T step, T stepFast, const char *format = nullptr, ImGuiInputFlags flags = 0);
+    template<ImGuiScalar T>
+    bool InputVector3(const char *label, T *value, const char *format = nullptr, ImGuiInputFlags flags = 0);
+    template<ImGuiScalar T>
+    bool InputVector3(const char *label, T *value, T step, T stepFast, const char *format = nullptr, ImGuiInputFlags flags = 0);
+    template<ImGuiScalar T>
+    bool InputVector4(const char *label, T *value, const char *format = nullptr, ImGuiInputFlags flags = 0);
+    template<ImGuiScalar T>
+    bool InputVector4(const char *label, T *value, T step, T stepFast, const char *format = nullptr, ImGuiInputFlags flags = 0);
+    template<ImGuiScalar T>
+    bool InputVector2(const char *label, Vector2<T> &value, const char *format = nullptr, ImGuiInputFlags flags = 0);
+    template<ImGuiScalar T>
+    bool InputVector2(const char *label, Vector2<T> &value, T step, T stepFast, const char *format = nullptr, ImGuiInputFlags flags = 0);
+    template<ImGuiScalar T>
+    bool InputVector3(const char *label, Vector3<T> &value, const char *format = nullptr, ImGuiInputFlags flags = 0);
+    template<ImGuiScalar T>
+    bool InputVector3(const char *label, Vector3<T> &value, T step, T stepFast, const char *format = nullptr, ImGuiInputFlags flags = 0);
+    template<ImGuiScalar T>
+    bool InputVector4(const char *label, Vector4<T> &value, const char *format = nullptr, ImGuiInputFlags flags = 0);
+    template<ImGuiScalar T>
+    bool InputVector4(const char *label, Vector4<T> &value, T step, T stepFast, const char *format = nullptr, ImGuiInputFlags flags = 0);
 
     bool ColorEdit3  (const char *label, float rgb [3], ImGuiColorEditFlags flags = {});
     bool ColorEdit4  (const char *label, float rgba[4], ImGuiColorEditFlags flags = {});

@@ -2,7 +2,7 @@
 #include <Rtrc/Graphics/RenderGraph/Graph.h>
 #include <Rtrc/Graphics/Shader/StandaloneCompiler.h>
 #include <Rtrc/Graphics/Device/MeshLayout.h>
-#include <Rtrc/ToolKit/ImGui/Instance.h>
+#include <Rtrc/ToolKit/ImGui/ImGuiInstance.h>
 
 RTRC_BEGIN
 
@@ -182,6 +182,27 @@ float4 FSMain(VsToFs input) : SV_TARGET
 
 #define IMGUI_CONTEXT_EXPLICIT(CONTEXT) ImGuiDetail::ImGuiContextGuard guiContextGuard(CONTEXT)
 #define IMGUI_CONTEXT IMGUI_CONTEXT_EXPLICIT(data_->context)
+
+    template<typename T>
+    struct TypeToImGuiDataType;
+
+    template<> struct TypeToImGuiDataType<int8_t>  { static constexpr ImGuiDataType Type = ImGuiDataType_S8;  };
+    template<> struct TypeToImGuiDataType<int16_t> { static constexpr ImGuiDataType Type = ImGuiDataType_S16; };
+    template<> struct TypeToImGuiDataType<int32_t> { static constexpr ImGuiDataType Type = ImGuiDataType_S32; };
+    template<> struct TypeToImGuiDataType<int64_t> { static constexpr ImGuiDataType Type = ImGuiDataType_S64; };
+    
+    template<> struct TypeToImGuiDataType<uint8_t>  { static constexpr ImGuiDataType Type = ImGuiDataType_U8;  };
+    template<> struct TypeToImGuiDataType<uint16_t> { static constexpr ImGuiDataType Type = ImGuiDataType_U16; };
+    template<> struct TypeToImGuiDataType<uint32_t> { static constexpr ImGuiDataType Type = ImGuiDataType_U32; };
+    template<> struct TypeToImGuiDataType<uint64_t> { static constexpr ImGuiDataType Type = ImGuiDataType_U64; };
+
+    template<> struct TypeToImGuiDataType<float>  { static constexpr ImGuiDataType Type = ImGuiDataType_Float;  };
+    template<> struct TypeToImGuiDataType<double> { static constexpr ImGuiDataType Type = ImGuiDataType_Double; };
+
+    template<> struct TypeToImGuiDataType<char>
+    {
+        static constexpr ImGuiDataType Type = std::is_signed_v<char> ? ImGuiDataType_S8 : ImGuiDataType_U8;
+    };
 
 } // namespace ImGuiDetail
 
@@ -862,97 +883,54 @@ bool ImGuiInstance::Selectable(const char *label, bool selected, ImGuiSelectable
     return ImGui::Selectable(label, selected, flags, size);
 }
 
-bool ImGuiInstance::DragFloat(const char *label, float *v, float vSpeed, float vMin, float vMax, const char *format, ImGuiSliderFlags flags)
+template <ImGuiScalar T>
+bool ImGuiInstance::Drag(const char* label, T* value, float vSpeed, T vMin, T vMax, const char* format, ImGuiSliderFlags flags)
 {
     IMGUI_CONTEXT;
-    return ImGui::DragFloat(label, v, vSpeed, vMin, vMax, format, flags);
+    constexpr ImGuiDataType dataType = ImGuiDetail::TypeToImGuiDataType<T>::Type;
+    return ImGui::DragScalar(label, dataType, value, vSpeed, &vMin, &vMax, format, flags);
 }
 
-bool ImGuiInstance::DragFloat2(const char *label, float *v, float vSpeed, float vMin, float vMax, const char *format, ImGuiSliderFlags flags)
+template <ImGuiScalar T>
+bool ImGuiInstance::DragVector2(const char* label, T* value, float vSpeed, T vMin, T vMax, const char* format, ImGuiSliderFlags flags)
 {
     IMGUI_CONTEXT;
-    return ImGui::DragFloat2(label, v, vSpeed, vMin, vMax, format, flags);
+    constexpr ImGuiDataType dataType = ImGuiDetail::TypeToImGuiDataType<T>::Type;
+    return ImGui::DragScalarN(label, dataType, value, 2, vSpeed, &vMin, &vMax, format, flags);
 }
 
-bool ImGuiInstance::DragFloat3(const char *label, float *v, float vSpeed, float vMin, float vMax, const char *format, ImGuiSliderFlags flags)
+template <ImGuiScalar T>
+bool ImGuiInstance::DragVector3(const char* label, T* value, float vSpeed, T vMin, T vMax, const char* format, ImGuiSliderFlags flags)
 {
     IMGUI_CONTEXT;
-    return ImGui::DragFloat3(label, v, vSpeed, vMin, vMax, format, flags);
+    constexpr ImGuiDataType dataType = ImGuiDetail::TypeToImGuiDataType<T>::Type;
+    return ImGui::DragScalarN(label, dataType, value, 3, vSpeed, &vMin, &vMax, format, flags);
 }
 
-bool ImGuiInstance::DragFloat4(const char *label, float *v, float vSpeed, float vMin, float vMax, const char *format, ImGuiSliderFlags flags)
+template <ImGuiScalar T>
+bool ImGuiInstance::DragVector4(const char* label, T *value, float vSpeed, T vMin, T vMax, const char* format, ImGuiSliderFlags flags)
 {
     IMGUI_CONTEXT;
-    return ImGui::DragFloat4(label, v, vSpeed, vMin, vMax, format, flags);
+    constexpr ImGuiDataType dataType = ImGuiDetail::TypeToImGuiDataType<T>::Type;
+    return ImGui::DragScalarN(label, dataType, value, 4, vSpeed, &vMin, &vMax, format, flags);
 }
 
-bool ImGuiInstance::DragFloat2(const char *label, Vector2f *v, float vSpeed, float vMin, float vMax, const char *format, ImGuiSliderFlags flags)
+template <ImGuiScalar T>
+bool ImGuiInstance::DragVector2(const char* label, Vector2<T>& value, float vSpeed, T vMin, T vMax, const char* format, ImGuiSliderFlags flags)
 {
-    IMGUI_CONTEXT;
-    return DragFloat2(label, &v->x, vSpeed, vMin, vMax, format, flags);
+    return this->DragVector2(label, &value.x, vSpeed, vMin, vMax, format, flags);
 }
 
-bool ImGuiInstance::DragFloat3(const char *label, Vector3f *v, float vSpeed, float vMin, float vMax, const char *format, ImGuiSliderFlags flags)
+template <ImGuiScalar T>
+bool ImGuiInstance::DragVector3(const char* label, Vector3<T>& value, float vSpeed, T vMin, T vMax, const char* format, ImGuiSliderFlags flags)
 {
-    IMGUI_CONTEXT;
-    return DragFloat3(label, &v->x, vSpeed, vMin, vMax, format, flags);
+    return this->DragVector3(label, &value.x, vSpeed, vMin, vMax, format, flags);
 }
 
-bool ImGuiInstance::DragFloat4(const char *label, Vector4f *v, float vSpeed, float vMin, float vMax, const char *format, ImGuiSliderFlags flags)
+template <ImGuiScalar T>
+bool ImGuiInstance::DragVector4(const char* label, Vector4<T>& value, float vSpeed, T vMin, T vMax, const char* format, ImGuiSliderFlags flags)
 {
-    IMGUI_CONTEXT;
-    return DragFloat4(label, &v->x, vSpeed, vMin, vMax, format, flags);
-}
-
-bool ImGuiInstance::DragInt(const char *label, int *v, float vSpeed, int vMin, int vMax, const char *format, ImGuiSliderFlags flags)
-{
-    IMGUI_CONTEXT;
-    return ImGui::DragInt(label, v, vSpeed, vMin, vMax, format, flags);
-}
-
-bool ImGuiInstance::DragInt2(const char *label, int *v, float vSpeed, int vMin, int vMax, const char *format, ImGuiSliderFlags flags)
-{
-    IMGUI_CONTEXT;
-    return ImGui::DragInt2(label, v, vSpeed, vMin, vMax, format, flags);
-}
-
-bool ImGuiInstance::DragInt3(const char *label, int *v, float vSpeed, int vMin, int vMax, const char *format, ImGuiSliderFlags flags)
-{
-    IMGUI_CONTEXT;
-    return ImGui::DragInt3(label, v, vSpeed, vMin, vMax, format, flags);
-}
-
-bool ImGuiInstance::DragInt4(const char *label, int *v, float vSpeed, int vMin, int vMax, const char *format, ImGuiSliderFlags flags)
-{
-    IMGUI_CONTEXT;
-    return ImGui::DragInt4(label, v, vSpeed, vMin, vMax, format, flags);
-}
-
-bool ImGuiInstance::DragInt2(const char *label, Vector2i *v, float vSpeed, int vMin, int vMax, const char *format, ImGuiSliderFlags flags)
-{
-    IMGUI_CONTEXT;
-    return DragInt2(label, &v->x, vSpeed, vMin, vMax, format, flags);
-}
-
-bool ImGuiInstance::DragInt3(const char *label, Vector3i *v, float vSpeed, int vMin, int vMax, const char *format, ImGuiSliderFlags flags)
-{
-    IMGUI_CONTEXT;
-    return DragInt3(label, &v->x, vSpeed, vMin, vMax, format, flags);
-}
-
-bool ImGuiInstance::DragInt4(const char *label, Vector4i *v, float vSpeed, int vMin, int vMax, const char *format, ImGuiSliderFlags flags)
-{
-    IMGUI_CONTEXT;
-    return DragInt4(label, &v->x, vSpeed, vMin, vMax, format, flags);
-}
-
-bool ImGuiInstance::DragUInt(const char *label, unsigned *v, float vSpeed, int vMax, const char *format, ImGuiSliderFlags flags)
-{
-    IMGUI_CONTEXT;
-    int vbar = *v;
-    const bool ret = DragInt(label, &vbar, vSpeed, 0, vMax, format, flags);
-    *v = vbar;
-    return ret;
+    return this->DragVector4(label, &value.x, vSpeed, vMin, vMax, format, flags);
 }
 
 bool ImGuiInstance::DragFloatRange2(const char *label, float *currMin, float *currMax, float vSpeed, float vMin, float vMax, const char *format, const char *formatMax, ImGuiSliderFlags flags)
@@ -967,82 +945,54 @@ bool ImGuiInstance::DragIntRange2(const char *label, int *currMin, int *currMax,
     return ImGui::DragIntRange2(label, currMin, currMax, vSpeed, vMin, vMax, format, formatMax, flags);
 }
 
-bool ImGuiInstance::SliderFloat(const char *label, float *v, float vMin, float vMax, const char *format, ImGuiSliderFlags flags)
+template <ImGuiScalar T>
+bool ImGuiInstance::Slider(const char* label, T* value, T vMin, T vMax, const char* format, ImGuiSliderFlags flags)
 {
     IMGUI_CONTEXT;
-    return ImGui::SliderFloat(label, v, vMin, vMax, format, flags);
+    constexpr ImGuiDataType dataType = ImGuiDetail::TypeToImGuiDataType<T>::Type;
+    return ImGui::SliderScalar(label, dataType, value, &vMin, &vMax, format, flags);
 }
 
-bool ImGuiInstance::SliderFloat2(const char *label, float *v, float vMin, float vMax, const char *format, ImGuiSliderFlags flags)
+template <ImGuiScalar T>
+bool ImGuiInstance::SliderVector2(const char* label, T* value, T vMin, T vMax, const char* format, ImGuiSliderFlags flags)
 {
     IMGUI_CONTEXT;
-    return ImGui::SliderFloat2(label, v, vMin, vMax, format, flags);
+    constexpr ImGuiDataType dataType = ImGuiDetail::TypeToImGuiDataType<T>::Type;
+    return ImGui::SliderScalarN(label, dataType, value, 2, &vMin, &vMax, format, flags);
 }
 
-bool ImGuiInstance::SliderFloat3(const char *label, float *v, float vMin, float vMax, const char *format, ImGuiSliderFlags flags)
+template <ImGuiScalar T>
+bool ImGuiInstance::SliderVector3(const char *label, T *value, T vMin, T vMax, const char *format, ImGuiSliderFlags flags)
 {
     IMGUI_CONTEXT;
-    return ImGui::SliderFloat3(label, v, vMin, vMax, format, flags);
+    constexpr ImGuiDataType dataType = ImGuiDetail::TypeToImGuiDataType<T>::Type;
+    return ImGui::SliderScalarN(label, dataType, value, 3, &vMin, &vMax, format, flags);
 }
 
-bool ImGuiInstance::SliderFloat4(const char *label, float *v, float vMin, float vMax, const char *format, ImGuiSliderFlags flags)
+template <ImGuiScalar T>
+bool ImGuiInstance::SliderVector4(const char *label, T *value, T vMin, T vMax, const char *format, ImGuiSliderFlags flags)
 {
     IMGUI_CONTEXT;
-    return ImGui::SliderFloat4(label, v, vMin, vMax, format, flags);
+    constexpr ImGuiDataType dataType = ImGuiDetail::TypeToImGuiDataType<T>::Type;
+    return ImGui::SliderScalarN(label, dataType, value, 4, &vMin, &vMax, format, flags);
 }
 
-bool ImGuiInstance::SliderFloat2(const char *label, Vector2f *v, float vMin, float vMax, const char *format, ImGuiSliderFlags flags)
+template <ImGuiScalar T>
+bool ImGuiInstance::SliderVector2(const char* label, Vector2<T>& value, T vMin, T vMax, const char* format, ImGuiSliderFlags flags)
 {
-    return SliderFloat2(label, &v->x, vMin, vMax, format, flags);
+    return ImGuiInstance::SliderVector2(label, &value.x, vMin, vMax, format, flags);
 }
 
-bool ImGuiInstance::SliderFloat3(const char *label, Vector3f *v, float vMin, float vMax, const char *format, ImGuiSliderFlags flags)
+template <ImGuiScalar T>
+bool ImGuiInstance::SliderVector3(const char* label, Vector3<T>& value, T vMin, T vMax, const char* format, ImGuiSliderFlags flags)
 {
-    return SliderFloat3(label, &v->x, vMin, vMax, format, flags);
+    return ImGuiInstance::SliderVector3(label, &value.x, vMin, vMax, format, flags);
 }
 
-bool ImGuiInstance::SliderFloat4(const char *label, Vector4f *v, float vMin, float vMax, const char *format, ImGuiSliderFlags flags)
+template <ImGuiScalar T>
+bool ImGuiInstance::SliderVector4(const char *label, Vector4<T> &value, T vMin, T vMax, const char *format, ImGuiSliderFlags flags)
 {
-    return SliderFloat4(label, &v->x, vMin, vMax, format, flags);
-}
-
-bool ImGuiInstance::SliderInt(const char *label, int *v, int vMin, int vMax, const char *format, ImGuiSliderFlags flags)
-{
-    IMGUI_CONTEXT;
-    return ImGui::SliderInt(label, v, vMin, vMax, format, flags);
-}
-
-bool ImGuiInstance::SliderInt2(const char *label, int *v, int vMin, int vMax, const char *format, ImGuiSliderFlags flags)
-{
-    IMGUI_CONTEXT;
-    return ImGui::SliderInt2(label, v, vMin, vMax, format, flags);
-}
-
-bool ImGuiInstance::SliderInt3(const char *label, int *v, int vMin, int vMax, const char *format, ImGuiSliderFlags flags)
-{
-    IMGUI_CONTEXT;
-    return ImGui::SliderInt3(label, v, vMin, vMax, format, flags);
-}
-
-bool ImGuiInstance::SliderInt4(const char *label, int *v, int vMin, int vMax, const char *format, ImGuiSliderFlags flags)
-{
-    IMGUI_CONTEXT;
-    return ImGui::SliderInt4(label, v, vMin, vMax, format, flags);
-}
-
-bool ImGuiInstance::SliderInt2(const char *label, Vector2i *v, int vMin, int vMax, const char *format, ImGuiSliderFlags flags)
-{
-    return SliderInt2(label, &v->x, vMin, vMax, format, flags);
-}
-
-bool ImGuiInstance::SliderInt3(const char *label, Vector3i *v, int vMin, int vMax, const char *format, ImGuiSliderFlags flags)
-{
-    return SliderInt3(label, &v->x, vMin, vMax, format, flags);
-}
-
-bool ImGuiInstance::SliderInt4(const char *label, Vector4i *v, int vMin, int vMax, const char *format, ImGuiSliderFlags flags)
-{
-    return SliderInt4(label, &v->x, vMin, vMax, format, flags);
+    return ImGuiInstance::SliderVector4(label, &value.x, vMin, vMax, format, flags);
 }
 
 bool ImGuiInstance::SliderAngle(const char *label, float *vRad, float vDegreeMin, float vDegreeMax, const char *format, ImGuiSliderFlags flags)
@@ -1051,88 +1001,104 @@ bool ImGuiInstance::SliderAngle(const char *label, float *vRad, float vDegreeMin
     return ImGui::SliderAngle(label, vRad, vDegreeMin, vDegreeMax, format, flags);
 }
 
-bool ImGuiInstance::InputFloat(const char *label, float *v, float step, float stepFast, const char *format, ImGuiInputTextFlags flags)
+template <ImGuiScalar T>
+bool ImGuiInstance::Input(const char* label, T* value, const char* format, ImGuiInputFlags flags)
 {
     IMGUI_CONTEXT;
-    return ImGui::InputFloat(label, v, step, stepFast, format, flags);
+    constexpr ImGuiDataType dataType = ImGuiDetail::TypeToImGuiDataType<T>::Type;
+    return ImGui::InputScalar(label, dataType, value, nullptr, nullptr, format, flags);
 }
 
-bool ImGuiInstance::InputDouble(const char *label, double *v, double step, double stepFast, const char *format, ImGuiInputTextFlags flags)
+template <ImGuiScalar T>
+bool ImGuiInstance::Input(const char* label, T* value, T step, T stepFast, const char* format, ImGuiInputFlags flags)
 {
     IMGUI_CONTEXT;
-    return ImGui::InputDouble(label, v, step, stepFast, format, flags);
+    constexpr ImGuiDataType dataType = ImGuiDetail::TypeToImGuiDataType<T>::Type;
+    return ImGui::InputScalar(label, dataType, value, &step, &stepFast, format, flags);
 }
 
-bool ImGuiInstance::InputInt(const char *label, int *v, int step, int stepFast, ImGuiInputTextFlags flags)
+template <ImGuiScalar T>
+bool ImGuiInstance::InputVector2(const char* label, T* value, const char* format, ImGuiInputFlags flags)
 {
     IMGUI_CONTEXT;
-    return ImGui::InputInt(label, v, step, stepFast, flags);
+    constexpr ImGuiDataType dataType = ImGuiDetail::TypeToImGuiDataType<T>::Type;
+    return ImGui::InputScalarN(label, dataType, value, 2, nullptr, nullptr, format, flags);
 }
 
-bool ImGuiInstance::InputFloat2(const char *label, float *v, const char *format, ImGuiInputTextFlags flags)
+template <ImGuiScalar T>
+bool ImGuiInstance::InputVector2(const char* label, T* value, T step, T stepFast, const char* format, ImGuiInputFlags flags)
 {
     IMGUI_CONTEXT;
-    return ImGui::InputFloat2(label, v, format, flags);
+    constexpr ImGuiDataType dataType = ImGuiDetail::TypeToImGuiDataType<T>::Type;
+    return ImGui::InputScalarN(label, dataType, value, 2, &step, &stepFast, format, flags);
 }
 
-bool ImGuiInstance::InputFloat3(const char *label, float *v, const char *format, ImGuiInputTextFlags flags)
+template <ImGuiScalar T>
+bool ImGuiInstance::InputVector3(const char *label, T *value, const char *format, ImGuiInputFlags flags)
 {
     IMGUI_CONTEXT;
-    return ImGui::InputFloat3(label, v, format, flags);
+    constexpr ImGuiDataType dataType = ImGuiDetail::TypeToImGuiDataType<T>::Type;
+    return ImGui::InputScalarN(label, dataType, value, 3, nullptr, nullptr, format, flags);
 }
 
-bool ImGuiInstance::InputFloat4(const char *label, float *v, const char *format, ImGuiInputTextFlags flags)
+template <ImGuiScalar T>
+bool ImGuiInstance::InputVector3(const char *label, T *value, T step, T stepFast, const char *format, ImGuiInputFlags flags)
 {
     IMGUI_CONTEXT;
-    return ImGui::InputFloat4(label, v, format, flags);
+    constexpr ImGuiDataType dataType = ImGuiDetail::TypeToImGuiDataType<T>::Type;
+    return ImGui::InputScalarN(label, dataType, value, 3, &step, &stepFast, format, flags);
 }
 
-bool ImGuiInstance::InputFloat2(const char *label, Vector2f *v, const char *format, ImGuiInputTextFlags flags)
-{
-    return InputFloat2(label, &v->x, format, flags);
-}
-
-bool ImGuiInstance::InputFloat3(const char *label, Vector3f *v, const char *format, ImGuiInputTextFlags flags)
-{
-    return InputFloat3(label, &v->x, format, flags);
-}
-
-bool ImGuiInstance::InputFloat4(const char *label, Vector4f *v, const char *format, ImGuiInputTextFlags flags)
-{
-    return InputFloat4(label, &v->x, format, flags);
-}
-
-bool ImGuiInstance::InputInt2(const char *label, int *v, ImGuiInputTextFlags flags)
+template <ImGuiScalar T>
+bool ImGuiInstance::InputVector4(const char *label, T *value, const char *format, ImGuiInputFlags flags)
 {
     IMGUI_CONTEXT;
-    return ImGui::InputInt2(label, v, flags);
+    constexpr ImGuiDataType dataType = ImGuiDetail::TypeToImGuiDataType<T>::Type;
+    return ImGui::InputScalarN(label, dataType, value, 4, nullptr, nullptr, format, flags);
 }
 
-bool ImGuiInstance::InputInt3(const char *label, int *v, ImGuiInputTextFlags flags)
+template <ImGuiScalar T>
+bool ImGuiInstance::InputVector4(const char *label, T *value, T step, T stepFast, const char *format, ImGuiInputFlags flags)
 {
     IMGUI_CONTEXT;
-    return ImGui::InputInt3(label, v, flags);
+    constexpr ImGuiDataType dataType = ImGuiDetail::TypeToImGuiDataType<T>::Type;
+    return ImGui::InputScalarN(label, dataType, value, 4, &step, &stepFast, format, flags);
 }
 
-bool ImGuiInstance::InputInt4(const char *label, int *v, ImGuiInputTextFlags flags)
+template <ImGuiScalar T>
+bool ImGuiInstance::InputVector2(const char* label, Vector2<T>& value, const char* format, ImGuiInputFlags flags)
 {
-    IMGUI_CONTEXT;
-    return ImGui::InputInt4(label, v, flags);
+    return this->InputVector2(label, &value.x, format, flags);
 }
 
-bool ImGuiInstance::InputInt2(const char *label, Vector2i *v, ImGuiInputTextFlags flags)
+template <ImGuiScalar T>
+bool ImGuiInstance::InputVector2(const char* label, Vector2<T>& value, T step, T stepFast, const char* format, ImGuiInputFlags flags)
 {
-    return InputInt2(label, &v->x, flags);
+    return this->InputVector2(label, &value.x, step, stepFast, format, flags);
 }
 
-bool ImGuiInstance::InputInt3(const char *label, Vector3i *v, ImGuiInputTextFlags flags)
+template <ImGuiScalar T>
+bool ImGuiInstance::InputVector3(const char *label, Vector3<T> &value, const char *format, ImGuiInputFlags flags)
 {
-    return InputInt3(label, &v->x, flags);
+    return this->InputVector3(label, &value.x, format, flags);
 }
 
-bool ImGuiInstance::InputInt4(const char *label, Vector4i *v, ImGuiInputTextFlags flags)
+template <ImGuiScalar T>
+bool ImGuiInstance::InputVector3(const char *label, Vector3<T> &value, T step, T stepFast, const char *format, ImGuiInputFlags flags)
 {
-    return InputInt4(label, &v->x, flags);
+    return this->InputVector3(label, &value.x, step, stepFast, format, flags);
+}
+
+template <ImGuiScalar T>
+bool ImGuiInstance::InputVector4(const char *label, Vector4<T> &value, const char *format, ImGuiInputFlags flags)
+{
+    return this->InputVector4(label, &value.x, format, flags);
+}
+
+template <ImGuiScalar T>
+bool ImGuiInstance::InputVector4(const char *label, Vector4<T> &value, T step, T stepFast, const char *format, ImGuiInputFlags flags)
+{
+    return this->InputVector4(label, &value.x, step, stepFast, format, flags);
 }
 
 bool ImGuiInstance::ColorEdit3(const char *label, float rgb[3], ImGuiColorEditFlags flags)
@@ -1176,6 +1142,50 @@ bool ImGuiInstance::IsAnyItemActive() const
     IMGUI_CONTEXT;
     return ImGui::IsAnyItemActive();
 }
+
+#define RTRC_INST_IMGUI_VECTOR_WIDGETS(TYPE)                                                                                                                             \
+template bool ImGuiInstance::Drag<TYPE>(const char *label, TYPE *value, float vSpeed, TYPE vMin, TYPE vMax, const char *format, ImGuiSliderFlags flags);                 \
+template bool ImGuiInstance::DragVector2<TYPE>(const char *label, TYPE *value, float vSpeed, TYPE vMin, TYPE vMax, const char *format, ImGuiSliderFlags flags);          \
+template bool ImGuiInstance::DragVector3<TYPE>(const char *label, TYPE *value, float vSpeed, TYPE vMin, TYPE vMax, const char *format, ImGuiSliderFlags flags);          \
+template bool ImGuiInstance::DragVector4<TYPE>(const char *label, TYPE *value, float vSpeed, TYPE vMin, TYPE vMax, const char *format, ImGuiSliderFlags flags);          \
+template bool ImGuiInstance::DragVector2<TYPE>(const char *label, Vector2<TYPE> &value, float vSpeed, TYPE vMin, TYPE vMax, const char *format, ImGuiSliderFlags flags); \
+template bool ImGuiInstance::DragVector3<TYPE>(const char *label, Vector3<TYPE> &value, float vSpeed, TYPE vMin, TYPE vMax, const char *format, ImGuiSliderFlags flags); \
+template bool ImGuiInstance::DragVector4<TYPE>(const char *label, Vector4<TYPE> &value, float vSpeed, TYPE vMin, TYPE vMax, const char *format, ImGuiSliderFlags flags); \
+template bool ImGuiInstance::Slider(const char *label, TYPE *value, TYPE vMin, TYPE vMax, const char *format, ImGuiSliderFlags flags);                                   \
+template bool ImGuiInstance::SliderVector2(const char *label, TYPE *value, TYPE vMin, TYPE vMax, const char *format, ImGuiSliderFlags flags);                            \
+template bool ImGuiInstance::SliderVector3(const char *label, TYPE *value, TYPE vMin, TYPE vMax, const char *format, ImGuiSliderFlags flags);                            \
+template bool ImGuiInstance::SliderVector4(const char *label, TYPE *value, TYPE vMin, TYPE vMax, const char *format, ImGuiSliderFlags flags);                            \
+template bool ImGuiInstance::SliderVector2(const char *label, Vector2<TYPE> &value, TYPE vMin, TYPE vMax, const char *format, ImGuiSliderFlags flags);                   \
+template bool ImGuiInstance::SliderVector3(const char *label, Vector3<TYPE> &value, TYPE vMin, TYPE vMax, const char *format, ImGuiSliderFlags flags);                   \
+template bool ImGuiInstance::SliderVector4(const char *label, Vector4<TYPE> &value, TYPE vMin, TYPE vMax, const char *format, ImGuiSliderFlags flags);                   \
+template bool ImGuiInstance::Input(const char *label, TYPE *value, TYPE step, TYPE stepFast, const char *format, ImGuiSliderFlags flags);                                \
+template bool ImGuiInstance::InputVector2(const char *label, TYPE *value, TYPE step, TYPE stepFast, const char *format, ImGuiSliderFlags flags);                         \
+template bool ImGuiInstance::InputVector3(const char *label, TYPE *value, TYPE step, TYPE stepFast, const char *format, ImGuiSliderFlags flags);                         \
+template bool ImGuiInstance::InputVector4(const char *label, TYPE *value, TYPE step, TYPE stepFast, const char *format, ImGuiSliderFlags flags);                         \
+template bool ImGuiInstance::InputVector2(const char *label, Vector2<TYPE> &value, TYPE step, TYPE stepFast, const char *format, ImGuiSliderFlags flags);                \
+template bool ImGuiInstance::InputVector3(const char *label, Vector3<TYPE> &value, TYPE step, TYPE stepFast, const char *format, ImGuiSliderFlags flags);                \
+template bool ImGuiInstance::InputVector4(const char *label, Vector4<TYPE> &value, TYPE step, TYPE stepFast, const char *format, ImGuiSliderFlags flags);                \
+template bool ImGuiInstance::Input(const char *label, TYPE *value, const char *format, ImGuiSliderFlags flags);                                                          \
+template bool ImGuiInstance::InputVector2(const char *label, TYPE *value, const char *format, ImGuiSliderFlags flags);                                                   \
+template bool ImGuiInstance::InputVector3(const char *label, TYPE *value, const char *format, ImGuiSliderFlags flags);                                                   \
+template bool ImGuiInstance::InputVector4(const char *label, TYPE *value, const char *format, ImGuiSliderFlags flags);                                                   \
+template bool ImGuiInstance::InputVector2(const char *label, Vector2<TYPE> &value, const char *format, ImGuiSliderFlags flags);                                          \
+template bool ImGuiInstance::InputVector3(const char *label, Vector3<TYPE> &value, const char *format, ImGuiSliderFlags flags);                                          \
+template bool ImGuiInstance::InputVector4(const char *label, Vector4<TYPE> &value, const char *format, ImGuiSliderFlags flags);                                          \
+
+RTRC_INST_IMGUI_VECTOR_WIDGETS(float)
+RTRC_INST_IMGUI_VECTOR_WIDGETS(double)
+RTRC_INST_IMGUI_VECTOR_WIDGETS(char)
+RTRC_INST_IMGUI_VECTOR_WIDGETS(int8_t)
+RTRC_INST_IMGUI_VECTOR_WIDGETS(int16_t)
+RTRC_INST_IMGUI_VECTOR_WIDGETS(int32_t)
+RTRC_INST_IMGUI_VECTOR_WIDGETS(int64_t)
+RTRC_INST_IMGUI_VECTOR_WIDGETS(uint8_t)
+RTRC_INST_IMGUI_VECTOR_WIDGETS(uint16_t)
+RTRC_INST_IMGUI_VECTOR_WIDGETS(uint32_t)
+RTRC_INST_IMGUI_VECTOR_WIDGETS(uint64_t)
+
+#undef RTRC_INST_IMGUI_VECTOR_WIDGETS
 
 RTRC_END
 

@@ -37,8 +37,7 @@ class DFDMDemo : public SimpleApplication
         {
             imgui.CheckBox("Enable Correction", &enableCorrection_);
             imgui.CheckBox("Enable Checkboard", &enableCheckboard_);
-            if(imgui.InputFloat(
-                "Area Preservation", &areaPreservation_, 0, 0, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
+            if(imgui.Input("Area Preservation", &areaPreservation_, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
                 reinitGeometryImage = true;
             imgui.End();
         }

@@ -74,7 +74,7 @@ class FADMDemo : public SimpleApplication
 
             if(renderMode_ == RenderMode::SeamCarvingByInterpolationError)
             {
-                if(imgui.InputInt2("Initial Sample Resolution", &seamCarvingInitialResolution_))
+                if(imgui.InputVector2("Initial Sample Resolution", seamCarvingInitialResolution_))
                 {
                     vdmSeamCarving_.reset();
                 }
@@ -108,7 +108,7 @@ class FADMDemo : public SimpleApplication
                 }
             }
 
-            if(imgui.InputInt("Grid Resolution", &gridResolution_, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue))
+            if(imgui.Input("Grid Resolution", &gridResolution_, 1, 100, nullptr, ImGuiInputTextFlags_EnterReturnsTrue))
             {
                 gridResolution_ = (std::max)(gridResolution_, 1);
                 OnGridResolutionChanged();

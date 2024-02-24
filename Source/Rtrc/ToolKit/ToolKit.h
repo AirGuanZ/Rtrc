@@ -7,7 +7,7 @@
 #include <Rtrc/ToolKit/Camera/EditorCameraController.h>
 #include <Rtrc/ToolKit/DFDM/DFDM.h>
 #include <Rtrc/ToolKit/Gizmo/GizmoRenderer.h>
-#include <Rtrc/ToolKit/ImGui/Instance.h>
+#include <Rtrc/ToolKit/ImGui/ImGuiInstance.h>
 #include <Rtrc/ToolKit/IndirectArg/PrepareThreadGroupCountForIndirectDispatch.h>
 #include <Rtrc/ToolKit/Mesh/UniformGrid.h>
 #include <Rtrc/ToolKit/PcgState/PcgStateTexture.h>
