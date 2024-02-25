@@ -19,16 +19,17 @@ class FADMDemo : public SimpleApplication
 
     void InitializeSimpleApplication(GraphRef graph) override
     {
-        inputMesh_ = InputMesh::Load("Asset/Sample/08.FADM/Mesh0.obj");
+        inputMesh_ = InputMesh::Load("Asset/Sample/08.FADM/Mesh1.obj");
         inputMesh_.DetectSharpFeatures(sharpEdgeAngleThreshold_);
         inputMesh_.Upload(GetDevice());
 
         const Vector3f center = 0.5f * (inputMesh_.lower + inputMesh_.upper);
         const Vector3f extent = 0.5f * (inputMesh_.upper - inputMesh_.lower);
-        camera_.SetLookAt(center + extent, { 0, 1, 0 }, center);
+        const Vector3f lookDir = Matrix3x3f::RotateY(Deg2Rad(110)) * extent;
+        camera_.SetLookAt(center + 1.5f * Vector3f(2, 1, 2) * lookDir, { 0, 1, 0 }, center);
         camera_.UpdateDerivedData();
         cameraController_.SetCamera(camera_);
-        cameraController_.SetTrackballDistance(Length(extent));
+        cameraController_.SetTrackballDistance(Length(camera_.GetPosition() - center));
 
         pipelineCache_.SetDevice(GetDevice());
 
@@ -80,27 +81,30 @@ class FADMDemo : public SimpleApplication
                 }
             }
 
+            if(renderMode_ == RenderMode::VisualizeAlignedGrid)
+            {
+                imgui.CheckBox("Draw Input Mesh", &drawInputMeshWhenVisualizingAlignedGrid_);
+            }
+
+            if(renderMode_ == RenderMode::InputMesh || renderMode_ == RenderMode::VisualizeAlignedGrid)
+            {
+                imgui.CheckBox("Draw Sharp Edges", &drawSharpEdges_);
+            }
+
             if(renderMode_ == RenderMode::VisualizeAlignedGrid || renderMode_ == RenderMode::GridAlignment)
             {
-                if(imgui.CheckBox("Adaptive Grid", &adaptiveGrid_))
-                {
-                    alignedGrid_ = {};
-                    alignedGridUVTexture_ = {};
-                    vdmGridAlignment_ = {};
-                    alignedGridIndexBuffer_ = {};
-                }
-                if(imgui.CheckBox("Align Edge", &alignEdge_))
-                {
-                    alignedGrid_ = {};
-                    alignedGridUVTexture_ = {};
-                    vdmGridAlignment_ = {};
-                    alignedGridIndexBuffer_ = {};
-                }
-                imgui.CheckBox("Draw Input Mesh", &drawInputMeshWhenVisualizingAlignedGrid_);
+                bool reset = false;
+                reset |= imgui.CheckBox("Adaptive Grid", &adaptiveGrid_);
+                reset |= imgui.CheckBox("Align Corner", &alignCorner_);
+                reset |= imgui.CheckBox("Align Edge", &alignEdge_);
                 if(imgui.SliderAngle("Sharp Edge Angle Threshold", &sharpEdgeAngleThreshold_, 0, 180))
                 {
                     inputMesh_.DetectSharpFeatures(sharpEdgeAngleThreshold_);
                     inputMesh_.Upload(GetDevice());
+                    reset = true;
+                }
+                if(reset)
+                {
                     alignedGrid_ = {};
                     alignedGridUVTexture_ = {};
                     vdmGridAlignment_ = {};
@@ -135,14 +139,14 @@ class FADMDemo : public SimpleApplication
 
         if(renderMode_ == RenderMode::InputMesh)
         {
-            RenderPlanarParameterizedInputMesh(framebuffer, true);
+            RenderPlanarParameterizedInputMesh(framebuffer, true, false);
         }
         else if(renderMode_ == RenderMode::VisualizeAlignedGrid)
         {
             VisualizeAlignedGrid(framebuffer, true);
             if(drawInputMeshWhenVisualizingAlignedGrid_)
             {
-                RenderPlanarParameterizedInputMesh(framebuffer, false);
+                RenderPlanarParameterizedInputMesh(framebuffer, false, true);
             }
         }
         else if(renderMode_ == RenderMode::UniformVDM)
@@ -168,8 +172,12 @@ class FADMDemo : public SimpleApplication
         {
             if(!alignedGrid_.GetWidth())
             {
-                alignedGrid_ = GridAlignment::CreateGrid(Vector2u(gridResolution_ + 1), inputMesh_, adaptiveGrid_);
-                AlignCorners(alignedGrid_, inputMesh_);
+                //alignedGrid_ = GridAlignment::CreateGrid(Vector2u(gridResolution_ + 1), inputMesh_, adaptiveGrid_);
+                alignedGrid_ = GridAlignment::CreateGridEx(GetDevice(), pipelineCache_, Vector2u(gridResolution_ + 1), inputMesh_, adaptiveGrid_);
+                if(alignCorner_)
+                {
+                    AlignCorners(alignedGrid_, inputMesh_);
+                }
                 if(alignEdge_)
                 {
                     AlignSegments(alignedGrid_, inputMesh_);
@@ -187,7 +195,7 @@ class FADMDemo : public SimpleApplication
         RGBlitTexture(graph, "BlitToSwapchainTexture", framebuffer, swapchainTexture);
     }
 
-    void RenderPlanarParameterizedInputMesh(RGTexture renderTarget, bool clearRenderTarget)
+    void RenderPlanarParameterizedInputMesh(RGTexture renderTarget, bool clearRenderTarget, bool transparent)
     {
         using Shader = RtrcShader::FADM::RenderPlanarParameterizedInputMesh;
 
@@ -199,7 +207,7 @@ class FADMDemo : public SimpleApplication
                 .loadOp = clearRenderTarget ? RHI::AttachmentLoadOp::Clear : RHI::AttachmentLoadOp::Load,
                 .clearValue = RHI::ColorClearValue{ 1, 1, 1, 0 },
                 .isWriteOnly = true
-            }, [renderTarget, this]
+            }, [renderTarget, transparent, this]
             {
                 const Vector2f viewportSize = renderTarget->GetSize().To<float>();
                 Vector2f clipRectSize;
@@ -229,6 +237,14 @@ class FADMDemo : public SimpleApplication
                             {
                                 .fillMode = RHI::FillMode::Line,
                             }),
+                            .blendState = RTRC_BLEND_STATE
+                            {
+                                .enableBlending = transparent,
+                                .blendingSrcColorFactor = RHI::BlendFactor::SrcAlpha,
+                                .blendingDstColorFactor = RHI::BlendFactor::OneMinusSrcAlpha,
+                                .blendingSrcAlphaFactor = RHI::BlendFactor::One,
+                                .blendingDstAlphaFactor = RHI::BlendFactor::Zero,
+                            },
                             .attachmentState = RTRC_ATTACHMENT_STATE
                             {
                                 .colorAttachmentFormats = { renderTarget->GetFormat() }
@@ -242,7 +258,7 @@ class FADMDemo : public SimpleApplication
                     commandBuffer.DrawIndexed(static_cast<int>(inputMesh_.indices.size()), 1, 0, 0, 0);
                 }
 
-                if(inputMesh_.sharpEdgeIndexBuffer)
+                if(drawSharpEdges_ && inputMesh_.sharpEdgeIndexBuffer)
                 {
                     Shader::Pass passData;
                     passData.ParameterSpacePositionBuffer = inputMesh_.parameterSpacePositionBuffer;
@@ -375,8 +391,12 @@ class FADMDemo : public SimpleApplication
     {
         if(!alignedGrid_.GetWidth())
         {
-            alignedGrid_ = GridAlignment::CreateGrid(Vector2u(gridResolution_ + 1), inputMesh_, adaptiveGrid_);
-            AlignCorners(alignedGrid_, inputMesh_);
+            //alignedGrid_ = GridAlignment::CreateGrid(Vector2u(gridResolution_ + 1), inputMesh_, adaptiveGrid_);
+            alignedGrid_ = GridAlignment::CreateGridEx(GetDevice(), pipelineCache_, Vector2u(gridResolution_ + 1), inputMesh_, adaptiveGrid_);
+            if(alignCorner_)
+            {
+                AlignCorners(alignedGrid_, inputMesh_);
+            }
             if(alignEdge_)
             {
                 AlignSegments(alignedGrid_, inputMesh_);
@@ -467,7 +487,10 @@ class FADMDemo : public SimpleApplication
     RC<Texture> alignedGridUVTexture_;
     RC<Buffer> alignedGridIndexBuffer_;
 
+    bool drawSharpEdges_ = true;
+
     bool adaptiveGrid_ = true;
+    bool alignCorner_ = true;
     bool alignEdge_ = true;
     bool drawInputMeshWhenVisualizingAlignedGrid_ = true;
 };

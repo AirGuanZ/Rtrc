@@ -28,7 +28,7 @@ rtrc_shader("FADM/RenderPlanarParameterizedInputMesh")
 
     float4 FSMain(VS2FS input) : SV_Target
     {
-        return float4(Pass.Color, 1);
+        return float4(Pass.Color, 0.3);
     }
 
 } // rtrc_shader("FADM/RenderPlanarParameterizedInputMesh")
@@ -116,6 +116,49 @@ rtrc_shader("FADM/BakeUniformVDM")
     }
 
 } // rtrc_shader("FADM/BakeUniformVDM")
+
+rtrc_shader("FADM/InverseTransportMap")
+{
+    
+    rtrc_vert(VSMain)
+    rtrc_frag(FSMain)
+
+    rtrc_group(Pass)
+    {
+        rtrc_define(Texture2D<float2>, TransportMap)
+        rtrc_uniform(float2, inputRes)
+        rtrc_uniform(float2, res)
+    };
+
+    struct VSInput
+    {
+        int2 coord : COORD;
+    };
+
+    struct VS2FS
+    {
+        float4 clipPosition : SV_Position;
+        float2 originalPosition : ORIGINAL_POSITION;
+    };
+
+    VS2FS VSMain(VSInput input)
+    {
+        const float2 uv = TransportMap[input.coord];
+        const float2 scale = (Pass.res - 1) / Pass.res;
+        const float2 bias = 0.5 / Pass.res;
+        const float2 correctedUV = (scale * uv + bias - 0.5) * 1.001 + 0.5;
+        VS2FS output;
+        output.clipPosition = float4(lerp(-1.0, 1.0, float2(correctedUV.x, 1 - correctedUV.y)), 0.5, 1.0);
+        output.originalPosition	= float2(input.coord) / Pass.inputRes;
+        return output;
+    }
+
+    float4 FSMain(VS2FS input) : SV_Target
+    {
+        return float4(input.originalPosition, 0, 1);
+    }
+
+} // rtrc_shader("FADM/InverseTransportMap")
 
 rtrc_shader("FADM/BakeAlignedVDM")
 {

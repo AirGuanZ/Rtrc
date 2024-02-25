@@ -175,9 +175,12 @@ void InputMesh::DetectSharpFeatures(float angleThreshold)
 
     // Sharp edges
 
+    auto &vertexImportance = sharpFeatures.vertexImportance;
     auto &sharpEdges = sharpFeatures.edges;
     {
         RTRC_LOG_INFO_SCOPE("Collect sharp edges");
+
+        vertexImportance.resize(positions.size(), 0);
 
         struct EdgeRecord
         {
@@ -210,12 +213,17 @@ void InputMesh::DetectSharpFeatures(float angleThreshold)
                     const Vector3f &pd = positions[id];
                     const Vector3f nor0 = +Normalize(Cross(pc - pb, pb - pa));
                     const Vector3f nor1 = -Normalize(Cross(pd - pb, pb - pa));
+
                     const float dot = Dot(nor0, nor1);
                     if(dot <= angleDotThreshold)
                     {
                         sharpEdges.push_back({ ia, ib });
                     }
                     e2v.erase(it);
+
+                    const float importance = 0.5f * (1 - dot);
+                    vertexImportance[ia] = (std::max)(vertexImportance[ia], importance);
+                    vertexImportance[ib] = (std::max)(vertexImportance[ib], importance);
                 }
                 else
                 {

@@ -92,9 +92,9 @@ DEFINE_PIPELINE_STATE(AttachmentState)
     ([](){ RTRC_DEFINE_STATIC_DEPTH_STENCIL_STATE(state) __VA_ARGS__ ; return state; }())
 #define RTRC_STATIC_RASTERIZER_STATE(...) \
     ([](){ RTRC_DEFINE_STATIC_RASTERIZER_STATE(state) __VA_ARGS__ ; return state; }())
-#define RTRC_GET_STATIC_BLEND_STATE(...) \
+#define RTRC_STATIC_BLEND_STATE(...) \
     ([](){ RTRC_DEFINE_STATIC_BLEND_STATE(state) __VA_ARGS__ ; return state; }())
-#define RTRC_GET_STATIC_ATTACHMENT_STATE(...) \
+#define RTRC_STATIC_ATTACHMENT_STATE(...) \
     ([](){ RTRC_DEFINE_STATIC_ATTACHMENT_STATE(state) __VA_ARGS__ ; return state; }())
 
 class GraphicsPipelineCache

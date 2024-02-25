@@ -1,4 +1,7 @@
+#include <Rtrc/ToolKit/OT2D/OT2D.h>
+
 #include "GridAlignment.h"
+#include "FADM.shader.outh"
 
 namespace GridAlignment
 {
@@ -6,7 +9,7 @@ namespace GridAlignment
     // ret[0] == 0
     // ret[n-1] == 1
     template<int Axis>
-    std::vector<float> AccumulateVertexDensity(const InputMesh &inputMesh, int n)
+    std::vector<float> AccumulateVertexDensity_Deprecated(const InputMesh &inputMesh, int n)
     {
         // Accumulate density
 
@@ -51,7 +54,42 @@ namespace GridAlignment
         return ret;
     }
 
-    std::vector<float> SampleAdaptively(const std::vector<float> &cdf, int n)
+    Image<float> AccumulateVertexDensity2D(const InputMesh &inputMesh, int n)
+    {
+        Image<float> ret(n, n);
+        for(auto &v : ret)
+        {
+            v = 0.5f;
+        }
+
+        constexpr int delta = 2;
+        for(unsigned vi = 0; vi < inputMesh.positions.size(); ++vi)
+        {
+            const Vector2f &pos = inputMesh.parameterSpacePositions[vi];
+            const float importance = inputMesh.sharpFeatures.vertexImportance[vi];
+            const int cx = (std::min)(static_cast<int>(pos.x * (n - 1)), n - 1);
+            const int cy = (std::min)(static_cast<int>(pos.y * (n - 1)), n - 1);
+            for(int iy = cy - delta; iy <= cy + delta; ++iy)
+            {
+                if(iy < 0 || iy >= n)
+                {
+                    continue;
+                }
+                for(int ix = cx - delta; ix <= cx + delta; ++ix)
+                {
+                    if(ix < 0 || ix >= n)
+                    {
+                        continue;
+                    }
+                    ret(ix, iy) += 1.0f / (Length(Vector2i(ix - cx, iy - cy).To<float>()) + 1.0f) * importance;
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    std::vector<float> SampleAdaptively_Deprecated(const std::vector<float> &cdf, int n)
     {
         std::vector<float> ret;
         ret.reserve(n);
@@ -82,11 +120,11 @@ namespace GridAlignment
         std::vector<float> us, vs;
         if(adaptive)
         {
-            auto cdfu = AccumulateVertexDensity<0>(inputMesh, res.x * 3);
-            us = SampleAdaptively(cdfu, res.x);
+            auto cdfu = AccumulateVertexDensity_Deprecated<0>(inputMesh, res.x * 3);
+            us = SampleAdaptively_Deprecated(cdfu, res.x);
 
-            auto cdfv = AccumulateVertexDensity<1>(inputMesh, res.y * 3);
-            vs = SampleAdaptively(cdfv, res.y);
+            auto cdfv = AccumulateVertexDensity_Deprecated<1>(inputMesh, res.y * 3);
+            vs = SampleAdaptively_Deprecated(cdfv, res.y);
         }
         else
         {
@@ -111,6 +149,139 @@ namespace GridAlignment
                 const float u = us[x];
                 auto &grid = ret(x, y);
                 grid.uv = { u, v };
+                grid.referenceUV = grid.uv;
+            }
+        }
+        return ret;
+    }
+
+    Image<GridPoint> CreateGridEx(
+        DeviceRef                  device,
+        Ref<GraphicsPipelineCache> pipelineCache,
+        const Vector2u            &res,
+        const InputMesh           &inputMesh,
+        bool                       adaptive)
+    {
+        if(!adaptive)
+        {
+            return CreateGrid(res, inputMesh, false);
+        }
+
+        const auto density = AccumulateVertexDensity2D(inputMesh, 2 * res.x).To<double>();
+        auto transportMapData = OT2D().Solve(density).To<Vector2f>();
+        auto transportMap = device->CreateAndUploadTexture2D(
+        {
+            .format = RHI::Format::R32G32_Float,
+            .width = transportMapData.GetWidth(),
+            .height = transportMapData.GetHeight(),
+            .usage = RHI::TextureUsage::ShaderResource
+        }, transportMapData.GetData(), RHI::TextureLayout::ShaderTexture);
+
+        Image<Vector2f> inverseTransportMap;
+        {
+            RC<Buffer> vertexBuffer, indexBuffer;
+            const Vector2u transportGridSize = transportMapData.GetSize() - Vector2u(1);
+            {
+                auto vertexData = GenerateUniformGridVertices(transportGridSize.x, transportGridSize.y);
+                vertexBuffer = device->CreateAndUploadStructuredBuffer(
+                    RHI::BufferUsage::VertexBuffer, Span<Vector2i>(vertexData));
+            }
+            {
+                auto indexData = GenerateUniformGridTriangleIndices(transportGridSize.x, transportGridSize.y);
+                indexBuffer = device->CreateAndUploadStructuredBuffer(
+                    RHI::BufferUsage::IndexBuffer, Span<uint32_t>(indexData));
+            }
+
+            auto graph = device->CreateRenderGraph();
+
+            auto gridMap = graph->CreateTexture(
+            {
+                .format = RHI::Format::R32G32B32A32_Float,
+                .width = res.x,
+                .height = res.y,
+                .usage = RHI::TextureUsage::RenderTarget | RHI::TextureUsage::ShaderResource | RHI::TextureUsage::TransferSrc,
+                .clearValue = RHI::ColorClearValue{ 0, 0, 0, 0 }
+            });
+            {
+                using Shader = RtrcShader::FADM::InverseTransportMap;
+                RGAddRenderPass<true>(graph, Shader::Name, RGColorAttachment
+                {
+                    .rtv = gridMap->GetRtv(),
+                    .loadOp = RHI::AttachmentLoadOp::Clear,
+                    .clearValue = RHI::ColorClearValue{ 0, 0, 0, 0 }
+                }, [&]
+                {
+                    Shader::Pass passData;
+                    passData.TransportMap = transportMap;
+                    passData.inputRes = transportGridSize.To<float>();
+                    passData.res = res.To<float>();
+                    auto passGroup = device->CreateBindingGroupWithCachedLayout(passData);
+
+                    auto pipeline = pipelineCache->Get(
+                    {
+                        .shader = device->GetShader<Shader::Name>(),
+                        .meshLayout = RTRC_STATIC_MESH_LAYOUT(Buffer(Attribute("COORD", Int2))),
+                        .attachmentState = RTRC_ATTACHMENT_STATE
+                        {
+                            .colorAttachmentFormats = { gridMap->GetFormat() }
+                        }
+                    });
+
+                    auto &commandBuffer = RGGetCommandBuffer();
+                    commandBuffer.BindGraphicsPipeline(pipeline);
+                    commandBuffer.BindGraphicsGroups(passGroup);
+                    commandBuffer.SetVertexBuffer(0, vertexBuffer, sizeof(Vector2i));
+                    commandBuffer.SetIndexBuffer(indexBuffer, RHI::IndexFormat::UInt32);
+                    commandBuffer.DrawIndexed(indexBuffer->GetSize() / sizeof(uint32_t), 1, 0, 0, 0);
+                });
+            }
+
+            Image<Vector4f> gridData(gridMap->GetWidth(), gridMap->GetHeight());
+            RGReadbackTexture(graph, "Readback grid data", gridMap, 0, 0, gridData.GetData());
+
+            RGExecuter(device).Execute(graph, false);
+
+            inverseTransportMap = gridData.To<Vector2f>();
+        }
+        
+        auto FixBoundary = [&](const Vector2i &coord)
+        {
+            auto &term = inverseTransportMap(coord.x, coord.y);
+            if(coord.x == 0)
+            {
+                term.x = 0;
+            }
+            else if(coord.x == inverseTransportMap.GetSWidth() - 1)
+            {
+                term.x = 1;
+            }
+            if(coord.y == 0)
+            {
+                term.y = 0;
+            }
+            else if(coord.y == inverseTransportMap.GetSHeight() - 1)
+            {
+                term.y = 1;
+            }
+        };
+        for(int x = 0; x < inverseTransportMap.GetSWidth(); ++x)
+        {
+            FixBoundary({ x, 0,                                  });
+            FixBoundary({ x, inverseTransportMap.GetSHeight() - 1});
+        }
+        for(int y = 1; y + 1 < inverseTransportMap.GetSHeight() - 1; ++y)
+        {
+            FixBoundary({ 0,                                   y });
+            FixBoundary({ inverseTransportMap.GetSWidth() - 1, y });
+        }
+
+        Image<GridPoint> ret(res.x, res.y);
+        for(unsigned y = 0; y < res.y; ++y)
+        {
+            for(unsigned x = 0; x < res.x; ++x)
+            {
+                auto &grid = ret(x, y);
+                grid.uv = inverseTransportMap(x, y);
                 grid.referenceUV = grid.uv;
             }
         }

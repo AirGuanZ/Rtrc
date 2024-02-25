@@ -14,6 +14,8 @@ namespace GridAlignment
 
     Image<GridPoint> CreateGrid(const Vector2u &res, const InputMesh &inputMesh, bool adaptive);
 
+    Image<GridPoint> CreateGridEx(DeviceRef device, Ref<GraphicsPipelineCache> pipelnieCache, const Vector2u &res, const InputMesh &inputMesh, bool adaptive);
+
     void AlignCorners(Image<GridPoint> &grid, const InputMesh &inputMesh);
 
     void AlignSegments(Image<GridPoint> &grid, const InputMesh &inputMesh);

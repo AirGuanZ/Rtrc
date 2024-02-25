@@ -219,32 +219,56 @@ namespace ImageDetail
         using Component = float;
         static constexpr int ComponentCount = 4;
     };
+    template<>
+    struct Trait<double>
+    {
+        using Component = double;
+        static constexpr int ComponentCount = 1;
+    };
+    template<>
+    struct Trait<Vector2d>
+    {
+        using Component = double;
+        static constexpr int ComponentCount = 2;
+    };
+    template<>
+    struct Trait<Vector3d>
+    {
+        using Component = double;
+        static constexpr int ComponentCount = 3;
+    };
+    template<>
+    struct Trait<Vector4d>
+    {
+        using Component = double;
+        static constexpr int ComponentCount = 4;
+    };
 
     template<typename To, typename From>
     To ToComponent(From from)
     {
-        if constexpr(std::is_same_v<To, From>)
+        if constexpr(std::is_same_v<To, From> || (std::is_floating_point_v<From> && std::is_floating_point_v<To>))
         {
-            return from;
+            return static_cast<To>(from);
         }
         else if constexpr(std::is_same_v<To, uint8_t>)
         {
-            static_assert(std::is_same_v<From, float>);
+            static_assert(std::is_same_v<From, float> || std::is_same_v<From, double>);
             return static_cast<uint8_t>(
                 (std::min)(static_cast<int>(from * 256), 255));
         }
         else
         {
-            static_assert(std::is_same_v<To, float>);
+            static_assert(std::is_same_v<To, float> || std::is_same_v<To, double>);
             static_assert(std::is_same_v<From, uint8_t>);
-            return from / 255.0f;
+            return from / To(255);
         }
     }
 
     template<typename T, int SrcComps, int DstComps>
     std::array<T, DstComps> ConvertComps(const T *src)
     {
-        constexpr T DEFAULT_ALPHA = static_cast<T>(std::is_same_v<T, uint8_t> ? 255 : 1);
+        constexpr T DEFAULT_LAST_CHANNEL = static_cast<T>(std::is_same_v<T, uint8_t> ? 255 : 1);
 
         std::array<T, DstComps> ret = {};
         if constexpr(SrcComps == DstComps)
@@ -263,7 +287,7 @@ namespace ImageDetail
             }
             if constexpr(DstComps > 3)
             {
-                ret[3] = DEFAULT_ALPHA;
+                ret[3] = DEFAULT_LAST_CHANNEL;
             }
         }
         else if constexpr(SrcComps == 2)
@@ -271,14 +295,14 @@ namespace ImageDetail
             ret[0] = src[0];
             if constexpr(DstComps == 3)
             {
-                ret[1] = src[0];
-                ret[2] = src[1];
+                ret[1] = src[1];
+                ret[2] = DEFAULT_LAST_CHANNEL;
             }
             else if constexpr(DstComps == 4)
             {
-                ret[1] = src[0];
-                ret[2] = src[0];
-                ret[3] = src[1];
+                ret[1] = src[1];
+                ret[2] = src[1];
+                ret[3] = DEFAULT_LAST_CHANNEL;
             }
         }
         else if constexpr(SrcComps == 3)
@@ -291,8 +315,6 @@ namespace ImageDetail
             {
                 ret[0] = src[0];
                 ret[1] = src[1];
-                ret[2] = src[2];
-                ret[3] = DEFAULT_ALPHA;
             }
             else
             {
@@ -300,7 +322,7 @@ namespace ImageDetail
                 ret[0] = src[0];
                 ret[1] = src[1];
                 ret[2] = src[2];
-                ret[3] = DEFAULT_ALPHA;
+                ret[3] = DEFAULT_LAST_CHANNEL;
             }
         }
         else

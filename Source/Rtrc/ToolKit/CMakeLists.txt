@@ -19,6 +19,6 @@ set_source_files_properties(${SHADER_SRCS} PROPERTIES HEADER_FILE_ONLY TRUE)
 
 set_property(TARGET ToolKit PROPERTY CXX_STANDARD 23)
 
-target_link_libraries(ToolKit PUBLIC Graphics)
+target_link_libraries(ToolKit PUBLIC Graphics Eigen3::Eigen)
 
 rtrc_register_target(ToolKit)

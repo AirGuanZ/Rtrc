@@ -18,6 +18,7 @@ struct SharpFeatures
     std::vector<SharpEdge> edges;
     std::vector<SharpSegment> segments;
     std::vector<int> corners;
+    std::vector<float> vertexImportance;
 };
 
 struct InputMesh
