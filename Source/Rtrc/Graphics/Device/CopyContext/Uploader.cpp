@@ -142,8 +142,8 @@ void UploadBatch::Record(
     RHI::TextureLayout         afterLayout)
 {
     assert(texture->GetDimension() == RHI::TextureDimension::Tex2D);
-    assert(texture->GetWidth(subrsc.mipLevel) == image.GetWidth());
-    assert(texture->GetHeight(subrsc.mipLevel) == image.GetHeight());
+    assert(texture->GetMipLevelWidth(subrsc.mipLevel) == image.GetWidth());
+    assert(texture->GetMipLevelHeight(subrsc.mipLevel) == image.GetHeight());
     switch(texture->GetFormat())
     {
     case RHI::Format::B8G8R8A8_UNorm:

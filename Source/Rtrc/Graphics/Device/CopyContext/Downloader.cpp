@@ -40,7 +40,7 @@ void DownloadBatch::Record(const RC<StatefulBuffer> &buffer, void *data, size_t 
 
 void DownloadBatch::Record(const RC<StatefulTexture> &texture, TexSubrsc subrsc, void *outputData, size_t dataRowBytes)
 {
-    const size_t packedRowBytes = texture->GetWidth(subrsc.mipLevel) * GetTexelSize(texture->GetFormat());
+    const size_t packedRowBytes = texture->GetMipLevelWidth(subrsc.mipLevel) * GetTexelSize(texture->GetFormat());
     if(dataRowBytes == 0)
     {
         dataRowBytes = packedRowBytes;
@@ -154,7 +154,7 @@ void DownloadBatch::SubmitAndWait()
 
     for(auto &task : textureTasks_)
     {
-        auto stagingBuffer = GetStagingBuffer(task.stagingRowBytes * task.texture->GetHeight(task.subrsc.mipLevel));
+        auto stagingBuffer = GetStagingBuffer(task.stagingRowBytes * task.texture->GetMipLevelHeight(task.subrsc.mipLevel));
         commandBuffer->CopyColorTexture2DToBuffer(
             stagingBuffer.Get(), 0, task.stagingRowBytes,
             task.texture->GetRHIObject().Get(), task.subrsc.mipLevel, task.subrsc.arrayLayer);
@@ -186,7 +186,7 @@ void DownloadBatch::SubmitAndWait()
         }
         else
         {
-            const uint32_t height = task.texture->GetHeight(task.subrsc.mipLevel);
+            const uint32_t height = task.texture->GetMipLevelHeight(task.subrsc.mipLevel);
             for(unsigned y = 0; y < height; ++y)
             {
                 auto src = reinterpret_cast<const uint8_t*>(p) + y * task.stagingRowBytes;

@@ -172,7 +172,7 @@ inline RGPass RGCopyColorTexture(
             {
                 const unsigned srcMipLevel = srcSubrscs.mipLevel + mi;
                 const unsigned dstMipLevel = dstSubrscs.mipLevel + mi;
-                assert(tsrc->GetSize(srcMipLevel) == tdst->GetSize(dstMipLevel));
+                assert(tsrc->GetMipLevelSize(srcMipLevel) == tdst->GetMipLevelSize(dstMipLevel));
                 cmds.CopyColorTexture(*tdst, dstMipLevel, dstArrayLayer, *tsrc, srcMipLevel, srcArrayLayer);
             }
         }

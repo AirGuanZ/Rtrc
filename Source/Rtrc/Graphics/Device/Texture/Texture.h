@@ -62,9 +62,9 @@ public:
     uint32_t GetWidth() const;
     uint32_t GetHeight() const;
     Vector2u GetSize() const;
-    uint32_t GetWidth(uint32_t mipLevel) const;
-    uint32_t GetHeight(uint32_t mipLevel) const;
-    Vector2u GetSize(uint32_t mipLevel) const;
+    uint32_t GetMipLevelWidth(uint32_t mipLevel) const;
+    uint32_t GetMipLevelHeight(uint32_t mipLevel) const;
+    Vector2u GetMipLevelSize(uint32_t mipLevel) const;
     uint32_t GetDepth() const;
     uint32_t GetArraySize() const;
     uint32_t GetMipmapLevelCount() const;
@@ -172,19 +172,19 @@ inline Vector2u Texture::GetSize() const
     return { GetWidth(), GetHeight() };
 }
 
-inline uint32_t Texture::GetWidth(uint32_t mipLevel) const
+inline uint32_t Texture::GetMipLevelWidth(uint32_t mipLevel) const
 {
     return std::max(desc_.width >> mipLevel, 1u);
 }
 
-inline uint32_t Texture::GetHeight(uint32_t mipLevel) const
+inline uint32_t Texture::GetMipLevelHeight(uint32_t mipLevel) const
 {
     return std::max(desc_.height >> mipLevel, 1u);
 }
 
-inline Vector2u Texture::GetSize(uint32_t mipLevel) const
+inline Vector2u Texture::GetMipLevelSize(uint32_t mipLevel) const
 {
-    return { GetWidth(mipLevel), GetHeight(mipLevel) };
+    return { GetMipLevelWidth(mipLevel), GetMipLevelHeight(mipLevel) };
 }
 
 inline uint32_t Texture::GetDepth() const

@@ -29,6 +29,7 @@ public:
     using Texel = T;
 
     Image();
+    explicit Image(const Vector2u &size);
     Image(uint32_t width, uint32_t height);
     Image(const Image &other);
     Image(Image &&other) noexcept;
@@ -454,6 +455,13 @@ Image<T>::Image()
     : width_(0), height_(0)
 {
 
+}
+
+template <typename T>
+Image<T>::Image(const Vector2u& size)
+    : Image(size.x, size.y)
+{
+    
 }
 
 template<typename T>
