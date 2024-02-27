@@ -4,7 +4,7 @@ project(RtrcGraphics)
 
 file(GLOB_RECURSE SRCS CONFIGURE_DEPENDS "*.cpp" "*.h" "*.inl")
 
-add_library(Graphics STATIC ${SRCS})
+add_library(RtrcGraphics STATIC ${SRCS})
 
 foreach(SRC IN ITEMS ${SRCS})
     get_filename_component(SRC_PATH "${SRC}" PATH)
@@ -13,6 +13,6 @@ foreach(SRC IN ITEMS ${SRCS})
     source_group("${GROUP_PATH}" FILES "${SRC}")
 endforeach()
 
-set_property(TARGET Graphics PROPERTY CXX_STANDARD 23)
+set_property(TARGET RtrcGraphics PROPERTY CXX_STANDARD 23)
 
-target_link_libraries(Graphics PUBLIC RHI ShaderCommon unordered_dense imgui)
+target_link_libraries(RtrcGraphics PUBLIC RtrcRHI RtrcShaderCommon unordered_dense imgui)

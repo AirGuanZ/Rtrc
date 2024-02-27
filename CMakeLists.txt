@@ -48,12 +48,12 @@ endfunction()
 
 add_subdirectory(Source/Rtrc/ToolKit)
 
-set_property(TARGET Core               PROPERTY FOLDER "RtrcLibrary")
-set_property(TARGET RHI                PROPERTY FOLDER "RtrcLibrary")
-set_property(TARGET Graphics           PROPERTY FOLDER "RtrcLibrary")
-set_property(TARGET ShaderCommon       PROPERTY FOLDER "RtrcLibrary")
-set_property(TARGET ShaderPreprocessor PROPERTY FOLDER "RtrcLibrary")
-set_property(TARGET ToolKit            PROPERTY FOLDER "RtrcLibrary")
+set_property(TARGET RtrcCore               PROPERTY FOLDER "Rtrc/Library")
+set_property(TARGET RtrcRHI                PROPERTY FOLDER "Rtrc/Library")
+set_property(TARGET RtrcGraphics           PROPERTY FOLDER "Rtrc/Library")
+set_property(TARGET RtrcShaderCommon       PROPERTY FOLDER "Rtrc/Library")
+set_property(TARGET RtrcShaderPreprocessor PROPERTY FOLDER "Rtrc/Library")
+set_property(TARGET RtrcToolKit            PROPERTY FOLDER "Rtrc/Library")
 
 ############## samples
 

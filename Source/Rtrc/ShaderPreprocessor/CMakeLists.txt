@@ -6,7 +6,7 @@ project(RtrcShaderPreprocessor)
 
 set(SRCS "${CMAKE_CURRENT_SOURCE_DIR}/Main.cpp")
     
-add_executable(ShaderPreprocessor ${SRCS})
+add_executable(RtrcShaderPreprocessor ${SRCS})
 
 foreach(SRC IN ITEMS ${SRCS})
     get_filename_component(SRC_PATH "${SRC}" PATH)
@@ -15,16 +15,16 @@ foreach(SRC IN ITEMS ${SRCS})
     source_group("${GROUP_PATH}" FILES "${SRC}")
 endforeach()
 
-set_property(TARGET ShaderPreprocessor PROPERTY CXX_STANDARD 23)
-set_property(TARGET ShaderPreprocessor PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${RTRC_SOURCE_DIR}")
+set_property(TARGET RtrcShaderPreprocessor PROPERTY CXX_STANDARD 23)
+set_property(TARGET RtrcShaderPreprocessor PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${RTRC_SOURCE_DIR}")
 
-target_link_libraries(ShaderPreprocessor PUBLIC ShaderCommon cxxopts)
+target_link_libraries(RtrcShaderPreprocessor PUBLIC RtrcShaderCommon cxxopts)
 
-add_custom_command(TARGET ShaderPreprocessor POST_BUILD
+add_custom_command(TARGET RtrcShaderPreprocessor POST_BUILD
   COMMAND
     ${CMAKE_COMMAND} -E copy_if_different
-    $<TARGET_RUNTIME_DLLS:ShaderPreprocessor>
-    $<TARGET_FILE_DIR:ShaderPreprocessor>
+    $<TARGET_RUNTIME_DLLS:RtrcShaderPreprocessor>
+    $<TARGET_FILE_DIR:RtrcShaderPreprocessor>
   COMMAND_EXPAND_LISTS)
 
 # ======================= Shader Registration Macro =======================
@@ -32,7 +32,7 @@ add_custom_command(TARGET ShaderPreprocessor POST_BUILD
 #    rtrc_register_shaders(TARGET_NAME)
 
 add_custom_target(RtrcPreprocessShaders)
-set_property(TARGET RtrcPreprocessShaders PROPERTY FOLDER "RtrcGenerated")
+set_property(TARGET RtrcPreprocessShaders PROPERTY FOLDER "Rtrc/Generated")
 
 # Conditionally set a variable to its name or undefined, for forwarding options.
 macro(set_if target condition)
@@ -139,20 +139,20 @@ function(rtrc_generate_custom_target_for_preprocessing_shaders FILE_LIST_NAME CU
             OUTPUT ${TS}
             BYPRODUCTS ${OUT}
             COMMAND
-                ShaderPreprocessor -i "${IN}"
-                                   -o "${OUT}"
-                                   -r "${RTRC_SOURCE_DIR}/Source"
-                                   -d "${DF}"
+                RtrcShaderPreprocessor -i "${IN}"
+                                       -o "${OUT}"
+                                       -r "${RTRC_SOURCE_DIR}/Source"
+                                       -d "${DF}"
             WORKING_DIRECTORY ${RTRC_SOURCE_DIR}
             COMMAND
                 ${CMAKE_COMMAND} -E touch "${TS}"
             DEPFILE ${DF}
-            DEPENDS ShaderPreprocessor)
+            DEPENDS RtrcShaderPreprocessor)
         list(APPEND SHADER_TIMESTAMP_FILE_LIST ${TS})
     endforeach()
     add_custom_target(${CUSTOM_TARGET_NAME} ALL DEPENDS ${SHADER_TIMESTAMP_FILE_LIST})
     add_dependencies(RtrcPreprocessShaders ${CUSTOM_TARGET_NAME})
-    set_property(TARGET ${CUSTOM_TARGET_NAME} PROPERTY FOLDER "RtrcGenerated")
+    set_property(TARGET ${CUSTOM_TARGET_NAME} PROPERTY FOLDER "Rtrc/Generated")
     message("Register rtrc custom target '${CUSTOM_TARGET_NAME}' for shader preprocessing")
 endfunction()
 

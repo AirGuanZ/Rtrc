@@ -4,7 +4,7 @@ project(ShaderCommon)
 
 file(GLOB_RECURSE SRCS CONFIGURE_DEPENDS "*.cpp" "*.h")
 
-add_library(ShaderCommon STATIC ${SRCS})
+add_library(RtrcShaderCommon STATIC ${SRCS})
 
 foreach(SRC IN ITEMS ${SRCS})
     get_filename_component(SRC_PATH "${SRC}" PATH)
@@ -13,6 +13,6 @@ foreach(SRC IN ITEMS ${SRCS})
     source_group("${GROUP_PATH}" FILES "${SRC}")
 endforeach()
 
-set_property(TARGET ShaderCommon PROPERTY CXX_STANDARD 23)
+set_property(TARGET RtrcShaderCommon PROPERTY CXX_STANDARD 23)
 
-target_link_libraries(ShaderCommon PUBLIC RHI dxc spirv_reflect)
+target_link_libraries(RtrcShaderCommon PUBLIC RtrcRHI dxc spirv_reflect)

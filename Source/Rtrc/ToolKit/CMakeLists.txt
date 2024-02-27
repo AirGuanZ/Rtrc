@@ -6,7 +6,7 @@ file(GLOB_RECURSE SRCS CONFIGURE_DEPENDS "*.cpp" "*.h" "*.inl")
 file(GLOB_RECURSE SHADER_SRCS CONFIGURE_DEPENDS "*.shader" "*.hlsl")
 
 set(ALL_SRCS ${SRCS} ${SHADER_SRCS})
-add_library(ToolKit STATIC ${ALL_SRCS})
+add_library(RtrcToolKit STATIC ${ALL_SRCS})
 
 foreach(SRC IN ITEMS ${ALL_SRCS})
     get_filename_component(SRC_PATH "${SRC}" PATH)
@@ -17,8 +17,8 @@ endforeach()
 
 set_source_files_properties(${SHADER_SRCS} PROPERTIES HEADER_FILE_ONLY TRUE)
 
-set_property(TARGET ToolKit PROPERTY CXX_STANDARD 23)
+set_property(TARGET RtrcToolKit PROPERTY CXX_STANDARD 23)
 
-target_link_libraries(ToolKit PUBLIC Graphics Eigen3::Eigen)
+target_link_libraries(RtrcToolKit PUBLIC RtrcGraphics Eigen3::Eigen)
 
-rtrc_register_target(ToolKit)
+rtrc_register_target(RtrcToolKit)

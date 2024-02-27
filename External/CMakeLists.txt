@@ -60,5 +60,5 @@ get_all_targets(RTRC_EXTERNAL_TARGETS "${CMAKE_CURRENT_SOURCE_DIR}")
 
 foreach(T ${RTRC_EXTERNAL_TARGETS})
     get_property(F TARGET ${T} PROPERTY FOLDER)
-    set_property(TARGET ${T} PROPERTY FOLDER "External/${F}")
+    set_property(TARGET ${T} PROPERTY FOLDER "Rtrc/External/${F}")
 endforeach()
