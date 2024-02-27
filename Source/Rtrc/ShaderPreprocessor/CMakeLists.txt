@@ -32,7 +32,7 @@ add_custom_command(TARGET ShaderPreprocessor POST_BUILD
 #    rtrc_register_shaders(TARGET_NAME)
 
 add_custom_target(RtrcPreprocessShaders)
-set_property(TARGET RtrcPreprocessShaders PROPERTY FOLDER "Generated")
+set_property(TARGET RtrcPreprocessShaders PROPERTY FOLDER "RtrcGenerated")
 
 # Conditionally set a variable to its name or undefined, for forwarding options.
 macro(set_if target condition)
@@ -152,7 +152,7 @@ function(rtrc_generate_custom_target_for_preprocessing_shaders FILE_LIST_NAME CU
     endforeach()
     add_custom_target(${CUSTOM_TARGET_NAME} ALL DEPENDS ${SHADER_TIMESTAMP_FILE_LIST})
     add_dependencies(RtrcPreprocessShaders ${CUSTOM_TARGET_NAME})
-    set_property(TARGET ${CUSTOM_TARGET_NAME} PROPERTY FOLDER "Generated")
+    set_property(TARGET ${CUSTOM_TARGET_NAME} PROPERTY FOLDER "RtrcGenerated")
     message("Register rtrc custom target '${CUSTOM_TARGET_NAME}' for shader preprocessing")
 endfunction()
 
