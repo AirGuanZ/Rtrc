@@ -427,6 +427,7 @@ inline bool Device::Present()
 
 inline bool Device::BeginFrame(bool processWindowEvents)
 {
+    assert(sync_->IsInRenderLoop());
     if(processWindowEvents && window_)
     {
         Window::DoEvents();

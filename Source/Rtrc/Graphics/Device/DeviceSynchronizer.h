@@ -23,6 +23,7 @@ public:
 
     void BeginRenderLoop(int frameCountInFlight);
     void EndRenderLoop();
+    bool IsInRenderLoop() const;
 
     void WaitForOldFrame();
     void BeginNewFrame();

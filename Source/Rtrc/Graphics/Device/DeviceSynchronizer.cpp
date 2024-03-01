@@ -111,6 +111,11 @@ void DeviceSynchronizer::EndRenderLoop()
     renderLoopFrames_.clear();
 }
 
+bool DeviceSynchronizer::IsInRenderLoop() const
+{
+    return !renderLoopFrames_.empty();
+}
+
 void DeviceSynchronizer::WaitForOldFrame()
 {
     {
