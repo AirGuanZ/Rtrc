@@ -329,6 +329,8 @@ private:
     bool               swapchainUav_        = false;
     RHI::SwapchainUPtr swapchain_;
 
+    RC<Receiver<WindowResizeEvent>> windowResizeReceiver_;
+
     Box<DeviceSynchronizer> sync_;
 
     Box<BindingGroupManager>          bindingLayoutManager_;

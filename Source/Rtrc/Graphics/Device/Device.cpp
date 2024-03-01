@@ -88,20 +88,28 @@ Box<Device> Device::CreateGraphicsDevice(const GraphicsDeviceDesc& desc)
     ret->RecreateSwapchain();
     if(!desc.flags.Contains(DisableAutoSwapchainRecreate))
     {
-        ret->window_->Attach([d = ret.get()](const WindowResizeEvent &e)
-        {
-            if(e.width > 0 && e.height > 0)
+        ret->windowResizeReceiver_ = MakeRC<FunctionalReceiver<WindowResizeEvent>>(
+            [d = ret.get()](const WindowResizeEvent &e)
             {
-                d->device_->WaitIdle();
-                d->RecreateSwapchain();
-            }
-        });
+                if(e.width > 0 && e.height > 0)
+                {
+                    d->device_->WaitIdle();
+                    d->RecreateSwapchain();
+                }
+            });
+        ret->window_->Attach(ret->windowResizeReceiver_);
     }
     return ret;
 }
 
 Device::~Device()
 {
+    if(window_ && windowResizeReceiver_)
+    {
+        window_->Detach(windowResizeReceiver_);
+        windowResizeReceiver_.reset();
+    }
+
     if(mainQueue_.GetRHIObject())
     {
         if(mainQueue_.GetRHIObject()->GetType() == RHI::QueueType::Graphics && window_)
