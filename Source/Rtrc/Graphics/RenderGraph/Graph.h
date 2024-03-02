@@ -43,9 +43,10 @@ public:
     RGBuffer CreateStructuredBuffer(size_t count, size_t stride, RHI::BufferUsageFlag usages, std::string name = {});
 
     RGBuffer  RegisterBuffer(RC<StatefulBuffer> buffer);
-    RGTexture  RegisterTexture(RC<StatefulTexture> texture);
-    RGTexture  RegisterReadOnlyTexture(RC<Texture> texture);
-    RGTlas RegisterTlas(RC<Tlas> tlas, RGBufImpl *internalBuffer);
+    RGTexture RegisterTexture(RC<StatefulTexture> texture);
+    RGBuffer  RegisterReadOnlyBuffer(RC<Buffer> buffer);
+    RGTexture RegisterReadOnlyTexture(RC<Texture> texture);
+    RGTlas    RegisterTlas(RC<Tlas> tlas, RGBufImpl *internalBuffer);
 
     // It is assumed that the swapchain texture has no external access before this graph.
     // Therefore, swapchain texture can only be registered in at most one render graph in each frame.
@@ -86,6 +87,7 @@ private:
         void SetDefaultTexelFormat(RHI::Format format) override;
         void SetDefaultStructStride(size_t stride) override;
 
+        bool isReadOnlyBuffer = false;
         RC<StatefulBuffer> buffer;
     };
 
@@ -167,8 +169,8 @@ private:
 
     RHI::FenceOPtr completeFence_;
 
-    size_t          currentUAVOverlapGroupDepth_ = 0;
-    uint32_t        nextUAVOverlapGroupIndex_ = 0;
+    size_t            currentUAVOverlapGroupDepth_ = 0;
+    uint32_t          nextUAVOverlapGroupIndex_ = 0;
     RGUavOverlapGroup currentUAVOverlapGroup_;
 };
 

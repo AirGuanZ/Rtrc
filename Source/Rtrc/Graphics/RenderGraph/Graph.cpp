@@ -90,6 +90,13 @@ RGBufImpl *RenderGraph::RegisterBuffer(RC<StatefulBuffer> buffer)
     const void *rhiPtr = buffer->GetRHIObject().Get();
     if(auto it = externalResourceMap_.find(rhiPtr); it != externalResourceMap_.end())
     {
+        auto extRsc = static_cast<ExternalBufferResource *>(buffers_[it->second].get());
+        if(extRsc->isReadOnlyBuffer)
+        {
+            throw Exception(
+                "RenderGraph::RegisterBuffer: "
+                "given buffer is already registered as read-only external buffer");
+        }
         return buffers_[it->second].get();
     }
     const int index = static_cast<int>(buffers_.size());
@@ -111,7 +118,7 @@ RGTexImpl *RenderGraph::RegisterTexture(RC<StatefulTexture> texture)
         if(extRsc->isReadOnlySampledTexture)
         {
             throw Exception(
-                "RenderGraph::RegisterReadOnlyTexture: "
+                "RenderGraph::RegisterTexture: "
                 "given texture is already registered as read-only external texture");
         }
         return textures_[it->second].get();
@@ -123,6 +130,32 @@ RGTexImpl *RenderGraph::RegisterTexture(RC<StatefulTexture> texture)
     buffers_.push_back(nullptr);
     externalResourceMap_.insert({ rhiPtr, index });
     return textures_.back().get();
+}
+
+RGBuffer RenderGraph::RegisterReadOnlyBuffer(RC<Buffer> buffer)
+{
+    assert(recording_);
+    const void *rhiPtr = buffer->GetRHIObject().Get();
+    if(auto it = externalResourceMap_.find(rhiPtr); it != externalResourceMap_.end())
+    {
+        auto extRsc = static_cast<ExternalBufferResource *>(buffers_[it->second].get());
+        if(!extRsc->isReadOnlyBuffer)
+        {
+            throw Exception(
+                "RenderGraph::RegisterReadOnlyBuffer: "
+                "given buffer is already registered as non-read-only external buffer");
+        }
+        return extRsc;
+    }
+
+    const int index = static_cast<int>(buffers_.size());
+    auto resource = MakeBox<ExternalBufferResource>(this, index);
+    resource->buffer = StatefulBuffer::FromBuffer(std::move(buffer));
+    resource->isReadOnlyBuffer = true;
+    textures_.push_back(nullptr);
+    buffers_.push_back(std::move(resource));
+    externalResourceMap_.insert({ rhiPtr, index });
+    return buffers_.back().get();
 }
 
 RGTexImpl *RenderGraph::RegisterReadOnlyTexture(RC<Texture> texture)

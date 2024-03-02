@@ -413,6 +413,17 @@ void RGCompiler::CollectResourceUsers()
                 .usage           = bufferUsage,
                 .uavOverlapGroup = IsUAVOnly(bufferUsage.accesses) ? pass.uavOverlapGroup_ : RGUavOverlapGroup{}
             });
+
+#if RTRC_DEBUG
+            if(const auto extRsc = dynamic_cast<const RenderGraph::ExternalBufferResource *>(bufferResource);
+               extRsc && extRsc->isReadOnlyBuffer)
+            {
+                if(!IsReadOnly(bufferUsage.accesses))
+                {
+                    throw Exception("External readonly buffer cannot be written into");
+                }
+            }
+#endif
         }
 
         for(auto &[textureResource, textureUsage] : pass.textureUsages_)
