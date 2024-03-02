@@ -75,8 +75,7 @@ public:
     using Resource = typename Entry::Resource;
     using ResourceSrv = typename Entry::ResourceSrv;
 
-    explicit BindlessResourceManager(
-        Ref<Device> device, uint32_t initialArraySize = 64, uint32_t maxArraySize = 4096);
+    explicit BindlessResourceManager(Ref<Device> device, uint32_t initialArraySize = 64, uint32_t maxArraySize = 4096);
 
     Entry Allocate(uint32_t count = 1);
 
@@ -101,7 +100,7 @@ private:
 
     void Expand();
 
-    Ref<Device>    device_;
+    Ref<Device>            device_;
     RC<BindingGroupLayout> bindingGroupLayout_;
 
     // TODO: thread-local allocator

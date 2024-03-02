@@ -333,7 +333,7 @@ ShaderPreprocessingOutput PreprocessShader(const ShaderPreprocessingInput &input
                 auto &var = uniformBlock.variables.emplace_back();
                 var.name       = uniform.name;
                 var.pooledName = ShaderPropertyName(var.name);
-                var.type       = ShaderUniformBlock::GetTypeFromTypeName(uniform.type);
+                var.type       = GetShaderUniformTypeFromName(uniform.type);
             }
 
             if(backend == RHI::BackendType::Vulkan)

@@ -48,31 +48,31 @@ enum class ShaderCategory
 using ShaderPropertyName = GeneralPooledString;
 #define RTRC_SHADER_PROPERTY_NAME(X) RTRC_GENERAL_POOLED_STRING(X)
 
+enum class ShaderUniformType
+{
+    Int, Int2, Int3, Int4,
+    UInt, UInt2, UInt3, UInt4,
+    Float, Float2, Float3, Float4,
+    Float4x4,
+    Unknown,
+};
+
+size_t GetShaderUniformSize(ShaderUniformType type);
+ShaderUniformType GetShaderUniformTypeFromName(std::string_view name);
+
+struct ShaderUniformVariable
+{
+    ShaderUniformType type;
+    std::string name;
+    ShaderPropertyName pooledName;
+};
+
 struct ShaderUniformBlock
 {
-    enum UniformType
-    {
-        Int,   Int2,   Int3,   Int4,
-        UInt,  UInt2,  UInt3,  UInt4,
-        Float, Float2, Float3, Float4,
-        Float4x4,
-        Unknown,
-    };
-
-    struct UniformVariable
-    {
-        UniformType type;
-        std::string name;
-        ShaderPropertyName pooledName;
-    };
-
-    static UniformType GetTypeFromTypeName(std::string_view name);
-    static size_t GetTypeSize(UniformType type);
-
-    std::string                  name;
-    uint32_t                     group;
-    uint32_t                     indexInGroup;
-    std::vector<UniformVariable> variables;
+    std::string                        name;
+    uint32_t                           group;
+    uint32_t                           indexInGroup;
+    std::vector<ShaderUniformVariable> variables;
 };
 
 struct ShaderPreprocessingInput
@@ -193,10 +193,23 @@ inline const GeneralPooledString &ShaderBindingNameMap::GetPooledBindingName(int
     return allPooledBindingNames_[groupIndex][indexInGroup];
 }
 
-inline ShaderUniformBlock::UniformType ShaderUniformBlock::GetTypeFromTypeName(std::string_view name)
+inline size_t GetShaderUniformSize(ShaderUniformType type)
 {
-    using enum UniformType;
-    static const std::map<std::string, UniformType, std::less<>> m =
+    static constexpr size_t ret[] =
+    {
+        4, 8, 12, 16,
+        4, 8, 12, 16,
+        4, 8, 12, 16,
+        64,
+        0
+    };
+    return ret[std::to_underlying(type)];
+}
+
+inline ShaderUniformType GetShaderUniformTypeFromName(std::string_view name)
+{
+    using enum ShaderUniformType;
+    static const std::map<std::string, ShaderUniformType, std::less<>> m =
     {
         { "int",      Int    },
         { "int2",     Int2   },
@@ -214,19 +227,6 @@ inline ShaderUniformBlock::UniformType ShaderUniformBlock::GetTypeFromTypeName(s
     };
     const auto it = m.find(name);
     return it != m.end() ? it->second : Unknown;
-}
-
-inline size_t ShaderUniformBlock::GetTypeSize(UniformType type)
-{
-    static constexpr size_t ret[] =
-    {
-        4, 8, 12, 16,
-        4, 8, 12, 16,
-        4, 8, 12, 16,
-        64,
-        0
-    };
-    return ret[std::to_underlying(type)];
 }
 
 RTRC_END

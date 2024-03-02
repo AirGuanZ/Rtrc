@@ -61,6 +61,17 @@ struct AttachmentStateDesc
     auto operator<=>(const AttachmentStateDesc &) const = default;
 };
 
+struct PipelineMiscStateDesc
+{
+    float depthBiasConstFactor = 0.0f;
+    float depthBiasSlopeFactor = 0.0f;
+    float depthBiasClampValue = 0.0f;
+
+    auto operator<=>(const PipelineMiscStateDesc &) const = default;
+
+    size_t Hash() const { return ::Rtrc::Hash(depthBiasConstFactor, depthBiasSlopeFactor, depthBiasClampValue); }
+};
+
 #define DEFINE_PIPELINE_STATE(STATE)                            \
     using STATE        = PipelineStateCacheKey<STATE##Desc>;    \
     using STATE##Cache = PipelineStateCache<STATE##Desc>;       \
@@ -97,66 +108,62 @@ DEFINE_PIPELINE_STATE(AttachmentState)
 #define RTRC_STATIC_ATTACHMENT_STATE(...) \
     ([](){ RTRC_DEFINE_STATIC_ATTACHMENT_STATE(state) __VA_ARGS__ ; return state; }())
 
+struct GraphicsPipelineDesc
+{
+    mutable RC<Shader>       shader;
+    mutable Shader::UniqueId shaderId; // Reserved for caching. Don't use it.
+
+    RHI::Viewports viewports = 1;
+    RHI::Scissors  scissors = 1;
+
+    const MeshLayout *meshLayout = nullptr;
+
+    DepthStencilState depthStencilState;
+    PipelineMiscStateDesc miscStateDesc;
+
+    RasterizerState rasterizerState;
+    BlendState      blendState;
+    AttachmentState attachmentState;
+
+    Shader::UniqueId GetShaderUniqueId() const
+    {
+        return shader ? shader->GetUniqueID() : shaderId;
+    }
+
+    bool operator==(const GraphicsPipelineDesc &rhs) const
+    {
+        return
+            GetShaderUniqueId() == rhs.GetShaderUniqueId() &&
+            viewports == rhs.viewports &&
+            scissors == rhs.scissors &&
+            meshLayout == rhs.meshLayout &&
+            depthStencilState == rhs.depthStencilState &&
+            miscStateDesc == rhs.miscStateDesc &&
+            rasterizerState == rhs.rasterizerState &&
+            blendState == rhs.blendState &&
+            attachmentState == rhs.attachmentState;
+    }
+
+    size_t Hash() const
+    {
+        return ::Rtrc::Hash(
+            GetShaderUniqueId(),
+            viewports,
+            scissors,
+            meshLayout,
+            depthStencilState,
+            miscStateDesc,
+            rasterizerState,
+            blendState,
+            attachmentState);
+    }
+};
+
 class GraphicsPipelineCache
 {
 public:
 
-    struct Key
-    {
-        mutable RC<Shader>       shader;
-        mutable Shader::UniqueId shaderId; // Reserved for caching. Don't use it.
-
-        RHI::Viewports viewports = 1;
-        RHI::Scissors  scissors = 1;
-
-        const MeshLayout *meshLayout = nullptr;
-
-        DepthStencilState depthStencilState;
-        float depthBiasConstFactor = 0.0f;
-        float depthBiasSlopeFactor = 0.0f;
-        float depthBiasClampValue  = 0.0f;
-
-        RasterizerState rasterizerState;
-        BlendState      blendState;
-        AttachmentState attachmentState;
-
-        Shader::UniqueId GetShaderUniqueId() const
-        {
-            return shader ? shader->GetUniqueID() : shaderId;
-        }
-
-        bool operator==(const Key &rhs) const
-        {
-            return
-                GetShaderUniqueId() == rhs.GetShaderUniqueId() &&
-                viewports == rhs.viewports &&
-                scissors == rhs.scissors &&
-                meshLayout == rhs.meshLayout &&
-                depthStencilState == rhs.depthStencilState &&
-                depthBiasConstFactor == rhs.depthBiasConstFactor &&
-                depthBiasSlopeFactor == rhs.depthBiasSlopeFactor &&
-                depthBiasClampValue == rhs.depthBiasClampValue &&
-                rasterizerState == rhs.rasterizerState &&
-                blendState == rhs.blendState &&
-                attachmentState == rhs.attachmentState;
-        }
-
-        size_t Hash() const
-        {
-            return ::Rtrc::Hash(
-                GetShaderUniqueId(),
-                viewports,
-                scissors,
-                meshLayout,
-                depthStencilState,
-                depthBiasConstFactor,
-                depthBiasSlopeFactor,
-                depthBiasClampValue,
-                rasterizerState,
-                blendState,
-                attachmentState);
-        }
-    };
+    using Key = GraphicsPipelineDesc;
 
     void SetDevice(Ref<Device> device)
     {
@@ -203,9 +210,9 @@ public:
             .cullMode               = rasterizerStateDesc.cullMode,
             .frontFaceMode          = rasterizerStateDesc.frontFaceMode,
             .enableDepthBias        = depthStencilStateDesc.enableDepthBias,
-            .depthBiasConstFactor   = key.depthBiasConstFactor,
-            .depthBiasSlopeFactor   = key.depthBiasSlopeFactor,
-            .depthBiasClampValue    = key.depthBiasClampValue,
+            .depthBiasConstFactor   = key.miscStateDesc.depthBiasConstFactor,
+            .depthBiasSlopeFactor   = key.miscStateDesc.depthBiasSlopeFactor,
+            .depthBiasClampValue    = key.miscStateDesc.depthBiasClampValue,
             .enableDepthClip        = depthStencilStateDesc.enableDepthClip,
             .multisampleCount       = attachmentStateDesc.multisampleCount,
             .enableDepthTest        = depthStencilStateDesc.enableDepthTest,

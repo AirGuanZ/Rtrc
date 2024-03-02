@@ -11,41 +11,19 @@ class GraphicsPipeline : public GeneralGPUObject<RHI::GraphicsPipelineUPtr>
 {
 public:
     
-    using StencilOp  = RHI::StencilOp;
-    using StencilOps = RHI::StencilOps;
-
-    using Viewport  = RHI::Viewport;
-    using Viewports = RHI::Viewports;
-
-    using Scissor  = RHI::Scissor;
-    using Scissors = RHI::Scissors;
-
-    using PrimitiveTopology = RHI::PrimitiveTopology;
-    using FillMode          = RHI::FillMode;
-    using CullMode          = RHI::CullMode;
-    using FrontFaceMode     = RHI::FrontFaceMode;
-
-    using CompareOp = RHI::CompareOp;
-
-    using BlendFactor = RHI::BlendFactor;
-    using BlendOp     = RHI::BlendOp;
-
-    using Format = RHI::Format;
-    
     struct Desc
     {
-        RC<Shader>       shader;
-        Shader::UniqueId shaderId; // Reserved for caching. Don't use it.
+        RC<Shader> shader;
 
-        Viewports viewports = 1;
-        Scissors  scissors  = 1;
+        RHI::Viewports viewports = 1;
+        RHI::Scissors  scissors  = 1;
 
         const MeshLayout *meshLayout = nullptr;
 
-        PrimitiveTopology primitiveTopology = PrimitiveTopology::TriangleList;
-        FillMode          fillMode          = FillMode::Fill;
-        CullMode          cullMode          = CullMode::DontCull;
-        FrontFaceMode     frontFaceMode     = FrontFaceMode::Clockwise;
+        RHI::PrimitiveTopology primitiveTopology = RHI::PrimitiveTopology::TriangleList;
+        RHI::FillMode          fillMode          = RHI::FillMode::Fill;
+        RHI::CullMode          cullMode          = RHI::CullMode::DontCull;
+        RHI::FrontFaceMode     frontFaceMode     = RHI::FrontFaceMode::Clockwise;
 
         bool  enableDepthBias      = false;
         float depthBiasConstFactor = 0.0f;
@@ -56,30 +34,28 @@ public:
 
         int multisampleCount = 1;
 
-        bool      enableDepthTest  = false;
-        bool      enableDepthWrite = false;
-        CompareOp depthCompareOp   = CompareOp::Always;
+        bool           enableDepthTest  = false;
+        bool           enableDepthWrite = false;
+        RHI::CompareOp depthCompareOp   = RHI::CompareOp::Always;
 
-        bool       enableStencilTest = false;
-        uint8_t    stencilReadMask = 0;
-        uint8_t    stencilWriteMask = 0;
-        StencilOps frontStencil;
-        StencilOps backStencil;
+        bool            enableStencilTest = false;
+        uint8_t         stencilReadMask = 0;
+        uint8_t         stencilWriteMask = 0;
+        RHI::StencilOps frontStencil;
+        RHI::StencilOps backStencil;
 
-        bool        enableBlending = false;
-        BlendFactor blendingSrcColorFactor = BlendFactor::One;
-        BlendFactor blendingDstColorFactor = BlendFactor::Zero;
-        BlendOp     blendingColorOp        = BlendOp::Add;
-        BlendFactor blendingSrcAlphaFactor = BlendFactor::One;
-        BlendFactor blendingDstAlphaFactor = BlendFactor::Zero;
-        BlendOp     blendingAlphaOp        = BlendOp::Add;
+        bool             enableBlending = false;
+        RHI::BlendFactor blendingSrcColorFactor = RHI::BlendFactor::One;
+        RHI::BlendFactor blendingDstColorFactor = RHI::BlendFactor::Zero;
+        RHI::BlendOp     blendingColorOp        = RHI::BlendOp::Add;
+        RHI::BlendFactor blendingSrcAlphaFactor = RHI::BlendFactor::One;
+        RHI::BlendFactor blendingDstAlphaFactor = RHI::BlendFactor::Zero;
+        RHI::BlendOp     blendingAlphaOp        = RHI::BlendOp::Add;
 
-        StaticVector<Format, 8> colorAttachmentFormats;
-        Format                  depthStencilFormat = RHI::Format::Unknown;
+        StaticVector<RHI::Format, 8> colorAttachmentFormats;
+        RHI::Format                  depthStencilFormat = RHI::Format::Unknown;
 
         void Validate() const;
-
-        size_t Hash() const;
 
         bool operator==(const Desc &) const = default;
     };
@@ -90,7 +66,6 @@ private:
 
     friend class PipelineManager;
 
-    Desc desc_;
     RC<const ShaderInfo> shaderInfo_;
 };
 

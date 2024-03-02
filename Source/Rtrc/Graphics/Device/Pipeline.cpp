@@ -79,42 +79,6 @@ void GraphicsPipeline::Desc::Validate() const
 #undef VALIDATE_FAIL
 }
 
-size_t GraphicsPipeline::Desc::Hash() const
-{
-    return Rtrc::Hash(
-        shader ? shader->GetUniqueID() : shaderId,
-        viewports,
-        scissors,
-        meshLayout,
-        primitiveTopology,
-        fillMode,
-        cullMode,
-        frontFaceMode,
-        enableDepthBias,
-        depthBiasConstFactor,
-        depthBiasSlopeFactor,
-        depthBiasClampValue,
-        enableDepthClip,
-        multisampleCount,
-        enableDepthTest,
-        enableDepthWrite,
-        depthCompareOp,
-        enableStencilTest,
-        stencilReadMask,
-        stencilWriteMask,
-        frontStencil,
-        backStencil,
-        enableBlending,
-        blendingSrcColorFactor,
-        blendingDstColorFactor,
-        blendingColorOp,
-        blendingSrcAlphaFactor,
-        blendingDstAlphaFactor,
-        blendingAlphaOp,
-        colorAttachmentFormats,
-        depthStencilFormat);
-}
-
 void RayTracingPipeline::GetShaderGroupHandles(
     uint32_t               startGroupIndex,
     uint32_t               groupCount,
@@ -360,10 +324,6 @@ RC<GraphicsPipeline> PipelineManager::CreateGraphicsPipeline(const GraphicsPipel
     auto ret = MakeRC<GraphicsPipeline>();
     ret->rhiObject_ = device_->CreateGraphicsPipeline(rhiDesc);
     ret->manager_ = this;
-    ret->desc_ = desc;
-    assert(ret->desc_.shaderId == UniqueId{});
-    ret->desc_.shaderId = ret->desc_.shader->GetUniqueID();
-    ret->desc_.shader = {}; // Don't store shader object
     ret->shaderInfo_ = desc.shader->GetInfo();
     return ret;
 }
