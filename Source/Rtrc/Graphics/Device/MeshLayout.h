@@ -3,7 +3,6 @@
 #include <map>
 
 #include <Rtrc/RHI/RHI.h>
-#include <Rtrc/Core/StringPool.h>
 
 RTRC_BEGIN
 
