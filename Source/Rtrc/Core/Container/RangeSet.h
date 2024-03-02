@@ -6,9 +6,10 @@
 
 #include <Rtrc/Core/Common.h>
 
-RTRC_BEGIN
+#include "Rtrc/Core/EnumFlags.h"
 
-class RangeSet
+RTRC_BEGIN
+    class RangeSet
 {
 public:
 
@@ -27,6 +28,7 @@ public:
     RangeSet(Index beg, Index end);
 
     Index Allocate(Index size, Policy policy = BestFit);
+    Index Allocate(Index size, Index alignment, Policy policy = BestFit);
     void Free(Index beg, Index end);
 
     // f is called with f(oldPos, newPos, count)
@@ -98,6 +100,104 @@ inline RangeSet::Index RangeSet::Allocate(Index size, Policy policy)
     sizeToOffsets_[restSize].insert(foundBegin);
     offsetToSize_[foundBegin] = foundSize - size;
     return foundBegin + restSize;
+}
+
+inline RangeSet::Index RangeSet::Allocate(Index size, Index alignment, Policy policy)
+{
+    decltype(sizeToOffsets_)::iterator it;
+    std::set<Index>::iterator jt;
+    Index offsetInJt = 0;
+
+    auto FindBestFit = [&]
+    {
+        for(it = sizeToOffsets_.upper_bound(size); it != sizeToOffsets_.end(); ++it)
+        {
+            for(jt = it->second.begin(); jt != it->second.end(); ++jt)
+            {
+                const Index offset = *jt;
+                const Index alignedOffset = UpAlignTo(offset, alignment);
+                offsetInJt = alignedOffset - offset;
+                if(offsetInJt + size < it->first)
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    };
+
+    auto FindLargest = [&]
+    {
+        it = sizeToOffsets_.end();
+        do
+        {
+            --it;
+            if(it->first < size)
+            {
+                return false;
+            }
+
+            const auto &set = it->second;
+            for(jt = set.begin(); jt != set.end(); ++jt)
+            {
+                const Index offset = *jt;
+                const Index alignedOffset = UpAlignTo(offset, alignment);
+                offsetInJt = alignedOffset - offset;
+                if(offsetInJt + size < it->first)
+                {
+                    return true;
+                }
+            }
+
+        } while(it != sizeToOffsets_.begin());
+        return false;
+    };
+
+    if(policy == BestFit)
+    {
+        if(!FindBestFit())
+        {
+            return NIL;
+        }
+    }
+    else
+    {
+        if(!FindLargest())
+        {
+            return NIL;
+        }
+    }
+
+    auto &set = it->second;
+    const Index foundBegin = *jt;
+    const Index foundSize = it->first;
+    const Index foundEnd = foundBegin + foundSize;
+    const Index returnValue = foundBegin + offsetInJt;
+
+    set.erase(jt);
+    if(set.empty())
+    {
+        sizeToOffsets_.erase(it);
+    }
+
+    const Index retBegin = foundBegin + offsetInJt;
+    const Index retEnd = retBegin + size;
+
+    assert(retEnd <= foundSize);
+    if(offsetInJt != 0)
+    {
+        sizeToOffsets_[offsetInJt].insert(foundBegin);
+        offsetToSize_[foundBegin] = offsetInJt;
+    }
+
+    if(returnValue < foundSize)
+    {
+        const Index restSize = foundEnd - retEnd;
+        sizeToOffsets_[restSize].insert(retEnd);
+        offsetToSize_[retEnd] = restSize;
+    }
+
+    return retBegin;
 }
 
 inline void RangeSet::Free(Index beg, Index end)
