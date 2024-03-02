@@ -15,26 +15,6 @@ class Mesh : public InObjectCache, public WithUniqueObjectID
 {
 public:
 
-    struct BuiltinVertexStruct_Default
-    {
-        Vector3f position;
-        Vector3f normal;
-        Vector2f texCoord;
-        Vector3f tangent;
-    };
-
-    struct BuiltinVertexStruct_Simplified
-    {
-        Vector3f position;
-        Vector3f normal;
-        Vector2f texCoord;
-    };
-
-    struct BuiltinVertexBufferLayout
-    {
-        static const VertexBufferLayout *Standard;
-    };
-
     Mesh() = default;
 
     Mesh(Mesh &&other) noexcept;
