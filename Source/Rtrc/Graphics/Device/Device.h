@@ -98,6 +98,9 @@ public:
 
     void WaitIdle();
 
+    /** Simplified BeginFrame with neither handling window events nor switching swapchain image */
+    void AddSynchronizationPoint();
+
     void BeginRenderLoop();
     void EndRenderLoop();
     bool Present();
@@ -180,11 +183,11 @@ public:
     template<typename T>
     RC<Buffer> CreateAndUploadTexelBuffer(RHI::BufferUsageFlag usages, Span<T> data, RHI::Format format);
     template<typename T>
-    RC<Buffer> CreateAndUploadTexelBuffer(Span<T> data, RHI::Format format); // usages is RHI::BufferUsage::ShaderBuffer
+    RC<Buffer> CreateAndUploadTexelBuffer(Span<T> data, RHI::Format format); // buffer usages: ShaderBuffer
     template<typename T>
     RC<Buffer> CreateAndUploadStructuredBuffer(RHI::BufferUsageFlag usages, Span<T> data);
     template<typename T>
-    RC<Buffer> CreateAndUploadStructuredBuffer(Span<T> data); // usages is RHI::BufferUsage::ShaderStructuredBuffer
+    RC<Buffer> CreateAndUploadStructuredBuffer(Span<T> data); // buffer usages: ShaderStructuredBuffer
     RC<Buffer> CreateAndUploadBuffer(
         const RHI::BufferDesc &desc,
         const void            *initData,
@@ -255,12 +258,11 @@ public:
     RC<Blas> CreateBlas(RC<SubBuffer> buffer = nullptr);
     RC<Tlas> CreateTlas(RC<SubBuffer> buffer = nullptr);
 
-    // Immediate execution
-    // Don't use them in render loop
+    // Immediate execution. Don't use these in render loop.
 
     void ExecuteAndWait(CommandBuffer commandBuffer);
     template<typename F> requires !std::is_same_v<std::remove_cvref_t<F>, CommandBuffer>
-    void ExecuteAndWait(F &&f);
+    void ExecuteAndWait(F &&f); // f(commandBuffer)
 
     void ExecuteBarrier(
         const RC<Buffer>       &buffer,
@@ -408,6 +410,20 @@ inline const RHI::TextureDesc &Device::GetSwapchainImageDesc() const
 inline void Device::WaitIdle()
 {
     sync_->WaitIdle();
+}
+
+inline void Device::AddSynchronizationPoint()
+{
+    if(sync_->IsInRenderLoop())
+    {
+        commandBufferManager_->_internalEndFrame();
+        sync_->WaitForOldFrame();
+        sync_->BeginNewFrame();
+    }
+    else
+    {
+        sync_->WaitIdle();
+    }
 }
 
 inline void Device::BeginRenderLoop()

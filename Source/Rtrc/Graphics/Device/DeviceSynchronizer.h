@@ -3,6 +3,8 @@
 #include <deque>
 #include <mutex>
 
+#include <tbb/spin_mutex.h>
+
 #include <Rtrc/RHI/RHI.h>
 
 RTRC_BEGIN
@@ -43,7 +45,7 @@ private:
     RHI::QueueRPtr queue_;
 
     Callbacks currentFrameCallbacks_;
-    std::mutex currentFrameCallbacksMutex_;
+    tbb::spin_mutex currentFrameCallbacksMutex_;
 
     std::vector<RenderLoopFrame> renderLoopFrames_;
     int renderLoopFrameIndex_;
