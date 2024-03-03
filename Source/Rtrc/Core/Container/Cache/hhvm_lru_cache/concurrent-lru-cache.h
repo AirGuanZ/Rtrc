@@ -29,8 +29,6 @@
 #include <vector>
 #include <tbb/concurrent_hash_map.h>
 
-#include <Rtrc/Core/LazyConstructor.h>
-
 namespace HPHP {
 
 /**
