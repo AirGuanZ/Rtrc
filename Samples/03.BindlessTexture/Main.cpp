@@ -26,7 +26,10 @@ void Run()
     {
         .shader = shader,
         .meshLayout = mesh->GetLayout(),
-        .colorAttachmentFormats = { device->GetSwapchainImageDesc().format }
+        .attachmentState = RTRC_ATTACHMENT_STATE
+        {
+            .colorAttachmentFormats = { device->GetSwapchainImageDesc().format }
+        }
     });
 
     // Textures

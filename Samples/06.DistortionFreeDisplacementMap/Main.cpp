@@ -268,17 +268,26 @@ class DFDMDemo : public SimpleApplication
     void InitializeRenderPipeline()
     {
         auto layout = RTRC_MESH_LAYOUT(Buffer(Attribute("Position", 0, Float2)));
-        const GraphicsPipeline::Desc pipelineDesc =
+        const GraphicsPipelineDesc pipelineDesc =
         {
-            .shader                 = GetDevice()->GetShader<RtrcShader::DFDM::Render::Name>(),
-            .meshLayout             = layout,
-            .cullMode               = RHI::CullMode::CullBack,
-            .frontFaceMode          = RHI::FrontFaceMode::CounterClockwise,
-            .enableDepthTest        = true,
-            .enableDepthWrite       = true,
-            .depthCompareOp         = RHI::CompareOp::Less,
-            .colorAttachmentFormats = { RHI::Format::R8G8B8A8_UNorm },
-            .depthStencilFormat     = RHI::Format::D24S8
+            .shader            = GetDevice()->GetShader<RtrcShader::DFDM::Render::Name>(),
+            .meshLayout        = layout,
+            .depthStencilState = RTRC_STATIC_DEPTH_STENCIL_STATE(
+            {
+                .enableDepthTest = true,
+                .enableDepthWrite = true,
+                .depthCompareOp = RHI::CompareOp::Less,
+            }),
+            .rasterizerState = RTRC_STATIC_RASTERIZER_STATE(
+            {
+                .cullMode = RHI::CullMode::CullBack,
+                .frontFaceMode = RHI::FrontFaceMode::CounterClockwise,
+            }),
+            .attachmentState = RTRC_STATIC_ATTACHMENT_STATE(
+            {
+                .colorAttachmentFormats = { RHI::Format::R8G8B8A8_UNorm },
+                .depthStencilFormat = RHI::Format::D24S8
+            })
         };
         pipeline_ = GetDevice()->CreateGraphicsPipeline(pipelineDesc);
     }

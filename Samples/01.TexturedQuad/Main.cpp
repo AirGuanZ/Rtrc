@@ -37,7 +37,10 @@ void Run()
     auto pipeline = device->CreateGraphicsPipeline({
         .shader = device->GetShaderTemplate("Sample01/Quad", true)->GetVariant(keywords),
         .meshLayout = mesh->GetLayout(),
-        .colorAttachmentFormats = { device->GetSwapchainImageDesc().format }
+        .attachmentState = RTRC_ATTACHMENT_STATE
+        {
+            .colorAttachmentFormats = { device->GetSwapchainImageDesc().format }
+        }
     });
 
     // Main texture
