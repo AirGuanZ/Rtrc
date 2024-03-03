@@ -452,29 +452,38 @@ void ImGuiRenderer::RenderImmediately(
 
 RC<GraphicsPipeline> ImGuiRenderer::GetOrCreatePipeline(RHI::Format format)
 {
-    static const MeshLayout *meshLayout = RTRC_MESH_LAYOUT(Buffer(
-        Attribute("POSITION", 0, Float2),
-        Attribute("UV",       0, Float2),
-        Attribute("COLOR",    0, UChar4UNorm)));
     if(auto it = rtFormatToPipeline_.find(format); it != rtFormatToPipeline_.end())
     {
         return it->second;
     }
-    auto pipeline = device_->CreateGraphicsPipeline(GraphicsPipeline::Desc
+    auto pipeline = device_->CreateGraphicsPipeline(GraphicsPipelineDesc
     {
-        .shader                 = shader_,
-        .meshLayout             = meshLayout,
-        .primitiveTopology      = RHI::PrimitiveTopology::TriangleList,
-        .fillMode               = RHI::FillMode::Fill,
-        .cullMode               = RHI::CullMode::DontCull,
-        .enableBlending         = true,
-        .blendingSrcColorFactor = RHI::BlendFactor::SrcAlpha,
-        .blendingDstColorFactor = RHI::BlendFactor::OneMinusSrcAlpha,
-        .blendingColorOp        = RHI::BlendOp::Add,
-        .blendingSrcAlphaFactor = RHI::BlendFactor::One,
-        .blendingDstAlphaFactor = RHI::BlendFactor::OneMinusSrcAlpha,
-        .blendingAlphaOp        = RHI::BlendOp::Add,
-        .colorAttachmentFormats = { format }
+        .shader     = shader_,
+        .meshLayout = RTRC_STATIC_MESH_LAYOUT(
+            Buffer(
+                Attribute("POSITION", 0, Float2),
+                Attribute("UV",       0, Float2),
+                Attribute("COLOR",    0, UChar4UNorm))),
+        .rasterizerState = RTRC_STATIC_RASTERIZER_STATE(
+        {
+            .primitiveTopology = RHI::PrimitiveTopology::TriangleList,
+            .fillMode          = RHI::FillMode::Fill,
+            .cullMode          = RHI::CullMode::DontCull
+        }),
+        .blendState = RTRC_STATIC_BLEND_STATE(
+        {
+            .enableBlending         = true,
+            .blendingSrcColorFactor = RHI::BlendFactor::SrcAlpha,
+            .blendingDstColorFactor = RHI::BlendFactor::OneMinusSrcAlpha,
+            .blendingColorOp        = RHI::BlendOp::Add,
+            .blendingSrcAlphaFactor = RHI::BlendFactor::One,
+            .blendingDstAlphaFactor = RHI::BlendFactor::OneMinusSrcAlpha,
+            .blendingAlphaOp        = RHI::BlendOp::Add,
+        }),
+        .attachmentState = RTRC_ATTACHMENT_STATE
+        {
+            .colorAttachmentFormats = { format }
+        }
     });
     rtFormatToPipeline_.insert({ format, pipeline });
     return pipeline;

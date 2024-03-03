@@ -80,7 +80,7 @@ private:
 
     RC<Shader> GetShaderImpl(ShaderRecord *record, FastKeywordSetValue fastKeywordValues);
 
-    ObjectCache<ShaderKey, Shader, true, true>                           shaders_;
+    SharedObjectCache<ShaderKey, Shader, true, true>                           shaders_;
     ankerl::unordered_dense::map<GeneralPooledString, Box<ShaderRecord>> records_;
 
     bool                     debug_ = RTRC_DEBUG;

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Rtrc/Graphics/Device/Texture/StatefulTexture.h>
-#include <Rtrc/Core/Container/ObjectPool.h>
+#include <Rtrc/Core/Container/Cache/ObjectRecycleBin.h>
 
 RTRC_BEGIN
 
@@ -31,7 +31,7 @@ private:
     RHI::DeviceOPtr device_;
     DeviceSynchronizer &sync_;
 
-    ObjectPool<RHI::TextureDesc, PooledRecord, true, true> pool_;
+    ObjectRecycleBin<RHI::TextureDesc, PooledRecord, true, true> pool_;
 };
 
 RTRC_END

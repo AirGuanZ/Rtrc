@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Rtrc/Graphics/Device/DeviceSynchronizer.h>
-#include <Rtrc/Core/Container/ObjectCache.h>
+#include <Rtrc/Core/Container/Cache/SharedObjectCache.h>
 
 RTRC_BEGIN
 
@@ -44,7 +44,7 @@ namespace TextureImpl
 class Texture :
     protected TextureImpl::TextureData,
     public std::enable_shared_from_this<Texture>,
-    public InObjectCache
+    public InSharedObjectCache
 {
 public:
 

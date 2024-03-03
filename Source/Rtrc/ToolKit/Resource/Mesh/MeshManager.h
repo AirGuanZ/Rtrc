@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/Core/Container/ObjectCache.h>
+#include <Rtrc/Core/Container/Cache/SharedObjectCache.h>
 #include <Rtrc/ToolKit/Resource/Mesh/Mesh.h>
 
 RTRC_BEGIN
@@ -45,7 +45,7 @@ private:
 
     Device *device_;
     
-    ObjectCache<std::pair<std::string, Flags>, Mesh, true, true> meshCache_;
+    SharedObjectCache<std::pair<std::string, Flags>, Mesh, true, true> meshCache_;
 };
 
 RTRC_END

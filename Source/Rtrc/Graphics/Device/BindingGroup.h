@@ -7,7 +7,7 @@
 #include <Rtrc/Graphics/Device/Buffer.h>
 #include <Rtrc/Graphics/Device/Sampler.h>
 #include <Rtrc/Graphics/Device/Texture.h>
-#include <Rtrc/Core/Container/ObjectCache.h>
+#include <Rtrc/Core/Container/Cache/SharedObjectCache.h>
 
 RTRC_BEGIN
 
@@ -61,7 +61,7 @@ private:
     RHI::BindingGroupUPtr        rhiGroup_;
 };
 
-class BindingGroupLayout : public InObjectCache, public std::enable_shared_from_this<BindingGroupLayout>
+class BindingGroupLayout : public InSharedObjectCache, public std::enable_shared_from_this<BindingGroupLayout>
 {
 public:
 
@@ -100,7 +100,7 @@ private:
     RHI::BindingGroupLayoutUPtr rhiLayout_;
 };
 
-class BindingLayout : public InObjectCache
+class BindingLayout : public InSharedObjectCache
 {
 public:
 
@@ -156,8 +156,8 @@ private:
 
     ConstantBufferManagerInterface *defaultConstantBufferManager_;
 
-    ObjectCache<BindingGroupLayout::Desc, BindingGroupLayout, true, false> groupLayoutCache_;
-    ObjectCache<BindingLayout::Desc, BindingLayout, true, false> layoutCache_;
+    SharedObjectCache<BindingGroupLayout::Desc, BindingGroupLayout, true, false> groupLayoutCache_;
+    SharedObjectCache<BindingLayout::Desc, BindingLayout, true, false> layoutCache_;
 };
 
 inline BindingGroup::~BindingGroup()

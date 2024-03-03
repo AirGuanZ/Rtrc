@@ -238,7 +238,7 @@ public:
 
     CommandBuffer CreateCommandBuffer();
 
-    RC<GraphicsPipeline> CreateGraphicsPipeline(const GraphicsPipeline::Desc &desc);
+    RC<GraphicsPipeline> CreateGraphicsPipeline(const GraphicsPipelineDesc &desc);
     RC<ComputePipeline> CreateComputePipeline(const RC<Shader> &shader);
 
     RC<RayTracingLibrary> CreateRayTracingLibrary(const RayTracingLibrary::Desc &desc);
@@ -789,7 +789,7 @@ inline CommandBuffer Device::CreateCommandBuffer()
     return commandBufferManager_->Create();
 }
 
-inline RC<GraphicsPipeline> Device::CreateGraphicsPipeline(const GraphicsPipeline::Desc &desc)
+inline RC<GraphicsPipeline> Device::CreateGraphicsPipeline(const GraphicsPipelineDesc &desc)
 {
     return pipelineManager_->CreateGraphicsPipeline(desc);
 }

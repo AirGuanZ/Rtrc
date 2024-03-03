@@ -19,7 +19,7 @@ namespace PipelineDetail
 
 } // namespace PipelineDetail
 
-void GraphicsPipeline::Desc::Validate() const
+/*void GraphicsPipeline::Desc::Validate() const
 {
 #define VALIDATE_FAIL(...) [&]{ throw Exception("GraphicsPipeline::Desc::Validate: " __VA_ARGS__); }()
 
@@ -77,7 +77,7 @@ void GraphicsPipeline::Desc::Validate() const
     }
 
 #undef VALIDATE_FAIL
-}
+}*/
 
 void RayTracingPipeline::GetShaderGroupHandles(
     uint32_t               startGroupIndex,
@@ -190,12 +190,8 @@ RC<RayTracingPipeline> PipelineManager::CreateRayTracingPipeline(const RayTracin
     return ret;
 }
 
-RC<GraphicsPipeline> PipelineManager::CreateGraphicsPipeline(const GraphicsPipeline::Desc &desc)
+RC<GraphicsPipeline> PipelineManager::CreateGraphicsPipeline(const GraphicsPipelineDesc &desc)
 {
-#if RTRC_DEBUG
-    desc.Validate();
-#endif
-
     RHI::GraphicsPipelineDesc rhiDesc;
 
     if(desc.shader->GetCategory() == ShaderCategory::ClassicalGraphics)
@@ -285,41 +281,44 @@ RC<GraphicsPipeline> PipelineManager::CreateGraphicsPipeline(const GraphicsPipel
     
     rhiDesc.vertexBuffers = std::move(vertexBuffers);
     rhiDesc.vertexAttributs = std::move(vertexAttributes);
-    
-    rhiDesc.primitiveTopology = desc.primitiveTopology;
-    rhiDesc.fillMode          = desc.fillMode;
-    rhiDesc.cullMode          = desc.cullMode;
-    rhiDesc.frontFaceMode     = desc.frontFaceMode;
-    
-    rhiDesc.enableDepthBias      = desc.enableDepthBias;
+
+    auto &rasterizerDesc = desc.rasterizerState.GetDesc();
+    rhiDesc.primitiveTopology = rasterizerDesc.primitiveTopology;
+    rhiDesc.fillMode          = rasterizerDesc.fillMode;
+    rhiDesc.cullMode          = rasterizerDesc.cullMode;
+    rhiDesc.frontFaceMode     = rasterizerDesc.frontFaceMode;
+
+    auto &depthStencilDesc = desc.depthStencilState.GetDesc();
+    rhiDesc.enableDepthBias      = depthStencilDesc.enableDepthBias;
     rhiDesc.depthBiasConstFactor = desc.depthBiasConstFactor;
     rhiDesc.depthBiasSlopeFactor = desc.depthBiasSlopeFactor;
     rhiDesc.depthBiasClampValue  = desc.depthBiasClampValue;
 
-    rhiDesc.enableDepthClip = desc.enableDepthClip;
+    rhiDesc.enableDepthClip = depthStencilDesc.enableDepthClip;
     
-    rhiDesc.multisampleCount = desc.multisampleCount;
+    rhiDesc.enableDepthTest  = depthStencilDesc.enableDepthTest;
+    rhiDesc.enableDepthWrite = depthStencilDesc.enableDepthWrite;
+    rhiDesc.depthCompareOp   = depthStencilDesc.depthCompareOp;
     
-    rhiDesc.enableDepthTest  = desc.enableDepthTest;
-    rhiDesc.enableDepthWrite = desc.enableDepthWrite;
-    rhiDesc.depthCompareOp   = desc.depthCompareOp;
-    
-    rhiDesc.enableStencilTest = desc.enableStencilTest;
-    rhiDesc.stencilReadMask   = desc.stencilReadMask;
-    rhiDesc.stencilWriteMask  = desc.stencilWriteMask;
-    rhiDesc.frontStencilOp    = desc.frontStencil;
-    rhiDesc.backStencilOp     = desc.backStencil;
-    
-    rhiDesc.enableBlending         = desc.enableBlending;
-    rhiDesc.blendingSrcColorFactor = desc.blendingSrcColorFactor;
-    rhiDesc.blendingDstColorFactor = desc.blendingDstColorFactor;
-    rhiDesc.blendingSrcAlphaFactor = desc.blendingSrcAlphaFactor;
-    rhiDesc.blendingDstAlphaFactor = desc.blendingDstAlphaFactor;
-    rhiDesc.blendingColorOp        = desc.blendingColorOp;
-    rhiDesc.blendingAlphaOp        = desc.blendingAlphaOp;
-    
-    rhiDesc.colorAttachments   = desc.colorAttachmentFormats;
-    rhiDesc.depthStencilFormat = desc.depthStencilFormat;
+    rhiDesc.enableStencilTest = depthStencilDesc.enableStencilTest;
+    rhiDesc.stencilReadMask   = depthStencilDesc.stencilReadMask;
+    rhiDesc.stencilWriteMask  = depthStencilDesc.stencilWriteMask;
+    rhiDesc.frontStencilOp    = depthStencilDesc.frontStencil;
+    rhiDesc.backStencilOp     = depthStencilDesc.backStencil;
+
+    auto &blendDesc = desc.blendState.GetDesc();
+    rhiDesc.enableBlending         = blendDesc.enableBlending;
+    rhiDesc.blendingSrcColorFactor = blendDesc.blendingSrcColorFactor;
+    rhiDesc.blendingDstColorFactor = blendDesc.blendingDstColorFactor;
+    rhiDesc.blendingSrcAlphaFactor = blendDesc.blendingSrcAlphaFactor;
+    rhiDesc.blendingDstAlphaFactor = blendDesc.blendingDstAlphaFactor;
+    rhiDesc.blendingColorOp        = blendDesc.blendingColorOp;
+    rhiDesc.blendingAlphaOp        = blendDesc.blendingAlphaOp;
+
+    auto &attachmentDesc = desc.attachmentState.GetDesc();
+    rhiDesc.multisampleCount   = attachmentDesc.multisampleCount;
+    rhiDesc.colorAttachments   = attachmentDesc.colorAttachmentFormats;
+    rhiDesc.depthStencilFormat = attachmentDesc.depthStencilFormat;
     
     auto ret = MakeRC<GraphicsPipeline>();
     ret->rhiObject_ = device_->CreateGraphicsPipeline(rhiDesc);

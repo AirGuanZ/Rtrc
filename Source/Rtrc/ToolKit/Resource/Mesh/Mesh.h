@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Rtrc/Core/Math/AABB.h>
-#include <Rtrc/Core/Container/ObjectCache.h>
+#include <Rtrc/Core/Container/Cache/SharedObjectCache.h>
 #include <Rtrc/Graphics/Device/Buffer.h>
 #include <Rtrc/Graphics/Device/MeshLayout.h>
 
@@ -11,7 +11,7 @@ class CommandBuffer;
 class Blas;
 class DynamicBuffer;
 
-class Mesh : public InObjectCache, public WithUniqueObjectID
+class Mesh : public InSharedObjectCache, public WithUniqueObjectID
 {
 public:
 

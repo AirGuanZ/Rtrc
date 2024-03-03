@@ -10,9 +10,12 @@
 
 RTRC_BEGIN
 
-class InObjectCache;
+class InSharedObjectCache;
 
-namespace ObjectCacheDetail
+template<typename Key, typename Value, bool ThreadSafe, bool HashMap>
+class SharedObjectCache;
+
+namespace SharedObjectCacheDetail
 {
 
     template<bool ThreadSafe>
@@ -44,25 +47,22 @@ namespace ObjectCacheDetail
     public:
 
         virtual ~ObjectCacheInterface() = default;
-        virtual void _internalRelease(InObjectCache &object) = 0;
+        virtual void _internalRelease(InSharedObjectCache &object) = 0;
     };
 
-} // namespace ObjectCacheDetail
+} // namespace SharedObjectCacheDetail
 
-template<typename Key, typename Value, bool ThreadSafe, bool HashMap>
-class ObjectCache;
-
-class InObjectCache : public Uncopyable
+class InSharedObjectCache : public Uncopyable
 {
     template<typename Key, typename Value, bool ThreadSafe, bool HashMap>
-    friend class ObjectCache;
+    friend class SharedObjectCache;
 
-    ObjectCacheDetail::ObjectCacheInterface *cache_ = nullptr;
+    SharedObjectCacheDetail::ObjectCacheInterface *cache_ = nullptr;
     void *iterator_ = nullptr;
 
 public:
 
-    virtual ~InObjectCache()
+    virtual ~InSharedObjectCache()
     {
         if(cache_)
         {
@@ -71,18 +71,48 @@ public:
     }
 };
 
+/*
+    SharedObjectCache: A thread-safe cache for managing and reusing instances of objects.
+
+    Behaviors:
+    - Object types must inherit from InSharedObjectCache.
+    - Instances are accessed via SharedObjectCache::GetOrCreate, which provides a shared_ptr to the requested object.
+    - Each key is mapped to a single instance of an object. This mapping persists as long as at least one shared_ptr reference to the object exists.
+    - When all references to an object are released, the object is automatically destroyed and its key is removed from the cache.
+    - It's guaranteed that each key will map to exactly one 'alive' instance at any given time within this cache.
+
+    Usage Example:
+    - Define an object class that inherits from InSharedObjectCache:
+        class Object : public InSharedObjectCache { ... };
+
+    - Create an SharedObjectCache instance specifying the key and object types:
+        SharedObjectCache<Key, Object, ...> cache;
+
+    - Use GetOrCreate with a key to obtain or create an object:
+        Key key1{...}, key2{ ... };
+        auto sharedObjectA = cache.GetOrCreate(key1, []{ ... }); // Create or get object for key1
+        auto sharedObjectB = cache.GetOrCreate(key1, []{ ... }); // Fetch the existing object for key1
+        auto sharedObjectC = cache.GetOrCreate(key2, []{ ... }); // Create or get object for key2
+
+    - Validate that sharedObjectA and sharedObjectB are the same instance:
+        assert(sharedObjectA == sharedObjectB);
+
+    - Release the shared_ptr references to the object associated with key1:
+        sharedObjectA.reset();
+        sharedObjectB.reset(); // The object for key1 is now destroyed and its entry evicted from the cache.
+*/
 template<typename Key, typename Value, bool ThreadSafe, bool HashMap>
-class ObjectCache :
-    protected ObjectCacheDetail::ObjectCacheMutex<ThreadSafe>,
-    public ObjectCacheDetail::ObjectCacheInterface
+class SharedObjectCache :
+    protected SharedObjectCacheDetail::ObjectCacheMutex<ThreadSafe>,
+    public SharedObjectCacheDetail::ObjectCacheInterface
 {
-    static_assert(std::is_base_of_v<InObjectCache, Value>);
+    static_assert(std::is_base_of_v<InSharedObjectCache, Value>);
 
     struct Record;
 
-    using Map = typename ObjectCacheDetail::ObjectCacheMap<HashMap, Key, Record>::Type;
+    using Map = typename SharedObjectCacheDetail::ObjectCacheMap<HashMap, Key, Record>::Type;
 
-    struct Record : ObjectCacheDetail::ObjectCacheRecordCounter<ThreadSafe>
+    struct Record : SharedObjectCacheDetail::ObjectCacheRecordCounter<ThreadSafe>
     {
         std::weak_ptr<Value> valueWeakRef;
         typename Map::iterator selfIterator;
@@ -90,7 +120,7 @@ class ObjectCache :
 
     Map map_;
 
-    void _internalRelease(InObjectCache &object) override
+    void _internalRelease(InSharedObjectCache &object) override
     {
         auto iter = *static_cast<typename Map::iterator *>(object.iterator_);
         if constexpr(ThreadSafe)
@@ -149,7 +179,7 @@ public:
                 // The cached object has 0 reference counter value, but its destructor hasn't been executed.
                 // In this case we create a new object, and increase the iteratorRefCount by 1
                 auto ret = CreateAsRC(std::forward<CreateFunc>(createFunc));
-                InObjectCache &base = *ret;
+                InSharedObjectCache &base = *ret;
                 base.cache_ = this;
                 base.iterator_ = &it->second.selfIterator;
                 ++it->second.iteratorRefCount;
@@ -159,7 +189,7 @@ public:
             auto ret = CreateAsRC(std::forward<CreateFunc>(createFunc));
             auto it = map_.insert({ Key(key), Record{} }).first;
             it->second.selfIterator = it;
-            InObjectCache &base = *ret;
+            InSharedObjectCache &base = *ret;
             base.cache_ = this;
             base.iterator_ = &it->second.selfIterator;
             it->second.iteratorRefCount = 1;
@@ -177,7 +207,7 @@ public:
             auto ret = CreateAsRC(std::forward<CreateFunc>(createFunc));
             auto it = map_.insert({ Key(key), Record{} }).first;
             it->second.selfIterator = it;
-            InObjectCache &base = *ret;
+            InSharedObjectCache &base = *ret;
             base.cache_ = this;
             base.iterator_ = &it->second.selfIterator;
             it->second.valueWeakRef = ret;

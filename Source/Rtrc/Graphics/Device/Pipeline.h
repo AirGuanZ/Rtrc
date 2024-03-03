@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Rtrc/Graphics/Device/GeneralGPUObject.h>
+#include <Rtrc/Graphics/Device/PipelineDesc.h>
 #include <Rtrc/Graphics/Shader/Shader.h>
 
 RTRC_BEGIN
@@ -11,7 +12,7 @@ class GraphicsPipeline : public GeneralGPUObject<RHI::GraphicsPipelineUPtr>
 {
 public:
     
-    struct Desc
+    /*struct Desc
     {
         RC<Shader> shader;
 
@@ -58,7 +59,7 @@ public:
         void Validate() const;
 
         bool operator==(const Desc &) const = default;
-    };
+    };*/
 
     const RC<const ShaderInfo> &GetShaderInfo() const;
 
@@ -150,7 +151,7 @@ public:
 
     RC<RayTracingLibrary> CreateRayTracingLibrary(const RayTracingLibrary::Desc &desc);
 
-    RC<GraphicsPipeline>   CreateGraphicsPipeline  (const GraphicsPipeline::Desc &desc);
+    RC<GraphicsPipeline>   CreateGraphicsPipeline  (const GraphicsPipelineDesc &desc);
     RC<ComputePipeline>    CreateComputePipeline   (const RC<Shader> &shader);
     RC<RayTracingPipeline> CreateRayTracingPipeline(const RayTracingPipeline::Desc &desc);
 

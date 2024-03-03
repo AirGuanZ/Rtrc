@@ -11,7 +11,7 @@
 
 RTRC_BEGIN
 
-namespace ObjectPoolDetail
+namespace ObjectRecycleBinDetail
 {
 
     template<bool ThreadSafe>
@@ -32,10 +32,39 @@ namespace ObjectPoolDetail
         using Type = std::unordered_multimap<Key, Value, HashOperator<>>;
     };
 
-} // namespace ObjectPoolDetail
+} // namespace ObjectRecycleBinDetail
 
+/**
+    ObjectRecycleBin: A thread-safe pool for managing object lifetimes with explicit user control over object destruction.
+
+    Purpose:
+    - Provides temporary storage for objects that are not currently needed, but may be reused in the future.
+    - Associates stored objects with keys, allowing a one-to-many relationship between keys and objects.
+
+    Behaviors:
+    - `Insert`: Adds an object to the pool and associates it with a specified key. Returns a `RemoveHandle`.
+        - The `RemoveHandle` allows the user to explicitly destroy the in-pool object before its natural eviction.
+    - `Get`: Retrieves and removes an object from the pool that matches the given key, if available.
+        - The corresponding `RemoveHandle` for the retrieved object is invalidated upon calling `Get`.
+
+    Usage Example:
+    ```
+    ObjectRecycleBin pool;
+    auto objectA = ...; // Create your object
+    auto removeHandleA = pool.Insert(key1, std::move(objectA));
+    // `removeHandleA` can be used to explicitly remove `objectA` from the pool.
+
+    auto retrievedObject = pool.Get(key1);
+    // `retrievedObject` now holds the original `objectA`.
+    // The `removeHandleA` is now invalidated and has no effect.
+    ```
+
+    Note:
+    - The destruction of `removeHandleA` will destruct `objectA` only if `objectA` is still in the pool.
+    - If `objectA` has been retrieved with `Get`, the handle's destructor has no effect on the now-external `objectA`.
+ */
 template<typename Key, typename Value, bool ThreadSafe, bool HashMap>
-class ObjectPool : public Uncopyable, protected ObjectPoolDetail::Mutex<ThreadSafe>
+class ObjectRecycleBin : public Uncopyable, protected ObjectRecycleBinDetail::Mutex<ThreadSafe>
 {
     class RemoveHandle;
 
@@ -45,7 +74,7 @@ class ObjectPool : public Uncopyable, protected ObjectPoolDetail::Mutex<ThreadSa
         Box<Value> value;
     };
 
-    using Map = typename ObjectPoolDetail::Map<HashMap, Key, Record>::Type;
+    using Map = typename ObjectRecycleBinDetail::Map<HashMap, Key, Record>::Type;
 
     Map map_;
 
@@ -53,8 +82,8 @@ public:
 
     class RemoveHandle : public Uncopyable
     {
-        friend class ObjectPool;
-        ObjectPool *pool_ = nullptr;
+        friend class ObjectRecycleBin;
+        ObjectRecycleBin *pool_ = nullptr;
         std::optional<typename Map::iterator> iterator_;
 
     public:
@@ -86,6 +115,7 @@ public:
         }
     };
 
+    /** Returns nullptr if not found */
     Box<Value> Get(const Key &key)
     {
         if constexpr(ThreadSafe)

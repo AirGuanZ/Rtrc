@@ -2,7 +2,7 @@
 
 #include <map>
 
-#include <Rtrc/Core/Container/ObjectCache.h>
+#include <Rtrc/Core/Container/Cache/SharedObjectCache.h>
 #include <Rtrc/Core/SignalSlot.h>
 #include <Rtrc/Core/Unreachable.h>
 #include <Rtrc/ShaderCommon/Preprocess/ShaderPreprocessing.h>
@@ -170,7 +170,7 @@ private:
     RC<ShaderBindingLayoutInfo> shaderBindingLayoutInfo_;
 };
 
-class Shader : public WithUniqueObjectID, public InObjectCache
+class Shader : public WithUniqueObjectID, public InSharedObjectCache
 {
 public:
 

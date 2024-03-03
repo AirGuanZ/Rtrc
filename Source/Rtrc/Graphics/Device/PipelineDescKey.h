@@ -1,9 +1,11 @@
 #pragma once
 
 #include <map>
+#include <mutex>
 
 #include <tbb/concurrent_vector.h>
 
+#include <Rtrc/Core/Hash.h>
 #include <Rtrc/Core/Uncopyable.h>
 
 RTRC_BEGIN
@@ -89,8 +91,20 @@ private:
 
     std::mutex                          mutex_;
     std::map<Desc, typename Key::Value> map_;
-    tbb::concurrent_vector<Desc*>       descs_;
+    tbb::concurrent_vector<Desc *>      descs_;
 };
+
+#define DEFINE_PIPELINE_STATE(STATE)                            \
+    using STATE        = PipelineStateCacheKey<STATE##Desc>;    \
+    using STATE##Cache = PipelineStateCache<STATE##Desc>;       \
+    class STATE##Builder                                        \
+    {                                                           \
+    public:                                                     \
+        STATE operator+(const STATE##Desc &desc) const          \
+        {                                                       \
+            return STATE##Cache::GetInstance().Register(desc);  \
+        }                                                       \
+    };
 
 template<typename Desc>
 const Desc &PipelineStateCacheKey<Desc>::GetDesc() const

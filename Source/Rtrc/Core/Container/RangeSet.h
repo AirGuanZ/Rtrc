@@ -9,7 +9,8 @@
 #include "Rtrc/Core/EnumFlags.h"
 
 RTRC_BEGIN
-    class RangeSet
+
+class RangeSet
 {
 public:
 
@@ -38,6 +39,9 @@ public:
 
 private:
 
+    template<bool HasAlignmentRequirement>
+    Index AllocateImpl(Index size, Index alignment, Policy policy);
+
     std::map<Index, std::set<Index>> sizeToOffsets_;
     std::map<Index, Index> offsetToSize_;
 };
@@ -55,7 +59,8 @@ inline RangeSet::RangeSet(Index beg, Index end)
 
 inline RangeSet::Index RangeSet::Allocate(Index size, Policy policy)
 {
-    decltype(sizeToOffsets_)::iterator it;
+    return AllocateImpl<false>(size, 0, policy);
+    /*decltype(sizeToOffsets_)::iterator it;
     if(policy == BestFit)
     {
         it = sizeToOffsets_.upper_bound(size);
@@ -99,12 +104,13 @@ inline RangeSet::Index RangeSet::Allocate(Index size, Policy policy)
     const Index restSize = foundSize - size;
     sizeToOffsets_[restSize].insert(foundBegin);
     offsetToSize_[foundBegin] = foundSize - size;
-    return foundBegin + restSize;
+    return foundBegin + restSize;*/
 }
 
 inline RangeSet::Index RangeSet::Allocate(Index size, Index alignment, Policy policy)
 {
-    decltype(sizeToOffsets_)::iterator it;
+    return AllocateImpl<true>(size, alignment, policy);
+    /*decltype(sizeToOffsets_)::iterator it;
     std::set<Index>::iterator jt;
     Index offsetInJt = 0;
 
@@ -197,7 +203,7 @@ inline RangeSet::Index RangeSet::Allocate(Index size, Index alignment, Policy po
         offsetToSize_[retEnd] = restSize;
     }
 
-    return retBegin;
+    return retBegin;*/
 }
 
 inline void RangeSet::Free(Index beg, Index end)
@@ -286,6 +292,139 @@ template<typename F>
 void RangeSet::Defragmentation(const F &f)
 {
     static_assert(AlwaysFalse<F>, "To be implemented");
+}
+
+template<bool HasAlignmentRequirement>
+RangeSet::Index RangeSet::AllocateImpl(Index size, Index alignment, Policy policy)
+{
+    decltype(sizeToOffsets_)::iterator it;
+    std::set<Index>::iterator jt;
+    Index offsetInJt = 0;
+
+    auto FindBestFit = [&]
+    {
+        if constexpr(HasAlignmentRequirement)
+        {
+            for(it = sizeToOffsets_.upper_bound(size); it != sizeToOffsets_.end(); ++it)
+            {
+                for(jt = it->second.begin(); jt != it->second.end(); ++jt)
+                {
+                    const Index offset = *jt;
+                    const Index alignedOffset = UpAlignTo(offset, alignment);
+                    offsetInJt = alignedOffset - offset;
+                    if(offsetInJt + size < it->first)
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+        else
+        {
+            it = sizeToOffsets_.upper_bound(size);
+            if(it == sizeToOffsets_.end())
+            {
+                return false;
+            }
+            jt = it->second.begin();
+            return true;
+        }
+    };
+
+    auto FindLargest = [&]
+    {
+        if constexpr(HasAlignmentRequirement)
+        {
+            it = sizeToOffsets_.end();
+            do
+            {
+                --it;
+                if(it->first < size)
+                {
+                    return false;
+                }
+
+                const auto &set = it->second;
+                for(jt = set.begin(); jt != set.end(); ++jt)
+                {
+                    const Index offset = *jt;
+                    const Index alignedOffset = UpAlignTo(offset, alignment);
+                    offsetInJt = alignedOffset - offset;
+                    if(offsetInJt + size < it->first)
+                    {
+                        return true;
+                    }
+                }
+
+            } while(it != sizeToOffsets_.begin());
+            return false;
+        }
+        else
+        {
+            assert(policy == Largest);
+            if(sizeToOffsets_.empty())
+            {
+                return false;
+            }
+            it = sizeToOffsets_.end();
+            if((--it)->first < size)
+            {
+                return false;
+            }
+            jt = it->second.begin();
+            return true;
+        }
+    };
+
+    if(policy == BestFit)
+    {
+        if(!FindBestFit())
+        {
+            return NIL;
+        }
+    }
+    else
+    {
+        if(!FindLargest())
+        {
+            return NIL;
+        }
+    }
+
+    auto &set = it->second;
+    const Index foundBegin = *jt;
+    const Index foundSize = it->first;
+    const Index foundEnd = foundBegin + foundSize;
+    const Index returnValue = foundBegin + offsetInJt;
+
+    set.erase(jt);
+    if(set.empty())
+    {
+        sizeToOffsets_.erase(it);
+    }
+
+    const Index retBegin = foundBegin + offsetInJt;
+    const Index retEnd = retBegin + size;
+
+    assert(retEnd <= foundSize);
+    if constexpr(HasAlignmentRequirement)
+    {
+        if(offsetInJt != 0)
+        {
+            sizeToOffsets_[offsetInJt].insert(foundBegin);
+            offsetToSize_[foundBegin] = offsetInJt;
+        }
+    }
+
+    if(returnValue < foundSize)
+    {
+        const Index restSize = foundEnd - retEnd;
+        sizeToOffsets_[restSize].insert(retEnd);
+        offsetToSize_[retEnd] = restSize;
+    }
+
+    return retBegin;
 }
 
 RTRC_END

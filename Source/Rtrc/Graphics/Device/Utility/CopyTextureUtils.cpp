@@ -125,10 +125,13 @@ const RC<GraphicsPipeline> &CopyTextureUtils::GetPipeline(const Key &key)
     auto &shader = key.samplingMethod == Point ?
         (key.enableGamma ? shaderPointSamplingGamma_ : shaderPointSampling_) :
         (key.enableGamma ? shaderLinearSamplingGamma_ : shaderLinearSampling_);
-    auto newPipeline = device_->CreateGraphicsPipeline(GraphicsPipeline::Desc
+    auto newPipeline = device_->CreateGraphicsPipeline(GraphicsPipelineDesc
     {
-        .shader                 = shader,
-        .colorAttachmentFormats = { key.dstFormat }
+        .shader          = shader,
+        .attachmentState = RTRC_ATTACHMENT_STATE
+        {
+            .colorAttachmentFormats = { key.dstFormat }
+        }
     });
     auto it = keyToPipeline_.insert({ key, std::move(newPipeline) }).first;
     return it->second;

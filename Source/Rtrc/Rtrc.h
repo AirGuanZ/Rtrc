@@ -15,8 +15,8 @@
 #include <Rtrc/Core/Resource/MeshData.h>
 
 #include <Rtrc/Graphics/Device/Device.h>
-#include <Rtrc/Graphics/Misc/PipelineCache.h>
-#include <Rtrc/Graphics/Misc/ShaderBindingTableBuilder.h>
+#include <Rtrc/Graphics/Device/PipelineCache.h>
+#include <Rtrc/Graphics/Device/ShaderBindingTableBuilder.h>
 #include <Rtrc/Graphics/RenderGraph/Executable.h>
 
 #include <Rtrc/RHI/Window/WindowInput.h>

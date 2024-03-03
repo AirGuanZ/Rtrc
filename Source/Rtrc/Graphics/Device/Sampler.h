@@ -1,13 +1,13 @@
 #pragma once
 
 #include <Rtrc/Graphics/Device/GeneralGPUObject.h>
-#include <Rtrc/Core/Container/ObjectCache.h>
+#include <Rtrc/Core/Container/Cache/SharedObjectCache.h>
 
 RTRC_BEGIN
 
 class SamplerManager;
 
-class Sampler : public GeneralGPUObject<RHI::SamplerRPtr>, public InObjectCache
+class Sampler : public GeneralGPUObject<RHI::SamplerRPtr>, public InSharedObjectCache
 {
     friend class SamplerManager;
 };
@@ -23,7 +23,7 @@ public:
 private:
 
     RHI::Device *device_;
-    ObjectCache<RHI::SamplerDesc, Sampler, true, false> cache_;
+    SharedObjectCache<RHI::SamplerDesc, Sampler, true, false> cache_;
 };
 
 inline SamplerManager::SamplerManager(RHI::Device *device, DeviceSynchronizer &sync)

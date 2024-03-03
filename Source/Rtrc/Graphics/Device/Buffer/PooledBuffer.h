@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Rtrc/Graphics/Device/Buffer/StatefulBuffer.h>
-#include <Rtrc/Core/Container/ObjectPool.h>
+#include <Rtrc/Core/Container/Cache/ObjectRecycleBin.h>
 
 RTRC_BEGIN
 
@@ -33,7 +33,7 @@ private:
     RHI::DeviceOPtr device_;
     DeviceSynchronizer &sync_;
 
-    ObjectPool<RHI::BufferDesc, PooledRecord, true, true> pool_;
+    ObjectRecycleBin<RHI::BufferDesc, PooledRecord, true, true> pool_;
 };
 
 RTRC_END

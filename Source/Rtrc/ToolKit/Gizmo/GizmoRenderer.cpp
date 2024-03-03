@@ -120,20 +120,39 @@ void GizmoRenderer::RenderImpl(
     const auto colorFormats = commandBuffer.GetCurrentRenderPassColorFormats();
     const RHI::Format depthFormat = commandBuffer.GetCurrentRenderPassDepthStencilFormat();
 
-    const static auto meshLayout = RTRC_MESH_LAYOUT(Buffer(Attribute("POSITION", 0, Float3),
+    const auto meshLayout = RTRC_STATIC_MESH_LAYOUT(Buffer(Attribute("POSITION", 0, Float3),
                                                            Attribute("COLOR", 0, Float3)));
 
-    const auto depthStencilState = RTRC_DEPTH_STENCIL_STATE
+    DepthStencilState depthStencilState;
+    if(depthFormat != RHI::Format::Unknown)
     {
-        .enableDepthTest  = depthFormat != RHI::Format::Unknown,
-        .enableDepthWrite = true,
-        .depthCompareOp   = reverseZ ? RHI::CompareOp::GreaterEqual : RHI::CompareOp::LessEqual
-    };
+        if(reverseZ)
+        {
+            depthStencilState = RTRC_STATIC_DEPTH_STENCIL_STATE(
+                {
+                    .enableDepthTest  = true,
+                    .enableDepthWrite = true,
+                    .depthCompareOp   = RHI::CompareOp::GreaterEqual
+                });
+        }
+        else
+        {
+            depthStencilState = RTRC_STATIC_DEPTH_STENCIL_STATE(
+                {
+                    .enableDepthTest  = true,
+                    .enableDepthWrite = true,
+                    .depthCompareOp   = RHI::CompareOp::LessEqual
+                });
+        }
+    }
+    else
+    {
+        depthStencilState = RTRC_STATIC_DEPTH_STENCIL_STATE({ .enableDepthTest = false });
+    }
 
-    const auto rasterizerState = RTRC_RASTERIZER_STATE
-    {
-        .primitiveTopology = isLine ? RHI::PrimitiveTopology::LineList : RHI::PrimitiveTopology::TriangleList
-    };
+    const auto rasterizerState = isLine ?
+        RTRC_STATIC_RASTERIZER_STATE({ .primitiveTopology = RHI::PrimitiveTopology::LineList }) :
+        RTRC_STATIC_RASTERIZER_STATE({ .primitiveTopology = RHI::PrimitiveTopology::TriangleList });
 
     const auto attachmentState = RTRC_ATTACHMENT_STATE
     {
@@ -141,7 +160,7 @@ void GizmoRenderer::RenderImpl(
         .depthStencilFormat     = depthFormat
     };
 
-    auto pipeline = pipelineCache_.Get(GraphicsPipelineCache::Key
+    auto pipeline = pipelineCache_.Get(GraphicsPipelineDesc
     {
         .shader            = device_->GetShader<"Rtrc/GizmoRenderer/RenderColoredPrimitives">(),
         .meshLayout        = meshLayout,
