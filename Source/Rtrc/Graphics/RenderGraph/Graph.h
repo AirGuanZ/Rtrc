@@ -48,8 +48,8 @@ public:
     RGTexture RegisterReadOnlyTexture(RC<Texture> texture);
     RGTlas    RegisterTlas(RC<Tlas> tlas, RGBufImpl *internalBuffer);
 
-    // It is assumed that the swapchain texture has no external access before this graph.
-    // Therefore, swapchain texture can only be registered in at most one render graph in each frame.
+    // This code assumes that the swapchain texture is not accessed externally prior to this graph.
+    // As a result, the swapchain texture can only be registered in a single render graph per frame.
     RGTexture RegisterSwapchainTexture(RHI::SwapchainOPtr swapchain);
     RGTexture RegisterSwapchainTexture(
         RHI::TextureRPtr             rhiTexture,
