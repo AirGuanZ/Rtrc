@@ -113,7 +113,7 @@ inline std::string from_base64(std::string const &data) {
 
 RTRC_BEGIN
 
-inline std::string ToBase64(CSpan<unsigned char> data)
+inline std::string ToBase64(Span<unsigned char> data)
 {
     return base64::to_base64(data);
 }

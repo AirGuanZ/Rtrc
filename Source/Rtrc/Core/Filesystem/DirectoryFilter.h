@@ -7,23 +7,29 @@
 #include <Rtrc/Core/Variant.h>
 
 RTRC_BEGIN
-
-//
-//  Filename pattern:
-//      DirectoryPattern/NamePattern(.ExtensionPattern)
-//
-//  DirectoryPattern:
-//      Single directory:      xxx/yyy/zzz
-//      Recursive directories: xxx/yyy/*
-//
-//  NamePattern & ExtensionPattern:
-//      Fixed:           xxx
-//      Any:             *
-//      Suffix:          *xxx
-//      Infix:           *xxx*
-//      Prefix:          xxx*
-//      Prefix & suffix: xxx*yyy
-//
+ 
+// DirectoryFilter: collect disk files by pattern.
+// 
+// In the following example, the three operations (add, remove, add) are sequentially applied.
+// std::set<std::filesystem::path> files = $rtrc_get_files(
+//  add(Pattern1), remove(Pattern2), add(Pattern3))
+// 
+// Filename pattern:
+//     DirectoryPattern/NamePattern(.ExtensionPattern)
+// 
+// DirectoryPattern:
+//     Single directory:      xxx/yyy/zzz
+//     Recursive directories: xxx/yyy/*
+// 
+// NamePattern & ExtensionPattern:
+//     Fixed:           xxx
+//     Any:             *
+//     Suffix:          *xxx
+//     Infix:           *xxx*
+//     Prefix:          xxx*
+//     Prefix & suffix: xxx*yyy
+// 
+// For example, 'A/B/*/*.txt' means all .txt files in all subdirectories of A/B.
 
 namespace DirectoryFilter
 {

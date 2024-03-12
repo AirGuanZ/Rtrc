@@ -6,7 +6,10 @@
 
 RTRC_BEGIN
 
-// from https://gist.github.com/yujincheng08/a65bb3ce21f8b91c0292d0974b8dee23
+// From https://gist.github.com/yujincheng08/a65bb3ce21f8b91c0292d0974b8dee23
+// Usage:
+//  for(auto &&[index, val] : Enumerate(container))
+//  { ... }
 template <typename T>
 class Enumerate
 {

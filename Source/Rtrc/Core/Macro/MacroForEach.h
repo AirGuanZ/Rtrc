@@ -3,6 +3,15 @@
 #include <Rtrc/Core/Macro/MacroOverloading.h>
 
 /*
+    'foreach' for variadic macro arg list
+
+    Example:
+        RTRC_MACRO_FOREACH_1(FUNC, a, b) is expanded to FUNC(a) FUNC(b)
+        RTRC_MACRO_FOREACH_3(FUNC, ARG1, ARG2, a, b, c) is expanded to FUNC(ARG1, ARG2, a) FUNC(ARG1, ARG2, b) FUNC(ARG1, ARG2, c)
+        RTRC_MACRO_FOREACH_INDEXED_2(FUNC, ARG1, a, b) is expanded to FUNC(0, ARG1, a) FUNC(1, ARG1, b)
+*/
+
+/*
 generated with:
 
 N = 16
