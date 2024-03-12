@@ -21,4 +21,4 @@ set_property(TARGET RtrcToolKit PROPERTY CXX_STANDARD 23)
 
 target_link_libraries(RtrcToolKit PUBLIC RtrcGraphics Eigen3::Eigen)
 
-rtrc_register_target(RtrcToolKit)
+rtrc_register_target(RtrcToolKit "${RTRC_SOURCE_DIR}/Source")

@@ -6,6 +6,8 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 set(RTRC_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "RTRC_SOURCE_DIR" FORCE)
 
+list(APPEND CMAKE_MODULE_PATH "${RTRC_SOURCE_DIR}/CMake")
+
 ############## optional modules
 
 option(RTRC_ENABLE_DIRECTX12_BACKEND "Enable DirectX12 backend"        ON)
@@ -33,7 +35,7 @@ add_subdirectory(Source/Rtrc/ShaderCommon)
 add_subdirectory(Source/Rtrc/ShaderPreprocessor)
 
 function(rtrc_register_target TARGET_NAME)
-    rtrc_register_shaders(${TARGET_NAME})
+    rtrc_register_shaders(${TARGET_NAME} ${ARGN})
     get_target_property(TARGET_TYPE ${TARGET_NAME} TYPE)
     if (TARGET_TYPE STREQUAL "EXECUTABLE")
         rtrc_deploy_d3d12_sdk(${TARGET_NAME})
