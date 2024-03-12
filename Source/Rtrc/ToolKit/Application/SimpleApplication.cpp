@@ -45,7 +45,7 @@ void SimpleApplication::Update()
     imguiRenderer_->Render(imguiDrawData.get(), renderTarget, graph.get());
 
     graph->SetCompleteFence(GetDevice()->GetFrameFence());
-    renderGraphExecuter_->Execute(graph);
+    renderGraphExecuter_->Execute(graph, true);
 
     if(!GetDevice()->Present())
     {

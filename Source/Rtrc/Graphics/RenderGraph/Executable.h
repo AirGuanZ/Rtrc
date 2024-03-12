@@ -85,8 +85,12 @@ public:
     //    executer->Execute(graph);
     void ExecutePartially(Ref<RenderGraph> graph);
 
-    // Execute recorded graph passes. The graph can't record new passes after this function is called.
-    void Execute(Ref<RenderGraph> graph, bool enableTransientResourcePool = true);
+    // Execute recorded graph passes.
+    // The graph can no longer record new passes after this function is called.
+    // Note that the transient resource pool is immediately destroyed along with the executor.
+    // Therefore, it is crucial to not enable the transient resource pool when using a temporary executor.
+    // Additionally, ensure that the corresponding pool is not being used by the GPU when destroying the executor.
+    void Execute(Ref<RenderGraph> graph, bool enableTransientResourcePool = false);
     
 private:
 
