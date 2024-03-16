@@ -42,6 +42,7 @@ namespace ShaderPreprocessingDetail
         case Texture:
         case Buffer:
         case StructuredBuffer:
+        case ByteAddressBuffer:
         case AccelerationStructure:
             return T;
         case ConstantBuffer:
@@ -51,6 +52,7 @@ namespace ShaderPreprocessingDetail
         case RWTexture:
         case RWBuffer:
         case RWStructuredBuffer:
+        case RWByteAddressBuffer:
             return U;
         }
         Unreachable();

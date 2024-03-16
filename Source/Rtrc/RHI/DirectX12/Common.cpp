@@ -570,7 +570,7 @@ D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS
 D3D12_RESOURCE_DESC TranslateBufferDesc(const BufferDesc &desc)
 {
     D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
-    if(desc.usage & (BufferUsage::ShaderRWBuffer | BufferUsage::ShaderRWStructuredBuffer))
+    if(desc.usage & (BufferUsage::ShaderRWBuffer | BufferUsage::ShaderRWStructuredBuffer | BufferUsage::ShaderRWByteAddressBuffer))
     {
         flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
     }
@@ -620,7 +620,7 @@ D3D12_RESOURCE_DESC TranslateTextureDesc(const TextureDesc &desc)
     {
         flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
     }
-    if(desc.usage.Contains(TextureUsage::UnorderAccess))
+    if(desc.usage.Contains(TextureUsage::UnorderedAccess))
     {
         flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
     }

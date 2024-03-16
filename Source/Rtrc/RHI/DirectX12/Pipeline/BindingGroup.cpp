@@ -38,7 +38,8 @@ uint32_t DirectX12BindingGroup::GetVariableArraySize() const
 void DirectX12BindingGroup::ModifyMember(int index, int arrayElem, const BufferSrv *bufferSrv)
 {
     assert(GetBindingType(index) == BindingType::Buffer || 
-           GetBindingType(index) == BindingType::StructuredBuffer);
+           GetBindingType(index) == BindingType::StructuredBuffer ||
+           GetBindingType(index) == BindingType::ByteAddressBuffer);
     auto d3dBufferSrv = static_cast<const DirectX12BufferSrv *>(bufferSrv);
     ModifyMemberImpl(
         index, arrayElem, d3dBufferSrv->_internalGetDescriptorHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
@@ -47,7 +48,8 @@ void DirectX12BindingGroup::ModifyMember(int index, int arrayElem, const BufferS
 void DirectX12BindingGroup::ModifyMember(int index, int arrayElem, const BufferUav *bufferUav)
 {
     assert(GetBindingType(index) == BindingType::RWBuffer || 
-           GetBindingType(index) == BindingType::RWStructuredBuffer);
+           GetBindingType(index) == BindingType::RWStructuredBuffer ||
+           GetBindingType(index) == BindingType::RWByteAddressBuffer);
     auto d3dBufferUav = static_cast<const DirectX12BufferUav *>(bufferUav);
     ModifyMemberImpl(
         index, arrayElem, d3dBufferUav->_internalGetDescriptorHandle(), D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);

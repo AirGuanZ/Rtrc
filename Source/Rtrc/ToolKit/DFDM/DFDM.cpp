@@ -67,7 +67,7 @@ Image<Vector2f> DFDM::GenerateCorrectionMap(const Image<Vector3f> &displacementM
         .format = RHI::Format::R32G32_Float,
         .width  = input->GetWidth(),
         .height = input->GetHeight(),
-        .usage  = RHI::TextureUsage::UnorderAccess | RHI::TextureUsage::ShaderResource | RHI::TextureUsage::TransferSrc
+        .usage  = RHI::TextureUsage::UnorderedAccess | RHI::TextureUsage::ShaderResource | RHI::TextureUsage::TransferSrc
     });
     auto correctionB = graph->CreateTexture(correctionA->GetDesc());
     auto rgCorrectionMap = graph->RegisterTexture(correctionMap);

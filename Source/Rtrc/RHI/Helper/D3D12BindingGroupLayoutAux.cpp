@@ -78,6 +78,7 @@ namespace Helper
             case Texture:
             case Buffer:
             case StructuredBuffer:
+            case ByteAddressBuffer:
             case AccelerationStructure:
                 bindingAssignment.offsetInRange = table.srvCount;
                 table.srvCount += descCount;
@@ -87,6 +88,7 @@ namespace Helper
             case RWTexture:
             case RWBuffer:
             case RWStructuredBuffer:
+            case RWByteAddressBuffer:
                 bindingAssignment.offsetInRange = table.uavCount;
                 table.uavCount += descCount;
                 bindingAssignment.registerInSpace = nextU;
@@ -175,6 +177,7 @@ namespace Helper
             case BindingType::Texture:
             case BindingType::Buffer:
             case BindingType::StructuredBuffer:
+            case BindingType::ByteAddressBuffer:
             case BindingType::AccelerationStructure:
             case BindingType::Sampler:
                 bindingAssignment.rangeIndexInTable = 0;
@@ -183,6 +186,7 @@ namespace Helper
             case BindingType::RWTexture:
             case BindingType::RWBuffer:
             case BindingType::RWStructuredBuffer:
+            case BindingType::RWByteAddressBuffer:
                 bindingAssignment.rangeIndexInTable = table.srvCount != 0 ? 1 : 0;
                 bindingAssignment.offsetInTable = table.srvCount;
                 break;

@@ -54,8 +54,7 @@ void VulkanBindingGroup::ModifyMember(int index, int arrayElem, const BufferSrv 
     }
     else
     {
-        assert(layout_->_internalIsSlotStructuredBuffer(index));
-        assert(desc.stride != 0);
+        assert(layout_->_internalIsSlotStructuredBuffer(index) || layout_->_internalIsSlotByteAddressBuffer(index));
         const VkDescriptorBufferInfo bufferInfo = {
             .buffer = rawBufferSrv->_internalGetBuffer()->_internalGetNativeBuffer(),
             .offset = desc.offset,
@@ -96,8 +95,7 @@ void VulkanBindingGroup::ModifyMember(int index, int arrayElem, const BufferUav 
     }
     else
     {
-        assert(layout_->_internalIsSlotRWStructuredBuffer(index));
-        assert(desc.stride != 0);
+        assert(layout_->_internalIsSlotRWStructuredBuffer(index) || layout_->_internalIsSlotRWByteAddressBuffer(index));
         const VkDescriptorBufferInfo bufferInfo = {
             .buffer = rawBufferUav->GetBuffer()->_internalGetNativeBuffer(),
             .offset = desc.offset,
@@ -240,9 +238,8 @@ void VulkanBindingGroup::_internalTranslate(
     }
     else
     {
-        assert(layout_->_internalIsSlotStructuredBuffer(index));
+        assert(layout_->_internalIsSlotStructuredBuffer(index) || layout_->_internalIsSlotByteAddressBuffer(index));
         auto &desc = bufferSrv->GetDesc();
-        assert(desc.stride != 0);
         auto bufferInfo = arena.Create<VkDescriptorBufferInfo>();
         *bufferInfo = {
             .buffer = bufferSrv->_internalGetBuffer()->_internalGetNativeBuffer(),
@@ -283,8 +280,7 @@ void VulkanBindingGroup::_internalTranslate(
     }
     else
     {
-        assert(layout_->_internalIsSlotRWStructuredBuffer(index));
-        assert(desc.stride != 0);
+        assert(layout_->_internalIsSlotRWStructuredBuffer(index) || layout_->_internalIsSlotRWByteAddressBuffer(index));
         auto bufferInfo = arena.Create<VkDescriptorBufferInfo>();
         *bufferInfo = {
             .buffer = bufferUav->GetBuffer()->_internalGetNativeBuffer(),

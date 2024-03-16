@@ -239,7 +239,7 @@ void Run()
             .arraySize            = 1,
             .mipLevels            = 1,
             .sampleCount          = 1,
-            .usage                = RHI::TextureUsage::ShaderResource | RHI::TextureUsage::UnorderAccess,
+            .usage                = RHI::TextureUsage::ShaderResource | RHI::TextureUsage::UnorderedAccess,
             .initialLayout        = RHI::TextureLayout::Undefined,
             .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
         });
@@ -263,7 +263,7 @@ void Run()
                 .mipLevels            = 1,
                 .sampleCount          = 1,
                 .usage                = RHI::TextureUsage::ShaderResource |
-                                        RHI::TextureUsage::UnorderAccess |
+                                        RHI::TextureUsage::UnorderedAccess |
                                         RHI::TextureUsage::ClearDst,
                 .initialLayout        = RHI::TextureLayout::Undefined,
                 .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
@@ -279,7 +279,7 @@ void Run()
                 .arraySize            = 1,
                 .mipLevels            = 1,
                 .sampleCount          = 1,
-                .usage                = RHI::TextureUsage::UnorderAccess,
+                .usage                = RHI::TextureUsage::UnorderedAccess,
                 .initialLayout        = RHI::TextureLayout::Undefined,
                 .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
             });

@@ -172,7 +172,7 @@ void Run()
             .arraySize            = 1,
             .mipLevels            = 1,
             .sampleCount          = 1,
-            .usage                = RHI::TextureUsage::ShaderResource | RHI::TextureUsage::UnorderAccess,
+            .usage                = RHI::TextureUsage::ShaderResource | RHI::TextureUsage::UnorderedAccess,
             .initialLayout        = RHI::TextureLayout::Undefined,
             .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
         }, "RenderTarget");

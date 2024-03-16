@@ -34,7 +34,7 @@ private:
         TS,
         MS
     };
-
+    
     void DoCompilation(
         const DXC::ShaderInfo      &shaderInfo,
         CompileStage                stage,

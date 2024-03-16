@@ -448,7 +448,7 @@ UPtr<Swapchain> VulkanDevice::CreateSwapchain(const SwapchainDesc &desc, Window 
         .mipLevels            = 1,
         .sampleCount          = 1,
         .usage                = TextureUsage::RenderTarget | TextureUsage::ClearDst |
-                                (desc.allowUav ? TextureUsage::UnorderAccess : TextureUsage::None),
+                                (desc.allowUav ? TextureUsage::UnorderedAccess : TextureUsage::None),
         .initialLayout        = TextureLayout::Undefined,
         .concurrentAccessMode = QueueConcurrentAccessMode::Exclusive
     };

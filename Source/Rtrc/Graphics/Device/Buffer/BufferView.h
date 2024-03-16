@@ -10,6 +10,7 @@ class TBufferView
 public:
 
     TBufferView() = default;
+    TBufferView(RC<Buffer> buffer, size_t byteOffset); // Byte address buffer
     TBufferView(RC<Buffer> buffer, size_t byteOffset, RHI::Format format);
     TBufferView(RC<Buffer> buffer, size_t byteOffset, size_t structStride);
     TBufferView(RC<Buffer> buffer, size_t byteOffset, RHI::Format format, size_t structStride);
@@ -27,6 +28,13 @@ private:
     RC<Buffer> buffer_;
     T view_;
 };
+
+template <typename T>
+TBufferView<T>::TBufferView(RC<Buffer> buffer, size_t byteOffset)
+    : TBufferView(std::move(buffer), byteOffset, RHI::Format::Unknown, 0)
+{
+    
+}
 
 template<typename T>
 TBufferView<T>::TBufferView(RC<Buffer> buffer, size_t byteOffset, RHI::Format format)
@@ -46,7 +54,6 @@ template<typename T>
 TBufferView<T>::TBufferView(RC<Buffer> buffer, size_t byteOffset, RHI::Format format, size_t structStride)
     : buffer_(std::move(buffer))
 {
-    assert(format != RHI::Format::Unknown || structStride != 0);
     const RHI::BufferSrvDesc desc =
     {
         .format = format,
@@ -80,6 +87,13 @@ template<typename T>
 const RC<Buffer> &TBufferView<T>::GetBuffer() const
 {
     return buffer_;
+}
+
+inline BufferSrv SubBuffer::GetByteAddressSrv(size_t byteOffset)
+{
+    auto fullBuffer = GetFullBuffer();
+    const size_t offset = byteOffset + GetSubBufferOffset();
+    return BufferSrv(std::move(fullBuffer), offset);
 }
 
 inline BufferSrv SubBuffer::GetStructuredSrv()
@@ -124,6 +138,13 @@ inline BufferSrv SubBuffer::GetTexelSrv(size_t byteOffset, RHI::Format texelForm
 {
     auto fullbuffer = GetFullBuffer();
     return BufferSrv(std::move(fullbuffer), GetSubBufferOffset() + byteOffset, texelFormat);
+}
+
+inline BufferUav SubBuffer::GetByteAddressUav(size_t byteOffset)
+{
+    auto fullBuffer = GetFullBuffer();
+    const size_t offset = byteOffset + GetSubBufferOffset();
+    return BufferUav(std::move(fullBuffer), offset);
 }
 
 inline BufferUav SubBuffer::GetStructuredUav()

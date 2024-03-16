@@ -149,7 +149,7 @@ RC<StatefulTexture> VDMBaker::BakeVDMBySeamCarving(
         .format = RHI::Format::R32G32B32A32_Float,
         .width = vdmData.GetWidth(),
         .height = vdmData.GetHeight(),
-        .usage = RHI::TextureUsage::UnorderAccess | RHI::TextureUsage::ShaderResource
+        .usage = RHI::TextureUsage::UnorderedAccess | RHI::TextureUsage::ShaderResource
 
     }, vdmData.GetData(), RHI::TextureLayout::ShaderTexture);
     return StatefulTexture::FromTexture(vdm);
@@ -173,7 +173,7 @@ RC<StatefulTexture> VDMBaker::BakeAlignedVDM(
         .format = RHI::Format::R32G32B32A32_Float,
         .width = grid.GetWidth(),
         .height = grid.GetHeight(),
-        .usage = RHI::TextureUsage::ShaderResource | RHI::TextureUsage::UnorderAccess
+        .usage = RHI::TextureUsage::ShaderResource | RHI::TextureUsage::UnorderedAccess
     }, "AlignedVDM");
 
     using Shader = RtrcShader::FADM::BakeAlignedVDM;

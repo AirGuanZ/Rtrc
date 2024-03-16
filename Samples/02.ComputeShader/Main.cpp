@@ -27,7 +27,7 @@ void Run()
             .arraySize = 1,
             .mipLevels = 1,
             .sampleCount = 1,
-            .usage = RHI::TextureUsage::TransferSrc | RHI::TextureUsage::UnorderAccess,
+            .usage = RHI::TextureUsage::TransferSrc | RHI::TextureUsage::UnorderedAccess,
             .initialLayout = RHI::TextureLayout::Undefined,
             .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
         });

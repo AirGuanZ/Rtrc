@@ -4,9 +4,14 @@ rtrc_shader("MeshShader/UniformGrid")
 	rtrc_mesh(MSMain)
 	rtrc_frag(FSMain)
 
+	struct DiagonalInfo
+	{
+		uint direction;
+	};
+
 	rtrc_group(Pass)
 	{
-		rtrc_define(StructuredBuffer<uint>, DiagonalDirectionBuffer)
+		rtrc_define(ByteAddressBuffer, DiagonalDirectionBuffer)
 		rtrc_uniform(float2, clipLower)
 		rtrc_uniform(float2, clipUpper)
 	};
@@ -37,14 +42,14 @@ rtrc_shader("MeshShader/UniformGrid")
 		}
 		if(tid.y == 7)
 		{
-			outputVertices[9 * 8 + tid.x].position =  float4(lerp(Pass.clipLower, Pass.clipUpper, float2(u0, v1)), 0, 1);
+			outputVertices[9 * 8 + tid.x].position = float4(lerp(Pass.clipLower, Pass.clipUpper, float2(u0, v1)), 0, 1);
 		}
 		if(tid.x == 7 && tid.y == 7)
 		{
-			outputVertices[9 * 8 + 8].position =  float4(lerp(Pass.clipLower, Pass.clipUpper, float2(u1, v1)), 0, 1);
+			outputVertices[9 * 8 + 8].position = float4(lerp(Pass.clipLower, Pass.clipUpper, float2(u1, v1)), 0, 1);
 		}
 
-		const uint direction = DiagonalDirectionBuffer[8 * tid.y + tid.x];
+		const uint direction = DiagonalDirectionBuffer.Load<DiagonalInfo>(4 * (8 * tid.y + tid.x)).direction;
 		if(direction)
 		{
 			outputTriangles[2 * (8 * tid.y + tid.x) + 0] = uint3(

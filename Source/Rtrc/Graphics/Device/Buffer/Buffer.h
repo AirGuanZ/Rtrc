@@ -58,6 +58,8 @@ public:
     static RC<SubBuffer> GetSubRange(RC<SubBuffer> buffer, size_t offset, size_t size);
     static RC<SubBuffer> GetSubRange(RC<Buffer> buffer, size_t offset, size_t size);
 
+    BufferSrv GetByteAddressSrv(size_t byteOffset = 0);
+
     BufferSrv GetStructuredSrv();
     BufferSrv GetStructuredSrv(size_t structStride);
     BufferSrv GetStructuredSrv(size_t byteOffset, size_t structStride);
@@ -65,6 +67,8 @@ public:
     BufferSrv GetTexelSrv();
     BufferSrv GetTexelSrv(RHI::Format texelFormat);
     BufferSrv GetTexelSrv(size_t byteOffset, RHI::Format texelFormat);
+
+    BufferUav GetByteAddressUav(size_t byteOffset = 0);
 
     BufferUav GetStructuredUav();
     BufferUav GetStructuredUav(size_t structStride);

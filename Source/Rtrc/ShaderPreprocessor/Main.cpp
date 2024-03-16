@@ -101,8 +101,10 @@ std::string_view BindingNameToTypeName(Rtrc::RHI::BindingType type)
         "RWTexture",
         "Buffer",
         "StructuredBuffer",
+        "ByteAddressBuffer",
         "RWBuffer",
         "RWStructuredBuffer",
+        "RWByteAddressBuffer",
         "ConstantBuffer",
         "SamplerState",
         "RaytracingAccelerationStructure"

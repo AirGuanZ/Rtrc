@@ -255,6 +255,8 @@ VkDescriptorType TranslateBindingType(BindingType type)
         return VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
     case BindingType::StructuredBuffer:
     case BindingType::RWStructuredBuffer:
+    case BindingType::ByteAddressBuffer:
+    case BindingType::RWByteAddressBuffer:
         return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     case BindingType::ConstantBuffer:
         return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -281,7 +283,7 @@ VkImageUsageFlags TranslateTextureUsageFlag(TextureUsageFlags flags)
     {
         result |= VK_IMAGE_USAGE_SAMPLED_BIT;
     }
-    if(flags.Contains(TextureUsage::UnorderAccess))
+    if(flags.Contains(TextureUsage::UnorderedAccess))
     {
         result |= VK_IMAGE_USAGE_STORAGE_BIT;
     }
@@ -310,6 +312,8 @@ VkBufferUsageFlags TranslateBufferUsageFlag(BufferUsageFlag flag)
     ADD_CASE(ShaderRWBuffer,                  VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT)
     ADD_CASE(ShaderStructuredBuffer,          VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
     ADD_CASE(ShaderRWStructuredBuffer,        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
+    ADD_CASE(ShaderByteAddressBuffer,         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
+    ADD_CASE(ShaderRWByteAddressBuffer,       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
     ADD_CASE(ShaderConstantBuffer,            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
     ADD_CASE(IndexBuffer,                     VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
     ADD_CASE(VertexBuffer,                    VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)

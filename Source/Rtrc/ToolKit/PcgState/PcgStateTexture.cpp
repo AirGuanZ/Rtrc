@@ -22,7 +22,7 @@ RGTexture Prepare2DPcgStateTexture(
         .format = RHI::Format::R32_UInt,
         .width  = size.x,
         .height = size.y,
-        .usage  = RHI::TextureUsage::UnorderAccess | RHI::TextureUsage::ShaderResource
+        .usage  = RHI::TextureUsage::UnorderedAccess | RHI::TextureUsage::ShaderResource
     });
     tex->SetName("PcgState");
     auto ret = renderGraph->RegisterTexture(tex);

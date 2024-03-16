@@ -321,8 +321,10 @@ enum class BindingType
     RWTexture,
     Buffer,
     StructuredBuffer,
+    ByteAddressBuffer,
     RWBuffer,
     RWStructuredBuffer,
+    RWByteAddressBuffer,
     ConstantBuffer,
     Sampler,
     AccelerationStructure,
@@ -336,8 +338,10 @@ inline const char *GetBindingTypeName(BindingType type)
         "RWTexture",
         "Buffer",
         "StructuredBuffer",
+        "ByteAddressBuffer",
         "RWBuffer",
         "RWStructuredBuffer",
+        "RWByteAddressBuffer",
         "ConstantBuffer",
         "Sampler",
         "AccelerationStructure"
@@ -354,14 +358,14 @@ enum class TextureDimension
 
 enum class TextureUsage : uint32_t
 {
-    None           = 0,
-    TransferDst    = 1 << 0,
-    TransferSrc    = 1 << 1,
-    ShaderResource = 1 << 2,
-    UnorderAccess  = 1 << 3,
-    RenderTarget   = 1 << 4,
-    DepthStencil   = 1 << 5,
-    ClearDst     = 1 << 6, // vulkan -> TransferDst; directx12 -> RenderTarget
+    None            = 0,
+    TransferDst     = 1 << 0,
+    TransferSrc     = 1 << 1,
+    ShaderResource  = 1 << 2,
+    UnorderedAccess = 1 << 3,
+    RenderTarget    = 1 << 4,
+    DepthStencil    = 1 << 5,
+    ClearDst        = 1 << 6, // vulkan -> TransferDst; directx12 -> RenderTarget
 };
 RTRC_DEFINE_ENUM_FLAGS(TextureUsage)
 using TextureUsageFlags = EnumFlagsTextureUsage;
@@ -374,6 +378,8 @@ enum class BufferUsage : uint32_t
     ShaderRWBuffer                  = 1 << 3,
     ShaderStructuredBuffer          = 1 << 4,
     ShaderRWStructuredBuffer        = 1 << 5,
+    ShaderByteAddressBuffer         = ShaderStructuredBuffer,
+    ShaderRWByteAddressBuffer       = ShaderRWStructuredBuffer,
     ShaderConstantBuffer            = 1 << 6,
     IndexBuffer                     = 1 << 7,
     VertexBuffer                    = 1 << 8,
@@ -464,36 +470,39 @@ inline PipelineStageFlag ShaderStagesToPipelineStages(ShaderStageFlags stages)
 
 enum class ResourceAccess : uint32_t
 {
-    None                    = 0,
-    VertexBufferRead        = 1 << 0,
-    IndexBufferRead         = 1 << 1,
-    ConstantBufferRead      = 1 << 2,
-    RenderTargetRead        = 1 << 3,
-    RenderTargetWrite       = 1 << 4,
-    DepthStencilRead        = 1 << 5,
-    DepthStencilWrite       = 1 << 6,
-    TextureRead             = 1 << 7,
-    RWTextureRead           = 1 << 8,
-    RWTextureWrite          = 1 << 9,
-    BufferRead              = 1 << 10,
-    StructuredBufferRead    = 1 << 11,
-    RWBufferRead            = 1 << 12,
-    RWBufferWrite           = 1 << 13,
-    RWStructuredBufferRead  = 1 << 14,
-    RWStructuredBufferWrite = 1 << 15,
-    CopyRead                = 1 << 16,
-    CopyWrite               = 1 << 17,
-    ResolveRead             = 1 << 18,
-    ResolveWrite            = 1 << 19,
-    ClearColorWrite         = 1 << 20,
-    ClearDepthStencilWrite  = 1 << 21,
-    ReadAS                  = 1 << 22,
-    WriteAS                 = 1 << 23,
-    BuildASScratch          = 1 << 24,
-    ReadSBT                 = 1 << 25,
-    ReadForBuildAS          = 1 << 26,
-    IndirectCommandRead     = 1 << 27,
-    All                     = 1 << 28
+    None                     = 0,
+    VertexBufferRead         = 1 << 0,
+    IndexBufferRead          = 1 << 1,
+    ConstantBufferRead       = 1 << 2,
+    RenderTargetRead         = 1 << 3,
+    RenderTargetWrite        = 1 << 4,
+    DepthStencilRead         = 1 << 5,
+    DepthStencilWrite        = 1 << 6,
+    TextureRead              = 1 << 7,
+    RWTextureRead            = 1 << 8,
+    RWTextureWrite           = 1 << 9,
+    BufferRead               = 1 << 10,
+    StructuredBufferRead     = 1 << 11,
+    ByteAddressBufferRead    = StructuredBufferRead,
+    RWBufferRead             = 1 << 12,
+    RWBufferWrite            = 1 << 13,
+    RWStructuredBufferRead   = 1 << 14,
+    RWStructuredBufferWrite  = 1 << 15,
+    RWByteAddressBufferRead  = RWStructuredBufferRead,
+    RWByteAddressBufferWrite = RWStructuredBufferWrite,
+    CopyRead                 = 1 << 16,
+    CopyWrite                = 1 << 17,
+    ResolveRead              = 1 << 18,
+    ResolveWrite             = 1 << 19,
+    ClearColorWrite          = 1 << 20,
+    ClearDepthStencilWrite   = 1 << 21,
+    ReadAS                   = 1 << 22,
+    WriteAS                  = 1 << 23,
+    BuildASScratch           = 1 << 24,
+    ReadSBT                  = 1 << 25,
+    ReadForBuildAS           = 1 << 26,
+    IndirectCommandRead      = 1 << 27,
+    All                      = 1 << 28
 };
 RTRC_DEFINE_ENUM_FLAGS(ResourceAccess)
 using ResourceAccessFlag = EnumFlagsResourceAccess;
@@ -902,6 +911,8 @@ struct BufferDesc
 
 struct BufferSrvDesc
 {
+    // If format is unknown and stride is 0, it's a byte address srv
+
     Format   format; // For texel buffer
     uint32_t offset;
     uint32_t range;

@@ -23,6 +23,8 @@ namespace BindingGroupParserDetail
         { "RWBuffer",                        RHI::BindingType::RWBuffer },
         { "StructuredBuffer",                RHI::BindingType::StructuredBuffer },
         { "RWStructuredBuffer",              RHI::BindingType::RWStructuredBuffer },
+        { "ByteAddressBuffer",               RHI::BindingType::ByteAddressBuffer },
+        { "RWByteAddressBuffer",             RHI::BindingType::RWByteAddressBuffer },
         { "ConstantBuffer",                  RHI::BindingType::ConstantBuffer },
         { "SamplerState",                    RHI::BindingType::Sampler },
         { "RaytracingAccelerationStructure", RHI::BindingType::AccelerationStructure }
@@ -126,7 +128,8 @@ namespace BindingGroupParserDetail
         const RHI::BindingType bindingType = it->second;
 
         std::string templateParam;
-        if(bindingType != RHI::BindingType::Sampler && bindingType != RHI::BindingType::AccelerationStructure)
+        if(bindingType != RHI::BindingType::Sampler && bindingType != RHI::BindingType::AccelerationStructure &&
+           bindingType != RHI::BindingType::ByteAddressBuffer && bindingType != RHI::BindingType::RWByteAddressBuffer)
         {
             tokens.ConsumeOrThrow("<");
             while(tokens.GetCurrentToken() != ">")

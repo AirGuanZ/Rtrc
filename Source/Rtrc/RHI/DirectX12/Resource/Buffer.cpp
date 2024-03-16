@@ -36,7 +36,6 @@ const BufferDesc &DirectX12Buffer::GetDesc() const
 
 RPtr<BufferSrv> DirectX12Buffer::CreateSrv(const BufferSrvDesc &desc) const
 {
-    assert((desc.stride != 0) != (desc.format != Format::Unknown));
     assert(desc.stride == 0 || desc.offset % desc.stride == 0);
 
     {
@@ -53,16 +52,17 @@ RPtr<BufferSrv> DirectX12Buffer::CreateSrv(const BufferSrvDesc &desc) const
         return MakeRPtr<DirectX12BufferSrv>(this, desc, it->second);
     }
 
-    const size_t actualStride = desc.stride != 0 ? desc.stride : GetTexelSize(desc.format);
+    const bool isRawBufferView = desc.format == Format::Unknown && desc.stride == 0;
+    const size_t actualStride = desc.stride != 0 ? desc.stride : (isRawBufferView ? 4 : GetTexelSize(desc.format));
 
     D3D12_SHADER_RESOURCE_VIEW_DESC viewDesc;
-    viewDesc.Format                     = TranslateFormat(desc.format);
+    viewDesc.Format                     = isRawBufferView ? DXGI_FORMAT_R32_TYPELESS : TranslateFormat(desc.format);
     viewDesc.Shader4ComponentMapping    = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
     viewDesc.ViewDimension              = D3D12_SRV_DIMENSION_BUFFER;
     viewDesc.Buffer.FirstElement        = desc.offset / actualStride;
     viewDesc.Buffer.NumElements         = desc.range / actualStride;
     viewDesc.Buffer.StructureByteStride = desc.stride;
-    viewDesc.Buffer.Flags               = D3D12_BUFFER_SRV_FLAG_NONE;
+    viewDesc.Buffer.Flags               = isRawBufferView ? D3D12_BUFFER_SRV_FLAG_RAW : D3D12_BUFFER_SRV_FLAG_NONE;
 
     auto handle = device_->_internalAllocateCPUDescriptorHandle_CbvSrvUav();
     device_->_internalGetNativeDevice()->CreateShaderResourceView(buffer_.Get(), &viewDesc, handle);
@@ -88,16 +88,17 @@ RPtr<BufferUav> DirectX12Buffer::CreateUav(const BufferUavDesc &desc) const
     {
         return MakeRPtr<DirectX12BufferUav>(this, desc, it->second);
     }
-
-    const size_t actualStride = desc.stride != 0 ? desc.stride : GetTexelSize(desc.format);
+    
+    const bool isRawBufferView = desc.format == Format::Unknown && desc.stride == 0;
+    const size_t actualStride = desc.stride != 0 ? desc.stride : (isRawBufferView ? 4 : GetTexelSize(desc.format));
 
     D3D12_UNORDERED_ACCESS_VIEW_DESC viewDesc;
-    viewDesc.Format                      = TranslateFormat(desc.format);
+    viewDesc.Format                      = isRawBufferView ? DXGI_FORMAT_R32_TYPELESS : TranslateFormat(desc.format);
     viewDesc.ViewDimension               = D3D12_UAV_DIMENSION_BUFFER;
     viewDesc.Buffer.FirstElement         = desc.offset / actualStride;
     viewDesc.Buffer.NumElements          = desc.range / actualStride;
     viewDesc.Buffer.StructureByteStride  = desc.stride;
-    viewDesc.Buffer.Flags                = D3D12_BUFFER_UAV_FLAG_NONE;
+    viewDesc.Buffer.Flags                = isRawBufferView ? D3D12_BUFFER_UAV_FLAG_RAW : D3D12_BUFFER_UAV_FLAG_NONE;;
     viewDesc.Buffer.CounterOffsetInBytes = 0;
 
     auto handle = device_->_internalAllocateCPUDescriptorHandle_CbvSrvUav();

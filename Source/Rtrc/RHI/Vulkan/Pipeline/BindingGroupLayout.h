@@ -42,6 +42,9 @@ public:
     bool _internalIsSlotStructuredBuffer(int index) const;
     bool _internalIsSlotRWStructuredBuffer(int index) const;
 
+    bool _internalIsSlotByteAddressBuffer(int index) const;
+    bool _internalIsSlotRWByteAddressBuffer(int index) const;
+
     bool _internalIsSlotTexture(int index) const;
     bool _internalIsSlotRWTexture(int index) const;
 

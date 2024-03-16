@@ -93,6 +93,16 @@ bool VulkanBindingGroupLayout::_internalIsSlotRWStructuredBuffer(int index) cons
     return desc_.bindings[index].type == BindingType::RWStructuredBuffer;
 }
 
+bool VulkanBindingGroupLayout::_internalIsSlotByteAddressBuffer(int index) const
+{
+    return desc_.bindings[index].type == BindingType::ByteAddressBuffer;
+}
+
+bool VulkanBindingGroupLayout::_internalIsSlotRWByteAddressBuffer(int index) const
+{
+    return desc_.bindings[index].type == BindingType::RWByteAddressBuffer;
+}
+
 bool VulkanBindingGroupLayout::_internalIsSlotTexture(int index) const
 {
     return desc_.bindings[index].type == BindingType::Texture;

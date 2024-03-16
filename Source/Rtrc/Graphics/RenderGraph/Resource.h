@@ -52,6 +52,11 @@ private:
 
     friend class RGBufImpl;
 
+    struct ByteAddressView
+    {
+        size_t byteOffset = 0;
+    };
+
     struct StructuredView
     {
         size_t byteStride = 0;
@@ -65,7 +70,7 @@ private:
     };
 
     RGBufImpl *resource_ = nullptr;
-    Variant<StructuredView, TexelView> desc_;
+    Variant<ByteAddressView, StructuredView, TexelView> desc_;
 };
 
 class RGBufUav
@@ -82,6 +87,11 @@ private:
 
     friend class RGBufImpl;
 
+    struct ByteAddressView
+    {
+        size_t byteOffset = 0;
+    };
+
     struct StructuredView
     {
         size_t byteStride = 0;
@@ -95,7 +105,7 @@ private:
     };
 
     RGBufImpl *resource_ = nullptr;
-    Variant<StructuredView, TexelView> desc_;
+    Variant<ByteAddressView, StructuredView, TexelView> desc_;
 };
 
 class RGBufImpl : public RGResource
@@ -115,6 +125,8 @@ public:
     virtual void SetDefaultTexelFormat(RHI::Format format) = 0;
     virtual void SetDefaultStructStride(size_t stride) = 0;
 
+    RGBufSrv GetByteAddressSrv(size_t byteOffset = 0);
+
     RGBufSrv GetStructuredSrv();
     RGBufSrv GetStructuredSrv(size_t structStride);
     RGBufSrv GetStructuredSrv(size_t byteOffset, size_t structStride);
@@ -122,6 +134,8 @@ public:
     RGBufSrv GetTexelSrv();
     RGBufSrv GetTexelSrv(RHI::Format texelFormat);
     RGBufSrv GetTexelSrv(size_t byteOffset, RHI::Format texelFormat);
+
+    RGBufUav GetByteAddressUav(size_t byteOffset = 0);
 
     RGBufUav GetStructuredUav();
     RGBufUav GetStructuredUav(size_t structStride);
@@ -133,6 +147,8 @@ public:
 
     // Helper methods available when executing pass callback function:
 
+    BufferSrv GetByteAddressSrvImm(size_t byteOffset = 0) const;
+
     BufferSrv GetStructuredSrvImm() const;
     BufferSrv GetStructuredSrvImm(size_t structStride) const;
     BufferSrv GetStructuredSrvImm(size_t byteOffset, size_t structStride) const;
@@ -140,6 +156,8 @@ public:
     BufferSrv GetTexelSrvImm() const;
     BufferSrv GetTexelSrvImm(RHI::Format texelFormat) const;
     BufferSrv GetTexelSrvImm(size_t byteOffset, RHI::Format texelFormat) const;
+
+    BufferUav GetByteAddressUavImm(size_t byteOffset = 0) const;
 
     BufferUav GetStructuredUavImm() const;
     BufferUav GetStructuredUavImm(size_t structStride) const;
@@ -151,8 +169,10 @@ public:
 
 private:
 
+    RGBufSrv GetSrvImpl(size_t offset);
     RGBufSrv GetSrvImpl(size_t stride, size_t offset);
     RGBufSrv GetSrvImpl(RHI::Format format, size_t offset);
+    RGBufUav GetUavImpl(size_t offset);
     RGBufUav GetUavImpl(size_t stride, size_t offset);
     RGBufUav GetUavImpl(RHI::Format format, size_t offset);
 };
@@ -345,6 +365,10 @@ public:
 inline BufferSrv RGBufSrv::GetSrv() const
 {
     return desc_.Match(
+        [&](const ByteAddressView &v)
+        {
+            return resource_->GetByteAddressSrvImm(v.byteOffset);
+        },
         [&](const StructuredView &v)
         {
             return resource_->GetStructuredSrvImm(v.byteOffset, v.byteStride);
@@ -358,6 +382,7 @@ inline BufferSrv RGBufSrv::GetSrv() const
 inline RHI::ResourceAccessFlag RGBufSrv::GetResourceAccess() const
 {
     return desc_.Match(
+        [&](const ByteAddressView &v) { return RHI::ResourceAccess::ByteAddressBufferRead; },
         [&](const StructuredView &v) { return RHI::ResourceAccess::StructuredBufferRead; },
         [&](const TexelView &v) { return RHI::ResourceAccess::BufferRead; });
 }
@@ -370,6 +395,10 @@ inline RGBufImpl *RGBufSrv::GetResource() const
 inline BufferUav RGBufUav::GetUav() const
 {
     return desc_.Match(
+        [&](const ByteAddressView &v)
+        {
+            return resource_->GetByteAddressUavImm(v.byteOffset);
+        },
         [&](const StructuredView &v)
         {
             return resource_->GetStructuredUavImm(v.byteOffset, v.byteStride);
@@ -383,6 +412,11 @@ inline BufferUav RGBufUav::GetUav() const
 inline RHI::ResourceAccessFlag RGBufUav::GetResourceAccess(bool writeOnly) const
 {
     return desc_.Match(
+        [&](const ByteAddressView &v)
+        {
+            return (writeOnly ? RHI::ResourceAccess::None : RHI::ResourceAccess::RWByteAddressBufferRead) |
+                   RHI::ResourceAccess::RWByteAddressBufferWrite;
+        },
         [&](const StructuredView &v)
         {
             return (writeOnly ? RHI::ResourceAccess::None : RHI::ResourceAccess::RWStructuredBufferRead) |
@@ -463,6 +497,11 @@ void RGTexUav::ForEachSubresourceAccess(const F &f, bool writeOnly) const
         });
 }
 
+inline RGBufSrv RGBufImpl::GetByteAddressSrv(size_t byteOffset)
+{
+    return GetSrvImpl(byteOffset);
+}
+
 inline RGBufSrv RGBufImpl::GetStructuredSrv()
 {
     return GetSrvImpl(GetDefaultStructStride(), 0);
@@ -491,6 +530,11 @@ inline RGBufSrv RGBufImpl::GetTexelSrv(RHI::Format texelFormat)
 inline RGBufSrv RGBufImpl::GetTexelSrv(size_t byteOffset, RHI::Format texelFormat)
 {
     return GetSrvImpl(texelFormat, byteOffset);
+}
+
+inline RGBufUav RGBufImpl::GetByteAddressUav(size_t byteOffset)
+{
+    return GetUavImpl(byteOffset);
 }
 
 inline RGBufUav RGBufImpl::GetStructuredUav()
@@ -523,6 +567,14 @@ inline RGBufUav RGBufImpl::GetTexelUav(size_t byteOffset, RHI::Format texelForma
     return GetUavImpl(texelFormat, byteOffset);
 }
 
+inline RGBufSrv RGBufImpl::GetSrvImpl(size_t offset)
+{
+    RGBufSrv ret;
+    ret.resource_ = this;
+    ret.desc_ = RGBufSrv::ByteAddressView{ offset };
+    return ret;
+}
+
 inline RGBufSrv RGBufImpl::GetSrvImpl(size_t stride, size_t offset)
 {
     RGBufSrv ret;
@@ -536,6 +588,14 @@ inline RGBufSrv RGBufImpl::GetSrvImpl(RHI::Format format, size_t offset)
     RGBufSrv ret;
     ret.resource_ = this;
     ret.desc_ = RGBufSrv::TexelView{ format, offset };
+    return ret;
+}
+
+inline RGBufUav RGBufImpl::GetUavImpl(size_t offset)
+{
+    RGBufUav ret;
+    ret.resource_ = this;
+    ret.desc_ = RGBufUav::ByteAddressView{ offset };
     return ret;
 }
 
@@ -553,6 +613,11 @@ inline RGBufUav RGBufImpl::GetUavImpl(RHI::Format format, size_t offset)
     ret.resource_ = this;
     ret.desc_ = RGBufUav::TexelView{ format, offset };
     return ret;
+}
+
+inline BufferSrv RGBufImpl::GetByteAddressSrvImm(size_t byteOffset) const
+{
+    return Get()->GetByteAddressSrv(byteOffset);
 }
 
 inline BufferSrv RGBufImpl::GetStructuredSrvImm() const
@@ -583,6 +648,11 @@ inline BufferSrv RGBufImpl::GetTexelSrvImm(RHI::Format texelFormat) const
 inline BufferSrv RGBufImpl::GetTexelSrvImm(size_t byteOffset, RHI::Format texelFormat) const
 {
     return Get()->GetTexelSrv(byteOffset, texelFormat);
+}
+
+inline BufferUav RGBufImpl::GetByteAddressUavImm(size_t byteOffset) const
+{
+    return Get()->GetByteAddressUav(byteOffset);
 }
 
 inline BufferUav RGBufImpl::GetStructuredUavImm() const

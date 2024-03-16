@@ -374,6 +374,112 @@ namespace BindingGroupDSL
         Variant<BufferUav, RGBufUav> data_;
     };
 
+    class MemberProxy_ByteAddressBuffer
+    {
+        Variant<BufferSrv, RGBufSrv> data_;
+
+    public:
+
+        static constexpr RHI::BindingType BindingType = RHI::BindingType::ByteAddressBuffer;
+
+        BufferSrv GetRtrcObject() const
+        {
+            return data_.Match(
+                [&](const BufferSrv &v) { return v; },
+                [&](const RGBufSrv &v) { return v.GetSrv(); });
+        }
+
+        void DeclareRenderGraphResourceUsage(RGPassImpl *pass, RHI::PipelineStageFlag stages) const
+        {
+            if(auto d = data_.AsIf<RGBufSrv>())
+            {
+                pass->Use(d->GetResource(), RGUseInfo
+                          {
+                              .layout = RHI::TextureLayout::Undefined,
+                              .stages = stages,
+                              .accesses = d->GetResourceAccess()
+                          });
+            }
+        }
+
+        auto &operator=(BufferSrv value)
+        {
+            data_ = std::move(value);
+            return *this;
+        }
+
+        auto &operator=(const RC<SubBuffer> &buffer)
+        {
+            return *this = buffer->GetByteAddressSrv();
+        }
+
+        auto &operator=(const RGBufSrv &v)
+        {
+            data_ = v;
+            return *this;
+        }
+
+        auto &operator=(RGBufImpl *buffer)
+        {
+            return *this = buffer->GetByteAddressSrv();
+        }
+    };
+
+    class MemberProxy_RWByteAddressBuffer
+    {
+    public:
+
+        static constexpr RHI::BindingType BindingType = RHI::BindingType::RWByteAddressBuffer;
+
+        bool writeOnly = false;
+
+        BufferUav GetRtrcObject() const
+        {
+            return data_.Match(
+                [&](const BufferUav &v) { return v; },
+                [&](const RGBufUav &v) { return v.GetUav(); });
+        }
+
+        void DeclareRenderGraphResourceUsage(RGPassImpl *pass, RHI::PipelineStageFlag stages) const
+        {
+            if(auto d = data_.AsIf<RGBufUav>())
+            {
+                pass->Use(d->GetResource(), RGUseInfo
+                          {
+                              .layout = RHI::TextureLayout::Undefined,
+                              .stages = stages,
+                              .accesses = d->GetResourceAccess(writeOnly)
+                          });
+            }
+        }
+
+        auto &operator=(BufferUav value)
+        {
+            data_ = std::move(value);
+            return *this;
+        }
+
+        auto &operator=(const RC<SubBuffer> &buffer)
+        {
+            return *this = buffer->GetByteAddressUav();
+        }
+
+        auto &operator=(const RGBufUav &v)
+        {
+            data_ = v;
+            return *this;
+        }
+
+        auto &operator=(RGBufImpl *buffer)
+        {
+            return *this = buffer->GetByteAddressUav();
+        }
+
+    private:
+
+        Variant<BufferUav, RGBufUav> data_;
+    };
+
     template<typename T>
     class MemberProxy_ConstantBuffer : public T
     {
