@@ -1,3 +1,5 @@
+#include <map>
+
 #include <Rtrc/Core/Filesystem/File.h>
 #include <Rtrc/Core/Parser/ShaderTokenStream.h>
 #include <Rtrc/Core/String.h>
@@ -58,8 +60,11 @@ namespace ShaderDatabaseDetail
             auto &shader = database.rawShaders.emplace_back();
             shader.shaderName = std::move(shaderName);
             shader.filename   = filename;
-            shader.charBegin  = static_cast<int>(charBegin) + 1;
-            shader.charEnd    = static_cast<int>(charEnd);
+            shader.ranges.push_back(
+            {
+                .begin = static_cast<int>(charBegin) + 1,
+                .end = static_cast<int>(charEnd)
+            });
         }
     }
     

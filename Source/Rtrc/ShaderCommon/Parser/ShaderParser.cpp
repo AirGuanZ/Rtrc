@@ -459,19 +459,27 @@ ParsedShader ParseShader(
 ParsedShader ParseShader(const ShaderCompileEnvironment &envir, DXC *dxc, const RawShader &rawShader)
 {
     std::string source = File::ReadTextFile(rawShader.filename);
-    for(int i = 0; i < rawShader.charBegin; ++i)
+    assert(!rawShader.ranges.empty());
+    int i = 0;
+    for(auto &range : rawShader.ranges)
     {
-        if(!std::isspace(source[i]))
+        while(i < range.begin)
         {
-            source[i] = ' ';
+            if(!std::isspace(source[i]))
+            {
+                source[i] = ' ';
+            }
+            ++i;
         }
+        i = range.end;
     }
-    for(int i = rawShader.charEnd; i < static_cast<int>(source.size()); ++i)
+    while(i < static_cast<int>(source.size()))
     {
         if(!std::isspace(source[i]))
         {
             source[i] = ' ';
         }
+        ++i;
     }
     return ParseShader(envir, dxc, source, rawShader.shaderName, rawShader.filename);
 }

@@ -95,6 +95,34 @@ struct ParsedBindingGroup
     RTRC_AUTO_SERIALIZE_WITH_MEMBER_COUNT_CHECK(name, uniformPropertyDefinitions, bindings, isRef, stages);
 };
 
+struct ParsedStructMember
+{
+    enum Type
+    {
+        Float, Float2, Float3, Float4,
+        Int, Int2, Int3, Int4,
+        UInt, UInt2, UInt3, UInt4
+    };
+
+    Type type;
+    std::string name;
+
+    auto operator<=>(const ParsedStructMember &) const = default;
+
+    RTRC_AUTO_SERIALIZE_WITH_MEMBER_COUNT_CHECK(type, name);
+};
+
+struct ParsedStructDefinition
+{
+    std::string name;
+    std::vector<ParsedStructMember> members;
+    size_t size;
+
+    auto operator<=>(const ParsedStructDefinition &) const = default;
+
+    RTRC_AUTO_SERIALIZE_WITH_MEMBER_COUNT_CHECK(name, members, size);
+};
+
 struct ParsedPushConstantVariable
 {
     enum Type
@@ -162,5 +190,10 @@ void ParsePushConstantRanges(
     const std::string                    &source,
     const std::string                    &sourceWithoutString,
     std::vector<ParsedPushConstantRange> &ranges);
+
+// source must contain neither comments nor string literal
+void ParseSpecialStructs(
+    const std::string                   &source,
+    std::vector<ParsedStructDefinition> &structs);
 
 RTRC_END

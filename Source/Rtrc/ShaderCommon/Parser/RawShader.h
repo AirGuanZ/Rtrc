@@ -1,49 +1,21 @@
 #pragma once
 
 #include <filesystem>
-
-#include <Rtrc/Core/Serialization/Serialize.h>
-#include <Rtrc/ShaderCommon/Parser/BindingGroupParser.h>
+#include <set>
 
 RTRC_BEGIN
 
-struct RawPassRecord
-{
-    std::string name;
-    std::string shaderName;
-    std::vector<std::string> tags;
-
-    size_t charBegin = 0; // Relative to material.charBegin
-    size_t charEnd   = 0;
-
-    RTRC_AUTO_SERIALIZE(name, shaderName, tags);
-};
-
-struct RawMaterialProperty
-{
-    std::string type;
-    std::string name;
-
-    RTRC_AUTO_SERIALIZE(type, name);
-};
-
-struct RawMaterialRecord
-{
-    std::string                      name;
-    size_t                           charBegin = 0;
-    size_t                           charEnd   = 0;
-    std::vector<RawMaterialProperty> properties;
-    std::vector<RawPassRecord>       passes;
-
-    RTRC_AUTO_SERIALIZE(name, properties, passes);
-};
-
 struct RawShader
 {
+    struct SourceRange
+    {
+        int begin;
+        int end;
+    };
+
     std::string shaderName;
     std::string filename; // abs norm path
-    int         charBegin;
-    int         charEnd;
+    std::vector<SourceRange> ranges;
 };
 
 struct RawShaderDatabase

@@ -4,6 +4,7 @@
 
 #include <Rtrc/Core/Serialization/Serialize.h>
 #include <Rtrc/ShaderCommon/Parser/RawShader.h>
+#include <Rtrc/ShaderCommon/Parser/RtrcSyntaxParser.h>
 
 RTRC_BEGIN
 

@@ -2,8 +2,8 @@
 
 #include <Rtrc/Core/Parser/ShaderTokenStream.h>
 #include <Rtrc/Core/String.h>
-#include <Rtrc/ShaderCommon/Parser/BindingGroupParser.h>
 #include <Rtrc/ShaderCommon/Parser/ParserHelper.h>
+#include <Rtrc/ShaderCommon/Parser/RtrcSyntaxParser.h>
 
 RTRC_BEGIN
 
@@ -820,6 +820,99 @@ void ParsePushConstantRanges(
         ShaderTokenStream tokens(source, keywordBeginPos);
         BindingGroupParserDetail::ParsePushConstantRange(
             tokens, ranges.emplace_back(), nextPushConstantOffset);
+    }
+}
+
+void ParseSpecialStructs(
+    const std::string                   &source,
+    std::vector<ParsedStructDefinition> &structs)
+{
+    size_t keywordBeginPos = 0;
+    while(true)
+    {
+        constexpr std::string_view keyword = "rtrc_refl_struct";
+        const size_t keywordPos = FindKeyword(source, keyword, keywordBeginPos);
+        if(keywordPos == std::string::npos)
+        {
+            break;
+        }
+        keywordBeginPos = keywordPos + keyword.size();
+
+        ShaderTokenStream tokens(source, keywordBeginPos);
+        tokens.ConsumeOrThrow("(");
+        std::string name = tokens.GetCurrentToken();
+        if(!ShaderTokenStream::IsIdentifier(name))
+        {
+            tokens.Throw("rtrc_refl_struct name expected");
+        }
+        tokens.Next();
+        tokens.ConsumeOrThrow(")");
+        tokens.ConsumeOrThrow("{");
+
+        uint32_t offset = 0;
+        std::vector<ParsedStructMember> members;
+        while(true)
+        {
+            if(tokens.IsFinished())
+            {
+                tokens.Throw("'}' expected for rtrc_push_constant");
+            }
+
+            if(tokens.GetCurrentToken() == "}")
+            {
+                break;
+            }
+
+            const std::string typeStr = tokens.GetCurrentToken();
+            tokens.Next();
+
+            // typename -> { alignment, size }
+            static const std::map<std::string, std::tuple<uint32_t, uint32_t, ParsedStructMember::Type>> typeInfo =
+            {
+                { "float",  { 4,  4,  ParsedStructMember::Float } },
+                { "int",    { 4,  4,  ParsedStructMember::Int } },
+                { "uint",   { 4,  4,  ParsedStructMember::UInt } },
+                { "float2", { 8,  8,  ParsedStructMember::Float2 } },
+                { "int2",   { 8,  8,  ParsedStructMember::Int2 } },
+                { "uint2",  { 8,  8,  ParsedStructMember::UInt2 } },
+                { "float3", { 16, 12, ParsedStructMember::Float3 } },
+                { "int3",   { 16, 12, ParsedStructMember::Int3 } },
+                { "uint3",  { 16, 12, ParsedStructMember::UInt3 } },
+                { "float4", { 16, 16, ParsedStructMember::Float4 } },
+                { "int4",   { 16, 16, ParsedStructMember::Int4 } },
+                { "uint4",  { 16, 16, ParsedStructMember::UInt4 } },
+            };
+
+            uint32_t alignment, size; ParsedStructMember::Type type;
+            if(auto it = typeInfo.find(typeStr); it != typeInfo.end())
+            {
+                std::tie(alignment, size, type) = it->second;
+            }
+            else
+            {
+                tokens.Throw(fmt::format("Unsupported var type {} in rtrc_refl_struct {}", typeStr, name));
+            }
+
+            std::string varName = tokens.GetCurrentToken();
+            if(!ShaderTokenStream::IsIdentifier(varName))
+            {
+                tokens.Throw("Push constant variable name expected");
+            }
+            tokens.Next();
+
+            tokens.ConsumeOrThrow(";");
+
+            offset = UpAlignTo(offset, alignment);
+            members.push_back({ type, std::move(varName) });
+            offset += size;
+        }
+        tokens.ConsumeOrThrow("}");
+        tokens.ConsumeOrThrow(";");
+
+        auto &s = structs.emplace_back();
+        s.name = std::move(name);
+        s.members = std::move(members);
+        s.size = offset;
     }
 }
 
