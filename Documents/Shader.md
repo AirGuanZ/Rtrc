@@ -127,3 +127,31 @@ rtrc_sampler(
     address = repeat/mirror/clamp/border)
 ```
 
+## Shared Code Block
+
+```cpp
+// Define a shareable code block with the name "SharedCodeBlock0"
+rtrc_code("SharedCodeBlock0")
+{
+	...
+}
+
+// Define another code block, "SharedCodeBlock1," which references "SharedCodeBlock0"
+rtrc_code("SharedCodeBlock1")
+{
+	rtrc_refcode("SharedCodeBlock0")
+}
+
+// Define a shader named "Shader0" that includes the first code block
+rtrc_shader("Shader0")
+{
+	rtrc_refcode("SharedCodeBlock0")
+}
+
+// Define a shader named "Shader1" that includes both code blocks
+rtrc_shader("Shader1")
+{
+	rtrc_refcode("SharedCodeBlock1")
+}
+```
+
