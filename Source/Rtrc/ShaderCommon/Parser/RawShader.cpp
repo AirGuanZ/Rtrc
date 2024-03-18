@@ -25,7 +25,7 @@ namespace ShaderDatabaseDetail
             {
                 return ret;
             }
-            keywordBeginPos += KEYWORD.size();
+            keywordBeginPos = p + KEYWORD.size();
 
             ShaderTokenStream tokens(source, keywordBeginPos, ShaderTokenStream::ErrorMode::Material);
             tokens.ConsumeOrThrow("(");
