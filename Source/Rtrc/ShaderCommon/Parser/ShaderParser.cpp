@@ -255,11 +255,7 @@ const std::string &ParsedShader::GetCachedSource() const
         return cachedSource;
     }
 
-    std::string fileContent = File::ReadTextFile(sourceFilename);
-    std::string fileContentWithoutComments = fileContent;
-    RemoveComments(fileContentWithoutComments);
-
-    cachedSource = ReadShaderSource(fileContent, fileContentWithoutComments, name);
+    cachedSource = ReadShaderSource(sourceFilename, name);
     cachedSource = "_rtrc_generated_shader_prefix " + cachedSource;
 
     return cachedSource;
@@ -367,49 +363,40 @@ std::vector<ShaderKeywordValue> ExtractKeywordValues(Span<ShaderKeyword> keyword
     return values;
 }
 
-std::string ReadShaderSource(
-    std::string_view   fileContent,
-    const std::string &fileContentWithoutComments,
-    std::string_view   shaderName)
+std::string ReadShaderSource(const std::string &filename, std::string_view shaderName)
 {
-    const std::string key = fmt::format("rtrc_shader(\"{}\")", shaderName);
-    const size_t p = fileContentWithoutComments.find(key);
-    if(p == std::string_view::npos)
+    const RawShaderDatabase database = CreateRawShaderDatabase(filename);
+    for(auto &shader : database.rawShaders)
     {
-        throw Exception(fmt::format("Cannot find shader \"{}\" in given file", shaderName));
-    }
-
-    ShaderTokenStream tokens(
-        fileContentWithoutComments, p + key.size(), ShaderTokenStream::ErrorMode::Material);
-
-    if(tokens.GetCurrentToken() != "{")
-    {
-        tokens.Throw("{ expected");
-    }
-
-    const size_t charBegin = tokens.GetCurrentPosition();
-    const size_t charEnd = FindMatchedRightBracket(fileContentWithoutComments, charBegin);
-    if(charEnd == std::string_view::npos)
-    {
-        tokens.Throw("Matched '}' is not found");
-    }
-
-    std::string result(fileContent);
-    for(size_t i = 0; i < charBegin + 1; ++i)
-    {
-        if(result[i] != '\n' && result[i] != '\r')
+        if(shaderName == shader.shaderName)
         {
-            result[i] = ' ';
+            std::string source = File::ReadTextFile(filename);
+            assert(!shader.ranges.empty());
+            int i = 0;
+            for(auto &range : shader.ranges)
+            {
+                while(i < range.begin)
+                {
+                    if(!std::isspace(source[i]))
+                    {
+                        source[i] = ' ';
+                    }
+                    ++i;
+                }
+                i = range.end;
+            }
+            while(i < static_cast<int>(source.size()))
+            {
+                if(!std::isspace(source[i]))
+                {
+                    source[i] = ' ';
+                }
+                ++i;
+            }
+            return source;
         }
     }
-    for(size_t i = charEnd; i < fileContent.size(); ++i)
-    {
-        if(result[i] != '\n' && result[i] != '\r')
-        {
-            result[i] = ' ';
-        }
-    }
-    return result;
+    throw Exception(fmt::format("Cannot find shader \"{}\" in file {}", shaderName, filename));
 }
 
 ParsedShader ParseShader(

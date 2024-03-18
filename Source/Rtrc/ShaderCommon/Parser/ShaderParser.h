@@ -103,10 +103,12 @@ int ComputeVariantIndex(Span<ShaderKeyword> keywords, Span<ShaderKeywordValue> v
 
 std::vector<ShaderKeywordValue> ExtractKeywordValues(Span<ShaderKeyword> keywords, size_t variantIndex);
 
-std::string ReadShaderSource(
-    std::string_view   fileContent,
-    const std::string &fileContentWithoutComments,
-    std::string_view   shaderName);
+std::string ReadShaderSource(const std::string &filename, std::string_view shaderName);
+
+//std::string ReadShaderSource(
+//    std::string_view   fileContent,
+//    const std::string &fileContentWithoutComments,
+//    std::string_view   shaderName);
 
 // dxc is optional
 ParsedShader ParseShader(

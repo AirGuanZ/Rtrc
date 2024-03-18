@@ -10,7 +10,38 @@ RTRC_BEGIN
 
 namespace ShaderDatabaseDetail
 {
-    
+
+    std::vector<std::string_view> FindDirectDependencies(
+        std::string_view source, std::string_view sourceForFindingKeyword)
+    {
+        std::vector<std::string_view> ret;
+
+        size_t keywordBeginPos = 0;
+        while(true)
+        {
+            constexpr std::string_view KEYWORD = "rtrc_refcode";
+            const size_t p = FindKeyword(sourceForFindingKeyword, KEYWORD, keywordBeginPos);
+            if(p == std::string_view::npos)
+            {
+                return ret;
+            }
+            keywordBeginPos += KEYWORD.size();
+
+            ShaderTokenStream tokens(source, keywordBeginPos, ShaderTokenStream::ErrorMode::Material);
+            tokens.ConsumeOrThrow("(");
+            std::string name = tokens.GetCurrentToken();
+            if(!ShaderTokenStream::IsNonEmptyStringLiterial(name))
+            {
+                tokens.Throw(fmt::format("Invalid refcode name: {}", name));
+            }
+            name = name.substr(1, name.size() - 2); // Remove quotation marks
+            tokens.Next();
+            tokens.ConsumeOrThrow(")");
+        }
+    }
+
+    // rtrc_code("CodeName")
+    // {...}
     // rtrc_shader("ShaderName")
     // {...}
     // rtrc_shader("AnotherShaderName")
@@ -23,26 +54,35 @@ namespace ShaderDatabaseDetail
         std::string sourceForFindingKeyword = source;
         RemoveCommentsAndStrings(sourceForFindingKeyword);
 
+        struct CodeSegment
+        {
+            std::string name;
+            std::vector<int> directDependencies;
+            int charBegin;
+            int charEnd;
+        };
+        std::vector<CodeSegment> codeSegments;
+
         size_t keywordBeginPos = 0;
         while(true)
         {
-            constexpr std::string_view KEYWORD = "rtrc_shader";
-            const size_t p = FindKeyword(sourceForFindingKeyword, KEYWORD, keywordBeginPos);
-            if(p == std::string::npos)
+            std::string_view keyword;
+            const size_t p = FindFirstKeyword(
+                sourceForFindingKeyword, { "rtrc_code", "rtrc_shader" }, keywordBeginPos, keyword);
+            if(p == std::string_view::npos)
             {
                 break;
             }
-
-            keywordBeginPos = p + KEYWORD.size();
+            keywordBeginPos = p + keyword.size();
             ShaderTokenStream tokens(source, keywordBeginPos, ShaderTokenStream::ErrorMode::Material);
 
             tokens.ConsumeOrThrow("(");
-            std::string shaderName = tokens.GetCurrentToken();
-            if(!ShaderTokenStream::IsNonEmptyStringLiterial(shaderName))
+            std::string segmentName = tokens.GetCurrentToken();
+            if(!ShaderTokenStream::IsNonEmptyStringLiterial(segmentName))
             {
-                tokens.Throw(fmt::format("Invalid shader name: {}", shaderName));
+                tokens.Throw(fmt::format("Invalid shader/code name: {}", segmentName));
             }
-            shaderName = shaderName.substr(1, shaderName.size() - 2);
+            segmentName = segmentName.substr(1, segmentName.size() - 2); // Remove quotation marks
             tokens.Next();
             tokens.ConsumeOrThrow(")");
 
@@ -50,52 +90,98 @@ namespace ShaderDatabaseDetail
             {
                 tokens.Throw("'{' expected");
             }
-            const size_t charBegin = tokens.GetCurrentPosition();
-            const size_t charEnd = FindMatchedRightBracket(source, charBegin);
-            if(charEnd == std::string::npos)
+            const size_t leftBracketPos = tokens.GetCurrentPosition();
+            const size_t rightBracketPos = FindMatchedRightBracket(source, leftBracketPos);
+            if(rightBracketPos == std::string::npos)
             {
                 tokens.Throw("Matched '}' is not found");
             }
 
-            auto &shader = database.rawShaders.emplace_back();
-            shader.shaderName = std::move(shaderName);
-            shader.filename   = filename;
-            shader.ranges.push_back(
+            // Find direct dependencies
+
+            const std::string_view segmentContent = std::string_view(source).substr(
+                leftBracketPos + 1, rightBracketPos - (leftBracketPos + 1));
+            const std::string_view segmentContentForFindingKeyword = std::string_view(sourceForFindingKeyword).substr(
+                leftBracketPos + 1, rightBracketPos - (leftBracketPos + 1));
+            const auto stringDependencies = FindDirectDependencies(segmentContent, segmentContentForFindingKeyword);
+
+            std::vector<int> directDependencies;
+            for(auto &strDep : stringDependencies)
             {
-                .begin = static_cast<int>(charBegin) + 1,
-                .end = static_cast<int>(charEnd)
-            });
+                bool found = false;
+                for(size_t i = 0; i < codeSegments.size(); ++i)
+                {
+                    if(strDep == codeSegments[i].name)
+                    {
+                        directDependencies.push_back(static_cast<int>(i));
+                        found = true;
+                        break;
+                    }
+                }
+                if(!found)
+                {
+                    tokens.Throw(fmt::format("Unknown code dependency {}", strDep));
+                }
+            }
+
+            // Finalize
+
+            if(keyword == "rtrc_shader")
+            {
+                std::set<int> allDependencies;
+                std::set<int> pendingDependencies = { directDependencies.begin(), directDependencies.end() };
+                while(!pendingDependencies.empty())
+                {
+                    const auto begin = pendingDependencies.begin();
+                    const int directDependency = *begin;
+                    pendingDependencies.erase(begin);
+
+                    allDependencies.insert(directDependency);
+                    for(int indirectDependencies : codeSegments[directDependency].directDependencies)
+                    {
+                        if(!allDependencies.contains(indirectDependencies))
+                        {
+                            pendingDependencies.insert(indirectDependencies);
+                        }
+                    }
+                }
+
+                auto &shader = database.rawShaders.emplace_back();
+                shader.shaderName = std::move(segmentName);
+                shader.filename = filename;
+                for(int segmentIndex : allDependencies)
+                {
+                    auto &range = shader.ranges.emplace_back();
+                    range.begin = codeSegments[segmentIndex].charBegin;
+                    range.end = codeSegments[segmentIndex].charEnd;
+                }
+                shader.ranges.push_back(
+                {
+                    .begin = static_cast<int>(leftBracketPos) + 1,
+                    .end = static_cast<int>(rightBracketPos)
+                });
+            }
+            else
+            {
+                auto &segment = codeSegments.emplace_back();
+                segment.name = std::move(segmentName);
+                segment.directDependencies = std::move(directDependencies);
+                segment.charBegin = static_cast<int>(leftBracketPos) + 1;
+                segment.charEnd = static_cast<int>(rightBracketPos);
+            }
         }
     }
     
 } // namespace ShaderDatabaseDetail
 
-RawShaderDatabase CreateRawShaderDatabase(const std::set<std::filesystem::path> &filenames)
+RawShaderDatabase CreateRawShaderDatabase(const std::filesystem::path &filename)
 {
-    using path = std::filesystem::path;
-
-    std::set<std::string> shaderFilenames;
-    std::set<std::string> materialFilenames;
-    for(const path &p : filenames)
-    {
-        if(!is_regular_file(p))
-        {
-            continue;
-        }
-        const path absp = absolute(p).lexically_normal();
-        const std::string ext = ToLower(absp.extension().string());
-        if(ext == ".shader")
-        {
-            shaderFilenames.insert(absp.string());
-        }
-    }
+    assert(std::filesystem::is_regular_file(filename));
+    assert(filename.extension() == ".shader");
 
     std::map<std::string, int> filenameToIndex;
     RawShaderDatabase database;
-    for(auto &filename : shaderFilenames)
-    {
-        ShaderDatabaseDetail::AddShaderFile(database, filename);
-    }
+    ShaderDatabaseDetail::AddShaderFile(database, filename.string());
     
     return database;
 }

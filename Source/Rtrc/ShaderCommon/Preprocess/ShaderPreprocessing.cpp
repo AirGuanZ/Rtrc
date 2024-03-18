@@ -217,6 +217,7 @@ ShaderPreprocessingOutput PreprocessShader(const ShaderPreprocessingInput &input
 
     // rtrc_* macros
 
+    macros["rtrc_refcode(...)"] = "";
     macros["rtrc_symbol_name(...)"] = "";
     macros["rtrc_vertex(...)"] = "";
     macros["rtrc_vert(...)"] = "";

@@ -6,9 +6,10 @@
 
 RTRC_BEGIN
 
-// Search first '^ or non-identifier char + keyword' in source, starting from beginPos.
-// Returns string::npos when not found.
-// Comments & string literials are not considered.
+// Search for the first occurrence of a non-identifier character (or the beginning of a string) followed by
+// the keyword in the source, starting from the beginPos.
+// Returns the position of the first character of the found keyword, or string::npos if the keyword is not found.
+// Comments and string literals are not present in the source.
 size_t FindKeyword(std::string_view source, std::string_view keyword, size_t beginPos);
 
 size_t FindFirstKeyword(
@@ -17,16 +18,17 @@ size_t FindFirstKeyword(
     size_t                 beginPos,
     std::string_view      &outKeyword);
 
-// Assume source[begin] is '{', find matched '}'
+// Given the source string and a starting index 'begin', finds the matching '}' for the '{' at the given position.
+// Returns the position of the matching '}' character, or string::npos if no matching '}' is found.
 size_t FindMatchedRightBracket(std::string_view source, size_t begin);
 
-// Replace comments with spaces without changing character positions
+// Replaces comments in the source string with spaces, while preserving the character positions.
 void RemoveComments(std::string &source);
 
-// Replace comments & string contents with spaces without changing character positions
+// Replaces comments and string literals in the source string with spaces, while preserving the character positions.
 void RemoveCommentsAndStrings(std::string &source);
 
-// Replace string contents with spaces without changing character positions
+// Replaces string literals in the source string with spaces, while preserving the character positions.
 void RemoveStrings(std::string &source);
 
 RTRC_END

@@ -23,6 +23,6 @@ struct RawShaderDatabase
     std::vector<RawShader> rawShaders;
 };
 
-RawShaderDatabase CreateRawShaderDatabase(const std::set<std::filesystem::path> &filenames);
+RawShaderDatabase CreateRawShaderDatabase(const std::filesystem::path &filename);
 
 RTRC_END
