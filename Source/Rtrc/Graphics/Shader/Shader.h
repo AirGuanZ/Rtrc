@@ -157,6 +157,11 @@ public:
 
     const ShaderGroupInfo &GetShaderGroupInfo() const;
 
+    // Original shader info
+
+    const RC<ParsedShader> &GetOriginalParsedShader() const;
+    uint32_t GetOriginalParsedShaderVariantIndex() const;
+
 private:
     
     friend class ShaderCompiler;
@@ -168,6 +173,9 @@ private:
     Vector3i                    computeShaderThreadGroupSize_;
     RC<ShaderGroupInfo>         shaderGroupInfo_;
     RC<ShaderBindingLayoutInfo> shaderBindingLayoutInfo_;
+
+    RC<ParsedShader> originalParsedShader_;
+    uint32_t originalVariantIndex_ = 0;
 };
 
 class Shader : public WithUniqueObjectID, public InSharedObjectCache
@@ -218,6 +226,9 @@ public:
     Span<RHI::RayTracingRayGenShaderGroup> GetRayGenShaderGroups() const;
     Span<RHI::RayTracingMissShaderGroup>   GetMissShaderGroups()   const;
     Span<RHI::RayTracingHitShaderGroup>    GetHitShaderGroups()    const;
+
+    const RC<ParsedShader> &GetOriginalParsedShader() const;
+    uint32_t GetOriginalParsedShaderVariantIndex() const;
 
     template<typename...Args>
     Connection OnDestroy(Args&&...args) const { return onDestroyCallbacks_.Connect(std::forward<Args>(args)...); }
@@ -420,6 +431,16 @@ inline const ShaderGroupInfo &ShaderInfo::GetShaderGroupInfo() const
     return *shaderGroupInfo_;
 }
 
+inline const RC<ParsedShader>& ShaderInfo::GetOriginalParsedShader() const
+{
+    return originalParsedShader_;
+}
+
+inline uint32_t ShaderInfo::GetOriginalParsedShaderVariantIndex() const
+{
+    return originalVariantIndex_;
+}
+
 inline const ShaderBindingNameMap &ShaderInfo::GetBindingNameMap() const
 {
     return shaderBindingLayoutInfo_->GetBindingNameMap();
@@ -581,6 +602,16 @@ inline Span<RHI::RayTracingMissShaderGroup> Shader::GetMissShaderGroups() const
 inline Span<RHI::RayTracingHitShaderGroup> Shader::GetHitShaderGroups() const
 {
     return info_->GetShaderGroupInfo().GetHitShaderGroups();
+}
+
+inline const RC<ParsedShader>& Shader::GetOriginalParsedShader() const
+{
+    return info_->GetOriginalParsedShader();
+}
+
+inline uint32_t Shader::GetOriginalParsedShaderVariantIndex() const
+{
+    return info_->GetOriginalParsedShaderVariantIndex();
 }
 
 RTRC_END

@@ -15,15 +15,15 @@ RC<Shader> StandaloneShaderCompiler::Compile(
     ShaderCompileEnvironment envir;
     envir.macros = macros;
 
-    auto parsedShader = ParseShader(envir, &dxc_, source, "UnknownShader", "UnknownFile");
-    auto &variant = parsedShader.variants.front();
-    assert(parsedShader.keywords.empty());
+    auto parsedShader = MakeRC<ParsedShader>(ParseShader(envir, &dxc_, source, "UnknownShader", "UnknownFile"));
+    auto &variant = parsedShader->variants.front();
+    assert(parsedShader->keywords.empty());
 
     CompilableShader compilableShader;
     compilableShader.envir                   = std::move(envir);
-    compilableShader.name                    = parsedShader.name;
+    compilableShader.name                    = parsedShader->name;
     compilableShader.source                  = "_rtrc_generated_shader_prefix " + source;
-    compilableShader.sourceFilename          = parsedShader.sourceFilename;
+    compilableShader.sourceFilename          = parsedShader->sourceFilename;
     compilableShader.vertexEntry             = variant.vertexEntry;
     compilableShader.fragmentEntry           = variant.fragmentEntry;
     compilableShader.computeEntry            = variant.computeEntry;
@@ -39,6 +39,8 @@ RC<Shader> StandaloneShaderCompiler::Compile(
     compilableShader.inlineSamplerDescs      = variant.inlineSamplerDescs;
     compilableShader.inlineSamplerNameToDesc = variant.inlineSamplerNameToDesc;
     compilableShader.pushConstantRanges      = variant.pushConstantRanges;
+    compilableShader.originalParsedShader    = std::move(parsedShader);
+    compilableShader.originalVariantIndex    = 0;
     
     return compiler_.Compile(compilableShader, debug);
 }

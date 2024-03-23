@@ -230,6 +230,7 @@ namespace ShaderParserDetail
         ParseBindingAliases(preprocessedSource, preprocessedSouceWithoutString, variant.aliases);
         ParseInlineSamplers(preprocessedSource, preprocessedSouceWithoutString, variant.inlineSamplerDescs, variant.inlineSamplerNameToDesc);
         ParsePushConstantRanges(preprocessedSource, preprocessedSouceWithoutString, variant.pushConstantRanges);
+        ParseSpecialStructs(preprocessedSouceWithoutString, variant.specialStructs);
     }
 
 } // namespace ShaderParserDetail

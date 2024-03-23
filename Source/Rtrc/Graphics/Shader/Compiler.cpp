@@ -308,6 +308,9 @@ RC<Shader> ShaderCompiler::Compile(
         ret->computePipeline_ = device_->CreateComputePipeline(ret);
     }
 
+    ret->info_->originalParsedShader_ = shader.originalParsedShader;
+    ret->info_->originalVariantIndex_ = shader.originalVariantIndex;
+
     return ret;
 }
 

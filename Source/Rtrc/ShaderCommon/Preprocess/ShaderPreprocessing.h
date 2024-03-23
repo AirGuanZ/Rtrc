@@ -104,26 +104,8 @@ struct ShaderPreprocessingInput
 
     std::vector<ParsedPushConstantRange> pushConstantRanges;
 
-    RTRC_AUTO_SERIALIZE_WITH_MEMBER_COUNT_CHECK(
-        envir,
-        name,
-        source,
-        sourceFilename,
-        keywords,
-        keywordValues,
-        vertexEntry,
-        fragmentEntry,
-        computeEntry,
-        taskEntry,
-        meshEntry,
-        isRayTracingShader,
-        entryGroups,
-        bindingGroups,
-        ungroupedBindings,
-        aliases,
-        inlineSamplerDescs,
-        inlineSamplerNameToDesc,
-        pushConstantRanges);
+    RC<ParsedShader> originalParsedShader;
+    uint32_t originalVariantIndex;
 };
 
 struct ShaderPreprocessingOutput

@@ -371,6 +371,17 @@ namespace BindingGroupParserDetail
 
 } // namespace BindingGroupParserDetail
 
+size_t ParsedStructMember::TypeToSize(Type type)
+{
+    const size_t sizes[] =
+    {
+        4, 8, 12, 16,
+        4, 8, 12, 16,
+        4, 8, 12, 16
+    };
+    return sizes[std::to_underlying(type)];
+}
+
 const char *ParsedPushConstantVariable::TypeToName(Type type)
 {
     const char *names[] =

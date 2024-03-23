@@ -57,6 +57,7 @@ struct ParsedShaderVariant
     std::map<std::string, int>    inlineSamplerNameToDesc;
 
     std::vector<ParsedPushConstantRange> pushConstantRanges;
+    std::vector<ParsedStructDefinition> specialStructs;
 
     RTRC_AUTO_SERIALIZE_WITH_MEMBER_COUNT_CHECK(
         vertexEntry,
@@ -70,7 +71,8 @@ struct ParsedShaderVariant
         aliases,
         inlineSamplerDescs,
         inlineSamplerNameToDesc,
-        pushConstantRanges);
+        pushConstantRanges,
+        specialStructs);
 };
 
 struct ParsedShader
@@ -104,11 +106,6 @@ int ComputeVariantIndex(Span<ShaderKeyword> keywords, Span<ShaderKeywordValue> v
 std::vector<ShaderKeywordValue> ExtractKeywordValues(Span<ShaderKeyword> keywords, size_t variantIndex);
 
 std::string ReadShaderSource(const std::string &filename, std::string_view shaderName);
-
-//std::string ReadShaderSource(
-//    std::string_view   fileContent,
-//    const std::string &fileContentWithoutComments,
-//    std::string_view   shaderName);
 
 // dxc is optional
 ParsedShader ParseShader(

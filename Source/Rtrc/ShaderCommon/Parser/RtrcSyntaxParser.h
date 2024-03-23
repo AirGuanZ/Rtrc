@@ -104,6 +104,8 @@ struct ParsedStructMember
         UInt, UInt2, UInt3, UInt4
     };
 
+    static size_t TypeToSize(Type type);
+
     Type type;
     std::string name;
 

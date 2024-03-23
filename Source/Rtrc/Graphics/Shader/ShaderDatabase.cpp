@@ -97,7 +97,7 @@ void ShaderDatabase::AddShader(ParsedShader shader)
 
     record->name         = pooledName;
     record->keywordSet   = FastKeywordSet(keywordRecords);
-    record->parsedShader = std::move(shader);
+    record->parsedShader = MakeRC<ParsedShader>(std::move(shader));
     
     for(int i = 0; i < EnumCount<BuiltinKeyword>; ++i)
     {
@@ -163,24 +163,24 @@ RC<Shader> ShaderDatabase::GetShaderImpl(ShaderRecord *record, FastKeywordSetVal
         const ShaderKey key(record->name, fastKeywordValues);
         return shaders_.GetOrCreate(key, [&]
         {
-            const ParsedShader &parsedShader = record->parsedShader;
+            const auto &parsedShader = record->parsedShader;
 
-            assert(static_cast<int>(parsedShader.keywords.size()) == record->keywordSet.GetKeywordCount());
-            std::vector<ShaderKeywordValue> keywordValues(parsedShader.keywords.size());
-            for(size_t i = 0; i < parsedShader.keywords.size(); ++i)
+            assert(static_cast<int>(parsedShader->keywords.size()) == record->keywordSet.GetKeywordCount());
+            std::vector<ShaderKeywordValue> keywordValues(parsedShader->keywords.size());
+            for(size_t i = 0; i < parsedShader->keywords.size(); ++i)
             {
                 const int value = record->keywordSet.ExtractSingleKeywordValue(static_cast<int>(i), fastKeywordValues);
                 keywordValues[i].value = value;
             }
-            const int variantIndex = ComputeVariantIndex(parsedShader.keywords, keywordValues);
-            const ParsedShaderVariant variant = parsedShader.variants[variantIndex];
+            const int variantIndex = ComputeVariantIndex(parsedShader->keywords, keywordValues);
+            const ParsedShaderVariant variant = parsedShader->variants[variantIndex];
 
             CompilableShader compilableShader;
             compilableShader.envir                   = envir_;
-            compilableShader.name                    = parsedShader.name;
-            compilableShader.source                  = parsedShader.GetCachedSource();
-            compilableShader.sourceFilename          = parsedShader.sourceFilename;
-            compilableShader.keywords                = parsedShader.keywords;
+            compilableShader.name                    = parsedShader->name;
+            compilableShader.source                  = parsedShader->GetCachedSource();
+            compilableShader.sourceFilename          = parsedShader->sourceFilename;
+            compilableShader.keywords                = parsedShader->keywords;
             compilableShader.keywordValues           = keywordValues;
             compilableShader.vertexEntry             = variant.vertexEntry;
             compilableShader.fragmentEntry           = variant.fragmentEntry;
@@ -197,6 +197,8 @@ RC<Shader> ShaderDatabase::GetShaderImpl(ShaderRecord *record, FastKeywordSetVal
             compilableShader.inlineSamplerDescs      = variant.inlineSamplerDescs;
             compilableShader.inlineSamplerNameToDesc = variant.inlineSamplerNameToDesc;
             compilableShader.pushConstantRanges      = variant.pushConstantRanges;
+            compilableShader.originalParsedShader    = parsedShader;
+            compilableShader.originalVariantIndex    = variantIndex;
             
             return compiler_.Compile(compilableShader, debug_);
         });

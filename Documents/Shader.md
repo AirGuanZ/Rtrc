@@ -155,3 +155,15 @@ rtrc_shader("Shader1")
 }
 ```
 
+## Reflected special structure
+
+```cpp
+// This structure is parsed by rtrc shader processor, and accessible in rtrc shader c++ code.
+// Namespace is not supported for reflected structure.
+rtrc_refl_struct(StructName)
+{
+    int a;
+    float2 b;
+    uint c;
+};
+```
