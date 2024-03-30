@@ -101,7 +101,7 @@ public:
 #define RTRC_APPLICATION_MAIN(APP, ...)             \
     int main()                                      \
     {                                               \
-        EnableMemoryLeakReporter();                 \
+        Rtrc::EnableMemoryLeakReporter();           \
         RTRC_RUN_WITH_EXCEPTION_HANDLING            \
         {                                           \
             APP().Run(APP::Config { __VA_ARGS__ }); \
