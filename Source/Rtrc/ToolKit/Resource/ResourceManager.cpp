@@ -8,14 +8,8 @@ RTRC_BEGIN
 ResourceManager::ResourceManager(Ref<Device> device)
     : device_(device)
 {
-    meshManager_.SetDevice(device);
     LoadBuiltinTextures();
     GeneratePoissonDiskSamples();
-}
-
-RC<Mesh> ResourceManager::GetMesh(std::string_view name, MeshFlags flags)
-{
-    return meshManager_.GetMesh(name, flags);
 }
 
 void ResourceManager::LoadBuiltinTextures()

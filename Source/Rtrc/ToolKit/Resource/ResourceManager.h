@@ -1,10 +1,12 @@
 #pragma once
 
 #include <Rtrc/Core/SmartPointer/ObserverPtr.h>
+#include <Rtrc/Graphics/Device/Buffer.h>
 #include <Rtrc/Graphics/Device/Texture.h>
-#include <Rtrc/ToolKit/Resource/Mesh/MeshManager.h>
 
 RTRC_BEGIN
+
+class Device;
 
 enum class BuiltinTexture
 {
@@ -24,21 +26,11 @@ class ResourceManager : public Uncopyable
 {
 public:
     
-    using MeshFlags = MeshManager::Flags;
-
     explicit ResourceManager(Ref<Device> device);
 
     Ref<Device> GetDevice() const { return device_; }
     
-    Ref<MeshManager> GetMeshManager()     { return meshManager_;     }
-    
-    // General resource loading
-
-    RC<Mesh> GetMesh(std::string_view name, MeshFlags flags = MeshFlags::None);
-
-    // Builtin resources
-    
-    const RC<Texture> &GetBuiltinTexture(BuiltinTexture texture)  const;
+    const RC<Texture> &GetBuiltinTexture(BuiltinTexture texture) const;
 
     const RC<Buffer> &GetPoissonDiskSamples2048() const;
 
@@ -48,10 +40,8 @@ private:
     void GeneratePoissonDiskSamples();
 
     Ref<Device> device_;
-    MeshManager meshManager_;
     
     std::array<RC<Texture>, EnumCount<BuiltinTexture>> textures_;
-    std::array<RC<Mesh>,    EnumCount<BuiltinMesh>>    meshes_;
 
     RC<Buffer> poissonDiskSamples2048_;
 };

@@ -17,7 +17,25 @@ void Run()
 
     // Mesh
 
-    auto mesh = resourceManager.GetMesh("Asset/Sample/03.BindlessTexture/Quad.obj");
+    auto meshData = MeshData::LoadFromObjFile("Asset/Sample/03.BindlessTexture/Quad.obj");
+    
+    auto positionBuffer = device->CreateAndUploadBuffer(RHI::BufferDesc
+    {
+        .size = sizeof(Vector3f) * meshData.positionData.size(),
+        .usage = RHI::BufferUsage::VertexBuffer
+    }, meshData.positionData.data());
+    auto uvBuffer = device->CreateAndUploadBuffer(RHI::BufferDesc
+    {
+        .size = sizeof(Vector2f) * meshData.texCoordData.size(),
+        .usage = RHI::BufferUsage::VertexBuffer
+    }, meshData.texCoordData.data());
+    auto indexBuffer = device->CreateAndUploadBuffer(RHI::BufferDesc
+    {
+        .size = sizeof(uint32_t) * meshData.indexData.size(),
+        .usage = RHI::BufferUsage::IndexBuffer
+    }, meshData.indexData.data());
+
+    auto meshLayout = RTRC_MESH_LAYOUT(Buffer(Attribute("POSITION", Float3)), Buffer(Attribute("TEXCOORD", Float2)));
 
     // Pipeline
 
@@ -25,7 +43,7 @@ void Run()
     auto pipeline = device->CreateGraphicsPipeline(
     {
         .shader = shader,
-        .meshLayout = mesh->GetLayout(),
+        .meshLayout = meshLayout,
         .attachmentState = RTRC_ATTACHMENT_STATE
         {
             .colorAttachmentFormats = { device->GetSwapchainImageDesc().format }
@@ -101,7 +119,8 @@ void Run()
             RTRC_SCOPE_EXIT{ commandBuffer.EndRenderPass(); };
 
             commandBuffer.BindGraphicsPipeline(pipeline);
-            mesh->Bind(commandBuffer);
+            commandBuffer.SetVertexBuffers(0, { positionBuffer, uvBuffer }, { sizeof(Vector3f), sizeof(Vector2f) });
+            commandBuffer.SetIndexBuffer(indexBuffer, RHI::IndexFormat::UInt32);
             commandBuffer.BindGraphicsGroup(0, bindingGroup);
             commandBuffer.SetViewports(renderTarget->GetViewport());
             commandBuffer.SetScissors(renderTarget->GetScissor());
