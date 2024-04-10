@@ -179,17 +179,30 @@ enum class VertexAttributeType : uint32_t
     UChar4Norm,
 };
 
-const char *GetFormatName(Format format);
-size_t GetTexelSize(Format format);
+struct FormatDesc
+{
+    const char *name;
+    size_t texelSize;
+    bool canBeAccessedAsFloatInShader;
+    bool canBeAccessedAsIntInShader;
+    bool canBeAccessedAsUIntInShader;
+    bool needSNormAsTypedUAV;
+    bool needUNormAsTypedUAV;
+    bool hasDepthAspect;
+    bool hasStencilAspect;
+};
 
-bool CanBeAccessedAsFloatInShader(Format format);
-bool CanBeAccessedAsIntInShader(Format format);
-bool CanBeAccessedAsUIntInShader(Format format);
-bool NeedUNormAsTypedUAV(Format format);
-bool NeedSNormAsTypedUAV(Format format);
+const FormatDesc &GetFormatDesc(Format format);
 
-bool HasDepthAspect(Format format);
-bool HasStencilAspect(Format format);
+inline const char *GetFormatName               (Format format) { return GetFormatDesc(format).name;                         }
+inline size_t      GetTexelSize                (Format format) { return GetFormatDesc(format).texelSize;                    }
+inline bool        CanBeAccessedAsFloatInShader(Format format) { return GetFormatDesc(format).canBeAccessedAsFloatInShader; }
+inline bool        CanBeAccessedAsIntInShader  (Format format) { return GetFormatDesc(format).canBeAccessedAsIntInShader;   }
+inline bool        CanBeAccessedAsUIntInShader (Format format) { return GetFormatDesc(format).canBeAccessedAsUIntInShader;  }
+inline bool        NeedUNormAsTypedUAV         (Format format) { return GetFormatDesc(format).needUNormAsTypedUAV;          }
+inline bool        NeedSNormAsTypedUAV         (Format format) { return GetFormatDesc(format).needSNormAsTypedUAV;          }
+inline bool        HasDepthAspect              (Format format) { return GetFormatDesc(format).hasDepthAspect;               }
+inline bool        HasStencilAspect            (Format format) { return GetFormatDesc(format).hasStencilAspect;             }
 
 enum class IndexFormat
 {

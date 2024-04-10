@@ -169,6 +169,8 @@ public:
             return;
         }
 
+        // String literial
+
         if(ch == '"' || ch == '\'')
         {
             size_t strEndPos = nextPos_ + 1;

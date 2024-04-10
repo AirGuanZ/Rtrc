@@ -3,106 +3,199 @@
 
 RTRC_RHI_BEGIN
 
-const char *GetFormatName(Format format)
+const FormatDesc &GetFormatDesc(Format format)
 {
-#define ADD_CASE(NAME) case Format::NAME: return #NAME;
-    switch(format)
+    static const FormatDesc DESCS[] =
     {
-    ADD_CASE(Unknown)
-    ADD_CASE(B8G8R8A8_UNorm)
-    ADD_CASE(R8G8B8A8_UNorm)
-    ADD_CASE(R32_Float)
-    ADD_CASE(R32G32_Float)
-    ADD_CASE(R32G32B32A32_Float)
-    ADD_CASE(R32G32B32_Float)
-    ADD_CASE(R32G32B32A32_UInt)
-    ADD_CASE(A2R10G10B10_UNorm)
-    ADD_CASE(R16_UInt)
-    ADD_CASE(R32_UInt)
-    ADD_CASE(R8_UNorm)
-    ADD_CASE(R16_UNorm)
-    ADD_CASE(R16G16_UNorm)
-    ADD_CASE(R16G16_Float)
-    ADD_CASE(D24S8)
-    ADD_CASE(D32)
-    }
-    throw Exception("Unknown format: " + std::to_string(static_cast<int>(format)));
-#undef ADD_CASE
-}
-
-size_t GetTexelSize(Format format)
-{
-    switch(format)
-    {
-    case Format::Unknown:
-        return 0;
-    case Format::R32G32B32A32_Float:
-    case Format::R32G32B32A32_UInt:
-        return 16;
-    case Format::R32G32B32_Float:
-        return 12;
-    case Format::R32G32_Float:
-        return 8;
-    case Format::B8G8R8A8_UNorm:
-    case Format::R8G8B8A8_UNorm:
-    case Format::R32_Float:
-    case Format::R32_UInt:
-    case Format::R16G16_Float:
-    case Format::R16G16_UNorm:
-        return 4;
-    case Format::A2R10G10B10_UNorm:
-    case Format::R16_UInt:
-    case Format::R16_UNorm:
-        return 2;
-    case Format::R8_UNorm:
-        return 1;
-    case Format::D24S8:
-    case Format::D32:
-        throw Exception(fmt::format("Texel size of {} is unknown", GetFormatName(format)));
-    }
-    throw Exception("Unknown format: " + std::to_string(static_cast<int>(format)));
-}
-
-bool CanBeAccessedAsFloatInShader(Format format)
-{
-    if(format == Format::R16_UInt || format == Format::R32_UInt)
-        return false;
-    return true;
-}
-
-bool CanBeAccessedAsIntInShader(Format format)
-{
-    return format == Format::R16_UInt || format == Format::R32_UInt;
-}
-
-bool CanBeAccessedAsUIntInShader(Format format)
-{
-    return format == Format::R16_UInt || format == Format::R32_UInt;
-}
-
-bool NeedUNormAsTypedUAV(Format format)
-{
-    return format == Format::B8G8R8A8_UNorm ||
-           format == Format::R8G8B8A8_UNorm ||
-           format == Format::A2R10G10B10_UNorm ||
-           format == Format::R8_UNorm ||
-           format == Format::R16_UNorm ||
-           format == Format::R16G16_UNorm;
-}
-
-bool NeedSNormAsTypedUAV(Format format)
-{
-    return false;
-}
-
-bool HasDepthAspect(Format format)
-{
-    return format == Format::D24S8 || format == Format::D32;
-}
-
-bool HasStencilAspect(Format format)
-{
-    return format == Format::D24S8;
+        {
+            .name                         = "Unknown",
+            .texelSize                    = 0,
+            .canBeAccessedAsFloatInShader = false,
+            .canBeAccessedAsIntInShader   = false,
+            .canBeAccessedAsUIntInShader  = false,
+            .needSNormAsTypedUAV          = false,
+            .needUNormAsTypedUAV          = false,
+            .hasDepthAspect               = false,
+            .hasStencilAspect             = false
+        },
+        {
+            .name                         = "B8G8R8A8_UNorm",
+            .texelSize                    = 4,
+            .canBeAccessedAsFloatInShader = true,
+            .canBeAccessedAsIntInShader   = false,
+            .canBeAccessedAsUIntInShader  = false,
+            .needSNormAsTypedUAV          = false,
+            .needUNormAsTypedUAV          = true,
+            .hasDepthAspect               = false,
+            .hasStencilAspect             = false
+        },
+        {
+            .name                         = "R8G8B8A8_UNorm",
+            .texelSize                    = 4,
+            .canBeAccessedAsFloatInShader = true,
+            .canBeAccessedAsIntInShader   = false,
+            .canBeAccessedAsUIntInShader  = false,
+            .needSNormAsTypedUAV          = false,
+            .needUNormAsTypedUAV          = true,
+            .hasDepthAspect               = false,
+            .hasStencilAspect             = false
+        },
+        {
+            .name                         = "R32_Float",
+            .texelSize                    = 4,
+            .canBeAccessedAsFloatInShader = true,
+            .canBeAccessedAsIntInShader   = false,
+            .canBeAccessedAsUIntInShader  = false,
+            .needSNormAsTypedUAV          = false,
+            .needUNormAsTypedUAV          = false,
+            .hasDepthAspect               = false,
+            .hasStencilAspect             = false
+        },
+        {
+            .name                         = "R32G32_Float",
+            .texelSize                    = 8,
+            .canBeAccessedAsFloatInShader = true,
+            .canBeAccessedAsIntInShader   = false,
+            .canBeAccessedAsUIntInShader  = false,
+            .needSNormAsTypedUAV          = false,
+            .needUNormAsTypedUAV          = false,
+            .hasDepthAspect               = false,
+            .hasStencilAspect             = false
+        },
+        {
+            .name                         = "R32G32B32A32_Float",
+            .texelSize                    = 16,
+            .canBeAccessedAsFloatInShader = true,
+            .canBeAccessedAsIntInShader   = false,
+            .canBeAccessedAsUIntInShader  = false,
+            .needSNormAsTypedUAV          = false,
+            .needUNormAsTypedUAV          = false,
+            .hasDepthAspect               = false,
+            .hasStencilAspect             = false
+        },
+        {
+            .name                         = "R32G32B32_Float",
+            .texelSize                    = 12,
+            .canBeAccessedAsFloatInShader = true,
+            .canBeAccessedAsIntInShader   = false,
+            .canBeAccessedAsUIntInShader  = false,
+            .needSNormAsTypedUAV          = false,
+            .needUNormAsTypedUAV          = false,
+            .hasDepthAspect               = false,
+            .hasStencilAspect             = false
+        },
+        {
+            .name                         = "R32G32B32A32_UInt",
+            .texelSize                    = 16,
+            .canBeAccessedAsFloatInShader = false,
+            .canBeAccessedAsIntInShader   = false,
+            .canBeAccessedAsUIntInShader  = true,
+            .needSNormAsTypedUAV          = false,
+            .needUNormAsTypedUAV          = false,
+            .hasDepthAspect               = false,
+            .hasStencilAspect             = false
+        },
+        {
+            .name                         = "A2R10G10B10_UNorm",
+            .texelSize                    = 4,
+            .canBeAccessedAsFloatInShader = true,
+            .canBeAccessedAsIntInShader   = false,
+            .canBeAccessedAsUIntInShader  = false,
+            .needSNormAsTypedUAV          = false,
+            .needUNormAsTypedUAV          = true,
+            .hasDepthAspect               = false,
+            .hasStencilAspect             = false
+        },
+        {
+            .name                         = "R16_UInt",
+            .texelSize                    = 2,
+            .canBeAccessedAsFloatInShader = false,
+            .canBeAccessedAsIntInShader   = false,
+            .canBeAccessedAsUIntInShader  = true,
+            .needSNormAsTypedUAV          = false,
+            .needUNormAsTypedUAV          = false,
+            .hasDepthAspect               = false,
+            .hasStencilAspect             = false
+        },
+        {
+            .name                         = "R32_UInt",
+            .texelSize                    = 4,
+            .canBeAccessedAsFloatInShader = false,
+            .canBeAccessedAsIntInShader   = false,
+            .canBeAccessedAsUIntInShader  = true,
+            .needSNormAsTypedUAV          = false,
+            .needUNormAsTypedUAV          = false,
+            .hasDepthAspect               = false,
+            .hasStencilAspect             = false
+        },
+        {
+            .name                         = "R8_UNorm",
+            .texelSize                    = 1,
+            .canBeAccessedAsFloatInShader = true,
+            .canBeAccessedAsIntInShader   = false,
+            .canBeAccessedAsUIntInShader  = false,
+            .needSNormAsTypedUAV          = false,
+            .needUNormAsTypedUAV          = true,
+            .hasDepthAspect               = false,
+            .hasStencilAspect             = false
+        },
+        {
+            .name                         = "R16_UNorm",
+            .texelSize                    = 2,
+            .canBeAccessedAsFloatInShader = true,
+            .canBeAccessedAsIntInShader   = false,
+            .canBeAccessedAsUIntInShader  = false,
+            .needSNormAsTypedUAV          = false,
+            .needUNormAsTypedUAV          = true,
+            .hasDepthAspect               = false,
+            .hasStencilAspect             = false
+        },
+        {
+            .name                         = "R16G16_UNorm",
+            .texelSize                    = 4,
+            .canBeAccessedAsFloatInShader = true,
+            .canBeAccessedAsIntInShader   = false,
+            .canBeAccessedAsUIntInShader  = false,
+            .needSNormAsTypedUAV          = false,
+            .needUNormAsTypedUAV          = true,
+            .hasDepthAspect               = false,
+            .hasStencilAspect             = false
+        },
+        {
+            .name                         = "R16G16_Float",
+            .texelSize                    = 4,
+            .canBeAccessedAsFloatInShader = true,
+            .canBeAccessedAsIntInShader   = false,
+            .canBeAccessedAsUIntInShader  = false,
+            .needSNormAsTypedUAV          = false,
+            .needUNormAsTypedUAV          = false,
+            .hasDepthAspect               = false,
+            .hasStencilAspect             = false
+        },
+        {
+            .name                         = "D24S8",
+            .texelSize                    = 4,
+            .canBeAccessedAsFloatInShader = true,
+            .canBeAccessedAsIntInShader   = false,
+            .canBeAccessedAsUIntInShader  = false,
+            .needSNormAsTypedUAV          = false,
+            .needUNormAsTypedUAV          = false,
+            .hasDepthAspect               = true,
+            .hasStencilAspect             = true
+        },
+        {
+            .name                         = "D32",
+            .texelSize                    = 4,
+            .canBeAccessedAsFloatInShader = true,
+            .canBeAccessedAsIntInShader   = false,
+            .canBeAccessedAsUIntInShader  = false,
+            .needSNormAsTypedUAV          = false,
+            .needUNormAsTypedUAV          = false,
+            .hasDepthAspect               = true,
+            .hasStencilAspect             = false
+        },
+    };
+    return DESCS[std::to_underlying(format)];
 }
 
 std::string GetShaderStageFlagsName(ShaderStageFlags flags)
