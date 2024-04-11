@@ -35,7 +35,7 @@ if(RTRC_ENABLE_VULKAN_BACKEND)
 endif()
 
 if(RTRC_ENABLE_DIRECTX12_BACKEND)
-    add_subdirectory(microsoft.direct3d.d3d12.1.610.3)
+    add_subdirectory(microsoft.direct3d.d3d12.1.613.2)
     add_subdirectory(winpixeventruntime.1.0.230302001)
     add_subdirectory(D3D12MemAlloc)
 endif()

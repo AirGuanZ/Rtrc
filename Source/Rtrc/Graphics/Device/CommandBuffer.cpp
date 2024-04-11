@@ -811,6 +811,7 @@ void CommandBuffer::BuildBlas(
             .usage          = RHI::BufferUsage::AccelerationStructure,
             .hostAccessType = RHI::BufferHostAccessType::None
         });
+        newBuffer->SetName("BlasBuffer");
         blas->SetBuffer(std::move(newBuffer));
     }
 
@@ -826,6 +827,7 @@ void CommandBuffer::BuildBlas(
             .usage          = RHI::BufferUsage::AccelerationStructureScratch,
             .hostAccessType = RHI::BufferHostAccessType::None
         });
+        temporaryScratchBuffer->GetFullBuffer()->SetName("BuildBlasScratchBuffer");
         actualScratchBuffer = temporaryScratchBuffer.get();
     }
 
@@ -862,6 +864,7 @@ void CommandBuffer::BuildTlas(
             .usage          = RHI::BufferUsage::AccelerationStructure,
             .hostAccessType = RHI::BufferHostAccessType::None
         });
+        newBuffer->SetName("TlasBuffer");
         tlas->SetBuffer(std::move(newBuffer));
     }
 
@@ -877,6 +880,7 @@ void CommandBuffer::BuildTlas(
             .usage          = RHI::BufferUsage::AccelerationStructureScratch,
             .hostAccessType = RHI::BufferHostAccessType::None
         });
+        temporaryScratchBuffer->GetFullBuffer()->SetName("BuildTlasScratchBuffer");
         actualScratchBuffer = temporaryScratchBuffer.get();
     }
 

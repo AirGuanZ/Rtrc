@@ -37,15 +37,17 @@ Object LoadObject(Device &device, const std::string &filename)
     {
         .size           = sizeof(Vector3f) * meshData.positionData.size(),
         .usage          = RHI::BufferUsage::AccelerationStructureBuildInput | RHI::BufferUsage::DeviceAddress,
-        .hostAccessType = RHI::BufferHostAccessType::Upload
+        .hostAccessType = RHI::BufferHostAccessType::None
     }, meshData.positionData.data());
+    vertexBuffer->SetName("VertexBuffer");
     
     auto indexBuffer = device.CreateAndUploadBuffer(RHI::BufferDesc
     {
         .size           = sizeof(uint32_t) * meshData.indexData.size(),
         .usage          = RHI::BufferUsage::AccelerationStructureBuildInput | RHI::BufferUsage::DeviceAddress,
-        .hostAccessType = RHI::BufferHostAccessType::Upload
+        .hostAccessType = RHI::BufferHostAccessType::None
     }, meshData.indexData.data());
+    indexBuffer->SetName("IndexBuffer");
 
     Object ret;
     ret.blas = device.CreateBlas();
@@ -91,8 +93,8 @@ Object LoadObject(Device &device, const std::string &filename)
         .usage          = RHI::BufferUsage::ShaderStructuredBuffer | RHI::BufferUsage::TransferDst,
         .hostAccessType = RHI::BufferHostAccessType::None
     }, primitives.data());
-
     ret.primitives->SetDefaultStructStride(sizeof(Primitive));
+    ret.primitives->SetName("PrimitiveInfoBuffer");
 
     return ret;
 }
@@ -153,7 +155,7 @@ void Run()
     {
         .size           = sizeof(RHI::RayTracingInstanceData) * instanceData.size(),
         .usage          = RHI::BufferUsage::AccelerationStructureBuildInput | RHI::BufferUsage::DeviceAddress,
-        .hostAccessType = RHI::BufferHostAccessType::Upload
+        .hostAccessType = RHI::BufferHostAccessType::None
     }, instanceData.data());
 
     auto tlas = device->CreateTlas();

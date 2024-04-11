@@ -155,15 +155,15 @@ void DirectX12BlasPrebuildInfo::_internalBuildBlas(
 
     auto d3dBlas = static_cast<DirectX12Blas *>(blas.Get());
 
-    ComPtr<ID3D12DebugCommandList3> debugCommandList;
-    commandList->QueryInterface(IID_PPV_ARGS(debugCommandList.GetAddressOf()));
-    if(debugCommandList)
-    {
-        auto d3dBuffer = static_cast<DirectX12Buffer *>(d3dBlas->_internalGetBuffer().Get());
-        debugCommandList->AssertResourceAccess(
-            d3dBuffer->_internalGetNativeBuffer().Get(),
-            0, D3D12_BARRIER_ACCESS_RAYTRACING_ACCELERATION_STRUCTURE_WRITE);
-    }
+    //ComPtr<ID3D12DebugCommandList3> debugCommandList;
+    //commandList->QueryInterface(IID_PPV_ARGS(debugCommandList.GetAddressOf()));
+    //if(debugCommandList)
+    //{
+    //    auto d3dBuffer = static_cast<DirectX12Buffer *>(d3dBlas->_internalGetBuffer().Get());
+    //    debugCommandList->AssertResourceAccess(
+    //        d3dBuffer->_internalGetNativeBuffer().Get(),
+    //        0, D3D12_BARRIER_ACCESS_RAYTRACING_ACCELERATION_STRUCTURE_WRITE);
+    //}
 
     D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC buildDesc;
     buildDesc.DestAccelerationStructureData    = d3dBlas->GetDeviceAddress().address;

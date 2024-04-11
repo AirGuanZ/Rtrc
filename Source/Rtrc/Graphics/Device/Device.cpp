@@ -226,9 +226,23 @@ RC<Buffer> Device::CreateAndUploadBuffer(
     size_t                    initDataSize)
 {
     RHI::BufferDesc desc = _desc;
-    desc.usage |= RHI::BufferUsage::TransferDst;
+    if(desc.hostAccessType != RHI::BufferHostAccessType::Upload)
+    {
+        desc.usage |= RHI::BufferUsage::TransferDst;
+    }
     auto ret = CreateBuffer(desc);
-    this->Upload(ret, initData, initDataOffset, initDataSize);
+    if(desc.hostAccessType == RHI::BufferHostAccessType::Upload)
+    {
+        if(!initDataSize)
+        {
+            initDataSize = desc.size - initDataOffset;
+        }
+        ret->Upload(initData, initDataOffset, initDataSize);
+    }
+    else
+    {
+        this->Upload(ret, initData, initDataOffset, initDataSize);
+    }
     return ret;
 }
 

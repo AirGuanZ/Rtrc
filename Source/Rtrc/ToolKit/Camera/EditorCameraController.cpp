@@ -232,7 +232,7 @@ bool EditorCameraController::UpdateTrackballMode(const WindowInput &input, float
     if(isRotating && input.IsKeyPressed(KeyCode::MouseLeft))
     {
         const Vector2f oldYawPitch = yawPitch;
-        if(input.GetCursorRelativePositionX() != 0 || input.GetCursorRelativePositionY() != 0)
+        if(std::abs(input.GetCursorRelativePositionX()) > 1e-5f || std::abs(input.GetCursorRelativePositionY()) > 1e-5f)
         {
             const float dx = input.GetCursorAbsolutePositionX() - mousePosWhenStartRotating_.x;
             const float dy = input.GetCursorAbsolutePositionY() - mousePosWhenStartRotating_.y;
