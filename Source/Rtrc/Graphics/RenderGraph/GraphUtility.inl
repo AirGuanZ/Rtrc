@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Rtrc/RHI/RHIDeclaration.h>
+
 RTRC_BEGIN
 
 /**
@@ -658,7 +660,7 @@ inline void RGReadbackBuffer(
     pass->Use(stagingBuffer, RGUseInfo // Add dummy use info to make sure this pass is executed after copy pass
     {
         .stages = RHI::PipelineStage::ComputeShader,
-        .accesses = RHI::ResourceAccess::RWBufferRead | RHI::ResourceAccess::RWBufferWrite
+        .accesses = RHI::ResourceAccess::DummyReadAndWrite
     });
     pass->SetCallback([stagingBuffer, output, offset, size]
     {
@@ -706,7 +708,7 @@ inline void RGReadbackTexture(
     readbackPass->Use(stagingBuffer, RGUseInfo
     {
         .stages = RHI::PipelineStage::ComputeShader,
-        .accesses = RHI::ResourceAccess::RWBufferRead | RHI::ResourceAccess::RWBufferWrite
+        .accesses = RHI::ResourceAccess::DummyReadAndWrite
     });
     readbackPass->SetCallback([stagingBuffer, texture, output, unalignedRowSize, alignedRowSize, stagingBufferSize]
     {

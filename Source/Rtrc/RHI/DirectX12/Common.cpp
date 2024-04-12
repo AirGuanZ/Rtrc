@@ -43,7 +43,7 @@ D3D12MA::ALLOCATION_CALLBACKS RtrcGlobalDirectX12AllocationCallbacks =
 
 std::wstring Utf8ToWin32W(std::string_view s)
 {
-    auto throwError = []
+    auto ThrowError = []
     {
         const DWORD err = GetLastError();
         throw Exception(fmt::format(
@@ -60,7 +60,7 @@ std::wstring Utf8ToWin32W(std::string_view s)
         nullptr, 0);
     if(!len)
     {
-        throwError();
+        ThrowError();
     }
     std::wstring ret;
     ret.resize(len);
@@ -70,7 +70,7 @@ std::wstring Utf8ToWin32W(std::string_view s)
         ret.data(), len);
     if(!len)
     {
-        throwError();
+        ThrowError();
     }
     return ret;
 }
@@ -447,6 +447,7 @@ D3D12_BARRIER_SYNC TranslateBarrierSync(PipelineStageFlag stages, Format format)
 
 D3D12_BARRIER_ACCESS TranslateBarrierAccess(ResourceAccessFlag accesses)
 {
+    assert(!accesses.Contains(ResourceAccess::DummyReadAndWrite));
     constexpr D3D12_BARRIER_ACCESS d3dAccesses[] =
     {
         D3D12_BARRIER_ACCESS_VERTEX_BUFFER,                           // VertexBufferRead
@@ -477,6 +478,7 @@ D3D12_BARRIER_ACCESS TranslateBarrierAccess(ResourceAccessFlag accesses)
         D3D12_BARRIER_ACCESS_SHADER_RESOURCE,                         // ReadSBT
         D3D12_BARRIER_ACCESS_SHADER_RESOURCE,                         // ReadForBuildAS
         D3D12_BARRIER_ACCESS_INDIRECT_ARGUMENT,                       // IndirectCommandRead
+        D3D12_BARRIER_ACCESS_NO_ACCESS,                               // DummyReadAndWrite
         D3D12_BARRIER_ACCESS_COMMON,                                  // All
     };
     if(accesses.Contains(ResourceAccess::All))

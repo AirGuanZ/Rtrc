@@ -488,6 +488,7 @@ VkPipelineStageFlags2 TranslatePipelineStageFlag(PipelineStageFlag flag)
 
 VkAccessFlags2 TranslateAccessFlag(ResourceAccessFlag flag)
 {
+    assert(!flag.Contains(ResourceAccess::DummyReadAndWrite));
     static constexpr VkAccessFlags2 bitToFlag[] =
     {
         VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT,                                                              // VertexBufferRead
@@ -518,6 +519,7 @@ VkAccessFlags2 TranslateAccessFlag(ResourceAccessFlag flag)
         VK_ACCESS_2_SHADER_BINDING_TABLE_READ_BIT_KHR,                                                      // ReadSBT
         VK_ACCESS_2_SHADER_READ_BIT,                                                                        // ReadForBuildAS
         VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,                                                              // IndirectCommandRead
+        VK_ACCESS_2_NONE,                                                                                   // DummyReadAndWrite
         VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT                                          // All
     };
     VkAccessFlags2 result = 0;

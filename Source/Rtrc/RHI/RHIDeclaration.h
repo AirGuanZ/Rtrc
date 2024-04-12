@@ -515,7 +515,8 @@ enum class ResourceAccess : uint32_t
     ReadSBT                  = 1 << 25,
     ReadForBuildAS           = 1 << 26,
     IndirectCommandRead      = 1 << 27,
-    All                      = 1 << 28
+    DummyReadAndWrite        = 1 << 28,
+    All                      = 1 << 29
 };
 RTRC_DEFINE_ENUM_FLAGS(ResourceAccess)
 using ResourceAccessFlag = EnumFlagsResourceAccess;

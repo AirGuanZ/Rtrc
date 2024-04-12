@@ -99,7 +99,6 @@ RC<StatefulTexture> VDMBaker::BakeVDMBySeamCarving(
         if(positionMap.GetWidth() > res.x)
         {
             auto energyMap = SeamEnergy::ComputeEnergyMapBasedOnInterpolationError(positionMap, true);
-            //auto energyMap = SeamEnergy::ComputeEnergyMapBasedOnNormalDifference(positionMap);
             auto dpTable = SeamEnergy::ComputeVerticalDPTable(energyMap);
 
             int entryX = 1; float seamEnergy = dpTable(1, 0);
@@ -120,7 +119,6 @@ RC<StatefulTexture> VDMBaker::BakeVDMBySeamCarving(
         if(positionMap.GetHeight() > res.y)
         {
             auto energyMap = SeamEnergy::ComputeEnergyMapBasedOnInterpolationError(positionMap, false);
-            //auto energyMap = SeamEnergy::ComputeEnergyMapBasedOnNormalDifference(positionMap);
             auto dpTable = SeamEnergy::ComputeHorizontalDPTable(energyMap);
 
             int entryY = 1; float seamEnergy = dpTable(0, 1);

@@ -407,6 +407,11 @@ void RGCompiler::CollectResourceUsers()
 
         for(auto &[bufferResource, bufferUsage] : pass.bufferUsages_)
         {
+            if(bufferUsage.accesses == RHI::ResourceAccess::DummyReadAndWrite)
+            {
+                continue;
+            }
+
             bufferUsers_[bufferResource].push_back(BufferUser
             {
                 .passIndex       = static_cast<int>(passIndex),
@@ -436,6 +441,10 @@ void RGCompiler::CollectResourceUsers()
                     continue;
                 }
                 const RGPassImpl::SubTexUsage &subTexUsage = textureUsage(mipLevel, arrayLayer).value();
+                if(subTexUsage.accesses == RHI::ResourceAccess::DummyReadAndWrite)
+                {
+                    continue;
+                }
                 const SubTexKey key = { textureResource, TexSubrsc{ mipLevel, arrayLayer } };
                 subTexUsers_[key].push_back(SubTexUser
                 {
@@ -456,6 +465,10 @@ void RGCompiler::CollectResourceUsers()
                         continue;
                     }
                     const RGPassImpl::SubTexUsage &subTexUsage = textureUsage(mipLevel, arrayLayer).value();
+                    if(subTexUsage.accesses == RHI::ResourceAccess::DummyReadAndWrite)
+                    {
+                        continue;
+                    }
                     if(subTexUsage.layout != RHI::TextureLayout::ShaderTexture)
                     {
                         throw Exception("External readonly texture is used in non ShaderTexture layout");

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <tbb/parallel_for.h>
+#include <execution>
 
 #include <Rtrc/Core/Common.h>
 
@@ -9,12 +9,10 @@ RTRC_BEGIN
 template<std::integral I, typename F>
 void ParallelFor(I begin, I end, const F &f)
 {
-    tbb::parallel_for(tbb::blocked_range<I>(begin, end), [&](tbb::blocked_range<I> range)
+    auto range = std::views::iota(begin, end);
+    std::for_each(std::execution::par_unseq, std::begin(range), std::end(range), [&](I index)
     {
-        for(I it = range.begin(); it != range.end(); ++it)
-        {
-            f(it);
-        }
+        f(index);
     });
 }
 
