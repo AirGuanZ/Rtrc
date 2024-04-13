@@ -92,6 +92,21 @@ template<typename T>
 Vector3<T> Max(const Vector3<T> &lhs, const Vector3<T> &rhs);
 
 template<typename T>
+Vector3<T> Floor(const Vector3<T> &v);
+template<typename T>
+Vector3<T> Ceil(const Vector3<T> &v);
+
+template<typename T>
+Vector3<T> Abs(const Vector3<T> &v);
+
+template<typename T>
+auto AddReduce(const Vector3<T> &v);
+template<typename T>
+T MaxReduce(const Vector3<T> &v);
+template<typename T>
+T MinReduce(const Vector3<T> &v);
+
+template<typename T>
 struct ArchiveTransferTrait<Vector3<T>>
 {
     template<typename Archive>
@@ -297,6 +312,42 @@ Vector3<T> Max(const Vector3<T> &lhs, const Vector3<T> &rhs)
         (std::max)(lhs.x, rhs.x),
         (std::max)(lhs.y, rhs.y),
         (std::max)(lhs.z, rhs.z));
+}
+
+template<typename T>
+Vector3<T> Floor(const Vector3<T> &v)
+{
+    return Vector3<T>(std::floor(v.x), std::floor(v.y), std::floor(v.z));
+}
+
+template<typename T>
+Vector3<T> Ceil(const Vector3<T> &v)
+{
+    return Vector3<T>(std::ceil(v.x), std::ceil(v.y), std::ceil(v.z));
+}
+
+template<typename T>
+Vector3<T> Abs(const Vector3<T> &v)
+{
+    return Vector3<T>(std::abs(v.x), std::abs(v.y), std::abs(v.z));
+}
+
+template<typename T>
+auto AddReduce(const Vector3<T> &v)
+{
+    return v.x + v.y + v.z;
+}
+
+template<typename T>
+T MaxReduce(const Vector3<T> &v)
+{
+    return (std::max)({ v.x, v.y, v.z });
+}
+
+template<typename T>
+T MinReduce(const Vector3<T> &v)
+{
+    return (std::min)({ v.x, v.y, v.z });
 }
 
 RTRC_END
