@@ -183,9 +183,10 @@ public:
     }
 
     MultiDimMutSpan(MutSpan<T> data, Span<uint32_t> sizes)
-        : data_(data), sizes_(sizes)
+        : data_(data)
     {
-        
+        assert(sizes.size() == D);
+        std::copy(sizes.begin(), sizes.end(), sizes_.begin());
     }
 
     bool IsEmpty() const
@@ -199,6 +200,12 @@ public:
 
     template<typename...TIs> requires (sizeof...(TIs) == D) && std::conjunction_v<std::is_integral<TIs>...>
     T &operator()(TIs...indices)
+    {
+        return data_[this->ComputeLinearIndex(indices...)];
+    }
+
+    template<typename...TIs> requires (sizeof...(TIs) == D) && std::conjunction_v<std::is_integral<TIs>...>
+    const T &operator()(TIs...indices) const
     {
         return data_[this->ComputeLinearIndex(indices...)];
     }
@@ -270,6 +277,18 @@ public:
 
     }
 
+    MultiDimSpan(MultiDimMutSpan<T, D> mutSpan)
+    {
+        size_t totalSize = 1;
+        for(uint32_t i = 0; i < D; ++i)
+        {
+            sizes_[i] = mutSpan.GetSize(i);
+            totalSize *= sizes_[i];
+        }
+
+        data_ = Span<T>(mutSpan.GetData(), totalSize);
+    }
+
     bool IsEmpty() const
     {
         return data_.IsEmpty();
@@ -280,7 +299,7 @@ public:
     uint32_t GetSize(size_t dim) const { return sizes_[dim]; }
 
     template<typename...TIs> requires (sizeof...(TIs) == D) && std::conjunction_v<std::is_integral<TIs>...>
-    const T &operator()(TIs...indices)
+    const T &operator()(TIs...indices) const
     {
         return data_[this->ComputeLinearIndex(indices...)];
     }
@@ -309,7 +328,7 @@ private:
         return accum * sizes_[DI] + a;
     }
 
-    template<uint32_t DI, typename...TIs> requires (sizeof...(TIs) == D) && std::conjunction_v<std::is_integral<TIs>...>
+    template<uint32_t DI, typename...TIs> requires std::conjunction_v<std::is_integral<TIs>...>
     uint32_t ComputeLinearIndexAux(uint32_t accum, uint32_t a, uint32_t b, TIs...indices) const
     {
         static_assert(DI < D);
