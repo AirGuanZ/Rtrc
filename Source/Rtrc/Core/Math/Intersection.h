@@ -70,7 +70,8 @@ inline bool IntersectionTriangleAABB(
         const float triMax = (std::max)({ pa, pb, pc });
         const float aabbMax = AddReduce(Abs(axis * aabbHalfSize));
         const float aabbMin = -aabbMax;
-        return triMax < aabbMin || aabbMax < triMin;
+        const bool missed = triMax < aabbMin || aabbMax < triMin;
+        return !missed;
     };
 
     // Edge vectors & edge normal vectors
