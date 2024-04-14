@@ -19,7 +19,7 @@ public:
 
     constexpr Vector3(const Vector2<T> &xy, T z);
 
-    T operator[](size_t i) const;
+    const T &operator[](size_t i) const;
 
     T &operator[](size_t i);
 
@@ -151,7 +151,7 @@ constexpr Vector3<T>::Vector3(const Vector2<T> &xy, T z)
 }
 
 template<typename T>
-T Vector3<T>::operator[](size_t i) const
+const T &Vector3<T>::operator[](size_t i) const
 {
     return *(&x + i);
 }

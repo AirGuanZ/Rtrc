@@ -27,6 +27,10 @@ class Image
 public:
 
     using Texel = T;
+    using TexelRef = std::conditional_t<
+        std::is_same_v<T, bool>, std::vector<bool>::reference, Texel&>;
+    using TexelConstRef = std::conditional_t<
+        std::is_same_v<T, bool>, std::vector<bool>::const_reference, const Texel &>;
 
     Image();
     explicit Image(const Vector2u &size);
@@ -61,11 +65,14 @@ public:
     Vector2u GetSizeMinusOne() const { return { this->GetWidthMinusOne(), this->GetHeightMinusOne() }; }
     Vector2i GetSSizeMinusOne() const { return { this->GetSWidthMinusOne(), this->GetSHeightMinusOne() }; }
 
-          Texel &operator()(uint32_t x, uint32_t y);
-    const Texel &operator()(uint32_t x, uint32_t y) const;
+    TexelRef      operator()(uint32_t x, uint32_t y);
+    TexelConstRef operator()(uint32_t x, uint32_t y) const;
 
     template<typename U>
     Image<U> To() const;
+
+    template<typename F>
+    auto Map(const F &func) const;
 
     void Pow_(float v);
     Image Pow(float v) const;
@@ -78,6 +85,9 @@ public:
 
     auto GetData()       { return data_.data(); }
     auto GetData() const { return data_.data(); }
+
+    auto &GetStorage()       { return data_; }
+    auto &GetStorage() const { return data_; }
 
     void Save(const std::string &filename, ImageFormat format = ImageFormat::Auto) const;
     static Image Load(const std::string &filename, ImageFormat format = ImageFormat::Auto);
@@ -530,7 +540,7 @@ uint32_t Image<T>::GetHeight() const
 }
 
 template<typename T>
-typename Image<T>::Texel &Image<T>::operator()(uint32_t x, uint32_t y)
+typename Image<T>::TexelRef Image<T>::operator()(uint32_t x, uint32_t y)
 {
     assert(x < width_);
     assert(y < height_);
@@ -539,7 +549,7 @@ typename Image<T>::Texel &Image<T>::operator()(uint32_t x, uint32_t y)
 }
 
 template<typename T>
-const typename Image<T>::Texel &Image<T>::operator()(uint32_t x, uint32_t y) const
+typename Image<T>::TexelConstRef Image<T>::operator()(uint32_t x, uint32_t y) const
 {
     assert(x < width_);
     assert(y < height_);
@@ -562,6 +572,24 @@ Image<U> Image<T>::To() const
         result.GetData()[i] = ImageDetail::To<U>(data_[i]);
     }
     return result;
+}
+
+template <typename T>
+template <typename F>
+auto Image<T>::Map(const F& func) const
+{
+    using DstTexel = decltype(func(std::declval<Texel>()));
+    if(!*this)
+    {
+        return Image<DstTexel>();
+    }
+    Image<DstTexel> ret(width_, height_);
+    const uint32_t c = width_ * height_;
+    for(uint32_t i = 0; i < c; ++i)
+    {
+        ret.GetStorage()[i] = func(GetStorage()[i]);
+    }
+    return ret;
 }
 
 template<typename T>
@@ -601,17 +629,13 @@ void Image<T>::Save(const std::string &filename, ImageFormat format) const
         {
             To<uint8_t>().Save(filename, format);
         }
-        else if constexpr(std::is_same_v<T, Vector2f>)
+        else if constexpr(std::is_same_v<T, Vector2f> || std::is_same_v<T, Vector4f>)
         {
             To<Vector4b>().Save(filename, format);
         }
         else if constexpr(std::is_same_v<T, Vector3f>)
         {
             To<Vector3b>().Save(filename, format);
-        }
-        else if constexpr(std::is_same_v<T, Vector4f>)
-        {
-            To<Vector4b>().Save(filename, format);
         }
         else if constexpr(std::is_same_v<T, uint8_t>)
         {

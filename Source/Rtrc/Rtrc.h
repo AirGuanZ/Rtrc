@@ -11,6 +11,7 @@
 #include <Rtrc/Core/Memory/Malloc.h>
 #include <Rtrc/Core/Parallel.h>
 #include <Rtrc/Core/Resource/GenerateMipmap.h>
+#include <Rtrc/Core/Resource/ImageND.h>
 #include <Rtrc/Core/Resource/ImageSampler.h>
 #include <Rtrc/Core/Resource/MeshData.h>
 

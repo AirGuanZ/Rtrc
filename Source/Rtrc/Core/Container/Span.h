@@ -100,6 +100,9 @@ public:
     Span(const std::vector<T> &data) : Span(data.data(), data.size()) { }
 
     template<size_t N>
+    Span(const std::array<T, N> &data) : Span(data.data(), data.size()) { }
+
+    template<size_t N>
     Span(const StaticVector<T, N> &data) : Span(data.GetData(), data.GetSize()) { }
 
     template<size_t N>
@@ -197,6 +200,7 @@ public:
     T *GetData() { return data_.GetData(); }
 
     uint32_t GetSize(size_t dim) const { return sizes_[dim]; }
+    const std::array<uint32_t, D> &GetSizes() const { return sizes_; }
 
     template<typename...TIs> requires (sizeof...(TIs) == D) && std::conjunction_v<std::is_integral<TIs>...>
     T &operator()(TIs...indices)
