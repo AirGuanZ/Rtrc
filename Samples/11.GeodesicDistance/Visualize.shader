@@ -30,6 +30,12 @@ rtrc_shader("VisualizeMeshWithDistanceField")
 		float3 uvw : UWV;
 	};
 
+	float3 ScalarToColor(float x)
+	{
+		const float level = saturate(x) * (3.14159265 / 2);
+		return float3(sin(level), sin(level * 2), cos(level));
+	}
+
 	VSOutput VSMain(VSInput input)
 	{
 		VSOutput output;
@@ -41,10 +47,14 @@ rtrc_shader("VisualizeMeshWithDistanceField")
 
 	float4 FSMain(VSOutput input) : SV_Target
 	{
-		float value = DistanceTexture.SampleLevel(TextureSampler, input.uvw, 0);
-		value = frac(value * Pass.distanceScale * Pass.visualizeSegments);
-		value = value < clamp(0.00125 * Pass.visualizeSegments * Pass.lineWidthScale, 0.01, 0.5) ? 0 : 1;
-		return float4(value.xxx, 0);
+		const float value = DistanceTexture.SampleLevel(TextureSampler, input.uvw, 0);
+		const float normalizedValue = value * Pass.distanceScale;
+		const float3 color = ScalarToColor(1 - normalizedValue);
+		const float normalAtten = 0.6 + 0.4 * input.normal.y;
+		const float lineValue = frac(normalizedValue * Pass.visualizeSegments);
+		const float lineThreshold = clamp(0.00125 * Pass.visualizeSegments * Pass.lineWidthScale, 0.01, 0.5);
+		const float lineAtten = lineValue < lineThreshold ? 0 : 1;
+		return float4(color * normalAtten * lineAtten, 0);
 	}
 
 } // rtrc_shader("VisualizeMeshWithDistanceField")

@@ -302,7 +302,7 @@ class GeodesicDistanceDemo : public SimpleApplication
 {
     Mesh mesh_;
 
-    uint32_t resolution_ = 128;
+    uint32_t resolution_ = RTRC_DEBUG ? 128 : 256;
     Image3D<bool> voxels_;
     Vector3f volumeLower_;
     Vector3f volumeUpper_;
@@ -311,8 +311,8 @@ class GeodesicDistanceDemo : public SimpleApplication
     Image3D<float> distances_;
     RC<Texture> distanceTexture_;
     float maxDistance_ = 0;
-    uint32_t visualizeSegments_ = 40;
-    float lineWidthScale_ = 1.0f;
+    uint32_t visualizeSegments_ = 35;
+    float lineWidthScale_ = 2.5f;
 
     Camera camera_;
     EditorCameraController cameraController_;
