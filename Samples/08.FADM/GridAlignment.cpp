@@ -169,7 +169,7 @@ namespace GridAlignment
 
         const auto density = AccumulateVertexDensity2D(inputMesh, 2 * res.x).To<double>();
         auto transportMapData = OT2D().Solve(density).To<Vector2f>();
-        auto transportMap = device->CreateAndUploadTexture2D(
+        auto transportMap = device->CreateAndUploadTexture(
         {
             .format = RHI::Format::R32G32_Float,
             .width = transportMapData.GetWidth(),
@@ -456,7 +456,7 @@ namespace GridAlignment
                 uvData(x, y) = grid(x, y).uv;
             }
         }
-        return device->CreateAndUploadTexture2D(RHI::TextureDesc
+        return device->CreateAndUploadTexture(RHI::TextureDesc
         {
             .format = RHI::Format::R32G32_Float,
             .width = uvData.GetWidth(),

@@ -9,7 +9,7 @@ void FMM2D(const std::vector<Vector2i> &sources, Image<float> &output)
 {
     // Initialize initial fixed points
 
-    Image<uint8_t> isFixed(output.GetSize());
+    Image<bool> isFixed(output.GetSize());
     std::fill(isFixed.begin(), isFixed.end(), false);
 
     std::fill(output.begin(), output.end(), FLT_MAX);
@@ -80,7 +80,7 @@ void FMM2D(const std::vector<Vector2i> &sources, Image<float> &output)
         assert(!(nx == FLT_MAX && ny != FLT_MAX));
         assert(nx != FLT_MAX && ny != FLT_MAX);
 
-        // (t - x)^2 + (t - y)^2 = 1
+        // (t-x)^2 + (t-y)^2 = 1
         // => 2t^2 + (-2x-2y)t + (x^2+y^2-1) = 0
         const float a = 2, b = -2 * nx - 2 * ny, c = nx * nx + ny * ny - 1;
         // Since |nx - ny| <= 1, b^2-4ac must be positive.
@@ -138,7 +138,7 @@ class FMMDemo : public SimpleApplication
         }
 
         auto swapchainTexture = graph->RegisterSwapchainTexture(GetDevice()->GetSwapchain());
-        RGClearColor(graph, "ClearSwapchainTexture", swapchainTexture, { 0, 0, 0, 0 });
+        RGClearColor(graph, "ClearSwapchainTexture", swapchainTexture, { 0, 1, 1, 0 });
 
         const Vector2f fbSize = swapchainTexture->GetSize().To<float>();
         const Vector2f texSize = sourceTexture->GetSize().To<float>();
@@ -172,7 +172,7 @@ class FMMDemo : public SimpleApplication
     void LoadSourceImage(const std::string &filename)
     {
         auto image = Image<uint8_t>::Load(filename);
-        sourceTexture = GetDevice()->CreateAndUploadTexture2D(RHI::TextureDesc
+        sourceTexture = GetDevice()->CreateAndUploadTexture(RHI::TextureDesc
         {
             .format = RHI::Format::R8_UNorm,
             .width = image.GetWidth(),
@@ -193,7 +193,7 @@ class FMMDemo : public SimpleApplication
 
         Image<float> T(image.GetSize());
         FMM2D(sources, T);
-        timeTexture = GetDevice()->CreateAndUploadTexture2D(RHI::TextureDesc
+        timeTexture = GetDevice()->CreateAndUploadTexture(RHI::TextureDesc
         {
             .format = RHI::Format::R32_Float,
             .width = T.GetWidth(),
@@ -224,7 +224,7 @@ class FMMDemo : public SimpleApplication
             passData.lower = lower;
             passData.upper = upper;
             passData.scale = scale;
-            auto passGroup = GetDevice()->CreateBindingGroup(passData);
+            auto passGroup = GetDevice()->CreateBindingGroupWithCachedLayout(passData);
 
             auto pipeline = pipelineCache_.Get(GraphicsPipelineDesc
             {

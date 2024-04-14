@@ -142,7 +142,7 @@ RC<StatefulTexture> VDMBaker::BakeVDMBySeamCarving(
 
     auto vdmData = SeamEnergy::ComputeDisplacementMap(positionMap, gridRect);
 
-    auto vdm = device->CreateAndUploadTexture2D(RHI::TextureDesc
+    auto vdm = device->CreateAndUploadTexture(RHI::TextureDesc
     {
         .format = RHI::Format::R32G32B32A32_Float,
         .width = vdmData.GetWidth(),
