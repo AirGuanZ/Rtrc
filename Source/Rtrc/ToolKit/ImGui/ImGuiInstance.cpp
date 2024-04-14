@@ -662,7 +662,7 @@ void ImGuiInstance::RecreateFontTexture()
     unsigned char *data;
     int width, height;
     ImGui::GetIO().Fonts->GetTexDataAsRGBA32(&data, &width, &height);
-    data_->fontTexture = data_->device->CreateAndUploadTexture2D(RHI::TextureDesc
+    data_->fontTexture = data_->device->CreateAndUploadTexture(RHI::TextureDesc
         {
             .dim                  = RHI::TextureDimension::Tex2D,
             .format               = RHI::Format::R8G8B8A8_UNorm,
@@ -780,6 +780,18 @@ void ImGuiInstance::End()
 {
     IMGUI_CONTEXT;
     return ImGui::End();
+}
+
+void ImGuiInstance::BeginDisabled()
+{
+    IMGUI_CONTEXT;
+    ImGui::BeginDisabled();
+}
+
+void ImGuiInstance::EndDisabled()
+{
+    IMGUI_CONTEXT;
+    ImGui::EndDisabled();
 }
 
 void ImGuiInstance::LabelUnformatted(const char *label, const std::string &text)

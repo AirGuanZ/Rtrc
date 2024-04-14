@@ -105,6 +105,9 @@ public:
     bool Begin(const char *label, bool *open = nullptr, ImGuiWindowFlags flags = 0);
     void End();
 
+    void BeginDisabled();
+    void EndDisabled();
+
     template<typename...Args>
     void Label(const char *label, fmt::format_string<Args...> fmt, Args&&...args);
     void LabelUnformatted(const char *label, const std::string &text);
