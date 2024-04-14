@@ -240,7 +240,7 @@ void CommandBuffer::CopyColorTexture2DToBuffer(
     Buffer &dst, size_t dstOffset, size_t dstRowBytes, Texture &src, uint32_t arrayLayer, uint32_t mipLevel)
 {
     CheckThreadID();
-    rhiCommandBuffer_->CopyColorTexture2DToBuffer(
+    rhiCommandBuffer_->CopyTextureToBuffer(
         dst.GetRHIObject(), dstOffset, dstRowBytes, src.GetRHIObject(), mipLevel, arrayLayer);
 }
 

@@ -23,7 +23,7 @@ void ResourceManager::LoadBuiltinTextures()
     if(std::filesystem::is_regular_file(blueNoiseFilename))
     {
         auto blueNoise256 = Image<uint8_t>::Load(blueNoiseFilename);
-        textures_[std::to_underlying(BuiltinTexture::BlueNoise256)] = device_->CreateAndUploadTexture2D(
+        textures_[std::to_underlying(BuiltinTexture::BlueNoise256)] = device_->CreateAndUploadTexture(
             RHI::TextureDesc
             {
                 .format = RHI::Format::R8_UNorm,

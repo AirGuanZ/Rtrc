@@ -424,11 +424,16 @@ void DirectX12CommandBuffer::CopyColorTexture(
     commandList_->CopyTextureRegion(&dstLoc, 0, 0, 0, &srcLoc, nullptr);
 }
 
-void DirectX12CommandBuffer::CopyBufferToColorTexture2D(
+void DirectX12CommandBuffer::CopyBufferToTexture(
     Texture *dst, uint32_t mipLevel, uint32_t arrayLayer, Buffer *src, size_t srcOffset, size_t srcRowBytes)
 {
-    assert(srcRowBytes % D3D12_TEXTURE_DATA_PITCH_ALIGNMENT == 0 || (dst->GetHeight() >> mipLevel) <= 1);
+    assert(srcRowBytes % D3D12_TEXTURE_DATA_PITCH_ALIGNMENT == 0 ||
+           ((dst->GetHeight() >> mipLevel) <= 1 &&
+            (dst->GetDimension() != TextureDimension::Tex3D || (dst->GetDepth() >> mipLevel) <= 1)));
+
+    assert(!HasDepthAspect(dst->GetFormat()) && !HasStencilAspect(dst->GetFormat()));
     const DXGI_FORMAT dstFormat = TranslateFormat(dst->GetFormat());
+
     auto d3dSrc = static_cast<DirectX12Buffer*>(src)->_internalGetNativeBuffer().Get();
     const D3D12_TEXTURE_COPY_LOCATION srcLoc =
     {
@@ -442,7 +447,8 @@ void DirectX12CommandBuffer::CopyBufferToColorTexture2D(
                 .Format   = dstFormat,
                 .Width    = (std::max)(1u, dst->GetWidth() >> mipLevel),
                 .Height   = (std::max)(1u, dst->GetHeight() >> mipLevel),
-                .Depth    = dst->GetDepth(),
+                .Depth    = dst->GetDimension() == TextureDimension::Tex3D ?
+                            (std::max)(1u, dst->GetDepth() >> mipLevel) : 1u,
                 .RowPitch = static_cast<UINT>(srcRowBytes)
             }
         }
@@ -456,11 +462,16 @@ void DirectX12CommandBuffer::CopyBufferToColorTexture2D(
     commandList_->CopyTextureRegion(&dstLoc, 0, 0, 0, &srcLoc, nullptr);
 }
 
-void DirectX12CommandBuffer::CopyColorTexture2DToBuffer(
+void DirectX12CommandBuffer::CopyTextureToBuffer(
     Buffer *dst, size_t dstOffset, size_t dstRowBytes, Texture *src, uint32_t mipLevel, uint32_t arrayLayer)
 {
-    assert(dstRowBytes % D3D12_TEXTURE_DATA_PITCH_ALIGNMENT == 0 || (src->GetHeight() >> mipLevel) <= 1);
+    assert(dstRowBytes % D3D12_TEXTURE_DATA_PITCH_ALIGNMENT == 0 ||
+           ((src->GetHeight() >> mipLevel) <= 1 &&
+            (src->GetDimension() != TextureDimension::Tex3D || (src->GetDepth() >> mipLevel) <= 1)));
+
+    assert(!HasDepthAspect(src->GetFormat()) && !HasStencilAspect(src->GetFormat()));
     const DXGI_FORMAT srcFormat = TranslateFormat(src->GetFormat());
+
     auto d3dDst = static_cast<DirectX12Buffer *>(dst)->_internalGetNativeBuffer().Get();
     const D3D12_TEXTURE_COPY_LOCATION dstLoc =
     {
@@ -474,7 +485,8 @@ void DirectX12CommandBuffer::CopyColorTexture2DToBuffer(
                 .Format   = srcFormat,
                 .Width    = (std::max)(1u, src->GetWidth() >> mipLevel),
                 .Height   = (std::max)(1u, src->GetHeight() >> mipLevel),
-                .Depth    = src->GetDepth(),
+                .Depth    = src->GetDimension() == TextureDimension::Tex3D ?
+                            (std::max)(1u, src->GetDepth() >> mipLevel) : 1u,
                 .RowPitch = static_cast<UINT>(dstRowBytes)
             }
         }

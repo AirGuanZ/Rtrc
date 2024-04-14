@@ -75,16 +75,19 @@ void UploadBatch::Record(
 
 void UploadBatch::Record(
     const RC<StatefulTexture> &texture,
-    RHI::TexSubrsc    subrsc,
+    RHI::TexSubrsc             subrsc,
     const void                *data,
     size_t                     dataRowBytes,
     RHI::TextureLayout         afterLayout,
     bool                       takeCopyOfData)
 {
     assert(texture->GetDesc().usage.Contains(RHI::TextureUsage::TransferDst));
+    assert(texture->GetDimension() != RHI::TextureDimension::Tex3D || subrsc.arrayLayer == 0);
 
     const uint32_t width = std::max<uint32_t>(texture->GetWidth() >> subrsc.mipLevel, 1);
     const uint32_t height = std::max<uint32_t>(texture->GetHeight() >> subrsc.mipLevel, 1);
+    const uint32_t depth = texture->GetDimension() == RHI::TextureDimension::Tex3D ?
+                            texture->GetMipLevelDepth(subrsc.mipLevel) : 1;
     if(dataRowBytes == 0)
     {
         dataRowBytes = width * GetTexelSize(texture->GetFormat());
@@ -107,18 +110,25 @@ void UploadBatch::Record(
 
     if(takeCopyOfData)
     {
-        task.ownedData.resize(ownedDataRowBytes * height);
+        task.ownedData.resize(ownedDataRowBytes * height * depth);
         if(ownedDataRowBytes == dataRowBytes)
         {
             std::memcpy(task.ownedData.data(), data, task.ownedData.size());
         }
         else
         {
-            for(unsigned y = 0; y < height; ++y)
+            const size_t planeSize = dataRowBytes * height;
+            const size_t ownedPlaneSize = ownedDataRowBytes * height;
+            for(unsigned z = 0; z < depth; ++z)
             {
-                auto src = reinterpret_cast<const char *>(data) + dataRowBytes * y;
-                auto dst = task.ownedData.data() + ownedDataRowBytes * y;
-                std::memcpy(dst, src, ownedDataRowBytes);
+                auto planeSrcData = reinterpret_cast<const unsigned char *>(data) + z * planeSize;
+                auto planeDstData = task.ownedData.data() + z * ownedPlaneSize;
+                for(unsigned y = 0; y < height; ++y)
+                {
+                    auto src = planeSrcData + dataRowBytes * y;
+                    auto dst = planeDstData + ownedDataRowBytes * y;
+                    std::memcpy(dst, src, ownedDataRowBytes);
+                }
             }
         }
         task.dataRowBytes = ownedDataRowBytes;
@@ -137,11 +147,10 @@ void UploadBatch::Record(
 
 void UploadBatch::Record(
     const RC<StatefulTexture> &texture,
-    RHI::TexSubrsc    subrsc,
+    TexSubrsc                  subrsc,
     const ImageDynamic        &image,
     RHI::TextureLayout         afterLayout)
 {
-    assert(texture->GetDimension() == RHI::TextureDimension::Tex2D);
     assert(texture->GetMipLevelWidth(subrsc.mipLevel) == image.GetWidth());
     assert(texture->GetMipLevelHeight(subrsc.mipLevel) == image.GetHeight());
     switch(texture->GetFormat())
@@ -222,11 +231,11 @@ void UploadBatch::SubmitAndWait()
             continue;
         }
         auto &b = beforeBufferBarriers.emplace_back();
-        b.buffer = task.buffer->GetRHIObject().Get();
-        b.beforeStages = prevState.stages;
+        b.buffer         = task.buffer->GetRHIObject().Get();
+        b.beforeStages   = prevState.stages;
         b.beforeAccesses = prevState.accesses;
-        b.afterStages = RHI::PipelineStage::Copy;
-        b.afterAccesses = RHI::ResourceAccess::CopyWrite;
+        b.afterStages    = RHI::PipelineStage::Copy;
+        b.afterAccesses  = RHI::ResourceAccess::CopyWrite;
 
         task.buffer->SetState(RHI::INITIAL_QUEUE_SESSION_ID, RHI::PipelineStage::None, RHI::ResourceAccess::None);
     }
@@ -250,12 +259,12 @@ void UploadBatch::SubmitAndWait()
                 .arrayLayer = task.subrsc.arrayLayer,
                 .layerCount = 1
             };
-            b.beforeStages = prevState.stages;
+            b.beforeStages   = prevState.stages;
             b.beforeAccesses = prevState.accesses;
-            b.beforeLayout = RHI::TextureLayout::Undefined;
-            b.afterStages = RHI::PipelineStage::Copy;
-            b.afterAccesses = RHI::ResourceAccess::CopyWrite;
-            b.afterLayout = RHI::TextureLayout::CopyDst;
+            b.beforeLayout   = RHI::TextureLayout::Undefined;
+            b.afterStages    = RHI::PipelineStage::Copy;
+            b.afterAccesses  = RHI::ResourceAccess::CopyWrite;
+            b.afterLayout    = RHI::TextureLayout::CopyDst;
         }
 
         if(task.afterLayout != RHI::TextureLayout::CopyDst)
@@ -269,12 +278,12 @@ void UploadBatch::SubmitAndWait()
                 .arrayLayer = task.subrsc.arrayLayer,
                 .layerCount = 1
             };
-            a.beforeStages = RHI::PipelineStage::Copy;
+            a.beforeStages   = RHI::PipelineStage::Copy;
             a.beforeAccesses = RHI::ResourceAccess::CopyWrite;
-            a.beforeLayout = RHI::TextureLayout::CopyDst;
-            a.afterStages = RHI::PipelineStage::None;
-            a.afterAccesses = RHI::ResourceAccess::None;
-            a.afterLayout = task.afterLayout;
+            a.beforeLayout   = RHI::TextureLayout::CopyDst;
+            a.afterStages    = RHI::PipelineStage::None;
+            a.afterAccesses  = RHI::ResourceAccess::None;
+            a.afterLayout    = task.afterLayout;
         }
 
         task.texture->SetState(
@@ -315,9 +324,10 @@ void UploadBatch::SubmitAndWait()
 
     for(auto& task : textureTasks_)
     {
-        const size_t size = task.dataRowBytes * (task.texture->GetHeight() >> task.subrsc.mipLevel);
+        const size_t size = task.dataRowBytes * (std::max)(1u, task.texture->GetHeight() >> task.subrsc.mipLevel)
+                                              * (std::max)(1u, task.texture->GetDepth() >> task.subrsc.mipLevel);
         auto stagingBuffer = GetStagingBuffer(size, task.data);
-        commandBuffer->CopyBufferToColorTexture2D(
+        commandBuffer->CopyBufferToTexture(
             task.texture->GetRHIObject().Get(),
             task.subrsc.mipLevel, task.subrsc.arrayLayer,
             stagingBuffer.Get(), 0, task.dataRowBytes);

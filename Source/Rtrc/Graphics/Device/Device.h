@@ -193,7 +193,7 @@ public:
         const void            *initData,
         size_t                 initDataOffset = 0,
         size_t                 initDataSize = 0);
-    RC<Texture> CreateAndUploadTexture2D(
+    RC<Texture> CreateAndUploadTexture(
         const RHI::TextureDesc &desc,
         Span<const void *>      imageData, // 'data of layer a, mip m' is in imageData[a * M + m]
         RHI::TextureLayout      afterLayout);
@@ -626,11 +626,11 @@ inline void Device::Upload(
 }
 
 inline void Device::Upload(
-    const RC<Texture>      &texture,
-    TexSubrsc subrsc,
-    const void             *data,
-    size_t                  dataRowBytes,
-    RHI::TextureLayout      afterLayout)
+    const RC<Texture> &texture,
+    TexSubrsc          subrsc,
+    const void        *data,
+    size_t             dataRowBytes,
+    RHI::TextureLayout afterLayout)
 {
     uploader_->Upload(texture, subrsc, data, dataRowBytes, afterLayout);
 }

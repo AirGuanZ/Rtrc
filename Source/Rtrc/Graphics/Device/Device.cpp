@@ -246,7 +246,7 @@ RC<Buffer> Device::CreateAndUploadBuffer(
     return ret;
 }
 
-RC<Texture> Device::CreateAndUploadTexture2D(
+RC<Texture> Device::CreateAndUploadTexture(
     const RHI::TextureDesc &_desc,
     Span<const void *>      imageData,
     RHI::TextureLayout      afterLayout)

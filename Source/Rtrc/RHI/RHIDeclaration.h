@@ -826,15 +826,12 @@ struct TextureDesc
 {
     using OptionalClearValue = Variant<std::monostate, ColorClearValue, DepthStencilClearValue>;
 
-    TextureDimension dim = TextureDimension::Tex2D;
-    Format           format;
-    uint32_t         width;
-    uint32_t         height;
-    union
-    {
-        uint32_t arraySize = 1;
-        uint32_t depth;
-    };
+    TextureDimension          dim = TextureDimension::Tex2D;
+    Format                    format;
+    uint32_t                  width;
+    uint32_t                  height;
+    uint32_t                  arraySize = 1;
+    uint32_t                  depth = 1;
     uint32_t                  mipLevels = 1;
     uint32_t                  sampleCount = 1;
     TextureUsageFlags         usage;
@@ -1771,14 +1768,14 @@ public:
         uint32_t srcMipLevel,
         uint32_t srcArrayLayer) RTRC_RHI_API_PURE;
 
-    RTRC_RHI_API void CopyBufferToColorTexture2D(
+    RTRC_RHI_API void CopyBufferToTexture(
         Texture *dst,
         uint32_t mipLevel,
         uint32_t arrayLayer,
         Buffer  *src,
         size_t   srcOffset,
         size_t   srcRowBytes) RTRC_RHI_API_PURE;
-    RTRC_RHI_API void CopyColorTexture2DToBuffer(
+    RTRC_RHI_API void CopyTextureToBuffer(
         Buffer  *dst,
         size_t   dstOffset,
         size_t   dstRowBytes,

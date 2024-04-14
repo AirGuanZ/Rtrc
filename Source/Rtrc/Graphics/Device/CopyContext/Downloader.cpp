@@ -155,7 +155,7 @@ void DownloadBatch::SubmitAndWait()
     for(auto &task : textureTasks_)
     {
         auto stagingBuffer = GetStagingBuffer(task.stagingRowBytes * task.texture->GetMipLevelHeight(task.subrsc.mipLevel));
-        commandBuffer->CopyColorTexture2DToBuffer(
+        commandBuffer->CopyTextureToBuffer(
             stagingBuffer.Get(), 0, task.stagingRowBytes,
             task.texture->GetRHIObject().Get(), task.subrsc.mipLevel, task.subrsc.arrayLayer);
     }

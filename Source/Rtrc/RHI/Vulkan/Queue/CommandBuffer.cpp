@@ -454,10 +454,12 @@ void VulkanCommandBuffer::CopyColorTexture(
         1, &copy);
 }
 
-void VulkanCommandBuffer::CopyBufferToColorTexture2D(
+void VulkanCommandBuffer::CopyBufferToTexture(
     Texture *dst, uint32_t mipLevel, uint32_t arrayLayer, Buffer *src, size_t srcOffset, size_t srcRowBytes)
 {
     assert(srcRowBytes % GetTexelSize(dst->GetFormat()) == 0);
+    assert(HasColorAspect(dst->GetFormat()));
+
     auto &texDesc = dst->GetDesc();
     const VkBufferImageCopy copy = {
         .bufferOffset      = srcOffset,
@@ -470,17 +472,22 @@ void VulkanCommandBuffer::CopyBufferToColorTexture2D(
             .layerCount     = 1
         },
         .imageOffset = { 0, 0, 0 },
-        .imageExtent = { texDesc.width >> mipLevel, texDesc.height >> mipLevel, 1 }
+        .imageExtent = {
+            (std::max)(1u, texDesc.width >> mipLevel),
+            (std::max)(1u, texDesc.height >> mipLevel),
+            texDesc.dim == TextureDimension::Tex3D ? (std::max)(1u, texDesc.depth >> mipLevel) : 1u
+        }
     };
     auto vkSrc = static_cast<VulkanBuffer *>(src)->_internalGetNativeBuffer();
     auto vkDst = CommandBufferDetail::GetVulkanImage(dst);
     vkCmdCopyBufferToImage(commandBuffer_, vkSrc, vkDst, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
 }
 
-void VulkanCommandBuffer::CopyColorTexture2DToBuffer(
+void VulkanCommandBuffer::CopyTextureToBuffer(
     Buffer *dst, size_t dstOffset, size_t dstRowBytes, Texture *src, uint32_t mipLevel, uint32_t arrayLayer)
 {
     assert(dstRowBytes % GetTexelSize(src->GetFormat()) == 0);
+    assert(HasColorAspect(src->GetFormat()));
     auto &texDesc = src->GetDesc();
     const VkBufferImageCopy copy = {
         .bufferOffset      = dstOffset,
@@ -493,7 +500,11 @@ void VulkanCommandBuffer::CopyColorTexture2DToBuffer(
             .layerCount     = 1
         },
         .imageOffset = { 0, 0, 0 },
-        .imageExtent = { texDesc.width, texDesc.height, 1 }
+        .imageExtent = {
+            (std::max)(1u, texDesc.width >> mipLevel),
+            (std::max)(1u, texDesc.height >> mipLevel),
+            texDesc.dim == TextureDimension::Tex3D ? (std::max)(1u, texDesc.depth >> mipLevel) : 1u
+        }
     };
     auto vkSrc = CommandBufferDetail::GetVulkanImage(src);
     auto vkDst = static_cast<VulkanBuffer *>(dst)->_internalGetNativeBuffer();

@@ -64,6 +64,7 @@ public:
     Vector2u GetSize() const;
     uint32_t GetMipLevelWidth(uint32_t mipLevel) const;
     uint32_t GetMipLevelHeight(uint32_t mipLevel) const;
+    uint32_t GetMipLevelDepth(uint32_t mipLevel) const;
     Vector2u GetMipLevelSize(uint32_t mipLevel) const;
     uint32_t GetDepth() const;
     uint32_t GetArraySize() const;
@@ -174,12 +175,17 @@ inline Vector2u Texture::GetSize() const
 
 inline uint32_t Texture::GetMipLevelWidth(uint32_t mipLevel) const
 {
-    return std::max(desc_.width >> mipLevel, 1u);
+    return (std::max)(desc_.width >> mipLevel, 1u);
 }
 
 inline uint32_t Texture::GetMipLevelHeight(uint32_t mipLevel) const
 {
-    return std::max(desc_.height >> mipLevel, 1u);
+    return (std::max)(desc_.height >> mipLevel, 1u);
+}
+
+inline uint32_t Texture::GetMipLevelDepth(uint32_t mipLevel) const
+{
+    return (std::max)(desc_.depth >> mipLevel, 1u);
 }
 
 inline Vector2u Texture::GetMipLevelSize(uint32_t mipLevel) const
