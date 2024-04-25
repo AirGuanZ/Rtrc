@@ -140,6 +140,12 @@ public:
     auto begin() const { return data_; }
     auto end() const { return data_ + size_; }
 
+    auto &first() const { return *begin(); }
+    auto &first() { return *begin(); }
+
+    auto &last() const { return *(end() - 1); }
+    auto &last() { return *(end() - 1); }
+
     size_t Hash() const
     {
         if(IsEmpty())

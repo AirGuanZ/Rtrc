@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Rtrc/Geometry/FlatHalfEdgeMesh.h>
 #include <Rtrc/ToolKit/Application/SimpleApplication.h>
 #include <Rtrc/ToolKit/Atmosphere/Atmosphere.h>
 #include <Rtrc/ToolKit/BufferPool/TransientConstantBufferAllocator.h>

@@ -103,4 +103,13 @@ struct HashOperator<void>
     }
 };
 
+template<typename T1, typename T2>
+struct HashOperator<std::pair<T1, T2>>
+{
+    size_t operator()(const std::pair<T1, T2> &pair) const
+    {
+        return ::Rtrc::Hash(pair.first, pair.second);
+    }
+};
+
 RTRC_END

@@ -44,7 +44,7 @@ RGCompiler::RGCompiler(Ref<Device> device, Options options)
 {
     if(!device_->GetRawDevice()->IsGlobalBarrierWellSupported())
     {
-        options_.value &= ~std::to_underlying(Options::PreferGlobalMemoryBarrier);
+        options_ = options_ & Options(~std::to_underlying(Options::PreferGlobalMemoryBarrier));
     }
 }
 

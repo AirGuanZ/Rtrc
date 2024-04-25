@@ -18,7 +18,7 @@ public:
 
     constexpr Vector2(T x, T y);
 
-    constexpr T &operator[](size_t i) const;
+    constexpr const T &operator[](size_t i) const;
 
     constexpr T &operator[](size_t i);
 
@@ -129,7 +129,7 @@ constexpr T &Vector2<T>::operator[](size_t i)
 }
 
 template<typename T>
-constexpr T &Vector2<T>::operator[](size_t i) const
+constexpr const T &Vector2<T>::operator[](size_t i) const
 {
     return *(&x + i);
 }
