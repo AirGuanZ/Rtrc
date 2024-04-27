@@ -407,7 +407,7 @@ UPtr<Swapchain> VulkanDevice::CreateSwapchain(const SwapchainDesc &desc, Window 
 
     // swapchain
 
-    VkImageUsageFlags usageFlags = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    VkImageUsageFlags usageFlags = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
     if(desc.allowUav)
     {
         usageFlags |= VK_IMAGE_USAGE_STORAGE_BIT;
