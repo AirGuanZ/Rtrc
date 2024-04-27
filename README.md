@@ -2,8 +2,8 @@
 
 Personal real-time graphics toolkits
 
-![](./Gallery/00.png)
-![](./Gallery/01.png)
+![](./Documents/Gallery/00.png)
+![](./Documents/Gallery/01.png)
 
 ## Samples
 
