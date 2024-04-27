@@ -61,7 +61,6 @@ Mesh LoadMeshFromObj(DeviceRef device, const std::string &filename)
     return mesh;
 }
 
-// voxelStorage is filled with FLT_MAX(occupied) and -1(empty)
 void VoxelizeWithDilation(
     const Mesh    &mesh,
     uint32_t       resolution,
