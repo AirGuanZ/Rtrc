@@ -130,4 +130,10 @@ RawMesh RawMesh::LoadWavefrontObj(const std::string& filename)
     return mesh;
 }
 
+FlatHalfEdgeMesh CreateFlatHalfEdgeMesh(const RawMesh &rawMesh)
+{
+    const Span<uint32_t> indices = rawMesh.GetIndices(rawMesh.GetPositionAttributeIndex());
+    return FlatHalfEdgeMesh::Build(indices);
+}
+
 RTRC_END

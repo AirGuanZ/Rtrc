@@ -15,9 +15,21 @@ namespace RawMeshDetail
         Float3,
     };
 
-    template<typename> struct AttributeTypeToDataType { };
-    template<> struct AttributeTypeToDataType<Vector2f> { static constexpr AttributeType Value = AttributeType::Float2; };
-    template<> struct AttributeTypeToDataType<Vector3f> { static constexpr AttributeType Value = AttributeType::Float3; };
+    template<typename>
+    struct AttributeTypeToDataType
+    {
+        
+    };
+    template<>
+    struct AttributeTypeToDataType<Vector2f>
+    {
+        static constexpr AttributeType Value = AttributeType::Float2;
+    };
+    template<>
+    struct AttributeTypeToDataType<Vector3f>
+    {
+        static constexpr AttributeType Value = AttributeType::Float3;
+    };
     
 } // namespace RawMeshDetail
 
@@ -48,8 +60,8 @@ private:
     std::vector<unsigned char> data_;
 };
 
-// Represents a raw mesh loaded from a model file. This class stores attributes in compact arrays.
-// Each polygon's vertices are associated with separate indices for their respective attributes.
+// Represents a raw triangle mesh loaded from a model file. This class stores attributes in compact arrays.
+// Each triangle's vertices are associated with separate indices for their respective attributes.
 class RawMesh
 {
 public:
@@ -66,6 +78,10 @@ public:
 
     Span<RawMeshAttributeData> GetAttributes() const;
     const RawMeshAttributeData &GetAttribute(uint32_t attributeIndex) const;
+
+    int GetPositionAttributeIndex() const;
+    int GetNormalAttributeIndex() const;
+    int GetUVAttributeIndex() const;
 
     const RawMeshAttributeData *GetPositions() const;
     const RawMeshAttributeData *GetNormals() const;
@@ -95,6 +111,8 @@ private:
     std::array<int, EnumCount<BuiltinAttribute>> builtinAttributeIndices_ = {};
     std::map<std::string, int, std::less<>> nameToAttributeIndex_;
 };
+
+FlatHalfEdgeMesh CreateFlatHalfEdgeMesh(const RawMesh &rawMesh);
 
 inline RawMeshAttributeData::Type RawMeshAttributeData::GetType() const
 {
@@ -161,6 +179,21 @@ inline Span<RawMeshAttributeData> RawMesh::GetAttributes() const
 inline const RawMeshAttributeData& RawMesh::GetAttribute(uint32_t attributeIndex) const
 {
     return attributes_[attributeIndex];
+}
+
+inline int RawMesh::GetPositionAttributeIndex() const
+{
+    return GetBuiltinAttributeIndex(BuiltinAttribute::Position);
+}
+
+inline int RawMesh::GetNormalAttributeIndex() const
+{
+    return GetBuiltinAttributeIndex(BuiltinAttribute::Normal);
+}
+
+inline int RawMesh::GetUVAttributeIndex() const
+{
+    return GetBuiltinAttributeIndex(BuiltinAttribute::UV);
 }
 
 inline const RawMeshAttributeData* RawMesh::GetPositions() const

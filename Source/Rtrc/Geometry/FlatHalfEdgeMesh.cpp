@@ -5,10 +5,8 @@
 
 RTRC_BEGIN
 
-FlatHalfEdgeMesh FlatHalfEdgeMesh::Build(Span<int32_t> indices, BuildOptions options)
+FlatHalfEdgeMesh FlatHalfEdgeMesh::Build(Span<uint32_t> indices, BuildOptions options)
 {
-    assert(indices.IsEmpty() || indices.last() < 0);
-
     struct EdgeRecord
     {
         int h0;
@@ -18,7 +16,7 @@ FlatHalfEdgeMesh FlatHalfEdgeMesh::Build(Span<int32_t> indices, BuildOptions opt
     ankerl::unordered_dense::map<std::pair<int, int>, int, HashOperator<>> vertsToEdge;
 
     int maxV = (std::numeric_limits<int>::min)();
-    std::vector<int> heads, faces, twins, edges;
+    std::vector<int> heads, twins, edges;
 
     assert(indices.size() % 3 == 0);
     const unsigned F = indices.size() / 3;
@@ -30,7 +28,6 @@ FlatHalfEdgeMesh FlatHalfEdgeMesh::Build(Span<int32_t> indices, BuildOptions opt
 
             const int h = static_cast<int>(heads.size());
             heads.push_back(head);
-            faces.push_back(faceIndex);
 
             int edge;
             const int vMin = (std::min)(head, tail);
@@ -74,6 +71,30 @@ FlatHalfEdgeMesh FlatHalfEdgeMesh::Build(Span<int32_t> indices, BuildOptions opt
         }
     }
 
+    // Check non-manifold vertex.
+    // A non-manifold has more than one incident boundary half edge.
+
+    std::vector<bool> vertexToBounadryIncidentHalfEdges(maxV + 1, false);
+    for(int h = 0; h < static_cast<int>(heads.size()); ++h)
+    {
+        if(twins[h] >= 0)
+        {
+            continue;
+        }
+        const int vert = heads[h];
+        if(vertexToBounadryIncidentHalfEdges[vert])
+        {
+            if(options.Contains(ThrowOnNonManifoldInput))
+            {
+                throw Exception(fmt::format("Non-manifold vertex encountered. Vertex is {}", vert));
+            }
+            return {};
+        }
+        vertexToBounadryIncidentHalfEdges[vert] = true;
+    }
+
+    // Fill final mesh
+
     FlatHalfEdgeMesh mesh;
     mesh.H_ = static_cast<int>(heads.size());
     mesh.V_ = maxV + 1;
@@ -82,12 +103,11 @@ FlatHalfEdgeMesh FlatHalfEdgeMesh::Build(Span<int32_t> indices, BuildOptions opt
     mesh.halfEdgeToTwin_ = std::move(twins);
     mesh.halfEdgeToEdge_ = std::move(edges);
     mesh.halfEdgeToHead_ = std::move(heads);
-    mesh.halfEdgeToFace_ = std::move(faces);
 
     mesh.vertToHalfEdge_.resize(mesh.V_, -1);
     for(int h = 0; h < mesh.H_; ++h)
     {
-        const int v = mesh.Head(h);
+        const int v = mesh.Vert(h);
         if(mesh.vertToHalfEdge_[v] < 0)
         {
             mesh.vertToHalfEdge_[v] = h;

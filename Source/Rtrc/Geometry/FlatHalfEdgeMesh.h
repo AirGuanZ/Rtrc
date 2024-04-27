@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Rtrc/Core/Container/Span.h>
-
 #include <Rtrc/Core/EnumFlags.h>
 
 RTRC_BEGIN
@@ -24,10 +23,7 @@ public:
     using BuildOptions = FlatHalfEdgeMeshDetail::EnumFlagsBuildOptionFlagBit;
     using enum FlatHalfEdgeMeshDetail::BuildOptionFlagBit;
 
-    // Polygon example:
-    //     1, 2, 3, -4, 5, 6, -7
-    //  => (1, 2, 3, 4), (5, 6, 7)
-    static FlatHalfEdgeMesh Build(Span<int32_t> indices, BuildOptions options = ThrowOnNonManifoldInput);
+    static FlatHalfEdgeMesh Build(Span<uint32_t> indices, BuildOptions options = ThrowOnNonManifoldInput);
 
     bool IsEmpty() const { return H_ == 0; }
 
@@ -40,8 +36,9 @@ public:
     int Prev(int h) const { return (h / 3 * 3) + (h + 2) % 3; }
     int Twin(int h) const { return halfEdgeToTwin_[h]; }
     int Edge(int h) const { return halfEdgeToEdge_[h]; }
-    int Head(int h) const { return halfEdgeToHead_[h]; }
-    int Face(int h) const { return halfEdgeToFace_[h]; }
+    int Vert(int h) const { return halfEdgeToHead_[h]; }
+    int Face(int h) const { return h / 3; }
+    int Rawi(int h) const { return h; }
 
     int VertToHalfEdge(int v) const { return vertToHalfEdge_[v]; }
     int EdgeToHalfEdge(int e) const { return edgeToHalfEdge_[e]; }
@@ -57,7 +54,6 @@ private:
     std::vector<int> halfEdgeToTwin_;
     std::vector<int> halfEdgeToEdge_;
     std::vector<int> halfEdgeToHead_;
-    std::vector<int> halfEdgeToFace_;
 
     std::vector<int> vertToHalfEdge_;
     std::vector<int> edgeToHalfEdge_;
