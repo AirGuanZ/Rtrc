@@ -176,8 +176,10 @@ class FMMDemo : public SimpleApplication
         {
             .format = RHI::Format::R8_UNorm,
             .width = image.GetWidth(),
-            .height = image.GetHeight()
+            .height = image.GetHeight(),
+            .usage = RHI::TextureUsage::ShaderResource
         }, image.GetData(), RHI::TextureLayout::ShaderTexture);
+        sourceTexture->SetName("SourceTexture");
 
         std::vector<Vector2i> sources;
         for(int y = 0; y < image.GetSHeight(); ++y)
@@ -197,8 +199,10 @@ class FMMDemo : public SimpleApplication
         {
             .format = RHI::Format::R32_Float,
             .width = T.GetWidth(),
-            .height = T.GetHeight()
+            .height = T.GetHeight(),
+            .usage = RHI::TextureUsage::ShaderResource
         }, T.GetData(), RHI::TextureLayout::ShaderTexture);
+        timeTexture->SetName("TimeTexture");
 
         maxT_ = 0;
         for(float t : T)
