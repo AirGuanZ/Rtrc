@@ -4,7 +4,7 @@
 RTRC_BEGIN
 
 DeviceSynchronizer::DeviceSynchronizer(RHI::DeviceOPtr device, RHI::QueueRPtr queue)
-    : device_(std::move(device))
+    : device_(device)
     , queue_(std::move(queue))
     , renderLoopFrameIndex_(0)
 {

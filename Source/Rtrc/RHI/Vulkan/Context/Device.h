@@ -28,6 +28,7 @@ public:
     BackendType GetBackendType() const RTRC_RHI_OVERRIDE { return BackendType::Vulkan; }
     bool IsGlobalBarrierWellSupported() const RTRC_RHI_OVERRIDE { return true; }
     BarrierMemoryModel GetBarrierMemoryModel() const RTRC_RHI_OVERRIDE { return BarrierMemoryModel::AvailableAndVisible; }
+    WorkGraphTier GetWorkGraphTier() const RTRC_RHI_OVERRIDE { return WorkGraphTier::None; }
 
     RPtr<Queue> GetQueue(QueueType type) RTRC_RHI_OVERRIDE;
 

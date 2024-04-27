@@ -143,6 +143,13 @@ DirectX12Device::DirectX12Device(
     RTRC_D3D12_FAIL_MSG(
         device_->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &featureOptions_, sizeof(featureOptions_)),
         "Fail to check d3d12 feature support of D3D12_FEATURE_D3D12_OPTIONS");
+
+    D3D12_FEATURE_DATA_D3D12_OPTIONS21 options21 = {};
+    RTRC_D3D12_FAIL_MSG(
+        device_->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS21, &options21, sizeof(options21)),
+        "Fail to check d3d12 feature support of D3D12_FEATURE_D3D12_OPTIONS21");
+    workGraphTier_ = options21.WorkGraphsTier == D3D12_WORK_GRAPHS_TIER_NOT_SUPPORTED ?
+                        WorkGraphTier::None : WorkGraphTier::Compute;
 }
 
 DirectX12Device::~DirectX12Device()

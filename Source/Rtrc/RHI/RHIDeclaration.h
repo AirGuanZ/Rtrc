@@ -591,6 +591,13 @@ inline BufferDeviceAddress operator+(std::ptrdiff_t lhs, const BufferDeviceAddre
     return rhs + lhs;
 }
 
+enum class WorkGraphTier
+{
+    None,
+    Compute,
+    Graphics
+};
+
 // =============================== rhi descriptions ===============================
 
 using QueueSessionID = uint64_t;
@@ -1507,6 +1514,7 @@ public:
     RTRC_RHI_API BackendType GetBackendType() const RTRC_RHI_API_PURE;
     RTRC_RHI_API bool IsGlobalBarrierWellSupported() const RTRC_RHI_API_PURE;
     RTRC_RHI_API BarrierMemoryModel GetBarrierMemoryModel() const RTRC_RHI_API_PURE;
+    RTRC_RHI_API WorkGraphTier GetWorkGraphTier() const RTRC_RHI_API_PURE;
     
     RTRC_RHI_API RPtr<Queue> GetQueue(QueueType type) RTRC_RHI_API_PURE;
 

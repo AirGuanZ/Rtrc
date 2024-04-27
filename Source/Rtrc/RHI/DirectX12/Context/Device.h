@@ -29,6 +29,7 @@ public:
     BackendType GetBackendType() const RTRC_RHI_OVERRIDE { return BackendType::DirectX12; }
     bool IsGlobalBarrierWellSupported() const RTRC_RHI_OVERRIDE { return false; }
     BarrierMemoryModel GetBarrierMemoryModel() const RTRC_RHI_OVERRIDE { return BarrierMemoryModel::Undefined; }
+    WorkGraphTier GetWorkGraphTier() const RTRC_RHI_OVERRIDE { return workGraphTier_; }
 
     RPtr<Queue> GetQueue(QueueType type) RTRC_RHI_OVERRIDE;
 
@@ -151,6 +152,8 @@ private:
     uint32_t samplerDescriptorSize_;
 
     D3D12_FEATURE_DATA_D3D12_OPTIONS featureOptions_;
+
+    WorkGraphTier workGraphTier_;
 };
 
 inline D3D12_CPU_DESCRIPTOR_HANDLE DirectX12Device::_internalAllocateCPUDescriptorHandle_CbvSrvUav()
