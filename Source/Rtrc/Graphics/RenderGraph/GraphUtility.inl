@@ -657,7 +657,7 @@ inline void RGReadbackBuffer(
     auto pass = graph->CreatePass("RGReadbackBuffer-ReadbackStagingBuffer");
     pass->SyncQueueBeforeExecution();
     pass->ClearUAVOverlapGroup();
-    pass->Use(stagingBuffer, RGUseInfo // Add dummy use info to make sure this pass is executed after copy pass
+    pass->Use(stagingBuffer, RGUseInfo // Add dummy use info to ensure this pass is executed after copy pass
     {
         .stages = RHI::PipelineStage::ComputeShader,
         .accesses = RHI::ResourceAccess::DummyReadAndWrite
