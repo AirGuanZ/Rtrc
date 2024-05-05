@@ -1,5 +1,8 @@
 #pragma once
 
+#include <Rtrc/Core/Math/Vector2.h>
+#include <Rtrc/Core/Math/Vector3.h>
+#include <Rtrc/Core/Math/Vector4.h>
 #include <Rtrc/Core/SelfType.h>
 
 RTRC_BEGIN
@@ -34,6 +37,8 @@ namespace StructDetail
         {
             U{}.template operator()<F>(f);
         }
+
+        static constexpr bool isValidMember = false;
     };
     
     template<typename T, typename F, int I>
@@ -93,6 +98,7 @@ namespace StructDetail
     struct _rtrcMemberDesc##NAME : ::Rtrc::StructDetail::TemplateProcessProvider<_rtrcU##NAME> \
     {                                                                                          \
         using Rtrc::StructDetail::TemplateProcessProvider<_rtrcU##NAME>::Process;              \
+        static constexpr bool isValidMember = true;                                            \
     };                                                                                         \
     static _rtrcMemberDesc##NAME *_rtrcMemberIndexToDesc(                                      \
         ::Rtrc::StructDetail::Int2Type<(_rtrcMemberCounter##NAME)>*);

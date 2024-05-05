@@ -26,4 +26,6 @@
 #include <Rtrc/RHI/Window/WindowInput.h>
 #include <Rtrc/RHI/Window/Window.h>
 
+#include <Rtrc/ShaderDSL/ShaderDSL.h>
+
 #include <Rtrc/ToolKit/ToolKit.h>
