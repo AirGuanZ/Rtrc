@@ -11,12 +11,6 @@ RTRC_END
 
 RTRC_EDSL_BEGIN
 
-template<typename T, int...Is>
-struct eVectorSwizzleProxy
-{
-    
-};
-
 template<typename T>
 struct eVector2 : eVariable<eVector2<T>>
 {
@@ -31,14 +25,15 @@ struct eVector2 : eVariable<eVector2<T>>
     eVector2(const ComponentType &x, const ComponentType &y);
     explicit eVector2(const ComponentType &xy);
 
-    eVector2(const eVector2 &other);
-    eVector2 &operator=(const eVector2 &rhs) &;
-    eVector2 &operator=(const eVector2 &rhs) && = delete;
+    eVector2(const eVector2 &other) : eVariable<eVector2>(other) { PopParentVariable(); }
+    eVector2 &operator=(const eVector2 &rhs) = default;
 
     eVector2 &operator=(const ComponentType &xy);
 
     template<typename U>
     explicit eVector2(const eVector2<U> &other);
+    template<typename U>
+    eVector2 &operator=(const eVector2<U> &other);
     
     const std::string &Compile() const;
 

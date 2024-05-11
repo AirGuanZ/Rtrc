@@ -13,6 +13,11 @@ int main()
     PushRecordContext(context);
     RTRC_SCOPE_EXIT{ PopRecordContext(); };
 
+    auto buffer = Buffer<u32>::CreateFromName("TestBuffer");
+    auto buffer2 = StructuredBuffer<A>::CreateFromName("ABuffer");
+    auto buffer3 = ByteAddressBuffer::CreateFromName("BBuffer");
+    auto buffer4 = RWByteAddressBuffer::CreateFromName("CBuffer");
+
     auto Func = $function(i32 &a, i32 b)
     {
         a = 2 * a;
@@ -36,6 +41,11 @@ int main()
         };
 
         A a = Func(i, 4);
+        a.b = a.b + buffer[2];
+
+        buffer2[2] = a;
+
+        buffer4.Store(0, a);
     };
 
     fmt::print("{}", context.BuildResult());

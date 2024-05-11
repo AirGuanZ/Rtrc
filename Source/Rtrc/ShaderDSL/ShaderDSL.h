@@ -20,6 +20,9 @@
 #include <Rtrc/ShaderDSL/DSL/StructDatabase.inl>
 #include <Rtrc/ShaderDSL/DSL/While.inl>
 
+#include <Rtrc/ShaderDSL/Resource/Buffer.h>
+#include <Rtrc/ShaderDSL/Resource/Buffer.inl>
+
 #define $if RTRC_EDSL_IF
 #define $else RTRC_EDSL_ELSE
 

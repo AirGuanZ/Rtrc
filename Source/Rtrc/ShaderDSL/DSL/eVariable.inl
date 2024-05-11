@@ -81,6 +81,18 @@ eVariable<T>::eVariable()
     eDSL::PushParentVariable(this);
 }
 
+template <typename T>
+eVariable<T>& eVariable<T>::operator=(const eVariable& other)
+{
+    if(!eVariable_HasParent())
+    {
+        const std::string idThis = eVariable_GetFullName();
+        const std::string idOther = CompileAsIdentifier(other);
+        GetCurrentRecordContext().AppendLine("{} = {};", idThis, idOther);
+    }
+    return *this;
+}
+
 template<typename T> requires std::is_base_of_v<eVariableCommonBase, T>
 std::string CompileAsIdentifier(const T &var)
 {
@@ -92,6 +104,16 @@ std::string CompileAsIdentifier(const T &var)
     {
         return var.eVariable_GetFullName();
     }
+}
+
+template<typename T> requires std::is_base_of_v<eVariableCommonBase, T>
+T CreateTemporaryVariableForExpression(std::string name)
+{
+    DisableStackVariableAllocation();
+    T ret;
+    ret.eVariableName = name;
+    EnableStackVariableAllocation();
+    return ret;
 }
 
 RTRC_EDSL_END

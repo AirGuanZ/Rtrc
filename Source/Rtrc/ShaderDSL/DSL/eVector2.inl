@@ -79,21 +79,6 @@ eVector2<T>::eVector2(const ComponentType& xy)
 }
 
 template <typename T>
-eVector2<T>::eVector2(const eVector2& other)
-    : eVector2(other.x, other.y)
-{
-    
-}
-
-template <typename T>
-eVector2<T>& eVector2<T>::operator=(const eVector2& rhs) &
-{
-    x = rhs.x;
-    y = rhs.y;
-    return *this;
-}
-
-template <typename T>
 eVector2<T>& eVector2<T>::operator=(const ComponentType& xy)
 {
     *this = eVector2(xy);
@@ -105,9 +90,16 @@ template <typename U>
 eVector2<T>::eVector2(const eVector2<U>& other)
     : eVector2()
 {
-    x = eNumber<T>(other.x);
-    y = eNumber<T>(other.y);
-    return *this;
+    *this = other;
+}
+
+template <typename T>
+template <typename U>
+eVector2<T>& eVector2<T>::operator=(const eVector2<U>& other)
+{
+    eVector2 casted = CreateTemporaryVariableForExpression<eVector2>(
+        fmt::format("{}({})", GetStaticTypeName(), other.Compile()));
+    return *this = casted;
 }
 
 template <typename T>

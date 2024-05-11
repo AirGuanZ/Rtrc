@@ -63,20 +63,6 @@ eNumber<T>::eNumber(T value)
 }
 
 template <typename T>
-eNumber<T>::eNumber(const eNumber& other)
-    : eNumber()
-{
-    *this = other;
-}
-
-template <typename T>
-eNumber<T>& eNumber<T>::operator=(const eNumber& rhs) &
-{
-    GetCurrentRecordContext().AppendLine("{} = {};", Compile(), rhs.Compile());
-    return *this;
-}
-
-template <typename T>
 template <typename U>
 eNumber<T>::eNumber(const eNumber<U>& other)
     : eNumber()
@@ -86,12 +72,11 @@ eNumber<T>::eNumber(const eNumber<U>& other)
 
 template <typename T>
 template <typename U>
-eNumber<T>& eNumber<T>::operator=(const eNumber<U> &rhs) &
+eNumber<T>& eNumber<T>::operator=(const eNumber<U> &rhs)
 {
-    const char *type = Detail::RawTypeToArithmeticTypeName<U>::GetName();
-    const std::string rhsId = rhs.Compile();
-    GetCurrentRecordContext().AppendLine("{} = {}({});", Compile(), type, rhs.Compile());
-    return *this;
+    eNumber casted = CreateTemporaryVariableForExpression<eNumber>(
+        fmt::format("{}({})", GetStaticTypeName(), rhs.Compile()));
+    return *this = casted;
 }
 
 template <typename T>
