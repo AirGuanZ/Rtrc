@@ -72,7 +72,7 @@ FlatHalfEdgeMesh FlatHalfEdgeMesh::Build(Span<uint32_t> indices, BuildOptions op
     }
 
     // Check non-manifold vertex.
-    // A non-manifold has more than one incident boundary half edge.
+    // A non-manifold vertex has more than one incident boundary half edge.
 
     std::vector<bool> vertexToBounadryIncidentHalfEdges(maxV + 1, false);
     for(int h = 0; h < static_cast<int>(heads.size()); ++h)

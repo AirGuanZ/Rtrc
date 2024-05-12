@@ -23,6 +23,8 @@ public:
     using BuildOptions = FlatHalfEdgeMeshDetail::EnumFlagsBuildOptionFlagBit;
     using enum FlatHalfEdgeMeshDetail::BuildOptionFlagBit;
 
+    // Construct a half-edge mesh structure from the provided triangle mesh.
+    // Includes a basic manifold check focusing solely on connectivity.
     static FlatHalfEdgeMesh Build(Span<uint32_t> indices, BuildOptions options = ThrowOnNonManifoldInput);
 
     bool IsEmpty() const { return H_ == 0; }
