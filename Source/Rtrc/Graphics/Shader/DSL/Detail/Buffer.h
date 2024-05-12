@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/ShaderDSL/DSL/eNumber.h>
+#include "eNumber.h"
 
 RTRC_EDSL_BEGIN
 
@@ -23,7 +23,7 @@ public:
 
     static TemplateBuffer CreateFromName(std::string name);
 
-    TemplateBuffer() { PopParentVariable(); }
+    TemplateBuffer() { PopConstructParentVariable(); }
 
     T operator[](const u32 &index) const;
 
@@ -39,37 +39,19 @@ private:
 };
 
 template<typename T>
-class Buffer : public TemplateBuffer<T, TemplateBufferType::Buffer>
-{
-
-};
+using Buffer  = TemplateBuffer<T, TemplateBufferType::Buffer>;
+template<typename T>
+using RWBuffer = TemplateBuffer<T, TemplateBufferType::RWBuffer>;
 
 template<typename T>
-class StructuredBuffer : public TemplateBuffer<T, TemplateBufferType::StructuredBuffer>
-{
-
-};
-
-class ByteAddressBuffer : public TemplateBuffer<void, TemplateBufferType::ByteAddressBuffer>
-{
-
-};
-
+using StructuredBuffer  = TemplateBuffer<T, TemplateBufferType::StructuredBuffer>;
 template<typename T>
-class RWBuffer : public TemplateBuffer<T, TemplateBufferType::RWBuffer>
-{
+using RWStructuredBuffer = TemplateBuffer<T, TemplateBufferType::RWStructuredBuffer>;
 
-};
+using ByteAddressBuffer  = TemplateBuffer<void, TemplateBufferType::ByteAddressBuffer>;
+using RWByteAddressBuffer = TemplateBuffer<void, TemplateBufferType::RWByteAddressBuffer>;
 
-template<typename T>
-class RWStructuredBuffer : public TemplateBuffer<T, TemplateBufferType::RWStructuredBuffer>
-{
-
-};
-
-class RWByteAddressBuffer : public TemplateBuffer<void, TemplateBufferType::RWByteAddressBuffer>
-{
-
-};
+#define RTRC_EDSL_DEFINE_BUFFER(TYPE, NAME) RTRC_EDSL_DEFINE_BUFFER_IMPL(TYPE, NAME)
+#define RTRC_EDSL_DEFINE_BUFFER_IMPL(TYPE, NAME) TYPE NAME = TYPE::CreateFromName(#NAME)
 
 RTRC_EDSL_END

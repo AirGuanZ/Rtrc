@@ -1,0 +1,110 @@
+#pragma once
+
+#include "eNumber.h"
+#include "eVectorSwizzle.h"
+
+RTRC_BEGIN
+
+template<typename T>
+class Vector2;
+
+RTRC_END
+
+RTRC_EDSL_BEGIN
+
+template<typename T>
+struct eVector2 : eVariable<eVector2<T>>
+{
+    using NativeComponentType = T;
+    using ComponentType = eNumber<T>;
+
+    static const char *GetStaticTypeName();
+
+    eVector2() { PopConstructParentVariable(); }
+
+    eVector2(const Vector2<T> &value);
+    eVector2(const ComponentType &x, const ComponentType &y);
+    explicit eVector2(const ComponentType &xy);
+
+    eVector2(const eVector2 &other) : eVariable<eVector2>(other) { PopConstructParentVariable(); }
+    eVector2 &operator=(const eVector2 &rhs) { static_cast<eVariable<eVector2> &>(*this) = rhs; PopCopyParentVariable(); return *this; }
+
+    eVector2 &operator=(const ComponentType &xy);
+
+    template<typename U>
+    explicit eVector2(const eVector2<U> &other);
+    template<typename U>
+    eVector2 &operator=(const eVector2<U> &other);
+
+          ComponentType operator[](u32 index);
+    const ComponentType operator[](u32 index) const;
+    
+    std::string Compile() const;
+
+    union
+    {
+        eVector2 *_vec = this;
+
+#define VECTOR_SWIZZLE_PERMUTATION_2_2(I0, I1, NAME) \
+    eVectorSwizzle<eVector2<T>, eVector2<T>, I0, I1, -1, -1> NAME;
+#define VECTOR_SWIZZLE_PERMUTATION_2_3(I0, I1, I2, NAME) \
+    eVectorSwizzle<eVector2<T>, eVector3<T>, I0, I1, I2, -1> NAME;
+#define VECTOR_SWIZZLE_PERMUTATION_2_4(I0, I1, I2, I3, NAME) \
+    eVectorSwizzle<eVector2<T>, eVector4<T>, I0, I1, I2, I3> NAME;
+
+#include "eVectorSwizzlePermutation.txt"
+
+#undef VECTOR_SWIZZLE_PERMUTATION_2_2
+#undef VECTOR_SWIZZLE_PERMUTATION_2_3
+#undef VECTOR_SWIZZLE_PERMUTATION_2_4
+    };
+
+    [[no_unique_address]] MemberVariableNameInitializer<"x"> _rtrc_init_x; eNumber<T> x;
+    [[no_unique_address]] MemberVariableNameInitializer<"y"> _rtrc_init_y; eNumber<T> y;
+
+    [[no_unique_address]] MemberVariableNameInitializer<"r"> _rtrc_init_r; eNumber<T> r;
+    [[no_unique_address]] MemberVariableNameInitializer<"g"> _rtrc_init_g; eNumber<T> g;
+};
+
+using uint2  = eVector2<uint32_t>;
+using int2   = eVector2<int32_t>;
+using float2 = eVector2<float>;
+using bool2  = eVector2<bool>;
+
+eNumber<bool> any(const eVector2<bool> &v);
+eNumber<bool> all(const eVector2<bool> &v);
+
+#define RTRC_EDSL_ADD_ELEMENT_WISE_VECTOR_OPERATOR(VEC, RET, OPR)              \
+    template<typename T>                                                       \
+    VEC<RET> operator OPR(const VEC<T> &lhs, const VEC<T> &rhs)                \
+    {                                                                          \
+        return CreateTemporaryVariableForExpression<VEC<RET>>(                 \
+            fmt::format("({} " #OPR " {})", lhs.Compile(), rhs.Compile()));    \
+    }                                                                          \
+    template<typename T>                                                       \
+    VEC<RET> operator OPR(const VEC<T> &lhs, const eNumber<T> &rhs)            \
+    {                                                                          \
+        return lhs OPR VEC<T>(rhs);                                            \
+    }                                                                          \
+    template<typename T>                                                       \
+    VEC<RET> operator OPR(const eNumber<T> &lhs, const VEC<T> &rhs)            \
+    {                                                                          \
+        return VEC<T>(lhs) OPR rhs;                                            \
+    }
+
+RTRC_EDSL_ADD_ELEMENT_WISE_VECTOR_OPERATOR(eVector2, T, +)
+RTRC_EDSL_ADD_ELEMENT_WISE_VECTOR_OPERATOR(eVector2, T, -)
+RTRC_EDSL_ADD_ELEMENT_WISE_VECTOR_OPERATOR(eVector2, T, *)
+RTRC_EDSL_ADD_ELEMENT_WISE_VECTOR_OPERATOR(eVector2, T, /)
+RTRC_EDSL_ADD_ELEMENT_WISE_VECTOR_OPERATOR(eVector2, T, &)
+RTRC_EDSL_ADD_ELEMENT_WISE_VECTOR_OPERATOR(eVector2, T, |)
+RTRC_EDSL_ADD_ELEMENT_WISE_VECTOR_OPERATOR(eVector2, T, ^)
+
+RTRC_EDSL_ADD_ELEMENT_WISE_VECTOR_OPERATOR(eVector2, bool, ==)
+RTRC_EDSL_ADD_ELEMENT_WISE_VECTOR_OPERATOR(eVector2, bool, !=)
+RTRC_EDSL_ADD_ELEMENT_WISE_VECTOR_OPERATOR(eVector2, bool, <)
+RTRC_EDSL_ADD_ELEMENT_WISE_VECTOR_OPERATOR(eVector2, bool, <=)
+RTRC_EDSL_ADD_ELEMENT_WISE_VECTOR_OPERATOR(eVector2, bool, >)
+RTRC_EDSL_ADD_ELEMENT_WISE_VECTOR_OPERATOR(eVector2, bool, >=)
+
+RTRC_EDSL_END

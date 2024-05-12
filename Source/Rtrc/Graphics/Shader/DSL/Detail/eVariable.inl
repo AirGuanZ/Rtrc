@@ -2,7 +2,7 @@
 
 #include <stack>
 
-#include <Rtrc/ShaderDSL/DSL/eVariable.h>
+#include "eVariable.h"
 
 RTRC_EDSL_BEGIN
 
@@ -11,6 +11,7 @@ namespace Detail
 
     inline thread_local std::stack<std::string> gMemberVariableNameStack;
     inline thread_local std::stack<eVariableCommonBase *> gVariableInitializationStack;
+    inline thread_local std::stack<eVariableCommonBase *> gVariableCopyStack;
     inline thread_local bool gEnableStackVariableAllocation = true;
 
 } // namespace Detail
@@ -36,15 +37,27 @@ inline std::string PopMemberVariableName()
     return ret;
 }
 
-inline void PushParentVariable(eVariableCommonBase *var)
+inline void PushConstructParentVariable(eVariableCommonBase *var)
 {
     Detail::gVariableInitializationStack.push(var);
 }
 
-inline eVariableCommonBase *PopParentVariable()
+inline eVariableCommonBase *PopConstructParentVariable()
 {
     auto ret = Detail::gVariableInitializationStack.top();
     Detail::gVariableInitializationStack.pop();
+    return ret;
+}
+
+inline void PushCopyParentVariable(eVariableCommonBase *var)
+{
+    Detail::gVariableCopyStack.push(var);
+}
+
+inline eVariableCommonBase *PopCopyParentVariable()
+{
+    auto ret = Detail::gVariableCopyStack.top();
+    Detail::gVariableCopyStack.pop();
     return ret;
 }
 
@@ -78,18 +91,19 @@ eVariable<T>::eVariable()
             GetCurrentRecordContext().AppendLine("{} {};", type, eVariableName);
         }
     }
-    eDSL::PushParentVariable(this);
+    eDSL::PushConstructParentVariable(this);
 }
 
 template <typename T>
 eVariable<T>& eVariable<T>::operator=(const eVariable& other)
 {
-    if(!eVariable_HasParent())
+    if(Detail::gVariableCopyStack.empty() || !eVariable_HasParent())
     {
         const std::string idThis = eVariable_GetFullName();
         const std::string idOther = CompileAsIdentifier(other);
         GetCurrentRecordContext().AppendLine("{} = {};", idThis, idOther);
     }
+    eDSL::PushCopyParentVariable(this);
     return *this;
 }
 

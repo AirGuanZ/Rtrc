@@ -1,6 +1,6 @@
-#include <Rtrc/Core/String.h>
-#include <Rtrc/ShaderDSL/DSL/RecordContext.h>
-#include <Rtrc/ShaderDSL/DSL/StructDatabase.h>
+#include <cassert>
+
+#include "../DSL.h"
 
 RTRC_EDSL_BEGIN
 
@@ -16,7 +16,7 @@ RecordContext::RecordContext()
     , nextFunctionNameIndex_(0)
 {
     scopeStack_.push(&rootScope_);
-    structs_ = MakeBox<StructDatabase>();
+    structs_ = MakeBox<StructTypeSet>();
 }
 
 RecordContext::~RecordContext() = default;
@@ -48,10 +48,21 @@ std::string RecordContext::AllocateFunction()
     return fmt::format("func{}", nextFunctionNameIndex_++);
 }
 
+void RecordContext::SetBuiltinValueRead(BuiltinValue value)
+{
+    builtinValueRead_[std::to_underlying(value)] = true;
+}
+
+bool RecordContext::GetBuiltinValueRead(BuiltinValue value)
+{
+    return builtinValueRead_[std::to_underlying(value)];
+}
+
 std::string RecordContext::BuildResult() const
 {
-    const std::string structs = Join("", structs_->GetDefinitions().begin(), structs_->GetDefinitions().end());
-    return structs + BuildScope("", rootScope_);
+    ResolvedStructTypeSet resolvedStructTypeSet;
+    structs_->ResolveInto(resolvedStructTypeSet);
+    return resolvedStructTypeSet.GetDefinitions() + BuildScope("", rootScope_);
 }
 
 // TODO: optimize frequent string appending
@@ -73,6 +84,17 @@ std::string RecordContext::BuildScope(const std::string &indent, const Scope& sc
             });
     }
     return result;
+}
+
+ScopedRecordContext::ScopedRecordContext()
+{
+    PushRecordContext(*this);
+}
+
+ScopedRecordContext::~ScopedRecordContext()
+{
+    assert(&GetCurrentRecordContext() == this);
+    PopRecordContext();
 }
 
 void PushRecordContext(RecordContext &context)

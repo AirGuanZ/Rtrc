@@ -2,7 +2,8 @@
 
 #include <Rtrc/Core/Struct.h>
 #include <Rtrc/Core/TemplateStringParameter.h>
-#include <Rtrc/ShaderDSL/DSL/eVariable.h>
+
+#include "eVariable.h"
 
 RTRC_EDSL_BEGIN
 
@@ -21,7 +22,7 @@ namespace ClassDetail
     template<TemplateStringParameter Str>
     struct StaticTypeNameBase
     {
-        static const char *GetStaticTypeName()
+        static constexpr const char *GetStaticTypeName()
         {
             return static_cast<const char *>(Str);
         }
@@ -45,11 +46,20 @@ namespace ClassDetail
         {
             if constexpr(ClassDetail::MemberCount<ClassType> == MemberIndex + 1)
             {
-                PopParentVariable();
+                PopConstructParentVariable();
             }
         }
 
         MemberVariablePostInitializer(const MemberVariablePostInitializer &) : MemberVariablePostInitializer() { }
+
+        MemberVariablePostInitializer &operator=(const MemberVariablePostInitializer &)
+        {
+            if constexpr(ClassDetail::MemberCount<ClassType> == MemberIndex + 1)
+            {
+                PopCopyParentVariable();
+            }
+            return *this;
+        }
     };
 
     template<typename ClassType>

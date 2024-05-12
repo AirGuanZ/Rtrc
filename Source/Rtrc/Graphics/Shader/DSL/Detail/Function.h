@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/ShaderDSL/Common.h>
+#include "RecordContext.h"
 
 RTRC_EDSL_BEGIN
 
@@ -19,9 +19,10 @@ private:
 
     friend struct FunctionBuilder;
 
-    explicit Function(std::string name);
+    Function(std::string name, Box<RecordContext> standaloneContext);
 
     std::string functionName_;
+    Box<RecordContext> standaloneContext_;
 };
 
 struct FunctionBuilder

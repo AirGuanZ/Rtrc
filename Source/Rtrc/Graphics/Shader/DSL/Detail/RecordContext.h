@@ -1,18 +1,29 @@
 #pragma once
 
+#include <bitset>
 #include <stack>
 
 #include <Rtrc/Core/Uncopyable.h>
 #include <Rtrc/Core/Variant.h>
-#include <Rtrc/ShaderDSL/Common.h>
+
+#include "Common.h"
 
 RTRC_EDSL_BEGIN
 
-class StructDatabase;
+class StructTypeSet;
 
 class RecordContext : public Uncopyable
 {
 public:
+
+    enum class BuiltinValue
+    {
+        GroupID,
+        GroupThreadID,
+        DispatchThreadID,
+
+        Count
+    };
 
     RecordContext();
     ~RecordContext();
@@ -30,6 +41,9 @@ public:
     std::string AllocateVariable();
     std::string AllocateFunction();
 
+    void SetBuiltinValueRead(BuiltinValue value);
+    bool GetBuiltinValueRead(BuiltinValue value);
+
     std::string BuildResult() const;
 
 private:
@@ -46,9 +60,20 @@ private:
 
     uint32_t nextVariableNameIndex_;
     uint32_t nextFunctionNameIndex_;
+
     Scope rootScope_;
     std::stack<Scope *> scopeStack_;
-    Box<StructDatabase> structs_;
+
+    Box<StructTypeSet> structs_;
+    std::bitset<EnumCount<BuiltinValue>> builtinValueRead_;
+};
+
+class ScopedRecordContext : public RecordContext
+{
+public:
+
+    ScopedRecordContext();
+    ~ScopedRecordContext();
 };
 
 void PushRecordContext(RecordContext &context);

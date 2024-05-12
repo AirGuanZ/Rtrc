@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/ShaderDSL/DSL/eNumber.h>
+#include "eNumber.h"
 
 RTRC_EDSL_BEGIN
 

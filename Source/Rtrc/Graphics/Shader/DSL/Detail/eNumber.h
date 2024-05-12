@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/ShaderDSL/DSL/eVariable.h>
+#include "eVariable.h"
 
 RTRC_EDSL_BEGIN
 
@@ -11,12 +11,12 @@ struct eNumber : eVariable<eNumber<T>>
 
     static const char *GetStaticTypeName();
 
-    eNumber() { PopParentVariable(); }
+    eNumber() { PopConstructParentVariable(); }
 
     eNumber(T value);
 
-    eNumber(const eNumber &other) : eVariable<eNumber>(other) { PopParentVariable(); }
-    eNumber &operator=(const eNumber &rhs) = default;
+    eNumber(const eNumber &other) : eVariable<eNumber>(other) { PopConstructParentVariable(); }
+    eNumber &operator=(const eNumber &rhs) { static_cast<eVariable<eNumber> &>(*this) = rhs; PopCopyParentVariable(); return *this; }
 
     template<typename U>
     eNumber(const eNumber<U> &other);

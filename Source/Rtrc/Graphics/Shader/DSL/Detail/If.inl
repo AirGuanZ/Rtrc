@@ -1,8 +1,9 @@
 #pragma once
 
 #include <Rtrc/Core/ScopeGuard.h>
-#include <Rtrc/ShaderDSL/DSL/If.h>
-#include <Rtrc/ShaderDSL/DSL/RecordContext.h>
+
+#include "If.h"
+#include "RecordContext.h"
 
 RTRC_EDSL_BEGIN
 

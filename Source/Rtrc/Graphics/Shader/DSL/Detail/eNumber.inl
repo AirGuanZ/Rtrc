@@ -1,7 +1,7 @@
 #pragma once
 
-#include <Rtrc/ShaderDSL/DSL/eNumber.h>
-#include <Rtrc/ShaderDSL/DSL/RecordContext.h>
+#include "eNumber.h"
+#include "RecordContext.h"
 
 RTRC_EDSL_BEGIN
 

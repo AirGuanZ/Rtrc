@@ -1,9 +1,11 @@
 #pragma once
 
+#include <Rtrc/Core/ScopeGuard.h>
 #include <Rtrc/Core/String.h>
-#include <Rtrc/ShaderDSL/DSL/eVariable.h>
-#include <Rtrc/ShaderDSL/DSL/Function.h>
-#include <Rtrc/ShaderDSL/DSL/RecordContext.h>
+
+#include "eVariable.h"
+#include "Function.h"
+#include "RecordContext.h"
 
 RTRC_EDSL_BEGIN
 
@@ -28,8 +30,8 @@ Ret Function<Ret, Args...>::operator()(const std::remove_reference_t<Args>&... a
 }
 
 template <typename Ret, typename... Args>
-Function<Ret, Args...>::Function(std::string name)
-    : functionName_(std::move(name))
+Function<Ret, Args...>::Function(std::string name, Box<RecordContext> standaloneContext)
+    : functionName_(std::move(name)), standaloneContext_(std::move(standaloneContext))
 {
     
 }
@@ -38,11 +40,15 @@ template <typename Ret, typename... Args>
 Function<Ret, std::remove_reference_t<Args>...> FunctionBuilder::BuildFunction(
     std::function<Ret(Args...)> bodyFunc)
 {
-    RecordContext &context = GetCurrentRecordContext();
+    //auto context = MakeBox<RecordContext>();
+    //PushRecordContext(*context);
+    //RTRC_SCOPE_EXIT{ PopRecordContext(); };
+
+    auto context = &GetCurrentRecordContext();
 
     // Head
 
-    const std::string functionName = context.AllocateFunction();
+    const std::string functionName = context->AllocateFunction();
     const char *retTypeName = "void";
     if constexpr(!std::is_same_v<Ret, void>)
     {
@@ -69,10 +75,10 @@ Function<Ret, std::remove_reference_t<Args>...> FunctionBuilder::BuildFunction(
         }
     }
 
-    context.AppendLine("{} {}({})", retTypeName, functionName, argStr);
+    context->AppendLine("{} {}({})", retTypeName, functionName, argStr);
 
-    context.BeginScope();
-    RTRC_SCOPE_EXIT { context.EndScope(); };
+    context->BeginScope();
+    RTRC_SCOPE_EXIT { context->EndScope(); };
 
     // Args
 
@@ -94,10 +100,10 @@ Function<Ret, std::remove_reference_t<Args>...> FunctionBuilder::BuildFunction(
     else
     {
         Ret ret = std::apply(std::move(bodyFunc), args);
-        context.AppendLine("return {};", eDSL::CompileAsIdentifier(ret));
+        context->AppendLine("return {};", eDSL::CompileAsIdentifier(ret));
     }
 
-    return Function<Ret, std::remove_reference_t<Args>...>(functionName);
+    return Function<Ret, std::remove_reference_t<Args>...>(functionName, nullptr);
 }
 
 RTRC_EDSL_END

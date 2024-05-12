@@ -1,6 +1,7 @@
 #pragma once
 
-#include <Rtrc/ShaderDSL/Resource/Buffer.h>
+#include "Buffer.h"
+#include "RecordContext.h"
 
 RTRC_EDSL_BEGIN
 
@@ -17,7 +18,7 @@ const char* TemplateBuffer<T, Type>::GetStaticTypeName()
         {
             const char *basic = GetBasicTypeName();
             const char *element = T::GetStaticTypeName();
-            return fmt::format("{}<{}>", basic, element);;
+            return fmt::format("{}<{}>", basic, element);
         }();
         return ret.data();
     }

@@ -1,6 +1,8 @@
 #pragma once
 
-#include <Rtrc/ShaderDSL/Common.h>
+#include <Rtrc/Core/TemplateStringParameter.h>
+
+#include "Common.h"
 
 RTRC_EDSL_BEGIN
 
@@ -20,9 +22,12 @@ std::string PopMemberVariableName();
 
 // Called when constructing a new eVariable.
 // Members of the var will use the pushed parent pointer to record the parent-children relationship.
-void PushParentVariable(eVariableCommonBase *var);
+void PushConstructParentVariable(eVariableCommonBase *var);
 // For each class inherited from eVariable, call this after the last eVariable-derived member is constructed.
-eVariableCommonBase *PopParentVariable();
+eVariableCommonBase *PopConstructParentVariable();
+
+void PushCopyParentVariable(eVariableCommonBase *var);
+eVariableCommonBase *PopCopyParentVariable();
 
 // After calling this, automatic variable name allocation will be disabled.
 // Newly constructed (top-most) variables will leave their names to be empty.
