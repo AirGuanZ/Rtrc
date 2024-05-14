@@ -27,7 +27,7 @@ struct eVector2 : eVariable<eVector2<T>>
     explicit eVector2(const ComponentType &xy);
 
     eVector2(const eVector2 &other) : eVariable<eVector2>(other) { PopConstructParentVariable(); }
-    eVector2 &operator=(const eVector2 &rhs) { static_cast<eVariable<eVector2> &>(*this) = rhs; PopCopyParentVariable(); return *this; }
+    eVector2 &operator=(const eVector2 &rhs);
 
     eVector2 &operator=(const ComponentType &xy);
 
@@ -36,10 +36,10 @@ struct eVector2 : eVariable<eVector2<T>>
     template<typename U>
     eVector2 &operator=(const eVector2<U> &other);
 
-          ComponentType operator[](u32 index);
-    const ComponentType operator[](u32 index) const;
+          TemporaryValueWrapper<ComponentType> operator[](const u32 &index);
+    const TemporaryValueWrapper<ComponentType> operator[](const u32 &index) const;
     
-    std::string Compile() const;
+    std::string Compile() const { return eVariableCommonBase::eVariable_GetFullName(); }
 
     union
     {
@@ -71,8 +71,8 @@ using int2   = eVector2<int32_t>;
 using float2 = eVector2<float>;
 using bool2  = eVector2<bool>;
 
-eNumber<bool> any(const eVector2<bool> &v);
-eNumber<bool> all(const eVector2<bool> &v);
+inline eNumber<bool> any(const eVector2<bool> &v) { return v.x | v.y; }
+inline eNumber<bool> all(const eVector2<bool> &v) { return v.x & v.y; }
 
 #define RTRC_EDSL_ADD_ELEMENT_WISE_VECTOR_OPERATOR(VEC, RET, OPR)              \
     template<typename T>                                                       \

@@ -79,6 +79,12 @@ eVector2<T>::eVector2(const ComponentType& xy)
 }
 
 template <typename T>
+eVector2<T>& eVector2<T>::operator=(const eVector2& rhs)
+{
+    static_cast<eVariable<eVector2> &>(*this) = rhs; PopCopyParentVariable(); return *this;
+}
+
+template <typename T>
 eVector2<T>& eVector2<T>::operator=(const ComponentType& xy)
 {
     *this = eVector2(xy);
@@ -97,37 +103,20 @@ template <typename T>
 template <typename U>
 eVector2<T>& eVector2<T>::operator=(const eVector2<U>& other)
 {
-    eVector2 casted = CreateTemporaryVariableForExpression<eVector2>(
+    return *this = CreateTemporaryVariableForExpression<eVector2>(
         fmt::format("{}({})", GetStaticTypeName(), other.Compile()));
-    return *this = casted;
 }
 
 template <typename T>
-typename eVector2<T>::ComponentType eVector2<T>::operator[](u32 index)
+TemporaryValueWrapper<typename eVector2<T>::ComponentType> eVector2<T>::operator[](const u32 &index)
 {
     return CreateTemporaryVariableForExpression<ComponentType>(fmt::format("{}[{}]", Compile(), index.Compile()));
 }
 
 template <typename T>
-const typename eVector2<T>::ComponentType eVector2<T>::operator[](u32 index) const
+const TemporaryValueWrapper<typename eVector2<T>::ComponentType> eVector2<T>::operator[](const u32 &index) const
 {
     return CreateTemporaryVariableForExpression<ComponentType>(fmt::format("{}[{}]", Compile(), index.Compile()));
-}
-
-template <typename T>
-std::string eVector2<T>::Compile() const
-{
-    return eVariableCommonBase::eVariable_GetFullName();
-}
-
-inline eNumber<bool> any(const eVector2<bool> &v)
-{
-    return v.x | v.y;
-}
-
-inline eNumber<bool> all(const eVector2<bool> &v)
-{
-    return v.x & v.y;
 }
 
 RTRC_EDSL_END

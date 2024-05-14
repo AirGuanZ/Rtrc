@@ -81,6 +81,12 @@ eVector4<T>::eVector4(const ComponentType& xyzw)
 }
 
 template <typename T>
+eVector4<T>& eVector4<T>::operator=(const eVector4& rhs)
+{
+    static_cast<eVariable<eVector4> &>(*this) = rhs; PopCopyParentVariable(); return *this;
+}
+
+template <typename T>
 eVector4<T>& eVector4<T>::operator=(const ComponentType &xyzw)
 {
     return *this = eVector4(xyzw);
@@ -98,19 +104,18 @@ template <typename T>
 template <typename U>
 eVector4<T>& eVector4<T>::operator=(const eVector4<U>& other)
 {
-    eVector4 casted = CreateTemporaryVariableForExpression<eVector4>(
+    return *this = CreateTemporaryVariableForExpression<eVector4>(
         fmt::format("{}({})", GetStaticTypeName(), other.Compile()));
-    return *this = casted;
 }
 
 template <typename T>
-typename eVector4<T>::ComponentType eVector4<T>::operator[](u32 index)
+TemporaryValueWrapper<typename eVector4<T>::ComponentType> eVector4<T>::operator[](u32 index)
 {
     return CreateTemporaryVariableForExpression<ComponentType>(fmt::format("{}[{}]", Compile(), index.Compile()));
 }
 
 template <typename T>
-const typename eVector4<T>::ComponentType eVector4<T>::operator[](u32 index) const
+const TemporaryValueWrapper<typename eVector4<T>::ComponentType> eVector4<T>::operator[](u32 index) const
 {
     return CreateTemporaryVariableForExpression<ComponentType>(fmt::format("{}[{}]", Compile(), index.Compile()));
 }

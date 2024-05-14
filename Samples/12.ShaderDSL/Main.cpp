@@ -28,10 +28,10 @@ int main()
 
     auto Func2 = $function
     {
-        A classA;
-        classA.b = 999;
-
-        A classB = classA;
+        //A classA;
+        //classA.b = 999;
+        //
+        //A classB = classA;
 
         //i32 i = 0;
         //$while(i != 100)
@@ -43,10 +43,13 @@ int main()
         //A a = Func(i, 4);
         //a.b = a.b + TestBuffer[2];
         //
-        //float2 v0 = float2(9999);
-        //float4 v1 = v0.xyyx;
-        //float4 v2;
-        //v2 = v1;
+        float2 v0 = float2(9999);
+        //f32 v = v0[1];
+        //v = 4;
+        v0.yx = float2(1, 2);
+
+        float4x4 m = float4x4(Rtrc::Matrix4x4f::Translate(1, 2, 3));
+        float4 p = mul(m, float4(2, 3, 4, 1));
         //
         //buffer2[2] = a;
         //

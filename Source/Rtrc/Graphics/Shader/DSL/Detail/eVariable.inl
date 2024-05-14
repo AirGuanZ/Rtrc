@@ -121,10 +121,10 @@ std::string CompileAsIdentifier(const T &var)
 }
 
 template<typename T> requires std::is_base_of_v<eVariableCommonBase, T>
-T CreateTemporaryVariableForExpression(std::string name)
+TemporaryValueWrapper<T> CreateTemporaryVariableForExpression(std::string name)
 {
     DisableStackVariableAllocation();
-    T ret;
+    TemporaryValueWrapper<T> ret;
     ret.eVariableName = name;
     EnableStackVariableAllocation();
     return ret;

@@ -24,14 +24,13 @@ namespace VectorSwizzleDetail
 template <typename Vec, typename TVec, int I0, int I1, int I2, int I3>
 eVectorSwizzle<Vec, TVec, I0, I1, I2, I3>::operator TVec() const
 {
-    TVec ret = CreateTemporaryVariableForExpression<TVec>(fmt::format(
+    return CreateTemporaryVariableForExpression<TVec>(fmt::format(
         "{}.{}{}{}{}",
         _vec->Compile(),
         VectorSwizzleDetail::ComponentIndexToName(I0),
         VectorSwizzleDetail::ComponentIndexToName(I1),
         VectorSwizzleDetail::ComponentIndexToName(I2),
         VectorSwizzleDetail::ComponentIndexToName(I3)));
-    return std::move(ret); // Disable RVO
 }
 
 template <typename Vec, typename TVec, int I0, int I1, int I2, int I3>

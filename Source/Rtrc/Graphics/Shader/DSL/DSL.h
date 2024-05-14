@@ -4,6 +4,7 @@
 
 #include "Detail/Buffer.h"
 #include "Detail/eVariable.h"
+#include "Detail/eMatrix4x4.h"
 #include "Detail/eNumber.h"
 #include "Detail/eVector2.h"
 #include "Detail/eVector3.h"
@@ -17,6 +18,7 @@
 
 #include "Detail/Buffer.inl"
 #include "Detail/eVariable.inl"
+#include "Detail/eMatrix4x4.inl"
 #include "Detail/eNumber.inl"
 #include "Detail/eVector2.inl"
 #include "Detail/eVector3.inl"

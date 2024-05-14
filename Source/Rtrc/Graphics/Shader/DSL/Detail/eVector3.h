@@ -26,7 +26,7 @@ struct eVector3 : eVariable<eVector3<T>>
     explicit eVector3(const ComponentType &xyz);
 
     eVector3(const eVector3 &other) : eVariable<eVector3>(other) { PopConstructParentVariable(); }
-    eVector3 &operator=(const eVector3 &rhs) { static_cast<eVariable<eVector3> &>(*this) = rhs; PopCopyParentVariable(); return *this; }
+    eVector3 &operator=(const eVector3 &rhs);
 
     eVector3 &operator=(const ComponentType &xyz);
 
@@ -35,10 +35,28 @@ struct eVector3 : eVariable<eVector3<T>>
     template<typename U>
     eVector3 &operator=(const eVector3<U> &other);
 
-          ComponentType operator[](u32 index);
-    const ComponentType operator[](u32 index) const;
+          TemporaryValueWrapper<ComponentType> operator[](u32 index);
+    const TemporaryValueWrapper<ComponentType> operator[](u32 index) const;
 
     std::string Compile() const;
+
+    union
+    {
+        eVector3 *_vec = this;
+
+#define VECTOR_SWIZZLE_PERMUTATION_3_2(I0, I1, NAME) \
+    eVectorSwizzle<eVector3<T>, eVector2<T>, I0, I1, -1, -1> NAME;
+#define VECTOR_SWIZZLE_PERMUTATION_3_3(I0, I1, I2, NAME) \
+    eVectorSwizzle<eVector3<T>, eVector3<T>, I0, I1, I2, -1> NAME;
+#define VECTOR_SWIZZLE_PERMUTATION_3_4(I0, I1, I2, I3, NAME) \
+    eVectorSwizzle<eVector3<T>, eVector4<T>, I0, I1, I2, I3> NAME;
+
+#include "eVectorSwizzlePermutation.txt"
+
+#undef VECTOR_SWIZZLE_PERMUTATION_3_2
+#undef VECTOR_SWIZZLE_PERMUTATION_3_3
+#undef VECTOR_SWIZZLE_PERMUTATION_3_4
+    };
 
     [[no_unique_address]] MemberVariableNameInitializer<"x"> _rtrc_init_x; eNumber<T> x;
     [[no_unique_address]] MemberVariableNameInitializer<"y"> _rtrc_init_y; eNumber<T> y;
