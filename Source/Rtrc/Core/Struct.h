@@ -63,12 +63,20 @@ namespace StructDetail
     }
 
     template<typename T>
+    constexpr int ComputeMemberCount()
+    {
+        int ret = 0;
+        StructDetail::ForEachMember<T>([&ret](auto, auto) { ++ret; });
+        return ret;
+    }
+
+    template<typename T>
     concept RtrcStruct = requires { typename T::_rtrcStructTypeFlag; };
 
     struct _rtrcStructBase
     {
         struct _rtrcStructTypeFlag {};
-        static StructDetail::Sizer<1> _rtrcMemberCounter(...);
+        static Sizer<1> _rtrcMemberCounter(...);
         auto operator<=>(const _rtrcStructBase &) const = default;
         using float2 = Vector2f;
         using float3 = Vector3f;
@@ -82,6 +90,34 @@ namespace StructDetail
         using uint4 = Vector4u;
         using float4x4 = Matrix4x4f;
     };
+
+    struct DefaultStructBuilder
+    {
+        template<typename T>
+        using Member = T;
+
+        template<typename T, TemplateStringParameter Name>
+        struct PreMember
+        {
+
+        };
+
+        template<typename T>
+        struct PostMember
+        {
+
+        };
+    };
+
+    template<template<typename> typename Sketch>
+    struct SketchRebindBase
+    {
+        template<typename B>
+        using _rtrcRebindStructBuilder = Sketch<B>;
+    };
+
+    template<RtrcStruct T, typename B>
+    using RebindSketchBuilder = typename T::template _rtrcRebindStructBuilder<B>;
 
 } // namespace StructDetail
 
@@ -105,21 +141,31 @@ namespace StructDetail
 
 using StructDetail::RtrcStruct;
 
-#define rtrc_struct(NAME) struct NAME : ::Rtrc::StructDetail::_rtrcStructBase
+#define rtrc_struct(NAME)                                                             \
+    template<typename B> struct _rtrcStructSketch##NAME;                              \
+    using NAME = _rtrcStructSketch##NAME<::Rtrc::StructDetail::DefaultStructBuilder>; \
+    template<typename B>                                                              \
+    struct _rtrcStructSketch##NAME :                                                  \
+        ::Rtrc::StructDetail::_rtrcStructBase,                                        \
+        ::Rtrc::StructDetail::SketchRebindBase<_rtrcStructSketch##NAME>
+
+#define rtrc_struct_name(NAME) _rtrcStructSketch##NAME
 
 #if defined(__INTELLISENSE__) || defined(__RSCPP_VERSION)
-#define rtrc_var(TYPE, NAME)            \
-    using _rtrcMemberType##NAME = TYPE; \
+#define rtrc_var(TYPE, NAME)                                         \
+    using _rtrcMemberType##NAME = typename B::template Member<TYPE>; \
     _rtrcMemberType##NAME NAME
 #else
-#define rtrc_var(TYPE, NAME)                                  \
-    RTRC_DEFINE_SELF_TYPE(_rtrcSelf##NAME)                    \
-    using _rtrcMemberType##NAME = TYPE;                       \
-    _rtrcMemberType##NAME NAME;                               \
-    RTRC_META_STRUCT_PRE_MEMBER(NAME)                         \
-        f.template operator()(&_rtrcSelf##NAME::NAME, #NAME); \
-    RTRC_META_STRUCT_POST_MEMBER(NAME)                        \
-    using _rtrcRequiresComma##NAME = int
+#define rtrc_var(TYPE, NAME)                                                        \
+    RTRC_DEFINE_SELF_TYPE(_rtrcSelf##NAME)                                          \
+    using _rtrcMemberType##NAME = typename B::template Member<TYPE>;                \
+    [[non_unique_address]] B::template PreMember<TYPE, #NAME> _rtrcPreMember##NAME; \
+    _rtrcMemberType##NAME NAME;                                                     \
+    RTRC_META_STRUCT_PRE_MEMBER(NAME)                                               \
+        f.template operator()(&_rtrcSelf##NAME::NAME, #NAME);                       \
+    RTRC_META_STRUCT_POST_MEMBER(NAME)                                              \
+    [[non_unique_address]] B::template PostMember<TYPE> _rtrcPostMember##NAME;      \
+    using _rtrcRequireComma##NAME = int
 #endif
 
 RTRC_END
