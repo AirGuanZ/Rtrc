@@ -39,8 +39,8 @@ class DFDMDemo : public SimpleApplication
             imgui.CheckBox("Enable Checkboard", &enableCheckboard_);
             if(imgui.Input("Area Preservation", &areaPreservation_, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
                 reinitGeometryImage = true;
-            imgui.End();
         }
+        imgui.End();
 
         if(reinitGeometryImage)
         {
