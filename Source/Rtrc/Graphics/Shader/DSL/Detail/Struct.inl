@@ -5,10 +5,10 @@
 
 RTRC_EDSL_BEGIN
 
-template <typename ClassType>
-ClassDetail::RegisterStructToRecordContext<ClassType>::RegisterStructToRecordContext()
+template <typename C, TemplateStringParameter Name>
+eDSLStructDetail::CommonBase<C, Name>::CommonBase()
 {
-    GetCurrentRecordContext().RegisterStruct<ClassType>();
+    GetCurrentRecordContext().RegisterStruct<C>();
 }
 
 RTRC_EDSL_END

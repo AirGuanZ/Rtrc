@@ -12,6 +12,7 @@
 #include "Detail/eVectorSwizzle.h"
 #include "Detail/Function.h"
 #include "Detail/If.h"
+#include "Detail/NativeTypeMapping.h"
 #include "Detail/Struct.h"
 #include "Detail/StructTypeSet.h"
 #include "Detail/While.h"

@@ -7,7 +7,7 @@
 
 RTRC_EDSL_BEGIN
 
-template <RtrcDSL_Struct T>
+template <RtrcDSLStruct T>
 void StructTypeSet::Add()
 {
     const std::string_view name = typeid(T).name();
@@ -25,7 +25,7 @@ inline void StructTypeSet::ResolveInto(ResolvedStructTypeSet& resolvedSet) const
     }
 }
 
-template <RtrcDSL_Struct T>
+template <RtrcDSLStruct T>
 void ResolvedStructTypeSet::Add()
 {
     const std::string_view cppTypeName = typeid(T).name();
@@ -41,7 +41,7 @@ void ResolvedStructTypeSet::Add()
 
     StructDetail::ForEachMember<T>([&]<typename M>(M T::*, const char *name)
     {
-        if constexpr(RtrcDSL_Struct<M>)
+        if constexpr(RtrcDSLStruct<M>)
         {
             this->Add<M>();
         }

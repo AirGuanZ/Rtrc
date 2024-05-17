@@ -4,57 +4,45 @@
 #include <Rtrc/Core/TemplateStringParameter.h>
 
 #include "eVariable.h"
+#include "NativeTypeMapping.h"
 
 RTRC_EDSL_BEGIN
 
-namespace ClassDetail
+namespace eDSLStructDetail
 {
 
-    struct CommonBase
+    template<typename C, TemplateStringParameter Name>
+    struct CommonBase : eVariable<C>
     {
-        struct eDSLTypeFlag {};
-        static StructDetail::Sizer<1> _rtrcMemberCounter(...) { return {}; }
-    };
+        struct eDSLStructTypeFlag { };
 
-    template<typename T>
-    concept RtrcDSL_Struct = requires{ typename T::eDSLTypeFlag; };
-
-    template<TemplateStringParameter Str>
-    struct StaticTypeNameBase
-    {
-        static constexpr const char *GetStaticTypeName()
+        static const char *GetStaticTypeName()
         {
-            return static_cast<const char *>(Str);
+            return static_cast<const char *>(Name);
         }
+
+        CommonBase();
     };
 
     template<typename T>
-    constexpr int ComputeMemberCount()
-    {
-        int ret = 0;
-        StructDetail::ForEachMember<T>([&ret](auto, auto){ ++ret; });
-        return ret;
-    }
+    concept RtrcDSLStruct = requires{ typename T::eDSLStructTypeFlag; };
 
-    template<typename T>
-    constexpr int MemberCount = ComputeMemberCount<T>();
-
-    template<typename ClassType, int MemberIndex>
-    struct MemberVariablePostInitializer
+    template<typename C, int MemberIndex, TemplateStringParameter Name>
+    struct PostMember
     {
-        MemberVariablePostInitializer()
+        PostMember()
         {
-            if constexpr(ClassDetail::MemberCount<ClassType> == MemberIndex + 1)
+            if constexpr(StructDetail::MemberCount<C> == MemberIndex + 1)
             {
                 PopConstructParentVariable();
             }
         }
 
-        MemberVariablePostInitializer(const MemberVariablePostInitializer &) : MemberVariablePostInitializer() { }
+        PostMember(const PostMember &) : PostMember() { }
 
-        MemberVariablePostInitializer &operator=(const MemberVariablePostInitializer &)
+        PostMember &operator=(const PostMember &)
         {
-            if constexpr(ClassDetail::MemberCount<ClassType> == MemberIndex + 1)
+            if constexpr(StructDetail::MemberCount<C> == MemberIndex + 1)
             {
                 PopCopyParentVariable();
             }
@@ -62,40 +50,43 @@ namespace ClassDetail
         }
     };
 
-    template<typename ClassType>
-    struct RegisterStructToRecordContext
+    struct DSLStructBuilder
     {
-        RegisterStructToRecordContext();
+        template<typename C, TemplateStringParameter Name>
+        using Base = CommonBase<C, Name>;
+
+        template<typename T>
+        using Member = NativeTypeToDSLType<T>;
+
+        template<typename C, typename T, int MemberIndex, TemplateStringParameter Name>
+        using PreMember = MemberVariableNameInitializer<Name>;
+
+        template<typename C, typename T, int MemberIndex>
+        struct PostMember
+        {
+            PostMember()
+            {
+                if constexpr(StructDetail::MemberCount<C> == MemberIndex + 1)
+                {
+                    PopConstructParentVariable();
+                }
+            }
+
+            PostMember(const PostMember &) : PostMember() { }
+
+            PostMember &operator=(const PostMember &)
+            {
+                if constexpr(StructDetail::MemberCount<C> == MemberIndex + 1)
+                {
+                    PopCopyParentVariable();
+                }
+                return *this;
+            }
+        };
     };
 
-    struct Dummy { int dummy; };
+} // namespace eDSLStructDetail
 
-} // namespace ClassDetail
-
-using ClassDetail::RtrcDSL_Struct;
-
-#define RTRC_EDSL_STRUCT(NAME)                                \
-    struct NAME :                                             \
-        ::Rtrc::eDSL::eVariable<NAME>,                        \
-        ::Rtrc::eDSL::ClassDetail::CommonBase,                \
-        ::Rtrc::eDSL::ClassDetail::StaticTypeNameBase<#NAME>, \
-        ::Rtrc::eDSL::ClassDetail::RegisterStructToRecordContext<NAME>
-
-#if defined(__INTELLISENSE__) || defined(__RSCPP_VERSION)
-#define RTRC_EDSL_VAR(TYPE, NAME) \
-    TYPE NAME;                    \
-    using _requireComma##NAME = int
-#else
-#define RTRC_EDSL_VAR(TYPE, NAME)                                       \
-    RTRC_DEFINE_SELF_TYPE(_rtrcSelf##NAME)                              \
-    Rtrc::eDSL::MemberVariableNameInitializer<#NAME> _rtrcInit##NAME;   \
-    TYPE NAME;                                                          \
-    RTRC_META_STRUCT_PRE_MEMBER(NAME)                                   \
-        f.template operator()(&_rtrcSelf##NAME::NAME, #NAME);           \
-    RTRC_META_STRUCT_POST_MEMBER(NAME)                                  \
-    Rtrc::eDSL::ClassDetail::MemberVariablePostInitializer<             \
-        _rtrcSelf##NAME, _rtrcMemberCounter##NAME> _rtrcPostInit##NAME; \
-    using _requireComma##NAME = int
-#endif
+using eDSLStructDetail::RtrcDSLStruct;
 
 RTRC_EDSL_END

@@ -71,11 +71,13 @@ namespace StructDetail
     }
 
     template<typename T>
+    constexpr int MemberCount = ComputeMemberCount<T>();
+
+    template<typename T>
     concept RtrcStruct = requires { typename T::_rtrcStructTypeFlag; };
 
     struct _rtrcStructBase
     {
-        struct _rtrcStructTypeFlag {};
         static Sizer<1> _rtrcMemberCounter(...);
         auto operator<=>(const _rtrcStructBase &) const = default;
         using float2 = Vector2f;
@@ -91,18 +93,26 @@ namespace StructDetail
         using float4x4 = Matrix4x4f;
     };
 
+    struct DefaultStructBase
+    {
+        struct _rtrcStructTypeFlag {};
+    };
+
     struct DefaultStructBuilder
     {
+        template<typename C, TemplateStringParameter Name>
+        using Base = DefaultStructBase;
+
         template<typename T>
         using Member = T;
 
-        template<typename T, TemplateStringParameter Name>
+        template<typename C, typename T, int MemberIndex, TemplateStringParameter Name>
         struct PreMember
         {
 
         };
 
-        template<typename T>
+        template<typename C, typename T, int MemberIndex>
         struct PostMember
         {
 
@@ -121,15 +131,19 @@ namespace StructDetail
 
 } // namespace StructDetail
 
-#define RTRC_META_STRUCT_PRE_MEMBER(NAME)                                           \
+using StructDetail::RtrcStruct;
+
+#define RTRC_META_STRUCT_SETUP_MEMBER(NAME)                                         \
     enum { _rtrcMemberCounter##NAME =                                               \
         sizeof(_rtrcSelf##NAME::_rtrcMemberCounter((::Rtrc::StructDetail::Int<      \
             ::Rtrc::StructDetail::STRUCT_MAX_MEMBER_COUNT >*)nullptr)) - 1 };       \
     static ::Rtrc::StructDetail::Sizer<(_rtrcMemberCounter##NAME) + 2>              \
-        _rtrcMemberCounter(::Rtrc::StructDetail::Int<(_rtrcMemberCounter##NAME)>*); \
+        _rtrcMemberCounter(::Rtrc::StructDetail::Int<(_rtrcMemberCounter##NAME)>*);
+
+#define RTRC_META_STRUCT_PRE_MEMBER_ACCESS(NAME) \
     using _rtrcU##NAME = decltype([]<typename F>(const F &f) constexpr {
 
-#define RTRC_META_STRUCT_POST_MEMBER(NAME)                                                     \
+#define RTRC_META_STRUCT_POST_MEMBER_ACCESS(NAME)                                              \
     });                                                                                        \
     struct _rtrcMemberDesc##NAME : ::Rtrc::StructDetail::TemplateProcessProvider<_rtrcU##NAME> \
     {                                                                                          \
@@ -139,15 +153,14 @@ namespace StructDetail
     static _rtrcMemberDesc##NAME *_rtrcMemberIndexToDesc(                                      \
         ::Rtrc::StructDetail::Int2Type<(_rtrcMemberCounter##NAME)>*);
 
-using StructDetail::RtrcStruct;
-
 #define rtrc_struct(NAME)                                                             \
     template<typename B> struct _rtrcStructSketch##NAME;                              \
     using NAME = _rtrcStructSketch##NAME<::Rtrc::StructDetail::DefaultStructBuilder>; \
     template<typename B>                                                              \
     struct _rtrcStructSketch##NAME :                                                  \
         ::Rtrc::StructDetail::_rtrcStructBase,                                        \
-        ::Rtrc::StructDetail::SketchRebindBase<_rtrcStructSketch##NAME>
+        ::Rtrc::StructDetail::SketchRebindBase<_rtrcStructSketch##NAME>,              \
+        B::template Base<_rtrcStructSketch##NAME<B>, #NAME>
 
 #define rtrc_struct_name(NAME) _rtrcStructSketch##NAME
 
@@ -156,15 +169,18 @@ using StructDetail::RtrcStruct;
     using _rtrcMemberType##NAME = typename B::template Member<TYPE>; \
     _rtrcMemberType##NAME NAME
 #else
-#define rtrc_var(TYPE, NAME)                                                        \
-    RTRC_DEFINE_SELF_TYPE(_rtrcSelf##NAME)                                          \
-    using _rtrcMemberType##NAME = typename B::template Member<TYPE>;                \
-    [[non_unique_address]] B::template PreMember<TYPE, #NAME> _rtrcPreMember##NAME; \
-    _rtrcMemberType##NAME NAME;                                                     \
-    RTRC_META_STRUCT_PRE_MEMBER(NAME)                                               \
-        f.template operator()(&_rtrcSelf##NAME::NAME, #NAME);                       \
-    RTRC_META_STRUCT_POST_MEMBER(NAME)                                              \
-    [[non_unique_address]] B::template PostMember<TYPE> _rtrcPostMember##NAME;      \
+#define rtrc_var(TYPE, NAME)                                                          \
+    RTRC_DEFINE_SELF_TYPE(_rtrcSelf##NAME)                                            \
+    RTRC_META_STRUCT_SETUP_MEMBER(NAME)                                               \
+    using _rtrcMemberType##NAME = typename B::template Member<TYPE>;                  \
+    [[non_unique_address]] B::template PreMember<                                     \
+        _rtrcSelf##NAME, TYPE, _rtrcMemberCounter##NAME, #NAME> _rtrcPreMember##NAME; \
+    _rtrcMemberType##NAME NAME;                                                       \
+    RTRC_META_STRUCT_PRE_MEMBER_ACCESS(NAME)                                          \
+        f.template operator()(&_rtrcSelf##NAME::NAME, #NAME);                         \
+    RTRC_META_STRUCT_POST_MEMBER_ACCESS(NAME)                                         \
+    [[non_unique_address]] B::template PostMember<                                    \
+        _rtrcSelf##NAME, TYPE, _rtrcMemberCounter##NAME> _rtrcPostMember##NAME;       \
     using _rtrcRequireComma##NAME = int
 #endif
 

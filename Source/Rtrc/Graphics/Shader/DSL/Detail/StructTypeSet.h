@@ -15,7 +15,7 @@ class StructTypeSet : public Uncopyable
 {
 public:
 
-    template<RtrcDSL_Struct T>
+    template<RtrcDSLStruct T>
     void Add();
 
     void ResolveInto(ResolvedStructTypeSet &resolvedSet) const;
@@ -31,7 +31,7 @@ class ResolvedStructTypeSet : public Uncopyable
 {
 public:
 
-    template<RtrcDSL_Struct T>
+    template<RtrcDSLStruct T>
     void Add();
 
     const std::string &GetDefinitions() const;

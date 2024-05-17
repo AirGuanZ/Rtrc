@@ -686,7 +686,7 @@ namespace BindingGroupDSL
         {
             if constexpr(IsUniform)
             {
-                const size_t memberSize = GetDeviceDWordCount<M>();;
+                const size_t memberSize = GetDeviceDWordCount<M>();
 
                 bool needNewLine;
                 if constexpr(std::is_array_v<M> || RtrcStruct<M>)
@@ -706,7 +706,7 @@ namespace BindingGroupDSL
                 const size_t hostOffset = reinterpret_cast<size_t>(accessor(nullT));
                 assert(hostOffset % 4 == 0);
 
-                Rtrc::ToDeviceLayout<M>(&data, output, hostOffset / 4, deviceDWordOffset);
+                Rtrc::ToDeviceLayout<M>(&data, output, hostOffset, 4 * deviceDWordOffset);
                 
                 deviceDWordOffset += memberSize;
             }
@@ -851,15 +851,16 @@ namespace BindingGroupDSL
 #define RTRC_UNIFORM_IMPL(TYPE, NAME) \
     using _rtrcMemberType##NAME = TYPE; _rtrcMemberType##NAME NAME; using _requireComma##NAME = int
 #else
-#define RTRC_UNIFORM_IMPL(TYPE, NAME)                                    \
-    RTRC_DEFINE_SELF_TYPE(_rtrcSelf##NAME)                               \
-    using _rtrcMemberType##NAME = TYPE;                                  \
-    _rtrcMemberType##NAME NAME;                                          \
-    RTRC_META_STRUCT_PRE_MEMBER(NAME)                                    \
-        f.template operator()<true>(                                     \
+#define RTRC_UNIFORM_IMPL(TYPE, NAME)                                                \
+    RTRC_DEFINE_SELF_TYPE(_rtrcSelf##NAME)                                           \
+    RTRC_META_STRUCT_SETUP_MEMBER(NAME)                                              \
+    using _rtrcMemberType##NAME = TYPE;                                              \
+    _rtrcMemberType##NAME NAME;                                                      \
+    RTRC_META_STRUCT_PRE_MEMBER_ACCESS(NAME)                                         \
+        f.template operator()<true>(                                                 \
             &_rtrcSelf##NAME::NAME, #NAME, _rtrcSelf##NAME::_rtrcGroupDefaultStages, \
-            ::Rtrc::BindingGroupDSL::CreateBindingFlags(false, false));  \
-    RTRC_META_STRUCT_POST_MEMBER(NAME) using _requireComma##NAME = int
+            ::Rtrc::BindingGroupDSL::CreateBindingFlags(false, false));              \
+    RTRC_META_STRUCT_POST_MEMBER_ACCESS(NAME) using _requireComma##NAME = int
 #endif
 
 #define rtrc_uniform(TYPE, NAME) RTRC_UNIFORM_IMPL(TYPE, NAME)
@@ -882,15 +883,16 @@ namespace BindingGroupDSL
 #else
 #define RTRC_CONDITIONAL_DEFINE_IMPL(COND, TYPE, NAME, STAGES, IS_BINDLESS, VARIABLE_ARRAY_SIZE)   \
     RTRC_DEFINE_SELF_TYPE(_rtrcSelf##NAME)                                                         \
+    RTRC_META_STRUCT_SETUP_MEMBER(NAME)                                                            \
     using _rtrcMemberType##NAME = std::conditional_t<(COND),                                       \
         ::Rtrc::BindingGroupDSL::MemberProxy_##TYPE,                                               \
         ::Rtrc::BindingGroupDSL::RtrcGroupDummyMemberType>;                                        \
     _rtrcMemberType##NAME NAME;                                                                    \
-    RTRC_META_STRUCT_PRE_MEMBER(NAME)                                                              \
+    RTRC_META_STRUCT_PRE_MEMBER_ACCESS(NAME)                                                       \
         f.template operator()<false>(                                                              \
             &_rtrcSelf##NAME::NAME, #NAME, STAGES,                                                 \
             ::Rtrc::BindingGroupDSL::CreateBindingFlags(IS_BINDLESS, VARIABLE_ARRAY_SIZE));        \
-    RTRC_META_STRUCT_POST_MEMBER(NAME) using _requireComma##NAME = int
+    RTRC_META_STRUCT_POST_MEMBER_ACCESS(NAME) using _requireComma##NAME = int
 #endif
 
 #define rtrc_inline2(TYPE, NAME)         RTRC_INLINE_IMPL(TYPE, NAME, _rtrcSelf##NAME::_rtrcGroupDefaultStages)
@@ -902,12 +904,13 @@ namespace BindingGroupDSL
 #else
 #define RTRC_INLINE_IMPL(TYPE, NAME, STAGES)                            \
     RTRC_DEFINE_SELF_TYPE(_rtrcSelf##NAME)                              \
+    RTRC_META_STRUCT_SETUP_MEMBER(NAME)                                 \
     TYPE NAME;                                                          \
-    RTRC_META_STRUCT_PRE_MEMBER(NAME)                                   \
+    RTRC_META_STRUCT_PRE_MEMBER_ACCESS(NAME)                            \
         f.template operator()<false>(                                   \
             &_rtrcSelf##NAME::NAME, #NAME, STAGES,                      \
             ::Rtrc::BindingGroupDSL::CreateBindingFlags(false, false)); \
-    RTRC_META_STRUCT_POST_MEMBER(NAME) using _requireComma##NAME = int
+    RTRC_META_STRUCT_POST_MEMBER_ACCESS(NAME) using _requireComma##NAME = int
 #endif
 
 template<BindingGroupDSL::RtrcGroupStruct T>
