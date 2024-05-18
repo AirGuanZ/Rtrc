@@ -149,6 +149,15 @@ namespace BindingGroupDSL
         }
     };
 
+    using MemberProxy_Texture1D = MemberProxy_Texture2D;
+    using MemberProxy_RWTexture1D = MemberProxy_Texture2D;
+
+    using MemberProxy_Texture1DArray = MemberProxy_Texture2D;
+    using MemberProxy_RWTexture1DArray = MemberProxy_Texture2D;
+
+    using MemberProxy_Texture1DArray = MemberProxy_Texture2D;
+    using MemberProxy_RWTexture1DArray = MemberProxy_Texture2D;
+
     using MemberProxy_Texture3D = MemberProxy_Texture2D;
     using MemberProxy_RWTexture3D = MemberProxy_Texture2D;
 

@@ -157,15 +157,10 @@ RC<Texture> Device::CreateColorTexture2D(uint8_t r, uint8_t g, uint8_t b, uint8_
 {
     auto tex = textureManager_->Create(RHI::TextureDesc
     {
-        .dim                  = RHI::TextureDimension::Tex2D,
         .format               = RHI::Format::B8G8R8A8_UNorm,
         .width                = 1,
         .height               = 1,
-        .arraySize            = 1,
-        .mipLevels            = 1,
-        .sampleCount          = 1,
         .usage                = RHI::TextureUsage::TransferDst | RHI::TextureUsage::ShaderResource,
-        .initialLayout        = RHI::TextureLayout::Undefined,
         .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Shared
     });
     if(!name.empty())
@@ -305,16 +300,11 @@ RC<Texture> Device::LoadTexture2D(
     }
     const RHI::TextureDesc desc =
     {
-        .dim                  = RHI::TextureDimension::Tex2D,
-        .format               = format,
-        .width                = images[0].GetWidth(),
-        .height               = images[0].GetHeight(),
-        .arraySize            = 1,
-        .mipLevels            = mipLevels,
-        .sampleCount          = 1,
-        .usage                = usages,
-        .initialLayout        = RHI::TextureLayout::Undefined,
-        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
+        .format    = format,
+        .width     = images[0].GetWidth(),
+        .height    = images[0].GetHeight(),
+        .mipLevels = mipLevels,
+        .usage     = usages
     };
     return CreateAndUploadTexture2D(desc, images, postLayout);
 }

@@ -365,6 +365,7 @@ inline const char *GetBindingTypeName(BindingType type)
 
 enum class TextureDimension
 {
+    Tex1D,
     Tex2D,
     Tex3D
 };
@@ -835,8 +836,8 @@ struct TextureDesc
 
     TextureDimension          dim = TextureDimension::Tex2D;
     Format                    format;
-    uint32_t                  width;
-    uint32_t                  height;
+    uint32_t                  width = 1;
+    uint32_t                  height = 1;
     uint32_t                  arraySize = 1;
     uint32_t                  depth = 1;
     uint32_t                  mipLevels = 1;
@@ -844,7 +845,7 @@ struct TextureDesc
     TextureUsageFlags         usage;
     TextureLayout             initialLayout = TextureLayout::Undefined;
     QueueConcurrentAccessMode concurrentAccessMode = QueueConcurrentAccessMode::Exclusive;
-    OptionalClearValue        clearValue;
+    OptionalClearValue        clearValue = {};
     bool                      linearHint = false;
 
     auto operator<=>(const TextureDesc &rhs) const

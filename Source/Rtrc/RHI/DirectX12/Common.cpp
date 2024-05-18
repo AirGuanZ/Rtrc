@@ -601,7 +601,11 @@ D3D12_RESOURCE_DESC TranslateBufferDesc(const BufferDesc &desc)
 D3D12_RESOURCE_DESC TranslateTextureDesc(const TextureDesc &desc)
 {
     D3D12_RESOURCE_DIMENSION dimension;
-    if(desc.dim == TextureDimension::Tex2D)
+    if(desc.dim == TextureDimension::Tex1D)
+    {
+        dimension = D3D12_RESOURCE_DIMENSION_TEXTURE1D;
+    }
+    else if(desc.dim == TextureDimension::Tex2D)
     {
         dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
     }
@@ -651,7 +655,7 @@ D3D12_RESOURCE_DESC TranslateTextureDesc(const TextureDesc &desc)
         .Dimension        = dimension,
         .Alignment        = 0,
         .Width            = desc.width,
-        .Height           = desc.height,
+        .Height           = desc.dim != TextureDimension::Tex1D ? desc.height : 1u,
         .DepthOrArraySize = static_cast<UINT16>(desc.dim == TextureDimension::Tex3D ? desc.depth : desc.arraySize),
         .MipLevels        = static_cast<UINT16>(desc.mipLevels),
         .Format           = TranslateFormat(desc.format),

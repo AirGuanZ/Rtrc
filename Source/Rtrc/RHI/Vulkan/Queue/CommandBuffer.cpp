@@ -442,7 +442,7 @@ void VulkanCommandBuffer::CopyColorTexture(
         {
             dst->GetDesc().width,
             dst->GetDesc().height,
-            dst->GetDimension() == TextureDimension::Tex3D ? dst->GetDepth() : 1
+            dst->GetDesc().depth
         }
     };
     auto vkSrc = CommandBufferDetail::GetVulkanImage(src);
@@ -475,7 +475,7 @@ void VulkanCommandBuffer::CopyBufferToTexture(
         .imageExtent = {
             (std::max)(1u, texDesc.width >> mipLevel),
             (std::max)(1u, texDesc.height >> mipLevel),
-            texDesc.dim == TextureDimension::Tex3D ? (std::max)(1u, texDesc.depth >> mipLevel) : 1u
+            (std::max)(1u, texDesc.depth >> mipLevel)
         }
     };
     auto vkSrc = static_cast<VulkanBuffer *>(src)->_internalGetNativeBuffer();
@@ -503,7 +503,7 @@ void VulkanCommandBuffer::CopyTextureToBuffer(
         .imageExtent = {
             (std::max)(1u, texDesc.width >> mipLevel),
             (std::max)(1u, texDesc.height >> mipLevel),
-            texDesc.dim == TextureDimension::Tex3D ? (std::max)(1u, texDesc.depth >> mipLevel) : 1u
+            (std::max)(1u, texDesc.depth >> mipLevel)
         }
     };
     auto vkSrc = CommandBufferDetail::GetVulkanImage(src);

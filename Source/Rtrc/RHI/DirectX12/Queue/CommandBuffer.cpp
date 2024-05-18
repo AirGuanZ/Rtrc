@@ -429,7 +429,7 @@ void DirectX12CommandBuffer::CopyBufferToTexture(
 {
     assert(srcRowBytes % D3D12_TEXTURE_DATA_PITCH_ALIGNMENT == 0 ||
            ((dst->GetHeight() >> mipLevel) <= 1 &&
-            (dst->GetDimension() != TextureDimension::Tex3D || (dst->GetDepth() >> mipLevel) <= 1)));
+            (dst->GetDepth() >> mipLevel) <= 1));
 
     assert(!HasDepthAspect(dst->GetFormat()) && !HasStencilAspect(dst->GetFormat()));
     const DXGI_FORMAT dstFormat = TranslateFormat(dst->GetFormat());
@@ -467,7 +467,7 @@ void DirectX12CommandBuffer::CopyTextureToBuffer(
 {
     assert(dstRowBytes % D3D12_TEXTURE_DATA_PITCH_ALIGNMENT == 0 ||
            ((src->GetHeight() >> mipLevel) <= 1 &&
-            (src->GetDimension() != TextureDimension::Tex3D || (src->GetDepth() >> mipLevel) <= 1)));
+            (src->GetDepth() >> mipLevel) <= 1));
 
     assert(!HasDepthAspect(src->GetFormat()) && !HasStencilAspect(src->GetFormat()));
     const DXGI_FORMAT srcFormat = TranslateFormat(src->GetFormat());

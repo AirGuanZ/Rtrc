@@ -20,16 +20,10 @@ void Run()
 
     auto outputTexture = device->CreateTexture(RHI::TextureDesc
         {
-            .dim = RHI::TextureDimension::Tex2D,
             .format = RHI::Format::B8G8R8A8_UNorm,
             .width = inputTexture->GetDesc().width,
             .height = inputTexture->GetDesc().height,
-            .arraySize = 1,
-            .mipLevels = 1,
-            .sampleCount = 1,
-            .usage = RHI::TextureUsage::TransferSrc | RHI::TextureUsage::UnorderedAccess,
-            .initialLayout = RHI::TextureLayout::Undefined,
-            .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
+            .usage = RHI::TextureUsage::TransferSrc | RHI::TextureUsage::UnorderedAccess
         });
     auto outputTextureUav = outputTexture->GetUav();
 

@@ -100,7 +100,8 @@ void UploadBatch::Record(
     task.dataRowBytes = dataRowBytes;
     task.afterLayout  = afterLayout;
 
-    const size_t rowAlignment = uploader_->device_->GetTextureBufferCopyRowPitchAlignment(texture->GetFormat());
+    const size_t rowAlignment = texture->GetDimension() == RHI::TextureDimension::Tex1D ?
+        1u : uploader_->device_->GetTextureBufferCopyRowPitchAlignment(texture->GetFormat());
     size_t ownedDataRowBytes = dataRowBytes;
     if(ownedDataRowBytes % rowAlignment)
     {

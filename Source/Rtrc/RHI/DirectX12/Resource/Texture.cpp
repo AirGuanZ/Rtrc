@@ -61,7 +61,23 @@ RPtr<TextureRtv> DirectX12Texture::CreateRtv(const TextureRtvDesc &_desc) const
     
     D3D12_RENDER_TARGET_VIEW_DESC viewDesc;
     viewDesc.Format = TranslateFormat(desc.format);
-    if(desc_.dim == TextureDimension::Tex2D)
+    if(desc_.dim == TextureDimension::Tex1D)
+    {
+        assert(desc_.sampleCount == 1);
+        if(desc_.arraySize == 1)
+        {
+            viewDesc.ViewDimension      = D3D12_RTV_DIMENSION_TEXTURE1D;
+            viewDesc.Texture1D.MipSlice = desc.mipLevel;
+        }
+        else
+        {
+            viewDesc.ViewDimension                  = D3D12_RTV_DIMENSION_TEXTURE1DARRAY;
+            viewDesc.Texture1DArray.MipSlice        = desc.mipLevel;
+            viewDesc.Texture1DArray.FirstArraySlice = desc.arrayLayer;
+            viewDesc.Texture1DArray.ArraySize       = 1;
+        }
+    }
+    else if(desc_.dim == TextureDimension::Tex2D)
     {
         if(desc_.sampleCount == 1)
         {
@@ -159,7 +175,29 @@ RPtr<TextureSrv> DirectX12Texture::CreateSrv(const TextureSrvDesc &_desc) const
     }
     viewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
-    if(desc_.dim == TextureDimension::Tex2D)
+    if(desc_.dim == TextureDimension::Tex1D)
+    {
+        assert(desc_.sampleCount == 1);
+        if(desc.isArray)
+        {
+            viewDesc.ViewDimension                      = D3D12_SRV_DIMENSION_TEXTURE1DARRAY;
+            viewDesc.Texture1DArray.MostDetailedMip     = desc.baseMipLevel;
+            viewDesc.Texture1DArray.MipLevels           = mipLevels;
+            viewDesc.Texture1DArray.FirstArraySlice     = desc.baseArrayLayer;
+            viewDesc.Texture1DArray.ArraySize           = arraySize;
+            viewDesc.Texture1DArray.ResourceMinLODClamp = 0;
+        }
+        else
+        {
+            assert(desc.baseArrayLayer == 0);
+            assert(arraySize == 1);
+            viewDesc.ViewDimension                 = D3D12_SRV_DIMENSION_TEXTURE1D;
+            viewDesc.Texture1D.MostDetailedMip     = desc.baseMipLevel;
+            viewDesc.Texture1D.MipLevels           = mipLevels;
+            viewDesc.Texture1D.ResourceMinLODClamp = 0;
+        }
+    }
+    else if(desc_.dim == TextureDimension::Tex2D)
     {
         if(desc_.sampleCount == 1)
         {
@@ -253,7 +291,23 @@ RPtr<TextureUav> DirectX12Texture::CreateUav(const TextureUavDesc &_desc) const
 
     D3D12_UNORDERED_ACCESS_VIEW_DESC viewDesc;
     viewDesc.Format = TranslateFormat(desc.format);
-    if(desc_.dim == TextureDimension::Tex2D)
+    if(desc_.dim == TextureDimension::Tex1D)
+    {
+        if(desc_.arraySize == 1)
+        {
+            assert(desc.baseArrayLayer == 0 && arraySize == 1);
+            viewDesc.ViewDimension      = D3D12_UAV_DIMENSION_TEXTURE1D;
+            viewDesc.Texture1D.MipSlice = desc.mipLevel;
+        }
+        else
+        {
+            viewDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE1DARRAY;
+            viewDesc.Texture1DArray.MipSlice        = desc.mipLevel;
+            viewDesc.Texture1DArray.FirstArraySlice = desc.baseArrayLayer;
+            viewDesc.Texture1DArray.ArraySize       = arraySize;
+        }
+    }
+    else if(desc_.dim == TextureDimension::Tex2D)
     {
         if(desc_.sampleCount == 1)
         {
@@ -333,36 +387,55 @@ RPtr<TextureDsv> DirectX12Texture::CreateDsv(const TextureDsvDesc &_desc) const
     viewDesc.Format = TranslateFormat(desc.format);
     viewDesc.Flags = D3D12_DSV_FLAG_NONE;
 
-    assert(desc_.dim == TextureDimension::Tex2D);
-    if(desc_.sampleCount == 1)
+    assert(desc_.dim == TextureDimension::Tex1D || desc_.dim == TextureDimension::Tex2D);
+    if(desc_.dim == TextureDimension::Tex1D)
     {
+        assert(desc_.sampleCount == 1);
         if(desc_.arraySize == 1)
         {
-            viewDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-            viewDesc.Texture2D.MipSlice = desc.mipLevel;
+            viewDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE1D;
+            viewDesc.Texture1D.MipSlice = desc.mipLevel;
         }
         else
         {
-            viewDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DARRAY;
-            viewDesc.Texture2DArray.MipSlice        = desc.mipLevel;
-            viewDesc.Texture2DArray.FirstArraySlice = desc.arrayLayer;
-            viewDesc.Texture2DArray.ArraySize       = 1;
+            viewDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE1DARRAY;
+            viewDesc.Texture1DArray.MipSlice        = desc.mipLevel;
+            viewDesc.Texture1DArray.FirstArraySlice = desc.arrayLayer;
+            viewDesc.Texture1DArray.ArraySize       = 1;
         }
     }
     else
     {
-        if(desc_.arraySize == 1)
+        if(desc_.sampleCount == 1)
         {
-            viewDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DMS;
-            viewDesc.Texture2DMS.UnusedField_NothingToDefine = 0;
+            if(desc_.arraySize == 1)
+            {
+                viewDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+                viewDesc.Texture2D.MipSlice = desc.mipLevel;
+            }
+            else
+            {
+                viewDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DARRAY;
+                viewDesc.Texture2DArray.MipSlice        = desc.mipLevel;
+                viewDesc.Texture2DArray.FirstArraySlice = desc.arrayLayer;
+                viewDesc.Texture2DArray.ArraySize       = 1;
+            }
         }
         else
         {
-            // d3d12 doesn't support non-zero mipmap level in multi-sampled texture2d array rtv
-            assert(desc.mipLevel == 0);
-            viewDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DMSARRAY;
-            viewDesc.Texture2DMSArray.FirstArraySlice = desc.arrayLayer;
-            viewDesc.Texture2DMSArray.ArraySize       = 1;
+            if(desc_.arraySize == 1)
+            {
+                viewDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DMS;
+                viewDesc.Texture2DMS.UnusedField_NothingToDefine = 0;
+            }
+            else
+            {
+                // d3d12 doesn't support non-zero mipmap level in multi-sampled texture2d array rtv
+                assert(desc.mipLevel == 0);
+                viewDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DMSARRAY;
+                viewDesc.Texture2DMSArray.FirstArraySlice = desc.arrayLayer;
+                viewDesc.Texture2DMSArray.ArraySize       = 1;
+            }
         }
     }
 

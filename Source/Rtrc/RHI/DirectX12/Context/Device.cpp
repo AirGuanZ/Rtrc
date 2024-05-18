@@ -217,17 +217,11 @@ UPtr<Swapchain> DirectX12Device::CreateSwapchain(const SwapchainDesc &desc, Wind
 
     const TextureDesc imageDesc =
     {
-        .dim           = TextureDimension::Tex2D,
-        .format        = desc.format,
-        .width         = static_cast<uint32_t>(window.GetFramebufferSize().x),
-        .height        = static_cast<uint32_t>(window.GetFramebufferSize().y),
-        .arraySize     = 1,
-        .mipLevels     = 1,
-        .sampleCount   = 1,
-        .usage         = TextureUsage::RenderTarget | TextureUsage::ClearDst |
-                         (desc.allowUav ? TextureUsage::UnorderedAccess : TextureUsage::None),
-        .initialLayout = TextureLayout::Undefined,
-        .concurrentAccessMode = QueueConcurrentAccessMode::Exclusive
+        .format = desc.format,
+        .width  = static_cast<uint32_t>(window.GetFramebufferSize().x),
+        .height = static_cast<uint32_t>(window.GetFramebufferSize().y),
+        .usage  = TextureUsage::RenderTarget | TextureUsage::ClearDst |
+                  (desc.allowUav ? TextureUsage::UnorderedAccess : TextureUsage::None),
     };
     return MakeUPtr<DirectX12Swapchain>(this, imageDesc, std::move(swapChain3), desc.vsync ? 1 : 0);
 }

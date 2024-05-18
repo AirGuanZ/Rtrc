@@ -115,14 +115,16 @@ namespace VkDeviceDetail
             GetVulkanSharingMode(desc.concurrentAccessMode, queueFamilies);
 
         const uint32_t arrayLayers = desc.dim != TextureDimension::Tex3D ? desc.arraySize : 1;
-        const uint32_t depth = desc.dim == TextureDimension::Tex3D ? desc.depth : 1;
+        assert(!(desc.dim == TextureDimension::Tex1D && desc.height != 1));
+        assert(!(desc.dim != TextureDimension::Tex3D && desc.depth != 1));
+        assert(!(desc.dim == TextureDimension::Tex3D && desc.arraySize != 1));
         ImageCreateInfoWrapper ret;
         ret.queueFamilyIndices = sharingQueueFamilyIndices;
         ret.createInfo = VkImageCreateInfo{
             .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
             .imageType             = TranslateTextureDimension(desc.dim),
             .format                = TranslateTexelFormat(desc.format),
-            .extent                = VkExtent3D{ desc.width, desc.height, depth },
+            .extent                = VkExtent3D{ desc.width, desc.width, desc.depth },
             .mipLevels             = desc.mipLevels,
             .arrayLayers           = arrayLayers,
             .samples               = TranslateSampleCount(static_cast<int>(desc.sampleCount)),

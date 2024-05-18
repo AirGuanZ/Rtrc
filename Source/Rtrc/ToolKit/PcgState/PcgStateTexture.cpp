@@ -18,7 +18,6 @@ RGTexture Prepare2DPcgStateTexture(
     auto device = renderGraph->GetDevice();
     tex = device->CreateStatefulTexture(RHI::TextureDesc
     {
-        .dim    = RHI::TextureDimension::Tex2D,
         .format = RHI::Format::R32_UInt,
         .width  = size.x,
         .height = size.y,

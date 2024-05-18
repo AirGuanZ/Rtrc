@@ -42,6 +42,7 @@ VkImageType TranslateTextureDimension(TextureDimension dim)
 {
     switch(dim)
     {
+    case TextureDimension::Tex1D: return VK_IMAGE_TYPE_1D;
     case TextureDimension::Tex2D: return VK_IMAGE_TYPE_2D;
     case TextureDimension::Tex3D: return VK_IMAGE_TYPE_3D;
     }

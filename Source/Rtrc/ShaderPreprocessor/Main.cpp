@@ -93,26 +93,6 @@ std::string ToString(Rtrc::RHI::ShaderStageFlags stages)
     return GetShaderStageFlagsName(stages);
 }
 
-std::string_view BindingNameToTypeName(Rtrc::RHI::BindingType type)
-{
-    constexpr std::string_view NAMES[] =
-    {
-        "Texture",
-        "RWTexture",
-        "Buffer",
-        "StructuredBuffer",
-        "ByteAddressBuffer",
-        "RWBuffer",
-        "RWStructuredBuffer",
-        "RWByteAddressBuffer",
-        "ConstantBuffer",
-        "SamplerState",
-        "RaytracingAccelerationStructure"
-    };
-    assert(std::to_underlying(type) < Rtrc::GetArraySize<int>(NAMES));
-    return NAMES[std::to_underlying(type)];
-}
-
 void GenerateBindingGroupDefinition(
     Rtrc::SourceWriter             &sw,
     const Rtrc::ParsedBindingGroup &group,

@@ -234,16 +234,10 @@ void Run()
         auto rgSwapchain = graph->RegisterSwapchainTexture(device->GetSwapchain());
         auto renderTarget = graph->CreateTexture(RHI::TextureDesc
         {
-            .dim                  = RHI::TextureDimension::Tex2D,
-            .format               = RHI::Format::B8G8R8A8_UNorm,
-            .width                = rgSwapchain->GetWidth(),
-            .height               = rgSwapchain->GetHeight(),
-            .arraySize            = 1,
-            .mipLevels            = 1,
-            .sampleCount          = 1,
-            .usage                = RHI::TextureUsage::ShaderResource | RHI::TextureUsage::UnorderedAccess,
-            .initialLayout        = RHI::TextureLayout::Undefined,
-            .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
+            .format = RHI::Format::B8G8R8A8_UNorm,
+            .width  = rgSwapchain->GetWidth(),
+            .height = rgSwapchain->GetHeight(),
+            .usage  = RHI::TextureUsage::ShaderResource | RHI::TextureUsage::UnorderedAccess
         });
 
         if(accumulateTexture && (accumulateTexture->GetSize() != renderTarget->GetSize() || needClear))
@@ -257,33 +251,21 @@ void Run()
         {
             accumulateTexture = device->CreateStatefulTexture(RHI::TextureDesc
             {
-                .dim                  = RHI::TextureDimension::Tex2D,
-                .format               = RHI::Format::R32G32B32A32_Float,
-                .width                = renderTarget->GetWidth(),
-                .height               = renderTarget->GetHeight(),
-                .arraySize            = 1,
-                .mipLevels            = 1,
-                .sampleCount          = 1,
-                .usage                = RHI::TextureUsage::ShaderResource |
-                                        RHI::TextureUsage::UnorderedAccess |
-                                        RHI::TextureUsage::ClearDst,
-                .initialLayout        = RHI::TextureLayout::Undefined,
-                .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
+                .format = RHI::Format::R32G32B32A32_Float,
+                .width  = renderTarget->GetWidth(),
+                .height = renderTarget->GetHeight(),
+                .usage  = RHI::TextureUsage::ShaderResource |
+                          RHI::TextureUsage::UnorderedAccess |
+                          RHI::TextureUsage::ClearDst,
             });
             accumulateTexture->SetName("AccumulateTexture");
 
             rngTexture = device->CreateStatefulTexture(RHI::TextureDesc
             {
-                .dim                  = RHI::TextureDimension::Tex2D,
-                .format               = RHI::Format::R32_UInt,
-                .width                = renderTarget->GetWidth(),
-                .height               = renderTarget->GetHeight(),
-                .arraySize            = 1,
-                .mipLevels            = 1,
-                .sampleCount          = 1,
-                .usage                = RHI::TextureUsage::UnorderedAccess,
-                .initialLayout        = RHI::TextureLayout::Undefined,
-                .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
+                .format = RHI::Format::R32_UInt,
+                .width  = renderTarget->GetWidth(),
+                .height = renderTarget->GetHeight(),
+                .usage  = RHI::TextureUsage::UnorderedAccess,
             });
             rngTexture->SetName("RngTexture");
 

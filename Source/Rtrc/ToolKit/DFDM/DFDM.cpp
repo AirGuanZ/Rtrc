@@ -31,7 +31,6 @@ Image<Vector2f> DFDM::GenerateCorrectionMap(const Image<Vector3f> &displacementM
     auto displacementMap = StatefulTexture::FromTexture(device_->CreateAndUploadTexture2D(
         RHI::TextureDesc
         {
-            .dim = RHI::TextureDimension::Tex2D,
             .format = RHI::Format::R32G32B32_Float,
             .width = displacementMapData.GetWidth(),
             .height = displacementMapData.GetHeight(),

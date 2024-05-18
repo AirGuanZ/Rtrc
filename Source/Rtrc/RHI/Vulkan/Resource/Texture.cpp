@@ -150,6 +150,9 @@ VkImageView VulkanTexture::CreateImageView(const ViewKey &key) const
     VkImageViewType viewType;
     switch(desc_.dim)
     {
+    case TextureDimension::Tex1D:
+        viewType = key.isArray ? VK_IMAGE_VIEW_TYPE_1D_ARRAY : VK_IMAGE_VIEW_TYPE_1D;
+        break;
     case TextureDimension::Tex2D:
         viewType = key.isArray ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D;
         break;

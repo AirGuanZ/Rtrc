@@ -165,16 +165,10 @@ void Run()
         auto swapchainImage = graph->RegisterSwapchainTexture(device->GetSwapchain());
         auto renderTarget = graph->CreateTexture(RHI::TextureDesc
         {
-            .dim                  = RHI::TextureDimension::Tex2D,
             .format               = RHI::Format::B8G8R8A8_UNorm,
             .width                = device->GetSwapchain()->GetRenderTargetDesc().width,
             .height               = device->GetSwapchain()->GetRenderTargetDesc().height,
-            .arraySize            = 1,
-            .mipLevels            = 1,
-            .sampleCount          = 1,
             .usage                = RHI::TextureUsage::ShaderResource | RHI::TextureUsage::UnorderedAccess,
-            .initialLayout        = RHI::TextureLayout::Undefined,
-            .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Exclusive
         }, "RenderTarget");
 
         auto trianglePass = graph->CreatePass("DrawTriangle");

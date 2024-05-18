@@ -11,6 +11,10 @@ namespace BindingGroupParserDetail
 {
     const std::map<std::string, RHI::BindingType, std::less<>> RESOURCE_PROPERTIES =
     {
+        { "Texture1DArray",                  RHI::BindingType::Texture },
+        { "Texture1D",                       RHI::BindingType::Texture },
+        { "RWTexture1DArray",                RHI::BindingType::RWTexture },
+        { "RWTexture1D",                     RHI::BindingType::RWTexture },
         { "Texture2DArray",                  RHI::BindingType::Texture },
         { "Texture2D",                       RHI::BindingType::Texture },
         { "RWTexture2DArray",                RHI::BindingType::RWTexture },
