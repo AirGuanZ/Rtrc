@@ -10,8 +10,6 @@
 /External/llvm16.0.6/install_release/
 /External/llvm16.0.6/llvm-project-16.0.6.src/
 /External/oneapi-tbb-2021.11.0/
-/Asset/Sample/Test.OT2D/
-/Samples/Test.OT2D/
 /Source/Rtrc/ToolKit/OT2D/OT2DImpl.h
 /GPUCapture.wpix
 *.shader.outh
