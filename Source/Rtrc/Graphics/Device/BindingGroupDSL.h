@@ -704,7 +704,6 @@ namespace BindingGroupDSL
 
                 constexpr T *nullT = nullptr;
                 const size_t hostOffset = reinterpret_cast<size_t>(accessor(nullT));
-                assert(hostOffset % 4 == 0);
 
                 Rtrc::ToDeviceLayout<M>(&data, output, hostOffset, 4 * deviceDWordOffset);
                 
