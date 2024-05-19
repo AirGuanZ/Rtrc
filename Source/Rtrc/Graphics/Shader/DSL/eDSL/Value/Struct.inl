@@ -1,6 +1,6 @@
 #pragma once
 
-#include "RecordContext.h"
+#include "../RecordContext.h"
 #include "Struct.h"
 
 RTRC_EDSL_BEGIN

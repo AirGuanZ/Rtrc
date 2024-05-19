@@ -10,7 +10,7 @@ namespace Detail
 {
 
     extern thread_local std::stack<std::string> gMemberVariableNameStack;
-    extern thread_local std::stack<eVariableCommonBase *> gVariableInitializationStack;
+    extern thread_local std::stack<eVariableCommonBase *> gNestedVariableInitializationStack;
     extern thread_local std::stack<eVariableCommonBase *> gVariableCopyStack;
     extern thread_local bool gEnableStackVariableAllocation;
 
@@ -39,13 +39,13 @@ inline std::string PopMemberVariableName()
 
 inline void PushConstructParentVariable(eVariableCommonBase *var)
 {
-    Detail::gVariableInitializationStack.push(var);
+    Detail::gNestedVariableInitializationStack.push(var);
 }
 
 inline eVariableCommonBase *PopConstructParentVariable()
 {
-    auto ret = Detail::gVariableInitializationStack.top();
-    Detail::gVariableInitializationStack.pop();
+    auto ret = Detail::gNestedVariableInitializationStack.top();
+    Detail::gNestedVariableInitializationStack.pop();
     return ret;
 }
 
@@ -76,9 +76,9 @@ inline void EnableStackVariableAllocation()
 template<typename T>
 eVariable<T>::eVariable()
 {
-    if(!Detail::gVariableInitializationStack.empty())
+    if(!Detail::gNestedVariableInitializationStack.empty())
     {
-        eVariableParent = Detail::gVariableInitializationStack.top();
+        eVariableParent = Detail::gNestedVariableInitializationStack.top();
         eVariableName = PopMemberVariableName();
     }
     else

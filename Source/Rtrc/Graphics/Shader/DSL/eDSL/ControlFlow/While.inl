@@ -3,7 +3,7 @@
 #include <Rtrc/Core/ScopeGuard.h>
 
 #include "While.h"
-#include "RecordContext.h"
+#include "../RecordContext.h"
 
 RTRC_EDSL_BEGIN
 

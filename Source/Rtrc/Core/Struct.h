@@ -7,6 +7,18 @@
 
 RTRC_BEGIN
 
+namespace eDSL
+{
+
+    namespace eDSLStructDetail
+    {
+
+        struct DSLStructBuilder;
+
+    } // namespace eDSLStructDetail
+
+} // namespace eDSL
+
 namespace StructDetail
 {
 
@@ -153,13 +165,14 @@ using StructDetail::RtrcStruct;
     static _rtrcMemberDesc##NAME *_rtrcMemberIndexToDesc(                                      \
         ::Rtrc::StructDetail::Int2Type<(_rtrcMemberCounter##NAME)>*);
 
-#define rtrc_struct(NAME)                                                             \
-    template<typename B> struct _rtrcStructSketch##NAME;                              \
-    using NAME = _rtrcStructSketch##NAME<::Rtrc::StructDetail::DefaultStructBuilder>; \
-    template<typename B>                                                              \
-    struct _rtrcStructSketch##NAME :                                                  \
-        ::Rtrc::StructDetail::_rtrcStructBase,                                        \
-        ::Rtrc::StructDetail::SketchRebindBase<_rtrcStructSketch##NAME>,              \
+#define rtrc_struct(NAME)                                                                      \
+    template<typename B> struct _rtrcStructSketch##NAME;                                       \
+    using NAME = _rtrcStructSketch##NAME<::Rtrc::StructDetail::DefaultStructBuilder>;          \
+    using e##NAME = _rtrcStructSketch##NAME<::Rtrc::eDSL::eDSLStructDetail::DSLStructBuilder>; \
+    template<typename B>                                                                       \
+    struct _rtrcStructSketch##NAME :                                                           \
+        ::Rtrc::StructDetail::_rtrcStructBase,                                                 \
+        ::Rtrc::StructDetail::SketchRebindBase<_rtrcStructSketch##NAME>,                       \
         B::template Base<_rtrcStructSketch##NAME<B>, #NAME>
 
 #define rtrc_struct_name(NAME) _rtrcStructSketch##NAME

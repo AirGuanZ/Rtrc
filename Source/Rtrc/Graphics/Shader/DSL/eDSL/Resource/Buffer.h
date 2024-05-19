@@ -1,6 +1,6 @@
 #pragma once
 
-#include "eNumber.h"
+#include "../Value/eNumber.h"
 
 RTRC_EDSL_BEGIN
 
@@ -23,12 +23,17 @@ public:
 
     static TemplateBuffer CreateFromName(std::string name);
 
+    static constexpr bool IsReadOnly =
+        Type == TemplateBufferType::Buffer ||
+        Type == TemplateBufferType::StructuredBuffer ||
+        Type == TemplateBufferType::ByteAddressBuffer;
+
     TemplateBuffer() { PopConstructParentVariable(); }
 
     T operator[](const u32 &index) const;
 
     template<typename S>
-    S Load(const u32 &offsetInBytes) const;
+    const S Load(const u32 &offsetInBytes) const;
 
     template<typename S>
     void Store(const u32 &offsetInBytes, const S &value) const;

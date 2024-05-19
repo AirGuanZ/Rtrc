@@ -2,7 +2,7 @@
 
 #include <Rtrc/Core/SourceWriter.h>
 
-#include "RecordContext.h"
+#include "../RecordContext.h"
 #include "StructTypeSet.h"
 
 RTRC_EDSL_BEGIN

@@ -1,7 +1,7 @@
 #pragma once
 
+#include "../RecordContext.h"
 #include "Buffer.h"
-#include "RecordContext.h"
 
 RTRC_EDSL_BEGIN
 
@@ -48,7 +48,7 @@ T TemplateBuffer<T, Type>::operator[](const u32& index) const
 
 template <typename T, TemplateBufferType Type>
 template <typename S>
-S TemplateBuffer<T, Type>::Load(const u32 &offsetInBytes) const
+const S TemplateBuffer<T, Type>::Load(const u32 &offsetInBytes) const
 {
     static_assert(
         Type == TemplateBufferType::ByteAddressBuffer || Type == TemplateBufferType::RWByteAddressBuffer,

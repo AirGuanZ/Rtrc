@@ -7,8 +7,6 @@ rtrc_struct(A)
     rtrc_var(uint, b);
 };
 
-using eA = NativeTypeToDSLType<A>;
-
 //$struct(A)
 //{
 //    $var(Rtrc::eDSL::u32, b);

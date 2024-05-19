@@ -2,7 +2,6 @@
 
 #include <Rtrc/Graphics/Device/AccelerationStructure.h>
 #include <Rtrc/Graphics/Device/BindingGroup.h>
-#include <Rtrc/Graphics/Device/BindingGroupDSL.h>
 #include <Rtrc/Graphics/Device/Buffer.h>
 #include <Rtrc/Graphics/Device/CopyContext/Downloader.h>
 #include <Rtrc/Graphics/Device/CopyContext/Uploader.h>
@@ -15,6 +14,7 @@
 #include <Rtrc/Graphics/Device/Utility/ClearTextureUtils.h>
 #include <Rtrc/Graphics/Device/Utility/CopyTextureUtils.h>
 #include <Rtrc/Graphics/Shader/ShaderManager.h>
+#include <Rtrc/Graphics/Shader/DSL/BindingGroup.h>
 
 RTRC_BEGIN
 
@@ -213,20 +213,20 @@ public:
 
     Box<RenderGraph> CreateRenderGraph();
 
-    template<BindingGroupDSL::RtrcGroupStruct T>
+    template<RtrcGroupStruct T>
     RC<BindingGroupLayout> CreateBindingGroupLayout();
     RC<BindingGroupLayout> CreateBindingGroupLayout(const BindingGroupLayout::Desc &desc);
 
-    template<BindingGroupDSL::RtrcGroupStruct T>
+    template<RtrcGroupStruct T>
     RC<BindingGroup> CreateBindingGroup(int variableBindingCount = 0);
-    template<BindingGroupDSL::RtrcGroupStruct T>
+    template<RtrcGroupStruct T>
     RC<BindingGroup> CreateBindingGroup(const RC<BindingGroupLayout> &layoutHint, int variableBindingCount = 0);
-    template<BindingGroupDSL::RtrcGroupStruct T>
+    template<RtrcGroupStruct T>
     RC<BindingGroup> CreateBindingGroup(const T &value, int variableBindingCount = 0);
-    template<BindingGroupDSL::RtrcGroupStruct T>
+    template<RtrcGroupStruct T>
     RC<BindingGroup> CreateBindingGroup(const T &value, const RC<BindingGroupLayout> &layoutHint, int variableBindingCount = 0);
 
-    template<BindingGroupDSL::RtrcGroupStruct T>
+    template<RtrcGroupStruct T>
     RC<BindingGroup> CreateBindingGroupWithCachedLayout(const T &value);
 
     void CopyBindings(
@@ -711,7 +711,7 @@ RC<Buffer> Device::CreateAndUploadStructuredBuffer(Span<T> data)
     return this->CreateAndUploadStructuredBuffer(RHI::BufferUsage::ShaderStructuredBuffer, data);
 }
 
-template<BindingGroupDSL::RtrcGroupStruct T>
+template<RtrcGroupStruct T>
 RC<BindingGroupLayout> Device::CreateBindingGroupLayout()
 {
     // TODO: fast cache for these group layouts
@@ -728,13 +728,13 @@ inline RC<BindingLayout> Device::CreateBindingLayout(const BindingLayout::Desc &
     return bindingLayoutManager_->CreateBindingLayout(desc);
 }
 
-template<BindingGroupDSL::RtrcGroupStruct T>
+template<RtrcGroupStruct T>
 RC<BindingGroup> Device::CreateBindingGroup(int variableBindingCount)
 {
     return this->CreateBindingGroupLayout<T>()->CreateBindingGroup(variableBindingCount);
 }
 
-template<BindingGroupDSL::RtrcGroupStruct T>
+template<RtrcGroupStruct T>
 RC<BindingGroup> Device::CreateBindingGroup(const RC<BindingGroupLayout> &layoutHint, int variableBindingCount)
 {
 #if RTRC_DEBUG
@@ -752,7 +752,7 @@ RC<BindingGroup> Device::CreateBindingGroup(const RC<BindingGroupLayout> &layout
     return layoutHint->CreateBindingGroup(variableBindingCount);
 }
 
-template<BindingGroupDSL::RtrcGroupStruct T>
+template<RtrcGroupStruct T>
 RC<BindingGroup> Device::CreateBindingGroup(const T &value, int variableBindingCount)
 {
     auto group = this->CreateBindingGroup<T>(variableBindingCount);
@@ -760,7 +760,7 @@ RC<BindingGroup> Device::CreateBindingGroup(const T &value, int variableBindingC
     return group;
 }
 
-template<BindingGroupDSL::RtrcGroupStruct T>
+template<RtrcGroupStruct T>
 RC<BindingGroup> Device::CreateBindingGroup(
     const T &value, const RC<BindingGroupLayout> &layoutHint, int variableBindingCount)
 {
@@ -769,7 +769,7 @@ RC<BindingGroup> Device::CreateBindingGroup(
     return group;
 }
 
-template<BindingGroupDSL::RtrcGroupStruct T>
+template<RtrcGroupStruct T>
 RC<BindingGroup> Device::CreateBindingGroupWithCachedLayout(const T &value)
 {
     RTRC_STATIC_BINDING_GROUP_LAYOUT(this, std::remove_cvref_t<decltype(value)>, _tempLayout);
@@ -943,7 +943,7 @@ void Device::ExecuteBarrierImpl(Args &&... args)
     });
 }
 
-template<BindingGroupDSL::RtrcGroupStruct T>
+template<RtrcGroupStruct T>
 RC<BindingGroupLayout> BindingGroupLayoutCache::Get(CachedBindingGroupLayoutStorage *storage)
 {
     const uint32_t index = storage->index_;

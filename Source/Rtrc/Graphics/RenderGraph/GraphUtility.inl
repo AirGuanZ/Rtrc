@@ -309,7 +309,7 @@ RGPass RGDispatchWithThreadGroupCount(
     auto pass = graph->CreatePass(std::move(name));
     auto DeclareUse = [&]<RGBindingGroupInput T>(const T &group)
     {
-        if constexpr(BindingGroupDSL::RtrcGroupStruct<T>)
+        if constexpr(RtrcGroupStruct<T>)
         {
             DeclareRenderGraphResourceUses(pass, group, RHI::PipelineStageFlag::ComputeShader);
         }
@@ -323,7 +323,7 @@ RGPass RGDispatchWithThreadGroupCount(
         std::vector<RC<BindingGroup>> finalGroups;
         auto BindGroup = [&]<RGBindingGroupInput T>(const T &group)
         {
-            if constexpr(BindingGroupDSL::RtrcGroupStruct<T>)
+            if constexpr(RtrcGroupStruct<T>)
             {
                 finalGroups.push_back(device->CreateBindingGroupWithCachedLayout(group));
             }
@@ -385,9 +385,9 @@ RGPass RGDispatchIndirect(
     auto pass = graph->CreatePass(std::move(name));
     auto DeclareUse = [&]<RGBindingGroupInput T>(const T & group)
     {
-        if constexpr(BindingGroupDSL::RtrcGroupStruct<T>)
+        if constexpr(RtrcGroupStruct<T>)
         {
-            DeclareRenderGraphResourceUses(pass, group, RHI::PipelineStageFlag::ComputeShader);
+            Rtrc::DeclareRenderGraphResourceUses(pass, group, RHI::PipelineStageFlag::ComputeShader);
         }
     };
     (DeclareUse(bindingGroups), ...);
@@ -401,7 +401,7 @@ RGPass RGDispatchIndirect(
         std::vector<RC<BindingGroup>> finalGroups;
         auto BindGroup = [&]<RGBindingGroupInput T>(const T &group)
         {
-            if constexpr(BindingGroupDSL::RtrcGroupStruct<T>)
+            if constexpr(RtrcGroupStruct<T>)
             {
                 finalGroups.push_back(device->CreateBindingGroupWithCachedLayout(group));
             }

@@ -3,8 +3,8 @@
 #include <Rtrc/Core/Struct.h>
 #include <Rtrc/Core/TemplateStringParameter.h>
 
-#include "eVariable.h"
-#include "NativeTypeMapping.h"
+#include "../eVariable.h"
+#include "../NativeTypeMapping.h"
 
 RTRC_EDSL_BEGIN
 

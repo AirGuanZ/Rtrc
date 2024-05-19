@@ -146,7 +146,7 @@ void GenerateBindingGroupDefinition(
         {
             if(binding.variableArraySize)
             {
-                head = "rtrc_bindless_variable_size";
+                head = "rtrc_bindless_varsize";
             }
             else
             {
@@ -587,7 +587,7 @@ void Run(int argc, const char *argv[])
 
     sw("#if !ENABLE_SHADER_REGISTRATION").NewLine();
     sw("#include <Rtrc/Core/TemplateStringParameter.h>").NewLine();
-    sw("#include <Rtrc/Graphics/Device/BindingGroupDSL.h>").NewLine();
+    sw("#include <Rtrc/Graphics/Shader/DSL/BindingGroup.h>").NewLine();
     sw("#include <Rtrc/Graphics/Shader/ShaderInfo.h>").NewLine();
     for(size_t i = 0; i < parsedShaders.size(); ++i)
     {

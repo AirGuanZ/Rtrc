@@ -12,9 +12,7 @@ rtrc_pixel(PSMain)
 rtrc_group(Pass)
 {
     rtrc_define(Texture2D<float4>, Src)
-#if USE_GAMMA
     rtrc_uniform(float, gamma)
-#endif
 };
 #if USE_POINT_SAMPLING
 rtrc_sampler(Sampler, filter = point, address_u = repeat, address_v = clamp)
@@ -44,11 +42,10 @@ float4 PSMain(Vs2Ps input) : SV_Target
 }
 )___";
 
-    template<bool EnableGamma>
     rtrc_group(Pass)
     {
         rtrc_define(Texture2D, Src);
-        rtrc_cond_uniform(EnableGamma, float, gamma);
+        rtrc_uniform(float, gamma);
     };
 
 } // namespace namespace CopyTextureUtilsDetail
@@ -88,15 +85,16 @@ void CopyTextureUtils::RenderFullscreenTriangle(
     RC<BindingGroup> passGroup;
     if(enableGamma)
     {
-        CopyTextureUtilsDetail::Pass<true> passData;
+        CopyTextureUtilsDetail::Pass passData;
         passData.Src = src;
         passData.gamma = gamma;
         passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
     }
     else
     {
-        CopyTextureUtilsDetail::Pass<false> passData;
+        CopyTextureUtilsDetail::Pass passData;
         passData.Src = src;
+        passData.gamma = 1;
         passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
     }
     commandBuffer.BindGraphicsGroup(0, passGroup);
