@@ -34,7 +34,19 @@ inline ElseBuilder::~ElseBuilder()
 template <typename ElseBodyFunc>
 void ElseBuilder::operator-(ElseBodyFunc inElseBodyFunc)
 {
-    elseBodyFunc = std::move(inElseBodyFunc);
+    if constexpr(std::is_same_v<std::invoke_result_t<ElseBodyFunc>, void>)
+    {
+        elseBodyFunc = std::move(inElseBodyFunc);
+    }
+    else
+    {
+        auto func = [inElseBodyFunc = std::move(inElseBodyFunc)]
+        {
+            auto ret = inElseBodyFunc();
+            GetCurrentRecordContext().AppendLine("return {};", eDSL::CompileAsIdentifier(ret));
+        };
+        elseBodyFunc = std::move(func);
+    }
 }
 
 inline IfBuilder::IfBuilder(const eNumber<bool>& condition)
@@ -46,7 +58,19 @@ inline IfBuilder::IfBuilder(const eNumber<bool>& condition)
 template <typename ThenBodyFunc>
 ElseBuilder IfBuilder::operator+(ThenBodyFunc thenBodyFunc)
 {
-    return ElseBuilder(condition, std::move(thenBodyFunc));
+    if constexpr(std::is_same_v<std::invoke_result_t<ThenBodyFunc>, void>)
+    {
+        return ElseBuilder(condition, std::move(thenBodyFunc));
+    }
+    else
+    {
+        auto func = [thenBodyFunc = std::move(thenBodyFunc)]
+        {
+            auto ret = thenBodyFunc();
+            GetCurrentRecordContext().AppendLine("return {};", eDSL::CompileAsIdentifier(ret));
+        };
+        return ElseBuilder(condition, std::move(func));
+    }
 }
 
 RTRC_EDSL_END

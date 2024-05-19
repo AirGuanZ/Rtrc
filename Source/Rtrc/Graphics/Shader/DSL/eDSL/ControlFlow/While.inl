@@ -29,7 +29,15 @@ void WhileBuilder::operator+(BodyFunc bodyFunc)
         context.AppendLine("if({}) break;", condVar.Compile());
     }
 
-    std::invoke(std::move(bodyFunc));
+    if constexpr(std::is_same_v<std::invoke_result_t<BodyFunc>, void>)
+    {
+        std::invoke(std::move(bodyFunc));
+    }
+    else
+    {
+        auto ret = std::invoke(std::move(bodyFunc));
+        context.AppendLine("return {};", eDSL::CompileAsIdentifier(ret));
+    }
 }
 
 RTRC_EDSL_END
