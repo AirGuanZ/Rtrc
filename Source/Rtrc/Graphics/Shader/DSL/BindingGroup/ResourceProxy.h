@@ -12,7 +12,8 @@ class Sampler;
 namespace BindingGroupDetail
 {
 
-    class MemberProxy_Texture2D
+    template<int Dim, bool IsArray>
+    class MemberProxy_Texture
     {
         Variant<TextureSrv, RGTexSrv> data_;
 
@@ -58,7 +59,8 @@ namespace BindingGroupDetail
 
         auto &operator=(const RC<Texture> &tex)
         {
-            return *this = tex->GetSrv(0, 0, 0);
+            *this = tex->GetSrv(0, 0, 0);
+            return *this;
         }
 
         auto &operator=(const RGTexSrv &srv)
@@ -69,11 +71,13 @@ namespace BindingGroupDetail
 
         auto &operator=(RGTexImpl *tex)
         {
-            return *this = tex->GetSrv();
+            *this = tex->GetSrv();
+            return *this;
         }
     };
-    
-    class MemberProxy_RWTexture2D
+
+    template<int Dim, bool IsArray>
+    class MemberProxy_RWTexture
     {
         Variant<TextureUav, RGTexUav> data_;
 
@@ -121,7 +125,8 @@ namespace BindingGroupDetail
 
         auto &operator=(const RC<Texture> &tex)
         {
-            return *this = tex->GetUav(0, 0);
+            *this = tex->GetUav(0, 0);
+            return *this;
         }
 
         auto &operator=(const RGTexUav &v)
@@ -132,18 +137,26 @@ namespace BindingGroupDetail
 
         auto &operator=(RGTexImpl *tex)
         {
-            return *this = tex->GetUav();
+            *this = tex->GetUav();
+            return *this;
         }
     };
 
-    using MemberProxy_Texture3D = MemberProxy_Texture2D;
-    using MemberProxy_RWTexture3D = MemberProxy_Texture2D;
+    using MemberProxy_Texture1D = MemberProxy_Texture<1, false>;
+    using MemberProxy_Texture2D = MemberProxy_Texture<2, false>;
+    using MemberProxy_Texture3D = MemberProxy_Texture<3, false>;
 
-    using MemberProxy_Texture2DArray = MemberProxy_Texture2D;
-    using MemberProxy_RWTexture2DArray = MemberProxy_Texture2D;
+    using MemberProxy_Texture1DArray = MemberProxy_Texture<1, true>;
+    using MemberProxy_Texture2DArray = MemberProxy_Texture<2, true>;
+    using MemberProxy_Texture3DArray = MemberProxy_Texture<3, true>;
 
-    using MemberProxy_Texture3DArray = MemberProxy_Texture2D;
-    using MemberProxy_RWTexture3DArray = MemberProxy_Texture2D;
+    using MemberProxy_RWTexture1D = MemberProxy_RWTexture<1, false>;
+    using MemberProxy_RWTexture2D = MemberProxy_RWTexture<2, false>;
+    using MemberProxy_RWTexture3D = MemberProxy_RWTexture<3, false>;
+
+    using MemberProxy_RWTexture1DArray = MemberProxy_RWTexture<1, true>;
+    using MemberProxy_RWTexture2DArray = MemberProxy_RWTexture<2, true>;
+    using MemberProxy_RWTexture3DArray = MemberProxy_RWTexture<3, true>;
     
     class MemberProxy_Buffer
     {

@@ -1,6 +1,8 @@
 #pragma once
 
-#include "../Value/eVector2.h"
+#include <Rtrc/Core/TypeList.h>
+
+#include "../Value/eVector4.h"
 
 RTRC_EDSL_BEGIN
 
@@ -9,11 +11,24 @@ class TemplateTexture2D : public eVariable<TemplateTexture2D<T, IsRW>>
 {
 public:
 
+    static_assert(
+        TypeList<
+            f32, float2, float3, float3,
+            u32, uint2, uint3, uint4,
+            i32, int2, int3, int4>::Contains<T>);
+
     static const char *GetStaticTypeName();
 
     static TemplateTexture2D CreateFromName(std::string name);
 
     TemplateTexture2D() { PopConstructParentVariable(); }
+
+    TemplateTexture2D &operator=(const TemplateTexture2D &other)
+    {
+        static_cast<eVariable<TemplateTexture2D> &>(*this) = other;
+        PopCopyParentVariable();
+        return *this;
+    }
 
     std::conditional_t<IsRW, T, const T> operator[](const uint2 &coord) const;
 

@@ -19,6 +19,8 @@ class TemplateBuffer : public eVariable<TemplateBuffer<T, Type>>
 {
 public:
 
+    static_assert(std::is_base_of_v<eVariableCommonBase, T>);
+
     static const char *GetStaticTypeName();
 
     static TemplateBuffer CreateFromName(std::string name);
@@ -29,6 +31,13 @@ public:
         Type == TemplateBufferType::ByteAddressBuffer;
 
     TemplateBuffer() { PopConstructParentVariable(); }
+
+    TemplateBuffer &operator=(const TemplateBuffer &other)
+    {
+        static_cast<eVariable<TemplateBuffer> &>(*this) = other;
+        PopCopyParentVariable();
+        return *this;
+    }
 
     T operator[](const u32 &index) const;
 

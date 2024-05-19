@@ -8,6 +8,13 @@
 #include "eDSL/Resource/Texture.h"
 #include "eDSL/Resource/Texture.inl"
 
+#include "eDSL/Resource/SamplerState.h"
+
+#include "eDSL/Resource/ConstantBuffer.h"
+#include "eDSL/Resource/ConstantBuffer.inl"
+
+#include "eDSL/Resource/RaytracingAccelerationStructure.h"
+
 #include "eDSL/Value/eMatrix4x4.h"
 #include "eDSL/Value/eNumber.h"
 #include "eDSL/Value/eVector2.h"
@@ -32,17 +39,15 @@
 #include "eDSL/ControlFlow/While.inl"
 
 #include "eDSL/eVariable.h"
-#include "eDSL/Function.h"
-#include "eDSL/NativeTypeMapping.h"
-
 #include "eDSL/eVariable.inl"
+
+#include "eDSL/Function.h"
 #include "eDSL/Function.inl"
+
+#include "eDSL/NativeTypeMapping.h"
 
 #define $if RTRC_EDSL_IF
 #define $else RTRC_EDSL_ELSE
-
-#define $struct RTRC_EDSL_STRUCT
-#define $var RTRC_EDSL_VAR
 
 #define $while RTRC_EDSL_WHILE
 

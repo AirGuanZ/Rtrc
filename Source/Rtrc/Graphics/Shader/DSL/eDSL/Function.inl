@@ -40,10 +40,6 @@ template <typename Ret, typename... Args>
 Function<Ret, std::remove_reference_t<Args>...> FunctionBuilder::BuildFunction(
     std::function<Ret(Args...)> bodyFunc)
 {
-    //auto context = MakeBox<RecordContext>();
-    //PushRecordContext(*context);
-    //RTRC_SCOPE_EXIT{ PopRecordContext(); };
-
     auto context = &GetCurrentRecordContext();
 
     // Head

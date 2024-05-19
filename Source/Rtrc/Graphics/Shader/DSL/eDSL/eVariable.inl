@@ -73,6 +73,11 @@ inline void EnableStackVariableAllocation()
     Detail::gEnableStackVariableAllocation = true;
 }
 
+inline bool IsStackVariableAllocationEnabled()
+{
+    return Detail::gEnableStackVariableAllocation;
+}
+
 template<typename T>
 eVariable<T>::eVariable()
 {

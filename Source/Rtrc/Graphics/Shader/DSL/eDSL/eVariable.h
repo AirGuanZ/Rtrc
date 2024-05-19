@@ -38,6 +38,7 @@ eVariableCommonBase *PopCopyParentVariable();
 void DisableStackVariableAllocation();
 // Enable the automatic variable name allocation. This function cannot be called when the allocation is already enabled.
 void EnableStackVariableAllocation();
+bool IsStackVariableAllocationEnabled();
 
 // Helper class calling PushMemberVariableName(Str) when constructed.
 template<TemplateStringParameter Str>
