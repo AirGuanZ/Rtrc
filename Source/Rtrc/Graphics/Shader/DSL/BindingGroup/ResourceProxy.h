@@ -12,7 +12,7 @@ class Sampler;
 namespace BindingGroupDetail
 {
 
-    template<int Dim, bool IsArray>
+    template<typename T, int Dim, bool IsArray>
     class MemberProxy_Texture
     {
         Variant<TextureSrv, RGTexSrv> data_;
@@ -76,7 +76,7 @@ namespace BindingGroupDetail
         }
     };
 
-    template<int Dim, bool IsArray>
+    template<typename T, int Dim, bool IsArray>
     class MemberProxy_RWTexture
     {
         Variant<TextureUav, RGTexUav> data_;
@@ -142,22 +142,23 @@ namespace BindingGroupDetail
         }
     };
 
-    using MemberProxy_Texture1D = MemberProxy_Texture<1, false>;
-    using MemberProxy_Texture2D = MemberProxy_Texture<2, false>;
-    using MemberProxy_Texture3D = MemberProxy_Texture<3, false>;
+    template<typename T = void> using MemberProxy_Texture1D = MemberProxy_Texture<T, 1, false>;
+    template<typename T = void> using MemberProxy_Texture2D = MemberProxy_Texture<T, 2, false>;
+    template<typename T = void> using MemberProxy_Texture3D = MemberProxy_Texture<T, 3, false>;
 
-    using MemberProxy_Texture1DArray = MemberProxy_Texture<1, true>;
-    using MemberProxy_Texture2DArray = MemberProxy_Texture<2, true>;
-    using MemberProxy_Texture3DArray = MemberProxy_Texture<3, true>;
+    template<typename T = void> using MemberProxy_Texture1DArray = MemberProxy_Texture<T, 1, true>;
+    template<typename T = void> using MemberProxy_Texture2DArray = MemberProxy_Texture<T, 2, true>;
+    template<typename T = void> using MemberProxy_Texture3DArray = MemberProxy_Texture<T, 3, true>;
 
-    using MemberProxy_RWTexture1D = MemberProxy_RWTexture<1, false>;
-    using MemberProxy_RWTexture2D = MemberProxy_RWTexture<2, false>;
-    using MemberProxy_RWTexture3D = MemberProxy_RWTexture<3, false>;
+    template<typename T = void> using MemberProxy_RWTexture1D = MemberProxy_RWTexture<T, 1, false>;
+    template<typename T = void> using MemberProxy_RWTexture2D = MemberProxy_RWTexture<T, 2, false>;
+    template<typename T = void> using MemberProxy_RWTexture3D = MemberProxy_RWTexture<T, 3, false>;
 
-    using MemberProxy_RWTexture1DArray = MemberProxy_RWTexture<1, true>;
-    using MemberProxy_RWTexture2DArray = MemberProxy_RWTexture<2, true>;
-    using MemberProxy_RWTexture3DArray = MemberProxy_RWTexture<3, true>;
-    
+    template<typename T = void> using MemberProxy_RWTexture1DArray = MemberProxy_RWTexture<T, 1, true>;
+    template<typename T = void> using MemberProxy_RWTexture2DArray = MemberProxy_RWTexture<T, 2, true>;
+    template<typename T = void> using MemberProxy_RWTexture3DArray = MemberProxy_RWTexture<T, 3, true>;
+
+    template<typename T = void>
     class MemberProxy_Buffer
     {
         Variant<BufferSrv, RGBufSrv> data_;
@@ -195,7 +196,8 @@ namespace BindingGroupDetail
 
         auto &operator=(const RC<SubBuffer> &buffer)
         {
-            return *this = buffer->GetTexelSrv();
+            *this = buffer->GetTexelSrv();
+            return *this;
         }
 
         auto &operator=(const RGBufSrv &v)
@@ -206,10 +208,12 @@ namespace BindingGroupDetail
 
         auto &operator=(RGBufImpl *buffer)
         {
-            return *this = buffer->GetTexelSrv();
+            *this = buffer->GetTexelSrv();
+            return *this;
         }
     };
-    
+
+    template<typename T = void>
     class MemberProxy_RWBuffer
     {
     public:
@@ -247,7 +251,8 @@ namespace BindingGroupDetail
 
         auto &operator=(const RC<SubBuffer> &buffer)
         {
-            return *this = buffer->GetTexelUav();
+            *this = buffer->GetTexelUav();
+            return *this;
         }
 
         auto &operator=(const RGBufUav &v)
@@ -258,14 +263,16 @@ namespace BindingGroupDetail
 
         auto &operator=(RGBufImpl *buffer)
         {
-            return *this = buffer->GetTexelUav();
+            *this = buffer->GetTexelUav();
+            return *this;
         }
 
     private:
 
         Variant<BufferUav, RGBufUav> data_;
     };
-    
+
+    template<typename T = void>
     class MemberProxy_StructuredBuffer
     {
         Variant<BufferSrv, RGBufSrv> data_;
@@ -303,7 +310,8 @@ namespace BindingGroupDetail
 
         auto &operator=(const RC<SubBuffer> &buffer)
         {
-            return *this = buffer->GetStructuredSrv();
+            *this = buffer->GetStructuredSrv();
+            return *this;
         }
 
         auto &operator=(const RGBufSrv &v)
@@ -314,10 +322,12 @@ namespace BindingGroupDetail
 
         auto &operator=(RGBufImpl *buffer)
         {
-            return *this = buffer->GetStructuredSrv();
+            *this = buffer->GetStructuredSrv();
+            return *this;
         }
     };
-    
+
+    template<typename T = void>
     class MemberProxy_RWStructuredBuffer
     {
     public:
@@ -355,7 +365,8 @@ namespace BindingGroupDetail
 
         auto &operator=(const RC<SubBuffer> &buffer)
         {
-            return *this = buffer->GetStructuredUav();
+            *this = buffer->GetStructuredUav();
+            return *this;
         }
 
         auto &operator=(const RGBufUav &v)
@@ -366,7 +377,8 @@ namespace BindingGroupDetail
 
         auto &operator=(RGBufImpl *buffer)
         {
-            return *this = buffer->GetStructuredUav();
+            *this = buffer->GetStructuredUav();
+            return *this;
         }
 
     private:
@@ -480,7 +492,7 @@ namespace BindingGroupDetail
         Variant<BufferUav, RGBufUav> data_;
     };
 
-    template<typename T>
+    template<typename T = void>
     class MemberProxy_ConstantBuffer : public T
     {
         RC<SubBuffer> data_;

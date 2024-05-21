@@ -93,26 +93,6 @@ std::string ToString(Rtrc::RHI::ShaderStageFlags stages)
     return GetShaderStageFlagsName(stages);
 }
 
-std::string_view BindingNameToTypeName(Rtrc::RHI::BindingType type)
-{
-    constexpr std::string_view NAMES[] =
-    {
-        "Texture",
-        "RWTexture",
-        "Buffer",
-        "StructuredBuffer",
-        "ByteAddressBuffer",
-        "RWBuffer",
-        "RWStructuredBuffer",
-        "RWByteAddressBuffer",
-        "ConstantBuffer",
-        "SamplerState",
-        "RaytracingAccelerationStructure"
-    };
-    assert(std::to_underlying(type) < Rtrc::GetArraySize<int>(NAMES));
-    return NAMES[std::to_underlying(type)];
-}
-
 void GenerateBindingGroupDefinition(
     Rtrc::SourceWriter             &sw,
     const Rtrc::ParsedBindingGroup &group,
@@ -135,12 +115,6 @@ void GenerateBindingGroupDefinition(
             templateParamStr = fmt::format("<{}>", binding.templateParam);
         }
 
-        std::string arraySizeStr;
-        if(binding.arraySize)
-        {
-            arraySizeStr = fmt::format("[{}]", *binding.arraySize);
-        }
-
         std::string_view head = "rtrc_define";
         if(binding.bindless)
         {
@@ -153,10 +127,20 @@ void GenerateBindingGroupDefinition(
                 head = "rtrc_bindless";
             }
         }
+        else if(binding.arraySize)
+        {
+            head = "rtrc_define_array";
+        }
+
+        std::string arraySizeStr;
+        if(binding.arraySize)
+        {
+            arraySizeStr = fmt::format(", [{}]", *binding.arraySize);
+        }
 
         sw(
-            "{}({}{}{}, {}, {});",
-            head, typeStr, templateParamStr, arraySizeStr, binding.name, ToString(binding.stages)).NewLine();
+            "{}({}{}, {}{}, {});",
+            head, typeStr, templateParamStr, binding.name, arraySizeStr, ToString(binding.stages)).NewLine();
     }
 
     for(size_t i = 0; i < group.uniformPropertyDefinitions.size(); ++i)

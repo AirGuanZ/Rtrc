@@ -13,7 +13,7 @@ public:
 
     static_assert(
         TypeList<
-            f32, float2, float3, float3,
+            float, float2, float3, float3,
             u32, uint2, uint3, uint4,
             i32, int2, int3, int4>::Contains<T>);
 

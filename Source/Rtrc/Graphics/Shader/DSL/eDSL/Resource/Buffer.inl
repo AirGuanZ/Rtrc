@@ -35,7 +35,7 @@ TemplateBuffer<T, Type> TemplateBuffer<T, Type>::CreateFromName(std::string name
 }
 
 template <typename T, TemplateBufferType Type>
-T TemplateBuffer<T, Type>::operator[](const u32& index) const
+T TemplateBuffer<T, Type>::operator[](const u32 &index) const
 {
     static_assert(
         Type == TemplateBufferType::Buffer || Type == TemplateBufferType::StructuredBuffer ||

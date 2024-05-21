@@ -69,14 +69,14 @@ rtrc_group(GroupName)
     rtrc_define(Buffer<uint>, Resource, CS)
 
     // Define a resource array with 4 elements.
-    rtrc_define(Texture2D<float4>[4], ResourceArray)
+    rtrc_define_array(Texture2D<float4>, ResourceArray, [4])
 
     // Define a bindless resource array with 64 elements.
     // 'bindless' indicates that it allows partial binding and updating while dynamically unused.
-    rtrc_bindless(Texture2D<float>[64], BindlessResourceArray)
+    rtrc_bindless(Texture2D<float>, BindlessResourceArray, [64])
 
     // Define a var-sized bindless resource array with with a maximal size of 512.
-    rtrc_bindless_varsize(Buffer<float>[512], VarSizedBindlessResourceArray)
+    rtrc_bindless_varsize(Buffer<float>, VarSizedBindlessResourceArray, [512])
 
     // Define a uniform value parameter.
     // Uniform parameters within a binding group are automatically packed into a constant buffer with the same name as the binding group.

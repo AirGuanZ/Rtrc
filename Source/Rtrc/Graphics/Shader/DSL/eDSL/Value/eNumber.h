@@ -26,9 +26,9 @@ struct eNumber : eVariable<eNumber<T>>
     std::string Compile() const;
 };
 
-using u32 = eNumber<uint32_t>;
-using i32 = eNumber<int32_t>;
-using f32 = eNumber<float>;
+using u32     = eNumber<uint32_t>;
+using i32     = eNumber<int32_t>;
+using f32     = eNumber<float>;
 using boolean = eNumber<bool>;
 
 template<typename T>

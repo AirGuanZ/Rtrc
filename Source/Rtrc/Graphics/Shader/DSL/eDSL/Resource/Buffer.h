@@ -19,7 +19,7 @@ class TemplateBuffer : public eVariable<TemplateBuffer<T, Type>>
 {
 public:
 
-    static_assert(std::is_base_of_v<eVariableCommonBase, T>);
+    static_assert(std::is_base_of_v<eVariableCommonBase, T> || std::is_same_v<T, void>);
 
     static const char *GetStaticTypeName();
 

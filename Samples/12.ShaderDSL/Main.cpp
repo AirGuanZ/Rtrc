@@ -18,7 +18,7 @@ int main()
 
     RTRC_EDSL_DEFINE_BUFFER(Buffer<u32>, TestBuffer);
 
-    //auto buffer = Buffer<u32>::CreateFromName("TestBuffer");
+    auto buffer = Buffer<u32>::CreateFromName("TestBuffer");
     auto buffer2 = StructuredBuffer<eA>::CreateFromName("ABuffer");
     auto buffer3 = ByteAddressBuffer::CreateFromName("BBuffer");
     auto buffer4 = RWByteAddressBuffer::CreateFromName("CBuffer");

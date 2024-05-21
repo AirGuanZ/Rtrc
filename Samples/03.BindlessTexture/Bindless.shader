@@ -6,7 +6,7 @@ rtrc_shader("Bindless")
     rtrc_group(Pass)
     {
         rtrc_uniform(float, alpha)
-        rtrc_bindless_varsize(Texture2D<float3>[2048], Textures)	
+        rtrc_bindless_varsize(Texture2D<float3>, Textures, [2048])	
     };
 
     rtrc_push_constant(Main, FS)

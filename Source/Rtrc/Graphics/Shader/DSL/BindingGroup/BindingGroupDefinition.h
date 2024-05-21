@@ -76,6 +76,14 @@ namespace BindingGroupDetail
         using Member = T;
     };
 
+    struct BindingGroupBuilder_eDSL;
+
+    template<typename T>
+    T instantiateWithVoidIfPossible();
+
+    template<template<typename> typename T>
+    T<void> instantiateWithVoidIfPossible();
+
 } // namespace BindingGroupDetail
 
 using BindingGroupDetail::RtrcGroupStruct;
@@ -85,22 +93,29 @@ using BindingGroupDetail::RtrcGroupStruct;
 #define rtrc_group2(NAME, STAGES) RTRC_DEFINE_BINDING_GROUP(NAME, RTRC_INLINE_STAGE_EXPRESSION(STAGES))
 
 #define rtrc_define(...)                 RTRC_MACRO_OVERLOADING(rtrc_define, __VA_ARGS__)
-#define rtrc_define2(TYPE, NAME)         RTRC_DEFINE_BINDING_GROUP_VAR(TYPE, NAME, _rtrcSelf##NAME::_rtrcGroupDefaultStages, false, false)
-#define rtrc_define3(TYPE, NAME, STAGES) RTRC_DEFINE_BINDING_GROUP_VAR(TYPE, NAME, RTRC_INLINE_STAGE_EXPRESSION(STAGES), false, false)
+#define rtrc_define2(TYPE, NAME)         RTRC_DEFINE_BINDING_GROUP_VAR(TYPE, NAME, , _rtrcSelf##NAME::_rtrcGroupDefaultStages, false, false)
+#define rtrc_define3(TYPE, NAME, STAGES) RTRC_DEFINE_BINDING_GROUP_VAR(TYPE, NAME, , RTRC_INLINE_STAGE_EXPRESSION(STAGES), false, false)
 
-#define rtrc_bindless(...)                 RTRC_MACRO_OVERLOADING(rtrc_bindless, __VA_ARGS__)
-#define rtrc_bindless2(TYPE, NAME)         RTRC_DEFINE_BINDING_GROUP_VAR(TYPE, NAME, _rtrcSelf##NAME::_rtrcGroupDefaultStages, true, false)
-#define rtrc_bindless3(TYPE, NAME, STAGES) RTRC_DEFINE_BINDING_GROUP_VAR(TYPE, NAME, RTRC_INLINE_STAGE_EXPRESSION(STAGES), true, false)
+#define rtrc_define_array(...)                       RTRC_MACRO_OVERLOADING(rtrc_define, __VA_ARGS__)
+#define rtrc_define_array3(TYPE, NAME, SIZE)         RTRC_DEFINE_BINDING_GROUP_VAR(TYPE, NAME, SIZE, _rtrcSelf##NAME::_rtrcGroupDefaultStages, false, false)
+#define rtrc_define_array4(TYPE, NAME, SIZE, STAGES) RTRC_DEFINE_BINDING_GROUP_VAR(TYPE, NAME, SIZE, RTRC_INLINE_STAGE_EXPRESSION(STAGES), false, false)
 
-#define rtrc_bindless_varsize(...)                 RTRC_MACRO_OVERLOADING(rtrc_bindless_varsize, __VA_ARGS__)
-#define rtrc_bindless_varsize2(TYPE, NAME)         RTRC_DEFINE_BINDING_GROUP_VAR(TYPE, NAME, _rtrcSelf##NAME::_rtrcGroupDefaultStages, true, true)
-#define rtrc_bindless_varsize3(TYPE, NAME, STAGES) RTRC_DEFINE_BINDING_GROUP_VAR(TYPE, NAME, RTRC_INLINE_STAGE_EXPRESSION(STAGES), true, true)
+#define rtrc_bindless(...)                       RTRC_MACRO_OVERLOADING(rtrc_bindless, __VA_ARGS__)
+#define rtrc_bindless3(TYPE, NAME, SIZE)         RTRC_DEFINE_BINDING_GROUP_VAR(TYPE, NAME, SIZE, _rtrcSelf##NAME::_rtrcGroupDefaultStages, true, false)
+#define rtrc_bindless4(TYPE, NAME, SIZE, STAGES) RTRC_DEFINE_BINDING_GROUP_VAR(TYPE, NAME, SIZE, RTRC_INLINE_STAGE_EXPRESSION(STAGES), true, false)
+
+#define rtrc_bindless_varsize(...)                       RTRC_MACRO_OVERLOADING(rtrc_bindless_varsize, __VA_ARGS__)
+#define rtrc_bindless_varsize3(TYPE, NAME, SIZE)         RTRC_DEFINE_BINDING_GROUP_VAR(TYPE, NAME, SIZE, _rtrcSelf##NAME::_rtrcGroupDefaultStages, true, true)
+#define rtrc_bindless_varsize4(TYPE, NAME, SIZE, STAGES) RTRC_DEFINE_BINDING_GROUP_VAR(TYPE, NAME, SIZE, RTRC_INLINE_STAGE_EXPRESSION(STAGES), true, true)
 
 #define rtrc_uniform(TYPE, NAME) RTRC_DEFINE_BINDING_GROUP_UNIFORM(TYPE, NAME)
 
 #define rtrc_inline(...)                 RTRC_MACRO_OVERLOADING(rtrc_inline, __VA_ARGS__)
 #define rtrc_inline2(TYPE, NAME)         RTRC_INLINE_BINDING_GROUP(TYPE, NAME, _rtrcSelf##NAME::_rtrcGroupDefaultStages)
 #define rtrc_inline3(TYPE, NAME, STAGES) RTRC_INLINE_BINDING_GROUP(TYPE, NAME, RTRC_INLINE_STAGE_EXPRESSION(STAGES))
+
+#define RTRC_INSTANTIATE_WITH_VOID_IF_POSSIBLE(T) \
+    decltype(::Rtrc::BindingGroupDetail::instantiateWithVoidIfPossible<T>())
 
 #define RTRC_DEFINE_BINDING_GROUP(NAME, DEFAULT_STAGES)                                                 \
     template<typename B> struct _rtrcGroupSketch##NAME;                                                 \
@@ -137,17 +152,19 @@ using BindingGroupDetail::RtrcGroupStruct;
     }())
 
 // Member access function f is called with f<isUniform>(memberPtr, name, stages, bindingFlags)
-#define RTRC_DEFINE_BINDING_GROUP_VAR(TYPE, NAME, STAGES, BINDLESS, VARSIZE)             \
-    RTRC_DEFINE_SELF_TYPE(_rtrcSelf##NAME)                                               \
-    RTRC_META_STRUCT_SETUP_MEMBER(NAME)                                                  \
-    using _rtrcRawMemberType##NAME = ::Rtrc::BindingGroupDetail::MemberProxy_##TYPE;     \
-    using _rtrcMemberType##NAME = typename B::template Member<_rtrcRawMemberType##NAME>; \
-    _rtrcMemberType##NAME NAME;                                                          \
-    RTRC_META_STRUCT_PRE_MEMBER_ACCESS(NAME)                                             \
-        f.template operator()<false>(                                                    \
-            &_rtrcSelf##NAME::NAME, #NAME, STAGES,                                       \
-            ::Rtrc::BindingGroupDetail::CreateBindingFlags(BINDLESS, VARSIZE));          \
-    RTRC_META_STRUCT_POST_MEMBER_ACCESS(NAME)                                            \
+#define RTRC_DEFINE_BINDING_GROUP_VAR(TYPE, NAME, ARRAY_SPEC, STAGES, BINDLESS, VARSIZE)        \
+    RTRC_DEFINE_SELF_TYPE(_rtrcSelf##NAME)                                                      \
+    RTRC_META_STRUCT_SETUP_MEMBER(NAME)                                                         \
+    using _rtrcRawMemberType##NAME =                                                            \
+        RTRC_INSTANTIATE_WITH_VOID_IF_POSSIBLE(::Rtrc::BindingGroupDetail::MemberProxy_##TYPE); \
+    using _rtrcMemberType##NAME =                                                               \
+        typename B::template Member<_rtrcRawMemberType##NAME>ARRAY_SPEC;                        \
+    _rtrcMemberType##NAME NAME;                                                                 \
+    RTRC_META_STRUCT_PRE_MEMBER_ACCESS(NAME)                                                    \
+        f.template operator()<false>(                                                           \
+            &_rtrcSelf##NAME::NAME, #NAME, STAGES,                                              \
+            ::Rtrc::BindingGroupDetail::CreateBindingFlags(BINDLESS, VARSIZE));                 \
+    RTRC_META_STRUCT_POST_MEMBER_ACCESS(NAME)                                                   \
     using _requireComma##NAME = int
 
 #define RTRC_DEFINE_BINDING_GROUP_UNIFORM(TYPE, NAME)                      \
