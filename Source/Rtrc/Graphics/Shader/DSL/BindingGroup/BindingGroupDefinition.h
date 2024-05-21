@@ -120,6 +120,7 @@ using BindingGroupDetail::RtrcGroupStruct;
 #define RTRC_DEFINE_BINDING_GROUP(NAME, DEFAULT_STAGES)                                                 \
     template<typename B> struct _rtrcGroupSketch##NAME;                                                 \
     using NAME = _rtrcGroupSketch##NAME<::Rtrc::BindingGroupDetail::BindingGroupStructBuilder_Default>; \
+    using e##NAME = _rtrcGroupSketch##NAME<::Rtrc::BindingGroupDetail::BindingGroupBuilder_eDSL>;       \
     template<typename B>                                                                                \
     struct _rtrcGroupSketch##NAME :                                                                     \
         ::Rtrc::BindingGroupDetail::DefaultStagesBase<DEFAULT_STAGES>,                                  \
