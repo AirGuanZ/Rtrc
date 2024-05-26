@@ -58,6 +58,7 @@ enum class ShaderUniformType
 };
 
 size_t GetShaderUniformSize(ShaderUniformType type);
+const char *GetShaderUniformTypeName(ShaderUniformType type);
 ShaderUniformType GetShaderUniformTypeFromName(std::string_view name);
 
 struct ShaderUniformVariable
@@ -186,6 +187,29 @@ inline size_t GetShaderUniformSize(ShaderUniformType type)
         0
     };
     return ret[std::to_underlying(type)];
+}
+
+inline const char *GetShaderUniformTypeName(ShaderUniformType type)
+{
+    static const char *NAMES[] =
+    {
+        "int",
+        "int2",
+        "int3",
+        "int4",
+        "uint",
+        "uint2",
+        "uint3",
+        "uint4",
+        "float",
+        "float2",
+        "float3",
+        "float4",
+        "float4x4",
+        "unknown_uniform_type"
+    };
+    assert(std::to_underlying(type) < GetArraySize(NAMES));
+    return NAMES[std::to_underlying(type)];
 }
 
 inline ShaderUniformType GetShaderUniformTypeFromName(std::string_view name)

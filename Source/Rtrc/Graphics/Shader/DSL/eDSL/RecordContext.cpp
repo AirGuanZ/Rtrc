@@ -1,6 +1,6 @@
 #include <cassert>
 
-#include "../DSL.h"
+#include "../eDSL.h"
 
 RTRC_EDSL_BEGIN
 
@@ -10,6 +10,18 @@ namespace RecordContextDetail
     thread_local std::stack<RecordContext *> gRecordContextStack;
 
 } // namespace RecordContextDetail
+
+const char* RecordContext::GetBuiltinValueName(BuiltinValue value)
+{
+    const char *ret[] =
+    {
+        "SV_GroupID",
+        "SV_GroupThreadID",
+        "SV_DispatchThreadID",
+    };
+    assert(std::to_underlying(value) < EnumCount<BuiltinValue>);
+    return ret[std::to_underlying(value)];
+}
 
 RecordContext::RecordContext()
     : nextVariableNameIndex_(0)
@@ -58,14 +70,35 @@ bool RecordContext::GetBuiltinValueRead(BuiltinValue value)
     return builtinValueRead_[std::to_underlying(value)];
 }
 
-std::string RecordContext::BuildResult() const
+uint32_t RecordContext::GetStaticSampler(const RHI::SamplerDesc& desc)
+{
+    if(auto it = staticSamplerToIndex_.find(desc); it != staticSamplerToIndex_.end())
+    {
+        return it->second;
+    }
+    const uint32_t ret = staticSamplerToIndex_.size();
+    staticSamplerToIndex_.insert({ desc, ret });
+    return ret;
+}
+
+const std::map<RHI::SamplerDesc, uint32_t>& RecordContext::GetAllStaticSamplers() const
+{
+    return staticSamplerToIndex_;
+}
+
+std::string RecordContext::BuildTypeDefinitions() const
 {
     ResolvedStructTypeSet resolvedStructTypeSet;
     structs_->ResolveInto(resolvedStructTypeSet);
-    return resolvedStructTypeSet.GetDefinitions() + BuildScope("", rootScope_);
+    return resolvedStructTypeSet.GetDefinitions();
 }
 
-// TODO: optimize frequent string appending
+std::string RecordContext::BuildRootScope(const std::string &indent) const
+{
+    return BuildScope(indent, rootScope_);
+}
+
+// TODO: optimize string appending
 std::string RecordContext::BuildScope(const std::string &indent, const Scope& scope)
 {
     std::string result;
@@ -84,17 +117,6 @@ std::string RecordContext::BuildScope(const std::string &indent, const Scope& sc
             });
     }
     return result;
-}
-
-ScopedRecordContext::ScopedRecordContext()
-{
-    PushRecordContext(*this);
-}
-
-ScopedRecordContext::~ScopedRecordContext()
-{
-    assert(&GetCurrentRecordContext() == this);
-    PopRecordContext();
 }
 
 void PushRecordContext(RecordContext &context)

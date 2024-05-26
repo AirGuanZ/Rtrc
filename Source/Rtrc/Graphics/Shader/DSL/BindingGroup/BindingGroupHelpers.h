@@ -7,7 +7,7 @@ RTRC_BEGIN
 namespace BindingGroupDetail
 {
 
-    template<RtrcGroupStruct T, typename F, typename A = std::identity>
+    template<RtrcGroupSketch T, typename F, typename A = std::identity>
     static constexpr void ForEachFlattenMember(
         const F &f, RHI::ShaderStageFlags stageMask = T::_rtrcGroupDefaultStages, const A &accessor = std::identity{})
     {
@@ -20,7 +20,7 @@ namespace BindingGroupDetail
                 static_assert(std::is_pointer_v<P>);
                 return &(accessor(p)->*ptr);
             };
-            if constexpr(RtrcGroupStruct<M>)
+            if constexpr(RtrcGroupSketch<M>)
             {
                 BindingGroupDetail::ForEachFlattenMember<M>(f, stageMask & stages, newAccessor);
             }

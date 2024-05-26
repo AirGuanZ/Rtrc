@@ -22,8 +22,10 @@
 #include <Rtrc/Graphics/Device/PipelineCache.h>
 #include <Rtrc/Graphics/Device/ShaderBindingTableBuilder.h>
 #include <Rtrc/Graphics/RenderGraph/Executable.h>
+
 #include <Rtrc/Graphics/Shader/DSL/BindingGroup.h>
 #include <Rtrc/Graphics/Shader/DSL/eDSL.h>
+#include <Rtrc/Graphics/Shader/DSL/Entry/ComputeEntry.h>
 
 #include <Rtrc/RHI/Window/WindowInput.h>
 #include <Rtrc/RHI/Window/Window.h>

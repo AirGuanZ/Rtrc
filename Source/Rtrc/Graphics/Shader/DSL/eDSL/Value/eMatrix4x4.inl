@@ -45,7 +45,7 @@ inline float4x4::float4x4(
                     m30.Compile(), m31.Compile(), m32.Compile(), m33.Compile()));
 }
 
-inline float4x4::float4x4(const float4& row0, const float4& row1, const float4& row2, const float4& row3)
+inline float4x4::float4x4(const f32x4& row0, const f32x4& row1, const f32x4& row2, const f32x4& row3)
     : float4x4(
         row0[0], row0[1], row0[2], row0[3],
         row1[0], row1[1], row1[2], row1[3],
@@ -62,14 +62,14 @@ inline float4x4& float4x4::operator=(const float4x4& other)
     return *this;
 }
 
-inline TemporaryValueWrapper<float4> float4x4::operator[](const u32& index)
+inline TemporaryValueWrapper<f32x4> float4x4::operator[](const u32& index)
 {
-    return CreateTemporaryVariableForExpression<float4>(fmt::format("{}[{}]", Compile(), index.Compile()));
+    return CreateTemporaryVariableForExpression<f32x4>(fmt::format("{}[{}]", Compile(), index.Compile()));
 }
 
-inline const TemporaryValueWrapper<float4> float4x4::operator[](const u32& index) const
+inline const TemporaryValueWrapper<f32x4> float4x4::operator[](const u32& index) const
 {
-    return CreateTemporaryVariableForExpression<float4>(fmt::format("{}[{}]", Compile(), index.Compile()));
+    return CreateTemporaryVariableForExpression<f32x4>(fmt::format("{}[{}]", Compile(), index.Compile()));
 }
 
 inline float4x4 mul(const float4x4 &lhs, const float4x4 &rhs)
@@ -78,15 +78,15 @@ inline float4x4 mul(const float4x4 &lhs, const float4x4 &rhs)
         "mul({}, {})", lhs.Compile(), rhs.Compile()));
 }
 
-inline float4 mul(const float4x4 &lhs, const float4 &rhs)
+inline f32x4 mul(const float4x4 &lhs, const f32x4 &rhs)
 {
-    return CreateTemporaryVariableForExpression<float4>(fmt::format(
+    return CreateTemporaryVariableForExpression<f32x4>(fmt::format(
         "mul({}, {})", lhs.Compile(), rhs.Compile()));
 }
 
-float4 mul(const float4 &lhs, const float4x4 &rhs)
+f32x4 mul(const f32x4 &lhs, const float4x4 &rhs)
 {
-    return CreateTemporaryVariableForExpression<float4>(fmt::format(
+    return CreateTemporaryVariableForExpression<f32x4>(fmt::format(
         "mul({}, {})", lhs.Compile(), rhs.Compile()));
 }
 

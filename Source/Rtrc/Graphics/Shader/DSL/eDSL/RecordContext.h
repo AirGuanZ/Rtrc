@@ -1,10 +1,13 @@
 #pragma once
 
 #include <bitset>
+#include <map>
 #include <stack>
 
+#include <Rtrc/Core/Math/Vector3.h>
 #include <Rtrc/Core/Uncopyable.h>
 #include <Rtrc/Core/Variant.h>
+#include <Rtrc/RHI/RHI.h>
 
 #include "Common.h"
 
@@ -25,6 +28,8 @@ public:
         Count
     };
 
+    static const char *GetBuiltinValueName(BuiltinValue value);
+
     RecordContext();
     ~RecordContext();
 
@@ -44,7 +49,11 @@ public:
     void SetBuiltinValueRead(BuiltinValue value);
     bool GetBuiltinValueRead(BuiltinValue value);
 
-    std::string BuildResult() const;
+    uint32_t GetStaticSampler(const RHI::SamplerDesc &desc);
+    const std::map<RHI::SamplerDesc, uint32_t> &GetAllStaticSamplers() const;
+
+    std::string BuildTypeDefinitions() const;
+    std::string BuildRootScope(const std::string &indent) const;
 
 private:
 
@@ -66,14 +75,8 @@ private:
 
     Box<StructTypeSet> structs_;
     std::bitset<EnumCount<BuiltinValue>> builtinValueRead_;
-};
 
-class ScopedRecordContext : public RecordContext
-{
-public:
-
-    ScopedRecordContext();
-    ~ScopedRecordContext();
+    std::map<RHI::SamplerDesc, uint32_t> staticSamplerToIndex_;
 };
 
 void PushRecordContext(RecordContext &context);

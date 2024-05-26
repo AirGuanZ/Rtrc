@@ -67,10 +67,10 @@ struct eVector3 : eVariable<eVector3<T>>
     [[no_unique_address]] MemberVariableNameInitializer<"b"> _rtrc_init_b; eNumber<T> b;
 };
 
-using uint3  = eVector3<uint32_t>;
-using int3   = eVector3<int32_t>;
-using float3 = eVector3<float>;
-using bool3  = eVector3<bool>;
+using u32x3  = eVector3<uint32_t>;
+using i32x3  = eVector3<int32_t>;
+using f32x3  = eVector3<float>;
+using boolx3 = eVector3<bool>;
 
 eNumber<bool> any(const eVector3<bool> &v);
 eNumber<bool> all(const eVector3<bool> &v);

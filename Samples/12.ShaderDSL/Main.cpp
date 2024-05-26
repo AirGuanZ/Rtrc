@@ -1,71 +1,49 @@
 #include <Rtrc/Rtrc.h>
 
-using namespace Rtrc::eDSL;
+using namespace Rtrc;
 
-rtrc_struct(A)
+template<typename Func>
+struct FunctionTrait
 {
-    rtrc_var(uint, b);
+    using T = typename FunctionTrait<decltype(std::function{ std::declval<Func>() })>::T;
 };
 
-//$struct(A)
-//{
-//    $var(Rtrc::eDSL::u32, b);
-//};
-
-int main()
+template<typename...Args>
+struct FunctionTrait<std::function<void(Args...)>>
 {
-    ScopedRecordContext context;
+    using T = std::function<void(Args...)>;
+};
 
-    RTRC_EDSL_DEFINE_BUFFER(Buffer<u32>, TestBuffer);
-
-    auto buffer = Buffer<u32>::CreateFromName("TestBuffer");
-    auto buffer2 = StructuredBuffer<eA>::CreateFromName("ABuffer");
-    auto buffer3 = ByteAddressBuffer::CreateFromName("BBuffer");
-    auto buffer4 = RWByteAddressBuffer::CreateFromName("CBuffer");
-
-    //auto Func = $function(i32 &a, i32 b)
-    //{
-    //    a = 2 * a;
-    //    A ret;
-    //    ret.b = a;
-    //    return ret;
-    //};
-
-    auto Func2 = $function
+class ShaderDSLDemo : public SimpleApplication
+{
+    void InitializeSimpleApplication(GraphRef graph) override
     {
-        eA a;
-        a.b = 999;
+        auto entry = eDSL::BuildComputeEntry(
+            GetDevice(),
+            [](const eDSL::RWBuffer<eDSL::u32> &buffer, const eDSL::u32 &threadCount, const eDSL::u32 &value)
+        {
+            $numthreads(64, 1, 1);
+            $if($SV_DispatchThreadID.x < threadCount)
+            {
+                buffer[$SV_DispatchThreadID.x] = value;
+            };
+        });
+    }
 
-        eA b;
-        b = a;
+    void UpdateSimpleApplication(GraphRef graph) override
+    {
+        SetExitFlag(true);
+    }
+};
 
-        //A classA;
-        //classA.b = 999;
-        //
-        //A classB = classA;
-
-        //i32 i = 0;
-        //$while(i != 100)
-        //{
-        //    classB.b = classB.b + 1u;
-        //    i = i + 1;
-        //};
-        //
-        //A a = Func(i, 4);
-        //a.b = a.b + TestBuffer[2];
-        //
-        //float2 v0 = float2(9999);
-        //f32 v = v0[1];
-        //v = 4;
-        //v0.yx = float2(1, 2);
-
-        //float4x4 m = float4x4(Rtrc::Matrix4x4f::Translate(1, 2, 3));
-        //float4 p = mul(m, float4(2, 3, 4, 1));
-        //
-        //buffer2[2] = a;
-        //
-        //buffer4.Store(0, a);
-    };
-
-    fmt::print("{}", context.BuildResult());
-}
+RTRC_APPLICATION_MAIN(
+    ShaderDSLDemo,
+    .title             = "Rtrc Sample: Shader DSL",
+    .width             = 640,
+    .height            = 480,
+    .maximized         = true,
+    .vsync             = true,
+    .debug             = RTRC_DEBUG,
+    .rayTracing        = false,
+    .backendType       = RHI::BackendType::Default,
+    .enableGPUCapturer = false)

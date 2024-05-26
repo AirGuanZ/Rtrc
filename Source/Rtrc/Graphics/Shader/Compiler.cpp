@@ -294,8 +294,7 @@ RC<Shader> ShaderCompiler::Compile(
     }
 
     layoutInfo->pushConstantRanges_ = std::move(preprocessingOutput.pushConstantRanges);
-    layoutInfo->uniformBlocks_ = std::move(preprocessingOutput.uniformBlocks);
-
+    
     if(preprocessingOutput.inlineSamplerBindingGroupIndex >= 0)
     {
         layoutInfo->bindingGroupForInlineSamplers_ =

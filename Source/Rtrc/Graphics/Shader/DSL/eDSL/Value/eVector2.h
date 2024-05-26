@@ -66,10 +66,10 @@ struct eVector2 : eVariable<eVector2<T>>
     [[no_unique_address]] MemberVariableNameInitializer<"g"> _rtrc_init_g; eNumber<T> g;
 };
 
-using uint2  = eVector2<uint32_t>;
-using int2   = eVector2<int32_t>;
-using float2 = eVector2<float>;
-using bool2  = eVector2<bool>;
+using u32x2  = eVector2<uint32_t>;
+using i32x2  = eVector2<int32_t>;
+using f32x2  = eVector2<float>;
+using boolx2 = eVector2<bool>;
 
 inline eNumber<bool> any(const eVector2<bool> &v) { return v.x | v.y; }
 inline eNumber<bool> all(const eVector2<bool> &v) { return v.x & v.y; }

@@ -80,10 +80,6 @@ public:
 
     Span<PushConstantRange> GetPushConstantRanges() const;
 
-    // Uniform blocks
-
-    Span<ShaderUniformBlock> GetUniformBlocks() const;
-
 private:
 
     friend class ShaderCompiler;
@@ -97,10 +93,7 @@ private:
 
     // Should be the last group, if present
     RC<BindingGroup> bindingGroupForInlineSamplers_;
-
     std::vector<PushConstantRange> pushConstantRanges_;
-
-    std::vector<ShaderUniformBlock> uniformBlocks_;
 };
 
 class ShaderInfo : public Uncopyable
@@ -148,10 +141,6 @@ public:
     // Push constant
 
     Span<PushConstantRange> GetPushConstantRanges() const;
-
-    // Uniform blocks
-
-    Span<ShaderUniformBlock> GetUniformBlocks() const;
 
     // Ray tracing shader group
 
@@ -221,7 +210,6 @@ public:
     Vector3i ComputeThreadGroupCount(const Vector3i &threadCount) const;
     
     Span<ShaderInfo::PushConstantRange> GetPushConstantRanges() const;
-    Span<ShaderUniformBlock> GetUniformBlocks() const;
 
     Span<RHI::RayTracingRayGenShaderGroup> GetRayGenShaderGroups() const;
     Span<RHI::RayTracingMissShaderGroup>   GetMissShaderGroups()   const;
@@ -321,11 +309,6 @@ inline Span<ShaderBindingLayoutInfo::PushConstantRange> ShaderBindingLayoutInfo:
     return pushConstantRanges_;
 }
 
-inline Span<ShaderUniformBlock> ShaderBindingLayoutInfo::GetUniformBlocks() const
-{
-    return uniformBlocks_;
-}
-
 inline const ShaderBindingNameMap &ShaderBindingLayoutInfo::GetBindingNameMap() const
 {
     return bindingNameMap_;
@@ -418,11 +401,6 @@ inline Vector3i ShaderInfo::ComputeThreadGroupCount(const Vector3i &threadCount)
 inline Span<ShaderInfo::PushConstantRange> ShaderInfo::GetPushConstantRanges() const
 {
     return shaderBindingLayoutInfo_->GetPushConstantRanges();
-}
-
-inline Span<ShaderUniformBlock> ShaderInfo::GetUniformBlocks() const
-{
-    return shaderBindingLayoutInfo_->GetUniformBlocks();
 }
 
 inline const ShaderGroupInfo &ShaderInfo::GetShaderGroupInfo() const
@@ -582,11 +560,6 @@ inline Vector3i Shader::ComputeThreadGroupCount(const Vector3i &threadCount) con
 inline Span<ShaderInfo::PushConstantRange> Shader::GetPushConstantRanges() const
 {
     return info_->GetPushConstantRanges();
-}
-
-inline Span<ShaderUniformBlock> Shader::GetUniformBlocks() const
-{
-    return info_->GetUniformBlocks();
 }
 
 inline Span<RHI::RayTracingRayGenShaderGroup> Shader::GetRayGenShaderGroups() const

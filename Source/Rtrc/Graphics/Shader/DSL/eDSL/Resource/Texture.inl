@@ -27,7 +27,7 @@ TemplateTexture1D<T, IsRW> TemplateTexture1D<T, IsRW>::CreateFromName(std::strin
 }
 
 template <typename T, bool IsRW>
-std::conditional_t<IsRW, T, const T> TemplateTexture1D<T, IsRW>::operator[](const uint2 &coord) const
+TemporaryValueWrapper<T> TemplateTexture1D<T, IsRW>::operator[](const u32x2 &coord) const
 {
     std::string name = fmt::format("{}[{}]", this->eVariable_GetFullName(), CompileAsIdentifier(coord));
     return CreateTemporaryVariableForExpression<T>(std::move(name));
@@ -62,7 +62,7 @@ TemplateTexture2D<T, IsRW> TemplateTexture2D<T, IsRW>::CreateFromName(std::strin
 }
 
 template <typename T, bool IsRW>
-std::conditional_t<IsRW, T, const T> TemplateTexture2D<T, IsRW>::operator[](const uint2& coord) const
+TemporaryValueWrapper<T> TemplateTexture2D<T, IsRW>::operator[](const u32x2& coord) const
 {
     std::string name = fmt::format("{}[{}]", this->eVariable_GetFullName(), CompileAsIdentifier(coord));
     return CreateTemporaryVariableForExpression<T>(std::move(name));
@@ -97,7 +97,7 @@ TemplateTexture3D<T, IsRW> TemplateTexture3D<T, IsRW>::CreateFromName(std::strin
 }
 
 template <typename T, bool IsRW>
-std::conditional_t<IsRW, T, const T> TemplateTexture3D<T, IsRW>::operator[](const uint2 &coord) const
+TemporaryValueWrapper<T> TemplateTexture3D<T, IsRW>::operator[](const u32x2 &coord) const
 {
     std::string name = fmt::format("{}[{}]", this->eVariable_GetFullName(), CompileAsIdentifier(coord));
     return CreateTemporaryVariableForExpression<T>(std::move(name));
@@ -132,7 +132,7 @@ TemplateTexture1DArray<T, IsRW> TemplateTexture1DArray<T, IsRW>::CreateFromName(
 }
 
 template <typename T, bool IsRW>
-std::conditional_t<IsRW, T, const T> TemplateTexture1DArray<T, IsRW>::operator[](const uint2 &coord) const
+std::conditional_t<IsRW, T, const T> TemplateTexture1DArray<T, IsRW>::operator[](const u32x2 &coord) const
 {
     std::string name = fmt::format("{}[{}]", this->eVariable_GetFullName(), CompileAsIdentifier(coord));
     return CreateTemporaryVariableForExpression<T>(std::move(name));
@@ -167,7 +167,7 @@ TemplateTexture2DArray<T, IsRW> TemplateTexture2DArray<T, IsRW>::CreateFromName(
 }
 
 template <typename T, bool IsRW>
-std::conditional_t<IsRW, T, const T> TemplateTexture2DArray<T, IsRW>::operator[](const uint2& coord) const
+std::conditional_t<IsRW, T, const T> TemplateTexture2DArray<T, IsRW>::operator[](const u32x2& coord) const
 {
     std::string name = fmt::format("{}[{}]", this->eVariable_GetFullName(), CompileAsIdentifier(coord));
     return CreateTemporaryVariableForExpression<T>(std::move(name));
@@ -202,7 +202,7 @@ TemplateTexture3DArray<T, IsRW> TemplateTexture3DArray<T, IsRW>::CreateFromName(
 }
 
 template <typename T, bool IsRW>
-std::conditional_t<IsRW, T, const T> TemplateTexture3DArray<T, IsRW>::operator[](const uint2 &coord) const
+std::conditional_t<IsRW, T, const T> TemplateTexture3DArray<T, IsRW>::operator[](const u32x2 &coord) const
 {
     std::string name = fmt::format("{}[{}]", this->eVariable_GetFullName(), CompileAsIdentifier(coord));
     return CreateTemporaryVariableForExpression<T>(std::move(name));

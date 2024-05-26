@@ -12,7 +12,7 @@ inline constexpr eVariableInitializeAsMemberTagType eVariableInitializeAsMemberT
 
 struct eVariableCommonBase
 {
-    eVariableCommonBase *eVariableParent;
+    eVariableCommonBase *eVariableParent = nullptr;
     std::string eVariableName;
     std::string eVariable_GetFullName() const;
 };

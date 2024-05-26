@@ -69,10 +69,10 @@ struct eVector4 : eVariable<eVector4<T>>
     [[no_unique_address]] MemberVariableNameInitializer<"a"> _rtrc_init_a; eNumber<T> a;
 };
 
-using uint4  = eVector4<uint32_t>;
-using int4   = eVector4<int32_t>;
-using float4 = eVector4<float>;
-using bool4  = eVector4<bool>;
+using u32x4  = eVector4<uint32_t>;
+using i32x4  = eVector4<int32_t>;
+using f32x4  = eVector4<float>;
+using boolx4 = eVector4<bool>;
 
 eNumber<bool> any(const eVector4<bool> &v);
 eNumber<bool> all(const eVector4<bool> &v);

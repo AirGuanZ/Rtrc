@@ -9,6 +9,7 @@ namespace BindingGroupDetail
 
     enum class BindingFlagBit : uint8_t
     {
+        None = 0,
         Bindless = 1 << 0,
         VariableArraySize = 1 << 1,
     };
@@ -16,7 +17,13 @@ namespace BindingGroupDetail
     using BindingFlags = EnumFlagsBindingFlagBit;
 
     template<typename T>
+    concept RtrcGroupSketch = requires { typename T::_rtrcBindingGroupSketchTypeFlag; };
+
+    template<typename T>
     concept RtrcGroupStruct = requires { typename T::_rtrcGroupTypeFlag; };
+
+    template<typename T>
+    concept RtrcDSLBindingGroup = requires{ typename T::_rtrcDSLGroupTypeFlag; };
 
     template<template<typename> typename Sketch>
     struct SketchRebindBase
@@ -25,7 +32,7 @@ namespace BindingGroupDetail
         using _rtrcRebindStructBuilder = Sketch<B>;
     };
 
-    template<RtrcGroupStruct T, typename B>
+    template<typename T, typename B>
     using RebindSketchBuilder = typename T::template _rtrcRebindStructBuilder<B>;
 
     template<RHI::ShaderStageFlags DefaultStages>
@@ -36,6 +43,7 @@ namespace BindingGroupDetail
 
     struct IndependentBase
     {
+        struct _rtrcBindingGroupSketchTypeFlag {};
         static StructDetail::Sizer<1> _rtrcMemberCounter(...);
         auto operator<=>(const IndependentBase &) const = default;
         using float2 = Vector2f;
@@ -86,7 +94,9 @@ namespace BindingGroupDetail
 
 } // namespace BindingGroupDetail
 
+using BindingGroupDetail::RtrcGroupSketch;
 using BindingGroupDetail::RtrcGroupStruct;
+using BindingGroupDetail::RtrcDSLBindingGroup;
 
 #define rtrc_group(...)           RTRC_MACRO_OVERLOADING(rtrc_group, __VA_ARGS__)
 #define rtrc_group1(NAME)         rtrc_group2(NAME, ::Rtrc::RHI::ShaderStage::All)

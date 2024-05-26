@@ -46,23 +46,6 @@
 
 #include "eDSL/NativeTypeMapping.h"
 
-#define $int   ::Rtrc::eDSL::i32
-#define $uint  ::Rtrc::eDSL::u32
-#define $float ::Rtrc::eDSL::f32;
-#define $bool  ::Rtrc::eDSL::boolean
-
-#define $float2 ::Rtrc::eDSL::float2
-#define $float3 ::Rtrc::eDSL::float3
-#define $float4 ::Rtrc::eDSL::float4
-
-#define $int2 ::Rtrc::eDSL::int2
-#define $int3 ::Rtrc::eDSL::int3
-#define $int4 ::Rtrc::eDSL::int4
-
-#define $uint2 ::Rtrc::eDSL::uint2
-#define $uint3 ::Rtrc::eDSL::uint3
-#define $uint4 ::Rtrc::eDSL::uint4
-
 #define $if RTRC_EDSL_IF
 #define $else RTRC_EDSL_ELSE
 

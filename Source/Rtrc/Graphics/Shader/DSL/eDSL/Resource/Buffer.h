@@ -39,7 +39,7 @@ public:
         return *this;
     }
 
-    T operator[](const u32 &index) const;
+    TemporaryValueWrapper<T> operator[](const u32 &index) const;
 
     template<typename S>
     const S Load(const u32 &offsetInBytes) const;

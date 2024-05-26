@@ -13,9 +13,9 @@ public:
 
     static_assert(
         TypeList<
-        float, float2, float3, float3,
-        u32, uint2, uint3, uint4,
-        i32, int2, int3, int4>::Contains<T>);
+        f32, f32x2, f32x3, f32x4,
+        u32, u32x2, u32x3, u32x4,
+        i32, i32x2, i32x3, i32x4>::Contains<T>);
 
     static const char *GetStaticTypeName();
 
@@ -30,7 +30,7 @@ public:
         return *this;
     }
 
-    std::conditional_t<IsRW, T, const T> operator[](const uint2 &coord) const;
+    TemporaryValueWrapper<T> operator[](const u32x2 &coord) const;
 
 private:
 
@@ -44,9 +44,9 @@ public:
 
     static_assert(
         TypeList<
-            float, float2, float3, float3,
-            u32, uint2, uint3, uint4,
-            i32, int2, int3, int4>::Contains<T>);
+        f32, f32x2, f32x3, f32x4,
+        u32, u32x2, u32x3, u32x4,
+        i32, i32x2, i32x3, i32x4>::Contains<T>);
 
     static const char *GetStaticTypeName();
 
@@ -61,7 +61,7 @@ public:
         return *this;
     }
 
-    std::conditional_t<IsRW, T, const T> operator[](const uint2 &coord) const;
+    TemporaryValueWrapper<T> operator[](const u32x2 &coord) const;
 
 private:
 
@@ -75,9 +75,9 @@ public:
 
     static_assert(
         TypeList<
-        float, float2, float3, float3,
-        u32, uint2, uint3, uint4,
-        i32, int2, int3, int4>::Contains<T>);
+        f32, f32x2, f32x3, f32x4,
+        u32, u32x2, u32x3, u32x4,
+        i32, i32x2, i32x3, i32x4>::Contains<T>);
 
     static const char *GetStaticTypeName();
 
@@ -92,7 +92,7 @@ public:
         return *this;
     }
 
-    std::conditional_t<IsRW, T, const T> operator[](const uint2 &coord) const;
+    TemporaryValueWrapper<T> operator[](const u32x2 &coord) const;
 
 private:
 
@@ -106,9 +106,9 @@ public:
 
     static_assert(
         TypeList<
-        float, float2, float3, float3,
-        u32, uint2, uint3, uint4,
-        i32, int2, int3, int4>::Contains<T>);
+        f32, f32x2, f32x3, f32x4,
+        u32, u32x2, u32x3, u32x4,
+        i32, i32x2, i32x3, i32x4>::Contains<T>);
 
     static const char *GetStaticTypeName();
 
@@ -123,7 +123,7 @@ public:
         return *this;
     }
 
-    std::conditional_t<IsRW, T, const T> operator[](const uint2 &coord) const;
+    std::conditional_t<IsRW, T, const T> operator[](const u32x2 &coord) const;
 
 private:
 
@@ -137,9 +137,9 @@ public:
 
     static_assert(
         TypeList<
-            float, float2, float3, float3,
-            u32, uint2, uint3, uint4,
-            i32, int2, int3, int4>::Contains<T>);
+        f32, f32x2, f32x3, f32x4,
+        u32, u32x2, u32x3, u32x4,
+        i32, i32x2, i32x3, i32x4>::Contains<T>);
 
     static const char *GetStaticTypeName();
 
@@ -154,7 +154,7 @@ public:
         return *this;
     }
 
-    std::conditional_t<IsRW, T, const T> operator[](const uint2 &coord) const;
+    std::conditional_t<IsRW, T, const T> operator[](const u32x2 &coord) const;
 
 private:
 
@@ -168,9 +168,9 @@ public:
 
     static_assert(
         TypeList<
-        float, float2, float3, float3,
-        u32, uint2, uint3, uint4,
-        i32, int2, int3, int4>::Contains<T>);
+        f32, f32x2, f32x3, f32x4,
+        u32, u32x2, u32x3, u32x4,
+        i32, i32x2, i32x3, i32x4>::Contains<T>);
 
     static const char *GetStaticTypeName();
 
@@ -185,7 +185,7 @@ public:
         return *this;
     }
 
-    std::conditional_t<IsRW, T, const T> operator[](const uint2 &coord) const;
+    std::conditional_t<IsRW, T, const T> operator[](const u32x2 &coord) const;
 
 private:
 

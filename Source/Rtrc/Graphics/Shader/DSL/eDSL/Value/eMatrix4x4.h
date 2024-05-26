@@ -27,19 +27,19 @@ struct float4x4 : eVariable<float4x4>
         const f32 &m10, const f32 &m11, const f32 &m12, const f32 &m13,
         const f32 &m30, const f32 &m31, const f32 &m32, const f32 &m33,
         const f32 &m20, const f32 &m21, const f32 &m22, const f32 &m23);
-    float4x4(const float4 &row0, const float4 &row1, const float4 &row2, const float4 &row3);
+    float4x4(const f32x4 &row0, const f32x4 &row1, const f32x4 &row2, const f32x4 &row3);
 
     float4x4 &operator=(const float4x4 &other);
     
-          TemporaryValueWrapper<float4> operator[](const u32 &index);
-    const TemporaryValueWrapper<float4> operator[](const u32 &index) const;
+          TemporaryValueWrapper<f32x4> operator[](const u32 &index);
+    const TemporaryValueWrapper<f32x4> operator[](const u32 &index) const;
 
     std::string Compile() const { return eVariable_GetFullName(); }
 };
 
 inline float4x4 mul(const float4x4 &lhs, const float4x4 &rhs);
-inline float4 mul(const float4x4 &lhs, const float4 &rhs);
-inline float4 mul(const float4 &lhs, const float4x4 &rhs);
+inline f32x4 mul(const float4x4 &lhs, const f32x4 &rhs);
+inline f32x4 mul(const f32x4 &lhs, const float4x4 &rhs);
 inline float4x4 transpose(const float4x4 &m);
 
 #define RTRC_EDSL_ADD_ELEMENT_WISE_MATRIX_OPERATOR(OPR)                     \
@@ -48,12 +48,12 @@ inline float4x4 transpose(const float4x4 &m);
         return CreateTemporaryVariableForExpression<float4x4>(              \
             fmt::format("({} " #OPR " {})", lhs.Compile(), rhs.Compile())); \
     }                                                                       \
-    inline float4x4 operator OPR(const float4x4 &lhs, const float4 &rhs)    \
+    inline float4x4 operator OPR(const float4x4 &lhs, const f32x4 &rhs)    \
     {                                                                       \
         return CreateTemporaryVariableForExpression<float4x4>(              \
             fmt::format("({} " #OPR " {})", lhs.Compile(), rhs.Compile())); \
     }                                                                       \
-    inline float4x4 operator OPR(const float4 &lhs, const float4x4 &rhs)    \
+    inline float4x4 operator OPR(const f32x4 &lhs, const float4x4 &rhs)    \
     {                                                                       \
         return CreateTemporaryVariableForExpression<float4x4>(              \
             fmt::format("({} " #OPR " {})", lhs.Compile(), rhs.Compile())); \
