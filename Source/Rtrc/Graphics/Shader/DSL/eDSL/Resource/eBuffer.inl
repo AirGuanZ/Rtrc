@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../RecordContext.h"
-#include "Buffer.h"
+#include "eBuffer.h"
 
 RTRC_EDSL_BEGIN
 
@@ -40,7 +40,7 @@ TemporaryValueWrapper<T> TemplateBuffer<T, Type>::operator[](const u32 &index) c
     static_assert(
         Type == TemplateBufferType::Buffer || Type == TemplateBufferType::StructuredBuffer ||
         Type == TemplateBufferType::RWBuffer || Type == TemplateBufferType::RWStructuredBuffer,
-        "'operator[]' can only be called with (RW)(Structured)Buffer");
+        "'operator[]' can only be called with (RW)(Structured)eBuffer");
 
     std::string name = fmt::format("{}[{}]", this->eVariable_GetFullName(), CompileAsIdentifier(index));
     return CreateTemporaryVariableForExpression<T>(std::move(name));

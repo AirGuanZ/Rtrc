@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Rtrc/Graphics/Shader/DSL/eDSL.h>
-#include <Rtrc/Graphics/Shader/Shader.h>
 #include <Rtrc/ShaderCommon/Preprocess/ShaderPreprocessing.h>
 
 RTRC_BEGIN
@@ -45,7 +44,14 @@ namespace ComputeEntryDetail
         using Entry = ComputeEntry<std::remove_cvref_t<Args>...>;
     };
 
+    template<typename Func>
+    using Entry = typename FunctionTrait<Func>::Entry;
+
 } // namespace ComputeEntryDetail
+
+template<typename Func>
+RTRC_INTELLISENSE_SELECT(auto, ComputeEntryDetail::Entry<Func>)
+    BuildComputeEntry(Ref<Device> device, const Func &func);
 
 // Valid types of Args:
 //    * eBindingGroup
@@ -54,11 +60,13 @@ namespace ComputeEntryDetail
 template<typename...Args>
 class ComputeEntry
 {
+    template<typename Func>
+    friend RTRC_INTELLISENSE_SELECT(auto, ComputeEntryDetail::Entry<Func>)
+        BuildComputeEntry(Ref<Device> device, const Func &func);
 
+    RC<Shader> shader_;
+    int defaultBindingGroupIndex_ = -1;
 };
-
-template<typename Func>
-auto BuildComputeEntry(Ref<Device> device, const Func &func);
 
 void SetThreadGroupSize(const Vector3u &size);
 

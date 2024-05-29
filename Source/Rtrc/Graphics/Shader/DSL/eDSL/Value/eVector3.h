@@ -72,6 +72,11 @@ using i32x3  = eVector3<int32_t>;
 using f32x3  = eVector3<float>;
 using boolx3 = eVector3<bool>;
 
+using euint3  = u32x3;
+using eint3   = i32x3;
+using efloat3 = f32x3;
+using ebool3  = boolx3;
+
 eNumber<bool> any(const eVector3<bool> &v);
 eNumber<bool> all(const eVector3<bool> &v);
 

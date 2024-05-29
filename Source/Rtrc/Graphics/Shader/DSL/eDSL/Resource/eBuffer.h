@@ -31,6 +31,7 @@ public:
         Type == TemplateBufferType::ByteAddressBuffer;
 
     TemplateBuffer() { PopConstructParentVariable(); }
+    TemplateBuffer(const TemplateBuffer &other) : eVariable<TemplateBuffer>(other) { PopConstructParentVariable(); }
 
     TemplateBuffer &operator=(const TemplateBuffer &other)
     {
@@ -53,19 +54,16 @@ private:
 };
 
 template<typename T>
-using Buffer  = TemplateBuffer<T, TemplateBufferType::Buffer>;
+using eBuffer  = TemplateBuffer<T, TemplateBufferType::Buffer>;
 template<typename T>
-using RWBuffer = TemplateBuffer<T, TemplateBufferType::RWBuffer>;
+using eRWBuffer = TemplateBuffer<T, TemplateBufferType::RWBuffer>;
 
 template<typename T>
-using StructuredBuffer  = TemplateBuffer<T, TemplateBufferType::StructuredBuffer>;
+using eStructuredBuffer  = TemplateBuffer<T, TemplateBufferType::StructuredBuffer>;
 template<typename T>
-using RWStructuredBuffer = TemplateBuffer<T, TemplateBufferType::RWStructuredBuffer>;
+using eRWStructuredBuffer = TemplateBuffer<T, TemplateBufferType::RWStructuredBuffer>;
 
-using ByteAddressBuffer  = TemplateBuffer<void, TemplateBufferType::ByteAddressBuffer>;
-using RWByteAddressBuffer = TemplateBuffer<void, TemplateBufferType::RWByteAddressBuffer>;
-
-#define RTRC_EDSL_DEFINE_BUFFER(TYPE, NAME) RTRC_EDSL_DEFINE_BUFFER_IMPL(TYPE, NAME)
-#define RTRC_EDSL_DEFINE_BUFFER_IMPL(TYPE, NAME) TYPE NAME = TYPE::CreateFromName(#NAME)
+using eByteAddressBuffer  = TemplateBuffer<void, TemplateBufferType::ByteAddressBuffer>;
+using eRWByteAddressBuffer = TemplateBuffer<void, TemplateBufferType::RWByteAddressBuffer>;
 
 RTRC_EDSL_END

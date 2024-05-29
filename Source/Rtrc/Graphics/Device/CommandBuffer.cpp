@@ -685,27 +685,27 @@ void CommandBuffer::DrawIndexed(int indexCount, int instanceCount, int firstInde
     rhiCommandBuffer_->DrawIndexed(indexCount, instanceCount, firstIndex, firstVertex, firstInstance);
 }
 
-void CommandBuffer::DispatchMesh(int groupCountX, int groupCountY, int groupCountZ)
+void CommandBuffer::DispatchMesh(unsigned groupCountX, unsigned groupCountY, unsigned groupCountZ)
 {
     CheckThreadID();
     rhiCommandBuffer_->DispatchMesh(groupCountX, groupCountY, groupCountZ);
 }
 
-void CommandBuffer::Dispatch(int groupCountX, int groupCountY, int groupCountZ)
+void CommandBuffer::Dispatch(unsigned groupCountX, unsigned groupCountY, unsigned groupCountZ)
 {
     CheckThreadID();
     rhiCommandBuffer_->Dispatch(groupCountX, groupCountY, groupCountZ);
 }
 
-void CommandBuffer::Dispatch(const Vector3i &groupCount)
+void CommandBuffer::Dispatch(const Vector3u &groupCount)
 {
     this->Dispatch(groupCount.x, groupCount.y, groupCount.z);
 }
 
 void CommandBuffer::DispatchWithThreadCount(unsigned countX, unsigned countY, unsigned countZ)
 {
-    const Vector3i groupCount = currentComputePipeline_->GetShaderInfo()
-        ->ComputeThreadGroupCount({ static_cast<int>(countX), static_cast<int>(countY), static_cast<int>(countZ) });
+    const Vector3u groupCount = currentComputePipeline_->GetShaderInfo()
+        ->ComputeThreadGroupCount({ countX, countY, countZ });
     Dispatch(groupCount);
 }
 

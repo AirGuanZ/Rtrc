@@ -4,13 +4,14 @@
 
 RTRC_EDSL_BEGIN
 
-struct SamplerState : eVariable<SamplerState>
+struct eSamplerState : eVariable<eSamplerState>
 {
     static const char *GetStaticTypeName() { return "SamplerState"; }
 
-    SamplerState() { PopConstructParentVariable(); }
+    eSamplerState() { PopConstructParentVariable(); }
+    eSamplerState(const eSamplerState &other) : eVariable(other) { PopConstructParentVariable(); }
 
-    SamplerState &operator=(const SamplerState &other)
+    eSamplerState &operator=(const eSamplerState &other)
     {
         static_cast<eVariable &>(*this) = other;
         PopCopyParentVariable();

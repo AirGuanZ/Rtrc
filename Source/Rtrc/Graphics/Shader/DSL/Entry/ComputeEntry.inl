@@ -7,6 +7,7 @@
 #include <Rtrc/Graphics/Device/Sampler.h>
 #include <Rtrc/Graphics/Shader/DSL/BindingGroup.h>
 #include <Rtrc/Graphics/Shader/DSL/Entry/ComputeEntry.h>
+#include <Rtrc/Graphics/Shader/ShaderBuilder.h>
 #include <Rtrc/ShaderCommon/Preprocess/RegisterAllocator.h>
 #include <Rtrc/ShaderCommon/Preprocess/ShaderPreprocessing.h>
 
@@ -130,7 +131,7 @@ namespace ComputeEntryDetail
     };
 
     template<typename T>
-    struct eResourceTrait<ConstantBuffer<T>>
+    struct eResourceTrait<eConstantBuffer<T>>
     {
         static constexpr bool IsResource = true;
 
@@ -143,7 +144,7 @@ namespace ComputeEntryDetail
     };
 
     template<>
-    struct eResourceTrait<RaytracingAccelerationStructure>
+    struct eResourceTrait<eRaytracingAccelerationStructure>
     {
         static constexpr bool IsResource = true;
 
@@ -156,7 +157,7 @@ namespace ComputeEntryDetail
     };
 
     template<>
-    struct eResourceTrait<SamplerState>
+    struct eResourceTrait<eSamplerState>
     {
         static constexpr bool IsResource = true;
 
@@ -203,11 +204,35 @@ namespace ComputeEntryDetail
 
     RC<Sampler> CreateSampler(Ref<Device> device, const RHI::SamplerDesc &desc);
 
-    RHI::BackendType GetBackendType(Ref<Device> device);
+    RHI::DeviceOPtr GetRHIDevice(Ref<Device> device);
+
+    struct ComputeEntryIntermediates
+    {
+        std::string                           resourceDefinitions;
+        Vector3u                              threadGroupSize;
+        RecordContext                         recordContext;
+        BindingGroupLayout::Desc              defaultBindingGroupLayoutDesc;
+        std::vector<ShaderUniformType>        defaultUniformTypes;
+        std::vector<BindingGroupLayout::Desc> bindingGroupLayoutDescs;
+    };
+
+    void BuildComputeEntry(
+        Ref<Device>                            device,
+        std::string                           &resourceDefinitions,
+        const Vector3u                        &threadGroupSize,
+        RecordContext                         &recordContext,
+        BindingGroupLayout::Desc              &defaultBindingGroupLayoutDesc,
+        std::vector<ShaderUniformType>        &defaultUniformTypes,
+        std::vector<BindingGroupLayout::Desc> &bindingGroupLayoutDescs,
+        RC<Shader>                            &outShader,
+        int                                   &outDefaultBindingGroupIndex);
 
     template<typename...Args, typename Func>
-    ComputeEntry<Args...> BuildComputeEntryImpl(
-        Ref<Device> device, const Func &func, ComputeEntry<Args...> *)
+    void RecordComputeKernel(
+        RHI::BackendType           backendType,
+        const Func                &func,
+        ComputeEntryIntermediates &result,
+        ComputeEntry<Args...> *)
     {
         // Prepare eDSL args
         //    Resource:                          _rtrcBindingGroup{groupIndex}_name
@@ -216,12 +241,6 @@ namespace ComputeEntryDetail
         //    Value in default binding group:    _rtrcDefaultBindingGroup.Value{index}
         //    Static sampler:                    _rtrcStaticSamplers
 
-        BindingGroupLayout::Desc              defaultBindingGroupLayoutDesc;
-        std::vector<ShaderUniformType>        defaultUniformTypes;
-        std::vector<BindingGroupLayout::Desc> bindingGroupLayoutDescs;
-
-        std::string resourceDefinitions;
-
         DisableStackVariableAllocation();
         std::tuple<Args...> args;
         {
@@ -229,7 +248,7 @@ namespace ComputeEntryDetail
             uint32_t resourceCountInDefaultBindingGroup = 0;
             uint32_t valueCountInDefaultBindingGroup = 0;
 
-            auto regAlloc = ShaderResourceRegisterAllocator::Create(GetBackendType(device));
+            auto regAlloc = ShaderResourceRegisterAllocator::Create(backendType);
 
             std::vector<std::string> partialResourceDefinitionsInDefaultBindingGroup;
             std::vector<RHI::BindingType> resourceBindingTypesInDefaultBindingGroup;
@@ -240,7 +259,8 @@ namespace ComputeEntryDetail
                 {
                     using BindingGroupStruct = BindingGroupDetail::RebindSketchBuilder<
                         Arg, BindingGroupDetail::BindingGroupStructBuilder_Default>;
-                    bindingGroupLayoutDescs.push_back(BindingGroupDetail::ToBindingGroupLayout<BindingGroupStruct>());
+                    result.bindingGroupLayoutDescs.push_back(
+                        BindingGroupDetail::ToBindingGroupLayout<BindingGroupStruct>());
 
                     struct UniformVariable
                     {
@@ -273,7 +293,7 @@ namespace ComputeEntryDetail
 
                             const std::string resourceName = fmt::format(
                                 "_rtrcBindingGroup{}_{}", bindingGroupIndex, name);
-                            resourceDefinitions += fmt::format(
+                            result.resourceDefinitions += fmt::format(
                                 "{}{} {}{};\n",
                                 regAlloc->GetPrefix(), M::GetStaticTypeName(),
                                 resourceName, regAlloc->GetSuffix());
@@ -293,11 +313,11 @@ namespace ComputeEntryDetail
                             uniformPropertyStr += fmt::format("{} {};", GetShaderUniformTypeName(var.type), var.name);
                         }
 
-                        resourceDefinitions += fmt::format(
+                        result.resourceDefinitions += fmt::format(
                             "struct _rtrc_generated_cbuffer_struct_{} {{ {} }};\n",
                             bindingGroupIndex, uniformPropertyStr);
 
-                        resourceDefinitions += fmt::format(
+                        result.resourceDefinitions += fmt::format(
                             "{}ConstantBuffer<_rtrc_generated_cbuffer_struct_{}> _rtrcBindingGroup{}{};\n",
                             regAlloc->GetPrefix(), bindingGroupIndex, bindingGroupIndex, regAlloc->GetSuffix());
 
@@ -308,7 +328,7 @@ namespace ComputeEntryDetail
                 }
                 else if constexpr(eResourceTrait<Arg>::IsResource)
                 {
-                    defaultBindingGroupLayoutDesc.bindings.push_back(eResourceTrait<Arg>::GetBindingDesc());
+                    result.defaultBindingGroupLayoutDesc.bindings.push_back(eResourceTrait<Arg>::GetBindingDesc());
 
                     partialResourceDefinitionsInDefaultBindingGroup.push_back(fmt::format(
                         "{} _rtrcDefaultBindingGroup_Resource{}",
@@ -325,7 +345,7 @@ namespace ComputeEntryDetail
                 {
                     static_assert(eValueTrait<Arg>::IsValue);
 
-                    defaultUniformTypes.push_back(eValueTrait<Arg>::Type);
+                    result.defaultUniformTypes.push_back(eValueTrait<Arg>::Type);
 
                     arg.eVariableName = fmt::format(
                         "_rtrcDefaultBindingGroup.Value{}", valueCountInDefaultBindingGroup);
@@ -344,7 +364,7 @@ namespace ComputeEntryDetail
                 {
                     regAlloc->NewBinding(i, resourceBindingTypesInDefaultBindingGroup[i]);
 
-                    resourceDefinitions += fmt::format(
+                    result.resourceDefinitions += fmt::format(
                         "{}{}{};\n",
                         regAlloc->GetPrefix(),
                         partialResourceDefinitionsInDefaultBindingGroup[i],
@@ -356,15 +376,15 @@ namespace ComputeEntryDetail
                     regAlloc->NewBinding(resourceCountInDefaultBindingGroup++, RHI::BindingType::ConstantBuffer);
 
                     std::string uniformPropertyStr;
-                    for(auto&& [index, type] : std::ranges::enumerate_view(defaultUniformTypes))
+                    for(auto&& [index, type] : std::ranges::enumerate_view(result.defaultUniformTypes))
                     {
                         uniformPropertyStr += fmt::format("{} Value{};", GetShaderUniformTypeName(type), index);
                     }
 
-                    resourceDefinitions += fmt::format(
+                    result.resourceDefinitions += fmt::format(
                         "struct _rtrc_generated_cbuffer_struct_default {{ {} }};\n", uniformPropertyStr);
 
-                    resourceDefinitions += fmt::format(
+                    result.resourceDefinitions += fmt::format(
                         "{}ConstantBuffer<_rtrc_generated_cbuffer_struct_default> _rtrcDefaultBindingGroup{};\n",
                         regAlloc->GetPrefix(), regAlloc->GetSuffix());
 
@@ -376,134 +396,50 @@ namespace ComputeEntryDetail
 
         // Record Body
 
-        RecordContext context;
-        Vector3u threadGroupSize;
-
         {
-            PushRecordContext(context);
+            PushRecordContext(result.recordContext);
             RTRC_SCOPE_EXIT{ PopRecordContext(); };
 
-            GetThreadGroupSizeStack().push(&threadGroupSize);
+            GetThreadGroupSizeStack().push(&result.threadGroupSize);
             RTRC_SCOPE_EXIT{ GetThreadGroupSizeStack().pop(); };
 
             std::apply(std::move(func), args);
         }
 
-        if(threadGroupSize == Vector3u(0))
+        if(result.threadGroupSize == Vector3u(0))
         {
-            throw Exception("Thread group size is not specified");
+            throw Exception("Thread group size is unspecified");
         }
-
-        // Default binding group
-
-        UniformBufferLayout defaultUniformBufferLayout;
-        size_t defaultUniformBufferSize = 0;
-        {
-            defaultUniformBufferLayout.variables.reserve(defaultUniformTypes.size());
-            for(ShaderUniformType type : defaultUniformTypes)
-            {
-                auto &variable = defaultUniformBufferLayout.variables.emplace_back();
-                variable.type = type;
-
-                variable.size = GetShaderUniformSize(type);
-                assert(variable.size % 4 == 0);
-
-                const size_t lineOffset = defaultUniformBufferSize % 16;
-                if(lineOffset && lineOffset + variable.size > 16)
-                {
-                    defaultUniformBufferSize = (defaultUniformBufferSize + 15) / 16 * 16;
-                }
-                variable.offset = defaultUniformBufferSize;
-                defaultUniformBufferSize += variable.size;
-            }
-            defaultUniformBufferSize = (defaultUniformBufferSize + 15) / 16 * 16;
-        }
-
-        if(defaultUniformBufferSize)
-        {
-            auto &binding = defaultBindingGroupLayoutDesc.bindings.emplace_back();
-            binding.type = RHI::BindingType::ConstantBuffer;
-        }
-
-        int defaultBindingGroupIndex = -1;
-        if(!defaultBindingGroupLayoutDesc.bindings.empty())
-        {
-            defaultBindingGroupIndex = static_cast<int>(bindingGroupLayoutDescs.size());
-            bindingGroupLayoutDescs.push_back(defaultBindingGroupLayoutDesc);
-        }
-
-        // Static samplers
-
-        int staticSamplerBindingGroupIndex = -1;
-        if(auto &staticSamplerMap = context.GetAllStaticSamplers(); !staticSamplerMap.empty())
-        {
-            staticSamplerBindingGroupIndex = static_cast<int>(bindingGroupLayoutDescs.size());
-            auto &groupLayoutDesc = bindingGroupLayoutDescs.emplace_back();
-            auto &binding = groupLayoutDesc.bindings.emplace_back();
-            binding.type = RHI::BindingType::Sampler;
-            binding.arraySize = static_cast<uint32_t>(staticSamplerMap.size());
-
-            auto &samplers = binding.immutableSamplers;
-            samplers.resize(staticSamplerMap.size());
-            for(auto &[desc, index] : staticSamplerMap)
-            {
-                samplers[index] = CreateSampler(device, desc);
-            }
-
-            resourceDefinitions += fmt::format(
-                "SamplerState _rtrcStaticSamplers[{}];\n", context.GetAllStaticSamplers().size());
-        }
-
-        // Generate type definitions
-
-        const std::string typeDefinitions = context.BuildTypeDefinitions();
-
-        // Generate final source
-
-        std::string source;
-        source += "#define RTRC_DEFINE_SV_GroupID(NAME)          uint3 NAME : SV_GroupID\n";
-        source += "#define RTRC_DEFINE_SV_GroupThreadID(NAME)    uint3 NAME : SV_GroupThreadID\n";
-        source += "#define RTRC_DEFINE_SV_DispatchThreadID(NAME) uint3 NAME : SV_DispatchThreadID\n";
-
-        source += typeDefinitions;
-        source += resourceDefinitions;
-
-        source += fmt::format("[numthreads({}, {}, {})]\n", threadGroupSize.x, threadGroupSize.y, threadGroupSize.z);
-
-        std::string systemValueDefinitions;
-        for(int i = 0; i < std::to_underlying(RecordContext::BuiltinValue::Count); ++i)
-        {
-            const auto e = static_cast<RecordContext::BuiltinValue>(i);
-            if(context.GetBuiltinValueRead(e))
-            {
-                if(!systemValueDefinitions.empty())
-                {
-                    systemValueDefinitions += ", ";
-                }
-                systemValueDefinitions += fmt::format(
-                    "RTRC_DEFINE_{}(_rtrc{})",
-                    RecordContext::GetBuiltinValueName(e),
-                    RecordContext::GetBuiltinValueName(e));
-            }
-        }
-        source += fmt::format("void CSMain({})\n", systemValueDefinitions);
-
-        source += "{\n";
-        source += context.BuildRootScope("    ");
-        source += "}\n";
-
-        LogInfo(source);
-
-        return {};
     }
 
 } // namespace ComputeEntryDetail
 
 template<typename Func>
-auto BuildComputeEntry(Ref<Device> device, const Func &func)
+RTRC_INTELLISENSE_SELECT(auto, ComputeEntryDetail::Entry<Func>)
+    BuildComputeEntry(Ref<Device> device, const Func &func)
 {
-    using Entry = typename ComputeEntryDetail::FunctionTrait<Func>::Entry;
-    return ComputeEntryDetail::BuildComputeEntryImpl(device, func, static_cast<Entry *>(nullptr));
+    using Entry = ComputeEntryDetail::Entry<Func>;
+
+    ComputeEntryDetail::ComputeEntryIntermediates intermediates;
+    ComputeEntryDetail::RecordComputeKernel(
+        ComputeEntryDetail::GetRHIDevice(device)->GetBackendType(), func, intermediates, static_cast<Entry *>(nullptr));
+
+    RC<Shader> shader;
+    int defaultBindingGroupIndex = -1;
+    ComputeEntryDetail::BuildComputeEntry(
+        device,
+        intermediates.resourceDefinitions,
+        intermediates.threadGroupSize,
+        intermediates.recordContext,
+        intermediates.defaultBindingGroupLayoutDesc,
+        intermediates.defaultUniformTypes,
+        intermediates.bindingGroupLayoutDescs,
+        shader, defaultBindingGroupIndex);
+
+    Entry ret;
+    ret.shader_ = std::move(shader);
+    ret.defaultBindingGroupIndex_ = defaultBindingGroupIndex;
+    return ret;
 }
 
 inline void SetThreadGroupSize(const Vector3u &size)

@@ -13,7 +13,7 @@ public:
     SPIRVReflection(Span<unsigned char> code, std::string entryPoint);
 
     std::vector<ShaderIOVar> GetInputVariables() const override;
-    Vector3i GetComputeShaderThreadGroupSize() const override;
+    Vector3u GetComputeShaderThreadGroupSize() const override;
     std::vector<RHI::RawShaderEntry> GetEntries() const override;
     bool IsBindingUsed(std::string_view name) const override;
 

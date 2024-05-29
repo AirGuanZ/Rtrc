@@ -22,6 +22,11 @@ public:
     static TemplateTexture1D CreateFromName(std::string name);
 
     TemplateTexture1D() { PopConstructParentVariable(); }
+    TemplateTexture1D(const TemplateTexture1D &other)
+        : eVariable<TemplateTexture1D>(other)
+    {
+        PopConstructParentVariable();
+    }
 
     TemplateTexture1D &operator=(const TemplateTexture1D &other)
     {
@@ -53,6 +58,11 @@ public:
     static TemplateTexture2D CreateFromName(std::string name);
 
     TemplateTexture2D() { PopConstructParentVariable(); }
+    TemplateTexture2D(const TemplateTexture2D &other)
+        : eVariable<TemplateTexture2D>(other)
+    {
+        PopConstructParentVariable();
+    }
 
     TemplateTexture2D &operator=(const TemplateTexture2D &other)
     {
@@ -84,6 +94,11 @@ public:
     static TemplateTexture3D CreateFromName(std::string name);
 
     TemplateTexture3D() { PopConstructParentVariable(); }
+    TemplateTexture3D(const TemplateTexture3D &other)
+        : eVariable<TemplateTexture3D>(other)
+    {
+        PopConstructParentVariable();
+    }
 
     TemplateTexture3D &operator=(const TemplateTexture3D &other)
     {
@@ -115,6 +130,11 @@ public:
     static TemplateTexture1DArray CreateFromName(std::string name);
 
     TemplateTexture1DArray() { PopConstructParentVariable(); }
+    TemplateTexture1DArray(const TemplateTexture1DArray &other)
+        : eVariable<TemplateTexture1DArray>(other)
+    {
+        PopConstructParentVariable();
+    }
 
     TemplateTexture1DArray &operator=(const TemplateTexture1DArray &other)
     {
@@ -146,6 +166,11 @@ public:
     static TemplateTexture2DArray CreateFromName(std::string name);
 
     TemplateTexture2DArray() { PopConstructParentVariable(); }
+    TemplateTexture2DArray(const TemplateTexture2DArray &other)
+        : eVariable<TemplateTexture2DArray>(other)
+    {
+        PopConstructParentVariable();
+    }
 
     TemplateTexture2DArray &operator=(const TemplateTexture2DArray &other)
     {
@@ -177,6 +202,11 @@ public:
     static TemplateTexture3DArray CreateFromName(std::string name);
 
     TemplateTexture3DArray() { PopConstructParentVariable(); }
+    TemplateTexture3DArray(const TemplateTexture3DArray &other)
+        : eVariable<TemplateTexture3DArray>(other)
+    {
+        PopConstructParentVariable();
+    }
 
     TemplateTexture3DArray &operator=(const TemplateTexture3DArray &other)
     {
@@ -192,23 +222,20 @@ private:
     static constexpr const char *GetBasicTypeName();
 };
 
-template<typename T> using Texture1D = TemplateTexture1D<T, false>;
-template<typename T> using Texture2D = TemplateTexture2D<T, false>;
-template<typename T> using Texture3D = TemplateTexture3D<T, false>;
+template<typename T> using eTexture1D = TemplateTexture1D<T, false>;
+template<typename T> using eTexture2D = TemplateTexture2D<T, false>;
+template<typename T> using eTexture3D = TemplateTexture3D<T, false>;
 
-template<typename T> using RWTexture1D = TemplateTexture1D<T, true>;
-template<typename T> using RWTexture2D = TemplateTexture2D<T, true>;
-template<typename T> using RWTexture3D = TemplateTexture3D<T, true>;
+template<typename T> using eRWTexture1D = TemplateTexture1D<T, true>;
+template<typename T> using eRWTexture2D = TemplateTexture2D<T, true>;
+template<typename T> using eRWTexture3D = TemplateTexture3D<T, true>;
 
-template<typename T> using Texture1DArray = TemplateTexture1DArray<T, false>;
-template<typename T> using Texture2DArray = TemplateTexture2DArray<T, false>;
-template<typename T> using Texture3DArray = TemplateTexture3DArray<T, false>;
+template<typename T> using eTexture1DArray = TemplateTexture1DArray<T, false>;
+template<typename T> using eTexture2DArray = TemplateTexture2DArray<T, false>;
+template<typename T> using eTexture3DArray = TemplateTexture3DArray<T, false>;
 
-template<typename T> using RWTexture1DArray = TemplateTexture1DArray<T, true>;
-template<typename T> using RWTexture2DArray = TemplateTexture2DArray<T, true>;
-template<typename T> using RWTexture3DArray = TemplateTexture3DArray<T, true>;
-
-#define RTRC_EDSL_DEFINE_TEXTURE(TYPE, NAME) RTRC_EDSL_DEFINE_TEXTURE_IMPL(TYPE, NAME)
-#define RTRC_EDSL_DEFINE_TEXTURE_IMPL(TYPE, NAME) TYPE NAME = TYPE::CreateFromName(#NAME)
+template<typename T> using eRWTexture1DArray = TemplateTexture1DArray<T, true>;
+template<typename T> using eRWTexture2DArray = TemplateTexture2DArray<T, true>;
+template<typename T> using eRWTexture3DArray = TemplateTexture3DArray<T, true>;
 
 RTRC_EDSL_END

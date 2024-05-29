@@ -31,6 +31,11 @@ using i32     = eNumber<int32_t>;
 using f32     = eNumber<float>;
 using boolean = eNumber<bool>;
 
+using euint  = u32;
+using eint   = i32;
+using efloat = f32;
+using ebool  = boolean;
+
 template<typename T>
 eNumber<T> operator+(const eNumber<T> &lhs, const eNumber<T> &rhs);
 template<typename T>

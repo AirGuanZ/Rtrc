@@ -2,25 +2,15 @@
 
 using namespace Rtrc;
 
-template<typename Func>
-struct FunctionTrait
-{
-    using T = typename FunctionTrait<decltype(std::function{ std::declval<Func>() })>::T;
-};
-
-template<typename...Args>
-struct FunctionTrait<std::function<void(Args...)>>
-{
-    using T = std::function<void(Args...)>;
-};
-
 class ShaderDSLDemo : public SimpleApplication
 {
     void InitializeSimpleApplication(GraphRef graph) override
     {
-        auto entry = eDSL::BuildComputeEntry(
+        using namespace eDSL;
+
+        auto entry = BuildComputeEntry(
             GetDevice(),
-            [](const eDSL::RWBuffer<eDSL::u32> &buffer, const eDSL::u32 &threadCount, const eDSL::u32 &value)
+            [](eRWBuffer<euint> buffer, euint threadCount, euint value)
         {
             $numthreads(64, 1, 1);
             $if($SV_DispatchThreadID.x < threadCount)

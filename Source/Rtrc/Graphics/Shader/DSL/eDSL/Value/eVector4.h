@@ -74,6 +74,11 @@ using i32x4  = eVector4<int32_t>;
 using f32x4  = eVector4<float>;
 using boolx4 = eVector4<bool>;
 
+using euint4  = u32x4;
+using eint4   = i32x4;
+using efloat4 = f32x4;
+using ebool4  = boolx4;
+
 eNumber<bool> any(const eVector4<bool> &v);
 eNumber<bool> all(const eVector4<bool> &v);
 

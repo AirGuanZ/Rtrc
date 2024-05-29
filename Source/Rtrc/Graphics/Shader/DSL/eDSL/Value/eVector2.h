@@ -71,6 +71,11 @@ using i32x2  = eVector2<int32_t>;
 using f32x2  = eVector2<float>;
 using boolx2 = eVector2<bool>;
 
+using euint2  = u32x2;
+using eint2   = i32x2;
+using efloat2 = f32x2;
+using ebool2  = boolx2;
+
 inline eNumber<bool> any(const eVector2<bool> &v) { return v.x | v.y; }
 inline eNumber<bool> all(const eVector2<bool> &v) { return v.x & v.y; }
 

@@ -13,7 +13,7 @@ public:
     D3D12Reflection(IDxcUtils *dxcUtils, Span<std::byte> code, bool isLibrary);
 
     std::vector<ShaderIOVar> GetInputVariables() const override { return inputVariables_; }
-    Vector3i GetComputeShaderThreadGroupSize() const override { return threadGroupSize_; }
+    Vector3u GetComputeShaderThreadGroupSize() const override { return threadGroupSize_; }
     std::vector<RHI::RawShaderEntry> GetEntries() const override;
     bool IsBindingUsed(std::string_view name) const override;
 
@@ -23,7 +23,7 @@ private:
     void InitializeLibraryReflection(IDxcUtils *dxcUtils, Span<std::byte> code);
 
     std::vector<ShaderIOVar>           inputVariables_;
-    Vector3i                           threadGroupSize_;
+    Vector3u                           threadGroupSize_;
     std::set<std::string, std::less<>> usedBindings_;
     std::vector<RHI::RawShaderEntry>   entries_; // For library only
 };

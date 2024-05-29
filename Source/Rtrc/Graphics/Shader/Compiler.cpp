@@ -1,6 +1,7 @@
 #include <Rtrc/Core/Enumerate.h>
 #include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/Graphics/Shader/Compiler.h>
+#include <Rtrc/Graphics/Shader/ShaderBuilder.h>
 #include <Rtrc/ShaderCommon/Reflection/D3D12Reflection.h>
 #include <Rtrc/ShaderCommon/Reflection/SPIRVReflection.h>
 
@@ -19,9 +20,9 @@ RC<Shader> ShaderCompiler::Compile(
     const RHI::BackendType backend = device_->GetBackendType();
     auto preprocessingOutput = PreprocessShader(shader, backend);
 
-    auto ret = MakeRC<Shader>();
-    ret->info_ = MakeRC<ShaderInfo>();
-    ret->info_->shaderBindingLayoutInfo_ = MakeRC<ShaderBindingLayoutInfo>();
+    //auto ret = MakeRC<Shader>();
+    //ret->info_ = MakeRC<ShaderInfo>();
+    //ret->info_->shaderBindingLayoutInfo_ = MakeRC<ShaderBindingLayoutInfo>();
 
     // Compile
 
@@ -149,33 +150,33 @@ RC<Shader> ShaderCompiler::Compile(
 
     // Fill shader object
 
-    ret->info_->category_ = preprocessingOutput.category;
-
+    ShaderBuilder::Desc desc;
+    desc.category = preprocessingOutput.category;
 
     if(VS)
     {
-        ret->rawShaders_[Shader::VS_INDEX] = device_->GetRawDevice()->CreateShader(
+        desc.vertexShader = device_->GetRawDevice()->CreateShader(
             vsData.data(), vsData.size(), { { RHI::ShaderStage::VertexShader, shader.vertexEntry } });
-        ret->info_->VSInput_ = vsRefl->GetInputVariables();
+        desc.VSInput = vsRefl->GetInputVariables();
     }
     if(FS)
     {
-        ret->rawShaders_[Shader::FS_INDEX] = device_->GetRawDevice()->CreateShader(
+        desc.fragmentShader = device_->GetRawDevice()->CreateShader(
             fsData.data(), fsData.size(), { { RHI::ShaderStage::FragmentShader, shader.fragmentEntry } });
     }
     if(CS)
     {
-        ret->rawShaders_[Shader::CS_INDEX] = device_->GetRawDevice()->CreateShader(
+        desc.computeShader = device_->GetRawDevice()->CreateShader(
             csData.data(), csData.size(), { { RHI::ShaderStage::ComputeShader, shader.computeEntry } });
     }
     if(TS)
     {
-        ret->rawShaders_[Shader::TS_INDEX] = device_->GetRawDevice()->CreateShader(
+        desc.taskShader = device_->GetRawDevice()->CreateShader(
             tsData.data(), tsData.size(), { { RHI::ShaderStage::TaskShader, shader.taskEntry } });
     }
     if(MS)
     {
-        ret->rawShaders_[Shader::MS_INDEX] = device_->GetRawDevice()->CreateShader(
+        desc.meshShader = device_->GetRawDevice()->CreateShader(
             msData.data(), msData.size(), { { RHI::ShaderStage::MeshShader, shader.meshEntry } });
     }
     if(RT)
@@ -193,7 +194,6 @@ RC<Shader> ShaderCompiler::Compile(
             throw Exception(fmt::format("Ray tracing entry {} is required by a shader group but not found", name));
         };
 
-        auto shaderGroups = MakeRC<ShaderGroupInfo>();
         for(const std::vector<std::string> &rawGroup : shader.entryGroups)
         {
             assert(!rawGroup.empty());
@@ -204,7 +204,7 @@ RC<Shader> ShaderCompiler::Compile(
                 {
                     throw Exception("RayGen shader group must contains no more than one shader");
                 }
-                shaderGroups->rayGenShaderGroups_.push_back({ firstEntryIndex });
+                desc.rayGenShaderGroups.push_back({ firstEntryIndex });
             }
             else if(rtEntries[firstEntryIndex].stage == RHI::ShaderStage::RT_MissShader)
             {
@@ -212,7 +212,7 @@ RC<Shader> ShaderCompiler::Compile(
                 {
                     throw Exception("Miss shader group must contains no more than one shader");
                 }
-                shaderGroups->missShaderGroups_.push_back({ firstEntryIndex });
+                desc.missShaderGroups.push_back({ firstEntryIndex });
             }
             else
             {
@@ -263,28 +263,27 @@ RC<Shader> ShaderCompiler::Compile(
                 {
                     throw Exception("A shader group must contain one of raygen/miss/closethit shader");
                 }
-                shaderGroups->hitShaderGroups_.push_back(group);
+                desc.hitShaderGroups.push_back(group);
             }
         }
 
-        ret->info_->shaderGroupInfo_ = std::move(shaderGroups);
-        ret->rawShaders_[Shader::RT_INDEX] = device_->GetRawDevice()->CreateShader(
+        desc.rayTracingShader = device_->GetRawDevice()->CreateShader(
             rtData.data(), rtData.size(), std::move(rtEntries));
     }
 
-    auto &layoutInfo = ret->info_->shaderBindingLayoutInfo_;
-    layoutInfo->nameToBindingGroupLayoutIndex_ = std::move(preprocessingOutput.nameToBindingGroupLayoutIndex);
-    layoutInfo->bindingGroupLayouts_ = std::move(bindingGroupLayouts);
-    layoutInfo->bindingGroupNames_ = std::move(preprocessingOutput.bindingGroupNames);
-    layoutInfo->bindingLayout_ = std::move(bindingLayout);
-    layoutInfo->bindingNameMap_ = std::move(preprocessingOutput.bindingNameMap);
+    desc.nameToBindingGroupLayoutIndex = std::move(preprocessingOutput.nameToBindingGroupLayoutIndex);
+    desc.bindingGroupLayouts           = std::move(bindingGroupLayouts);
+    desc.bindingGroupNames             = std::move(preprocessingOutput.bindingGroupNames);
+    desc.bindingLayout                 = std::move(bindingLayout);
+    desc.bindingNameMap                = std::move(preprocessingOutput.bindingNameMap);
 
     {
         using enum Shader::BuiltinBindingGroup;
         auto SetBuiltinBindingGroupIndex = [&](Shader::BuiltinBindingGroup group, std::string_view name)
         {
-            const int index = ret->GetBindingGroupIndexByName(name);
-            layoutInfo->builtinBindingGroupIndices_[std::to_underlying(group)] = index;
+            const auto it = desc.nameToBindingGroupLayoutIndex.find(name);
+            const int index = it != desc.nameToBindingGroupLayoutIndex.end() ? it->second : -1;
+            desc.builtinBindingGroupIndices[std::to_underlying(group)] = index;
         };
         SetBuiltinBindingGroupIndex(Pass,                   "Pass");
         SetBuiltinBindingGroupIndex(Material,               "Material");
@@ -293,24 +292,20 @@ RC<Shader> ShaderCompiler::Compile(
         SetBuiltinBindingGroupIndex(BindlessGeometryBuffer, "GlobalBindlessGeometryBufferGroup");
     }
 
-    layoutInfo->pushConstantRanges_ = std::move(preprocessingOutput.pushConstantRanges);
+    desc.pushConstantRanges = std::move(preprocessingOutput.pushConstantRanges);
     
     if(preprocessingOutput.inlineSamplerBindingGroupIndex >= 0)
     {
-        layoutInfo->bindingGroupForInlineSamplers_ =
-            layoutInfo->bindingGroupLayouts_[preprocessingOutput.inlineSamplerBindingGroupIndex]->CreateBindingGroup();
+        desc.bindingGroupForInlineSamplers =
+            desc.bindingGroupLayouts[preprocessingOutput.inlineSamplerBindingGroupIndex]->CreateBindingGroup();
     }
 
     if(CS)
     {
-        ret->info_->computeShaderThreadGroupSize_ = csRefl->GetComputeShaderThreadGroupSize();
-        ret->computePipeline_ = device_->CreateComputePipeline(ret);
+        desc.computeShaderThreadGroupSize = csRefl->GetComputeShaderThreadGroupSize();
     }
 
-    ret->info_->originalParsedShader_ = shader.originalParsedShader;
-    ret->info_->originalVariantIndex_ = shader.originalVariantIndex;
-
-    return ret;
+    return ShaderBuilder::BuildShader(device_, std::move(desc));
 }
 
 void ShaderCompiler::DoCompilation(

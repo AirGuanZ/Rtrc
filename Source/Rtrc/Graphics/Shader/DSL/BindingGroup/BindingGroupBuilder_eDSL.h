@@ -20,128 +20,128 @@ namespace NativeTypeMappingDetail
     template<typename T>
     struct Impl<BindingGroupDetail::MemberProxy_Texture<T, 1, false>>
     {
-        using Type = eDSL::Texture1D<T>;
+        using Type = eDSL::eTexture1D<T>;
     };
 
     template<typename T>
     struct Impl<BindingGroupDetail::MemberProxy_Texture<T, 2, false>>
     {
-        using Type = eDSL::Texture2D<T>;
+        using Type = eDSL::eTexture2D<T>;
     };
 
     template<typename T>
     struct Impl<BindingGroupDetail::MemberProxy_Texture<T, 3, false>>
     {
-        using Type = eDSL::Texture3D<T>;
+        using Type = eDSL::eTexture3D<T>;
     };
 
     template<typename T>
     struct Impl<BindingGroupDetail::MemberProxy_Texture<T, 1, true>>
     {
-        using Type = eDSL::Texture1DArray<T>;
+        using Type = eDSL::eTexture1DArray<T>;
     };
 
     template<typename T>
     struct Impl<BindingGroupDetail::MemberProxy_Texture<T, 2, true>>
     {
-        using Type = eDSL::Texture2DArray<T>;
+        using Type = eDSL::eTexture2DArray<T>;
     };
 
     template<typename T>
     struct Impl<BindingGroupDetail::MemberProxy_Texture<T, 3, true>>
     {
-        using Type = eDSL::Texture3DArray<T>;
+        using Type = eDSL::eTexture3DArray<T>;
     };
 
     template<typename T>
     struct Impl<BindingGroupDetail::MemberProxy_RWTexture<T, 1, false>>
     {
-        using Type = eDSL::RWTexture1D<T>;
+        using Type = eDSL::eRWTexture1D<T>;
     };
 
     template<typename T>
     struct Impl<BindingGroupDetail::MemberProxy_RWTexture<T, 2, false>>
     {
-        using Type = eDSL::RWTexture2D<T>;
+        using Type = eDSL::eRWTexture2D<T>;
     };
 
     template<typename T>
     struct Impl<BindingGroupDetail::MemberProxy_RWTexture<T, 3, false>>
     {
-        using Type = eDSL::RWTexture3D<T>;
+        using Type = eDSL::eRWTexture3D<T>;
     };
 
     template<typename T>
     struct Impl<BindingGroupDetail::MemberProxy_RWTexture<T, 1, true>>
     {
-        using Type = eDSL::RWTexture1DArray<T>;
+        using Type = eDSL::eRWTexture1DArray<T>;
     };
 
     template<typename T>
     struct Impl<BindingGroupDetail::MemberProxy_RWTexture<T, 2, true>>
     {
-        using Type = eDSL::RWTexture2DArray<T>;
+        using Type = eDSL::eRWTexture2DArray<T>;
     };
 
     template<typename T>
     struct Impl<BindingGroupDetail::MemberProxy_RWTexture<T, 3, true>>
     {
-        using Type = eDSL::RWTexture3DArray<T>;
+        using Type = eDSL::eRWTexture3DArray<T>;
     };
 
     template<typename T>
     struct Impl<BindingGroupDetail::MemberProxy_Buffer<T>>
     {
-        using Type = eDSL::Buffer<T>;
+        using Type = eDSL::eBuffer<T>;
     };
 
     template<typename T>
     struct Impl<BindingGroupDetail::MemberProxy_RWBuffer<T>>
     {
-        using Type = eDSL::RWBuffer<T>;
+        using Type = eDSL::eRWBuffer<T>;
     };
 
     template<typename T>
     struct Impl<BindingGroupDetail::MemberProxy_StructuredBuffer<T>>
     {
-        using Type = eDSL::StructuredBuffer<T>;
+        using Type = eDSL::eStructuredBuffer<T>;
     };
 
     template<typename T>
     struct Impl<BindingGroupDetail::MemberProxy_RWStructuredBuffer<T>>
     {
-        using Type = eDSL::RWStructuredBuffer<T>;
+        using Type = eDSL::eRWStructuredBuffer<T>;
     };
 
     template<>
     struct Impl<BindingGroupDetail::MemberProxy_ByteAddressBuffer>
     {
-        using Type = eDSL::ByteAddressBuffer;
+        using Type = eDSL::eByteAddressBuffer;
     };
 
     template<>
     struct Impl<BindingGroupDetail::MemberProxy_RWByteAddressBuffer>
     {
-        using Type = eDSL::RWByteAddressBuffer;
+        using Type = eDSL::eRWByteAddressBuffer;
     };
 
     template<typename T>
     struct Impl<BindingGroupDetail::MemberProxy_ConstantBuffer<T>>
     {
         using Element = typename Impl<T>::Type;
-        using Type = eDSL::ConstantBuffer<Element>;
+        using Type = eDSL::eConstantBuffer<Element>;
     };
 
     template<>
     struct Impl<BindingGroupDetail::MemberProxy_SamplerState>
     {
-        using Type = eDSL::SamplerState;
+        using Type = eDSL::eSamplerState;
     };
 
     template<>
     struct Impl<BindingGroupDetail::MemberProxy_RaytracingAccelerationStructure>
     {
-        using Type = eDSL::RaytracingAccelerationStructure;
+        using Type = eDSL::eRaytracingAccelerationStructure;
     };
 
 } // namespace NativeTypeMappingDetail

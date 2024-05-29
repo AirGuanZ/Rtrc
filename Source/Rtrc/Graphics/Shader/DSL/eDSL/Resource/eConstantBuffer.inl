@@ -1,11 +1,11 @@
 #pragma once
 
-#include "ConstantBuffer.h"
+#include "eConstantBuffer.h"
 
 RTRC_EDSL_BEGIN
 
 template <typename T>
-const char* ConstantBuffer<T>::GetStaticTypeName()
+const char* eConstantBuffer<T>::GetStaticTypeName()
 {
     static const std::string ret = []
     {
@@ -16,17 +16,17 @@ const char* ConstantBuffer<T>::GetStaticTypeName()
 }
 
 template <typename T>
-ConstantBuffer<T> ConstantBuffer<T>::CreateFromName(std::string name)
+eConstantBuffer<T> eConstantBuffer<T>::CreateFromName(std::string name)
 {
     DisableStackVariableAllocation();
-    ConstantBuffer ret;
+    eConstantBuffer ret;
     ret.eVariableName = std::move(name);
     EnableStackVariableAllocation();
     return ret;
 }
 
 template <typename T>
-ConstantBuffer<T>::ConstantBuffer()
+eConstantBuffer<T>::eConstantBuffer()
 {
     assert(!IsStackVariableAllocationEnabled());
 }

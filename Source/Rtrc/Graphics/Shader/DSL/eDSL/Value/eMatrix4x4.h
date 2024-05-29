@@ -37,6 +37,8 @@ struct float4x4 : eVariable<float4x4>
     std::string Compile() const { return eVariable_GetFullName(); }
 };
 
+using efloat4x4 = float4x4;
+
 inline float4x4 mul(const float4x4 &lhs, const float4x4 &rhs);
 inline f32x4 mul(const float4x4 &lhs, const f32x4 &rhs);
 inline f32x4 mul(const f32x4 &lhs, const float4x4 &rhs);
