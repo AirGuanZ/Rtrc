@@ -14,7 +14,6 @@ class ShaderBindingNameMap
 public:
 
     int GetContainedBindingGroupIndex(std::string_view bindingName) const;
-
     int GetIndexInBindingGroup(std::string_view bindingName) const;
 
     const std::string &GetBindingName(int groupIndex, int indexInGroup) const;

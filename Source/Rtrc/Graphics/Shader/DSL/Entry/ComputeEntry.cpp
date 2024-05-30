@@ -138,32 +138,31 @@ namespace ComputeEntryDetail
             csData.data(), csData.size(),
             { RHI::RawShaderEntry{.stage = RHI::ShaderStage::ComputeShader, .name = "CSMain" } });
 
-        std::vector<std::string> bindingGroupNames;
-        bindingGroupNames.reserve(bindingGroupLayoutDescs.size());
-        for(int i = 0; i < static_cast<int>(bindingGroupLayoutDescs.size()); ++i)
+        std::vector<RC<BindingGroupLayout>> bindingGroupLayouts;
+        bindingGroupLayouts.reserve(bindingGroupLayoutDescs.size());
+        for(auto& desc : bindingGroupLayoutDescs)
         {
-            if(i == defaultBindingGroupIndex)
-            {
-                bindingGroupNames.push_back("rtrcBindingGroupDefault");
-            }
-            else if(i == staticSamplerBindingGroupIndex)
-            {
-                bindingGroupNames.push_back("rtrcBindingGroupInlineSamplers");
-            }
-            else
-            {
-                bindingGroupNames.push_back(fmt::format("_rtrcBindingGroup{}", i));
-            }
+            bindingGroupLayouts.push_back(device->CreateBindingGroupLayout(desc));
         }
 
         BindingLayout::Desc bindingLayoutDesc;
-        // TODO
+        bindingLayoutDesc.groupLayouts = bindingGroupLayouts;
+        auto bindingLayout = device->CreateBindingLayout(bindingLayoutDesc);
 
         ShaderBuilder::Desc desc;
-        desc.category      = ShaderCategory::Compute;
-        desc.computeShader = std::move(computeShader);
-        desc.bindingGroupNames = std::move(bindingGroupNames);
-        // TODO
+        desc.category                     = ShaderCategory::Compute;
+        desc.computeShader                = std::move(computeShader);
+        desc.bindingGroupLayouts          = std::move(bindingGroupLayouts);
+        desc.bindingLayout                = std::move(bindingLayout);
+        desc.computeShaderThreadGroupSize = threadGroupSize;
+        if(staticSamplerBindingGroupIndex >= 0)
+        {
+            auto bindingGroup = desc.bindingGroupLayouts[staticSamplerBindingGroupIndex]->CreateBindingGroup();;
+            desc.bindingGroupForInlineSamplers = std::move(bindingGroup);
+        }
+
+        outShader = ShaderBuilder::BuildShader(device, std::move(desc));
+        outDefaultBindingGroupIndex = defaultBindingGroupIndex;
     }
 
 } // namespace ComputeEntryDetail
