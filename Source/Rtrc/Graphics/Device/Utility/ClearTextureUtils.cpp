@@ -24,13 +24,32 @@ void CSMain(uint2 tid : SV_DispatchThreadID)
 )___";
 
     template<typename T>
-    rtrc_group(Pass)
-    {
-        rtrc_define(RWTexture2D, Output);
-        rtrc_uniform(uint2, resolution);
-        rtrc_uniform(T, value);
-    };
+    struct ValueToPassGroup;
 
+#define DEFINE_PASS_GROUP(VALUE_TYPE)     \
+    rtrc_group(Pass_##VALUE_TYPE)         \
+    {                                     \
+        rtrc_define(RWTexture2D, Output); \
+        rtrc_uniform(uint2, resolution);  \
+        rtrc_uniform(VALUE_TYPE, value);  \
+    };                                    \
+    template<>                            \
+    struct ValueToPassGroup<VALUE_TYPE>   \
+    {                                     \
+        using Type = Pass_##VALUE_TYPE;   \
+    }
+
+    DEFINE_PASS_GROUP(float);
+    DEFINE_PASS_GROUP(Vector2f);
+    DEFINE_PASS_GROUP(Vector4f);
+    DEFINE_PASS_GROUP(uint32_t);
+    DEFINE_PASS_GROUP(Vector2u);
+    DEFINE_PASS_GROUP(Vector4u);
+    DEFINE_PASS_GROUP(int);
+    DEFINE_PASS_GROUP(Vector2i);
+    DEFINE_PASS_GROUP(Vector4i);
+
+#undef DEFINE_PASS_GROUP
 }
 
 ClearTextureUtils::ClearTextureUtils(Ref<Device> device)
@@ -127,7 +146,7 @@ template<typename ValueType>
 void ClearTextureUtils::ClearRWTexture2DImpl(
     const RC<Shader> &shader, CommandBuffer &commandBuffer, const TextureUav &uav, const ValueType &value) const
 {
-    ClearTextureUtilsDetail::Pass<ValueType> passData;
+    typename ClearTextureUtilsDetail::ValueToPassGroup<ValueType>::Type passData;
     passData.Output     = uav;
     passData.resolution = uav.GetTexture()->GetSize();
     passData.value      = value;

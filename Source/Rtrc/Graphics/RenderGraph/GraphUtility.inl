@@ -1,7 +1,5 @@
 #pragma once
 
-#include <Rtrc/RHI/RHIDeclaration.h>
-
 RTRC_BEGIN
 
 /**
@@ -303,13 +301,13 @@ RGPass RGDispatchWithThreadGroupCount(
     GraphRef        graph,
     std::string     name,
     RC<Shader>      shader,
-    const Vector3i &threadGroupCount,
+    const Vector3u &threadGroupCount,
     const Ts&...    bindingGroups)
 {
     auto pass = graph->CreatePass(std::move(name));
     auto DeclareUse = [&]<RGBindingGroupInput T>(const T &group)
     {
-        if constexpr(BindingGroupDSL::RtrcGroupStruct<T>)
+        if constexpr(RtrcGroupStruct<T>)
         {
             DeclareRenderGraphResourceUses(pass, group, RHI::PipelineStageFlag::ComputeShader);
         }
@@ -323,7 +321,7 @@ RGPass RGDispatchWithThreadGroupCount(
         std::vector<RC<BindingGroup>> finalGroups;
         auto BindGroup = [&]<RGBindingGroupInput T>(const T &group)
         {
-            if constexpr(BindingGroupDSL::RtrcGroupStruct<T>)
+            if constexpr(RtrcGroupStruct<T>)
             {
                 finalGroups.push_back(device->CreateBindingGroupWithCachedLayout(group));
             }
@@ -344,7 +342,7 @@ RGPass RGDispatchWithThreadGroupCount(
 template<RGStaticShader S, RGBindingGroupInput...Ts>
 RGPass RGDispatchWithThreadGroupCount(
     GraphRef        graph,
-    const Vector3i &threadGroupCount,
+    const Vector3u &threadGroupCount,
     const Ts&...    bindingGroups)
 {
     return RGDispatchWithThreadGroupCount(
@@ -356,17 +354,17 @@ RGPass RGDispatchWithThreadCount(
     GraphRef        graph,
     std::string     name,
     RC<Shader>      shader,
-    const Vector3i &threadCount,
+    const Vector3u &threadCount,
     const Ts&...    bindingGroups)
 {
-    const Vector3i groupCount = shader->ComputeThreadGroupCount(threadCount);
+    const Vector3u groupCount = shader->ComputeThreadGroupCount(threadCount);
     return RGDispatchWithThreadGroupCount(graph, std::move(name), std::move(shader), groupCount, bindingGroups...);
 }
 
 template<RGStaticShader S, RGBindingGroupInput...Ts>
 RGPass RGDispatchWithThreadCount(
     GraphRef        graph,
-    const Vector3i &threadCount,
+    const Vector3u &threadCount,
     const Ts&...    bindingGroups)
 {
     return RGDispatchWithThreadCount(
@@ -385,9 +383,9 @@ RGPass RGDispatchIndirect(
     auto pass = graph->CreatePass(std::move(name));
     auto DeclareUse = [&]<RGBindingGroupInput T>(const T & group)
     {
-        if constexpr(BindingGroupDSL::RtrcGroupStruct<T>)
+        if constexpr(RtrcGroupStruct<T>)
         {
-            DeclareRenderGraphResourceUses(pass, group, RHI::PipelineStageFlag::ComputeShader);
+            Rtrc::DeclareRenderGraphResourceUses(pass, group, RHI::PipelineStageFlag::ComputeShader);
         }
     };
     (DeclareUse(bindingGroups), ...);
@@ -401,7 +399,7 @@ RGPass RGDispatchIndirect(
         std::vector<RC<BindingGroup>> finalGroups;
         auto BindGroup = [&]<RGBindingGroupInput T>(const T &group)
         {
-            if constexpr(BindingGroupDSL::RtrcGroupStruct<T>)
+            if constexpr(RtrcGroupStruct<T>)
             {
                 finalGroups.push_back(device->CreateBindingGroupWithCachedLayout(group));
             }
@@ -473,12 +471,12 @@ RGPass RGDispatchIndirect(
                 graph, EXPR, bindingGroups...);                                     \
         }
 
-DEFINE_DISPATCH(Vector3i(t.x, t.y, t.z), const Vector3u &t)
-DEFINE_DISPATCH(Vector3i(t.x, t.y, 1), const Vector2i &t)
-DEFINE_DISPATCH(Vector3i(t.x, t.y, 1), const Vector2u &t)
-DEFINE_DISPATCH(Vector3i(x, 1, 1), unsigned int x)
-DEFINE_DISPATCH(Vector3i(x, y, 1), unsigned int x, unsigned int y)
-DEFINE_DISPATCH(Vector3i(x, y, z), unsigned int x, unsigned int y, unsigned int z)
+DEFINE_DISPATCH(Vector3u(t.x, t.y, t.z), const Vector3i &t)
+DEFINE_DISPATCH(Vector3u(t.x, t.y, 1), const Vector2i &t)
+DEFINE_DISPATCH(Vector3u(t.x, t.y, 1), const Vector2u &t)
+DEFINE_DISPATCH(Vector3u(x, 1, 1), unsigned int x)
+DEFINE_DISPATCH(Vector3u(x, y, 1), unsigned int x, unsigned int y)
+DEFINE_DISPATCH(Vector3u(x, y, z), unsigned int x, unsigned int y, unsigned int z)
 
 #undef DEFINE_DISPATCH
 

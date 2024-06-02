@@ -34,9 +34,9 @@ rtrc_group(Pass)
     rtrc_define(RWTexture2D<float4>, OutputTexture)
     rtrc_define(RWTexture2D<uint>,   RngTexture)
 
-    rtrc_define(RaytracingAccelerationStructure,                   Scene)
-    rtrc_define(StructuredBuffer<SurfaceMaterial>,                 Materials)
-    rtrc_bindless(StructuredBuffer<Primitive>[MAX_INSTANCE_COUNT], Geometries)
+    rtrc_define(RaytracingAccelerationStructure,   Scene)
+    rtrc_define(StructuredBuffer<SurfaceMaterial>, Materials)
+    rtrc_bindless(StructuredBuffer<Primitive>,     Geometries, [MAX_INSTANCE_COUNT])
 
     rtrc_uniform(float3, EyePosition)
     rtrc_uniform(float3, FrustumA)

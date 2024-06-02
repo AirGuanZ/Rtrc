@@ -15,6 +15,7 @@ class BindingGroup;
 class BindingGroupLayout;
 class ShaderCompiler;
 class ComputePipeline;
+class ShaderBuilder;
 class ShaderCompiler;
 
 using ShaderPropertyName = GeneralPooledString;
@@ -32,7 +33,7 @@ public:
 private:
 
     friend class ShaderCompiler;
-    friend class ShaderCompiler;
+    friend class ShaderBuilder;
 
     std::vector<RHI::RayTracingRayGenShaderGroup> rayGenShaderGroups_;
     std::vector<RHI::RayTracingMissShaderGroup>   missShaderGroups_;
@@ -80,13 +81,10 @@ public:
 
     Span<PushConstantRange> GetPushConstantRanges() const;
 
-    // Uniform blocks
-
-    Span<ShaderUniformBlock> GetUniformBlocks() const;
-
 private:
 
     friend class ShaderCompiler;
+    friend class ShaderBuilder;
 
     std::map<std::string, int, std::less<>> nameToBindingGroupLayoutIndex_;
     std::vector<RC<BindingGroupLayout>>     bindingGroupLayouts_;
@@ -97,10 +95,7 @@ private:
 
     // Should be the last group, if present
     RC<BindingGroup> bindingGroupForInlineSamplers_;
-
     std::vector<PushConstantRange> pushConstantRanges_;
-
-    std::vector<ShaderUniformBlock> uniformBlocks_;
 };
 
 class ShaderInfo : public Uncopyable
@@ -142,40 +137,29 @@ public:
 
     // Compute thread group
 
-    const Vector3i &GetThreadGroupSize() const; // Compute shader only
-    Vector3i ComputeThreadGroupCount(const Vector3i &threadCount) const;
+    const Vector3u &GetThreadGroupSize() const; // Compute shader only
+    Vector3u ComputeThreadGroupCount(const Vector3u &threadCount) const;
 
     // Push constant
 
     Span<PushConstantRange> GetPushConstantRanges() const;
 
-    // Uniform blocks
-
-    Span<ShaderUniformBlock> GetUniformBlocks() const;
-
     // Ray tracing shader group
 
     const ShaderGroupInfo &GetShaderGroupInfo() const;
 
-    // Original shader info
-
-    const RC<ParsedShader> &GetOriginalParsedShader() const;
-    uint32_t GetOriginalParsedShaderVariantIndex() const;
-
 private:
     
     friend class ShaderCompiler;
+    friend class ShaderBuilder;
 
     ShaderCategory category_ = ShaderCategory::ClassicalGraphics;
 
     std::vector<ShaderIOVar> VSInput_;
 
-    Vector3i                    computeShaderThreadGroupSize_;
+    Vector3u                    computeShaderThreadGroupSize_;
     RC<ShaderGroupInfo>         shaderGroupInfo_;
     RC<ShaderBindingLayoutInfo> shaderBindingLayoutInfo_;
-
-    RC<ParsedShader> originalParsedShader_;
-    uint32_t originalVariantIndex_ = 0;
 };
 
 class Shader : public WithUniqueObjectID, public InSharedObjectCache
@@ -217,18 +201,14 @@ public:
     const ShaderBindingNameMap &GetBindingNameMap() const;
 
     const RC<ComputePipeline> &GetComputePipeline() const;
-    const Vector3i &GetThreadGroupSize() const; // Compute shader only
-    Vector3i ComputeThreadGroupCount(const Vector3i &threadCount) const;
+    const Vector3u &GetThreadGroupSize() const; // Compute shader only
+    Vector3u ComputeThreadGroupCount(const Vector3u &threadCount) const;
     
     Span<ShaderInfo::PushConstantRange> GetPushConstantRanges() const;
-    Span<ShaderUniformBlock> GetUniformBlocks() const;
 
     Span<RHI::RayTracingRayGenShaderGroup> GetRayGenShaderGroups() const;
     Span<RHI::RayTracingMissShaderGroup>   GetMissShaderGroups()   const;
     Span<RHI::RayTracingHitShaderGroup>    GetHitShaderGroups()    const;
-
-    const RC<ParsedShader> &GetOriginalParsedShader() const;
-    uint32_t GetOriginalParsedShaderVariantIndex() const;
 
     template<typename...Args>
     Connection OnDestroy(Args&&...args) const { return onDestroyCallbacks_.Connect(std::forward<Args>(args)...); }
@@ -236,7 +216,7 @@ public:
 private:
     
     friend class ShaderCompiler;
-    friend class ShaderCompiler;
+    friend class ShaderBuilder;
 
     static constexpr int VS_INDEX = 0;
     static constexpr int FS_INDEX = 1;
@@ -321,11 +301,6 @@ inline Span<ShaderBindingLayoutInfo::PushConstantRange> ShaderBindingLayoutInfo:
     return pushConstantRanges_;
 }
 
-inline Span<ShaderUniformBlock> ShaderBindingLayoutInfo::GetUniformBlocks() const
-{
-    return uniformBlocks_;
-}
-
 inline const ShaderBindingNameMap &ShaderBindingLayoutInfo::GetBindingNameMap() const
 {
     return bindingNameMap_;
@@ -401,12 +376,12 @@ inline int ShaderInfo::GetBuiltinBindingGroupIndex(BuiltinBindingGroup bindingGr
     return shaderBindingLayoutInfo_->GetBuiltinBindingGroupIndex(bindingGroup);
 }
 
-inline const Vector3i &ShaderInfo::GetThreadGroupSize() const
+inline const Vector3u &ShaderInfo::GetThreadGroupSize() const
 {
     return computeShaderThreadGroupSize_;
 }
 
-inline Vector3i ShaderInfo::ComputeThreadGroupCount(const Vector3i &threadCount) const
+inline Vector3u ShaderInfo::ComputeThreadGroupCount(const Vector3u &threadCount) const
 {
     return {
         (threadCount.x + computeShaderThreadGroupSize_.x - 1) / computeShaderThreadGroupSize_.x,
@@ -420,25 +395,10 @@ inline Span<ShaderInfo::PushConstantRange> ShaderInfo::GetPushConstantRanges() c
     return shaderBindingLayoutInfo_->GetPushConstantRanges();
 }
 
-inline Span<ShaderUniformBlock> ShaderInfo::GetUniformBlocks() const
-{
-    return shaderBindingLayoutInfo_->GetUniformBlocks();
-}
-
 inline const ShaderGroupInfo &ShaderInfo::GetShaderGroupInfo() const
 {
     assert(shaderGroupInfo_);
     return *shaderGroupInfo_;
-}
-
-inline const RC<ParsedShader>& ShaderInfo::GetOriginalParsedShader() const
-{
-    return originalParsedShader_;
-}
-
-inline uint32_t ShaderInfo::GetOriginalParsedShaderVariantIndex() const
-{
-    return originalVariantIndex_;
 }
 
 inline const ShaderBindingNameMap &ShaderInfo::GetBindingNameMap() const
@@ -569,12 +529,12 @@ inline const RC<ComputePipeline> &Shader::GetComputePipeline() const
     return computePipeline_;
 }
 
-inline const Vector3i &Shader::GetThreadGroupSize() const
+inline const Vector3u &Shader::GetThreadGroupSize() const
 {
     return info_->GetThreadGroupSize();
 }
 
-inline Vector3i Shader::ComputeThreadGroupCount(const Vector3i &threadCount) const
+inline Vector3u Shader::ComputeThreadGroupCount(const Vector3u &threadCount) const
 {
     return info_->ComputeThreadGroupCount(threadCount);
 }
@@ -582,11 +542,6 @@ inline Vector3i Shader::ComputeThreadGroupCount(const Vector3i &threadCount) con
 inline Span<ShaderInfo::PushConstantRange> Shader::GetPushConstantRanges() const
 {
     return info_->GetPushConstantRanges();
-}
-
-inline Span<ShaderUniformBlock> Shader::GetUniformBlocks() const
-{
-    return info_->GetUniformBlocks();
 }
 
 inline Span<RHI::RayTracingRayGenShaderGroup> Shader::GetRayGenShaderGroups() const
@@ -602,16 +557,6 @@ inline Span<RHI::RayTracingMissShaderGroup> Shader::GetMissShaderGroups() const
 inline Span<RHI::RayTracingHitShaderGroup> Shader::GetHitShaderGroups() const
 {
     return info_->GetShaderGroupInfo().GetHitShaderGroups();
-}
-
-inline const RC<ParsedShader>& Shader::GetOriginalParsedShader() const
-{
-    return info_->GetOriginalParsedShader();
-}
-
-inline uint32_t Shader::GetOriginalParsedShaderVariantIndex() const
-{
-    return info_->GetOriginalParsedShaderVariantIndex();
 }
 
 RTRC_END

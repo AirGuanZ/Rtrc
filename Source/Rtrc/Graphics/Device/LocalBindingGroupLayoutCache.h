@@ -2,8 +2,8 @@
 
 #include <atomic>
 
-#include <Rtrc/Graphics/Device/BindingGroupDSL.h>
 #include <Rtrc/Core/SmartPointer/ObserverPtr.h>
+#include <Rtrc/Graphics/Shader/DSL/BindingGroup.h>
 
 RTRC_BEGIN
 
@@ -68,7 +68,7 @@ public:
         
     }
 
-    template<BindingGroupDSL::RtrcGroupStruct T>
+    template<RtrcGroupStruct T>
     RC<BindingGroupLayout> Get(CachedBindingGroupLayoutStorage *storage);
 
 private:

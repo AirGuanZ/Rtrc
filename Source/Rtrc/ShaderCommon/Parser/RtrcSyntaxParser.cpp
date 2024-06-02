@@ -152,26 +152,6 @@ namespace BindingGroupParserDetail
             tokens.ConsumeOrThrow(">");
         }
 
-        std::optional<uint32_t> arraySize;
-        if(tokens.GetCurrentToken() == "[")
-        {
-            tokens.Next();
-            try
-            {
-                arraySize = std::stoi(tokens.GetCurrentToken());
-                tokens.Next();
-            }
-            catch(...)
-            {
-                tokens.Throw(fmt::format("Invalid array size: {}", tokens.GetCurrentToken()));
-            }
-            tokens.ConsumeOrThrow("]");
-        }
-        else if(isBindless)
-        {
-            tokens.Throw("Bindless item must have an array specifier");
-        }
-
         tokens.ConsumeOrThrow(",");
 
         std::string bindingName = tokens.GetCurrentToken();
@@ -181,11 +161,40 @@ namespace BindingGroupParserDetail
         }
         tokens.Next();
 
+        std::optional<uint32_t> arraySize;
         RHI::ShaderStageFlags stages = RHI::ShaderStage::All;
         if(tokens.GetCurrentToken() == ",")
         {
             tokens.Next();
-            stages = ParseShaderStages(tokens);
+
+            if(tokens.GetCurrentToken() == "[")
+            {
+                tokens.Next();
+                try
+                {
+                    arraySize = std::stoi(tokens.GetCurrentToken());
+                    tokens.Next();
+                }
+                catch(...)
+                {
+                    tokens.Throw(fmt::format("Invalid array size: {}", tokens.GetCurrentToken()));
+                }
+                tokens.ConsumeOrThrow("]");
+
+                if(tokens.GetCurrentToken() == ",")
+                {
+                    tokens.Next();
+                    stages = ParseShaderStages(tokens);
+                }
+            }
+            else if(isBindless)
+            {
+                tokens.Throw("Bindless item must have an array specifier");
+            }
+            else
+            {
+                stages = ParseShaderStages(tokens);
+            }
         }
 
         return ParsedBinding

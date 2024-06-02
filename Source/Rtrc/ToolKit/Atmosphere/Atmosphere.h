@@ -7,7 +7,7 @@ RTRC_BEGIN
 
 rtrc_struct(AtmosphereProperties)
 {
-    AtmosphereProperties()
+    rtrc_struct_name(AtmosphereProperties)()
     {
         scatterRayleigh  = 1e-6f * float3(5.802f, 13.558f, 33.1f);
         hDensityRayleigh = 1e3f * 8;
@@ -52,7 +52,7 @@ rtrc_struct(AtmosphereProperties)
 
     rtrc_var(float3, terrainAlbedo);
 
-    auto operator<=>(const AtmosphereProperties &) const = default;
+    auto operator<=>(const rtrc_struct_name(AtmosphereProperties) &) const = default;
 };
 
 void GenerateT(

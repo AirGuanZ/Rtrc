@@ -82,37 +82,38 @@ namespace CBufferStructDetail
 
     // call f(name, hostOffset, deviceOffset)
     template<typename T, typename F>
-    constexpr void ForEachFlattenMember(const char *name, const F &f, size_t hostDWordOffset, size_t deviceDWordOffset)
+    constexpr void ForEachFlattenMember(const char *name, const F &f, size_t hostByteOffset, size_t deviceByteOffset)
     {
         static_assert(sizeof(T) % 4 == 0);
         static_assert(alignof(T) <= 4);
         if constexpr(std::is_array_v<T>)
         {
             using Element = typename ArrayTrait<T>::Element;
-            constexpr size_t elemSize = CBufferStructDetail::GetDeviceDWordCountImpl<Element>();
+            constexpr size_t elemDWordSize = CBufferStructDetail::GetDeviceDWordCountImpl<Element>();
             constexpr size_t elemCount = ArrayTrait<T>::Size;
             for(size_t i = 0; i < elemCount; ++i)
             {
-                CBufferStructDetail::ForEachFlattenMember<Element, F>(name, f, hostDWordOffset, deviceDWordOffset);
-                hostDWordOffset += sizeof(Element) / 4;
-                deviceDWordOffset += UpAlignTo4(elemSize);
+                CBufferStructDetail::ForEachFlattenMember<Element, F>(name, f, hostByteOffset, deviceByteOffset);
+                hostByteOffset += sizeof(Element);
+                deviceByteOffset += 4 * UpAlignTo4(elemDWordSize);
             }
         }
         else if constexpr(BasicTypes::Contains<T>)
         {
-            f.template operator() < T > (name, hostDWordOffset * 4, deviceDWordOffset * 4);
+            f.template operator()<T>(name, hostByteOffset, deviceByteOffset);
         }
         else
         {
             static_assert(RtrcStruct<T>, "Invalid constant buffer struct");
-            CBufferStructDetail::ForEachMember<T>([&deviceDWordOffset, &hostDWordOffset, &f]
-                                                          <typename M>(const M T::*, const char *name) constexpr
+            CBufferStructDetail::ForEachMember<T>([&hostByteOffset, &deviceByteOffset, &f]
+                                                  <typename M>(const M T::* ptr, const char *name) constexpr
             {
-                const size_t memberSize = CBufferStructDetail::GetDeviceDWordCountImpl<M>();
+                const size_t localHostOffset = GetMemberOffset(ptr);
+                const size_t memberDWordSize = CBufferStructDetail::GetDeviceDWordCountImpl<M>();
                 bool needNewLine;
                 if constexpr(BasicTypes::Contains<M>)
                 {
-                    needNewLine = (deviceDWordOffset % 4) + memberSize > 4;
+                    needNewLine = ((deviceByteOffset / 4) % 4) + memberDWordSize > 4;
                 }
                 else
                 {
@@ -120,18 +121,19 @@ namespace CBufferStructDetail
                 }
                 if(needNewLine)
                 {
-                    deviceDWordOffset = UpAlignTo4(deviceDWordOffset);
+                    deviceByteOffset = 4 * UpAlignTo4(deviceByteOffset / 4);
                 }
-                CBufferStructDetail::ForEachFlattenMember<M, F>(name, f, hostDWordOffset, deviceDWordOffset);
-                hostDWordOffset += sizeof(M) / 4;
-                deviceDWordOffset += memberSize;
+                CBufferStructDetail::ForEachFlattenMember<M, F>(
+                    name, f, hostByteOffset + localHostOffset, deviceByteOffset);
+                //hostDWordOffset += sizeof(M) / 4;
+                deviceByteOffset += 4 * memberDWordSize;
             });
         }
     }
 
     template<typename T>
     void ToDeviceLayoutImpl(
-        const void *hostData, void *deviceData, size_t initHostDWordOffset, size_t initDeviceDWordOffset)
+        const void *hostData, void *deviceData, size_t initHostByteOffset, size_t initDeviceByteOffset)
     {
         auto f = [&]<typename M>(const char *, size_t hostOffset, size_t deviceOffset)
         {
@@ -139,7 +141,7 @@ namespace CBufferStructDetail
             auto dst = static_cast<unsigned char *>(deviceData) + deviceOffset;
             std::memcpy(dst, src, sizeof(M));
         };
-        CBufferStructDetail::ForEachFlattenMember<T>("root", f, initHostDWordOffset, initDeviceDWordOffset);
+        CBufferStructDetail::ForEachFlattenMember<T>("root", f, initHostByteOffset, initDeviceByteOffset);
     }
 
     template<typename T>

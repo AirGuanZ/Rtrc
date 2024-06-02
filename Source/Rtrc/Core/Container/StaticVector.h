@@ -230,6 +230,13 @@ public:
     auto begin() const { return std::launder(reinterpret_cast<const T *>(&data_)); }
     auto end() const { return begin() + size_; }
 
+    bool empty() const { return IsEmpty(); }
+    void push_back(const T &value) { this->PushBack(value); }
+    void push_back(T &&value) { PushBack(std::move(value)); }
+    void pop_back() { PopBack(); }
+    auto &back() { return *(end() - 1); }
+    auto &back() const { return *(end() - 1); }
+
     size_t Hash() const
     {
         return ::Rtrc::HashRange(this->begin(), this->end());

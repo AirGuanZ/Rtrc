@@ -23,6 +23,8 @@
 #include <Rtrc/Graphics/Device/ShaderBindingTableBuilder.h>
 #include <Rtrc/Graphics/RenderGraph/Executable.h>
 
+#include <Rtrc/Graphics/Shader/DSL/BindingGroup.h>
+
 #include <Rtrc/RHI/Window/WindowInput.h>
 #include <Rtrc/RHI/Window/Window.h>
 

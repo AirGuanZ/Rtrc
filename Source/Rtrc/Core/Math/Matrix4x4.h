@@ -8,7 +8,9 @@
 
 RTRC_BEGIN
 
-// Row-major 4x4 matrix
+// Row-major 4x4 matrix.
+// Note that we use the -Zpr option with DXC,
+// which allows matrices to be passed directly to the constant buffer without transposition.
 class Matrix4x4f
 {
 public:
@@ -58,7 +60,7 @@ public:
         float m41, float m42, float m43, float m44);
     
     float  At(int row, int col) const; // row and col start from 1
-    float &At(int row, int col);      // row and col start from 1
+    float &At(int row, int col);       // row and col start from 1
 
     const Vector4f &GetRow(int rowMinusOne) const;
     Vector4f        GetCol(int colMinusOne) const;

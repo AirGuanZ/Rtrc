@@ -123,7 +123,7 @@ void D3D12Reflection::InitializeRegularReflection(IDxcUtils *dxcUtils, Span<std:
 
     UINT x = 0, y = 0, z = 0;
     reflection->GetThreadGroupSize(&x, &y, &z);
-    threadGroupSize_ = Vector3i(static_cast<int>(x), static_cast<int>(y), static_cast<int>(z));
+    threadGroupSize_ = Vector3u(x, y, z);
 
     // Used bindings
 

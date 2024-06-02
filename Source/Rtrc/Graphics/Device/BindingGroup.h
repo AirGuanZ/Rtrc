@@ -47,7 +47,7 @@ public:
     void Set(int slot, int arrElem, T &&object);
 
     template<typename T>
-    void Set(const T &value); // Impl in BindingGroupDSL.h
+    void Set(const T &value); // Impl in BindingGroupHelpers.h
     
     const RHI::BindingGroupUPtr &GetRHIObject() const;
 

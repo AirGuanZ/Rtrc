@@ -3,13 +3,13 @@
 #include <map>
 
 #include <Rtrc/Core/SmartPointer/ObserverPtr.h>
-#include <Rtrc/Graphics/Device/BindingGroupDSL.h>
 #include <Rtrc/Graphics/Device/Buffer.h>
 #include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/Graphics/Device/Queue.h>
 #include <Rtrc/Graphics/Device/Texture.h>
 #include <Rtrc/Graphics/RenderGraph/Label.h>
 #include <Rtrc/Graphics/RenderGraph/Pass.h>
+#include <Rtrc/Graphics/Shader/DSL/BindingGroup.h>
 
 RTRC_BEGIN
 
@@ -20,7 +20,7 @@ class RGExecuter;
 class RGCompiler;
 
 template<typename T>
-concept RGBindingGroupInput = BindingGroupDSL::RtrcGroupStruct<T> || std::is_same_v<T, RC<BindingGroup>>;
+concept RGBindingGroupInput = RtrcGroupStruct<T> || std::is_same_v<T, RC<BindingGroup>>;
 
 template<typename T>
 concept RGStaticShader = requires { std::string(T::Name.GetString()); };

@@ -36,6 +36,8 @@ target_link_libraries(08.FADM PUBLIC libigl)
 add_rtrc_sample(09.MeshShader)
 add_rtrc_sample(10.FastMarchingMethod)
 add_rtrc_sample(11.GeodesicDistance)
+add_rtrc_sample(12.ShaderDSL)
+
 if(EXISTS "${RTRC_SOURCE_DIR}/Samples/Test.OT2D")
 	add_rtrc_sample(Test.OT2D)
 endif()

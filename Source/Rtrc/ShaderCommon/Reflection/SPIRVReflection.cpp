@@ -165,14 +165,10 @@ std::vector<ShaderIOVar> SPIRVReflection::GetInputVariables() const
     return result;
 }
 
-Vector3i SPIRVReflection::GetComputeShaderThreadGroupSize() const
+Vector3u SPIRVReflection::GetComputeShaderThreadGroupSize() const
 {
     const auto &localSize = shaderModule_->entry_points[0].local_size;
-    Vector3i ret;
-    ret.x = static_cast<int>(localSize.x);
-    ret.y = static_cast<int>(localSize.y);
-    ret.z = static_cast<int>(localSize.z);
-    return ret;
+    return Vector3u(localSize.x, localSize.y, localSize.z);
 }
 
 std::vector<RHI::RawShaderEntry> SPIRVReflection::GetEntries() const

@@ -115,28 +115,32 @@ void GenerateBindingGroupDefinition(
             templateParamStr = fmt::format("<{}>", binding.templateParam);
         }
 
-        std::string arraySizeStr;
-        if(binding.arraySize)
-        {
-            arraySizeStr = fmt::format("[{}]", *binding.arraySize);
-        }
-
         std::string_view head = "rtrc_define";
         if(binding.bindless)
         {
             if(binding.variableArraySize)
             {
-                head = "rtrc_bindless_variable_size";
+                head = "rtrc_bindless_varsize";
             }
             else
             {
                 head = "rtrc_bindless";
             }
         }
+        else if(binding.arraySize)
+        {
+            head = "rtrc_define_array";
+        }
+
+        std::string arraySizeStr;
+        if(binding.arraySize)
+        {
+            arraySizeStr = fmt::format(", [{}]", *binding.arraySize);
+        }
 
         sw(
-            "{}({}{}{}, {}, {});",
-            head, typeStr, templateParamStr, arraySizeStr, binding.name, ToString(binding.stages)).NewLine();
+            "{}({}{}, {}{}, {});",
+            head, typeStr, templateParamStr, binding.name, arraySizeStr, ToString(binding.stages)).NewLine();
     }
 
     for(size_t i = 0; i < group.uniformPropertyDefinitions.size(); ++i)
@@ -567,7 +571,7 @@ void Run(int argc, const char *argv[])
 
     sw("#if !ENABLE_SHADER_REGISTRATION").NewLine();
     sw("#include <Rtrc/Core/TemplateStringParameter.h>").NewLine();
-    sw("#include <Rtrc/Graphics/Device/BindingGroupDSL.h>").NewLine();
+    sw("#include <Rtrc/Graphics/Shader/DSL/BindingGroup.h>").NewLine();
     sw("#include <Rtrc/Graphics/Shader/ShaderInfo.h>").NewLine();
     for(size_t i = 0; i < parsedShaders.size(); ++i)
     {
