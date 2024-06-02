@@ -16,10 +16,11 @@ Personal real-time graphics toolkits
 | 05.PathTracing<br>Basic unidirectional path tracer using ray query | ![Samples00](./Documents/Samples_05.png) |
 | 06.DistortionFreeDisplacementMap<br>https://cg.ivd.kit.edu/english/undistort.php | ![Samples00](./Documents/Samples_06.png) |
 | 07.Gizmo<br>Basic gizmo elements | ![Samples00](./Documents/Samples_07.png) |
-| 08.FeatureAwareDisplacementMap <br>https://airguanz.github.io/2024/02/23/vdm-baking.html | ![Samples00](./Documents/Samples_08.png) |
+| 08.FeatureAwareDisplacementMap <br>https://airguanz.github.io/articles/2024.02.23.VDM-Baking | ![Samples00](./Documents/Samples_08.png) |
 | 09.MeshShader<br>Basic usage of mesh shader | ![Samples00](./Documents/Samples_09.png) |
 | 10.FastMarchingMethod<br>Basic fast marching method on 2d grid | ![Samples00](./Documents/Samples_10.png) |
 | 11.GeodesicDistance<br>Geodesic distance field on voxels | ![Samples00](./Documents/Samples_11.png) |
+| 12.ShaderDSL<br>Embedded DSL in C++ for writing shader | ![](/Documents/Samples_12.png) |
 | WIP | ... |
 
 ## Third-party Dependencies
