@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Rtrc/Graphics/Shader/DSL/eDSL.h>
-#include <Rtrc/ShaderCommon/Preprocess/ShaderPreprocessing.h>
+#include <Rtrc/Graphics/Shader/DSL/Entry/ArgumentTrait.h>
 
 RTRC_BEGIN
 
@@ -11,23 +11,13 @@ RTRC_END
 
 RTRC_EDSL_BEGIN
 
-struct UniformBufferLayout
-{
-    struct UniformVariable
-    {
-        ShaderUniformType type;
-        size_t offset;
-        size_t size;
-    };
-
-    std::vector<UniformVariable> variables;
-};
-
 template<typename...Args>
 class ComputeEntry;
 
 namespace ComputeEntryDetail
 {
+
+    // Callable -> ComputeEntry arguments
 
     template<typename Func>
     struct FunctionTrait
@@ -47,11 +37,94 @@ namespace ComputeEntryDetail
     template<typename Func>
     using Entry = typename FunctionTrait<Func>::Entry;
 
+    // ComputeEntry argument -> invoke argument
+
+    template<RtrcDSLBindingGroup T>
+    struct BindingGroupArgumentWrapper
+    {
+        Variant<T, RC<BindingGroup>> bindingGroup;
+
+        BindingGroupArgumentWrapper() = default;
+        BindingGroupArgumentWrapper(const BindingGroupArgumentWrapper &) = delete;
+        BindingGroupArgumentWrapper &operator=(const BindingGroupArgumentWrapper &) = delete;
+
+        BindingGroupArgumentWrapper(T data): bindingGroup(std::move(data)) { }
+        BindingGroupArgumentWrapper(RC<BindingGroup> group) : bindingGroup(std::move(group)) { }
+
+        RC<BindingGroup> GetBindingGroup(Ref<Device> device) const;
+    };
+
+    template<typename T>
+    struct EntryArgumentAux;
+
+    template<typename T> requires ArgumentTrait::eValueTrait<T>::IsValue
+    struct EntryArgumentAux<T>
+    {
+        struct InvokeType
+        {
+            using NativeType = typename ArgumentTrait::eValueTrait<T>::NativeType;
+            NativeType value;
+            InvokeType(const NativeType &value) : value(std::move(value)) { }
+        };
+    };
+
+    template<typename T> requires ArgumentTrait::eResourceTrait<T>::IsResource
+    struct EntryArgumentAux<T>
+    {
+        using InvokeType = typename ArgumentTrait::eResourceTrait<T>::ArgumentWrapperType;
+    };
+
+    template<typename T> requires RtrcDSLBindingGroup<T>
+    struct EntryArgumentAux<T>
+    {
+        using InvokeType = BindingGroupArgumentWrapper<T>;
+    };
+
+    template<typename T>
+    using InvokeType = typename EntryArgumentAux<T>::InvokeType;
+
+    struct ValueItem
+    {
+        size_t offset;
+        size_t size;
+    };
+
 } // namespace ComputeEntryDetail
 
 template<typename Func>
 RTRC_INTELLISENSE_SELECT(auto, ComputeEntryDetail::Entry<Func>)
     BuildComputeEntry(Ref<Device> device, const Func &func);
+
+template<typename...KernelArgs>
+void DeclareRenderGraphResourceUses(
+    RGPass                                              pass,
+    const ComputeEntry<KernelArgs...>                  &entry,
+    const ComputeEntryDetail::InvokeType<KernelArgs>&...args);
+
+template<typename...KernelArgs>
+void SetupComputeEntry(
+    CommandBuffer                                      &commandBuffer,
+    const ComputeEntry<KernelArgs...>                  &entry,
+    const ComputeEntryDetail::InvokeType<KernelArgs>&...args);
+
+class UntypedComputeEntry
+{
+public:
+
+    const RC<Shader> &GetShader() const { return shader_; }
+    int GetDefaultBindingGroupIndex() const { return defaultBindingGroupIndex_; }
+    Span<ComputeEntryDetail::ValueItem> GetValueItems() const { return defaultBindingGroupValueItems_; }
+
+private:
+
+    template<typename Func>
+    friend RTRC_INTELLISENSE_SELECT(auto, ComputeEntryDetail::Entry<Func>)
+        BuildComputeEntry(Ref<Device> device, const Func &func);
+
+    RC<Shader> shader_;
+    int defaultBindingGroupIndex_ = -1;
+    std::vector<ComputeEntryDetail::ValueItem> defaultBindingGroupValueItems_;
+};
 
 // Valid types of Args:
 //    * eBindingGroup
@@ -60,12 +133,20 @@ RTRC_INTELLISENSE_SELECT(auto, ComputeEntryDetail::Entry<Func>)
 template<typename...Args>
 class ComputeEntry
 {
+public:
+
+    const RC<Shader> &GetShader() const { return untypedComputeEntry_->GetShader(); }
+
+    int GetDefaultBindingGroupIndex() const { return untypedComputeEntry_->GetDefaultBindingGroupIndex(); }
+    Span<ComputeEntryDetail::ValueItem> GetValueItems() const { return untypedComputeEntry_->GetValueItems(); }
+
+private:
+
     template<typename Func>
     friend RTRC_INTELLISENSE_SELECT(auto, ComputeEntryDetail::Entry<Func>)
         BuildComputeEntry(Ref<Device> device, const Func &func);
 
-    RC<Shader> shader_;
-    int defaultBindingGroupIndex_ = -1;
+    RC<UntypedComputeEntry> untypedComputeEntry_;
 };
 
 void SetThreadGroupSize(const Vector3u &size);

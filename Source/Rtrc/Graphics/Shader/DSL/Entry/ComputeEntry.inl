@@ -2,14 +2,11 @@
 
 #include <cassert>
 
-#include <magic_enum.hpp>
-
-#include <Rtrc/Graphics/Device/Sampler.h>
-#include <Rtrc/Graphics/Shader/DSL/BindingGroup.h>
+#include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/Graphics/Shader/DSL/Entry/ComputeEntry.h>
+#include <Rtrc/Graphics/Shader/DSL/BindingGroup/BindingGroupBuilder_eDSL.h>
 #include <Rtrc/Graphics/Shader/ShaderBuilder.h>
 #include <Rtrc/ShaderCommon/Preprocess/RegisterAllocator.h>
-#include <Rtrc/ShaderCommon/Preprocess/ShaderPreprocessing.h>
 
 RTRC_EDSL_BEGIN
 
@@ -21,190 +18,6 @@ namespace ComputeEntryDetail
         static std::stack<Vector3u *> ret;
         return ret;
     }
-
-    template<typename T>
-    struct eResourceTrait
-    {
-        static constexpr bool IsResource = false;
-    };
-
-    template<typename T, TemplateBufferType Type>
-    struct eResourceTrait<TemplateBuffer<T, Type>>
-    {
-        static constexpr bool IsResource = true;
-
-        static BindingGroupLayout::BindingDesc GetBindingDesc()
-        {
-            constexpr RHI::BindingType TYPE_MAP[] =
-            {
-                RHI::BindingType::Buffer,
-                RHI::BindingType::StructuredBuffer,
-                RHI::BindingType::ByteAddressBuffer,
-                RHI::BindingType::RWBuffer,
-                RHI::BindingType::RWStructuredBuffer,
-                RHI::BindingType::RWByteAddressBuffer
-            };
-            static_assert(GetArraySize(TYPE_MAP) == magic_enum::enum_count<TemplateBufferType>());
-
-            BindingGroupLayout::BindingDesc ret;
-            ret.type = TYPE_MAP[std::to_underlying(Type)];
-            return ret;
-        }
-    };
-
-    template<typename T, bool IsRW>
-    struct eResourceTrait<TemplateTexture1D<T, IsRW>>
-    {
-        static constexpr bool IsResource = true;
-
-        static BindingGroupLayout::BindingDesc GetBindingDesc()
-        {
-            BindingGroupLayout::BindingDesc ret;
-            ret.type = IsRW ? RHI::BindingType::Texture : RHI::BindingType::RWTexture;
-            return ret;
-        }
-    };
-
-    template<typename T, bool IsRW>
-    struct eResourceTrait<TemplateTexture2D<T, IsRW>>
-    {
-        static constexpr bool IsResource = true;
-
-        static BindingGroupLayout::BindingDesc GetBindingDesc()
-        {
-            BindingGroupLayout::BindingDesc ret;
-            ret.type = IsRW ? RHI::BindingType::Texture : RHI::BindingType::RWTexture;
-            return ret;
-        }
-    };
-
-    template<typename T, bool IsRW>
-    struct eResourceTrait<TemplateTexture3D<T, IsRW>>
-    {
-        static constexpr bool IsResource = true;
-
-        static BindingGroupLayout::BindingDesc GetBindingDesc()
-        {
-            BindingGroupLayout::BindingDesc ret;
-            ret.type = IsRW ? RHI::BindingType::Texture : RHI::BindingType::RWTexture;
-            return ret;
-        }
-    };
-
-    template<typename T, bool IsRW>
-    struct eResourceTrait<TemplateTexture1DArray<T, IsRW>>
-    {
-        static constexpr bool IsResource = true;
-
-        static BindingGroupLayout::BindingDesc GetBindingDesc()
-        {
-            BindingGroupLayout::BindingDesc ret;
-            ret.type = IsRW ? RHI::BindingType::Texture : RHI::BindingType::RWTexture;
-            return ret;
-        }
-    };
-
-    template<typename T, bool IsRW>
-    struct eResourceTrait<TemplateTexture2DArray<T, IsRW>>
-    {
-        static constexpr bool IsResource = true;
-
-        static BindingGroupLayout::BindingDesc GetBindingDesc()
-        {
-            BindingGroupLayout::BindingDesc ret;
-            ret.type = IsRW ? RHI::BindingType::Texture : RHI::BindingType::RWTexture;
-            return ret;
-        }
-    };
-
-    template<typename T, bool IsRW>
-    struct eResourceTrait<TemplateTexture3DArray<T, IsRW>>
-    {
-        static constexpr bool IsResource = true;
-
-        static BindingGroupLayout::BindingDesc GetBindingDesc()
-        {
-            BindingGroupLayout::BindingDesc ret;
-            ret.type = IsRW ? RHI::BindingType::Texture : RHI::BindingType::RWTexture;
-            return ret;
-        }
-    };
-
-    template<typename T>
-    struct eResourceTrait<eConstantBuffer<T>>
-    {
-        static constexpr bool IsResource = true;
-
-        static BindingGroupLayout::BindingDesc GetBindingDesc()
-        {
-            BindingGroupLayout::BindingDesc ret;
-            ret.type = RHI::BindingType::ConstantBuffer;
-            return ret;
-        }
-    };
-
-    template<>
-    struct eResourceTrait<eRaytracingAccelerationStructure>
-    {
-        static constexpr bool IsResource = true;
-
-        static BindingGroupLayout::BindingDesc GetBindingDesc()
-        {
-            BindingGroupLayout::BindingDesc ret;
-            ret.type = RHI::BindingType::AccelerationStructure;
-            return ret;
-        }
-    };
-
-    template<>
-    struct eResourceTrait<eSamplerState>
-    {
-        static constexpr bool IsResource = true;
-
-        static BindingGroupLayout::BindingDesc GetBindingDesc()
-        {
-            BindingGroupLayout::BindingDesc ret;
-            ret.type = RHI::BindingType::Sampler;
-            return ret;
-        }
-    };
-
-    template<typename T>
-    struct eValueTrait
-    {
-        static constexpr bool IsValue = false;
-    };
-
-#define ADD_EVALUE_TRAIT(ETYPE, TYPE)                                      \
-    template<>                                                             \
-    struct eValueTrait<ETYPE>                                              \
-    {                                                                      \
-        static constexpr bool IsValue = true;                              \
-        static constexpr ShaderUniformType Type = ShaderUniformType::TYPE; \
-    }
-
-    ADD_EVALUE_TRAIT(i32, Int);
-    ADD_EVALUE_TRAIT(i32x2, Int2);
-    ADD_EVALUE_TRAIT(i32x3, Int3);
-    ADD_EVALUE_TRAIT(i32x4, Int4);
-
-    ADD_EVALUE_TRAIT(u32, UInt);
-    ADD_EVALUE_TRAIT(u32x2, UInt2);
-    ADD_EVALUE_TRAIT(u32x3, UInt3);
-    ADD_EVALUE_TRAIT(u32x4, UInt4);
-
-    ADD_EVALUE_TRAIT(f32, Float);
-    ADD_EVALUE_TRAIT(f32x2, Float2);
-    ADD_EVALUE_TRAIT(f32x3, Float3);
-    ADD_EVALUE_TRAIT(f32x4, Float4);
-
-    ADD_EVALUE_TRAIT(float4x4, Float4x4);
-
-#undef ADD_EVALUE_TRAIT
-
-    RC<Sampler> CreateSampler(Ref<Device> device, const RHI::SamplerDesc &desc);
-
-    RHI::DeviceOPtr GetRHIDevice(Ref<Device> device);
 
     struct ComputeEntryIntermediates
     {
@@ -225,7 +38,8 @@ namespace ComputeEntryDetail
         std::vector<ShaderUniformType>        &defaultUniformTypes,
         std::vector<BindingGroupLayout::Desc> &bindingGroupLayoutDescs,
         RC<Shader>                            &outShader,
-        int                                   &outDefaultBindingGroupIndex);
+        int                                   &outDefaultBindingGroupIndex,
+        std::vector<ValueItem>                &outDefaultBindingGroupValueItems);
 
     template<typename...Args, typename Func>
     void RecordComputeKernel(
@@ -281,7 +95,7 @@ namespace ComputeEntryDetail
                         if constexpr(IsUniform)
                         {
                             auto &var = uniformVariables.emplace_back();
-                            var.type = eValueTrait<M>::Type;
+                            var.type = ArgumentTrait::eValueTrait<M>::Type;
                             var.name = name;
 
                             accessor(arg).eVariableName = fmt::format(
@@ -289,7 +103,8 @@ namespace ComputeEntryDetail
                         }
                         else
                         {
-                            regAlloc->NewBinding(resourceCountInBindingGroup, eResourceTrait<M>::GetBindingDesc().type);
+                            regAlloc->NewBinding(
+                                resourceCountInBindingGroup, ArgumentTrait::eResourceTrait<M>::GetBindingDesc().type);
 
                             const std::string resourceName = fmt::format(
                                 "_rtrcBindingGroup{}_{}", bindingGroupIndex, name);
@@ -326,15 +141,17 @@ namespace ComputeEntryDetail
 
                     ++bindingGroupIndex;
                 }
-                else if constexpr(eResourceTrait<Arg>::IsResource)
+                else if constexpr(ArgumentTrait::eResourceTrait<Arg>::IsResource)
                 {
-                    result.defaultBindingGroupLayoutDesc.bindings.push_back(eResourceTrait<Arg>::GetBindingDesc());
+                    result.defaultBindingGroupLayoutDesc.bindings.push_back(
+                        ArgumentTrait::eResourceTrait<Arg>::GetBindingDesc());
 
                     partialResourceDefinitionsInDefaultBindingGroup.push_back(fmt::format(
                         "{} _rtrcDefaultBindingGroup_Resource{}",
                         Arg::GetStaticTypeName(), resourceCountInDefaultBindingGroup));
 
-                    resourceBindingTypesInDefaultBindingGroup.push_back(eResourceTrait<Arg>::GetBindingDesc().type);
+                    resourceBindingTypesInDefaultBindingGroup.push_back(
+                        ArgumentTrait::eResourceTrait<Arg>::GetBindingDesc().type);
 
                     arg.eVariableName = fmt::format(
                         "_rtrcDefaultBindingGroup_Resource{}", resourceCountInDefaultBindingGroup);
@@ -343,9 +160,9 @@ namespace ComputeEntryDetail
                 }
                 else
                 {
-                    static_assert(eValueTrait<Arg>::IsValue);
+                    static_assert(ArgumentTrait::eValueTrait<Arg>::IsValue);
 
-                    result.defaultUniformTypes.push_back(eValueTrait<Arg>::Type);
+                    result.defaultUniformTypes.push_back(ArgumentTrait::eValueTrait<Arg>::Type);
 
                     arg.eVariableName = fmt::format(
                         "_rtrcDefaultBindingGroup.Value{}", valueCountInDefaultBindingGroup);
@@ -414,6 +231,14 @@ namespace ComputeEntryDetail
 
 } // namespace ComputeEntryDetail
 
+template <RtrcDSLBindingGroup T>
+RC<BindingGroup> ComputeEntryDetail::BindingGroupArgumentWrapper<T>::GetBindingGroup(Ref<Device> device) const
+{
+    return bindingGroup.Match(
+        [&](const T &data) { return device->CreateBindingGroupWithCachedLayout(data); },
+        [&](const RC<BindingGroup> &group) { return group; });
+}
+
 template<typename Func>
 RTRC_INTELLISENSE_SELECT(auto, ComputeEntryDetail::Entry<Func>)
     BuildComputeEntry(Ref<Device> device, const Func &func)
@@ -422,10 +247,11 @@ RTRC_INTELLISENSE_SELECT(auto, ComputeEntryDetail::Entry<Func>)
 
     ComputeEntryDetail::ComputeEntryIntermediates intermediates;
     ComputeEntryDetail::RecordComputeKernel(
-        ComputeEntryDetail::GetRHIDevice(device)->GetBackendType(), func, intermediates, static_cast<Entry *>(nullptr));
+        device->GetBackendType(), func, intermediates, static_cast<Entry *>(nullptr));
 
     RC<Shader> shader;
     int defaultBindingGroupIndex = -1;
+    std::vector<ComputeEntryDetail::ValueItem> defaultBindingGroupValueItems;
     ComputeEntryDetail::BuildComputeEntry(
         device,
         intermediates.resourceDefinitions,
@@ -434,12 +260,157 @@ RTRC_INTELLISENSE_SELECT(auto, ComputeEntryDetail::Entry<Func>)
         intermediates.defaultBindingGroupLayoutDesc,
         intermediates.defaultUniformTypes,
         intermediates.bindingGroupLayoutDescs,
-        shader, defaultBindingGroupIndex);
+        shader, defaultBindingGroupIndex, defaultBindingGroupValueItems);
 
     Entry ret;
-    ret.shader_ = std::move(shader);
-    ret.defaultBindingGroupIndex_ = defaultBindingGroupIndex;
+    ret.untypedComputeEntry_ = MakeRC<UntypedComputeEntry>();
+    ret.untypedComputeEntry_->shader_                        = std::move(shader);
+    ret.untypedComputeEntry_->defaultBindingGroupIndex_      = defaultBindingGroupIndex;
+    ret.untypedComputeEntry_->defaultBindingGroupValueItems_ = std::move(defaultBindingGroupValueItems);
     return ret;
+}
+
+template<typename...KernelArgs>
+void DeclareRenderGraphResourceUses(
+    RGPass                                              pass,
+    const ComputeEntry<KernelArgs...>                  &entry,
+    const ComputeEntryDetail::InvokeType<KernelArgs>&...args)
+{
+    auto HandleBindingGroupStruct = [&]<typename Arg>(const Arg &arg)
+    {
+        if constexpr( requires{ arg.GetBindingGroup(); })
+        {
+            arg.bindingGroup.Match(
+                [&](const RC<BindingGroup> &) {},
+                [&]<RtrcGroupStruct T>(const T &data)
+                {
+                    BindingGroupDetail::DeclareRenderGraphResourceUses(
+                        pass, data, RHI::PipelineStageFlag::ComputeShader);
+                });
+        }
+    };
+    (HandleBindingGroupStruct(args), ...);
+
+    auto HandleResource = [&]<typename Arg>(const Arg &arg)
+    {
+        if constexpr(requires { arg.DeclareRenderGraphResourceUsage(pass, RHI::PipelineStageFlag::ComputeShader); })
+        {
+            arg.DeclareRenderGraphResourceUsage(pass, RHI::PipelineStageFlag::ComputeShader);
+        }
+    };
+    (HandleResource(args), ...);
+}
+
+template<typename...KernelArgs>
+void SetupComputeEntry(
+    CommandBuffer                                      &commandBuffer,
+    const ComputeEntry<KernelArgs...>                  &entry,
+    const ComputeEntryDetail::InvokeType<KernelArgs>&...args)
+{
+    auto device = commandBuffer.GetDevice();
+
+    // Bind pipeline & binding groups
+
+    commandBuffer.BindComputePipeline(entry.GetShader()->GetComputePipeline());
+
+    int bindingGroupIndex = 0;
+    auto BindCustomBindingGroup = [&]<typename Arg>(const Arg &arg)
+    {
+        if constexpr(requires{ arg.GetBindingGroup(device); })
+        {
+            commandBuffer.BindComputeGroup(bindingGroupIndex++, arg.GetBindingGroup(device));
+        }
+    };
+    (BindCustomBindingGroup(args), ...);
+
+    // Create default binding group
+
+    RC<BindingGroup> defaultBindingGroup;
+    if(const int defaultBindingGroupIndex = entry.GetDefaultBindingGroupIndex(); defaultBindingGroupIndex >= 0)
+    {
+        auto group = entry.GetShader()->GetBindingGroupLayoutByIndex(defaultBindingGroupIndex)->CreateBindingGroup();
+
+        RHI::BindingGroupUpdateBatch batch;
+        int slot = 0;
+
+        // Resources
+
+        auto BindResourceInDefaultBindingGroup = [&]<typename Arg>(const Arg &arg)
+        {
+            if constexpr(requires { Arg::Proxy::BindingType; })
+            {
+                if constexpr(Arg::Proxy::BindingType == RHI::BindingType::ConstantBuffer)
+                {
+                    RC<SubBuffer> constantBuffer = arg.GetRtrcObject();
+                    if(!constantBuffer)
+                    {
+                        using CBufferStruct = typename Arg::Proxy::Struct;
+                        constantBuffer = device->CreateConstantBuffer(static_cast<const CBufferStruct &>(arg.proxy));
+                    }
+                    batch.Append(*group->GetRHIObject(), slot, RHI::ConstantBufferUpdate
+                    {
+                        constantBuffer->GetFullBufferRHIObject().Get(),
+                        constantBuffer->GetSubBufferOffset(),
+                        constantBuffer->GetSubBufferSize()
+                    });
+                    ++slot;
+                }
+                else if constexpr(IsRC<std::remove_cvref_t<decltype(arg.GetRtrcObject())>>)
+                {
+                    if(auto obj = arg.GetRtrcObject())
+                    {
+                        batch.Append(*group->GetRHIObject(), slot, obj->GetRHIObject());
+                    }
+                    ++slot;
+                }
+                else
+                {
+                    if(auto rhiObj = arg.GetRtrcObject().GetRHIObject())
+                    {
+                        batch.Append(*group->GetRHIObject(), slot, std::move(rhiObj));
+                    }
+                    ++slot;
+                }
+            }
+        };
+        (BindResourceInDefaultBindingGroup(args), ...);
+
+        // Uniforms
+
+        if(auto items = entry.GetValueItems(); !items.IsEmpty())
+        {
+            const size_t size = UpAlignTo<size_t>(items.last().size + items.last().offset, 16);
+            std::vector<unsigned char> data(size);
+
+            int valueIndex = 0;
+            auto FlattenUniformValue = [&]<typename Arg>(const Arg &arg)
+            {
+                if constexpr(requires{ typename Arg::NativeType; })
+                {
+                    const ComputeEntryDetail::ValueItem &item = items[valueIndex];
+                    std::memcpy(data.data() + item.offset, &arg.value, sizeof(arg.value));
+                    valueIndex++;
+                }
+            };
+            (FlattenUniformValue(args), ...);
+
+            auto uniformBuffer = device->CreateConstantBuffer(data.data(), data.size());
+            batch.Append(*group->GetRHIObject(), slot, RHI::ConstantBufferUpdate
+            {
+                uniformBuffer->GetFullBufferRHIObject().Get(),
+                uniformBuffer->GetSubBufferOffset(),
+                uniformBuffer->GetSubBufferSize()
+            });
+            ++slot;
+        }
+
+        if(slot > 0)
+        {
+            device->GetRawDevice()->UpdateBindingGroups(batch);
+        }
+
+        commandBuffer.BindComputeGroup(defaultBindingGroupIndex, group);
+    }
 }
 
 inline void SetThreadGroupSize(const Vector3u &size)

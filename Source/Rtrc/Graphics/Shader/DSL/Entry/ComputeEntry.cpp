@@ -6,16 +6,6 @@ RTRC_EDSL_BEGIN
 namespace ComputeEntryDetail
 {
 
-    RC<Sampler> CreateSampler(Ref<Device> device, const RHI::SamplerDesc &desc)
-    {
-        return device->CreateSampler(desc);
-    }
-
-    RHI::DeviceOPtr GetRHIDevice(Ref<Device> device)
-    {
-        return device->GetRawDevice();
-    }
-
     void BuildComputeEntry(
         Ref<Device>                            device,
         std::string                           &resourceDefinitions,
@@ -25,19 +15,19 @@ namespace ComputeEntryDetail
         std::vector<ShaderUniformType>        &defaultUniformTypes,
         std::vector<BindingGroupLayout::Desc> &bindingGroupLayoutDescs,
         RC<Shader>                            &outShader,
-        int                                   &outDefaultBindingGroupIndex)
+        int                                   &outDefaultBindingGroupIndex,
+        std::vector<ValueItem>                &outDefaultBindingGroupValueItems)
     {
         // Default binding group
 
-        UniformBufferLayout defaultUniformBufferLayout;
+        std::vector<ValueItem> defaultBindingGroupValueItems;
         size_t defaultUniformBufferSize = 0;
         {
-            defaultUniformBufferLayout.variables.reserve(defaultUniformTypes.size());
+            defaultBindingGroupValueItems.reserve(defaultUniformTypes.size());
             for(ShaderUniformType type : defaultUniformTypes)
             {
-                auto &variable = defaultUniformBufferLayout.variables.emplace_back();
-                variable.type = type;
-
+                auto &variable = defaultBindingGroupValueItems.emplace_back();
+                
                 variable.size = GetShaderUniformSize(type);
                 assert(variable.size % 4 == 0);
 
@@ -80,7 +70,7 @@ namespace ComputeEntryDetail
             samplers.resize(staticSamplerMap.size());
             for(auto &[desc, index] : staticSamplerMap)
             {
-                samplers[index] = CreateSampler(device, desc);
+                samplers[index] = device->CreateSampler(desc);
             }
 
             resourceDefinitions += fmt::format(
@@ -161,8 +151,11 @@ namespace ComputeEntryDetail
             desc.bindingGroupForInlineSamplers = std::move(bindingGroup);
         }
 
-        outShader = ShaderBuilder::BuildShader(device, std::move(desc));
-        outDefaultBindingGroupIndex = defaultBindingGroupIndex;
+        // Commit
+
+        outShader                        = ShaderBuilder::BuildShader(device, std::move(desc));
+        outDefaultBindingGroupIndex      = defaultBindingGroupIndex;
+        outDefaultBindingGroupValueItems = std::move(defaultBindingGroupValueItems);
     }
 
 } // namespace ComputeEntryDetail

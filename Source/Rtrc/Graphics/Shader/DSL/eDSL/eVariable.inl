@@ -9,10 +9,10 @@ RTRC_EDSL_BEGIN
 namespace Detail
 {
 
-    extern thread_local std::stack<std::string> gMemberVariableNameStack;
-    extern thread_local std::stack<eVariableCommonBase *> gNestedVariableInitializationStack;
-    extern thread_local std::stack<eVariableCommonBase *> gVariableCopyStack;
-    extern thread_local bool gEnableStackVariableAllocation;
+    extern std::stack<std::string> gMemberVariableNameStack;
+    extern std::stack<eVariableCommonBase *> gNestedVariableInitializationStack;
+    extern std::stack<eVariableCommonBase *> gVariableCopyStack;
+    extern bool gEnableStackVariableAllocation;
 
 } // namespace Detail
 

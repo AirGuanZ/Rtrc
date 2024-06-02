@@ -1,6 +1,8 @@
 #include <Rtrc/Rtrc.h>
+#include <Rtrc/eDSL.h>
 
 using namespace Rtrc;
+using namespace eDSL;
 
 class ShaderDSLDemo : public SimpleApplication
 {
@@ -8,7 +10,7 @@ class ShaderDSLDemo : public SimpleApplication
     {
         using namespace eDSL;
 
-        auto entry = BuildComputeEntry(
+        entry_ = BuildComputeEntry(
             GetDevice(),
             [](eRWBuffer<euint> buffer, euint threadCount, euint value)
         {
@@ -22,8 +24,28 @@ class ShaderDSLDemo : public SimpleApplication
 
     void UpdateSimpleApplication(GraphRef graph) override
     {
-        SetExitFlag(true);
+        if(GetWindowInput().IsKeyDown(KeyCode::Escape))
+        {
+            SetExitFlag(true);
+        }
+
+        RGClearColor(
+            graph, "ClearFramebuffer",
+            graph->RegisterSwapchainTexture(GetDevice()->GetSwapchain()),
+            Vector4f(0, 1, 1, 0));
+
+        auto buffer = graph->CreateBuffer(RHI::BufferDesc
+        {
+            .size = 16 * sizeof(uint16_t),
+            .usage = RHI::BufferUsage::ShaderRWBuffer
+        });
+        buffer->SetDefaultTexelFormat(RHI::Format::R16_UInt);
+
+        RGDispatchWithThreadCount(graph, "Pass1", entry_, 16, buffer, 16, 1);
+        RGDispatchWithThreadCount(graph, "Pass2", entry_, 16, buffer, 16, 2);
     }
+
+    ComputeEntry<eRWBuffer<euint>, euint, euint> entry_;
 };
 
 RTRC_APPLICATION_MAIN(

@@ -13,8 +13,8 @@
 #include <Rtrc/Graphics/Device/Utility/ClearBufferUtils.h>
 #include <Rtrc/Graphics/Device/Utility/ClearTextureUtils.h>
 #include <Rtrc/Graphics/Device/Utility/CopyTextureUtils.h>
+#include <Rtrc/Graphics/Shader/DSL/BindingGroup/BindingGroupHelpers.h>
 #include <Rtrc/Graphics/Shader/ShaderManager.h>
-#include <Rtrc/Graphics/Shader/DSL/BindingGroup.h>
 
 RTRC_BEGIN
 

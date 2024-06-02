@@ -7,7 +7,7 @@ RTRC_EDSL_BEGIN
 namespace RecordContextDetail
 {
 
-    thread_local std::stack<RecordContext *> gRecordContextStack;
+    thread_local RecordContext *gRecordContext = nullptr;
 
 } // namespace RecordContextDetail
 
@@ -121,17 +121,19 @@ std::string RecordContext::BuildScope(const std::string &indent, const Scope& sc
 
 void PushRecordContext(RecordContext &context)
 {
-    RecordContextDetail::gRecordContextStack.push(&context);
+    assert(!RecordContextDetail::gRecordContext);
+    RecordContextDetail::gRecordContext = &context;
 }
 
 void PopRecordContext()
 {
-    RecordContextDetail::gRecordContextStack.pop();
+    assert(RecordContextDetail::gRecordContext);
+    RecordContextDetail::gRecordContext = nullptr;
 }
 
 RecordContext &GetCurrentRecordContext()
 {
-    return *RecordContextDetail::gRecordContextStack.top();
+    return *RecordContextDetail::gRecordContext;
 }
 
 RTRC_EDSL_END
