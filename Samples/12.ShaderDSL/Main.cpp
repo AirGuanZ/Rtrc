@@ -13,13 +13,13 @@ class ShaderDSLDemo : public SimpleApplication
         entry_ = BuildComputeEntry(
             GetDevice(),
             [](eRWBuffer<euint> buffer, euint threadCount, euint value)
-        {
-            $numthreads(64, 1, 1);
-            $if($SV_DispatchThreadID.x < threadCount)
             {
-                buffer[$SV_DispatchThreadID.x] = value;
-            };
-        });
+                $numthreads(64, 1, 1);
+                $if($SV_DispatchThreadID.x < threadCount)
+                {
+                    buffer[$SV_DispatchThreadID.x] = value;
+                };
+            });
     }
 
     void UpdateSimpleApplication(GraphRef graph) override
