@@ -93,6 +93,16 @@ public:
     void CopyColorTexture(
         Texture *dst, uint32_t dstMipLevel, uint32_t dstArrayLayer,
         Texture *src, uint32_t srcMipLevel, uint32_t srcArrayLayer) RTRC_RHI_OVERRIDE;
+    void CopyColorTexture(
+        Texture*        dst,
+        uint32_t        dstMipLevel,
+        uint32_t        dstArrayLayer,
+        const Vector3u &dstOffset,
+        Texture*        src,
+        uint32_t        srcMipLevel,
+        uint32_t        srcArrayLayer,
+        const Vector3u &srcOffset,
+        const Vector3u &size) RTRC_RHI_OVERRIDE;
     void CopyBufferToTexture(
         Texture *dst,
         uint32_t mipLevel,

@@ -114,6 +114,10 @@ public:
     void CopyColorTexture(
         const Texture &dst, uint32_t dstMipLevel, uint32_t dstArrayLayer,
         const Texture &src, uint32_t srcMipLevel, uint32_t srcArrayLayer);
+    void CopyColorTexture(
+        const Texture &dst, uint32_t dstMipLevel, uint32_t dstArrayLayer, const Vector3u &dstOffset,
+        const Texture &src, uint32_t srcMipLevel, uint32_t srcArrayLayer, const Vector3u &srcOffset,
+        const Vector3u &size);
     void CopyColorTexture2DToBuffer(
         Buffer &dst, size_t dstOffset, size_t dstRowBytes, Texture &src, uint32_t arrayLayer, uint32_t mipLevel);
 
@@ -123,6 +127,10 @@ public:
     void CopyColorTexture(
         RGTexture dst, uint32_t dstMipLevel, uint32_t dstArrayLayer,
         RGTexture src, uint32_t srcMipLevel, uint32_t srcArrayLayer);
+    void CopyColorTexture(
+        RGTexture dst, uint32_t dstMipLevel, uint32_t dstArrayLayer, const Vector3u &dstOffset,
+        RGTexture src, uint32_t srcMipLevel, uint32_t srcArrayLayer, const Vector3u &srcOffset,
+        const Vector3u &size);
     void CopyColorTexture2DToBuffer(
         RGBuffer dst, size_t dstOffset, size_t dstRowBytes,
         RGTexture src, uint32_t arrayLayer, uint32_t mipLevel);

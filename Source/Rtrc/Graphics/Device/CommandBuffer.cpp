@@ -236,6 +236,21 @@ void CommandBuffer::CopyColorTexture(
         dst.GetRHIObject(), dstMipLevel, dstArrayLayer, src.GetRHIObject(), srcMipLevel, srcArrayLayer);
 }
 
+void CommandBuffer::CopyColorTexture(
+    const Texture &dst, uint32_t dstMipLevel, uint32_t dstArrayLayer, const Vector3u &dstOffset,
+    const Texture &src, uint32_t srcMipLevel, uint32_t srcArrayLayer, const Vector3u &srcOffset,
+    const Vector3u &size)
+{
+    CheckThreadID();
+    assert(size.x >= 1 && size.y >= 1 && size.z >= 1);
+    const auto minDim = (std::min)(std::to_underlying(src.GetDimension()), std::to_underlying(dst.GetDimension()));
+    assert(minDim > std::to_underlying(RHI::TextureDimension::Tex1D) || size.y == 1);
+    assert(minDim > std::to_underlying(RHI::TextureDimension::Tex2D) || size.z == 1);
+    rhiCommandBuffer_->CopyColorTexture(
+        dst.GetRHIObject(), dstMipLevel, dstArrayLayer, dstOffset,
+        src.GetRHIObject(), srcMipLevel, srcArrayLayer, srcOffset, size);
+}
+
 void CommandBuffer::CopyColorTexture2DToBuffer(
     Buffer &dst, size_t dstOffset, size_t dstRowBytes, Texture &src, uint32_t arrayLayer, uint32_t mipLevel)
 {
@@ -255,6 +270,17 @@ void CommandBuffer::CopyColorTexture(
     RGTexture src, uint32_t srcMipLevel, uint32_t srcArrayLayer)
 {
     CopyColorTexture(*dst->Get(), dstMipLevel, dstArrayLayer, *src->Get(), srcMipLevel, srcArrayLayer);
+}
+
+void CommandBuffer::CopyColorTexture(
+    RGTexture dst, uint32_t dstMipLevel, uint32_t dstArrayLayer, const Vector3u &dstOffset,
+    RGTexture src, uint32_t srcMipLevel, uint32_t srcArrayLayer, const Vector3u &srcOffset,
+    const Vector3u &size)
+{
+    CheckThreadID();
+    CopyColorTexture(
+        *dst->Get(), dstMipLevel, dstArrayLayer, dstOffset,
+        *src->Get(), srcMipLevel, srcArrayLayer, srcOffset, size);
 }
 
 void CommandBuffer::CopyColorTexture2DToBuffer(

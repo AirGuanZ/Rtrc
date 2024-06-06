@@ -454,6 +454,55 @@ void VulkanCommandBuffer::CopyColorTexture(
         1, &copy);
 }
 
+void VulkanCommandBuffer::CopyColorTexture(
+    Texture* dst, uint32_t dstMipLevel, uint32_t dstArrayLayer, const Vector3u& dstOffset,
+    Texture* src, uint32_t srcMipLevel, uint32_t srcArrayLayer, const Vector3u& srcOffset,
+    const Vector3u& size)
+{
+    const VkImageCopy copy =
+    {
+        .srcSubresource = VkImageSubresourceLayers
+        {
+            .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+            .mipLevel       = srcMipLevel,
+            .baseArrayLayer = srcArrayLayer,
+            .layerCount     = 1
+        },
+        .srcOffset =
+        {
+            .x = static_cast<int>(srcOffset.x),
+            .y = static_cast<int>(srcOffset.y),
+            .z = static_cast<int>(srcOffset.z)
+        },
+        .dstSubresource = VkImageSubresourceLayers
+        {
+            .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+            .mipLevel       = dstMipLevel,
+            .baseArrayLayer = dstArrayLayer,
+            .layerCount     = 1
+        },
+        .dstOffset =
+        {
+            .x = static_cast<int>(dstOffset.x),
+            .y = static_cast<int>(dstOffset.y),
+            .z = static_cast<int>(dstOffset.z)
+        },
+        .extent =
+        {
+            .width  = size.x,
+            .height = size.y,
+            .depth  = size.z,
+        }
+    };
+    auto vkSrc = CommandBufferDetail::GetVulkanImage(src);
+    auto vkDst = CommandBufferDetail::GetVulkanImage(dst);
+    vkCmdCopyImage(
+        commandBuffer_,
+        vkSrc, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        vkDst, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        1, &copy);
+}
+
 void VulkanCommandBuffer::CopyBufferToTexture(
     Texture *dst, uint32_t mipLevel, uint32_t arrayLayer, Buffer *src, size_t srcOffset, size_t srcRowBytes)
 {

@@ -40,6 +40,7 @@ protected:
     void SetExitFlag(bool shouldExit);
 
     Ref<Device>                 GetDevice()                 const { return device_; }
+    const RHI::SwapchainUPtr   &GetSwapchain()              const { return GetDevice()->GetSwapchain(); }
     Ref<ResourceManager>        GetResourceManager()        const { return resourceManager_; }
     Ref<BindlessTextureManager> GetBindlessTextureManager() const { return bindlessTextureManager_; }
     Ref<ImGuiInstance>          GetImGuiInstance()          const { return imgui_; }

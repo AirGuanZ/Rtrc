@@ -416,12 +416,45 @@ void DirectX12CommandBuffer::CopyColorTexture(
     };
     const D3D12_TEXTURE_COPY_LOCATION srcLoc =
     {
-        .pResource = d3dSrc,
-        .Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
+        .pResource        = d3dSrc,
+        .Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
         .SubresourceIndex = D3D12CalcSubresource(
                                 srcMipLevel, srcArrayLayer, 0, src->GetMipLevels(), src->GetArraySize())
     };
     commandList_->CopyTextureRegion(&dstLoc, 0, 0, 0, &srcLoc, nullptr);
+}
+
+void DirectX12CommandBuffer::CopyColorTexture(
+    Texture* dst, uint32_t dstMipLevel, uint32_t dstArrayLayer, const Vector3u &dstOffset,
+    Texture* src, uint32_t srcMipLevel, uint32_t srcArrayLayer, const Vector3u &srcOffset,
+    const Vector3u &size)
+{
+    auto d3dDst = static_cast<DirectX12Texture *>(dst)->_internalGetNativeTexture().Get();
+    auto d3dSrc = static_cast<DirectX12Texture *>(src)->_internalGetNativeTexture().Get();
+    const D3D12_TEXTURE_COPY_LOCATION dstLoc =
+    {
+        .pResource        = d3dDst,
+        .Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
+        .SubresourceIndex = D3D12CalcSubresource(
+                                dstMipLevel, dstArrayLayer, 0, dst->GetMipLevels(), dst->GetArraySize())
+    };
+    const D3D12_TEXTURE_COPY_LOCATION srcLoc =
+    {
+        .pResource        = d3dSrc,
+        .Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
+        .SubresourceIndex = D3D12CalcSubresource(
+                                srcMipLevel, srcArrayLayer, 0, src->GetMipLevels(), src->GetArraySize())
+    };
+    const D3D12_BOX srcBox =
+    {
+        .left   = srcOffset.x,
+        .top    = srcOffset.y,
+        .front  = srcOffset.z,
+        .right  = srcOffset.x + size.x,
+        .bottom = srcOffset.y + size.y,
+        .back   = srcOffset.z + size.z
+    };
+    commandList_->CopyTextureRegion(&dstLoc, dstOffset.x, dstOffset.y, dstOffset.z, &srcLoc, &srcBox);
 }
 
 void DirectX12CommandBuffer::CopyBufferToTexture(
