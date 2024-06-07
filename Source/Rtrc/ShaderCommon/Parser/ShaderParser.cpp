@@ -424,7 +424,7 @@ ParsedShader ParseShader(
     ParsedShader ret;
     ret.name           = std::move(shaderName);
     ret.cppSymbolName  = GetCppSymbolName(source);
-    ret.sourceFilename = std::filesystem::relative(filename).string();
+    ret.sourceFilename = filename;
     ret.keywords       = std::move(keywords);
 
     if(ret.cppSymbolName.empty())
