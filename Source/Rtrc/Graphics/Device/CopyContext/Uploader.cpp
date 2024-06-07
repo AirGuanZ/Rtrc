@@ -122,13 +122,13 @@ void UploadBatch::Record(
             const size_t ownedPlaneSize = ownedDataRowBytes * height;
             for(unsigned z = 0; z < depth; ++z)
             {
-                auto planeSrcData = reinterpret_cast<const unsigned char *>(data) + z * planeSize;
+                auto planeSrcData = static_cast<const unsigned char *>(data) + z * planeSize;
                 auto planeDstData = task.ownedData.data() + z * ownedPlaneSize;
                 for(unsigned y = 0; y < height; ++y)
                 {
                     auto src = planeSrcData + dataRowBytes * y;
                     auto dst = planeDstData + ownedDataRowBytes * y;
-                    std::memcpy(dst, src, ownedDataRowBytes);
+                    std::memcpy(dst, src, dataRowBytes);
                 }
             }
         }
