@@ -67,7 +67,7 @@ RawMesh RawMesh::LoadWavefrontObj(const std::string& filename)
         auto normals = normalAttribute.GetData<Vector3f>();
         for(auto& normal : normals)
         {
-            normal = normal == Vector3f(0) ? Normalize(normal) : Vector3f();
+            normal = normal == Vector3f(0) ? Vector3f(0) : Normalize(normal);
         }
     }
 
