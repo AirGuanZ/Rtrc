@@ -2,8 +2,30 @@
 
 Personal real-time graphics toolkits
 
-![](./Documents/Gallery/00.png)
 ![](./Documents/Gallery/01.png)
+
+Minimal example (clear the framebuffer to sky blue):
+
+```c++
+#include <Rtrc/Rtrc.h>
+
+using namespace Rtrc;
+
+class Demo : public SimpleApplication
+{
+    void UpdateSimpleApplication(GraphRef graph) override
+    {
+        auto framebuffer = graph->RegisterSwapchainTexture(GetSwapchain());
+        RGClearColor(graph, "ClearFramebuffer", framebuffer, { 0.0, 1.0, 0.0, 0.0 });
+    }
+};
+
+RTRC_APPLICATION_MAIN(
+    Demo,
+    .title  = "Rtrc Demo",
+    .width  = 640,
+    .height = 480)
+```
 
 ## Samples
 
