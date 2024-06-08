@@ -15,7 +15,7 @@ public:
     explicit DirectX12Fence(ComPtr<ID3D12Fence> fence, bool signaled)
         : fence_(std::move(fence))
         , syncSessionID_(0)
-        , syncSessionIDRecevier_(nullptr)
+        , syncSessionIDReceiver_(nullptr)
     {
         signalValue_ = signaled ? 0 : 1;
     }
@@ -23,7 +23,7 @@ public:
     void Reset() RTRC_RHI_OVERRIDE
     {
         syncSessionID_ = 0;
-        syncSessionIDRecevier_ = nullptr;
+        syncSessionIDReceiver_ = nullptr;
         ++signalValue_;
     }
 
@@ -47,7 +47,7 @@ private:
     uint64_t            signalValue_;
 
     QueueSessionID               syncSessionID_;
-    std::atomic<QueueSessionID> *syncSessionIDRecevier_;
+    std::atomic<QueueSessionID> *syncSessionIDReceiver_;
 };
 
 RTRC_RHI_D3D12_END

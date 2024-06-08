@@ -80,8 +80,8 @@ void DirectX12Queue::Submit(
             queue_->Signal(df->_internalGetNativeFence().Get(), df->GetSignalValue()),
             "Fail to call ID3D12CommandQueue::Signal on fence");
 
-        assert(!df->syncSessionIDRecevier_);
-        df->syncSessionIDRecevier_ = &synchronizedSessionID_;
+        assert(!df->syncSessionIDReceiver_);
+        df->syncSessionIDReceiver_ = &synchronizedSessionID_;
         df->syncSessionID_ = currentSessionID_++;
     }
 }

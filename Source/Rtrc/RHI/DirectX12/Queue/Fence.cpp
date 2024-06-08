@@ -11,16 +11,16 @@ void DirectX12Fence::Wait()
     WaitForSingleObject(eventHandle, INFINITE);
     CloseHandle(eventHandle);
 
-    if(syncSessionIDRecevier_)
+    if(syncSessionIDReceiver_)
     {
-        auto &maxv = *syncSessionIDRecevier_;
+        auto &maxv = *syncSessionIDReceiver_;
         QueueSessionID prevValue = maxv;
         while(prevValue < syncSessionID_ && !maxv.compare_exchange_weak(prevValue, syncSessionID_))
         {
 
         }
         syncSessionID_ = 0;
-        syncSessionIDRecevier_ = nullptr;
+        syncSessionIDReceiver_ = nullptr;
     }
 }
 

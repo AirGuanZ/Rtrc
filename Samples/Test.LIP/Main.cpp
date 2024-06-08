@@ -4,22 +4,6 @@
 
 using namespace Rtrc;
 
-class Demo : public SimpleApplication
-{
-    void UpdateSimpleApplication(GraphRef graph) override
-    {
-        auto framebuffer = graph->RegisterSwapchainTexture(GetSwapchain());
-        RGClearColor(graph, "ClearFramebuffer", framebuffer, { 0, 1, 1, 0 });
-    }
-};
-
-RTRC_APPLICATION_MAIN(
-    Demo,
-    .title  = "Rtrc Demo",
-    .width  = 640,
-    .height = 480)
-
-
 class LinearInterpolationPrecisionDemo : public SimpleApplication
 {
     RC<Texture> texture_;
