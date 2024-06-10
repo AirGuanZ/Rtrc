@@ -15,6 +15,16 @@ namespace RawMeshDetail
         Float3,
     };
 
+    constexpr size_t GetAttributeBytes(AttributeType type)
+    {
+        constexpr std::array<size_t, 2> ret =
+        {
+            8,
+            12
+        };
+        return ret[std::to_underlying(type)];
+    }
+
     template<typename>
     struct AttributeTypeToDataType
     {
@@ -68,7 +78,7 @@ public:
 
     static RawMesh Load(const std::string &filename);
 
-    // Get data
+    // ======================== Get data ========================
 
     uint32_t GetAttributeCount() const;
     uint32_t GetTriangleCount() const;
@@ -83,11 +93,29 @@ public:
     int GetNormalAttributeIndex() const;
     int GetUVAttributeIndex() const;
 
+    bool HasNormals() const;
+    bool HasUVs() const;
+
     const RawMeshAttributeData *GetPositions() const;
     const RawMeshAttributeData *GetNormals() const;
     const RawMeshAttributeData *GetUVs() const;
 
+    Span<uint32_t> GetPositionIndices() const;
+    Span<uint32_t> GetNormalIndices() const;
+    Span<uint32_t> GetUVIndices() const;
+
     Span<uint32_t> GetIndices(uint32_t attributeIndex) const;
+
+    FlatHalfEdgeMesh CreateFlatHalfEdgeMesh() const;
+
+    // ======================== In-place modifier ========================
+
+    // Set angle threshold to 1 to use face normals
+    void RecalculateNormal(float cosAngleThreshold = 1);
+
+    // Split vertices by normal, UV, etc., so that the position index can be used to reference all available attributes.
+    // Suitable for rendering.
+    void SplitByAttributes();
 
 private:
 
@@ -111,8 +139,6 @@ private:
     std::array<int, EnumCount<BuiltinAttribute>> builtinAttributeIndices_ = {};
     std::map<std::string, int, std::less<>> nameToAttributeIndex_;
 };
-
-FlatHalfEdgeMesh CreateFlatHalfEdgeMesh(const RawMesh &rawMesh);
 
 inline RawMeshAttributeData::Type RawMeshAttributeData::GetType() const
 {
@@ -196,6 +222,16 @@ inline int RawMesh::GetUVAttributeIndex() const
     return GetBuiltinAttributeIndex(BuiltinAttribute::UV);
 }
 
+inline bool RawMesh::HasNormals() const
+{
+    return GetBuiltinAttributeIndex(BuiltinAttribute::Normal) >= 0;
+}
+
+inline bool RawMesh::HasUVs() const
+{
+    return GetBuiltinAttributeIndex(BuiltinAttribute::UV) >= 0;
+}
+
 inline const RawMeshAttributeData* RawMesh::GetPositions() const
 {
     const int index = GetBuiltinAttributeIndex(BuiltinAttribute::Position);
@@ -214,9 +250,35 @@ inline const RawMeshAttributeData* RawMesh::GetUVs() const
     return index >= 0 ? &attributes_[index] : nullptr;
 }
 
+inline Span<uint32_t> RawMesh::GetPositionIndices() const
+{
+    const int index = GetPositionAttributeIndex();
+    assert(index >= 0);
+    return GetIndices(index);
+}
+
+inline Span<uint32_t> RawMesh::GetNormalIndices() const
+{
+    const int index = GetNormalAttributeIndex();
+    assert(index >= 0);
+    return GetIndices(index);
+}
+
+inline Span<uint32_t> RawMesh::GetUVIndices() const
+{
+    const int index = GetUVAttributeIndex();
+    assert(index >= 0);
+    return GetIndices(index);
+}
+
 inline Span<uint32_t> RawMesh::GetIndices(uint32_t attributeIndex) const
 {
     return indices_[attributeIndex];
+}
+
+inline FlatHalfEdgeMesh RawMesh::CreateFlatHalfEdgeMesh() const
+{
+    return FlatHalfEdgeMesh::Build(GetPositionIndices());
 }
 
 inline int RawMesh::GetBuiltinAttributeIndex(BuiltinAttribute attribute) const

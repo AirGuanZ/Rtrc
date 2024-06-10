@@ -1,6 +1,5 @@
 #include <tiny_obj_loader.h>
 
-#include <Rtrc/Core/Enumerate.h>
 #include <Rtrc/Core/String.h>
 #include <Rtrc/Geometry/RawMesh.h>
 
@@ -24,6 +23,172 @@ std::string_view RawMesh::GetExtension(const std::string& filename)
         throw Exception(fmt::format("No extension found in {}", filename));
     }
     return std::string_view(filename).substr(pos);
+}
+
+void RawMesh::RecalculateNormal(float cosAngleThreshold)
+{
+    auto positionData = GetPositions()->GetData<Vector3f>();
+    auto positionIndices = GetPositionIndices();
+
+    std::vector<Vector3f> newNormals;
+    std::vector<uint32_t> newNormalIndices;
+    std::map<Vector3f, uint32_t> newNormalToIndex;
+    auto AppendNewNormalIndex = [&](const Vector3f &newNormal)
+    {
+        auto it = newNormalToIndex.find(newNormal);
+        if(it == newNormalToIndex.end())
+        {
+            const uint32_t newNormalIndex = static_cast<uint32_t>(newNormals.size());
+            newNormals.push_back(newNormal);
+            it = newNormalToIndex.emplace(std::make_pair(newNormal, newNormalIndex)).first;
+        }
+        newNormalIndices.push_back(it->second);
+    };
+
+    if(cosAngleThreshold >= 1)
+    {
+        for(uint32_t f0 = 0; f0 < positionIndices.size(); f0 += 3)
+        {
+            const uint32_t va = positionIndices[f0 + 0];
+            const uint32_t vb = positionIndices[f0 + 1];
+            const uint32_t vc = positionIndices[f0 + 2];
+
+            const Vector3f &pa = positionData[va];
+            const Vector3f &pb = positionData[vb];
+            const Vector3f &pc = positionData[vc];
+
+            const Vector3f faceNormal = Normalize(Cross(pc - pb, pb - pa));
+
+            AppendNewNormalIndex(faceNormal);
+            AppendNewNormalIndex(faceNormal);
+            AppendNewNormalIndex(faceNormal);
+        }
+    }
+    else
+    {
+        struct FaceNormalRecord
+        {
+            Vector3f normal;
+            float angle;
+        };
+        std::vector<std::vector<FaceNormalRecord>> vertexToFaceNormals(positionData.size());
+
+        for(uint32_t f0 = 0; f0 < positionIndices.size(); f0 += 3)
+        {
+            const uint32_t va = positionIndices[f0 + 0];
+            const uint32_t vb = positionIndices[f0 + 1];
+            const uint32_t vc = positionIndices[f0 + 2];
+
+            const Vector3f &pa = positionData[va];
+            const Vector3f &pb = positionData[vb];
+            const Vector3f &pc = positionData[vc];
+
+            const Vector3f faceNormal = Normalize(Cross(pc - pb, pb - pa));
+            const float ca = Dot(Normalize(pb - pa), Normalize(pc - pa));
+            const float cb = Dot(Normalize(pc - pb), Normalize(pa - pb));
+            const float cc = Dot(Normalize(pa - pc), Normalize(pb - pc));
+
+            vertexToFaceNormals[va].push_back({ faceNormal, std::acos(ca) });
+            vertexToFaceNormals[vb].push_back({ faceNormal, std::acos(cb) });
+            vertexToFaceNormals[vc].push_back({ faceNormal, std::acos(cc) });
+        }
+
+        auto ComputeAverageNormal = [&](const Vector3f &referenceNormal, Span<FaceNormalRecord> records)
+        {
+            Vector3f sumNormal(0, 0, 0);
+            float sumWeight = 0;
+            for(auto &record : records)
+            {
+                if(Dot(referenceNormal, record.normal) >= cosAngleThreshold)
+                {
+                    sumNormal += record.normal * record.angle;
+                    sumWeight += record.angle;
+                }
+            }
+            return sumNormal / (std::max)(sumWeight, 1e-5f);
+        };
+
+        for(uint32_t f0 = 0; f0 < positionIndices.size(); f0 += 3)
+        {
+            const uint32_t va = positionIndices[f0 + 0];
+            const uint32_t vb = positionIndices[f0 + 1];
+            const uint32_t vc = positionIndices[f0 + 2];
+
+            const Vector3f &pa = positionData[f0 + 0];
+            const Vector3f &pb = positionData[f0 + 1];
+            const Vector3f &pc = positionData[f0 + 2];
+            const Vector3f faceNormal = Normalize(Cross(pc - pb, pb - pa));
+
+            const Vector3f na = ComputeAverageNormal(faceNormal, vertexToFaceNormals[va]);
+            const Vector3f nb = ComputeAverageNormal(faceNormal, vertexToFaceNormals[vb]);
+            const Vector3f nc = ComputeAverageNormal(faceNormal, vertexToFaceNormals[vc]);
+
+            AppendNewNormalIndex(na);
+            AppendNewNormalIndex(nb);
+            AppendNewNormalIndex(nc);
+        }
+    }
+
+    int normalAttributeIndex = GetNormalAttributeIndex();
+    if(normalAttributeIndex < 0)
+    {
+        normalAttributeIndex = static_cast<int>(attributes_.size());
+        attributes_.emplace_back();
+        indices_.emplace_back();
+        nameToAttributeIndex_.emplace(std::make_pair("normal", normalAttributeIndex));
+        builtinAttributeIndices_[std::to_underlying(BuiltinAttribute::Normal)] = normalAttributeIndex;
+    }
+
+    auto &normalAttribute = attributes_[normalAttributeIndex];
+    normalAttribute.type_ = RawMeshAttributeData::Type::Float3;
+    normalAttribute.name_ = "normal";
+    normalAttribute.data_.resize(sizeof(Vector3f) * newNormals.size());
+    std::memcpy(normalAttribute.data_.data(), newNormals.data(), normalAttribute.data_.size());
+
+    indices_[normalAttributeIndex] = std::move(newNormalIndices);
+}
+
+void RawMesh::SplitByAttributes()
+{
+    uint32_t newVertexCount = 0;
+    std::vector<std::vector<unsigned char>> newAttributeData(attributes_.size());
+    std::map<std::vector<uint32_t>, uint32_t> newIndexMap;
+    std::vector<uint32_t> newIndices;
+
+    auto positionIndices = GetPositionIndices();
+    for(uint32_t i = 0; i < positionIndices.size(); ++i)
+    {
+        std::vector<uint32_t> combinedIndices;
+        for(uint32_t ai = 0; ai < attributes_.size(); ++ai)
+        {
+            combinedIndices.push_back(GetIndices(ai)[i]);
+        }
+
+        auto it = newIndexMap.find(combinedIndices);
+        if(it == newIndexMap.end())
+        {
+            const uint32_t newIndex = newVertexCount++;
+            for(uint32_t ai = 0; ai < attributes_.size(); ++i)
+            {
+                auto &attribute = GetAttribute(ai);
+                auto srcUnit = GetAttributeBytes(attribute.GetType());
+                auto srcIndex = combinedIndices[ai];
+                auto src = attribute.GetUntypedData().GetData() + srcIndex * srcUnit;
+                for(size_t bi = 0; bi < srcUnit; ++bi)
+                {
+                    newAttributeData[ai].push_back(src[bi]);
+                }
+            }
+            it = newIndexMap.emplace(std::make_pair(std::move(combinedIndices), newIndex)).first;
+        }
+        newIndices.push_back(it->second);
+    }
+
+    for(uint32_t ai = 0; ai < attributes_.size(); ++ai)
+    {
+        attributes_[ai].data_ = std::move(newAttributeData[ai]);
+        indices_[ai] = newIndices;
+    }
 }
 
 RawMesh RawMesh::LoadWavefrontObj(const std::string& filename)
@@ -122,18 +287,12 @@ RawMesh RawMesh::LoadWavefrontObj(const std::string& filename)
 
     // Name -> attribute
 
-    for(auto&& [index, attribute] : Enumerate(mesh.attributes_))
+    for(auto&& [index, attribute] : std::views::enumerate(mesh.attributes_))
     {
         mesh.nameToAttributeIndex_[attribute.GetName()] = index;
     }
 
     return mesh;
-}
-
-FlatHalfEdgeMesh CreateFlatHalfEdgeMesh(const RawMesh &rawMesh)
-{
-    const Span<uint32_t> indices = rawMesh.GetIndices(rawMesh.GetPositionAttributeIndex());
-    return FlatHalfEdgeMesh::Build(indices);
 }
 
 RTRC_END
