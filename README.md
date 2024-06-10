@@ -50,6 +50,8 @@ RTRC_APPLICATION_MAIN(
 
 [avir](https://github.com/avaneev/avir) for image resizing
 
+[bvh](https://github.com/madmann91/bvh) for BVH construction
+
 [cista](https://github.com/felixguendling/cista) for counting class members
 
 [cxxopts](https://github.com/jarro2783/cxxopts) for parsing command arguments

@@ -1,0 +1,33 @@
+name: build-and-test
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  build-and-test:
+    name: Build and test on ${{matrix.os}} in ${{matrix.build-type}} mode
+    runs-on: ${{matrix.os}}
+    strategy:
+      matrix:
+        build-type: [Debug, Release]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Create Build Environment
+      run: cmake -E make_directory ${{runner.workspace}}/build
+
+    - name: Configure CMake
+      working-directory: ${{runner.workspace}}/build
+      shell: bash # Necessary because of the $GITHUB_WORKSPACE variable
+      run: cmake -DCMAKE_BUILD_TYPE=${{matrix.build-type}} -DBUILD_TESTING=ON -S $GITHUB_WORKSPACE
+
+    - name: Build
+      working-directory: ${{runner.workspace}}/build
+      run: cmake --build . --config ${{matrix.build-type}}
+
+    - name: Test
+      working-directory: ${{runner.workspace}}/build
+      run: ctest -C ${{matrix.build-type}}

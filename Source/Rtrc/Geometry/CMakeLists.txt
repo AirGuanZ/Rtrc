@@ -15,4 +15,4 @@ endforeach()
 
 set_property(TARGET RtrcGeometry PROPERTY CXX_STANDARD 23)
 
-target_link_libraries(RtrcGeometry PUBLIC RtrcCore Eigen3::Eigen unordered_dense)
+target_link_libraries(RtrcGeometry PUBLIC RtrcCore Eigen3::Eigen unordered_dense bvh)

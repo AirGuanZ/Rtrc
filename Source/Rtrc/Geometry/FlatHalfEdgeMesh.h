@@ -46,6 +46,15 @@ public:
     int EdgeToHalfEdge(int e) const { return edgeToHalfEdge_[e]; }
     int FaceToHalfEdge(int f) const { return faceToHalfEdge_[f]; }
 
+    // If Unique is true, only one of each pair of twin half-edges will be used, with the outgoing one being preferred.
+    // func is called with the index of each half edge.
+    template <bool Unique, typename Func>
+    void ForEachHalfEdge(int v, const Func &func) const;
+
+    // func is called with the index of each neighboring vertex.
+    template<typename Func>
+    void ForEachNeighbor(int v, const Func &func) const;
+
 private:
 
     int H_ = 0;
@@ -57,9 +66,51 @@ private:
     std::vector<int> halfEdgeToEdge_;
     std::vector<int> halfEdgeToHead_;
 
-    std::vector<int> vertToHalfEdge_;
+    std::vector<int> vertToHalfEdge_; // One of the half edges outgoing from v. The boundary one is preferred, if present.
     std::vector<int> edgeToHalfEdge_;
     std::vector<int> faceToHalfEdge_;
 };
+
+template <bool Unique, typename Func>
+void FlatHalfEdgeMesh::ForEachHalfEdge(int v, const Func &func) const
+{
+    int h0 = VertToHalfEdge(v);
+    assert(Vert(h0) == v);
+
+    int h = h0;
+    while(true)
+    {
+        func(h);
+        h = Prev(h);
+        if constexpr(!Unique)
+        {
+            func(h);
+        }
+        const int nh = Twin(h);
+        if(nh < 0)
+        {
+            if constexpr(Unique)
+            {
+                func(h);
+            }
+            break;
+        }
+        h = nh;
+        if(h == h0)
+        {
+            break;
+        }
+    }
+}
+
+template <typename Func>
+void FlatHalfEdgeMesh::ForEachNeighbor(int v, const Func &func) const
+{
+    this->ForEachHalfEdge<true>([&](int h)
+    {
+        const int nh = Vert(h) == v ? Succ(h) : h;
+        func(Vert(nh));
+    });
+}
 
 RTRC_END

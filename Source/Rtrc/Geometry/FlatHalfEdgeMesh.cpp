@@ -71,10 +71,10 @@ FlatHalfEdgeMesh FlatHalfEdgeMesh::Build(Span<uint32_t> indices, BuildOptions op
         }
     }
 
-    // Check non-manifold vertex.
-    // A non-manifold vertex has more than one incident boundary half edge.
+    // Check for non-manifold vertices.
+    // A non-manifold vertex has more than one incident boundary half-edge.
 
-    std::vector<bool> vertexToBounadryIncidentHalfEdges(maxV + 1, false);
+    std::vector<bool> vertexToBoundaryIncidentHalfEdges(maxV + 1, false);
     for(int h = 0; h < static_cast<int>(heads.size()); ++h)
     {
         if(twins[h] >= 0)
@@ -82,7 +82,7 @@ FlatHalfEdgeMesh FlatHalfEdgeMesh::Build(Span<uint32_t> indices, BuildOptions op
             continue;
         }
         const int vert = heads[h];
-        if(vertexToBounadryIncidentHalfEdges[vert])
+        if(vertexToBoundaryIncidentHalfEdges[vert])
         {
             if(options.Contains(ThrowOnNonManifoldInput))
             {
@@ -90,7 +90,7 @@ FlatHalfEdgeMesh FlatHalfEdgeMesh::Build(Span<uint32_t> indices, BuildOptions op
             }
             return {};
         }
-        vertexToBounadryIncidentHalfEdges[vert] = true;
+        vertexToBoundaryIncidentHalfEdges[vert] = true;
     }
 
     // Fill final mesh
@@ -108,7 +108,7 @@ FlatHalfEdgeMesh FlatHalfEdgeMesh::Build(Span<uint32_t> indices, BuildOptions op
     for(int h = 0; h < mesh.H_; ++h)
     {
         const int v = mesh.Vert(h);
-        if(mesh.vertToHalfEdge_[v] < 0)
+        if(mesh.vertToHalfEdge_[v] < 0 || mesh.halfEdgeToTwin_[h] < 0)
         {
             mesh.vertToHalfEdge_[v] = h;
         }

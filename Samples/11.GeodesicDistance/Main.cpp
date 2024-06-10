@@ -120,7 +120,7 @@ void VoxelizeWithDilation(
                     const Vector3u voxel = { x, y, z };
                     const Vector3f voxelMin = lower + voxelSize * voxel.To<float>();
                     const Vector3f voxelMax = voxelMin + Vector3f(voxelSize);
-                    if(IntersectionTriangleAABB(p0, p1, p2, voxelMin, voxelMax))
+                    if(IntersectTriangleAABB(p0, p1, p2, voxelMin, voxelMax))
                     {
                         voxels(x, y, z) = true;
                     }

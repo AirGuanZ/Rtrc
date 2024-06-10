@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.12)
 
 add_subdirectory(avir)
+add_subdirectory(bvh)
 add_subdirectory(cista)
 add_subdirectory(cy)
 add_subdirectory(cxxopts-3.1.1)
