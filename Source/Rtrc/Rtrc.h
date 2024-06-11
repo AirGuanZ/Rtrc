@@ -15,8 +15,10 @@
 #include <Rtrc/Core/Resource/ImageSampler.h>
 #include <Rtrc/Core/Resource/MeshData.h>
 
-#include <Rtrc/Geometry/RawMesh.h>
+#include <Rtrc/Geometry/DiscreteOperators.h>
 #include <Rtrc/Geometry/FlatHalfEdgeMesh.h>
+#include <Rtrc/Geometry/RawMesh.h>
+#include <Rtrc/Geometry/TriangleBVH.h>
 
 #include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/Graphics/Device/PipelineCache.h>

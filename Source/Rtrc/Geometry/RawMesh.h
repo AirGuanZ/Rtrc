@@ -76,7 +76,16 @@ class RawMesh
 {
 public:
 
+    // ======================== Builder ========================
+
     static RawMesh Load(const std::string &filename);
+
+    void SetTriangleCount(uint32_t count);
+    void AddAttribute(
+        std::string                name,
+        RawMeshAttributeData::Type type,
+        std::vector<unsigned char> data,
+        std::vector<uint32_t>      indices);
 
     // ======================== Get data ========================
 
@@ -96,15 +105,27 @@ public:
     bool HasNormals() const;
     bool HasUVs() const;
 
-    const RawMeshAttributeData *GetPositions() const;
-    const RawMeshAttributeData *GetNormals() const;
-    const RawMeshAttributeData *GetUVs() const;
+    RawMeshAttributeData *GetPositionAttribute();
+    RawMeshAttributeData *GetNormalAttribute();
+    RawMeshAttributeData *GetUVAttribute();
+
+    const RawMeshAttributeData *GetPositionAttribute() const;
+    const RawMeshAttributeData *GetNormalAttribute() const;
+    const RawMeshAttributeData *GetUVAttribute() const;
+
+    Span<Vector3f> GetPositionData() const;
+    Span<Vector3f> GetNormalData() const;
+    Span<Vector2f> GetUVData() const;
+
+    MutSpan<Vector3f> GetPositionData();
+    MutSpan<Vector3f> GetNormalData();
+    MutSpan<Vector2f> GetUVData();
+
+    Span<uint32_t> GetIndices(uint32_t attributeIndex) const;
 
     Span<uint32_t> GetPositionIndices() const;
     Span<uint32_t> GetNormalIndices() const;
     Span<uint32_t> GetUVIndices() const;
-
-    Span<uint32_t> GetIndices(uint32_t attributeIndex) const;
 
     FlatHalfEdgeMesh CreateFlatHalfEdgeMesh() const;
 
@@ -116,6 +137,9 @@ public:
     // Split vertices by normal, UV, etc., so that the position index can be used to reference all available attributes.
     // Suitable for rendering.
     void SplitByAttributes();
+
+    // Scale and translate the mesh to fit into the given bounding box
+    void NormalizePositionTo(const Vector3f &targetLower, const Vector3f &targetUpper);
 
 private:
 
@@ -232,22 +256,91 @@ inline bool RawMesh::HasUVs() const
     return GetBuiltinAttributeIndex(BuiltinAttribute::UV) >= 0;
 }
 
-inline const RawMeshAttributeData* RawMesh::GetPositions() const
+inline RawMeshAttributeData *RawMesh::GetPositionAttribute()
 {
     const int index = GetBuiltinAttributeIndex(BuiltinAttribute::Position);
     return index >= 0 ? &attributes_[index] : nullptr;
 }
 
-inline const RawMeshAttributeData* RawMesh::GetNormals() const
+inline RawMeshAttributeData *RawMesh::GetNormalAttribute()
 {
     const int index = GetBuiltinAttributeIndex(BuiltinAttribute::Normal);
     return index >= 0 ? &attributes_[index] : nullptr;
 }
 
-inline const RawMeshAttributeData* RawMesh::GetUVs() const
+inline RawMeshAttributeData *RawMesh::GetUVAttribute()
 {
     const int index = GetBuiltinAttributeIndex(BuiltinAttribute::UV);
     return index >= 0 ? &attributes_[index] : nullptr;
+}
+
+inline const RawMeshAttributeData* RawMesh::GetPositionAttribute() const
+{
+    const int index = GetBuiltinAttributeIndex(BuiltinAttribute::Position);
+    return index >= 0 ? &attributes_[index] : nullptr;
+}
+
+inline const RawMeshAttributeData* RawMesh::GetNormalAttribute() const
+{
+    const int index = GetBuiltinAttributeIndex(BuiltinAttribute::Normal);
+    return index >= 0 ? &attributes_[index] : nullptr;
+}
+
+inline const RawMeshAttributeData* RawMesh::GetUVAttribute() const
+{
+    const int index = GetBuiltinAttributeIndex(BuiltinAttribute::UV);
+    return index >= 0 ? &attributes_[index] : nullptr;
+}
+
+inline Span<Vector3f> RawMesh::GetPositionData() const
+{
+    return GetPositionAttribute()->GetData<Vector3f>();
+}
+
+inline Span<Vector3f> RawMesh::GetNormalData() const
+{
+    if(auto attrib = GetNormalAttribute())
+    {
+        return attrib->GetData<Vector3f>();
+    }
+    return {};
+}
+
+inline Span<Vector2f> RawMesh::GetUVData() const
+{
+    if(auto attrib = GetUVAttribute())
+    {
+        return attrib->GetData<Vector2f>();
+    }
+    return {};
+}
+
+inline MutSpan<Vector3f> RawMesh::GetPositionData()
+{
+    return GetPositionAttribute()->GetData<Vector3f>();
+}
+
+inline MutSpan<Vector3f> RawMesh::GetNormalData()
+{
+    if(auto attrib = GetNormalAttribute())
+    {
+        return attrib->GetData<Vector3f>();
+    }
+    return {};
+}
+
+inline MutSpan<Vector2f> RawMesh::GetUVData()
+{
+    if(auto attrib = GetUVAttribute())
+    {
+        return attrib->GetData<Vector2f>();
+    }
+    return {};
+}
+
+inline Span<uint32_t> RawMesh::GetIndices(uint32_t attributeIndex) const
+{
+    return indices_[attributeIndex];
 }
 
 inline Span<uint32_t> RawMesh::GetPositionIndices() const
@@ -269,11 +362,6 @@ inline Span<uint32_t> RawMesh::GetUVIndices() const
     const int index = GetUVAttributeIndex();
     assert(index >= 0);
     return GetIndices(index);
-}
-
-inline Span<uint32_t> RawMesh::GetIndices(uint32_t attributeIndex) const
-{
-    return indices_[attributeIndex];
 }
 
 inline FlatHalfEdgeMesh RawMesh::CreateFlatHalfEdgeMesh() const

@@ -15,6 +15,51 @@ RawMesh RawMesh::Load(const std::string& filename)
     throw Exception(fmt::format("Unsupported mesh file extension: '{}'", ext));
 }
 
+void RawMesh::SetTriangleCount(uint32_t count)
+{
+    assert(attributes_.empty());
+    assert(count > 0);
+    triangleCount_ = count;
+}
+
+void RawMesh::AddAttribute(
+    std::string                name,
+    RawMeshAttributeData::Type type,
+    std::vector<unsigned char> data,
+    std::vector<uint32_t>      indices)
+{
+    assert(triangleCount_);
+    assert(!nameToAttributeIndex_.contains(name));
+    assert(data.size() % RawMeshDetail::GetAttributeBytes(type) == 0);
+    assert(indices.size() % 3 == 0);
+    assert(indices.size() / 3 == triangleCount_);
+
+    const int attributeIndex = static_cast<int>(attributes_.size());
+    auto &attribute = attributes_.emplace_back();
+    attribute.type_ = type;
+    attribute.name_ = std::move(name);
+    attribute.data_ = std::move(data);
+
+    indices_.push_back(std::move(indices));
+
+    if(attribute.name_ == "position")
+    {
+        assert(type == RawMeshAttributeData::Type::Float3);
+        builtinAttributeIndices_[std::to_underlying(BuiltinAttribute::Position)] = attributeIndex
+            ;
+    }
+    else if(attribute.name_ == "normal")
+    {
+        assert(type == RawMeshAttributeData::Type::Float3);
+        builtinAttributeIndices_[std::to_underlying(BuiltinAttribute::Normal)] = attributeIndex;
+    }
+    else if(attribute.name_ == "uv")
+    {
+        assert(type == RawMeshAttributeData::Type::Float2);
+        builtinAttributeIndices_[std::to_underlying(BuiltinAttribute::UV)] = attributeIndex;
+    }
+}
+
 std::string_view RawMesh::GetExtension(const std::string& filename)
 {
     const size_t pos = filename.rfind('.');
@@ -27,7 +72,7 @@ std::string_view RawMesh::GetExtension(const std::string& filename)
 
 void RawMesh::RecalculateNormal(float cosAngleThreshold)
 {
-    auto positionData = GetPositions()->GetData<Vector3f>();
+    auto positionData = GetPositionData();
     auto positionIndices = GetPositionIndices();
 
     std::vector<Vector3f> newNormals;
@@ -188,6 +233,27 @@ void RawMesh::SplitByAttributes()
     {
         attributes_[ai].data_ = std::move(newAttributeData[ai]);
         indices_[ai] = newIndices;
+    }
+}
+
+void RawMesh::NormalizePositionTo(const Vector3f &targetLower, const Vector3f &targetUpper)
+{
+    Vector3f currentLower(FLT_MAX), currentUpper(-FLT_MAX);
+    for(auto &position : GetPositionData())
+    {
+        currentLower = Min(currentLower, position);
+        currentUpper = Max(currentUpper, position);
+    }
+    const Vector3f currentExtent = currentUpper - currentLower;
+    const Vector3f targetExtent = targetUpper - targetLower;
+
+    const Vector3f idealScaleFactor = targetExtent / Max(currentExtent, Vector3f(1e-6f));
+    const float scale = (std::min)({ idealScaleFactor.x, idealScaleFactor.y, idealScaleFactor.z });
+    const Vector3f bias = 0.5f * (targetUpper + targetLower) - scale * 0.5f * (currentLower + currentUpper);
+
+    for(auto& position : GetPositionData())
+    {
+        position = scale * position + bias;
     }
 }
 
