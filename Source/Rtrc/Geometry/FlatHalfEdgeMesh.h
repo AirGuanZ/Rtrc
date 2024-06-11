@@ -106,7 +106,7 @@ void FlatHalfEdgeMesh::ForEachHalfEdge(int v, const Func &func) const
 template <typename Func>
 void FlatHalfEdgeMesh::ForEachNeighbor(int v, const Func &func) const
 {
-    this->ForEachHalfEdge<true>([&](int h)
+    this->ForEachHalfEdge<true>(v, [&](int h)
     {
         const int nh = Vert(h) == v ? Succ(h) : h;
         func(Vert(nh));
