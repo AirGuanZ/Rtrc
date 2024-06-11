@@ -79,19 +79,13 @@ void D3D12Reflection::InitializeRegularReflection(IDxcUtils *dxcUtils, Span<std:
             throw Exception(fmt::format( "Fail to get directx12 shader input parameter {}", i));
         }
 
-        int dimension;
-        switch(signatureParameterDesc.Mask)
+        const int dimension = std::popcount(signatureParameterDesc.Mask);
+        if(dimension <= 0 || dimension > 4)
         {
-        case 0b1:    dimension = 1; break;
-        case 0b11:   dimension = 2; break;
-        case 0b111:  dimension = 3; break;
-        case 0b1111: dimension = 4; break;
-        default:
             throw Exception(fmt::format("Invalid input variable mask {}", signatureParameterDesc.Mask));
         }
         
         RHI::VertexAttributeType vertexAttributeType;
-
         if(signatureParameterDesc.ComponentType == D3D_REGISTER_COMPONENT_UINT32)
         {
             vertexAttributeType = static_cast<RHI::VertexAttributeType>(
