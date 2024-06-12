@@ -37,15 +37,19 @@ TriangleBVH TriangleBVH::Build(Span<Vector3f> positions, Span<uint32_t> indices)
     std::vector<bvh::Vector3<float>> primitiveCenters(triangleCount);
     for(uint32_t i = 0, j = 0; i < triangleCount; ++i, j += 3)
     {
+        const uint32_t v0 = indices[j + 0];
+        const uint32_t v1 = indices[j + 1];
+        const uint32_t v2 = indices[j + 2];
+
         AABB3f primitiveBoundingBox;
-        primitiveBoundingBox |= positions[j + 0];
-        primitiveBoundingBox |= positions[j + 1];
-        primitiveBoundingBox |= positions[j + 2];
+        primitiveBoundingBox |= positions[v0];
+        primitiveBoundingBox |= positions[v1];
+        primitiveBoundingBox |= positions[v2];
         primitiveBoundingBoxes[i] = ConvertBoundingBox(primitiveBoundingBox);
 
         globalBoundingBox |= primitiveBoundingBox;
 
-        const Vector3f center = 1.0f / 3 * (positions[j + 0] + positions[j + 1] + positions[j + 2]);
+        const Vector3f center = 1.0f / 3 * (positions[v0] + positions[v1] + positions[v2]);
         primitiveCenters[i] = ConvertVector3(center);
     }
 
@@ -74,11 +78,14 @@ TriangleBVH TriangleBVH::Build(Span<Vector3f> positions, Span<uint32_t> indices)
             for(size_t i = src.first_child_or_primitive; i < src.first_child_or_primitive + src.primitive_count; ++i)
             {
                 const uint32_t pi = tree.primitive_indices[i];
+                const uint32_t v0 = indices[3 * pi + 0];
+                const uint32_t v1 = indices[3 * pi + 1];
+                const uint32_t v2 = indices[3 * pi + 2];
 
                 auto &triangle = ret.triangles_.emplace_back();
-                triangle.a  = positions[3 * pi + 0];
-                triangle.ab = positions[3 * pi + 1] - triangle.a;
-                triangle.ac = positions[3 * pi + 2] - triangle.a;
+                triangle.a  = positions[v0];
+                triangle.ab = positions[v1] - triangle.a;
+                triangle.ac = positions[v2] - triangle.a;
 
                 ret.originalTriangleIndices_.push_back(pi);
             }
