@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Rtrc/Core/Math/AABB.h>
 #include <Rtrc/Core/Math/Vector3.h>
 #include <Rtrc/Core/StringPool.h>
 #include <Rtrc/Geometry/FlatHalfEdgeMesh.h>
@@ -128,6 +129,8 @@ public:
     Span<uint32_t> GetUVIndices() const;
 
     FlatHalfEdgeMesh CreateFlatHalfEdgeMesh() const;
+
+    AABB3f ComputeBoundingBox() const;
 
     // ======================== In-place modifier ========================
 
@@ -367,6 +370,12 @@ inline Span<uint32_t> RawMesh::GetUVIndices() const
 inline FlatHalfEdgeMesh RawMesh::CreateFlatHalfEdgeMesh() const
 {
     return FlatHalfEdgeMesh::Build(GetPositionIndices());
+}
+
+inline AABB3f RawMesh::ComputeBoundingBox() const
+{
+    return std::ranges::fold_left(
+        GetPositionData(), AABB3f{}, [](const auto &lhs, const auto &rhs) { return lhs | rhs; });
 }
 
 inline int RawMesh::GetBuiltinAttributeIndex(BuiltinAttribute attribute) const

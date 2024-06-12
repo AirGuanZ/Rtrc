@@ -45,8 +45,7 @@ void RawMesh::AddAttribute(
     if(attribute.name_ == "position")
     {
         assert(type == RawMeshAttributeData::Type::Float3);
-        builtinAttributeIndices_[std::to_underlying(BuiltinAttribute::Position)] = attributeIndex
-            ;
+        builtinAttributeIndices_[std::to_underlying(BuiltinAttribute::Position)] = attributeIndex;
     }
     else if(attribute.name_ == "normal")
     {
