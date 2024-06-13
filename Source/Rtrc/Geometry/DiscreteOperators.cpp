@@ -17,7 +17,7 @@ namespace DiscreteOperatorDetail
 } // namespace DiscreteOperatorDetail
 
 template <typename Scalar>
-Eigen::SparseMatrix<Scalar> BuildCotanLaplacianMatrix(const FlatHalfEdgeMesh &mesh, Span<Vector3<Scalar>> positions)
+Eigen::SparseMatrix<Scalar> BuildCotanLaplacianMatrix(const FlatHalfedgeMesh &mesh, Span<Vector3<Scalar>> positions)
 {
     auto ComputeCotan = [&](int v, int n, int nPrev, int nSucc)
     {
@@ -44,7 +44,7 @@ Eigen::SparseMatrix<Scalar> BuildCotanLaplacianMatrix(const FlatHalfEdgeMesh &me
     Eigen::SparseMatrix<Scalar> ret(mesh.V(), mesh.V());
     for(int v = 0; v < mesh.V(); ++v)
     {
-        int h0 = mesh.VertToHalfEdge(v);
+        int h0 = mesh.VertToHalfedge(v);
         assert(mesh.Vert(h0) == v);
 
         Scalar sumW = 0;
@@ -82,7 +82,7 @@ Eigen::SparseMatrix<Scalar> BuildCotanLaplacianMatrix(const FlatHalfEdgeMesh &me
     return ret;
 }
 
-template<> Eigen::SparseMatrix<float>  BuildCotanLaplacianMatrix<float>(const FlatHalfEdgeMesh &, Span<Vector3<float>>);
-template<> Eigen::SparseMatrix<double> BuildCotanLaplacianMatrix<double>(const FlatHalfEdgeMesh &, Span<Vector3<double>>);
+template<> Eigen::SparseMatrix<float>  BuildCotanLaplacianMatrix<float>(const FlatHalfedgeMesh &, Span<Vector3<float>>);
+template<> Eigen::SparseMatrix<double> BuildCotanLaplacianMatrix<double>(const FlatHalfedgeMesh &, Span<Vector3<double>>);
 
 RTRC_END

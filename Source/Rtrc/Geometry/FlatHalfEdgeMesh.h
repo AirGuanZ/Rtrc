@@ -5,7 +5,7 @@
 
 RTRC_BEGIN
 
-namespace FlatHalfEdgeMeshDetail
+namespace FlatHalfedgeMeshDetail
 {
 
     enum class BuildOptionFlagBit
@@ -14,18 +14,18 @@ namespace FlatHalfEdgeMeshDetail
     };
     RTRC_DEFINE_ENUM_FLAGS(BuildOptionFlagBit)
 
-} // namespace FlatHalfEdgeMeshDetail
+} // namespace FlatHalfedgeMeshDetail
 
-class FlatHalfEdgeMesh
+class FlatHalfedgeMesh
 {
 public:
 
-    using BuildOptions = FlatHalfEdgeMeshDetail::EnumFlagsBuildOptionFlagBit;
-    using enum FlatHalfEdgeMeshDetail::BuildOptionFlagBit;
+    using BuildOptions = FlatHalfedgeMeshDetail::EnumFlagsBuildOptionFlagBit;
+    using enum FlatHalfedgeMeshDetail::BuildOptionFlagBit;
 
-    // Construct a half-edge mesh structure from the provided triangle mesh.
+    // Construct a halfedge mesh structure from the provided triangle mesh.
     // Includes a basic manifold check focusing solely on connectivity.
-    static FlatHalfEdgeMesh Build(Span<uint32_t> indices, BuildOptions options = ThrowOnNonManifoldInput);
+    static FlatHalfedgeMesh Build(Span<uint32_t> indices, BuildOptions options = ThrowOnNonManifoldInput);
 
     bool IsEmpty() const { return H_ == 0; }
 
@@ -36,24 +36,27 @@ public:
 
     int Succ(int h) const { return (h / 3 * 3) + (h + 1) % 3; }
     int Prev(int h) const { return (h / 3 * 3) + (h + 2) % 3; }
-    int Twin(int h) const { return halfEdgeToTwin_[h]; }
-    int Edge(int h) const { return halfEdgeToEdge_[h]; }
-    int Vert(int h) const { return halfEdgeToHead_[h]; }
+    int Twin(int h) const { return halfedgeToTwin_[h]; }
+    int Edge(int h) const { return halfedgeToEdge_[h]; }
+    int Vert(int h) const { return halfedgeToHead_[h]; }
     int Face(int h) const { return h / 3; }
     int Rawi(int h) const { return h; }
 
-    int VertToHalfEdge(int v) const { return vertToHalfEdge_[v]; }
-    int EdgeToHalfEdge(int e) const { return edgeToHalfEdge_[e]; }
-    int FaceToHalfEdge(int f) const { return faceToHalfEdge_[f]; }
+    int VertToHalfedge(int v) const { return vertToHalfedge_[v]; }
+    int EdgeToHalfedge(int e) const { return edgeToHalfedge_[e]; }
+    int FaceToHalfedge(int f) const { return 3 * f; }
 
-    // If Unique is true, only one of each pair of twin half-edges will be used, with the outgoing one being preferred.
-    // func is called with the index of each half edge.
+    // If Unique is true, only one of each pair of twin halfedges will be used, with the outgoing one being preferred.
+    // func is called with the index of each halfedge.
     template <bool Unique, typename Func>
-    void ForEachHalfEdge(int v, const Func &func) const;
+    void ForEachHalfedge(int v, const Func &func) const;
 
     // func is called with the index of each neighboring vertex.
     template<typename Func>
     void ForEachNeighbor(int v, const Func &func) const;
+
+    // Atomic edge flip operation
+    void FlipEdge(int e);
 
 private:
 
@@ -62,19 +65,18 @@ private:
     int E_ = 0;
     int F_ = 0;
 
-    std::vector<int> halfEdgeToTwin_;
-    std::vector<int> halfEdgeToEdge_;
-    std::vector<int> halfEdgeToHead_;
+    std::vector<int> halfedgeToTwin_;
+    std::vector<int> halfedgeToEdge_;
+    std::vector<int> halfedgeToHead_;
 
-    std::vector<int> vertToHalfEdge_; // One of the half edges outgoing from v. The boundary one is preferred, if present.
-    std::vector<int> edgeToHalfEdge_;
-    std::vector<int> faceToHalfEdge_;
+    std::vector<int> vertToHalfedge_; // One of the half edges outgoing from v. The boundary one is preferred, if present.
+    std::vector<int> edgeToHalfedge_;
 };
 
 template <bool Unique, typename Func>
-void FlatHalfEdgeMesh::ForEachHalfEdge(int v, const Func &func) const
+void FlatHalfedgeMesh::ForEachHalfedge(int v, const Func &func) const
 {
-    int h0 = VertToHalfEdge(v);
+    int h0 = VertToHalfedge(v);
     assert(Vert(h0) == v);
 
     int h = h0;
@@ -104,9 +106,9 @@ void FlatHalfEdgeMesh::ForEachHalfEdge(int v, const Func &func) const
 }
 
 template <typename Func>
-void FlatHalfEdgeMesh::ForEachNeighbor(int v, const Func &func) const
+void FlatHalfedgeMesh::ForEachNeighbor(int v, const Func &func) const
 {
-    this->ForEachHalfEdge<true>(v, [&](int h)
+    this->ForEachHalfedge<true>(v, [&](int h)
     {
         const int nh = Vert(h) == v ? Succ(h) : h;
         func(Vert(nh));

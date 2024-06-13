@@ -1,11 +1,11 @@
 #include <ankerl/unordered_dense.h>
 
 #include <Rtrc/Core/Hash.h>
-#include <Rtrc/Geometry/FlatHalfEdgeMesh.h>
+#include <Rtrc/Geometry/FlatHalfedgeMesh.h>
 
 RTRC_BEGIN
 
-FlatHalfEdgeMesh FlatHalfEdgeMesh::Build(Span<uint32_t> indices, BuildOptions options)
+FlatHalfedgeMesh FlatHalfedgeMesh::Build(Span<uint32_t> indices, BuildOptions options)
 {
     struct EdgeRecord
     {
@@ -72,9 +72,9 @@ FlatHalfEdgeMesh FlatHalfEdgeMesh::Build(Span<uint32_t> indices, BuildOptions op
     }
 
     // Check for non-manifold vertices.
-    // A non-manifold vertex has more than one incident boundary half-edge.
+    // A non-manifold vertex has more than one incident boundary halfedge.
 
-    std::vector<bool> vertexToBoundaryIncidentHalfEdges(maxV + 1, false);
+    std::vector<bool> vertexToBoundaryIncidentHalfedges(maxV + 1, false);
     for(int h = 0; h < static_cast<int>(heads.size()); ++h)
     {
         if(twins[h] >= 0)
@@ -82,7 +82,7 @@ FlatHalfEdgeMesh FlatHalfEdgeMesh::Build(Span<uint32_t> indices, BuildOptions op
             continue;
         }
         const int vert = heads[h];
-        if(vertexToBoundaryIncidentHalfEdges[vert])
+        if(vertexToBoundaryIncidentHalfedges[vert])
         {
             if(options.Contains(ThrowOnNonManifoldInput))
             {
@@ -90,48 +90,103 @@ FlatHalfEdgeMesh FlatHalfEdgeMesh::Build(Span<uint32_t> indices, BuildOptions op
             }
             return {};
         }
-        vertexToBoundaryIncidentHalfEdges[vert] = true;
+        vertexToBoundaryIncidentHalfedges[vert] = true;
     }
 
     // Fill final mesh
 
-    FlatHalfEdgeMesh mesh;
+    FlatHalfedgeMesh mesh;
     mesh.H_ = static_cast<int>(heads.size());
     mesh.V_ = maxV + 1;
     mesh.E_ = static_cast<int>(edgeRecords.size());
     mesh.F_ = F;
-    mesh.halfEdgeToTwin_ = std::move(twins);
-    mesh.halfEdgeToEdge_ = std::move(edges);
-    mesh.halfEdgeToHead_ = std::move(heads);
+    mesh.halfedgeToTwin_ = std::move(twins);
+    mesh.halfedgeToEdge_ = std::move(edges);
+    mesh.halfedgeToHead_ = std::move(heads);
 
-    mesh.vertToHalfEdge_.resize(mesh.V_, -1);
+    mesh.vertToHalfedge_.resize(mesh.V_, -1);
     for(int h = 0; h < mesh.H_; ++h)
     {
         const int v = mesh.Vert(h);
-        if(mesh.vertToHalfEdge_[v] < 0 || mesh.halfEdgeToTwin_[h] < 0)
+        if(mesh.vertToHalfedge_[v] < 0 || mesh.halfedgeToTwin_[h] < 0)
         {
-            mesh.vertToHalfEdge_[v] = h;
+            mesh.vertToHalfedge_[v] = h;
         }
     }
 
-    mesh.edgeToHalfEdge_.resize(mesh.E_);
+    mesh.edgeToHalfedge_.resize(mesh.E_);
     for(int e = 0; e < mesh.E_; ++e)
     {
         const EdgeRecord &record = edgeRecords[e];
-        mesh.edgeToHalfEdge_[e] = record.h0;
-    }
-
-    mesh.faceToHalfEdge_.resize(mesh.F_);
-    for(int h = 0; h < mesh.H_; ++h)
-    {
-        const int f = mesh.Face(h);
-        if(mesh.faceToHalfEdge_[f] < 0)
-        {
-            mesh.faceToHalfEdge_[f] = h;
-        }
+        mesh.edgeToHalfedge_[e] = record.h0;
     }
 
     return mesh;
+}
+
+void FlatHalfedgeMesh::FlipEdge(int e)
+{
+    const int a0 = edgeToHalfedge_[e];
+    const int b0 = Twin(a0);
+    assert(b0 >= 0);
+
+    const int a1  = Succ(a0);
+    const int a2  = Succ(a1);
+    const int a1t = Twin(a1);
+    const int a2t = Twin(a2);
+    const int a1e = Edge(a1);
+    const int a2e = Edge(a2);
+
+    const int b1  = Succ(b0);
+    const int b2  = Succ(b1);
+    const int b1t = Twin(b1);
+    const int b2t = Twin(b2);
+    const int b1e = Edge(b1);
+    const int b2e = Edge(b2);
+
+    const int v0 = Vert(a0);
+    const int v1 = Vert(a1);
+    const int v2 = Vert(a2);
+    const int v3 = Vert(b1);
+
+    auto SetVert = [&](int vert, int oldH, int newH)
+    {
+        halfedgeToHead_[newH] = vert;
+        if(vertToHalfedge_[vert] == oldH)
+        {
+            vertToHalfedge_[vert] = newH;
+        }
+    };
+    SetVert(v3, -1, a0);
+    SetVert(v2, a2, a1);
+    SetVert(v0, b1, a2);
+    SetVert(v2, -1, b0);
+    SetVert(v3, b2, b1);
+    SetVert(v1, a1, b2);
+
+    auto SetTwin = [&](int h0, int h1)
+    {
+        if(h0 >= 0) { halfedgeToTwin_[h0] = h1; }
+        if(h1 >= 0) { halfedgeToTwin_[h1] = h0; }
+    };
+    SetTwin(a0, b0);
+    SetTwin(a1, a2t);
+    SetTwin(a2, b1t);
+    SetTwin(b1, b2t);
+    SetTwin(b2, a1t);
+
+    auto SetEdge = [&](int edge, int oldH, int newH)
+    {
+        halfedgeToEdge_[newH] = edge;
+        if(edgeToHalfedge_[edge] == oldH)
+        {
+            edgeToHalfedge_[edge] = newH;
+        }
+    };
+    SetEdge(a1e, a1, b2);
+    SetEdge(a2e, a2, a1);
+    SetEdge(b1e, b1, a2);
+    SetEdge(b2e, b2, b1);
 }
 
 RTRC_END

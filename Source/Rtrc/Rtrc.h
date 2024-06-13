@@ -16,7 +16,7 @@
 #include <Rtrc/Core/Resource/MeshData.h>
 
 #include <Rtrc/Geometry/DiscreteOperators.h>
-#include <Rtrc/Geometry/FlatHalfEdgeMesh.h>
+#include <Rtrc/Geometry/FlatHalfedgeMesh.h>
 #include <Rtrc/Geometry/RawMesh.h>
 #include <Rtrc/Geometry/TriangleBVH.h>
 

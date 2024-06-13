@@ -3,7 +3,7 @@
 #include <Rtrc/Core/Math/AABB.h>
 #include <Rtrc/Core/Math/Vector3.h>
 #include <Rtrc/Core/StringPool.h>
-#include <Rtrc/Geometry/FlatHalfEdgeMesh.h>
+#include <Rtrc/Geometry/FlatHalfedgeMesh.h>
 
 RTRC_BEGIN
 
@@ -12,14 +12,16 @@ namespace RawMeshDetail
 
     enum class AttributeType
     {
+        Float,
         Float2,
         Float3,
     };
 
     constexpr size_t GetAttributeBytes(AttributeType type)
     {
-        constexpr std::array<size_t, 2> ret =
+        constexpr std::array<size_t, 3> ret =
         {
+            4,
             8,
             12
         };
@@ -27,20 +29,20 @@ namespace RawMeshDetail
     }
 
     template<typename>
-    struct AttributeTypeToDataType
-    {
-        
-    };
-    template<>
-    struct AttributeTypeToDataType<Vector2f>
-    {
-        static constexpr AttributeType Value = AttributeType::Float2;
-    };
-    template<>
-    struct AttributeTypeToDataType<Vector3f>
-    {
-        static constexpr AttributeType Value = AttributeType::Float3;
-    };
+    struct AttributeTypeToDataType;
+
+#define ADD_TYPE_MAP(SRC, DST)                                     \
+    template<>                                                     \
+    struct AttributeTypeToDataType<SRC>                            \
+    {                                                              \
+        static constexpr AttributeType Value = AttributeType::DST; \
+    }
+
+    ADD_TYPE_MAP(float,    Float);
+    ADD_TYPE_MAP(Vector2f, Float2);
+    ADD_TYPE_MAP(Vector3f, Float3);
+
+#undef ADD_TYPE_MAP
     
 } // namespace RawMeshDetail
 
@@ -128,7 +130,7 @@ public:
     Span<uint32_t> GetNormalIndices() const;
     Span<uint32_t> GetUVIndices() const;
 
-    FlatHalfEdgeMesh CreateFlatHalfEdgeMesh() const;
+    FlatHalfedgeMesh CreateFlatHalfEdgeMesh() const;
 
     AABB3f ComputeBoundingBox() const;
 
@@ -367,9 +369,9 @@ inline Span<uint32_t> RawMesh::GetUVIndices() const
     return GetIndices(index);
 }
 
-inline FlatHalfEdgeMesh RawMesh::CreateFlatHalfEdgeMesh() const
+inline FlatHalfedgeMesh RawMesh::CreateFlatHalfEdgeMesh() const
 {
-    return FlatHalfEdgeMesh::Build(GetPositionIndices());
+    return FlatHalfedgeMesh::Build(GetPositionIndices());
 }
 
 inline AABB3f RawMesh::ComputeBoundingBox() const
