@@ -58,6 +58,8 @@ public:
     // Atomic edge flip operation
     void FlipEdge(int e);
 
+    bool CheckSanity() const;
+
 private:
 
     int H_ = 0;

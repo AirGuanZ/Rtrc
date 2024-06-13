@@ -147,22 +147,22 @@ void FlatHalfedgeMesh::FlipEdge(int e)
     const int v0 = Vert(a0);
     const int v1 = Vert(a1);
     const int v2 = Vert(a2);
-    const int v3 = Vert(b1);
+    const int v3 = Vert(b2);
 
-    auto SetVert = [&](int vert, int oldH, int newH)
+    auto SetVert = [&](int vert, int oldH0, int oldH1, int newH)
     {
         halfedgeToHead_[newH] = vert;
-        if(vertToHalfedge_[vert] == oldH)
+        if(vertToHalfedge_[vert] == oldH0 || vertToHalfedge_[vert] == oldH1)
         {
             vertToHalfedge_[vert] = newH;
         }
     };
-    SetVert(v3, -1, a0);
-    SetVert(v2, a2, a1);
-    SetVert(v0, b1, a2);
-    SetVert(v2, -1, b0);
-    SetVert(v3, b2, b1);
-    SetVert(v1, a1, b2);
+    SetVert(v3, -1, -1, a0);
+    SetVert(v2, a2, -1, a1);
+    SetVert(v0, b1, a0, a2);
+    SetVert(v2, -1, -1, b0);
+    SetVert(v3, b2, -1, b1);
+    SetVert(v1, a1, b0, b2);
 
     auto SetTwin = [&](int h0, int h1)
     {
@@ -187,6 +187,36 @@ void FlatHalfedgeMesh::FlipEdge(int e)
     SetEdge(a2e, a2, a1);
     SetEdge(b1e, b1, a2);
     SetEdge(b2e, b2, b1);
+}
+
+bool FlatHalfedgeMesh::CheckSanity() const
+{
+    for(int h = 0; h < H(); ++h)
+    {
+        const int twin = Twin(h);
+        if(twin >= 0 && Twin(twin) != h)
+        {
+            return false;
+        }
+    }
+
+    for(int v = 0; v < V(); ++v)
+    {
+        if(Vert(VertToHalfedge(v)) != v)
+        {
+            return false;
+        }
+    }
+
+    for(int e = 0; e < E(); ++e)
+    {
+        if(Edge(EdgeToHalfedge(e)) != e)
+        {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 RTRC_END
