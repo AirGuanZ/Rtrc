@@ -56,15 +56,27 @@ public:
     template<typename Func>
     void ForEachNeighbor(int v, const Func &func) const;
 
-    // Atomic edge flip operation
+    // Perform an atomic edge flip operation.
+    // 'e' points to the newly flipped edge afterward.
     void FlipEdge(int e);
 
     // Insert a new vertex v on half-edge h. It is guaranteed that Vert(h) does not change, and Vert(Succ(h)) equals v.
-    void InsertVertex(int h);
+    // The new vertex will always be the original value of V().
+    void SplitEdge(int h);
+
+    // Insert a new vertex v into face f, subdividing f into 3 new faces
+    // The new vertex will always be the original value of V().
+    void SplitFace(int f);
 
     bool CheckSanity() const;
 
 private:
+
+    // Set Edge(newH) to e.
+    // If edgeToHalfedge[e] matches any one of the oldHs, edgeToHalfedge[e] will be set to newH.
+    void InternalSetEdge(int newH, int e, Span<int> oldHs);
+    void InternalSetVert(int newH, int v, Span<int> oldHs);
+    void InternalSetTwin(int h0, int h1);
 
     int H_ = 0;
     int V_ = 0;

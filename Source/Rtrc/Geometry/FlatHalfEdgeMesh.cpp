@@ -163,44 +163,220 @@ void FlatHalfedgeMesh::FlipEdge(int e)
     const int v2 = Vert(a2);
     const int v3 = Vert(b2);
 
-    auto SetVert = [&](int vert, int oldH0, int oldH1, int newH)
-    {
-        halfedgeToHead_[newH] = vert;
-        if(vertToHalfedge_[vert] == oldH0 || vertToHalfedge_[vert] == oldH1)
-        {
-            vertToHalfedge_[vert] = newH;
-        }
-    };
-    SetVert(v3, -1, -1, a0);
-    SetVert(v2, a2, -1, a1);
-    SetVert(v0, b1, a0, a2);
-    SetVert(v2, -1, -1, b0);
-    SetVert(v3, b2, -1, b1);
-    SetVert(v1, a1, b0, b2);
+    InternalSetVert(a0, v3, {        });
+    InternalSetVert(a1, v2, { a2     });
+    InternalSetVert(a2, v0, { b1, a0 });
+    InternalSetVert(b0, v2, {        });
+    InternalSetVert(b1, v3, { b2     });
+    InternalSetVert(b2, v1, { a1, b0 });
 
-    auto SetTwin = [&](int h0, int h1)
-    {
-        if(h0 >= 0) { halfedgeToTwin_[h0] = h1; }
-        if(h1 >= 0) { halfedgeToTwin_[h1] = h0; }
-    };
-    SetTwin(a0, b0);
-    SetTwin(a1, a2t);
-    SetTwin(a2, b1t);
-    SetTwin(b1, b2t);
-    SetTwin(b2, a1t);
+    InternalSetTwin(a0, b0);
+    InternalSetTwin(a1, a2t);
+    InternalSetTwin(a2, b1t);
+    InternalSetTwin(b1, b2t);
+    InternalSetTwin(b2, a1t);
 
-    auto SetEdge = [&](int edge, int oldH, int newH)
+    InternalSetEdge(b2, a1e, { a1 });
+    InternalSetEdge(a1, a2e, { a2 });
+    InternalSetEdge(a2, b1e, { b1 });
+    InternalSetEdge(b1, b2e, { b2 });
+}
+
+void FlatHalfedgeMesh::SplitEdge(int h)
+{
+    if(const int twin = Twin(h); twin < 0)
     {
-        halfedgeToEdge_[newH] = edge;
-        if(edgeToHalfedge_[edge] == oldH)
-        {
-            edgeToHalfedge_[edge] = newH;
-        }
-    };
-    SetEdge(a1e, a1, b2);
-    SetEdge(a2e, a2, a1);
-    SetEdge(b1e, b1, a2);
-    SetEdge(b2e, b2, b1);
+        // Before
+
+        const int a0 = h;
+        const int a1 = Succ(a0);
+        const int a2 = Succ(a1);
+
+        const int a1t = Twin(a1);
+
+        const int v1 = Vert(a1);
+        const int v2 = Vert(a2);
+
+        const int e1 = Edge(a1);
+
+        // New
+
+        const int v3 = V_;
+        const int e3 = E_;
+        const int e4 = e3 + 1;
+        const int b0 = H_;
+        const int b1 = b0 + 1;
+        const int b2 = b1 + 1;
+
+        H_ += 3;
+        V_ += 1;
+        E_ += 2;
+        F_ += 1;
+
+        halfedgeToHead_.resize(H_, -1);
+        halfedgeToTwin_.resize(H_, -1);
+        halfedgeToEdge_.resize(H_, -1);
+        vertToHalfedge_.resize(V_, -1);
+        edgeToHalfedge_.resize(E_, -1);
+
+        InternalSetTwin(a1, b2);
+        InternalSetTwin(b0, -1);
+        InternalSetTwin(b1, a1t);
+
+        InternalSetVert(a1, v3, {    });
+        InternalSetVert(b0, v3, { -1 });
+        InternalSetVert(b1, v1, { a1 });
+        InternalSetVert(b2, v2, {    });
+
+        InternalSetEdge(a1, e3, { -1 });
+        InternalSetEdge(b0, e4, { -1 });
+        InternalSetEdge(b1, e1, { a1 });
+        InternalSetEdge(b2, e3, {    });
+    }
+    else
+    {
+        // Before
+
+        const int a0 = h;
+        const int a1 = Succ(a0);
+        const int a2 = Succ(a1);
+
+        const int b0 = twin;
+        const int b1 = Succ(b0);
+        const int b2 = Succ(b1);
+
+        const int a1t = Twin(a1);
+        const int b1t = Twin(b1);
+
+        const int v0 = Vert(a0);
+        const int v1 = Vert(b2);
+        const int v2 = Vert(a1);
+        const int v3 = Vert(a2);
+
+        const int e0 = Edge(b1);
+        const int e2 = Edge(a1);
+        const int e4 = Edge(a0);
+
+        // New
+
+        const int c0 = H_ + 0;
+        const int c1 = H_ + 1;
+        const int c2 = H_ + 2;
+        const int d0 = H_ + 3;
+        const int d1 = H_ + 4;
+        const int d2 = H_ + 5;
+
+        const int v4 = V_;
+
+        const int e5 = E_ + 0;
+        const int e6 = E_ + 1;
+        const int e7 = E_ + 2;
+
+        H_ += 6;
+        V_ += 1;
+        E_ += 3;
+        F_ += 2;
+
+        halfedgeToHead_.resize(H_, -1);
+        halfedgeToTwin_.resize(H_, -1);
+        halfedgeToEdge_.resize(H_, -1);
+        vertToHalfedge_.resize(V_, -1);
+        edgeToHalfedge_.resize(E_, -1);
+
+        InternalSetTwin(a0, d1);
+        InternalSetTwin(a1, c0);
+        InternalSetTwin(b0, c1);
+        InternalSetTwin(b1, d0);
+        InternalSetTwin(c2, a1t);
+        InternalSetTwin(d2, b1t);
+
+        InternalSetVert(a1, v4, { -1 });
+        InternalSetVert(b1, v4, {    });
+        InternalSetVert(c0, v3, {    });
+        InternalSetVert(c1, v4, {    });
+        InternalSetVert(c2, v2, { a1 });
+        InternalSetVert(d0, v1, {    });
+        InternalSetVert(d1, v4, {    });
+        InternalSetVert(d2, v0, { b1 });
+
+        InternalSetEdge(a1, e6, { -1 });
+        InternalSetEdge(b0, e5, { -1 });
+        InternalSetEdge(b1, e7, { -1 });
+        InternalSetEdge(c0, e6, {    });
+        InternalSetEdge(c1, e5, {    });
+        InternalSetEdge(c2, e2, { a1 });
+        InternalSetEdge(d0, e7, {    });
+        InternalSetEdge(d1, e4, { b0 });
+        InternalSetEdge(d2, e0, { b1 });
+    }
+}
+
+void FlatHalfedgeMesh::SplitFace(int f)
+{
+    // Before
+
+    const int a0 = 3 * f + 0;
+    const int a1 = 3 * f + 1;
+    const int a2 = 3 * f + 2;
+
+    const int a1t = Twin(a1);
+    const int a2t = Twin(a2);
+
+    const int v0 = Vert(a0);
+    const int v1 = Vert(a1);
+    const int v2 = Vert(a2);
+
+    const int e1 = Edge(a1);
+    const int e2 = Edge(a2);
+
+    // New
+
+    const int b0 = H_ + 0;
+    const int b1 = H_ + 1;
+    const int b2 = H_ + 2;
+    const int c0 = H_ + 3;
+    const int c1 = H_ + 4;
+    const int c2 = H_ + 5;
+
+    const int e3 = E_ + 0;
+    const int e4 = E_ + 1;
+    const int e5 = E_ + 2;
+
+    const int v3 = V_;
+
+    H_ += 6;
+    E_ += 3;
+    V_ += 1;
+    F_ += 2;
+
+    halfedgeToHead_.resize(H_, -1);
+    halfedgeToTwin_.resize(H_, -1);
+    halfedgeToEdge_.resize(H_, -1);
+    vertToHalfedge_.resize(V_, -1);
+    edgeToHalfedge_.resize(E_, -1);
+
+    InternalSetTwin(a1, b2);
+    InternalSetTwin(a2, c1);
+    InternalSetTwin(b0, a1t);
+    InternalSetTwin(b1, c2);
+    InternalSetTwin(c0, a2t);
+
+    InternalSetVert(a2, v3, { -1 });
+    InternalSetVert(b0, v1, { a1 });
+    InternalSetVert(b1, v2, {    });
+    InternalSetVert(b2, v3, {    });
+    InternalSetVert(c0, v2, { a2 });
+    InternalSetVert(c1, v0, {    });
+    InternalSetVert(c2, v3, {    });
+
+    InternalSetEdge(a1, e4, { -1 });
+    InternalSetEdge(a2, e3, { -1 });
+    InternalSetEdge(b0, e1, { a1 });
+    InternalSetEdge(b1, e5, { -1 });
+    InternalSetEdge(b2, e4, {    });
+    InternalSetEdge(c0, e2, { a2 });
+    InternalSetEdge(c1, e3, {    });
+    InternalSetEdge(c2, e5, {    });
 }
 
 bool FlatHalfedgeMesh::CheckSanity() const
@@ -216,7 +392,7 @@ bool FlatHalfedgeMesh::CheckSanity() const
 
     for(int v = 0; v < V(); ++v)
     {
-        if(Vert(VertToHalfedge(v)) != v)
+        if(VertToHalfedge(v) < 0 || Vert(VertToHalfedge(v)) != v)
         {
             return false;
         }
@@ -224,13 +400,51 @@ bool FlatHalfedgeMesh::CheckSanity() const
 
     for(int e = 0; e < E(); ++e)
     {
-        if(Edge(EdgeToHalfedge(e)) != e)
+        if(EdgeToHalfedge(e) < 0 || Edge(EdgeToHalfedge(e)) != e)
         {
             return false;
         }
     }
 
     return true;
+}
+
+void FlatHalfedgeMesh::InternalSetEdge(int newH, int e, Span<int> oldHs)
+{
+    // By setting oldHs = { -1 }, the caller must ensure that edgeToHalfedge[e] has not been initialized
+    // and will always be set to newH in this call.
+    assert(!(oldHs.size() > 1 && oldHs[0] == -1));
+    assert(!(!oldHs.IsEmpty() && oldHs[0] == -1 && edgeToHalfedge_[e] != -1));
+    halfedgeToEdge_[newH] = e;
+    for(int oldH : oldHs)
+    {
+        if(edgeToHalfedge_[e] == oldH)
+        {
+            edgeToHalfedge_[e] = newH;
+            break;
+        }
+    }
+}
+
+void FlatHalfedgeMesh::InternalSetVert(int newH, int v, Span<int> oldHs)
+{
+    assert(!(oldHs.size() > 1 && oldHs[0] == -1));
+    assert(!(!oldHs.IsEmpty() && oldHs[0] == -1 && vertToHalfedge_[v] != -1));
+    halfedgeToHead_[newH] = v;
+    for(int oldH : oldHs)
+    {
+        if(vertToHalfedge_[v] == oldH)
+        {
+            vertToHalfedge_[v] = newH;
+            break;
+        }
+    }
+}
+
+void FlatHalfedgeMesh::InternalSetTwin(int h0, int h1)
+{
+    if(h0 >= 0) { halfedgeToTwin_[h0] = h1; }
+    if(h1 >= 0) { halfedgeToTwin_[h1] = h0; }
 }
 
 RTRC_END
