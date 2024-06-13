@@ -10,7 +10,7 @@ namespace FlatHalfedgeMeshDetail
 
     enum class BuildOptionFlagBit
     {
-        ThrowOnNonManifoldInput = 1 << 0,
+        ThrowOnInvalidInput = 1 << 0,
     };
     RTRC_DEFINE_ENUM_FLAGS(BuildOptionFlagBit)
 
@@ -25,7 +25,8 @@ public:
 
     // Construct a halfedge mesh structure from the provided triangle mesh.
     // Includes a basic manifold check focusing solely on connectivity.
-    static FlatHalfedgeMesh Build(Span<uint32_t> indices, BuildOptions options = ThrowOnNonManifoldInput);
+    // This method also assumes that each vertex is contained by at least one face.
+    static FlatHalfedgeMesh Build(Span<uint32_t> indices, BuildOptions options = ThrowOnInvalidInput);
 
     bool IsEmpty() const { return H_ == 0; }
 
@@ -57,6 +58,9 @@ public:
 
     // Atomic edge flip operation
     void FlipEdge(int e);
+
+    // Insert a new vertex v on half-edge h. It is guaranteed that Vert(h) does not change, and Vert(Succ(h)) equals v.
+    void InsertVertex(int h);
 
     bool CheckSanity() const;
 

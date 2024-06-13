@@ -39,7 +39,7 @@ FlatHalfedgeMesh FlatHalfedgeMesh::Build(Span<uint32_t> indices, BuildOptions op
                 assert(record.h0 >= 0);
                 if(record.h1 >= 0)
                 {
-                    if(options.Contains(ThrowOnNonManifoldInput))
+                    if(options.Contains(ThrowOnInvalidInput))
                     {
                         throw Exception(fmt::format(
                             "Non-manifold edge encountered. Vertices in edge are {} and {}", head, tail));
@@ -84,7 +84,7 @@ FlatHalfedgeMesh FlatHalfedgeMesh::Build(Span<uint32_t> indices, BuildOptions op
         const int vert = heads[h];
         if(vertexToBoundaryIncidentHalfedges[vert])
         {
-            if(options.Contains(ThrowOnNonManifoldInput))
+            if(options.Contains(ThrowOnInvalidInput))
             {
                 throw Exception(fmt::format("Non-manifold vertex encountered. Vertex is {}", vert));
             }
@@ -111,6 +111,20 @@ FlatHalfedgeMesh FlatHalfedgeMesh::Build(Span<uint32_t> indices, BuildOptions op
         if(mesh.vertToHalfedge_[v] < 0 || mesh.halfedgeToTwin_[h] < 0)
         {
             mesh.vertToHalfedge_[v] = h;
+        }
+    }
+
+    // Check vertex references
+
+    for(int v = 0; v < mesh.V_; ++v)
+    {
+        if(mesh.vertToHalfedge_[v] < 0)
+        {
+            if(options.Contains(ThrowOnInvalidInput))
+            {
+                throw Exception(fmt::format("Vertex {} is not contained by any face", v));
+            }
+            return {};
         }
     }
 
