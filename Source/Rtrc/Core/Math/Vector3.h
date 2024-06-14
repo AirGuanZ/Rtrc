@@ -106,6 +106,9 @@ T MaxReduce(const Vector3<T> &v);
 template<typename T>
 T MinReduce(const Vector3<T> &v);
 
+template<std::floating_point T>
+Vector3<T> Lerp(const Vector3<T> &lhs, const Vector3<T> &rhs, const Vector3<T> &t);
+
 template<typename T>
 struct ArchiveTransferTrait<Vector3<T>>
 {
@@ -348,6 +351,12 @@ template<typename T>
 T MinReduce(const Vector3<T> &v)
 {
     return (std::min)({ v.x, v.y, v.z });
+}
+
+template<std::floating_point T>
+Vector3<T> Lerp(const Vector3<T> &lhs, const Vector3<T> &rhs, const Vector3<T> &t)
+{
+    return Vector3<T>(Rtrc::Lerp(lhs.x, rhs.x, t.x), Rtrc::Lerp(lhs.y, rhs.y, t.y), Rtrc::Lerp(lhs.z, rhs.z, t.z));
 }
 
 RTRC_END

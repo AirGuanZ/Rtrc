@@ -69,6 +69,9 @@ T Length(const Vector4<T> &v);
 template<typename T>
 Vector4<T> Normalize(const Vector4<T> &v);
 
+template<std::floating_point T>
+Vector4<T> Lerp(const Vector4<T> &lhs, const Vector4<T> &rhs, const Vector4<T> &t);
+
 template<typename T>
 struct ArchiveTransferTrait<Vector4<T>>
 {
@@ -243,6 +246,14 @@ Vector4<T> Normalize(const Vector4<T> &v)
     static_assert(std::is_floating_point_v<T>);
     const T invLen = 1 / Length(v);
     return Vector4<T>(invLen * v.x, invLen * v.y, invLen * v.z, invLen * v.w);
+}
+
+template<std::floating_point T>
+Vector4<T> Lerp(const Vector4<T> &lhs, const Vector4<T> &rhs, const Vector4<T> &t)
+{
+    return Vector4<T>(
+        Rtrc::Lerp(lhs.x, rhs.x, t.x), Rtrc::Lerp(lhs.y, rhs.y, t.y),
+        Rtrc::Lerp(lhs.z, rhs.z, t.z), Rtrc::Lerp(lhs.w, rhs.w, t.w));
 }
 
 RTRC_END

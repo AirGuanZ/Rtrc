@@ -86,6 +86,9 @@ Vector2<T> Ceil(const Vector2<T> &v);
 template<typename T>
 Vector2<T> Round(const Vector2<T> &v);
 
+template<std::floating_point T>
+Vector2<T> Lerp(const Vector2<T> &lhs, const Vector2<T> &rhs, const Vector2<T> &t);
+
 template<typename T>
 struct ArchiveTransferTrait<Vector2<T>>
 {
@@ -268,6 +271,12 @@ template<typename T>
 Vector2<T> Round(const Vector2<T> &v)
 {
     return Vector2<T>(std::round(v.x), std::round(v.y));
+}
+
+template<std::floating_point T>
+Vector2<T> Lerp(const Vector2<T> &lhs, const Vector2<T> &rhs, const Vector2<T> &t)
+{
+    return Vector2<T>(Rtrc::Lerp(lhs.x, rhs.x, t.x), Rtrc::Lerp(lhs.y, rhs.y, t.y));
 }
 
 RTRC_END
