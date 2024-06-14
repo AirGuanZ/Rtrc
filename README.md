@@ -44,6 +44,7 @@ RTRC_APPLICATION_MAIN(
 | 11.GeodesicDistance<br>Geodesic distance field on voxels | ![Samples00](./Documents/Samples_11.png) |
 | 12.ShaderDSL<br>Embedded DSL in C++ for writing shader | ![](/Documents/Samples_12.png) |
 | 13.HorizonMap<br>Basic horizon shadow described in paper<br>'Interactive Horizon Mapping' | ![](./Documents/Samples_13.png) |
+| 14.HalfedgeMesh<br>Halfedge data structure for triangle mesh | ![](./Documents/Samples_14.png) |
 | WIP | ... |
 
 ## Third-party Dependencies
