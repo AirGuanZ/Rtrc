@@ -149,7 +149,6 @@ void VoxelizeWithDilation(
         }
     };
 
-    for(int i = 0; i < 1; ++i)
     {
         Image3D<bool> voxelsEx = voxels;
         for(uint32_t z = 0; z < voxels.GetDepth(); ++z)
