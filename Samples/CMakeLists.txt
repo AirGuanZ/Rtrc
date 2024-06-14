@@ -38,6 +38,7 @@ add_rtrc_sample(10.FastMarchingMethod)
 add_rtrc_sample(11.GeodesicDistance)
 add_rtrc_sample(12.ShaderDSL)
 add_rtrc_sample(13.HorizonShadowMap)
+add_rtrc_sample(14.HalfedgeMesh)
 
 if(EXISTS "${RTRC_SOURCE_DIR}/Samples/Test.OT2D")
 	add_rtrc_sample(Test.OT2D)
