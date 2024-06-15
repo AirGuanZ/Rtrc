@@ -18,6 +18,7 @@
 #include <Rtrc/Geometry/DiscreteOperators.h>
 #include <Rtrc/Geometry/FlatHalfedgeMesh.h>
 #include <Rtrc/Geometry/RawMesh.h>
+#include <Rtrc/Geometry/SignpostsMesh.h>
 #include <Rtrc/Geometry/TriangleBVH.h>
 
 #include <Rtrc/Graphics/Device/Device.h>
