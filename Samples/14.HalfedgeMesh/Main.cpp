@@ -26,12 +26,12 @@ class HalfedgeMeshDemo : public SimpleApplication
             { +1, +1 },
             { +1, -1 }
         };
-        indices_ =
+        std::vector<uint32_t> indices =
         {
             0, 1, 2,
             0, 2, 3
         };
-        halfedgeMesh_ = FlatHalfedgeMesh::Build(indices_);
+        halfedgeMesh_ = FlatHalfedgeMesh::Build(indices);
 
         SplitEdge(2);
         SplitEdge(halfedgeMesh_.Succ(halfedgeMesh_.Succ(halfedgeMesh_.Twin(halfedgeMesh_.Succ(2)))));
@@ -54,12 +54,6 @@ class HalfedgeMeshDemo : public SimpleApplication
         m.SplitEdge(a0);
 
         positions_.push_back(0.5f * (positions_[v0] + positions_[v1]));
-
-        indices_.resize(m.H());
-        for(int hi = 0; hi < m.H(); ++hi)
-        {
-            indices_[hi] = m.Vert(hi);
-        }
     }
 
     void SplitFace(int f)
@@ -73,12 +67,6 @@ class HalfedgeMeshDemo : public SimpleApplication
         m.SplitFace(f);
 
         positions_.push_back(1.0f / 3 * (positions_[v0] + positions_[v1] + positions_[v2]));
-
-        indices_.resize(m.H());
-        for(int hi = 0; hi < m.H(); ++hi)
-        {
-            indices_[hi] = m.Vert(hi);
-        }
     }
 
     void UpdateSimpleApplication(GraphRef graph) override
@@ -275,7 +263,6 @@ class HalfedgeMeshDemo : public SimpleApplication
     }
 
     std::vector<Vector2f> positions_;
-    std::vector<uint32_t> indices_;
     FlatHalfedgeMesh      halfedgeMesh_;
 
     RC<Buffer> vertexBuffer_;
