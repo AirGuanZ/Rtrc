@@ -35,17 +35,17 @@ public:
     int E() const { return E_; }
     int F() const { return F_; }
 
-    int Succ(int h) const { return (h / 3 * 3) + (h + 1) % 3; }
-    int Prev(int h) const { return (h / 3 * 3) + (h + 2) % 3; }
-    int Twin(int h) const { return halfedgeToTwin_[h]; }
-    int Edge(int h) const { return halfedgeToEdge_[h]; }
-    int Vert(int h) const { return halfedgeToHead_[h]; }
-    int Face(int h) const { return h / 3; }
+    int Succ(int h) const { return h >= 0 ? ((h / 3 * 3) + (h + 1) % 3) : -1; }
+    int Prev(int h) const { return h >= 0 ? ((h / 3 * 3) + (h + 2) % 3) : -1; }
+    int Twin(int h) const { return h >= 0 ? halfedgeToTwin_[h] : -1; }
+    int Edge(int h) const { return h >= 0 ? halfedgeToEdge_[h] : -1; }
+    int Vert(int h) const { return h >= 0 ? halfedgeToHead_[h] : -1; }
+    int Face(int h) const { return h >= 0 ? (h / 3) : -1; }
     int Rawi(int h) const { return h; }
 
-    int VertToHalfedge(int v) const { return vertToHalfedge_[v]; }
-    int EdgeToHalfedge(int e) const { return edgeToHalfedge_[e]; }
-    int FaceToHalfedge(int f) const { return 3 * f; }
+    int VertToHalfedge(int v) const { return v >= 0 ? vertToHalfedge_[v] : -1; }
+    int EdgeToHalfedge(int e) const { return e >= 0 ? edgeToHalfedge_[e] : -1; }
+    int FaceToHalfedge(int f) const { return f >= 0 ? (3 * f) : -1; }
 
     // If Unique is true, only one of each pair of twin halfedges will be used, with the outgoing one being preferred.
     // func is called with the index of each halfedge.
@@ -60,8 +60,8 @@ public:
     // 'e' points to the newly flipped edge afterward.
     void FlipEdge(int e);
 
-    // Insert a new vertex v on half-edge h. It is guaranteed that Vert(h) does not change, and Vert(Succ(h)) equals v.
-    // The new vertex will always be the original value of V().
+    // Insert a new vertex v on half-edge h. The new vertex v will always be the original value of V().
+    // It is guaranteed that Vert(h) does not change, and Vert(Succ(h)) equals v after the insertion.
     void SplitEdge(int h);
 
     // Insert a new vertex v into face f, subdividing f into 3 new faces
