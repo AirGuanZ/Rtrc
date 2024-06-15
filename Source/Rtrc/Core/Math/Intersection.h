@@ -12,12 +12,13 @@ inline float ComputeSquaredDistanceBetweenPointAndAABB(const Vector2f &point, co
 inline float ComputeDistanceBetweenPointAndAABB(const Vector3f &point, const AABB3f &aabb);
 inline float ComputeSquaredDistanceBetweenPointAndAABB(const Vector3f &point, const AABB3f &aabb);
 
-inline bool IntersectTriangleAABB(
-    Vector3f a,
-    Vector3f b,
-    Vector3f c,
-    const Vector3f &lower,
-    const Vector3f &upper);
+template<typename T>
+bool IntersectTriangleAABB(
+    Vector3<T> a,
+    Vector3<T> b,
+    Vector3<T> c,
+    const Vector3<T> &lower,
+    const Vector3<T> &upper);
 
 // Note that the current implementation may produce unstable results if the ray lies exactly
 // on the plane of a bounding box face.
@@ -61,31 +62,32 @@ inline float ComputeDistanceBetweenPointAndAABB(const Vector3f &point, const AAB
 }
 
 // Intersection test based on separating axis theorem
-inline bool IntersectTriangleAABB(
-    Vector3f a,
-    Vector3f b,
-    Vector3f c,
-    const Vector3f &lower,
-    const Vector3f &upper)
+template<typename T>
+bool IntersectTriangleAABB(
+    Vector3<T>        a,
+    Vector3<T>        b,
+    Vector3<T>        c,
+    const Vector3<T> &lower,
+    const Vector3<T> &upper)
 {
     // Move aabb to original
 
-    const Vector3f aabbCenter = 0.5f * (lower + upper);
-    const Vector3f aabbHalfSize = 0.5f * (upper - lower);
+    const Vector3<T> aabbCenter = T(0.5) * (lower + upper);
+    const Vector3<T> aabbHalfSize = T(0.5) * (upper - lower);
     a -= aabbCenter;
     b -= aabbCenter;
     c -= aabbCenter;
 
     // Test intersection when projected onto given axis
 
-    auto IntersectProjected = [&](const Vector3f &axis)
+    auto IntersectProjected = [&](const Vector3<T> &axis)
     {
-        const float pa = Dot(a, axis);
-        const float pb = Dot(b, axis);
-        const float pc = Dot(c, axis);
+        const float pa = Rtrc::Dot(a, axis);
+        const float pb = Rtrc::Dot(b, axis);
+        const float pc = Rtrc::Dot(c, axis);
         const float triMin = (std::min)({ pa, pb, pc });
         const float triMax = (std::max)({ pa, pb, pc });
-        const float aabbMax = AddReduce(Abs(axis * aabbHalfSize));
+        const float aabbMax = Rtrc::AddReduce(Rtrc::Abs(axis * aabbHalfSize));
         const float aabbMin = -aabbMax;
         const bool missed = triMax < aabbMin || aabbMax < triMin;
         return !missed;
@@ -93,17 +95,17 @@ inline bool IntersectTriangleAABB(
 
     // Edge vectors & edge normal vectors
 
-    const Vector3f ab = b - a;
-    const Vector3f bc = c - b;
-    const Vector3f ca = a - c;
+    const Vector3<T> ab = b - a;
+    const Vector3<T> bc = c - b;
+    const Vector3<T> ca = a - c;
 
-    const Vector3f e0 = ab - Dot(ab, bc) * bc / LengthSquare(bc);
-    const Vector3f e1 = bc - Dot(bc, ca) * ca / LengthSquare(ca);
-    const Vector3f e2 = ca - Dot(ca, ab) * ab / LengthSquare(ab);
+    const Vector3<T> e0 = ab - Rtrc::Dot(ab, bc) * bc / Rtrc::LengthSquare(bc);
+    const Vector3<T> e1 = bc - Rtrc::Dot(bc, ca) * ca / Rtrc::LengthSquare(ca);
+    const Vector3<T> e2 = ca - Rtrc::Dot(ca, ab) * ab / Rtrc::LengthSquare(ab);
 
     // Primary axis
 
-    if(!IntersectProjected(Cross(bc, ca)) ||
+    if(!IntersectProjected(Rtrc::Cross(bc, ca)) ||
        !IntersectProjected({ 1, 0, 0 }) ||
        !IntersectProjected({ 0, 1, 0 }) ||
        !IntersectProjected({ 0, 0, 1 }))
@@ -113,23 +115,23 @@ inline bool IntersectTriangleAABB(
 
     // Crossing axis
 
-    if(!IntersectProjected(Cross({ 1, 0, 0 }, e0)) ||
-       !IntersectProjected(Cross({ 1, 0, 0 }, e1)) ||
-       !IntersectProjected(Cross({ 1, 0, 0 }, e2)))
+    if(!IntersectProjected(Rtrc::Cross({ 1, 0, 0 }, e0)) ||
+       !IntersectProjected(Rtrc::Cross({ 1, 0, 0 }, e1)) ||
+       !IntersectProjected(Rtrc::Cross({ 1, 0, 0 }, e2)))
     {
         return false;
     }
 
-    if(!IntersectProjected(Cross({ 0, 1, 0 }, e0)) ||
-       !IntersectProjected(Cross({ 0, 1, 0 }, e1)) ||
-       !IntersectProjected(Cross({ 0, 1, 0 }, e2)))
+    if(!IntersectProjected(Rtrc::Cross({ 0, 1, 0 }, e0)) ||
+       !IntersectProjected(Rtrc::Cross({ 0, 1, 0 }, e1)) ||
+       !IntersectProjected(Rtrc::Cross({ 0, 1, 0 }, e2)))
     {
         return false;
     }
 
-    if(!IntersectProjected(Cross({ 0, 0, 1 }, e0)) ||
-       !IntersectProjected(Cross({ 0, 0, 1 }, e1)) ||
-       !IntersectProjected(Cross({ 0, 0, 1 }, e2)))
+    if(!IntersectProjected(Rtrc::Cross({ 0, 0, 1 }, e0)) ||
+       !IntersectProjected(Rtrc::Cross({ 0, 0, 1 }, e1)) ||
+       !IntersectProjected(Rtrc::Cross({ 0, 0, 1 }, e2)))
     {
         return false;
     }

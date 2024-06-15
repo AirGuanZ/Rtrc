@@ -68,6 +68,9 @@ public:
 using AABB2f = AABB2<float>;
 using AABB3f = AABB3<float>;
 
+using AABB2d = AABB2<double>;
+using AABB3d = AABB3<double>;
+
 template<typename T>
 AABB2<T> operator|(const AABB2<T> &lhs, const AABB2<T> &rhs);
 template<typename T>

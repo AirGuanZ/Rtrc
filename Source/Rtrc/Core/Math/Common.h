@@ -16,10 +16,28 @@ int ArgMax(T v0, T v1, T v2)
     return v0 > v1 ? (v0 > v2 ? 0 : 2) : (v1 > v2 ? 1 : 2);
 }
 
+template<typename T>
+T Min(T a, T b)
+{
+    return a < b ? a : b;
+}
+
+template<typename T>
+T Max(T a, T b)
+{
+    return a < b ? b : a;
+}
+
+template<typename T>
+T Clamp(T v, T vmin, T vmax)
+{
+    return Rtrc::Max(vmin, Rtrc::Min(v, vmax));
+}
+
 template<std::floating_point T>
 T Saturate(T v)
 {
-    return std::clamp(v, T(0), T(1));
+    return Rtrc::Clamp(v, T(0), T(1));
 }
 
 template<typename V, std::floating_point T>
@@ -31,11 +49,12 @@ T Lerp(const V &lhs, const V &rhs, const T &t)
 template<std::floating_point T>
 T InverseLerp(const T &lhs, const T &rhs, const T &val)
 {
-    if(lhs <= rhs)
+    const T diff = rhs - lhs;
+    if(diff == 0)
     {
         return T(0);
     }
-    return (val - lhs) / (rhs - lhs);
+    return (val - lhs) / diff;
 }
 
 RTRC_END
