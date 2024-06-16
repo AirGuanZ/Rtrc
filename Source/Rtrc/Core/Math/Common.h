@@ -41,7 +41,7 @@ T Saturate(T v)
 }
 
 template<typename V, std::floating_point T>
-T Lerp(const V &lhs, const V &rhs, const T &t)
+V Lerp(const V &lhs, const V &rhs, const T &t)
 {
     return lhs * (1 - t) + rhs * t;
 }
