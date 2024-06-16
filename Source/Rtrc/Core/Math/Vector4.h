@@ -68,6 +68,10 @@ template<typename T>
 T Length(const Vector4<T> &v);
 template<typename T>
 Vector4<T> Normalize(const Vector4<T> &v);
+template<typename T>
+Vector4<T> NormalizeIfNotZero(const Vector4<T> &v);
+template<typename T>
+T Cos(const Vector4<T> &a, const Vector4<T> &b);
 
 template<std::floating_point T>
 Vector4<T> Lerp(const Vector4<T> &lhs, const Vector4<T> &rhs, const Vector4<T> &t);
@@ -246,6 +250,22 @@ Vector4<T> Normalize(const Vector4<T> &v)
     static_assert(std::is_floating_point_v<T>);
     const T invLen = 1 / Length(v);
     return Vector4<T>(invLen * v.x, invLen * v.y, invLen * v.z, invLen * v.w);
+}
+
+template<typename T>
+Vector4<T> NormalizeIfNotZero(const Vector4<T> &v)
+{
+    if(v == Vector4<T>())
+    {
+        return {};
+    }
+    return Rtrc::Normalize(v);
+}
+
+template<typename T>
+T Cos(const Vector4<T> &a, const Vector4<T> &b)
+{
+    return Rtrc::Dot(Rtrc::NormalizeIfNotZero(a), Rtrc::NormalizeIfNotZero(b));
 }
 
 template<std::floating_point T>

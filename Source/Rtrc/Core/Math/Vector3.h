@@ -85,6 +85,8 @@ template<typename T>
 Vector3<T> NormalizeIfNotZero(const Vector3<T> &v);
 template<typename T>
 T Distance(const Vector3<T> &a, const Vector3<T> &b);
+template<typename T>
+T Cos(const Vector3<T> &a, const Vector3<T> &b);
 
 template<typename T>
 Vector3<T> Min(const Vector3<T> &lhs, const Vector3<T> &rhs);
@@ -297,6 +299,12 @@ template<typename T>
 T Distance(const Vector3<T> &a, const Vector3<T> &b)
 {
     return Rtrc::Length(a - b);
+}
+
+template<typename T>
+T Cos(const Vector3<T> &a, const Vector3<T> &b)
+{
+    return Rtrc::Dot(Rtrc::NormalizeIfNotZero(a), Rtrc::NormalizeIfNotZero(b));
 }
 
 template<typename T>

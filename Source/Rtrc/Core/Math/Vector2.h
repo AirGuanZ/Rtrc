@@ -73,6 +73,10 @@ template<typename T>
 T Length(const Vector2<T> &v);
 template<typename T>
 Vector2<T> Normalize(const Vector2<T> &v);
+template<typename T>
+Vector2<T> NormalizeIfNotZero(const Vector2<T> &v);
+template<typename T>
+T Cos(const Vector2<T> &a, const Vector2<T> &b);
 
 template<typename T>
 Vector2<T> Min(const Vector2<T> &a, const Vector2<T> &b);
@@ -241,6 +245,22 @@ Vector2<T> Normalize(const Vector2<T> &v)
 {
     const T invLen = 1 / Rtrc::Length(v);
     return invLen * v;
+}
+
+template<typename T>
+Vector2<T> NormalizeIfNotZero(const Vector2<T> &v)
+{
+    if(v == Vector2<T>())
+    {
+        return {};
+    }
+    return Rtrc::Normalize(v);
+}
+
+template<typename T>
+T Cos(const Vector2<T> &a, const Vector2<T> &b)
+{
+    return Rtrc::Dot(Rtrc::NormalizeIfNotZero(a), Rtrc::NormalizeIfNotZero(b));
 }
 
 template<typename T>
