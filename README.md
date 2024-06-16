@@ -45,6 +45,7 @@ RTRC_APPLICATION_MAIN(
 | 12.ShaderDSL<br>Embedded DSL in C++ for writing shader | ![](/Documents/Samples_12.png) |
 | 13.HorizonMap<br>Basic horizon shadow described in paper<br>'Interactive Horizon Mapping' | ![](./Documents/Samples_13.png) |
 | 14.HalfedgeMesh<br>Halfedge data structure for triangle mesh | ![](./Documents/Samples_14.png) |
+| 15.HeatMethod<br>Heat method for geodesic distance computation | ![](./Documents/Samples_15.png) |
 | WIP | ... |
 
 ## Third-party Dependencies
