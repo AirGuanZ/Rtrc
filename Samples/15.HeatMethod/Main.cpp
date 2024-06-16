@@ -49,14 +49,15 @@ class HeatMethodDemo : public SimpleApplication
                 sumEdgeLength += Length(p0 - p1);
             }
             const double meanEdgeLength = sumEdgeLength / m.E();
-            dt = meanEdgeLength * meanEdgeLength;
+            dt = 4 * meanEdgeLength * meanEdgeLength;
         }
         LogInfo("Time step = {}", dt);
 
         // Heat diffusion
 
         const SparseMatrixXd A = (1.0 / 3.0) * BuildVertexAreaDiagonalMatrix<double>(m, positions);
-        const SparseMatrixXd L = BuildCotanLaplacianMatrix<double>(m, positions, CotanLaplacianBoundaryType::Neumann);
+        const SparseMatrixXd Ld = BuildCotanLaplacianMatrix<double>(m, positions, CotanLaplacianBoundaryType::Dirichlet);
+        const SparseMatrixXd Ln = BuildCotanLaplacianMatrix<double>(m, positions, CotanLaplacianBoundaryType::Neumann);
 
         Eigen::VectorXd delta = Eigen::VectorXd::Zero(m.V());
         for(int v = 0; v < m.V(); ++v)
@@ -68,9 +69,15 @@ class HeatMethodDemo : public SimpleApplication
             }
         }
 
-        Eigen::SimplicialLDLT<SparseMatrixXd> heatSolver;
-        heatSolver.compute(A - dt * L);
-        const Eigen::VectorXd u = heatSolver.solve(delta);
+        Eigen::SimplicialLDLT<SparseMatrixXd> dirichletHeatSolver;
+        dirichletHeatSolver.compute(A - dt * Ld);
+        const Eigen::VectorXd ud = dirichletHeatSolver.solve(delta);
+
+        Eigen::SimplicialLDLT<SparseMatrixXd> neumannHeatSolver;
+        neumannHeatSolver.compute(A - dt * Ln);
+        const Eigen::VectorXd un = neumannHeatSolver.solve(delta);
+
+        const Eigen::VectorXd u = 0.5 * (ud + un);
 
         // Gradient direction
 
@@ -109,7 +116,7 @@ class HeatMethodDemo : public SimpleApplication
         // Poisson
 
         Eigen::SimplicialLDLT<SparseMatrixXd> poissonSolver;
-        poissonSolver.compute(L);
+        poissonSolver.compute(Ln);
         const Eigen::VectorXd phi = poissonSolver.solve(divergence);
 
         // Geodesic distances
