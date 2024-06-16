@@ -99,6 +99,11 @@ Eigen::SparseMatrix<Scalar> BuildCotanLaplacianMatrix(
     std::vector<Eigen::Triplet<Scalar>> triplets;
     for(int v = 0; v < mesh.V(); ++v)
     {
+        if(dirichlet && mesh.IsVertOnBoundary(v))
+        {
+            continue;
+        }
+
         int h0 = mesh.VertToHalfedge(v);
         assert(mesh.Vert(h0) == v);
 
@@ -108,13 +113,14 @@ Eigen::SparseMatrix<Scalar> BuildCotanLaplacianMatrix(
         {
             assert(mesh.Vert(h) == v);
             const int n = mesh.Vert(mesh.Succ(h));
+
             const int nPrev = mesh.Vert(mesh.Prev(mesh.Twin(h)));
             const int nSucc = mesh.Vert(mesh.Prev(h));
 
             const Scalar w = ComputeCotan(v, n, nPrev, nSucc);
             sumW += w;
 
-            if(!dirichlet || !mesh.IsEdgeOnBoundary(mesh.Edge(h)))
+            if(!dirichlet || !mesh.IsVertOnBoundary(n))
             {
                 triplets.push_back(Eigen::Triplet<Scalar>(v, n, w));
             }
@@ -126,7 +132,7 @@ Eigen::SparseMatrix<Scalar> BuildCotanLaplacianMatrix(
 
                 if(!dirichlet)
                 {
-                    triplets.push_back(Eigen::Triplet<Scalar>(v, nSucc, w));
+                    triplets.push_back(Eigen::Triplet<Scalar>(v, nSucc, wLast));
                 }
 
                 break;
@@ -142,10 +148,7 @@ Eigen::SparseMatrix<Scalar> BuildCotanLaplacianMatrix(
             }
         }
 
-        if(!dirichlet || !mesh.IsVertOnBoundary(v))
-        {
-            triplets.push_back(Eigen::Triplet<Scalar>(v, v, -sumW));
-        }
+        triplets.push_back(Eigen::Triplet<Scalar>(v, v, -sumW));
     }
 
     Eigen::SparseMatrix<Scalar> ret(mesh.V(), mesh.V());
