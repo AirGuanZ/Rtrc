@@ -58,6 +58,9 @@ public:
     template <bool Unique, typename Func>
     void ForEachHalfedge(int v, const Func &func) const;
 
+    template<typename Func>
+    void ForEachOutgoingHalfedge(int v, const Func &func) const;
+
     // func is called with the index of each neighboring vertex.
     template<typename Func>
     void ForEachNeighbor(int v, const Func &func) const;
@@ -127,6 +130,18 @@ void FlatHalfedgeMesh::ForEachHalfedge(int v, const Func &func) const
             break;
         }
     }
+}
+
+template <typename Func>
+void FlatHalfedgeMesh::ForEachOutgoingHalfedge(int v, const Func &func) const
+{
+    this->ForEachHalfedge<true>(v, [&](int h)
+    {
+        if(this->Vert(h) == v)
+        {
+            func(h);
+        }
+    });
 }
 
 template <typename Func>
