@@ -123,11 +123,11 @@ public:
     using ItemGetter = std::function<bool(int, const char **)>;
     bool BeginCombo(const char *label, const char *previewValue, ImGuiComboFlags flags = 0);
     void EndCombo();
-    void Combo(const char *label, int *curr, Span<std::string> items, int popupMaxHeightInItems = -1);
-    void Combo(const char *label, int *curr, Span<const char*> items, int popupMaxHeightInItems = -1);
-    void Combo(const char *label, int *curr, std::initializer_list<const char*> items, int popupMaxHeightInItems = -1);
-    void Combo(const char *label, int *curr, const char *itemsSeparatedByZeros, int popupMaxHeightInItems = -1);
-    void Combo(const char *label, int *curr, const ItemGetter &getItem, int itemCount, int popupMaxHeightInItems = -1);
+    bool Combo(const char *label, int *curr, Span<std::string> items, int popupMaxHeightInItems = -1);
+    bool Combo(const char *label, int *curr, Span<const char*> items, int popupMaxHeightInItems = -1);
+    bool Combo(const char *label, int *curr, std::initializer_list<const char*> items, int popupMaxHeightInItems = -1);
+    bool Combo(const char *label, int *curr, const char *itemsSeparatedByZeros, int popupMaxHeightInItems = -1);
+    bool Combo(const char *label, int *curr, const ItemGetter &getItem, int itemCount, int popupMaxHeightInItems = -1);
 
     bool Selectable(const char *label, bool selected, ImGuiSelectableFlags flags = 0, const Vector2f &size = {});
 

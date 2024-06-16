@@ -848,7 +848,7 @@ void ImGuiInstance::EndCombo()
     return ImGui::EndCombo();
 }
 
-void ImGuiInstance::Combo(const char *label, int *curr, Span<std::string> items, int popupMaxHeightInItems)
+bool ImGuiInstance::Combo(const char *label, int *curr, Span<std::string> items, int popupMaxHeightInItems)
 {
     const int itemCount = static_cast<int>(items.size());
     auto getItem = [&](int idx, const char **outItem)
@@ -860,27 +860,27 @@ void ImGuiInstance::Combo(const char *label, int *curr, Span<std::string> items,
         }
         return false;
     };
-    Combo(label, curr, getItem, itemCount, popupMaxHeightInItems);
+    return Combo(label, curr, getItem, itemCount, popupMaxHeightInItems);
 }
 
-void ImGuiInstance::Combo(const char *label, int *curr, Span<const char*> items, int popupMaxHeightInItems)
+bool ImGuiInstance::Combo(const char *label, int *curr, Span<const char*> items, int popupMaxHeightInItems)
 {
     IMGUI_CONTEXT;
-    ImGui::Combo(label, curr, items.GetData(), static_cast<int>(items.size()), popupMaxHeightInItems);
+    return ImGui::Combo(label, curr, items.GetData(), static_cast<int>(items.size()), popupMaxHeightInItems);
 }
 
-void ImGuiInstance::Combo(const char *label, int *curr, std::initializer_list<const char*> items, int popupMaxHeightInItems)
+bool ImGuiInstance::Combo(const char *label, int *curr, std::initializer_list<const char*> items, int popupMaxHeightInItems)
 {
     return Combo(label, curr, Span(items), popupMaxHeightInItems);
 }
 
-void ImGuiInstance::Combo(const char *label, int *curr, const char *itemsSeparatedByZeros, int popupMaxHeightInItems)
+bool ImGuiInstance::Combo(const char *label, int *curr, const char *itemsSeparatedByZeros, int popupMaxHeightInItems)
 {
     IMGUI_CONTEXT;
-    ImGui::Combo(label, curr, itemsSeparatedByZeros, popupMaxHeightInItems);
+    return ImGui::Combo(label, curr, itemsSeparatedByZeros, popupMaxHeightInItems);
 }
 
-void ImGuiInstance::Combo(const char *label, int *curr, const ItemGetter &getItem, int itemCount, int popupMaxHeightInItems)
+bool ImGuiInstance::Combo(const char *label, int *curr, const ItemGetter &getItem, int itemCount, int popupMaxHeightInItems)
 {
     IMGUI_CONTEXT;
     auto cGetter = +[](void *userData, int idx, const char **outItem)
@@ -889,7 +889,7 @@ void ImGuiInstance::Combo(const char *label, int *curr, const ItemGetter &getIte
         return getter(idx, outItem);
     };
     auto getterData = const_cast<void *>(static_cast<const void *>(&getItem));
-    ImGui::Combo(label, curr, cGetter, getterData, itemCount, popupMaxHeightInItems);
+    return ImGui::Combo(label, curr, cGetter, getterData, itemCount, popupMaxHeightInItems);
 }
 
 bool ImGuiInstance::Selectable(const char *label, bool selected, ImGuiSelectableFlags flags, const Vector2f &size)
