@@ -35,9 +35,9 @@ namespace DiscreteOperatorDetail
             const Scalar area = ComputeTriangleAreaFromEdgeLengths(Length(e0), Length(e1), Length(e2));
             const Scalar areaFactor = 1 / (2 * area);
 
-            const Scalar c0 = areaFactor * Cross(normal, e0)[Axis];
-            const Scalar c1 = areaFactor * Cross(normal, e1)[Axis];
-            const Scalar c2 = areaFactor * Cross(normal, e2)[Axis];
+            const Scalar c0 = areaFactor * Cross(normal, e1)[Axis];
+            const Scalar c1 = areaFactor * Cross(normal, e2)[Axis];
+            const Scalar c2 = areaFactor * Cross(normal, e0)[Axis];
 
             triplets.push_back(Eigen::Triplet<Scalar>(f, v0, c0));
             triplets.push_back(Eigen::Triplet<Scalar>(f, v1, c1));
