@@ -158,9 +158,9 @@ void RawMesh::RecalculateNormal(float cosAngleThreshold)
             const uint32_t vb = positionIndices[f0 + 1];
             const uint32_t vc = positionIndices[f0 + 2];
 
-            const Vector3f &pa = positionData[f0 + 0];
-            const Vector3f &pb = positionData[f0 + 1];
-            const Vector3f &pc = positionData[f0 + 2];
+            const Vector3f &pa = positionData[va];
+            const Vector3f &pb = positionData[vb];
+            const Vector3f &pc = positionData[vc];
             const Vector3f faceNormal = Normalize(Cross(pc - pb, pb - pa));
 
             const Vector3f na = ComputeAverageNormal(faceNormal, vertexToFaceNormals[va]);

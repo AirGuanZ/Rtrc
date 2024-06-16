@@ -57,4 +57,11 @@ T InverseLerp(const T &lhs, const T &rhs, const T &val)
     return (val - lhs) / diff;
 }
 
+template<std::floating_point T>
+T ComputeTriangleAreaFromEdgeLengths(T l0, T l1, T l2)
+{
+    const T s = T(0.5) * (l0 + l1 + l2);
+    return std::sqrt(s * (s - l0) * (s - l1) * (s - l2));
+}
+
 RTRC_END

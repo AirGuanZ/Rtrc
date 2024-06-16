@@ -6,6 +6,7 @@
 #include <Rtrc/Core/Filesystem/DirectoryFilter.h>
 #include <Rtrc/Core/Filesystem/File.h>
 #include <Rtrc/Core/Math/Angle.h>
+#include <Rtrc/Core/Math/Common.h>
 #include <Rtrc/Core/Math/Intersection.h>
 #include <Rtrc/Core/Math/Rect.h>
 #include <Rtrc/Core/Memory/Malloc.h>
@@ -15,7 +16,6 @@
 #include <Rtrc/Core/Resource/ImageSampler.h>
 #include <Rtrc/Core/Resource/MeshData.h>
 
-#include <Rtrc/Geometry/DiscreteOperators.h>
 #include <Rtrc/Geometry/FlatHalfedgeMesh.h>
 #include <Rtrc/Geometry/RawMesh.h>
 #include <Rtrc/Geometry/SignpostsMesh.h>

@@ -55,13 +55,14 @@ protected:
     void AddPendingCaptureFrames(int frames) { pendingGPUCaptureFrames_ += frames; }
     bool IsGPUCapturerAvailable() const { return gpuCapturer_ != nullptr; }
 
+    Window             window_;
+    Box<Device>        device_;
+    Box<ImGuiInstance> imgui_;
+
 private:
     
     void UpdateLoop();
     
-    Window                      window_;
-    Box<Device>                 device_;
-    Box<ImGuiInstance>          imgui_;
     Box<ResourceManager>        resourceManager_;
     Box<BindlessTextureManager> bindlessTextureManager_;
 

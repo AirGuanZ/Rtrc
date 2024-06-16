@@ -43,9 +43,15 @@ public:
     int Face(int h) const { return h >= 0 ? (h / 3) : -1; }
     int Rawi(int h) const { return h; }
 
+    int Head(int h) const { return Vert(h); }
+    int Tail(int h) const { return Vert(Succ(h)); }
+
     int VertToHalfedge(int v) const { return v >= 0 ? vertToHalfedge_[v] : -1; }
     int EdgeToHalfedge(int e) const { return e >= 0 ? edgeToHalfedge_[e] : -1; }
     int FaceToHalfedge(int f) const { return f >= 0 ? (3 * f) : -1; }
+
+    bool IsEdgeOnBoundary(int e) const { return Twin(EdgeToHalfedge(e)) < 0; }
+    bool IsVertOnBoundary(int v) const { return Twin(VertToHalfedge(v)) < 0; }
 
     // If Unique is true, only one of each pair of twin halfedges will be used, with the outgoing one being preferred.
     // func is called with the index of each halfedge.
