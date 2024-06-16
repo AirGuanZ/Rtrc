@@ -49,7 +49,7 @@ class HeatMethodDemo : public SimpleApplication
                 sumEdgeLength += Length(p0 - p1);
             }
             const double meanEdgeLength = sumEdgeLength / m.E();
-            dt = 4 * meanEdgeLength * meanEdgeLength;
+            dt = meanEdgeLength * meanEdgeLength;
         }
         LogInfo("Time step = {}", dt);
 
