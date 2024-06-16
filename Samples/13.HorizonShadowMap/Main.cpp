@@ -18,7 +18,7 @@ class HorizonShadowMapDemo : public SimpleApplication
 
     void UpdateSimpleApplication(GraphRef graph) override
     {
-        if(GetWindowInput().IsKeyDown(KeyCode::Escape))
+        if(input_->IsKeyDown(KeyCode::Escape))
         {
             SetExitFlag(true);
         }
@@ -37,7 +37,7 @@ class HorizonShadowMapDemo : public SimpleApplication
         }
         imgui.End();
 
-        camera_.SetAspectRatio(GetWindow().GetFramebufferWOverH());
+        camera_.SetAspectRatio(window_->GetFramebufferWOverH());
         if(!imgui.IsAnyItemActive())
         {
             cameraController_.Update(GetWindowInput(), GetFrameTimer().GetDeltaSecondsF());
@@ -94,7 +94,7 @@ class HorizonShadowMapDemo : public SimpleApplication
             }
         });
 
-        heightMap_ = GetDevice()->CreateAndUploadTexture(
+        heightMap_ = device_->CreateAndUploadTexture(
             RHI::TextureDesc
             {
                 .format = RHI::Format::R32_Float,
@@ -103,7 +103,7 @@ class HorizonShadowMapDemo : public SimpleApplication
                 .usage  = RHI::TextureUsage::ShaderResource
             }, heightMapData.GetData(), RHI::TextureLayout::ShaderTexture);
 
-        normalMap_ = GetDevice()->CreateAndUploadTexture(
+        normalMap_ = device_->CreateAndUploadTexture(
             RHI::TextureDesc
             {
                 .format = RHI::Format::R32G32B32_Float,
@@ -112,7 +112,7 @@ class HorizonShadowMapDemo : public SimpleApplication
                 .usage  = RHI::TextureUsage::ShaderResource
             }, normalMapData.GetData(), RHI::TextureLayout::ShaderTexture);
 
-        horizonMap_ = GetDevice()->CreateStatefulTexture(
+        horizonMap_ = device_->CreateStatefulTexture(
             RHI::TextureDesc
             {
                 .format = RHI::Format::R32_Float,
@@ -134,7 +134,7 @@ class HorizonShadowMapDemo : public SimpleApplication
         RGDispatchWithThreadCount(
             graph,
             "GenerateHorizonMap",
-            GetDevice()->GetShader<RtrcShader::Bake::Name>(),
+            device_->GetShader<RtrcShader::Bake::Name>(),
             horizonMap->GetSize(),
             passData);
     }
@@ -153,10 +153,10 @@ class HorizonShadowMapDemo : public SimpleApplication
 
         if(!renderPipeline_)
         {
-            renderPipeline_ = GetDevice()->CreateGraphicsPipeline(
+            renderPipeline_ = device_->CreateGraphicsPipeline(
                 GraphicsPipelineDesc
                 {
-                    .shader = GetDevice()->GetShader<RtrcShader::Render::Name>(),
+                    .shader = device_->GetShader<RtrcShader::Render::Name>(),
                     .depthStencilState = RTRC_DEPTH_STENCIL_STATE
                     {
                         .enableDepthTest  = true,
@@ -174,7 +174,7 @@ class HorizonShadowMapDemo : public SimpleApplication
         if(!indexBuffer_)
         {
             const auto indexData = GenerateUniformGridTriangleIndices<uint32_t>(N, N);
-            indexBuffer_ = GetDevice()->CreateAndUploadBuffer(
+            indexBuffer_ = device_->CreateAndUploadBuffer(
                 RHI::BufferDesc
                 {
                     .size = indexData.size() * sizeof(uint32_t),
@@ -208,7 +208,7 @@ class HorizonShadowMapDemo : public SimpleApplication
                 passData.N               = N;
                 passData.sunTheta        = sunThetaRad_;
                 passData.softness        = Deg2Rad(std::clamp(softnessDeg_, 1e-4f, 90.0f));
-                auto passGroup = GetDevice()->CreateBindingGroupWithCachedLayout(passData);
+                auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
 
                 auto &commandBuffer = RGGetCommandBuffer();
                 commandBuffer.BindGraphicsPipeline(renderPipeline_);

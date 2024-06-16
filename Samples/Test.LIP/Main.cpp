@@ -12,7 +12,7 @@ class LinearInterpolationPrecisionDemo : public SimpleApplication
     void InitializeSimpleApplication(GraphRef graph) override
     {
         const float texData[2] = { 0, 1 };
-        texture_ = GetDevice()->CreateAndUploadTexture(RHI::TextureDesc
+        texture_ = device_->CreateAndUploadTexture(RHI::TextureDesc
         {
             .dim    = RHI::TextureDimension::Tex1D,
             .format = RHI::Format::R32_Float,
@@ -23,18 +23,18 @@ class LinearInterpolationPrecisionDemo : public SimpleApplication
 
     void UpdateSimpleApplication(GraphRef graph) override
     {
-        if(GetWindowInput().IsKeyDown(KeyCode::Escape))
+        if(input_->IsKeyDown(KeyCode::Escape))
         {
             SetExitFlag(true);
         }
 
-        auto framebuffer = graph->RegisterSwapchainTexture(GetDevice()->GetSwapchain());
+        auto framebuffer = graph->RegisterSwapchainTexture(device_->GetSwapchain());
 
         if(!pipeline_)
         {
-            pipeline_ = GetDevice()->CreateGraphicsPipeline(
+            pipeline_ = device_->CreateGraphicsPipeline(
             {
-                .shader = GetDevice()->GetShader<RtrcShader::Draw::Name>(),
+                .shader = device_->GetShader<RtrcShader::Draw::Name>(),
                 .rasterizerState = RTRC_STATIC_RASTERIZER_STATE(
                 {
                     .primitiveTopology = RHI::PrimitiveTopology::LineList
@@ -58,7 +58,7 @@ class LinearInterpolationPrecisionDemo : public SimpleApplication
             {
                 RtrcShader::Draw::Pass passData;
                 passData.Texture = texture_;
-                auto passGroup = GetDevice()->CreateBindingGroupWithCachedLayout(passData);
+                auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
 
                 auto &commandBuffer = RGGetCommandBuffer();
                 commandBuffer.BindGraphicsPipeline(pipeline_);

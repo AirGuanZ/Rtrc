@@ -11,7 +11,7 @@ class ShaderDSLDemo : public SimpleApplication
         using namespace eDSL;
 
         entry_ = BuildComputeEntry(
-            GetDevice(),
+            device_,
             [](eRWBuffer<euint> buffer, euint threadCount, euint value)
             {
                 $numthreads(64, 1, 1);
@@ -24,14 +24,14 @@ class ShaderDSLDemo : public SimpleApplication
 
     void UpdateSimpleApplication(GraphRef graph) override
     {
-        if(GetWindowInput().IsKeyDown(KeyCode::Escape))
+        if(input_->IsKeyDown(KeyCode::Escape))
         {
             SetExitFlag(true);
         }
 
         RGClearColor(
             graph, "ClearFramebuffer",
-            graph->RegisterSwapchainTexture(GetDevice()->GetSwapchain()),
+            graph->RegisterSwapchainTexture(device_->GetSwapchain()),
             Vector4f(0, 1, 1, 0));
 
         auto buffer = graph->CreateBuffer(RHI::BufferDesc

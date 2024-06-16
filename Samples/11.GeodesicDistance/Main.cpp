@@ -319,7 +319,7 @@ class GeodesicDistanceDemo : public SimpleApplication
 
     void InitializeSimpleApplication(GraphRef graph) override
     {
-        pipelineCache_.SetDevice(GetDevice());
+        pipelineCache_.SetDevice(device_);
         LoadMesh("Asset/Sample/11.GeodesicDistance/Bunny.obj");
         Voxelize();
         EvaluateDistanceField();
@@ -327,7 +327,7 @@ class GeodesicDistanceDemo : public SimpleApplication
 
     void UpdateSimpleApplication(GraphRef graph) override
     {
-        if(GetWindowInput().IsKeyDown(KeyCode::Escape))
+        if(input_->IsKeyDown(KeyCode::Escape))
         {
             SetExitFlag(true);
         }
@@ -359,11 +359,11 @@ class GeodesicDistanceDemo : public SimpleApplication
             EvaluateDistanceField();
         }
 
-        camera_.SetAspectRatio(GetWindow().GetFramebufferWOverH());
+        camera_.SetAspectRatio(window_->GetFramebufferWOverH());
         cameraController_.Update(GetWindowInput(), GetFrameTimer().GetDeltaSecondsF());
         camera_.UpdateDerivedData();
 
-        auto swapchainTexture = graph->RegisterSwapchainTexture(GetDevice()->GetSwapchain());
+        auto swapchainTexture = graph->RegisterSwapchainTexture(device_->GetSwapchain());
         RGClearColor(graph, "ClearSwapchainTexture", swapchainTexture, { 0, 1, 1, 0 });
 
         auto depthBuffer = graph->CreateTexture(RHI::TextureDesc
@@ -381,7 +381,7 @@ class GeodesicDistanceDemo : public SimpleApplication
 
     void LoadMesh(const std::string &filename)
     {
-        mesh_ = LoadMeshFromObj(GetDevice(), filename);
+        mesh_ = LoadMeshFromObj(device_, filename);
 
         const Vector3f center = 0.5f * (mesh_.lower + mesh_.upper);
         const Vector3f extent = mesh_.upper - mesh_.lower;
@@ -440,7 +440,7 @@ class GeodesicDistanceDemo : public SimpleApplication
 
         // Upload distance texture
 
-        distanceTexture_= GetDevice()->CreateAndUploadTexture(RHI::TextureDesc
+        distanceTexture_= device_->CreateAndUploadTexture(RHI::TextureDesc
         {
             .dim    = RHI::TextureDimension::Tex3D,
             .format = RHI::Format::R32_Float,
@@ -485,11 +485,11 @@ class GeodesicDistanceDemo : public SimpleApplication
                 passData.worldToClip        = camera_.GetWorldToClip();
                 passData.positionToUVWScale = Vector3f(1) / (volumeUpper_ - volumeLower_);
                 passData.positionToUVWBias  = -passData.positionToUVWScale * volumeLower_;
-                auto passGroup = GetDevice()->CreateBindingGroupWithCachedLayout(passData);
+                auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
 
                 auto pipeline = pipelineCache_.Get(GraphicsPipelineDesc
                 {
-                    .shader = GetDevice()->GetShader<Shader::Name>(),
+                    .shader = device_->GetShader<Shader::Name>(),
                     .meshLayout = RTRC_MESH_LAYOUT(
                                     Buffer(Attribute("POSITION", Float3)),
                                     Buffer(Attribute("NORMAL", Float3))),

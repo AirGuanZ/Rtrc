@@ -55,7 +55,8 @@ protected:
     void AddPendingCaptureFrames(int frames) { pendingGPUCaptureFrames_ += frames; }
     bool IsGPUCapturerAvailable() const { return gpuCapturer_ != nullptr; }
 
-    Window             window_;
+    Box<Window>        window_;
+    Ref<WindowInput>   input_;
     Box<Device>        device_;
     Box<ImGuiInstance> imgui_;
 

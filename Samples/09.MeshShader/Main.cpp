@@ -10,7 +10,7 @@ class MeshShaderDemo : public SimpleApplication
 {
     void InitializeSimpleApplication(GraphRef graph) override
     {
-        pipelineCache_.SetDevice(GetDevice());
+        pipelineCache_.SetDevice(device_);
 
         diagonalDirectionData_.resize(8 * 8, 0);
         std::default_random_engine rng{ std::random_device{}() };
@@ -18,7 +18,7 @@ class MeshShaderDemo : public SimpleApplication
         {
             v = std::uniform_int_distribution<int>(0, 1)(rng) ? 1 : 0;
         }
-        diagonalDirectionBuffer_ = GetDevice()->CreateAndUploadStructuredBuffer(Span<uint32_t>(diagonalDirectionData_));
+        diagonalDirectionBuffer_ = device_->CreateAndUploadStructuredBuffer(Span<uint32_t>(diagonalDirectionData_));
     }
 
     void UpdateSimpleApplication(GraphRef graph) override
@@ -29,7 +29,7 @@ class MeshShaderDemo : public SimpleApplication
             SetExitFlag(true);
         }
 
-        auto swapchainTexture = graph->RegisterSwapchainTexture(GetDevice()->GetSwapchain());
+        auto swapchainTexture = graph->RegisterSwapchainTexture(device_->GetSwapchain());
         
         RGAddRenderPass<true>(graph, "RenderUniformGrid", RGColorAttachment
         {
@@ -56,11 +56,11 @@ class MeshShaderDemo : public SimpleApplication
             passData.DiagonalDirectionBuffer = diagonalDirectionBuffer_;
             passData.clipLower = -0.5f * clipRectSize;
             passData.clipUpper = +0.5f * clipRectSize;
-            auto passGroup = GetDevice()->CreateBindingGroupWithCachedLayout(passData);
+            auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
 
             auto pipeline = pipelineCache_.Get(
             {
-                .shader = GetDevice()->GetShader<Shader::Name>(),
+                .shader = device_->GetShader<Shader::Name>(),
                 .rasterizerState = RTRC_STATIC_RASTERIZER_STATE(
                 {
                     .fillMode = RHI::FillMode::Line,

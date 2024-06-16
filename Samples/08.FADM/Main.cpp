@@ -21,7 +21,7 @@ class FADMDemo : public SimpleApplication
     {
         inputMesh_ = InputMesh::Load("Asset/Sample/08.FADM/Mesh1.obj");
         inputMesh_.DetectSharpFeatures(sharpEdgeAngleThreshold_);
-        inputMesh_.Upload(GetDevice());
+        inputMesh_.Upload(device_);
 
         const Vector3f center = 0.5f * (inputMesh_.lower + inputMesh_.upper);
         const Vector3f extent = 0.5f * (inputMesh_.upper - inputMesh_.lower);
@@ -31,9 +31,9 @@ class FADMDemo : public SimpleApplication
         cameraController_.SetCamera(camera_);
         cameraController_.SetTrackballDistance(Length(camera_.GetPosition() - center));
 
-        pipelineCache_.SetDevice(GetDevice());
+        pipelineCache_.SetDevice(device_);
 
-        vdmBaker_ = MakeBox<VDMBaker>(GetDevice());
+        vdmBaker_ = MakeBox<VDMBaker>(device_);
 
         OnGridResolutionChanged();
 
@@ -100,7 +100,7 @@ class FADMDemo : public SimpleApplication
                 if(imgui.SliderAngle("Sharp Edge Angle Threshold", &sharpEdgeAngleThreshold_, 0, 180))
                 {
                     inputMesh_.DetectSharpFeatures(sharpEdgeAngleThreshold_);
-                    inputMesh_.Upload(GetDevice());
+                    inputMesh_.Upload(device_);
                     reset = true;
                 }
                 if(reset)
@@ -123,11 +123,11 @@ class FADMDemo : public SimpleApplication
         if(!imgui.IsAnyItemActive() && renderMode_ != RenderMode::InputMesh)
         {
             cameraController_.Update(GetWindowInput(), GetFrameTimer().GetDeltaSecondsF());
-            camera_.SetAspectRatio(GetWindow().GetFramebufferWOverH());
+            camera_.SetAspectRatio(window_->GetFramebufferWOverH());
             camera_.UpdateDerivedData();
         }
 
-        auto swapchainTexture = graph->RegisterSwapchainTexture(GetDevice()->GetSwapchain());
+        auto swapchainTexture = graph->RegisterSwapchainTexture(device_->GetSwapchain());
         auto framebuffer = graph->CreateTexture(RHI::TextureDesc
         {
             .format = RHI::Format::R8G8B8A8_UNorm,
@@ -173,7 +173,7 @@ class FADMDemo : public SimpleApplication
             if(!alignedGrid_.GetWidth())
             {
                 //alignedGrid_ = GridAlignment::CreateGrid(Vector2u(gridResolution_ + 1), inputMesh_, adaptiveGrid_);
-                alignedGrid_ = GridAlignment::CreateGridEx(GetDevice(), pipelineCache_, Vector2u(gridResolution_ + 1), inputMesh_, adaptiveGrid_);
+                alignedGrid_ = GridAlignment::CreateGridEx(device_, pipelineCache_, Vector2u(gridResolution_ + 1), inputMesh_, adaptiveGrid_);
                 if(alignCorner_)
                 {
                     AlignCorners(alignedGrid_, inputMesh_);
@@ -182,8 +182,8 @@ class FADMDemo : public SimpleApplication
                 {
                     AlignSegments(alignedGrid_, inputMesh_);
                 }
-                alignedGridUVTexture_ = UploadGrid(GetDevice(), alignedGrid_);
-                alignedGridIndexBuffer_ = GenerateIndexBufferForGrid(GetDevice(), inputMesh_, alignedGrid_);
+                alignedGridUVTexture_ = UploadGrid(device_, alignedGrid_);
+                alignedGridIndexBuffer_ = GenerateIndexBufferForGrid(device_, inputMesh_, alignedGrid_);
             }
             if(!vdmGridAlignment_)
             {
@@ -228,11 +228,11 @@ class FADMDemo : public SimpleApplication
                     passData.Color = { 0, 0, 0 };
                     passData.ClipLower = -0.5f * clipRectSize;
                     passData.ClipUpper = +0.5f * clipRectSize;
-                    auto passGroup = GetDevice()->CreateBindingGroupWithCachedLayout(passData);
+                    auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
 
                     auto pipeline = pipelineCache_.Get(
                         {
-                            .shader = GetDevice()->GetShader<Shader::Name>(),
+                            .shader = device_->GetShader<Shader::Name>(),
                             .rasterizerState = RTRC_STATIC_RASTERIZER_STATE(
                             {
                                 .fillMode = RHI::FillMode::Line,
@@ -265,11 +265,11 @@ class FADMDemo : public SimpleApplication
                     passData.Color = { 1, 0, 0 };
                     passData.ClipLower = -0.5f * clipRectSize;
                     passData.ClipUpper = +0.5f * clipRectSize;
-                    auto passGroup = GetDevice()->CreateBindingGroupWithCachedLayout(passData);
+                    auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
 
                     auto pipeline = pipelineCache_.Get(
                         {
-                            .shader = GetDevice()->GetShader<Shader::Name>(),
+                            .shader = device_->GetShader<Shader::Name>(),
                             .rasterizerState = RTRC_STATIC_RASTERIZER_STATE(
                             {
                                 .primitiveTopology = RHI::PrimitiveTopology::LineList
@@ -291,15 +291,14 @@ class FADMDemo : public SimpleApplication
 
     void OnGridResolutionChanged()
     {
-        auto device = GetDevice();
         {
             auto vertexData = GenerateUniformGridVertices(gridResolution_, gridResolution_);
-            gridVertexBuffer_ = device->CreateAndUploadStructuredBuffer(
+            gridVertexBuffer_ = device_->CreateAndUploadStructuredBuffer(
                 RHI::BufferUsage::VertexBuffer, Span<Vector2i>(vertexData));
         }
         {
             auto indexData = GenerateUniformGridTriangleIndices(gridResolution_, gridResolution_);
-            gridIndexBuffer_ = device->CreateAndUploadStructuredBuffer(
+            gridIndexBuffer_ = device_->CreateAndUploadStructuredBuffer(
                 RHI::BufferUsage::IndexBuffer, Span<uint32_t>(indexData));
         }
         vdmUniform_.reset();
@@ -347,11 +346,11 @@ class FADMDemo : public SimpleApplication
                 passData.gridLower   = inputMesh_.gridLower;
                 passData.gridUpper   = inputMesh_.gridUpper;
                 passData.res         = Vector2i(gridResolution_).To<float>();
-                auto passGroup = GetDevice()->CreateBindingGroupWithCachedLayout(passData);
+                auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
 
                 auto pipeline = pipelineCache_.Get(
                 {
-                    .shader = GetDevice()->GetShader<Shader::Name>(),
+                    .shader = device_->GetShader<Shader::Name>(),
                     .meshLayout = RTRC_STATIC_MESH_LAYOUT(Buffer(Attribute("POSITION", UInt2))),
                     .depthStencilState = RTRC_STATIC_DEPTH_STENCIL_STATE(
                     {
@@ -392,7 +391,7 @@ class FADMDemo : public SimpleApplication
         if(!alignedGrid_.GetWidth())
         {
             //alignedGrid_ = GridAlignment::CreateGrid(Vector2u(gridResolution_ + 1), inputMesh_, adaptiveGrid_);
-            alignedGrid_ = GridAlignment::CreateGridEx(GetDevice(), pipelineCache_, Vector2u(gridResolution_ + 1), inputMesh_, adaptiveGrid_);
+            alignedGrid_ = GridAlignment::CreateGridEx(device_, pipelineCache_, Vector2u(gridResolution_ + 1), inputMesh_, adaptiveGrid_);
             if(alignCorner_)
             {
                 AlignCorners(alignedGrid_, inputMesh_);
@@ -401,8 +400,8 @@ class FADMDemo : public SimpleApplication
             {
                 AlignSegments(alignedGrid_, inputMesh_);
             }
-            alignedGridUVTexture_ = UploadGrid(GetDevice(), alignedGrid_);
-            alignedGridIndexBuffer_ = GenerateIndexBufferForGrid(GetDevice(), inputMesh_, alignedGrid_);
+            alignedGridUVTexture_ = UploadGrid(device_, alignedGrid_);
+            alignedGridIndexBuffer_ = GenerateIndexBufferForGrid(device_, inputMesh_, alignedGrid_);
         }
 
         auto graph = renderTarget->GetGraph();
@@ -436,11 +435,11 @@ class FADMDemo : public SimpleApplication
                 passData.clipLower = -0.5f * clipRectSize;
                 passData.clipUpper = +0.5f * clipRectSize;
                 passData.color = { 0, 1, 0 };
-                auto passGroup = GetDevice()->CreateBindingGroupWithCachedLayout(passData);
+                auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
 
                 auto pipeline = pipelineCache_.Get(
                     {
-                        .shader = GetDevice()->GetShader<Shader::Name>(),
+                        .shader = device_->GetShader<Shader::Name>(),
                         .meshLayout = RTRC_STATIC_MESH_LAYOUT(Buffer(Attribute("POSITION", UInt2))),
                         .rasterizerState = RTRC_STATIC_RASTERIZER_STATE(
                         {

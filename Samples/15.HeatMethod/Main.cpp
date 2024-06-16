@@ -21,7 +21,6 @@ class HeatMethodDemo : public SimpleApplication
     {
         rawMesh_ = RawMesh::Load("./Asset/Sample/15.HeatMethod/Bunny_good.obj");
         rawMesh_.NormalizePositionTo({ -1, -1, -1 }, { 1, 1, 1 });
-        rawMesh_.RecalculateNormal(0);
 
         camera_.SetLookAt({ -3, 0, 0 }, { 0, 1, 0 }, { 0, 0, 0 });
         cameraController_.SetCamera(camera_);
@@ -44,7 +43,7 @@ class HeatMethodDemo : public SimpleApplication
 
     void UpdateSimpleApplication(GraphRef graph) override
     {
-        if(GetWindowInput().IsKeyDown(KeyCode::Escape))
+        if(input_->IsKeyDown(KeyCode::Escape))
         {
             SetExitFlag(true);
         }
@@ -59,19 +58,19 @@ class HeatMethodDemo : public SimpleApplication
         }
         imgui_->End();
 
-        camera_.SetAspectRatio(GetWindow().GetFramebufferWOverH());
+        camera_.SetAspectRatio(window_->GetFramebufferWOverH());
         if(!imgui_->IsAnyItemActive())
         {
-            cameraController_.Update(GetWindowInput(), GetFrameTimer().GetDeltaSecondsF());
+            cameraController_.Update(*input_, GetFrameTimer().GetDeltaSecondsF());
             camera_.UpdateDerivedData();
         }
 
         if(!imgui_->IsAnyItemActive() &&
-           !GetWindowInput().IsKeyPressed(KeyCode::LeftAlt) &&
-           GetWindowInput().IsKeyDown(KeyCode::MouseLeft))
+           !input_->IsKeyPressed(KeyCode::LeftAlt) &&
+           input_->IsKeyPressed(KeyCode::MouseLeft))
         {
-            const float tx = GetWindowInput().GetCursorAbsolutePositionX() / GetWindow().GetFramebufferSize().x;
-            const float ty = GetWindowInput().GetCursorAbsolutePositionY() / GetWindow().GetFramebufferSize().y;
+            const float tx = input_->GetCursorAbsolutePositionX() / window_->GetFramebufferSize().x;
+            const float ty = input_->GetCursorAbsolutePositionY() / window_->GetFramebufferSize().y;
             auto worldRays = camera_.GetWorldRays();
             const Vector3f direction =
                 Normalize(Lerp(
@@ -81,7 +80,7 @@ class HeatMethodDemo : public SimpleApplication
             const Vector3f origin = camera_.GetPosition();
 
             bvh_.FindClosestIntersection(
-                origin, direction, FLT_MAX, [&](float t, uint32_t triangle, const Vector2f &uv)
+                origin, direction, FLT_MAX, [&](float, uint32_t triangle, const Vector2f &uv)
                 {
                     float bestDistance = FLT_MAX; int bestV = -1;
                     for(int i = 0; i < 3; ++i)
@@ -114,16 +113,25 @@ class HeatMethodDemo : public SimpleApplication
 
     void PreprocessMesh()
     {
-        const std::vector<Vector3d> positions =
-            rawMesh_.GetPositionData() |
-            std::views::transform([](const Vector3f &p) { return p.To<double>(); }) |
-            std::ranges::to<std::vector<Vector3d>>();
+        LogInfo("#V = {}", rawMesh_.GetPositionData().size());
+        LogInfo("#F = {}", rawMesh_.GetPositionIndices().size() / 3);
+
+        LogInfo("Build BVH");
 
         bvh_ = TriangleBVH::Build(rawMesh_.GetPositionData(), rawMesh_.GetPositionIndices());
+
+        LogInfo("Build connectivity");
 
         halfEdgeMesh_ = FlatHalfedgeMesh::Build(rawMesh_.GetPositionIndices());
 
         auto &m = halfEdgeMesh_;
+
+        LogInfo("Compute time step");
+
+        const std::vector<Vector3d> positions =
+            rawMesh_.GetPositionData() |
+            std::views::transform([](const Vector3f &p) { return p.To<double>(); }) |
+            std::ranges::to<std::vector<Vector3d>>();
 
         double dt;
         {
@@ -140,27 +148,51 @@ class HeatMethodDemo : public SimpleApplication
             const double meanEdgeLength = sumEdgeLength / m.E();
             dt = meanEdgeLength * meanEdgeLength;
         }
+
         LogInfo("Time step = {}", dt);
 
-        const SparseMatrixXd A = (1.0 / 3.0) * BuildVertexAreaDiagonalMatrix<double>(m, positions);
-        const SparseMatrixXd Ld = BuildCotanLaplacianMatrix<double>(m, positions, CotanLaplacianBoundaryType::Dirichlet);
-        const SparseMatrixXd Ln = BuildCotanLaplacianMatrix<double>(m, positions, CotanLaplacianBoundaryType::Neumann);
+        LogInfo("Build area matrix");
 
+        const SparseMatrixXd A = (1.0 / 3.0) * BuildVertexAreaDiagonalMatrix<double>(m, positions);
+
+        LogInfo("Prefactorize heat solver with Dirichlet boundary conditions");
+
+        const SparseMatrixXd Ld = BuildCotanLaplacianMatrix<double>(m, positions, CotanLaplacianBoundaryType::Dirichlet);
         dirichletHeatSolver_.compute(A - dt * Ld);
+
+        LogInfo("Prefactorize heat solver with Neumann boundary conditions");
+
+        const SparseMatrixXd Ln = BuildCotanLaplacianMatrix<double>(m, positions, CotanLaplacianBoundaryType::Neumann);
         neumannHeatSolver_.compute(A - dt * Ln);
+
+        LogInfo("Build gradient operator");
 
         gradientOperatorX_ = BuildFaceGradientMatrix_X<double>(m, positions);
         gradientOperatorY_ = BuildFaceGradientMatrix_Y<double>(m, positions);
         gradientOperatorZ_ = BuildFaceGradientMatrix_Z<double>(m, positions);
 
+        LogInfo("Build divergence operator");
+
         divergenceOperator_ = BuildVertexDivergenceMatrix<double>(m, positions);
 
+        LogInfo("Prefactorize poisson solver");
+
         poissonSolver_.compute(Ln);
+
+        LogInfo("Complete preprocessing");
     }
 
     void ComputeGeodesicDistance(int sourceVertex)
     {
+        if(sourceVertex == lastV_)
+        {
+            return;
+        }
+        lastV_ = sourceVertex;
+
         auto &m = halfEdgeMesh_;
+
+        Timer timer;
 
         // Heat diffusion
 
@@ -212,6 +244,9 @@ class HeatMethodDemo : public SimpleApplication
             d -= minPhi;
         }
 
+        timer.BeginFrame();
+        LogInfo("Complete solving. Delta time = {}ms", timer.GetDeltaSeconds() * 1000);
+
         // Visualization
 
         auto minOperator = [](double a, double b) { return (std::min)(a, b); };
@@ -219,11 +254,9 @@ class HeatMethodDemo : public SimpleApplication
 
         const double minHeat = *std::ranges::fold_left_first(u, minOperator);
         const double maxHeat = *std::ranges::fold_left_first(u, maxOperator);
-        LogInfo("Min heat = {}, max heat = {}", minHeat, maxHeat);
 
         const double minDivergence = *std::ranges::fold_left_first(divergence, minOperator);
         const double maxDivergence = *std::ranges::fold_left_first(divergence, maxOperator);
-        LogInfo("Min divergence = {}, max divergence = {}", minDivergence, maxDivergence);
         const double maxAbsDivergence = (std::max)(std::abs(minDivergence), std::abs(maxDivergence));
         
         std::vector<Vector3f> vertexGradients(m.V());
@@ -368,6 +401,7 @@ class HeatMethodDemo : public SimpleApplication
     SparseMatrixXd divergenceOperator_;
     Eigen::SimplicialLDLT<SparseMatrixXd> poissonSolver_;
 
+    int lastV_ = -1;
     RC<Buffer> vertexBuffer_;
     RC<Buffer> indexBuffer_;
 

@@ -5,11 +5,13 @@ RTRC_BEGIN
 
 void Application::Run(const Config &config)
 {
-    window_ = WindowBuilder()
+    window_ = MakeBox<Window>(WindowBuilder()
         .SetTitle(config.title)
         .SetSize(static_cast<int>(config.width), static_cast<int>(config.height))
         .SetMaximized(config.maximized)
-        .Create();
+        .Create());
+    input_ = window_->GetInput();
+    RTRC_SCOPE_EXIT{ input_ = {}; };
 
     Device::Flags deviceFlags = Device::DisableAutoSwapchainRecreate;
     if(config.rayTracing)
@@ -36,11 +38,11 @@ void Application::Run(const Config &config)
     });
     RTRC_SCOPE_EXIT{ device_->WaitIdle(); };
 
-    window_.SetFocus();
-    RTRC_SCOPE_EXIT{ window_.GetInput().LockCursor(false); };
+    window_->SetFocus();
+    RTRC_SCOPE_EXIT{ input_->LockCursor(false); };
 
-    imgui_                  = MakeBox<ImGuiInstance>(device_, window_);
-    resourceManager_        = MakeBox<ResourceManager>(device_);
+    imgui_ = MakeBox<ImGuiInstance>(device_, window_);
+    resourceManager_ = MakeBox<ResourceManager>(device_);
     bindlessTextureManager_ = MakeBox<BindlessTextureManager>(device_);
     
     Initialize();
@@ -50,44 +52,44 @@ void Application::Run(const Config &config)
 
 bool Application::GetExitFlag() const
 {
-    return window_.ShouldClose();
+    return window_->ShouldClose();
 }
 
 void Application::SetExitFlag(bool shouldExit)
 {
-    window_.SetCloseFlag(shouldExit);
+    window_->SetCloseFlag(shouldExit);
 }
 
 Window &Application::GetWindow()
 {
-    return window_;
+    return *window_;
 }
 
 WindowInput &Application::GetWindowInput()
 {
-    return window_.GetInput();
+    return *input_;
 }
 
 void Application::UpdateLoop()
 {
-    Vector2i framebufferSize = window_.GetFramebufferSize();
+    Vector2i framebufferSize = window_->GetFramebufferSize();
     frameTimer_.Restart();
 
-    while(!window_.ShouldClose())
+    while(!window_->ShouldClose())
     {
         Window::DoEvents();
 
         // Handle window resize
 
-        if(framebufferSize != window_.GetFramebufferSize() || framebufferSize.x == 0 || framebufferSize.y == 0)
+        if(framebufferSize != window_->GetFramebufferSize() || framebufferSize.x == 0 || framebufferSize.y == 0)
         {
-            framebufferSize = window_.GetFramebufferSize();
+            framebufferSize = window_->GetFramebufferSize();
             ResizeFrameBuffer(framebufferSize.x, framebufferSize.y);
         }
 
         if(!isCapturing_ && !pendingGPUCaptureFrames_)
         {
-            auto &input = window_.GetInput();
+            auto &input = window_->GetInput();
             if(input.IsKeyPressed(KeyCode::LeftShift) && input.IsKeyDown(KeyCode::F11))
             {
                 pendingGPUCaptureFrames_ = 1;

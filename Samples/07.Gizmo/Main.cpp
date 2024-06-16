@@ -6,7 +6,7 @@ class GizmoDemo : public SimpleApplication
 {
     void InitializeSimpleApplication(GraphRef graph) override
     {
-        gizmoRenderer_ = MakeBox<GizmoRenderer>(GetDevice());
+        gizmoRenderer_ = MakeBox<GizmoRenderer>(device_);
         camera_.SetLookAt({ 0, 0, 7 }, { 0, 1, 0 }, { 0, 0, 0 });
         cameraController_.SetCamera(camera_);
         cameraController_.SetTrackballDistance(Length(camera_.GetPosition()));
@@ -14,16 +14,16 @@ class GizmoDemo : public SimpleApplication
 
     void UpdateSimpleApplication(GraphRef renderGraph) override
     {
-        if(GetWindowInput().IsKeyDown(KeyCode::Escape))
+        if(input_->IsKeyDown(KeyCode::Escape))
         {
             SetExitFlag(true);
         }
 
         cameraController_.Update(GetWindowInput(), GetFrameTimer().GetDeltaSecondsF());
-        camera_.SetAspectRatio(GetWindow().GetFramebufferWOverH());
+        camera_.SetAspectRatio(window_->GetFramebufferWOverH());
         camera_.UpdateDerivedData();
 
-        auto framebuffer = renderGraph->RegisterSwapchainTexture(GetDevice()->GetSwapchain());
+        auto framebuffer = renderGraph->RegisterSwapchainTexture(device_->GetSwapchain());
         auto depthBuffer = renderGraph->CreateTexture(RHI::TextureDesc
         {
             .format = RHI::Format::D24S8,

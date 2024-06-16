@@ -20,12 +20,12 @@ class DFDMDemo : public SimpleApplication
         cameraController_.SetCamera(camera_);
         cameraController_.SetTrackballDistance(Length(camera_.GetPosition() - Vector3f(5, 1, 5)));
 
-        gizmoRenderer_ = MakeBox<GizmoRenderer>(GetDevice());
+        gizmoRenderer_ = MakeBox<GizmoRenderer>(device_);
     }
 
     void UpdateSimpleApplication(GraphRef renderGraph) override
     {
-        if(GetWindowInput().IsKeyDown(KeyCode::Escape))
+        if(input_->IsKeyDown(KeyCode::Escape))
         {
             SetExitFlag(true);
         }
@@ -48,10 +48,10 @@ class DFDMDemo : public SimpleApplication
         }
 
         cameraController_.Update(GetWindowInput(), GetFrameTimer().GetDeltaSecondsF());
-        camera_.SetAspectRatio(GetWindow().GetFramebufferWOverH());
+        camera_.SetAspectRatio(window_->GetFramebufferWOverH());
         camera_.UpdateDerivedData();
 
-        auto swapchainTexture = renderGraph->RegisterSwapchainTexture(GetDevice()->GetSwapchain());
+        auto swapchainTexture = renderGraph->RegisterSwapchainTexture(device_->GetSwapchain());
         auto framebuffer = renderGraph->CreateTexture(RHI::TextureDesc
         {
             .format     = RHI::Format::R8G8B8A8_UNorm,
@@ -105,7 +105,7 @@ class DFDMDemo : public SimpleApplication
                 passData.N                = N;
                 passData.EnableCorrection = enableCorrection_;
                 passData.Checkboard       = enableCheckboard_;
-                auto passGroup = GetDevice()->CreateBindingGroupWithCachedLayout(passData);
+                auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
 
                 cmds.BindGraphicsPipeline(pipeline_);
                 cmds.BindGraphicsGroup(0, passGroup);
@@ -143,7 +143,7 @@ class DFDMDemo : public SimpleApplication
                 vertexData[i] = Vector2i(x, y).To<float>();
             }
         }
-        vertexBuffer_ = GetDevice()->CreateAndUploadBuffer(RHI::BufferDesc
+        vertexBuffer_ = device_->CreateAndUploadBuffer(RHI::BufferDesc
         {
             .size = sizeof(Vector2f) * vertexData.size(),
             .usage = RHI::BufferUsage::VertexBuffer
@@ -164,7 +164,7 @@ class DFDMDemo : public SimpleApplication
                 indexData.push_back((y + 0) * (N + 1) + (x + 1));
             }
         }
-        indexBuffer_ = GetDevice()->CreateAndUploadBuffer(RHI::BufferDesc
+        indexBuffer_ = device_->CreateAndUploadBuffer(RHI::BufferDesc
         {
             .size = sizeof(uint32_t)*  indexData.size(),
             .usage = RHI::BufferUsage::IndexBuffer
@@ -182,7 +182,7 @@ class DFDMDemo : public SimpleApplication
         {
             height *= HeightScale;
         }
-        height_ = GetDevice()->CreateAndUploadTexture2D(RHI::TextureDesc
+        height_ = device_->CreateAndUploadTexture2D(RHI::TextureDesc
         {
             .format = RHI::Format::R32_Float,
             .width  = heightMap.GetWidth(),
@@ -204,7 +204,7 @@ class DFDMDemo : public SimpleApplication
         }
 
         DFDM dfdm;
-        dfdm.SetDevice(GetDevice());
+        dfdm.SetDevice(device_);
         dfdm.SetIterationCount(300);
         dfdm.SetAreaPreservation(areaPreservation_);
         auto correctionMap = dfdm.GenerateCorrectionMap(displacementMap);
@@ -213,7 +213,7 @@ class DFDMDemo : public SimpleApplication
         {
             offset = offsetScale * offset;
         }
-        correction_ = GetDevice()->CreateAndUploadTexture2D(RHI::TextureDesc
+        correction_ = device_->CreateAndUploadTexture2D(RHI::TextureDesc
         {
             .format = RHI::Format::R32G32_Float,
             .width  = correctionMap.GetWidth(),
@@ -248,7 +248,7 @@ class DFDMDemo : public SimpleApplication
             }
         }
 
-        normal_ = GetDevice()->CreateAndUploadTexture2D(RHI::TextureDesc
+        normal_ = device_->CreateAndUploadTexture2D(RHI::TextureDesc
         {
             .format = RHI::Format::R32G32B32A32_Float,
             .width  = normalMap.GetWidth(),
@@ -259,7 +259,7 @@ class DFDMDemo : public SimpleApplication
 
         // Color map
 
-        color_ = GetDevice()->LoadTexture2D(
+        color_ = device_->LoadTexture2D(
             "Asset/Sample/06.DistortionFreeDisplacementMap/Color.png",
             RHI::Format::R8G8B8A8_UNorm, RHI::TextureUsage::ShaderResource,
             true, RHI::TextureLayout::ShaderTexture);
@@ -270,7 +270,7 @@ class DFDMDemo : public SimpleApplication
         auto layout = RTRC_MESH_LAYOUT(Buffer(Attribute("Position", 0, Float2)));
         const GraphicsPipelineDesc pipelineDesc =
         {
-            .shader            = GetDevice()->GetShader<RtrcShader::DFDM::Render::Name>(),
+            .shader            = device_->GetShader<RtrcShader::DFDM::Render::Name>(),
             .meshLayout        = layout,
             .depthStencilState = RTRC_STATIC_DEPTH_STENCIL_STATE(
             {
@@ -289,7 +289,7 @@ class DFDMDemo : public SimpleApplication
                 .depthStencilFormat = RHI::Format::D24S8
             })
         };
-        pipeline_ = GetDevice()->CreateGraphicsPipeline(pipelineDesc);
+        pipeline_ = device_->CreateGraphicsPipeline(pipelineDesc);
     }
     
     RC<Buffer> vertexBuffer_;

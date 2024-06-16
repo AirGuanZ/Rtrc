@@ -127,17 +127,17 @@ class FMMDemo : public SimpleApplication
     void InitializeSimpleApplication(GraphRef graph) override
     {
         LoadSourceImage("Asset/Sample/10.FastMarchingMethod/0.png");
-        pipelineCache_.SetDevice(GetDevice());
+        pipelineCache_.SetDevice(device_);
     }
 
     void UpdateSimpleApplication(GraphRef graph) override
     {
-        if(GetWindowInput().IsKeyDown(KeyCode::Escape))
+        if(input_->IsKeyDown(KeyCode::Escape))
         {
             SetExitFlag(true);
         }
 
-        auto swapchainTexture = graph->RegisterSwapchainTexture(GetDevice()->GetSwapchain());
+        auto swapchainTexture = graph->RegisterSwapchainTexture(device_->GetSwapchain());
         RGClearColor(graph, "ClearSwapchainTexture", swapchainTexture, { 0, 1, 1, 0 });
 
         const Vector2f fbSize = swapchainTexture->GetSize().To<float>();
@@ -172,7 +172,7 @@ class FMMDemo : public SimpleApplication
     void LoadSourceImage(const std::string &filename)
     {
         auto image = Image<uint8_t>::Load(filename);
-        sourceTexture = GetDevice()->CreateAndUploadTexture(RHI::TextureDesc
+        sourceTexture = device_->CreateAndUploadTexture(RHI::TextureDesc
         {
             .format = RHI::Format::R8_UNorm,
             .width = image.GetWidth(),
@@ -195,7 +195,7 @@ class FMMDemo : public SimpleApplication
 
         Image<float> T(image.GetSize());
         FMM2D(sources, T);
-        timeTexture = GetDevice()->CreateAndUploadTexture(RHI::TextureDesc
+        timeTexture = device_->CreateAndUploadTexture(RHI::TextureDesc
         {
             .format = RHI::Format::R32_Float,
             .width = T.GetWidth(),
@@ -228,11 +228,11 @@ class FMMDemo : public SimpleApplication
             passData.lower = lower;
             passData.upper = upper;
             passData.scale = scale;
-            auto passGroup = GetDevice()->CreateBindingGroupWithCachedLayout(passData);
+            auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
 
             auto pipeline = pipelineCache_.Get(GraphicsPipelineDesc
             {
-                .shader = GetDevice()->GetShader<Shader::Name>(),
+                .shader = device_->GetShader<Shader::Name>(),
                 .attachmentState = RTRC_ATTACHMENT_STATE
                 {
                     .colorAttachmentFormats = { framebuffer->GetFormat() }

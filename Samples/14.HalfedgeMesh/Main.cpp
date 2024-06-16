@@ -71,7 +71,7 @@ class HalfedgeMeshDemo : public SimpleApplication
 
     void UpdateSimpleApplication(GraphRef graph) override
     {
-        if(GetWindowInput().IsKeyDown(KeyCode::Escape))
+        if(input_->IsKeyDown(KeyCode::Escape))
         {
             SetExitFlag(true);
         }
@@ -170,19 +170,19 @@ class HalfedgeMeshDemo : public SimpleApplication
             AddHalfedge(p2, p0, p1);
         }
 
-        vertexBuffer_ = GetDevice()->CreateAndUploadBuffer(RHI::BufferDesc
+        vertexBuffer_ = device_->CreateAndUploadBuffer(RHI::BufferDesc
         {
             .size = sizeof(Vertex) * vertices.size(),
             .usage = RHI::BufferUsage::VertexBuffer
         }, vertices.data());
 
-        lineIndexBuffer_ = GetDevice()->CreateAndUploadBuffer(RHI::BufferDesc
+        lineIndexBuffer_ = device_->CreateAndUploadBuffer(RHI::BufferDesc
         {
             .size = sizeof(uint32_t) * lineIndices.size(),
             .usage = RHI::BufferUsage::IndexBuffer
         }, lineIndices.data());
         
-        triangleIndexBuffer_ = GetDevice()->CreateAndUploadBuffer(RHI::BufferDesc
+        triangleIndexBuffer_ = device_->CreateAndUploadBuffer(RHI::BufferDesc
         {
             .size = sizeof(uint32_t) * triangleIndices.size(),
             .usage = RHI::BufferUsage::IndexBuffer
@@ -193,9 +193,9 @@ class HalfedgeMeshDemo : public SimpleApplication
     {
         if(!linePipeline_)
         {
-            trianglePipeline_ = GetDevice()->CreateGraphicsPipeline(GraphicsPipelineDesc
+            trianglePipeline_ = device_->CreateGraphicsPipeline(GraphicsPipelineDesc
             {
-                .shader = GetDevice()->GetShader<RtrcShader::Draw::Name>(),
+                .shader = device_->GetShader<RtrcShader::Draw::Name>(),
                 .meshLayout = RTRC_STATIC_MESH_LAYOUT(Buffer(
                     Attribute("POSITION", Float2), Attribute("COLOR", Float3))),
                 .attachmentState = RTRC_ATTACHMENT_STATE
@@ -203,9 +203,9 @@ class HalfedgeMeshDemo : public SimpleApplication
                     .colorAttachmentFormats = { renderTarget->GetFormat() }
                 }
             });
-            linePipeline_ = GetDevice()->CreateGraphicsPipeline(GraphicsPipelineDesc
+            linePipeline_ = device_->CreateGraphicsPipeline(GraphicsPipelineDesc
             {
-                .shader = GetDevice()->GetShader<RtrcShader::Draw::Name>(),
+                .shader = device_->GetShader<RtrcShader::Draw::Name>(),
                 .meshLayout = RTRC_STATIC_MESH_LAYOUT(Buffer(
                     Attribute("POSITION", Float2), Attribute("COLOR", Float3))),
                 .rasterizerState = RTRC_STATIC_RASTERIZER_STATE(
@@ -228,7 +228,7 @@ class HalfedgeMeshDemo : public SimpleApplication
             },
             [this]
             {
-                const float wOverH = GetWindow().GetFramebufferWOverH();
+                const float wOverH = window_->GetFramebufferWOverH();
                 Vector2f range;
                 if(wOverH > 1)
                 {
@@ -244,7 +244,7 @@ class HalfedgeMeshDemo : public SimpleApplication
                 RtrcShader::Draw::Pass passData;
                 passData.lower = -range;
                 passData.upper = range;
-                auto passGroup = GetDevice()->CreateBindingGroupWithCachedLayout(passData);
+                auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
 
                 auto &commandBuffer = RGGetCommandBuffer();
 

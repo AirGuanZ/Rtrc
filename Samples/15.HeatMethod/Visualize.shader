@@ -58,7 +58,7 @@ rtrc_shader("VisualizeHeat")
 		}
 		else
 		{
-			const float strip = input.distance / 0.02;
+			const float strip = input.distance / 0.05;
 			color = int(strip) & 1 ? float3(0.2, 0.8, 0.8) : float3(0.8, 0.2, 0.2);
 			color *= 1 - frac(strip);
 			color = pow(color, 1 / 2.2);
