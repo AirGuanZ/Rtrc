@@ -3,20 +3,12 @@
 
 #include "Visualize.shader.outh"
 
-#include <iostream>
-
 using namespace Rtrc;
 
 using SparseMatrixXd = Eigen::SparseMatrix<double>;
 
 class HeatMethodDemo : public SimpleApplication
 {
-    static void PrintSparseMatrix(const Eigen::MatrixXd &s)
-    {
-        const Eigen::MatrixXd m = s;
-        std::cout << m << "\n";
-    }
-
     void InitializeSimpleApplication(GraphRef graph) override
     {
         rawMesh_ = RawMesh::Load("./Asset/Sample/15.HeatMethod/Bunny_good.obj");
@@ -122,7 +114,7 @@ class HeatMethodDemo : public SimpleApplication
 
         LogInfo("Build connectivity");
 
-        halfEdgeMesh_ = FlatHalfedgeMesh::Build(rawMesh_.GetPositionIndices());
+        halfEdgeMesh_ = HalfedgeMesh::Build(rawMesh_.GetPositionIndices());
 
         auto &m = halfEdgeMesh_;
 
@@ -390,7 +382,7 @@ class HeatMethodDemo : public SimpleApplication
     };
 
     RawMesh          rawMesh_;
-    FlatHalfedgeMesh halfEdgeMesh_;
+    HalfedgeMesh halfEdgeMesh_;
     TriangleBVH      bvh_;
 
     Eigen::SimplicialLDLT<SparseMatrixXd> dirichletHeatSolver_;

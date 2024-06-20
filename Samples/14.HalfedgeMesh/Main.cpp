@@ -31,15 +31,36 @@ class HalfedgeMeshDemo : public SimpleApplication
             0, 1, 2,
             0, 2, 3
         };
-        halfedgeMesh_ = FlatHalfedgeMesh::Build(indices);
+        halfedgeMesh_ = HalfedgeMesh::Build(indices);
 
+        // Test split
+        //SplitEdge(2);
+        //SplitEdge(halfedgeMesh_.Succ(halfedgeMesh_.Succ(halfedgeMesh_.Twin(halfedgeMesh_.Succ(2)))));
+        //SplitEdge(halfedgeMesh_.Succ(2));
+        //SplitFace(1);
+        //SplitFace(6);
+        
+        // Test collapse
         SplitEdge(2);
-        SplitEdge(halfedgeMesh_.Succ(halfedgeMesh_.Succ(halfedgeMesh_.Twin(halfedgeMesh_.Succ(2)))));
-        SplitEdge(halfedgeMesh_.Succ(2));
-        SplitFace(1);
-        SplitFace(6);
+        SplitEdge(2);
+        CollapseEdge(halfedgeMesh_.Succ(halfedgeMesh_.Twin(halfedgeMesh_.Succ(2))));
 
+        assert(halfedgeMesh_.CheckSanity());
         GenerateVisualizationData();
+    }
+
+    void CollapseEdge(int h)
+    {
+        auto &m = halfedgeMesh_;
+        m.CollapseEdge(h);
+        m.Compact([&](HalfedgeMesh::MoveType type, int src, int dst)
+        {
+            if(type == HalfedgeMesh::MoveVertex)
+            {
+                positions_[dst] = positions_[src];
+            }
+        });
+        positions_.resize(m.V());
     }
 
     void SplitEdge(int h)
@@ -102,19 +123,22 @@ class HalfedgeMeshDemo : public SimpleApplication
         constexpr Vector3f FACE_COLOR = { 0.05f, 0.05f, 0.05f };
         constexpr Vector3f WIRE_COLOR = { 0.8f, 0.8f, 0.8f };
         constexpr Vector3f ARROW_COLOR = { 0.7f, 0.2f, 0.2f };
+        constexpr Vector3f ARROW_COLOR2 = { 0.2f, 0.8f, 0.2f };
 
-        auto AddArrow = [&](const Vector2f &start, const Vector2f &end)
+        auto AddArrow = [&](const Vector2f &start, const Vector2f &end, bool replaceColor)
         {
-            lineIndices.push_back(NewVertex({ start, ARROW_COLOR }));
-            lineIndices.push_back(NewVertex({ end, ARROW_COLOR }));
+            const Vector3f color = replaceColor ? ARROW_COLOR2 : ARROW_COLOR;
+
+            lineIndices.push_back(NewVertex({ start, color }));
+            lineIndices.push_back(NewVertex({ end, color }));
 
             const Vector2f e2s = 0.02f * Normalize(start - end);
             const Vector2f e21 = end + (Matrix3x3f::RotateZ(Deg2Rad(+45)) * Vector3f(e2s, 0)).xy();
-            lineIndices.push_back(NewVertex({ end, ARROW_COLOR }));
-            lineIndices.push_back(NewVertex({ e21, ARROW_COLOR }));
+            lineIndices.push_back(NewVertex({ end, color }));
+            lineIndices.push_back(NewVertex({ e21, color }));
         };
 
-        auto AddHalfedge = [&](const Vector2f &a, const Vector2f &b, const Vector2f &c)
+        auto AddHalfedge = [&](const Vector2f &a, const Vector2f &b, const Vector2f &c, bool replaceColor = false)
         {
             const Vector2f ab = b - a;
             const Vector2f ac = c - a;
@@ -128,7 +152,7 @@ class HalfedgeMeshDemo : public SimpleApplication
             const float length = 0.3f * Length(ab);
             const Vector2f start = center - 0.5f * length * Normalize(ab) + 0.01f * offsetDirection;
             const Vector2f end   = center + 0.5f * length * Normalize(ab) + 0.01f * offsetDirection;
-            AddArrow(start, end);
+            AddArrow(start, end, replaceColor);
         };
 
         for(int f = 0; f < halfedgeMesh_.F(); ++f)
@@ -263,7 +287,7 @@ class HalfedgeMeshDemo : public SimpleApplication
     }
 
     std::vector<Vector2f> positions_;
-    FlatHalfedgeMesh      halfedgeMesh_;
+    HalfedgeMesh      halfedgeMesh_;
 
     RC<Buffer> vertexBuffer_;
     RC<Buffer> triangleIndexBuffer_;

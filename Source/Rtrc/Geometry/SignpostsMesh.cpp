@@ -12,7 +12,7 @@ SignpostsMesh<T> SignpostsMesh<T>::Build(Span<uint32_t> indices, Span<Vector3<T>
 
     // Build connectivity
 
-    ret.connectivity = FlatHalfedgeMesh::Build(indices);
+    ret.connectivity = HalfedgeMesh::Build(indices);
 
     // Compute edge length
 
@@ -146,7 +146,7 @@ void SignpostsMesh<T>::FlipToDelaunayTriangulation(T tolerance)
 
         const int ha0 = m.EdgeToHalfedge(e0);
         const int hb0 = m.Twin(ha0);
-        if(hb0 < 0)
+        if(hb0 == HalfedgeMesh::NullID)
         {
             continue;
         }

@@ -3,7 +3,7 @@
 #include <Rtrc/Core/Math/AABB.h>
 #include <Rtrc/Core/Math/Vector3.h>
 #include <Rtrc/Core/StringPool.h>
-#include <Rtrc/Geometry/FlatHalfedgeMesh.h>
+#include <Rtrc/Geometry/HalfedgeMesh.h>
 
 RTRC_BEGIN
 
@@ -130,7 +130,7 @@ public:
     Span<uint32_t> GetNormalIndices() const;
     Span<uint32_t> GetUVIndices() const;
 
-    FlatHalfedgeMesh CreateFlatHalfEdgeMesh() const;
+    HalfedgeMesh CreateHalfEdgeMesh() const;
 
     AABB3f ComputeBoundingBox() const;
 
@@ -369,9 +369,9 @@ inline Span<uint32_t> RawMesh::GetUVIndices() const
     return GetIndices(index);
 }
 
-inline FlatHalfedgeMesh RawMesh::CreateFlatHalfEdgeMesh() const
+inline HalfedgeMesh RawMesh::CreateHalfEdgeMesh() const
 {
-    return FlatHalfedgeMesh::Build(GetPositionIndices());
+    return HalfedgeMesh::Build(GetPositionIndices());
 }
 
 inline AABB3f RawMesh::ComputeBoundingBox() const

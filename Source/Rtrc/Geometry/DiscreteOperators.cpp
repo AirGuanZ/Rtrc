@@ -16,8 +16,9 @@ namespace DiscreteOperatorDetail
     }
 
     template<typename Scalar, int Axis>
-    Eigen::SparseMatrix<Scalar> BuildFaceGradientMatrix_Axis(const FlatHalfedgeMesh &mesh, Span<Vector3<Scalar>> positions)
+    Eigen::SparseMatrix<Scalar> BuildFaceGradientMatrix_Axis(const HalfedgeMesh &mesh, Span<Vector3<Scalar>> positions)
     {
+        assert(mesh.IsCompacted());
         std::vector<Eigen::Triplet<Scalar>> triplets;
         for(int f = 0; f < mesh.F(); ++f)
         {
@@ -52,8 +53,9 @@ namespace DiscreteOperatorDetail
 } // namespace DiscreteOperatorDetail
 
 template <typename Scalar>
-Eigen::VectorX<Scalar> BuildVertexAreaVector(const FlatHalfedgeMesh &mesh, Span<Vector3<Scalar>> positions)
+Eigen::VectorX<Scalar> BuildVertexAreaVector(const HalfedgeMesh &mesh, Span<Vector3<Scalar>> positions)
 {
+    assert(mesh.IsCompacted());
     Eigen::VectorX<Scalar> ret(mesh.V());
     for(int v = 0; v < mesh.V(); ++v)
     {
@@ -84,8 +86,9 @@ Eigen::VectorX<Scalar> BuildVertexAreaVector(const FlatHalfedgeMesh &mesh, Span<
 }
 
 template <typename Scalar>
-Eigen::SparseMatrix<Scalar> BuildVertexAreaDiagonalMatrix(const FlatHalfedgeMesh &mesh, Span<Vector3<Scalar>> positions)
+Eigen::SparseMatrix<Scalar> BuildVertexAreaDiagonalMatrix(const HalfedgeMesh &mesh, Span<Vector3<Scalar>> positions)
 {
+    assert(mesh.IsCompacted());
     const auto vector = BuildVertexAreaVector(mesh, positions);
 
     std::vector<Eigen::Triplet<Scalar>> triplets;
@@ -101,26 +104,27 @@ Eigen::SparseMatrix<Scalar> BuildVertexAreaDiagonalMatrix(const FlatHalfedgeMesh
 }
 
 template<typename Scalar>
-Eigen::SparseMatrix<Scalar> BuildFaceGradientMatrix_X(const FlatHalfedgeMesh &mesh, Span<Vector3<Scalar>> positions)
+Eigen::SparseMatrix<Scalar> BuildFaceGradientMatrix_X(const HalfedgeMesh &mesh, Span<Vector3<Scalar>> positions)
 {
     return DiscreteOperatorDetail::BuildFaceGradientMatrix_Axis<Scalar, 0>(mesh, positions);
 }
 
 template<typename Scalar>
-Eigen::SparseMatrix<Scalar> BuildFaceGradientMatrix_Y(const FlatHalfedgeMesh &mesh, Span<Vector3<Scalar>> positions)
+Eigen::SparseMatrix<Scalar> BuildFaceGradientMatrix_Y(const HalfedgeMesh &mesh, Span<Vector3<Scalar>> positions)
 {
     return DiscreteOperatorDetail::BuildFaceGradientMatrix_Axis<Scalar, 1>(mesh, positions);
 }
 
 template<typename Scalar>
-Eigen::SparseMatrix<Scalar> BuildFaceGradientMatrix_Z(const FlatHalfedgeMesh &mesh, Span<Vector3<Scalar>> positions)
+Eigen::SparseMatrix<Scalar> BuildFaceGradientMatrix_Z(const HalfedgeMesh &mesh, Span<Vector3<Scalar>> positions)
 {
     return DiscreteOperatorDetail::BuildFaceGradientMatrix_Axis<Scalar, 2>(mesh, positions);
 }
 
 template<typename Scalar>
-Eigen::SparseMatrix<Scalar> BuildVertexDivergenceMatrix(const FlatHalfedgeMesh &mesh, Span<Vector3<Scalar>> positions)
+Eigen::SparseMatrix<Scalar> BuildVertexDivergenceMatrix(const HalfedgeMesh &mesh, Span<Vector3<Scalar>> positions)
 {
+    assert(mesh.IsCompacted());
     std::vector<Eigen::Triplet<Scalar>> triplets;
     for(int v = 0; v < mesh.V(); ++v)
     {
@@ -155,10 +159,12 @@ Eigen::SparseMatrix<Scalar> BuildVertexDivergenceMatrix(const FlatHalfedgeMesh &
 
 template <typename Scalar>
 Eigen::SparseMatrix<Scalar> BuildCotanLaplacianMatrix(
-    const FlatHalfedgeMesh    &mesh,
+    const HalfedgeMesh    &mesh,
     Span<Vector3<Scalar>>      positions,
     CotanLaplacianBoundaryType boundaryConditions)
 {
+    assert(mesh.IsCompacted());
+
     const bool dirichlet = boundaryConditions == CotanLaplacianBoundaryType::Dirichlet;
 
     auto ComputeCotan = [&](int v, int n, int nPrev, int nSucc)
@@ -167,14 +173,14 @@ Eigen::SparseMatrix<Scalar> BuildCotanLaplacianMatrix(
         const Vector3<Scalar> &pn = positions[n];
 
         Scalar cotPrev = 0;
-        if(nPrev >= 0)
+        if(nPrev != HalfedgeMesh::NullID)
         {
             const Vector3<Scalar> pPrev = positions[nPrev];
             cotPrev = DiscreteOperatorDetail::Cotan<Scalar>(pPrev, pv, pn);
         }
 
         Scalar cotSucc = 0;
-        if(nSucc >= 0)
+        if(nSucc != HalfedgeMesh::NullID)
         {
             const Vector3<Scalar> pSucc = positions[nSucc];
             cotSucc = DiscreteOperatorDetail::Cotan<Scalar>(pSucc, pv, pn);
@@ -212,7 +218,7 @@ Eigen::SparseMatrix<Scalar> BuildCotanLaplacianMatrix(
                 triplets.push_back(Eigen::Triplet<Scalar>(v, n, w));
             }
 
-            if(const int nh = mesh.Twin(mesh.Prev(h)); nh < 0) // We are on the another boundary
+            if(const int nh = mesh.Twin(mesh.Prev(h)); nh == HalfedgeMesh::NullID) // We are on the another boundary
             {
                 const Scalar wLast = ComputeCotan(v, nSucc, n, -1);
                 sumW += wLast;
@@ -244,23 +250,23 @@ Eigen::SparseMatrix<Scalar> BuildCotanLaplacianMatrix(
 }
 
 
-template Eigen::VectorX<float> BuildVertexAreaVector<float>(const FlatHalfedgeMesh &, Span<Vector3<float>>);
-template Eigen::VectorX<double> BuildVertexAreaVector<double>(const FlatHalfedgeMesh &, Span<Vector3<double>>);
+template Eigen::VectorX<float> BuildVertexAreaVector<float>(const HalfedgeMesh &, Span<Vector3<float>>);
+template Eigen::VectorX<double> BuildVertexAreaVector<double>(const HalfedgeMesh &, Span<Vector3<double>>);
 
-template Eigen::SparseMatrix<float> BuildVertexAreaDiagonalMatrix(const FlatHalfedgeMesh &, Span<Vector3<float>>);
-template Eigen::SparseMatrix<double> BuildVertexAreaDiagonalMatrix(const FlatHalfedgeMesh &, Span<Vector3<double>>);
+template Eigen::SparseMatrix<float> BuildVertexAreaDiagonalMatrix(const HalfedgeMesh &, Span<Vector3<float>>);
+template Eigen::SparseMatrix<double> BuildVertexAreaDiagonalMatrix(const HalfedgeMesh &, Span<Vector3<double>>);
 
-template Eigen::SparseMatrix<float> BuildFaceGradientMatrix_X(const FlatHalfedgeMesh &, Span<Vector3<float>>);
-template Eigen::SparseMatrix<double> BuildFaceGradientMatrix_X(const FlatHalfedgeMesh &, Span<Vector3<double>>);
-template Eigen::SparseMatrix<float> BuildFaceGradientMatrix_Y(const FlatHalfedgeMesh &, Span<Vector3<float>>);
-template Eigen::SparseMatrix<double> BuildFaceGradientMatrix_Y(const FlatHalfedgeMesh &, Span<Vector3<double>>);
-template Eigen::SparseMatrix<float> BuildFaceGradientMatrix_Z(const FlatHalfedgeMesh &, Span<Vector3<float>>);
-template Eigen::SparseMatrix<double> BuildFaceGradientMatrix_Z(const FlatHalfedgeMesh &, Span<Vector3<double>>);
+template Eigen::SparseMatrix<float> BuildFaceGradientMatrix_X(const HalfedgeMesh &, Span<Vector3<float>>);
+template Eigen::SparseMatrix<double> BuildFaceGradientMatrix_X(const HalfedgeMesh &, Span<Vector3<double>>);
+template Eigen::SparseMatrix<float> BuildFaceGradientMatrix_Y(const HalfedgeMesh &, Span<Vector3<float>>);
+template Eigen::SparseMatrix<double> BuildFaceGradientMatrix_Y(const HalfedgeMesh &, Span<Vector3<double>>);
+template Eigen::SparseMatrix<float> BuildFaceGradientMatrix_Z(const HalfedgeMesh &, Span<Vector3<float>>);
+template Eigen::SparseMatrix<double> BuildFaceGradientMatrix_Z(const HalfedgeMesh &, Span<Vector3<double>>);
 
-template Eigen::SparseMatrix<float> BuildVertexDivergenceMatrix(const FlatHalfedgeMesh &mesh, Span<Vector3<float>>);
-template Eigen::SparseMatrix<double> BuildVertexDivergenceMatrix(const FlatHalfedgeMesh &mesh, Span<Vector3<double>>);
+template Eigen::SparseMatrix<float> BuildVertexDivergenceMatrix(const HalfedgeMesh &mesh, Span<Vector3<float>>);
+template Eigen::SparseMatrix<double> BuildVertexDivergenceMatrix(const HalfedgeMesh &mesh, Span<Vector3<double>>);
 
-template Eigen::SparseMatrix<float>  BuildCotanLaplacianMatrix<float>(const FlatHalfedgeMesh &, Span<Vector3<float>>, CotanLaplacianBoundaryType);
-template Eigen::SparseMatrix<double> BuildCotanLaplacianMatrix<double>(const FlatHalfedgeMesh &, Span<Vector3<double>>, CotanLaplacianBoundaryType);
+template Eigen::SparseMatrix<float>  BuildCotanLaplacianMatrix<float>(const HalfedgeMesh &, Span<Vector3<float>>, CotanLaplacianBoundaryType);
+template Eigen::SparseMatrix<double> BuildCotanLaplacianMatrix<double>(const HalfedgeMesh &, Span<Vector3<double>>, CotanLaplacianBoundaryType);
 
 RTRC_END

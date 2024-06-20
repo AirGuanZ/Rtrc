@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Rtrc/Core/Math/Vector3.h>
-#include <Rtrc/Geometry/FlatHalfedgeMesh.h>
+#include <Rtrc/Geometry/HalfedgeMesh.h>
 
 RTRC_BEGIN
 
@@ -14,7 +14,7 @@ public:
 
     SignpostsMesh() = default;
 
-    const FlatHalfedgeMesh &GetConnectivity() const { return connectivity; }
+    const HalfedgeMesh &GetConnectivity() const { return connectivity; }
 
     T GetEdgeLength(int e) const { return lengths[e]; }
     T GetSumAngle  (int v) const { return thetas[v];  }
@@ -37,7 +37,7 @@ private:
 
     static_assert(std::is_same_v<T, float> || std::is_same_v<T, double>);
 
-    FlatHalfedgeMesh connectivity;
+    HalfedgeMesh connectivity;
     std::vector<T> lengths; // edge length
     std::vector<T> thetas;  // vertex -> sum of original angles
     std::vector<std::pair<T, T>> phis; // edge -> (directional angle, twin directional angle)
