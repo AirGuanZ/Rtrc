@@ -4,15 +4,18 @@
 #include "Visualize.shader.outh"
 
 using namespace Rtrc;
+using namespace Geo;
 
+using VectorXd       = Eigen::VectorXd;
 using SparseMatrixXd = Eigen::SparseMatrix<double>;
+using SimplicialLDLT = Eigen::SimplicialLDLT<SparseMatrixXd>;
 
 class HeatMethodDemo : public SimpleApplication
 {
     void InitializeSimpleApplication(GraphRef graph) override
     {
         rawMesh_ = RawMesh::Load("./Asset/Sample/15.HeatMethod/Bunny_good.obj");
-        rawMesh_.NormalizePositionTo({ -1, -1, -1 }, { 1, 1, 1 });
+        rawMesh_.NormalizePositionTo(Vector3f(-1), Vector3f(+1));
 
         camera_.SetLookAt({ -3, 0, 0 }, { 0, 1, 0 }, { 0, 0, 0 });
         cameraController_.SetCamera(camera_);
@@ -30,7 +33,8 @@ class HeatMethodDemo : public SimpleApplication
             }
         }
 
-        ComputeGeodesicDistance(sourceVertex);
+        lastVs_ = { sourceVertex };
+        ComputeGeodesicDistance(false);
     }
 
     void UpdateSimpleApplication(GraphRef graph) override
@@ -43,10 +47,21 @@ class HeatMethodDemo : public SimpleApplication
         if(imgui_->Begin("Settings", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
         {
             int mode = visualizationMode_;
-            if(imgui_->Combo("Visualization Mode", &mode, { "Heat", "Gradient", "Divergence", "Distance" }))
+            if(imgui_->Combo("Visualization Mode", &mode, { "Heat", "Gradient", "Divergence", "Source", "UV", "Distance" }))
             {
                 visualizationMode_ = static_cast<VisualizeMode>(mode);
             }
+            if(imgui_->Button("Evaluate Source"))
+            {
+                isDirty_ = true;
+                ComputeGeodesicDistance(true);
+            }
+            if(imgui_->Button("Clear"))
+            {
+                lastVs_.clear();
+                isDirty_ = true;
+            }
+            imgui_->CheckBox("Append", &append_);
         }
         imgui_->End();
 
@@ -94,7 +109,16 @@ class HeatMethodDemo : public SimpleApplication
 
                     if(bestV >= 0)
                     {
-                        ComputeGeodesicDistance(bestV);
+                        if(append_)
+                        {
+                            isDirty_ |= lastVs_.insert(bestV).second;
+                        }
+                        else
+                        {
+                            isDirty_ |= lastVs_ != std::set{ bestV };
+                            lastVs_ = { bestV };
+                        }
+                        ComputeGeodesicDistance(false);
                     }
                 });
         }
@@ -120,7 +144,7 @@ class HeatMethodDemo : public SimpleApplication
 
         LogInfo("Compute time step");
 
-        const std::vector<Vector3d> positions =
+        positions_ =
             rawMesh_.GetPositionData() |
             std::views::transform([](const Vector3f &p) { return p.To<double>(); }) |
             std::ranges::to<std::vector<Vector3d>>();
@@ -133,8 +157,8 @@ class HeatMethodDemo : public SimpleApplication
                 const int h = m.EdgeToHalfedge(e);
                 const int v0 = m.Head(h);
                 const int v1 = m.Tail(h);
-                const Vector3d p0 = positions[v0];
-                const Vector3d p1 = positions[v1];
+                const Vector3d p0 = positions_[v0];
+                const Vector3d p1 = positions_[v1];
                 sumEdgeLength += Length(p0 - p1);
             }
             const double meanEdgeLength = sumEdgeLength / m.E();
@@ -145,27 +169,28 @@ class HeatMethodDemo : public SimpleApplication
 
         LogInfo("Build area matrix");
 
-        const SparseMatrixXd A = (1.0 / 3.0) * BuildVertexAreaDiagonalMatrix<double>(m, positions);
+        A_ = (1.0 / 3.0) * BuildVertexAreaDiagonalMatrix<double>(m, positions_);
 
         LogInfo("Prefactorize heat solver with Dirichlet boundary conditions");
 
-        const SparseMatrixXd Ld = BuildCotanLaplacianMatrix<double>(m, positions, CotanLaplacianBoundaryType::Dirichlet);
-        dirichletHeatSolver_.compute(A - dt * Ld);
+        const SparseMatrixXd Ld = BuildCotanLaplacianMatrix<double>(m, positions_, CotanLaplacianBoundaryType::Dirichlet);
+        dirichletHeatSolver_.compute(A_ - dt * Ld);
 
         LogInfo("Prefactorize heat solver with Neumann boundary conditions");
 
-        const SparseMatrixXd Ln = BuildCotanLaplacianMatrix<double>(m, positions, CotanLaplacianBoundaryType::Neumann);
-        neumannHeatSolver_.compute(A - dt * Ln);
+        const SparseMatrixXd Ln = BuildCotanLaplacianMatrix<double>(m, positions_, CotanLaplacianBoundaryType::Neumann);
+        neumannHeatSolver_.compute(A_ - dt * Ln);
 
         LogInfo("Build gradient operator");
 
-        gradientOperatorX_ = BuildFaceGradientMatrix_X<double>(m, positions);
-        gradientOperatorY_ = BuildFaceGradientMatrix_Y<double>(m, positions);
-        gradientOperatorZ_ = BuildFaceGradientMatrix_Z<double>(m, positions);
+        gradientOperatorX_ = BuildFaceGradientMatrix_X<double>(m, positions_);
+        gradientOperatorY_ = BuildFaceGradientMatrix_Y<double>(m, positions_);
+        gradientOperatorZ_ = BuildFaceGradientMatrix_Z<double>(m, positions_);
 
         LogInfo("Build divergence operator");
 
-        divergenceOperator_ = BuildVertexDivergenceMatrix<double>(m, positions);
+        divergenceOperator_ = BuildVertexDivergenceMatrix<double>(m, positions_);
+        normalizedDivergenceOperator_ = BuildVertexDivergenceMatrix_NormalizedByBoundaryLength<double>(m, positions_);
 
         LogInfo("Prefactorize poisson solver");
 
@@ -174,13 +199,13 @@ class HeatMethodDemo : public SimpleApplication
         LogInfo("Complete preprocessing");
     }
 
-    void ComputeGeodesicDistance(int sourceVertex)
+    void ComputeGeodesicDistance(bool evalSourceParameter)
     {
-        if(sourceVertex == lastV_)
+        if(!isDirty_ || lastVs_.empty())
         {
             return;
         }
-        lastV_ = sourceVertex;
+        isDirty_ = false;
 
         auto &m = halfEdgeMesh_;
 
@@ -188,18 +213,21 @@ class HeatMethodDemo : public SimpleApplication
 
         // Heat diffusion
 
-        Eigen::VectorXd delta = Eigen::VectorXd::Zero(m.V());
-        delta(sourceVertex) = 1.0;
+        VectorXd delta = VectorXd::Zero(m.V());
+        for(int v : lastVs_)
+        {
+            delta(v) = 1.0;
+        }
 
-        const Eigen::VectorXd ud = dirichletHeatSolver_.solve(delta);
-        const Eigen::VectorXd un = neumannHeatSolver_.solve(delta);
-        const Eigen::VectorXd u = 0.5 * (ud + un);
+        const VectorXd ud = dirichletHeatSolver_.solve(A_ * delta);
+        const VectorXd un = neumannHeatSolver_.solve(A_ * delta);
+        const VectorXd u = 0.5 * (ud + un);
 
-        // Gradient
+        // Gradient direction
 
-        const Eigen::VectorXd gradientX = -gradientOperatorX_ * u;
-        const Eigen::VectorXd gradientY = -gradientOperatorY_ * u;
-        const Eigen::VectorXd gradientZ = -gradientOperatorZ_ * u;
+        const VectorXd gradientX = -gradientOperatorX_ * u;
+        const VectorXd gradientY = -gradientOperatorY_ * u;
+        const VectorXd gradientZ = -gradientOperatorZ_ * u;
         
         std::vector<Vector3d> gradients(m.F());
         for(int f = 0; f < m.F(); ++f)
@@ -214,22 +242,22 @@ class HeatMethodDemo : public SimpleApplication
 
         // Divergence
 
-        Eigen::VectorXd flattenGradients(m.F() * 3);
+        flattenHeatGradient_ = VectorXd(m.F() * 3);
         for(int f = 0; f < m.F(); ++f)
         {
-            flattenGradients[3 * f + 0] = gradients[f].x;
-            flattenGradients[3 * f + 1] = gradients[f].y;
-            flattenGradients[3 * f + 2] = gradients[f].z;
+            flattenHeatGradient_[3 * f + 0] = gradients[f].x;
+            flattenHeatGradient_[3 * f + 1] = gradients[f].y;
+            flattenHeatGradient_[3 * f + 2] = gradients[f].z;
         }
-        const Eigen::VectorXd divergence = divergenceOperator_ * flattenGradients;
+        const VectorXd divergence = divergenceOperator_ * flattenHeatGradient_;
 
         // Poisson
 
-        const Eigen::VectorXd phi = poissonSolver_.solve(divergence);
+        const VectorXd phi = poissonSolver_.solve(divergence);
 
         // Geodesic distances
 
-        const double minPhi = *std::ranges::fold_left_first(phi, [](double a, double b) { return (std::min)(a, b); });
+        const double minPhi = *std::ranges::fold_left_first(phi, MinOperator{});
         std::vector<double> geodesicDistances = { phi.begin(), phi.end() };
         for(double &d : geodesicDistances)
         {
@@ -239,16 +267,43 @@ class HeatMethodDemo : public SimpleApplication
         timer.BeginFrame();
         LogInfo("Complete solving. Delta time = {}ms", timer.GetDeltaSeconds() * 1000);
 
+        // Source parameter
+
+        VectorXd sourceParameters;
+        if(evalSourceParameter)
+        {
+            Vector3d sourceLower(DBL_MAX), sourceUpper(-DBL_MAX);
+            for(int v = 0; v < halfEdgeMesh_.V(); ++v)
+            {
+                if(delta[v] > 0)
+                {
+                    sourceLower = Min(sourceLower, positions_[v]);
+                    sourceUpper = Max(sourceUpper, positions_[v]);
+                }
+            }
+            const Vector3d sourceExtent = sourceUpper - sourceLower;
+            const int sourceAxis = ArgMax(sourceExtent.x, sourceExtent.y, sourceExtent.z);
+
+            sourceParameters = -1.0 * VectorXd::Ones(halfEdgeMesh_.V());
+            for(int v = 0; v < halfEdgeMesh_.V(); ++v)
+            {
+                if(delta[v] > 0)
+                {
+                    const Vector3d p = positions_[v];
+                    sourceParameters[v] = Saturate(
+                        (p[sourceAxis] - sourceLower[sourceAxis]) / (std::max)(sourceExtent[sourceAxis], 1e-5));
+                }
+            }
+            sourceParameters = SolveSourceParameter(positions_, flattenHeatGradient_, sourceParameters);
+        }
+
         // Visualization
 
-        auto minOperator = [](double a, double b) { return (std::min)(a, b); };
-        auto maxOperator = [](double a, double b) { return (std::max)(a, b); };
+        const double minHeat = *std::ranges::fold_left_first(u, MinOperator{});
+        const double maxHeat = *std::ranges::fold_left_first(u, MaxOperator{});
 
-        const double minHeat = *std::ranges::fold_left_first(u, minOperator);
-        const double maxHeat = *std::ranges::fold_left_first(u, maxOperator);
-
-        const double minDivergence = *std::ranges::fold_left_first(divergence, minOperator);
-        const double maxDivergence = *std::ranges::fold_left_first(divergence, maxOperator);
+        const double minDivergence = *std::ranges::fold_left_first(divergence, MinOperator{});
+        const double maxDivergence = *std::ranges::fold_left_first(divergence, MaxOperator{});
         const double maxAbsDivergence = (std::max)(std::abs(minDivergence), std::abs(maxDivergence));
         
         std::vector<Vector3f> vertexGradients(m.V());
@@ -283,6 +338,7 @@ class HeatMethodDemo : public SimpleApplication
             vertex.normalizedHeat = static_cast<float>(Saturate(InverseLerp(minHeat, maxHeat, u[v])));
             vertex.gradient = vertexGradients[v];
             vertex.divergence = static_cast<float>(divergence[v] / maxAbsDivergence);
+            vertex.source = evalSourceParameter ? static_cast<float>(sourceParameters[v]) : 0.0f;
             vertex.distance = static_cast<float>(geodesicDistances[v]);
         }
 
@@ -298,14 +354,181 @@ class HeatMethodDemo : public SimpleApplication
         }, rawMesh_.GetPositionIndices().GetData());
     }
 
+    static Vector3d BuildBarycentricGradient(const Vector3d &a, const Vector3d &b, const Vector3d &c)
+    {
+        const Vector3d nbc = Normalize(b - c);
+        const Vector3d direction = Normalize((a - b) - Dot(a - b, nbc) * nbc);
+        const double length = Length(b - c) / Length(Cross(b - a, c - a));
+        return length * direction;
+    }
+
+    VectorXd SolveSourceParameter(
+        Span<Vector3d>  positions,
+        const VectorXd &binormals,  // per-face
+        const VectorXd &sourceValue // per-vertex, -1 means nil
+    ) const
+    {
+        const int knownVertexCount = *std::ranges::fold_left_first(
+            sourceValue | std::views::transform([&](double v) { return v >= 0.0 ? 1 : 0; }), std::plus{});
+        const int unknownVertexCount = halfEdgeMesh_.V() - knownVertexCount;
+
+        if(halfEdgeMesh_.F() < unknownVertexCount)
+        {
+            LogInfo("Characteristics equations are underdetermined");
+            LogInfo("Unknown vertex count = {}", unknownVertexCount);
+            LogInfo("Vertex count = {}", halfEdgeMesh_.V());
+            LogInfo("Face count = {}", halfEdgeMesh_.F());
+            return {};
+        }
+
+        std::vector<int> vertexMap;
+        vertexMap.resize(halfEdgeMesh_.V(), -1);
+        for(int v = 0, nextMappedVertex = 0; v < halfEdgeMesh_.V(); ++v)
+        {
+            if(sourceValue[v] < 0)
+            {
+                vertexMap[v] = nextMappedVertex++;
+            }
+        }
+
+        std::vector<Eigen::Triplet<double>> triplets;
+        std::vector<double> bValues;
+        for(int f = 0; f < halfEdgeMesh_.F(); ++f)
+        {
+            // Try to start from the first unconstrained vertex
+            int startIndex = 0;
+            for(int i = 0; i < 3; ++i)
+            {
+                if(sourceValue[halfEdgeMesh_.Vert(3 * f + i)] >= 0.0 &&
+                   sourceValue[halfEdgeMesh_.Vert(3 * f + ((i + 1) % 3))] < 0)
+                {
+                    startIndex = (i + 1) % 3;
+                    break;
+                }
+            }
+            auto MI = [&](int i) { return (startIndex + i) % 3; };
+
+            const bool isConstrained[3] =
+            {
+                sourceValue[halfEdgeMesh_.Vert(3 * f + MI(0))] >= 0.0,
+                sourceValue[halfEdgeMesh_.Vert(3 * f + MI(1))] >= 0.0,
+                sourceValue[halfEdgeMesh_.Vert(3 * f + MI(2))] >= 0.0,
+            };
+            if(isConstrained[0])
+            {
+                // All three source values have been specified. No unknown vertex is related to this face.
+                continue;
+            }
+
+            const int v[3] =
+            {
+                halfEdgeMesh_.Vert(3 * f + MI(0)),
+                halfEdgeMesh_.Vert(3 * f + MI(1)),
+                halfEdgeMesh_.Vert(3 * f + MI(2)),
+            };
+            const Vector3d p[3] =
+            {
+                positions[v[0]],
+                positions[v[1]],
+                positions[v[2]],
+            };
+            const Vector3d B[3] =
+            {
+                BuildBarycentricGradient(p[0], p[1], p[2]),
+                BuildBarycentricGradient(p[1], p[2], p[0]),
+                BuildBarycentricGradient(p[2], p[0], p[1]),
+            };
+            const double u[3] =
+            {
+                sourceValue[v[0]],
+                sourceValue[v[1]],
+                sourceValue[v[2]],
+            };
+
+            const Vector3d G =
+            {
+                binormals[3 * f + 0],
+                binormals[3 * f + 1],
+                binormals[3 * f + 2]
+            };
+
+            const double coef[3] =
+            {
+                Dot(B[0], G),
+                Dot(B[1], G),
+                Dot(B[2], G),
+            };
+
+            const int nextEquationIndex = static_cast<int>(bValues.size());
+            if(isConstrained[1]) // Only u0 is unknown. The gradient is u0 * B0 + u1 * B1 + u2 * B2
+            {
+                if(std::abs(coef[0]) < 1e-9)
+                {
+                    continue;
+                }
+                triplets.emplace_back(nextEquationIndex, vertexMap[v[0]], coef[0]);
+                bValues.push_back(-(u[1] * coef[1] + u[2] * coef[2]));
+            }
+            else if(isConstrained[2]) // Both u0 and u1 are unknown
+            {
+                if(std::abs(coef[0]) < 1e-9 && std::abs(coef[1]) < 1e-9)
+                {
+                    continue;
+                }
+                triplets.emplace_back(nextEquationIndex, vertexMap[v[0]], coef[0]);
+                triplets.emplace_back(nextEquationIndex, vertexMap[v[1]], coef[1]);
+                bValues.push_back(-(u[2] * coef[2]));
+            }
+            else // All three vertices are unknown
+            {
+                if(std::abs(coef[0]) < 1e-9 && std::abs(coef[1]) < 1e-9 && std::abs(coef[2]) < 1e-9)
+                {
+                    continue;
+                }
+                triplets.emplace_back(nextEquationIndex, vertexMap[v[0]], coef[0]);
+                triplets.emplace_back(nextEquationIndex, vertexMap[v[1]], coef[1]);
+                triplets.emplace_back(nextEquationIndex, vertexMap[v[2]], coef[2]);
+                bValues.push_back(0);
+            }
+        }
+
+        SparseMatrixXd A(bValues.size(), unknownVertexCount);
+        A.setFromTriplets(triplets.begin(), triplets.end());
+
+        VectorXd b(bValues.size());
+        for(uint32_t i = 0; i < bValues.size(); ++i)
+        {
+            b[i] = bValues[i];
+        }
+
+        Eigen::LeastSquaresConjugateGradient<SparseMatrixXd> CG;
+        CG.compute(A);
+        const VectorXd u = CG.solve(b);
+
+        VectorXd remappedU(halfEdgeMesh_.V());
+        for(int v = 0; v < halfEdgeMesh_.V(); ++v)
+        {
+            if(sourceValue[v] >= 0)
+            {
+                remappedU[v] = sourceValue[v];
+            }
+            else
+            {
+                remappedU[v] = u[vertexMap[v]];
+            }
+        }
+
+        return remappedU;
+    }
+
     void VisualizeHeat(GraphRef graph, RGTexture renderTarget)
     {
         auto depthBuffer = graph->CreateTexture(RHI::TextureDesc
         {
-            .format = RHI::Format::D32,
-            .width = renderTarget->GetWidth(),
-            .height = renderTarget->GetHeight(),
-            .usage = RHI::TextureUsage::DepthStencil,
+            .format     = RHI::Format::D32,
+            .width      = renderTarget->GetWidth(),
+            .height     = renderTarget->GetHeight(),
+            .usage      = RHI::TextureUsage::DepthStencil,
             .clearValue = RHI::DepthStencilClearValue{ 1, 0 }
         });
 
@@ -315,21 +538,22 @@ class HeatMethodDemo : public SimpleApplication
             {
                 .shader = device_->GetShader<RtrcShader::VisualizeHeat::Name>(),
                 .meshLayout = RTRC_MESH_LAYOUT(Buffer(
-                    Attribute("POSITION", Float3),
-                    Attribute("HEAT", Float),
-                    Attribute("GRADIENT", Float3),
+                    Attribute("POSITION",   Float3),
+                    Attribute("HEAT",       Float),
+                    Attribute("GRADIENT",   Float3),
                     Attribute("DIVERGENCE", Float),
-                    Attribute("DISTANCE", Float))),
+                    Attribute("SOURCE",     Float),
+                    Attribute("DISTANCE",   Float))),
                 .depthStencilState = RTRC_DEPTH_STENCIL_STATE
                 {
-                    .enableDepthTest = true,
+                    .enableDepthTest  = true,
                     .enableDepthWrite = true,
-                    .depthCompareOp = RHI::CompareOp::LessEqual
+                    .depthCompareOp   = RHI::CompareOp::LessEqual
                 },
                 .attachmentState = RTRC_ATTACHMENT_STATE
                 {
                     .colorAttachmentFormats = { renderTarget->GetFormat() },
-                    .depthStencilFormat = depthBuffer->GetFormat()
+                    .depthStencilFormat     = depthBuffer->GetFormat()
                 }
             });
         }
@@ -370,6 +594,7 @@ class HeatMethodDemo : public SimpleApplication
         float    normalizedHeat;
         Vector3f gradient;
         float    divergence;
+        float    source;
         float    distance;
     };
 
@@ -378,22 +603,32 @@ class HeatMethodDemo : public SimpleApplication
         Heat,
         Gradient,
         Divergence,
+        Source,
+        UV,
         Distance
     };
 
-    RawMesh          rawMesh_;
-    HalfedgeMesh halfEdgeMesh_;
-    TriangleBVH      bvh_;
+    RawMesh               rawMesh_;
+    HalfedgeMesh          halfEdgeMesh_;
+    TriangleBVH           bvh_;
+    std::vector<Vector3d> positions_;
 
-    Eigen::SimplicialLDLT<SparseMatrixXd> dirichletHeatSolver_;
-    Eigen::SimplicialLDLT<SparseMatrixXd> neumannHeatSolver_;
+    SparseMatrixXd A_;
+    SimplicialLDLT dirichletHeatSolver_;
+    SimplicialLDLT neumannHeatSolver_;
     SparseMatrixXd gradientOperatorX_;
     SparseMatrixXd gradientOperatorY_;
     SparseMatrixXd gradientOperatorZ_;
     SparseMatrixXd divergenceOperator_;
-    Eigen::SimplicialLDLT<SparseMatrixXd> poissonSolver_;
+    SparseMatrixXd normalizedDivergenceOperator_;
+    SimplicialLDLT poissonSolver_;
 
-    int lastV_ = -1;
+    VectorXd flattenHeatGradient_;
+
+    bool append_ = false;
+    bool isDirty_ = true;
+    std::set<int> lastVs_;
+
     RC<Buffer> vertexBuffer_;
     RC<Buffer> indexBuffer_;
 
@@ -401,7 +636,6 @@ class HeatMethodDemo : public SimpleApplication
     EditorCameraController cameraController_;
 
     VisualizeMode visualizationMode_ = Distance;
-
     RC<GraphicsPipeline> visualizeHeatPipeline_;
 };
 

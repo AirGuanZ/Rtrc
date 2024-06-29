@@ -15,6 +15,7 @@ rtrc_shader("VisualizeHeat")
 		float heat : HEAT;
 		float3 gradient : GRADIENT;
 		float divergence : DIVERGENCE;
+		float source : SOURCE;
 		float distance : DISTANCE;
 	};
 
@@ -24,8 +25,15 @@ rtrc_shader("VisualizeHeat")
 		float heat : HEAT;
 		float3 gradient : GRADIENT;
 		float divergence : DIVERGENCE;
+		float source : SOURCE;
 		float distance : DISTANCE;
 	};
+
+	float3 HeatColor(float v)
+	{
+		const float level = saturate(v) * (3.14159265 / 2);
+		return float3(sin(level), sin(2 * level), cos(level));
+	}
 
 	VSOutput VSMain(VSInput input)
 	{
@@ -34,6 +42,7 @@ rtrc_shader("VisualizeHeat")
 		output.heat = input.heat;
 		output.gradient = input.gradient;
 		output.divergence = input.divergence;
+		output.source = input.source;
 		output.distance = input.distance;
 		return output;
 	}
@@ -41,22 +50,33 @@ rtrc_shader("VisualizeHeat")
 	float4 FSMain(VSOutput input) : SV_TARGET
 	{
 		float3 color;
-		if(Pass.mode == 0)
+		if(Pass.mode == 0) // heat
 		{
 			color = pow(input.heat, 0.1);
 		}
-		else if(Pass.mode == 1)
+		else if(Pass.mode == 1) // gradient
 		{
 			const float3 direction = any(input.gradient != 0) ? normalize(input.gradient) : 0;
 			color = 0.5 + 0.5 * direction;
 		}
-		else if(Pass.mode == 2)
+		else if(Pass.mode == 2) // divergence
 		{
-			color = input.divergence >= 0 ? float3(0.8, 0.1, 0.1) : float3(0.1, 0.1, 0.8);
+			color = input.divergence >= 0 ? float3(1, 0, 0) : float3(0, 0, 1);
 			color *= abs(input.divergence);
-			color = pow(color, 1 / 2.2);
 		}
-		else
+		else if(Pass.mode == 3) // source
+		{
+			const float t = saturate(input.source);
+			color = HeatColor(t);
+			//color = pow(color, 1 / 2.2);
+		}
+		else if(Pass.mode == 4) // uv
+		{
+			const int ui = int(input.distance / 0.01);
+			const int vi = int(input.source * 100);
+			color = (ui & 1) ^ (vi & 1);
+		}
+		else // distance
 		{
 			const float strip = input.distance / 0.05;
 			color = int(strip) & 1 ? float3(0.2, 0.8, 0.8) : float3(0.8, 0.2, 0.2);
