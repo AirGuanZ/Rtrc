@@ -225,7 +225,7 @@ namespace VkPhysicalDeviceDetail
             current = UpAlignPointerTo(current, feature.alignment);
             *reinterpret_cast<VkPhysicalDeviceFeatureHead *>(current) = { feature.type, last };
             last = current;
-            for(const size_t boolOffset : std::ranges::views::keys(feature.boolOffsetAndNames))
+            for(const size_t boolOffset : std::views::keys(feature.boolOffsetAndNames))
             {
                 *reinterpret_cast<VkBool32 *>(current + boolOffset) = true;
             }

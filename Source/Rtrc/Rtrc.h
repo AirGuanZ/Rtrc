@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Rtrc/Core/Archive/Archive.h>
+#include <Rtrc/Core/Bool.h>
 #include <Rtrc/Core/Container/RangeSet.h>
 #include <Rtrc/Core/Enumerate.h>
 #include <Rtrc/Core/Filesystem/DirectoryFilter.h>
@@ -20,6 +21,7 @@
 #include <Rtrc/Geometry/RawMesh.h>
 #include <Rtrc/Geometry/SignpostsMesh.h>
 #include <Rtrc/Geometry/TriangleBVH.h>
+#include <Rtrc/Geometry/Utility.h>
 
 #include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/Graphics/Device/PipelineCache.h>

@@ -19,19 +19,19 @@ DirectX12Texture::DirectX12Texture(
 
 DirectX12Texture::~DirectX12Texture()
 {
-    for(auto &srv : std::ranges::views::values(srvs_))
+    for(auto &srv : std::views::values(srvs_))
     {
         device_->_internalFreeCPUDescriptorHandle_CbvSrvUav(srv);
     }
-    for(auto &uav : std::ranges::views::values(uavs_))
+    for(auto &uav : std::views::values(uavs_))
     {
         device_->_internalFreeCPUDescriptorHandle_CbvSrvUav(uav);
     }
-    for(auto &rtv : std::ranges::views::values(rtvs_))
+    for(auto &rtv : std::views::values(rtvs_))
     {
         device_->_internalFreeCPUDescriptorHandle_Rtv(rtv);
     }
-    for(auto &dsv : std::ranges::views::values(dsvs_))
+    for(auto &dsv : std::views::values(dsvs_))
     {
         device_->_internalFreeCPUDescriptorHandle_Dsv(dsv);
     }

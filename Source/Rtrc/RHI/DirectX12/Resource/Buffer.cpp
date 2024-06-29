@@ -19,11 +19,11 @@ DirectX12Buffer::DirectX12Buffer(
 
 DirectX12Buffer::~DirectX12Buffer()
 {
-    for(auto &v : std::ranges::views::values(srvs_))
+    for(auto &v : std::views::values(srvs_))
     {
         device_->_internalFreeCPUDescriptorHandle_CbvSrvUav(v);
     }
-    for(auto &v : std::ranges::views::values(uavs_))
+    for(auto &v : std::views::values(uavs_))
     {
         device_->_internalFreeCPUDescriptorHandle_CbvSrvUav(v);
     }

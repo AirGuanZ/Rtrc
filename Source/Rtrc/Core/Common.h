@@ -24,8 +24,8 @@
 #define RTRC_RHI_BEGIN RTRC_BEGIN namespace RHI {
 #define RTRC_RHI_END } RTRC_END
 
-#define RTRC_RENDERER_BEGIN RTRC_BEGIN namespace Renderer {
-#define RTRC_RENDERER_END   } RTRC_END
+#define RTRC_GEO_BEGIN RTRC_BEGIN namespace Geo {
+#define RTRC_GEO_END } RTRC_END
 
 #if defined(DEBUG) || defined(_DEBUG)
 #define RTRC_DEBUG 1

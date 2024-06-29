@@ -3,7 +3,7 @@
 #include <Rtrc/Core/Math/Vector3.h>
 #include <Rtrc/Geometry/HalfedgeMesh.h>
 
-RTRC_BEGIN
+RTRC_GEO_BEGIN
 
 template<typename T>
 class SignpostsMesh
@@ -43,4 +43,4 @@ private:
     std::vector<std::pair<T, T>> phis; // edge -> (directional angle, twin directional angle)
 };
 
-RTRC_END
+RTRC_GEO_END

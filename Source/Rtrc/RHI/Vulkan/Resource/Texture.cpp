@@ -22,7 +22,7 @@ VulkanTexture::VulkanTexture(
 
 VulkanTexture::~VulkanTexture()
 {
-    for(VkImageView view : std::ranges::views::values(views_))
+    for(VkImageView view : std::views::values(views_))
     {
         vkDestroyImageView(device_->_internalGetNativeDevice(), view, RTRC_VK_ALLOC);
     }

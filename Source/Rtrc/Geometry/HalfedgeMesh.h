@@ -3,7 +3,7 @@
 #include <Rtrc/Core/Container/Span.h>
 #include <Rtrc/Core/EnumFlags.h>
 
-RTRC_BEGIN
+RTRC_GEO_BEGIN
 
 namespace FlatHalfedgeMeshDetail
 {
@@ -69,6 +69,9 @@ public:
     template<typename Func>
     void ForEachOutgoingHalfedge(int v, const Func &func) const;
 
+    // Returns the first outgoing halfedge given by ForEachOutgoingHalfedge
+    int GetFirstOutgoingHalfedge(int v) const;
+
     // func is called with the index of each neighboring vertex.
     template<typename Func>
     void ForEachNeighbor(int v, const Func &func) const;
@@ -98,7 +101,7 @@ public:
         MoveFace
     };
 
-    // Remove elements marked for deletion so that the half-edge mesh becomes compacted again.
+    // Remove elements marked for deletion so that the halfedge mesh becomes compacted again.
     // During this process, valid elements may be moved to fill the holes.
     // The user can provide a custom function to monitor these movements.
     //
@@ -181,6 +184,11 @@ void HalfedgeMesh::ForEachOutgoingHalfedge(int v, const Func &func) const
             func(h);
         }
     });
+}
+
+inline int HalfedgeMesh::GetFirstOutgoingHalfedge(int v) const
+{
+    return VertToHalfedge(v);
 }
 
 template <typename Func>
@@ -303,4 +311,4 @@ void HalfedgeMesh::Compact(const Func &func)
     facesMarkedForDeletion_.clear();
 }
 
-RTRC_END
+RTRC_GEO_END

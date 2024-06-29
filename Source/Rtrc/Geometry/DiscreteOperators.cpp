@@ -1,7 +1,7 @@
 #include <Rtrc/Core/Math/Common.h>
 #include <Rtrc/Geometry/DiscreteOperators.h>
 
-RTRC_BEGIN
+RTRC_GEO_BEGIN
 
 namespace DiscreteOperatorDetail
 {
@@ -46,6 +46,62 @@ namespace DiscreteOperatorDetail
         }
 
         Eigen::SparseMatrix<Scalar> ret(mesh.F(), mesh.V());
+        ret.setFromTriplets(triplets.begin(), triplets.end());
+        return ret;
+    }
+
+    template<typename Scalar, bool NormalizeByBoundaryLength>
+    Eigen::SparseMatrix<Scalar> BuildVertexDivergenceMatrix(const HalfedgeMesh &mesh, Span<Vector3<Scalar>> positions)
+    {
+        assert(mesh.IsCompacted());
+        std::vector<Eigen::Triplet<Scalar>> triplets;
+        for(int v = 0; v < mesh.V(); ++v)
+        {
+            Scalar rcpBoundaryLength;
+            if constexpr(NormalizeByBoundaryLength)
+            {
+                Scalar boundaryLength = 0;
+                mesh.ForEachOutgoingHalfedge(v, [&](int h)
+                {
+                    const int v0 = mesh.Tail(h);
+                    const int v1 = mesh.Tail(mesh.Succ(h));
+                    const Vector3<Scalar> &p0 = positions[v0];
+                    const Vector3<Scalar> &p1 = positions[v1];
+                    boundaryLength += Rtrc::Length(p0 - p1);
+                });
+                boundaryLength *= Scalar(0.5);
+                rcpBoundaryLength = Scalar(1) / boundaryLength;
+            }
+            else
+            {
+                rcpBoundaryLength = 1;
+            }
+
+            mesh.ForEachOutgoingHalfedge(v, [&](int h0)
+            {
+                const int f = h0 / 3;
+
+                const int h1 = mesh.Succ(h0);
+                const int h2 = mesh.Succ(h1);
+                const int v0 = mesh.Vert(h0);
+                const int v1 = mesh.Vert(h1);
+                const int v2 = mesh.Vert(h2);
+
+                const Vector3<Scalar> &p0 = positions[v0];
+                const Vector3<Scalar> &p1 = positions[v1];
+                const Vector3<Scalar> &p2 = positions[v2];
+
+                const Scalar cotTheta0 = DiscreteOperatorDetail::Cotan(p2, p0, p1);
+                const Scalar cotTheta1 = DiscreteOperatorDetail::Cotan(p1, p0, p2);
+
+                const Vector3<Scalar> coef = Scalar(0.5) * (cotTheta0 * (p1 - p0) + cotTheta1 * (p2 - p0));
+                triplets.push_back({ v, 3 * f + 0, rcpBoundaryLength * coef.x });
+                triplets.push_back({ v, 3 * f + 1, rcpBoundaryLength * coef.y });
+                triplets.push_back({ v, 3 * f + 2, rcpBoundaryLength * coef.z });
+            });
+        }
+
+        Eigen::SparseMatrix<Scalar> ret(mesh.V(), mesh.F() * 3);
         ret.setFromTriplets(triplets.begin(), triplets.end());
         return ret;
     }
@@ -124,37 +180,13 @@ Eigen::SparseMatrix<Scalar> BuildFaceGradientMatrix_Z(const HalfedgeMesh &mesh, 
 template<typename Scalar>
 Eigen::SparseMatrix<Scalar> BuildVertexDivergenceMatrix(const HalfedgeMesh &mesh, Span<Vector3<Scalar>> positions)
 {
-    assert(mesh.IsCompacted());
-    std::vector<Eigen::Triplet<Scalar>> triplets;
-    for(int v = 0; v < mesh.V(); ++v)
-    {
-        mesh.ForEachOutgoingHalfedge(v, [&](int h0)
-        {
-            const int f = h0 / 3;
+    return DiscreteOperatorDetail::BuildVertexDivergenceMatrix<Scalar, false>(mesh, positions);
+}
 
-            const int h1 = mesh.Succ(h0);
-            const int h2 = mesh.Succ(h1);
-            const int v0 = mesh.Vert(h0);
-            const int v1 = mesh.Vert(h1);
-            const int v2 = mesh.Vert(h2);
-
-            const Vector3<Scalar> &p0 = positions[v0];
-            const Vector3<Scalar> &p1 = positions[v1];
-            const Vector3<Scalar> &p2 = positions[v2];
-
-            const Scalar cotTheta0 = DiscreteOperatorDetail::Cotan(p2, p0, p1);
-            const Scalar cotTheta1 = DiscreteOperatorDetail::Cotan(p1, p0, p2);
-
-            const Vector3<Scalar> coef = Scalar(0.5) * (cotTheta0 * (p1 - p0) + cotTheta1 * (p2 - p0));
-            triplets.push_back({ v, 3 * f + 0, coef.x });
-            triplets.push_back({ v, 3 * f + 1, coef.y });
-            triplets.push_back({ v, 3 * f + 2, coef.z });
-        });
-    }
-
-    Eigen::SparseMatrix<Scalar> ret(mesh.V(), mesh.F() * 3);
-    ret.setFromTriplets(triplets.begin(), triplets.end());
-    return ret;
+template<typename Scalar>
+Eigen::SparseMatrix<Scalar> BuildVertexDivergenceMatrix_NormalizedByBoundaryLength(const HalfedgeMesh &mesh, Span<Vector3<Scalar>> positions)
+{
+    return DiscreteOperatorDetail::BuildVertexDivergenceMatrix<Scalar, true>(mesh, positions);
 }
 
 template <typename Scalar>
@@ -249,6 +281,44 @@ Eigen::SparseMatrix<Scalar> BuildCotanLaplacianMatrix(
     return ret;
 }
 
+template<typename Scalar>
+Eigen::SparseMatrix<Scalar> BuildFaceToVertexMatrix(const HalfedgeMesh &mesh, Span<Vector3<Scalar>> positions)
+{
+    std::vector<Eigen::Triplet<double>> triplets;
+    std::vector<Scalar> innerAngles;
+    for(int v = 0; v < mesh.V(); ++v)
+    {
+        innerAngles.clear();
+
+        Scalar sumAngles = 0;
+        mesh.ForEachOutgoingHalfedge(v, [&](int h)
+        {
+            const int v0 = v;
+            const int v1 = mesh.Tail(h);
+            const int v2 = mesh.Head(mesh.Prev(h));
+            const Vector3<Scalar> p0 = positions[v0];
+            const Vector3<Scalar> p1 = positions[v1];
+            const Vector3<Scalar> p2 = positions[v2];
+            const Scalar cosAngle = Cos(p1 - p0, p2 - p0);
+            const Scalar angle = std::acos(Clamp(cosAngle, Scalar(-1), Scalar(1)));
+            innerAngles.push_back(angle);
+            sumAngles += angle;
+        });
+        const Scalar rcpSumAngles = Scalar(1) / (std::max)(sumAngles, Scalar(1e-20));
+
+        int localFaceIndex = 0;
+        mesh.ForEachOutgoingHalfedge(v, [&](int h)
+        {
+            const int f = h / 3;
+            const Scalar weight = innerAngles[localFaceIndex++] * rcpSumAngles;
+            triplets.push_back({ v, f, weight });
+        });
+    }
+
+    Eigen::SparseMatrix<Scalar> ret(mesh.V(), mesh.F());
+    ret.setFromTriplets(triplets.begin(), triplets.end());
+    return ret;
+}
 
 template Eigen::VectorX<float> BuildVertexAreaVector<float>(const HalfedgeMesh &, Span<Vector3<float>>);
 template Eigen::VectorX<double> BuildVertexAreaVector<double>(const HalfedgeMesh &, Span<Vector3<double>>);
@@ -266,7 +336,10 @@ template Eigen::SparseMatrix<double> BuildFaceGradientMatrix_Z(const HalfedgeMes
 template Eigen::SparseMatrix<float> BuildVertexDivergenceMatrix(const HalfedgeMesh &mesh, Span<Vector3<float>>);
 template Eigen::SparseMatrix<double> BuildVertexDivergenceMatrix(const HalfedgeMesh &mesh, Span<Vector3<double>>);
 
+template Eigen::SparseMatrix<float> BuildVertexDivergenceMatrix_NormalizedByBoundaryLength(const HalfedgeMesh &mesh, Span<Vector3<float>>);
+template Eigen::SparseMatrix<double> BuildVertexDivergenceMatrix_NormalizedByBoundaryLength(const HalfedgeMesh &mesh, Span<Vector3<double>>);
+
 template Eigen::SparseMatrix<float>  BuildCotanLaplacianMatrix<float>(const HalfedgeMesh &, Span<Vector3<float>>, CotanLaplacianBoundaryType);
 template Eigen::SparseMatrix<double> BuildCotanLaplacianMatrix<double>(const HalfedgeMesh &, Span<Vector3<double>>, CotanLaplacianBoundaryType);
 
-RTRC_END
+RTRC_GEO_END

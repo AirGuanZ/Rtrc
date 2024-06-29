@@ -1,9 +1,8 @@
-#include <Rtrc/ToolKit/Resource/ResourceManager.h>
 #include <Rtrc/ToolKit/IndirectArg/PrepareThreadGroupCountForIndirectDispatch.h>
 
 #include "PrepareThreadGroupCountForIndirectDispatch.shader.outh"
 
-RTRC_RENDERER_BEGIN
+RTRC_BEGIN
 
 RGPass PrepareThreadGroupCount1D(
     GraphRef        renderGraph,
@@ -20,4 +19,4 @@ RGPass PrepareThreadGroupCount1D(
     return RGDispatchWithThreadCount(renderGraph, Shader::Name, shader, 1, passData);
 }
 
-RTRC_RENDERER_END
+RTRC_END

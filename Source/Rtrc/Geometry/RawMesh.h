@@ -5,7 +5,7 @@
 #include <Rtrc/Core/StringPool.h>
 #include <Rtrc/Geometry/HalfedgeMesh.h>
 
-RTRC_BEGIN
+RTRC_GEO_BEGIN
 
 namespace RawMeshDetail
 {
@@ -123,6 +123,8 @@ public:
     MutSpan<Vector3f> GetPositionData();
     MutSpan<Vector3f> GetNormalData();
     MutSpan<Vector2f> GetUVData();
+
+    std::vector<Vector3d> GetPositionDataDouble() const;
 
     Span<uint32_t> GetIndices(uint32_t attributeIndex) const;
 
@@ -343,6 +345,17 @@ inline MutSpan<Vector2f> RawMesh::GetUVData()
     return {};
 }
 
+inline std::vector<Vector3d> RawMesh::GetPositionDataDouble() const
+{
+    auto positions = GetPositionData();
+    std::vector<Vector3d> result(positions.size());
+    for(size_t i = 0; i < positions.size(); ++i)
+    {
+        result[i] = positions[i].To<double>();
+    }
+    return result;
+}
+
 inline Span<uint32_t> RawMesh::GetIndices(uint32_t attributeIndex) const
 {
     return indices_[attributeIndex];
@@ -385,4 +398,4 @@ inline int RawMesh::GetBuiltinAttributeIndex(BuiltinAttribute attribute) const
     return builtinAttributeIndices_[std::to_underlying(attribute)];
 }
 
-RTRC_END
+RTRC_GEO_END

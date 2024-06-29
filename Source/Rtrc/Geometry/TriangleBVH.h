@@ -3,7 +3,7 @@
 #include <Rtrc/Core/Container/Span.h>
 #include <Rtrc/Core/Math/Vector3.h>
 
-RTRC_BEGIN
+RTRC_GEO_BEGIN
 
 class TriangleBVH
 {
@@ -102,4 +102,4 @@ void TriangleBVH::FindClosestIntersection(const Vector3f &o, const Vector3f &d, 
     }
 }
 
-RTRC_END
+RTRC_GEO_END

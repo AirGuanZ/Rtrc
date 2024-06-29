@@ -3,7 +3,7 @@
 #include <Rtrc/Core/Math/Common.h>
 #include <Rtrc/Geometry/SignpostsMesh.h>
 
-RTRC_BEGIN
+RTRC_GEO_BEGIN
 
 template <typename T>
 SignpostsMesh<T> SignpostsMesh<T>::Build(Span<uint32_t> indices, Span<Vector3<T>> positions, T edgeLengthTolerance)
@@ -204,4 +204,4 @@ void SignpostsMesh<T>::FlipToDelaunayTriangulation(T tolerance)
 template<> class SignpostsMesh<float>;
 template<> class SignpostsMesh<double>;
 
-RTRC_END
+RTRC_GEO_END

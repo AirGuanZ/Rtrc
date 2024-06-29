@@ -708,7 +708,7 @@ void ParseBindingGroups(
         }
     }
 
-    for(auto &binding: std::ranges::views::values(ungroupedBindingMap))
+    for(auto &binding: std::views::values(ungroupedBindingMap))
     {
         ungroupedBindings.push_back(binding);
     }

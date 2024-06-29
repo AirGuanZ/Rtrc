@@ -101,7 +101,7 @@ void RGLabelStack::Transfer(const Node *from, const Node *to, const PushOperatio
     {
         pop(node);
     }
-    for(auto node : std::ranges::views::reverse(toPath))
+    for(auto node : std::views::reverse(toPath))
     {
         push(node);
     }

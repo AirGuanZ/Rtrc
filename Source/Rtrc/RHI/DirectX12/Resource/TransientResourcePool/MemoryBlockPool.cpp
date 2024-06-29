@@ -104,7 +104,7 @@ const TransientResourcePoolDetail::MemoryBlockPool::MemoryBlock &
 
 void TransientResourcePoolDetail::MemoryBlockPool::RecycleAvailableMemoryBlocks()
 {
-    for(auto &queueRecord : std::ranges::views::values(queueRecords_))
+    for(auto &queueRecord : std::views::values(queueRecords_))
     {
         // Alias barrier between previous uses of these memory blocks are unnecessary as the subsequent access will
         // be performed in different ExecuteCommandLists scope(s).
@@ -122,7 +122,7 @@ void TransientResourcePoolDetail::MemoryBlockPool::RecycleAvailableMemoryBlocks(
 
 void TransientResourcePoolDetail::MemoryBlockPool::FreeUnusedMemoryBlocks()
 {
-    for(auto &queueRecord : std::ranges::views::values(queueRecords_))
+    for(auto &queueRecord : std::views::values(queueRecords_))
     {
         for(int i = 0; i < 4; ++i)
         {

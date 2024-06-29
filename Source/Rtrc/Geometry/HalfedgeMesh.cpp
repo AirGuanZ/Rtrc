@@ -3,7 +3,7 @@
 #include <Rtrc/Core/Hash.h>
 #include <Rtrc/Geometry/HalfedgeMesh.h>
 
-RTRC_BEGIN
+RTRC_GEO_BEGIN
 
 HalfedgeMesh HalfedgeMesh::Build(Span<uint32_t> indices, BuildOptions options)
 {
@@ -735,4 +735,4 @@ void HalfedgeMesh::MarkFaceForDeletion(int f)
     facesMarkedForDeletion_.push_back(f);
 }
 
-RTRC_END
+RTRC_GEO_END

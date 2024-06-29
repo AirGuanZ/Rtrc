@@ -29,7 +29,7 @@ VulkanBuffer::VulkanBuffer(
 
 VulkanBuffer::~VulkanBuffer()
 {
-    for(VkBufferView view : std::ranges::views::values(views_))
+    for(VkBufferView view : std::views::values(views_))
     {
         vkDestroyBufferView(device_->_internalGetNativeDevice(), view, RTRC_VK_ALLOC);
     }

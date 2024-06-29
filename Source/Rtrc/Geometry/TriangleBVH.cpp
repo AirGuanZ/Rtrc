@@ -6,7 +6,7 @@
 #include <Rtrc/Core/Math/Intersection.h>
 #include <Rtrc/Geometry/TriangleBVH.h>
 
-RTRC_BEGIN
+RTRC_GEO_BEGIN
 
 namespace TriangleBVHDetail
 {
@@ -116,4 +116,4 @@ bool TriangleBVH::Node::IsLeaf() const
     return childCount != 0;
 }
 
-RTRC_END
+RTRC_GEO_END

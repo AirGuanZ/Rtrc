@@ -2,7 +2,7 @@
 
 #include <Rtrc/Graphics/RenderGraph/Graph.h>
 
-RTRC_RENDERER_BEGIN
+RTRC_BEGIN
 
 RGPass PrepareThreadGroupCount1D(
     GraphRef        renderGraph,
@@ -10,4 +10,4 @@ RGPass PrepareThreadGroupCount1D(
     const RGBufUav &threadGroupCountBuffer,
     int             threadGroupSize);
 
-RTRC_RENDERER_END
+RTRC_END

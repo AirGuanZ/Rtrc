@@ -3,7 +3,7 @@
 
 #include "PcgStateTexture.shader.outh"
 
-RTRC_RENDERER_BEGIN
+RTRC_BEGIN
 
 RGTexture Prepare2DPcgStateTexture(
     GraphRef             renderGraph,
@@ -47,4 +47,4 @@ RGTexture Prepare2DPcgStateTexture(
     return ret;
 }
 
-RTRC_RENDERER_END
+RTRC_END

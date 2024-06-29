@@ -948,7 +948,7 @@ CommandBufferManager::CommandBufferManager(Device *device, DeviceSynchronizer &s
 
 CommandBufferManager::~CommandBufferManager()
 {
-    for(PerThreadPoolData &poolData : std::ranges::views::values(threadToActivePoolData_))
+    for(PerThreadPoolData &poolData : std::views::values(threadToActivePoolData_))
     {
         if(poolData.activePool)
         {
@@ -970,7 +970,7 @@ CommandBuffer CommandBufferManager::Create()
 void CommandBufferManager::_internalEndFrame()
 {
     std::unique_lock lock(threadToActivePoolDataMutex_);
-    for(PerThreadPoolData &poolData : std::ranges::views::values(threadToActivePoolData_))
+    for(PerThreadPoolData &poolData : std::views::values(threadToActivePoolData_))
     {
         if(poolData.activePool)
         {

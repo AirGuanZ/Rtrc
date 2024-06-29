@@ -3,7 +3,7 @@
 #include <Rtrc/Core/String.h>
 #include <Rtrc/Geometry/RawMesh.h>
 
-RTRC_BEGIN
+RTRC_GEO_BEGIN
 
 RawMesh RawMesh::Load(const std::string& filename)
 {
@@ -360,4 +360,4 @@ RawMesh RawMesh::LoadWavefrontObj(const std::string& filename)
     return mesh;
 }
 
-RTRC_END
+RTRC_GEO_END

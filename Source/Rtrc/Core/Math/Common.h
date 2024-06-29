@@ -64,4 +64,29 @@ T ComputeTriangleAreaFromEdgeLengths(T l0, T l1, T l2)
     return std::sqrt(s * (s - l0) * (s - l1) * (s - l2));
 }
 
+// cos<a, b>
+template<std::floating_point T>
+T ComputeCosAngleFromTriangleEdgeLengths(T a, T b, T c)
+{
+    return (a * a + b * b - c * c) / (2 * a * b);
+}
+
+struct MinOperator
+{
+    template<typename T>
+    const T &operator()(const T &lhs, const T &rhs) const
+    {
+        return (std::min)(lhs, rhs);
+    }
+};
+
+struct MaxOperator
+{
+    template<typename T>
+    const T &operator()(const T &lhs, const T &rhs) const
+    {
+        return (std::max)(lhs, rhs);
+    }
+};
+
 RTRC_END

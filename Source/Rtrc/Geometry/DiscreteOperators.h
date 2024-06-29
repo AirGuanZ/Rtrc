@@ -5,7 +5,7 @@
 #include <Rtrc/Core/Math/Vector3.h>
 #include <Rtrc/Geometry/HalfedgeMesh.h>
 
-RTRC_BEGIN
+RTRC_GEO_BEGIN
 
 // Build a |V|-dimension vector containing the area of faces incident to each vertex
 template<typename Scalar>
@@ -30,6 +30,10 @@ Eigen::SparseMatrix<Scalar> BuildFaceGradientMatrix_Z(const HalfedgeMesh &mesh, 
 template<typename Scalar>
 Eigen::SparseMatrix<Scalar> BuildVertexDivergenceMatrix(const HalfedgeMesh &mesh, Span<Vector3<Scalar>> positions);
 
+// Similar to BuildVertexDivergenceMatrix, except the computed divergence is scaled by 1/boundary_length of each vertex.
+template<typename Scalar>
+Eigen::SparseMatrix<Scalar> BuildVertexDivergenceMatrix_NormalizedByBoundaryLength(const HalfedgeMesh &mesh, Span<Vector3<Scalar>> positions);
+
 enum class CotanLaplacianBoundaryType
 {
     Neumann,
@@ -44,4 +48,9 @@ Eigen::SparseMatrix<Scalar> BuildCotanLaplacianMatrix(
     Span<Vector3<Scalar>>      positions,
     CotanLaplacianBoundaryType boundaryConditions);
 
-RTRC_END
+// Build a |V|x|F| matrix M.
+// Given a per-face value vector u, M * u transforms u into a per-vertex value vector using inner-angle based weights.
+template<typename Scalar>
+Eigen::SparseMatrix<Scalar> BuildFaceToVertexMatrix(const HalfedgeMesh &mesh, Span<Vector3<Scalar>> positions);
+
+RTRC_GEO_END

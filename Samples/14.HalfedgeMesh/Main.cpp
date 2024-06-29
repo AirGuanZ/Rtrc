@@ -3,6 +3,7 @@
 #include "DrawMesh.shader.outh"
 
 using namespace Rtrc;
+using namespace Geo;
 
 class HalfedgeMeshDemo : public SimpleApplication
 {
@@ -33,17 +34,18 @@ class HalfedgeMeshDemo : public SimpleApplication
         };
         halfedgeMesh_ = HalfedgeMesh::Build(indices);
 
-        // Test split
-        //SplitEdge(2);
-        //SplitEdge(halfedgeMesh_.Succ(halfedgeMesh_.Succ(halfedgeMesh_.Twin(halfedgeMesh_.Succ(2)))));
-        //SplitEdge(halfedgeMesh_.Succ(2));
-        //SplitFace(1);
-        //SplitFace(6);
+        // Test 1
+        SplitEdge(2);
+        SplitEdge(halfedgeMesh_.Succ(halfedgeMesh_.Succ(halfedgeMesh_.Twin(halfedgeMesh_.Succ(2)))));
+        SplitEdge(halfedgeMesh_.Succ(2));
+        SplitFace(1);
+        SplitFace(6);
+        CollapseEdge(2);
         
-        // Test collapse
-        SplitEdge(2);
-        SplitEdge(2);
-        CollapseEdge(halfedgeMesh_.Succ(halfedgeMesh_.Twin(halfedgeMesh_.Succ(2))));
+        // Test 2
+        //SplitEdge(2);
+        //SplitEdge(2);
+        //CollapseEdge(halfedgeMesh_.Succ(halfedgeMesh_.Twin(halfedgeMesh_.Succ(2))));
 
         assert(halfedgeMesh_.CheckSanity());
         GenerateVisualizationData();
@@ -52,6 +54,9 @@ class HalfedgeMeshDemo : public SimpleApplication
     void CollapseEdge(int h)
     {
         auto &m = halfedgeMesh_;
+        const int v0 = m.Head(h);
+        const int v1 = m.Tail(h);
+        positions_[v0] = 0.5f * (positions_[v0] + positions_[v1]);
         m.CollapseEdge(h);
         m.Compact([&](HalfedgeMesh::MoveType type, int src, int dst)
         {
