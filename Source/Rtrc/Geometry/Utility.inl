@@ -4,7 +4,7 @@
 
 RTRC_GEO_BEGIN
 
-template<typename T, bool >
+template<typename T>
 void ComputeAngleAveragedNormals(
     Span<Vector3<T>>    positions,
     Span<uint32_t>      indices,
