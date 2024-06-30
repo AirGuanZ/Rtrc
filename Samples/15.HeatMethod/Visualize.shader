@@ -72,8 +72,8 @@ rtrc_shader("VisualizeHeat")
 		}
 		else if(Pass.mode == 4) // uv
 		{
-			const int ui = int(input.distance / 0.01);
-			const int vi = int(input.source * 100);
+			const int ui = int(input.distance / 0.05);
+			const int vi = int(input.source * 20);
 			color = (ui & 1) ^ (vi & 1);
 		}
 		else // distance
