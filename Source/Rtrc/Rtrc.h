@@ -19,6 +19,7 @@
 
 #include <Rtrc/Geometry/Expansion.h>
 #include <Rtrc/Geometry/HalfedgeMesh.h>
+#include <Rtrc/Geometry/Predicates.h>
 #include <Rtrc/Geometry/RawMesh.h>
 #include <Rtrc/Geometry/SignpostsMesh.h>
 #include <Rtrc/Geometry/TriangleBVH.h>

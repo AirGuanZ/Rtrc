@@ -35,6 +35,7 @@ namespace ExpansionUtility
 
 } // namespace ExpansionUtility
 
+// See Adaptive Precision Floating-Point Arithmetic and Fast Robust Geometric Predicates
 class Expansion
 {
 public:
@@ -60,6 +61,7 @@ public:
     uint32_t GetLength() const;
     uint32_t GetCapacity() const;
     Span<double> GetItems() const;
+    double ToDouble() const;
 
     int GetSign() const;
 
@@ -93,7 +95,7 @@ private:
           double *GetItemPointer();
     const double *GetItemPointer() const;
 
-    static constexpr size_t InlinedItemCount = 16;
+    static constexpr size_t InlinedItemCount = 32;
     static constexpr size_t StorageSize = (std::max)(InlinedItemCount * sizeof(double), sizeof(void *));
 
     uint32_t capacity_;
@@ -106,6 +108,8 @@ Expansion operator-(const Expansion &lhs, const Expansion &rhs);
 Expansion operator*(const Expansion &lhs, const Expansion &rhs);
 Expansion operator*(const Expansion &lhs, double rhs);
 Expansion operator*(double lhs, const Expansion &rhs);
+
+std::ostream &operator<<(std::ostream &stream, const Expansion &e);
 
 inline Expansion::Expansion()
     : Expansion(0.0)
@@ -197,6 +201,11 @@ inline uint32_t Expansion::GetCapacity() const
 inline Span<double> Expansion::GetItems() const
 {
     return Span<double>(GetItemPointer(), GetLength());
+}
+
+inline double Expansion::ToDouble() const
+{
+    return *std::ranges::fold_left_first(GetItems(), std::plus<>{});
 }
 
 inline int Expansion::GetSign() const
@@ -444,6 +453,11 @@ inline Expansion operator*(double lhs, const Expansion &rhs)
     Expansion ret;
     ret.SetMul(rhs, lhs);
     return ret;
+}
+
+inline std::ostream &operator<<(std::ostream &stream, const Expansion &e)
+{
+    return stream << e.ToString();
 }
 
 RTRC_GEO_END
