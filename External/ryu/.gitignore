@@ -1,0 +1,6 @@
+bazel-*
+/.eclipse-bin/
+/.project
+.vscode/
+ryu/*.[oa]
+ryu/tests/*.test

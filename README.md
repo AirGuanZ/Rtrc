@@ -54,6 +54,8 @@ RTRC_APPLICATION_MAIN(
 
 [bvh](https://github.com/madmann91/bvh) for BVH construction
 
+[Catch2](https://github.com/catchorg/Catch2) for testing
+
 [cista](https://github.com/felixguendling/cista) for counting class members
 
 [cxxopts](https://github.com/jarro2783/cxxopts) for parsing command arguments
@@ -61,6 +63,10 @@ RTRC_APPLICATION_MAIN(
 [cyCodeBase](http://www.cemyuksel.com/cyCodeBase/) for generating possion disk samples
 
 [D3D12MemAlloc](https://github.com/GPUOpen-LibrariesAndSDKs/D3D12MemoryAllocator) for memory management in D3D12 backend
+
+[DearImGui](https://github.com/ocornut/imgui) for creating GUI in samples
+
+[DirectXAgilitySDK](https://devblogs.microsoft.com/directx/directx12agility/) (binary) for accessing D3D12 preview features
 
 [DirectXShaderCompiler](https://github.com/microsoft/DirectXShaderCompiler) (binary) for compiling shaders
 
@@ -74,19 +80,17 @@ RTRC_APPLICATION_MAIN(
 
 [half](https://github.com/melowntech/half) for conversions between float16 and float32
 
-[DearImGui](https://github.com/ocornut/imgui) for creating GUI in samples
-
-[nlohmann-json](https://github.com/nlohmann/json) for parsing & writing JSON strings
-
 [libigl](https://libigl.github.io/) for planar mesh parameterization in samples
 
 [magic_enum](https://github.com/Neargye/magic_enum) for formatting enum values
 
 [mimalloc](https://github.com/microsoft/mimalloc) for memory allocation
 
+[nlohmann-json](https://github.com/nlohmann/json) for parsing & writing JSON strings
+
 [oneapi-tbb](https://github.com/oneapi-src/oneTBB) for spin locks and thread-safe containers
 
-[DirectXAgilitySDK](https://devblogs.microsoft.com/directx/directx12agility/) (binary) for accessing D3D12 preview features
+[ryu](https://github.com/ulfjack/ryu/tree/master) for numer-to-string conversion
 
 [sigslot](https://github.com/palacaze/sigslot) for thread-safe event broadcasting
 

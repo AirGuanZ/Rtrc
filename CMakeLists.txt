@@ -50,6 +50,7 @@ function(rtrc_register_target TARGET_NAME)
 endfunction()
 
 add_subdirectory(Source/Rtrc/ToolKit)
+add_subdirectory(Test)
 
 set_property(TARGET RtrcCore               PROPERTY FOLDER "Rtrc/Library")
 set_property(TARGET RtrcRHI                PROPERTY FOLDER "Rtrc/Library")
@@ -58,6 +59,7 @@ set_property(TARGET RtrcGraphics           PROPERTY FOLDER "Rtrc/Library")
 set_property(TARGET RtrcShaderCommon       PROPERTY FOLDER "Rtrc/Library")
 set_property(TARGET RtrcShaderPreprocessor PROPERTY FOLDER "Rtrc/Library")
 set_property(TARGET RtrcToolKit            PROPERTY FOLDER "Rtrc/Library")
+set_property(TARGET RtrcTest               PROPERTY FOLDER "Rtrc/Library")
 
 ############## samples
 

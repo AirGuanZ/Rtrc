@@ -24,4 +24,4 @@ target_include_directories(RtrcCore PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../..")
 target_link_libraries(
 	RtrcCore PUBLIC
 	mimalloc-static spdlog fmt tbbinterface stb tinyexr nlohmann-json
-	half tinyobjloader sigslot avir cy smhasher cista magic_enum)
+	half tinyobjloader sigslot avir cy smhasher cista magic_enum ryu)

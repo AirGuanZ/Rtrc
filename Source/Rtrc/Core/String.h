@@ -54,6 +54,9 @@ inline std::string Replace(std::string_view str, std::string_view oldSeg, std::s
 template<typename T>
 T FromString(const std::string &str);
 
+std::string ToString(float v);
+std::string ToString(double v);
+
 // align_left("xyz", 5) -> "xyz  "
 inline std::string AlignLeft(std::string_view str, size_t width, char padder = ' ');
 
