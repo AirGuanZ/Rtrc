@@ -23,6 +23,7 @@
 #include <Rtrc/Geometry/RawMesh.h>
 #include <Rtrc/Geometry/SignpostsMesh.h>
 #include <Rtrc/Geometry/TriangleBVH.h>
+#include <Rtrc/Geometry/TriangleTriangleIntersection.h>
 #include <Rtrc/Geometry/Utility.h>
 
 #include <Rtrc/Graphics/Device/Device.h>
