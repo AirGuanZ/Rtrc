@@ -127,10 +127,10 @@ void SymbolicTriangleTriangleIntersection<T>::IntersectCoplanarEdgeTriangle(
 {
     Vector observer;
     {
+        // Construct an observer point which is not coplanar with other points
         const int offsetAxis = FindNormalAxis(a, b, c);
-        const T maxVOnOffsetAxis = (std::max)({ p[offsetAxis], q[offsetAxis], a[offsetAxis], b[offsetAxis], c[offsetAxis] });
         observer = p;
-        observer[offsetAxis] = (std::max)(T(2.0) * maxVOnOffsetAxis + T(1.0), T(10));
+        observer[offsetAxis] = (std::max)(T(2.0) * p[offsetAxis] + T(1.0), T(10));
     }
     auto ProjectedOrient2D = [&](const Vector &i, const Vector &j, const Vector &k)
     {
@@ -157,7 +157,7 @@ void SymbolicTriangleTriangleIntersection<T>::IntersectCoplanarEdgeTriangle(
         outPoints.push_back({ vertexQ, Element::F });
         ++fallWithinCount;
     }
-    if(fallWithinCount)
+    if(fallWithinCount >= 2)
     {
         return;
     }
