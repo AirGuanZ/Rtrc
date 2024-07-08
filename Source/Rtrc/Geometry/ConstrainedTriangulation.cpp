@@ -364,6 +364,18 @@ std::vector<Vector3i> ConstrainedTriangulation2D(
                     newEdges.push_back(e);
                 }
             }
+
+            // Now (vStart, vEnd) must form an edge. Mark it to be fixed.
+            connectivity.ForEachOutgoingHalfedge(vStart, [&](int h)
+            {
+                if(connectivity.Tail(h) != vEnd)
+                {
+                    return true;
+                }
+                const int e = connectivity.Edge(h);
+                isEdgeFixed[e] = true;
+                return false;
+            });
         };
 
         while(true)
