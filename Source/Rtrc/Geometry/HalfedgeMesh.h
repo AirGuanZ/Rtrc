@@ -63,9 +63,13 @@ public:
 
     // If Unique is true, only one of each pair of twin halfedges will be used, with the outgoing one being preferred.
     // func is called with the index of each halfedge.
+    // The returned type of func must be either void or bool.
+    // When returning bool, false means immediately exiting the traversal.
     template <bool Unique, typename Func>
     void ForEachHalfedge(int v, const Func &func) const;
 
+    // The returned type of func must be either void or bool.
+    // When returning bool, false means immediately exiting the traversal.
     template<typename Func>
     void ForEachOutgoingHalfedge(int v, const Func &func) const;
 
@@ -73,6 +77,8 @@ public:
     int GetFirstOutgoingHalfedge(int v) const;
 
     // func is called with the index of each neighboring vertex.
+    // The returned type of func must be either void or bool.
+    // When returning bool, false means immediately exiting the traversal.
     template<typename Func>
     void ForEachNeighbor(int v, const Func &func) const;
 
@@ -148,28 +154,47 @@ void HalfedgeMesh::ForEachHalfedge(int v, const Func &func) const
     int h0 = VertToHalfedge(v);
     assert(Vert(h0) == v);
 
+    auto callFunc = [&](int h)
+    {
+        if constexpr(std::is_convertible_v<decltype(func(h)), bool>)
+        {
+            return static_cast<bool>(func(h));
+        }
+        else
+        {
+            func(h);
+            return true;
+        }
+    };
+
     int h = h0;
     while(true)
     {
-        func(h);
+        if(!callFunc(h))
+        {
+            return;
+        }
         h = Prev(h);
         if constexpr(!Unique)
         {
-            func(h);
+            if(!callFunc(h))
+            {
+                return;
+            }
         }
         const int nh = Twin(h);
         if(nh < 0)
         {
             if constexpr(Unique)
             {
-                func(h);
+                callFunc(h);
             }
-            break;
+            return;
         }
         h = nh;
         if(h == h0)
         {
-            break;
+            return;
         }
     }
 }
@@ -179,9 +204,20 @@ void HalfedgeMesh::ForEachOutgoingHalfedge(int v, const Func &func) const
 {
     this->ForEachHalfedge<true>(v, [&](int h)
     {
-        if(this->Vert(h) == v)
+        if constexpr(std::is_convertible_v<decltype(func(h)), bool>)
         {
-            func(h);
+            if(this->Vert(h) == v)
+            {
+                return static_cast<bool>(func(h));
+            }
+            return true;
+        }
+        else
+        {
+            if(this->Vert(h) == v)
+            {
+                func(h);
+            }
         }
     });
 }
@@ -197,7 +233,15 @@ void HalfedgeMesh::ForEachNeighbor(int v, const Func &func) const
     this->ForEachHalfedge<true>(v, [&](int h)
     {
         const int nh = Vert(h) == v ? Succ(h) : h;
-        func(Vert(nh));
+        const int vn = Vert(nh);
+        if constexpr(std::is_convertible_v<decltype(func(vn)), bool>)
+        {
+            return static_cast<bool>(func(vn));
+        }
+        else
+        {
+            func(vn);
+        }
     });
 }
 

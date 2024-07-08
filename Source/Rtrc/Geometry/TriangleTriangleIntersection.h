@@ -35,10 +35,16 @@ public:
         F
     };
 
-    struct Point
+    class Point
     {
-        Element elementA;
-        Element elementB;
+        uint8_t data_ = 0;
+
+    public:
+
+        Point() = default;
+        Point(Element a, Element b): data_(std::to_underlying(a) | (std::to_underlying(b) << 4)) {}
+        Element GetElement0() const { return static_cast<Element>(data_ & 0xf); }
+        Element GetElement1() const { return static_cast<Element>(data_ >> 4); }
         auto operator<=>(const Point &) const = default;
     };
 

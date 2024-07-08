@@ -11,7 +11,7 @@
 #pragma fenv_access(off)
 #pragma float_control(precise, on)
 #else
-#warning "float_control are not implemented. Expansion arithemetic operations may become unreliable."
+#warning "float_control is not implemented. Expansion arithemetic operations may become unreliable."
 #endif
 
 RTRC_GEO_BEGIN
@@ -338,12 +338,44 @@ namespace ExpansionUtility
     template int CompressExpansion(const float *, int, float *);
     template int CompressExpansion(const double *, int, double *);
 
-} // namespace ExpansionUtility
+    template<typename F>
+    F ToUnitRoundUp(const F *e, int eCount)
+    {
+        assert(eCount > 0);
+        if(eCount == 1)
+        {
+            return e[0];
+        }
+        assert(e[0] != 0 && e[1] != 0);
+        if(e[1] < 0)
+        {
+            return e[0];
+        }
+        return std::nextafter(e[0], (std::numeric_limits<F>::max)());
+    }
 
-std::string Expansion::ToString() const
-{
-    auto items = GetItems() | std::views::transform([](double v) { return Rtrc::ToString(v); });
-    return "[" + Join(" + ", items.begin(), items.end()) + "]";
-}
+    template float ToUnitRoundUp(const float *, int);
+    template double ToUnitRoundUp(const double *, int);
+
+    template<typename F>
+    F ToUnitRoundDown(const F* e, int eCount)
+    {
+        assert(eCount > 0);
+        if(eCount == 1)
+        {
+            return e[0];
+        }
+        assert(e[0] != 0 && e[1] != 0);
+        if(e[1] > 0)
+        {
+            return e[0];
+        }
+        return std::nextafter(e[0], std::numeric_limits<F>::lowest());
+    }
+
+    template float ToUnitRoundDown(const float *, int);
+    template double ToUnitRoundDown(const double *, int);
+
+} // namespace ExpansionUtility
 
 RTRC_GEO_END

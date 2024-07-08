@@ -64,6 +64,16 @@
 #define RTRC_INTELLISENSE_SELECT(FOR_INTELLISENSE, FOR_COMPILATION) FOR_COMPILATION
 #endif
 
+#if defined(_MSC_VER)
+#define RTRC_MSVC 1
+#elif defined(__GNUC__)
+#define RTRC_GUNC 1
+#endif
+
+#if defined(WIN32) || defined(_WIN32)
+#define RTRC_WIN32 1
+#endif
+
 RTRC_BEGIN
 
 template<typename T> class Vector2;

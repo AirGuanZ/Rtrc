@@ -90,6 +90,16 @@ Vector2<T> Ceil(const Vector2<T> &v);
 template<typename T>
 Vector2<T> Round(const Vector2<T> &v);
 
+
+template<typename T>
+Vector2<T> Abs(const Vector2<T> &v);
+template<typename T>
+auto AddReduce(const Vector2<T> &v);
+template<typename T>
+T MaxReduce(const Vector2<T> &v);
+template<typename T>
+T MinReduce(const Vector2<T> &v);
+
 template<std::floating_point T>
 Vector2<T> Lerp(const Vector2<T> &lhs, const Vector2<T> &rhs, const Vector2<T> &t);
 
@@ -291,6 +301,30 @@ template<typename T>
 Vector2<T> Round(const Vector2<T> &v)
 {
     return Vector2<T>(std::round(v.x), std::round(v.y));
+}
+
+template<typename T>
+Vector2<T> Abs(const Vector2<T> &v)
+{
+    return Vector2<T>(std::abs(v.x), std::abs(v.y));
+}
+
+template<typename T>
+auto AddReduce(const Vector2<T> &v)
+{
+    return v.x + v.y;
+}
+
+template<typename T>
+T MaxReduce(const Vector2<T> &v)
+{
+    return (std::max)({ v.x, v.y });
+}
+
+template<typename T>
+T MinReduce(const Vector2<T> &v)
+{
+    return (std::min)({ v.x, v.y });
 }
 
 template<std::floating_point T>

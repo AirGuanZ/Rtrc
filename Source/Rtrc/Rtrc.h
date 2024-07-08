@@ -11,12 +11,14 @@
 #include <Rtrc/Core/Math/Intersection.h>
 #include <Rtrc/Core/Math/Rect.h>
 #include <Rtrc/Core/Memory/Malloc.h>
+#include <Rtrc/Core/Memory/StackAllocation.h>
 #include <Rtrc/Core/Parallel.h>
 #include <Rtrc/Core/Resource/GenerateMipmap.h>
 #include <Rtrc/Core/Resource/ImageND.h>
 #include <Rtrc/Core/Resource/ImageSampler.h>
 #include <Rtrc/Core/Resource/MeshData.h>
 
+#include <Rtrc/Geometry/ConstrainedTriangulation.h>
 #include <Rtrc/Geometry/Expansion.h>
 #include <Rtrc/Geometry/HalfedgeMesh.h>
 #include <Rtrc/Geometry/Predicates.h>

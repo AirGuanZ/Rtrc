@@ -228,15 +228,18 @@ void SymbolicTriangleTriangleIntersection<T>::IntersectColinearEdgeEdge(
 {
     auto DotSign = [](const Vector &i, const Vector &j, const Vector &k)
     {
-        using E = Expansion;
-        const E ix(i.x), iy(i.y), iz(i.z);
-        const E ijx = E(j.x) - ix;
-        const E ijy = E(j.y) - iy;
-        const E ijz = E(j.z) - iz;
-        const E ikx = E(k.x) - ix;
-        const E iky = E(k.y) - iy;
-        const E ikz = E(k.z) - iz;
-        return (ijx * ikx + ijy * iky + ijz * ikz).GetSign();
+        using E = SExpansion;
+        const E ix = E(i.x);
+        const E iy = E(i.y);
+        const E iz = E(i.z);
+        const E ux = E(j.x) - ix;
+        const E uy = E(j.y) - iy;
+        const E uz = E(j.z) - iz;
+        const E vx = E(k.x) - ix;
+        const E vy = E(k.y) - iy;
+        const E vz = E(k.z) - iz;
+        const E dot = ux * vx + uy * vy + uz * vz;
+        return dot.GetSign();
     };
 
     if(p == a)
@@ -286,9 +289,12 @@ Vector2<T> SymbolicTriangleTriangleIntersection<T>::ProjectTo2D(const Vector &p,
 template <typename T>
 int SymbolicTriangleTriangleIntersection<T>::FindNormalAxis(const Vector &af, const Vector &bf, const Vector &cf)
 {
-    using E = Expansion;
+    using E = SExpansion;
 
-    const E ax(af.x), ay(af.y), az(af.z);
+    const E ax = E(af.x);
+    const E ay = E(af.y);
+    const E az = E(af.z);
+
     const E ux = E(bf.x) - ax;
     const E uy = E(bf.y) - ay;
     const E uz = E(bf.z) - az;
@@ -303,7 +309,7 @@ int SymbolicTriangleTriangleIntersection<T>::FindNormalAxis(const Vector &af, co
     if(ny.GetSign() < 0) { ny.SetNegative(); }
     if(nz.GetSign() < 0) { nz.SetNegative(); }
 
-    const E *best = &nx;
+    const decltype(nx) *best = &nx;
     int result = 0;
     if(ny > *best)
     {
@@ -320,7 +326,8 @@ int SymbolicTriangleTriangleIntersection<T>::FindNormalAxis(const Vector &af, co
 template <typename T>
 bool SymbolicTriangleTriangleIntersection<T>::IsOnInputEdge(const Point &a, const Point &b)
 {
-    return IsOnInputEdge(a.elementA, b.elementA) || IsOnInputEdge(a.elementB, b.elementB);
+    return IsOnInputEdge(a.GetElement0(), b.GetElement0()) ||
+           IsOnInputEdge(a.GetElement1(), b.GetElement1());
 }
 
 template <typename T>
