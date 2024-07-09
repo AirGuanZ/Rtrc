@@ -81,45 +81,6 @@ namespace CDTDetail
         }
     }
 
-    void FlipToDelaunay(HalfedgeMesh &connectivity, Span<Expansion2> points)
-    {
-        assert(connectivity.IsCompacted());
-        std::vector<int> activeEdges = std::views::iota(0, connectivity.E()) | std::ranges::to<std::vector<int>>();
-        while(!activeEdges.empty())
-        {
-            const int e0 = activeEdges.back();
-            activeEdges.pop_back();
-
-            const int ha0 = connectivity.EdgeToHalfedge(e0);
-            const int hb0 = connectivity.Twin(ha0);
-            if(hb0 == HalfedgeMesh::NullID)
-            {
-                continue;
-            }
-
-            const int v0 = connectivity.Head(ha0);
-            const int v1 = connectivity.Tail(ha0);
-            const int v2 = connectivity.Vert(connectivity.Prev(ha0));
-            const int v3 = connectivity.Vert(connectivity.Prev(hb0));
-            if(InCircle(points[v0], points[v1], points[v2], points[v3]) <= 0)
-            {
-                continue;
-            }
-
-            const int e1 = connectivity.Edge(connectivity.Succ(ha0));
-            const int e2 = connectivity.Edge(connectivity.Prev(ha0));
-            const int e3 = connectivity.Edge(connectivity.Succ(hb0));
-            const int e4 = connectivity.Edge(connectivity.Prev(hb0));
-
-            connectivity.FlipEdge(e0);
-
-            activeEdges.push_back(e1);
-            activeEdges.push_back(e2);
-            activeEdges.push_back(e3);
-            activeEdges.push_back(e4);
-        }
-    }
-
     // Intersect segment ot with triangle oab. All points are represented using homogeneous coordinates.
     // * t is not inside oab or lie on ab (being coincident with a/b is allowed) since we are in a valid triangulation.
     // * oab is in clockwise order.
@@ -206,12 +167,61 @@ namespace CDTDetail
         return Orient2DHomogeneous(a, d, c) < 0 && Orient2DHomogeneous(c, d, b) < 0;
     }
 
+    void EnsureDelaunayConditions(
+        Span<Expansion3>         vertices,
+        const std::vector<bool> &isEdgeFixed,
+        HalfedgeMesh            &connectivity,
+        std::stack<int>         &activeEdges)
+    {
+        assert(connectivity.IsCompacted());
+        while(!activeEdges.empty())
+        {
+            const int e0 = activeEdges.top();
+            activeEdges.pop();
+            if(isEdgeFixed[e0])
+            {
+                continue;
+            }
+
+            const int ha0 = connectivity.EdgeToHalfedge(e0);
+            const int hb0 = connectivity.Twin(ha0);
+            if(hb0 == HalfedgeMesh::NullID)
+            {
+                continue;
+            }
+
+            const int v0 = connectivity.Head(ha0);
+            const int v1 = connectivity.Tail(ha0);
+            const int v2 = connectivity.Vert(connectivity.Prev(ha0));
+            const int v3 = connectivity.Vert(connectivity.Prev(hb0));
+            if(InCircle2DHomogeneous(vertices[v0], vertices[v1], vertices[v2], vertices[v3]) >= 0)
+            {
+                continue;
+            }
+
+            const int e1 = connectivity.Edge(connectivity.Succ(ha0));
+            const int e2 = connectivity.Edge(connectivity.Prev(ha0));
+            const int e3 = connectivity.Edge(connectivity.Succ(hb0));
+            const int e4 = connectivity.Edge(connectivity.Prev(hb0));
+            
+            connectivity.FlipEdge(e0);
+
+            activeEdges.push(e1);
+            activeEdges.push(e2);
+            activeEdges.push(e3);
+            activeEdges.push(e4);
+        }
+
+        assert(connectivity.CheckSanity());
+    }
+
 } // namespace CDTDetail
 
 std::vector<Vector3i> ConstrainedTriangulation2D(
     Span<Expansion2>         points,
     Span<Vector2i>           constraints,
-    std::vector<Expansion3> &newIntersections)
+    std::vector<Expansion3> &newIntersections,
+    bool                     delaunay)
 {
     using namespace CDTDetail;
 
@@ -290,25 +300,28 @@ std::vector<Vector3i> ConstrainedTriangulation2D(
             connectivity.SplitEdge(h);
         }
 
-        vertices.emplace_back(point, 1.0);
+        vertices.emplace_back(point, ToExpansion(1.0));
         meshVertexToPointIndex.push_back(pointIndex);
     }
 
-    // Initialize delaunay conditions
-
-    //if(delaunay)
-    //{
-    //    FlipToDelaunay(connectivity, points);
-    //}
-
-    // Insert edges
-
     std::vector isEdgeFixed(connectivity.E(), false);
 
-    for(int constraintIndex = 0; constraintIndex < static_cast<int>(constraints.size()); ++constraintIndex)
-    {
-        const Vector2i &constraint = constraints[constraintIndex];
+    // Initialize delaunay conditions
 
+    if(delaunay)
+    {
+        std::stack<int> activeEdges;
+        for(int e = 0; e < connectivity.E(); ++e)
+        {
+            activeEdges.push(e);
+        }
+        EnsureDelaunayConditions(vertices, isEdgeFixed, connectivity, activeEdges);
+    }
+
+    // Insert constraints
+
+    for(const Vector2i &constraint : constraints)
+    {
         int vo = constraint.x + 3;
         const int vt = constraint.y + 3;
         assert(meshVertexToPointIndex[vo] == constraint.x);
@@ -333,7 +346,7 @@ std::vector<Vector3i> ConstrainedTriangulation2D(
                 return;
             }
 
-            std::vector<int> newEdges;
+            std::stack<int> newEdges;
             while(!intersectedEdges.empty())
             {
                 const int e = intersectedEdges.front();
@@ -359,9 +372,9 @@ std::vector<Vector3i> ConstrainedTriangulation2D(
                 {
                     intersectedEdges.push_back(e);
                 }
-                else
+                else if(delaunay)
                 {
-                    newEdges.push_back(e);
+                    newEdges.push(e);
                 }
             }
 
@@ -385,8 +398,67 @@ std::vector<Vector3i> ConstrainedTriangulation2D(
 #if RTRC_DEBUG
             assert(isEdgeFound);
 #endif
+
+            if(delaunay)
+            {
+                EnsureDelaunayConditions(vertices, isEdgeFixed, connectivity, newEdges);
+            }
         };
 
+        // Create a new intersection between the constraint segments (vo, vt) and (va, vb).
+        // Delaunayize the neighborhood of the newly created intersection.
+        // After the triangulation, restart the tracing process from the vertex 'vo'.
+        auto CreateIntersectionOnConstraint = [&](int va, int vb, int h)
+        {
+            assert(connectivity.Head(h) == va || connectivity.Head(h) == vb);
+            assert(connectivity.Tail(h) == va || connectivity.Tail(h) == vb);
+
+            const Expansion3 inct = ComputeIntersectionHomogeneous(
+                vertices[vo], vertices[vt], vertices[va], vertices[vb]);
+
+            const int vInct = connectivity.V();
+            vertices.push_back(inct);
+
+            connectivity.SplitEdge(h);
+            isEdgeFixed.resize(connectivity.E(), false);
+
+            assert(static_cast<int>(meshVertexToPointIndex.size()) == vInct);
+            meshVertexToPointIndex.push_back(
+                static_cast<int>(points.size() + newIntersections.size()));
+            newIntersections.push_back(inct);
+
+            if(delaunay)
+            {
+                std::stack<int> activeEdges;
+                connectivity.ForEachOutgoingHalfedge(vInct, [&](int vh)
+                {
+                    activeEdges.push(connectivity.Edge(vh));
+                });
+                EnsureDelaunayConditions(vertices, isEdgeFixed, connectivity, activeEdges);
+
+                // EnsureDelaunayConditions may compromise the validity of `intersectedEdges`.
+                // Therefore discard the invalid edges and restart the tracing process from the vertex 'vo'.
+                intersectedEdges.clear();
+                startVertex = vo;
+                startHalfedge = -1;
+            }
+            else
+            {
+                CommitIntersectedEdges(vo, vInct);
+                vo = vInct;
+                startVertex = vo;
+                startHalfedge = -1;
+            }
+        };
+
+        // Trace the path from vertex 'vo' to vertex 'vt'.
+        // - When intersecting a non-fixed edge,
+        //       add this edge to the `intersectedEdges` collection for later processing.
+        // - When intersecting a vertex 'v'
+        //       perform edge flipping on all collected edges to ensure that the edge ('vt', 'v') is valid.
+        //       Mark this edge as constrained and continue tracing from vertex 'v'.
+        // - When intersecting a fixed edge 'e',
+        //       split 'e' at the intersection point 't', treating it as if the intersection occurred at vertex 't'.
         while(true)
         {
             if(startVertex >= 0)
@@ -437,28 +509,11 @@ std::vector<Vector3i> ConstrainedTriangulation2D(
                             const int e = connectivity.Edge(connectivity.Succ(h));
                             if(isEdgeFixed[e])
                             {
-                                const Expansion3 inct = ComputeIntersectionHomogeneous(
-                                    vertices[startVertex], vertices[vt], vertices[va], vertices[vb]);
-
-                                const int vInct = connectivity.V();
-                                vertices.push_back(inct);
-
-                                connectivity.SplitEdge(connectivity.Succ(h));
-                                isEdgeFixed.resize(connectivity.E(), false);
-
-                                assert(static_cast<int>(meshVertexToPointIndex.size()) == vInct);
-                                meshVertexToPointIndex.push_back(static_cast<int>(points.size() + newIntersections.size()));
-                                newIntersections.push_back(inct);
-
-                                CommitIntersectedEdges(vo, vInct);
-
-                                vo = vInct;
-                                startVertex = vo;
+                                CreateIntersectionOnConstraint(va, vb, connectivity.Succ(h));
                             }
                             else
                             {
                                 intersectedEdges.push_back(e);
-
                                 startVertex = -1;
                                 startHalfedge = connectivity.Twin(connectivity.Succ(h));
                                 assert(startHalfedge >= 0);
@@ -490,10 +545,17 @@ std::vector<Vector3i> ConstrainedTriangulation2D(
                 {
                     const int hac = connectivity.Prev(startHalfedge);
                     const int eac = connectivity.Edge(hac);
-                    intersectedEdges.push_back(eac);
 
-                    startHalfedge = connectivity.Twin(hac);
-                    assert(startHalfedge >= 0);
+                    if(isEdgeFixed[eac])
+                    {
+                        CreateIntersectionOnConstraint(va, vc, hac);
+                    }
+                    else
+                    {
+                        intersectedEdges.push_back(eac);
+                        startHalfedge = connectivity.Twin(hac);
+                        assert(startHalfedge >= 0);
+                    }
                 }
                 else
                 {
@@ -501,10 +563,17 @@ std::vector<Vector3i> ConstrainedTriangulation2D(
 
                     const int hbc = connectivity.Succ(startHalfedge);
                     const int ebc = connectivity.Edge(hbc);
-                    intersectedEdges.push_back(ebc);
 
-                    startHalfedge = connectivity.Twin(hbc);
-                    assert(startHalfedge >= 0);
+                    if(isEdgeFixed[ebc])
+                    {
+                        CreateIntersectionOnConstraint(vb, vc, hbc);
+                    }
+                    else
+                    {
+                        intersectedEdges.push_back(ebc);
+                        startHalfedge = connectivity.Twin(hbc);
+                        assert(startHalfedge >= 0);
+                    }
                 }
             }
         }

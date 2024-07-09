@@ -640,6 +640,11 @@ bool HalfedgeMesh::CheckSanity() const
         {
             return false;
         }
+
+        if(Twin(h) == h)
+        {
+            return false;
+        }
     }
 
     for(int v = 0; v < V(); ++v)

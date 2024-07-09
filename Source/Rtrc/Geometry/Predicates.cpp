@@ -63,16 +63,16 @@ namespace PredicatesDetail
     }
 
     template<typename T>
-    int InCircleExact(const Vector2<T> &pa, const Vector2<T> &pb, const Vector2<T> &pc, const Vector2<T> &pd)
+    int InCircle2DExact(const Vector2<T> &pa, const Vector2<T> &pb, const Vector2<T> &pc, const Vector2<T> &pd)
     {
         using E = SExpansion;
 
-        const E adx = pa[0] - pd[0];
-        const E ady = pa[1] - pd[1];
-        const E bdx = pb[0] - pd[0];
-        const E bdy = pb[1] - pd[1];
-        const E cdx = pc[0] - pd[0];
-        const E cdy = pc[1] - pd[1];
+        const E adx = E(pa[0]) - E(pd[0]);
+        const E ady = E(pa[1]) - E(pd[1]);
+        const E bdx = E(pb[0]) - E(pd[0]);
+        const E bdy = E(pb[1]) - E(pd[1]);
+        const E cdx = E(pc[0]) - E(pd[0]);
+        const E cdy = E(pc[1]) - E(pd[1]);
 
         const E abdet = adx * bdy - bdx * ady;
         const E bcdet = bdx * cdy - cdx * bdy;
@@ -83,6 +83,11 @@ namespace PredicatesDetail
 
         return (alift * bcdet + blift * cadet + clift * abdet).GetSign();
     }
+
+    bool IsOne(const Expansion &e)
+    {
+        return e.GetLength() == 1 && e.GetItems()[0] == 1.0;
+    };
 
 } // namespace PredicatesDetail
 
@@ -107,8 +112,7 @@ int Orient2DHomogeneous(const Expansion3 &pa, const Expansion3 &pb, const Expans
 
     // Fast path for regular coordinate
 
-    auto IsOne = [](const Expansion &e) { return e.GetLength() == 1 && e.GetItems()[0] == 1.0; };
-    if(IsOne(pa.z) && IsOne(pb.z) && IsOne(pc.z))
+    if(PredicatesDetail::IsOne(pa.z) && PredicatesDetail::IsOne(pb.z) && PredicatesDetail::IsOne(pc.z))
     {
         const E A = pa[0] - pc[0];
         const E B = pb[0] - pc[0];
@@ -156,7 +160,12 @@ int Orient3D(const Expansion3 &pa, const Expansion3 &pb, const Expansion3 &pc, c
     return det.GetSign();
 }
 
-int InCircle(const Expansion2 &pa, const Expansion2 &pb, const Expansion2 &pc, const Expansion2 &pd)
+int InCircle2D(const Expansion2 &pa, const Expansion2 &pb, const Expansion2 &pc, const Expansion2 &pd)
+{
+    return InCircle2D(&pa.x, &pb.x, &pc.x, &pd.x);
+}
+
+int InCircle2D(const Expansion *pa, const Expansion *pb, const Expansion *pc, const Expansion *pd)
 {
     using E = SExpansion;
 
@@ -175,6 +184,20 @@ int InCircle(const Expansion2 &pa, const Expansion2 &pb, const Expansion2 &pc, c
     const E clift = cdx * cdx + cdy * cdy;
 
     return (alift * bcdet + blift * cadet + clift * abdet).GetSign();
+}
+
+int InCircle2DHomogeneous(const Expansion3 &pa, const Expansion3 &pb, const Expansion3 &pc, const Expansion3 &pd)
+{
+    if(PredicatesDetail::IsOne(pa.z) &&
+       PredicatesDetail::IsOne(pb.z) &&
+       PredicatesDetail::IsOne(pc.z) &&
+       PredicatesDetail::IsOne(pd.z))
+    {
+        return InCircle2D(&pa.x, &pb.x, &pc.x, &pd.x);
+    }
+
+    // TODO
+    return 0;
 }
 
 template <std::floating_point T>
@@ -264,7 +287,7 @@ template int Orient3D(const Vector3<float> &, const Vector3<float> &, const Vect
 template int Orient3D(const Vector3<double> &, const Vector3<double> &, const Vector3<double> &, const Vector3<double> &);
 
 template<std::floating_point T>
-int InCircle(const Vector2<T> &pa, const Vector2<T> &pb, const Vector2<T> &pc, const Vector2<T> &pd)
+int InCircle2D(const Vector2<T> &pa, const Vector2<T> &pb, const Vector2<T> &pc, const Vector2<T> &pd)
 {
     const T adx = pa[0] - pd[0];
     const T bdx = pb[0] - pd[0];
@@ -300,10 +323,10 @@ int InCircle(const Vector2<T> &pa, const Vector2<T> &pb, const Vector2<T> &pc, c
         return PredicatesDetail::GetSign(det);
     }
 
-    return PredicatesDetail::InCircleExact(pa, pb, pc, pd);
+    return PredicatesDetail::InCircle2DExact(pa, pb, pc, pd);
 }
 
-template int InCircle(const Vector2<float> &, const Vector2<float> &, const Vector2<float> &, const Vector2<float> &);
-template int InCircle(const Vector2<double> &, const Vector2<double> &, const Vector2<double> &, const Vector2<double> &);
+template int InCircle2D(const Vector2<float> &, const Vector2<float> &, const Vector2<float> &, const Vector2<float> &);
+template int InCircle2D(const Vector2<double> &, const Vector2<double> &, const Vector2<double> &, const Vector2<double> &);
 
 RTRC_GEO_END
