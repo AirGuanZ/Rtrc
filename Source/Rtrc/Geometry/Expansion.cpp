@@ -26,6 +26,7 @@ namespace ExpansionDetail
     {
         using EquallySizedUInt = uint32_t;
         static constexpr int TOTAL_BITS = 32;
+        static constexpr int SPLIT_BITS = 12;
         static constexpr int EXP_BITS = 8;
         static constexpr int MTS_BITS = 23;
     };
@@ -35,6 +36,7 @@ namespace ExpansionDetail
     {
         using EquallySizedUInt = uint64_t;
         static constexpr int TOTAL_BITS = 64;
+        static constexpr int SPLIT_BITS = 27;
         static constexpr int EXP_BITS = 11;
         static constexpr int MTS_BITS = 52;
     };
@@ -44,6 +46,9 @@ namespace ExpansionDetail
 
     template<typename F>
     constexpr int TOTAL_BITS = FloatingPointTypeTrait<F>::TOTAL_BITS;
+
+    template<typename F>
+    constexpr int SPLIT_BITS = FloatingPointTypeTrait<F>::SPLIT_BITS;
 
     template<typename F>
     constexpr int MTS_BITS = FloatingPointTypeTrait<F>::MTS_BITS;
@@ -235,7 +240,7 @@ namespace ExpansionUtility
     template<typename F>
     void Split(F a, int s, F &aLo, F &aHi)
     {
-        const F c = F((1 << s) + 1) * a;
+        const F c = F((1ull << s) + 1ull) * a;
         const F aBig = c - a;
         aHi = c - aBig;
         aLo = a - aHi;
@@ -248,8 +253,8 @@ namespace ExpansionUtility
 
         static_assert(TOTAL_BITS<F> % 2 == 0);
         F aHi, aLo, bHi, bLo;
-        Split(a, TOTAL_BITS<F> / 2, aLo, aHi);
-        Split(b, TOTAL_BITS<F> / 2, bLo, bHi);
+        Split(a, SPLIT_BITS<F>, aLo, aHi);
+        Split(b, SPLIT_BITS<F>, bLo, bHi);
 
         const F e1 = x  - (aHi * bHi);
         const F e2 = e1 - (aLo * bHi);
