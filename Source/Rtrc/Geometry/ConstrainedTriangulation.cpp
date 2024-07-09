@@ -366,16 +366,25 @@ std::vector<Vector3i> ConstrainedTriangulation2D(
             }
 
             // Now (vStart, vEnd) must form an edge. Mark it to be fixed.
+#if RTRC_DEBUG
+            bool isEdgeFound = false;
+#endif
             connectivity.ForEachOutgoingHalfedge(vStart, [&](int h)
             {
                 if(connectivity.Tail(h) != vEnd)
                 {
                     return true;
                 }
+#if RTRC_DEBUG
+                isEdgeFound = true;
+#endif
                 const int e = connectivity.Edge(h);
                 isEdgeFixed[e] = true;
                 return false;
             });
+#if RTRC_DEBUG
+            assert(isEdgeFound);
+#endif
         };
 
         while(true)
@@ -433,7 +442,9 @@ std::vector<Vector3i> ConstrainedTriangulation2D(
 
                                 const int vInct = connectivity.V();
                                 vertices.push_back(inct);
-                                connectivity.SplitEdge(e);
+
+                                connectivity.SplitEdge(connectivity.Succ(h));
+                                isEdgeFixed.resize(connectivity.E(), false);
 
                                 assert(static_cast<int>(meshVertexToPointIndex.size()) == vInct);
                                 meshVertexToPointIndex.push_back(static_cast<int>(points.size() + newIntersections.size()));
