@@ -20,15 +20,21 @@ namespace PredicatesDetail
     }
 
     template<typename T>
-    int GetSign(T v)
+    int GetSign(const T &v)
     {
         return v < 0 ? -1 : (v > 0 ? 1 : 0);
     }
 
     template<typename T>
-    T Abs(T v)
+    T Abs(const T &v)
     {
         return v < 0 ? -v : v;
+    }
+
+    template<typename T>
+    T Square(const T &v)
+    {
+        return v * v;
     }
 
     template <typename T>
@@ -129,11 +135,12 @@ int Orient2DHomogeneous(const Expansion3 &pa, const Expansion3 &pb, const Expans
 
     // Homogeneous case
 
+    const int signFactor = pa[2].GetSign() * pb[2].GetSign();
     const E A = pa[0] * pc[2] - pc[0] * pa[2];
     const E B = pb[0] * pc[2] - pc[0] * pb[2];
     const E C = pa[1] * pc[2] - pc[1] * pa[2];
     const E D = pb[1] * pc[2] - pc[1] * pb[2];
-    return (A * D - B * C).GetSign();
+    return signFactor * (A * D - B * C).GetSign();
 }
 
 int Orient3D(const Expansion3 &pa, const Expansion3 &pb, const Expansion3 &pc, const Expansion3 &pd)
@@ -202,8 +209,37 @@ int InCircle2DHomogeneous(const Expansion3 &pa, const Expansion3 &pb, const Expa
         return InCircle2D(&pa.x, &pb.x, &pc.x, &pd.x);
     }
 
-    // TODO
-    return 0;
+    using E = SExpansion;
+    using PredicatesDetail::Square;
+
+    // Multiple pa.z^2 * pd.z^2 to the first row, pb.z^2 * pd.z^2 to the second row, etc...
+    // | a b c |
+    // | d e f |
+    // | g h i |
+
+    const E az2 = pa[2] * pa[2];
+    const E bz2 = pb[2] * pb[2];
+    const E cz2 = pc[2] * pc[2];
+    const E dz2 = pd[2] * pd[2];
+
+    const E a = pa.x * pa.z * dz2 - pd.x * pd.z * az2;
+    const E b = pa.y * pa.z * dz2 - pd.y * pd.z * az2;
+
+    const E d = pb.x * pb.z * dz2 - pd.x * pd.z * bz2;
+    const E e = pb.y * pb.z * dz2 - pd.y * pd.z * bz2;
+
+    const E g = pc.x * pc.z * dz2 - pd.x * pd.z * cz2;
+    const E h = pc.y * pc.z * dz2 - pd.y * pd.z * cz2;
+
+    const E c = Square(pa.x * pd.z - pd.x * pa.z) + Square(pa.y * pd.z - pd.y * pa.z);
+    const E f = Square(pb.x * pd.z - pd.x * pb.z) + Square(pb.y * pd.z - pd.y * pb.z);
+    const E i = Square(pc.x * pd.z - pd.x * pc.z) + Square(pc.y * pd.z - pd.y * pc.z);
+
+    const E sc = d * h - e * g;
+    const E sf = a * h - b * g;
+    const E si = a * e - b * d;
+
+    return (c * sc - f * sf + i * si).GetSign();
 }
 
 template <typename T>

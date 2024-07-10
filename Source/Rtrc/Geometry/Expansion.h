@@ -148,7 +148,7 @@ private:
 template<typename Word>
 SExpansion(Word)->SExpansion<Word, 1>;
 
-using Expansion  = SExpansion<ExpansionUtility::float_200_55, 0>;
+using Expansion  = SExpansion<ExpansionUtility::float_100_27, 0>;
 using Expansion2 = Vector2<Expansion>;
 using Expansion3 = Vector3<Expansion>;
 using Expansion4 = Vector4<Expansion>;
