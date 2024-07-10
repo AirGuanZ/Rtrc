@@ -232,10 +232,10 @@ std::vector<Vector3i> ConstrainedTriangulation2D(
     Vector2d lower(DBL_MAX), upper(DBL_MIN);
     for(const Expansion2 &point : points)
     {
-        lower.x = (std::min)(lower.x, point.x.ToDoubleRoundDown());
-        lower.y = (std::min)(lower.y, point.y.ToDoubleRoundDown());
-        upper.x = (std::max)(upper.x, point.x.ToDoubleRoundUp());
-        upper.y = (std::max)(upper.y, point.y.ToDoubleRoundUp());
+        lower.x = (std::min)(lower.x, static_cast<double>(point.x.ToWord()));
+        lower.y = (std::min)(lower.y, static_cast<double>(point.y.ToWord()));
+        upper.x = (std::max)(upper.x, static_cast<double>(point.x.ToWord()));
+        upper.y = (std::max)(upper.y, static_cast<double>(point.y.ToWord()));
     }
     const double extent = MaxReduce(upper - lower);
     const Vector2d superTriangleA = lower - Vector2d(extent);

@@ -16,29 +16,69 @@
 
 RTRC_GEO_BEGIN
 
-namespace ExpansionDetail
+namespace ExpansionUtility
 {
 
     template<typename> struct FloatingPointTypeTrait;
 
+    template<typename F>
+    F ComputeSplitter(int N)
+    {
+        F ret = 1;
+        for(int i = 0; i < N; ++i)
+        {
+            ret *= 2;
+        }
+        ret += 1;
+        return ret;
+    }
+
     template<>
-    struct FloatingPointTypeTrait<float>
+    struct FloatingPointTypeTrait<float_24_7>
     {
         using EquallySizedUInt = uint32_t;
         static constexpr int TOTAL_BITS = 32;
-        static constexpr int SPLIT_BITS = 12;
         static constexpr int EXP_BITS = 8;
         static constexpr int MTS_BITS = 23;
+
+        static constexpr float_24_7 GetSpliter()
+        {
+            return static_cast<float_24_7>((1ull << 12) + 1ull);
+        }
     };
 
     template<>
-    struct FloatingPointTypeTrait<double>
+    struct FloatingPointTypeTrait<float_53_11>
     {
         using EquallySizedUInt = uint64_t;
         static constexpr int TOTAL_BITS = 64;
-        static constexpr int SPLIT_BITS = 27;
         static constexpr int EXP_BITS = 11;
         static constexpr int MTS_BITS = 52;
+
+        static constexpr float_53_11 GetSpliter()
+        {
+            return static_cast<float_53_11>((1ull << 27) + 1ull);
+        }
+    };
+
+    template<>
+    struct FloatingPointTypeTrait<float_100_27>
+    {
+        static float_100_27 GetSpliter()
+        {
+            static const float_100_27 ret = ComputeSplitter<float_100_27>(50);
+            return ret;
+        }
+    };
+
+    template<>
+    struct FloatingPointTypeTrait<float_200_55>
+    {
+        static float_200_55 GetSpliter()
+        {
+            static const float_200_55 ret = ComputeSplitter<float_200_55>(100);
+            return ret;
+        }
     };
 
     template<typename F>
@@ -46,9 +86,6 @@ namespace ExpansionDetail
 
     template<typename F>
     constexpr int TOTAL_BITS = FloatingPointTypeTrait<F>::TOTAL_BITS;
-
-    template<typename F>
-    constexpr int SPLIT_BITS = FloatingPointTypeTrait<F>::SPLIT_BITS;
 
     template<typename F>
     constexpr int MTS_BITS = FloatingPointTypeTrait<F>::MTS_BITS;
@@ -89,19 +126,6 @@ namespace ExpansionDetail
         return { lsb + offset, msb + offset };
     }
 
-    template<typename F>
-    bool CheckNonOverlappingPropertyImpl(F af, F bf)
-    {
-        if(af == F(0) || bf == F(0))
-        {
-            return true;
-        }
-
-        const auto rangeA = GetBitRange(af);
-        const auto rangeB = GetBitRange(bf);
-        return rangeA.second < rangeB.first || rangeB.second < rangeA.first;
-    }
-
     std::string UIntToBitString(uint64_t i, int bits)
     {
         std::string ret;
@@ -113,17 +137,10 @@ namespace ExpansionDetail
         return ret;
     }
 
-} // namespace ExpansionDetail
-
-bool CheckRuntimeFloatingPointSettingsForExpansion()
-{
-    return std::fegetround() == FE_TONEAREST;
-}
-
-namespace ExpansionUtility
-{
-
-    using namespace ExpansionDetail;
+    bool CheckRuntimeFloatingPointSettingsForExpansion()
+    {
+        return std::fegetround() == FE_TONEAREST;
+    }
 
     template<typename F>
     std::string ToBitString(F a, bool splitComponents, bool bitRange)
@@ -170,12 +187,19 @@ namespace ExpansionUtility
         const F br = b - bv;
         const F ar = a - av;
         y = ar + br;
+        assert(a + b == x + y);
     }
 
     template<typename F>
     bool CheckNonOverlappingProperty(F af, F bf)
     {
-        return ExpansionDetail::CheckNonOverlappingPropertyImpl<F>(af, bf);
+        if(af == F(0) || bf == F(0))
+        {
+            return true;
+        }
+        const auto rangeA = GetBitRange(af);
+        const auto rangeB = GetBitRange(bf);
+        return rangeA.second < rangeB.first || rangeB.second < rangeA.first;
     }
 
     template bool CheckNonOverlappingProperty(float, float);
@@ -208,6 +232,8 @@ namespace ExpansionUtility
 
     template int GrowExpansion<float>(const float *, int, float b, float *);
     template int GrowExpansion<double>(const double *, int, double b, double *);
+    template int GrowExpansion<float_100_27>(const float_100_27 *, int, float_100_27 b, float_100_27 *);
+    template int GrowExpansion<float_200_55>(const float_200_55 *, int, float_200_55 b, float_200_55 *);
     
     template<typename F>
     int ExpansionSum(const F *e, int eCount, const F *f, int fCount, F *h)
@@ -222,6 +248,8 @@ namespace ExpansionUtility
 
     template int ExpansionSum<float>(const float *, int, const float *, int, float *);
     template int ExpansionSum<double>(const double *, int, const double *, int, double *);
+    template int ExpansionSum<float_100_27>(const float_100_27 *, int, const float_100_27 *, int, float_100_27 *);
+    template int ExpansionSum<float_200_55>(const float_200_55 *, int, const float_200_55 *, int, float_200_55 *);
 
     template<typename F>
     int ExpansionSumNegative(const F *e, int eCount, const F *f, int fCount, F *h)
@@ -236,11 +264,13 @@ namespace ExpansionUtility
 
     template int ExpansionSumNegative<float>(const float *, int, const float *, int, float *);
     template int ExpansionSumNegative<double>(const double *, int, const double *, int, double *);
+    template int ExpansionSumNegative<float_100_27>(const float_100_27 *, int, const float_100_27 *, int, float_100_27 *);
+    template int ExpansionSumNegative<float_200_55>(const float_200_55 *, int, const float_200_55 *, int, float_200_55 *);
 
     template<typename F>
-    void Split(F a, int s, F &aLo, F &aHi)
+    void Split(F a, F s, F &aLo, F &aHi)
     {
-        const F c = F((1ull << s) + 1ull) * a;
+        const F c = s * a;
         const F aBig = c - a;
         aHi = c - aBig;
         aLo = a - aHi;
@@ -251,15 +281,15 @@ namespace ExpansionUtility
     {
         x = a * b;
 
-        static_assert(TOTAL_BITS<F> % 2 == 0);
         F aHi, aLo, bHi, bLo;
-        Split(a, SPLIT_BITS<F>, aLo, aHi);
-        Split(b, SPLIT_BITS<F>, bLo, bHi);
+        Split(a, FloatingPointTypeTrait<F>::GetSpliter(), aLo, aHi);
+        Split(b, FloatingPointTypeTrait<F>::GetSpliter(), bLo, bHi);
 
         const F e1 = x  - (aHi * bHi);
         const F e2 = e1 - (aLo * bHi);
         const F e3 = e2 - (aHi * bLo);
         y = (aLo * bLo) - e3;
+        assert(a * b == x + y);
     }
 
     template<typename F>
@@ -305,6 +335,8 @@ namespace ExpansionUtility
 
     template int ScaleExpansion(const float *, int, float, float *);
     template int ScaleExpansion(const double *, int, double, double *);
+    template int ScaleExpansion(const float_100_27 *, int, float_100_27, float_100_27 *);
+    template int ScaleExpansion(const float_200_55 *, int, float_200_55, float_200_55 *);
 
     template <typename F>
     int CompressExpansion(const F *e, int eCount, F *h)
@@ -342,44 +374,8 @@ namespace ExpansionUtility
 
     template int CompressExpansion(const float *, int, float *);
     template int CompressExpansion(const double *, int, double *);
-
-    template<typename F>
-    F ToUnitRoundUp(const F *e, int eCount)
-    {
-        assert(eCount > 0);
-        if(eCount == 1)
-        {
-            return e[0];
-        }
-        assert(e[0] != 0 && e[1] != 0);
-        if(e[1] < 0)
-        {
-            return e[0];
-        }
-        return std::nextafter(e[0], (std::numeric_limits<F>::max)());
-    }
-
-    template float ToUnitRoundUp(const float *, int);
-    template double ToUnitRoundUp(const double *, int);
-
-    template<typename F>
-    F ToUnitRoundDown(const F* e, int eCount)
-    {
-        assert(eCount > 0);
-        if(eCount == 1)
-        {
-            return e[0];
-        }
-        assert(e[0] != 0 && e[1] != 0);
-        if(e[1] > 0)
-        {
-            return e[0];
-        }
-        return std::nextafter(e[0], std::numeric_limits<F>::lowest());
-    }
-
-    template float ToUnitRoundDown(const float *, int);
-    template double ToUnitRoundDown(const double *, int);
+    template int CompressExpansion(const float_100_27 *, int, float_100_27 *);
+    template int CompressExpansion(const float_200_55 *, int, float_200_55 *);
 
 } // namespace ExpansionUtility
 

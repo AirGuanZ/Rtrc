@@ -52,6 +52,8 @@ RTRC_APPLICATION_MAIN(
 
 [avir](https://github.com/avaneev/avir) for image resizing
 
+[boost-multiprecision](https://github.com/boostorg/multiprecision) for multi-precision floating-point numbers
+
 [bvh](https://github.com/madmann91/bvh) for BVH construction
 
 [Catch2](https://github.com/catchorg/Catch2) for testing

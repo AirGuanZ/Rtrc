@@ -4,6 +4,8 @@
 #include <ostream>
 #include <ranges>
 
+#include <boost/multiprecision/cpp_bin_float.hpp>
+
 #include <Rtrc/Core/Container/Span.h>
 #include <Rtrc/Core/Math/Vector4.h>
 #include <Rtrc/Core/String.h>
@@ -12,10 +14,10 @@ RTRC_GEO_BEGIN
 
 // See Adaptive Precision Floating-Point Arithmetic and Fast Robust Geometric Predicates
 
-bool CheckRuntimeFloatingPointSettingsForExpansion();
-
 namespace ExpansionUtility
 {
+
+    bool CheckRuntimeFloatingPointSettingsForExpansion();
 
     template<typename F>
     std::string ToBitString(F a, bool splitComponents = false, bool bitRange = false);
@@ -39,12 +41,6 @@ namespace ExpansionUtility
     template<typename F>
     int CompressExpansion(const F *e, int eCount, F *h);
 
-    template<typename F>
-    F ToUnitRoundUp(const F *e, int eCount);
-
-    template<typename F>
-    F ToUnitRoundDown(const F *e, int eCount);
-
     constexpr size_t MaxInlinedItemCount = 16;
 
     template<bool HasMember> class CapacityMember;
@@ -56,10 +52,21 @@ namespace ExpansionUtility
     consteval size_t StaticStorageMul(size_t a, size_t b) { return StaticStorageFilter(a && b ? (2 * a * b) : 0); }
     consteval bool StaticStorageGreaterEqual(size_t a, size_t b) { return !a ? true : (!b ? false : (a >= b)); }
 
+    using float_24_7 = float;
+    using float_53_11 = double;
+    using float_100_27 = boost::multiprecision::number<
+        boost::multiprecision::backends::cpp_bin_float<
+        100, boost::multiprecision::backends::digit_base_2,
+        void, int32_t, -67108862, 67108863>>;
+    using float_200_55 = boost::multiprecision::number<
+        boost::multiprecision::backends::cpp_bin_float<
+        200, boost::multiprecision::backends::digit_base_2,
+        void, int64_t, -18014398509481982, 18014398509481983>>;
+
 } // namespace ExpansionUtility
 
 /* StaticStorage == 0 means supporting dynamic storage */
-template<size_t StaticStorage>
+template<typename Word, size_t StaticStorage>
 class SExpansion : public ExpansionUtility::CapacityMember<StaticStorage == 0>
 {
 public:
@@ -67,7 +74,7 @@ public:
     static constexpr bool SupportDynamicStorage = StaticStorage == 0;
     
     SExpansion();
-    SExpansion(double source);
+    SExpansion(Word source);
 
     SExpansion(const SExpansion &other);
     SExpansion(SExpansion &&other) noexcept;
@@ -76,9 +83,9 @@ public:
     SExpansion &operator=(SExpansion &&other) noexcept;
 
     template<size_t StaticStorage2> requires (!StaticStorage || StaticStorage2 <= StaticStorage)
-    SExpansion(const SExpansion<StaticStorage2> &other);
+    SExpansion(const SExpansion<Word, StaticStorage2> &other);
     template<size_t StaticStorage2> requires (!StaticStorage || StaticStorage2 <= StaticStorage)
-    SExpansion &operator=(const SExpansion<StaticStorage2> &other);
+    SExpansion &operator=(const SExpansion<Word, StaticStorage2> &other);
 
     void Swap(SExpansion &other) noexcept;
 
@@ -86,64 +93,61 @@ public:
 
     uint32_t GetLength() const;
     uint32_t GetCapacity() const;
-    Span<double> GetItems() const;
-    double ToDouble() const;
-    double ToDoubleRoundUp() const;
-    double ToDoubleRoundDown() const;
+    Span<Word> GetItems() const;
+    Word ToWord() const;
 
     int GetSign() const;
 
     void Reserve(uint32_t capacity);
 
     template<size_t SL, size_t SR>
-    void SetSum(const SExpansion<SL> &lhs, const SExpansion<SR> &rhs);
+    void SetSum(const SExpansion<Word, SL> &lhs, const SExpansion<Word, SR> &rhs);
     template<size_t SL, size_t SR>
-    void SetDiff(const SExpansion<SL> &lhs, const SExpansion<SR> &rhs);
+    void SetDiff(const SExpansion<Word, SL> &lhs, const SExpansion<Word, SR> &rhs);
     template<size_t SL, size_t SR>
-    void SetMul(const SExpansion<SL> &lhs, const SExpansion<SR> &rhs);
+    void SetMul(const SExpansion<Word, SL> &lhs, const SExpansion<Word, SR> &rhs);
     template<size_t SL>
-    void SetMul(const SExpansion<SL> &lhs, double rhs);
+    void SetMul(const SExpansion<Word, SL> &lhs, Word rhs);
 
     template<size_t S> requires !StaticStorage
-    SExpansion &operator+=(const SExpansion<S> &rhs);
+    SExpansion &operator+=(const SExpansion<Word, S> &rhs);
     template<size_t S> requires !StaticStorage
-    SExpansion &operator-=(const SExpansion<S> &rhs);
+    SExpansion &operator-=(const SExpansion<Word, S> &rhs);
     template<size_t S> requires !StaticStorage
-    SExpansion &operator*=(const SExpansion<S> &rhs);
-    template<typename T>  requires !StaticStorage && (std::is_same_v<T, double> || std::is_same_v<T, float>)
-    SExpansion &operator*=(T rhs);
+    SExpansion &operator*=(const SExpansion<Word, S> &rhs);
+    SExpansion &operator*=(Word rhs);
 
     void Compress();
     void SetNegative();
 
     template<int S>
-    int Compare(const SExpansion<S> &rhs) const;
+    int Compare(const SExpansion<Word, S> &rhs) const;
 
     SExpansion operator-() const;
 
     template<int S>
-    std::strong_ordering operator<=>(const SExpansion<S> &rhs) const;
+    std::strong_ordering operator<=>(const SExpansion<Word, S> &rhs) const;
     template<int S>
-    bool operator==(const SExpansion<S> &rhs) const;
+    bool operator==(const SExpansion<Word, S> &rhs) const;
 
     std::string ToString() const;
     
-          double *GetItemPointer();
-    const double *GetItemPointer() const;
+          Word *GetItemPointer();
+    const Word *GetItemPointer() const;
 
 private:
 
     static constexpr size_t InlinedItemCount = StaticStorage ? StaticStorage : ExpansionUtility::MaxInlinedItemCount;
-    static constexpr size_t StorageSize = (std::max)(InlinedItemCount * sizeof(double), sizeof(void *));
+    static constexpr size_t StorageSize = (std::max)(InlinedItemCount * sizeof(Word), sizeof(void *));
     static_assert(InlinedItemCount <= ExpansionUtility::MaxInlinedItemCount);
 
     uint32_t size_;
     unsigned char storage_[StorageSize];
 };
 
-SExpansion(double)->SExpansion<1>;
+SExpansion(double)->SExpansion<ExpansionUtility::float_200_55, 1>;
 
-using Expansion  = SExpansion<0>;
+using Expansion  = SExpansion<ExpansionUtility::float_200_55, 0>;
 using Expansion2 = Vector2<Expansion>;
 using Expansion3 = Vector3<Expansion>;
 using Expansion4 = Vector4<Expansion>;
@@ -168,48 +172,48 @@ inline Expansion4 ToExpansion(const Vector4d &v)
     return { SExpansion(v.x), SExpansion(v.y), SExpansion(v.z), SExpansion(v.w) };
 }
 
-template<size_t SL, size_t SR>
-auto operator+(const SExpansion<SL> &lhs, const SExpansion<SR> &rhs)
+template<typename Word, size_t SL, size_t SR>
+auto operator+(const SExpansion<Word, SL> &lhs, const SExpansion<Word, SR> &rhs)
 {
-    SExpansion<ExpansionUtility::StaticStorageAdd(SL, SR)> ret;
+    SExpansion<Word, ExpansionUtility::StaticStorageAdd(SL, SR)> ret;
     ret.SetSum(lhs, rhs);
     return ret;
 }
 
-template<size_t SL, size_t SR>
-auto operator-(const SExpansion<SL> &lhs, const SExpansion<SR> &rhs)
+template<typename Word, size_t SL, size_t SR>
+auto operator-(const SExpansion<Word, SL> &lhs, const SExpansion<Word, SR> &rhs)
 {
-    SExpansion<ExpansionUtility::StaticStorageAdd(SL, SR)> ret;
+    SExpansion<Word, ExpansionUtility::StaticStorageAdd(SL, SR)> ret;
     ret.SetDiff(lhs, rhs);
     return ret;
 }
 
-template<size_t SL, size_t SR>
-auto operator*(const SExpansion<SL> &lhs, const SExpansion<SR> &rhs)
+template<typename Word, size_t SL, size_t SR>
+auto operator*(const SExpansion<Word, SL> &lhs, const SExpansion<Word, SR> &rhs)
 {
-    SExpansion<ExpansionUtility::StaticStorageMul(SL, SR)> ret;
+    SExpansion<Word, ExpansionUtility::StaticStorageMul(SL, SR)> ret;
     ret.SetMul(lhs, rhs);
     return ret;
 }
 
-template<size_t SL>
-auto operator*(const SExpansion<SL> &lhs, double rhs)
+template<typename Word, size_t SL>
+auto operator*(const SExpansion<Word, SL> &lhs, Word rhs)
 {
-    SExpansion<ExpansionUtility::StaticStorageMul(SL, 1)> ret;
+    SExpansion<Word, ExpansionUtility::StaticStorageMul(SL, 1)> ret;
     ret.SetMul(lhs, rhs);
     return ret;
 }
 
-template<size_t SR>
-auto operator*(double lhs, const SExpansion<SR> &rhs)
+template<typename Word, size_t SR>
+auto operator*(Word lhs, const SExpansion<Word, SR> &rhs)
 {
     return rhs * lhs;
 }
 
-template <size_t StaticStorage>
-SExpansion<StaticStorage>::SExpansion()
+template <typename Word, size_t StaticStorage>
+SExpansion<Word, StaticStorage>::SExpansion()
 {
-    assert(CheckRuntimeFloatingPointSettingsForExpansion());
+    assert(ExpansionUtility::CheckRuntimeFloatingPointSettingsForExpansion());
     if constexpr(SupportDynamicStorage)
     {
         this->capacity_ = InlinedItemCount;
@@ -218,65 +222,71 @@ SExpansion<StaticStorage>::SExpansion()
     GetItemPointer()[0] = 0.0;
 }
 
-template <size_t StaticStorage>
-SExpansion<StaticStorage>::SExpansion(double source)
+template <typename Word, size_t StaticStorage>
+SExpansion<Word, StaticStorage>::SExpansion(Word source)
     : SExpansion()
 {
     GetItemPointer()[0] = source;
 }
 
-template <size_t StaticStorage>
-SExpansion<StaticStorage>::SExpansion(const SExpansion &other)
+template <typename Word, size_t StaticStorage>
+SExpansion<Word, StaticStorage>::SExpansion(const SExpansion &other)
     : SExpansion()
 {
     this->Reserve(other.size_);
     size_ = other.size_;
-    std::memcpy(GetItemPointer(), other.GetItemPointer(), sizeof(double) * size_);
+    for(uint32_t i = 0; i < size_; ++i)
+    {
+        new(GetItemPointer() + i) Word(other.GetItemPointer()[i]);
+    }
 }
 
-template <size_t StaticStorage>
-SExpansion<StaticStorage>::SExpansion(SExpansion &&other) noexcept
+template <typename Word, size_t StaticStorage>
+SExpansion<Word, StaticStorage>::SExpansion(SExpansion &&other) noexcept
     : SExpansion()
 {
     this->Swap(other);
 }
 
-template <size_t StaticStorage>
-SExpansion<StaticStorage> &SExpansion<StaticStorage>::operator=(const SExpansion &other)
+template <typename Word, size_t StaticStorage>
+SExpansion<Word, StaticStorage> &SExpansion<Word, StaticStorage>::operator=(const SExpansion &other)
 {
     SExpansion t(other);
     this->Swap(t);
     return *this;
 }
 
-template <size_t StaticStorage>
-SExpansion<StaticStorage> &SExpansion<StaticStorage>::operator=(SExpansion &&other) noexcept
+template <typename Word, size_t StaticStorage>
+SExpansion<Word, StaticStorage> &SExpansion<Word, StaticStorage>::operator=(SExpansion &&other) noexcept
 {
     this->Swap(other);
     return *this;
 }
 
-template <size_t StaticStorage>
+template <typename Word, size_t StaticStorage>
 template <size_t StaticStorage2> requires (!StaticStorage || StaticStorage2 <= StaticStorage)
-SExpansion<StaticStorage>::SExpansion(const SExpansion<StaticStorage2> &other)
+SExpansion<Word, StaticStorage>::SExpansion(const SExpansion<Word, StaticStorage2> &other)
     : SExpansion()
 {
     Reserve(other.GetLength());
     size_ = other.GetLength();
-    std::memcpy(GetItemPointer(), other.GetItemPointer(), sizeof(double) * size_);
+    for(uint32_t i = 0; i < size_; ++i)
+    {
+        new(GetItemPointer() + i) Word(other.GetItemPointer()[i]);
+    }
 }
 
-template <size_t StaticStorage>
+template <typename Word, size_t StaticStorage>
 template <size_t StaticStorage2> requires (!StaticStorage || StaticStorage2 <= StaticStorage)
-SExpansion<StaticStorage> &SExpansion<StaticStorage>::operator=(const SExpansion<StaticStorage2> &other)
+SExpansion<Word, StaticStorage> &SExpansion<Word, StaticStorage>::operator=(const SExpansion<Word, StaticStorage2> &other)
 {
     SExpansion t(other);
     this->Swap(t);
     return *this;
 }
 
-template <size_t StaticStorage>
-void SExpansion<StaticStorage>::Swap(SExpansion &other) noexcept
+template <typename Word, size_t StaticStorage>
+void SExpansion<Word, StaticStorage>::Swap(SExpansion &other) noexcept
 {
     if constexpr(SupportDynamicStorage)
     {
@@ -286,8 +296,8 @@ void SExpansion<StaticStorage>::Swap(SExpansion &other) noexcept
     std::swap(storage_, other.storage_);
 }
 
-template <size_t StaticStorage>
-bool SExpansion<StaticStorage>::CheckSanity() const
+template <typename Word, size_t StaticStorage>
+bool SExpansion<Word, StaticStorage>::CheckSanity() const
 {
     if(!size_)
     {
@@ -308,14 +318,14 @@ bool SExpansion<StaticStorage>::CheckSanity() const
     return true;
 }
 
-template <size_t StaticStorage>
-uint32_t SExpansion<StaticStorage>::GetLength() const
+template <typename Word, size_t StaticStorage>
+uint32_t SExpansion<Word, StaticStorage>::GetLength() const
 {
     return size_;
 }
 
-template <size_t StaticStorage>
-uint32_t SExpansion<StaticStorage>::GetCapacity() const
+template <typename Word, size_t StaticStorage>
+uint32_t SExpansion<Word, StaticStorage>::GetCapacity() const
 {
     if constexpr(SupportDynamicStorage)
     {
@@ -327,39 +337,27 @@ uint32_t SExpansion<StaticStorage>::GetCapacity() const
     }
 }
 
-template <size_t StaticStorage>
-Span<double> SExpansion<StaticStorage>::GetItems() const
+template <typename Word, size_t StaticStorage>
+Span<Word> SExpansion<Word, StaticStorage>::GetItems() const
 {
-    return Span<double>(GetItemPointer(), size_);
+    return Span<Word>(GetItemPointer(), size_);
 }
 
-template <size_t StaticStorage>
-double SExpansion<StaticStorage>::ToDouble() const
+template <typename Word, size_t StaticStorage>
+Word SExpansion<Word, StaticStorage>::ToWord() const
 {
     return *std::ranges::fold_left_first(GetItems(), std::plus<>{});
 }
 
-template <size_t StaticStorage>
-double SExpansion<StaticStorage>::ToDoubleRoundUp() const
+template <typename Word, size_t StaticStorage>
+int SExpansion<Word, StaticStorage>::GetSign() const
 {
-    return ExpansionUtility::ToUnitRoundUp(GetItemPointer(), size_);
-}
-
-template <size_t StaticStorage>
-double SExpansion<StaticStorage>::ToDoubleRoundDown() const
-{
-    return ExpansionUtility::ToUnitRoundDown(GetItemPointer(), size_);
-}
-
-template <size_t StaticStorage>
-int SExpansion<StaticStorage>::GetSign() const
-{
-    const double word = GetItems().last();
+    const Word word = GetItems().last();
     return word < 0 ? -1 : (word > 0 ? 1 : 0);
 }
 
-template <size_t StaticStorage>
-void SExpansion<StaticStorage>::Reserve(uint32_t capacity)
+template <typename Word, size_t StaticStorage>
+void SExpansion<Word, StaticStorage>::Reserve(uint32_t capacity)
 {
     if constexpr(SupportDynamicStorage)
     {
@@ -369,16 +367,16 @@ void SExpansion<StaticStorage>::Reserve(uint32_t capacity)
             return;
         }
 
-        void *newPointer = std::malloc(sizeof(double) * capacity);
+        void *newPointer = std::malloc(sizeof(Word) * capacity);
         if(newPointer)
         {
             throw std::bad_alloc();
         }
 
         void *oldPointer = GetItemPointer();
-        if(size_)
+        for(uint32_t i = 0; i < size_; ++i)
         {
-            std::memcpy(newPointer, oldPointer, size_ * sizeof(double));
+            new (static_cast<Word *>(newPointer) + i) Word(static_cast<Word *>(oldPointer)[i]);
         }
         if(this->capacity_ > InlinedItemCount)
         {
@@ -394,9 +392,9 @@ void SExpansion<StaticStorage>::Reserve(uint32_t capacity)
     }
 }
 
-template <size_t StaticStorage>
+template <typename Word, size_t StaticStorage>
 template <size_t SL, size_t SR>
-void SExpansion<StaticStorage>::SetSum(const SExpansion<SL> &lhs, const SExpansion<SR> &rhs)
+void SExpansion<Word, StaticStorage>::SetSum(const SExpansion<Word, SL> &lhs, const SExpansion<Word, SR> &rhs)
 {
     static_assert(ExpansionUtility::StaticStorageGreaterEqual(
         StaticStorage, ExpansionUtility::StaticStorageAdd(SL, SR)));
@@ -405,9 +403,9 @@ void SExpansion<StaticStorage>::SetSum(const SExpansion<SL> &lhs, const SExpansi
         lhs.GetItemPointer(), lhs.GetLength(), rhs.GetItemPointer(), rhs.GetLength(), GetItemPointer());
 }
 
-template <size_t StaticStorage>
+template <typename Word, size_t StaticStorage>
 template <size_t SL, size_t SR>
-void SExpansion<StaticStorage>::SetDiff(const SExpansion<SL> &lhs, const SExpansion<SR> &rhs)
+void SExpansion<Word, StaticStorage>::SetDiff(const SExpansion<Word, SL> &lhs, const SExpansion<Word, SR> &rhs)
 {
     static_assert(ExpansionUtility::StaticStorageGreaterEqual(
         StaticStorage, ExpansionUtility::StaticStorageAdd(SL, SR)));
@@ -417,9 +415,9 @@ void SExpansion<StaticStorage>::SetDiff(const SExpansion<SL> &lhs, const SExpans
         lhs.GetItemPointer(), lhs.GetLength(), rhs.GetItemPointer(), rhs.GetLength(), GetItemPointer());
 }
 
-template <size_t StaticStorage>
+template <typename Word, size_t StaticStorage>
 template <size_t SL, size_t SR>
-void SExpansion<StaticStorage>::SetMul(const SExpansion<SL> &lhs, const SExpansion<SR> &rhs)
+void SExpansion<Word, StaticStorage>::SetMul(const SExpansion<Word, SL> &lhs, const SExpansion<Word, SR> &rhs)
 {
     static_assert(ExpansionUtility::StaticStorageGreaterEqual(
         StaticStorage, ExpansionUtility::StaticStorageMul(SL, SR)));
@@ -435,9 +433,9 @@ void SExpansion<StaticStorage>::SetMul(const SExpansion<SL> &lhs, const SExpansi
     }
 }
 
-template <size_t StaticStorage>
+template <typename Word, size_t StaticStorage>
 template <size_t SL>
-void SExpansion<StaticStorage>::SetMul(const SExpansion<SL> &lhs, double rhs)
+void SExpansion<Word, StaticStorage>::SetMul(const SExpansion<Word, SL> &lhs, Word rhs)
 {
     static_assert(ExpansionUtility::StaticStorageGreaterEqual(
         StaticStorage, ExpansionUtility::StaticStorageMul(SL, 1)));
@@ -446,9 +444,9 @@ void SExpansion<StaticStorage>::SetMul(const SExpansion<SL> &lhs, double rhs)
     size_ = ExpansionUtility::ScaleExpansion(lhs.GetItemPointer(), lhs.GetLength(), rhs, GetItemPointer());
 }
 
-template <size_t StaticStorage>
+template <typename Word, size_t StaticStorage>
 template <size_t S> requires !StaticStorage
-SExpansion<StaticStorage> &SExpansion<StaticStorage>::operator+=(const SExpansion<S> &rhs)
+SExpansion<Word, StaticStorage> &SExpansion<Word, StaticStorage>::operator+=(const SExpansion<Word, S> &rhs)
 {
     Reserve(GetLength() + rhs.GetLength());
     size_ = ExpansionUtility::ExpansionSum(
@@ -456,9 +454,9 @@ SExpansion<StaticStorage> &SExpansion<StaticStorage>::operator+=(const SExpansio
     return *this;
 }
 
-template <size_t StaticStorage>
+template <typename Word, size_t StaticStorage>
 template <size_t S> requires !StaticStorage
-SExpansion<StaticStorage> &SExpansion<StaticStorage>::operator-=(const SExpansion<S> &rhs)
+SExpansion<Word, StaticStorage> &SExpansion<Word, StaticStorage>::operator-=(const SExpansion<Word, S> &rhs)
 {
     Reserve(GetLength() + rhs.GetLength());
     size_ = ExpansionUtility::ExpansionSumNegative(
@@ -466,33 +464,33 @@ SExpansion<StaticStorage> &SExpansion<StaticStorage>::operator-=(const SExpansio
     return *this;
 }
 
-template <size_t StaticStorage>
+template <typename Word, size_t StaticStorage>
 template <size_t S> requires !StaticStorage
-SExpansion<StaticStorage> &SExpansion<StaticStorage>::operator*=(const SExpansion<S> &rhs)
+SExpansion<Word, StaticStorage> &SExpansion<Word, StaticStorage>::operator*=(const SExpansion<Word, S> &rhs)
 {
     *this = *this * rhs;
     return *this;
 }
 
-template <size_t StaticStorage>
-template <typename T> requires !StaticStorage && (std::is_same_v<T, double> || std::is_same_v<T, float>)
-SExpansion<StaticStorage> &SExpansion<StaticStorage>::operator*=(T rhs)
+template <typename Word, size_t StaticStorage>
+SExpansion<Word, StaticStorage> &SExpansion<Word, StaticStorage>::operator*=(Word rhs)
 {
+    static_assert(SupportDynamicStorage);
     Reserve(GetLength() * 2);
     size_ = ExpansionUtility::ScaleExpansion(GetItemPointer(), GetLength(), rhs, GetItemPointer());
     return *this;
 }
 
-template <size_t StaticStorage>
-void SExpansion<StaticStorage>::Compress()
+template <typename Word, size_t StaticStorage>
+void SExpansion<Word, StaticStorage>::Compress()
 {
     const uint32_t newSize = ExpansionUtility::CompressExpansion(GetItemPointer(), size_, GetItemPointer());
     assert(newSize <= size_);
     size_ = newSize;
 }
 
-template <size_t StaticStorage>
-void SExpansion<StaticStorage>::SetNegative()
+template <typename Word, size_t StaticStorage>
+void SExpansion<Word, StaticStorage>::SetNegative()
 {
     auto items = GetItemPointer();
     for(uint32_t i = 0; i < size_; ++i)
@@ -501,9 +499,9 @@ void SExpansion<StaticStorage>::SetNegative()
     }
 }
 
-template <size_t StaticStorage>
+template <typename Word, size_t StaticStorage>
 template <int S>
-int SExpansion<StaticStorage>::Compare(const SExpansion<S> &rhs) const
+int SExpansion<Word, StaticStorage>::Compare(const SExpansion<Word, S> &rhs) const
 {
     const SExpansion &lhs = *this;
     const int signLhs = lhs.GetSign();
@@ -523,25 +521,25 @@ int SExpansion<StaticStorage>::Compare(const SExpansion<S> &rhs) const
         return (lhs - rhs).GetSign();
     }
 
-    double diff[256];
+    Word diff[256];
     const int diffSize = ExpansionUtility::ExpansionSumNegative(
         lhs.GetItemPointer(), lhs.GetLength(), rhs.GetItemPointer(), rhs.GetLength(), diff);
     assert(diffSize);
-    const double word = diff[diffSize - 1];
+    const Word word = diff[diffSize - 1];
     return word < 0 ? -1 : (word > 0 ? 1 : 0);
 }
 
-template <size_t StaticStorage>
-SExpansion<StaticStorage> SExpansion<StaticStorage>::operator-() const
+template <typename Word, size_t StaticStorage>
+SExpansion<Word, StaticStorage> SExpansion<Word, StaticStorage>::operator-() const
 {
     SExpansion ret(*this);
     ret.SetNegative();
     return ret;
 }
 
-template <size_t StaticStorage>
+template <typename Word, size_t StaticStorage>
 template <int S>
-std::strong_ordering SExpansion<StaticStorage>::operator<=>(const SExpansion<S> &rhs) const
+std::strong_ordering SExpansion<Word, StaticStorage>::operator<=>(const SExpansion<Word, S> &rhs) const
 {
     const int compare = this->Compare(rhs);
     return compare < 0 ? std::strong_ordering::less :
@@ -549,50 +547,50 @@ std::strong_ordering SExpansion<StaticStorage>::operator<=>(const SExpansion<S> 
         std::strong_ordering::equal;
 }
 
-template <size_t StaticStorage>
+template <typename Word, size_t StaticStorage>
 template <int S>
-bool SExpansion<StaticStorage>::operator==(const SExpansion<S> &rhs) const
+bool SExpansion<Word, StaticStorage>::operator==(const SExpansion<Word, S> &rhs) const
 {
     return this->Compare(rhs) == 0;
 }
 
-template <size_t StaticStorage>
-std::string SExpansion<StaticStorage>::ToString() const
+template <typename Word, size_t StaticStorage>
+std::string SExpansion<Word, StaticStorage>::ToString() const
 {
-    auto items = GetItems() | std::views::transform([](double v) { return Rtrc::ToString(v); });
+    auto items = GetItems() | std::views::transform([](Word v) { return Rtrc::ToString(v); });
     return "[" + Rtrc::Join(" + ", items.begin(), items.end()) + "]";
 }
 
-template <size_t StaticStorage>
-double *SExpansion<StaticStorage>::GetItemPointer()
+template <typename Word, size_t StaticStorage>
+Word *SExpansion<Word, StaticStorage>::GetItemPointer()
 {
     if constexpr(SupportDynamicStorage)
     {
-        return this->capacity_ > InlinedItemCount ? *reinterpret_cast<double **>(storage_)
-                                                  : reinterpret_cast<double*>(storage_);
+        return this->capacity_ > InlinedItemCount ? *reinterpret_cast<Word **>(storage_)
+                                                  : reinterpret_cast<Word *>(storage_);
     }
     else
     {
-        return reinterpret_cast<double *>(storage_);
+        return reinterpret_cast<Word *>(storage_);
     }
 }
 
-template <size_t StaticStorage>
-const double *SExpansion<StaticStorage>::GetItemPointer() const
+template <typename Word, size_t StaticStorage>
+const Word *SExpansion<Word, StaticStorage>::GetItemPointer() const
 {
     if constexpr(SupportDynamicStorage)
     {
-        return this->capacity_ > InlinedItemCount ? *reinterpret_cast<const double *const *>(storage_)
-                                                  : reinterpret_cast<const double *>(storage_);
+        return this->capacity_ > InlinedItemCount ? *reinterpret_cast<const Word *const *>(storage_)
+                                                  : reinterpret_cast<const Word *>(storage_);
     }
     else
     {
-        return reinterpret_cast<const double *>(storage_);
+        return reinterpret_cast<const Word *>(storage_);
     }
 }
 
-template<size_t StaticStorage>
-std::ostream &operator<<(std::ostream &stream, const SExpansion<StaticStorage> &e)
+template<typename Word, size_t StaticStorage>
+std::ostream &operator<<(std::ostream &stream, const SExpansion<Word, StaticStorage> &e)
 {
     return stream << e.ToString();
 }
