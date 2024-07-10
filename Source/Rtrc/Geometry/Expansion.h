@@ -145,7 +145,8 @@ private:
     unsigned char storage_[StorageSize];
 };
 
-SExpansion(double)->SExpansion<ExpansionUtility::float_200_55, 1>;
+template<typename Word>
+SExpansion(Word)->SExpansion<Word, 1>;
 
 using Expansion  = SExpansion<ExpansionUtility::float_200_55, 0>;
 using Expansion2 = Vector2<Expansion>;
@@ -154,22 +155,22 @@ using Expansion4 = Vector4<Expansion>;
 
 inline Expansion ToExpansion(double v)
 {
-    return SExpansion(v);
+    return Expansion(v);
 }
 
 inline Expansion2 ToExpansion(const Vector2d& v)
 {
-    return { SExpansion(v.x), SExpansion(v.y) };
+    return { Expansion(v.x), Expansion(v.y) };
 }
 
 inline Expansion3 ToExpansion(const Vector3d &v)
 {
-    return { SExpansion(v.x), SExpansion(v.y), SExpansion(v.z) };
+    return { Expansion(v.x), Expansion(v.y), Expansion(v.z) };
 }
 
 inline Expansion4 ToExpansion(const Vector4d &v)
 {
-    return { SExpansion(v.x), SExpansion(v.y), SExpansion(v.z), SExpansion(v.w) };
+    return { Expansion(v.x), Expansion(v.y), Expansion(v.z), Expansion(v.w) };
 }
 
 template<typename Word, size_t SL, size_t SR>
@@ -306,13 +307,17 @@ bool SExpansion<Word, StaticStorage>::CheckSanity() const
     auto items = GetItemPointer();
     for(uint32_t i = 1; i < size_; ++i)
     {
-        if(std::abs(items[i - 1]) >= std::abs(items[i]))
+        auto Abs = [](Word w) { return w < 0 ? -w : w; };
+        if(Abs(items[i - 1]) >= Abs(items[i]))
         {
             return false;
         }
-        if(!ExpansionUtility::CheckNonOverlappingProperty(items[i - 1], items[i]))
+        if constexpr(std::is_floating_point_v<Word>)
         {
-            return false;
+            if(!ExpansionUtility::CheckNonOverlappingProperty(items[i - 1], items[i]))
+            {
+                return false;
+            }
         }
     }
     return true;
@@ -516,12 +521,13 @@ int SExpansion<Word, StaticStorage>::Compare(const SExpansion<Word, S> &rhs) con
     }
 
     const uint32_t maxDiffSize = lhs.GetLength() + rhs.GetLength();
-    if(maxDiffSize > 256)
+    constexpr size_t DIFF_SIZE_THRESHOLD = 1024 / sizeof(Word);
+    if(maxDiffSize > DIFF_SIZE_THRESHOLD)
     {
         return (lhs - rhs).GetSign();
     }
 
-    Word diff[256];
+    Word diff[DIFF_SIZE_THRESHOLD];
     const int diffSize = ExpansionUtility::ExpansionSumNegative(
         lhs.GetItemPointer(), lhs.GetLength(), rhs.GetItemPointer(), rhs.GetLength(), diff);
     assert(diffSize);
@@ -557,7 +563,18 @@ bool SExpansion<Word, StaticStorage>::operator==(const SExpansion<Word, S> &rhs)
 template <typename Word, size_t StaticStorage>
 std::string SExpansion<Word, StaticStorage>::ToString() const
 {
-    auto items = GetItems() | std::views::transform([](Word v) { return Rtrc::ToString(v); });
+    auto ConvertWord = [](Word v)
+    {
+        if constexpr(std::is_floating_point_v<Word>)
+        {
+            return Rtrc::ToString(v);
+        }
+        else
+        {
+            return boost::multiprecision::to_string(v);
+        }
+    };
+    auto items = GetItems() | std::views::transform([&](Word v) { return ConvertWord(v); });
     return "[" + Rtrc::Join(" + ", items.begin(), items.end()) + "]";
 }
 

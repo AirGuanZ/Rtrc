@@ -50,9 +50,9 @@ TEST_CASE("Expansion")
     using E = Expansion;
 
     REQUIRE(E(0.5) < E(0.6));
-    REQUIRE(E(1e30) + E(1e-30) + E(1e-30) - E(1e30) == 2.0 * E(1e-30));
+    REQUIRE(E(1e30) + E(1e-30) + E(1e-30) - E(1e30) == E(2.0) * E(1e-30));
     REQUIRE((E(1e30) + E(1e-30) + E(1e-30) - E(1e30)).CheckSanity());
-    REQUIRE(E(1e30) + E(1e-30) + E(1e-30) - E(1e30) != 1.999999 * E(1e-30));
+    REQUIRE(E(1e30) + E(1e-30) + E(1e-30) - E(1e30) != E(1.999999) * E(1e-30));
     REQUIRE((E(1e10) + E(1e-30)) * E(1e10) == E(1e10) * E(1e10) + E(1e-30) * E(1e10));
 
     {

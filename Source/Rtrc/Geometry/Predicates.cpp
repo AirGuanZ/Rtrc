@@ -14,10 +14,21 @@ RTRC_GEO_BEGIN
 namespace PredicatesDetail
 {
 
+    bool IsOne(const Expansion &e)
+    {
+        return e.GetLength() == 1 && e.GetItems()[0] == 1.0;
+    }
+
     template<typename T>
     int GetSign(T v)
     {
         return v < 0 ? -1 : (v > 0 ? 1 : 0);
+    }
+
+    template<typename T>
+    T Abs(T v)
+    {
+        return v < 0 ? -v : v;
     }
 
     template <typename T>
@@ -83,11 +94,6 @@ namespace PredicatesDetail
 
         return (alift * bcdet + blift * cadet + clift * abdet).GetSign();
     }
-
-    bool IsOne(const Expansion &e)
-    {
-        return e.GetLength() == 1 && e.GetItems()[0] == 1.0;
-    };
 
 } // namespace PredicatesDetail
 
@@ -200,7 +206,7 @@ int InCircle2DHomogeneous(const Expansion3 &pa, const Expansion3 &pb, const Expa
     return 0;
 }
 
-template <std::floating_point T>
+template <typename T>
 int Orient2D(const Vector2<T> &pa, const Vector2<T> &pb, const Vector2<T> &pc)
 {
     const T detL = (pa[0] - pc[0]) * (pb[1] - pc[1]);
@@ -229,8 +235,8 @@ int Orient2D(const Vector2<T> &pa, const Vector2<T> &pb, const Vector2<T> &pc)
         return PredicatesDetail::GetSign(det);
     }
 
-    constexpr T eps = T(0.5) * std::numeric_limits<T>::epsilon();
-    constexpr T errorBoundFactor = (3.0 + 16.0 * eps) * eps;
+    const T unitError = T(0.5) * std::numeric_limits<T>::epsilon();
+    const T errorBoundFactor = (3.0 + 16.0 * unitError) * unitError;
     const T errorBound = errorBoundFactor * detSum;
     if(det > errorBound || -det > errorBound)
     {
@@ -242,8 +248,10 @@ int Orient2D(const Vector2<T> &pa, const Vector2<T> &pb, const Vector2<T> &pc)
 
 template int Orient2D(const Vector2<float> &, const Vector2<float> &, const Vector2<float> &);
 template int Orient2D(const Vector2<double> &, const Vector2<double> &, const Vector2<double> &);
+template int Orient2D(const Vector2<ExpansionUtility::float_100_27> &, const Vector2<ExpansionUtility::float_100_27> &, const Vector2<ExpansionUtility::float_100_27> &);
+template int Orient2D(const Vector2<ExpansionUtility::float_200_55> &, const Vector2<ExpansionUtility::float_200_55> &, const Vector2<ExpansionUtility::float_200_55> &);
 
-template<std::floating_point T>
+template<typename T>
 int Orient3D(const Vector3<T> &pa, const Vector3<T> &pb, const Vector3<T> &pc, const Vector3<T> &pd)
 {
     const T adx = pa[0] - pd[0];
@@ -269,11 +277,11 @@ int Orient3D(const Vector3<T> &pa, const Vector3<T> &pb, const Vector3<T> &pc, c
                 + bdz * (cdxady - adxcdy)
                 + cdz * (adxbdy - bdxady);
 
-    const T permanent = (std::abs(bdxcdy) + std::abs(cdxbdy)) * std::abs(adz)
-                      + (std::abs(cdxady) + std::abs(adxcdy)) * std::abs(bdz)
-                      + (std::abs(adxbdy) + std::abs(bdxady)) * std::abs(cdz);
-    constexpr T eps = T(0.5) * std::numeric_limits<T>::epsilon();
-    constexpr T errorBoundFactor = (7.0 + 56.0 * eps) * eps;
+    const T permanent = (PredicatesDetail::Abs(bdxcdy) + PredicatesDetail::Abs(cdxbdy)) * PredicatesDetail::Abs(adz)
+                      + (PredicatesDetail::Abs(cdxady) + PredicatesDetail::Abs(adxcdy)) * PredicatesDetail::Abs(bdz)
+                      + (PredicatesDetail::Abs(adxbdy) + PredicatesDetail::Abs(bdxady)) * PredicatesDetail::Abs(cdz);
+    const T unitError = T(0.5) * std::numeric_limits<T>::epsilon();
+    const T errorBoundFactor = (7.0 + 56.0 * unitError) * unitError;
     const T errorBound = errorBoundFactor * permanent;
     if(det > errorBound || -det > errorBound)
     {
@@ -285,8 +293,10 @@ int Orient3D(const Vector3<T> &pa, const Vector3<T> &pb, const Vector3<T> &pc, c
 
 template int Orient3D(const Vector3<float> &, const Vector3<float> &, const Vector3<float> &, const Vector3<float> &);
 template int Orient3D(const Vector3<double> &, const Vector3<double> &, const Vector3<double> &, const Vector3<double> &);
+template int Orient3D(const Vector3<ExpansionUtility::float_100_27> &, const Vector3<ExpansionUtility::float_100_27> &, const Vector3<ExpansionUtility::float_100_27> &, const Vector3<ExpansionUtility::float_100_27> &);
+template int Orient3D(const Vector3<ExpansionUtility::float_200_55> &, const Vector3<ExpansionUtility::float_200_55> &, const Vector3<ExpansionUtility::float_200_55> &, const Vector3<ExpansionUtility::float_200_55> &);
 
-template<std::floating_point T>
+template<typename T>
 int InCircle2D(const Vector2<T> &pa, const Vector2<T> &pb, const Vector2<T> &pc, const Vector2<T> &pd)
 {
     const T adx = pa[0] - pd[0];
@@ -312,11 +322,11 @@ int InCircle2D(const Vector2<T> &pa, const Vector2<T> &pb, const Vector2<T> &pc,
                 + blift * (cdxady - adxcdy)
                 + clift * (adxbdy - bdxady);
 
-    const T permanent = (std::abs(bdxcdy) + std::abs(cdxbdy)) * alift
-                      + (std::abs(cdxady) + std::abs(adxcdy)) * blift
-                      + (std::abs(adxbdy) + std::abs(bdxady)) * clift;
-    constexpr T eps = T(0.5) * std::numeric_limits<T>::epsilon();
-    constexpr T errorBoundFactor = (10.0 + 96.0 * eps) * eps;
+    const T permanent = (PredicatesDetail::Abs(bdxcdy) + PredicatesDetail::Abs(cdxbdy)) * alift
+                      + (PredicatesDetail::Abs(cdxady) + PredicatesDetail::Abs(adxcdy)) * blift
+                      + (PredicatesDetail::Abs(adxbdy) + PredicatesDetail::Abs(bdxady)) * clift;
+    const T unitError = T(0.5) * std::numeric_limits<T>::epsilon();
+    const T errorBoundFactor = (10.0 + 96.0 * unitError) * unitError;
     const T errorBound = errorBoundFactor * permanent;
     if(det > errorBound || -det > errorBound)
     {
@@ -328,5 +338,7 @@ int InCircle2D(const Vector2<T> &pa, const Vector2<T> &pb, const Vector2<T> &pc,
 
 template int InCircle2D(const Vector2<float> &, const Vector2<float> &, const Vector2<float> &, const Vector2<float> &);
 template int InCircle2D(const Vector2<double> &, const Vector2<double> &, const Vector2<double> &, const Vector2<double> &);
+template int InCircle2D(const Vector2<ExpansionUtility::float_100_27> &, const Vector2<ExpansionUtility::float_100_27> &, const Vector2<ExpansionUtility::float_100_27> &, const Vector2<ExpansionUtility::float_100_27> &);
+template int InCircle2D(const Vector2<ExpansionUtility::float_200_55> &, const Vector2<ExpansionUtility::float_200_55> &, const Vector2<ExpansionUtility::float_200_55> &, const Vector2<ExpansionUtility::float_200_55> &);
 
 RTRC_GEO_END

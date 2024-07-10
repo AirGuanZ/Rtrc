@@ -22,11 +22,11 @@ int InCircle2D(const Expansion2 &pa, const Expansion2 &pb, const Expansion2 &pc,
 int InCircle2D(const Expansion *pa, const Expansion *pb, const Expansion *pc, const Expansion *pd);
 int InCircle2DHomogeneous(const Expansion3 &pa, const Expansion3 &pb, const Expansion3 &pc, const Expansion3 &pd);
 
-template<std::floating_point T>
+template<typename T>
 int Orient2D(const Vector2<T> &pa, const Vector2<T> &pb, const Vector2<T> &pc);
-template<std::floating_point T>
+template<typename T>
 int Orient3D(const Vector3<T> &pa, const Vector3<T> &pb, const Vector3<T> &pc, const Vector3<T> &pd);
-template<std::floating_point T>
+template<typename T>
 int InCircle2D(const Vector2<T> &pa, const Vector2<T> &pb, const Vector2<T> &pc, const Vector2<T> &pd);
 
 RTRC_GEO_END
