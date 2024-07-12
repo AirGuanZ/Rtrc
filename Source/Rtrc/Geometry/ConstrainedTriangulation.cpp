@@ -169,7 +169,7 @@ namespace CDTDetail
 
     void EnsureDelaunayConditions(
         Span<Expansion3>         vertices,
-        const std::vector<bool> &isEdgeFixed,
+        Span<int>                edgeToSourceConstraint,
         HalfedgeMesh            &connectivity,
         std::stack<int>         &activeEdges)
     {
@@ -178,7 +178,7 @@ namespace CDTDetail
         {
             const int e0 = activeEdges.top();
             activeEdges.pop();
-            if(isEdgeFixed[e0])
+            if(edgeToSourceConstraint[e0] >= 0)
             {
                 continue;
             }
@@ -217,27 +217,26 @@ namespace CDTDetail
 
 } // namespace CDTDetail
 
-std::vector<Vector3i> ConstrainedTriangulation2D(
-    Span<Expansion2>         points,
-    Span<Vector2i>           constraints,
-    std::vector<Expansion3> &newIntersections,
-    bool                     delaunay)
+CDT2D CDT2D::Create(Span<Expansion3> points, Span<Vector2i> constraints, bool delaunay)
 {
     using namespace CDTDetail;
 
     assert(points.size() >= 3);
+    CDT2D result;
 
     // Build super triangle
 
     Vector2d lower(DBL_MAX), upper(DBL_MIN);
-    for(const Expansion2 &point : points)
+    for(const Expansion3 &point : points)
     {
-        lower.x = (std::min)(lower.x, static_cast<double>(point.x.ToWord()));
-        lower.y = (std::min)(lower.y, static_cast<double>(point.y.ToWord()));
-        upper.x = (std::max)(upper.x, static_cast<double>(point.x.ToWord()));
-        upper.y = (std::max)(upper.y, static_cast<double>(point.y.ToWord()));
+        const double px = static_cast<double>(point.x.ToWord() / point.z.ToWord());
+        const double py = static_cast<double>(point.y.ToWord() / point.z.ToWord());
+        lower.x = (std::min)(lower.x, px);
+        lower.y = (std::min)(lower.y, py);
+        upper.x = (std::max)(upper.x, px);
+        upper.y = (std::max)(upper.y, py);
     }
-    const double extent = MaxReduce(upper - lower);
+    const double extent = (std::max)(MaxReduce(upper - lower), 1.0);
     const Vector2d superTriangleA = lower - Vector2d(extent);
     const Vector2d superTriangleB = superTriangleA + Vector2d(0, 8 * extent);
     const Vector2d superTriangleC = superTriangleA + Vector2d(8 * extent, 0);
@@ -246,7 +245,6 @@ std::vector<Vector3i> ConstrainedTriangulation2D(
 
     std::vector<Expansion3> vertices =
     {
-        // In homogeneous coordinate
         ToExpansion(Vector3d(superTriangleA, 1.0)),
         ToExpansion(Vector3d(superTriangleB, 1.0)),
         ToExpansion(Vector3d(superTriangleC, 1.0))
@@ -261,7 +259,7 @@ std::vector<Vector3i> ConstrainedTriangulation2D(
 
     for(int pointIndex = 0; pointIndex < static_cast<int>(points.size()); ++pointIndex)
     {
-        const Expansion2 &point = points[pointIndex];
+        const Expansion3 &point = points[pointIndex];
         int signs[3];
         const int triangleIndex = LocatePointInTriangulation(
             [&](int T, int E)
@@ -269,7 +267,7 @@ std::vector<Vector3i> ConstrainedTriangulation2D(
                 const int h = 3 * T + E;
                 const int head = connectivity.Head(h);
                 const int tail = connectivity.Tail(h);
-                const int sign = Orient2D(&vertices[head].x, &vertices[tail].x, &point.x);
+                const int sign = Orient2DHomogeneous(vertices[head], vertices[tail], point);
                 return sign;
             },
             [&](int T, int E)
@@ -300,11 +298,11 @@ std::vector<Vector3i> ConstrainedTriangulation2D(
             connectivity.SplitEdge(h);
         }
 
-        vertices.emplace_back(point, ToExpansion(1.0));
+        vertices.emplace_back(point);
         meshVertexToPointIndex.push_back(pointIndex);
     }
 
-    std::vector isEdgeFixed(connectivity.E(), false);
+    std::vector<int> edgeToSourceConstraint(connectivity.E(), -1);
 
     // Initialize delaunay conditions
 
@@ -315,13 +313,14 @@ std::vector<Vector3i> ConstrainedTriangulation2D(
         {
             activeEdges.push(e);
         }
-        EnsureDelaunayConditions(vertices, isEdgeFixed, connectivity, activeEdges);
+        EnsureDelaunayConditions(vertices, edgeToSourceConstraint, connectivity, activeEdges);
     }
 
     // Insert constraints
 
-    for(const Vector2i &constraint : constraints)
+    for(int constraintIndex = 0; constraintIndex < static_cast<int>(constraints.size()); ++constraintIndex)
     {
+        const Vector2i &constraint = constraints[constraintIndex];
         int vo = constraint.x + 3;
         const int vt = constraint.y + 3;
         assert(meshVertexToPointIndex[vo] == constraint.x);
@@ -392,7 +391,7 @@ std::vector<Vector3i> ConstrainedTriangulation2D(
                 isEdgeFound = true;
 #endif
                 const int e = connectivity.Edge(h);
-                isEdgeFixed[e] = true;
+                edgeToSourceConstraint[e] = constraintIndex;
                 return false;
             });
 #if RTRC_DEBUG
@@ -401,14 +400,14 @@ std::vector<Vector3i> ConstrainedTriangulation2D(
 
             if(delaunay)
             {
-                EnsureDelaunayConditions(vertices, isEdgeFixed, connectivity, newEdges);
+                EnsureDelaunayConditions(vertices, edgeToSourceConstraint, connectivity, newEdges);
             }
         };
 
         // Create a new intersection between the constraint segments (vo, vt) and (va, vb).
         // Delaunayize the neighborhood of the newly created intersection.
         // After the triangulation, restart the tracing process from the vertex 'vo'.
-        auto CreateIntersectionOnConstraint = [&](int va, int vb, int h)
+        auto CreateIntersectionOnConstraint = [&](int va, int vb, int h, int targetConstraintIndex)
         {
             assert(connectivity.Head(h) == va || connectivity.Head(h) == vb);
             assert(connectivity.Tail(h) == va || connectivity.Tail(h) == vb);
@@ -420,12 +419,12 @@ std::vector<Vector3i> ConstrainedTriangulation2D(
             vertices.push_back(inct);
 
             connectivity.SplitEdge(h);
-            isEdgeFixed.resize(connectivity.E(), false);
+            edgeToSourceConstraint.resize(connectivity.E(), -1);
 
             assert(static_cast<int>(meshVertexToPointIndex.size()) == vInct);
             meshVertexToPointIndex.push_back(
-                static_cast<int>(points.size() + newIntersections.size()));
-            newIntersections.push_back(inct);
+                static_cast<int>(points.size() + result.newIntersections.size()));
+            result.newIntersections.push_back({ inct, constraintIndex, targetConstraintIndex });
 
             if(delaunay)
             {
@@ -434,7 +433,7 @@ std::vector<Vector3i> ConstrainedTriangulation2D(
                 {
                     activeEdges.push(connectivity.Edge(vh));
                 });
-                EnsureDelaunayConditions(vertices, isEdgeFixed, connectivity, activeEdges);
+                EnsureDelaunayConditions(vertices, edgeToSourceConstraint, connectivity, activeEdges);
 
                 // EnsureDelaunayConditions may compromise the validity of `intersectedEdges`.
                 // Therefore discard the invalid edges and restart the tracing process from the vertex 'vo'.
@@ -484,7 +483,7 @@ std::vector<Vector3i> ConstrainedTriangulation2D(
                         if(intersectionType == 1)
                         {
                             const int e = connectivity.Edge(h);
-                            isEdgeFixed[e] = true;
+                            edgeToSourceConstraint[e] = constraintIndex;
                             if(vo != startVertex)
                             {
                                 CommitIntersectedEdges(vo, startVertex);
@@ -495,7 +494,7 @@ std::vector<Vector3i> ConstrainedTriangulation2D(
                         else if(intersectionType == 2)
                         {
                             const int e = connectivity.Edge(connectivity.Prev(h));
-                            isEdgeFixed[e] = true;
+                            edgeToSourceConstraint[e] = constraintIndex;
                             if(vo != startVertex)
                             {
                                 CommitIntersectedEdges(vo, startVertex);
@@ -507,9 +506,9 @@ std::vector<Vector3i> ConstrainedTriangulation2D(
                         {
                             assert(intersectionType == 3);
                             const int e = connectivity.Edge(connectivity.Succ(h));
-                            if(isEdgeFixed[e])
+                            if(edgeToSourceConstraint[e] >= 0)
                             {
-                                CreateIntersectionOnConstraint(va, vb, connectivity.Succ(h));
+                                CreateIntersectionOnConstraint(va, vb, connectivity.Succ(h), edgeToSourceConstraint[e]);
                             }
                             else
                             {
@@ -546,9 +545,9 @@ std::vector<Vector3i> ConstrainedTriangulation2D(
                     const int hac = connectivity.Prev(startHalfedge);
                     const int eac = connectivity.Edge(hac);
 
-                    if(isEdgeFixed[eac])
+                    if(edgeToSourceConstraint[eac] >= 0)
                     {
-                        CreateIntersectionOnConstraint(va, vc, hac);
+                        CreateIntersectionOnConstraint(va, vc, hac, edgeToSourceConstraint[eac]);
                     }
                     else
                     {
@@ -564,9 +563,9 @@ std::vector<Vector3i> ConstrainedTriangulation2D(
                     const int hbc = connectivity.Succ(startHalfedge);
                     const int ebc = connectivity.Edge(hbc);
 
-                    if(isEdgeFixed[ebc])
+                    if(edgeToSourceConstraint[ebc] >= 0)
                     {
-                        CreateIntersectionOnConstraint(vb, vc, hbc);
+                        CreateIntersectionOnConstraint(vb, vc, hbc, edgeToSourceConstraint[ebc]);
                     }
                     else
                     {
@@ -579,20 +578,18 @@ std::vector<Vector3i> ConstrainedTriangulation2D(
         }
     }
 
-    std::vector<Vector3i> result;
     for(int f = 0; f < connectivity.F(); ++f)
     {
         const int v0 = connectivity.Vert(3 * f + 0);
         const int v1 = connectivity.Vert(3 * f + 1);
         const int v2 = connectivity.Vert(3 * f + 2);
-        if(v0 < 3 || v1 < 3 || v2 < 3)
+        if(v0 >= 3 && v1 >= 3 && v2 >= 3)
         {
-            continue;
+            result.triangles.emplace_back(
+                meshVertexToPointIndex[v0],
+                meshVertexToPointIndex[v1],
+                meshVertexToPointIndex[v2]);
         }
-        result.emplace_back(
-            meshVertexToPointIndex[v0],
-            meshVertexToPointIndex[v1],
-            meshVertexToPointIndex[v2]);
     }
 
     return result;
