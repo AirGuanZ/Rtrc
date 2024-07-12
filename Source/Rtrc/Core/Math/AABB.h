@@ -31,6 +31,8 @@ public:
     AABB2 &operator|=(const AABB2 &rhs);
     AABB2 &operator|=(const Vector2<T> &rhs);
 
+    bool Intersect(const AABB2 &other) const;
+
     Vector2<T> lower;
     Vector2<T> upper;
 };
@@ -60,6 +62,8 @@ public:
 
     AABB3 &operator|=(const AABB3 &rhs);
     AABB3 &operator|=(const Vector3<T> &rhs);
+
+    bool Intersect(const AABB3 &other) const;
 
     Vector3<T> lower;
     Vector3<T> upper;
@@ -164,6 +168,14 @@ AABB2<T> &AABB2<T>::operator|=(const Vector2<T> &rhs)
     return *this = *this | rhs;
 }
 
+template <typename T>
+bool AABB2<T>::Intersect(const AABB2 &other) const
+{
+    const Vector2<T> lower = Max(lower, other.lower);
+    const Vector2<T> upper = Min(lower, other.upper);
+    return lower.x <= upper.x && lower.y <= upper.y;
+}
+
 template<typename T>
 AABB3<T>::AABB3()
     : lower((std::numeric_limits<T>::max)()), upper((std::numeric_limits<T>::lowest)())
@@ -251,6 +263,14 @@ template<typename T>
 AABB3<T> &AABB3<T>::operator|=(const Vector3<T> &rhs)
 {
     return *this = *this | rhs;
+}
+
+template <typename T>
+bool AABB3<T>::Intersect(const AABB3 &other) const
+{
+    const Vector3<T> lower = Max(lower, other.lower);
+    const Vector3<T> upper = Min(lower, other.upper);
+    return lower.x <= upper.x && lower.y <= upper.y && lower.z <= upper.z;
 }
 
 template<typename T>

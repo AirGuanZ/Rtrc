@@ -45,6 +45,7 @@ public:
         Point(Element a, Element b): data_(std::to_underlying(a) | (std::to_underlying(b) << 4)) {}
         Element GetElement0() const { return static_cast<Element>(data_ & 0xf); }
         Element GetElement1() const { return static_cast<Element>(data_ >> 4); }
+        void SwapOrder() { *this = Point(GetElement1(), GetElement0()); }
         auto operator<=>(const Point &) const = default;
     };
 
@@ -55,29 +56,30 @@ public:
 
     void SortPointsForPolygon();
 
-    Type GetType() const { return type_; }
+    Type GetType() const;
 
     Span<Point> GetPoints() const { return points_; }
 
 private:
 
-    static constexpr int MaxPointCount = 21;
+    static constexpr int MaxIntermediatePointCount = 42;
 
     static_assert(std::is_floating_point_v<T>);
 
-    using PointVector = StaticVector<Point, MaxPointCount>;
+    using IntermediatePointVector = StaticVector<Point, MaxIntermediatePointCount>;
+    using PointVector = StaticVector<Point, 6>;
 
     static void IntersectEdgeTriangle(
         Element edgePQ, Element vertexP, Element vertexQ,
         const Vector &p, const Vector &q,
         const Vector &a, const Vector &b, const Vector &c,
-        PointVector &outPoints);
+        IntermediatePointVector &outPoints);
 
     static void IntersectCoplanarEdgeTriangle(
         Element edgePQ, Element vertexP, Element vertexQ,
         const Vector &p, const Vector &q,
         const Vector &a, const Vector &b, const Vector &c,
-        PointVector &outPoints);
+        IntermediatePointVector &outPoints);
 
     static void IntersectCoplanarEdgeEdge(
         Element edgePQ, Element vertexP, Element vertexQ,
@@ -85,14 +87,14 @@ private:
         const Vector &p, const Vector &q,
         const Vector &a, const Vector &b,
         const Vector &observer,
-        PointVector &outPoints);
+        IntermediatePointVector &outPoints);
 
     static void IntersectColinearEdgeEdge(
         Element edgePQ, Element vertexP, Element vertexQ,
         Element edgeAB, Element vertexA, Element vertexB,
         const Vector &p, const Vector &q,
         const Vector &a, const Vector &b,
-        PointVector &outPoints);
+        IntermediatePointVector &outPoints);
 
     static Vector2<T> ProjectTo2D(const Vector &p, int axis);
 
@@ -102,7 +104,6 @@ private:
 
     static bool IsOnInputEdge(Element a, Element b);
 
-    Type type_ = Type::None;
     PointVector points_;
 };
 

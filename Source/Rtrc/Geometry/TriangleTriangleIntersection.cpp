@@ -13,23 +13,34 @@ SymbolicTriangleTriangleIntersection<T> SymbolicTriangleTriangleIntersection<T>:
 {
     assert(a0 != b0 && a0 != c0 && b0 != c0);
     assert(a1 != b1 && a1 != c1 && b1 != c1);
+
+    IntermediatePointVector points;
+    IntersectEdgeTriangle(Element::E01, Element::V0, Element::V1, a0, b0, a1, b1, c1, points);
+    IntersectEdgeTriangle(Element::E12, Element::V1, Element::V2, b0, c0, a1, b1, c1, points);
+    IntersectEdgeTriangle(Element::E20, Element::V2, Element::V0, c0, a0, a1, b1, c1, points);
+
+    const uint32_t midPoint = points.size();
+    IntersectEdgeTriangle(Element::E01, Element::V0, Element::V1, a1, b1, a0, b0, c0, points);
+    IntersectEdgeTriangle(Element::E12, Element::V1, Element::V2, b1, c1, a0, b0, c0, points);
+    IntersectEdgeTriangle(Element::E20, Element::V2, Element::V0, c1, a1, a0, b0, c0, points);
+    for(uint32_t i = midPoint; i < points.size(); ++i)
+    {
+        points[i].SwapOrder();
+    }
+
+    if(!points.empty())
+    {
+        std::ranges::sort(points);
+        const uint32_t newSize = std::unique(points.begin(), points.end()) - points.begin();
+        points.Resize(newSize);
+    }
+
     SymbolicTriangleTriangleIntersection ret;
-    IntersectEdgeTriangle(Element::E01, Element::V0, Element::V1, a0, b0, a1, b1, c1, ret.points_);
-    IntersectEdgeTriangle(Element::E12, Element::V1, Element::V2, b0, c0, a1, b1, c1, ret.points_);
-    IntersectEdgeTriangle(Element::E20, Element::V2, Element::V0, c0, a0, a1, b1, c1, ret.points_);
-    if(!ret.points_.empty())
-    {
-        std::ranges::sort(ret.points_);
-        const uint32_t newSize = std::unique(ret.points_.begin(), ret.points_.end()) - ret.points_.begin();
-        ret.points_.Resize(newSize);
-    }
-    switch(ret.points_.size())
-    {
-    case 0:  ret.type_ = Type::None;    break;
-    case 1:  ret.type_ = Type::Point;   break;
-    case 2:  ret.type_ = Type::Edge;    break;
-    default: ret.type_ = Type::Polygon; break;
-    }
+
+    assert(points.size() <= 6);
+    ret.points_.Resize(points.size());
+    std::memcpy(ret.points_.GetData(), points.GetData(), ret.points_.size() * sizeof(Point));
+
     if(sortForPolygon)
     {
         ret.SortPointsForPolygon();
@@ -38,9 +49,21 @@ SymbolicTriangleTriangleIntersection<T> SymbolicTriangleTriangleIntersection<T>:
 }
 
 template <typename T>
+typename SymbolicTriangleTriangleIntersection<T>::Type SymbolicTriangleTriangleIntersection<T>::GetType() const
+{
+    switch(points_.size())
+    {
+    case 0:  return Type::None;
+    case 1:  return Type::Point;
+    case 2:  return Type::Edge;
+    default: return Type::Polygon;
+    }
+}
+
+template <typename T>
 void SymbolicTriangleTriangleIntersection<T>::SortPointsForPolygon()
 {
-    if(type_ != Type::Polygon)
+    if(GetType() != Type::Polygon)
     {
         return;
     }
@@ -77,7 +100,7 @@ void SymbolicTriangleTriangleIntersection<T>::IntersectEdgeTriangle(
     Element edgePQ, Element vertexP, Element vertexQ,
     const Vector &p, const Vector &q,
     const Vector &a, const Vector &b, const Vector &c,
-    PointVector &outPoints)
+    IntermediatePointVector &outPoints)
 {
     const int s0 = Geo::Orient3D<T>(a, b, c, p);
     const int s1 = Geo::Orient3D<T>(a, b, c, q);
@@ -100,7 +123,7 @@ void SymbolicTriangleTriangleIntersection<T>::IntersectEdgeTriangle(
 
     const Element firstElement = s0 == 0 ? vertexP : s1 == 0 ? vertexQ : edgePQ;
 
-    static constexpr Element SecondElementLUT[] =
+    constexpr Element SecondElementLUT[] =
     {
         Element::F,   // 000, any 4 points in pqabc are not coplanar
         Element::E01, // 001, pqab are coplanar
@@ -123,7 +146,7 @@ void SymbolicTriangleTriangleIntersection<T>::IntersectCoplanarEdgeTriangle(
     Element edgePQ, Element vertexP, Element vertexQ,
     const Vector &p, const Vector &q,
     const Vector &a, const Vector &b, const Vector &c,
-    PointVector &outPoints)
+    IntermediatePointVector &outPoints)
 {
     Vector observer;
     {
@@ -185,7 +208,7 @@ void SymbolicTriangleTriangleIntersection<T>::IntersectCoplanarEdgeEdge(
     const Vector &p, const Vector &q,
     const Vector &a, const Vector &b,
     const Vector &observer,
-    PointVector &outPoints)
+    IntermediatePointVector &outPoints)
 {
     auto ProjectedOrient2D = [&](const Vector &i, const Vector &j, const Vector &k)
     {
@@ -224,7 +247,7 @@ void SymbolicTriangleTriangleIntersection<T>::IntersectColinearEdgeEdge(
     Element edgeAB, Element vertexA, Element vertexB,
     const Vector &p, const Vector &q,
     const Vector &a, const Vector &b,
-    PointVector &outPoints)
+    IntermediatePointVector &outPoints)
 {
     auto DotSign = [](const Vector &i, const Vector &j, const Vector &k)
     {
@@ -280,10 +303,7 @@ void SymbolicTriangleTriangleIntersection<T>::IntersectColinearEdgeEdge(
 template <typename T>
 Vector2<T> SymbolicTriangleTriangleIntersection<T>::ProjectTo2D(const Vector &p, int axis)
 {
-    Vector2<T> ret;
-    ret.x = p[(axis + 1) % 3];
-    ret.y = p[(axis + 2) % 3];
-    return ret;
+    return { p[(axis + 1) % 3], p[(axis + 2) % 3] };
 }
 
 template <typename T>
