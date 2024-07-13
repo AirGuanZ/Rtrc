@@ -1,8 +1,7 @@
 #pragma once
 
 #include <Rtrc/Core/Container/Span.h>
-#include <Rtrc/Core/Math/Vector4.h>
-#include <Rtrc/Geometry/Expansion.h>
+#include <Rtrc/Geometry/Exact/Vector.h>
 
 RTRC_GEO_BEGIN
 

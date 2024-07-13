@@ -1,5 +1,6 @@
-#include <Rtrc/Geometry/Expansion.h>
-#include <Rtrc/Geometry/Predicates.h>
+#include <Rtrc/Geometry/Exact/Expansion.h>
+#include <Rtrc/Geometry/Exact/Predicates.h>
+#include <Rtrc/Geometry/Exact/Vector.h>
 
 #if _MSC_VER
 #pragma fp_contract(off)

@@ -17,6 +17,9 @@ public:
 
     constexpr Vector3(T x, T y, T z);
 
+    template<typename U> requires !std::is_same_v<T, U>
+    explicit constexpr Vector3(const Vector3<U> &other);
+
     constexpr Vector3(const Vector2<T> &xy, T z);
 
     const T &operator[](size_t i) const;
@@ -144,6 +147,14 @@ constexpr Vector3<T>::Vector3(T value)
 template<typename T>
 constexpr Vector3<T>::Vector3(T x, T y, T z)
     : x(x), y(y), z(z)
+{
+    
+}
+
+template <typename T>
+template <typename U> requires !std::is_same_v<T, U>
+constexpr Vector3<T>::Vector3(const Vector3<U> &other)
+    : x(T(other.x)), y(T(other.y)), z(T(other.z))
 {
     
 }

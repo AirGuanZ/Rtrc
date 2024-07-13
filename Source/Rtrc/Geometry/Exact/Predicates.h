@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/Core/Math/Vector3.h>
+#include <Rtrc/Geometry/Exact/Vector.h>
 
 RTRC_GEO_BEGIN
 

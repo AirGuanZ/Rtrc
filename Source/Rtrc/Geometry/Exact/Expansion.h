@@ -7,7 +7,6 @@
 #include <boost/multiprecision/cpp_bin_float.hpp>
 
 #include <Rtrc/Core/Container/Span.h>
-#include <Rtrc/Core/Math/Vector4.h>
 #include <Rtrc/Core/String.h>
 
 RTRC_GEO_BEGIN
@@ -52,6 +51,8 @@ namespace ExpansionUtility
     consteval size_t StaticStorageMul(size_t a, size_t b) { return StaticStorageFilter(a && b ? (2 * a * b) : 0); }
     consteval bool StaticStorageGreaterEqual(size_t a, size_t b) { return !a ? true : (!b ? false : (a >= b)); }
 
+    // Combine multiprecision numbers with arithmetic expansions to avoid exponent overflow/underflow
+
     using float_24_7 = float;
     using float_53_11 = double;
     using float_100_27 = boost::multiprecision::number<
@@ -63,6 +64,12 @@ namespace ExpansionUtility
         200, boost::multiprecision::backends::digit_base_2,
         void, int64_t, -18014398509481982, 18014398509481983>>;
 
+    using DefaultWord = float_100_27;
+
+    template<typename Word>
+    using PromoteWord = std::conditional_t<
+        (sizeof(Word) > sizeof(DefaultWord)), Word, DefaultWord>;
+
 } // namespace ExpansionUtility
 
 /* StaticStorage == 0 means supporting dynamic storage */
@@ -70,6 +77,8 @@ template<typename Word, size_t StaticStorage>
 class SExpansion : public ExpansionUtility::CapacityMember<StaticStorage == 0>
 {
 public:
+
+    using WordType = Word;
 
     static constexpr bool SupportDynamicStorage = StaticStorage == 0;
     
@@ -95,6 +104,8 @@ public:
     uint32_t GetCapacity() const;
     Span<Word> GetItems() const;
     Word ToWord() const;
+    float ToFloat() const;
+    double ToDouble() const;
 
     int GetSign() const;
 
@@ -146,31 +157,13 @@ private:
 };
 
 template<typename Word>
-SExpansion(Word)->SExpansion<Word, 1>;
+SExpansion(Word) -> SExpansion<ExpansionUtility::PromoteWord<Word>, 1>;
 
-using Expansion  = SExpansion<ExpansionUtility::float_100_27, 0>;
-using Expansion2 = Vector2<Expansion>;
-using Expansion3 = Vector3<Expansion>;
-using Expansion4 = Vector4<Expansion>;
+using Expansion  = SExpansion<ExpansionUtility::DefaultWord, 0>;
 
-inline Expansion ToExpansion(double v)
+inline Expansion ToDynamicExpansion(double v)
 {
     return Expansion(v);
-}
-
-inline Expansion2 ToExpansion(const Vector2d& v)
-{
-    return { Expansion(v.x), Expansion(v.y) };
-}
-
-inline Expansion3 ToExpansion(const Vector3d &v)
-{
-    return { Expansion(v.x), Expansion(v.y), Expansion(v.z) };
-}
-
-inline Expansion4 ToExpansion(const Vector4d &v)
-{
-    return { Expansion(v.x), Expansion(v.y), Expansion(v.z), Expansion(v.w) };
 }
 
 template<typename Word, size_t SL, size_t SR>
@@ -351,7 +344,19 @@ Span<Word> SExpansion<Word, StaticStorage>::GetItems() const
 template <typename Word, size_t StaticStorage>
 Word SExpansion<Word, StaticStorage>::ToWord() const
 {
-    return *std::ranges::fold_left_first(GetItems(), std::plus<>{});
+    return *std::ranges::fold_right_last(GetItems(), std::plus<>{});
+}
+
+template <typename Word, size_t StaticStorage>
+float SExpansion<Word, StaticStorage>::ToFloat() const
+{
+    return static_cast<float>(ToWord());
+}
+
+template <typename Word, size_t StaticStorage>
+double SExpansion<Word, StaticStorage>::ToDouble() const
+{
+    return static_cast<double>(ToWord());
 }
 
 template <typename Word, size_t StaticStorage>
@@ -373,7 +378,7 @@ void SExpansion<Word, StaticStorage>::Reserve(uint32_t capacity)
         }
 
         void *newPointer = std::malloc(sizeof(Word) * capacity);
-        if(newPointer)
+        if(!newPointer)
         {
             throw std::bad_alloc();
         }

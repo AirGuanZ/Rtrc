@@ -1,34 +1,15 @@
 #include <random>
 
 #include <Rtrc/Geometry/ConstrainedTriangulation.h>
-#include <Rtrc/Geometry/Expansion.h>
+#include <Rtrc/Geometry/Exact/Expansion.h>
+#include <Rtrc/Geometry/Exact/Intersection.h>
+#include <Rtrc/Geometry/Exact/Predicates.h>
 #include <Rtrc/Geometry/HalfedgeMesh.h>
-#include <Rtrc/Geometry/Predicates.h>
 
 RTRC_GEO_BEGIN
 
 namespace CDTDetail
 {
-
-    Expansion3 HomoAdd(const Expansion3 &a, const Expansion3 &b)
-    {
-        return
-        {
-            a.x * b.z + b.x * a.z,
-            a.y * b.z + b.y * a.z,
-            a.z * b.z
-        };
-    }
-
-    Expansion3 HomoSub(const Expansion3 &a, const Expansion3 &b)
-    {
-        return
-        {
-            a.x * b.z - b.x * a.z,
-            a.y * b.z - b.y * a.z,
-            a.z * b.z
-        };
-    }
 
     // See 'Walking in a Triangulation'
     //     separate(T, E):
@@ -102,20 +83,6 @@ namespace CDTDetail
             return 0;
         }
         return sa == 0 ? 1 : (sb == 0 ? 2 : 3);
-    }
-
-    // Compute intersection between homogeneous segments ab and cd.
-    // The intersection must exist uniquely, and is not at a, b, c, or d.
-    Expansion3 ComputeIntersectionHomogeneous(
-        const Expansion3 &a, const Expansion3 &b, const Expansion3 &c, const Expansion3 &d)
-    {
-        const Expansion3 A = HomoSub(b, a);
-        const Expansion3 B = HomoSub(c, d);
-        const Expansion3 C = HomoSub(c, a);
-        const Expansion2 det = Expansion2(A.x * B.y - B.x * A.y, A.z * B.z);
-        const Expansion2 det1 = Expansion2(C.x * B.y - B.x * C.y, C.z * B.z);
-        const Expansion2 t = Expansion2(det1.x * det.y, det1.y * det.x);
-        return HomoAdd(a, Expansion3(A.x * t.x, A.y * t.x, A.z * t.y));
     }
 
     // Intersect segment ot with triangle abc.
@@ -226,7 +193,7 @@ CDT2D CDT2D::Create(Span<Expansion3> points, Span<Vector2i> constraints, bool de
 
     // Build super triangle
 
-    Vector2d lower(DBL_MAX), upper(DBL_MIN);
+    Vector2d lower(DBL_MAX), upper(-DBL_MAX);
     for(const Expansion3 &point : points)
     {
         const double px = static_cast<double>(point.x.ToWord() / point.z.ToWord());
@@ -245,9 +212,9 @@ CDT2D CDT2D::Create(Span<Expansion3> points, Span<Vector2i> constraints, bool de
 
     std::vector<Expansion3> vertices =
     {
-        ToExpansion(Vector3d(superTriangleA, 1.0)),
-        ToExpansion(Vector3d(superTriangleB, 1.0)),
-        ToExpansion(Vector3d(superTriangleC, 1.0))
+        ToDynamicExpansion(Vector3d(superTriangleA, 1.0)),
+        ToDynamicExpansion(Vector3d(superTriangleB, 1.0)),
+        ToDynamicExpansion(Vector3d(superTriangleC, 1.0))
     };
     std::vector<int> meshVertexToPointIndex = { -1, -1, -1 };
     HalfedgeMesh connectivity = HalfedgeMesh::Build({ 0, 1, 2 });
@@ -412,8 +379,7 @@ CDT2D CDT2D::Create(Span<Expansion3> points, Span<Vector2i> constraints, bool de
             assert(connectivity.Head(h) == va || connectivity.Head(h) == vb);
             assert(connectivity.Tail(h) == va || connectivity.Tail(h) == vb);
 
-            const Expansion3 inct = ComputeIntersectionHomogeneous(
-                vertices[vo], vertices[vt], vertices[va], vertices[vb]);
+            const Expansion3 inct = IntersectLine2D(vertices[vo], vertices[vt], vertices[va], vertices[vb]);
 
             const int vInct = connectivity.V();
             vertices.push_back(inct);

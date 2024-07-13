@@ -3,7 +3,6 @@
 #include <bvh/locally_ordered_clustering_builder.hpp>
 
 #include <Rtrc/Core/Math/AABB.h>
-#include <Rtrc/Core/Math/Intersection.h>
 #include <Rtrc/Geometry/TriangleBVH.h>
 
 RTRC_GEO_BEGIN

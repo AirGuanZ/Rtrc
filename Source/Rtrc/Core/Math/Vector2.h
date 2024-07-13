@@ -16,6 +16,9 @@ public:
 
     explicit constexpr Vector2(T value);
 
+    template<typename U> requires !std::is_same_v<T, U>
+    explicit constexpr Vector2(const Vector2<U> &other);
+
     constexpr Vector2(T x, T y);
 
     constexpr const T &operator[](size_t i) const;
@@ -128,6 +131,14 @@ constexpr Vector2<T>::Vector2()
 template<typename T>
 constexpr Vector2<T>::Vector2(T value)
     : Vector2(value, value)
+{
+    
+}
+
+template <typename T>
+template <typename U> requires !std::is_same_v<T, U>
+constexpr Vector2<T>::Vector2(const Vector2<U> &other)
+    : x(T(other.x), T(other.y))
 {
     
 }

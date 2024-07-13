@@ -171,6 +171,9 @@ private:
     std::map<std::string, int, std::less<>> nameToAttributeIndex_;
 };
 
+template<std::floating_point T>
+void WriteOFFFile(const std::string &filename, Span<Vector3<T>> positions, Span<uint32_t> indices);
+
 inline RawMeshAttributeData::Type RawMeshAttributeData::GetType() const
 {
     return type_;

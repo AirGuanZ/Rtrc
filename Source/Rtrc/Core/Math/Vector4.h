@@ -17,6 +17,9 @@ public:
 
     constexpr Vector4(T x, T y, T z, T w);
 
+    template<typename U> requires !std::is_same_v<T, U>
+    explicit constexpr Vector4(const Vector4<U> &other);
+
     constexpr Vector4(const Vector3<T> &xyz, T w);
 
     const T &operator[](size_t i) const;
@@ -95,7 +98,7 @@ struct ArchiveTransferTrait<Vector4<T>>
 
 template <typename T>
 constexpr Vector4<T>::Vector4()
-    : Vector4(0, 0, 0, 0)
+    : Vector4(T(0), T(0), T(0), T(0))
 {
     
 }
@@ -112,6 +115,14 @@ constexpr Vector4<T>::Vector4(T x, T y, T z, T w)
     : x(x), y(y), z(z), w(w)
 {
 
+}
+
+template <typename T>
+template <typename U> requires !std::is_same_v<T, U>
+constexpr Vector4<T>::Vector4(const Vector4<U> &other)
+    : x(T(other.x)), y(T(other.y)), z(T(other.z)), w(T(other.w))
+{
+    
 }
 
 template<typename T>

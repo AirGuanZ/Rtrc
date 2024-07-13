@@ -4,7 +4,7 @@
 #include <ryu/ryu.h>
 
 #include <Rtrc/Core/String.h>
-#include <Rtrc/Geometry/Expansion.h>
+#include <Rtrc/Geometry/Exact/Expansion.h>
 
 #if _MSC_VER
 #pragma fp_contract(off)

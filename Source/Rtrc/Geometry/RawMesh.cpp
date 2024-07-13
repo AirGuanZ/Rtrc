@@ -1,3 +1,5 @@
+#include <fstream>
+
 #include <tiny_obj_loader.h>
 
 #include <Rtrc/Core/String.h>
@@ -359,5 +361,49 @@ RawMesh RawMesh::LoadWavefrontObj(const std::string& filename)
 
     return mesh;
 }
+
+template<std::floating_point T>
+void WriteOFFFile(const std::string &filename, Span<Vector3<T>> positions, Span<uint32_t> indices)
+{
+    std::ofstream fout(filename, std::ofstream::trunc);
+    if(!fout)
+    {
+        throw Exception("WriteOFFFile: fail to open " + filename);
+    }
+
+    fout << "OFF\n";
+
+    if(indices.IsEmpty())
+    {
+        fout << positions.size() << " " << (positions.size() / 3) << " 0\n";
+    }
+    else
+    {
+        fout << positions.size() << " " << (indices.size() / 3) << " 0\n";
+    }
+
+    for(auto &p : positions)
+    {
+        fout << p.x << " " << p.y << " " << p.z << "\n";
+    }
+
+    if(indices.IsEmpty())
+    {
+        for(uint32_t i = 0; i < positions.size(); i += 3)
+        {
+            fout << "3 " << i << " " << (i + 1) << " " << (i + 2) << "\n";
+        }
+    }
+    else
+    {
+        for(uint32_t i = 0; i < indices.size(); i += 3)
+        {
+            fout << "3 " << indices[i] << " " << indices[i + 1] << " " << indices[i + 2] << "\n";
+        }
+    }
+}
+
+template void WriteOFFFile(const std::string &, Span<Vector3<float>>, Span<uint32_t>);
+template void WriteOFFFile(const std::string &, Span<Vector3<double>>, Span<uint32_t>);
 
 RTRC_GEO_END

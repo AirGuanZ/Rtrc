@@ -1,6 +1,7 @@
 #include <Rtrc/Core/Unreachable.h>
-#include <Rtrc/Geometry/Expansion.h>
-#include <Rtrc/Geometry/Predicates.h>
+#include <Rtrc/Geometry/Exact/Expansion.h>
+#include <Rtrc/Geometry/Exact/Intersection.h>
+#include <Rtrc/Geometry/Exact/Predicates.h>
 #include <Rtrc/Geometry/TriangleTriangleIntersection.h>
 
 RTRC_GEO_BEGIN
@@ -151,7 +152,7 @@ void SymbolicTriangleTriangleIntersection<T>::IntersectCoplanarEdgeTriangle(
     Vector observer;
     {
         // Construct an observer point which is not coplanar with other points
-        const int offsetAxis = FindNormalAxis(a, b, c);
+        const int offsetAxis = FindMaximalNormalAxis(a, b, c);
         observer = p;
         observer[offsetAxis] = (std::max)(T(2.0) * p[offsetAxis] + T(1.0), T(10));
     }
@@ -304,43 +305,6 @@ template <typename T>
 Vector2<T> SymbolicTriangleTriangleIntersection<T>::ProjectTo2D(const Vector &p, int axis)
 {
     return { p[(axis + 1) % 3], p[(axis + 2) % 3] };
-}
-
-template <typename T>
-int SymbolicTriangleTriangleIntersection<T>::FindNormalAxis(const Vector &af, const Vector &bf, const Vector &cf)
-{
-    using E = SExpansion;
-
-    const E ax = E(af.x);
-    const E ay = E(af.y);
-    const E az = E(af.z);
-
-    const E ux = E(bf.x) - ax;
-    const E uy = E(bf.y) - ay;
-    const E uz = E(bf.z) - az;
-    const E vx = E(cf.x) - ax;
-    const E vy = E(cf.y) - ay;
-    const E vz = E(cf.z) - az;
-
-    E nx = uy * vz - uz * vy;
-    E ny = uz * vx - ux * vz;
-    E nz = ux * vy - uy * vx;
-    if(nx.GetSign() < 0) { nx.SetNegative(); }
-    if(ny.GetSign() < 0) { ny.SetNegative(); }
-    if(nz.GetSign() < 0) { nz.SetNegative(); }
-
-    const decltype(nx) *best = &nx;
-    int result = 0;
-    if(ny > *best)
-    {
-        best = &ny;
-        result = 1;
-    }
-    if(nz > *best)
-    {
-        result = 2;
-    }
-    return result;
 }
 
 template <typename T>

@@ -98,8 +98,6 @@ private:
 
     static Vector2<T> ProjectTo2D(const Vector &p, int axis);
 
-    static int FindNormalAxis(const Vector &a, const Vector &b, const Vector &c);
-
     static bool IsOnInputEdge(const Point &a, const Point &b);
 
     static bool IsOnInputEdge(Element a, Element b);

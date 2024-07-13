@@ -1,6 +1,7 @@
 #include <catch2/catch_all.hpp>
 
-#include <Rtrc/Geometry/Expansion.h>
+#include <Rtrc/Geometry/Exact/Expansion.h>
+#include <Rtrc/Geometry/Exact/Vector.h>
 
 using namespace Rtrc;
 using namespace Geo;
@@ -83,4 +84,44 @@ TEST_CASE("Expansion")
         b.Compress();
         REQUIRE(a == b);
     }
+}
+
+TEST_CASE("CompareHomo")
+{
+    struct CompareHomogeneousPoint
+    {
+        bool operator()(const Expansion3 &a, const Expansion3 &b) const
+        {
+            if(const int c0 = (a.x * b.z).Compare(a.z * b.x); c0 != 0)
+            {
+                return c0 < 0;
+            }
+            return a.y * b.z < a.z * b.y;
+        }
+
+        bool operator()(const Expansion4 &a, const Expansion4 &b) const
+        {
+            if(const int c0 = (a.x * b.w).Compare(a.w * b.x); c0 != 0)
+            {
+                return c0 < 0;
+            }
+            if(const int c1 = (a.y * b.w).Compare(a.w * b.y); c1 != 0)
+            {
+                return c1 < 0;
+            }
+            return a.z * b.w < a.w * b.z;
+        }
+    };
+
+    auto E3 = [](double x, double y, double z)
+    {
+        return Expansion3(Vector3d(x, y, z));
+    };
+    auto E4 = [](double x, double y, double z, double w)
+    {
+        return Expansion4(Vector4d(x, y, z, w));
+    };
+
+    REQUIRE_FALSE(CompareHomogeneousPoint{}(E4(0, 0, 0,-1), E4(0, 0, 0, 1)));
+    REQUIRE_FALSE(CompareHomogeneousPoint{}(E4(0, 0, 0, 1), E4(0, 0, 0, -1)));
 }
