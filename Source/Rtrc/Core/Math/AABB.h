@@ -171,9 +171,9 @@ AABB2<T> &AABB2<T>::operator|=(const Vector2<T> &rhs)
 template <typename T>
 bool AABB2<T>::Intersect(const AABB2 &other) const
 {
-    const Vector2<T> lower = Max(lower, other.lower);
-    const Vector2<T> upper = Min(lower, other.upper);
-    return lower.x <= upper.x && lower.y <= upper.y;
+    const Vector2<T> commonLower = Max(lower, other.lower);
+    const Vector2<T> commonUpper = Min(upper, other.upper);
+    return commonLower.x <= commonUpper.x && commonLower.y <= commonUpper.y;
 }
 
 template<typename T>
@@ -268,9 +268,9 @@ AABB3<T> &AABB3<T>::operator|=(const Vector3<T> &rhs)
 template <typename T>
 bool AABB3<T>::Intersect(const AABB3 &other) const
 {
-    const Vector3<T> lower = Max(lower, other.lower);
-    const Vector3<T> upper = Min(lower, other.upper);
-    return lower.x <= upper.x && lower.y <= upper.y && lower.z <= upper.z;
+    const Vector3<T> commonLower = Max(lower, other.lower);
+    const Vector3<T> commonUpper = Min(upper, other.upper);
+    return commonLower.x <= commonUpper.x && commonLower.y <= commonUpper.y && commonLower.z <= commonUpper.z;
 }
 
 template<typename T>
