@@ -13,6 +13,8 @@
 #include <Rtrc/Geometry/MeshCorefinement.h>
 #include <Rtrc/Geometry/TriangleTriangleIntersection.h>
 
+#define RTRC_MESH_COREFINEMENT_PARALLEL_FOR Rtrc::ParallelFor
+
 RTRC_GEO_BEGIN
 
 namespace CorefineDetail
@@ -240,7 +242,7 @@ namespace CorefineDetail
         assert(triangleCount == triangleToPairwiseIntersections.size());
         assert(triangleCount == triangleToOutput.size());
 
-        ParallelForDebug<uint32_t>(0, triangleCount, [&](uint32_t triangleA)
+        RTRC_MESH_COREFINEMENT_PARALLEL_FOR<uint32_t>(0, triangleCount, [&](uint32_t triangleA)
         {
             if(degenerateTriangleFlags[triangleA])
             {
@@ -414,7 +416,7 @@ void Corefine(
     // Filter degenerate triangles
 
     std::vector<uint8_t> degenerateTriangleFlagA(triangleCountA);
-    ParallelForDebug<uint32_t>(0, triangleCountA, [&](uint32_t a)
+    RTRC_MESH_COREFINEMENT_PARALLEL_FOR<uint32_t>(0, triangleCountA, [&](uint32_t a)
     {
         const Vector3d &p0 = inputPositionsA[3 * a + 0];
         const Vector3d &p1 = inputPositionsA[3 * a + 1];
@@ -426,7 +428,7 @@ void Corefine(
     });
 
     std::vector<uint8_t> degenerateTriangleFlagB(triangleCountB);
-    ParallelForDebug<uint32_t>(0, triangleCountB, [&](uint32_t b)
+    RTRC_MESH_COREFINEMENT_PARALLEL_FOR<uint32_t>(0, triangleCountB, [&](uint32_t b)
     {
         const Vector3d &p0 = inputPositionsB[3 * b + 0];
         const Vector3d &p1 = inputPositionsB[3 * b + 1];
@@ -466,7 +468,7 @@ void Corefine(
 
     const BVH bvhB = BVH(inputPositionsB);
 
-    ParallelForDebug<uint32_t>(0, triangleCountA, [&](uint32_t triangleA)
+    RTRC_MESH_COREFINEMENT_PARALLEL_FOR<uint32_t>(0, triangleCountA, [&](uint32_t triangleA)
     {
         AABB3d triangleBoundingBox;
         triangleBoundingBox |= inputPositionsA[3 * triangleA + 0];
@@ -486,7 +488,7 @@ void Corefine(
 
     // Resolve symbolic intersections
 
-    ParallelForDebug<uint32_t>(0, triangleCountA, [&](uint32_t triangleA)
+    RTRC_MESH_COREFINEMENT_PARALLEL_FOR<uint32_t>(0, triangleCountA, [&](uint32_t triangleA)
     {
         auto& symbolicIntersections = triangleAToPairwiseIntersections[triangleA];
         if(symbolicIntersections.empty())
