@@ -46,6 +46,7 @@ RTRC_APPLICATION_MAIN(
 | 13.HorizonMap<br>Basic horizon shadow described in paper<br>'Interactive Horizon Mapping' | ![](./Documents/Samples_13.png) |
 | 14.HalfedgeMesh<br>Halfedge data structure for triangle mesh | ![](./Documents/Samples_14.png) |
 | 15.HeatMethod<br>Heat method for geodesic distance computation | ![](./Documents/Samples_15.png) |
+| 16.MeshCorefinement<br>Embed all intersection lines between meshes | ![](./Documents/Samples_16.png) |
 | WIP | ... |
 
 ## Third-party Dependencies
