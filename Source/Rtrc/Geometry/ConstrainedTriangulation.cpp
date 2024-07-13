@@ -138,7 +138,8 @@ namespace CDTDetail
         Span<Expansion3>         vertices,
         Span<int>                edgeToSourceConstraint,
         HalfedgeMesh            &connectivity,
-        std::stack<int>         &activeEdges)
+        std::stack<int>         &activeEdges,
+        std::map<Vector4i, int> &cocircleCache)
     {
         assert(connectivity.IsCompacted());
         while(!activeEdges.empty())
@@ -161,9 +162,52 @@ namespace CDTDetail
             const int v1 = connectivity.Tail(ha0);
             const int v2 = connectivity.Vert(connectivity.Prev(ha0));
             const int v3 = connectivity.Vert(connectivity.Prev(hb0));
-            if(InCircle2DHomogeneous(vertices[v0], vertices[v1], vertices[v2], vertices[v3]) >= 0)
+
+            const int inCircleSign = InCircle2DHomogeneous(vertices[v0], vertices[v1], vertices[v2], vertices[v3]);
+            if(inCircleSign > 0)
             {
                 continue;
+            }
+            if(inCircleSign == 0)
+            {
+                // Corner case: 4 co-circular points always satisfy the delaunay conditions. To make the triangulation
+                // determinstic, we always connect the lexically smallest point.
+                // The result is cached in cocircleCache to accelerate later computations.
+
+                Vector4i key = { v0, v1, v2, v3 };
+                std::sort(&key.x, &key.x + 4);
+
+                int connectedPoint;
+                if(auto it = cocircleCache.find(key); it != cocircleCache.end())
+                {
+                    connectedPoint = it->second;
+                }
+                else
+                {
+                    int minPointIndex = v0; const Expansion3 *minPoint = &vertices[v0];
+                    if(CompareHomogeneousPoint{}(vertices[v1], *minPoint))
+                    {
+                        minPointIndex = v1;
+                        minPoint = &vertices[v1];
+                    }
+                    if(CompareHomogeneousPoint{}(vertices[v2], *minPoint))
+                    {
+                        minPointIndex = v2;
+                        minPoint = &vertices[v2];
+                    }
+                    // Compare v3 only when the connected point is v0 or v1, as connecting to v2 is equivalent to v3.
+                    if(minPointIndex != v2 && CompareHomogeneousPoint{}(vertices[v3], *minPoint))
+                    {
+                        minPointIndex = v3;
+                    }
+                    connectedPoint = minPointIndex;
+                    cocircleCache.insert({ key, connectedPoint });
+                }
+
+                if(connectedPoint == v0 || connectedPoint == v1)
+                {
+                    continue;
+                }
             }
 
             const int e1 = connectivity.Edge(connectivity.Succ(ha0));
@@ -270,6 +314,7 @@ CDT2D CDT2D::Create(Span<Expansion3> points, Span<Vector2i> constraints, bool de
     }
 
     std::vector<int> edgeToSourceConstraint(connectivity.E(), -1);
+    std::map<Vector4i, int> cocircleCache;
 
     // Initialize delaunay conditions
 
@@ -280,7 +325,7 @@ CDT2D CDT2D::Create(Span<Expansion3> points, Span<Vector2i> constraints, bool de
         {
             activeEdges.push(e);
         }
-        EnsureDelaunayConditions(vertices, edgeToSourceConstraint, connectivity, activeEdges);
+        EnsureDelaunayConditions(vertices, edgeToSourceConstraint, connectivity, activeEdges, cocircleCache);
     }
 
     // Insert constraints
@@ -367,7 +412,7 @@ CDT2D CDT2D::Create(Span<Expansion3> points, Span<Vector2i> constraints, bool de
 
             if(delaunay)
             {
-                EnsureDelaunayConditions(vertices, edgeToSourceConstraint, connectivity, newEdges);
+                EnsureDelaunayConditions(vertices, edgeToSourceConstraint, connectivity, newEdges, cocircleCache);
             }
         };
 
@@ -399,7 +444,7 @@ CDT2D CDT2D::Create(Span<Expansion3> points, Span<Vector2i> constraints, bool de
                 {
                     activeEdges.push(connectivity.Edge(vh));
                 });
-                EnsureDelaunayConditions(vertices, edgeToSourceConstraint, connectivity, activeEdges);
+                EnsureDelaunayConditions(vertices, edgeToSourceConstraint, connectivity, activeEdges, cocircleCache);
 
                 // EnsureDelaunayConditions may compromise the validity of `intersectedEdges`.
                 // Therefore discard the invalid edges and restart the tracing process from the vertex 'vo'.
