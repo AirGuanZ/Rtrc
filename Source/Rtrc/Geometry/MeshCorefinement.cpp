@@ -9,6 +9,7 @@
 #include <Rtrc/Core/Unreachable.h>
 #include <Rtrc/Geometry/ConstrainedTriangulation.h>
 #include <Rtrc/Geometry/Exact/Intersection.h>
+#include <Rtrc/Geometry/Exact/Predicates.h>
 #include <Rtrc/Geometry/MeshCorefinement.h>
 #include <Rtrc/Geometry/TriangleTriangleIntersection.h>
 
@@ -345,6 +346,26 @@ namespace CorefineDetail
             CDT2D cdt = CDT2D::Create(inputPoints2D, inputConstraints, true);
             output.points = std::move(inputPoints);
             output.triangles = std::move(cdt.triangles);
+
+            auto Get2DPoint = [&](uint32_t v) -> const Expansion3 &
+            {
+                if(v < inputPoints2D.size())
+                {
+                    return inputPoints2D[v];
+                }
+                return cdt.newIntersections[v - inputPoints2D.size()].position;
+            };
+            const int orientBefore = Orient2DHomogeneous(inputPoints2D[0], inputPoints2D[1], inputPoints2D[2]);
+            const int orientAfter = Orient2DHomogeneous(Get2DPoint(output.triangles[0][0]),
+                                                        Get2DPoint(output.triangles[0][1]),
+                                                        Get2DPoint(output.triangles[0][2]));
+            if(orientBefore != orientAfter)
+            {
+                for(Vector3i& triangle : output.triangles)
+                {
+                    std::swap(triangle[0], triangle[2]);
+                }
+            }
 
             // Resolve new intersections encountered in triangulation
 
