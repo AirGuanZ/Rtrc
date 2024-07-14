@@ -637,6 +637,8 @@ void MeshCorefinement::Corefine(
     outputIndicesB.clear();
     outputFaceMapA.clear();
     outputFaceMapB.clear();
+    outputCutEdgesA.clear();
+    outputCutEdgesB.clear();
 
     // Filter degenerate triangles
 
@@ -716,7 +718,8 @@ void MeshCorefinement::Corefine(
             {
                 const SI::Element elemA = inct.GetElement0();
                 const SI::Element elemB = inct.GetElement1();
-                intersectionInfo.points.push_back(EvaluateSymbolicIntersection(p0, p1, p2, q0, q1, q2, elemA, elemB));
+                intersectionInfo.points.push_back(
+                    EvaluateSymbolicIntersection(p0, p1, p2, q0, q1, q2, elemA, elemB));
             }
         }
     });

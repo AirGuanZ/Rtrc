@@ -28,8 +28,8 @@ public:
     bool trackCutEdges = false;
 
     // Store output positions in exact homogeneous coordinates, avoiding rounding to double precision.
-    // When set to true, the output excludes any degenerate triangles, except for those inherited directly from the input.
-    // If not enabled, despite exact corefinement, snap rounding may lead to the degenerate triangles or new, unresolved intersections.
+    // When set to true, the output has no degenerate triangle except those inherited directly from the input.
+    // Otherwise, despite exact corefinement, snap rounding may lead to the degenerate triangles or new unresolved intersections.
     bool preserveExactPositions = false;
 
     // Output connectivity
