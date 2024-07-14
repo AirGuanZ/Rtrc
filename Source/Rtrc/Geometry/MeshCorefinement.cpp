@@ -1,4 +1,5 @@
 #include <map>
+#include <set>
 
 #include <bvh/bvh.hpp>
 #include <bvh/leaf_collapser.hpp>
@@ -230,10 +231,12 @@ namespace CorefineDetail
     {
         std::vector<Expansion4> points;
         std::vector<Vector3i> triangles;
+        std::vector<Vector2i> cutEdges;
     };
 
     void RefineTriangles(
         const IndexedPositions                     &inputPositions,
+        bool                                        collectCutEdges,
         Span<uint8_t>                               degenerateTriangleFlags,
         Span<std::vector<TrianglePairIntersection>> triangleToPairwiseIntersections,
         MutSpan<PerTriangleOutput>                  triangleToOutput)
@@ -286,19 +289,19 @@ namespace CorefineDetail
                 return result;
             };
 
-            std::vector<Vector2i> inputConstraints;
+            std::vector<CDT2D::Constraint> inputConstraints;
 
             // Add triangle vertices as input points and triangle edges as input constraints
             {
                 const int i0 = AddInputPoint(Expansion4(Vector4d(p0, 1)));
                 const int i1 = AddInputPoint(Expansion4(Vector4d(p1, 1)));
                 const int i2 = AddInputPoint(Expansion4(Vector4d(p2, 1)));
-                inputConstraints.emplace_back(i0, i1);
-                inputConstraints.emplace_back(i1, i2);
-                inputConstraints.emplace_back(i2, i0);
+                inputConstraints.emplace_back(i0, i1, 0u);
+                inputConstraints.emplace_back(i1, i2, 0u);
+                inputConstraints.emplace_back(i2, i0, 0u);
             }
 
-            // Add ponits and constraints from triangle intersections
+            // Add points and constraints from triangle intersections
             for(const TrianglePairIntersection &intersectionInfo : symbolicIntersections)
             {
                 auto &evalulatedPoints = intersectionInfo.points;
@@ -319,7 +322,7 @@ namespace CorefineDetail
                     assert(evalulatedPoints.size() == 2);
                     const int i0 = AddInputPoint(evalulatedPoints[0]);
                     const int i1 = AddInputPoint(evalulatedPoints[1]);
-                    inputConstraints.emplace_back(i0, i1);
+                    inputConstraints.emplace_back(i0, i1, 1u);
                     break;
                 }
                 case SI::Type::Polygon:
@@ -331,7 +334,7 @@ namespace CorefineDetail
                     }
                     for(uint32_t i = 0; i < is.size(); ++i)
                     {
-                        inputConstraints.emplace_back(is[i], is[(i + 1) % is.size()]);
+                        inputConstraints.emplace_back(is[i], is[(i + 1) % is.size()], 1u);
                     }
                     break;
                 }
@@ -350,9 +353,24 @@ namespace CorefineDetail
 
             // Perform constrained triangulation
 
-            CDT2D cdt = CDT2D::Create(inputPoints2D, inputConstraints, true);
+            CDT2D cdt;
+            cdt.delaunay = true;
+            cdt.trackConstraintMask = collectCutEdges;
+            cdt.Triangulate(inputPoints2D, inputConstraints);
+
             output.points = std::move(inputPoints);
             output.triangles = std::move(cdt.triangles);
+
+            if(collectCutEdges)
+            {
+                for(auto &pair : cdt.edgeToConstraintMask)
+                {
+                    if(pair.second > 0)
+                    {
+                        output.cutEdges.emplace_back(pair.first.first, pair.first.second);
+                    }
+                }
+            }
 
             auto Get2DPoint = [&](uint32_t v) -> const Expansion3 &
             {
@@ -378,8 +396,8 @@ namespace CorefineDetail
 
             for(const CDT2D::ConstraintIntersection &cinct : cdt.newIntersections)
             {
-                const auto [a, b] = inputConstraints[cinct.constraint0];
-                const auto [c, d] = inputConstraints[cinct.constraint1];
+                const auto [a, b, mask0] = inputConstraints[cinct.constraint0];
+                const auto [c, d, mask1] = inputConstraints[cinct.constraint1];
                 output.points.push_back(IntersectLine3D(
                     output.points[a], output.points[b], output.points[c], output.points[d], projectAxis));
             }
@@ -422,7 +440,8 @@ namespace CorefineDetail
         const IndexedPositions &inputPositions,
         std::vector<Vector3d>  &outputPositions,
         std::vector<uint32_t>  &outputIndices,
-        std::vector<uint32_t>  *outputFaceToInputFace)
+        std::vector<uint32_t>  *outputFaceToInputFace,
+        std::vector<Vector2u>  *outputCutEdges)
     {
         std::map<Vector3d, uint32_t> positionToIndex;
         auto GetIndex = [&](const Vector3d &position)
@@ -437,9 +456,16 @@ namespace CorefineDetail
             return newIndex;
         };
 
+        std::vector<uint32_t> localIndexToGlobalIndex;
         for(uint32_t triangleIndex = 0; triangleIndex < triangleToOutput.size(); ++triangleIndex)
         {
             const PerTriangleOutput &newTriangles = triangleToOutput[triangleIndex];
+
+            if(outputCutEdges)
+            {
+                localIndexToGlobalIndex.clear();
+                localIndexToGlobalIndex.resize(newTriangles.points.size(), UINT32_MAX);
+            }
 
             std::vector<Vector3d> roundedPoints;
             for(uint32_t i = 0; i < 3; ++i) // Copy the first three points directly from the input.
@@ -458,15 +484,47 @@ namespace CorefineDetail
 
             for(const Vector3i &triangle : newTriangles.triangles)
             {
-                const Vector3d &p0 = roundedPoints[triangle[0]];
-                const Vector3d &p1 = roundedPoints[triangle[1]];
-                const Vector3d &p2 = roundedPoints[triangle[2]];
-                outputIndices.push_back(GetIndex(p0));
-                outputIndices.push_back(GetIndex(p1));
-                outputIndices.push_back(GetIndex(p2));
+                const int localIndex0 = triangle[0];
+                const int localIndex1 = triangle[1];
+                const int localIndex2 = triangle[2];
+
+                const Vector3d &p0 = roundedPoints[localIndex0];
+                const Vector3d &p1 = roundedPoints[localIndex1];
+                const Vector3d &p2 = roundedPoints[localIndex2];
+
+                const uint32_t globalIndex0 = GetIndex(p0);
+                const uint32_t globalIndex1 = GetIndex(p1);
+                const uint32_t globalIndex2 = GetIndex(p2);
+
+                if(outputCutEdges)
+                {
+                    localIndexToGlobalIndex[localIndex0] = globalIndex0;
+                    localIndexToGlobalIndex[localIndex1] = globalIndex1;
+                    localIndexToGlobalIndex[localIndex2] = globalIndex2;
+                }
+
+                outputIndices.push_back(globalIndex0);
+                outputIndices.push_back(globalIndex1);
+                outputIndices.push_back(globalIndex2);
+
                 if(outputFaceToInputFace)
                 {
                     outputFaceToInputFace->push_back(triangleIndex);
+                }
+            }
+
+            if(outputCutEdges)
+            {
+                for(auto &edge : newTriangles.cutEdges)
+                {
+                    uint32_t v0 = localIndexToGlobalIndex[edge.x];
+                    uint32_t v1 = localIndexToGlobalIndex[edge.y];
+                    assert(v0 != UINT32_MAX && v1 != UINT32_MAX);
+                    if(v0 > v1)
+                    {
+                        std::swap(v0, v1);
+                    }
+                    outputCutEdges->push_back({ v0, v1 });
                 }
             }
         }
@@ -476,7 +534,8 @@ namespace CorefineDetail
         Span<PerTriangleOutput>  triangleToOutput,
         std::vector<Expansion4> &outputPositions,
         std::vector<uint32_t>   &outputIndices,
-        std::vector<uint32_t>   *outputFaceToInputFace)
+        std::vector<uint32_t>   *outputFaceToInputFace,
+        std::vector<Vector2u>   *outputCutEdges)
     {
         std::map<Expansion4, uint32_t, CompareHomogeneousPoint> positionToIndex;
         auto GetIndex = [&](const Expansion4 &position)
@@ -491,20 +550,60 @@ namespace CorefineDetail
             return newIndex;
         };
 
+        std::vector<uint32_t> localIndexToGlobalIndex;
         for(uint32_t triangleIndex = 0; triangleIndex < triangleToOutput.size(); ++triangleIndex)
         {
             const PerTriangleOutput &newTriangles = triangleToOutput[triangleIndex];
+
+            if(outputCutEdges)
+            {
+                localIndexToGlobalIndex.clear();
+                localIndexToGlobalIndex.resize(newTriangles.points.size(), UINT32_MAX);
+            }
+
             for(const Vector3i &triangle : newTriangles.triangles)
             {
-                const Expansion4 &p0 = newTriangles.points[triangle[0]];
-                const Expansion4 &p1 = newTriangles.points[triangle[1]];
-                const Expansion4 &p2 = newTriangles.points[triangle[2]];
-                outputIndices.push_back(GetIndex(p0));
-                outputIndices.push_back(GetIndex(p1));
-                outputIndices.push_back(GetIndex(p2));
+                const int localIndex0 = triangle[0];
+                const int localIndex1 = triangle[1];
+                const int localIndex2 = triangle[2];
+
+                const Expansion4 &p0 = newTriangles.points[localIndex0];
+                const Expansion4 &p1 = newTriangles.points[localIndex1];
+                const Expansion4 &p2 = newTriangles.points[localIndex2];
+
+                const uint32_t globalIndex0 = GetIndex(p0);
+                const uint32_t globalIndex1 = GetIndex(p1);
+                const uint32_t globalIndex2 = GetIndex(p2);
+
+                if(outputCutEdges)
+                {
+                    localIndexToGlobalIndex[localIndex0] = globalIndex0;
+                    localIndexToGlobalIndex[localIndex1] = globalIndex1;
+                    localIndexToGlobalIndex[localIndex2] = globalIndex2;
+                }
+
+                outputIndices.push_back(globalIndex0);
+                outputIndices.push_back(globalIndex1);
+                outputIndices.push_back(globalIndex2);
+
                 if(outputFaceToInputFace)
                 {
                     outputFaceToInputFace->push_back(triangleIndex);
+                }
+            }
+
+            if(outputCutEdges)
+            {
+                for(auto &edge : newTriangles.cutEdges)
+                {
+                    uint32_t v0 = localIndexToGlobalIndex[edge.x];
+                    uint32_t v1 = localIndexToGlobalIndex[edge.y];
+                    assert(v0 != UINT32_MAX && v1 != UINT32_MAX);
+                    if(v0 > v1)
+                    {
+                        std::swap(v0, v1);
+                    }
+                    outputCutEdges->push_back({ v0, v1 });
                 }
             }
         }
@@ -575,6 +674,7 @@ void MeshCorefinement::Corefine(
         bvhB.CollectCandidates(
             [&](const AABB3d &targetBoundingBox)
             {
+                return true;
                 return triangleBoundingBox.Intersect(targetBoundingBox);
             },
             [&](uint32_t triangleB)
@@ -621,7 +721,8 @@ void MeshCorefinement::Corefine(
     // Retriangulate A
 
     std::vector<PerTriangleOutput> triangleAToOutput(triangleCountA);
-    RefineTriangles(inputA, degenerateTriangleFlagA, triangleAToPairwiseIntersections, triangleAToOutput);
+    RefineTriangles(
+        inputA, trackCutEdges, degenerateTriangleFlagA, triangleAToPairwiseIntersections, triangleAToOutput);
 
     // Collect symbolic intersections for B
 
@@ -638,23 +739,43 @@ void MeshCorefinement::Corefine(
     // Retriangulate B
 
     std::vector<PerTriangleOutput> triangleBToOutput(triangleCountB);
-    RefineTriangles(inputB, degenerateTriangleFlagB, triangleBToPairwiseIntersections, triangleBToOutput);
+    RefineTriangles(
+        inputB, trackCutEdges, degenerateTriangleFlagB, triangleBToPairwiseIntersections, triangleBToOutput);
 
     // Final rounding
 
     if(preserveExactPositions)
     {
         GenerateExactOutput(
-            triangleAToOutput, outputExactPositionsA, outputIndicesA, trackFaceMap ? &outputFaceMapA : nullptr);
+            triangleAToOutput, outputExactPositionsA, outputIndicesA,
+            trackFaceMap ? &outputFaceMapA : nullptr,
+            trackCutEdges ? &outputCutEdgesA : nullptr);
         GenerateExactOutput(
-            triangleBToOutput, outputExactPositionsB, outputIndicesB, trackFaceMap ? &outputFaceMapB : nullptr);
+            triangleBToOutput, outputExactPositionsB, outputIndicesB,
+            trackFaceMap ? &outputFaceMapB : nullptr,
+            trackCutEdges ? &outputCutEdgesB : nullptr);
     }
     else
     {
         GenerateRoundedOutput(
-            triangleAToOutput, inputA, outputPositionsA, outputIndicesA, trackFaceMap ? &outputFaceMapA : nullptr);
+            triangleAToOutput, inputA, outputPositionsA, outputIndicesA,
+            trackFaceMap ? &outputFaceMapA : nullptr,
+            trackCutEdges ? &outputCutEdgesA : nullptr);
         GenerateRoundedOutput(
-            triangleBToOutput, inputB, outputPositionsB, outputIndicesB, trackFaceMap ? &outputFaceMapB : nullptr);
+            triangleBToOutput, inputB, outputPositionsB, outputIndicesB,
+            trackFaceMap ? &outputFaceMapB : nullptr,
+            trackCutEdges ? &outputCutEdgesB : nullptr);
+    }
+
+    if(trackCutEdges)
+    {
+        std::ranges::sort(outputCutEdgesA);
+        auto uniqueA = std::ranges::unique(outputCutEdgesA);
+        outputCutEdgesA.erase(uniqueA.begin(), uniqueA.end());
+
+        std::ranges::sort(outputCutEdgesB);
+        auto uniqueB = std::ranges::unique(outputCutEdgesB);
+        outputCutEdgesB.erase(uniqueB.begin(), uniqueB.end());
     }
 }
 

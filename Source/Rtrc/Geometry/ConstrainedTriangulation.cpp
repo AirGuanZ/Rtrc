@@ -228,12 +228,15 @@ namespace CDTDetail
 
 } // namespace CDTDetail
 
-CDT2D CDT2D::Create(Span<Expansion3> points, Span<Vector2i> constraints, bool delaunay)
+void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
 {
     using namespace CDTDetail;
 
     assert(points.size() >= 3);
-    CDT2D result;
+
+    newIntersections = {};
+    triangles = {};
+    edgeToConstraintMask = {};
 
     // Build super triangle
 
@@ -314,6 +317,11 @@ CDT2D CDT2D::Create(Span<Expansion3> points, Span<Vector2i> constraints, bool de
     }
 
     std::vector<int> edgeToSourceConstraint(connectivity.E(), -1);
+    std::vector<uint32_t> edgeToConstraintMask;
+    if(trackConstraintMask)
+    {
+        edgeToConstraintMask.resize(connectivity.E(), 0);
+    }
     std::map<Vector4i, int> cocircleCache;
 
     // Initialize delaunay conditions
@@ -332,11 +340,11 @@ CDT2D CDT2D::Create(Span<Expansion3> points, Span<Vector2i> constraints, bool de
 
     for(int constraintIndex = 0; constraintIndex < static_cast<int>(constraints.size()); ++constraintIndex)
     {
-        const Vector2i &constraint = constraints[constraintIndex];
-        int vo = constraint.x + 3;
-        const int vt = constraint.y + 3;
-        assert(meshVertexToPointIndex[vo] == constraint.x);
-        assert(meshVertexToPointIndex[vt] == constraint.y);
+        const Constraint &constraint = constraints[constraintIndex];
+        int vo = constraint.a + 3;
+        const int vt = constraint.b + 3;
+        assert(meshVertexToPointIndex[vo] == constraint.a);
+        assert(meshVertexToPointIndex[vt] == constraint.b);
 
         // Used when last intersection is on an edge.
         // In the next iteration we enter triangle `startHalfedge/3` at `startHalfedge`.
@@ -404,6 +412,10 @@ CDT2D CDT2D::Create(Span<Expansion3> points, Span<Vector2i> constraints, bool de
 #endif
                 const int e = connectivity.Edge(h);
                 edgeToSourceConstraint[e] = constraintIndex;
+                if(trackConstraintMask)
+                {
+                    edgeToConstraintMask[e] |= constraint.mask;
+                }
                 return false;
             });
 #if RTRC_DEBUG
@@ -431,11 +443,15 @@ CDT2D CDT2D::Create(Span<Expansion3> points, Span<Vector2i> constraints, bool de
 
             connectivity.SplitEdge(h);
             edgeToSourceConstraint.resize(connectivity.E(), -1);
+            if(trackConstraintMask)
+            {
+                edgeToConstraintMask.resize(connectivity.E(), 0);
+            }
 
             assert(static_cast<int>(meshVertexToPointIndex.size()) == vInct);
             meshVertexToPointIndex.push_back(
-                static_cast<int>(points.size() + result.newIntersections.size()));
-            result.newIntersections.push_back({ inct, constraintIndex, targetConstraintIndex });
+                static_cast<int>(points.size() + this->newIntersections.size()));
+            this->newIntersections.push_back({ inct, constraintIndex, targetConstraintIndex });
 
             if(delaunay)
             {
@@ -495,6 +511,10 @@ CDT2D CDT2D::Create(Span<Expansion3> points, Span<Vector2i> constraints, bool de
                         {
                             const int e = connectivity.Edge(h);
                             edgeToSourceConstraint[e] = constraintIndex;
+                            if(trackConstraintMask)
+                            {
+                                edgeToConstraintMask[e] |= constraint.mask;
+                            }
                             if(vo != startVertex)
                             {
                                 CommitIntersectedEdges(vo, startVertex);
@@ -506,6 +526,10 @@ CDT2D CDT2D::Create(Span<Expansion3> points, Span<Vector2i> constraints, bool de
                         {
                             const int e = connectivity.Edge(connectivity.Prev(h));
                             edgeToSourceConstraint[e] = constraintIndex;
+                            if(trackConstraintMask)
+                            {
+                                edgeToConstraintMask[e] |= constraint.mask;
+                            }
                             if(vo != startVertex)
                             {
                                 CommitIntersectedEdges(vo, startVertex);
@@ -596,14 +620,32 @@ CDT2D CDT2D::Create(Span<Expansion3> points, Span<Vector2i> constraints, bool de
         const int v2 = connectivity.Vert(3 * f + 2);
         if(v0 >= 3 && v1 >= 3 && v2 >= 3)
         {
-            result.triangles.emplace_back(
+            this->triangles.emplace_back(
                 meshVertexToPointIndex[v0],
                 meshVertexToPointIndex[v1],
                 meshVertexToPointIndex[v2]);
         }
     }
 
-    return result;
+    if(trackConstraintMask)
+    {
+        for(int e = 0; e < connectivity.E(); ++e)
+        {
+            if(edgeToSourceConstraint[e] >= 0)
+            {
+                const int h = connectivity.EdgeToHalfedge(e);
+                const int v0 = connectivity.Head(h);
+                const int v1 = connectivity.Tail(h);
+                int pv0 = meshVertexToPointIndex[v0];
+                int pv1 = meshVertexToPointIndex[v1];
+                if(pv0 > pv1)
+                {
+                    std::swap(pv0, pv1);
+                }
+                this->edgeToConstraintMask.insert({ { pv0, pv1 }, edgeToConstraintMask[e] });
+            }
+        }
+    }
 }
 
 RTRC_GEO_END

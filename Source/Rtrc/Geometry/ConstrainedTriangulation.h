@@ -1,5 +1,7 @@
 #pragma once
 
+#include <map>
+
 #include <Rtrc/Core/Container/Span.h>
 #include <Rtrc/Geometry/Exact/Vector.h>
 
@@ -31,10 +33,28 @@ public:
         int constraint1;
     };
 
-    static CDT2D Create(Span<Expansion3> points, Span<Vector2i> constraints, bool delaunay);
+    struct Constraint
+    {
+        int a;
+        int b;
+        uint32_t mask;
+    };
+
+    void Triangulate(Span<Expansion3> points, Span<Constraint> constraints);
+
+    // Ensure the result satisfy constrained delaunay conditions.
+    bool delaunay = true;
+
+    // If enabled, for each edge 'e' in the result, the masks of constraints overlapping with 'e' will be bitwise unioned.
+    // The resulting mask is stored in `edgeToConstraintMask`.
+    // This allows the user to track the correspondence between the original constraints and the resulting edges.
+    bool trackConstraintMask = false;
 
     std::vector<Vector3i> triangles;
     std::vector<ConstraintIntersection> newIntersections;
+
+    // Available when trackConstraintMask is true
+    std::map<std::pair<int, int>, uint32_t> edgeToConstraintMask;
 };
 
 RTRC_GEO_END
