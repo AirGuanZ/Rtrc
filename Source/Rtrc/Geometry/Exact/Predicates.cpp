@@ -385,8 +385,10 @@ bool IsDegenerateTriangle(const Vector3<T> &a, const Vector3<T> &b, const Vector
     {
         return true;
     }
+    // TODO: optimize
     return Orient2D(Vector2<T>(a.x, a.y), Vector2<T>(b.x, b.y), Vector2<T>(c.x, c.y)) == 0 &&
-           Orient2D(Vector2<T>(a.x, a.z), Vector2<T>(b.x, b.z), Vector2<T>(c.x, c.z)) == 0;
+           Orient2D(Vector2<T>(a.x, a.z), Vector2<T>(b.x, b.z), Vector2<T>(c.x, c.z)) == 0 &&
+           Orient2D(Vector2<T>(a.y, a.z), Vector2<T>(b.y, b.z), Vector2<T>(c.y, c.z)) == 0;
 }
 
 template bool IsDegenerateTriangle(const Vector3<float> &, const Vector3<float> &, const Vector3<float> &);
