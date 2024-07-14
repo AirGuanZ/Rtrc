@@ -14,7 +14,11 @@
 #include <Rtrc/Geometry/MeshCorefinement.h>
 #include <Rtrc/Geometry/TriangleTriangleIntersection.h>
 
+#if RTRC_DEBUG
+#define RTRC_MESH_COREFINEMENT_PARALLEL_FOR Rtrc::ParallelForDebug
+#else
 #define RTRC_MESH_COREFINEMENT_PARALLEL_FOR Rtrc::ParallelFor
+#endif
 
 RTRC_GEO_BEGIN
 
@@ -674,7 +678,6 @@ void MeshCorefinement::Corefine(
         bvhB.CollectCandidates(
             [&](const AABB3d &targetBoundingBox)
             {
-                return true;
                 return triangleBoundingBox.Intersect(targetBoundingBox);
             },
             [&](uint32_t triangleB)
