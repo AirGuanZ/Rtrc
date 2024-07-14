@@ -20,6 +20,37 @@ RTRC_GEO_BEGIN
 namespace CorefineDetail
 {
 
+    class IndexedPositions
+    {
+    public:
+
+        // By setting indices to empty, they will be implicitly defined as 0, 1, 2, ...
+        IndexedPositions(Span<Vector3d> positions, Span<uint32_t> indices)
+            : positions(positions), indices(indices)
+        {
+
+        }
+
+        const Vector3d &operator[](uint32_t i) const
+        {
+            if(indices.IsEmpty())
+            {
+                return positions[i];
+            }
+            return positions[indices[i]];
+        }
+
+        uint32_t GetSize() const
+        {
+            return indices.IsEmpty() ? positions.size() : indices.size();
+        }
+
+    private:
+
+        Span<Vector3d> positions;
+        Span<uint32_t> indices;
+    };
+
     bvh::Vector3<double> ConvertVector3(const Vector3d &v)
     {
         return { v.x, v.y, v.z };
@@ -35,10 +66,10 @@ namespace CorefineDetail
     {
     public:
 
-        explicit BVH(Span<Vector3d> positions)
+        explicit BVH(const IndexedPositions &positions)
         {
-            assert(positions.size() % 3 == 0);
-            const uint32_t triangleCount = positions.size() / 3;
+            assert(positions.GetSize() % 3 == 0);
+            const uint32_t triangleCount = positions.GetSize() / 3;
 
             AABB3d globalBoundingBox;
             std::vector<bvh::BoundingBox<double>> primitiveBoundingBoxes(triangleCount);
@@ -202,27 +233,31 @@ namespace CorefineDetail
     };
 
     void RefineTriangles(
-        Span<Vector3d>                              inputPositions,
+        const IndexedPositions                     &inputPositions,
         Span<uint8_t>                               degenerateTriangleFlags,
         Span<std::vector<TrianglePairIntersection>> triangleToPairwiseIntersections,
         MutSpan<PerTriangleOutput>                  triangleToOutput)
     {
-        const uint32_t triangleCount = inputPositions.size() / 3;
+        const uint32_t triangleCount = inputPositions.GetSize() / 3;
         assert(triangleCount == degenerateTriangleFlags.size());
         assert(triangleCount == triangleToPairwiseIntersections.size());
         assert(triangleCount == triangleToOutput.size());
 
         RTRC_MESH_COREFINEMENT_PARALLEL_FOR<uint32_t>(0, triangleCount, [&](uint32_t triangleA)
         {
-            if(degenerateTriangleFlags[triangleA])
-            {
-                return;
-            }
             const Vector3d &p0 = inputPositions[3 * triangleA + 0];
             const Vector3d &p1 = inputPositions[3 * triangleA + 1];
             const Vector3d &p2 = inputPositions[3 * triangleA + 2];
-
             auto &output = triangleToOutput[triangleA];
+
+            if(degenerateTriangleFlags[triangleA]) // Degenerate triangle is directly copied to output
+            {
+                output.points.emplace_back(Vector4d(p0, 1));
+                output.points.emplace_back(Vector4d(p1, 1));
+                output.points.emplace_back(Vector4d(p2, 1));
+                output.triangles.emplace_back(0, 1, 2);
+                return;
+            }
 
             auto& symbolicIntersections = triangleToPairwiseIntersections[triangleA];
             if(symbolicIntersections.empty())
@@ -348,84 +383,30 @@ namespace CorefineDetail
                 output.points.push_back(IntersectLine3D(
                     output.points[a], output.points[b], output.points[c], output.points[d], projectAxis));
             }
+
+            for(auto &p : output.points)
+            {
+                p.x.Compress();
+                p.y.Compress();
+                p.z.Compress();
+                p.w.Compress();
+            }
         });
     }
 
-} // namespace CorefineDetail
-
-void Corefine(
-    Span<Vector3d>                     inputPositionsA,
-    Span<Vector3d>                     inputPositionsB,
-    std::vector<Vector3d>             &outputPositionsA,
-    std::vector<Vector3d>             &outputPositionsB,
-    ObserverPtr<std::vector<uint32_t>> outputFaceToInputFaceA,
-    ObserverPtr<std::vector<uint32_t>> outputFaceToInputFaceB)
-{
-    using namespace CorefineDetail;
-
-    assert(inputPositionsA.size() % 3 == 0);
-    assert(inputPositionsB.size() % 3 == 0);
-    const uint32_t triangleCountA = inputPositionsA.size() / 3;
-    const uint32_t triangleCountB = inputPositionsB.size() / 3;
-
-    outputPositionsA.clear();
-    outputPositionsB.clear();
-    if(outputFaceToInputFaceA)
+    void ComputeSymbolicIntersection(
+        uint32_t                               triangleA,
+        uint32_t                               triangleB,
+        const IndexedPositions                &positionsA,
+        const IndexedPositions                &positionsB,
+        std::vector<TrianglePairIntersection> &output)
     {
-        outputFaceToInputFaceA->clear();
-    }
-    if(outputFaceToInputFaceB)
-    {
-        outputFaceToInputFaceB->clear();
-    }
-    if(!triangleCountA && !triangleCountB)
-    {
-        return;
-    }
-
-    // Filter degenerate triangles
-
-    std::vector<uint8_t> degenerateTriangleFlagA(triangleCountA);
-    RTRC_MESH_COREFINEMENT_PARALLEL_FOR<uint32_t>(0, triangleCountA, [&](uint32_t a)
-    {
-        const Vector3d &p0 = inputPositionsA[3 * a + 0];
-        const Vector3d &p1 = inputPositionsA[3 * a + 1];
-        const Vector3d &p2 = inputPositionsA[3 * a + 2];
-        if(p0 == p1 || p1 == p2 || p2 == p0)
-        {
-            degenerateTriangleFlagA[a] = true;
-        }
-    });
-
-    std::vector<uint8_t> degenerateTriangleFlagB(triangleCountB);
-    RTRC_MESH_COREFINEMENT_PARALLEL_FOR<uint32_t>(0, triangleCountB, [&](uint32_t b)
-    {
-        const Vector3d &p0 = inputPositionsB[3 * b + 0];
-        const Vector3d &p1 = inputPositionsB[3 * b + 1];
-        const Vector3d &p2 = inputPositionsB[3 * b + 2];
-        if(p0 == p1 || p1 == p2 || p2 == p0)
-        {
-            degenerateTriangleFlagA[b] = true;
-        }
-    });
-
-    // Compute triangle-triangle symbolic intersections
-
-    std::vector<std::vector<TrianglePairIntersection>> triangleAToPairwiseIntersections(triangleCountA);
-
-    auto ComputeSymbolicIntersection = [&](uint32_t triangleA, uint32_t triangleB)
-    {
-        if(degenerateTriangleFlagA[triangleA] || degenerateTriangleFlagB[triangleB])
-        {
-            return;
-        }
-
-        const Vector3d &a0 = inputPositionsA[3 * triangleA + 0];
-        const Vector3d &a1 = inputPositionsA[3 * triangleA + 1];
-        const Vector3d &a2 = inputPositionsA[3 * triangleA + 2];
-        const Vector3d &b0 = inputPositionsB[3 * triangleB + 0];
-        const Vector3d &b1 = inputPositionsB[3 * triangleB + 1];
-        const Vector3d &b2 = inputPositionsB[3 * triangleB + 2];
+        const Vector3d &a0 = positionsA[3 * triangleA + 0];
+        const Vector3d &a1 = positionsA[3 * triangleA + 1];
+        const Vector3d &a2 = positionsA[3 * triangleA + 2];
+        const Vector3d &b0 = positionsB[3 * triangleB + 0];
+        const Vector3d &b1 = positionsB[3 * triangleB + 1];
+        const Vector3d &b2 = positionsB[3 * triangleB + 2];
 
         const auto intersection = SI::Intersect(a0, a1, a2, b0, b1, b2, true);
         if(intersection.GetPoints().IsEmpty())
@@ -433,90 +414,29 @@ void Corefine(
             return;
         }
 
-        triangleAToPairwiseIntersections[triangleA].push_back({ triangleA, triangleB, intersection, {} });
-    };
-
-    const BVH bvhB = BVH(inputPositionsB);
-
-    RTRC_MESH_COREFINEMENT_PARALLEL_FOR<uint32_t>(0, triangleCountA, [&](uint32_t triangleA)
-    {
-        AABB3d triangleBoundingBox;
-        triangleBoundingBox |= inputPositionsA[3 * triangleA + 0];
-        triangleBoundingBox |= inputPositionsA[3 * triangleA + 1];
-        triangleBoundingBox |= inputPositionsA[3 * triangleA + 2];
-
-        bvhB.CollectCandidates(
-            [&](const AABB3d &targetBoundingBox)
-            {
-                return triangleBoundingBox.Intersect(targetBoundingBox);
-            },
-            [&](uint32_t triangleB)
-            {
-                ComputeSymbolicIntersection(triangleA, triangleB);
-            });
-    });
-
-    // Resolve symbolic intersections
-
-    RTRC_MESH_COREFINEMENT_PARALLEL_FOR<uint32_t>(0, triangleCountA, [&](uint32_t triangleA)
-    {
-        auto& symbolicIntersections = triangleAToPairwiseIntersections[triangleA];
-        if(symbolicIntersections.empty())
-        {
-            return;
-        }
-
-        const Vector3d &p0 = inputPositionsA[3 * triangleA + 0];
-        const Vector3d &p1 = inputPositionsA[3 * triangleA + 1];
-        const Vector3d &p2 = inputPositionsA[3 * triangleA + 2];
-
-        for(TrianglePairIntersection &intersectionInfo : symbolicIntersections)
-        {
-            const uint32_t triangleB = intersectionInfo.triangleB;
-            const Vector3d &q0 = inputPositionsB[3 * triangleB + 0];
-            const Vector3d &q1 = inputPositionsB[3 * triangleB + 1];
-            const Vector3d &q2 = inputPositionsB[3 * triangleB + 2];
-
-            intersectionInfo.points.reserve(intersectionInfo.intersection.GetPoints().size());
-            for(auto &inct : intersectionInfo.intersection.GetPoints())
-            {
-                const SI::Element elemA = inct.GetElement0();
-                const SI::Element elemB = inct.GetElement1();
-                intersectionInfo.points.push_back(EvaluateSymbolicIntersection(p0, p1, p2, q0, q1, q2, elemA, elemB));
-            }
-        }
-    });
-
-    // Retriangulate A
-
-    std::vector<PerTriangleOutput> triangleAToOutput(triangleCountA);
-    RefineTriangles(inputPositionsA, degenerateTriangleFlagA, triangleAToPairwiseIntersections, triangleAToOutput);
-
-    // Collect symbolic intersections for B
-
-    std::vector<std::vector<TrianglePairIntersection>> triangleBToPairwiseIntersections(triangleCountB);
-    for(auto &incts : triangleAToPairwiseIntersections)
-    {
-        for(auto &inct : incts)
-        {
-            const uint32_t triangleB = inct.triangleB;
-            triangleBToPairwiseIntersections[triangleB].push_back(std::move(inct));
-        }
+        output.push_back({ triangleA, triangleB, intersection, {} });
     }
 
-    // Retriangulate B
-
-    std::vector<PerTriangleOutput> triangleBToOutput(triangleCountB);
-    RefineTriangles(inputPositionsB, degenerateTriangleFlagB, triangleBToPairwiseIntersections, triangleBToOutput);
-
-    // Final rounding
-
-    auto RoundToFinalOutput = [](
+    void GenerateRoundedOutput(
         Span<PerTriangleOutput> triangleToOutput,
-        Span<Vector3d>          inputPositions,
+        const IndexedPositions &inputPositions,
         std::vector<Vector3d>  &outputPositions,
+        std::vector<uint32_t>  &outputIndices,
         std::vector<uint32_t>  *outputFaceToInputFace)
     {
+        std::map<Vector3d, uint32_t> positionToIndex;
+        auto GetIndex = [&](const Vector3d &position)
+        {
+            if(auto it = positionToIndex.find(position); it != positionToIndex.end())
+            {
+                return it->second;
+            }
+            const uint32_t newIndex = static_cast<uint32_t>(outputPositions.size());
+            positionToIndex.insert({ position, newIndex });
+            outputPositions.push_back(position);
+            return newIndex;
+        };
+
         for(uint32_t triangleIndex = 0; triangleIndex < triangleToOutput.size(); ++triangleIndex)
         {
             const PerTriangleOutput &newTriangles = triangleToOutput[triangleIndex];
@@ -541,23 +461,201 @@ void Corefine(
                 const Vector3d &p0 = roundedPoints[triangle[0]];
                 const Vector3d &p1 = roundedPoints[triangle[1]];
                 const Vector3d &p2 = roundedPoints[triangle[2]];
-
-                if(p0 != p1 && p1 != p2 && p2 != p0) // Rounding may create new degenerate triangles. Ignored them.
+                outputIndices.push_back(GetIndex(p0));
+                outputIndices.push_back(GetIndex(p1));
+                outputIndices.push_back(GetIndex(p2));
+                if(outputFaceToInputFace)
                 {
-                    outputPositions.push_back(p0);
-                    outputPositions.push_back(p1);
-                    outputPositions.push_back(p2);
-                    if(outputFaceToInputFace)
-                    {
-                        outputFaceToInputFace->push_back(triangleIndex);
-                    }
+                    outputFaceToInputFace->push_back(triangleIndex);
                 }
             }
         }
-    };
+    }
 
-    RoundToFinalOutput(triangleAToOutput, inputPositionsA, outputPositionsA, outputFaceToInputFaceA);
-    RoundToFinalOutput(triangleBToOutput, inputPositionsB, outputPositionsB, outputFaceToInputFaceB);
+    void GenerateExactOutput(
+        Span<PerTriangleOutput>  triangleToOutput,
+        std::vector<Expansion4> &outputPositions,
+        std::vector<uint32_t>   &outputIndices,
+        std::vector<uint32_t>   *outputFaceToInputFace)
+    {
+        std::map<Expansion4, uint32_t, CompareHomogeneousPoint> positionToIndex;
+        auto GetIndex = [&](const Expansion4 &position)
+        {
+            if(auto it = positionToIndex.find(position); it != positionToIndex.end())
+            {
+                return it->second;
+            }
+            const uint32_t newIndex = static_cast<uint32_t>(outputPositions.size());
+            positionToIndex.insert({ position, newIndex });
+            outputPositions.push_back(position);
+            return newIndex;
+        };
+
+        for(uint32_t triangleIndex = 0; triangleIndex < triangleToOutput.size(); ++triangleIndex)
+        {
+            const PerTriangleOutput &newTriangles = triangleToOutput[triangleIndex];
+            for(const Vector3i &triangle : newTriangles.triangles)
+            {
+                const Expansion4 &p0 = newTriangles.points[triangle[0]];
+                const Expansion4 &p1 = newTriangles.points[triangle[1]];
+                const Expansion4 &p2 = newTriangles.points[triangle[2]];
+                outputIndices.push_back(GetIndex(p0));
+                outputIndices.push_back(GetIndex(p1));
+                outputIndices.push_back(GetIndex(p2));
+                if(outputFaceToInputFace)
+                {
+                    outputFaceToInputFace->push_back(triangleIndex);
+                }
+            }
+        }
+    }
+
+} // namespace CorefineDetail
+
+void MeshCorefinement::Corefine(
+    Span<Vector3d> inputPositionsA, Span<uint32_t> inputIndicesA,
+    Span<Vector3d> inputPositionsB, Span<uint32_t> inputIndicesB)
+{
+    using namespace CorefineDetail;
+
+    const IndexedPositions inputA(inputPositionsA, inputIndicesA);
+    const IndexedPositions inputB(inputPositionsB, inputIndicesB);
+    assert(inputA.GetSize() % 3 == 0);
+    assert(inputB.GetSize() % 3 == 0);
+
+    const uint32_t triangleCountA = inputA.GetSize() / 3;
+    const uint32_t triangleCountB = inputB.GetSize() / 3;
+
+    outputPositionsA.clear();
+    outputPositionsB.clear();
+    outputExactPositionsA.clear();
+    outputExactPositionsB.clear();
+    outputIndicesA.clear();
+    outputIndicesB.clear();
+    outputFaceMapA.clear();
+    outputFaceMapB.clear();
+
+    // Filter degenerate triangles
+
+    std::vector<uint8_t> degenerateTriangleFlagA(triangleCountA);
+    RTRC_MESH_COREFINEMENT_PARALLEL_FOR<uint32_t>(0, triangleCountA, [&](uint32_t a)
+    {
+        const Vector3d &p0 = inputA[3 * a + 0];
+        const Vector3d &p1 = inputA[3 * a + 1];
+        const Vector3d &p2 = inputA[3 * a + 2];
+        degenerateTriangleFlagA[a] = IsDegenerateTriangle(p0, p1, p2);
+    });
+
+    std::vector<uint8_t> degenerateTriangleFlagB(triangleCountB);
+    RTRC_MESH_COREFINEMENT_PARALLEL_FOR<uint32_t>(0, triangleCountB, [&](uint32_t b)
+    {
+        const Vector3d &p0 = inputB[3 * b + 0];
+        const Vector3d &p1 = inputB[3 * b + 1];
+        const Vector3d &p2 = inputB[3 * b + 2];
+        degenerateTriangleFlagB[b] = IsDegenerateTriangle(p0, p1, p2);
+    });
+
+    // Compute triangle-triangle symbolic intersections
+
+    const BVH bvhB = BVH(inputB);
+    std::vector<std::vector<TrianglePairIntersection>> triangleAToPairwiseIntersections(triangleCountA);
+
+    RTRC_MESH_COREFINEMENT_PARALLEL_FOR<uint32_t>(0, triangleCountA, [&](uint32_t triangleA)
+    {
+        if(degenerateTriangleFlagA[triangleA])
+        {
+            return;
+        }
+
+        AABB3d triangleBoundingBox;
+        triangleBoundingBox |= inputA[3 * triangleA + 0];
+        triangleBoundingBox |= inputA[3 * triangleA + 1];
+        triangleBoundingBox |= inputA[3 * triangleA + 2];
+
+        bvhB.CollectCandidates(
+            [&](const AABB3d &targetBoundingBox)
+            {
+                return triangleBoundingBox.Intersect(targetBoundingBox);
+            },
+            [&](uint32_t triangleB)
+            {
+                if(!degenerateTriangleFlagB[triangleB])
+                {
+                    ComputeSymbolicIntersection(
+                        triangleA, triangleB, inputA, inputB, triangleAToPairwiseIntersections[triangleA]);
+                }
+            });
+    });
+
+    // Resolve symbolic intersections
+
+    RTRC_MESH_COREFINEMENT_PARALLEL_FOR<uint32_t>(0, triangleCountA, [&](uint32_t triangleA)
+    {
+        auto& symbolicIntersections = triangleAToPairwiseIntersections[triangleA];
+        if(symbolicIntersections.empty())
+        {
+            return;
+        }
+
+        const Vector3d &p0 = inputA[3 * triangleA + 0];
+        const Vector3d &p1 = inputA[3 * triangleA + 1];
+        const Vector3d &p2 = inputA[3 * triangleA + 2];
+
+        for(TrianglePairIntersection &intersectionInfo : symbolicIntersections)
+        {
+            const uint32_t triangleB = intersectionInfo.triangleB;
+            const Vector3d &q0 = inputB[3 * triangleB + 0];
+            const Vector3d &q1 = inputB[3 * triangleB + 1];
+            const Vector3d &q2 = inputB[3 * triangleB + 2];
+
+            intersectionInfo.points.reserve(intersectionInfo.intersection.GetPoints().size());
+            for(auto &inct : intersectionInfo.intersection.GetPoints())
+            {
+                const SI::Element elemA = inct.GetElement0();
+                const SI::Element elemB = inct.GetElement1();
+                intersectionInfo.points.push_back(EvaluateSymbolicIntersection(p0, p1, p2, q0, q1, q2, elemA, elemB));
+            }
+        }
+    });
+
+    // Retriangulate A
+
+    std::vector<PerTriangleOutput> triangleAToOutput(triangleCountA);
+    RefineTriangles(inputA, degenerateTriangleFlagA, triangleAToPairwiseIntersections, triangleAToOutput);
+
+    // Collect symbolic intersections for B
+
+    std::vector<std::vector<TrianglePairIntersection>> triangleBToPairwiseIntersections(triangleCountB);
+    for(auto &incts : triangleAToPairwiseIntersections)
+    {
+        for(auto &inct : incts)
+        {
+            const uint32_t triangleB = inct.triangleB;
+            triangleBToPairwiseIntersections[triangleB].push_back(std::move(inct));
+        }
+    }
+
+    // Retriangulate B
+
+    std::vector<PerTriangleOutput> triangleBToOutput(triangleCountB);
+    RefineTriangles(inputB, degenerateTriangleFlagB, triangleBToPairwiseIntersections, triangleBToOutput);
+
+    // Final rounding
+
+    if(preserveExactPositions)
+    {
+        GenerateExactOutput(
+            triangleAToOutput, outputExactPositionsA, outputIndicesA, trackFaceMap ? &outputFaceMapA : nullptr);
+        GenerateExactOutput(
+            triangleBToOutput, outputExactPositionsB, outputIndicesB, trackFaceMap ? &outputFaceMapB : nullptr);
+    }
+    else
+    {
+        GenerateRoundedOutput(
+            triangleAToOutput, inputA, outputPositionsA, outputIndicesA, trackFaceMap ? &outputFaceMapA : nullptr);
+        GenerateRoundedOutput(
+            triangleBToOutput, inputB, outputPositionsB, outputIndicesB, trackFaceMap ? &outputFaceMapB : nullptr);
+    }
 }
 
 RTRC_GEO_END

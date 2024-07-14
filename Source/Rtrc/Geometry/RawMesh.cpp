@@ -384,7 +384,7 @@ void WriteOFFFile(const std::string &filename, Span<Vector3<T>> positions, Span<
 
     for(auto &p : positions)
     {
-        fout << p.x << " " << p.y << " " << p.z << "\n";
+        fout << ToString(p.x) << " " << ToString(p.y) << " " << ToString(p.z) << "\n";
     }
 
     if(indices.IsEmpty())

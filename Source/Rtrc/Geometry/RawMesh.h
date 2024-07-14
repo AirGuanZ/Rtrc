@@ -171,6 +171,7 @@ private:
     std::map<std::string, int, std::less<>> nameToAttributeIndex_;
 };
 
+// If empty, indices are implicitly defined as [0, 1, 2, ...]
 template<std::floating_point T>
 void WriteOFFFile(const std::string &filename, Span<Vector3<T>> positions, Span<uint32_t> indices);
 

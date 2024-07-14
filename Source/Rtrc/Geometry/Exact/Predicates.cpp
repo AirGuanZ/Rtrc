@@ -378,4 +378,18 @@ template int InCircle2D(const Vector2<double> &, const Vector2<double> &, const 
 template int InCircle2D(const Vector2<ExpansionUtility::float_100_27> &, const Vector2<ExpansionUtility::float_100_27> &, const Vector2<ExpansionUtility::float_100_27> &, const Vector2<ExpansionUtility::float_100_27> &);
 template int InCircle2D(const Vector2<ExpansionUtility::float_200_55> &, const Vector2<ExpansionUtility::float_200_55> &, const Vector2<ExpansionUtility::float_200_55> &, const Vector2<ExpansionUtility::float_200_55> &);
 
+template <typename T>
+bool IsDegenerateTriangle(const Vector3<T> &a, const Vector3<T> &b, const Vector3<T> &c)
+{
+    if(a == b || b == c || c == a)
+    {
+        return true;
+    }
+    return Orient2D(Vector2<T>(a.x, a.y), Vector2<T>(b.x, b.y), Vector2<T>(c.x, c.y)) == 0 &&
+           Orient2D(Vector2<T>(a.x, a.z), Vector2<T>(b.x, b.z), Vector2<T>(c.x, c.z)) == 0;
+}
+
+template bool IsDegenerateTriangle(const Vector3<float> &, const Vector3<float> &, const Vector3<float> &);
+template bool IsDegenerateTriangle(const Vector3<double> &, const Vector3<double> &, const Vector3<double> &);
+
 RTRC_GEO_END

@@ -19,9 +19,13 @@ int main()
     const auto inputA = LoadMesh("./Asset/Sample/16.MeshCorefinement/MeshA.obj");
     const auto inputB = LoadMesh("./Asset/Sample/16.MeshCorefinement/MeshB.obj");
 
-    std::vector<Vector3d> outputA, outputB;
-    Corefine(inputA, inputB, outputA, outputB);
+    MeshCorefinement corefinement;
+    corefinement.Corefine(inputA, {}, inputB, {});
 
-    WriteOFFFile<double>("./Asset/Sample/16.MeshCorefinement/OutputA.off", outputA, {});
-    WriteOFFFile<double>("./Asset/Sample/16.MeshCorefinement/OutputB.off", outputB, {});
+    WriteOFFFile<double>(
+        "./Asset/Sample/16.MeshCorefinement/OutputA.off",
+        corefinement.outputPositionsA, corefinement.outputIndicesA);
+    WriteOFFFile<double>(
+        "./Asset/Sample/16.MeshCorefinement/OutputB.off",
+        corefinement.outputPositionsB, corefinement.outputIndicesB);
 }
