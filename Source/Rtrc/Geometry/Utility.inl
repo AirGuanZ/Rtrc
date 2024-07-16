@@ -44,4 +44,31 @@ void ComputeAngleAveragedNormals(
     }
 }
 
+template<typename T>
+void MergeCoincidentVertices(
+    const IndexedPositions  &input,
+    std::vector<Vector3<T>> &outputPositions,
+    std::vector<uint32_t>   &outputIndices)
+{
+    outputPositions.clear();
+    outputIndices.clear();
+
+    std::map<Vector3<T>, uint32_t> positionToIndex;
+    for(uint32_t i = 0; i < input.GetSize(); ++i)
+    {
+        const Vector3<T> &position = input[i];
+
+        auto it = positionToIndex.find(position);
+        if(it != positionToIndex.end())
+        {
+            outputIndices.push_back(it->second);
+        }
+
+        const uint32_t newIndex = outputIndices.size();
+        outputPositions.push_back(position);
+        outputIndices.push_back(newIndex);
+        positionToIndex.insert({ position, newIndex });
+    }
+}
+
 RTRC_GEO_END

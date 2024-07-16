@@ -5,11 +5,61 @@
 
 RTRC_GEO_BEGIN
 
+class IndexedPositions
+{
+public:
+
+    IndexedPositions() = default;
+
+    // By setting indices to empty, they will be implicitly defined as 0, 1, 2, ...
+    IndexedPositions(Span<Vector3d> positions, Span<uint32_t> indices)
+        : positions(positions), indices(indices)
+    {
+
+    }
+
+    const Vector3d &operator[](uint32_t i) const
+    {
+        if(indices.IsEmpty())
+        {
+            return positions[i];
+        }
+        return positions[indices[i]];
+    }
+
+    uint32_t GetSize() const
+    {
+        return indices.IsEmpty() ? positions.size() : indices.size();
+    }
+
+    Span<Vector3d> GetPositions() const
+    {
+        return positions;
+    }
+
+    uint32_t GetPositionCount() const
+    {
+        return positions.size();
+    }
+
+private:
+
+    Span<Vector3d> positions;
+    Span<uint32_t> indices;
+};
+
 template<typename T>
 void ComputeAngleAveragedNormals(
     Span<Vector3<T>>    positions,
     Span<uint32_t>      indices,
     MutSpan<Vector3<T>> outNormals);
+
+// By setting inputIndices to empty, they will be implicitly defined as 0, 1, 2, ...
+template<typename T>
+void MergeCoincidentVertices(
+    const IndexedPositions  &input,
+    std::vector<Vector3<T>> &outputPositions,
+    std::vector<uint32_t>   &outputIndices);
 
 RTRC_GEO_END
 

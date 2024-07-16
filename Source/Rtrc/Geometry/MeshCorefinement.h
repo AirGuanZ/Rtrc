@@ -9,22 +9,22 @@
 RTRC_GEO_BEGIN
 
 // Mesh Corefinement:
-//     Resolve intersections between two groups of triangles. The resulting mesh will only contain shared edges as intersections, preserving the original geometry.
+//     Resolve intersections between two groups of triangles. The resulting mesh will have the same geometry as the input, without any interesting intersection.
 //     Degenerate triangles in the input will be preserved as-is and will not be considered during the intersection computation.
 class MeshCorefinement
 {
 public:
 
-    // Empty indices are implicitly defined as 0,1, 2, ...
+    // Empty indices are implicitly defined as 0, 1, 2, ...
     void Corefine(
         Span<Vector3d> inputPositionsA, Span<uint32_t> inputIndicesA,
         Span<Vector3d> inputPositionsB, Span<uint32_t> inputIndicesB);
 
     // For each output triangle, track its origin from the input triangles. The results are stored in outputFaceMapA and outputFaceMapB.
-    // For example, if input triangle number 5 from group A is divided into 2 output triangles {0, 3}, then outputFaceMapA[0] and outputFaceMapA[3] will both be set to 5.
+    // For example, if input triangle 5 from group A is divided into 2 output triangles (0 and 3), then outputFaceMapA[0] and outputFaceMapA[3] will both be set to 5.
     bool trackFaceMap = false;
 
-    // Collect all edges on the intersection cut line
+    // Collect all edges on the intersection cut line.
     bool trackCutEdges = false;
 
     // Store output positions in exact homogeneous coordinates, avoiding rounding to double precision.

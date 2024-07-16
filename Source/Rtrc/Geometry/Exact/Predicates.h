@@ -30,6 +30,6 @@ template<typename T>
 int InCircle2D(const Vector2<T> &pa, const Vector2<T> &pb, const Vector2<T> &pc, const Vector2<T> &pd);
 
 template<typename T>
-bool IsDegenerateTriangle(const Vector3<T> &a, const Vector3<T> &b, const Vector3<T> &c);
+bool AreCoLinear(const Vector3<T> &a, const Vector3<T> &b, const Vector3<T> &c);
 
 RTRC_GEO_END

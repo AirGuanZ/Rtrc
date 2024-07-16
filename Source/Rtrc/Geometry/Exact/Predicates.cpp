@@ -102,6 +102,46 @@ namespace PredicatesDetail
         return (alift * bcdet + blift * cadet + clift * abdet).GetSign();
     }
 
+    // Orient2D for fast rejection. When returning 0, the result is not reliable.
+    int UncertainOrient2D(const Vector2d &pa, const Vector2d &pb, const Vector2d &pc)
+    {
+        const double detL = (pa[0] - pc[0]) * (pb[1] - pc[1]);
+        const double detR = (pa[1] - pc[1]) * (pb[0] - pc[0]);
+        const double det = detL - detR;
+
+        double detSum;
+        if(detL > 0)
+        {
+            if(detR <= 0)
+            {
+                return GetSign(det);
+            }
+            detSum = detL + detR;
+        }
+        else if(detL < 0)
+        {
+            if(detR >= 0)
+            {
+                return GetSign(det);
+            }
+            detSum = -detL - detR;
+        }
+        else
+        {
+            return GetSign(det);
+        }
+
+        const double unitError = double(0.5) * std::numeric_limits<double>::epsilon();
+        const double errorBoundFactor = (3.0 + 16.0 * unitError) * unitError;
+        const double errorBound = errorBoundFactor * detSum;
+        if(det > errorBound || -det > errorBound)
+        {
+            return GetSign(det);
+        }
+
+        return 0;
+    }
+
 } // namespace PredicatesDetail
 
 int Orient2D(const Expansion2 &pa, const Expansion2 &pb, const Expansion2 &pc)
@@ -379,19 +419,38 @@ template int InCircle2D(const Vector2<ExpansionUtility::float_100_27> &, const V
 template int InCircle2D(const Vector2<ExpansionUtility::float_200_55> &, const Vector2<ExpansionUtility::float_200_55> &, const Vector2<ExpansionUtility::float_200_55> &, const Vector2<ExpansionUtility::float_200_55> &);
 
 template <typename T>
-bool IsDegenerateTriangle(const Vector3<T> &a, const Vector3<T> &b, const Vector3<T> &c)
+bool AreCoLinear(const Vector3<T> &a, const Vector3<T> &b, const Vector3<T> &c)
 {
     if(a == b || b == c || c == a)
     {
         return true;
     }
-    // TODO: optimize
-    return Orient2D(Vector2<T>(a.x, a.y), Vector2<T>(b.x, b.y), Vector2<T>(c.x, c.y)) == 0 &&
-           Orient2D(Vector2<T>(a.x, a.z), Vector2<T>(b.x, b.z), Vector2<T>(c.x, c.z)) == 0 &&
-           Orient2D(Vector2<T>(a.y, a.z), Vector2<T>(b.y, b.z), Vector2<T>(c.y, c.z)) == 0;
+
+    if(PredicatesDetail::UncertainOrient2D(Vector2d(a.x, a.y), Vector2d(b.x, b.y), Vector2d(c.x, c.y)) != 0 ||
+       PredicatesDetail::UncertainOrient2D(Vector2d(a.x, a.z), Vector2d(b.x, b.z), Vector2d(c.x, c.z)) != 0 ||
+       PredicatesDetail::UncertainOrient2D(Vector2d(a.y, a.z), Vector2d(b.y, b.z), Vector2d(c.y, c.z)) != 0)
+    {
+        return false;
+    }
+
+    using E = SExpansion;
+
+    const auto ux = E(b.x) - E(a.x);
+    const auto uy = E(b.y) - E(a.y);
+    const auto uz = E(b.z) - E(a.z);
+
+    const auto vx = E(c.x) - E(a.x);
+    const auto vy = E(c.y) - E(a.y);
+    const auto vz = E(c.z) - E(a.z);
+
+    const E dot = ux * vx + uy * vy + uz * vz;
+    const E lu = ux * ux + uy * uy + uz * uz;
+    const E lv = vx * vx + vy * vy + vz * vz;
+
+    return dot * dot == lu * lv;
 }
 
-template bool IsDegenerateTriangle(const Vector3<float> &, const Vector3<float> &, const Vector3<float> &);
-template bool IsDegenerateTriangle(const Vector3<double> &, const Vector3<double> &, const Vector3<double> &);
+template bool AreCoLinear(const Vector3<float> &, const Vector3<float> &, const Vector3<float> &);
+template bool AreCoLinear(const Vector3<double> &, const Vector3<double> &, const Vector3<double> &);
 
 RTRC_GEO_END

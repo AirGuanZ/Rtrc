@@ -13,6 +13,7 @@
 #include <Rtrc/Geometry/Exact/Predicates.h>
 #include <Rtrc/Geometry/MeshCorefinement.h>
 #include <Rtrc/Geometry/TriangleTriangleIntersection.h>
+#include <Rtrc/Geometry/Utility.h>
 
 #if RTRC_DEBUG
 #define RTRC_MESH_COREFINEMENT_PARALLEL_FOR Rtrc::ParallelForDebug
@@ -24,37 +25,6 @@ RTRC_GEO_BEGIN
 
 namespace CorefineDetail
 {
-
-    class IndexedPositions
-    {
-    public:
-
-        // By setting indices to empty, they will be implicitly defined as 0, 1, 2, ...
-        IndexedPositions(Span<Vector3d> positions, Span<uint32_t> indices)
-            : positions(positions), indices(indices)
-        {
-
-        }
-
-        const Vector3d &operator[](uint32_t i) const
-        {
-            if(indices.IsEmpty())
-            {
-                return positions[i];
-            }
-            return positions[indices[i]];
-        }
-
-        uint32_t GetSize() const
-        {
-            return indices.IsEmpty() ? positions.size() : indices.size();
-        }
-
-    private:
-
-        Span<Vector3d> positions;
-        Span<uint32_t> indices;
-    };
 
     bvh::Vector3<double> ConvertVector3(const Vector3d &v)
     {
@@ -122,7 +92,7 @@ namespace CorefineDetail
                     for(size_t i = src.first_child_or_primitive;
                         i < src.first_child_or_primitive + src.primitive_count; ++i)
                     {
-                        originalTriangleIndices_.push_back(tree.primitive_indices[i]);
+                        originalTriangleIndices_.push_back(static_cast<uint32_t>(tree.primitive_indices[i]));
                     }
                     const size_t triangleEnd = originalTriangleIndices_.size();
 
@@ -190,7 +160,7 @@ namespace CorefineDetail
 
     using SI = SymbolicTriangleTriangleIntersection<double>;
 
-    Expansion4 EvaluateSymbolicIntersection(
+    Expansion4 ResolveSymbolicIntersection(
         Vector3d a0, Vector3d a1, Vector3d a2,
         Vector3d b0, Vector3d b1, Vector3d b2,
         SymbolicTriangleTriangleIntersection<double>::Element elemA,
@@ -528,7 +498,7 @@ namespace CorefineDetail
                     {
                         std::swap(v0, v1);
                     }
-                    outputCutEdges->push_back({ v0, v1 });
+                    outputCutEdges->emplace_back(v0, v1);
                 }
             }
         }
@@ -607,7 +577,7 @@ namespace CorefineDetail
                     {
                         std::swap(v0, v1);
                     }
-                    outputCutEdges->push_back({ v0, v1 });
+                    outputCutEdges->emplace_back(v0, v1);
                 }
             }
         }
@@ -648,7 +618,7 @@ void MeshCorefinement::Corefine(
         const Vector3d &p0 = inputA[3 * a + 0];
         const Vector3d &p1 = inputA[3 * a + 1];
         const Vector3d &p2 = inputA[3 * a + 2];
-        degenerateTriangleFlagA[a] = IsDegenerateTriangle(p0, p1, p2);
+        degenerateTriangleFlagA[a] = AreCoLinear(p0, p1, p2);
     });
 
     std::vector<uint8_t> degenerateTriangleFlagB(triangleCountB);
@@ -657,7 +627,7 @@ void MeshCorefinement::Corefine(
         const Vector3d &p0 = inputB[3 * b + 0];
         const Vector3d &p1 = inputB[3 * b + 1];
         const Vector3d &p2 = inputB[3 * b + 2];
-        degenerateTriangleFlagB[b] = IsDegenerateTriangle(p0, p1, p2);
+        degenerateTriangleFlagB[b] = AreCoLinear(p0, p1, p2);
     });
 
     // Compute triangle-triangle symbolic intersections
@@ -719,7 +689,7 @@ void MeshCorefinement::Corefine(
                 const SI::Element elemA = inct.GetElement0();
                 const SI::Element elemB = inct.GetElement1();
                 intersectionInfo.points.push_back(
-                    EvaluateSymbolicIntersection(p0, p1, p2, q0, q1, q2, elemA, elemB));
+                    ResolveSymbolicIntersection(p0, p1, p2, q0, q1, q2, elemA, elemB));
             }
         }
     });
