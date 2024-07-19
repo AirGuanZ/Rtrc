@@ -5,6 +5,7 @@
 
 RTRC_GEO_BEGIN
 
+template<typename T>
 class IndexedPositions
 {
 public:
@@ -12,13 +13,13 @@ public:
     IndexedPositions() = default;
 
     // By setting indices to empty, they will be implicitly defined as 0, 1, 2, ...
-    IndexedPositions(Span<Vector3d> positions, Span<uint32_t> indices)
+    IndexedPositions(Span<Vector3<T>> positions, Span<uint32_t> indices)
         : positions(positions), indices(indices)
     {
 
     }
 
-    const Vector3d &operator[](uint32_t i) const
+    const Vector3<T> &operator[](uint32_t i) const
     {
         if(indices.IsEmpty())
         {
@@ -32,7 +33,7 @@ public:
         return indices.IsEmpty() ? positions.size() : indices.size();
     }
 
-    Span<Vector3d> GetPositions() const
+    Span<Vector3<T>> GetPositions() const
     {
         return positions;
     }
@@ -44,7 +45,7 @@ public:
 
 private:
 
-    Span<Vector3d> positions;
+    Span<Vector3<T>> positions;
     Span<uint32_t> indices;
 };
 
@@ -57,9 +58,9 @@ void ComputeAngleAveragedNormals(
 // By setting inputIndices to empty, they will be implicitly defined as 0, 1, 2, ...
 template<typename T>
 void MergeCoincidentVertices(
-    const IndexedPositions  &input,
-    std::vector<Vector3<T>> &outputPositions,
-    std::vector<uint32_t>   &outputIndices);
+    const IndexedPositions<double> &input,
+    std::vector<Vector3<T>>        &outputPositions,
+    std::vector<uint32_t>          &outputIndices);
 
 RTRC_GEO_END
 

@@ -41,7 +41,7 @@ namespace CorefineDetail
     {
     public:
 
-        explicit BVH(const IndexedPositions &positions)
+        explicit BVH(const IndexedPositions<double> &positions)
         {
             assert(positions.GetSize() % 3 == 0);
             const uint32_t triangleCount = positions.GetSize() / 3;
@@ -209,7 +209,7 @@ namespace CorefineDetail
     };
 
     void RefineTriangles(
-        const IndexedPositions                     &inputPositions,
+        const IndexedPositions<double>             &inputPositions,
         bool                                        collectCutEdges,
         Span<uint8_t>                               degenerateTriangleFlags,
         Span<std::vector<TrianglePairIntersection>> triangleToPairwiseIntersections,
@@ -389,8 +389,8 @@ namespace CorefineDetail
     void ComputeSymbolicIntersection(
         uint32_t                               triangleA,
         uint32_t                               triangleB,
-        const IndexedPositions                &positionsA,
-        const IndexedPositions                &positionsB,
+        const IndexedPositions<double>        &positionsA,
+        const IndexedPositions<double>        &positionsB,
         std::vector<TrianglePairIntersection> &output)
     {
         const Vector3d &a0 = positionsA[3 * triangleA + 0];
@@ -410,12 +410,12 @@ namespace CorefineDetail
     }
 
     void GenerateRoundedOutput(
-        Span<PerTriangleOutput> triangleToOutput,
-        const IndexedPositions &inputPositions,
-        std::vector<Vector3d>  &outputPositions,
-        std::vector<uint32_t>  &outputIndices,
-        std::vector<uint32_t>  *outputFaceToInputFace,
-        std::vector<Vector2u>  *outputCutEdges)
+        Span<PerTriangleOutput>         triangleToOutput,
+        const IndexedPositions<double> &inputPositions,
+        std::vector<Vector3d>          &outputPositions,
+        std::vector<uint32_t>          &outputIndices,
+        std::vector<uint32_t>          *outputFaceToInputFace,
+        std::vector<Vector2u>          *outputCutEdges)
     {
         std::map<Vector3d, uint32_t> positionToIndex;
         auto GetIndex = [&](const Vector3d &position)

@@ -39,12 +39,12 @@ namespace MeshCleanDetail
     }
 
     void RemoveDegenerateTriangles(
-        const IndexedPositions &rawInput,
-        std::vector<Vector3d>  &outputPositions,
-        std::vector<uint32_t>  &outputIndices,
-        std::vector<uint32_t>  *outputFaceMap,
-        std::vector<uint32_t>  *outputVertexMap,
-        std::vector<uint32_t>  *outputInverseVertexMap)
+        const IndexedPositions<double> &rawInput,
+        std::vector<Vector3d>          &outputPositions,
+        std::vector<uint32_t>          &outputIndices,
+        std::vector<uint32_t>          *outputFaceMap,
+        std::vector<uint32_t>          *outputVertexMap,
+        std::vector<uint32_t>          *outputInverseVertexMap)
     {
         outputPositions.clear();
         outputIndices.clear();
@@ -274,7 +274,7 @@ namespace MeshCleanDetail
             }
         }
 
-        MergeCoincidentVertices(IndexedPositions(positions, remainingIndices), outputPositions, outputIndices);
+        MergeCoincidentVertices(IndexedPositions<double>(positions, remainingIndices), outputPositions, outputIndices);
 
         if(outputVertexMap)
         {

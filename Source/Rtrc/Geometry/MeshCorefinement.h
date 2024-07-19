@@ -30,6 +30,7 @@ public:
     // Store output positions in exact homogeneous coordinates, avoiding rounding to double precision.
     // When set to true, the output has no degenerate triangle except those inherited directly from the input.
     // Otherwise, despite exact corefinement, snap rounding may lead to the degenerate triangles or new unresolved intersections.
+    // See MeshCleaner::RemoveDegenerateTriangles for removing degenrates.
     bool preserveExactPositions = false;
 
     // Output connectivity

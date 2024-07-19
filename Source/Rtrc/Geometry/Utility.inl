@@ -1,5 +1,7 @@
 #pragma once
 
+#include <map>
+
 #include <Rtrc/Core/Math/Common.h>
 
 RTRC_GEO_BEGIN
@@ -46,9 +48,9 @@ void ComputeAngleAveragedNormals(
 
 template<typename T>
 void MergeCoincidentVertices(
-    const IndexedPositions  &input,
-    std::vector<Vector3<T>> &outputPositions,
-    std::vector<uint32_t>   &outputIndices)
+    const IndexedPositions<double> &input,
+    std::vector<Vector3<T>>        &outputPositions,
+    std::vector<uint32_t>          &outputIndices)
 {
     outputPositions.clear();
     outputIndices.clear();
