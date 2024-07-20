@@ -137,22 +137,17 @@ void DirectX12CommandBuffer::BindPipeline(const OPtr<ComputePipeline> &pipeline)
     };
     commandList_->SetProgram(&setProgramDesc);
 
-    if(auto s = d3dPipeline->_internalGetRootSignature().Get(); currentComputeRootSignature_ != s)
-    {
-        commandList_->SetComputeRootSignature(s);
-        currentComputeRootSignature_ = s;
-    }
-
 #else
 
     commandList_->SetPipelineState(d3dPipeline->_internalGetNativePipelineState().Get());
+
+#endif
+
     if(auto s = d3dPipeline->_internalGetRootSignature().Get(); currentComputeRootSignature_ != s)
     {
         commandList_->SetComputeRootSignature(s);
         currentComputeRootSignature_ = s;
     }
-
-#endif
 }
 
 void DirectX12CommandBuffer::BindPipeline(const OPtr<RayTracingPipeline> &pipeline)

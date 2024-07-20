@@ -19,66 +19,6 @@ namespace PipelineDetail
 
 } // namespace PipelineDetail
 
-/*void GraphicsPipeline::Desc::Validate() const
-{
-#define VALIDATE_FAIL(...) [&]{ throw Exception("GraphicsPipeline::Desc::Validate: " __VA_ARGS__); }()
-
-    if(!shader)
-    {
-        VALIDATE_FAIL("'shader' is not set");
-    }
-
-    if(shader->GetCategory() == ShaderCategory::ClassicalGraphics)
-    {
-        if(!shader->GetRawShader(RHI::ShaderType::VertexShader))
-        {
-            VALIDATE_FAIL("'shader' doesn't contain vertex shader");
-        }
-        if(!shader->GetRawShader(RHI::ShaderType::FragmentShader))
-        {
-            VALIDATE_FAIL("'shader' doesn't contain fragment shader");
-        }
-    }
-    else if(shader->GetCategory() == ShaderCategory::MeshGraphics)
-    {
-        if(!shader->GetRawShader(RHI::ShaderType::MeshShader))
-        {
-            VALIDATE_FAIL("'shader doesn't contain mesh shader");
-        }
-        if(!shader->GetRawShader(RHI::ShaderType::FragmentShader))
-        {
-            VALIDATE_FAIL("'shader' doesn't contain fragment shader");
-        }
-        if(meshLayout)
-        {
-            VALIDATE_FAIL("'meshLayout' must be empty for mesh pipeline");
-        }
-    }
-    else
-    {
-        VALIDATE_FAIL("invalid shader category");
-    }
-
-    if(viewports.Is<std::monostate>())
-    {
-        VALIDATE_FAIL("'viewports' is not set");
-    }
-
-    if(scissors.Is<std::monostate>())
-    {
-        VALIDATE_FAIL("'scissors' is not set");
-    }
-
-    const bool useDepthStencil = enableDepthTest || enableDepthWrite || enableStencilTest;
-    const bool hasDepthStencilFormat = depthStencilFormat != RHI::Format::Unknown;
-    if(useDepthStencil != hasDepthStencilFormat)
-    {
-        VALIDATE_FAIL("depth stencil settings cannot match depthStencilFormat");
-    }
-
-#undef VALIDATE_FAIL
-}*/
-
 void RayTracingPipeline::GetShaderGroupHandles(
     uint32_t               startGroupIndex,
     uint32_t               groupCount,

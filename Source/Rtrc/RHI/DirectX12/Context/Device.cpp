@@ -588,6 +588,8 @@ UPtr<RayTracingPipeline> DirectX12Device::CreateRayTracingPipeline(const RayTrac
         }
     }
 
+    std::vector<uint32_t> libraryIndexToFirstShaderIndex;
+    libraryIndexToFirstShaderIndex.reserve(desc.libraries.size());
     for(auto &&[libraryIndex, library] : Enumerate(desc.libraries))
     {
         auto d3dLibrary = static_cast<DirectX12RayTracingLibrary *>(library.Get());
@@ -596,6 +598,7 @@ UPtr<RayTracingPipeline> DirectX12Device::CreateRayTracingPipeline(const RayTrac
         auto d3dShader = static_cast<DirectX12RawShader *>(d3dLibrary->_internalGetDesc().rawShader.Get());
         dxilLibrary->SetDXILLibrary(&d3dShader->_internalGetShaderByteCode());
 
+        libraryIndexToFirstShaderIndex.push_back(entryRecords.size());
         for(auto &&[entryIndex, entry] : Enumerate(d3dShader->_internalGetEntries()))
         {
             entryRecords.push_back({ entry.name, static_cast<int>(libraryIndex), 0, static_cast<int>(entryIndex), {} });
@@ -609,8 +612,13 @@ UPtr<RayTracingPipeline> DirectX12Device::CreateRayTracingPipeline(const RayTrac
 
     std::vector<std::wstring> groupExportedNames;
 
-    for(auto &&[groupIndex, group] : Enumerate(desc.shaderGroups))
+    auto HandleShaderGroup = [&](uint32_t libraryIndex, uint32_t groupIndex, const RayTracingShaderGroup& group)
     {
+        uint32_t firstEntryIndex = 0;
+        if(libraryIndex != (std::numeric_limits<uint32_t>::max)())
+        {
+            firstEntryIndex = libraryIndexToFirstShaderIndex[libraryIndex];
+        }
         group.Match(
             [&](const RayTracingHitShaderGroup &hitGroup)
             {
@@ -618,40 +626,57 @@ UPtr<RayTracingPipeline> DirectX12Device::CreateRayTracingPipeline(const RayTrac
                 if(hitGroup.closestHitShaderIndex != RAY_TRACING_UNUSED_SHADER)
                 {
                     dxilGroup->SetClosestHitShaderImport(
-                        entryRecords[hitGroup.closestHitShaderIndex].GetExportName().c_str());
+                        entryRecords[firstEntryIndex + hitGroup.closestHitShaderIndex].GetExportName().c_str());
                 }
                 if(hitGroup.anyHitShaderIndex != RAY_TRACING_UNUSED_SHADER)
                 {
                     dxilGroup->SetAnyHitShaderImport(
-                        entryRecords[hitGroup.anyHitShaderIndex].GetExportName().c_str());
+                        entryRecords[firstEntryIndex + hitGroup.anyHitShaderIndex].GetExportName().c_str());
                 }
                 if(hitGroup.intersectionShaderIndex != RAY_TRACING_UNUSED_SHADER)
                 {
                     dxilGroup->SetIntersectionShaderImport(
-                        entryRecords[hitGroup.intersectionShaderIndex].GetExportName().c_str());
+                        entryRecords[firstEntryIndex + hitGroup.intersectionShaderIndex].GetExportName().c_str());
                     dxilGroup->SetHitGroupType(D3D12_HIT_GROUP_TYPE_PROCEDURAL_PRIMITIVE);
                 }
                 else
                 {
                     dxilGroup->SetHitGroupType(D3D12_HIT_GROUP_TYPE_TRIANGLES);
                 }
+
                 // groupName: HitGroup_{libraryIndex}_{groupIndex}
-                groupExportedNames.push_back(Utf8ToWin32W(fmt::format(
-                    "HitGroup_{}_{}", (std::numeric_limits<int>::max)(), groupIndex)));
+                groupExportedNames.push_back(Utf8ToWin32W(fmt::format("HitGroup_{}_{}", libraryIndex, groupIndex)));
                 dxilGroup->SetHitGroupExport(groupExportedNames.back().c_str());
             },
             [&](const RayTracingRayGenShaderGroup &rayGenGroup)
             {
-                groupExportedNames.push_back(entryRecords[rayGenGroup.rayGenShaderIndex].GetExportName());
+                groupExportedNames.push_back(
+                    entryRecords[firstEntryIndex + rayGenGroup.rayGenShaderIndex].GetExportName());
             },
                 [&](const RayTracingMissShaderGroup &missGroup)
             {
-                groupExportedNames.push_back(entryRecords[missGroup.missShaderIndex].GetExportName());
+                groupExportedNames.push_back(
+                    entryRecords[firstEntryIndex + missGroup.missShaderIndex].GetExportName());
             },
                 [&](const RayTracingCallableShaderGroup &callableGroup)
             {
-                groupExportedNames.push_back(entryRecords[callableGroup.callableShaderIndex].GetExportName());
+                groupExportedNames.push_back(
+                    entryRecords[firstEntryIndex + callableGroup.callableShaderIndex].GetExportName());
             });
+    };
+
+    for(auto &&[groupIndex, group] : Enumerate(desc.shaderGroups))
+    {
+        HandleShaderGroup((std::numeric_limits<uint32_t>::max)(), groupIndex, group);
+    }
+
+    for(auto &&[libraryIndex, library] : Enumerate(desc.libraries))
+    {
+        auto d3dLibrary = static_cast<DirectX12RayTracingLibrary *>(library.Get());
+        for(auto &&[localGroupIndex, group] : Enumerate(d3dLibrary->_internalGetDesc().shaderGroups))
+        {
+            HandleShaderGroup(libraryIndex, localGroupIndex, group);
+        }
     }
 
     auto shaderConfig = pipelineDesc.CreateSubobject<CD3DX12_RAYTRACING_SHADER_CONFIG_SUBOBJECT>();

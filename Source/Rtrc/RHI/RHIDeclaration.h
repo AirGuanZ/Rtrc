@@ -1196,6 +1196,11 @@ struct RayTracingLibraryDesc
     uint32_t                           maxRecursiveDepth;
 };
 
+// Guidelines for shaders, shader groups, and libraries:
+// 1. Shaders defined in desc.libraries are placed after desc.rawShaders.
+// 2. Groups defined in desc.libraries are placed after desc.shaderGroups.
+// 3. desc.shaderGroups may reference shaders defined in desc.libraries.
+// 4. Groups within desc.libraries can only reference shaders within the same libraries, using local shader indices.
 struct RayTracingPipelineDesc
 {
     std::vector<RawShaderOPtr>         rawShaders;

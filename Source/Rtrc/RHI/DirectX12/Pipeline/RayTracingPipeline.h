@@ -27,7 +27,7 @@ public:
 private:
 
     ComPtr<ID3D12StateObject>           pipelineStateObject_;
-    OPtr<BindingLayout>                  bindingLayout_;
+    OPtr<BindingLayout>                 bindingLayout_;
     ComPtr<ID3D12RootSignature>         rootSignature_;
     std::vector<std::wstring>           groupExportedNames_;
     ComPtr<ID3D12StateObjectProperties> properties_;
