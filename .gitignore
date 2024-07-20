@@ -5,6 +5,7 @@
 /Build/
 /BuildCMake/
 /External/eigen-3.4.0/
+/External/microsoft.direct3d.d3d12.1.715.0-preview/
 /External/mimalloc/build/
 /External/multiprecision-Boost/
 /External/llvm16.0.6/build_debug/

@@ -26,7 +26,7 @@ namespace DirectX12Detail
 
 } // namespace DirectX12Detail
 
-extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 613; }
+extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 715; }
 extern "C" { __declspec(dllexport) extern const char8_t *D3D12SDKPath = u8".\\D3D12\\"; }
 
 std::string HResultToString(HRESULT hr)

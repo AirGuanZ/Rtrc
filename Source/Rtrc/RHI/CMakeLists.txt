@@ -48,7 +48,7 @@ target_link_libraries(RtrcRHI PUBLIC RtrcCore)
 target_link_libraries(RtrcRHI PRIVATE glfw)
 
 if(RTRC_ENABLE_DIRECTX12_BACKEND)
-	target_link_libraries(RtrcRHI PUBLIC d3d12_1613 winpix_102 D3D12MemoryAllocator)
+	target_link_libraries(RtrcRHI PUBLIC d3d12_1715 winpix_102 D3D12MemoryAllocator)
 endif()
 
 if(RTRC_ENABLE_VULKAN_BACKEND)
