@@ -39,8 +39,10 @@ function(rtrc_register_target TARGET_NAME)
     rtrc_register_shaders(${TARGET_NAME} ${ARGN})
     get_target_property(TARGET_TYPE ${TARGET_NAME} TYPE)
     if (TARGET_TYPE STREQUAL "EXECUTABLE")
-        rtrc_deploy_d3d12_sdk(${TARGET_NAME})
-	    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+        if(RTRC_ENABLE_DIRECTX12_BACKEND)
+            rtrc_deploy_d3d12_sdk(${TARGET_NAME})
+	    endif()
+        add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
 	        COMMAND
                 ${CMAKE_COMMAND} -E copy_if_different
                 $<TARGET_RUNTIME_DLLS:${TARGET_NAME}>
