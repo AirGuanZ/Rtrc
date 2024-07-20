@@ -29,7 +29,7 @@ private:
     ComPtr<ID3D12CommandAllocator> allocator_;
 
     size_t nextFreeCommandBufferIndex_;
-    std::vector<ComPtr<ID3D12GraphicsCommandList7>> commandBuffers_;
+    std::vector<ComPtr<ID3D12GraphicsCommandList10>> commandBuffers_;
 };
 
 RTRC_RHI_D3D12_END

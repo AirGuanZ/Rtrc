@@ -17,9 +17,9 @@ public:
 #endif
 
     DirectX12CommandBuffer(
-        DirectX12Device                   *device,
-        DirectX12CommandPool              *pool,
-        ComPtr<ID3D12GraphicsCommandList7> commandList);
+        DirectX12Device                    *device,
+        DirectX12CommandPool               *pool,
+        ComPtr<ID3D12GraphicsCommandList10> commandList);
     
     void Begin() RTRC_RHI_OVERRIDE;
     void End()   RTRC_RHI_OVERRIDE;
@@ -149,9 +149,9 @@ protected:
 
 private:
     
-    DirectX12Device                   *device_;
-    DirectX12CommandPool              *pool_;
-    ComPtr<ID3D12GraphicsCommandList7> commandList_;
+    DirectX12Device                    *device_;
+    DirectX12CommandPool               *pool_;
+    ComPtr<ID3D12GraphicsCommandList10> commandList_;
 
     OPtr<GraphicsPipeline>   currentGraphicsPipeline_;
     OPtr<ComputePipeline>    currentComputePipeline_;

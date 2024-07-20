@@ -148,8 +148,31 @@ DirectX12Device::DirectX12Device(
     RTRC_D3D12_FAIL_MSG(
         device_->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS21, &options21, sizeof(options21)),
         "Fail to check d3d12 feature support of D3D12_FEATURE_D3D12_OPTIONS21");
-    workGraphTier_ = options21.WorkGraphsTier == D3D12_WORK_GRAPHS_TIER_NOT_SUPPORTED ?
-                        WorkGraphTier::None : WorkGraphTier::Compute;
+
+    if(options21.WorkGraphsTier >= D3D12_WORK_GRAPHS_TIER_1_1)
+    {
+        workGraphTier_ = WorkGraphTier::Graphics;
+    }
+    else if(options21.WorkGraphsTier >= D3D12_WORK_GRAPHS_TIER_1_0)
+    {
+        workGraphTier_ = WorkGraphTier::Compute;
+    }
+    else
+    {
+        workGraphTier_ = WorkGraphTier::None;
+    }
+
+    D3D12_FEATURE_DATA_SHADER_MODEL shaderModel;
+    shaderModel.HighestShaderModel = D3D_SHADER_MODEL_6_8;
+    RTRC_D3D12_FAIL_MSG(
+        device_->CheckFeatureSupport(D3D12_FEATURE_SHADER_MODEL, &shaderModel, sizeof(shaderModel)),
+        "Fail to check d3d12 feature support of shader model");
+    if(shaderModel.HighestShaderModel < D3D_SHADER_MODEL_6_8)
+    {
+        throw Exception(std::format(
+            "Shader model 6.8 is required by rtrc. The highest supported version is {:x}",
+            static_cast<uint32_t>(shaderModel.HighestShaderModel)));
+    }
 }
 
 DirectX12Device::~DirectX12Device()
@@ -457,6 +480,50 @@ UPtr<GraphicsPipeline> DirectX12Device::CreateGraphicsPipeline(const GraphicsPip
 
 UPtr<ComputePipeline> DirectX12Device::CreateComputePipeline(const ComputePipelineDesc &desc)
 {
+#if RTRC_RHI_D3D12_USE_GENERIC_PROGRAM_FOR_COMPUTE_PIPELINE
+
+    CD3DX12_STATE_OBJECT_DESC stateObjectDesc(D3D12_STATE_OBJECT_TYPE_EXECUTABLE);
+
+    auto d3dShader = static_cast<DirectX12RawShader *>(desc.computeShader.Get());
+    const std::wstring exportName = Utf8ToWin32W(d3dShader->_internalGetEntries()[0].name);
+
+    auto dxilLibrary = stateObjectDesc.CreateSubobject<CD3DX12_DXIL_LIBRARY_SUBOBJECT>();
+    dxilLibrary->SetDXILLibrary(&d3dShader->_internalGetShaderByteCode());
+    dxilLibrary->DefineExport(exportName.c_str());
+    dxilLibrary->Finalize();
+
+    auto d3dBindingLayout = static_cast<DirectX12BindingLayout *>(desc.bindingLayout.Get());
+    auto rootSignature = d3dBindingLayout->_internalGetRootSignature(false);
+    auto globalRootSignatureSubObject = stateObjectDesc.CreateSubobject<CD3DX12_GLOBAL_ROOT_SIGNATURE_SUBOBJECT>();
+    globalRootSignatureSubObject->SetRootSignature(rootSignature.Get());
+    globalRootSignatureSubObject->Finalize();
+
+    /*auto asso = stateObjectDesc.CreateSubobject<CD3DX12_SUBOBJECT_TO_EXPORTS_ASSOCIATION_SUBOBJECT>();
+    asso->SetSubobjectToAssociate(*globalRootSignatureSubObject);
+    asso->AddExport(exportName.c_str());
+    asso->Finalize();*/
+
+    auto genericProgram = stateObjectDesc.CreateSubobject<CD3DX12_GENERIC_PROGRAM_SUBOBJECT>();
+    genericProgram->SetProgramName(L"Program");
+    genericProgram->AddExport(exportName.c_str());
+    genericProgram->Finalize();
+    
+    ComPtr<ID3D12StateObject> stateObject;
+    RTRC_D3D12_FAIL_MSG(
+        device_->CreateStateObject(stateObjectDesc, IID_PPV_ARGS(stateObject.GetAddressOf())),
+        "Fail to create generic program for directx12 compute pipeline");
+
+    ComPtr<ID3D12StateObjectProperties1> stateObjectProperties;
+    RTRC_D3D12_FAIL_MSG(
+        stateObject->QueryInterface(IID_PPV_ARGS(stateObjectProperties.GetAddressOf())),
+        "Fail to query ID3D12StateObjectProperties1 from state object");
+    const auto programIdentifier = stateObjectProperties->GetProgramIdentifier(L"Program");
+
+    return MakeUPtr<DirectX12ComputePipeline>(
+        desc.bindingLayout, std::move(rootSignature), std::move(stateObject), programIdentifier);
+
+#else
+
     auto d3dBindingLayout = static_cast<DirectX12BindingLayout *>(desc.bindingLayout.Get());
     auto rootSignature = d3dBindingLayout->_internalGetRootSignature(false);
 
@@ -472,6 +539,8 @@ UPtr<ComputePipeline> DirectX12Device::CreateComputePipeline(const ComputePipeli
         "Fail to create directx12 compute pipeline state");
 
     return MakeUPtr<DirectX12ComputePipeline>(desc.bindingLayout, std::move(rootSignature), std::move(pipelineState));
+
+#endif
 }
 
 UPtr<RayTracingPipeline> DirectX12Device::CreateRayTracingPipeline(const RayTracingPipelineDesc &desc)

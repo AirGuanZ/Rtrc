@@ -1,7 +1,6 @@
 #include <Rtrc/RHI/DirectX12/Context/Device.h>
 #include <Rtrc/RHI/DirectX12/Queue/CommandBuffer.h>
 #include <Rtrc/RHI/DirectX12/Queue/CommandPool.h>
-#include <Rtrc/Core/Unreachable.h>
 
 RTRC_RHI_D3D12_BEGIN
 
@@ -43,7 +42,7 @@ RPtr<CommandBuffer> DirectX12CommandPool::NewCommandBuffer()
 void DirectX12CommandPool::CreateCommandBuffer()
 {
     const D3D12_COMMAND_LIST_TYPE type = TranslateCommandListType(type_);
-    ComPtr<ID3D12GraphicsCommandList7> commandList;
+    ComPtr<ID3D12GraphicsCommandList10> commandList;
     RTRC_D3D12_FAIL_MSG(
         device_->_internalGetNativeDevice()->CreateCommandList(
             0, type, allocator_.Get(), nullptr, IID_PPV_ARGS(commandList.GetAddressOf())),

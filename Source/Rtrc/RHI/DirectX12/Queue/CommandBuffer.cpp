@@ -23,9 +23,9 @@
 RTRC_RHI_D3D12_BEGIN
 
 DirectX12CommandBuffer::DirectX12CommandBuffer(
-    DirectX12Device                   *device,
-    DirectX12CommandPool              *pool,
-    ComPtr<ID3D12GraphicsCommandList7> commandList)
+    DirectX12Device                    *device,
+    DirectX12CommandPool               *pool,
+    ComPtr<ID3D12GraphicsCommandList10> commandList)
     : device_(device)
     , pool_(pool)
     , commandList_(std::move(commandList))
@@ -124,12 +124,35 @@ void DirectX12CommandBuffer::BindPipeline(const OPtr<ComputePipeline> &pipeline)
 {
     const auto d3dPipeline = static_cast<DirectX12ComputePipeline*>(pipeline.Get());
     currentComputePipeline_ = pipeline;
+
+#if RTRC_RHI_D3D12_USE_GENERIC_PROGRAM_FOR_COMPUTE_PIPELINE
+
+    const D3D12_SET_PROGRAM_DESC setProgramDesc =
+    {
+        .Type = D3D12_PROGRAM_TYPE_GENERIC_PIPELINE,
+        .GenericPipeline = D3D12_SET_GENERIC_PIPELINE_DESC
+        {
+            .ProgramIdentifier = d3dPipeline->_internalGetProgramIdentifier()
+        }
+    };
+    commandList_->SetProgram(&setProgramDesc);
+
+    if(auto s = d3dPipeline->_internalGetRootSignature().Get(); currentComputeRootSignature_ != s)
+    {
+        commandList_->SetComputeRootSignature(s);
+        currentComputeRootSignature_ = s;
+    }
+
+#else
+
     commandList_->SetPipelineState(d3dPipeline->_internalGetNativePipelineState().Get());
     if(auto s = d3dPipeline->_internalGetRootSignature().Get(); currentComputeRootSignature_ != s)
     {
         commandList_->SetComputeRootSignature(s);
         currentComputeRootSignature_ = s;
     }
+
+#endif
 }
 
 void DirectX12CommandBuffer::BindPipeline(const OPtr<RayTracingPipeline> &pipeline)
