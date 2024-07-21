@@ -10,6 +10,7 @@
 #include <Rtrc/RHI/DirectX12/Pipeline/ComputePipeline.h>
 #include <Rtrc/RHI/DirectX12/Pipeline/GraphicsPipeline.h>
 #include <Rtrc/RHI/DirectX12/Pipeline/RayTracingPipeline.h>
+#include <Rtrc/RHI/DirectX12/Pipeline/WorkGraphPipeline.h>
 #include <Rtrc/RHI/DirectX12/Queue/CommandBuffer.h>
 #include <Rtrc/RHI/DirectX12/Queue/CommandPool.h>
 #include <Rtrc/RHI/DirectX12/RayTracing/BlasPrebuildInfo.h>
@@ -155,7 +156,32 @@ void DirectX12CommandBuffer::BindPipeline(const OPtr<RayTracingPipeline> &pipeli
     auto d3dPipeline = static_cast<DirectX12RayTracingPipeline*>(pipeline.Get());
     currentRayTracingPipeline_ = pipeline;
     commandList_->SetPipelineState1(d3dPipeline->_internalGetStateObject().Get());
+
     if(auto s = d3dPipeline->_internalGetRootSignature().Get(); currentComputeRootSignature_ != s)
+    {
+        commandList_->SetComputeRootSignature(s);
+        currentComputeRootSignature_ = s;
+    }
+}
+
+void DirectX12CommandBuffer::BindPipeline(const OPtr<WorkGraphPipeline> &pipeline)
+{
+    auto d3dPipeline = static_cast<DirectX12WorkGraphPipeline *>(pipeline.Get());
+    currentWorkGraphPipeline_ = pipeline;
+    commandList_->SetPipelineState1(d3dPipeline->_internalGetStateObject().Get());
+
+    const D3D12_SET_PROGRAM_DESC setProgramDesc =
+    {
+        .Type = D3D12_PROGRAM_TYPE_GENERIC_PIPELINE,
+        .GenericPipeline = D3D12_SET_GENERIC_PIPELINE_DESC
+        {
+            .ProgramIdentifier = d3dPipeline->_internalGetProgramIdentifier()
+        }
+    };
+    commandList_->SetProgram(&setProgramDesc);
+
+    auto d3dBindingLayout = static_cast<DirectX12BindingLayout *>(d3dPipeline->GetDesc().bindingLayout.Get());
+    if(auto s = d3dBindingLayout->_internalGetRootSignature(false).Get(); currentComputeRootSignature_ != s)
     {
         commandList_->SetComputeRootSignature(s);
         currentComputeRootSignature_ = s;
@@ -183,6 +209,14 @@ void DirectX12CommandBuffer::BindGroupsToRayTracingPipeline(int startIndex, Span
     for(auto &&[i, group] : Enumerate(groups))
     {
         BindGroupToRayTracingPipeline(static_cast<int>(startIndex + i), group);
+    }
+}
+
+void DirectX12CommandBuffer::BindGroupsToWorkGraphPipeline(int startIndex, Span<OPtr<BindingGroup>> groups)
+{
+    for(auto &&[i, group] : Enumerate(groups))
+    {
+        BindGroupToWorkGraphPipeline(static_cast<int>(startIndex + i), group);
     }
 }
 
@@ -225,6 +259,24 @@ void DirectX12CommandBuffer::BindGroupToComputePipeline(int index, const OPtr<Bi
 void DirectX12CommandBuffer::BindGroupToRayTracingPipeline(int index, const OPtr<BindingGroup> &group)
 {
     const auto bindingLayout = static_cast<DirectX12BindingLayout *>(currentRayTracingPipeline_->GetBindingLayout().Get());
+    const auto d3dGroup = static_cast<DirectX12BindingGroup *>(group.Get());
+    const int firstRootParamIndex = bindingLayout->_internalGetRootParamIndex(index);
+    for(auto &&[i, table] : Enumerate(d3dGroup->_internalGetDescriptorTables()))
+    {
+        commandList_->SetComputeRootDescriptorTable(static_cast<UINT>(firstRootParamIndex + i), table.gpuHandle);
+    }
+
+    for(auto &alias : bindingLayout->_internalGetUnboundedResourceArrayAliases(index))
+    {
+        auto &table = d3dGroup->_internalGetDescriptorTables()[alias.srcTableIndex];
+        const D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = { table.gpuHandle.ptr + alias.offsetInSrcTable };
+        commandList_->SetComputeRootDescriptorTable(static_cast<UINT>(alias.rootParamIndex), gpuHandle);
+    }
+}
+
+void DirectX12CommandBuffer::BindGroupToWorkGraphPipeline(int index, const OPtr<BindingGroup> &group)
+{
+    const auto bindingLayout = static_cast<DirectX12BindingLayout *>(currentWorkGraphPipeline_->GetDesc().bindingLayout.Get());
     const auto d3dGroup = static_cast<DirectX12BindingGroup *>(group.Get());
     const int firstRootParamIndex = bindingLayout->_internalGetRootParamIndex(index);
     for(auto &&[i, table] : Enumerate(d3dGroup->_internalGetDescriptorTables()))
@@ -357,6 +409,23 @@ void DirectX12CommandBuffer::DispatchMesh(int groupCountX, int groupCountY, int 
 void DirectX12CommandBuffer::Dispatch(int groupCountX, int groupCountY, int groupCountZ)
 {
     commandList_->Dispatch(groupCountX, groupCountY, groupCountZ);
+}
+
+void DirectX12CommandBuffer::DispatchNode(
+    uint32_t entryIndex, uint32_t recordCount, uint32_t recordStride, const void *records)
+{
+    const D3D12_DISPATCH_GRAPH_DESC dispatchDesc =
+    {
+        .Mode         = D3D12_DISPATCH_MODE_NODE_CPU_INPUT,
+        .NodeCPUInput = D3D12_NODE_CPU_INPUT
+        {
+            .EntrypointIndex     = entryIndex,
+            .NumRecords          = recordCount,
+            .pRecords            = records,
+            .RecordStrideInBytes = recordStride
+        }
+    };
+    commandList_->DispatchGraph(&dispatchDesc);
 }
 
 void DirectX12CommandBuffer::TraceRays(

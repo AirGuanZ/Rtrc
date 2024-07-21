@@ -44,6 +44,7 @@ public:
     UPtr<GraphicsPipeline>   CreateGraphicsPipeline  (const GraphicsPipelineDesc &desc) RTRC_RHI_OVERRIDE;
     UPtr<ComputePipeline>    CreateComputePipeline   (const ComputePipelineDesc &desc) RTRC_RHI_OVERRIDE;
     UPtr<RayTracingPipeline> CreateRayTracingPipeline(const RayTracingPipelineDesc &desc) RTRC_RHI_OVERRIDE;
+    UPtr<WorkGraphPipeline>  CreateWorkGraphPipeline (const WorkGraphPipelineDesc &desc) RTRC_RHI_OVERRIDE;
 
     UPtr<RayTracingLibrary> CreateRayTracingLibrary(const RayTracingLibraryDesc &desc) RTRC_RHI_OVERRIDE;
 

@@ -7,6 +7,7 @@
 #include <Rtrc/RHI/DirectX12/Pipeline/RayTracingLibrary.h>
 #include <Rtrc/RHI/DirectX12/Pipeline/RayTracingPipeline.h>
 #include <Rtrc/RHI/DirectX12/Pipeline/Shader.h>
+#include <Rtrc/RHI/DirectX12/Pipeline/WorkGraphPipeline.h>
 #include <Rtrc/RHI/DirectX12/Queue/CommandPool.h>
 #include <Rtrc/RHI/DirectX12/Queue/Fence.h>
 #include <Rtrc/RHI/DirectX12/Queue/Queue.h>
@@ -697,6 +698,44 @@ UPtr<RayTracingPipeline> DirectX12Device::CreateRayTracingPipeline(const RayTrac
 
     return MakeUPtr<DirectX12RayTracingPipeline>(
         std::move(stateObject), desc.bindingLayout, std::move(rootSignature), std::move(groupExportedNames));
+}
+
+UPtr<WorkGraphPipeline> DirectX12Device::CreateWorkGraphPipeline(const WorkGraphPipelineDesc &desc)
+{
+    CD3DX12_STATE_OBJECT_DESC stateObjectDesc(D3D12_STATE_OBJECT_TYPE_EXECUTABLE);
+
+    for(auto &shader : desc.rawShaders)
+    {
+        auto d3dShader = static_cast<DirectX12RawShader *>(shader.Get());
+        auto dxilObject = stateObjectDesc.CreateSubobject<CD3DX12_DXIL_LIBRARY_SUBOBJECT>();
+        dxilObject->SetDXILLibrary(&d3dShader->_internalGetShaderByteCode());
+        dxilObject->Finalize();
+    }
+
+    auto workGraphObject = stateObjectDesc.CreateSubobject<CD3DX12_WORK_GRAPH_SUBOBJECT>();
+    workGraphObject->SetProgramName(L"DefaultWorkGraphProgramName");
+    for(auto &entryPoint : desc.entryPoints)
+    {
+        const std::wstring name = Utf8ToWin32W(entryPoint.name);
+        workGraphObject->AddEntrypoint(D3D12_NODE_ID
+        {
+            .Name = name.c_str(),
+            .ArrayIndex = entryPoint.index
+        });
+    }
+    workGraphObject->Finalize();
+
+    auto d3dBindingLayout = static_cast<DirectX12BindingLayout *>(desc.bindingLayout.Get());
+    auto rootSignatureObject = stateObjectDesc.CreateSubobject<CD3DX12_GLOBAL_ROOT_SIGNATURE_SUBOBJECT>();
+    rootSignatureObject->SetRootSignature(d3dBindingLayout->_internalGetRootSignature(false).Get());
+    rootSignatureObject->Finalize();
+
+    ComPtr<ID3D12StateObject> stateObject;
+    RTRC_D3D12_FAIL_MSG(
+        device_->CreateStateObject(stateObjectDesc, IID_PPV_ARGS(stateObject.GetAddressOf())),
+        "Fail to create d3d12 work graph state object");
+
+    return MakeUPtr<DirectX12WorkGraphPipeline>(desc, std::move(stateObject));
 }
 
 UPtr<RayTracingLibrary> DirectX12Device::CreateRayTracingLibrary(const RayTracingLibraryDesc &desc)

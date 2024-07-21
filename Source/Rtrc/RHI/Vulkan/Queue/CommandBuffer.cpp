@@ -171,6 +171,11 @@ void VulkanCommandBuffer::BindPipeline(const OPtr<RayTracingPipeline> &pipeline)
     currentRayTracingPipeline_ = pipeline;
 }
 
+void VulkanCommandBuffer::BindPipeline(const OPtr<WorkGraphPipeline> &pipeline)
+{
+    throw Exception("Not implemented");
+}
+
 void VulkanCommandBuffer::BindGroupsToGraphicsPipeline(int startIndex, Span<OPtr<BindingGroup>> groups)
 {
     auto layout = static_cast<const VulkanBindingLayout *>(currentGraphicsPipeline_->GetBindingLayout().Get());
@@ -213,6 +218,11 @@ void VulkanCommandBuffer::BindGroupsToRayTracingPipeline(int startIndex, Span<OP
         static_cast<uint32_t>(sets.size()), sets.data(), 0, nullptr);
 }
 
+void VulkanCommandBuffer::BindGroupsToWorkGraphPipeline(int startIndex, Span<OPtr<BindingGroup>> groups)
+{
+    throw Exception("Not implemented");
+}
+
 void VulkanCommandBuffer::BindGroupToGraphicsPipeline(int index, const OPtr<BindingGroup> &group)
 {
     auto layout = static_cast<const VulkanBindingLayout *>(currentGraphicsPipeline_->GetBindingLayout().Get());
@@ -238,6 +248,11 @@ void VulkanCommandBuffer::BindGroupToRayTracingPipeline(int index, const OPtr<Bi
     vkCmdBindDescriptorSets(
         commandBuffer_, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR,
         layout->_internalGetNativeLayout(), index, 1, &set, 0, nullptr);
+}
+
+void VulkanCommandBuffer::BindGroupToWorkGraphPipeline(int index, const OPtr<BindingGroup> &group)
+{
+    throw Exception("Not implemented");
 }
 
 void VulkanCommandBuffer::SetViewports(Span<Viewport> viewports)
@@ -361,6 +376,12 @@ void VulkanCommandBuffer::Dispatch(int groupCountX, int groupCountY, int groupCo
         static_cast<uint32_t>(groupCountX),
         static_cast<uint32_t>(groupCountY),
         static_cast<uint32_t>(groupCountZ));
+}
+
+void VulkanCommandBuffer::DispatchNode(
+    uint32_t entryIndex, uint32_t recordCount, uint32_t recordStride, const void *records)
+{
+    throw Exception("Not implemented");
 }
 
 void VulkanCommandBuffer::TraceRays(

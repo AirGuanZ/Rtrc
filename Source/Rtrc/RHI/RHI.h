@@ -16,6 +16,7 @@
 #include <Rtrc/RHI/Vulkan/Pipeline/RayTracingLibrary.h>
 #include <Rtrc/RHI/Vulkan/Pipeline/RayTracingPipeline.h>
 #include <Rtrc/RHI/Vulkan/Pipeline/Shader.h>
+#include <Rtrc/RHI/Vulkan/Pipeline/WorkGraphPipeline.h>
 #include <Rtrc/RHI/Vulkan/Queue/CommandBuffer.h>
 #include <Rtrc/RHI/Vulkan/Queue/CommandPool.h>
 #include <Rtrc/RHI/Vulkan/Queue/Fence.h>
@@ -47,6 +48,7 @@
 #include <Rtrc/RHI/DirectX12/Pipeline/RayTracingLibrary.h>
 #include <Rtrc/RHI/DirectX12/Pipeline/RayTracingPipeline.h>
 #include <Rtrc/RHI/DirectX12/Pipeline/Shader.h>
+#include <Rtrc/RHI/DirectX12/Pipeline/WorkGraphPipeline.h>
 #include <Rtrc/RHI/DirectX12/Queue/CommandBuffer.h>
 #include <Rtrc/RHI/DirectX12/Queue/CommandPool.h>
 #include <Rtrc/RHI/DirectX12/Queue/Fence.h>

@@ -1226,6 +1226,19 @@ struct RayTracingPipelineDesc
     bool                               useCustomStackSize = false;
 };
 
+struct WorkGraphEntryPoint
+{
+    std::string name;
+    uint32_t index;
+};
+
+struct WorkGraphPipelineDesc
+{
+    std::vector<RawShaderOPtr> rawShaders;
+    std::vector<WorkGraphEntryPoint> entryPoints;
+    OPtr<BindingLayout> bindingLayout;
+};
+
 struct RayTracingTrianglesGeometryData
 {
     RayTracingVertexFormat vertexFormat;
@@ -1549,6 +1562,7 @@ public:
     RTRC_RHI_API UPtr<GraphicsPipeline>   CreateGraphicsPipeline  (const GraphicsPipelineDesc &desc) RTRC_RHI_API_PURE;
     RTRC_RHI_API UPtr<ComputePipeline>    CreateComputePipeline   (const ComputePipelineDesc &desc) RTRC_RHI_API_PURE;
     RTRC_RHI_API UPtr<RayTracingPipeline> CreateRayTracingPipeline(const RayTracingPipelineDesc &desc) RTRC_RHI_API_PURE;
+    RTRC_RHI_API UPtr<WorkGraphPipeline>  CreateWorkGraphPipeline (const WorkGraphPipelineDesc &desc) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API UPtr<RayTracingLibrary> CreateRayTracingLibrary(const RayTracingLibraryDesc &desc) RTRC_RHI_API_PURE;
 
@@ -1711,14 +1725,17 @@ public:
     RTRC_RHI_API void BindPipeline(const OPtr<GraphicsPipeline>   &pipeline) RTRC_RHI_API_PURE;
     RTRC_RHI_API void BindPipeline(const OPtr<ComputePipeline>    &pipeline) RTRC_RHI_API_PURE;
     RTRC_RHI_API void BindPipeline(const OPtr<RayTracingPipeline> &pipeline) RTRC_RHI_API_PURE;
+    RTRC_RHI_API void BindPipeline(const OPtr<WorkGraphPipeline>  &pipeline) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void BindGroupsToGraphicsPipeline  (int startIndex, Span<OPtr<BindingGroup>> groups) RTRC_RHI_API_PURE;
     RTRC_RHI_API void BindGroupsToComputePipeline   (int startIndex, Span<OPtr<BindingGroup>> groups) RTRC_RHI_API_PURE;
     RTRC_RHI_API void BindGroupsToRayTracingPipeline(int startIndex, Span<OPtr<BindingGroup>> groups) RTRC_RHI_API_PURE;
+    RTRC_RHI_API void BindGroupsToWorkGraphPipeline (int startIndex, Span<OPtr<BindingGroup>> groups) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void BindGroupToGraphicsPipeline  (int index, const OPtr<BindingGroup> &group) RTRC_RHI_API_PURE;
     RTRC_RHI_API void BindGroupToComputePipeline   (int index, const OPtr<BindingGroup> &group) RTRC_RHI_API_PURE;
     RTRC_RHI_API void BindGroupToRayTracingPipeline(int index, const OPtr<BindingGroup> &group) RTRC_RHI_API_PURE;
+    RTRC_RHI_API void BindGroupToWorkGraphPipeline (int index, const OPtr<BindingGroup> &group) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void SetViewports(Span<Viewport> viewports) RTRC_RHI_API_PURE;
     RTRC_RHI_API void SetScissors (Span<Scissor> scissor)    RTRC_RHI_API_PURE;
@@ -1762,6 +1779,12 @@ public:
     RTRC_RHI_API void DispatchMesh(int groupCountX, int groupCountY, int groupCountZ) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void Dispatch(int groupCountX, int groupCountY, int groupCountZ) RTRC_RHI_API_PURE;
+
+    RTRC_RHI_API void DispatchNode(
+        uint32_t    entryIndex,
+        uint32_t    recordCount,
+        uint32_t    recordStride,
+        const void *records) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void TraceRays(
         int                             rayCountX,
@@ -1897,7 +1920,9 @@ public:
 
 class WorkGraphPipeline : public RHIObject
 {
-    
+public:
+
+    RTRC_RHI_API const WorkGraphPipelineDesc &GetDesc() const RTRC_RHI_API_PURE;
 };
 
 class Texture : public RHIObject

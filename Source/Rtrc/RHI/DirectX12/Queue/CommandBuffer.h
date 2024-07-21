@@ -32,14 +32,17 @@ public:
     void BindPipeline(const OPtr<GraphicsPipeline>   &pipeline) RTRC_RHI_OVERRIDE;
     void BindPipeline(const OPtr<ComputePipeline>    &pipeline) RTRC_RHI_OVERRIDE;
     void BindPipeline(const OPtr<RayTracingPipeline> &pipeline) RTRC_RHI_OVERRIDE;
+    void BindPipeline(const OPtr<WorkGraphPipeline>  &pipeline) RTRC_RHI_OVERRIDE;
     
     void BindGroupsToGraphicsPipeline  (int startIndex, Span<OPtr<BindingGroup>> groups) RTRC_RHI_OVERRIDE;
     void BindGroupsToComputePipeline   (int startIndex, Span<OPtr<BindingGroup>> groups) RTRC_RHI_OVERRIDE;
     void BindGroupsToRayTracingPipeline(int startIndex, Span<OPtr<BindingGroup>> groups) RTRC_RHI_OVERRIDE;
+    void BindGroupsToWorkGraphPipeline (int startIndex, Span<OPtr<BindingGroup>> groups) RTRC_RHI_OVERRIDE;
 
     void BindGroupToGraphicsPipeline  (int index, const OPtr<BindingGroup> &group) RTRC_RHI_OVERRIDE;
     void BindGroupToComputePipeline   (int index, const OPtr<BindingGroup> &group) RTRC_RHI_OVERRIDE;
     void BindGroupToRayTracingPipeline(int index, const OPtr<BindingGroup> &group) RTRC_RHI_OVERRIDE;
+    void BindGroupToWorkGraphPipeline (int index, const OPtr<BindingGroup> &group) RTRC_RHI_OVERRIDE;
 
     void SetViewports(Span<Viewport> viewports) RTRC_RHI_OVERRIDE;
     void SetScissors(Span<Scissor> scissors) RTRC_RHI_OVERRIDE;
@@ -74,6 +77,12 @@ public:
     void DispatchMesh(int groupCountX, int groupCountY, int groupCountZ) RTRC_RHI_OVERRIDE;
 
     void Dispatch(int groupCountX, int groupCountY, int groupCountZ) RTRC_RHI_OVERRIDE;
+
+    void DispatchNode(
+        uint32_t    entryIndex,
+        uint32_t    recordCount,
+        uint32_t    recordStride,
+        const void *records) RTRC_RHI_OVERRIDE;
 
     void TraceRays(
         int                             rayCountX,
@@ -156,9 +165,10 @@ private:
     OPtr<GraphicsPipeline>   currentGraphicsPipeline_;
     OPtr<ComputePipeline>    currentComputePipeline_;
     OPtr<RayTracingPipeline> currentRayTracingPipeline_;
+    OPtr<WorkGraphPipeline>  currentWorkGraphPipeline_;
 
     ID3D12RootSignature *currentGraphicsRootSignature_;
-    ID3D12RootSignature *currentComputeRootSignature_; // For both compute & ray tracing
+    ID3D12RootSignature *currentComputeRootSignature_; // For compute, work graph and ray tracing
 };
 
 RTRC_RHI_D3D12_END

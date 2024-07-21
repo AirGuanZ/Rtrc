@@ -838,6 +838,11 @@ UPtr<RayTracingPipeline> VulkanDevice::CreateRayTracingPipeline(const RayTracing
     return MakeUPtr<VulkanRayTracingPipeline>(desc.bindingLayout, this, pipeline);
 }
 
+UPtr<WorkGraphPipeline> VulkanDevice::CreateWorkGraphPipeline(const WorkGraphPipelineDesc &desc)
+{
+    return {};
+}
+
 UPtr<RayTracingLibrary> VulkanDevice::CreateRayTracingLibrary(const RayTracingLibraryDesc &desc)
 {
     std::vector<VkPipelineShaderStageCreateInfo> vkStages;
