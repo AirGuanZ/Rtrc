@@ -120,7 +120,7 @@ RC<QueueSyncQuery> DirectX12TransientResourcePool::Allocate(
     struct ResourceAllocation
     {
         Category             category      = Category::General;
-        HeapAlignment            heapAlignment = HeapAlignment::Regular;
+        HeapAlignment        heapAlignment = HeapAlignment::Regular;
         D3D12MA::Allocation *allocation    = nullptr;
         size_t               offset        = 0;
         size_t               size          = 0;

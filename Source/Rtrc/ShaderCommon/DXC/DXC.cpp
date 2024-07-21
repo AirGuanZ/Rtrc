@@ -106,7 +106,7 @@ std::vector<unsigned char> DXC::Compile(
     }
 
     std::wstring entryPoint;
-    if(target != Target::Vulkan_1_3_RT_6_6 && target != Target::DirectX12_RT_6_6 && !shaderInfo.entryPoint.empty())
+    if(target != Target::Vulkan_1_3_RT_6_8 && target != Target::DirectX12_RT_6_8 && !shaderInfo.entryPoint.empty())
     {
         entryPoint = DXCDetail::ToWString(shaderInfo.entryPoint);
         arguments.push_back(L"-E");
@@ -116,35 +116,35 @@ std::vector<unsigned char> DXC::Compile(
     std::wstring targetProfile;
     switch(target)
     {
-    case Target::Vulkan_1_3_VS_6_6:
-    case Target::DirectX12_VS_6_6:
-        targetProfile = L"vs_6_6";
+    case Target::Vulkan_1_3_VS_6_8:
+    case Target::DirectX12_VS_6_8:
+        targetProfile = L"vs_6_8";
         break;
-    case Target::Vulkan_1_3_FS_6_6:
-    case Target::DirectX12_FS_6_6:
-        targetProfile = L"ps_6_6";
+    case Target::Vulkan_1_3_FS_6_8:
+    case Target::DirectX12_FS_6_8:
+        targetProfile = L"ps_6_8";
         break;
-    case Target::Vulkan_1_3_CS_6_6:
-    case Target::DirectX12_CS_6_6:
-        targetProfile = L"cs_6_6";
+    case Target::Vulkan_1_3_CS_6_8:
+    case Target::DirectX12_CS_6_8:
+        targetProfile = L"cs_6_8";
         break;
-    case Target::Vulkan_1_3_RT_6_6:
-    case Target::DirectX12_RT_6_6:
-        targetProfile = L"lib_6_6";
+    case Target::Vulkan_1_3_RT_6_8:
+    case Target::DirectX12_RT_6_8:
+        targetProfile = L"lib_6_8";
         break;
-    case Target::Vulkan_1_3_MS_6_6:
-    case Target::DirectX12_MS_6_6:
-        targetProfile = L"ms_6_6";
+    case Target::Vulkan_1_3_MS_6_8:
+    case Target::DirectX12_MS_6_8:
+        targetProfile = L"ms_6_8";
         break;
-    case Target::Vulkan_1_3_TS_6_6:
-    case Target::DirectX12_TS_6_6:
-        targetProfile = L"as_6_6";
+    case Target::Vulkan_1_3_TS_6_8:
+    case Target::DirectX12_TS_6_8:
+        targetProfile = L"as_6_8";
         break;
     }
     arguments.push_back(L"-T");
     arguments.push_back(targetProfile.c_str());
 
-    if(target == Target::Vulkan_1_3_RT_6_6)
+    if(target == Target::Vulkan_1_3_RT_6_8)
     {
         arguments.push_back(L"-Vd"); // DXC crashes when ray tracing is enabled for spirv
     }
@@ -165,7 +165,7 @@ std::vector<unsigned char> DXC::Compile(
     arguments.push_back(L"-HV");
     arguments.push_back(L"2021");
 
-    const bool isVulkan = std::to_underlying(target) < std::to_underlying(Target::DirectX12_VS_6_6);
+    const bool isVulkan = std::to_underlying(target) < std::to_underlying(Target::DirectX12_VS_6_8);
     if(isVulkan)
     {
         arguments.push_back(L"-spirv");
@@ -177,7 +177,7 @@ std::vector<unsigned char> DXC::Compile(
 
     const bool enableDebugInfo =
         debugMode &&
-        target != Target::Vulkan_1_3_RT_6_6 && // DXC crashes when enabling debug info for spirv ray tracing shader
+        target != Target::Vulkan_1_3_RT_6_8 && // DXC crashes when enabling debug info for spirv ray tracing shader
         (!shaderInfo.rayQuery || SupportRayQueryDebugInfo(target));
     if(enableDebugInfo)
     {
@@ -217,7 +217,7 @@ std::vector<unsigned char> DXC::Compile(
         }
     }
 
-    if(target == Target::Vulkan_1_3_TS_6_6 || target == Target::Vulkan_1_3_MS_6_6)
+    if(target == Target::Vulkan_1_3_TS_6_8 || target == Target::Vulkan_1_3_MS_6_8)
     {
         arguments.push_back(L"-fspv-extension=SPV_EXT_mesh_shader");
     }
@@ -300,7 +300,7 @@ std::vector<unsigned char> DXC::Compile(
     if(reflectionData)
     {
         assert(!preprocessOutput);
-        assert(std::to_underlying(target) >= std::to_underlying(Target::DirectX12_VS_6_6));
+        assert(std::to_underlying(target) >= std::to_underlying(Target::DirectX12_VS_6_8));
         ComPtr<IDxcBlob> reflectionBlob;
         if(FAILED(compileResult->GetOutput(DXC_OUT_REFLECTION, IID_PPV_ARGS(reflectionBlob.GetAddressOf()), nullptr)))
         {
@@ -322,12 +322,12 @@ IDxcUtils *DXC::GetDxcUtils() const
 
 bool DXC::SupportRayQueryDebugInfo(Target target)
 {
-    return target == Target::DirectX12_CS_6_6 ||
-           target == Target::DirectX12_FS_6_6 ||
-           target == Target::DirectX12_VS_6_6 ||
-           target == Target::DirectX12_RT_6_6 ||
-           target == Target::DirectX12_TS_6_6 ||
-           target == Target::DirectX12_MS_6_6;
+    return target == Target::DirectX12_CS_6_8 ||
+           target == Target::DirectX12_FS_6_8 ||
+           target == Target::DirectX12_VS_6_8 ||
+           target == Target::DirectX12_RT_6_8 ||
+           target == Target::DirectX12_TS_6_8 ||
+           target == Target::DirectX12_MS_6_8;
 }
 
 RTRC_END

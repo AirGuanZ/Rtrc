@@ -91,6 +91,7 @@ RTRC_RHI_FORWARD_DECL(BindingLayout)
 RTRC_RHI_FORWARD_DECL(GraphicsPipeline)
 RTRC_RHI_FORWARD_DECL(ComputePipeline)
 RTRC_RHI_FORWARD_DECL(RayTracingPipeline)
+RTRC_RHI_FORWARD_DECL(WorkGraphPipeline)
 RTRC_RHI_FORWARD_DECL(Texture)
 RTRC_RHI_FORWARD_DECL(TextureRtv)
 RTRC_RHI_FORWARD_DECL(TextureSrv)
@@ -521,6 +522,18 @@ enum class ResourceAccess : uint32_t
 };
 RTRC_DEFINE_ENUM_FLAGS(ResourceAccess)
 using ResourceAccessFlag = EnumFlagsResourceAccess;
+
+constexpr ResourceAccessFlag ResourceAccessWriteMask =
+      ResourceAccess::RenderTargetWrite
+    | ResourceAccess::DepthStencilWrite
+    | ResourceAccess::RWTextureWrite
+    | ResourceAccess::RWBufferWrite
+    | ResourceAccess::RWStructuredBufferWrite
+    | ResourceAccess::CopyWrite
+    | ResourceAccess::ResolveWrite
+    | ResourceAccess::ClearColorWrite
+    | ResourceAccess::ClearDepthStencilWrite
+    | ResourceAccess::WriteAS;
 
 bool IsReadOnly(ResourceAccessFlag access);
 bool IsWriteOnly(ResourceAccessFlag access);
@@ -1880,6 +1893,11 @@ public:
         uint32_t               startGroupIndex,
         uint32_t               groupCount,
         MutSpan<unsigned char> outputData) const RTRC_RHI_API_PURE;
+};
+
+class WorkGraphPipeline : public RHIObject
+{
+    
 };
 
 class Texture : public RHIObject

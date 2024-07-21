@@ -20,10 +20,6 @@ RC<Shader> ShaderCompiler::Compile(
     const RHI::BackendType backend = device_->GetBackendType();
     auto preprocessingOutput = PreprocessShader(shader, backend);
 
-    //auto ret = MakeRC<Shader>();
-    //ret->info_ = MakeRC<ShaderInfo>();
-    //ret->info_->shaderBindingLayoutInfo_ = MakeRC<ShaderBindingLayoutInfo>();
-
     // Compile
 
     const bool VS = !shader.vertexEntry.empty();
@@ -315,16 +311,16 @@ void ShaderCompiler::DoCompilation(
     std::vector<unsigned char> &outData,
     Box<ShaderReflection>      &outRefl) const
 {
-    DXC::Target target = DXC::Target::Vulkan_1_3_CS_6_6;
+    DXC::Target target = DXC::Target::Vulkan_1_3_CS_6_8;
     const bool isVulkan = device_->GetBackendType() == RHI::BackendType::Vulkan;
     switch(stage)
     {
-    case CompileStage::VS: target = isVulkan ? DXC::Target::Vulkan_1_3_VS_6_6 : DXC::Target::DirectX12_VS_6_6; break;
-    case CompileStage::FS: target = isVulkan ? DXC::Target::Vulkan_1_3_FS_6_6 : DXC::Target::DirectX12_FS_6_6; break;
-    case CompileStage::CS: target = isVulkan ? DXC::Target::Vulkan_1_3_CS_6_6 : DXC::Target::DirectX12_CS_6_6; break;
-    case CompileStage::RT: target = isVulkan ? DXC::Target::Vulkan_1_3_RT_6_6 : DXC::Target::DirectX12_RT_6_6; break;
-    case CompileStage::TS: target = isVulkan ? DXC::Target::Vulkan_1_3_TS_6_6 : DXC::Target::DirectX12_TS_6_6; break;
-    case CompileStage::MS: target = isVulkan ? DXC::Target::Vulkan_1_3_MS_6_6 : DXC::Target::DirectX12_MS_6_6; break;
+    case CompileStage::VS: target = isVulkan ? DXC::Target::Vulkan_1_3_VS_6_8 : DXC::Target::DirectX12_VS_6_8; break;
+    case CompileStage::FS: target = isVulkan ? DXC::Target::Vulkan_1_3_FS_6_8 : DXC::Target::DirectX12_FS_6_8; break;
+    case CompileStage::CS: target = isVulkan ? DXC::Target::Vulkan_1_3_CS_6_8 : DXC::Target::DirectX12_CS_6_8; break;
+    case CompileStage::RT: target = isVulkan ? DXC::Target::Vulkan_1_3_RT_6_8 : DXC::Target::DirectX12_RT_6_8; break;
+    case CompileStage::TS: target = isVulkan ? DXC::Target::Vulkan_1_3_TS_6_8 : DXC::Target::DirectX12_TS_6_8; break;
+    case CompileStage::MS: target = isVulkan ? DXC::Target::Vulkan_1_3_MS_6_8 : DXC::Target::DirectX12_MS_6_8; break;
     }
 
     if(isVulkan)
@@ -337,7 +333,7 @@ void ShaderCompiler::DoCompilation(
         assert(device_->GetBackendType() == RHI::BackendType::DirectX12);
         std::vector<std::byte> reflData;
         outData = dxc_.Compile(shaderInfo, target, debug, nullptr, nullptr, &reflData);
-        outRefl = MakeBox<D3D12Reflection>(dxc_.GetDxcUtils(), reflData, target == DXC::Target::DirectX12_RT_6_6);
+        outRefl = MakeBox<D3D12Reflection>(dxc_.GetDxcUtils(), reflData, target == DXC::Target::DirectX12_RT_6_8);
     }
 }
 

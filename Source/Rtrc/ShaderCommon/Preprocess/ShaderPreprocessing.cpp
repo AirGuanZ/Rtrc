@@ -638,21 +638,21 @@ std::set<std::string> GetDependentFiles(
     if(shader.category == ShaderCategory::ClassicalGraphics)
     {
         shaderInfo.entryPoint = shader.vertexEntry;
-        target = isVulkan ? DXC::Target::Vulkan_1_3_VS_6_6 : DXC::Target::DirectX12_VS_6_6;
+        target = isVulkan ? DXC::Target::Vulkan_1_3_VS_6_8 : DXC::Target::DirectX12_VS_6_8;
     }
     else if(shader.category == ShaderCategory::MeshGraphics)
     {
         shaderInfo.entryPoint = shader.meshEntry;
-        target = isVulkan ? DXC::Target::Vulkan_1_3_MS_6_6 : DXC::Target::DirectX12_MS_6_6;
+        target = isVulkan ? DXC::Target::Vulkan_1_3_MS_6_8 : DXC::Target::DirectX12_MS_6_8;
     }
     else if(shader.category == ShaderCategory::Compute)
     {
         shaderInfo.entryPoint = shader.computeEntry;
-        target = isVulkan ? DXC::Target::Vulkan_1_3_CS_6_6 : DXC::Target::DirectX12_CS_6_6;
+        target = isVulkan ? DXC::Target::Vulkan_1_3_CS_6_8 : DXC::Target::DirectX12_CS_6_8;
     }
     else
     {
-        target = isVulkan ? DXC::Target::Vulkan_1_3_RT_6_6 : DXC::Target::DirectX12_RT_6_6;
+        target = isVulkan ? DXC::Target::Vulkan_1_3_RT_6_8 : DXC::Target::DirectX12_RT_6_8;
     }
 
     std::string dependencies;

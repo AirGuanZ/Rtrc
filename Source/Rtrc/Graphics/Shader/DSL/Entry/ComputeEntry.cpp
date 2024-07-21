@@ -122,7 +122,7 @@ namespace ComputeEntryDetail
         dxcShaderInfo.sourceFilename = "anonymous.hlsl";
         dxcShaderInfo.entryPoint     = "CSMain";
         const DXC::Target dxcTarget = device->GetBackendType() == RHI::BackendType::DirectX12 ?
-            DXC::Target::DirectX12_CS_6_6 : DXC::Target::Vulkan_1_3_CS_6_6;
+            DXC::Target::DirectX12_CS_6_8 : DXC::Target::Vulkan_1_3_CS_6_8;
         const auto csData = DXC().Compile(dxcShaderInfo, dxcTarget, RTRC_DEBUG, nullptr, nullptr, nullptr);
         auto computeShader = device->GetRawDevice()->CreateShader(
             csData.data(), csData.size(),

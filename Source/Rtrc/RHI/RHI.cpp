@@ -253,19 +253,7 @@ bool IsReadOnly(ResourceAccessFlag access)
 
 bool IsWriteOnly(ResourceAccessFlag access)
 {
-    using enum ResourceAccess;
-    constexpr ResourceAccessFlag WRITEONLY_MASK =
-        RenderTargetWrite
-      | DepthStencilWrite
-      | RWTextureWrite
-      | RWBufferWrite
-      | RWStructuredBufferWrite
-      | CopyWrite
-      | ResolveWrite
-      | ClearColorWrite
-      | ClearDepthStencilWrite
-      | WriteAS;
-    return (access & WRITEONLY_MASK) == access;
+    return (access & ResourceAccessWriteMask) == access;
 }
 
 bool IsUAVOnly(ResourceAccessFlag access)

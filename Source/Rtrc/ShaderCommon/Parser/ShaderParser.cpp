@@ -212,7 +212,7 @@ namespace ShaderParserDetail
         }
 
         std::string preprocessedSource;
-        dxc->Compile(shaderInfo, DXC::Target::DirectX12_CS_6_6, true, &preprocessedSource, nullptr, nullptr);
+        dxc->Compile(shaderInfo, DXC::Target::DirectX12_CS_6_8, true, &preprocessedSource, nullptr, nullptr);
 
         std::string preprocessedSouceWithoutString = preprocessedSource;
         RemoveComments(preprocessedSource);
