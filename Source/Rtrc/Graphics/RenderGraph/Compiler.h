@@ -24,10 +24,7 @@ public:
 
     using Options = RGCompilerDetail::Options;
 
-    explicit RGCompiler(
-        Ref<Device> device,
-        Options     options = Options::ConnectPassesByDefinitionOrder |
-                              Options::PreferGlobalMemoryBarrier);
+    explicit RGCompiler(Ref<Device> device, Options options = Options::ConnectPassesByDefinitionOrder);
 
     void SetPartialExecution(bool value);
 
