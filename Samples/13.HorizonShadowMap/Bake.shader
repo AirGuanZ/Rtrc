@@ -64,7 +64,7 @@ rtrc_shader("Bake")
 			sum += ComputeAngle(int2(tid) + offsets[i]);
 		}
 
-		const float minVisibleAngle = sum / 9; //ComputeAngle(tid);
+		const float minVisibleAngle = sum / 9;
 		MinVisibleAngleMap[tid] = minVisibleAngle;
 	}
 }

@@ -183,7 +183,9 @@ class HorizonShadowMapDemo : public SimpleApplication
             indexCount_ = indexData.size();
         }
 
-        RGAddRenderPass<true>(
+        auto horizonMap = graph->RegisterTexture(horizonMap_);
+
+        auto renderPass = RGAddRenderPass<true>(
             graph, "Render", RGColorAttachment
             {
                 .rtv        = renderTarget->GetRtv(),
@@ -196,12 +198,12 @@ class HorizonShadowMapDemo : public SimpleApplication
                 .loadOp     = RHI::AttachmentLoadOp::Clear,
                 .clearValue = RHI::DepthStencilClearValue{ 1, 0 }
             },
-            [this]
+            [this, horizonMap]
             {
                 RtrcShader::Render::Pass passData;
                 passData.HeightMap       = heightMap_;
                 passData.NormalMap       = normalMap_;
-                passData.HorizonMap      = horizonMap_;
+                passData.HorizonMap      = horizonMap;
                 passData.worldToClip     = camera_.GetWorldToClip();
                 passData.horizontalLower = -Vector2f(0.5f * terrainSize_);
                 passData.horizontalUpper = Vector2f(0.5f * terrainSize_);
@@ -216,6 +218,7 @@ class HorizonShadowMapDemo : public SimpleApplication
                 commandBuffer.SetIndexBuffer(indexBuffer_, RHI::IndexFormat::UInt32);
                 commandBuffer.DrawIndexed(indexCount_, 1, 0, 0, 0);
             });
+        renderPass->Use(horizonMap, RG::PS_Texture);
     }
 
     static constexpr uint32_t N = 1024;
