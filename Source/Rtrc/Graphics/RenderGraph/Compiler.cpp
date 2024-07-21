@@ -957,7 +957,7 @@ void RGCompiler::GenerateBarriers(const RGExecutableResources &resources)
                 {
                     auto &prevFinalState = resources.indexToBuffer[prev].finalState;
                     lastState.stages |= prevFinalState.stages;
-                    lastState.accesses |= prevFinalState.accesses;
+                    lastState.accesses |= prevFinalState.accesses & ~RHI::ResourceAccessWriteMask;
                 }
                 else
                 {
@@ -966,7 +966,7 @@ void RGCompiler::GenerateBarriers(const RGExecutableResources &resources)
                         if(prevFinalState)
                         {
                             lastState.stages |= prevFinalState->stages;
-                            lastState.accesses |= prevFinalState->accesses;
+                            lastState.accesses |= prevFinalState->accesses & ~RHI::ResourceAccessWriteMask;
                         }
                     }
                 }
@@ -1059,7 +1059,7 @@ void RGCompiler::GenerateBarriers(const RGExecutableResources &resources)
                 {
                     auto &prevFinalState = resources.indexToBuffer[prev].finalState;
                     lastState.stages |= prevFinalState.stages;
-                    lastState.accesses |= prevFinalState.accesses;
+                    lastState.accesses |= prevFinalState.accesses & ~RHI::ResourceAccessWriteMask;
                 }
                 else
                 {
@@ -1068,7 +1068,7 @@ void RGCompiler::GenerateBarriers(const RGExecutableResources &resources)
                         if(prevFinalState)
                         {
                             lastState.stages |= prevFinalState->stages;
-                            lastState.accesses |= prevFinalState->accesses;
+                            lastState.accesses |= prevFinalState->accesses & ~RHI::ResourceAccessWriteMask;
                         }
                     }
                 }
