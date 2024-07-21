@@ -219,6 +219,7 @@ enum class ShaderType : uint8_t
     RayTracingShader = 1u << 3,
     TaskShader       = 1u << 4,
     MeshShader       = 1u << 5,
+    WorkGraphShader  = 1u << 6,
 };
 
 enum class ShaderStage : uint32_t
@@ -1229,7 +1230,7 @@ struct RayTracingPipelineDesc
 struct WorkGraphEntryPoint
 {
     std::string name;
-    uint32_t index;
+    uint32_t index = 0;
 };
 
 struct WorkGraphPipelineDesc
@@ -1725,7 +1726,12 @@ public:
     RTRC_RHI_API void BindPipeline(const OPtr<GraphicsPipeline>   &pipeline) RTRC_RHI_API_PURE;
     RTRC_RHI_API void BindPipeline(const OPtr<ComputePipeline>    &pipeline) RTRC_RHI_API_PURE;
     RTRC_RHI_API void BindPipeline(const OPtr<RayTracingPipeline> &pipeline) RTRC_RHI_API_PURE;
-    RTRC_RHI_API void BindPipeline(const OPtr<WorkGraphPipeline>  &pipeline) RTRC_RHI_API_PURE;
+
+    RTRC_RHI_API void BindPipeline(
+        const OPtr<WorkGraphPipeline> &pipeline,
+        BufferDeviceAddress backingMemory,
+        size_t backingMemorySize,
+        bool initializeBakingMemory) RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void BindGroupsToGraphicsPipeline  (int startIndex, Span<OPtr<BindingGroup>> groups) RTRC_RHI_API_PURE;
     RTRC_RHI_API void BindGroupsToComputePipeline   (int startIndex, Span<OPtr<BindingGroup>> groups) RTRC_RHI_API_PURE;

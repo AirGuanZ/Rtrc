@@ -28,6 +28,7 @@ RC<Shader> ShaderCompiler::Compile(
     const bool RT = shader.isRayTracingShader;
     const bool TS = !shader.taskEntry.empty();
     const bool MS = !shader.meshEntry.empty();
+    const bool WG = !shader.workGraphEntryNodes.empty();
 
     DXC::ShaderInfo shaderInfo;
     shaderInfo.source         = shader.source;
@@ -60,8 +61,8 @@ RC<Shader> ShaderCompiler::Compile(
         shaderInfo.rayQuery = HasASBinding();
     }
 
-    std::vector<unsigned char> vsData, fsData, csData, rtData, tsData, msData;
-    Box<ShaderReflection> vsRefl, fsRefl, csRefl, rtRefl, tsRefl, msRefl;
+    std::vector<unsigned char> vsData, fsData, csData, rtData, tsData, msData, wgData;
+    Box<ShaderReflection> vsRefl, fsRefl, csRefl, rtRefl, tsRefl, msRefl, wgRefl;
     if(VS)
     {
         shaderInfo.entryPoint = shader.vertexEntry;
@@ -80,6 +81,10 @@ RC<Shader> ShaderCompiler::Compile(
     if(RT)
     {
         DoCompilation(shaderInfo, CompileStage::RT, debug, rtData, rtRefl);
+    }
+    if(WG)
+    {
+        DoCompilation(shaderInfo, CompileStage::WG, debug, wgData, wgRefl);
     }
     if(TS)
     {
@@ -100,6 +105,7 @@ RC<Shader> ShaderCompiler::Compile(
     EnsureAllUsedBindingsAreGrouped(shader, rtRefl, "ray tracing shader");
     EnsureAllUsedBindingsAreGrouped(shader, tsRefl, "task shader");
     EnsureAllUsedBindingsAreGrouped(shader, msRefl, "mesh shader");
+    EnsureAllUsedBindingsAreGrouped(shader, wgRefl, "work graph shader");
 
     // Binding layout
 
@@ -175,6 +181,10 @@ RC<Shader> ShaderCompiler::Compile(
         desc.meshShader = device_->GetRawDevice()->CreateShader(
             msData.data(), msData.size(), { { RHI::ShaderStage::MeshShader, shader.meshEntry } });
     }
+    if(WG)
+    {
+        desc.workGraphShader = device_->GetRawDevice()->CreateShader(wgData.data(), wgData.size(), {});
+    }
     if(RT)
     {
         std::vector<RHI::RawShaderEntry> rtEntries = rtRefl->GetEntries();
@@ -190,7 +200,7 @@ RC<Shader> ShaderCompiler::Compile(
             throw Exception(fmt::format("Ray tracing entry {} is required by a shader group but not found", name));
         };
 
-        for(const std::vector<std::string> &rawGroup : shader.entryGroups)
+        for(const std::vector<std::string> &rawGroup : shader.rayTracingEntryGroups)
         {
             assert(!rawGroup.empty());
             const uint32_t firstEntryIndex = FindEntryIndex(rawGroup[0]);
@@ -267,6 +277,11 @@ RC<Shader> ShaderCompiler::Compile(
             rtData.data(), rtData.size(), std::move(rtEntries));
     }
 
+    if(WG)
+    {
+        desc.workGraphEntryNodes = shader.workGraphEntryNodes;
+    }
+
     desc.nameToBindingGroupLayoutIndex = std::move(preprocessingOutput.nameToBindingGroupLayoutIndex);
     desc.bindingGroupLayouts           = std::move(bindingGroupLayouts);
     desc.bindingGroupNames             = std::move(preprocessingOutput.bindingGroupNames);
@@ -321,6 +336,7 @@ void ShaderCompiler::DoCompilation(
     case CompileStage::RT: target = isVulkan ? DXC::Target::Vulkan_1_3_RT_6_8 : DXC::Target::DirectX12_RT_6_8; break;
     case CompileStage::TS: target = isVulkan ? DXC::Target::Vulkan_1_3_TS_6_8 : DXC::Target::DirectX12_TS_6_8; break;
     case CompileStage::MS: target = isVulkan ? DXC::Target::Vulkan_1_3_MS_6_8 : DXC::Target::DirectX12_MS_6_8; break;
+    case CompileStage::WG: target = isVulkan ? DXC::Target::Vulkan_1_3_WG_6_8 : DXC::Target::DirectX12_WG_6_8; break;
     }
 
     if(isVulkan)
@@ -333,7 +349,9 @@ void ShaderCompiler::DoCompilation(
         assert(device_->GetBackendType() == RHI::BackendType::DirectX12);
         std::vector<std::byte> reflData;
         outData = dxc_.Compile(shaderInfo, target, debug, nullptr, nullptr, &reflData);
-        outRefl = MakeBox<D3D12Reflection>(dxc_.GetDxcUtils(), reflData, target == DXC::Target::DirectX12_RT_6_8);
+        outRefl = MakeBox<D3D12Reflection>(
+            dxc_.GetDxcUtils(), reflData,
+            target == DXC::Target::DirectX12_RT_6_8 || target == DXC::Target::DirectX12_WG_6_8);
     }
 }
 

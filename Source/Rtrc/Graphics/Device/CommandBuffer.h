@@ -153,19 +153,27 @@ public:
     void BindGraphicsPipeline(const RC<GraphicsPipeline> &graphicsPipeline);
     void BindComputePipeline(const RC<ComputePipeline> &computePipeline);
     void BindRayTracingPipeline(const RC<RayTracingPipeline> &rayTracingPipeline);
+    void BindWorkGraphPipeline(
+        const RC<WorkGraphPipeline> &workGraphPipeline,
+        RHI::BufferDeviceAddress     backingBuffer,
+        size_t                       backBufferSize,
+        bool                         initializeBackingBuffer);
 
     const GraphicsPipeline   *GetCurrentGraphicsPipeline() const;
     const ComputePipeline    *GetCurrentComputePipeline() const;
     const RayTracingPipeline *GetCurrentRayTracingPipeline() const;
+    const WorkGraphPipeline  *GetCurrentWorkGraphPipeline() const;
 
     void BindGraphicsGroup(int index, const RC<BindingGroup> &group);
     void BindComputeGroup(int index, const RC<BindingGroup> &group);
     void BindRayTracingGroup(int index, const RC<BindingGroup> &group);
+    void BindWorkGraphGroup(int index, const RC<BindingGroup> &group);
     
     void BindGraphicsGroups(Span<RC<BindingGroup>> groups);
     void BindComputeGroups(Span<RC<BindingGroup>> groups);
     void BindRayTracingGroups(Span<RC<BindingGroup>> groups);
-    
+    void BindWorkGraphGroups(Span<RC<BindingGroup>> groups);
+
     void SetViewports(Span<RHI::Viewport> viewports);
     void SetScissors(Span<RHI::Scissor> scissors);
     void SetViewportAndScissorAutomatically(); // Automatically set viewport and scissor with current RT size
@@ -222,6 +230,12 @@ public:
         const RHI::ShaderBindingTableRegion &callableSbt);
     
     void DispatchIndirect(const RC<SubBuffer> &buffer, size_t byteOffset);
+
+    void DispatchNode(
+        uint32_t    entryIndex,
+        uint32_t    recordCount,
+        uint32_t    recordStride,
+        const void *records);
 
     void DrawIndexedIndirect(
         const RC<SubBuffer> &buffer,
@@ -332,6 +346,7 @@ private:
     RC<GraphicsPipeline>   currentGraphicsPipeline_;
     RC<ComputePipeline>    currentComputePipeline_;
     RC<RayTracingPipeline> currentRayTracingPipeline_;
+    RC<WorkGraphPipeline>  currentWorkGraphPipeline_;
 
     bool                         isInRenderPass_ = false;
     Vector2u                     currentPassRenderTargetSize_;

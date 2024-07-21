@@ -42,6 +42,7 @@ enum class ShaderCategory
     MeshGraphics,
     Compute,
     RayTracing,
+    WorkGraph,
 };
 
 using ShaderPropertyName = GeneralPooledString;
@@ -93,7 +94,9 @@ struct ShaderPreprocessingInput
     std::string meshEntry;
 
     bool isRayTracingShader = false;
-    std::vector<std::vector<std::string>> entryGroups;
+    std::vector<std::vector<std::string>> rayTracingEntryGroups;
+
+    std::vector<WorkGraphEntryPoint> workGraphEntryNodes;
 
     std::vector<ParsedBindingGroup> bindingGroups;
     std::vector<ParsedBinding>      ungroupedBindings;
@@ -124,6 +127,9 @@ struct ShaderPreprocessingOutput
 
     // Valid only when category is RayTracing
     std::vector<std::vector<std::string>> rayTracingEntryGroups;
+
+    // Valid only when category is WorkGraph
+    std::vector<WorkGraphEntryPoint> workGraphEntryNodes;
 
     std::vector<std::string> includeDirs;
     std::map<std::string, std::string> macros;

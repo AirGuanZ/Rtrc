@@ -224,6 +224,7 @@ private:
     static constexpr int RT_INDEX = 0;
     static constexpr int MS_INDEX = 0;
     static constexpr int TS_INDEX = 2;
+    static constexpr int WG_INDEX = 0;
 
     RHI::RawShaderUPtr rawShaders_[3];
     
@@ -440,6 +441,9 @@ inline RHI::RawShaderOPtr Shader::GetRawShader(RHI::ShaderType type) const
     case MeshShader:
         assert(GetCategory() == MeshGraphics);
         return rawShaders_[MS_INDEX];
+    case WorkGraphShader:
+        assert(GetCategory() == WorkGraph);
+        return rawShaders_[WG_INDEX];
     }
     Unreachable();
 }

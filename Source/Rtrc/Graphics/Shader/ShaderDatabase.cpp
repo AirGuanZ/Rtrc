@@ -190,7 +190,8 @@ RC<Shader> ShaderDatabase::GetShaderImpl(ShaderRecord *record, FastKeywordSetVal
             compilableShader.isRayTracingShader      = variant.vertexEntry.empty() &&
                                                        variant.fragmentEntry.empty() &&
                                                        variant.computeEntry.empty();
-            compilableShader.entryGroups             = variant.entryGroups;
+            compilableShader.rayTracingEntryGroups   = variant.rayTracingEntryGroups;
+            compilableShader.workGraphEntryNodes     = variant.workGraphEntryNodes;
             compilableShader.bindingGroups           = variant.bindingGroups;
             compilableShader.ungroupedBindings       = variant.ungroupedBindings;
             compilableShader.aliases                 = variant.aliases;

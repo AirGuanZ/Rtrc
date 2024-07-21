@@ -386,6 +386,24 @@ void CommandBuffer::BindRayTracingPipeline(const RC<RayTracingPipeline> &rayTrac
     }
 }
 
+void CommandBuffer::BindWorkGraphPipeline(
+    const RC<WorkGraphPipeline> &workGraphPipeline,
+    RHI::BufferDeviceAddress     backingBuffer,
+    size_t                       backBufferSize,
+    bool                         initializeBackingBuffer)
+{
+    auto &bindingLayoutInfo = workGraphPipeline->GetBindingLayoutInfo();
+
+    CheckThreadID();
+    rhiCommandBuffer_->BindPipeline(
+        workGraphPipeline->GetRHIObject(), backingBuffer, backBufferSize, initializeBackingBuffer);
+    currentWorkGraphPipeline_ = workGraphPipeline;
+    if(int index = bindingLayoutInfo.GetBindingGroupIndexForInlineSamplers(); index >= 0)
+    {
+        BindWorkGraphGroup(index, bindingLayoutInfo.GetBindingGroupForInlineSamplers());
+    }
+}
+
 const GraphicsPipeline *CommandBuffer::GetCurrentGraphicsPipeline() const
 {
     return currentGraphicsPipeline_.get();
@@ -399,6 +417,11 @@ const ComputePipeline *CommandBuffer::GetCurrentComputePipeline() const
 const RayTracingPipeline *CommandBuffer::GetCurrentRayTracingPipeline() const
 {
     return currentRayTracingPipeline_.get();
+}
+
+const WorkGraphPipeline *CommandBuffer::GetCurrentWorkGraphPipeline() const
+{
+    return currentWorkGraphPipeline_.get();
 }
 
 void CommandBuffer::BindGraphicsGroup(int index, const RC<BindingGroup> &group)
@@ -450,6 +473,23 @@ void CommandBuffer::BindRayTracingGroup(int index, const RC<BindingGroup> &group
     }
 #endif
     rhiCommandBuffer_->BindGroupToRayTracingPipeline(index, group->GetRHIObject());
+}
+
+void CommandBuffer::BindWorkGraphGroup(int index, const RC<BindingGroup> &group)
+{
+    CheckThreadID();
+#if RTRC_DEBUG
+    auto bindingGroupLayoutInShader = currentWorkGraphPipeline_->GetBindingLayoutInfo().GetBindingGroupLayoutByIndex(index);
+    if(bindingGroupLayoutInShader != group->GetLayout())
+    {
+        LogError("Binding group defined in shader is");
+        DumpBindingGroupLayoutDesc(bindingGroupLayoutInShader->GetRHIObject()->GetDesc());
+        LogError("Binding group being bound is");
+        DumpBindingGroupLayoutDesc(group->GetLayout()->GetRHIObject()->GetDesc());
+        throw Exception("Unmatched binding group layout for ray tracing pipeline!");
+    }
+#endif
+    rhiCommandBuffer_->BindGroupToWorkGraphPipeline(index, group->GetRHIObject());
 }
 
 void CommandBuffer::BindGraphicsGroups(Span<RC<BindingGroup>> groups)
@@ -551,7 +591,7 @@ void CommandBuffer::BindRayTracingGroups(Span<RC<BindingGroup>> groups)
         {
             if(layoutInfo.GetBindingGroupLayoutByIndex(i) == group->GetLayout())
             {
-                BindComputeGroup(i, group);
+                BindRayTracingGroup(i, group);
 #if RTRC_DEBUG
                 if(foundIndex >= 0)
                 {
@@ -576,6 +616,49 @@ void CommandBuffer::BindRayTracingGroups(Span<RC<BindingGroup>> groups)
                 DumpBindingGroupLayoutDesc(layoutInfo.GetBindingGroupLayoutByIndex(i)->GetRHIObject()->GetDesc());
             }
             throw Exception(fmt::format("CommandBuffer::BindRayTracingGroups: group {} is unbounded", groupIndex));
+        }
+#endif
+    }
+}
+
+void CommandBuffer::BindWorkGraphGroups(Span<RC<BindingGroup>> groups)
+{
+    CheckThreadID();
+    auto &layoutInfo = currentWorkGraphPipeline_->GetBindingLayoutInfo();
+    for(auto &&[groupIndex, group] : Enumerate(groups))
+    {
+#if RTRC_DEBUG
+        int foundIndex = -1;
+#endif
+        for(int i = 0; i < layoutInfo.GetBindingGroupCount(); ++i)
+        {
+            if(layoutInfo.GetBindingGroupLayoutByIndex(i) == group->GetLayout())
+            {
+                BindWorkGraphGroup(i, group);
+#if RTRC_DEBUG
+                if(foundIndex >= 0)
+                {
+                    throw Exception(fmt::format(
+                        "CommandBuffer::BindWorkGraphGroups: group {} and {} have the same group layout",
+                        foundIndex, i));
+                }
+                foundIndex = i;
+#else
+                break;
+#endif
+            }
+        }
+#if RTRC_DEBUG
+        if(foundIndex < 0)
+        {
+            LogError("Layout of given binding group is:");
+            DumpBindingGroupLayoutDesc(group->GetLayout()->GetRHIObject()->GetDesc());
+            LogError("Binding group layouts defined in shader are:");
+            for(int i = 0; i < layoutInfo.GetBindingGroupCount(); ++i)
+            {
+                DumpBindingGroupLayoutDesc(layoutInfo.GetBindingGroupLayoutByIndex(i)->GetRHIObject()->GetDesc());
+            }
+            throw Exception(fmt::format("CommandBuffer::BindWorkGraphGroups: group {} is unbounded", groupIndex));
         }
 #endif
     }
@@ -800,6 +883,12 @@ void CommandBuffer::DispatchIndirect(const RC<SubBuffer> &buffer, size_t byteOff
     byteOffset += buffer->GetSubBufferOffset();
     auto &rhiBuffer = buffer->GetFullBufferRHIObject();
     rhiCommandBuffer_->DispatchIndirect(rhiBuffer, byteOffset);
+}
+
+void CommandBuffer::DispatchNode(uint32_t entryIndex, uint32_t recordCount, uint32_t recordStride, const void *records)
+{
+    CheckThreadID();
+    rhiCommandBuffer_->DispatchNode(entryIndex, recordCount, recordStride, records);
 }
 
 void CommandBuffer::DrawIndexedIndirect(

@@ -84,7 +84,8 @@ VkShaderStageFlagBits TranslateShaderType(ShaderType type)
     case ComputeShader:    return VK_SHADER_STAGE_COMPUTE_BIT;
     case TaskShader:       return VK_SHADER_STAGE_TASK_BIT_EXT;
     case MeshShader:       return VK_SHADER_STAGE_MESH_BIT_EXT;
-    case RayTracingShader: Unreachable();
+    case RayTracingShader:
+    case WorkGraphShader:  Unreachable();
     }
     Unreachable();
 }

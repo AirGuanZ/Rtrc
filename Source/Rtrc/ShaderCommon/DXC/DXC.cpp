@@ -139,6 +139,9 @@ std::vector<unsigned char> DXC::Compile(
     case Target::Vulkan_1_3_TS_6_8:
     case Target::DirectX12_TS_6_8:
         targetProfile = L"as_6_8";
+    case Target::Vulkan_1_3_WG_6_8:
+    case Target::DirectX12_WG_6_8:
+        targetProfile = L"lib_6_8";
         break;
     }
     arguments.push_back(L"-T");
@@ -322,12 +325,14 @@ IDxcUtils *DXC::GetDxcUtils() const
 
 bool DXC::SupportRayQueryDebugInfo(Target target)
 {
-    return target == Target::DirectX12_CS_6_8 ||
-           target == Target::DirectX12_FS_6_8 ||
-           target == Target::DirectX12_VS_6_8 ||
-           target == Target::DirectX12_RT_6_8 ||
-           target == Target::DirectX12_TS_6_8 ||
-           target == Target::DirectX12_MS_6_8;
+    return
+        target == Target::DirectX12_CS_6_8 ||
+        target == Target::DirectX12_FS_6_8 ||
+        target == Target::DirectX12_VS_6_8 ||
+        target == Target::DirectX12_RT_6_8 ||
+        target == Target::DirectX12_TS_6_8 ||
+        target == Target::DirectX12_MS_6_8 ||
+        target == Target::DirectX12_WG_6_8;
 }
 
 RTRC_END

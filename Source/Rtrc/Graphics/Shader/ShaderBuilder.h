@@ -22,6 +22,7 @@ public:
         RHI::RawShaderUPtr rayTracingShader;
         RHI::RawShaderUPtr meshShader;
         RHI::RawShaderUPtr taskShader;
+        RHI::RawShaderUPtr workGraphShader;
 
         // ==================== Input attributes ====================
 
@@ -50,6 +51,10 @@ public:
         std::vector<RHI::RayTracingRayGenShaderGroup> rayGenShaderGroups;
         std::vector<RHI::RayTracingMissShaderGroup>   missShaderGroups;
         std::vector<RHI::RayTracingHitShaderGroup>    hitShaderGroups;
+
+        // ==================== Work graph entry nodes ====================
+
+        std::vector<WorkGraphEntryPoint> workGraphEntryNodes;
     };
 
     static RC<Shader> BuildShader(Ref<Device> device, Desc desc);

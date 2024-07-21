@@ -12,55 +12,6 @@ class GraphicsPipeline : public GeneralGPUObject<RHI::GraphicsPipelineUPtr>
 {
 public:
     
-    /*struct Desc
-    {
-        RC<Shader> shader;
-
-        RHI::Viewports viewports = 1;
-        RHI::Scissors  scissors  = 1;
-
-        const MeshLayout *meshLayout = nullptr;
-
-        RHI::PrimitiveTopology primitiveTopology = RHI::PrimitiveTopology::TriangleList;
-        RHI::FillMode          fillMode          = RHI::FillMode::Fill;
-        RHI::CullMode          cullMode          = RHI::CullMode::DontCull;
-        RHI::FrontFaceMode     frontFaceMode     = RHI::FrontFaceMode::Clockwise;
-
-        bool  enableDepthBias      = false;
-        float depthBiasConstFactor = 0.0f;
-        float depthBiasSlopeFactor = 0.0f;
-        float depthBiasClampValue  = 0.0f;
-
-        bool enableDepthClip = true;
-
-        int multisampleCount = 1;
-
-        bool           enableDepthTest  = false;
-        bool           enableDepthWrite = false;
-        RHI::CompareOp depthCompareOp   = RHI::CompareOp::Always;
-
-        bool            enableStencilTest = false;
-        uint8_t         stencilReadMask = 0;
-        uint8_t         stencilWriteMask = 0;
-        RHI::StencilOps frontStencil;
-        RHI::StencilOps backStencil;
-
-        bool             enableBlending = false;
-        RHI::BlendFactor blendingSrcColorFactor = RHI::BlendFactor::One;
-        RHI::BlendFactor blendingDstColorFactor = RHI::BlendFactor::Zero;
-        RHI::BlendOp     blendingColorOp        = RHI::BlendOp::Add;
-        RHI::BlendFactor blendingSrcAlphaFactor = RHI::BlendFactor::One;
-        RHI::BlendFactor blendingDstAlphaFactor = RHI::BlendFactor::Zero;
-        RHI::BlendOp     blendingAlphaOp        = RHI::BlendOp::Add;
-
-        StaticVector<RHI::Format, 8> colorAttachmentFormats;
-        RHI::Format                  depthStencilFormat = RHI::Format::Unknown;
-
-        void Validate() const;
-
-        bool operator==(const Desc &) const = default;
-    };*/
-
     const RC<const ShaderInfo> &GetShaderInfo() const;
 
 private:
@@ -143,6 +94,26 @@ private:
     uint32_t                    shaderGroupCount_ = 0;
 };
 
+class WorkGraphPipeline : public GeneralGPUObject<RHI::WorkGraphPipelineUPtr>
+{
+public:
+
+    struct Desc
+    {
+        std::vector<RC<Shader>> shaders;
+        RC<BindingLayout> bindingLayout;
+        std::vector<WorkGraphEntryPoint> entryNodes;
+    };
+
+    const ShaderBindingLayoutInfo &GetBindingLayoutInfo() const;
+
+private:
+
+    friend class PipelineManager;
+
+    RC<const ShaderBindingLayoutInfo> bindingLayoutInfo_;
+};
+
 class PipelineManager : public GeneralGPUObjectManager
 {
 public:
@@ -154,6 +125,7 @@ public:
     RC<GraphicsPipeline>   CreateGraphicsPipeline  (const GraphicsPipelineDesc &desc);
     RC<ComputePipeline>    CreateComputePipeline   (const RC<Shader> &shader);
     RC<RayTracingPipeline> CreateRayTracingPipeline(const RayTracingPipeline::Desc &desc);
+    RC<WorkGraphPipeline>  CreateWorkGraphPipeline (const WorkGraphPipeline::Desc &desc);
 
     const RHI::DeviceOPtr &_internalGetRHIDevice() const;
 
@@ -175,6 +147,16 @@ inline const RC<const ShaderInfo> &ComputePipeline::GetShaderInfo() const
 inline uint32_t RayTracingLibrary::GetShaderGroupCount() const
 {
     return shaderGroupCount_;
+}
+
+inline const ShaderBindingLayoutInfo &WorkGraphPipeline::GetBindingLayoutInfo() const
+{
+    return *bindingLayoutInfo_;
+}
+
+inline const ShaderBindingLayoutInfo &RayTracingPipeline::GetBindingLayoutInfo() const
+{
+    return *bindingLayoutInfo_;
 }
 
 RTRC_END

@@ -29,7 +29,12 @@ public:
     void BindPipeline(const OPtr<GraphicsPipeline>   &pipeline) RTRC_RHI_OVERRIDE;
     void BindPipeline(const OPtr<ComputePipeline>    &pipeline) RTRC_RHI_OVERRIDE;
     void BindPipeline(const OPtr<RayTracingPipeline> &pipeline) RTRC_RHI_OVERRIDE;
-    void BindPipeline(const OPtr<WorkGraphPipeline>  &pipeline) RTRC_RHI_OVERRIDE;
+
+    void BindPipeline(
+        const OPtr<WorkGraphPipeline> &pipeline,
+        BufferDeviceAddress            backingMemory,
+        size_t                         backingMemorySize,
+        bool                           initializeBakingMemory) RTRC_RHI_OVERRIDE;
     
     void BindGroupsToGraphicsPipeline  (int startIndex, Span<OPtr<BindingGroup>> groups) RTRC_RHI_OVERRIDE;
     void BindGroupsToComputePipeline   (int startIndex, Span<OPtr<BindingGroup>> groups) RTRC_RHI_OVERRIDE;

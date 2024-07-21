@@ -22,6 +22,7 @@ public:
         Vulkan_1_3_RT_6_8,
         Vulkan_1_3_TS_6_8,
         Vulkan_1_3_MS_6_8,
+        Vulkan_1_3_WG_6_8,
 
         DirectX12_VS_6_8,
         DirectX12_FS_6_8,
@@ -29,6 +30,7 @@ public:
         DirectX12_RT_6_8,
         DirectX12_TS_6_8,
         DirectX12_MS_6_8,
+        DirectX12_WG_6_8,
     };
 
     struct ShaderInfo

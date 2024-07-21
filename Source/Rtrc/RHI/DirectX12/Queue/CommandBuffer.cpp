@@ -164,7 +164,11 @@ void DirectX12CommandBuffer::BindPipeline(const OPtr<RayTracingPipeline> &pipeli
     }
 }
 
-void DirectX12CommandBuffer::BindPipeline(const OPtr<WorkGraphPipeline> &pipeline)
+void DirectX12CommandBuffer::BindPipeline(
+    const OPtr<WorkGraphPipeline> &pipeline,
+    BufferDeviceAddress            backingMemory,
+    size_t                         backingMemorySize,
+    bool                           initializeBakingMemory)
 {
     auto d3dPipeline = static_cast<DirectX12WorkGraphPipeline *>(pipeline.Get());
     currentWorkGraphPipeline_ = pipeline;
@@ -172,10 +176,13 @@ void DirectX12CommandBuffer::BindPipeline(const OPtr<WorkGraphPipeline> &pipelin
 
     const D3D12_SET_PROGRAM_DESC setProgramDesc =
     {
-        .Type = D3D12_PROGRAM_TYPE_GENERIC_PIPELINE,
-        .GenericPipeline = D3D12_SET_GENERIC_PIPELINE_DESC
+        .Type = D3D12_PROGRAM_TYPE_WORK_GRAPH,
+        .WorkGraph = D3D12_SET_WORK_GRAPH_DESC
         {
-            .ProgramIdentifier = d3dPipeline->_internalGetProgramIdentifier()
+            .ProgramIdentifier = d3dPipeline->_internalGetProgramIdentifier(),
+            .Flags             = initializeBakingMemory ? D3D12_SET_WORK_GRAPH_FLAG_INITIALIZE
+                                                        : D3D12_SET_WORK_GRAPH_FLAG_NONE,
+            .BackingMemory     = { backingMemory.address, backingMemorySize }
         }
     };
     commandList_->SetProgram(&setProgramDesc);

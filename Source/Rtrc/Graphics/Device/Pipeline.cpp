@@ -40,11 +40,6 @@ uint32_t RayTracingPipeline::GetShaderGroupHandleSize() const
     return device->GetShaderGroupRecordRequirements().shaderGroupHandleSize;
 }
 
-const ShaderBindingLayoutInfo &RayTracingPipeline::GetBindingLayoutInfo() const
-{
-    return *bindingLayoutInfo_;
-}
-
 PipelineManager::PipelineManager(RHI::DeviceOPtr device, DeviceSynchronizer &sync)
     : GeneralGPUObjectManager(sync), device_(std::move(device))
 {
@@ -261,8 +256,8 @@ RC<GraphicsPipeline> PipelineManager::CreateGraphicsPipeline(const GraphicsPipel
     rhiDesc.depthStencilFormat = attachmentDesc.depthStencilFormat;
     
     auto ret = MakeRC<GraphicsPipeline>();
-    ret->rhiObject_ = device_->CreateGraphicsPipeline(rhiDesc);
-    ret->manager_ = this;
+    ret->rhiObject_  = device_->CreateGraphicsPipeline(rhiDesc);
+    ret->manager_    = this;
     ret->shaderInfo_ = desc.shader->GetInfo();
     return ret;
 }
@@ -278,9 +273,33 @@ RC<ComputePipeline> PipelineManager::CreateComputePipeline(const RC<Shader> &sha
     rhiDesc.bindingLayout = shader->GetBindingLayout()->GetRHIObject();
 
     auto ret = MakeRC<ComputePipeline>();
-    ret->rhiObject_ = device_->CreateComputePipeline(rhiDesc);
-    ret->manager_ = this;
+    ret->rhiObject_  = device_->CreateComputePipeline(rhiDesc);
+    ret->manager_    = this;
     ret->shaderInfo_ = shader->GetInfo();
+    return ret;
+}
+
+RC<WorkGraphPipeline> PipelineManager::CreateWorkGraphPipeline(const WorkGraphPipeline::Desc &desc)
+{
+    assert(!desc.shaders.empty());
+    for(auto &shader : desc.shaders)
+    {
+        assert(desc.shaders[0]->GetBindingLayout() == shader->GetBindingLayout());
+    }
+
+    RHI::WorkGraphPipelineDesc rhiDesc;
+    rhiDesc.rawShaders.reserve(desc.shaders.size());
+    for(auto &rawShader : desc.shaders)
+    {
+        rhiDesc.rawShaders.push_back(rawShader->GetRawShader(RHI::ShaderType::WorkGraphShader));
+    }
+    rhiDesc.bindingLayout = desc.bindingLayout->GetRHIObject();
+    rhiDesc.entryPoints = desc.entryNodes;
+
+    auto ret = MakeRC<WorkGraphPipeline>();
+    ret->rhiObject_         = device_->CreateWorkGraphPipeline(rhiDesc);
+    ret->manager_           = this;
+    ret->bindingLayoutInfo_ = desc.shaders.front()->GetInfo()->GetBindingLayoutInfo();
     return ret;
 }
 

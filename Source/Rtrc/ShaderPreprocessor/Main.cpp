@@ -522,7 +522,8 @@ void Run(int argc, const char *argv[])
         shaderPreprocessInput.isRayTracingShader      = variant.vertexEntry.empty() &&
                                                         variant.fragmentEntry.empty() &&
                                                         variant.computeEntry.empty();
-        shaderPreprocessInput.entryGroups             = variant.entryGroups;
+        shaderPreprocessInput.rayTracingEntryGroups   = variant.rayTracingEntryGroups;
+        shaderPreprocessInput.workGraphEntryNodes     = variant.workGraphEntryNodes;
         shaderPreprocessInput.bindingGroups           = variant.bindingGroups;
         shaderPreprocessInput.ungroupedBindings       = variant.ungroupedBindings;
         shaderPreprocessInput.aliases                 = variant.aliases;

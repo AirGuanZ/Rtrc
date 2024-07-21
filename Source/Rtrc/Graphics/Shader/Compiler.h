@@ -32,7 +32,8 @@ private:
         CS,
         RT,
         TS,
-        MS
+        MS,
+        WG
     };
     
     void DoCompilation(

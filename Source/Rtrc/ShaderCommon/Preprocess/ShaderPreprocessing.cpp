@@ -15,6 +15,7 @@ namespace ShaderPreprocessingDetail
         case ShaderCategory::MeshGraphics:        return RHI::ShaderStage::AllMesh;
         case ShaderCategory::Compute:             return RHI::ShaderStage::CS;
         case ShaderCategory::RayTracing:          return RHI::ShaderStage::AllRT;
+        case ShaderCategory::WorkGraph:           return RHI::ShaderStage::CS;
         }
         Unreachable();
     }
@@ -41,29 +42,34 @@ ShaderPreprocessingOutput PreprocessShader(const ShaderPreprocessingInput &input
     const bool TS = !input.taskEntry.empty();
     const bool MS = !input.meshEntry.empty();
     const bool RT = input.isRayTracingShader;
+    const bool WG = !input.workGraphEntryNodes.empty();
 
     ShaderCategory category;
-    if(VS && FS && !CS && !RT && !TS && !MS)
+    if(VS && FS && !CS && !RT && !TS && !MS && !WG)
     {
         category = ShaderCategory::ClassicalGraphics;
     }
-    else if(!VS && !FS && CS && !RT && !TS && !MS)
+    else if(!VS && !FS && CS && !RT && !TS && !MS && !WG)
     {
         category = ShaderCategory::Compute;
     }
-    else if(!VS && !FS && !CS && RT && !TS && !MS)
+    else if(!VS && !FS && !CS && RT && !TS && !MS && !WG)
     {
         category = ShaderCategory::RayTracing;
     }
-    else if(!VS && FS && !CS && !RT && MS)
+    else if(!VS && FS && !CS && !RT && MS && !WG)
     {
         category = ShaderCategory::MeshGraphics;
+    }
+    else if(!VS && !FS && !CS && !TS && !MS && !RT && WG)
+    {
+        category = ShaderCategory::WorkGraph;
     }
     else
     {
         throw Exception(fmt::format(
-            "Invalid shader category. Shader name: {}; VS: {}, FS: {}, CS: {}, RT: {}, TS: {}, MS: {}",
-            input.name, VS, FS, CS, RT, TS, MS));
+            "Invalid shader category. Shader name: {}; VS: {}, FS: {}, CS: {}, RT: {}, TS: {}, MS: {}, WG: {}",
+            input.name, VS, FS, CS, RT, TS, MS, WG));
     }
 
     struct BindingSlot
@@ -198,6 +204,7 @@ ShaderPreprocessingOutput PreprocessShader(const ShaderPreprocessingInput &input
     macros["rtrc_task(...)"] = "";
     macros["rtrc_mesh(...)"] = "";
     macros["rtrc_rt_group(...)"] = "";
+    macros["rtrc_entry(...)"] = "";
     macros["rtrc_keyword(...)"] = "";
 
     macros["rtrc_group(NAME, ...)"] = "_rtrc_group_##NAME";
@@ -568,15 +575,16 @@ ShaderPreprocessingOutput PreprocessShader(const ShaderPreprocessingInput &input
         }
     }
 
-    output.name = input.name;
-    output.source = input.source;
-    output.sourceFilename = input.sourceFilename;
-    output.vertexEntry = input.vertexEntry;
-    output.fragmentEntry = input.fragmentEntry;
-    output.computeEntry = input.computeEntry;
-    output.taskEntry = input.taskEntry;
-    output.meshEntry = input.meshEntry;
-    output.rayTracingEntryGroups = input.entryGroups;
+    output.name                  = input.name;
+    output.source                = input.source;
+    output.sourceFilename        = input.sourceFilename;
+    output.vertexEntry           = input.vertexEntry;
+    output.fragmentEntry         = input.fragmentEntry;
+    output.computeEntry          = input.computeEntry;
+    output.taskEntry             = input.taskEntry;
+    output.meshEntry             = input.meshEntry;
+    output.rayTracingEntryGroups = input.rayTracingEntryGroups;
+    output.workGraphEntryNodes   = input.workGraphEntryNodes;
 
     output.includeDirs = std::move(includeDirs);
     output.macros = std::move(macros);
@@ -649,6 +657,10 @@ std::set<std::string> GetDependentFiles(
     {
         shaderInfo.entryPoint = shader.computeEntry;
         target = isVulkan ? DXC::Target::Vulkan_1_3_CS_6_8 : DXC::Target::DirectX12_CS_6_8;
+    }
+    else if(shader.category == ShaderCategory::WorkGraph)
+    {
+        target = isVulkan ? DXC::Target::Vulkan_1_3_WG_6_8 : DXC::Target::DirectX12_WG_6_8;
     }
     else
     {

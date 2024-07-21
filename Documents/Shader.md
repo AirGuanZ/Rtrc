@@ -49,6 +49,10 @@ void CallableShaderEntryName() { ... }
 // Ray tracing shader group
 rtrc_rt_group(RayGen)
 rtrc_rt_group(ClosestHit, AnyHit, Intersection)
+    
+// Work graph entry node. If not specified, array index is implicitly set to 0.
+rtrc_entry(Node1)
+rtrc_entry(Node2, 3)
 ```
 
 ## Binding Group

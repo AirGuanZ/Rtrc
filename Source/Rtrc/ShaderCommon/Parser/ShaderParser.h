@@ -40,6 +40,8 @@ struct ShaderCompileEnvironment
     RTRC_AUTO_SERIALIZE_WITH_MEMBER_COUNT_CHECK(includeDirs, macros);
 };
 
+using WorkGraphEntryPoint = RHI::WorkGraphEntryPoint;
+
 struct ParsedShaderVariant
 {
     std::string vertexEntry;
@@ -47,7 +49,8 @@ struct ParsedShaderVariant
     std::string computeEntry;
     std::string taskEntry;
     std::string meshEntry;
-    std::vector<std::vector<std::string>> entryGroups;
+    std::vector<std::vector<std::string>> rayTracingEntryGroups;
+    std::vector<WorkGraphEntryPoint> workGraphEntryNodes;
 
     std::vector<ParsedBindingGroup> bindingGroups;
     std::vector<ParsedBinding>      ungroupedBindings;
@@ -65,7 +68,8 @@ struct ParsedShaderVariant
         computeEntry,
         taskEntry,
         meshEntry,
-        entryGroups,
+        rayTracingEntryGroups,
+        workGraphEntryNodes,
         bindingGroups,
         ungroupedBindings,
         aliases,

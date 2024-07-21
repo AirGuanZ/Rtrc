@@ -171,7 +171,11 @@ void VulkanCommandBuffer::BindPipeline(const OPtr<RayTracingPipeline> &pipeline)
     currentRayTracingPipeline_ = pipeline;
 }
 
-void VulkanCommandBuffer::BindPipeline(const OPtr<WorkGraphPipeline> &pipeline)
+void VulkanCommandBuffer::BindPipeline(
+    const OPtr<WorkGraphPipeline> &pipeline,
+    BufferDeviceAddress            backingMemory,
+    size_t                         backingMemorySize,
+    bool                           initializeBakingMemory)
 {
     throw Exception("Not implemented");
 }

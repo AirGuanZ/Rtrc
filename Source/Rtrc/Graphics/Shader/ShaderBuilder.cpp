@@ -48,6 +48,9 @@ RC<Shader> ShaderBuilder::BuildShader(Ref<Device> device, Desc desc)
         shader->rawShaders_[Shader::MS_INDEX] = std::move(desc.meshShader);
         shader->rawShaders_[Shader::FS_INDEX] = std::move(desc.fragmentShader);
         break;
+    case ShaderCategory::WorkGraph:
+        shader->rawShaders_[Shader::WG_INDEX] = std::move(desc.workGraphShader);
+        break;
     }
     shader->info_ = std::move(shaderInfo);
 
