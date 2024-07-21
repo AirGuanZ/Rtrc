@@ -240,6 +240,7 @@ public:
 
     RC<GraphicsPipeline> CreateGraphicsPipeline(const GraphicsPipelineDesc &desc);
     RC<ComputePipeline> CreateComputePipeline(const RC<Shader> &shader);
+    RC<WorkGraphPipeline> CreateWorkGraphPipeline(const WorkGraphPipeline::Desc &desc);
 
     RC<RayTracingLibrary> CreateRayTracingLibrary(const RayTracingLibrary::Desc &desc);
     RC<RayTracingPipeline> CreateRayTracingPipeline(const RayTracingPipeline::Desc &desc);
@@ -797,6 +798,11 @@ inline RC<GraphicsPipeline> Device::CreateGraphicsPipeline(const GraphicsPipelin
 inline RC<ComputePipeline> Device::CreateComputePipeline(const RC<Shader> &shader)
 {
     return pipelineManager_->CreateComputePipeline(shader);
+}
+
+inline RC<WorkGraphPipeline> Device::CreateWorkGraphPipeline(const WorkGraphPipeline::Desc &desc)
+{
+    return pipelineManager_->CreateWorkGraphPipeline(desc);
 }
 
 inline RC<RayTracingLibrary> Device::CreateRayTracingLibrary(const RayTracingLibrary::Desc &desc)

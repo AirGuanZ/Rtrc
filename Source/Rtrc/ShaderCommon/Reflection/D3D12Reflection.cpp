@@ -169,6 +169,14 @@ void D3D12Reflection::InitializeLibraryReflection(IDxcUtils *dxcUtils, Span<std:
 
         RHI::ShaderStage stage;
         const uint32_t programType = (functionDesc.Version & 0xffff0000) >> 16;
+
+        // Temporary workaround for the work graph: Work graph entries are assigned version type 15, which is undefined
+        // in the d3d12 reflection header as of 2024.07.21 (dxc version 1.8.2405).
+        if(programType == 15)
+        {
+            continue;
+        }
+
         switch(programType)
         {
         case D3D12_SHVER_PIXEL_SHADER:          stage = RHI::ShaderStage::FragmentShader;        break;

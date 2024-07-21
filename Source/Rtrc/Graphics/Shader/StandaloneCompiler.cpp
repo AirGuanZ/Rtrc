@@ -31,8 +31,9 @@ RC<Shader> StandaloneShaderCompiler::Compile(
     compilableShader.meshEntry               = variant.meshEntry;
     compilableShader.isRayTracingShader      = variant.vertexEntry.empty() &&
                                                variant.fragmentEntry.empty() &&
-                                               variant.computeEntry.empty();
-    compilableShader.rayTracingEntryGroups             = variant.rayTracingEntryGroups;
+                                               variant.computeEntry.empty() &&
+                                               variant.workGraphEntryNodes.empty();
+    compilableShader.rayTracingEntryGroups   = variant.rayTracingEntryGroups;
     compilableShader.bindingGroups           = variant.bindingGroups;
     compilableShader.ungroupedBindings       = variant.ungroupedBindings;
     compilableShader.aliases                 = variant.aliases;

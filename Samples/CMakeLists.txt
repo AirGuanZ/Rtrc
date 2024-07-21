@@ -41,6 +41,7 @@ add_rtrc_sample(13.HorizonShadowMap)
 add_rtrc_sample(14.HalfedgeMesh)
 add_rtrc_sample(15.HeatMethod)
 add_rtrc_sample(16.MeshCorefinement)
+add_rtrc_sample(17.WorkGraph)
 
 if(EXISTS "${RTRC_SOURCE_DIR}/Samples/Test.OT2D")
 	add_rtrc_sample(Test.OT2D)

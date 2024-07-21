@@ -293,7 +293,7 @@ RC<WorkGraphPipeline> PipelineManager::CreateWorkGraphPipeline(const WorkGraphPi
     {
         rhiDesc.rawShaders.push_back(rawShader->GetRawShader(RHI::ShaderType::WorkGraphShader));
     }
-    rhiDesc.bindingLayout = desc.bindingLayout->GetRHIObject();
+    rhiDesc.bindingLayout = desc.shaders[0]->GetBindingLayout()->GetRHIObject();
     rhiDesc.entryPoints = desc.entryNodes;
 
     auto ret = MakeRC<WorkGraphPipeline>();

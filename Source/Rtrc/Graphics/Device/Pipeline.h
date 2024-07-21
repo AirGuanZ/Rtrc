@@ -101,7 +101,6 @@ public:
     struct Desc
     {
         std::vector<RC<Shader>> shaders;
-        RC<BindingLayout> bindingLayout;
         std::vector<WorkGraphEntryPoint> entryNodes;
     };
 
