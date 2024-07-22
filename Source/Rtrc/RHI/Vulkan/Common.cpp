@@ -328,6 +328,10 @@ VkBufferUsageFlags TranslateBufferUsageFlag(BufferUsageFlag flag)
                                               VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT)
     ADD_CASE(ShaderBindingTable,              VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR)
 #undef ADD_CASE
+    if(flag.Contains(BufferUsage::BackingMemory))
+    {
+        throw Exception("Vulkan backend: work graph is not supported");
+    }
     return result;
 }
 
@@ -521,9 +525,14 @@ VkAccessFlags2 TranslateAccessFlag(ResourceAccessFlag flag)
         VK_ACCESS_2_SHADER_BINDING_TABLE_READ_BIT_KHR,                                                      // ReadSBT
         VK_ACCESS_2_SHADER_READ_BIT,                                                                        // ReadForBuildAS
         VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,                                                              // IndirectCommandRead
+        VK_ACCESS_2_NONE,                                                                                   // Backing memory
         VK_ACCESS_2_NONE,                                                                                   // DummyReadAndWrite
         VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT                                          // All
     };
+    if(flag.Contains(ResourceAccess::BackingMemory))
+    {
+        throw Exception("Vulkan backend: work graph is not supported");
+    }
     VkAccessFlags2 result = 0;
     for(size_t i = 0; i < GetArraySize(bitToFlag); ++i)
     {

@@ -253,7 +253,7 @@ bool IsReadOnly(ResourceAccessFlag access)
 
 bool IsWriteOnly(ResourceAccessFlag access)
 {
-    return (access & ResourceAccessWriteMask) == access;
+    return (access & ResourceAccessWriteOnlyMask) == access;
 }
 
 bool IsUAVOnly(ResourceAccessFlag access)

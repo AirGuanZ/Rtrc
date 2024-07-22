@@ -3,9 +3,17 @@
 
 RTRC_BEGIN
 
-void SimpleApplication::ExecuteStandaloneRenderGraph(GraphRef graph, bool enableTransientResourcePool)
+void SimpleApplication::ExecuteStandaloneRenderGraph(GraphRef graph, bool enableTransientResourcePool, bool partial)
 {
-    renderGraphExecuter_->Execute(graph, enableTransientResourcePool);
+    if(partial)
+    {
+        assert(!enableTransientResourcePool && "Partial execution doesn't support transient resource pool");
+        renderGraphExecuter_->ExecutePartially(graph);
+    }
+    else
+    {
+        renderGraphExecuter_->Execute(graph, enableTransientResourcePool);
+    }
 }
 
 void SimpleApplication::Initialize()

@@ -404,6 +404,7 @@ enum class BufferUsage : uint32_t
     AccelerationStructureBuildInput = 1 << 11,
     AccelerationStructure           = 1 << 12,
     ShaderBindingTable              = 1 << 13,
+    BackingMemory                   = 1 << 14,
 
     ComputeBuffer = ShaderStructuredBuffer | ShaderRWStructuredBuffer,
     AccelerationStructureScratch = ShaderRWStructuredBuffer | DeviceAddress,
@@ -518,13 +519,14 @@ enum class ResourceAccess : uint32_t
     ReadSBT                  = 1 << 25,
     ReadForBuildAS           = 1 << 26,
     IndirectCommandRead      = 1 << 27,
-    DummyReadAndWrite        = 1 << 28,
-    All                      = 1 << 29
+    BackingMemory            = 1 << 28,
+    DummyReadAndWrite        = 1 << 29,
+    All                      = 1 << 30
 };
 RTRC_DEFINE_ENUM_FLAGS(ResourceAccess)
 using ResourceAccessFlag = EnumFlagsResourceAccess;
 
-constexpr ResourceAccessFlag ResourceAccessWriteMask =
+constexpr ResourceAccessFlag ResourceAccessWriteOnlyMask =
       ResourceAccess::RenderTargetWrite
     | ResourceAccess::DepthStencilWrite
     | ResourceAccess::RWTextureWrite
@@ -611,6 +613,13 @@ enum class WorkGraphTier
     None,
     Compute,
     Graphics
+};
+
+struct WorkGraphMemoryRequirements
+{
+    size_t minSize = 0;
+    size_t maxSize = 0;
+    size_t sizeGranularity = 0;
 };
 
 // =============================== rhi descriptions ===============================
@@ -1929,6 +1938,8 @@ class WorkGraphPipeline : public RHIObject
 public:
 
     RTRC_RHI_API const WorkGraphPipelineDesc &GetDesc() const RTRC_RHI_API_PURE;
+
+    RTRC_RHI_API const WorkGraphMemoryRequirements &GetMemoryRequirements() const RTRC_RHI_API_PURE;
 };
 
 class Texture : public RHIObject

@@ -478,6 +478,7 @@ D3D12_BARRIER_ACCESS TranslateBarrierAccess(ResourceAccessFlag accesses)
         D3D12_BARRIER_ACCESS_SHADER_RESOURCE,                         // ReadSBT
         D3D12_BARRIER_ACCESS_SHADER_RESOURCE,                         // ReadForBuildAS
         D3D12_BARRIER_ACCESS_INDIRECT_ARGUMENT,                       // IndirectCommandRead
+        D3D12_BARRIER_ACCESS_UNORDERED_ACCESS,                        // Backing memory
         D3D12_BARRIER_ACCESS_NO_ACCESS,                               // DummyReadAndWrite
         D3D12_BARRIER_ACCESS_COMMON,                                  // All
     };
@@ -572,7 +573,8 @@ D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS
 D3D12_RESOURCE_DESC TranslateBufferDesc(const BufferDesc &desc)
 {
     D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
-    if(desc.usage & (BufferUsage::ShaderRWBuffer | BufferUsage::ShaderRWStructuredBuffer | BufferUsage::ShaderRWByteAddressBuffer))
+    if(desc.usage & (BufferUsage::ShaderRWBuffer | BufferUsage::ShaderRWStructuredBuffer |
+                     BufferUsage::ShaderRWByteAddressBuffer | BufferUsage::BackingMemory))
     {
         flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
     }

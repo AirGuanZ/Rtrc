@@ -15,8 +15,12 @@ public:
 
     const WorkGraphPipelineDesc &GetDesc() const RTRC_RHI_OVERRIDE
     {
-        static const WorkGraphPipelineDesc ret;
-        return ret;
+        throw Exception("Not implemented");
+    }
+
+    const WorkGraphMemoryRequirements &GetMemoryRequirements() const override
+    {
+        throw Exception("Not implemented");
     }
 };
 

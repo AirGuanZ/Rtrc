@@ -106,6 +106,8 @@ public:
 
     const ShaderBindingLayoutInfo &GetBindingLayoutInfo() const;
 
+    const RHI::WorkGraphMemoryRequirements &GetMemoryRequirements() const;
+
 private:
 
     friend class PipelineManager;
@@ -151,6 +153,11 @@ inline uint32_t RayTracingLibrary::GetShaderGroupCount() const
 inline const ShaderBindingLayoutInfo &WorkGraphPipeline::GetBindingLayoutInfo() const
 {
     return *bindingLayoutInfo_;
+}
+
+inline const RHI::WorkGraphMemoryRequirements &WorkGraphPipeline::GetMemoryRequirements() const
+{
+    return rhiObject_->GetMemoryRequirements();
 }
 
 inline const ShaderBindingLayoutInfo &RayTracingPipeline::GetBindingLayoutInfo() const
