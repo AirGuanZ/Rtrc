@@ -98,7 +98,7 @@ RPtr<BufferUav> DirectX12Buffer::CreateUav(const BufferUavDesc &desc) const
     viewDesc.Buffer.FirstElement         = desc.offset / actualStride;
     viewDesc.Buffer.NumElements          = desc.range / actualStride;
     viewDesc.Buffer.StructureByteStride  = desc.stride;
-    viewDesc.Buffer.Flags                = isRawBufferView ? D3D12_BUFFER_UAV_FLAG_RAW : D3D12_BUFFER_UAV_FLAG_NONE;;
+    viewDesc.Buffer.Flags                = isRawBufferView ? D3D12_BUFFER_UAV_FLAG_RAW : D3D12_BUFFER_UAV_FLAG_NONE;
     viewDesc.Buffer.CounterOffsetInBytes = 0;
 
     auto handle = device_->_internalAllocateCPUDescriptorHandle_CbvSrvUav();
@@ -164,6 +164,10 @@ void DirectX12Buffer::FlushAfterWrite(size_t offset, size_t size)
 
 BufferDeviceAddress DirectX12Buffer::GetDeviceAddress() const
 {
+    assert(desc_.usage & (BufferUsage::DeviceAddress | BufferUsage::AccelerationStructure |
+                          BufferUsage::AccelerationStructureBuildInput |  BufferUsage::ShaderBindingTable |
+                          BufferUsage::VertexBuffer | BufferUsage::IndexBuffer |
+                          BufferUsage::ShaderConstantBuffer | BufferUsage::BackingMemory));
     return { deviceAddress_ };
 }
 

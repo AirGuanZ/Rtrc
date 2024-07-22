@@ -326,7 +326,8 @@ VkBufferUsageFlags TranslateBufferUsageFlag(BufferUsageFlag flag)
     ADD_CASE(AccelerationStructure,           VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR |
                                               VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                                               VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT)
-    ADD_CASE(ShaderBindingTable,              VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR)
+    ADD_CASE(ShaderBindingTable,              VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR |
+                                              VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT)
 #undef ADD_CASE
     if(flag.Contains(BufferUsage::BackingMemory))
     {

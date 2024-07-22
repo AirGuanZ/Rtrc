@@ -16,7 +16,8 @@ VulkanBuffer::VulkanBuffer(
     : desc_(desc), device_(device), buffer_(buffer), alloc_(alloc), ownership_(ownership), deviceAddress_()
 {
     if(desc_.usage.Contains(BufferUsage::DeviceAddress) ||
-       desc_.usage.Contains(BufferUsage::AccelerationStructureBuildInput))
+       desc_.usage.Contains(BufferUsage::AccelerationStructureBuildInput) ||
+       desc_.usage.Contains(BufferUsage::ShaderBindingTable))
     {
         const VkBufferDeviceAddressInfo deviceAddressInfo =
         {

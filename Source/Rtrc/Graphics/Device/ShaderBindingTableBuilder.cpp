@@ -87,7 +87,7 @@ ShaderBindingTable ShaderBindingTableBuilder::CreateShaderBindingTable(bool useC
     auto buffer = device_->CreateAndUploadBuffer(RHI::BufferDesc
     {
         .size           = bufferSize,
-        .usage          = RHI::BufferUsage::ShaderBindingTable | RHI::BufferUsage::DeviceAddress,
+        .usage          = RHI::BufferUsage::ShaderBindingTable,
         .hostAccessType = useCopyCommand ? RHI::BufferHostAccessType::None : RHI::BufferHostAccessType::Upload
     }, storage.data());
 
