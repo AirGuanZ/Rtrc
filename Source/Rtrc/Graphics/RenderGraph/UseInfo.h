@@ -193,6 +193,13 @@ namespace RG
         .accesses = RHI::ResourceAccess::IndirectCommandRead
     };
 
+    inline constexpr RGUseInfo WG_Compute_BackingMemory =
+    {
+        .layout   = RHI::TextureLayout::Undefined,
+        .stages   = RHI::PipelineStage::ComputeShader,
+        .accesses = RHI::ResourceAccess::BackingMemory
+    };
+
 } // namespace RG
 
 RTRC_END

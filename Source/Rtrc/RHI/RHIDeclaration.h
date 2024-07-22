@@ -1247,6 +1247,7 @@ struct WorkGraphPipelineDesc
     std::vector<RawShaderOPtr> rawShaders;
     std::vector<WorkGraphEntryPoint> entryPoints;
     OPtr<BindingLayout> bindingLayout;
+    bool graphics = false;
 };
 
 struct RayTracingTrianglesGeometryData
@@ -1534,6 +1535,10 @@ private:
     void ModifyMember(int index, Sampler *sampler)                    { this->ModifyMember(index, 0, sampler);    } \
     void ModifyMember(int index, const ConstantBufferUpdate &cbuffer) { this->ModifyMember(index, 0, cbuffer);    } \
     void ModifyMember(int index, Tlas *tlas)                          { this->ModifyMember(index, 0, tlas);       }
+
+#define RTRC_RHI_WORK_GRAPH_PIPELINE_COMMON                      \
+    bool IsGraphics() const { return this->GetDesc().graphics; } \
+    const OPtr<BindingLayout> &GetBindingLayout() const { return this->GetDesc().bindingLayout; }
 
 #if !RTRC_STATIC_RHI
 
@@ -1936,6 +1941,8 @@ public:
 class WorkGraphPipeline : public RHIObject
 {
 public:
+
+    RTRC_RHI_WORK_GRAPH_PIPELINE_COMMON
 
     RTRC_RHI_API const WorkGraphPipelineDesc &GetDesc() const RTRC_RHI_API_PURE;
 

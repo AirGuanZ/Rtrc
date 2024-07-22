@@ -730,6 +730,13 @@ UPtr<WorkGraphPipeline> DirectX12Device::CreateWorkGraphPipeline(const WorkGraph
     rootSignatureObject->SetRootSignature(d3dBindingLayout->_internalGetRootSignature(false).Get());
     rootSignatureObject->Finalize();
 
+    if(desc.graphics)
+    {
+        auto configObject = stateObjectDesc.CreateSubobject<CD3DX12_STATE_OBJECT_CONFIG_SUBOBJECT>();
+        configObject->SetFlags(D3D12_STATE_OBJECT_FLAG_WORK_GRAPHS_USE_GRAPHICS_STATE_FOR_GLOBAL_ROOT_SIGNATURE);
+        configObject->Finalize();
+    }
+
     ComPtr<ID3D12StateObject> stateObject;
     RTRC_D3D12_FAIL_MSG(
         device_->CreateStateObject(stateObjectDesc, IID_PPV_ARGS(stateObject.GetAddressOf())),

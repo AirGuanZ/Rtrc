@@ -102,6 +102,7 @@ public:
     {
         std::vector<RC<Shader>> shaders;
         std::vector<WorkGraphEntryPoint> entryNodes;
+        bool graphics = false;
     };
 
     const ShaderBindingLayoutInfo &GetBindingLayoutInfo() const;

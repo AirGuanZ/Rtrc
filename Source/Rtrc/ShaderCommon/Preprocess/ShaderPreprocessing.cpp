@@ -15,7 +15,7 @@ namespace ShaderPreprocessingDetail
         case ShaderCategory::MeshGraphics:        return RHI::ShaderStage::AllMesh;
         case ShaderCategory::Compute:             return RHI::ShaderStage::CS;
         case ShaderCategory::RayTracing:          return RHI::ShaderStage::AllRT;
-        case ShaderCategory::WorkGraph:           return RHI::ShaderStage::CS;
+        case ShaderCategory::WorkGraph:           return RHI::ShaderStage::CS | RHI::ShaderStage::AllMesh; // TODO: optimize this
         }
         Unreachable();
     }

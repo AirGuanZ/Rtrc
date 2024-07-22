@@ -8,6 +8,8 @@ RTRC_RHI_IMPLEMENT(DirectX12WorkGraphPipeline, WorkGraphPipeline)
 {
 public:
 
+    RTRC_RHI_WORK_GRAPH_PIPELINE_COMMON
+
     DirectX12WorkGraphPipeline(WorkGraphPipelineDesc desc, ComPtr<ID3D12StateObject> stateObject);
 
     const WorkGraphPipelineDesc &GetDesc() const RTRC_RHI_OVERRIDE { return desc_; }

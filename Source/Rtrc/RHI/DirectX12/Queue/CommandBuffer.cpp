@@ -188,10 +188,21 @@ void DirectX12CommandBuffer::BindPipeline(
     commandList_->SetProgram(&setProgramDesc);
 
     auto d3dBindingLayout = static_cast<DirectX12BindingLayout *>(d3dPipeline->GetDesc().bindingLayout.Get());
-    if(auto s = d3dBindingLayout->_internalGetRootSignature(false).Get(); currentComputeRootSignature_ != s)
+    if(pipeline->IsGraphics())
     {
-        commandList_->SetComputeRootSignature(s);
-        currentComputeRootSignature_ = s;
+        if(auto s = d3dBindingLayout->_internalGetRootSignature(false).Get(); currentGraphicsRootSignature_ != s)
+        {
+            commandList_->SetGraphicsRootSignature(s);
+            currentGraphicsRootSignature_ = s;
+        }
+    }
+    else
+    {
+        if(auto s = d3dBindingLayout->_internalGetRootSignature(false).Get(); currentComputeRootSignature_ != s)
+        {
+            commandList_->SetComputeRootSignature(s);
+            currentComputeRootSignature_ = s;
+        }
     }
 }
 
@@ -286,16 +297,34 @@ void DirectX12CommandBuffer::BindGroupToWorkGraphPipeline(int index, const OPtr<
     const auto bindingLayout = static_cast<DirectX12BindingLayout *>(currentWorkGraphPipeline_->GetDesc().bindingLayout.Get());
     const auto d3dGroup = static_cast<DirectX12BindingGroup *>(group.Get());
     const int firstRootParamIndex = bindingLayout->_internalGetRootParamIndex(index);
-    for(auto &&[i, table] : Enumerate(d3dGroup->_internalGetDescriptorTables()))
-    {
-        commandList_->SetComputeRootDescriptorTable(static_cast<UINT>(firstRootParamIndex + i), table.gpuHandle);
-    }
 
-    for(auto &alias : bindingLayout->_internalGetUnboundedResourceArrayAliases(index))
+    if(currentWorkGraphPipeline_->IsGraphics())
     {
-        auto &table = d3dGroup->_internalGetDescriptorTables()[alias.srcTableIndex];
-        const D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = { table.gpuHandle.ptr + alias.offsetInSrcTable };
-        commandList_->SetComputeRootDescriptorTable(static_cast<UINT>(alias.rootParamIndex), gpuHandle);
+        for(auto &&[i, table] : Enumerate(d3dGroup->_internalGetDescriptorTables()))
+        {
+            commandList_->SetGraphicsRootDescriptorTable(static_cast<UINT>(firstRootParamIndex + i), table.gpuHandle);
+        }
+
+        for(auto &alias : bindingLayout->_internalGetUnboundedResourceArrayAliases(index))
+        {
+            auto &table = d3dGroup->_internalGetDescriptorTables()[alias.srcTableIndex];
+            const D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = { table.gpuHandle.ptr + alias.offsetInSrcTable };
+            commandList_->SetGraphicsRootDescriptorTable(static_cast<UINT>(alias.rootParamIndex), gpuHandle);
+        }
+    }
+    else
+    {
+        for(auto &&[i, table] : Enumerate(d3dGroup->_internalGetDescriptorTables()))
+        {
+            commandList_->SetComputeRootDescriptorTable(static_cast<UINT>(firstRootParamIndex + i), table.gpuHandle);
+        }
+
+        for(auto &alias : bindingLayout->_internalGetUnboundedResourceArrayAliases(index))
+        {
+            auto &table = d3dGroup->_internalGetDescriptorTables()[alias.srcTableIndex];
+            const D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle = { table.gpuHandle.ptr + alias.offsetInSrcTable };
+            commandList_->SetComputeRootDescriptorTable(static_cast<UINT>(alias.rootParamIndex), gpuHandle);
+        }
     }
 }
 

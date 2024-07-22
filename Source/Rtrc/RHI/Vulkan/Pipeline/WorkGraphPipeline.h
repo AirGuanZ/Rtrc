@@ -8,6 +8,8 @@ RTRC_RHI_IMPLEMENT(VulkanWorkGraphPipeline, WorkGraphPipeline)
 {
 public:
 
+    RTRC_RHI_WORK_GRAPH_PIPELINE_COMMON
+
     VulkanWorkGraphPipeline()
     {
         throw Exception("Not implemented");

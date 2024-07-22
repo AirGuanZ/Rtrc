@@ -295,6 +295,7 @@ RC<WorkGraphPipeline> PipelineManager::CreateWorkGraphPipeline(const WorkGraphPi
     }
     rhiDesc.bindingLayout = desc.shaders[0]->GetBindingLayout()->GetRHIObject();
     rhiDesc.entryPoints = desc.entryNodes;
+    rhiDesc.graphics = desc.graphics;
 
     auto ret = MakeRC<WorkGraphPipeline>();
     ret->rhiObject_         = device_->CreateWorkGraphPipeline(rhiDesc);
