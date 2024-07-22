@@ -4,6 +4,8 @@
 
 using namespace Rtrc;
 
+// TODO: write a non-trivial sample
+
 class WorkGraphDemo : public SimpleApplication
 {
     void InitializeSimpleApplication(GraphRef graph) override
@@ -14,18 +16,70 @@ class WorkGraphDemo : public SimpleApplication
             .entryNodes = { { "EntryNode", 0 } }
         });
 
-        // TODO
-    }
+        auto inputTexture = StatefulTexture::FromTexture(device_->LoadTexture2D(
+            "./Asset/Sample/01.TexturedQuad/MainTexture.png",
+            RHI::Format::R32G32B32A32_Float,
+            RHI::TextureUsage::UnorderedAccess | RHI::TextureUsage::TransferSrc,
+            false,
+            RHI::TextureLayout::ShaderRWTexture));
+        inputTexture->SetState(TexSubrscState(
+            RHI::INITIAL_QUEUE_SESSION_ID, RHI::TextureLayout::ShaderRWTexture,
+            RHI::PipelineStage::None, RHI::ResourceAccess::None));
 
-    void UpdateSimpleApplication(GraphRef graph) override
-    {
-        if(input_->IsKeyDown(KeyCode::Escape))
+        auto texture = graph->RegisterTexture(inputTexture);
+
+        RC<Buffer> backingMemory;
+        const auto &memoryRequirements = pipeline_->GetMemoryRequirements();
+        if(memoryRequirements.minSize > 0)
         {
-            SetExitFlag(true);
+            backingMemory = device_->CreateBuffer(RHI::BufferDesc
+            {
+                .size = memoryRequirements.minSize,
+                .usage = RHI::BufferUsage::ShaderRWBuffer | RHI::BufferUsage::BackingMemory
+            });
         }
 
-        auto swapchainTexture = graph->RegisterSwapchainTexture(device_->GetSwapchain());
-        RGClearColor(graph, "ClearSwapchainTexture", swapchainTexture, { 0, 1, 1, 0 });
+        auto pass = graph->CreatePass("WorkGraphPass");
+        pass->Use(texture, RG::CS_RWTexture);
+        pass->SetCallback([&]
+        {
+            RtrcShader::WorkGraph::Pass passData;
+            passData.Texture = texture;
+            passData.resolution = texture->GetSize();
+            auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
+
+            auto &commandBuffer = RGGetCommandBuffer();
+            commandBuffer.BindWorkGraphPipeline(
+                pipeline_,
+                backingMemory ? backingMemory->GetDeviceAddress() : RHI::BufferDeviceAddress{},
+                memoryRequirements.minSize, true);
+            commandBuffer.BindWorkGraphGroup(0, passGroup);
+
+            struct InputRecord
+            {
+                uint32_t gridSizeX;
+                uint32_t gridSizeY;
+            };
+            const InputRecord inputRecord =
+            {
+                UpAlignTo(texture->GetWidth(), 8u) / 8u,
+                UpAlignTo(texture->GetHeight(), 8u) / 8u,
+            };
+            commandBuffer.DispatchNode(0, 1, sizeof(InputRecord), &inputRecord);
+        });
+
+        Image<Vector4f> readbackResult(texture->GetWidth(), texture->GetHeight());
+        RGReadbackTexture(graph, "Readback", texture, 0, 0, readbackResult.GetData());
+
+        ExecuteStandaloneRenderGraph(graph, false, true);
+
+        if(!std::filesystem::exists("./Asset/Sample/17.WorkGraph"))
+        {
+            std::filesystem::create_directories("./Asset/Sample/17.WorkGraph");
+        }
+        readbackResult.Save("./Asset/Sample/17.WorkGraph/Output.png");
+
+        SetExitFlag(true);
     }
 
     RC<WorkGraphPipeline> pipeline_;
