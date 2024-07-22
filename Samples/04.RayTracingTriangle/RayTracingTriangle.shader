@@ -12,9 +12,9 @@ rtrc_shader("RayTracingTriangle")
         rtrc_define(RaytracingAccelerationStructure, Scene)
     };
 
-    struct Payload
+    struct [raypayload] Payload
     {
-        float3 value;
+        float3 value : read(caller) : write(miss, closesthit);
     };
 
     struct Attribute
@@ -35,7 +35,7 @@ rtrc_shader("RayTracingTriangle")
         ray.TMin      = 0;
         ray.TMax      = 100;
 
-        Payload payload = { float3(0, 0, 0) };
+        Payload payload;
         TraceRay(Scene, RAY_FLAG_NONE, 0xff, 0, 0, 0, ray, payload);
 
         OutputTextureRW[texelXY] = float4(payload.value, 1);
