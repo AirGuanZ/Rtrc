@@ -151,7 +151,7 @@ ImageND<T, D>::ImageND(const std::array<uint32_t, D>& dims)
 template <typename T, size_t D>
 template <typename... TIs> requires (sizeof...(TIs) == D) && std::conjunction_v<std::is_integral<TIs>...>
 ImageND<T, D>::ImageND(TIs... tis)
-    : ImageND(std::array<T, D>{ tis... })
+    : ImageND(std::array<uint32_t, D>{ static_cast<uint32_t>(tis)... })
 {
     
 }
