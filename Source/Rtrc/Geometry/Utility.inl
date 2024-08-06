@@ -64,9 +64,10 @@ void MergeCoincidentVertices(
         if(it != positionToIndex.end())
         {
             outputIndices.push_back(it->second);
+            continue;
         }
 
-        const uint32_t newIndex = outputIndices.size();
+        const uint32_t newIndex = outputPositions.size();
         outputPositions.push_back(position);
         outputIndices.push_back(newIndex);
         positionToIndex.insert({ position, newIndex });
