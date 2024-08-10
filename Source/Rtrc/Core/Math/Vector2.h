@@ -345,3 +345,12 @@ Vector2<T> Lerp(const Vector2<T> &lhs, const Vector2<T> &rhs, const Vector2<T> &
 }
 
 RTRC_END
+
+template <typename T>
+struct std::formatter<Rtrc::Vector2<T>> : std::formatter<std::string>
+{
+    auto format(const Rtrc::Vector2<T> &p, std::format_context &ctx) const
+    {
+        return formatter<std::string>::format(std::format("({}, {})", p.x, p.y), ctx);
+    }
+};

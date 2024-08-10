@@ -288,3 +288,12 @@ Vector4<T> Lerp(const Vector4<T> &lhs, const Vector4<T> &rhs, const Vector4<T> &
 }
 
 RTRC_END
+
+template <typename T>
+struct std::formatter<Rtrc::Vector4<T>> : std::formatter<std::string>
+{
+    auto format(const Rtrc::Vector4<T> &p, std::format_context &ctx) const
+    {
+        return formatter<std::string>::format(std::format("({}, {}, {}, {})", p.x, p.y, p.z, p.w), ctx);
+    }
+};

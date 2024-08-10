@@ -375,14 +375,6 @@ namespace CorefineDetail
                 output.points.push_back(IntersectLine3D(
                     output.points[a], output.points[b], output.points[c], output.points[d], projectAxis));
             }
-
-            for(auto &p : output.points)
-            {
-                p.x.Compress();
-                p.y.Compress();
-                p.z.Compress();
-                p.w.Compress();
-            }
         });
     }
 
@@ -688,8 +680,13 @@ void MeshCorefinement::Corefine(
             {
                 const SI::Element elemA = inct.GetElement0();
                 const SI::Element elemB = inct.GetElement1();
-                intersectionInfo.points.push_back(
-                    ResolveSymbolicIntersection(p0, p1, p2, q0, q1, q2, elemA, elemB));
+                intersectionInfo.points.push_back(ResolveSymbolicIntersection(p0, p1, p2, q0, q1, q2, elemA, elemB));
+
+                Expansion4 &newPoint = intersectionInfo.points.back();
+                newPoint.x.Compress();
+                newPoint.y.Compress();
+                newPoint.z.Compress();
+                newPoint.w.Compress();
             }
         }
     });

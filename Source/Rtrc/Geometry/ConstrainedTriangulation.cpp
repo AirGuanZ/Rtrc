@@ -317,10 +317,10 @@ void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
     }
 
     std::vector<int> edgeToSourceConstraint(connectivity.E(), -1);
-    std::vector<uint32_t> edgeToConstraintMask;
+    std::vector<uint32_t> localEdgeToConstraintMask;
     if(trackConstraintMask)
     {
-        edgeToConstraintMask.resize(connectivity.E(), 0);
+        localEdgeToConstraintMask.resize(connectivity.E(), 0);
     }
     std::map<Vector4i, int> cocircleCache;
 
@@ -387,7 +387,9 @@ void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
                 const int newH0 = connectivity.EdgeToHalfedge(e);
                 const int newVa = connectivity.Head(newH0);
                 const int newVb = connectivity.Tail(newH0);
-                if(TestIntersectionNoColinear(vertices[newVa], vertices[newVb], vertices[vStart], vertices[vEnd]))
+
+                if(!((newVa == vStart && newVb == vEnd) || (newVa == vEnd && newVb == vStart)) &&
+                   TestIntersectionNoColinear(vertices[newVa], vertices[newVb], vertices[vStart], vertices[vEnd]))
                 {
                     intersectedEdges.push_back(e);
                 }
@@ -414,7 +416,7 @@ void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
                 edgeToSourceConstraint[e] = constraintIndex;
                 if(trackConstraintMask)
                 {
-                    edgeToConstraintMask[e] |= constraint.mask;
+                    localEdgeToConstraintMask[e] |= constraint.mask;
                 }
                 return false;
             });
@@ -430,13 +432,16 @@ void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
 
         // Create a new intersection between the constraint segments (vo, vt) and (va, vb).
         // Delaunayize the neighborhood of the newly created intersection.
-        // After the triangulation, restart the tracing process from the vertex 'vo'.
+        // After that, restart the tracing process from the vertex 'vo'.
         auto CreateIntersectionOnConstraint = [&](int va, int vb, int h, int targetConstraintIndex)
         {
             assert(connectivity.Head(h) == va || connectivity.Head(h) == vb);
             assert(connectivity.Tail(h) == va || connectivity.Tail(h) == vb);
 
-            const Expansion3 inct = IntersectLine2D(vertices[vo], vertices[vt], vertices[va], vertices[vb]);
+            Expansion3 inct = IntersectLine2D(vertices[vo], vertices[vt], vertices[va], vertices[vb]);
+            inct.x.Compress();
+            inct.y.Compress();
+            inct.z.Compress();
 
             const int vInct = connectivity.V();
             vertices.push_back(inct);
@@ -445,7 +450,7 @@ void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
             edgeToSourceConstraint.resize(connectivity.E(), -1);
             if(trackConstraintMask)
             {
-                edgeToConstraintMask.resize(connectivity.E(), 0);
+                localEdgeToConstraintMask.resize(connectivity.E(), 0);
             }
 
             assert(static_cast<int>(meshVertexToPointIndex.size()) == vInct);
@@ -513,7 +518,7 @@ void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
                             edgeToSourceConstraint[e] = constraintIndex;
                             if(trackConstraintMask)
                             {
-                                edgeToConstraintMask[e] |= constraint.mask;
+                                localEdgeToConstraintMask[e] |= constraint.mask;
                             }
                             if(vo != startVertex)
                             {
@@ -528,7 +533,7 @@ void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
                             edgeToSourceConstraint[e] = constraintIndex;
                             if(trackConstraintMask)
                             {
-                                edgeToConstraintMask[e] |= constraint.mask;
+                                localEdgeToConstraintMask[e] |= constraint.mask;
                             }
                             if(vo != startVertex)
                             {
@@ -642,7 +647,7 @@ void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
                 {
                     std::swap(pv0, pv1);
                 }
-                this->edgeToConstraintMask.insert({ { pv0, pv1 }, edgeToConstraintMask[e] });
+                this->edgeToConstraintMask.insert({ { pv0, pv1 }, localEdgeToConstraintMask[e] });
             }
         }
     }

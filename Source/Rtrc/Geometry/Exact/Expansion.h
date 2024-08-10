@@ -96,6 +96,8 @@ public:
     template<size_t StaticStorage2> requires (!StaticStorage || StaticStorage2 <= StaticStorage)
     SExpansion &operator=(const SExpansion<Word, StaticStorage2> &other);
 
+    ~SExpansion();
+
     void Swap(SExpansion &other) noexcept;
 
     bool CheckSanity() const;
@@ -106,6 +108,7 @@ public:
     Word ToWord() const;
     float ToFloat() const;
     double ToDouble() const;
+    operator double() const { return ToDouble(); }
 
     int GetSign() const;
 
@@ -277,6 +280,18 @@ SExpansion<Word, StaticStorage> &SExpansion<Word, StaticStorage>::operator=(cons
     SExpansion t(other);
     this->Swap(t);
     return *this;
+}
+
+template <typename Word, size_t StaticStorage>
+SExpansion<Word, StaticStorage>::~SExpansion()
+{
+    if constexpr(SupportDynamicStorage)
+    {
+        if(this->capacity_ > InlinedItemCount)
+        {
+            std::free(GetItemPointer());
+        }
+    }
 }
 
 template <typename Word, size_t StaticStorage>

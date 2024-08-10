@@ -191,8 +191,8 @@ Expansion4 IntersectLine3D(const Expansion4 &a3d, const Expansion4 &b3d, const E
     const auto A = HomoSub(b, a);
     const auto B = HomoSub(c, d);
     const auto C = HomoSub(c, a);
-    const auto tu = (A.x * B.y - B.x * A.y) * C.z;
-    const auto td = (C.x * B.y - B.x * C.y) * A.z;
+    const auto td = (A.x * B.y - B.x * A.y) * C.z;
+    const auto tu = (C.x * B.y - B.x * C.y) * A.z;
 
     const auto ab = HomoSub(b3d, a3d);
     return HomoAdd(a3d, Expansion4(ab.x * tu, ab.y * tu, ab.z * tu, ab.w * td));
