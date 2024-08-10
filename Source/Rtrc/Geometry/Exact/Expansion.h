@@ -456,6 +456,7 @@ void SExpansion<Word, StaticStorage>::SetMul(const SExpansion<Word, SL> &lhs, co
         size_ = ExpansionUtility::ExpansionSum(
             GetItemPointer(), GetLength(), t.GetItemPointer(), t.GetLength(), GetItemPointer());
     }
+    this->Compress();
 }
 
 template <typename Word, size_t StaticStorage>

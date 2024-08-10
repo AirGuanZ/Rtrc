@@ -61,6 +61,9 @@ public:
     bool IsEdgeOnBoundary(int e) const { return Twin(EdgeToHalfedge(e)) == NullID; }
     bool IsVertOnBoundary(int v) const { return Twin(VertToHalfedge(v)) == NullID; }
 
+    int FindHalfedgeByVertex(int head, int tail) const;
+    int FindEdgeByVertex(int va, int vb) const;
+
     // If Unique is true, only one of each pair of twin halfedges will be used, with the outgoing one being preferred.
     // func is called with the index of each halfedge.
     // The returned type of func must be either void or bool.
@@ -147,6 +150,38 @@ private:
     std::vector<int> vertToHalfedge_; // One of the halfedges outgoing from v. The boundary one is preferred, if present.
     std::vector<int> edgeToHalfedge_;
 };
+
+inline int HalfedgeMesh::FindHalfedgeByVertex(int head, int tail) const
+{
+    int result = NullID;
+    this->ForEachOutgoingHalfedge(head, [&](int h)
+    {
+        if(this->Tail(h) == tail)
+        {
+            result = h;
+            return false;
+        }
+        return true;
+    });
+    return result;
+}
+
+inline int HalfedgeMesh::FindEdgeByVertex(int va, int vb) const
+{
+    int result = NullID;
+    this->ForEachHalfedge<true>(va, [&](int h)
+    {
+        const int head = this->Head(h);
+        const int tail = this->Tail(h);
+        if((head == va && tail == vb) || (head == vb && tail == va))
+        {
+            result = this->Edge(h);
+            return false;
+        }
+        return true;
+    });
+    return result;
+}
 
 template <bool Unique, typename Func>
 void HalfedgeMesh::ForEachHalfedge(int v, const Func &func) const

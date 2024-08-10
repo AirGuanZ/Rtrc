@@ -369,6 +369,7 @@ void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
             while(!intersectedEdges.empty())
             {
                 const int e = intersectedEdges.front();
+                assert(edgeToSourceConstraint[e] < 0);
                 intersectedEdges.pop_front();
 
                 const int h0 = connectivity.EdgeToHalfedge(e);
@@ -438,7 +439,14 @@ void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
             assert(connectivity.Head(h) == va || connectivity.Head(h) == vb);
             assert(connectivity.Tail(h) == va || connectivity.Tail(h) == vb);
 
-            Expansion3 inct = IntersectLine2D(vertices[vo], vertices[vt], vertices[va], vertices[vb]);
+            const int vSourceConstraintA = constraint.a + 3;
+            const int vSourceConstraintB = constraint.b + 3;
+            const int vTargetConstraintA = constraints[targetConstraintIndex].a + 3;
+            const int vTargetConstraintB = constraints[targetConstraintIndex].b + 3;
+
+            Expansion3 inct = IntersectLine2D(
+                vertices[vSourceConstraintA], vertices[vSourceConstraintB],
+                vertices[vTargetConstraintA], vertices[vTargetConstraintB]);
             inct.x.Compress();
             inct.y.Compress();
             inct.z.Compress();
@@ -446,11 +454,28 @@ void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
             const int vInct = connectivity.V();
             vertices.push_back(inct);
 
+            const int oldE = connectivity.Edge(h);
+            const uint32_t oldConstraintMask = trackConstraintMask ? localEdgeToConstraintMask[oldE] : 0;
+
+            edgeToSourceConstraint[oldE] = -1;
+            if(trackConstraintMask)
+            {
+                localEdgeToConstraintMask[oldE] = 0;
+            }
             connectivity.SplitEdge(h);
+
+            const int newEa = connectivity.FindEdgeByVertex(va, vInct);
+            const int newEb = connectivity.FindEdgeByVertex(vb, vInct);
+
             edgeToSourceConstraint.resize(connectivity.E(), -1);
+            edgeToSourceConstraint[newEa] = targetConstraintIndex;
+            edgeToSourceConstraint[newEb] = targetConstraintIndex;
+
             if(trackConstraintMask)
             {
                 localEdgeToConstraintMask.resize(connectivity.E(), 0);
+                localEdgeToConstraintMask[newEa] = oldConstraintMask;
+                localEdgeToConstraintMask[newEb] = oldConstraintMask;
             }
 
             assert(static_cast<int>(meshVertexToPointIndex.size()) == vInct);
@@ -494,6 +519,7 @@ void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
         {
             if(startVertex >= 0)
             {
+                assert(startHalfedge < 0);
                 if(startVertex == vt) 
                 {
                     CommitIntersectedEdges(vo, vt);
@@ -520,10 +546,7 @@ void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
                             {
                                 localEdgeToConstraintMask[e] |= constraint.mask;
                             }
-                            if(vo != startVertex)
-                            {
-                                CommitIntersectedEdges(vo, startVertex);
-                            }
+                            CommitIntersectedEdges(vo, startVertex);
                             vo = va;
                             startVertex = vo;
                         }
@@ -535,10 +558,7 @@ void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
                             {
                                 localEdgeToConstraintMask[e] |= constraint.mask;
                             }
-                            if(vo != startVertex)
-                            {
-                                CommitIntersectedEdges(vo, startVertex);
-                            }
+                            CommitIntersectedEdges(vo, startVertex);
                             vo = vb;
                             startVertex = vo;
                         }
