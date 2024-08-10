@@ -1,31 +1,23 @@
 # Rtrc
 
-Personal real-time graphics toolkits
+Personal graphics toolkits
 
 ![](./Documents/Gallery/01.png)
 
-Minimal example (clear the framebuffer to sky blue):
+## Features
 
-```c++
-#include <Rtrc/Rtrc.h>
-
-using namespace Rtrc;
-
-class Demo : public SimpleApplication
-{
-    void UpdateSimpleApplication(GraphRef graph) override
-    {
-        auto framebuffer = graph->RegisterSwapchainTexture(GetSwapchain());
-        RGClearColor(graph, "ClearFramebuffer", framebuffer, { 0.0, 1.0, 0.0, 0.0 });
-    }
-};
-
-RTRC_APPLICATION_MAIN(
-    Demo,
-    .title  = "Rtrc Demo",
-    .width  = 640,
-    .height = 480)
-```
+* DirectX12 & Vulkan RHI backends, supporting RTX, mesh shader and work graph
+* Render graph with transient resource aliasing
+* Explicit binding group management in shader
+* (Experimental) compute shader DSL embedded in C++
+* Physically-based atmosphere rendering
+* Distortion-free displacement map optimizer
+* Exact floating-point computation based on arithmetic expansion
+* Exact predicates for computational geometry
+* Constrained Delaunay triangulation
+* Array-style halfedge mesh
+* Exact mesh corefinement
+* Discrete differential operators on triangle mesh
 
 ## Samples
 
