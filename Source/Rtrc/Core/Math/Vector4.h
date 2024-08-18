@@ -98,7 +98,7 @@ struct ArchiveTransferTrait<Vector4<T>>
 
 template <typename T>
 constexpr Vector4<T>::Vector4()
-    : Vector4(T(0), T(0), T(0), T(0))
+    : Vector4(T{})
 {
     
 }

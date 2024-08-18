@@ -4,7 +4,7 @@
 
 #include <Rtrc/Core/Parallel.h>
 #include <Rtrc/Core/Unreachable.h>
-#include <Rtrc/Geometry/Exact/Predicates.h>
+#include <Rtrc/Core/Math/Exact/Predicates.h>
 #include <Rtrc/Geometry/MeshCleaner.h>
 #include <Rtrc/Geometry/Utility.h>
 

@@ -1,8 +1,8 @@
 #pragma once
 
-#include <Rtrc/Geometry/Exact/Vector.h>
+#include <Rtrc/Core/Math/Exact/Vector.h>
 
-RTRC_GEO_BEGIN
+RTRC_BEGIN
 
 // Reference:
 //    Adaptive Precision Floating-Point Arithmetic and Fast Robust Geometric Predicates
@@ -32,4 +32,4 @@ int InCircle2D(const Vector2<T> &pa, const Vector2<T> &pb, const Vector2<T> &pc,
 template<typename T>
 bool AreCoLinear(const Vector3<T> &a, const Vector3<T> &b, const Vector3<T> &c);
 
-RTRC_GEO_END
+RTRC_END

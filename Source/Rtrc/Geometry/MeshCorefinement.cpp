@@ -1,16 +1,13 @@
 #include <map>
 #include <set>
 
-#include <bvh/bvh.hpp>
-#include <bvh/leaf_collapser.hpp>
-#include <bvh/locally_ordered_clustering_builder.hpp>
-
 #include <Rtrc/Core/Math/AABB.h>
+#include <Rtrc/Core/Math/Exact/Intersection.h>
+#include <Rtrc/Core/Math/Exact/Predicates.h>
 #include <Rtrc/Core/Parallel.h>
 #include <Rtrc/Core/Unreachable.h>
+#include <Rtrc/Geometry/BVH.h>
 #include <Rtrc/Geometry/ConstrainedTriangulation.h>
-#include <Rtrc/Geometry/Exact/Intersection.h>
-#include <Rtrc/Geometry/Exact/Predicates.h>
 #include <Rtrc/Geometry/MeshCorefinement.h>
 #include <Rtrc/Geometry/TriangleTriangleIntersection.h>
 #include <Rtrc/Geometry/Utility.h>
@@ -26,7 +23,7 @@ RTRC_GEO_BEGIN
 namespace CorefineDetail
 {
 
-    bvh::Vector3<double> ConvertVector3(const Vector3d &v)
+    /*bvh::Vector3<double> ConvertVector3(const Vector3d &v)
     {
         return { v.x, v.y, v.z };
     }
@@ -156,7 +153,7 @@ namespace CorefineDetail
 
         std::vector<Node>     nodes_;
         std::vector<uint32_t> originalTriangleIndices_;
-    };
+    };*/
 
     using SI = SymbolicTriangleTriangleIntersection<double>;
 
@@ -624,7 +621,21 @@ void MeshCorefinement::Corefine(
 
     // Compute triangle-triangle symbolic intersections
 
-    const BVH bvhB = BVH(inputB);
+    BVH<double> bvhB;
+    {
+        std::vector<AABB3d> primitiveBoundingsB;
+        primitiveBoundingsB.reserve(triangleCountB);
+        for(uint32_t f = 0; f < triangleCountB; ++f)
+        {
+            AABB3d bbox;
+            bbox |= inputB[3 * f + 0];
+            bbox |= inputB[3 * f + 1];
+            bbox |= inputB[3 * f + 2];
+            primitiveBoundingsB.push_back(bbox);
+        }
+        bvhB = BVH<double>::Build(primitiveBoundingsB);
+    }
+
     std::vector<std::vector<TrianglePairIntersection>> triangleAToPairwiseIntersections(triangleCountA);
 
     RTRC_MESH_COREFINEMENT_PARALLEL_FOR<uint32_t>(0, triangleCountA, [&](uint32_t triangleA)
@@ -639,7 +650,7 @@ void MeshCorefinement::Corefine(
         triangleBoundingBox |= inputA[3 * triangleA + 1];
         triangleBoundingBox |= inputA[3 * triangleA + 2];
 
-        bvhB.CollectCandidates(
+        bvhB.TraversalPrimitives(
             [&](const AABB3d &targetBoundingBox)
             {
                 return triangleBoundingBox.Intersect(targetBoundingBox);

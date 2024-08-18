@@ -8,6 +8,10 @@
 #include <Rtrc/Core/Filesystem/File.h>
 #include <Rtrc/Core/Math/Angle.h>
 #include <Rtrc/Core/Math/Common.h>
+#include <Rtrc/Core/Math/Exact/Expansion.h>
+#include <Rtrc/Core/Math/Exact/Intersection.h>
+#include <Rtrc/Core/Math/Exact/Predicates.h>
+#include <Rtrc/Core/Math/Exact/Vector.h>
 #include <Rtrc/Core/Math/Intersection.h>
 #include <Rtrc/Core/Math/Rect.h>
 #include <Rtrc/Core/Memory/Malloc.h>
@@ -18,16 +22,12 @@
 #include <Rtrc/Core/Resource/ImageSampler.h>
 #include <Rtrc/Core/Resource/MeshData.h>
 
+#include <Rtrc/Geometry/BVH.h>
 #include <Rtrc/Geometry/ConstrainedTriangulation.h>
-#include <Rtrc/Geometry/Exact/Expansion.h>
-#include <Rtrc/Geometry/Exact/Intersection.h>
-#include <Rtrc/Geometry/Exact/Predicates.h>
-#include <Rtrc/Geometry/Exact/Vector.h>
 #include <Rtrc/Geometry/HalfedgeMesh.h>
 #include <Rtrc/Geometry/MeshCorefinement.h>
 #include <Rtrc/Geometry/RawMesh.h>
 #include <Rtrc/Geometry/SignpostsMesh.h>
-#include <Rtrc/Geometry/TriangleBVH.h>
 #include <Rtrc/Geometry/TriangleTriangleIntersection.h>
 #include <Rtrc/Geometry/Utility.h>
 

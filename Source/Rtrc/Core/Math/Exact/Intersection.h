@@ -1,9 +1,9 @@
 #pragma once
 
-#include <Rtrc/Geometry/Exact/Expansion.h>
-#include <Rtrc/Geometry/Exact/Vector.h>
+#include <Rtrc/Core/Math/Exact/Expansion.h>
+#include <Rtrc/Core/Math/Exact/Vector.h>
 
-RTRC_GEO_BEGIN
+RTRC_BEGIN
 
 // Compute the normal 'n' of triangle abc and return the index of the component of 'n' with the maximum absolute value.
 int FindMaximalNormalAxis(const Vector3f &a, const Vector3f &b, const Vector3f &c);
@@ -26,4 +26,4 @@ Expansion4 IntersectLineTriangle3D(
     const Vector3d &p, const Vector3d &q,
     const Vector3d &a, const Vector3d &b, const Vector3d &c);
 
-RTRC_GEO_END
+RTRC_END

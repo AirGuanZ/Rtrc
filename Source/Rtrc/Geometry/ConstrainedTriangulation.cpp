@@ -1,9 +1,9 @@
 #include <random>
 
+#include <Rtrc/Core/Math/Exact/Expansion.h>
+#include <Rtrc/Core/Math/Exact/Intersection.h>
+#include <Rtrc/Core/Math/Exact/Predicates.h>
 #include <Rtrc/Geometry/ConstrainedTriangulation.h>
-#include <Rtrc/Geometry/Exact/Expansion.h>
-#include <Rtrc/Geometry/Exact/Intersection.h>
-#include <Rtrc/Geometry/Exact/Predicates.h>
 #include <Rtrc/Geometry/HalfedgeMesh.h>
 
 RTRC_GEO_BEGIN
@@ -225,6 +225,12 @@ namespace CDTDetail
 
         assert(connectivity.CheckSanity());
     }
+
+    //Expansion2 ComputeWindingNumber(Span<Expansion3> points, const Expansion3 &point, Span<Vector2i> edges)
+    //{
+    //    // TODO
+    //    return {};
+    //}
 
 } // namespace CDTDetail
 
@@ -643,13 +649,23 @@ void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
         const int v0 = connectivity.Vert(3 * f + 0);
         const int v1 = connectivity.Vert(3 * f + 1);
         const int v2 = connectivity.Vert(3 * f + 2);
-        if(v0 >= 3 && v1 >= 3 && v2 >= 3)
+        if(v0 < 3 || v1 < 3 || v2 < 3)
         {
-            this->triangles.emplace_back(
-                meshVertexToPointIndex[v0],
-                meshVertexToPointIndex[v1],
-                meshVertexToPointIndex[v2]);
+            continue;
         }
+        //if(!boundaryEdges.IsEmpty())
+        //{
+        //    // TODO
+        //    const Expansion2 windingNumber = ComputeWindingNumber(vertices, {}, {});
+        //    if(windingNumber.x.GetSign() == 0)
+        //    {
+        //        continue;
+        //    }
+        //}
+        this->triangles.emplace_back(
+            meshVertexToPointIndex[v0],
+            meshVertexToPointIndex[v1],
+            meshVertexToPointIndex[v2]);
     }
 
     if(trackConstraintMask)

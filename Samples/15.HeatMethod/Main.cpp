@@ -86,41 +86,41 @@ class HeatMethodDemo : public SimpleApplication
                     ty));
             const Vector3f origin = camera_.GetPosition();
 
-            bvh_.FindClosestIntersection(
-                origin, direction, FLT_MAX, [&](float, uint32_t triangle, const Vector2f &uv)
+            TriangleBVH<float>::RayIntersectionResult intersection;
+            if(bvh_.FindClosestRayIntersection(origin, direction, 0, FLT_MAX, intersection))
+            {
+                float bestDistance = FLT_MAX; int bestV = -1;
+                for(int i = 0; i < 3; ++i)
                 {
-                    float bestDistance = FLT_MAX; int bestV = -1;
-                    for(int i = 0; i < 3; ++i)
+                    const int v = halfEdgeMesh_.Vert(3 * intersection.triangleIndex + i);
+                    if(halfEdgeMesh_.IsVertOnBoundary(v))
                     {
-                        const int v = halfEdgeMesh_.Vert(3 * triangle + i);
-                        if(halfEdgeMesh_.IsVertOnBoundary(v))
-                        {
-                            continue;
-                        }
-                        const Vector3f op = rawMesh_.GetPositionData()[v] - origin;
-                        const Vector3f diff = op - Dot(op, direction) * direction;
-                        const float distance = Length(diff);
-                        if(distance < bestDistance)
-                        {
-                            bestDistance = distance;
-                            bestV = v;
-                        }
+                        continue;
                     }
+                    const Vector3f op = rawMesh_.GetPositionData()[v] - origin;
+                    const Vector3f diff = op - Dot(op, direction) * direction;
+                    const float distance = Length(diff);
+                    if(distance < bestDistance)
+                    {
+                        bestDistance = distance;
+                        bestV = v;
+                    }
+                }
 
-                    if(bestV >= 0)
+                if(bestV >= 0)
+                {
+                    if(append_)
                     {
-                        if(append_)
-                        {
-                            isDirty_ |= lastVs_.insert(bestV).second;
-                        }
-                        else
-                        {
-                            isDirty_ |= lastVs_ != std::set{ bestV };
-                            lastVs_ = { bestV };
-                        }
-                        ComputeGeodesicDistance(false);
+                        isDirty_ |= lastVs_.insert(bestV).second;
                     }
-                });
+                    else
+                    {
+                        isDirty_ |= lastVs_ != std::set{ bestV };
+                        lastVs_ = { bestV };
+                    }
+                    ComputeGeodesicDistance(false);
+                }
+            }
         }
 
         auto framebuffer = graph->RegisterSwapchainTexture(GetSwapchain());
@@ -134,7 +134,7 @@ class HeatMethodDemo : public SimpleApplication
 
         LogInfo("Build BVH");
 
-        bvh_ = TriangleBVH::Build(rawMesh_.GetPositionData(), rawMesh_.GetPositionIndices());
+        bvh_ = TriangleBVH<float>::Build(IndexedPositions<float>(rawMesh_.GetPositionData(), rawMesh_.GetPositionIndices()));
 
         LogInfo("Build connectivity");
 
@@ -610,7 +610,7 @@ class HeatMethodDemo : public SimpleApplication
 
     RawMesh               rawMesh_;
     HalfedgeMesh          halfEdgeMesh_;
-    TriangleBVH           bvh_;
+    TriangleBVH<float>    bvh_;
     std::vector<Vector3d> positions_;
 
     SparseMatrixXd A_;

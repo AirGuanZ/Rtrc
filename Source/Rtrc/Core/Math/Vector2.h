@@ -123,7 +123,7 @@ struct ArchiveTransferTrait<Vector2<T>>
 
 template<typename T>
 constexpr Vector2<T>::Vector2()
-    : Vector2(0)
+    : Vector2(T{})
 {
     
 }

@@ -1,7 +1,7 @@
+#include <Rtrc/Core/Math/Exact/Expansion.h>
+#include <Rtrc/Core/Math/Exact/Intersection.h>
+#include <Rtrc/Core/Math/Exact/Predicates.h>
 #include <Rtrc/Core/Unreachable.h>
-#include <Rtrc/Geometry/Exact/Expansion.h>
-#include <Rtrc/Geometry/Exact/Intersection.h>
-#include <Rtrc/Geometry/Exact/Predicates.h>
 #include <Rtrc/Geometry/TriangleTriangleIntersection.h>
 
 RTRC_GEO_BEGIN
@@ -103,8 +103,8 @@ void SymbolicTriangleTriangleIntersection<T>::IntersectEdgeTriangle(
     const Vector &a, const Vector &b, const Vector &c,
     IntermediatePointVector &outPoints)
 {
-    const int s0 = Geo::Orient3D<T>(a, b, c, p);
-    const int s1 = Geo::Orient3D<T>(a, b, c, q);
+    const int s0 = Orient3D<T>(a, b, c, p);
+    const int s1 = Orient3D<T>(a, b, c, q);
     if(s0 * s1 > 0) // p and q are on the same side of abc, no intersection
     {
         return;
@@ -114,9 +114,9 @@ void SymbolicTriangleTriangleIntersection<T>::IntersectEdgeTriangle(
         return IntersectCoplanarEdgeTriangle(edgePQ, vertexP, vertexQ, p, q, a, b, c, outPoints);
     }
 
-    const int o0 = Geo::Orient3D(p, q, a, b);
-    const int o1 = Geo::Orient3D(p, q, b, c);
-    const int o2 = Geo::Orient3D(p, q, c, a);
+    const int o0 = Orient3D(p, q, a, b);
+    const int o1 = Orient3D(p, q, b, c);
+    const int o2 = Orient3D(p, q, c, a);
     if(o0 * o1 < 0 || o1 * o2 < 0 || o2 * o0 < 0) // Intersection of pq and plane of abc is out of abc
     {
         return;
@@ -158,7 +158,7 @@ void SymbolicTriangleTriangleIntersection<T>::IntersectCoplanarEdgeTriangle(
     }
     auto ProjectedOrient2D = [&](const Vector &i, const Vector &j, const Vector &k)
     {
-        return Geo::Orient3D(i, j, k, observer);
+        return Orient3D(i, j, k, observer);
     };
 
     const int p0 = ProjectedOrient2D(a, b, p);
@@ -213,7 +213,7 @@ void SymbolicTriangleTriangleIntersection<T>::IntersectCoplanarEdgeEdge(
 {
     auto ProjectedOrient2D = [&](const Vector &i, const Vector &j, const Vector &k)
     {
-        return Geo::Orient3D(i, j, k, observer);
+        return Orient3D(i, j, k, observer);
     };
 
     const int sp = ProjectedOrient2D(a, b, p);

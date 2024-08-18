@@ -1,6 +1,6 @@
-#include <Rtrc/Geometry/Exact/Intersection.h>
+#include <Rtrc/Core/Math/Exact/Intersection.h>
 
-RTRC_GEO_BEGIN
+RTRC_BEGIN
 
 namespace
 {
@@ -248,4 +248,4 @@ Expansion4 IntersectLineTriangle3D(
     };
 }
 
-RTRC_GEO_END
+RTRC_END

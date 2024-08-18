@@ -1,10 +1,9 @@
 #include <catch2/catch_all.hpp>
 
-#include <Rtrc/Geometry/Exact/Expansion.h>
-#include <Rtrc/Geometry/Exact/Vector.h>
+#include <Rtrc/Core/Math/Exact/Expansion.h>
+#include <Rtrc/Core/Math/Exact/Vector.h>
 
 using namespace Rtrc;
-using namespace Geo;
 using namespace ExpansionUtility;
 
 TEST_CASE("CheckNonOverlappingProperty")

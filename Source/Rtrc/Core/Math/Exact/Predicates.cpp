@@ -1,6 +1,6 @@
-#include <Rtrc/Geometry/Exact/Expansion.h>
-#include <Rtrc/Geometry/Exact/Predicates.h>
-#include <Rtrc/Geometry/Exact/Vector.h>
+#include <Rtrc/Core/Math/Exact/Expansion.h>
+#include <Rtrc/Core/Math/Exact/Predicates.h>
+#include <Rtrc/Core/Math/Exact/Vector.h>
 
 #if _MSC_VER
 #pragma fp_contract(off)
@@ -10,7 +10,7 @@
 #warning "float_control are not implemented. Expansion arithemetic operations may become unreliable."
 #endif
 
-RTRC_GEO_BEGIN
+RTRC_BEGIN
 
 namespace PredicatesDetail
 {
@@ -453,4 +453,4 @@ bool AreCoLinear(const Vector3<T> &a, const Vector3<T> &b, const Vector3<T> &c)
 template bool AreCoLinear(const Vector3<float> &, const Vector3<float> &, const Vector3<float> &);
 template bool AreCoLinear(const Vector3<double> &, const Vector3<double> &, const Vector3<double> &);
 
-RTRC_GEO_END
+RTRC_END

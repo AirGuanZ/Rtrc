@@ -250,7 +250,7 @@ template<typename T>
 Vector3<T> AABB3<T>::ComputeCenter() const
 {
     static_assert(std::is_floating_point_v<T>);
-    return static_cast<float>(0.5) * (lower + upper);
+    return static_cast<T>(0.5) * (lower + upper);
 }
 
 template<typename T>

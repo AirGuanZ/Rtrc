@@ -22,20 +22,28 @@ bool IntersectTriangleAABB(
 
 // Note that the current implementation may produce unstable results if the ray lies exactly
 // on the plane of a bounding box face.
-inline bool IntersectRayBox(
-    const Vector3f &origin, const Vector3f &invDir, float t0, float t1, const float *boundingBox);
+// boundingBox[0/1/2]: lower
+// boundingBox[2/3/4]: upper
+template<typename T>
+bool IntersectRayBox(
+    const Vector3<T> &origin,
+    const Vector3<T> &invDir,
+    T                 t0,
+    T                 t1,
+    const T          *boundingBox);
 
 // Note: the current implementation is not watertight
-inline bool IntersectRayTriangle(
-    const Vector3f &o,
-    const Vector3f &d,
-    float           t0,
-    float           t1,
-    const Vector3f &a,
-    const Vector3f &ab,
-    const Vector3f &ac,
-    float          &outT,
-    Vector2f       &uv);
+template<typename T>
+bool IntersectRayTriangle(
+    const Vector3<T> &o,
+    const Vector3<T> &d,
+    T                 t0,
+    T                 t1,
+    const Vector3<T> &a,
+    const Vector3<T> &ab,
+    const Vector3<T> &ac,
+    float            &outT,
+    Vector2<T>       &outUV);
 
 // ================================ Implementations ================================
 
@@ -139,16 +147,21 @@ bool IntersectTriangleAABB(
     return true;
 }
 
-inline bool IntersectRayBox(
-    const Vector3f &origin, const Vector3f &invDir, float t0, float t1, const float *boundingBox)
+template<typename T>
+bool IntersectRayBox(
+    const Vector3<T> &origin,
+    const Vector3<T> &invDir,
+    T                 t0,
+    T                 t1,
+    const T          *boundingBox)
 {
-    const float nx = invDir[0] * (boundingBox[0] - origin[0]);
-    const float ny = invDir[1] * (boundingBox[1] - origin[1]);
-    const float nz = invDir[2] * (boundingBox[2] - origin[2]);
+    const T nx = invDir[0] * (boundingBox[0] - origin[0]);
+    const T ny = invDir[1] * (boundingBox[1] - origin[1]);
+    const T nz = invDir[2] * (boundingBox[2] - origin[2]);
 
-    const float fx = invDir[0] * (boundingBox[3] - origin[0]);
-    const float fy = invDir[1] * (boundingBox[4] - origin[1]);
-    const float fz = invDir[2] * (boundingBox[5] - origin[2]);
+    const T fx = invDir[0] * (boundingBox[3] - origin[0]);
+    const T fy = invDir[1] * (boundingBox[4] - origin[1]);
+    const T fz = invDir[2] * (boundingBox[5] - origin[2]);
 
     t0 = (std::max)(t0, (std::min)(nx, fx));
     t0 = (std::max)(t0, (std::min)(ny, fy));
@@ -161,47 +174,48 @@ inline bool IntersectRayBox(
     return t0 <= t1;
 }
 
-inline bool IntersectRayTriangle(
-    const Vector3f &o,
-    const Vector3f &d,
-    float           t0,
-    float           t1,
-    const Vector3f &a,
-    const Vector3f &ab,
-    const Vector3f &ac,
-    float          &outT,
-    Vector2f       &outUV)
+template<typename T>
+bool IntersectRayTriangle(
+    const Vector3<T> &o,
+    const Vector3<T> &d,
+    T                 t0,
+    T                 t1,
+    const Vector3<T> &a,
+    const Vector3<T> &ab,
+    const Vector3<T> &ac,
+    float            &outT,
+    Vector2<T>       &outUV)
 {
-    const Vector3f s1 = Cross(d, ac);
-    const float div = Dot(s1, ab);
-    if(div == 0.0f)
+    const Vector3<T> s1 = Cross(d, ac);
+    const T div = Dot(s1, ab);
+    if(div == T(0))
     {
         return false;
     }
-    const float invDiv = 1 / div;
+    const T invDiv = 1 / div;
 
-    const Vector3f ao = o - a;
-    const float alpha = Dot(ao, s1) * invDiv;
+    const Vector3<T> ao = o - a;
+    const T alpha = Dot(ao, s1) * invDiv;
     if(alpha < 0)
     {
         return false;
     }
 
-    const Vector3f s2 = Cross(ao, ab);
-    const float beta = Dot(d, s2) * invDiv;
+    const Vector3<T> s2 = Cross(ao, ab);
+    const T beta = Dot(d, s2) * invDiv;
     if(beta < 0 || alpha + beta > 1)
     {
         return false;
     }
 
-    const float t = Dot(ac, s2) * invDiv;
+    const T t = Dot(ac, s2) * invDiv;
     if(t < t0 || t > t1)
     {
         return false;
     }
 
     outT = t;
-    outUV = Vector2f(alpha, beta);
+    outUV = Vector2<T>(alpha, beta);
     return true;
 }
 

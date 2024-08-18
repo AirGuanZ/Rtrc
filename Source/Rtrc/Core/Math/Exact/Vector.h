@@ -1,9 +1,9 @@
 #pragma once
 
 #include <Rtrc/Core/Math/Vector4.h>
-#include <Rtrc/Geometry/Exact/Expansion.h>
+#include <Rtrc/Core/Math/Exact/Expansion.h>
 
-RTRC_GEO_BEGIN
+RTRC_BEGIN
 
 using Expansion2 = Vector2<Expansion>;
 using Expansion3 = Vector3<Expansion>;
@@ -50,30 +50,30 @@ struct CompareHomogeneousPoint
     }
 };
 
-RTRC_GEO_END
+RTRC_END
 
 template <>
-struct std::formatter<Rtrc::Geo::Expansion> : std::formatter<std::string>
+struct std::formatter<Rtrc::Expansion> : std::formatter<std::string>
 {
-    auto format(const Rtrc::Geo::Expansion &p, std::format_context &ctx) const
+    auto format(const Rtrc::Expansion &p, std::format_context &ctx) const
     {
         return formatter<std::string>::format(p.ToString(), ctx);
     }
 };
 
 template <>
-struct std::formatter<Rtrc::Geo::Expansion2> : std::formatter<std::string>
+struct std::formatter<Rtrc::Expansion2> : std::formatter<std::string>
 {
-    auto format(const Rtrc::Geo::Expansion2 &p, std::format_context &ctx) const
+    auto format(const Rtrc::Expansion2 &p, std::format_context &ctx) const
     {
         return formatter<std::string>::format(std::format("({}, {})", p.x.ToString(), p.y.ToString()), ctx);
     }
 };
 
 template <>
-struct std::formatter<Rtrc::Geo::Expansion3> : std::formatter<std::string>
+struct std::formatter<Rtrc::Expansion3> : std::formatter<std::string>
 {
-    auto format(const Rtrc::Geo::Expansion3 &p, std::format_context &ctx) const
+    auto format(const Rtrc::Expansion3 &p, std::format_context &ctx) const
     {
         return formatter<std::string>::format(std::format(
             "({}, {}, {})", p.x.ToString(), p.y.ToString(), p.z.ToString()), ctx);
@@ -81,9 +81,9 @@ struct std::formatter<Rtrc::Geo::Expansion3> : std::formatter<std::string>
 };
 
 template <>
-struct std::formatter<Rtrc::Geo::Expansion4> : std::formatter<std::string>
+struct std::formatter<Rtrc::Expansion4> : std::formatter<std::string>
 {
-    auto format(const Rtrc::Geo::Expansion4 &p, std::format_context &ctx) const
+    auto format(const Rtrc::Expansion4 &p, std::format_context &ctx) const
     {
         return formatter<std::string>::format(std::format(
             "({}, {}, {}, {})", p.x.ToString(), p.y.ToString(), p.z.ToString(), p.w.ToString()), ctx);

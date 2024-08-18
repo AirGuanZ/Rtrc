@@ -4,7 +4,7 @@
 #include <ryu/ryu.h>
 
 #include <Rtrc/Core/String.h>
-#include <Rtrc/Geometry/Exact/Expansion.h>
+#include <Rtrc/Core/Math/Exact/Expansion.h>
 
 #if _MSC_VER
 #pragma fp_contract(off)
@@ -14,7 +14,7 @@
 #warning "float_control is not implemented. Expansion arithemetic operations may become unreliable."
 #endif
 
-RTRC_GEO_BEGIN
+RTRC_BEGIN
 
 namespace ExpansionUtility
 {
@@ -379,4 +379,4 @@ namespace ExpansionUtility
 
 } // namespace ExpansionUtility
 
-RTRC_GEO_END
+RTRC_END

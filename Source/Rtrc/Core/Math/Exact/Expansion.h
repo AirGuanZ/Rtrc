@@ -9,7 +9,7 @@
 #include <Rtrc/Core/Container/Span.h>
 #include <Rtrc/Core/String.h>
 
-RTRC_GEO_BEGIN
+RTRC_BEGIN
 
 // See Adaptive Precision Floating-Point Arithmetic and Fast Robust Geometric Predicates
 
@@ -633,4 +633,4 @@ std::ostream &operator<<(std::ostream &stream, const SExpansion<Word, StaticStor
     return stream << e.ToString();
 }
 
-RTRC_GEO_END
+RTRC_END
