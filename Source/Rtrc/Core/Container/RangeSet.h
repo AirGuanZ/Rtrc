@@ -60,160 +60,23 @@ inline RangeSet::RangeSet(Index beg, Index end)
 inline RangeSet::Index RangeSet::Allocate(Index size, Policy policy)
 {
     return AllocateImpl<false>(size, 0, policy);
-    /*decltype(sizeToOffsets_)::iterator it;
-    if(policy == BestFit)
-    {
-        it = sizeToOffsets_.upper_bound(size);
-        if(it == sizeToOffsets_.end())
-        {
-            return NIL;
-        }
-    }
-    else
-    {
-        assert(policy == Largest);
-        if(sizeToOffsets_.empty())
-        {
-            return NIL;
-        }
-        it = sizeToOffsets_.end();
-        if((--it)->first < size)
-        {
-            return NIL;
-        }
-    }
-
-    std::set<Index> &set = it->second;
-    assert(!set.empty());
-    const Index foundBegin = *set.begin();
-    const Index foundSize = it->first;
-
-    set.erase(set.begin());
-    if(set.empty())
-    {
-        sizeToOffsets_.erase(it);
-    }
-
-    assert(foundSize >= size);
-    if(foundSize == size)
-    {
-        offsetToSize_.erase(foundBegin);
-        return foundBegin;
-    }
-
-    const Index restSize = foundSize - size;
-    sizeToOffsets_[restSize].insert(foundBegin);
-    offsetToSize_[foundBegin] = foundSize - size;
-    return foundBegin + restSize;*/
 }
 
 inline RangeSet::Index RangeSet::Allocate(Index size, Index alignment, Policy policy)
 {
     return AllocateImpl<true>(size, alignment, policy);
-    /*decltype(sizeToOffsets_)::iterator it;
-    std::set<Index>::iterator jt;
-    Index offsetInJt = 0;
-
-    auto FindBestFit = [&]
-    {
-        for(it = sizeToOffsets_.upper_bound(size); it != sizeToOffsets_.end(); ++it)
-        {
-            for(jt = it->second.begin(); jt != it->second.end(); ++jt)
-            {
-                const Index offset = *jt;
-                const Index alignedOffset = UpAlignTo(offset, alignment);
-                offsetInJt = alignedOffset - offset;
-                if(offsetInJt + size < it->first)
-                {
-                    return true;
-                }
-            }
-        }
-        return false;
-    };
-
-    auto FindLargest = [&]
-    {
-        it = sizeToOffsets_.end();
-        do
-        {
-            --it;
-            if(it->first < size)
-            {
-                return false;
-            }
-
-            const auto &set = it->second;
-            for(jt = set.begin(); jt != set.end(); ++jt)
-            {
-                const Index offset = *jt;
-                const Index alignedOffset = UpAlignTo(offset, alignment);
-                offsetInJt = alignedOffset - offset;
-                if(offsetInJt + size < it->first)
-                {
-                    return true;
-                }
-            }
-
-        } while(it != sizeToOffsets_.begin());
-        return false;
-    };
-
-    if(policy == BestFit)
-    {
-        if(!FindBestFit())
-        {
-            return NIL;
-        }
-    }
-    else
-    {
-        if(!FindLargest())
-        {
-            return NIL;
-        }
-    }
-
-    auto &set = it->second;
-    const Index foundBegin = *jt;
-    const Index foundSize = it->first;
-    const Index foundEnd = foundBegin + foundSize;
-    const Index returnValue = foundBegin + offsetInJt;
-
-    set.erase(jt);
-    if(set.empty())
-    {
-        sizeToOffsets_.erase(it);
-    }
-
-    const Index retBegin = foundBegin + offsetInJt;
-    const Index retEnd = retBegin + size;
-
-    assert(retEnd <= foundSize);
-    if(offsetInJt != 0)
-    {
-        sizeToOffsets_[offsetInJt].insert(foundBegin);
-        offsetToSize_[foundBegin] = offsetInJt;
-    }
-
-    if(returnValue < foundSize)
-    {
-        const Index restSize = foundEnd - retEnd;
-        sizeToOffsets_[restSize].insert(retEnd);
-        offsetToSize_[retEnd] = restSize;
-    }
-
-    return retBegin;*/
 }
 
 inline void RangeSet::Free(Index beg, Index end)
 {
-    auto prevIt = offsetToSize_.lower_bound(beg);
-    auto succIt = prevIt;
-    if(succIt != offsetToSize_.end())
+    assert(!offsetToSize_.contains(beg));
+    auto succIt = offsetToSize_.upper_bound(beg);
+    auto prevIt = succIt;
+    if(prevIt != offsetToSize_.begin())
     {
-        ++succIt;
+        std::advance(prevIt, -1);
     }
+
     const bool hasPrev = prevIt != offsetToSize_.end();
     const bool hasSucc = succIt != offsetToSize_.end();
     assert(!hasPrev || prevIt->first + prevIt->second <= beg);
@@ -336,6 +199,11 @@ RangeSet::Index RangeSet::AllocateImpl(Index size, Index alignment, Policy polic
     {
         if constexpr(HasAlignmentRequirement)
         {
+            if(sizeToOffsets_.empty())
+            {
+                return false;
+            }
+
             it = sizeToOffsets_.end();
             do
             {
@@ -396,8 +264,7 @@ RangeSet::Index RangeSet::AllocateImpl(Index size, Index alignment, Policy polic
     const Index foundBegin = *jt;
     const Index foundSize = it->first;
     const Index foundEnd = foundBegin + foundSize;
-    const Index returnValue = foundBegin + offsetInJt;
-
+    
     set.erase(jt);
     if(set.empty())
     {
@@ -415,9 +282,17 @@ RangeSet::Index RangeSet::AllocateImpl(Index size, Index alignment, Policy polic
             sizeToOffsets_[offsetInJt].insert(foundBegin);
             offsetToSize_[foundBegin] = offsetInJt;
         }
+        else
+        {
+            offsetToSize_.erase(foundBegin);
+        }
+    }
+    else
+    {
+        offsetToSize_.erase(foundBegin);
     }
 
-    if(returnValue < foundSize)
+    if(retEnd < foundEnd)
     {
         const Index restSize = foundEnd - retEnd;
         sizeToOffsets_[restSize].insert(retEnd);
