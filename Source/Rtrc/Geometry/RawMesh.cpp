@@ -314,6 +314,17 @@ RawMesh RawMesh::LoadWavefrontObj(const std::string& filename)
         std::memcpy(texCoordAttribute.data_.data(), attributes.texcoords.data(), texCoordAttribute.data_.size());
     }
 
+    if(!attributes.colors.empty())
+    {
+        assert(attributes.colors.size() % 3 == 0);
+        mesh.builtinAttributeIndices_[std::to_underlying(BuiltinAttribute::Color)] = mesh.attributes_.size();
+        auto &colorAttribute = mesh.attributes_.emplace_back();
+        colorAttribute.type_ = RawMeshAttributeData::Float3;
+        colorAttribute.name_ = "color";
+        colorAttribute.data_.resize(attributes.colors.size() * sizeof(Vector3f));
+        std::memcpy(colorAttribute.data_.data(), attributes.colors.data(), colorAttribute.data_.size());
+    }
+
     // Indices
 
     mesh.indices_.resize(mesh.attributes_.size());
@@ -346,6 +357,16 @@ RawMesh RawMesh::LoadWavefrontObj(const std::string& filename)
             for(const tinyobj::index_t &index : shape.mesh.indices)
             {
                 uvIndices.push_back(index.texcoord_index);
+            }
+        }
+
+        if(const int ii = mesh.GetBuiltinAttributeIndex(BuiltinAttribute::Color); ii >= 0)
+        {
+            auto &colorIndices = mesh.indices_[ii];
+            colorIndices.reserve(colorIndices.size() + shape.mesh.indices.size());
+            for(const tinyobj::index_t &index : shape.mesh.indices)
+            {
+                colorIndices.push_back(index.vertex_index);
             }
         }
     }

@@ -104,25 +104,31 @@ public:
     int GetPositionAttributeIndex() const;
     int GetNormalAttributeIndex() const;
     int GetUVAttributeIndex() const;
+    int GetColorAttributeIndex() const;
 
     bool HasNormals() const;
     bool HasUVs() const;
+    bool HasColors() const;
 
     RawMeshAttributeData *GetPositionAttribute();
     RawMeshAttributeData *GetNormalAttribute();
     RawMeshAttributeData *GetUVAttribute();
+    RawMeshAttributeData *GetColorAttribute();
 
     const RawMeshAttributeData *GetPositionAttribute() const;
     const RawMeshAttributeData *GetNormalAttribute() const;
     const RawMeshAttributeData *GetUVAttribute() const;
+    const RawMeshAttributeData *GetColorAttribute() const;
 
     Span<Vector3f> GetPositionData() const;
     Span<Vector3f> GetNormalData() const;
     Span<Vector2f> GetUVData() const;
+    Span<Vector3f> GetColorData() const;
 
     MutSpan<Vector3f> GetPositionData();
     MutSpan<Vector3f> GetNormalData();
     MutSpan<Vector2f> GetUVData();
+    MutSpan<Vector3f> GetColorData();
 
     std::vector<Vector3d> GetPositionDataDouble() const;
 
@@ -131,6 +137,7 @@ public:
     Span<uint32_t> GetPositionIndices() const;
     Span<uint32_t> GetNormalIndices() const;
     Span<uint32_t> GetUVIndices() const;
+    Span<uint32_t> GetColorIndices() const;
 
     HalfedgeMesh CreateHalfEdgeMesh() const;
 
@@ -155,6 +162,7 @@ private:
         Position,
         Normal,
         UV,
+        Color,
         Count
     };
 
@@ -257,6 +265,11 @@ inline int RawMesh::GetUVAttributeIndex() const
     return GetBuiltinAttributeIndex(BuiltinAttribute::UV);
 }
 
+inline int RawMesh::GetColorAttributeIndex() const
+{
+    return GetBuiltinAttributeIndex(BuiltinAttribute::Color);
+}
+
 inline bool RawMesh::HasNormals() const
 {
     return GetBuiltinAttributeIndex(BuiltinAttribute::Normal) >= 0;
@@ -265,6 +278,11 @@ inline bool RawMesh::HasNormals() const
 inline bool RawMesh::HasUVs() const
 {
     return GetBuiltinAttributeIndex(BuiltinAttribute::UV) >= 0;
+}
+
+inline bool RawMesh::HasColors() const
+{
+    return GetBuiltinAttributeIndex(BuiltinAttribute::Color) >= 0;
 }
 
 inline RawMeshAttributeData *RawMesh::GetPositionAttribute()
@@ -285,6 +303,12 @@ inline RawMeshAttributeData *RawMesh::GetUVAttribute()
     return index >= 0 ? &attributes_[index] : nullptr;
 }
 
+inline RawMeshAttributeData *RawMesh::GetColorAttribute()
+{
+    const int index = GetBuiltinAttributeIndex(BuiltinAttribute::Color);
+    return index >= 0 ? &attributes_[index] : nullptr;
+}
+
 inline const RawMeshAttributeData* RawMesh::GetPositionAttribute() const
 {
     const int index = GetBuiltinAttributeIndex(BuiltinAttribute::Position);
@@ -298,6 +322,12 @@ inline const RawMeshAttributeData* RawMesh::GetNormalAttribute() const
 }
 
 inline const RawMeshAttributeData* RawMesh::GetUVAttribute() const
+{
+    const int index = GetBuiltinAttributeIndex(BuiltinAttribute::UV);
+    return index >= 0 ? &attributes_[index] : nullptr;
+}
+
+inline const RawMeshAttributeData *RawMesh::GetColorAttribute() const
 {
     const int index = GetBuiltinAttributeIndex(BuiltinAttribute::UV);
     return index >= 0 ? &attributes_[index] : nullptr;
@@ -326,6 +356,15 @@ inline Span<Vector2f> RawMesh::GetUVData() const
     return {};
 }
 
+inline Span<Vector3f> RawMesh::GetColorData() const
+{
+    if(auto attrib = GetColorAttribute())
+    {
+        return attrib->GetData<Vector3f>();
+    }
+    return {};
+}
+
 inline MutSpan<Vector3f> RawMesh::GetPositionData()
 {
     return GetPositionAttribute()->GetData<Vector3f>();
@@ -345,6 +384,15 @@ inline MutSpan<Vector2f> RawMesh::GetUVData()
     if(auto attrib = GetUVAttribute())
     {
         return attrib->GetData<Vector2f>();
+    }
+    return {};
+}
+
+inline MutSpan<Vector3f> RawMesh::GetColorData()
+{
+    if(auto attrib = GetColorAttribute())
+    {
+        return attrib->GetData<Vector3f>();
     }
     return {};
 }
@@ -382,6 +430,13 @@ inline Span<uint32_t> RawMesh::GetNormalIndices() const
 inline Span<uint32_t> RawMesh::GetUVIndices() const
 {
     const int index = GetUVAttributeIndex();
+    assert(index >= 0);
+    return GetIndices(index);
+}
+
+inline Span<uint32_t> RawMesh::GetColorIndices() const
+{
+    const int index = GetColorAttributeIndex();
     assert(index >= 0);
     return GetIndices(index);
 }
