@@ -59,6 +59,11 @@ void RawMesh::AddAttribute(
         assert(type == RawMeshAttributeData::Type::Float2);
         builtinAttributeIndices_[std::to_underlying(BuiltinAttribute::UV)] = attributeIndex;
     }
+    else if(attribute.name_ == "color")
+    {
+        assert(type == RawMeshAttributeData::Type::Float3);
+        builtinAttributeIndices_[std::to_underlying(BuiltinAttribute::Color)] = attributeIndex;
+    }
 }
 
 std::string_view RawMesh::GetExtension(const std::string& filename)

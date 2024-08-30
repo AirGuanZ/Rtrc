@@ -84,6 +84,7 @@ public:
     static RawMesh Load(const std::string &filename);
 
     void SetTriangleCount(uint32_t count);
+
     void AddAttribute(
         std::string                name,
         RawMeshAttributeData::Type type,
