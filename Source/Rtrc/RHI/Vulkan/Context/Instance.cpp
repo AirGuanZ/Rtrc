@@ -225,7 +225,8 @@ UPtr<Device> VulkanInstance::CreateDevice(const DeviceDesc &desc)
         queueFamilies.transferFamilyIndex = physicalDevice.GetTransferQueueFamily();
     }
 
-    return MakeUPtr<VulkanDevice>(instance_.instance, physicalDevice, device, queueFamilies, desc_.debugMode);
+    return MakeUPtr<VulkanDevice>(
+        instance_.instance, physicalDevice, device, queueFamilies, desc_.debugMode, desc.supportSwapchain);
 }
 
 RTRC_RHI_VK_END

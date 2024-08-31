@@ -54,7 +54,7 @@ public:
 
     struct GraphicsDeviceDesc
     {
-        Ref<Window>      window;
+        Ref<Window>      window; // optional. only required if want to create a swapchain with the device.
         RHI::BackendType rhiType             = RHI::BackendType::Default;
         RHI::Format      swapchainFormat     = RHI::Format::B8G8R8A8_UNorm;
         int              swapchainImageCount = 3;

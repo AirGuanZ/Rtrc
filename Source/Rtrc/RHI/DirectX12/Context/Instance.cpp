@@ -105,7 +105,8 @@ UPtr<Device> DirectX12Instance::CreateDevice(const DeviceDesc &desc)
             "Fail to create directx12 copy queue");
     }
 
-    return MakeUPtr<DirectX12Device>(std::move(device), queues, std::move(factory), std::move(adapter));
+    return MakeUPtr<DirectX12Device>(
+        std::move(device), queues, std::move(factory), std::move(adapter), desc.supportSwapchain);
 }
 
 RTRC_RHI_D3D12_END

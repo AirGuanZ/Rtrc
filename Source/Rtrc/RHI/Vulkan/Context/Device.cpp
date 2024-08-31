@@ -245,8 +245,10 @@ VulkanDevice::VulkanDevice(
     VulkanPhysicalDevice   physicalDevice,
     VkDevice               device,
     const QueueFamilyInfo &queueFamilyInfo,
-    bool                   enableDebug)
-    : enableDebug_(enableDebug),
+    bool                   enableDebug,
+    bool                   supportSwapchain)
+    : supportSwapchain_(supportSwapchain),
+      enableDebug_(enableDebug),
       instance_(instance),
       physicalDevice_(physicalDevice),
       device_(device),
@@ -268,7 +270,10 @@ VulkanDevice::VulkanDevice(
     };
 
     graphicsQueue_ = getNextQueue(queueFamilies_.graphicsFamilyIndex, QueueType::Graphics);
-    presentQueue_  = getNextQueue(queueFamilies_.graphicsFamilyIndex, QueueType::Graphics);
+    if(supportSwapchain)
+    {
+        presentQueue_ = getNextQueue(queueFamilies_.graphicsFamilyIndex, QueueType::Graphics);
+    }
     computeQueue_  = getNextQueue(queueFamilies_.computeFamilyIndex, QueueType::Compute);
     transferQueue_ = getNextQueue(queueFamilies_.transferFamilyIndex, QueueType::Transfer);
 
@@ -331,6 +336,7 @@ UPtr<CommandPool> VulkanDevice::CreateCommandPool(const RPtr<Queue> &queue)
 
 UPtr<Swapchain> VulkanDevice::CreateSwapchain(const SwapchainDesc &desc, Window &window)
 {
+    assert(supportSwapchain_ && "VulkanDevice::CreateSwapchain: 'support swapchain' must be enabled in device desc");
     assert(presentQueue_);
     auto surface = DynamicCast<VulkanSurface>(window.CreateVulkanSurface(instance_));
 

@@ -40,15 +40,16 @@ Box<Device> Device::CreateGraphicsDevice(const GraphicsDeviceDesc& desc)
 {
     Box<Device> ret{ new Device };
 
+    const bool enableSwapchain = desc.window != nullptr;
     const auto rhiType = DebugOverrideBackendType(desc.rhiType);
 #if RTRC_RHI_VULKAN
     if(rhiType == RHI::BackendType::Vulkan)
     {
         ret->instance_ = CreateVulkanInstance(RHI::VulkanInstanceDesc
-            {
-                .extensions = Window::GetRequiredVulkanInstanceExtensions(),
-                .debugMode = desc.debugMode
-            });
+        {
+            .extensions = enableSwapchain ? Window::GetRequiredVulkanInstanceExtensions() : std::vector<std::string>{},
+            .debugMode = desc.debugMode
+        });
     }
 #endif
 #if RTRC_RHI_DIRECTX12
@@ -75,7 +76,7 @@ Box<Device> Device::CreateGraphicsDevice(const GraphicsDeviceDesc& desc)
         .graphicsQueue    = true,
         .computeQueue     = true,
         .transferQueue    = true,
-        .supportSwapchain = true,
+        .supportSwapchain = enableSwapchain,
         .enableRayTracing = desc.flags.Contains(EnableRayTracing)
     };
     auto rhiDevice = ret->instance_->CreateDevice(deviceDesc);
@@ -85,19 +86,22 @@ Box<Device> Device::CreateGraphicsDevice(const GraphicsDeviceDesc& desc)
     ret->swapchainImageCount_ = desc.swapchainImageCount;
     ret->vsync_               = desc.vsync;
     ret->swapchainUav_        = false;
-    ret->RecreateSwapchain();
-    if(!desc.flags.Contains(DisableAutoSwapchainRecreate))
+    if(enableSwapchain)
     {
-        ret->windowResizeReceiver_ = MakeRC<FunctionalReceiver<WindowResizeEvent>>(
-            [d = ret.get()](const WindowResizeEvent &e)
-            {
-                if(e.width > 0 && e.height > 0)
+        ret->RecreateSwapchain();
+        if(!desc.flags.Contains(DisableAutoSwapchainRecreate))
+        {
+            ret->windowResizeReceiver_ = MakeRC<FunctionalReceiver<WindowResizeEvent>>(
+                [d = ret.get()](const WindowResizeEvent &e)
                 {
-                    d->device_->WaitIdle();
-                    d->RecreateSwapchain();
-                }
-            });
-        ret->window_->Attach(ret->windowResizeReceiver_);
+                    if(e.width > 0 && e.height > 0)
+                    {
+                        d->device_->WaitIdle();
+                        d->RecreateSwapchain();
+                    }
+                });
+            ret->window_->Attach(ret->windowResizeReceiver_);
+        }
     }
     return ret;
 }

@@ -50,8 +50,12 @@ DirectX12Device::DirectX12Device(
     ComPtr<ID3D12Device5>  device,
     const Queues          &queues,
     ComPtr<IDXGIFactory4>  factory,
-    ComPtr<IDXGIAdapter>   adapter)
-    : device_(std::move(device)), factory_(std::move(factory)), adapter_(std::move(adapter))
+    ComPtr<IDXGIAdapter>   adapter,
+    bool                   supportSwapchain)
+    : supportSwapchain_(supportSwapchain)
+    , device_(std::move(device))
+    , factory_(std::move(factory))
+    , adapter_(std::move(adapter))
     , shaderGroupRecordRequirements_{}
 {
     const D3D12MA::ALLOCATOR_DESC allocatorDesc =

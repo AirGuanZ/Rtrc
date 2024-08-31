@@ -26,9 +26,8 @@ public:
     using BuildOptions = FlatHalfedgeMeshDetail::EnumFlagsBuildOptionFlagBit;
     using enum FlatHalfedgeMeshDetail::BuildOptionFlagBit;
 
-    // Construct a halfedge mesh structure from the provided triangle mesh.
-    // Includes a basic manifold check focusing solely on connectivity.
-    // This method also assumes that each vertex is contained by at least one face.
+    // Construct a halfedge mesh structure from the provided triangle mesh. Includes a basic manifold check.
+    // Also assumes that each vertex is contained by at least one face.
     static HalfedgeMesh Build(Span<uint32_t> indices, BuildOptions options = ThrowOnInvalidInput);
 
     bool IsEmpty() const { return H_ == 0; }

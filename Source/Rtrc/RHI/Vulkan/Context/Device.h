@@ -21,7 +21,8 @@ public:
         VulkanPhysicalDevice   physicalDevice,
         VkDevice               device,
         const QueueFamilyInfo &queueFamilyInfo,
-        bool                   enableDebug);
+        bool                   enableDebug,
+        bool                   supportSwapchain);
 
     ~VulkanDevice() override;
 
@@ -95,6 +96,7 @@ public:
 
 private:
 
+    bool supportSwapchain_;
     bool enableDebug_;
 
     VkInstance           instance_;

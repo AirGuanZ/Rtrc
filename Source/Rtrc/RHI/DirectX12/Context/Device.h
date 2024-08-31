@@ -23,7 +23,11 @@ public:
     RTRC_D3D12_IMPL_SET_NAME(device_)
 
     DirectX12Device(
-        ComPtr<ID3D12Device5> device, const Queues &queues, ComPtr<IDXGIFactory4> factory, ComPtr<IDXGIAdapter> adapter);
+        ComPtr<ID3D12Device5> device,
+        const Queues         &queues,
+        ComPtr<IDXGIFactory4> factory,
+        ComPtr<IDXGIAdapter>  adapter,
+        bool                  supportSwapchain);
     ~DirectX12Device() override;
 
     BackendType GetBackendType() const RTRC_RHI_OVERRIDE { return BackendType::DirectX12; }
@@ -124,6 +128,8 @@ public:
     const ComPtr<D3D12MA::Allocator> &_internalGetAllocator() const { return allocator_; }
 
 private:
+
+    bool supportSwapchain_;
 
     ComPtr<ID3D12Device5>  device_;
     ComPtr<IDXGIFactory4>  factory_;
