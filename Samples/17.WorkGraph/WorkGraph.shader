@@ -25,6 +25,4 @@ rtrc_shader("WorkGraph")
 		}
 		Texture[tid] = 2.0 * Texture[tid];
 	}
-
-	// TODO
 }
