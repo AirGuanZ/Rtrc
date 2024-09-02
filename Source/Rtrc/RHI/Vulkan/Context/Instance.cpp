@@ -69,6 +69,7 @@ UPtr<Instance> CreateVulkanInstance(const VulkanInstanceDesc &desc)
     {
         instanceBuilder.enable_extension(e.c_str());
     }
+    instanceBuilder.enable_extension(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 
     if(desc.debugMode)
     {

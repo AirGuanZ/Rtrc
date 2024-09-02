@@ -356,6 +356,7 @@ std::vector<const char*> VulkanPhysicalDevice::GetRequiredExtensions(const Devic
     std::vector<const char*> requiredExtensions =
     {
         VK_EXT_MESH_SHADER_EXTENSION_NAME,
+        VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME,
 
         // The following extensions have been promoted to core 1.2/1.3, so they are not explicitly required
         // VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,

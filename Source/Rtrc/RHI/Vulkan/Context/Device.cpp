@@ -309,6 +309,13 @@ VulkanDevice::VulkanDevice(
     auto &subgroupProperties = physicalDevice_._internalGetSubgroupProperties();
     warpSizeInfo_.minSize = subgroupProperties.subgroupSize;
     warpSizeInfo_.maxSize = subgroupProperties.subgroupSize;
+
+    conservativeRasterizationProperties_ = {};
+    conservativeRasterizationProperties_.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONSERVATIVE_RASTERIZATION_PROPERTIES_EXT;
+    deviceProperties2_ = {};
+    deviceProperties2_.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR;
+    deviceProperties2_.pNext = &conservativeRasterizationProperties_;
+    vkGetPhysicalDeviceProperties2KHR(physicalDevice_.GetNativeHandle(), &deviceProperties2_);
 }
 
 VulkanDevice::~VulkanDevice()
@@ -524,10 +531,19 @@ UPtr<GraphicsPipeline> VulkanDevice::CreateGraphicsPipeline(const GraphicsPipeli
         colorAttachments.push_back(TranslateTexelFormat(f));
     }
 
+    const VkPipelineRasterizationConservativeStateCreateInfoEXT conservativeRasterizerState =
+    {
+        .sType                            = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_CONSERVATIVE_STATE_CREATE_INFO_EXT,
+        .conservativeRasterizationMode    = desc.enableConservativeRasterization ?
+                                                    VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT
+                                                  : VK_CONSERVATIVE_RASTERIZATION_MODE_DISABLED_EXT,
+        .extraPrimitiveOverestimationSize = conservativeRasterizationProperties_.maxExtraPrimitiveOverestimationSize
+    };
+
     const VkPipelineRasterizationDepthClipStateCreateInfoEXT depthClipState =
     {
         .sType           = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_DEPTH_CLIP_STATE_CREATE_INFO_EXT,
-        .pNext           = nullptr,
+        .pNext           = desc.enableConservativeRasterization ? &conservativeRasterizerState : nullptr,
         .flags           = {},
         .depthClipEnable = desc.enableDepthClip
     };
@@ -581,7 +597,8 @@ UPtr<GraphicsPipeline> VulkanDevice::CreateGraphicsPipeline(const GraphicsPipeli
         output.offset   = attrib.byteOffsetInBuffer;
     }
 
-    const VkPipelineVertexInputStateCreateInfo vertexInputState = {
+    const VkPipelineVertexInputStateCreateInfo vertexInputState =
+    {
         .sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
         .vertexBindingDescriptionCount   = static_cast<uint32_t>(inputBindingDescs.size()),
         .pVertexBindingDescriptions      = inputBindingDescs.data(),
@@ -589,12 +606,14 @@ UPtr<GraphicsPipeline> VulkanDevice::CreateGraphicsPipeline(const GraphicsPipeli
         .pVertexAttributeDescriptions    = inputAttributeDescs.data()
     };
 
-    const VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = {
+    const VkPipelineInputAssemblyStateCreateInfo inputAssemblyState =
+    {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
         .topology = TranslatePrimitiveTopology(desc.primitiveTopology)
     };
 
-    VkPipelineViewportStateCreateInfo viewportState = {
+    VkPipelineViewportStateCreateInfo viewportState =
+    {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
     };
 

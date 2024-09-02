@@ -103,6 +103,9 @@ private:
     VulkanPhysicalDevice physicalDevice_;
     VkDevice             device_;
 
+    VkPhysicalDeviceProperties2KHR deviceProperties2_;
+    VkPhysicalDeviceConservativeRasterizationPropertiesEXT conservativeRasterizationProperties_;
+
     RPtr<VulkanQueue> graphicsQueue_;
     RPtr<VulkanQueue> computeQueue_;
     RPtr<VulkanQueue> transferQueue_;
