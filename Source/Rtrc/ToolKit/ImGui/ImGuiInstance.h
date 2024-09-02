@@ -212,10 +212,10 @@ public:
 
     bool IsAnyItemActive() const;
 
-private:
-
     template<typename F>
     void Do(F &&f); // Call f with thread local ImGui context bounded
+
+private:
     
     void RecreateFontTexture();
 
