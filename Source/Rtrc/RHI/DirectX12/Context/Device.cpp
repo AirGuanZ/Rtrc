@@ -407,7 +407,7 @@ UPtr<GraphicsPipeline> DirectX12Device::CreateGraphicsPipeline(const GraphicsPip
             {
                 .FillMode              = TranslateFillMode(desc.fillMode),
                 .CullMode              = TranslateCullMode(desc.cullMode),
-                .FrontCounterClockwise = desc.frontFaceMode == FrontFaceMode::CounterClockwise ? true : false,
+                .FrontCounterClockwise = desc.frontFaceMode == FrontFaceMode::CounterClockwise,
                 .DepthBias             = static_cast<INT>(desc.depthBiasConstFactor),
                 .DepthBiasClamp        = desc.depthBiasClampValue,
                 .SlopeScaledDepthBias  = desc.depthBiasSlopeFactor,
@@ -415,7 +415,8 @@ UPtr<GraphicsPipeline> DirectX12Device::CreateGraphicsPipeline(const GraphicsPip
                 .MultisampleEnable     = false,
                 .AntialiasedLineEnable = false,
                 .ForcedSampleCount     = 0,
-                .ConservativeRaster    = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF
+                .ConservativeRaster    = desc.enableConservativeRasterization ? D3D12_CONSERVATIVE_RASTERIZATION_MODE_ON
+                                                                              : D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF
             },
             .DepthStencilState = D3D12_DEPTH_STENCIL_DESC
             {
