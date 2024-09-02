@@ -218,10 +218,11 @@ RC<GraphicsPipeline> PipelineManager::CreateGraphicsPipeline(const GraphicsPipel
     rhiDesc.vertexAttributs = std::move(vertexAttributes);
 
     auto &rasterizerDesc = desc.rasterizerState.GetDesc();
-    rhiDesc.primitiveTopology = rasterizerDesc.primitiveTopology;
-    rhiDesc.fillMode          = rasterizerDesc.fillMode;
-    rhiDesc.cullMode          = rasterizerDesc.cullMode;
-    rhiDesc.frontFaceMode     = rasterizerDesc.frontFaceMode;
+    rhiDesc.enableConservativeRasterization = rasterizerDesc.conservativeRasterization;
+    rhiDesc.primitiveTopology               = rasterizerDesc.primitiveTopology;
+    rhiDesc.fillMode                        = rasterizerDesc.fillMode;
+    rhiDesc.cullMode                        = rasterizerDesc.cullMode;
+    rhiDesc.frontFaceMode                   = rasterizerDesc.frontFaceMode;
 
     auto &depthStencilDesc = desc.depthStencilState.GetDesc();
     rhiDesc.enableDepthBias      = depthStencilDesc.enableDepthBias;

@@ -40,10 +40,11 @@ struct DepthStencilStateDesc
 
 struct RasterizerStateDesc
 {
-    RHI::PrimitiveTopology primitiveTopology = RHI::PrimitiveTopology::TriangleList;
-    RHI::FillMode          fillMode          = RHI::FillMode::Fill;
-    RHI::CullMode          cullMode          = RHI::CullMode::DontCull;
-    RHI::FrontFaceMode     frontFaceMode     = RHI::FrontFaceMode::Clockwise;
+    RHI::PrimitiveTopology primitiveTopology         = RHI::PrimitiveTopology::TriangleList;
+    RHI::FillMode          fillMode                  = RHI::FillMode::Fill;
+    RHI::CullMode          cullMode                  = RHI::CullMode::DontCull;
+    RHI::FrontFaceMode     frontFaceMode             = RHI::FrontFaceMode::Clockwise;
+    bool                   conservativeRasterization = false;
 
     auto operator<=>(const RasterizerStateDesc &) const = default;
 };

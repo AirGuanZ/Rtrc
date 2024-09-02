@@ -1149,6 +1149,8 @@ struct GraphicsPipelineDesc
     std::vector<VertexInputBuffer>    vertexBuffers;
     std::vector<VertexInputAttribute> vertexAttributs;
 
+    bool enableConservativeRasterization = false;
+
     PrimitiveTopology primitiveTopology = PrimitiveTopology::TriangleList;
     FillMode          fillMode          = FillMode::Fill;
     CullMode          cullMode          = CullMode::DontCull;

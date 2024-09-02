@@ -179,7 +179,7 @@ RC<Texture> Device::CreateColorTexture2D(uint8_t r, uint8_t g, uint8_t b, uint8_
 RHI::BackendType Device::DebugOverrideBackendType(RHI::BackendType type)
 {
     //return RHI::BackendType::DirectX12;
-    //return RHI::BackendType::Vulkan;
+    return RHI::BackendType::Vulkan;
     return type;
 }
 
