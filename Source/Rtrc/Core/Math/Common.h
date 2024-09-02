@@ -89,4 +89,22 @@ struct MaxOperator
     }
 };
 
+template<typename T>
+auto Det2x2(const T &a, const T &b,
+            const T &c, const T &d)
+{
+    return a * d - b * c;
+}
+
+template<typename T>
+auto Det3x3(const T &a, const T &b, const T &c,
+            const T &d, const T &e, const T &f,
+            const T &g, const T &h, const T &i)
+{
+    const auto A = Det2x2(e, f, h, i);
+    const auto B = Det2x2(d, f, g, i);
+    const auto C = Det2x2(d, e, g, h);
+    return a * A - b * B + c * C;
+}
+
 RTRC_END
