@@ -326,7 +326,7 @@ RawMesh RawMesh::LoadWavefrontObj(const std::string& filename)
         auto &colorAttribute = mesh.attributes_.emplace_back();
         colorAttribute.type_ = RawMeshAttributeData::Float3;
         colorAttribute.name_ = "color";
-        colorAttribute.data_.resize(attributes.colors.size() * sizeof(Vector3f));
+        colorAttribute.data_.resize(attributes.colors.size() * sizeof(float));
         std::memcpy(colorAttribute.data_.data(), attributes.colors.data(), colorAttribute.data_.size());
     }
 

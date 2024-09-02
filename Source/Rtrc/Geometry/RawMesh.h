@@ -330,7 +330,7 @@ inline const RawMeshAttributeData* RawMesh::GetUVAttribute() const
 
 inline const RawMeshAttributeData *RawMesh::GetColorAttribute() const
 {
-    const int index = GetBuiltinAttributeIndex(BuiltinAttribute::UV);
+    const int index = GetBuiltinAttributeIndex(BuiltinAttribute::Color);
     return index >= 0 ? &attributes_[index] : nullptr;
 }
 
