@@ -1,15 +1,26 @@
 #include <Rtrc/ToolKit/OT2D/OT2D.h>
 
-#if __has_include(<Rtrc/ToolKit/OT2D/OT2DImpl.h>)
-#define RTRC_HAS_OT2D_IMPL 1
-#include <Rtrc/ToolKit/OT2D/OT2DImpl.h>
-#else
-#define RTRC_HAS_OT2D_IMPL 0
-#endif
-
 RTRC_BEGIN
 
-Image<Vector2d> OT2D::Solve(const Image<double>& sourceDensity) const
+void OT2D::Initialize(int resolution, Span<unsigned char> cachedInternalState)
+{
+#if RTRC_HAS_OT2D_IMPL
+    impl_.Initialize(resolution, cachedInternalState);
+#else
+    throw Exception("Not implemented");
+#endif
+}
+
+std::vector<unsigned char> OT2D::GenerateCachedInternalState() const
+{
+#if RTRC_HAS_OT2D_IMPL
+    return impl_.GenerateInternalStateCache();
+#else
+    throw Exception("Not implemented");
+#endif
+}
+
+Image<Vector2d> OT2D::Solve(const Image<double>& sourceDensity)
 {
 #if RTRC_HAS_OT2D_IMPL
     assert(sourceDensity.GetSWidth() == sourceDensity.GetSHeight());
@@ -24,7 +35,7 @@ Image<Vector2d> OT2D::Solve(const Image<double>& sourceDensity) const
             input[x * n + y] = sourceDensity(x, y);
         }
     }
-    const auto displacement = OT2DImpl{}.Solve(n, input);
+    const auto displacement = impl_.Solve(n, input);
 
     Image<Vector2d> ret(n + 1, n + 1);
     for(int y = 0; y <= n; ++y)
