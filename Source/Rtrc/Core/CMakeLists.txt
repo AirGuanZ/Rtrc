@@ -25,4 +25,4 @@ target_link_libraries(
 	RtrcCore PUBLIC
 	mimalloc-static spdlog fmt tbbinterface stb tinyexr nlohmann-json
 	half tinyobjloader sigslot avir cy smhasher cista magic_enum ryu
-	boost_multiprecision)
+	boost_multiprecision Eigen3::Eigen)
