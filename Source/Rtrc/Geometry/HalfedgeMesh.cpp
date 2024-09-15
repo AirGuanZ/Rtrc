@@ -1,6 +1,5 @@
 #include <ankerl/unordered_dense.h>
 
-#include <Rtrc/Core/Hash.h>
 #include <Rtrc/Geometry/HalfedgeMesh.h>
 
 RTRC_GEO_BEGIN
@@ -9,35 +8,56 @@ HalfedgeMesh HalfedgeMesh::Build(Span<uint32_t> indices, BuildOptions options)
 {
     struct EdgeRecord
     {
-        int h0;
-        int h1;
+        std::vector<int> halfedges;
+        bool isNonManifold = false;
     };
-    std::vector<EdgeRecord> edgeRecords;
-    ankerl::unordered_dense::map<std::pair<int, int>, int, HashOperator<>> vertToEdge;
-
-    int maxV = (std::numeric_limits<int>::min)();
-    std::vector<int> heads, twins, edges;
+    std::map<std::pair<int, int>, EdgeRecord> vertPairToEdge;
+    
+    int vertexCount = 0;
+    std::vector<int> heads;
+    heads.reserve(indices.size());
 
     assert(indices.size() % 3 == 0);
-    const unsigned F = indices.size() / 3;
-    for(unsigned faceIndex = 0; faceIndex < F; ++faceIndex)
+    const unsigned faceCount = indices.size() / 3;
+    for(unsigned faceIndex = 0; faceIndex < faceCount; ++faceIndex)
     {
         auto HandleEdge = [&](int head, int tail)
         {
-            maxV = (std::max)(maxV, head);
+            vertexCount = (std::max)(vertexCount, head + 1);
 
             const int h = static_cast<int>(heads.size());
             heads.push_back(head);
 
-            int edge;
-            const int vMin = (std::min)(head, tail);
-            const int vMax = (std::max)(head, tail);
-            if(auto it = vertToEdge.find({ vMin, vMax }); it != vertToEdge.end())
+            bool meetNonManifoldEdge = false;
+            if(auto it = vertPairToEdge.find({ head, tail }); it != vertPairToEdge.end())
             {
-                edge = it->second;
-                EdgeRecord &record = edgeRecords[edge];
-                assert(record.h0 != NullID);
-                if(record.h1 != NullID)
+                it->second.halfedges.push_back(h);
+                it->second.isNonManifold = true;
+                meetNonManifoldEdge = true;
+            }
+            else if(auto jt = vertPairToEdge.find({ tail, head }); jt != vertPairToEdge.end())
+            {
+                auto &record = jt->second;
+                if(record.halfedges.size() == 1)
+                {
+                    assert(!record.isNonManifold);
+                    record.halfedges.push_back(h);
+                }
+                else
+                {
+                    record.halfedges.push_back(h);
+                    record.isNonManifold = true;
+                    meetNonManifoldEdge = true;
+                }
+            }
+            else
+            {
+                vertPairToEdge.insert({ { head, tail }, { { h }, false } });
+            }
+
+            if(meetNonManifoldEdge)
+            {
+                if(!options.Contains(SplitNonManifoldEdge))
                 {
                     if(options.Contains(ThrowOnInvalidInput))
                     {
@@ -46,19 +66,7 @@ HalfedgeMesh HalfedgeMesh::Build(Span<uint32_t> indices, BuildOptions options)
                     }
                     return false;
                 }
-                record.h1 = h;
-                twins[record.h0] = h;
-                twins.push_back(record.h0);
             }
-            else
-            {
-                edge = static_cast<int>(edgeRecords.size());
-                twins.push_back(NullID);
-                edgeRecords.emplace_back() = EdgeRecord{ h, NullID };
-                vertToEdge.try_emplace({ vMin, vMax }, edge);
-            }
-            edges.push_back(edge);
-
             return true;
         };
 
@@ -71,38 +79,151 @@ HalfedgeMesh HalfedgeMesh::Build(Span<uint32_t> indices, BuildOptions options)
         }
     }
 
-    // Check for non-manifold vertices.
-    // A non-manifold vertex has more than one incident boundary halfedge.
+    std::vector<int> twins(heads.size(), NullID);
+    std::vector<int> edges(heads.size(), NullID);
+    int edgeCount = 0;
 
-    std::vector<bool> vertexToBoundaryIncidentHalfedges(maxV + 1, false);
-    for(int h = 0; h < static_cast<int>(heads.size()); ++h)
+    for(auto &edgeRecord : std::views::values(vertPairToEdge))
     {
-        if(twins[h] != NullID)
+        if(edgeRecord.isNonManifold)
         {
-            continue;
+            assert(options.Contains(SplitNonManifoldEdge));
+            assert(edgeRecord.halfedges.size() >= 2);
+            for(int h : edgeRecord.halfedges)
+            {
+                edges[h] = edgeCount++;
+            }
         }
-        const int vert = heads[h];
-        if(vertexToBoundaryIncidentHalfedges[vert])
+        else
+        {
+            assert(edgeRecord.halfedges.size() == 1 || edgeRecord.halfedges.size() == 2);
+            const int edge = edgeCount++;
+            edges[edgeRecord.halfedges[0]] = edge;
+            if(edgeRecord.halfedges.size() == 2)
+            {
+                edges[edgeRecord.halfedges[1]] = edge;
+                twins[edgeRecord.halfedges[0]] = edgeRecord.halfedges[1];
+                twins[edgeRecord.halfedges[1]] = edgeRecord.halfedges[0];
+            }
+        }
+    }
+
+    // Check non-manifold vertices.
+
+    const int originalVertexCount = vertexCount;
+
+    std::vector<bool> isHalfedgeProcessed(heads.size(), false);
+
+    // Collect all halfedges in the the bundle of boundary halfedge h, and mark them as processed.
+    auto CollectBoundaryHalfedgeBundle = [&](int h, std::vector<int> &halfedgeBundle)
+    {
+        assert(twins[h] == NullID);
+        do
+        {
+            assert(!isHalfedgeProcessed[h]);
+            isHalfedgeProcessed[h] = true;
+            halfedgeBundle.push_back(h);
+            h = twins[StaticPrev(h)];
+        }
+        while(h != NullID);
+    };
+
+    // Collect all halfedges in the same closed bundle of h, and mark all of them as processed.
+    auto CollectClosedHalfedgeBundle = [&](int h, std::vector<int> &bundleHalfedges)
+    {
+        const int h0 = h;
+        do
+        {
+            assert(!isHalfedgeProcessed[h]);
+            isHalfedgeProcessed[h] = true;
+            bundleHalfedges.push_back(h);
+            h = twins[StaticPrev(h)];
+            assert(h != NullID);
+        }
+        while(h != h0);
+    };
+
+    std::vector<bool> isVertexOccupied(vertexCount, false);
+
+    // Splitting non-manifold vertices can result in the creation of new vertices. For each newly created vertex v,
+    // vertexToOriginalVertex[v - originalVertexCount] records the vertex from which v was originally derived.
+    std::vector<int> vertexToOriginalVertex;
+
+    // For a given halfedge bundle B, if the vertex v associated with B hasn't been occupied by any other bundle,
+    // then mark v as occupied by B. If v is already occupied, it must be a non-manifold vertex.
+    // In such cases, if 'SplitNonManifoldVertex' is enabled, create a new vertex for the halfedges in bundle B.
+    auto ProcessHalfedgeBundle = [&](const std::vector<int> &halfedgeBundle)
+    {
+        assert(!halfedgeBundle.empty());
+        const int v = heads[halfedgeBundle[0]];
+        if(!isVertexOccupied[v])
+        {
+            isVertexOccupied[v] = true;
+            return true;
+        }
+
+        // This vertex has more than one halfedge bundle and thus is a non-manifold vertex
+        if(!options.Contains(SplitNonManifoldVertex))
         {
             if(options.Contains(ThrowOnInvalidInput))
             {
-                throw Exception(fmt::format("Non-manifold vertex encountered. Vertex is {}", vert));
+                throw Exception(fmt::format("Non-manifold vertex encountered. Vertex id is {}", v));
             }
-            return {};
+            return false;
         }
-        vertexToBoundaryIncidentHalfedges[vert] = true;
+
+        const int newV = vertexCount++;
+        for(int halfedgeInBundle : halfedgeBundle)
+        {
+            heads[halfedgeInBundle] = newV;
+        }
+        vertexToOriginalVertex.push_back(v);
+        return true;
+    };
+
+    std::vector<int> tempHalfedgeBundle;
+    for(int h = 0; h < static_cast<int>(heads.size()); ++h)
+    {
+        if(twins[h] == NullID)
+        {
+            assert(!isHalfedgeProcessed[h]);
+            tempHalfedgeBundle.clear();
+            CollectBoundaryHalfedgeBundle(h, tempHalfedgeBundle);
+            if(!ProcessHalfedgeBundle(tempHalfedgeBundle))
+            {
+                return {};
+            }
+        }
+    }
+
+    for(int h = 0; h < static_cast<int>(heads.size()); ++h)
+    {
+        // All boundary bundles are already handled previously. Any halfedge that hasn't been processed must be
+        // contained in a closed bundle.
+        if(!isHalfedgeProcessed[h])
+        {
+            assert(twins[h] != NullID);
+            tempHalfedgeBundle.clear();
+            CollectClosedHalfedgeBundle(h, tempHalfedgeBundle);
+            if(!ProcessHalfedgeBundle(tempHalfedgeBundle))
+            {
+                return {};
+            }
+        }
     }
 
     // Fill final mesh
 
     HalfedgeMesh mesh;
-    mesh.H_ = static_cast<int>(heads.size());
-    mesh.V_ = maxV + 1;
-    mesh.E_ = static_cast<int>(edgeRecords.size());
-    mesh.F_ = F;
-    mesh.halfedgeToTwin_ = std::move(twins);
-    mesh.halfedgeToEdge_ = std::move(edges);
-    mesh.halfedgeToHead_ = std::move(heads);
+    mesh.H_                  = static_cast<int>(heads.size());
+    mesh.V_                  = vertexCount;
+    mesh.E_                  = edgeCount;
+    mesh.F_                  = static_cast<int>(faceCount);
+    mesh.halfedgeToTwin_     = std::move(twins);
+    mesh.halfedgeToEdge_     = std::move(edges);
+    mesh.halfedgeToHead_     = std::move(heads);
+    mesh.originalVertCount_  = originalVertexCount;
+    mesh.vertToOriginalVert_ = std::move(vertexToOriginalVertex);
 
     mesh.vertToHalfedge_.resize(mesh.V_, NullID);
     for(int h = 0; h < mesh.H_; ++h)
@@ -129,10 +250,10 @@ HalfedgeMesh HalfedgeMesh::Build(Span<uint32_t> indices, BuildOptions options)
     }
 
     mesh.edgeToHalfedge_.resize(mesh.E_);
-    for(int e = 0; e < mesh.E_; ++e)
+    for(int h = 0; h < mesh.H_; ++h)
     {
-        const EdgeRecord &record = edgeRecords[e];
-        mesh.edgeToHalfedge_[e] = record.h0;
+        const int e = mesh.halfedgeToEdge_[h];
+        mesh.edgeToHalfedge_[e] = h;
     }
 
     return mesh;

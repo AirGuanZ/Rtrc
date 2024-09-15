@@ -10,7 +10,9 @@ namespace FlatHalfedgeMeshDetail
 
     enum class BuildOptionFlagBit
     {
-        ThrowOnInvalidInput = 1 << 0,
+        ThrowOnInvalidInput    = 1 << 0,
+        SplitNonManifoldEdge   = 1 << 1,
+        SplitNonManifoldVertex = 1 << 2,
     };
     RTRC_DEFINE_ENUM_FLAGS(BuildOptionFlagBit)
 
@@ -42,8 +44,8 @@ public:
     bool IsEdgeValid    (int e) const { return 0 <= e && e < E_ && edgeToHalfedge_[e]     != PendingDeleteID; }
     bool IsHalfedgeValid(int h) const { return 0 <= h && h < H_ && halfedgeToHead_[h]     != PendingDeleteID; }
 
-    int Succ(int h) const { return h != NullID ? ((h / 3 * 3) + (h + 1) % 3) : NullID; }
-    int Prev(int h) const { return h != NullID ? ((h / 3 * 3) + (h + 2) % 3) : NullID; }
+    int Succ(int h) const { return StaticSucc(h); }
+    int Prev(int h) const { return StaticPrev(h); }
     int Twin(int h) const { return h != NullID ? halfedgeToTwin_[h] : NullID; }
     int Edge(int h) const { return h != NullID ? halfedgeToEdge_[h] : NullID; }
     int Vert(int h) const { return h != NullID ? halfedgeToHead_[h] : NullID; }
@@ -62,6 +64,9 @@ public:
 
     int FindHalfedgeByVertex(int head, int tail) const;
     int FindEdgeByVertex(int va, int vb) const;
+
+    // Useful when SplitNonManifoldVertex is enabled. Otherwise always be identity.
+    int VertToOriginalVert(int vert) const;
 
     // If Unique is true, only one of each pair of twin halfedges will be used, with the outgoing one being preferred.
     // func is called with the index of each halfedge.
@@ -123,6 +128,9 @@ public:
 
 private:
 
+    static int StaticSucc(int h) { return h != NullID ? ((h / 3 * 3) + (h + 1) % 3) : NullID; }
+    static int StaticPrev(int h) { return h != NullID ? ((h / 3 * 3) + (h + 2) % 3) : NullID; }
+
     // Set Edge(newH) to e.
     // If edgeToHalfedge[e] matches any one of the oldHs, edgeToHalfedge[e] will be set to newH.
     void InternalSetEdge(int newH, int e, Span<int> oldHs);
@@ -148,6 +156,9 @@ private:
 
     std::vector<int> vertToHalfedge_; // One of the halfedges outgoing from v. The boundary one is preferred, if present.
     std::vector<int> edgeToHalfedge_;
+
+    int originalVertCount_;
+    std::vector<int> vertToOriginalVert_;
 };
 
 inline int HalfedgeMesh::FindHalfedgeByVertex(int head, int tail) const
@@ -180,6 +191,15 @@ inline int HalfedgeMesh::FindEdgeByVertex(int va, int vb) const
         return true;
     });
     return result;
+}
+
+inline int HalfedgeMesh::VertToOriginalVert(int vert) const
+{
+    if(vert == NullID || vert < originalVertCount_)
+    {
+        return vert;
+    }
+    return vertToOriginalVert_[vert - originalVertCount_];
 }
 
 template <bool Unique, typename Func>
