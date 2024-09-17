@@ -82,6 +82,7 @@ HalfedgeMesh HalfedgeMesh::Build(Span<uint32_t> indices, BuildOptions options)
     std::vector<int> twins(heads.size(), NullID);
     std::vector<int> edges(heads.size(), NullID);
     int edgeCount = 0;
+    bool hasNonManifoldEdge = false;
 
     for(auto &edgeRecord : std::views::values(vertPairToEdge))
     {
@@ -93,6 +94,7 @@ HalfedgeMesh HalfedgeMesh::Build(Span<uint32_t> indices, BuildOptions options)
             {
                 edges[h] = edgeCount++;
             }
+            hasNonManifoldEdge = true;
         }
         else
         {
@@ -222,6 +224,7 @@ HalfedgeMesh HalfedgeMesh::Build(Span<uint32_t> indices, BuildOptions options)
     mesh.halfedgeToTwin_     = std::move(twins);
     mesh.halfedgeToEdge_     = std::move(edges);
     mesh.halfedgeToHead_     = std::move(heads);
+    mesh.isInputManifold_    = !hasNonManifoldEdge && vertexToOriginalVertex.empty();
     mesh.originalVertCount_  = originalVertexCount;
     mesh.vertToOriginalVert_ = std::move(vertexToOriginalVertex);
 

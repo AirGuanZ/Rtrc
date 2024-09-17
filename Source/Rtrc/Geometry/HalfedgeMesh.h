@@ -13,6 +13,7 @@ namespace FlatHalfedgeMeshDetail
         ThrowOnInvalidInput    = 1 << 0,
         SplitNonManifoldEdge   = 1 << 1,
         SplitNonManifoldVertex = 1 << 2,
+        SplitNonManifoldInput  = SplitNonManifoldEdge | SplitNonManifoldVertex
     };
     RTRC_DEFINE_ENUM_FLAGS(BuildOptionFlagBit)
 
@@ -65,7 +66,11 @@ public:
     int FindHalfedgeByVertex(int head, int tail) const;
     int FindEdgeByVertex(int va, int vb) const;
 
-    // Useful when SplitNonManifoldVertex is enabled. Otherwise always be identity.
+    // Can be true if SplitNonManifoldEdge or SplitNonManifoldVertex is specified.
+    bool IsInputManifold() const;
+
+    // New vertex may be appended when SplitNonManifoldVertex is enabled.
+    // Use this to map a vertex id in halfedge mesh to the original vertex id in input indices.
     int VertToOriginalVert(int vert) const;
 
     // If Unique is true, only one of each pair of twin halfedges will be used, with the outgoing one being preferred.
@@ -157,7 +162,8 @@ private:
     std::vector<int> vertToHalfedge_; // One of the halfedges outgoing from v. The boundary one is preferred, if present.
     std::vector<int> edgeToHalfedge_;
 
-    int originalVertCount_;
+    bool isInputManifold_ = false;
+    int originalVertCount_ = 0;
     std::vector<int> vertToOriginalVert_;
 };
 
@@ -191,6 +197,11 @@ inline int HalfedgeMesh::FindEdgeByVertex(int va, int vb) const
         return true;
     });
     return result;
+}
+
+inline bool HalfedgeMesh::IsInputManifold() const
+{
+    return isInputManifold_;
 }
 
 inline int HalfedgeMesh::VertToOriginalVert(int vert) const
