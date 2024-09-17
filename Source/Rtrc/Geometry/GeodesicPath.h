@@ -47,6 +47,7 @@ private:
     struct Node
     {
         bool isInQueue = false;
+        int depth = 0;
 
         Node    *parent = nullptr;
         Node    *prev   = nullptr;

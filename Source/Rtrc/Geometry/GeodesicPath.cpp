@@ -74,6 +74,7 @@ std::vector<GeodesicPathICH::PathPoint> GeodesicPathICH::FindShortestPath(int so
 
     auto rootNode = context.NewNode();
     rootNode->isInQueue = true;
+    rootNode->depth     = 1;
     rootNode->isVertex  = true;
     rootNode->element   = sourceVertex;
     context.activeNodes.push(rootNode);
@@ -178,7 +179,7 @@ bool GeodesicPathICH::ShouldUpdateDistance(double oldDistance, double newDistanc
 
 void GeodesicPathICH::ProcessVertexNode(Context &context, Node *node)
 {
-    if(node->minDistance > context.vertexRecords[context.target].distanceToSource)
+    if(node->minDistance > context.vertexRecords[context.target].distanceToSource || node->depth > connectivity_->F())
     {
         return;
     }
@@ -212,6 +213,7 @@ void GeodesicPathICH::ProcessVertexNode(Context &context, Node *node)
             AddChildNode(node, newNode);
             
             newNode->isInQueue    = true;
+            newNode->depth        = node->depth + 1;
             newNode->isVertex     = true;
             newNode->element      = nv;
             newNode->baseDistance = newDistance;
@@ -240,6 +242,7 @@ void GeodesicPathICH::ProcessVertexNode(Context &context, Node *node)
         AddChildNode(node, newNode);
         
         newNode->isInQueue              = true;
+        newNode->depth                  = node->depth + 1;
         newNode->isVertex               = false;
         newNode->element                = ho;
         newNode->baseDistance           = node->baseDistance;
@@ -254,7 +257,7 @@ void GeodesicPathICH::ProcessVertexNode(Context &context, Node *node)
 
 void GeodesicPathICH::ProcessEdgeNode(Context &context, Node *node)
 {
-    if(node->minDistance > context.vertexRecords[context.target].distanceToSource)
+    if(node->minDistance > context.vertexRecords[context.target].distanceToSource || node->depth > connectivity_->F())
     {
         return;
     }
@@ -277,6 +280,7 @@ void GeodesicPathICH::ProcessEdgeNode(Context &context, Node *node)
             AddChildNode(node, newNode);
 
             newNode->isInQueue    = true;
+            newNode->depth        = node->depth + 1;
             newNode->isVertex     = true;
             newNode->element      = vb;
             newNode->baseDistance = newDistance;
@@ -315,6 +319,7 @@ void GeodesicPathICH::ProcessEdgeNode(Context &context, Node *node)
             AddChildNode(node, newNode);
 
             newNode->isInQueue    = true;
+            newNode->depth        = node->depth + 1;
             newNode->isVertex     = false;
             newNode->element      = habTwin;
             newNode->baseDistance = node->baseDistance;
@@ -354,6 +359,7 @@ void GeodesicPathICH::ProcessEdgeNode(Context &context, Node *node)
             AddChildNode(node, newNode);
 
             newNode->isInQueue    = true;
+            newNode->depth        = node->depth + 1;
             newNode->isVertex     = false;
             newNode->element      = hbcTwin;
             newNode->baseDistance = node->baseDistance;
