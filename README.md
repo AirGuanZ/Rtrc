@@ -39,6 +39,8 @@ Personal graphics toolkits
 | 14.HalfedgeMesh<br>Halfedge data structure for triangle mesh | ![](./Documents/Samples_14.png) |
 | 15.HeatMethod<br>Heat method for geodesic distance computation | ![](./Documents/Samples_15.png) |
 | 16.MeshCorefinement<br>Embed all intersection lines between meshes | ![](./Documents/Samples_16.png) |
+| 17.WorkGraph<br>Basic example of work graph | ![](./Documents/Samples_17.png) |
+| 18.ShortestGeodesicPath<br>Find globally shortest geodesic path on triangle mesh | ![](./Documents/Samples_18.png) |
 | WIP | ... |
 
 ## Third-party Dependencies
