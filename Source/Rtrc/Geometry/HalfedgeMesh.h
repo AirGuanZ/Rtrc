@@ -2,6 +2,7 @@
 
 #include <Rtrc/Core/Container/Span.h>
 #include <Rtrc/Core/EnumFlags.h>
+#include <Rtrc/Core/Math/Vector2.h>
 
 RTRC_GEO_BEGIN
 
@@ -29,9 +30,20 @@ public:
     using BuildOptions = FlatHalfedgeMeshDetail::EnumFlagsBuildOptionFlagBit;
     using enum FlatHalfedgeMeshDetail::BuildOptionFlagBit;
 
+    struct BuildByproducts
+    {
+        // Non-manifold elements are represented with input indices.
+
+        std::set<Vector2i> nonManifoldEdges;
+        std::set<int> nonManifoldVertices;
+    };
+
     // Construct a halfedge mesh structure from the provided triangle mesh. Includes a basic manifold check.
     // Also assumes that each vertex is contained by at least one face.
-    static HalfedgeMesh Build(Span<uint32_t> indices, BuildOptions options = ThrowOnInvalidInput);
+    static HalfedgeMesh Build(
+        Span<uint32_t>   indices,
+        BuildOptions     options = ThrowOnInvalidInput,
+        BuildByproducts *byproducts = nullptr);
 
     bool IsEmpty() const { return H_ == 0; }
 

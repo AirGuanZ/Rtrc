@@ -45,13 +45,6 @@ public:
     // Ensure the result satisfy constrained delaunay conditions.
     bool delaunay = true;
 
-    // CDT2D assumes that all boundary edges be defined as constraints.
-    // If the anticipated polygon is convex, this is sufficient to produce the final triangulation.
-    // Otherwise, boundary edges need to be explicitly specified to determine which triangles fall outside the boundary
-    // and should be removed.
-    // If specified, edges must be given in clockwise order.
-    //Span<Vector2i> boundaryEdges;
-
     // If enabled, for each edge 'e' in the result, the masks of constraints overlapping with 'e' will be bitwise unioned.
     // The resulting mask is stored in `edgeToConstraintMask`.
     // This allows the user to track the correspondence between the original constraints and the resulting edges.

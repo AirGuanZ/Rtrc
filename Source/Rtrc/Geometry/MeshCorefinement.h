@@ -3,8 +3,7 @@
 #include <vector>
 
 #include <Rtrc/Core/Container/Span.h>
-#include <Rtrc/Core/Math/Vector3.h>
-#include <Rtrc/Core/SmartPointer/ObserverPtr.h>
+#include <Rtrc/Core/Math/Exact/Vector.h>
 
 RTRC_GEO_BEGIN
 
@@ -52,6 +51,25 @@ public:
     // Available when trackCutEdges is true
     std::vector<Vector2u> outputCutEdgesA;
     std::vector<Vector2u> outputCutEdgesB;
+};
+
+// Similar to MeshCorefinement, but designed to operate within a single mesh
+class MeshSelfIntersectionRefinement
+{
+public:
+
+    void Refine(Span<Vector3d> inputPositions, Span<uint32_t> inputIndices);
+
+    bool trackFaceMap = false;
+    bool trackCutEdges = false;
+    bool preserveExactPositions = false;
+
+    std::vector<uint32_t>   outputIndices;
+    std::vector<Vector3d>   outputPositions;
+    std::vector<Expansion4> outputExactPositions;
+
+    std::vector<uint32_t> outputFaceMap;
+    std::vector<Vector2u> outputCutEdges;
 };
 
 RTRC_GEO_END

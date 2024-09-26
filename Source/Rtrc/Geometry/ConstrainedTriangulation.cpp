@@ -226,12 +226,6 @@ namespace CDTDetail
         assert(connectivity.CheckSanity());
     }
 
-    //Expansion2 ComputeWindingNumber(Span<Expansion3> points, const Expansion3 &point, Span<Vector2i> edges)
-    //{
-    //    // TODO
-    //    return {};
-    //}
-
 } // namespace CDTDetail
 
 void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
@@ -653,15 +647,6 @@ void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
         {
             continue;
         }
-        //if(!boundaryEdges.IsEmpty())
-        //{
-        //    // TODO
-        //    const Expansion2 windingNumber = ComputeWindingNumber(vertices, {}, {});
-        //    if(windingNumber.x.GetSign() == 0)
-        //    {
-        //        continue;
-        //    }
-        //}
         this->triangles.emplace_back(
             meshVertexToPointIndex[v0],
             meshVertexToPointIndex[v1],

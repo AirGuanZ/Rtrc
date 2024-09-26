@@ -286,40 +286,10 @@ int InCircle2DHomogeneous(const Expansion3 &pa, const Expansion3 &pb, const Expa
 template <typename T>
 int Orient2D(const Vector2<T> &pa, const Vector2<T> &pb, const Vector2<T> &pc)
 {
-    const T detL = (pa[0] - pc[0]) * (pb[1] - pc[1]);
-    const T detR = (pa[1] - pc[1]) * (pb[0] - pc[0]);
-    const T det = detL - detR;
-
-    T detSum;
-    if(detL > 0)
+    if(const int approx = Rtrc::Orient2DApprox(pa, pb, pc))
     {
-        if(detR <= 0)
-        {
-            return PredicatesDetail::GetSign(det);
-        }
-        detSum = detL + detR;
+        return approx;
     }
-    else if(detL < 0)
-    {
-        if(detR >= 0)
-        {
-            return PredicatesDetail::GetSign(det);
-        }
-        detSum = -detL - detR;
-    }
-    else
-    {
-        return PredicatesDetail::GetSign(det);
-    }
-
-    const T unitError = T(0.5) * std::numeric_limits<T>::epsilon();
-    const T errorBoundFactor = (3.0 + 16.0 * unitError) * unitError;
-    const T errorBound = errorBoundFactor * detSum;
-    if(det > errorBound || -det > errorBound)
-    {
-        return PredicatesDetail::GetSign(det);
-    }
-
     return PredicatesDetail::Orient2DExact(pa, pb, pc);
 }
 
@@ -331,40 +301,10 @@ template int Orient2D(const Vector2<ExpansionUtility::float_200_55> &, const Vec
 template<typename T>
 int Orient3D(const Vector3<T> &pa, const Vector3<T> &pb, const Vector3<T> &pc, const Vector3<T> &pd)
 {
-    const T adx = pa[0] - pd[0];
-    const T bdx = pb[0] - pd[0];
-    const T cdx = pc[0] - pd[0];
-    const T ady = pa[1] - pd[1];
-    const T bdy = pb[1] - pd[1];
-    const T cdy = pc[1] - pd[1];
-    const T adz = pa[2] - pd[2];
-    const T bdz = pb[2] - pd[2];
-    const T cdz = pc[2] - pd[2];
-
-    const T bdxcdy = bdx * cdy;
-    const T cdxbdy = cdx * bdy;
-
-    const T cdxady = cdx * ady;
-    const T adxcdy = adx * cdy;
-
-    const T adxbdy = adx * bdy;
-    const T bdxady = bdx * ady;
-    
-    const T det = adz * (bdxcdy - cdxbdy)
-                + bdz * (cdxady - adxcdy)
-                + cdz * (adxbdy - bdxady);
-
-    const T permanent = (PredicatesDetail::Abs(bdxcdy) + PredicatesDetail::Abs(cdxbdy)) * PredicatesDetail::Abs(adz)
-                      + (PredicatesDetail::Abs(cdxady) + PredicatesDetail::Abs(adxcdy)) * PredicatesDetail::Abs(bdz)
-                      + (PredicatesDetail::Abs(adxbdy) + PredicatesDetail::Abs(bdxady)) * PredicatesDetail::Abs(cdz);
-    const T unitError = T(0.5) * std::numeric_limits<T>::epsilon();
-    const T errorBoundFactor = (7.0 + 56.0 * unitError) * unitError;
-    const T errorBound = errorBoundFactor * permanent;
-    if(det > errorBound || -det > errorBound)
+    if(const int approx = Rtrc::Orient3DApprox(pa, pb, pc, pd))
     {
-        return PredicatesDetail::GetSign(det);
+        return approx;
     }
-
     return PredicatesDetail::Orient3DExact(pa, pb, pc, pd);
 }
 
@@ -417,6 +357,96 @@ template int InCircle2D(const Vector2<float> &, const Vector2<float> &, const Ve
 template int InCircle2D(const Vector2<double> &, const Vector2<double> &, const Vector2<double> &, const Vector2<double> &);
 template int InCircle2D(const Vector2<ExpansionUtility::float_100_27> &, const Vector2<ExpansionUtility::float_100_27> &, const Vector2<ExpansionUtility::float_100_27> &, const Vector2<ExpansionUtility::float_100_27> &);
 template int InCircle2D(const Vector2<ExpansionUtility::float_200_55> &, const Vector2<ExpansionUtility::float_200_55> &, const Vector2<ExpansionUtility::float_200_55> &, const Vector2<ExpansionUtility::float_200_55> &);
+
+template<typename T>
+int Orient2DApprox(const Vector2<T> &pa, const Vector2<T> &pb, const Vector2<T> &pc)
+{
+    const T detL = (pa[0] - pc[0]) * (pb[1] - pc[1]);
+    const T detR = (pa[1] - pc[1]) * (pb[0] - pc[0]);
+    const T det = detL - detR;
+
+    T detSum;
+    if(detL > 0)
+    {
+        if(detR <= 0)
+        {
+            return PredicatesDetail::GetSign(det);
+        }
+        detSum = detL + detR;
+    }
+    else if(detL < 0)
+    {
+        if(detR >= 0)
+        {
+            return PredicatesDetail::GetSign(det);
+        }
+        detSum = -detL - detR;
+    }
+    else
+    {
+        return PredicatesDetail::GetSign(det);
+    }
+
+    const T unitError = T(0.5) * std::numeric_limits<T>::epsilon();
+    const T errorBoundFactor = (3.0 + 16.0 * unitError) * unitError;
+    const T errorBound = errorBoundFactor * detSum;
+    if(det > errorBound || -det > errorBound)
+    {
+        return PredicatesDetail::GetSign(det);
+    }
+
+    return 0;
+}
+
+template int Orient2DApprox(const Vector2<float>&, const Vector2<float>&, const Vector2<float>&);
+template int Orient2DApprox(const Vector2<double>&, const Vector2<double>&, const Vector2<double>&);
+template int Orient2DApprox(const Vector2<ExpansionUtility::float_100_27>&, const Vector2<ExpansionUtility::float_100_27>&, const Vector2<ExpansionUtility::float_100_27>&);
+template int Orient2DApprox(const Vector2<ExpansionUtility::float_200_55>&, const Vector2<ExpansionUtility::float_200_55>&, const Vector2<ExpansionUtility::float_200_55>&);
+
+template<typename T>
+int Orient3DApprox(const Vector3<T> &pa, const Vector3<T> &pb, const Vector3<T> &pc, const Vector3<T> &pd)
+{
+    const T adx = pa[0] - pd[0];
+    const T bdx = pb[0] - pd[0];
+    const T cdx = pc[0] - pd[0];
+    const T ady = pa[1] - pd[1];
+    const T bdy = pb[1] - pd[1];
+    const T cdy = pc[1] - pd[1];
+    const T adz = pa[2] - pd[2];
+    const T bdz = pb[2] - pd[2];
+    const T cdz = pc[2] - pd[2];
+
+    const T bdxcdy = bdx * cdy;
+    const T cdxbdy = cdx * bdy;
+
+    const T cdxady = cdx * ady;
+    const T adxcdy = adx * cdy;
+
+    const T adxbdy = adx * bdy;
+    const T bdxady = bdx * ady;
+    
+    const T det = adz * (bdxcdy - cdxbdy)
+                + bdz * (cdxady - adxcdy)
+                + cdz * (adxbdy - bdxady);
+
+    const T permanent = (PredicatesDetail::Abs(bdxcdy) + PredicatesDetail::Abs(cdxbdy)) * PredicatesDetail::Abs(adz)
+                      + (PredicatesDetail::Abs(cdxady) + PredicatesDetail::Abs(adxcdy)) * PredicatesDetail::Abs(bdz)
+                      + (PredicatesDetail::Abs(adxbdy) + PredicatesDetail::Abs(bdxady)) * PredicatesDetail::Abs(cdz);
+    const T unitError = T(0.5) * std::numeric_limits<T>::epsilon();
+    const T errorBoundFactor = (7.0 + 56.0 * unitError) * unitError;
+    const T errorBound = errorBoundFactor * permanent;
+    if(det > errorBound || -det > errorBound)
+    {
+        return PredicatesDetail::GetSign(det);
+    }
+
+    return 0;
+}
+
+template int Orient3DApprox(const Vector3<float>&, const Vector3<float>&, const Vector3<float>&, const Vector3<float>&);
+template int Orient3DApprox(const Vector3<double>&, const Vector3<double>&, const Vector3<double>&, const Vector3<double>&);
+template int Orient3DApprox(const Vector3<ExpansionUtility::float_100_27>&, const Vector3<ExpansionUtility::float_100_27>&, const Vector3<ExpansionUtility::float_100_27>&, const Vector3<ExpansionUtility::float_100_27>&);
+template int Orient3DApprox(const Vector3<ExpansionUtility::float_200_55>&, const Vector3<ExpansionUtility::float_200_55>&, const Vector3<ExpansionUtility::float_200_55>&, const Vector3<ExpansionUtility::float_200_55>&);
 
 template <typename T>
 bool AreCoLinear(const Vector3<T> &a, const Vector3<T> &b, const Vector3<T> &c)

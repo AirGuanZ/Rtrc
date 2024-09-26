@@ -12,6 +12,9 @@ RTRC_BEGIN
 // Orient3D: returns 1 if from pd's perspective, pa, pb, pc is clockwise. 0 if all points are coplanar. -1 otherwise.
 // InCicle2D: returns 1 if pd is outside the circle passing through pa, pb, pc. 0 if cocircular. -1 if otherwise.
 
+// Orient2DApprox/Orient3DApprox: fast version of Orient2D/Orient3D.
+//                                when returning 0, the result is unreliable. Useful in some coarse filters.
+
 int Orient2D(const Expansion2 &pa, const Expansion2 &pb, const Expansion2 &pc);
 int Orient2D(const Expansion *pa, const Expansion *pb, const Expansion *pc);
 int Orient2DHomogeneous(const Expansion3 &pa, const Expansion3 &pb, const Expansion3 &pc);
@@ -28,6 +31,11 @@ template<typename T>
 int Orient3D(const Vector3<T> &pa, const Vector3<T> &pb, const Vector3<T> &pc, const Vector3<T> &pd);
 template<typename T>
 int InCircle2D(const Vector2<T> &pa, const Vector2<T> &pb, const Vector2<T> &pc, const Vector2<T> &pd);
+
+template<typename T>
+int Orient2DApprox(const Vector2<T>& pa, const Vector2<T>& pb, const Vector2<T>& pc);
+template<typename T>
+int Orient3DApprox(const Vector3<T> &pa, const Vector3<T> &pb, const Vector3<T> &pc, const Vector3<T> &pd);
 
 template<typename T>
 bool AreCoLinear(const Vector3<T> &a, const Vector3<T> &b, const Vector3<T> &c);

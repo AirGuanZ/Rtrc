@@ -4,7 +4,7 @@
 
 RTRC_GEO_BEGIN
 
-HalfedgeMesh HalfedgeMesh::Build(Span<uint32_t> indices, BuildOptions options)
+HalfedgeMesh HalfedgeMesh::Build(Span<uint32_t> indices, BuildOptions options, BuildByproducts* byproducts)
 {
     struct EdgeRecord
     {
@@ -84,7 +84,7 @@ HalfedgeMesh HalfedgeMesh::Build(Span<uint32_t> indices, BuildOptions options)
     int edgeCount = 0;
     bool hasNonManifoldEdge = false;
 
-    for(auto &edgeRecord : std::views::values(vertPairToEdge))
+    for(auto &[headAndTail, edgeRecord] : vertPairToEdge)
     {
         if(edgeRecord.isNonManifold)
         {
@@ -95,6 +95,12 @@ HalfedgeMesh HalfedgeMesh::Build(Span<uint32_t> indices, BuildOptions options)
                 edges[h] = edgeCount++;
             }
             hasNonManifoldEdge = true;
+
+            if(byproducts)
+            {
+                const auto [head, tail] = std::minmax(headAndTail.first, headAndTail.second);
+                byproducts->nonManifoldEdges.insert({ head, tail });
+            }
         }
         else
         {
@@ -172,6 +178,11 @@ HalfedgeMesh HalfedgeMesh::Build(Span<uint32_t> indices, BuildOptions options)
                 throw Exception(fmt::format("Non-manifold vertex encountered. Vertex id is {}", v));
             }
             return false;
+        }
+
+        if(byproducts)
+        {
+            byproducts->nonManifoldVertices.insert(v);
         }
 
         const int newV = vertexCount++;

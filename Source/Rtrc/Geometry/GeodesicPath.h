@@ -59,8 +59,7 @@ private:
         double   baseDistance = 0;
         double   minDistance          = 0;
 
-        // These 3 fields are meaningful only for edge nodes
-        // intervalBegin/End are stored as distance to tail(element)
+        // Edge nodes only. intervalBegin/End are stored as distance to tail(element).
 
         Vector2d unfoldedSourcePosition;
         double   intervalBegin = 0;
