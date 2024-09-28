@@ -188,12 +188,11 @@ namespace CorefineDetail
 
     template<typename PairwiseIntersections>
     void RefineTriangles(
-        const IndexedPositions<double>             &inputPositions,
-        bool                                        collectCutEdges,
-        Span<uint8_t>                               degenerateTriangleFlags,
-        const PairwiseIntersections                &pairwiseIntersections,
-        //Span<std::vector<TrianglePairIntersection>> triangleToPairwiseIntersections,
-        MutSpan<PerTriangleOutput>                  triangleToOutput)
+        const IndexedPositions<double> &inputPositions,
+        bool                            collectCutEdges,
+        Span<uint8_t>                   degenerateTriangleFlags,
+        const PairwiseIntersections    &pairwiseIntersections,
+        MutSpan<PerTriangleOutput>      triangleToOutput)
     {
         const uint32_t triangleCount = inputPositions.GetSize() / 3;
         assert(triangleCount == degenerateTriangleFlags.size());
@@ -215,7 +214,6 @@ namespace CorefineDetail
                 return;
             }
 
-            //auto &symbolicIntersections = triangleToPairwiseIntersections[triangleA];
             const uint32_t symbolicIntersectionCount = pairwiseIntersections.GetPairwiseIntersectionCount(triangleA);
             if(symbolicIntersectionCount == 0)
             {

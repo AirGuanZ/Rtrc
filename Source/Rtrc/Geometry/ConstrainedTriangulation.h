@@ -21,7 +21,6 @@ RTRC_GEO_BEGIN
 //
 // The constraints are assumed to define the boundary of the shape. Thus any triangles that include a vertex from
 // the 'super triangle' will be discarded as they are outside the relevant area.
-
 class CDT2D
 {
 public:
