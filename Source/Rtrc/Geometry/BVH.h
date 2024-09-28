@@ -103,7 +103,17 @@ void BVH<T>::TraversalPrimitives(
             const uint32_t childEnd = node.childIndex + node.childCount;
             for(uint32_t i = node.childIndex; i < childEnd; ++i)
             {
-                processPrimitive(primitiveIndices_[i]);
+                if constexpr(std::is_convertible_v<decltype(processPrimitive(primitiveIndices_[i])), bool>)
+                {
+                    if(!processPrimitive(primitiveIndices_[i]))
+                    {
+                        return;
+                    }
+                }
+                else
+                {
+                    processPrimitive(primitiveIndices_[i]);
+                }
             }
             continue;
         }
