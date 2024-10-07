@@ -31,7 +31,7 @@ int main()
     const auto samplePoints = Geo::UniformSampleDiscreteCurve(pathPoints, false, numSegments);
 
     std::vector<uint32_t> outputIndices; std::vector<Vector3d> outputPositions;
-    Geo::GenerateTube(samplePoints, false, 0.002, 16, outputPositions, outputIndices);
+    Geo::GenerateTube(samplePoints, false, 0.002, 16, true, outputPositions, outputIndices);
 
     Geo::WriteOFFFile<double>("Asset/Sample/18.ShortestGeodesicPath/Output.off", outputPositions, outputIndices);
 }

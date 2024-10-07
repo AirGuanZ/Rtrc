@@ -54,6 +54,7 @@ void GenerateTube(
     bool                   isLoop,
     double                 radius,
     uint32_t               subdivisions,
+    bool                   closeEnds,
     std::vector<Vector3d> &outputPositions,
     std::vector<uint32_t> &outputIndices)
 {
@@ -107,6 +108,29 @@ void GenerateTube(
     if(isLoop)
     {
         BuildSegment(centers.size() - 1, 0);
+    }
+
+    if(closeEnds && !isLoop)
+    {
+        const uint32_t iStart = outputPositions.size();
+        outputPositions.push_back(centers[0]);
+        for(uint32_t i = 0; i < subdivisions; ++i)
+        {
+            const uint32_t j = (i + 1) % subdivisions;
+            outputIndices.push_back(baseIndex + i);
+            outputIndices.push_back(iStart);
+            outputIndices.push_back(baseIndex + j);
+        }
+
+        const uint32_t iEnd = outputPositions.size();
+        outputPositions.push_back(centers.last());
+        for(uint32_t i = 0; i < subdivisions; ++i)
+        {
+            const uint32_t j = (i + 1) % subdivisions;
+            outputIndices.push_back(baseIndex + (centers.size() - 1) * subdivisions + i);
+            outputIndices.push_back(baseIndex + (centers.size() - 1) * subdivisions + j);
+            outputIndices.push_back(iEnd);
+        }
     }
 }
 

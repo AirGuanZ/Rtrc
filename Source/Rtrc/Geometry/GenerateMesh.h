@@ -16,6 +16,7 @@ void GenerateTube(
     bool                   isLoop,
     double                 radius,
     uint32_t               subdivisions,
+    bool                   closeEnds,
     std::vector<Vector3d> &outputPositions,
     std::vector<uint32_t> &outputIndices);
 
