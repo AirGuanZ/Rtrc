@@ -268,7 +268,7 @@ std::vector<unsigned char> DXC::Compile(
                 throw Exception(msg);
             }
 #if RTRC_DEBUG
-            LogWarn(msg);
+            LogWarning(msg);
 #endif
         }
         if(hasCompileError)

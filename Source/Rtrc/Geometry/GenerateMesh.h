@@ -13,6 +13,7 @@ void GenerateAABB(
 
 void GenerateTube(
     Span<Vector3d>         centers,
+    bool                   isLoop,
     double                 radius,
     int                    segments,
     std::vector<Vector3d> &outputPositions,

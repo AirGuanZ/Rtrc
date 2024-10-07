@@ -15,8 +15,8 @@ public:
     Transform &SetTranslation(const Vector3f &position);
     const Vector3f &GetTranslation() const;
 
-    Transform &SetRotation(const Quaternion &rotation);
-    const Quaternion &GetRotation() const;
+    Transform &SetRotation(const Quaternionf &rotation);
+    const Quaternionf &GetRotation() const;
 
     Transform &SetScale(const Vector3f &scale);
     const Vector3f &GetScale() const;
@@ -31,9 +31,9 @@ public:
 
 private:
 
-    Vector3f   translate_;
-    Quaternion rotate_;
-    Vector3f   scale_;
+    Vector3f    translate_;
+    Quaternionf rotate_;
+    Vector3f    scale_;
 };
 
 Transform Inverse(const Transform &t);
@@ -55,7 +55,7 @@ inline Transform::Transform(const Matrix4x4f &m)
     scale_.x = Length(ex);
     scale_.y = Length(ey);
     scale_.z = Length(ez);
-    rotate_ = Quaternion::FromMatrix(Matrix3x3f::FromCols(ex / scale_.x, ey / scale_.y, ez / scale_.z));
+    rotate_ = Quaternionf::FromMatrix(Matrix3x3f::FromCols(ex / scale_.x, ey / scale_.y, ez / scale_.z));
 }
 
 inline Transform &Transform::SetTranslation(const Vector3f &position)
@@ -69,13 +69,13 @@ inline const Vector3f &Transform::GetTranslation() const
     return translate_;
 }
 
-inline Transform &Transform::SetRotation(const Quaternion &rotation)
+inline Transform &Transform::SetRotation(const Quaternionf &rotation)
 {
     rotate_ = rotation;
     return *this;
 }
 
-inline const Quaternion &Transform::GetRotation() const
+inline const Quaternionf &Transform::GetRotation() const
 {
     return rotate_;
 }

@@ -274,7 +274,7 @@ void LogInfo(const T &msg)
 }
 
 template<typename T>
-void LogWarn(const T &msg)
+void LogWarning(const T &msg)
 {
     Rtrc::LogWarning("{}", msg);
 }
@@ -302,7 +302,7 @@ public:
 #define RTRC_LOG_INFO_SCOPE(...) \
     ::Rtrc::RtrcLogIndentScope RTRC_ANONYMOUS_NAME(_rtrcLogIndentScope)((::Rtrc::LogInfo(__VA_ARGS__), 0))
 #define RTRC_LOG_WARN_SCOPE(...) \
-    ::Rtrc::RtrcLogIndentScope RTRC_ANONYMOUS_NAME(_rtrcLogIndentScope)((::Rtrc::LogWarn(__VA_ARGS__), 0))
+    ::Rtrc::RtrcLogIndentScope RTRC_ANONYMOUS_NAME(_rtrcLogIndentScope)((::Rtrc::LogWarning(__VA_ARGS__), 0))
 #define RTRC_LOG_ERROR_SCOPE(...) \
     ::Rtrc::RtrcLogIndentScope RTRC_ANONYMOUS_NAME(_rtrcLogIndentScope)((::Rtrc::LogError(__VA_ARGS__), 0))
 

@@ -1,3 +1,4 @@
+#include <Rtrc/Geometry/DiscreteCurve.h>
 #include <Rtrc/Geometry/GenerateMesh.h>
 
 RTRC_GEO_BEGIN
@@ -48,12 +49,14 @@ void GenerateAABB(
 
 void GenerateTube(
     Span<Vector3d>         centers,
+    bool                   isLoop,
     double                 radius,
     int                    segments,
     std::vector<Vector3d> &outputPositions,
     std::vector<uint32_t> &outputIndices)
 {
-    
+    const auto frames = ComputeParallelTransportFrame(centers, isLoop);
+
 }
 
 RTRC_GEO_END
