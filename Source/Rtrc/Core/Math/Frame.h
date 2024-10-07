@@ -91,7 +91,7 @@ Frame<T> Frame<T>::FromZ(const Vector3<T> &z)
     {
         newY = Cross(newZ, Vector3<T>(1, 0, 0));
     }
-    return Frame(Cross(newZ, newY), newY, newZ);
+    return Frame(Cross(newY, newZ), newY, newZ);
 }
 
 template<typename T>
