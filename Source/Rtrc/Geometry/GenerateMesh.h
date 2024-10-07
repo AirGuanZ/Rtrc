@@ -5,10 +5,6 @@
 
 RTRC_GEO_BEGIN
 
-double ComputeDiscreteCurveLength(Span<Vector3d> points, bool isLoop);
-
-std::vector<Vector3d> UniformSampleDiscreteCurve(Span<Vector3d> points, bool isLoop, uint32_t numSamples);
-
 void GenerateAABB(
     const Vector3d        &lower,
     const Vector3d        &upper,
