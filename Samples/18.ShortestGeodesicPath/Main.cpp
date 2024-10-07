@@ -27,18 +27,11 @@ int main()
     }
 
     const double pathLength = Geo::ComputeDiscreteCurveLength(pathPoints, false);
-    const uint32_t numSegments = (std::max<uint32_t>)(pathLength / 0.002f, 2);
+    const uint32_t numSegments = (std::max<uint32_t>)(static_cast<uint32_t>(pathLength / 0.002), 2);
     const auto samplePoints = Geo::UniformSampleDiscreteCurve(pathPoints, false, numSegments);
 
-    std::vector<uint32_t> outputIndices;
-    std::vector<Vector3d> outputPositions;
-    for(auto &center : samplePoints)
-    {
-        const Vector3d size = Vector3d(0.002f);
-        const Vector3d lower = center - 0.5 * size;
-        const Vector3d upper = center + 0.5 * size;
-        Geo::GenerateAABB(lower, upper, outputPositions, outputIndices);
-    }
+    std::vector<uint32_t> outputIndices; std::vector<Vector3d> outputPositions;
+    Geo::GenerateTube(samplePoints, false, 0.002, 16, outputPositions, outputIndices);
 
     Geo::WriteOFFFile<double>("Asset/Sample/18.ShortestGeodesicPath/Output.off", outputPositions, outputIndices);
 }

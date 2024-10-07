@@ -11,7 +11,7 @@ namespace DiscreteCurveDetail
     void ForEachSegment(uint32_t numPoints, bool isLoop, const Func &func)
     {
         assert(numPoints >= 2 && "A discrete curve should contain at least 2 points");
-        assert((!isLoop || numPonits >= 3) && "A closed discrete curve should contain at least 3 points");
+        assert((!isLoop || numPoints >= 3) && "A closed discrete curve should contain at least 3 points");
         for(uint32_t i = 1; i < numPoints; ++i)
         {
             func(i - 1, i);

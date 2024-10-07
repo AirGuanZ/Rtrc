@@ -15,7 +15,7 @@ void GenerateTube(
     Span<Vector3d>         centers,
     bool                   isLoop,
     double                 radius,
-    int                    segments,
+    uint32_t               subdivisions,
     std::vector<Vector3d> &outputPositions,
     std::vector<uint32_t> &outputIndices);
 

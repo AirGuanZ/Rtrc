@@ -1,3 +1,5 @@
+#include <numbers>
+
 #include <Rtrc/Geometry/DiscreteCurve.h>
 #include <Rtrc/Geometry/GenerateMesh.h>
 
@@ -51,12 +53,61 @@ void GenerateTube(
     Span<Vector3d>         centers,
     bool                   isLoop,
     double                 radius,
-    int                    segments,
+    uint32_t               subdivisions,
     std::vector<Vector3d> &outputPositions,
     std::vector<uint32_t> &outputIndices)
 {
-    const auto frames = ComputeParallelTransportFrame(centers, isLoop);
+    assert(subdivisions >= 3);
 
+    std::vector<Vector2d> localPoints;
+    localPoints.reserve(subdivisions);
+    for(uint32_t i = 0; i < subdivisions; ++i)
+    {
+        const double alpha = 2.0 * std::numbers::pi * i / subdivisions;
+        localPoints.emplace_back(radius * std::cos(alpha), radius * std::sin(alpha));
+    }
+
+    const auto frames = ComputeParallelTransportFrame(centers, isLoop);
+    const uint32_t baseIndex = outputPositions.size();
+
+    outputPositions.reserve(outputPositions.size() + subdivisions * centers.size());
+    for(uint32_t i = 0; i < centers.size(); ++i)
+    {
+        const Framed &frame = frames[i];
+        for(auto &localPoint : localPoints)
+        {
+            outputPositions.push_back(centers[i] + frame.LocalToGlobal(Vector3d(localPoint, 0.0)));
+        }
+    }
+
+    auto BuildSegment = [&](uint32_t a, uint32_t b)
+    {
+        for(uint32_t i = 0; i < subdivisions; ++i)
+        {
+            const uint32_t j = (i + 1) % subdivisions;
+
+            const uint32_t ai = baseIndex + a * subdivisions + i;
+            const uint32_t aj = baseIndex + a * subdivisions + j;
+            const uint32_t bi = baseIndex + b * subdivisions + i;
+            const uint32_t bj = baseIndex + b * subdivisions + j;
+
+            outputIndices.push_back(ai);
+            outputIndices.push_back(bj);
+            outputIndices.push_back(bi);
+
+            outputIndices.push_back(ai);
+            outputIndices.push_back(aj);
+            outputIndices.push_back(bj);
+        }
+    };
+    for(uint32_t i = 1; i < centers.size(); ++i)
+    {
+        BuildSegment(i - 1, i);
+    }
+    if(isLoop)
+    {
+        BuildSegment(centers.size() - 1, 0);
+    }
 }
 
 RTRC_GEO_END
