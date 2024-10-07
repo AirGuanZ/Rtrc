@@ -36,13 +36,14 @@ public:
 
     // Returns Empty vector if the algorithm fails to find any path. Otherwise, the frist element in the returned path
     // must be a vertex point corresponding to sourceVertex, and the last element must be targetVertex.
-    std::vector<PathPoint> FindShortestPath(int sourceVertex, int targetVertex);
+    std::vector<PathPoint> FindShortestPath(int sourceVertex, int targetVertex, bool enableXinWangCulling = true);
 
 private:
 
     static constexpr double SADDLE_EPS          = 1e-4;
     static constexpr double DISTANCE_UPDATE_EPS = 1e-5;
     static constexpr double COVER_POINT_EPS     = 1e-5;
+    static constexpr double XIN_WANG_EPS        = 1e-3;
 
     struct Node
     {
@@ -91,6 +92,8 @@ private:
 
     struct Context
     {
+        bool cullUselessWindowsUsingXinWangConditions = false;
+
         int source = 0;
         int target = 0;
 

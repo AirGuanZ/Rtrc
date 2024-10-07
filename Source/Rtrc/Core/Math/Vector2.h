@@ -79,6 +79,8 @@ Vector2<T> Normalize(const Vector2<T> &v);
 template<typename T>
 Vector2<T> NormalizeIfNotZero(const Vector2<T> &v);
 template<typename T>
+T Distance(const Vector2<T> &a, const Vector2<T> &b);
+template<typename T>
 T Cos(const Vector2<T> &a, const Vector2<T> &b);
 
 template<typename T>
@@ -276,6 +278,12 @@ Vector2<T> NormalizeIfNotZero(const Vector2<T> &v)
         return {};
     }
     return Rtrc::Normalize(v);
+}
+
+template<typename T>
+T Distance(const Vector2<T> &a, const Vector2<T> &b)
+{
+    return Rtrc::Length(a - b);
 }
 
 template<typename T>

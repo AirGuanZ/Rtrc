@@ -60,11 +60,13 @@ GeodesicPathICH::GeodesicPathICH(ObserverPtr<const HalfedgeMesh> connectivity, S
     }
 }
 
-std::vector<GeodesicPathICH::PathPoint> GeodesicPathICH::FindShortestPath(int sourceVertex, int targetVertex)
+std::vector<GeodesicPathICH::PathPoint> GeodesicPathICH::FindShortestPath(
+    int sourceVertex, int targetVertex, bool enableXinWangCulling)
 {
     assert(sourceVertex != targetVertex);
 
     Context context;
+    context.cullUselessWindowsUsingXinWangConditions = enableXinWangCulling;
     context.source = sourceVertex;
     context.target = targetVertex;
     context.vertexRecords.resize(connectivity_->V());
@@ -263,7 +265,9 @@ void GeodesicPathICH::ProcessEdgeNode(Context &context, Node *node)
     }
 
     const int hca = node->element;
+    const int va = connectivity_->Tail(hca);
     const int vb = connectivity_->Head(connectivity_->Prev(hca));
+    const int vc = connectivity_->Head(hca);
     const Vector2d b = halfedgeToOppositeVertexPositions_[hca];
     const double ac = edgeToLength_[connectivity_->Edge(hca)];
 
@@ -271,6 +275,7 @@ void GeodesicPathICH::ProcessEdgeNode(Context &context, Node *node)
     assert(node->unfoldedSourcePosition.y < 0);
     const double m = IntersectWithXAxis(b, node->unfoldedSourcePosition);
 
+    // Add a new vertex node when the opposite vertex is covered by the shadow of the edge window
     if(node->intervalBegin - COVER_POINT_EPS <= m && m <= node->intervalEnd + COVER_POINT_EPS)
     {
         if(const double newDistance = node->baseDistance + Length(b - node->unfoldedSourcePosition);
@@ -293,6 +298,7 @@ void GeodesicPathICH::ProcessEdgeNode(Context &context, Node *node)
     const bool leftChild = node->intervalBegin < m;
     const bool rightChild = node->intervalEnd > m;
 
+    // When 'partial' is false, the right endpoint of the new window must be at b. Otherwise it will be on ab.
     auto AddLeftChild = [&](bool partial)
     {
         const int hab = connectivity_->Succ(hca);
@@ -313,6 +319,32 @@ void GeodesicPathICH::ProcessEdgeNode(Context &context, Node *node)
             else
             {
                 intervalEnd = edgeToLength_[connectivity_->Edge(hab)];
+            }
+
+            if(context.cullUselessWindowsUsingXinWangConditions)
+            {
+                const Vector2d normalizedAToB = Normalize(b);
+                const Vector2d B = intervalEnd * normalizedAToB;
+                const double aB = Distance({ 0, 0 }, B);
+                const double IB = Distance(node->unfoldedSourcePosition, B);
+                if((1 + XIN_WANG_EPS) * (context.vertexRecords[va].distanceToSource + aB) < node->baseDistance + IB)
+                {
+                    return;
+                }
+
+                const Vector2d A = intervalBegin * normalizedAToB;
+                const double IA = Distance(node->unfoldedSourcePosition, A);
+                const double bA = Distance(b, A);
+                if((1 + XIN_WANG_EPS) * (context.vertexRecords[vb].distanceToSource + bA) < node->baseDistance + IA)
+                {
+                    return;
+                }
+
+                const double cA = Distance({ ac, 0 }, A);
+                if((1 + XIN_WANG_EPS) * (context.vertexRecords[vc].distanceToSource + cA) < node->baseDistance + IA)
+                {
+                    return;
+                }
             }
 
             auto newNode = context.NewNode();
@@ -353,6 +385,33 @@ void GeodesicPathICH::ProcessEdgeNode(Context &context, Node *node)
             else
             {
                 intervalBegin = 0;
+            }
+
+            if(context.cullUselessWindowsUsingXinWangConditions)
+            {
+                const Vector2d c = { ac, 0 };
+                const Vector2d normalizedBToC = Normalize(c - b);
+                const Vector2d B = b + normalizedBToC * intervalBegin;
+                const double IB = Distance(node->unfoldedSourcePosition, B);
+                const double cB = Distance(c, B);
+                if((1 + XIN_WANG_EPS) * (context.vertexRecords[vc].distanceToSource + cB) < node->baseDistance + IB)
+                {
+                    return;
+                }
+
+                const Vector2d A = b + normalizedBToC * intervalEnd;
+                const double IA = Distance(node->unfoldedSourcePosition, A);
+                const double bA = Distance(b, A);
+                if((1 + XIN_WANG_EPS) * (context.vertexRecords[vb].distanceToSource + bA) < node->baseDistance + IA)
+                {
+                    return;
+                }
+
+                const double aA = Distance({ 0, 0 }, A);
+                if((1 + XIN_WANG_EPS) * (context.vertexRecords[va].distanceToSource + aA) < node->baseDistance + IA)
+                {
+                    return;
+                }
             }
 
             auto newNode = context.NewNode();
