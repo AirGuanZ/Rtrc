@@ -594,4 +594,36 @@ void GeodesicPathICH::Context::RecycleNode(Node *node)
     freeNodes.push_back(node);
 }
 
+template<typename T>
+Vector3<T> EvaluateGeodesicPathPoint(
+    const HalfedgeMesh               &connectivity,
+    Span<Vector3<T>>                  positions,
+    const GeodesicPathICH::PathPoint &pathPoint)
+{
+    assert(connectivity.IsCompacted() && connectivity.IsInputManifold());
+    return pathPoint.Match(
+        [&](const GeodesicPathICH::VertexPoint &vertexPoint)
+        {
+            return positions[vertexPoint.v];
+        },
+        [&](const GeodesicPathICH::EdgePoint &edgePoint)
+        {
+            const Vector3<T> &a = positions[connectivity.Head(edgePoint.halfedge)];
+            const Vector3<T> &b = positions[connectivity.Tail(edgePoint.halfedge)];
+            return Lerp(a, b, static_cast<T>(edgePoint.normalizedPosition));
+        });
+}
+
+template
+Vector3<float> EvaluateGeodesicPathPoint(
+    const HalfedgeMesh &,
+    Span<Vector3<float>>,
+    const GeodesicPathICH::PathPoint &);
+
+template
+Vector3<double> EvaluateGeodesicPathPoint(
+    const HalfedgeMesh &,
+    Span<Vector3<double>>,
+    const GeodesicPathICH::PathPoint &);
+
 RTRC_GEO_END

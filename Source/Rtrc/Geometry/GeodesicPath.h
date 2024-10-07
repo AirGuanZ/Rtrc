@@ -141,4 +141,10 @@ private:
     std::vector<Vector2d> halfedgeToOppositeVertexPositions_;
 };
 
+template<typename T>
+Vector3<T> EvaluateGeodesicPathPoint(
+    const HalfedgeMesh               &connectivity,
+    Span<Vector3<T>>                  positions,
+    const GeodesicPathICH::PathPoint &pathPoint);
+
 RTRC_GEO_END

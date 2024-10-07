@@ -24,6 +24,8 @@
 
 #include <Rtrc/Geometry/BVH.h>
 #include <Rtrc/Geometry/ConstrainedTriangulation.h>
+#include <Rtrc/Geometry/DiscreteCurve.h>
+#include <Rtrc/Geometry/GenerateMesh.h>
 #include <Rtrc/Geometry/GeodesicPath.h>
 #include <Rtrc/Geometry/HalfedgeMesh.h>
 #include <Rtrc/Geometry/MeshCorefinement.h>
