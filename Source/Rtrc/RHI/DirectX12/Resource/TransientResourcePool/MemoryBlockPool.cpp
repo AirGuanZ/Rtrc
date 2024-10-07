@@ -1,3 +1,5 @@
+#include <ranges>
+
 #include <Rtrc/RHI/DirectX12/Context/Device.h>
 #include <Rtrc/RHI/DirectX12/Resource/TransientResourcePool/MemoryBlockPool.h>
 

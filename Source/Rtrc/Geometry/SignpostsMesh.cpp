@@ -1,4 +1,5 @@
 #include <numbers>
+#include <ranges>
 
 #include <Rtrc/Core/Math/Common.h>
 #include <Rtrc/Geometry/SignpostsMesh.h>
@@ -116,7 +117,7 @@ SignpostsMesh<T> SignpostsMesh<T>::Build(HalfedgeMesh connectivity, Span<Vector3
             }
             else
             {
-                assert(ret.connectivity.EdgeToHalfedge(e) == ret.connectivity.Twin(h));
+                assert(ret.connectivity_.EdgeToHalfedge(e) == ret.connectivity_.Twin(h));
                 ret.phis_[e].second = curr;
             }
             curr = Rtrc::Saturate(curr + halfEdgeToAngles[h] / theta);

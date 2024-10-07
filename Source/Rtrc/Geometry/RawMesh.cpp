@@ -1,4 +1,5 @@
 #include <fstream>
+#include <ranges>
 
 #include <tiny_obj_loader.h>
 

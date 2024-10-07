@@ -1,3 +1,4 @@
+#include <ranges>
 #include <ankerl/unordered_dense.h>
 
 #include <Rtrc/Geometry/HalfedgeMesh.h>

@@ -1,3 +1,5 @@
+#include <ranges>
+
 #include <Rtrc/Core/String.h>
 #include <Rtrc/ShaderCommon/Preprocess/RegisterAllocator.h>
 #include <Rtrc/ShaderCommon/Preprocess/ShaderPreprocessing.h>
