@@ -222,7 +222,13 @@ inline int HalfedgeMesh::VertToOriginalVert(int vert) const
     {
         return vert;
     }
-    return vertToOriginalVert_[vert - originalVertCount_];
+
+    const int index = vert - originalVertCount_;
+    if(index >= static_cast<int>(vertToOriginalVert_.size()))
+    {
+        return vert;
+    }
+    return vertToOriginalVert_[index];
 }
 
 template <bool Unique, typename Func>
