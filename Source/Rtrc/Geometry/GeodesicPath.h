@@ -32,7 +32,7 @@ public:
 
     // Note: positions should be indexed by 'vertex in connectivity', instead of 'original vertex in connectivity'.
     // For more details about 'original vertex', see HalfedgeMesh::VertToOriginalVert.
-    GeodesicPathICH(ObserverPtr<const HalfedgeMesh> connectivity, Span<Vector3d> positions);
+    GeodesicPathICH(ObserverPtr<const HalfedgeMesh> connectivity, Span<Vector3d> positions, double edgeLengthTolerance = -1);
 
     // Returns Empty vector if the algorithm fails to find any path. Otherwise, the frist element in the returned path
     // must be a vertex point corresponding to sourceVertex, and the last element must be targetVertex.
@@ -44,6 +44,7 @@ private:
     static constexpr double DISTANCE_UPDATE_EPS = 1e-5;
     static constexpr double COVER_POINT_EPS     = 1e-5;
     static constexpr double XIN_WANG_EPS        = 1e-3;
+    static constexpr double REMOVE_CHILD_EPS    = 1e-5;
 
     struct Node
     {
@@ -56,6 +57,7 @@ private:
         Node    *child  = nullptr;
 
         bool     isVertex     = false;
+        bool     isLeft       = false; // Is this node the left child of its parent node. Meaningful only for edge node created by another edge node.
         int      element      = 0; // Vertex id for vertex node; halfedge id for edge node; -1 for pending delete node.
         double   baseDistance = 0;
         double   minDistance          = 0;
@@ -133,7 +135,6 @@ private:
     static Vector2d PropagatePseudoSource(const Vector2d &o, const Vector2d &b, double ac, bool left);
 
     ObserverPtr<const HalfedgeMesh> connectivity_;
-    Span<Vector3d> positions_;
 
     std::vector<bool> isPseudoSourceVertex_;
     std::vector<double> edgeToLength_;
@@ -149,5 +150,11 @@ Vector3<T> EvaluateGeodesicPathPoint(
     const HalfedgeMesh               &connectivity,
     Span<Vector3<T>>                  positions,
     const GeodesicPathICH::PathPoint &pathPoint);
+
+// Embed a geodesic path onto the given mesh, ensuring each segment aligns with a mesh edge.
+std::vector<int> EmbedGeodesicPath(
+    HalfedgeMesh                    &connectivity,
+    std::vector<Vector3d>           &positions,
+    Span<GeodesicPathICH::PathPoint> path);
 
 RTRC_GEO_END

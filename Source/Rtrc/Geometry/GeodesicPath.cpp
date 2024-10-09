@@ -5,9 +5,9 @@
 
 RTRC_GEO_BEGIN
 
-GeodesicPathICH::GeodesicPathICH(ObserverPtr<const HalfedgeMesh> connectivity, Span<Vector3d> positions)
+GeodesicPathICH::GeodesicPathICH(
+    ObserverPtr<const HalfedgeMesh> connectivity, Span<Vector3d> positions, double edgeLengthTolerance)
     : connectivity_(connectivity)
-    , positions_(positions)
 {
     assert(connectivity_ && connectivity_->IsCompacted() && connectivity_->IsInputManifold());
     
@@ -37,8 +37,35 @@ GeodesicPathICH::GeodesicPathICH(ObserverPtr<const HalfedgeMesh> connectivity, S
         const int h = connectivity_->EdgeToHalfedge(e);
         const int head = connectivity_->Head(h);
         const int tail = connectivity_->Tail(h);
-        edgeToLength_[e] = Length(positions_[head] - positions_[tail]);
+        edgeToLength_[e] = Length(positions[head] - positions[tail]);
     }
+
+    // Bias lengths globally so that for every triangle abc is non-degenerate (ab + bc > ac + edgeLengthTolerance)
+
+    double eps = 0;
+    for(int f = 0; f < connectivity_->F(); ++f)
+    {
+        const int e0 = connectivity_->Edge(3 * f + 0);
+        const int e1 = connectivity_->Edge(3 * f + 1);
+        const int e2 = connectivity_->Edge(3 * f + 2);
+        const double l0 = edgeToLength_[e0];
+        const double l1 = edgeToLength_[e1];
+        const double l2 = edgeToLength_[e2];
+        const double localEps = (std::max)(
+        {
+            edgeLengthTolerance - l0 - l1 + l2,
+            edgeLengthTolerance - l0 - l2 + l1,
+            edgeLengthTolerance - l1 - l2 + l0,
+        });
+        eps = (std::max)(eps, localEps);
+    }
+
+    for(double& l : edgeToLength_)
+    {
+        l += eps;
+    }
+
+    // Fill halfedgeToOppositeVertexPositions_
 
     halfedgeToOppositeVertexPositions_.resize(connectivity_->H());
     for(int h = 0; h < connectivity_->H(); ++h)
@@ -55,7 +82,7 @@ GeodesicPathICH::GeodesicPathICH(ObserverPtr<const HalfedgeMesh> connectivity, S
         const double a = l1;
         const double b = l2;
         const double x = (xb * xb + a * a - b * b) / (2 * xb);
-        const double y = std::sqrt(std::max(0.0, a * a - x * x));
+        const double y = std::max(1e-10, std::sqrt((std::max)(0.0, a * a - x * x)));
         halfedgeToOppositeVertexPositions_[h] = { x, y };
     }
 }
@@ -136,7 +163,7 @@ std::vector<GeodesicPathICH::PathPoint> GeodesicPathICH::FindShortestPath(
                 {
                     assert(lastVertexPoint.v == connectivity_->Vert(connectivity_->Prev(hca)));
                     const double positionX = IntersectWithXAxis(b, node->unfoldedSourcePosition);
-                    newEdgePoint.normalizedPosition = 1 - Saturate(positionX / ac);
+                    newEdgePoint.normalizedPosition = 1 - Clamp(positionX / ac, 1e-5, 1 - 1e-5);
                 },
                 [&](const EdgePoint &lastEdgePoint)
                 {
@@ -151,7 +178,7 @@ std::vector<GeodesicPathICH::PathPoint> GeodesicPathICH::FindShortestPath(
                         u = Lerp(b, { ac, 0 }, 1 - lastEdgePoint.normalizedPosition);
                     }
                     const double positionX = IntersectWithXAxis(u, node->unfoldedSourcePosition);
-                    newEdgePoint.normalizedPosition = 1 - Saturate(positionX / ac);
+                    newEdgePoint.normalizedPosition = 1 - Clamp(positionX / ac, 1e-5, 1 - 1e-5);
                 });
             result.emplace_back(newEdgePoint);
         }
@@ -208,7 +235,9 @@ void GeodesicPathICH::ProcessVertexNode(Context &context, Node *node)
     assert(!node->child);
     connectivity_->ForEachNeighbor(v, [&](int nv)
     {
-        if(const double newDistance = node->baseDistance + Length(positions_[v] - positions_[nv]);
+        const int e = connectivity_->FindEdgeByVertex(v, nv);
+        const double edgeLength = edgeToLength_[e];
+        if(const double newDistance = node->baseDistance + edgeLength;
            ShouldUpdateDistance(context.vertexRecords[nv].distanceToSource, newDistance))
         {
             auto newNode = context.NewNode();
@@ -305,9 +334,11 @@ void GeodesicPathICH::ProcessEdgeNode(Context &context, Node *node)
         const int habTwin = connectivity_->Twin(hab);
         if(habTwin != HalfedgeMesh::NullID)
         {
+            const double edgeLength = edgeToLength_[connectivity_->Edge(hab)];
+
             const Vector2d inctLeft = IntersectLineSegment(
                 node->unfoldedSourcePosition, Vector2d(node->intervalBegin, 0), { 0, 0 }, b, false);
-            const double intervalBegin = Length(inctLeft - Vector2d(0, 0));
+            const double intervalBegin = Clamp(Length(inctLeft - Vector2d(0, 0)), 0.0, edgeLength);
 
             double intervalEnd;
             if(partial)
@@ -315,10 +346,11 @@ void GeodesicPathICH::ProcessEdgeNode(Context &context, Node *node)
                 const Vector2d inctRight = IntersectLineSegment(
                     node->unfoldedSourcePosition, Vector2d(node->intervalEnd, 0), { 0, 0 }, b, true);
                 intervalEnd = Length(inctRight - Vector2d(0, 0));
+                intervalEnd = Clamp(intervalEnd, intervalBegin, edgeLength);
             }
             else
             {
-                intervalEnd = edgeToLength_[connectivity_->Edge(hab)];
+                intervalEnd = edgeLength;
             }
 
             if(context.cullUselessWindowsUsingXinWangConditions)
@@ -353,6 +385,7 @@ void GeodesicPathICH::ProcessEdgeNode(Context &context, Node *node)
             newNode->isInQueue    = true;
             newNode->depth        = node->depth + 1;
             newNode->isVertex     = false;
+            newNode->isLeft       = true;
             newNode->element      = habTwin;
             newNode->baseDistance = node->baseDistance;
 
@@ -371,9 +404,11 @@ void GeodesicPathICH::ProcessEdgeNode(Context &context, Node *node)
         const int hbcTwin = connectivity_->Twin(hbc);
         if(hbcTwin != HalfedgeMesh::NullID)
         {
+            const double edgeLength = edgeToLength_[connectivity_->Edge(hbc)];
+
             const Vector2d inctRight = IntersectLineSegment(
                 node->unfoldedSourcePosition, Vector2d(node->intervalEnd, 0), { ac, 0 }, b, false);
-            const double intervalEnd = Length(inctRight - b);
+            const double intervalEnd = Clamp(Length(inctRight - b), 0.0, edgeLength);
 
             double intervalBegin;
             if(partial)
@@ -381,6 +416,7 @@ void GeodesicPathICH::ProcessEdgeNode(Context &context, Node *node)
                 const Vector2d inctLeft = IntersectLineSegment(
                     node->unfoldedSourcePosition, Vector2d(node->intervalBegin, 0), { ac, 0 }, b, true);
                 intervalBegin = Length(inctLeft - b);
+                intervalBegin = Clamp(intervalBegin, 0.0, intervalEnd);
             }
             else
             {
@@ -420,6 +456,7 @@ void GeodesicPathICH::ProcessEdgeNode(Context &context, Node *node)
             newNode->isInQueue    = true;
             newNode->depth        = node->depth + 1;
             newNode->isVertex     = false;
+            newNode->isLeft       = false;
             newNode->element      = hbcTwin;
             newNode->baseDistance = node->baseDistance;
 
@@ -450,17 +487,49 @@ void GeodesicPathICH::ProcessEdgeNode(Context &context, Node *node)
         {
             if(halfedgeRecord.occupier)
             {
-                assert(!halfedgeRecord.occupier->isVertex && halfedgeRecord.occupier->child);
-                assert(halfedgeRecord.occupier->child->succ->succ == halfedgeRecord.occupier->child);
-                if(halfedgeRecord.occupierM > m)
+                assert(!halfedgeRecord.occupier->isVertex);
+                if(halfedgeRecord.occupier->child)
                 {
-                    // Delete the left subtree of the original occupier
-                    DeleteSubTree(context, halfedgeRecord.occupier->child);
-                }
-                else
-                {
-                    // Delete the right subtree
-                    DeleteSubTree(context, halfedgeRecord.occupier->child->succ);
+                    if(halfedgeRecord.occupierM > m + REMOVE_CHILD_EPS)
+                    {
+                        // Delete the left subtree of the original occupier
+
+                        Node *childNodeToBeDeleted = nullptr, *currentNode = halfedgeRecord.occupier->child;
+                        for(int i = 0; i < 3; ++i)
+                        {
+                            if(!currentNode->isVertex && currentNode->isLeft)
+                            {
+                                childNodeToBeDeleted = currentNode;
+                                break;
+                            }
+                            currentNode = currentNode->succ;
+                        }
+
+                        if(childNodeToBeDeleted)
+                        {
+                            DeleteSubTree(context, childNodeToBeDeleted);
+                        }
+                    }
+                    else if(halfedgeRecord.occupierM < m - REMOVE_CHILD_EPS)
+                    {
+                        // Delete the right subtree
+
+                        Node *childNodeToBeDeleted = nullptr, *currentNode = halfedgeRecord.occupier->child;
+                        for(int i = 0; i < 3; ++i)
+                        {
+                            if(!currentNode->isVertex && !currentNode->isLeft)
+                            {
+                                childNodeToBeDeleted = currentNode;
+                                break;
+                            }
+                            currentNode = currentNode->succ;
+                        }
+
+                        if(childNodeToBeDeleted)
+                        {
+                            DeleteSubTree(context, childNodeToBeDeleted);
+                        }
+                    }
                 }
             }
 
@@ -498,7 +567,7 @@ void GeodesicPathICH::AddChildNode(Node *parent, Node *child)
     }
     else
     {
-        auto a = parent->child->prev;
+        auto a = parent->child;
         auto b = parent->child->succ;
         a->succ = child;
         b->prev = child;
@@ -673,16 +742,108 @@ Vector3<T> EvaluateGeodesicPathPoint(
         });
 }
 
-template
-Vector3<float> EvaluateGeodesicPathPoint(
-    const HalfedgeMesh &,
-    Span<Vector3<float>>,
-    const GeodesicPathICH::PathPoint &);
+template Vector3<float>  EvaluateGeodesicPathPoint(const HalfedgeMesh &, Span<Vector3<float>>,  const GeodesicPathICH::PathPoint &);
+template Vector3<double> EvaluateGeodesicPathPoint(const HalfedgeMesh &, Span<Vector3<double>>, const GeodesicPathICH::PathPoint &);
 
-template
-Vector3<double> EvaluateGeodesicPathPoint(
-    const HalfedgeMesh &,
-    Span<Vector3<double>>,
-    const GeodesicPathICH::PathPoint &);
+namespace EmbedGeodesicPathDetail
+{
+
+    // A sub path is a geodesic path which contains only two vertex points (start and end).
+    // All other intermediate points must be edge points.
+    struct SubPathPoint
+    {
+        // When the tail is -1, this is a vertex point, otherwise an edge point.
+        int head, tail;
+        double normalizedPosition;
+    };
+
+    std::vector<int> EmbedEdgePointsInGeodesicSubPath(
+        HalfedgeMesh           &connectivity,
+        std::vector<Vector3d>  &positions,
+        Span<SubPathPoint>  edgePoints)
+    {
+        std::vector<int> result;
+        result.reserve(edgePoints.size());
+
+        for(const SubPathPoint &edgePoint : edgePoints)
+        {
+            const Vector3d &pHead = positions[edgePoint.head];
+            const Vector3d &pTail = positions[edgePoint.tail];
+            const Vector3d newPoint = Lerp(pHead, pTail, edgePoint.normalizedPosition);
+
+            const int h = connectivity.FindHalfedgeByVertex(edgePoint.head, edgePoint.tail);
+            assert(h >= 0);
+
+            const int v = connectivity.V();
+            result.push_back(v);
+
+            connectivity.SplitEdge(h);
+            positions.push_back(newPoint);
+        }
+
+        return result;
+    }
+
+} // namespace EmbedGeodesicPathDetail
+
+std::vector<int> EmbedGeodesicPath(
+    HalfedgeMesh                    &connectivity,
+    std::vector<Vector3d>           &positions,
+    Span<GeodesicPathICH::PathPoint> path)
+{
+    using namespace EmbedGeodesicPathDetail;
+
+    assert(path.first().Is<Geo::GeodesicPathICH::VertexPoint>());
+    assert(path.last().Is<Geo::GeodesicPathICH::VertexPoint>());
+
+    // Store halfedges using heads and tails, since heads and tails are stable
+    // during the embedding process, while halfedge indices are not.
+
+    std::vector<SubPathPoint> convertedPathPoints;
+    convertedPathPoints.reserve(path.size());
+    for(auto &p : path)
+    {
+        p.Match(
+            [&](const GeodesicPathICH::VertexPoint &vp)
+            {
+                convertedPathPoints.push_back({ vp.v, -1, 0 });
+            },
+            [&](const GeodesicPathICH::EdgePoint &ep)
+            {
+                const int head = connectivity.Head(ep.halfedge);
+                const int tail = connectivity.Tail(ep.halfedge);
+                convertedPathPoints.push_back({ head, tail, ep.normalizedPosition });
+            });
+    }
+
+    // Subdivide the whole path into multiple sub paths and embed them one-by-one.
+
+    std::vector<int> result;
+    for(uint32_t subPathStart = 0, subPathEnd; subPathStart < convertedPathPoints.size() - 1; subPathStart = subPathEnd)
+    {
+        assert(convertedPathPoints[subPathStart].tail == -1);
+        result.push_back(convertedPathPoints[subPathStart].head);
+
+        subPathEnd = subPathStart + 1;
+        while(convertedPathPoints[subPathEnd].tail != -1)
+        {
+            ++subPathEnd;
+            assert(subPathEnd < convertedPathPoints.size());
+        }
+
+        const uint32_t edgePointStart = subPathStart + 1;
+        const uint32_t edgePointEnd = subPathEnd;
+        if(edgePointStart < edgePointEnd)
+        {
+            const auto edgePoints = EmbedEdgePointsInGeodesicSubPath(
+                connectivity, positions,
+                Span(convertedPathPoints).GetSubSpan(edgePointStart, edgePointEnd - edgePointStart));
+            result.append_range(edgePoints);
+        }
+    }
+    result.push_back(convertedPathPoints.back().head);
+
+    return result;
+}
 
 RTRC_GEO_END
