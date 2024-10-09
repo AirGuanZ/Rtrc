@@ -12,11 +12,8 @@
 #include <Rtrc/Geometry/TriangleTriangleIntersection.h>
 #include <Rtrc/Geometry/Utility.h>
 
-#if RTRC_DEBUG
-#define RTRC_MESH_COREFINEMENT_PARALLEL_FOR Rtrc::ParallelForDebug
-#else
+//#define RTRC_MESH_COREFINEMENT_PARALLEL_FOR Rtrc::ParallelForDebug
 #define RTRC_MESH_COREFINEMENT_PARALLEL_FOR Rtrc::ParallelFor
-#endif
 
 RTRC_GEO_BEGIN
 
