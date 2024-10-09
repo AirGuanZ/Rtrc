@@ -27,8 +27,8 @@ int main()
     }
 
     const double pathLength = Geo::ComputeDiscreteCurveLength(pathPoints, false);
-    const uint32_t numSegments = (std::max<uint32_t>)(static_cast<uint32_t>(pathLength / 0.002), 2);
-    const auto samplePoints = Geo::UniformSampleDiscreteCurve(pathPoints, false, numSegments);
+    const uint32_t numSegments = (std::max<uint32_t>)(static_cast<uint32_t>(pathLength / 0.002), 1);
+    const auto samplePoints = Geo::UniformSampleDiscreteCurve(pathPoints, false, numSegments + 1);
 
     std::vector<uint32_t> outputIndices; std::vector<Vector3d> outputPositions;
     Geo::GenerateTube(samplePoints, false, 0.001, 16, true, outputPositions, outputIndices);

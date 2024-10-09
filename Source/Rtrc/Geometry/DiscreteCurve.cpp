@@ -73,12 +73,7 @@ std::vector<Vector3d> UniformSampleDiscreteCurve(Span<Vector3d> points, bool isL
 
     if(!isLoop)
     {
-        assert(result.size() == numSamples - 1);
         result.push_back(points.last());
-    }
-    else
-    {
-        assert(result.size() == numSamples);
     }
     return result;
 }
