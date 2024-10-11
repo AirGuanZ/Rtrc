@@ -31,8 +31,8 @@ public:
     using PathPoint = Variant<EdgePoint, VertexPoint>;
 
     // Note: positions should be indexed by 'vertex in connectivity', instead of 'original vertex in connectivity'.
-    // For more details about 'original vertex', see HalfedgeMesh::VertToOriginalVert.
-    GeodesicPathICH(ObserverPtr<const HalfedgeMesh> connectivity, Span<Vector3d> positions, double edgeLengthTolerance = -1);
+    GeodesicPathICH(
+        ObserverPtr<const HalfedgeMesh> connectivity, Span<Vector3d> positions, double edgeLengthTolerance = -1);
 
     // Returns Empty vector if the algorithm fails to find any path. Otherwise, the frist element in the returned path
     // must be a vertex point corresponding to sourceVertex, and the last element must be targetVertex.

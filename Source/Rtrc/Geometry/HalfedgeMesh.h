@@ -78,7 +78,8 @@ public:
     int FindHalfedgeByVertex(int head, int tail) const;
     int FindEdgeByVertex(int va, int vb) const;
 
-    // Can be true if SplitNonManifoldEdge or SplitNonManifoldVertex is specified.
+    // This can be true if SplitNonManifoldEdge or SplitNonManifoldVertex is specified.
+    // Note that the result depends solely on the initial connectivity when constructing this halfedge mesh.
     bool IsInputManifold() const;
 
     // New vertex may be appended when SplitNonManifoldVertex is enabled.

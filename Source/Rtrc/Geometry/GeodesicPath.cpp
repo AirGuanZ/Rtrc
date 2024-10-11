@@ -9,7 +9,7 @@ GeodesicPathICH::GeodesicPathICH(
     ObserverPtr<const HalfedgeMesh> connectivity, Span<Vector3d> positions, double edgeLengthTolerance)
     : connectivity_(connectivity)
 {
-    assert(connectivity_ && connectivity_->IsCompacted() && connectivity_->IsInputManifold());
+    assert(connectivity_ && connectivity_->IsCompacted());
     
     isPseudoSourceVertex_.resize(connectivity_->V(), false);
     for(int v = 0; v < connectivity_->V(); ++v)
@@ -17,9 +17,9 @@ GeodesicPathICH::GeodesicPathICH(
         double sumAngle = 0;
         connectivity_->ForEachOutgoingHalfedge(v, [&](int h)
         {
-            const Vector3d &p0 = positions[v];
-            const Vector3d &p1 = positions[connectivity_->Tail(h)];
-            const Vector3d &p2 = positions[connectivity_->Vert(connectivity_->Prev(h))];
+            const Vector3d &p0 = positions[connectivity->VertToOriginalVert(v)];
+            const Vector3d &p1 = positions[connectivity->VertToOriginalVert(connectivity_->Tail(h))];
+            const Vector3d &p2 = positions[connectivity->VertToOriginalVert(connectivity_->Vert(connectivity_->Prev(h)))];
             const double cosAngle = Cos(p1 - p0, p2 - p0);
             const double angle = std::acos(Clamp(cosAngle, -1.0, 1.0));
             sumAngle += angle;
@@ -37,7 +37,8 @@ GeodesicPathICH::GeodesicPathICH(
         const int h = connectivity_->EdgeToHalfedge(e);
         const int head = connectivity_->Head(h);
         const int tail = connectivity_->Tail(h);
-        edgeToLength_[e] = Length(positions[head] - positions[tail]);
+        edgeToLength_[e] = Length(
+            positions[connectivity->VertToOriginalVert(head)] - positions[connectivity->VertToOriginalVert(tail)]);
     }
 
     // Bias lengths globally so that for every triangle abc is non-degenerate (ab + bc > ac + edgeLengthTolerance)
