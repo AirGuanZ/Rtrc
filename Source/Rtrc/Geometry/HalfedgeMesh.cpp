@@ -229,16 +229,25 @@ HalfedgeMesh HalfedgeMesh::Build(Span<uint32_t> indices, BuildOptions options, B
     // Fill final mesh
 
     HalfedgeMesh mesh;
-    mesh.H_                  = static_cast<int>(heads.size());
-    mesh.V_                  = vertexCount;
-    mesh.E_                  = edgeCount;
-    mesh.F_                  = static_cast<int>(faceCount);
-    mesh.halfedgeToTwin_     = std::move(twins);
-    mesh.halfedgeToEdge_     = std::move(edges);
-    mesh.halfedgeToHead_     = std::move(heads);
-    mesh.isInputManifold_    = !hasNonManifoldEdge && vertexToOriginalVertex.empty();
-    mesh.originalVertCount_  = originalVertexCount;
-    mesh.vertToOriginalVert_ = std::move(vertexToOriginalVertex);
+    mesh.H_                 = static_cast<int>(heads.size());
+    mesh.V_                 = vertexCount;
+    mesh.E_                 = edgeCount;
+    mesh.F_                 = static_cast<int>(faceCount);
+    mesh.halfedgeToTwin_    = std::move(twins);
+    mesh.halfedgeToEdge_    = std::move(edges);
+    mesh.halfedgeToHead_    = std::move(heads);
+    mesh.isInputManifold_   = !hasNonManifoldEdge && vertexToOriginalVertex.empty();
+    mesh.originalVertCount_ = originalVertexCount;
+
+    if(!vertexToOriginalVertex.empty())
+    {
+        mesh.vertToOriginalVert_.reserve(originalVertexCount + vertexToOriginalVertex.size());
+        for(int i = 0; i < originalVertexCount; ++i)
+        {
+            mesh.vertToOriginalVert_.push_back(i);
+        }
+        mesh.vertToOriginalVert_.append_range(vertexToOriginalVertex);
+    }
 
     mesh.vertToHalfedge_.resize(mesh.V_, NullID);
     for(int h = 0; h < mesh.H_; ++h)
@@ -344,6 +353,12 @@ void HalfedgeMesh::SplitEdge(int h)
         const int b1 = b0 + 1;
         const int b2 = b1 + 1;
 
+        if(!vertToOriginalVert_.empty())
+        {
+            vertToOriginalVert_.push_back(originalVertCount_);
+        }
+        ++originalVertCount_;
+
         H_ += 3;
         V_ += 1;
         E_ += 2;
@@ -407,6 +422,12 @@ void HalfedgeMesh::SplitEdge(int h)
         const int e5 = E_ + 0;
         const int e6 = E_ + 1;
         const int e7 = E_ + 2;
+
+        if(!vertToOriginalVert_.empty())
+        {
+            vertToOriginalVert_.push_back(originalVertCount_);
+        }
+        ++originalVertCount_;
 
         H_ += 6;
         V_ += 1;
@@ -479,6 +500,12 @@ void HalfedgeMesh::SplitFace(int f)
     const int e5 = E_ + 2;
 
     const int v3 = V_;
+
+    if(!vertToOriginalVert_.empty())
+    {
+        vertToOriginalVert_.push_back(originalVertCount_);
+    }
+    ++originalVertCount_;
 
     H_ += 6;
     E_ += 3;

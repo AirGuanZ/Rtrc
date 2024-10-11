@@ -85,6 +85,8 @@ public:
     // Use this to map a vertex id in halfedge mesh to the original vertex id in input indices.
     int VertToOriginalVert(int vert) const;
 
+    int GetOriginalVertexCount() const { return originalVertCount_; }
+
     // If Unique is true, only one of each pair of twin halfedges will be used, with the outgoing one being preferred.
     // func is called with the index of each halfedge.
     // The returned type of func must be either void or bool.
@@ -110,7 +112,8 @@ public:
     // 'e' points to the newly flipped edge afterward.
     void FlipEdge(int e);
 
-    // Insert a new vertex v on half-edge h. The new vertex v will always be the original value of V().
+    // Insert a new vertex v on halfedge h. The new vertex v will always be the old value of V(), and its
+    // `original vertex id` will be the old value of GetOriginalVertexCount().
     // It is guaranteed that Vert(h) does not change, and Vert(Succ(h)) equals v after the insertion.
     void SplitEdge(int h);
 
@@ -136,6 +139,8 @@ public:
     // The user can provide a custom function to monitor these movements.
     //
     // `func(MoveType type, int movedElement, int targetHole)` is called when the specific movement is finished.
+    //
+    // Note that this method doesn't remove potential holes in 'original vertex id', if presented.
     template<typename Func>
     void Compact(const Func &func);
 
@@ -176,7 +181,7 @@ private:
 
     bool isInputManifold_ = false;
     int originalVertCount_ = 0;
-    std::vector<int> vertToOriginalVert_;
+    std::vector<int> vertToOriginalVert_; // Empty for identity
 };
 
 inline int HalfedgeMesh::FindHalfedgeByVertex(int head, int tail) const
@@ -218,17 +223,11 @@ inline bool HalfedgeMesh::IsInputManifold() const
 
 inline int HalfedgeMesh::VertToOriginalVert(int vert) const
 {
-    if(vert == NullID || vert < originalVertCount_)
+    if(vert == NullID || vertToOriginalVert_.empty())
     {
         return vert;
     }
-
-    const int index = vert - originalVertCount_;
-    if(index >= static_cast<int>(vertToOriginalVert_.size()))
-    {
-        return vert;
-    }
-    return vertToOriginalVert_[index];
+    return vertToOriginalVert_[vert];
 }
 
 template <bool Unique, typename Func>
@@ -337,6 +336,11 @@ void HalfedgeMesh::Compact(const Func &func)
         RTRC_SCOPE_EXIT
         {
             vertToHalfedge_.pop_back();
+            if(!vertToOriginalVert_.empty())
+            {
+                assert(static_cast<int>(vertToOriginalVert_.size()) == V_);
+                vertToOriginalVert_.pop_back();
+            }
             --V_;
         };
 
@@ -353,6 +357,10 @@ void HalfedgeMesh::Compact(const Func &func)
         vertToHalfedge_[v] = vertToHalfedge_[V_ - 1];
 
         func(MoveVertex, V_ - 1, v);
+        if(!vertToOriginalVert_.empty())
+        {
+            vertToOriginalVert_[v] = vertToOriginalVert_[V_ - 1];
+        }
     }
     verticesMarkedForDeletion_.clear();
 
