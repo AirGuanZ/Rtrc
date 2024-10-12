@@ -433,4 +433,105 @@ void WriteOFFFile(const std::string &filename, Span<Vector3<T>> positions, Span<
 template void WriteOFFFile(const std::string &, Span<Vector3<float>>, Span<uint32_t>);
 template void WriteOFFFile(const std::string &, Span<Vector3<double>>, Span<uint32_t>);
 
+template<std::floating_point T>
+void WriteOBJFile(
+    const std::string &filename,
+    Span<Vector3<T>>   positions,
+    Span<uint32_t>     positionIndices,
+    Span<Vector3<T>>   normals,
+    Span<uint32_t>     normalIndices,
+    Span<Vector2<T>>   uvs,
+    Span<uint32_t>     uvIndices)
+{
+    std::ofstream fout(filename, std::ofstream::trunc);
+    if(!fout)
+    {
+        throw Exception("Fail to open file " + filename);
+    }
+
+    for(auto &position : positions)
+    {
+        std::println(fout, "v {} {} {}", ToString(position.x), ToString(position.y), ToString(position.z));
+    }
+
+    for(auto &normal : normals)
+    {
+        std::println(fout, "vn {} {} {}", ToString(normal.x), ToString(normal.y), ToString(normal.z));
+    }
+
+    for(auto &uv : uvs)
+    {
+        std::println(fout, "vt {} {}", ToString(uv.x), ToString(uv.y));
+    }
+
+    const uint32_t wedgeCount = positionIndices.IsEmpty() ? positions.GetSize() : positionIndices.GetSize();
+
+    const bool hasNormal = !normals.IsEmpty();
+    assert(!hasNormal || (normalIndices.IsEmpty() ? normals.GetSize() : normalIndices.GetSize()) == wedgeCount);
+
+    const bool hasUV = !uvs.IsEmpty();
+    assert(!hasUV || (uvIndices.IsEmpty() ? uvs.GetSize() : uvIndices.GetSize()) == wedgeCount);
+
+    for(uint32_t i = 0; i < wedgeCount; ++i)
+    {
+        const uint32_t positionIndex = 1 + (positionIndices.IsEmpty() ? i : positionIndices[i]);
+
+        uint32_t normalIndex = 0;
+        if(hasNormal)
+        {
+            normalIndex = normalIndices.IsEmpty() ? i : normalIndices[i];
+            ++normalIndex;
+        }
+
+        uint32_t uvIndex = 0;
+        if(hasUV)
+        {
+            uvIndex = uvIndices.IsEmpty() ? i : uvIndices[i];
+            ++uvIndex;
+        }
+
+        if(i % 3 == 0)
+        {
+            std::print(fout, "\nf");
+        }
+
+        if(hasNormal && hasUV)
+        {
+            std::print(fout, " {}/{}/{}", positionIndex, uvIndex, normalIndex);
+        }
+        else if(hasNormal && !hasUV)
+        {
+            std::print(fout, " {}//{}", positionIndex, normalIndex);
+        }
+        else if(!hasNormal && hasUV)
+        {
+            std::print(fout, " {}/{}", positionIndex, uvIndex);
+        }
+        else
+        {
+            std::print(fout, " {}", positionIndex);
+        }
+    }
+}
+
+template
+void WriteOBJFile(
+    const std::string    &filename,
+    Span<Vector3<double>> positions,
+    Span<uint32_t>        positionIndices,
+    Span<Vector3<double>> normals,
+    Span<uint32_t>        normalIndices,
+    Span<Vector2<double>> uvs,
+    Span<uint32_t>        uvIndices);
+
+template
+void WriteOBJFile(
+    const std::string   &filename,
+    Span<Vector3<float>> positions,
+    Span<uint32_t>       positionIndices,
+    Span<Vector3<float>> normals,
+    Span<uint32_t>       normalIndices,
+    Span<Vector2<float>> uvs,
+    Span<uint32_t>       uvIndices);
+
 RTRC_GEO_END

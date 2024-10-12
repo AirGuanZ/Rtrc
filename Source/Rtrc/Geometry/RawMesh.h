@@ -184,6 +184,19 @@ private:
 template<std::floating_point T>
 void WriteOFFFile(const std::string &filename, Span<Vector3<T>> positions, Span<uint32_t> indices);
 
+// 'positions' is required. 'normals' and 'uvs' are optional.
+// 'normal' and 'uv' should be in per-wedge style, if provided.
+// All 'xxxIndices' fields are optional. If left empty, they are implicitly defined as [0, 1, 2, ...]
+template<std::floating_point T>
+void WriteOBJFile(
+    const std::string &filename,
+    Span<Vector3<T>>   positions,
+    Span<uint32_t>     positionIndices,
+    Span<Vector3<T>>   normals,
+    Span<uint32_t>     normalIndices,
+    Span<Vector2<T>>   uvs,
+    Span<uint32_t>     uvIndices);
+
 inline RawMeshAttributeData::Type RawMeshAttributeData::GetType() const
 {
     return type_;
