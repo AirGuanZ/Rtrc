@@ -269,7 +269,7 @@ namespace MeshCleanDetail
                 remainingIndices.push_back(indices[3 * f + 2]);
                 if(outputFaceMap)
                 {
-                    (*outputFaceMap)[f] = faceMap[f];
+                    outputFaceMap->push_back(faceMap[f]);
                 }
             }
         }
