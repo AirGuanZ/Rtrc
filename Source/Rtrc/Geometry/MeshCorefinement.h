@@ -32,6 +32,8 @@ public:
     // See MeshCleaner::RemoveDegenerateTriangles for removing degenrates.
     bool preserveExactPositions = false;
 
+    // Use constrained Delaunay triangulation to triangulate the new polygons created by intersections.
+    // Otherwise, the result might not be deterministic and intrinsic.
     bool delaunay = true;
 
     // Output connectivity
