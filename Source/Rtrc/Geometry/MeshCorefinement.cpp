@@ -55,6 +55,8 @@ namespace CorefineDetail
     // result[triangleA] is { triangleB | triangleA < triangleB and triangleA is adjacent to triangleB }
     std::vector<std::vector<int>> DetectAdjacentTriangles(const IndexedPositions<double> &input)
     {
+        // Build map: edge -> triangles containg the edge
+
         struct TriangleRecord
         {
             Vector3d oppositeVertex;
@@ -83,20 +85,62 @@ namespace CorefineDetail
             HandleEdge(p2, p0, p1, f);
         }
 
-        std::vector<std::vector<int>> result(triangleCount);
-        for(auto &[edge, records] : edgeToTriangles)
+        // Flatten the edge-to-triangles map for concurrent process
+
+        struct FlattenEdgeRecord
         {
-            for(uint32_t i = 0, iEnd = records.size() - 1; i < iEnd; ++i)
+            Vector3d a;
+            Vector3d b;
+            std::vector<TriangleRecord> triangles;
+            std::vector<Vector2i> adjacentPairs;
+        };
+        std::vector<FlattenEdgeRecord> flattenEdgeRecords;
+
+        for(auto&& [edge, triangleRecords] : edgeToTriangles)
+        {
+            if(triangleRecords.size() > 1)
             {
-                for(uint32_t j = i + 1; j < records.size(); ++j)
+                std::ranges::sort(triangleRecords, [&](const TriangleRecord& lhs, const TriangleRecord& rhs)
+                {
+                    return lhs.triangleIndex < rhs.triangleIndex;
+                });
+                auto &flattenEdgeRecord = flattenEdgeRecords.emplace_back();
+                flattenEdgeRecord.a = edge.first;
+                flattenEdgeRecord.b = edge.second;
+                flattenEdgeRecord.triangles = std::move(triangleRecords);
+            }
+        }
+
+        // Detect adjacents concurrently
+
+        RTRC_MESH_COREFINEMENT_PARALLEL_FOR<uint32_t>(0, flattenEdgeRecords.size(), [&](uint32_t flattenEdgeRecordIndex)
+        {
+            auto &edgeRecord = flattenEdgeRecords[flattenEdgeRecordIndex];
+            auto &triangles = edgeRecord.triangles;
+            for(uint32_t i = 0, iEnd = triangles.size() - 1; i < iEnd; ++i)
+            {
+                for(uint32_t j = i + 1; j < triangles.size(); ++j)
                 {
                     if(CantHaveInterestingIntersections(
-                        edge.first, edge.second, records[i].oppositeVertex, records[j].oppositeVertex))
+                        edgeRecord.a, edgeRecord.b, triangles[i].oppositeVertex, triangles[j].oppositeVertex))
                     {
-                        const auto [a, b] = std::minmax(records[i].triangleIndex, records[j].triangleIndex);
-                        result[a].push_back(b);
+                        const int a = triangles[i].triangleIndex;
+                        const int b = triangles[j].triangleIndex;
+                        assert(a < b);
+                        edgeRecord.adjacentPairs.push_back({ a, b });
                     }
                 }
+            }
+        });
+
+        // Collect results
+
+        std::vector<std::vector<int>> result(triangleCount);
+        for(auto &edgeRecord : flattenEdgeRecords)
+        {
+            for(auto &pair : edgeRecord.adjacentPairs)
+            {
+                result[pair.x].push_back(pair.y);
             }
         }
 
