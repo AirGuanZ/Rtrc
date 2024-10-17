@@ -32,6 +32,8 @@ public:
     // See MeshCleaner::RemoveDegenerateTriangles for removing degenrates.
     bool preserveExactPositions = false;
 
+    bool delaunay = true;
+
     // Output connectivity
     std::vector<uint32_t> outputIndicesA;
     std::vector<uint32_t> outputIndicesB;
@@ -63,6 +65,7 @@ public:
     bool trackFaceMap = false;
     bool trackCutEdges = false;
     bool preserveExactPositions = false;
+    bool delaunay = true;
 
     std::vector<uint32_t>   outputIndices;
     std::vector<Vector3d>   outputPositions;

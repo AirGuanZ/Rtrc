@@ -16,6 +16,8 @@ std::vector<Vector3d> LoadMesh(const std::string &filename)
 
 int main()
 {
+    EnableMemoryLeakReporter();
+
     const auto inputA = LoadMesh("./Asset/Sample/16.MeshCorefinement/MeshA.obj");
     const auto inputB = LoadMesh("./Asset/Sample/16.MeshCorefinement/MeshB.obj");
 

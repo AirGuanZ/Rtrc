@@ -187,6 +187,7 @@ namespace CorefineDetail
     void RefineTriangles(
         const IndexedPositions<double> &inputPositions,
         bool                            collectCutEdges,
+        bool                            delaunay,
         Span<uint8_t>                   degenerateTriangleFlags,
         const PairwiseIntersections    &pairwiseIntersections,
         MutSpan<PerTriangleOutput>      triangleToOutput)
@@ -306,7 +307,7 @@ namespace CorefineDetail
             // Perform constrained triangulation
 
             CDT2D cdt;
-            cdt.delaunay = true;
+            cdt.delaunay = delaunay;
             cdt.trackConstraintMask = collectCutEdges;
             cdt.Triangulate(inputPoints2D, inputConstraints);
 
@@ -333,12 +334,12 @@ namespace CorefineDetail
                 return cdt.newIntersections[v - inputPoints2D.size()].position;
             };
             const int orientBefore = Orient2DHomogeneous(inputPoints2D[0], inputPoints2D[1], inputPoints2D[2]);
-            const int orientAfter = Orient2DHomogeneous(Get2DPoint(output.triangles[0][0]),
-                                                        Get2DPoint(output.triangles[0][1]),
-                                                        Get2DPoint(output.triangles[0][2]));
-            if(orientBefore != orientAfter)
+            for(Vector3i &triangle : output.triangles)
             {
-                for(Vector3i& triangle : output.triangles)
+                const int orientAfter = Orient2DHomogeneous(Get2DPoint(triangle[0]),
+                                                            Get2DPoint(triangle[1]),
+                                                            Get2DPoint(triangle[2]));
+                if(orientBefore != orientAfter)
                 {
                     std::swap(triangle[0], triangle[2]);
                 }
@@ -687,7 +688,7 @@ void MeshCorefinement::Corefine(
 
     std::vector<PerTriangleOutput> triangleAToOutput(triangleCountA);
     RefineTriangles(
-        inputA, trackCutEdges, degenerateTriangleFlagA,
+        inputA, trackCutEdges, delaunay, degenerateTriangleFlagA,
         TrianglePairIntersections{ triangleAToPairwiseIntersections }, triangleAToOutput);
 
     // Collect symbolic intersections for B
@@ -706,7 +707,7 @@ void MeshCorefinement::Corefine(
 
     std::vector<PerTriangleOutput> triangleBToOutput(triangleCountB);
     RefineTriangles(
-        inputB, trackCutEdges, degenerateTriangleFlagB,
+        inputB, trackCutEdges, delaunay, degenerateTriangleFlagB,
         TrianglePairIntersections{ triangleBToPairwiseIntersections }, triangleBToOutput);
 
     // Final rounding
@@ -872,7 +873,7 @@ void MeshSelfIntersectionRefinement::Refine(Span<Vector3d> inputPositions, Span<
 
     std::vector<PerTriangleOutput> triangleToOutput(triangleCount);
     RefineTriangles(
-        input, trackCutEdges, degenerateTriangleFlags,
+        input, trackCutEdges, delaunay, degenerateTriangleFlags,
         IndexedTrianglePairIntersections{ triangleToIntersectionIndices, allIntersections },
         triangleToOutput);
 
