@@ -44,6 +44,10 @@ public:
     // Ensure the result satisfy constrained delaunay conditions.
     bool delaunay = true;
 
+    // When enabled, in some cases, the delaunay conditions will be computed using regular floating-point numbers
+    // intead of exact predicates. The later is much slower.
+    bool approxDelaunay = false;
+
     // If enabled, for each edge 'e' in the result, the masks of constraints overlapping with 'e' will be bitwise unioned.
     // The resulting mask is stored in `edgeToConstraintMask`.
     // This allows the user to track the correspondence between the original constraints and the resulting edges.

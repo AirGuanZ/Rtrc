@@ -294,56 +294,60 @@ namespace CorefineDetail
 
             std::vector<CDT2D::Constraint> inputConstraints;
 
-            // Add triangle vertices as input points and triangle edges as input constraints
             {
-                const int i0 = AddInputPoint(Expansion4(Vector4d(p0, 1)));
-                const int i1 = AddInputPoint(Expansion4(Vector4d(p1, 1)));
-                const int i2 = AddInputPoint(Expansion4(Vector4d(p2, 1)));
-                inputConstraints.emplace_back(i0, i1, 0u);
-                inputConstraints.emplace_back(i1, i2, 0u);
-                inputConstraints.emplace_back(i2, i0, 0u);
-            }
+                RTRC_PROFILER_SCOPE_CPU("Perpare input points and constraints for retriangulation");
 
-            // Add points and constraints from triangle intersections
-            for(uint32_t infoIndex = 0; infoIndex < symbolicIntersectionCount; ++infoIndex)
-            {
-                const TrianglePairIntersection &intersectionInfo =
-                    pairwiseIntersections.GetPairwiseIntersection(triangleA, infoIndex);
+                // Add triangle vertices as input points and triangle edges as input constraints
+                {
+                    const int i0 = AddInputPoint(Expansion4(Vector4d(p0, 1)));
+                    const int i1 = AddInputPoint(Expansion4(Vector4d(p1, 1)));
+                    const int i2 = AddInputPoint(Expansion4(Vector4d(p2, 1)));
+                    inputConstraints.emplace_back(i0, i1, 0u);
+                    inputConstraints.emplace_back(i1, i2, 0u);
+                    inputConstraints.emplace_back(i2, i0, 0u);
+                }
 
-                auto &evalulatedPoints = intersectionInfo.points;
-                switch(intersectionInfo.intersection.GetType())
+                // Add points and constraints from triangle intersections
+                for(uint32_t infoIndex = 0; infoIndex < symbolicIntersectionCount; ++infoIndex)
                 {
-                case SI::Type::None:
-                {
-                    Unreachable();
-                }
-                case SI::Type::Point:
-                {
-                    assert(evalulatedPoints.size() == 1);
-                    AddInputPoint(evalulatedPoints[0]);
-                    break;
-                }
-                case SI::Type::Edge:
-                {
-                    assert(evalulatedPoints.size() == 2);
-                    const int i0 = AddInputPoint(evalulatedPoints[0]);
-                    const int i1 = AddInputPoint(evalulatedPoints[1]);
-                    inputConstraints.emplace_back(i0, i1, 1u);
-                    break;
-                }
-                case SI::Type::Polygon:
-                {
-                    StaticVector<int, 6> is;
-                    for(auto &p : evalulatedPoints)
+                    const TrianglePairIntersection &intersectionInfo =
+                        pairwiseIntersections.GetPairwiseIntersection(triangleA, infoIndex);
+
+                    auto &evalulatedPoints = intersectionInfo.points;
+                    switch(intersectionInfo.intersection.GetType())
                     {
-                        is.push_back(AddInputPoint(p));
-                    }
-                    for(uint32_t i = 0; i < is.size(); ++i)
+                    case SI::Type::None:
                     {
-                        inputConstraints.emplace_back(is[i], is[(i + 1) % is.size()], 1u);
+                        Unreachable();
                     }
-                    break;
-                }
+                    case SI::Type::Point:
+                    {
+                        assert(evalulatedPoints.size() == 1);
+                        AddInputPoint(evalulatedPoints[0]);
+                        break;
+                    }
+                    case SI::Type::Edge:
+                    {
+                        assert(evalulatedPoints.size() == 2);
+                        const int i0 = AddInputPoint(evalulatedPoints[0]);
+                        const int i1 = AddInputPoint(evalulatedPoints[1]);
+                        inputConstraints.emplace_back(i0, i1, 1u);
+                        break;
+                    }
+                    case SI::Type::Polygon:
+                    {
+                        StaticVector<int, 6> is;
+                        for(auto &p : evalulatedPoints)
+                        {
+                            is.push_back(AddInputPoint(p));
+                        }
+                        for(uint32_t i = 0; i < is.size(); ++i)
+                        {
+                            inputConstraints.emplace_back(is[i], is[(i + 1) % is.size()], 1u);
+                        }
+                        break;
+                    }
+                    }
                 }
             }
 
@@ -361,6 +365,7 @@ namespace CorefineDetail
 
             CDT2D cdt;
             cdt.delaunay = delaunay;
+            cdt.approxDelaunay = true;
             cdt.trackConstraintMask = collectCutEdges;
             cdt.Triangulate(inputPoints2D, inputConstraints);
 
@@ -378,23 +383,27 @@ namespace CorefineDetail
                 }
             }
 
-            auto Get2DPoint = [&](uint32_t v) -> const Expansion3 &
             {
-                if(v < inputPoints2D.size())
+                RTRC_PROFILER_SCOPE_CPU("Correct winding order");
+
+                auto Get2DPoint = [&](uint32_t v) -> const Expansion3 &
                 {
-                    return inputPoints2D[v];
-                }
-                return cdt.newIntersections[v - inputPoints2D.size()].position;
-            };
-            const int orientBefore = Orient2DHomogeneous(inputPoints2D[0], inputPoints2D[1], inputPoints2D[2]);
-            for(Vector3i &triangle : output.triangles)
-            {
-                const int orientAfter = Orient2DHomogeneous(Get2DPoint(triangle[0]),
-                                                            Get2DPoint(triangle[1]),
-                                                            Get2DPoint(triangle[2]));
+                    if(v < inputPoints2D.size())
+                    {
+                        return inputPoints2D[v];
+                    }
+                    return cdt.newIntersections[v - inputPoints2D.size()].position;
+                };
+                const int orientBefore = Orient2DHomogeneous(inputPoints2D[0], inputPoints2D[1], inputPoints2D[2]);
+                const int orientAfter = Orient2DHomogeneous(Get2DPoint(output.triangles[0][0]),
+                                                            Get2DPoint(output.triangles[0][1]), 
+                                                            Get2DPoint(output.triangles[0][2]));
                 if(orientBefore != orientAfter)
                 {
-                    std::swap(triangle[0], triangle[2]);
+                    for(Vector3i &triangle : output.triangles)
+                    {
+                        std::swap(triangle[0], triangle[2]);
+                    }
                 }
             }
 
@@ -402,6 +411,8 @@ namespace CorefineDetail
 
             for(const CDT2D::ConstraintIntersection &cinct : cdt.newIntersections)
             {
+                RTRC_PROFILER_SCOPE_CPU("Resolve new points created by triangulation");
+
                 const auto [a, b, mask0] = inputConstraints[cinct.constraint0];
                 const auto [c, d, mask1] = inputConstraints[cinct.constraint1];
                 output.points.push_back(IntersectLine3D(

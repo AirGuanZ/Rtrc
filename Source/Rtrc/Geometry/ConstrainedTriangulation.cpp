@@ -7,6 +7,8 @@
 #include <Rtrc/Geometry/ConstrainedTriangulation.h>
 #include <Rtrc/Geometry/HalfedgeMesh.h>
 
+#define OPTIMIZE_LOCATING_POINT_USING_APPROX_GUESS 1
+
 RTRC_GEO_BEGIN
 
 namespace CDTDetail
@@ -30,12 +32,13 @@ namespace CDTDetail
         const GetNeighbor       &getNeighbor,
         const GenerateEdgeGuess &generateEdgeGuess,
         int                      initialTriangleGuess,
-        int                    (&signs)[3])
+        int                    (&signs)[3],
+        uint32_t                 maxNumberOfIterations)
     {
         RTRC_PROFILER_SCOPE_CPU("LocatePointInTriangulation");
 
         int T = initialTriangleGuess;
-        while(true)
+        for(uint32_t iteration = 0; iteration < maxNumberOfIterations; ++iteration)
         {
             const int E0 = generateEdgeGuess();
             const int S0 = separate(T, E0);
@@ -63,6 +66,7 @@ namespace CDTDetail
             signs[E2] = S2;
             return T;
         }
+        return -1;
     }
 
     // Intersect segment ot with triangle oab. All points are represented using homogeneous coordinates.
@@ -143,6 +147,114 @@ namespace CDTDetail
 
         // The quad is convex iff flipping ab gives two correctly-oriented triangles.
         return Orient2DHomogeneous(a, d, c) < 0 && Orient2DHomogeneous(c, d, b) < 0;
+    }
+
+    bool EnsureDelaunayConditionsApprox(
+        Span<Vector2d>           vertices,
+        Span<int>                edgeToSourceConstraint,
+        HalfedgeMesh            &connectivity,
+        std::stack<int>         &activeEdges,
+        std::map<Vector4i, int> &cocircleCache,
+        uint32_t                 maxIterations)
+    {
+        RTRC_PROFILER_SCOPE_CPU("EnsureDelaunayConditions_Approx");
+
+        uint32_t iterations = 0;
+
+        assert(connectivity.IsCompacted());
+        while(!activeEdges.empty())
+        {
+            if(iterations++ >= maxIterations)
+            {
+                return false;
+            }
+
+            const int e0 = activeEdges.top();
+            activeEdges.pop();
+            if(edgeToSourceConstraint[e0] >= 0)
+            {
+                continue;
+            }
+
+            const int ha0 = connectivity.EdgeToHalfedge(e0);
+            const int hb0 = connectivity.Twin(ha0);
+            if(hb0 == HalfedgeMesh::NullID)
+            {
+                continue;
+            }
+
+            const int v0 = connectivity.Head(ha0);
+            const int v1 = connectivity.Tail(ha0);
+            const int v2 = connectivity.Vert(connectivity.Prev(ha0));
+            const int v3 = connectivity.Vert(connectivity.Prev(hb0));
+
+            int inCircleSign;
+            {
+                inCircleSign = InCircle2D(vertices[v0], vertices[v1], vertices[v2], vertices[v3]);
+            }
+            if(inCircleSign > 0)
+            {
+                continue;
+            }
+            if(inCircleSign == 0)
+            {
+                // Corner case: 4 co-circular points always satisfy the delaunay conditions. To make the triangulation
+                // determinstic, we always connect the lexically smallest point.
+                // The result is cached in cocircleCache to accelerate later computations.
+
+                Vector4i key = { v0, v1, v2, v3 };
+                std::sort(&key.x, &key.x + 4);
+
+                int connectedPoint;
+                if(auto it = cocircleCache.find(key); it != cocircleCache.end())
+                {
+                    connectedPoint = it->second;
+                }
+                else
+                {
+                    int minPointIndex = v0; const Vector2d *minPoint = &vertices[v0];
+                    if(vertices[v1] < *minPoint)
+                    {
+                        minPointIndex = v1;
+                        minPoint = &vertices[v1];
+                    }
+                    if(vertices[v2] < *minPoint)
+                    {
+                        minPointIndex = v2;
+                        minPoint = &vertices[v2];
+                    }
+                    // Compare v3 only when the connected point is v0 or v1, as connecting to v2 is equivalent to v3.
+                    if(minPointIndex != v2 && vertices[v3] < *minPoint)
+                    {
+                        minPointIndex = v3;
+                    }
+                    connectedPoint = minPointIndex;
+                    cocircleCache.insert({ key, connectedPoint });
+                }
+
+                if(connectedPoint == v0 || connectedPoint == v1)
+                {
+                    continue;
+                }
+            }
+
+            {
+                const int e1 = connectivity.Edge(connectivity.Succ(ha0));
+                const int e2 = connectivity.Edge(connectivity.Prev(ha0));
+                const int e3 = connectivity.Edge(connectivity.Succ(hb0));
+                const int e4 = connectivity.Edge(connectivity.Prev(hb0));
+
+                connectivity.FlipEdge(e0);
+
+                activeEdges.push(e1);
+                activeEdges.push(e2);
+                activeEdges.push(e3);
+                activeEdges.push(e4);
+            }
+        }
+
+        assert(connectivity.CheckSanity());
+        return true;
     }
 
     void EnsureDelaunayConditions(
@@ -309,6 +421,10 @@ void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
     std::vector<int> meshVertexToPointIndex = { -1, -1, -1 };
     HalfedgeMesh connectivity = HalfedgeMesh::Build({ 0, 1, 2 });
 
+    std::vector<Vector2d> approxVertices;
+    approxVertices.reserve(3 + points.size());
+    approxVertices.append_range(std::array{ superTriangleA, superTriangleB, superTriangleC });
+
     // Insert points
     
     std::minstd_rand edgeRNG(42);
@@ -319,29 +435,102 @@ void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
         RTRC_PROFILER_SCOPE_CPU("Insert point");
 
         const Expansion3 &point = points[pointIndex];
+        const Vector2d approxPoint =
+        {
+            point.x.ToDouble() / point.z.ToDouble(),
+            point.y.ToDouble() / point.z.ToDouble()
+        };
         int signs[3];
-        const int triangleIndex = LocatePointInTriangulation(
-            [&](int T, int E)
-            {
-                RTRC_PROFILER_SCOPE_CPU("Separate");
 
-                const int h = 3 * T + E;
-                const int head = connectivity.Head(h);
-                const int tail = connectivity.Tail(h);
-                const int sign = Orient2DHomogeneous(vertices[head], vertices[tail], point);
-                return sign;
-            },
-            [&](int T, int E)
+        int triangleIndex = -1;
+        int guess = 0;
+
+#if OPTIMIZE_LOCATING_POINT_USING_APPROX_GUESS
+
+        // Locating a point in the current triangulation using exact floating-point expansions is time-consuming.
+        // First, we attempt to locate the point using rounded double precision positions, then verify the result
+        // with expansions. If the initial locating process or the verification fails, it indicates a numeric precision
+        // issue, prompting us to revert to using expansions for the entire locating process.
+
+        {
+            RTRC_PROFILER_SCOPE_CPU("LocatePointInTriangulation_Approx");
+
+            triangleIndex = LocatePointInTriangulation(
+                [&](int T, int E)
+                {
+                    RTRC_PROFILER_SCOPE_CPU("Separate");
+
+                    const int h = 3 * T + E;
+                    const int head = connectivity.Head(h);
+                    const int tail = connectivity.Tail(h);
+                    const int sign = Orient2D(approxVertices[head], approxVertices[tail], approxPoint);
+                    return sign;
+                },
+                [&](int T, int E)
+                {
+                    const int h = 3 * T + E;
+                    const int twin = connectivity.Twin(h);
+                    return twin >= 0 ? twin / 3 : -1;
+                },
+                [&]
+                {
+                    return edgeDistribution(edgeRNG);
+                },
+                0, signs, connectivity.F());
+        }
+
+        if(triangleIndex >= 0)
+        {
+            RTRC_PROFILER_SCOPE_CPU("Verify the approx result");
+
+            const int h0 = 3 * triangleIndex + 0;
+            const int h1 = 3 * triangleIndex + 1;
+            const int h2 = 3 * triangleIndex + 2;
+            const int v0 = connectivity.Head(h0);
+            const int v1 = connectivity.Head(h1);
+            const int v2 = connectivity.Head(h2);
+            signs[0] = Orient2DHomogeneous(vertices[v0], vertices[v1], point);
+            signs[1] = Orient2DHomogeneous(vertices[v1], vertices[v2], point);
+            signs[2] = Orient2DHomogeneous(vertices[v2], vertices[v0], point);
+            if(signs[0] > 0 || signs[1] > 0 || signs[2] > 0)
             {
-                const int h = 3 * T + E;
-                const int twin = connectivity.Twin(h);
-                return twin >= 0 ? twin / 3 : -1;
-            },
-            [&]
-            {
-                return edgeDistribution(edgeRNG);
-            },
-            0, signs);
+                // The checks using exact expansions fail, but this should be close to the ground truth.
+                // Use it as the seed triangle in the later locating process.
+                guess = triangleIndex;
+                triangleIndex = -1;
+            }
+        }
+
+#endif // #if OPTIMIZE_LOCATING_POINT_USING_APPROX_GUESS
+
+        if(triangleIndex < 0)
+        {
+            RTRC_PROFILER_SCOPE_CPU("LocatePointInTriangulation_Exact");
+
+            triangleIndex = LocatePointInTriangulation(
+                [&](int T, int E)
+                {
+                    RTRC_PROFILER_SCOPE_CPU("Separate");
+
+                    const int h = 3 * T + E;
+                    const int head = connectivity.Head(h);
+                    const int tail = connectivity.Tail(h);
+                    const int sign = Orient2DHomogeneous(vertices[head], vertices[tail], point);
+                    return sign;
+                },
+                [&](int T, int E)
+                {
+                    const int h = 3 * T + E;
+                    const int twin = connectivity.Twin(h);
+                    return twin >= 0 ? twin / 3 : -1;
+                },
+                [&]
+                {
+                    return edgeDistribution(edgeRNG);
+                },
+                guess, signs, UINT32_MAX);
+        }
+        assert(triangleIndex >= 0);
 
         // zeroSignCount == 3 means the point lies on three edges simulatiously;
         // zeroSignCount == 2 means the point lies exactly on one exiting vertex.
@@ -360,6 +549,7 @@ void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
         }
 
         vertices.emplace_back(point);
+        approxVertices.push_back(approxPoint);
         meshVertexToPointIndex.push_back(pointIndex);
     }
 
@@ -374,7 +564,6 @@ void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
 
     // Initialize delaunay conditions
 
-
     if(delaunay)
     {
         RTRC_PROFILER_SCOPE_CPU("Initialize delaunay conditions");
@@ -384,8 +573,25 @@ void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
         {
             activeEdges.push(e);
         }
-        EnsureDelaunayConditions(
-            vertices, edgeToSourceConstraint, connectivity, activeEdges, cocircleCache, &inCircleCache);
+
+        bool needExactDelaunay = true;
+        if(approxDelaunay)
+        {
+            needExactDelaunay = !EnsureDelaunayConditionsApprox(
+                approxVertices, edgeToSourceConstraint, connectivity,
+                activeEdges, cocircleCache, 4 * activeEdges.size());
+        }
+
+        if(needExactDelaunay)
+        {
+            activeEdges = {};
+            for(int e = 0; e < connectivity.E(); ++e)
+            {
+                activeEdges.push(e);
+            }
+            EnsureDelaunayConditions(
+                vertices, edgeToSourceConstraint, connectivity, activeEdges, cocircleCache, &inCircleCache);
+        }
     }
 
     // Insert constraints
@@ -512,6 +718,7 @@ void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
 
             const int vInct = connectivity.V();
             vertices.push_back(inct);
+            //approxVertices.push_back({ inct.x.ToDouble() / inct.z.ToDouble(), inct.y.ToDouble() / inct.z.ToDouble() });
 
             const int oldE = connectivity.Edge(h);
             const uint32_t oldConstraintMask = trackConstraintMask ? localEdgeToConstraintMask[oldE] : 0;
