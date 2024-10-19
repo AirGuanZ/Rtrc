@@ -8,6 +8,7 @@
 #include <Rtrc/Geometry/HalfedgeMesh.h>
 
 #define OPTIMIZE_LOCATING_POINT_USING_APPROX_GUESS 1
+#define OPTIMIZE_TRACE_FROM_VERTEX_USING_APPROX_GUESS 1
 
 RTRC_GEO_BEGIN
 
@@ -718,7 +719,7 @@ void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
 
             const int vInct = connectivity.V();
             vertices.push_back(inct);
-            //approxVertices.push_back({ inct.x.ToDouble() / inct.z.ToDouble(), inct.y.ToDouble() / inct.z.ToDouble() });
+            approxVertices.push_back({ inct.x.ToDouble() / inct.z.ToDouble(), inct.y.ToDouble() / inct.z.ToDouble() });
 
             const int oldE = connectivity.Edge(h);
             const uint32_t oldConstraintMask = trackConstraintMask ? localEdgeToConstraintMask[oldE] : 0;
@@ -786,8 +787,6 @@ void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
         {
             if(startVertex >= 0)
             {
-                RTRC_PROFILER_SCOPE_CPU("Trace from vertex");
-
                 assert(startHalfedge < 0);
                 if(startVertex == vt) 
                 {
@@ -795,61 +794,102 @@ void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
                     break;
                 }
 
-                connectivity.ForEachOutgoingHalfedge(
-                    startVertex, [&](int h)
-                    {
-                        const int va = connectivity.Vert(connectivity.Succ(h));
-                        const int vb = connectivity.Vert(connectivity.Prev(h));
-                        const int intersectionType = IntersectCornerRay(
-                            vertices[startVertex], vertices[vt], vertices[va], vertices[vb]);
-                        if(intersectionType == 0)
-                        {
-                            return true;
-                        }
+                RTRC_PROFILER_SCOPE_CPU("Trace from vertex");
 
-                        if(intersectionType == 1)
+                int candidateH = -1;
+#if OPTIMIZE_TRACE_FROM_VERTEX_USING_APPROX_GUESS
+                // Use double-precision positions to locate a triangle containing the ray (stored in candidateH),
+                // then use exact floating-point expansions to find the actual intersection.
+                // If any issues arise due to numeric precision, fallback to using expansions for all calculations.
+                {
+                    // Determine whether B is inside A and C
+                    auto IsVectorBetween = [&](const Vector2d &A, const Vector2d &B, const Vector2d &C)
+                    {
+                        auto Cross = [](const Vector2d &X, const Vector2d &Y)
                         {
-                            const int e = connectivity.Edge(h);
-                            edgeToSourceConstraint[e] = constraintIndex;
-                            if(trackConstraintMask)
+                            return Rtrc::Cross(Vector3d(X, 0), Vector3d(Y, 0));
+                        };
+                        return Dot(Cross(A, B), Cross(A, C)) >= 0 && Dot(Cross(C, B), Cross(C, A)) >= 0;
+                    };
+
+                    const Vector2d dir = approxVertices[vt] - approxVertices[startVertex];
+                    connectivity.ForEachOutgoingHalfedge(
+                        startVertex, [&](int h)
+                        {
+                            const int va = connectivity.Vert(connectivity.Succ(h));
+                            const int vb = connectivity.Vert(connectivity.Prev(h));
+                            const Vector2d dirA = approxVertices[va] - approxVertices[startVertex];
+                            const Vector2d dirB = approxVertices[vb] - approxVertices[startVertex];
+                            if(IsVectorBetween(dirA, dir, dirB))
                             {
-                                localEdgeToConstraintMask[e] |= constraint.mask;
+                                candidateH = h;
+                                return false;
                             }
-                            CommitIntersectedEdges(vo, startVertex);
-                            vo = va;
-                            startVertex = vo;
+                            return true;
+                        });
+                }
+#endif // #if OPTIMIZE_TRACE_FROM_VERTEX_USING_APPROX_GUESS
+
+                // Returns false when no intersection is found in the triangle containing h
+                auto TraceInTriangle = [&](int h)
+                {
+                    const int va = connectivity.Vert(connectivity.Succ(h));
+                    const int vb = connectivity.Vert(connectivity.Prev(h));
+                    const int intersectionType = IntersectCornerRay(
+                        vertices[startVertex], vertices[vt], vertices[va], vertices[vb]);
+                    if(intersectionType == 0)
+                    {
+                        return false;
+                    }
+
+                    if(intersectionType == 1)
+                    {
+                        const int e = connectivity.Edge(h);
+                        edgeToSourceConstraint[e] = constraintIndex;
+                        if(trackConstraintMask)
+                        {
+                            localEdgeToConstraintMask[e] |= constraint.mask;
                         }
-                        else if(intersectionType == 2)
+                        CommitIntersectedEdges(vo, startVertex);
+                        vo = va;
+                        startVertex = vo;
+                    }
+                    else if(intersectionType == 2)
+                    {
+                        const int e = connectivity.Edge(connectivity.Prev(h));
+                        edgeToSourceConstraint[e] = constraintIndex;
+                        if(trackConstraintMask)
                         {
-                            const int e = connectivity.Edge(connectivity.Prev(h));
-                            edgeToSourceConstraint[e] = constraintIndex;
-                            if(trackConstraintMask)
-                            {
-                                localEdgeToConstraintMask[e] |= constraint.mask;
-                            }
-                            CommitIntersectedEdges(vo, startVertex);
-                            vo = vb;
-                            startVertex = vo;
+                            localEdgeToConstraintMask[e] |= constraint.mask;
+                        }
+                        CommitIntersectedEdges(vo, startVertex);
+                        vo = vb;
+                        startVertex = vo;
+                    }
+                    else
+                    {
+                        assert(intersectionType == 3);
+                        const int e = connectivity.Edge(connectivity.Succ(h));
+                        if(edgeToSourceConstraint[e] >= 0)
+                        {
+                            CreateIntersectionOnConstraint(va, vb, connectivity.Succ(h), edgeToSourceConstraint[e]);
                         }
                         else
                         {
-                            assert(intersectionType == 3);
-                            const int e = connectivity.Edge(connectivity.Succ(h));
-                            if(edgeToSourceConstraint[e] >= 0)
-                            {
-                                CreateIntersectionOnConstraint(va, vb, connectivity.Succ(h), edgeToSourceConstraint[e]);
-                            }
-                            else
-                            {
-                                intersectedEdges.push_back(e);
-                                startVertex = -1;
-                                startHalfedge = connectivity.Twin(connectivity.Succ(h));
-                                assert(startHalfedge >= 0);
-                            }
+                            intersectedEdges.push_back(e);
+                            startVertex = -1;
+                            startHalfedge = connectivity.Twin(connectivity.Succ(h));
+                            assert(startHalfedge >= 0);
                         }
+                    }
 
-                        return false;
-                    });
+                    return true;
+                };
+
+                if(candidateH < 0 || !TraceInTriangle(candidateH))
+                {
+                    connectivity.ForEachOutgoingHalfedge(startVertex, [&](int h) { return !TraceInTriangle(h); });
+                }
             }
             else
             {
