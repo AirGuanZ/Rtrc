@@ -444,14 +444,13 @@ void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
         int signs[3];
 
         int triangleIndex = -1;
-        int guess = 0;
 
 #if OPTIMIZE_LOCATING_POINT_USING_APPROX_GUESS
 
         // Locating a point in the current triangulation using exact floating-point expansions is time-consuming.
-        // First, we attempt to locate the point using rounded double precision positions, then verify the result
-        // with expansions. If the initial locating process or the verification fails, it indicates a numeric precision
-        // issue, prompting us to revert to using expansions for the entire locating process.
+        // First, we attempt to locate the point using rounded double precision positions, then using the result
+        // as the initial guess to run the locating process again, but with exact floating-point expansions.
+        // The second process almost always success immediately.
 
         {
             RTRC_PROFILER_SCOPE_CPU("LocatePointInTriangulation_Approx");
@@ -459,8 +458,6 @@ void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
             triangleIndex = LocatePointInTriangulation(
                 [&](int T, int E)
                 {
-                    RTRC_PROFILER_SCOPE_CPU("Separate");
-
                     const int h = 3 * T + E;
                     const int head = connectivity.Head(h);
                     const int tail = connectivity.Tail(h);
@@ -480,31 +477,8 @@ void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
                 0, signs, connectivity.F());
         }
 
-        if(triangleIndex >= 0)
-        {
-            RTRC_PROFILER_SCOPE_CPU("Verify the approx result");
-
-            const int h0 = 3 * triangleIndex + 0;
-            const int h1 = 3 * triangleIndex + 1;
-            const int h2 = 3 * triangleIndex + 2;
-            const int v0 = connectivity.Head(h0);
-            const int v1 = connectivity.Head(h1);
-            const int v2 = connectivity.Head(h2);
-            signs[0] = Orient2DHomogeneous(vertices[v0], vertices[v1], point);
-            signs[1] = Orient2DHomogeneous(vertices[v1], vertices[v2], point);
-            signs[2] = Orient2DHomogeneous(vertices[v2], vertices[v0], point);
-            if(signs[0] > 0 || signs[1] > 0 || signs[2] > 0)
-            {
-                // The checks using exact expansions fail, but this should be close to the ground truth.
-                // Use it as the seed triangle in the later locating process.
-                guess = triangleIndex;
-                triangleIndex = -1;
-            }
-        }
-
 #endif // #if OPTIMIZE_LOCATING_POINT_USING_APPROX_GUESS
 
-        if(triangleIndex < 0)
         {
             RTRC_PROFILER_SCOPE_CPU("LocatePointInTriangulation_Exact");
 
@@ -529,7 +503,7 @@ void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
                 {
                     return edgeDistribution(edgeRNG);
                 },
-                guess, signs, UINT32_MAX);
+                triangleIndex >= 0 ? triangleIndex : 0, signs, UINT32_MAX);
         }
         assert(triangleIndex >= 0);
 
