@@ -3,6 +3,7 @@
 #include <Rtrc/Core/Math/Exact/Expansion.h>
 #include <Rtrc/Core/Math/Exact/Intersection.h>
 #include <Rtrc/Core/Math/Exact/Predicates.h>
+#include <Rtrc/Core/Profile.h>
 #include <Rtrc/Geometry/ConstrainedTriangulation.h>
 #include <Rtrc/Geometry/HalfedgeMesh.h>
 
@@ -31,6 +32,8 @@ namespace CDTDetail
         int                      initialTriangleGuess,
         int                    (&signs)[3])
     {
+        RTRC_PROFILER_SCOPE_CPU("LocatePointInTriangulation");
+
         int T = initialTriangleGuess;
         while(true)
         {
@@ -71,6 +74,8 @@ namespace CDTDetail
     //         3 if ot intersects ab.
     int IntersectCornerRay(const Expansion3 &o, const Expansion3 &t, const Expansion3 &a, const Expansion3 &b)
     {
+        RTRC_PROFILER_SCOPE_CPU("IntersectCornerRay");
+
         const int st = Orient2DHomogeneous(a, b, t);
         if(st < 0) // s and o are on the same side of ab
         {
@@ -95,6 +100,8 @@ namespace CDTDetail
     int IntersectEdgeRay(
         const Expansion3 &o, const Expansion3 &t, const Expansion3 &a, const Expansion3 &b, const Expansion3 &c)
     {
+        RTRC_PROFILER_SCOPE_CPU("IntersectEdgeRay");
+
         const int sc = Orient2DHomogeneous(o, t, c);
         if(sc == 0) // o, t, c are colinear
         {
@@ -112,6 +119,8 @@ namespace CDTDetail
     // Test if ab intersects cd. Returns false when three points are colinear.
     bool TestIntersectionNoColinear(const Expansion3 &a, const Expansion3 &b, const Expansion3 &c, const Expansion3 &d)
     {
+        RTRC_PROFILER_SCOPE_CPU("TestIntersectionNoColinear");
+
         const int sa = Orient2DHomogeneous(c, d, a);
         const int sb = Orient2DHomogeneous(c, d, b);
         if(sa * sb >= 0)
@@ -130,6 +139,8 @@ namespace CDTDetail
     // Test whether quad acbd is convex. abc and adb must be in clockwise order.
     bool IsConvexQuad(const Expansion3 &a, const Expansion3 &b, const Expansion3 &c, const Expansion3 &d)
     {
+        RTRC_PROFILER_SCOPE_CPU("IsConvexQuad");
+
         // The quad is convex iff flipping ab gives two correctly-oriented triangles.
         return Orient2DHomogeneous(a, d, c) < 0 && Orient2DHomogeneous(c, d, b) < 0;
     }
@@ -139,8 +150,11 @@ namespace CDTDetail
         Span<int>                edgeToSourceConstraint,
         HalfedgeMesh            &connectivity,
         std::stack<int>         &activeEdges,
-        std::map<Vector4i, int> &cocircleCache)
+        std::map<Vector4i, int> &cocircleCache,
+        std::map<Vector4i, int>* inCircleCache)
     {
+        RTRC_PROFILER_SCOPE_CPU("EnsureDelaunayConditions");
+
         assert(connectivity.IsCompacted());
         while(!activeEdges.empty())
         {
@@ -163,13 +177,36 @@ namespace CDTDetail
             const int v2 = connectivity.Vert(connectivity.Prev(ha0));
             const int v3 = connectivity.Vert(connectivity.Prev(hb0));
 
-            const int inCircleSign = InCircle2DHomogeneous(vertices[v0], vertices[v1], vertices[v2], vertices[v3]);
+            int inCircleSign;
+            {
+                RTRC_PROFILER_SCOPE_CPU("In-circle predicate");
+                if(inCircleCache)
+                {
+                    Vector4i key(v0, v1, v2, v3);
+                    std::ranges::sort(&key.x, &key.x + 3);
+                    if(auto it = inCircleCache->find(key); it != inCircleCache->end())
+                    {
+                        inCircleSign = it->second;
+                    }
+                    else
+                    {
+                        inCircleSign = InCircle2DHomogeneous(vertices[v0], vertices[v1], vertices[v2], vertices[v3]);
+                        inCircleCache->insert({ key, inCircleSign });
+                    }
+                }
+                else
+                {
+                    inCircleSign = InCircle2DHomogeneous(vertices[v0], vertices[v1], vertices[v2], vertices[v3]);
+                }
+            }
             if(inCircleSign > 0)
             {
                 continue;
             }
             if(inCircleSign == 0)
             {
+                RTRC_PROFILER_SCOPE_CPU("Handle co-circular case");
+
                 // Corner case: 4 co-circular points always satisfy the delaunay conditions. To make the triangulation
                 // determinstic, we always connect the lexically smallest point.
                 // The result is cached in cocircleCache to accelerate later computations.
@@ -210,17 +247,21 @@ namespace CDTDetail
                 }
             }
 
-            const int e1 = connectivity.Edge(connectivity.Succ(ha0));
-            const int e2 = connectivity.Edge(connectivity.Prev(ha0));
-            const int e3 = connectivity.Edge(connectivity.Succ(hb0));
-            const int e4 = connectivity.Edge(connectivity.Prev(hb0));
-            
-            connectivity.FlipEdge(e0);
+            {
+                RTRC_PROFILER_SCOPE_CPU("Flip edge");
 
-            activeEdges.push(e1);
-            activeEdges.push(e2);
-            activeEdges.push(e3);
-            activeEdges.push(e4);
+                const int e1 = connectivity.Edge(connectivity.Succ(ha0));
+                const int e2 = connectivity.Edge(connectivity.Prev(ha0));
+                const int e3 = connectivity.Edge(connectivity.Succ(hb0));
+                const int e4 = connectivity.Edge(connectivity.Prev(hb0));
+
+                connectivity.FlipEdge(e0);
+
+                activeEdges.push(e1);
+                activeEdges.push(e2);
+                activeEdges.push(e3);
+                activeEdges.push(e4);
+            }
         }
 
         assert(connectivity.CheckSanity());
@@ -230,6 +271,8 @@ namespace CDTDetail
 
 void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
 {
+    RTRC_PROFILER_SCOPE_CPU("CDT2D");
+
     using namespace CDTDetail;
 
     assert(points.size() >= 3);
@@ -267,17 +310,21 @@ void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
     HalfedgeMesh connectivity = HalfedgeMesh::Build({ 0, 1, 2 });
 
     // Insert points
-
+    
     std::minstd_rand edgeRNG(42);
     std::uniform_int_distribution<int> edgeDistribution(0, 2);
 
     for(int pointIndex = 0; pointIndex < static_cast<int>(points.size()); ++pointIndex)
     {
+        RTRC_PROFILER_SCOPE_CPU("Insert point");
+
         const Expansion3 &point = points[pointIndex];
         int signs[3];
         const int triangleIndex = LocatePointInTriangulation(
             [&](int T, int E)
             {
+                RTRC_PROFILER_SCOPE_CPU("Separate");
+
                 const int h = 3 * T + E;
                 const int head = connectivity.Head(h);
                 const int tail = connectivity.Tail(h);
@@ -323,23 +370,30 @@ void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
         localEdgeToConstraintMask.resize(connectivity.E(), 0);
     }
     std::map<Vector4i, int> cocircleCache;
+    std::map<Vector4i, int> inCircleCache;
 
     // Initialize delaunay conditions
 
+
     if(delaunay)
     {
+        RTRC_PROFILER_SCOPE_CPU("Initialize delaunay conditions");
+
         std::stack<int> activeEdges;
         for(int e = 0; e < connectivity.E(); ++e)
         {
             activeEdges.push(e);
         }
-        EnsureDelaunayConditions(vertices, edgeToSourceConstraint, connectivity, activeEdges, cocircleCache);
+        EnsureDelaunayConditions(
+            vertices, edgeToSourceConstraint, connectivity, activeEdges, cocircleCache, &inCircleCache);
     }
 
     // Insert constraints
-
+    
     for(int constraintIndex = 0; constraintIndex < static_cast<int>(constraints.size()); ++constraintIndex)
     {
+        RTRC_PROFILER_SCOPE_CPU("Insert constraint");
+
         const Constraint &constraint = constraints[constraintIndex];
         int vo = constraint.a + 3;
         const int vt = constraint.b + 3;
@@ -360,6 +414,8 @@ void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
         // `intersectedEdges` stores all edges intersected along the path. None of them is constrained.
         auto CommitIntersectedEdges = [&](int vStart, int vEnd)
         {
+            RTRC_PROFILER_SCOPE_CPU("Commit intersected edges");
+
             if(vStart == vEnd)
             {
                 return;
@@ -427,7 +483,8 @@ void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
 
             if(delaunay)
             {
-                EnsureDelaunayConditions(vertices, edgeToSourceConstraint, connectivity, newEdges, cocircleCache);
+                EnsureDelaunayConditions(
+                    vertices, edgeToSourceConstraint, connectivity, newEdges, cocircleCache, &inCircleCache);
             }
         };
 
@@ -436,6 +493,8 @@ void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
         // After that, restart the tracing process from the vertex 'vo'.
         auto CreateIntersectionOnConstraint = [&](int va, int vb, int h, int targetConstraintIndex)
         {
+            RTRC_PROFILER_SCOPE_CPU("Create new intersection");
+
             assert(connectivity.Head(h) == va || connectivity.Head(h) == vb);
             assert(connectivity.Tail(h) == va || connectivity.Tail(h) == vb);
 
@@ -490,7 +549,8 @@ void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
                 {
                     activeEdges.push(connectivity.Edge(vh));
                 });
-                EnsureDelaunayConditions(vertices, edgeToSourceConstraint, connectivity, activeEdges, cocircleCache);
+                EnsureDelaunayConditions(
+                    vertices, edgeToSourceConstraint, connectivity, activeEdges, cocircleCache, &inCircleCache);
 
                 // EnsureDelaunayConditions may compromise the validity of `intersectedEdges`.
                 // Therefore discard the invalid edges and restart the tracing process from the vertex 'vo'.
@@ -519,6 +579,8 @@ void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
         {
             if(startVertex >= 0)
             {
+                RTRC_PROFILER_SCOPE_CPU("Trace from vertex");
+
                 assert(startHalfedge < 0);
                 if(startVertex == vt) 
                 {
@@ -584,6 +646,8 @@ void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
             }
             else
             {
+                RTRC_PROFILER_SCOPE_CPU("Trace from halfedge");
+
                 assert(startHalfedge >= 0);
                 
                 const int va = connectivity.Vert(startHalfedge);

@@ -16,6 +16,7 @@
 /External/llvm16.0.6/install_release/
 /External/llvm16.0.6/llvm-project-16.0.6.src/
 /External/oneapi-tbb-2021.11.0/
+/External/tracy-0.11.1/
 /Source/Rtrc/ToolKit/OT2D/OT2DImpl.h
 /GPUCapture.wpix
 *.shader.outh

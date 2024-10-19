@@ -28,6 +28,10 @@ add_subdirectory(tinyexr)
 add_subdirectory(tinyobjloader)
 add_subdirectory(unordered_dense)
 
+if(RTRC_ENABLE_TRACY AND NOT RTRC_USE_EXTERNAL_TRACY)
+    add_subdirectory(tracy-0.11.1)
+endif()
+
 add_library(libigl INTERFACE)
 target_include_directories(libigl INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/libigl-2.5.0/include")
 target_link_libraries(libigl INTERFACE Eigen3::Eigen)

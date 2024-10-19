@@ -5,6 +5,7 @@
 #include <Rtrc/Core/Math/Exact/Intersection.h>
 #include <Rtrc/Core/Math/Exact/Predicates.h>
 #include <Rtrc/Core/Parallel.h>
+#include <Rtrc/Core/Profile.h>
 #include <Rtrc/Core/Unreachable.h>
 #include <Rtrc/Geometry/BVH.h>
 #include <Rtrc/Geometry/ConstrainedTriangulation.h>
@@ -55,6 +56,8 @@ namespace CorefineDetail
     // result[triangleA] is { triangleB | triangleA < triangleB and triangleA is adjacent to triangleB }
     std::vector<std::vector<int>> DetectAdjacentTriangles(const IndexedPositions<double> &input)
     {
+        RTRC_PROFILER_SCOPE_CPU("DetectAdjacentTriangles");
+
         // Build map: edge -> triangles containg the edge
 
         struct TriangleRecord
@@ -153,6 +156,8 @@ namespace CorefineDetail
         SymbolicTriangleTriangleIntersection<double>::Element elemA,
         SymbolicTriangleTriangleIntersection<double>::Element elemB)
     {
+        RTRC_PROFILER_SCOPE_CPU("ResolveSymbolicIntersection");
+
         using enum SI::Element;
 
         if(std::to_underlying(elemA) > std::to_underlying(elemB))
@@ -236,12 +241,16 @@ namespace CorefineDetail
         const PairwiseIntersections    &pairwiseIntersections,
         MutSpan<PerTriangleOutput>      triangleToOutput)
     {
+        RTRC_PROFILER_SCOPE_CPU("RefineTriangles");
+
         const uint32_t triangleCount = inputPositions.GetSize() / 3;
         assert(triangleCount == degenerateTriangleFlags.size());
         assert(triangleCount == triangleToOutput.size());
 
         RTRC_MESH_COREFINEMENT_PARALLEL_FOR<uint32_t>(0, triangleCount, [&](uint32_t triangleA)
         {
+            RTRC_PROFILER_SCOPE_CPU("Retriangulate");
+
             const Vector3d &p0 = inputPositions[3 * triangleA + 0];
             const Vector3d &p1 = inputPositions[3 * triangleA + 1];
             const Vector3d &p2 = inputPositions[3 * triangleA + 2];
@@ -408,6 +417,8 @@ namespace CorefineDetail
         const IndexedPositions<double>        &positionsB,
         std::vector<TrianglePairIntersection> &output)
     {
+        RTRC_PROFILER_SCOPE_CPU("Compute symbolic intersections");
+
         const Vector3d &a0 = positionsA[3 * triangleA + 0];
         const Vector3d &a1 = positionsA[3 * triangleA + 1];
         const Vector3d &a2 = positionsA[3 * triangleA + 2];
@@ -432,6 +443,8 @@ namespace CorefineDetail
         std::vector<uint32_t>          *outputFaceToInputFace,
         std::vector<Vector2u>          *outputCutEdges)
     {
+        RTRC_PROFILER_SCOPE_CPU("Generate rounded output");
+
         std::map<Vector3d, uint32_t> positionToIndex;
         auto GetIndex = [&](const Vector3d &position)
         {
@@ -526,6 +539,8 @@ namespace CorefineDetail
         std::vector<uint32_t>   *outputFaceToInputFace,
         std::vector<Vector2u>   *outputCutEdges)
     {
+        RTRC_PROFILER_SCOPE_CPU("Generate exact output");
+
         std::map<Expansion4, uint32_t, CompareHomogeneousPoint> positionToIndex;
         auto GetIndex = [&](const Expansion4 &position)
         {
@@ -666,6 +681,8 @@ void MeshCorefinement::Corefine(
 
     RTRC_MESH_COREFINEMENT_PARALLEL_FOR<uint32_t>(0, triangleCountA, [&](uint32_t triangleA)
     {
+        RTRC_PROFILER_SCOPE_CPU("Compute symbolic intersections");
+
         if(degenerateTriangleFlagA[triangleA])
         {
             return;
@@ -695,6 +712,8 @@ void MeshCorefinement::Corefine(
 
     RTRC_MESH_COREFINEMENT_PARALLEL_FOR<uint32_t>(0, triangleCountA, [&](uint32_t triangleA)
     {
+        RTRC_PROFILER_SCOPE_CPU("Resolve symbolic intersections");
+
         auto& symbolicIntersections = triangleAToPairwiseIntersections[triangleA];
         if(symbolicIntersections.empty())
         {

@@ -16,6 +16,15 @@ option(RTRC_ENABLE_STATIC_RHI        "Enable static backend selection" OFF)
 
 option(RTRC_BUILD_SAMPLES "Build Rtrc samples" ON)
 
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+    set(RTRC_ENABLE_TRACY_DEFAULT_VALUE ON)
+else()
+    set(RTRC_ENABLE_TRACY_DEFAULT_VALUE OFF)
+endif()
+
+option(RTRC_ENABLE_TRACY       "Enable tracy for profiling" ${RTRC_ENABLE_TRACY_DEFAULT_VALUE})
+option(RTRC_USE_EXTERNAL_TRACY "Use external tracy target"  OFF)
+
 ############## build type
 
 if(NOT CMAKE_BUILD_TYPE)

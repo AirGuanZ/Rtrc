@@ -25,3 +25,10 @@ cd ./External/
 if exist "./microsoft.direct3d.d3d12.1.715.0-preview/" rmdir /s /q "./microsoft.direct3d.d3d12.1.715.0-preview/"
 "C:/Program Files/7-Zip/7z.exe" x -y microsoft.direct3d.d3d12.1.715.0-preview.7z
 cd ../
+
+:: ====================================== tracy ======================================
+
+cd ./External/
+if exist "./tracy-0.11.1/" rmdir /s /q "./tracy-0.11.1/"
+"C:/Program Files/7-Zip/7z.exe" x -y tracy-0.11.1.7z
+cd ../
