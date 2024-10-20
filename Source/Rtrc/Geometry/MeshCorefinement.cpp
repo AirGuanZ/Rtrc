@@ -362,6 +362,7 @@ namespace CorefineDetail
             }
 
             // Perform constrained triangulation
+            // TODO: preconstruct some common cases to optimize the triangulation
 
             CDT2D cdt;
             cdt.delaunay = delaunay;
@@ -630,6 +631,8 @@ void MeshCorefinement::Corefine(
     Span<Vector3d> inputPositionsA, Span<uint32_t> inputIndicesA,
     Span<Vector3d> inputPositionsB, Span<uint32_t> inputIndicesB)
 {
+    RTRC_PROFILER_SCOPE_CPU("MeshCorefinement::Corefine");
+
     using namespace CorefineDetail;
 
     const IndexedPositions inputA(inputPositionsA, inputIndicesA);
@@ -690,73 +693,79 @@ void MeshCorefinement::Corefine(
 
     std::vector<std::vector<TrianglePairIntersection>> triangleAToPairwiseIntersections(triangleCountA);
 
-    RTRC_MESH_COREFINEMENT_PARALLEL_FOR<uint32_t>(0, triangleCountA, [&](uint32_t triangleA)
     {
         RTRC_PROFILER_SCOPE_CPU("Compute symbolic intersections");
 
-        if(degenerateTriangleFlagA[triangleA])
+        RTRC_MESH_COREFINEMENT_PARALLEL_FOR<uint32_t>(0, triangleCountA, [&](uint32_t triangleA)
         {
-            return;
-        }
-
-        AABB3d triangleBoundingBox;
-        triangleBoundingBox |= inputA[3 * triangleA + 0];
-        triangleBoundingBox |= inputA[3 * triangleA + 1];
-        triangleBoundingBox |= inputA[3 * triangleA + 2];
-
-        bvhB.TraversalPrimitives(
-            [&](const AABB3d &targetBoundingBox)
+            if(degenerateTriangleFlagA[triangleA])
             {
-                return triangleBoundingBox.Intersect(targetBoundingBox);
-            },
-            [&](uint32_t triangleB)
-            {
-                if(!degenerateTriangleFlagB[triangleB])
+                return;
+            }
+
+            AABB3d triangleBoundingBox;
+            triangleBoundingBox |= inputA[3 * triangleA + 0];
+            triangleBoundingBox |= inputA[3 * triangleA + 1];
+            triangleBoundingBox |= inputA[3 * triangleA + 2];
+
+            bvhB.TraversalPrimitives(
+                [&](const AABB3d &targetBoundingBox)
                 {
-                    ComputeSymbolicIntersection(
-                        triangleA, triangleB, inputA, inputB, triangleAToPairwiseIntersections[triangleA]);
-                }
-            });
-    });
+                    return triangleBoundingBox.Intersect(targetBoundingBox);
+                },
+                [&](uint32_t triangleB)
+                {
+                    if(!degenerateTriangleFlagB[triangleB])
+                    {
+                        ComputeSymbolicIntersection(
+                            triangleA, triangleB, inputA, inputB, triangleAToPairwiseIntersections[triangleA]);
+                    }
+                });
+        });
+    }
 
     // Resolve symbolic intersections
 
-    RTRC_MESH_COREFINEMENT_PARALLEL_FOR<uint32_t>(0, triangleCountA, [&](uint32_t triangleA)
     {
         RTRC_PROFILER_SCOPE_CPU("Resolve symbolic intersections");
 
-        auto& symbolicIntersections = triangleAToPairwiseIntersections[triangleA];
-        if(symbolicIntersections.empty())
-        {
-            return;
-        }
-
-        const Vector3d &p0 = inputA[3 * triangleA + 0];
-        const Vector3d &p1 = inputA[3 * triangleA + 1];
-        const Vector3d &p2 = inputA[3 * triangleA + 2];
-
-        for(TrianglePairIntersection &intersectionInfo : symbolicIntersections)
-        {
-            const uint32_t triangleB = intersectionInfo.triangleB;
-            const Vector3d &q0 = inputB[3 * triangleB + 0];
-            const Vector3d &q1 = inputB[3 * triangleB + 1];
-            const Vector3d &q2 = inputB[3 * triangleB + 2];
-
-            intersectionInfo.points.reserve(intersectionInfo.intersection.GetPoints().size());
-            for(auto &inct : intersectionInfo.intersection.GetPoints())
+        RTRC_MESH_COREFINEMENT_PARALLEL_FOR<uint32_t>(
+            0, triangleCountA, [&](uint32_t triangleA)
             {
-                const SI::Element elemA = inct.GetElement0();
-                const SI::Element elemB = inct.GetElement1();
-                intersectionInfo.points.push_back(ResolveSymbolicIntersection(p0, p1, p2, q0, q1, q2, elemA, elemB));
+                auto &symbolicIntersections = triangleAToPairwiseIntersections[triangleA];
+                if(symbolicIntersections.empty())
+                {
+                    return;
+                }
 
-                Expansion4 &newPoint = intersectionInfo.points.back();
-                newPoint.x.Compress();
-                newPoint.y.Compress();
-                newPoint.z.Compress();
-                newPoint.w.Compress();
-            }
-        }
-    });
+                const Vector3d &p0 = inputA[3 * triangleA + 0];
+                const Vector3d &p1 = inputA[3 * triangleA + 1];
+                const Vector3d &p2 = inputA[3 * triangleA + 2];
+
+                for(TrianglePairIntersection &intersectionInfo : symbolicIntersections)
+                {
+                    const uint32_t triangleB = intersectionInfo.triangleB;
+                    const Vector3d &q0 = inputB[3 * triangleB + 0];
+                    const Vector3d &q1 = inputB[3 * triangleB + 1];
+                    const Vector3d &q2 = inputB[3 * triangleB + 2];
+
+                    intersectionInfo.points.reserve(intersectionInfo.intersection.GetPoints().size());
+                    for(auto &inct : intersectionInfo.intersection.GetPoints())
+                    {
+                        const SI::Element elemA = inct.GetElement0();
+                        const SI::Element elemB = inct.GetElement1();
+                        intersectionInfo.points.push_back(
+                            ResolveSymbolicIntersection(p0, p1, p2, q0, q1, q2, elemA, elemB));
+
+                        Expansion4 &newPoint = intersectionInfo.points.back();
+                        newPoint.x.Compress();
+                        newPoint.y.Compress();
+                        newPoint.z.Compress();
+                        newPoint.w.Compress();
+                    }
+                }
+            });
+    }
 
     // Retriangulate A
 
@@ -823,6 +832,8 @@ void MeshCorefinement::Corefine(
 
 void MeshSelfIntersectionRefinement::Refine(Span<Vector3d> inputPositions, Span<uint32_t> inputIndices)
 {
+    RTRC_PROFILER_SCOPE_CPU("MeshSelfIntersectionRefinement::Refine");
+
     using namespace CorefineDetail;
 
     const IndexedPositions input(inputPositions, inputIndices);
