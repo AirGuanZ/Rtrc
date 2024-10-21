@@ -36,6 +36,9 @@ public:
     // Otherwise, the result might not be deterministic and intrinsic.
     bool delaunay = true;
 
+    // See ConstrainedTriangulation::approxDelaunay
+    bool approxDelaunay = false;
+
     // Output connectivity
     std::vector<uint32_t> outputIndicesA;
     std::vector<uint32_t> outputIndicesB;
@@ -68,6 +71,7 @@ public:
     bool trackCutEdges = false;
     bool preserveExactPositions = false;
     bool delaunay = true;
+    bool approxDelaunay = false;
 
     std::vector<uint32_t>   outputIndices;
     std::vector<Vector3d>   outputPositions;

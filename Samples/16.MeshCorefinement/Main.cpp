@@ -22,6 +22,7 @@ int main()
     const auto inputB = LoadMesh("./Asset/Sample/16.MeshCorefinement/MeshB.obj");
 
     MeshCorefinement corefinement;
+    corefinement.approxDelaunay = true;
     corefinement.Corefine(inputA, {}, inputB, {});
 
     WriteOFFFile<double>(

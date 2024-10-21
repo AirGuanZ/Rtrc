@@ -237,11 +237,16 @@ namespace CorefineDetail
         const IndexedPositions<double> &inputPositions,
         bool                            collectCutEdges,
         bool                            delaunay,
+        bool                            approxDelaunay,
         Span<uint8_t>                   degenerateTriangleFlags,
         const PairwiseIntersections    &pairwiseIntersections,
         MutSpan<PerTriangleOutput>      triangleToOutput)
     {
         RTRC_PROFILER_SCOPE_CPU("RefineTriangles");
+
+        assert(
+            !(!delaunay && approxDelaunay) &&
+            "'Delaunay' is not enabled, but 'approxDelaunay' is enabled. This seems likely to be unintended.");
 
         const uint32_t triangleCount = inputPositions.GetSize() / 3;
         assert(triangleCount == degenerateTriangleFlags.size());
@@ -366,7 +371,7 @@ namespace CorefineDetail
 
             CDT2D cdt;
             cdt.delaunay = delaunay;
-            cdt.approxDelaunay = true;
+            cdt.approxDelaunay = approxDelaunay;
             cdt.trackConstraintMask = collectCutEdges;
             cdt.Triangulate(inputPoints2D, inputConstraints);
 
@@ -771,7 +776,7 @@ void MeshCorefinement::Corefine(
 
     std::vector<PerTriangleOutput> triangleAToOutput(triangleCountA);
     RefineTriangles(
-        inputA, trackCutEdges, delaunay, degenerateTriangleFlagA,
+        inputA, trackCutEdges, delaunay, approxDelaunay, degenerateTriangleFlagA,
         TrianglePairIntersections{ triangleAToPairwiseIntersections }, triangleAToOutput);
 
     // Collect symbolic intersections for B
@@ -790,7 +795,7 @@ void MeshCorefinement::Corefine(
 
     std::vector<PerTriangleOutput> triangleBToOutput(triangleCountB);
     RefineTriangles(
-        inputB, trackCutEdges, delaunay, degenerateTriangleFlagB,
+        inputB, trackCutEdges, delaunay, approxDelaunay, degenerateTriangleFlagB,
         TrianglePairIntersections{ triangleBToPairwiseIntersections }, triangleBToOutput);
 
     // Final rounding
@@ -958,7 +963,7 @@ void MeshSelfIntersectionRefinement::Refine(Span<Vector3d> inputPositions, Span<
 
     std::vector<PerTriangleOutput> triangleToOutput(triangleCount);
     RefineTriangles(
-        input, trackCutEdges, delaunay, degenerateTriangleFlags,
+        input, trackCutEdges, delaunay, approxDelaunay, degenerateTriangleFlags,
         IndexedTrianglePairIntersections{ triangleToIntersectionIndices, allIntersections },
         triangleToOutput);
 
