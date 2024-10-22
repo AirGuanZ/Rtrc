@@ -6,7 +6,7 @@ RTRC_BEGIN
 
 struct JSONArchiveReader::Frame
 {
-    int version = 0;
+    uint32_t version = 0;
     nlohmann::json json;
     int nextIndexInTuple = -1;
 };
@@ -22,12 +22,12 @@ JSONArchiveReader::~JSONArchiveReader()
     
 }
 
-void JSONArchiveReader::SetVersion(int version)
+void JSONArchiveReader::SetVersion(uint32_t version)
 {
     assert(version >= frames_.back().version);
 }
 
-int JSONArchiveReader::GetVersion() const
+uint32_t JSONArchiveReader::GetVersion() const
 {
     return frames_.back().version;
 }

@@ -12,11 +12,11 @@ public:
     explicit JSONArchiveReader(const std::string &json);
     ~JSONArchiveReader();
 
-    void SetVersion(int version);
-    int GetVersion() const;
+    void SetVersion(uint32_t version);
+    uint32_t GetVersion() const;
 
-    bool IsWriting() const { return false; }
-    bool IsReading() const { return true; }
+    constexpr bool IsWriting() const { return false; }
+    constexpr bool IsReading() const { return true; }
     bool DidReadLastProperty() const;
 
     bool BeginTransferObject(std::string_view name);

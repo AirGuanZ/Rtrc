@@ -14,8 +14,8 @@ public:
     void SetVersion(int version);
     int GetVersion() const;
 
-    bool IsWriting() const { return false; }
-    bool IsReading() const { return true; }
+    constexpr bool IsWriting() const { return false; }
+    constexpr bool IsReading() const { return true; }
     bool DidReadLastProperty() const;
 
     bool BeginTransferObject(std::string_view name);

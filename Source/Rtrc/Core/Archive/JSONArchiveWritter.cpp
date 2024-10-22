@@ -10,7 +10,7 @@ struct JSONArchiveWritter::Frame
 {
     std::string name;
     bool isVersionSet = false;
-    int version = 0;
+    uint32_t version = 0;
     nlohmann::json json;
 };
 
@@ -24,17 +24,19 @@ JSONArchiveWritter::JSONArchiveWritter()
 // Define this here for hiding definition of JSONArchiveWritter::Frame.
 JSONArchiveWritter::~JSONArchiveWritter() = default;
 
-void JSONArchiveWritter::SetVersion(int version)
+void JSONArchiveWritter::SetVersion(uint32_t version)
 {
-    assert(version > 0);
     assert(!frames_.empty());
     auto &frame = frames_.back();
     assert(!frame.isVersionSet);
-    frame.version = version;
+    if(version > 0)
+    {
+        frame.version = version;
+    }
     frame.isVersionSet = true;
 }
 
-int JSONArchiveWritter::GetVersion() const
+uint32_t JSONArchiveWritter::GetVersion() const
 {
     return frames_.back().version;
 }

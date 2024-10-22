@@ -12,12 +12,12 @@ public:
     JSONArchiveWritter();
     ~JSONArchiveWritter();
 
-    void SetVersion(int version);
-    int GetVersion() const;
+    void SetVersion(uint32_t version);
+    uint32_t GetVersion() const;
 
-    bool IsWriting() const { return true; }
-    bool IsReading() const { return false; }
-    bool DidReadLastProperty() const { return false; }
+    constexpr bool IsWriting() const { return true; }
+    constexpr bool IsReading() const { return false; }
+    constexpr bool DidReadLastProperty() const { return false; }
 
     bool BeginTransferObject(std::string_view name);
     void EndTransferObject();

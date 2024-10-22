@@ -15,9 +15,9 @@ public:
     void SetVersion(int version);
     int GetVersion() const;
 
-    bool IsWriting() const;
-    bool IsReading() const;
-    bool DidReadLastProperty() const;
+    constexpr bool IsWriting() const { return true; }
+    constexpr bool IsReading() const { return false; }
+    constexpr bool DidReadLastProperty() const { return false; }
 
     bool BeginTransferObject(std::string_view name);
     void EndTransferObject();
@@ -57,21 +57,6 @@ inline void JSONFileArchiveWritter::SetVersion(int version)
 inline int JSONFileArchiveWritter::GetVersion() const
 {
     return jsonWritter_.GetVersion();
-}
-
-inline bool JSONFileArchiveWritter::IsWriting() const
-{
-    return true;
-}
-
-inline bool JSONFileArchiveWritter::IsReading() const
-{
-    return false;
-}
-
-inline bool JSONFileArchiveWritter::DidReadLastProperty() const
-{
-    return false;
 }
 
 inline bool JSONFileArchiveWritter::BeginTransferObject(std::string_view name)
