@@ -54,7 +54,7 @@ public:
     void EndTransferTuple()
     {
         auto ar = static_cast<Archive *>(this);
-        ar->EndTransferTuple();
+        ar->EndTransferObject();
     }
 };
 
@@ -68,6 +68,19 @@ struct ArchiveTransferTrait
         {
             object.Transfer(ar);
             ar.EndTransferObject();
+        }
+    }
+};
+
+template<typename T, size_t N>
+struct ArchiveTransferTrait<T[N]>
+{
+    template<typename Archive>
+    static void Transfer(Archive &ar, std::string_view name, T (&array)[N])
+    {
+        for(size_t i = 0; i < N; ++i)
+        {
+            ar.Transfer(fmt::format("{}[{}]", name, i), array[i]);
         }
     }
 };

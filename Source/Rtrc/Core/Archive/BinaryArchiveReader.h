@@ -26,7 +26,7 @@ namespace BinaryArchiveReaderDetail
 template<bool ReadVersionNumber>
 class BinaryArchiveReader :
     public Uncopyable,
-    private BinaryArchiveReaderDetail::VersionsMember<ReadVersionNumber>,
+    BinaryArchiveReaderDetail::VersionsMember<ReadVersionNumber>,
     public ArchiveCommon<BinaryArchiveReader<ReadVersionNumber>>
 {
 public:
@@ -36,10 +36,7 @@ public:
     BinaryArchiveReader(const void *data, size_t size)
         : input_(static_cast<const std::byte*>(data), size)
     {
-        if constexpr(ReadVersionNumber)
-        {
-            this->versions_.push_back(ConsumeVersionNumber());
-        }
+
     }
 
     void SetVersion(uint32_t version) { }

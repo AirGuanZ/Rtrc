@@ -13,19 +13,19 @@ public:
 
     BinaryArchiveWriter()
     {
-        versions_.push_back(0);
+
     }
 
     void SetVersion(uint32_t version)
     {
         assert(!versions_.empty());
-        versions_.back() = version;
+        versions_.back().version = version;
     }
 
     uint32_t GetVersion() const
     {
         assert(!versions_.empty());
-        return versions_.back();
+        return versions_.back().version;
     }
 
     constexpr bool IsWriting() const { return true; }
