@@ -1,4 +1,5 @@
 #include <iostream>
+#include <print>
 
 #include <Rtrc/Core/Archive/Archive.h>
 #include <Rtrc/Core/Math/Vector3.h>
@@ -40,7 +41,7 @@ int main()
         MyStruct2 s1;
         JSONArchiveReader jsonReader(jsonWriter.ToString());
         jsonReader.Transfer("root", s1);
-        std::print(std::cout, "Serialize/deserialize using JSON string: {}\n", s == s1);
+        std::print("Serialize/deserialize using JSON string: {}\n", s == s1);
     }
 
     BinaryArchiveWriter<true> binaryWriter;
@@ -50,6 +51,6 @@ int main()
         MyStruct2 s1;
         BinaryArchiveReader<true> binaryReader(binaryWriter.GetResult().GetData(), binaryWriter.GetResult().GetSize());
         binaryReader.Transfer("root", s1);
-        std::print(std::cout, "Serialize/deserialize using binary data: {}\n", s == s1);
+        std::print("Serialize/deserialize using binary data: {}\n", s == s1);
     }
 }
