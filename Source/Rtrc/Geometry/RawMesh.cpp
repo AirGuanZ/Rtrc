@@ -15,7 +15,7 @@ RawMesh RawMesh::Load(const std::string& filename)
     {
         return LoadWavefrontObj(filename);
     }
-    throw Exception(fmt::format("Unsupported mesh file extension: '{}'", ext));
+    throw Exception(std::format("Unsupported mesh file extension: '{}'", ext));
 }
 
 void RawMesh::SetTriangleCount(uint32_t count)
@@ -72,7 +72,7 @@ std::string_view RawMesh::GetExtension(const std::string& filename)
     const size_t pos = filename.rfind('.');
     if(pos == std::string::npos)
     {
-        throw Exception(fmt::format("No extension found in {}", filename));
+        throw Exception(std::format("No extension found in {}", filename));
     }
     return std::string_view(filename).substr(pos);
 }

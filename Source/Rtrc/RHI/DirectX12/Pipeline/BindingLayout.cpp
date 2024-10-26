@@ -220,7 +220,7 @@ const ComPtr<ID3D12RootSignature> &DirectX12BindingLayout::_internalGetRootSigna
     {
         const char *errorMessage = serializeError ?
             static_cast<const char *>(serializeError->GetBufferPointer()) : "unknown";
-        throw Exception(fmt::format(
+        throw Exception(std::format(
             "Fail to serialize directx12 root signature. Error message: {}", errorMessage));
     };
 

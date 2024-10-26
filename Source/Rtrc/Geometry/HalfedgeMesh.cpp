@@ -62,7 +62,7 @@ HalfedgeMesh HalfedgeMesh::Build(Span<uint32_t> indices, BuildOptions options, B
                 {
                     if(options.Contains(ThrowOnInvalidInput))
                     {
-                        throw Exception(fmt::format(
+                        throw Exception(std::format(
                             "Non-manifold edge encountered. Vertices in edge are {} and {}", head, tail));
                     }
                     return false;
@@ -176,7 +176,7 @@ HalfedgeMesh HalfedgeMesh::Build(Span<uint32_t> indices, BuildOptions options, B
         {
             if(options.Contains(ThrowOnInvalidInput))
             {
-                throw Exception(fmt::format("Non-manifold vertex encountered. Vertex id is {}", v));
+                throw Exception(std::format("Non-manifold vertex encountered. Vertex id is {}", v));
             }
             return false;
         }
@@ -267,7 +267,7 @@ HalfedgeMesh HalfedgeMesh::Build(Span<uint32_t> indices, BuildOptions options, B
         {
             if(options.Contains(ThrowOnInvalidInput))
             {
-                throw Exception(fmt::format("Vertex {} is not contained by any face", v));
+                throw Exception(std::format("Vertex {} is not contained by any face", v));
             }
             return {};
         }

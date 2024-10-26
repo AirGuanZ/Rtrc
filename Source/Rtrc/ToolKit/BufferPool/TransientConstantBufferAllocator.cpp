@@ -10,7 +10,7 @@ TransientConstantBufferAllocator::TransientConstantBufferAllocator(Device &devic
     {
         const size_t elemSize = MIN_BINDING_GROUP_CBUFFER_SIZE << index;
         pool = MakeBox<FixedSizedTransientConstantBufferBindingGroupPool>(
-            elemSize, fmt::format("Transient{}", elemSize), RHI::ShaderStage::All, device);
+            elemSize, std::format("Transient{}", elemSize), RHI::ShaderStage::All, device);
     }
 }
 
@@ -46,7 +46,7 @@ RC<BindingGroup> TransientConstantBufferAllocator::CreateConstantBufferBindingGr
             return bindingGroupPool_[i]->NewRecord(data, bytes).bindingGroup;
         }
     }
-    throw Exception(fmt::format(
+    throw Exception(std::format(
         "TransientConstantBufferAllocator: required constant buffer size is too large. "
         "Supported: {}, required: {}", MIN_BINDING_GROUP_CBUFFER_SIZE << (BINDING_GROUP_POOL_COUNT - 1), bytes));
 }

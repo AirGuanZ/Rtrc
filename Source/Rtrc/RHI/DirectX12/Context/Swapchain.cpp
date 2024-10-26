@@ -32,7 +32,7 @@ DirectX12Swapchain::DirectX12Swapchain(
             "Fail to get directx12 swapchain image");
         images_[i] = MakeRPtr<DirectX12Texture>(
             imageDesc, device_, std::move(image), DirectX12MemoryAllocation{ nullptr });
-        images_[i]->SetName(fmt::format("SwapChainImage{}", i));
+        images_[i]->SetName(std::format("SwapChainImage{}", i));
     }
 
     imageIndex_ = swapchain_->GetCurrentBackBufferIndex();

@@ -83,7 +83,7 @@ std::string ShaderNameToNamespaceName(const std::string &shaderName)
     ret += "_";
     for(char c : shaderName)
     {
-        ret += fmt::format("{:0>2x}", static_cast<unsigned int>(c));
+        ret += std::format("{:0>2x}", static_cast<unsigned int>(c));
     }
     return ret;
 }
@@ -112,7 +112,7 @@ void GenerateBindingGroupDefinition(
         std::string templateParamStr;
         if(binding.type == Rtrc::RHI::BindingType::ConstantBuffer && !binding.templateParam.empty())
         {
-            templateParamStr = fmt::format("<{}>", binding.templateParam);
+            templateParamStr = std::format("<{}>", binding.templateParam);
         }
 
         std::string_view head = "rtrc_define";
@@ -135,7 +135,7 @@ void GenerateBindingGroupDefinition(
         std::string arraySizeStr;
         if(binding.arraySize)
         {
-            arraySizeStr = fmt::format(", [{}]", *binding.arraySize);
+            arraySizeStr = std::format(", [{}]", *binding.arraySize);
         }
 
         sw(
@@ -267,7 +267,7 @@ void GenerateKeywordAndBindingGroupsInShader(
                 int nameSuffix = 0;
                 while(true)
                 {
-                    bindingGroupName = fmt::format("{}_{}", bindingGroup.name, nameSuffix);
+                    bindingGroupName = std::format("{}_{}", bindingGroup.name, nameSuffix);
                     if(!allBindingGroupNames.contains(bindingGroupName))
                     {
                         break;
@@ -541,10 +541,10 @@ void Run(int argc, const char *argv[])
     }
 
     {
-        std::cout << fmt::format("    Dependencies:\n", args->inputFilename);
+        std::cout << std::format("    Dependencies:\n", args->inputFilename);
         for(auto &x : dependencies)
         {
-            std::cout << fmt::format("        {}\n", x);
+            std::cout << std::format("        {}\n", x);
         }
     }
 

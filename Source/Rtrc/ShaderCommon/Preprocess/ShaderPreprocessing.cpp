@@ -24,7 +24,7 @@ namespace ShaderPreprocessingDetail
 
     std::string GetArraySpecifier(std::optional<uint32_t> arraySize)
     {
-        return arraySize ? fmt::format("[{}]", *arraySize) : std::string();
+        return arraySize ? std::format("[{}]", *arraySize) : std::string();
     }
 
 } // namespace ShaderPreprocessingDetail
@@ -69,7 +69,7 @@ ShaderPreprocessingOutput PreprocessShader(const ShaderPreprocessingInput &input
     }
     else
     {
-        throw Exception(fmt::format(
+        throw Exception(std::format(
             "Invalid shader category. Shader name: {}; VS: {}, FS: {}, CS: {}, RT: {}, TS: {}, MS: {}, WG: {}",
             input.name, VS, FS, CS, RT, TS, MS, WG));
     }
@@ -99,7 +99,7 @@ ShaderPreprocessingOutput PreprocessShader(const ShaderPreprocessingInput &input
             {
                 if(&binding != &group.bindings.back())
                 {
-                    throw Exception(fmt::format(
+                    throw Exception(std::format(
                         "Binding {} in shader {} has variable array size but is not the last one in binding group {}",
                         binding.name, input.name, group.name));
                 }
@@ -182,7 +182,7 @@ ShaderPreprocessingOutput PreprocessShader(const ShaderPreprocessingInput &input
                 {
                     macros.insert(
                         {
-                            fmt::format("{}_{}", keyword.name, valueName),
+                            std::format("{}_{}", keyword.name, valueName),
                             std::to_string(valueIndex)
                         });
                 }
@@ -231,7 +231,7 @@ ShaderPreprocessingOutput PreprocessShader(const ShaderPreprocessingInput &input
     auto regAlloc = ShaderResourceRegisterAllocator::Create(backend);
     for(auto &&[groupIndex, group] : std::views::enumerate(input.bindingGroups))
     {
-        std::string groupLeft = fmt::format("_rtrc_group_{}", group.name);
+        std::string groupLeft = std::format("_rtrc_group_{}", group.name);
         std::string groupDefinition;
 
         regAlloc->NewBindingGroup(groupIndex);
@@ -253,13 +253,13 @@ ShaderPreprocessingOutput PreprocessShader(const ShaderPreprocessingInput &input
             std::string templateParamSpecifier;
             if(!binding.templateParam.empty())
             {
-                templateParamSpecifier = fmt::format("<{}>", binding.templateParam);
+                templateParamSpecifier = std::format("<{}>", binding.templateParam);
             }
 
-            std::string left = fmt::format("_rtrc_define_{}", binding.name);
+            std::string left = std::format("_rtrc_define_{}", binding.name);
             std::string right;
 
-            right = fmt::format(
+            right = std::format(
                 "{} {}{} {}{}{};",
                 regAlloc->GetPrefix(),
                 binding.rawTypeName, templateParamSpecifier, binding.name, arraySpecifier,
@@ -295,7 +295,7 @@ ShaderPreprocessingOutput PreprocessShader(const ShaderPreprocessingInput &input
             uniformBlock.variables.reserve(group.uniformPropertyDefinitions.size());
             for(const ParsedUniformDefinition &uniform : group.uniformPropertyDefinitions)
             {
-                uniformPropertyStr += fmt::format("{} {};", uniform.type, uniform.name);
+                uniformPropertyStr += std::format("{} {};", uniform.type, uniform.name);
 
                 auto &var = uniformBlock.variables.emplace_back();
                 var.name       = uniform.name;
@@ -304,14 +304,14 @@ ShaderPreprocessingOutput PreprocessShader(const ShaderPreprocessingInput &input
             }
 
             regAlloc->NewBinding(slot, RHI::BindingType::ConstantBuffer);
-            groupDefinition += fmt::format(
+            groupDefinition += std::format(
                 "struct _rtrc_generated_cbuffer_struct_{} {{ {} }}; "
                 "{}ConstantBuffer<_rtrc_generated_cbuffer_struct_{}> {}{};",
                 group.name, uniformPropertyStr,
                 regAlloc->GetPrefix(), group.name, group.name, regAlloc->GetSuffix());
         }
         
-        std::string groupRight = fmt::format("struct _group_dummy_struct_{}", group.name);
+        std::string groupRight = std::format("struct _group_dummy_struct_{}", group.name);
         macros.insert({ groupLeft, std::move(groupRight) });
 
         macros[groupLeft] = groupDefinition + macros[groupLeft];
@@ -326,7 +326,7 @@ ShaderPreprocessingOutput PreprocessShader(const ShaderPreprocessingInput &input
         {
             for(auto &var : range.variables)
             {
-                pushConstantContent += fmt::format(
+                pushConstantContent += std::format(
                     "[[vk::offset({})]] {} {}__{};",
                     var.offset, ParsedPushConstantVariable::TypeToName(var.type), range.name, var.name);
             }
@@ -334,16 +334,16 @@ ShaderPreprocessingOutput PreprocessShader(const ShaderPreprocessingInput &input
         for(size_t i = 0; i < input.pushConstantRanges.size(); ++i)
         {
             const std::string &name = input.pushConstantRanges[i].name;
-            std::string left = fmt::format("_rtrc_push_constant_{}", name);
+            std::string left = std::format("_rtrc_push_constant_{}", name);
             std::string right;
             if(i == 0)
             {
-                right = fmt::format(
+                right = std::format(
                     "struct _rtrc_push_constant_struct {{ {} }}; "
                     "[[vk::push_constant]] _rtrc_push_constant_struct _rtrc_push_constant_struct_buffer;",
                     pushConstantContent);
             }
-            right += fmt::format("struct _rtrc_push_constant_dummy_struct_{}", name);
+            right += std::format("struct _rtrc_push_constant_dummy_struct_{}", name);
             macros.insert({ std::move(left), std::move(right) });
         }
         macros.insert(
@@ -371,14 +371,14 @@ ShaderPreprocessingOutput PreprocessShader(const ShaderPreprocessingInput &input
                 }
                 for(size_t i = offset; i < alignedOffset; ++i)
                 {
-                    content += fmt::format("float pad{};", padIndex++);
+                    content += std::format("float pad{};", padIndex++);
                 }
-                content += fmt::format("{} {};", ParsedPushConstantVariable::TypeToName(var.type), var.name);
+                content += std::format("{} {};", ParsedPushConstantVariable::TypeToName(var.type), var.name);
                 offset = alignedOffset + size;
             }
 
-            std::string left = fmt::format("_rtrc_push_constant_{}", range.name);
-            std::string right = fmt::format(
+            std::string left = std::format("_rtrc_push_constant_{}", range.name);
+            std::string right = std::format(
                 "struct _rtrc_push_constant_struct_{} {{ {} }}; "
                 "ConstantBuffer<_rtrc_push_constant_struct_{}> _rtrc_push_constant_range_{} : register(b{}, space{});"
                 "struct _rtrc_push_constant_dummy_struct_{}",
@@ -399,14 +399,14 @@ ShaderPreprocessingOutput PreprocessShader(const ShaderPreprocessingInput &input
     {
         if(backend == RHI::BackendType::Vulkan)
         {
-            macros["_rtrc_generated_shader_prefix"] += fmt::format(
+            macros["_rtrc_generated_shader_prefix"] += std::format(
                 "[[vk::binding(0, {})]] SamplerState _rtrc_generated_samplers[{}];",
                 inlineSamplerGroupIndex, input.inlineSamplerDescs.size());
 
             for(auto &[name, index] : input.inlineSamplerNameToDesc)
             {
-                std::string left = fmt::format("_rtrc_sampler_{}", name);
-                std::string right = fmt::format("static SamplerState {} = _rtrc_generated_samplers[{}];", name, index);
+                std::string left = std::format("_rtrc_sampler_{}", name);
+                std::string right = std::format("static SamplerState {} = _rtrc_generated_samplers[{}];", name, index);
                 macros.insert({ std::move(left), std::move(right) });
             }
         }
@@ -416,7 +416,7 @@ ShaderPreprocessingOutput PreprocessShader(const ShaderPreprocessingInput &input
             std::string generatedShaderPrefix;
             for(auto &&[i, s] : std::views::enumerate(input.inlineSamplerDescs))
             {
-                generatedShaderPrefix += fmt::format(
+                generatedShaderPrefix += std::format(
                     "SamplerState _rtrc_generated_sampler_{} : register(s{}, space{});",
                     i, i, inlineSamplerGroupIndex);
             }
@@ -424,8 +424,8 @@ ShaderPreprocessingOutput PreprocessShader(const ShaderPreprocessingInput &input
 
             for(auto &&[name, index] : input.inlineSamplerNameToDesc)
             {
-                std::string left = fmt::format("_rtrc_sampler_{}", name);
-                std::string right = fmt::format("static SamplerState {} = _rtrc_generated_sampler_{};", name, index);
+                std::string left = std::format("_rtrc_sampler_{}", name);
+                std::string right = std::format("static SamplerState {} = _rtrc_generated_sampler_{};", name, index);
                 macros.insert({ std::move(left), std::move(right) });
             }
         }
@@ -440,16 +440,16 @@ ShaderPreprocessingOutput PreprocessShader(const ShaderPreprocessingInput &input
         std::string templateParamSpec;
         if(!binding.templateParam.empty())
         {
-            templateParamSpec = fmt::format("<{}>", binding.templateParam);
+            templateParamSpec = std::format("<{}>", binding.templateParam);
         }
         std::string arraySpec = ShaderPreprocessingDetail::GetArraySpecifier(binding.arraySize);
 
-        std::string left = fmt::format("_rtrc_define_{}", binding.name);
+        std::string left = std::format("_rtrc_define_{}", binding.name);
         std::string right;
         if(backend == RHI::BackendType::Vulkan)
         {
             const int groupIndexForUngroupedBindings = static_cast<int>(groupLayoutDescs.size()); // For vulkan backend
-            right = fmt::format(
+            right = std::format(
                 "[[vk::binding({}, {})]] {}{} {}{};",
                 bindingIndex, groupIndexForUngroupedBindings,
                 binding.rawTypeName, templateParamSpec, binding.name, arraySpec);
@@ -464,8 +464,8 @@ ShaderPreprocessingOutput PreprocessShader(const ShaderPreprocessingInput &input
             using namespace ShaderPreprocessingDetail;
             assert(backend == RHI::BackendType::DirectX12);
             const char *reg = D3D12ShaderResourceRegisterAllocator::GetD3D12RegisterType(binding.type);
-            std::string regSpec = fmt::format("{}0, space{}", reg, 9000 + bindingIndex);
-            right = fmt::format(
+            std::string regSpec = std::format("{}0, space{}", reg, 9000 + bindingIndex);
+            right = std::format(
                 "{}{} {}{} : register({});",
                 binding.rawTypeName, templateParamSpec, binding.name, arraySpec, regSpec);
             bindingNameToSlot.insert(
@@ -489,21 +489,21 @@ ShaderPreprocessingOutput PreprocessShader(const ShaderPreprocessingInput &input
         }
         else
         {
-            throw Exception(fmt::format("Unknown aliased name {}", alias.aliasedName));
+            throw Exception(std::format("Unknown aliased name {}", alias.aliasedName));
         }
         auto &binding = *nameToBinding.at(alias.aliasedName);
 
         std::string templateParamSpec;
         if(!alias.templateParam.empty())
         {
-            templateParamSpec = fmt::format("<{}>", alias.templateParam);
+            templateParamSpec = std::format("<{}>", alias.templateParam);
         }
 
-        std::string left = fmt::format("_rtrc_alias_{}", alias.name);
+        std::string left = std::format("_rtrc_alias_{}", alias.name);
         std::string right;
         if(backend == RHI::BackendType::Vulkan)
         {
-            right = fmt::format(
+            right = std::format(
                 "[[vk::binding({}, {})]] {}{} {}{};",
                 slot, set, alias.rawTypename, templateParamSpec,
                 alias.name, ShaderPreprocessingDetail::GetArraySpecifier(binding.arraySize));
@@ -513,7 +513,7 @@ ShaderPreprocessingOutput PreprocessShader(const ShaderPreprocessingInput &input
             using namespace ShaderPreprocessingDetail;
             assert(backend == RHI::BackendType::DirectX12);
             const char *reg = D3D12ShaderResourceRegisterAllocator::GetD3D12RegisterType(binding.type);
-            right = fmt::format(
+            right = std::format(
                 "{}{} {}{} : register({}0, space{});",
                 alias.rawTypename, templateParamSpec, alias.name,
                 GetArraySpecifier(binding.arraySize),
@@ -675,7 +675,7 @@ std::set<std::string> GetDependentFiles(
     const size_t commaPos = dependencies.find(":");
     if(commaPos == std::string::npos)
     {
-        throw Exception(fmt::format("Invalid shader dependency info: {}", dependencies));
+        throw Exception(std::format("Invalid shader dependency info: {}", dependencies));
     }
     const auto lines = Split(dependencies.substr(commaPos + 1), " \\");
 

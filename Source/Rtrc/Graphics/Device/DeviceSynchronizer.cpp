@@ -80,7 +80,7 @@ void DeviceSynchronizer::BeginRenderLoop(int frameCountInFlight)
     for(auto &&[i, frame] : Enumerate(renderLoopFrames_))
     {
         frame.fence = device_->CreateFence(true);
-        frame.fence->SetName(fmt::format("DeviceSynchronizer.Fence{}", i));
+        frame.fence->SetName(std::format("DeviceSynchronizer.Fence{}", i));
     }
     renderLoopFrameIndex_ = 0;
 }

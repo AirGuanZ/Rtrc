@@ -197,7 +197,7 @@ RC<Shader> ShaderCompiler::Compile(
                     return i;
                 }
             }
-            throw Exception(fmt::format("Ray tracing entry {} is required by a shader group but not found", name));
+            throw Exception(std::format("Ray tracing entry {} is required by a shader group but not found", name));
         };
 
         for(const std::vector<std::string> &rawGroup : shader.rayTracingEntryGroups)
@@ -252,7 +252,7 @@ RC<Shader> ShaderCompiler::Compile(
                     }
                     else
                     {
-                        throw Exception(fmt::format(
+                        throw Exception(std::format(
                             "Unsupported shader stage in ray tracing shader group: {}",
                             std::to_underlying(stage)));
                     }
@@ -366,7 +366,7 @@ void ShaderCompiler::EnsureAllUsedBindingsAreGrouped(
         {
             if(refl->IsBindingUsed(binding.name))
             {
-                throw Exception(fmt::format(
+                throw Exception(std::format(
                     "Binding {} is not explicitly grouped but is used in {}", binding.name, stage));
             }
         }

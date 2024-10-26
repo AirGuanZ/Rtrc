@@ -1,10 +1,10 @@
 #pragma once
 
-#include <fmt/format.h>
 #include <half.hpp>
 
 #include <cmath>
 #include <cstddef>
+#include <format>
 #include <memory>
 #include <stdexcept>
 #include <version>
@@ -116,8 +116,8 @@ public:
 
 using float16 = half_float::half;
 
-inline float16 operator "" _f16(long double f) { return float16(static_cast<float>(f)); }
-inline float16 operator "" _f16(unsigned long long f) { return float16(static_cast<float>(f)); }
+inline float16 operator""_f16(long double f) { return float16(static_cast<float>(f)); }
+inline float16 operator""_f16(unsigned long long f) { return float16(static_cast<float>(f)); }
 
 // =============================================== smart pointer ===============================================
 
@@ -309,13 +309,13 @@ public:
 // =============================================== misc ===============================================
 
 template<typename R = size_t, typename T, size_t N>
-constexpr R GetArraySize(const T(&arr)[N])
+constexpr R GetArraySize(const T (&)[N])
 {
     return static_cast<R>(N);
 }
 
 template<typename C, typename M>
-constexpr size_t GetMemberOffset(M C:: *p)
+constexpr size_t GetMemberOffset(M C::* p)
 {
     return reinterpret_cast<size_t>(&(static_cast<C *>(nullptr)->*p));
 }

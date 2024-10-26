@@ -77,7 +77,7 @@ public:
         }
         else if(!msg.size())
         {
-            Throw(fmt::format("'{}' expected", token));
+            Throw(std::format("'{}' expected", token));
         }
         else
         {
@@ -191,7 +191,7 @@ public:
 
         if(!std::isalpha(ch) && ch != '_')
         {
-            Throw(fmt::format("Unknown token starting with '{}'", ch));
+            Throw(std::format("Unknown token starting with '{}'", ch));
         }
 
         size_t endPos = nextPos_ + 1;
@@ -253,7 +253,7 @@ private:
                 }
                 const std::string_view filename = source_.substr(filenameStart, filenameEnd - filenameStart);
 
-                throw Exception(fmt::format("Parsing error at {}, line {}. {}", filename, line, msg));
+                throw Exception(std::format("Parsing error at {}, line {}. {}", filename, line, msg));
             }
 
             ++line;
@@ -268,7 +268,7 @@ private:
             }
         }
 
-        throw Exception(fmt::format("Parsing error at line {}. {}", line, msg));
+        throw Exception(std::format("Parsing error at line {}. {}", line, msg));
     }
 
     [[noreturn]] void ThrowInMaterialMode(std::string_view msg) const
@@ -282,7 +282,7 @@ private:
                 ++line;
             }
         }
-        throw Exception(fmt::format("Parsing error at line {}. {}", line, msg));
+        throw Exception(std::format("Parsing error at line {}. {}", line, msg));
     }
 
     size_t FindEndOfNumber(size_t start) const

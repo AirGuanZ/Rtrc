@@ -104,19 +104,19 @@ template <typename U>
 eVector3<T>& eVector3<T>::operator=(const eVector3<U>& other)
 {
     return *this = CreateTemporaryVariableForExpression<eVector3>(
-        fmt::format("{}({})", GetStaticTypeName(), other.Compile()));
+        std::format("{}({})", GetStaticTypeName(), other.Compile()));
 }
 
 template <typename T>
 TemporaryValueWrapper<typename eVector3<T>::ComponentType> eVector3<T>::operator[](u32 index)
 {
-    return CreateTemporaryVariableForExpression<ComponentType>(fmt::format("{}[{}]", Compile(), index.Compile()));
+    return CreateTemporaryVariableForExpression<ComponentType>(std::format("{}[{}]", Compile(), index.Compile()));
 }
 
 template <typename T>
 const TemporaryValueWrapper<typename eVector3<T>::ComponentType> eVector3<T>::operator[](u32 index) const
 {
-    return CreateTemporaryVariableForExpression<ComponentType>(fmt::format("{}[{}]", Compile(), index.Compile()));
+    return CreateTemporaryVariableForExpression<ComponentType>(std::format("{}[{}]", Compile(), index.Compile()));
 }
 
 template <typename T>

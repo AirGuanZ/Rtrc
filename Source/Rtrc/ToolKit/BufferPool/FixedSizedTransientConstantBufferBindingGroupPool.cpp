@@ -30,7 +30,7 @@ FixedSizedTransientConstantBufferBindingGroupPool::FixedSizedTransientConstantBu
     alignedSize_ = UpAlignTo(size_, (std::max)(alignment_, sizeAlignment_));
     if(alignedSize_ > 4 * 1024 * 1024)
     {
-        throw Exception(fmt::format(
+        throw Exception(std::format(
             "Aligned element size exceeds limit. Limit = {}, size = {}", 4 * 1024 * 1024, alignedSize_));
     }
     chunkSize_ = UpAlignTo(static_cast<size_t>(4 * 1024 * 1024), alignedSize_);

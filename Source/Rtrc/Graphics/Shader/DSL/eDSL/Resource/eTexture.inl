@@ -11,7 +11,7 @@ const char *TemplateTexture1D<T, IsRW>::GetStaticTypeName()
         {
             const char *basic = GetBasicTypeName();
             const char *element = T::GetStaticTypeName();
-            return fmt::format("{}<{}>", basic, element);
+            return std::format("{}<{}>", basic, element);
         }();
     return ret.data();
 }
@@ -29,7 +29,7 @@ TemplateTexture1D<T, IsRW> TemplateTexture1D<T, IsRW>::CreateFromName(std::strin
 template <typename T, bool IsRW>
 TemporaryValueWrapper<T> TemplateTexture1D<T, IsRW>::operator[](const u32x2 &coord) const
 {
-    std::string name = fmt::format("{}[{}]", this->eVariable_GetFullName(), CompileAsIdentifier(coord));
+    std::string name = std::format("{}[{}]", this->eVariable_GetFullName(), CompileAsIdentifier(coord));
     return CreateTemporaryVariableForExpression<T>(std::move(name));
 }
 
@@ -46,7 +46,7 @@ const char* TemplateTexture2D<T, IsRW>::GetStaticTypeName()
     {
         const char *basic = GetBasicTypeName();
         const char *element = T::GetStaticTypeName();
-        return fmt::format("{}<{}>", basic, element);
+        return std::format("{}<{}>", basic, element);
     }();
     return ret.data();
 }
@@ -64,7 +64,7 @@ TemplateTexture2D<T, IsRW> TemplateTexture2D<T, IsRW>::CreateFromName(std::strin
 template <typename T, bool IsRW>
 TemporaryValueWrapper<T> TemplateTexture2D<T, IsRW>::operator[](const u32x2& coord) const
 {
-    std::string name = fmt::format("{}[{}]", this->eVariable_GetFullName(), CompileAsIdentifier(coord));
+    std::string name = std::format("{}[{}]", this->eVariable_GetFullName(), CompileAsIdentifier(coord));
     return CreateTemporaryVariableForExpression<T>(std::move(name));
 }
 
@@ -81,7 +81,7 @@ const char *TemplateTexture3D<T, IsRW>::GetStaticTypeName()
         {
             const char *basic = GetBasicTypeName();
             const char *element = T::GetStaticTypeName();
-            return fmt::format("{}<{}>", basic, element);
+            return std::format("{}<{}>", basic, element);
         }();
     return ret.data();
 }
@@ -99,7 +99,7 @@ TemplateTexture3D<T, IsRW> TemplateTexture3D<T, IsRW>::CreateFromName(std::strin
 template <typename T, bool IsRW>
 TemporaryValueWrapper<T> TemplateTexture3D<T, IsRW>::operator[](const u32x2 &coord) const
 {
-    std::string name = fmt::format("{}[{}]", this->eVariable_GetFullName(), CompileAsIdentifier(coord));
+    std::string name = std::format("{}[{}]", this->eVariable_GetFullName(), CompileAsIdentifier(coord));
     return CreateTemporaryVariableForExpression<T>(std::move(name));
 }
 
@@ -116,7 +116,7 @@ const char *TemplateTexture1DArray<T, IsRW>::GetStaticTypeName()
         {
             const char *basic = GetBasicTypeName();
             const char *element = T::GetStaticTypeName();
-            return fmt::format("{}<{}>", basic, element);
+            return std::format("{}<{}>", basic, element);
         }();
     return ret.data();
 }
@@ -134,7 +134,7 @@ TemplateTexture1DArray<T, IsRW> TemplateTexture1DArray<T, IsRW>::CreateFromName(
 template <typename T, bool IsRW>
 std::conditional_t<IsRW, T, const T> TemplateTexture1DArray<T, IsRW>::operator[](const u32x2 &coord) const
 {
-    std::string name = fmt::format("{}[{}]", this->eVariable_GetFullName(), CompileAsIdentifier(coord));
+    std::string name = std::format("{}[{}]", this->eVariable_GetFullName(), CompileAsIdentifier(coord));
     return CreateTemporaryVariableForExpression<T>(std::move(name));
 }
 
@@ -151,7 +151,7 @@ const char* TemplateTexture2DArray<T, IsRW>::GetStaticTypeName()
     {
         const char *basic = GetBasicTypeName();
         const char *element = T::GetStaticTypeName();
-        return fmt::format("{}<{}>", basic, element);
+        return std::format("{}<{}>", basic, element);
     }();
     return ret.data();
 }
@@ -169,7 +169,7 @@ TemplateTexture2DArray<T, IsRW> TemplateTexture2DArray<T, IsRW>::CreateFromName(
 template <typename T, bool IsRW>
 std::conditional_t<IsRW, T, const T> TemplateTexture2DArray<T, IsRW>::operator[](const u32x2& coord) const
 {
-    std::string name = fmt::format("{}[{}]", this->eVariable_GetFullName(), CompileAsIdentifier(coord));
+    std::string name = std::format("{}[{}]", this->eVariable_GetFullName(), CompileAsIdentifier(coord));
     return CreateTemporaryVariableForExpression<T>(std::move(name));
 }
 
@@ -186,7 +186,7 @@ const char *TemplateTexture3DArray<T, IsRW>::GetStaticTypeName()
         {
             const char *basic = GetBasicTypeName();
             const char *element = T::GetStaticTypeName();
-            return fmt::format("{}<{}>", basic, element);
+            return std::format("{}<{}>", basic, element);
         }();
     return ret.data();
 }
@@ -204,7 +204,7 @@ TemplateTexture3DArray<T, IsRW> TemplateTexture3DArray<T, IsRW>::CreateFromName(
 template <typename T, bool IsRW>
 std::conditional_t<IsRW, T, const T> TemplateTexture3DArray<T, IsRW>::operator[](const u32x2 &coord) const
 {
-    std::string name = fmt::format("{}[{}]", this->eVariable_GetFullName(), CompileAsIdentifier(coord));
+    std::string name = std::format("{}[{}]", this->eVariable_GetFullName(), CompileAsIdentifier(coord));
     return CreateTemporaryVariableForExpression<T>(std::move(name));
 }
 

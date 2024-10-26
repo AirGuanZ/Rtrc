@@ -18,7 +18,7 @@ const char* TemplateBuffer<T, Type>::GetStaticTypeName()
         {
             const char *basic = GetBasicTypeName();
             const char *element = T::GetStaticTypeName();
-            return fmt::format("{}<{}>", basic, element);
+            return std::format("{}<{}>", basic, element);
         }();
         return ret.data();
     }
@@ -42,7 +42,7 @@ TemporaryValueWrapper<T> TemplateBuffer<T, Type>::operator[](const u32 &index) c
         Type == TemplateBufferType::RWBuffer || Type == TemplateBufferType::RWStructuredBuffer,
         "'operator[]' can only be called with (RW)(Structured)eBuffer");
 
-    std::string name = fmt::format("{}[{}]", this->eVariable_GetFullName(), CompileAsIdentifier(index));
+    std::string name = std::format("{}[{}]", this->eVariable_GetFullName(), CompileAsIdentifier(index));
     return CreateTemporaryVariableForExpression<T>(std::move(name));
 }
 
@@ -56,7 +56,7 @@ const S TemplateBuffer<T, Type>::Load(const u32 &offsetInBytes) const
     const std::string idThis = this->eVariable_GetFullName();
     const std::string typeStr = S::GetStaticTypeName();
     const std::string idOffset = CompileAsIdentifier(offsetInBytes);
-    std::string name = fmt::format("{}.Load<{}>({})", idThis, typeStr, idOffset);
+    std::string name = std::format("{}.Load<{}>({})", idThis, typeStr, idOffset);
     return CreateTemporaryVariableForExpression<S>(std::move(name));
 }
 

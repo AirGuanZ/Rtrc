@@ -104,7 +104,7 @@ void ClearTextureUtils::ClearRWTexture2D(
     case RHI::Format::R16G16_UNorm:
         return ClearRWTexture2DImpl(clearUNorm2Shader_, commandBuffer, uav, Vector2f(value.x, value.y));
     default:
-        throw Exception(fmt::format(
+        throw Exception(std::format(
             "ClearTextureUtils::ClearRWTexture2D(float): unsupported uav format {}", GetFormatName(format)));
     }
 }
@@ -125,7 +125,7 @@ void ClearTextureUtils::ClearRWTexture2D(
     case RHI::Format::R32G32B32A32_UInt:
         return ClearRWTexture2DImpl(clearUInt4Shader_, commandBuffer, uav, value);
     default:
-        throw Exception(fmt::format(
+        throw Exception(std::format(
             "ClearTextureUtils::ClearRWTexture2D(uint): unsupported uav format {}", GetFormatName(format)));
     }
 }
@@ -138,7 +138,7 @@ void ClearTextureUtils::ClearRWTexture2D(
     {
         format = uav.GetTexture()->GetFormat();
     }
-    throw Exception(fmt::format(
+    throw Exception(std::format(
         "ClearTextureUtils::ClearRWTexture2D(int): unsupported uav format {}", GetFormatName(format)));
 }
 

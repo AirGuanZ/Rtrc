@@ -47,7 +47,7 @@ namespace ShaderReflDetail
     {
         if(result != SPV_REFLECT_RESULT_SUCCESS)
         {
-            throw Exception(fmt::format("{}. error code: {}", errMsg, GetSPIRVReflectResultName(result)));
+            throw Exception(std::format("{}. error code: {}", errMsg, GetSPIRVReflectResultName(result)));
         }
     }
 
@@ -73,7 +73,7 @@ namespace ShaderReflDetail
         }
         if(!semanticLastPos && std::isdigit(inputName[0]))
         {
-            throw Exception(fmt::format("Invalid semantic name: {}", inputName));
+            throw Exception(std::format("Invalid semantic name: {}", inputName));
         }
         const std::string_view semantic = inputName.substr(0, semanticLastPos + 1);
 

@@ -79,22 +79,22 @@ void SetLogLevel(LogLevel level)
 
 void LogVerboseUnformatted(std::string_view msg)
 {
-    CommonDetail::_rtrcInternalLogVerboseUnformatted(fmt::format("{}{}", GetLogIndentString(), msg));
+    CommonDetail::_rtrcInternalLogVerboseUnformatted(std::format("{}{}", GetLogIndentString(), msg));
 }
 
 void LogInfoUnformatted(std::string_view msg)
 {
-    CommonDetail::_rtrcInternalLogInfoUnformatted(fmt::format("{}{}", GetLogIndentString(), msg));
+    CommonDetail::_rtrcInternalLogInfoUnformatted(std::format("{}{}", GetLogIndentString(), msg));
 }
 
 void LogWarningUnformatted(std::string_view msg)
 {
-    CommonDetail::_rtrcInternalLogWarningUnformatted(fmt::format("{}{}", GetLogIndentString(), msg));
+    CommonDetail::_rtrcInternalLogWarningUnformatted(std::format("{}{}", GetLogIndentString(), msg));
 }
 
 void LogErrorUnformatted(std::string_view msg)
 {
-    CommonDetail::_rtrcInternalLogErrorUnformatted(fmt::format("{}{}", GetLogIndentString(), msg));
+    CommonDetail::_rtrcInternalLogErrorUnformatted(std::format("{}{}", GetLogIndentString(), msg));
 }
 
 void SetLogIndentSize(unsigned size)

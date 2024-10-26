@@ -80,7 +80,7 @@ struct ArchiveTransferTrait<T[N]>
     {
         for(size_t i = 0; i < N; ++i)
         {
-            ar.Transfer(fmt::format("{}[{}]", name, i), array[i]);
+            ar.Transfer(std::format("{}[{}]", name, i), array[i]);
         }
     }
 };

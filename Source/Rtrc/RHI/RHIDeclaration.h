@@ -673,7 +673,7 @@ public:
                 semanticString.data() + i, end, semanticIndex);
             if(parseResult.ec != std::errc() || parseResult.ptr != end)
             {
-                throw Exception(fmt::format("Fail to parse semantic index in {}", semanticString));
+                throw Exception(std::format("Fail to parse semantic index in {}", semanticString));
             }
         }
         key_ = (semanticIndex << 24) | PooledSemanticName(semanticName).GetIndex();
@@ -682,7 +682,7 @@ public:
     bool IsValid() const { return key_ != INVALID_KEY; }
     const std::string &GetName() const { return PooledSemanticName::FromIndex(key_ & 0xffffff).GetString(); }
     uint32_t GetIndex() const { return key_ >> 24; }
-    std::string ToString() const { return fmt::format("{}{}", GetName(), GetIndex()); }
+    std::string ToString() const { return std::format("{}{}", GetName(), GetIndex()); }
 
     auto operator<=>(const VertexSemantic &) const = default;
 };

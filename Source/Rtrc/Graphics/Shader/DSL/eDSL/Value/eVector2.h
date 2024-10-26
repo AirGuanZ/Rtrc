@@ -84,7 +84,7 @@ inline eNumber<bool> all(const eVector2<bool> &v) { return v.x & v.y; }
     VEC<RET> operator OPR(const VEC<T> &lhs, const VEC<T> &rhs)                \
     {                                                                          \
         return CreateTemporaryVariableForExpression<VEC<RET>>(                 \
-            fmt::format("({} " #OPR " {})", lhs.Compile(), rhs.Compile()));    \
+            std::format("({} " #OPR " {})", lhs.Compile(), rhs.Compile()));    \
     }                                                                          \
     template<typename T>                                                       \
     VEC<RET> operator OPR(const VEC<T> &lhs, const eNumber<T> &rhs)            \

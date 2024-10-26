@@ -568,7 +568,7 @@ UPtr<RayTracingPipeline> DirectX12Device::CreateRayTracingPipeline(const RayTrac
         {
             if(exportedName.empty())
             {
-                exportedName = Utf8ToWin32W(fmt::format(
+                exportedName = Utf8ToWin32W(std::format(
                     "_{}_{}_{}_{}", name, libraryIndex, shaderIndex, entryIndex));
             }
             return exportedName;
@@ -652,7 +652,7 @@ UPtr<RayTracingPipeline> DirectX12Device::CreateRayTracingPipeline(const RayTrac
                 }
 
                 // groupName: HitGroup_{libraryIndex}_{groupIndex}
-                groupExportedNames.push_back(Utf8ToWin32W(fmt::format("HitGroup_{}_{}", libraryIndex, groupIndex)));
+                groupExportedNames.push_back(Utf8ToWin32W(std::format("HitGroup_{}_{}", libraryIndex, groupIndex)));
                 dxilGroup->SetHitGroupExport(groupExportedNames.back().c_str());
             },
             [&](const RayTracingRayGenShaderGroup &rayGenGroup)

@@ -55,7 +55,7 @@ void Run()
     RC<Texture> textures[4];
     for(int i = 0; i < 3; ++i)
     {
-        const std::string filename = fmt::format("Asset/Sample/03.BindlessTexture/{}.png", i);
+        const std::string filename = std::format("Asset/Sample/03.BindlessTexture/{}.png", i);
         textures[i] = device->LoadTexture2D(
             filename, RHI::Format::R8G8B8A8_UNorm,
             RHI::TextureUsage::TransferDst | RHI::TextureUsage::ShaderResource,

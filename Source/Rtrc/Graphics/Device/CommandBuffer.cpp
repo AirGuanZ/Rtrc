@@ -509,7 +509,7 @@ void CommandBuffer::BindGraphicsGroups(Span<RC<BindingGroup>> groups)
 #if RTRC_DEBUG
                 if(foundIndex >= 0)
                 {
-                    throw Exception(fmt::format(
+                    throw Exception(std::format(
                         "CommandBuffer::BindGraphicsGroups: group {} and {} have the same group layout",
                         foundIndex, i));
                 }
@@ -529,7 +529,7 @@ void CommandBuffer::BindGraphicsGroups(Span<RC<BindingGroup>> groups)
             {
                 DumpBindingGroupLayoutDesc(shaderInfo->GetBindingGroupLayoutByIndex(i)->GetRHIObject()->GetDesc());
             }
-            throw Exception(fmt::format("CommandBuffer::BindGraphicsGroups: group {} is unbounded", groupIndex));
+            throw Exception(std::format("CommandBuffer::BindGraphicsGroups: group {} is unbounded", groupIndex));
         }
 #endif
     }
@@ -552,7 +552,7 @@ void CommandBuffer::BindComputeGroups(Span<RC<BindingGroup>> groups)
 #if RTRC_DEBUG
                 if(foundIndex >= 0)
                 {
-                    throw Exception(fmt::format(
+                    throw Exception(std::format(
                         "CommandBuffer::BindComputeGroups: group {} and {} have the same group layout",
                         foundIndex, i));
                 }
@@ -572,7 +572,7 @@ void CommandBuffer::BindComputeGroups(Span<RC<BindingGroup>> groups)
             {
                 DumpBindingGroupLayoutDesc(shaderInfo->GetBindingGroupLayoutByIndex(i)->GetRHIObject()->GetDesc());
             }
-            throw Exception(fmt::format("CommandBuffer::BindComputeGroups: group {} is unbounded", groupIndex));
+            throw Exception(std::format("CommandBuffer::BindComputeGroups: group {} is unbounded", groupIndex));
         }
 #endif
     }
@@ -595,7 +595,7 @@ void CommandBuffer::BindRayTracingGroups(Span<RC<BindingGroup>> groups)
 #if RTRC_DEBUG
                 if(foundIndex >= 0)
                 {
-                    throw Exception(fmt::format(
+                    throw Exception(std::format(
                         "CommandBuffer::BindRayTracingGroups: group {} and {} have the same group layout",
                         foundIndex, i));
                 }
@@ -615,7 +615,7 @@ void CommandBuffer::BindRayTracingGroups(Span<RC<BindingGroup>> groups)
             {
                 DumpBindingGroupLayoutDesc(layoutInfo.GetBindingGroupLayoutByIndex(i)->GetRHIObject()->GetDesc());
             }
-            throw Exception(fmt::format("CommandBuffer::BindRayTracingGroups: group {} is unbounded", groupIndex));
+            throw Exception(std::format("CommandBuffer::BindRayTracingGroups: group {} is unbounded", groupIndex));
         }
 #endif
     }
@@ -638,7 +638,7 @@ void CommandBuffer::BindWorkGraphGroups(Span<RC<BindingGroup>> groups)
 #if RTRC_DEBUG
                 if(foundIndex >= 0)
                 {
-                    throw Exception(fmt::format(
+                    throw Exception(std::format(
                         "CommandBuffer::BindWorkGraphGroups: group {} and {} have the same group layout",
                         foundIndex, i));
                 }
@@ -658,7 +658,7 @@ void CommandBuffer::BindWorkGraphGroups(Span<RC<BindingGroup>> groups)
             {
                 DumpBindingGroupLayoutDesc(layoutInfo.GetBindingGroupLayoutByIndex(i)->GetRHIObject()->GetDesc());
             }
-            throw Exception(fmt::format("CommandBuffer::BindWorkGraphGroups: group {} is unbounded", groupIndex));
+            throw Exception(std::format("CommandBuffer::BindWorkGraphGroups: group {} is unbounded", groupIndex));
         }
 #endif
     }

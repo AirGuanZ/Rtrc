@@ -89,14 +89,14 @@ void D3D12ShaderResourceRegisterAllocator::NewBinding(int slot, RHI::BindingType
 
     if(groupIndex_ < 0)
     {
-        suffix_ = fmt::format(" : register({}0, space{})", regStr, 9000 + slot);
+        suffix_ = std::format(" : register({}0, space{})", regStr, 9000 + slot);
         return;
     }
 
     assert(*lastBindingIndex < slot &&
            "The allocation order for each type of register must be monotonic with respect to the binding index.");
 
-    suffix_ = fmt::format(" : register({}{}, space{})", regStr, *reg, groupIndex_);
+    suffix_ = std::format(" : register({}{}, space{})", regStr, *reg, groupIndex_);
     ++*reg;
     *lastBindingIndex = slot;
 }
@@ -120,7 +120,7 @@ void VulkanShaderResourceRegisterAllocator::NewBindingGroup(int groupIndex)
 
 void VulkanShaderResourceRegisterAllocator::NewBinding(int slot, RHI::BindingType type)
 {
-    prefix_ = fmt::format("[[vk::binding({}, {})]] ", slot, groupIndex_);
+    prefix_ = std::format("[[vk::binding({}, {})]] ", slot, groupIndex_);
 }
 
 const std::string& VulkanShaderResourceRegisterAllocator::GetPrefix() const

@@ -10,7 +10,7 @@ const char* eConstantBuffer<T>::GetStaticTypeName()
     static const std::string ret = []
     {
         const char *element = T::GetStaticTypeName();
-        return fmt::format("ConstantBuffer<{}>", element);
+        return std::format("ConstantBuffer<{}>", element);
     }();
     return ret.data();
 }

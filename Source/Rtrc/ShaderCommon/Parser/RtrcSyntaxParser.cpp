@@ -126,7 +126,7 @@ namespace BindingGroupParserDetail
         auto it = RESOURCE_PROPERTIES.find(rawTypename);
         if(it == RESOURCE_PROPERTIES.end())
         {
-            tokens.Throw(fmt::format("Unknown resource type: {}", tokens.GetCurrentToken()));
+            tokens.Throw(std::format("Unknown resource type: {}", tokens.GetCurrentToken()));
         }
         tokens.Next();
         const RHI::BindingType bindingType = it->second;
@@ -177,7 +177,7 @@ namespace BindingGroupParserDetail
                 }
                 catch(...)
                 {
-                    tokens.Throw(fmt::format("Invalid array size: {}", tokens.GetCurrentToken()));
+                    tokens.Throw(std::format("Invalid array size: {}", tokens.GetCurrentToken()));
                 }
                 tokens.ConsumeOrThrow("]");
 
@@ -235,7 +235,7 @@ namespace BindingGroupParserDetail
                 if(str == "nearest") { return RHI::FilterMode::Point; }
                 if(str == "point") { return RHI::FilterMode::Point; }
                 if(str == "linear") { return RHI::FilterMode::Linear; }
-                tokens.Throw(fmt::format("Unknown filter mode: {}", str));
+                tokens.Throw(std::format("Unknown filter mode: {}", str));
             };
 
             auto TranslateAddressMode = [&](std::string_view str)
@@ -244,7 +244,7 @@ namespace BindingGroupParserDetail
                 if(str == "mirror") { return RHI::AddressMode::Mirror; }
                 if(str == "clamp") { return RHI::AddressMode::Clamp; }
                 if(str == "border") { return RHI::AddressMode::Border; }
-                tokens.Throw(fmt::format("Unknown address mode: ", str));
+                tokens.Throw(std::format("Unknown address mode: ", str));
             };
 
             if(propertyName == "filter_mag")
@@ -286,7 +286,7 @@ namespace BindingGroupParserDetail
             }
             else
             {
-                tokens.Throw(fmt::format("Unknown sampler property name: {}", propertyName));
+                tokens.Throw(std::format("Unknown sampler property name: {}", propertyName));
             }
         }
     }
@@ -350,7 +350,7 @@ namespace BindingGroupParserDetail
             }
             else
             {
-                tokens.Throw(fmt::format("Unsupported var type {} in push constant tange {}", typeStr, output.name));
+                tokens.Throw(std::format("Unsupported var type {} in push constant tange {}", typeStr, output.name));
             }
 
             const std::string varName = tokens.GetCurrentToken();
@@ -475,7 +475,7 @@ void ParseBindingGroups(
     {
         if(allBindingMap.contains(b.name))
         {
-            throw Exception(fmt::format("Binding {} is defined twice", b.name));
+            throw Exception(std::format("Binding {} is defined twice", b.name));
         }
         allBindingMap.insert({ b.name, b });
     }
@@ -509,7 +509,7 @@ void ParseBindingGroups(
         }
         if(parsedGroupNames.contains(group.name))
         {
-            tokens.Throw(fmt::format("Group name {} is found twice", group.name));
+            tokens.Throw(std::format("Group name {} is found twice", group.name));
         }
         parsedGroupNames.insert(group.name);
         tokens.Next();
@@ -537,14 +537,14 @@ void ParseBindingGroups(
                 ParsedBinding binding = BindingGroupParserDetail::ParseBinding(tokens, isBindless, isVarSized);
                 if(auto it = allBindingMap.find(binding.name); it == allBindingMap.end() || it->second != binding)
                 {
-                    throw Exception(fmt::format(
+                    throw Exception(std::format(
                         "Binding {} in group {} doesn't match its previous definition",
                         binding.name, group.name));
                 }
                 binding.stages = binding.stages & groupStages;
                 if(binding.stages == RHI::ShaderStage::None)
                 {
-                    throw Exception(fmt::format(
+                    throw Exception(std::format(
                         "Shader stages of binding {} are incompatible with stages of group {}",
                         binding.name, group.name));
                 }
@@ -552,7 +552,7 @@ void ParseBindingGroups(
 
                 if(auto it = ungroupedBindingMap.find(binding.name); it == ungroupedBindingMap.end())
                 {
-                    throw Exception(fmt::format("Binding {} exists in multiple groups", binding.name));
+                    throw Exception(std::format("Binding {} exists in multiple groups", binding.name));
                 }
                 else
                 {
@@ -573,7 +573,7 @@ void ParseBindingGroups(
                 const std::string refName = tokens.GetCurrentToken();
                 if(!allBindingMap.contains(refName))
                 {
-                    throw Exception(fmt::format("Unknown binding name {} in rtrc_ref", refName));
+                    throw Exception(std::format("Unknown binding name {} in rtrc_ref", refName));
                 }
                 tokens.Next();
 
@@ -589,7 +589,7 @@ void ParseBindingGroups(
                 ParsedBinding binding;
                 if(auto it = ungroupedBindingMap.find(refName); it == ungroupedBindingMap.end())
                 {
-                    throw Exception(fmt::format("Binding {} exists in multiple groups", refName));
+                    throw Exception(std::format("Binding {} exists in multiple groups", refName));
                 }
                 else
                 {
@@ -600,7 +600,7 @@ void ParseBindingGroups(
                 binding.stages = binding.stages & groupStages & refStages;
                 if(binding.stages == RHI::ShaderStage::None)
                 {
-                    throw Exception(fmt::format(
+                    throw Exception(std::format(
                         "Shader stages of binding {} are incompatible with stages of group {}",
                         binding.name, group.name));
                 }
@@ -646,7 +646,7 @@ void ParseBindingGroups(
                 tokens.Next();
                 if(auto it = nameToStruct.find(structName); it == nameToStruct.end())
                 {
-                    tokens.Throw(fmt::format("Unknown inlined binding group struct {}", structName));
+                    tokens.Throw(std::format("Unknown inlined binding group struct {}", structName));
                 }
                 else
                 {
@@ -669,7 +669,7 @@ void ParseBindingGroups(
                     const RHI::ShaderStageFlags stages = srcBinding.stages & groupStages & inlineStages;
                     if(stages == RHI::ShaderStage::None)
                     {
-                        tokens.Throw(fmt::format(
+                        tokens.Throw(std::format(
                             "Binding {} in group struct {} (inlined in {}) doesn't have a compatible stage flag",
                             srcBinding.name, groupStruct->name, group.name));
                     }
@@ -742,7 +742,7 @@ void ParseBindingAliases(
         auto it = BindingGroupParserDetail::RESOURCE_PROPERTIES.find(alias.rawTypename);
         if(it == BindingGroupParserDetail::RESOURCE_PROPERTIES.end())
         {
-            tokens.Throw(fmt::format("Unknown resource type {}", alias.rawTypename));
+            tokens.Throw(std::format("Unknown resource type {}", alias.rawTypename));
         }
         alias.bindingType = it->second;
 
@@ -809,7 +809,7 @@ void ParseInlineSamplers(
         tokens.ConsumeOrThrow(")");
         if(auto it = nameToDescIndex.find(name); it != nameToDescIndex.end())
         {
-            throw Exception(fmt::format("Sampler {} is defined twice", name));
+            throw Exception(std::format("Sampler {} is defined twice", name));
         }
         if(auto it = descToIndex.find(desc); it != descToIndex.end())
         {
@@ -914,7 +914,7 @@ void ParseSpecialStructs(
             }
             else
             {
-                tokens.Throw(fmt::format("Unsupported var type {} in rtrc_refl_struct {}", typeStr, name));
+                tokens.Throw(std::format("Unsupported var type {} in rtrc_refl_struct {}", typeStr, name));
             }
 
             std::string varName = tokens.GetCurrentToken();

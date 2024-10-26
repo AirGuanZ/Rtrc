@@ -21,11 +21,11 @@ void DumpBindingGroupLayoutDesc(const RHI::BindingGroupLayoutDesc &desc)
             continue;
         }
 
-        std::string line = fmt::format(
+        std::string line = std::format(
             "[{}] {}", GetShaderStageFlagsName(binding.stages), GetBindingTypeName(binding.type));
         if(binding.arraySize)
         {
-            line += fmt::format(" [{}]", *binding.arraySize);
+            line += std::format(" [{}]", *binding.arraySize);
         }
         if(binding.bindless)
         {

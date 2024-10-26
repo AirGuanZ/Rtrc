@@ -44,7 +44,7 @@ std::string HResultToString(HRESULT hr);
         const auto r = (RESULT);                                                                                    \
         RTRC_D3D12_CHECK(r)                                                                                         \
         {                                                                                                           \
-            throw ::Rtrc::Exception(fmt::format(                                                                    \
+            throw ::Rtrc::Exception(std::format(                                                                    \
                 "{} (Error = {:#X}, {})", (MSG), uint32_t(r), ::Rtrc::RHI::D3D12::HResultToString(r)));             \
         };                                                                                                          \
     } while(false)

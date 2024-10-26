@@ -107,7 +107,7 @@ VkShaderStageFlagBits TranslateShaderStage(ShaderStage type)
     case TaskShader:            return VK_SHADER_STAGE_TASK_BIT_EXT;
     case MeshShader:            return VK_SHADER_STAGE_MESH_BIT_EXT;
     default:
-        throw Exception(fmt::format("Single shader stage expected. Actual: {0:x}", std::to_underlying(type)));
+        throw Exception(std::format("Single shader stage expected. Actual: {0:x}", std::to_underlying(type)));
     }
 }
 

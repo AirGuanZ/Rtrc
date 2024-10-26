@@ -38,7 +38,7 @@ inline float4x4::float4x4(
     : float4x4()
 {
     *this = CreateTemporaryVariableForExpression<float4x4>(
-        fmt::format("float4x4({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})",
+        std::format("float4x4({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})",
                     m00.Compile(), m01.Compile(), m02.Compile(), m03.Compile(),
                     m10.Compile(), m11.Compile(), m12.Compile(), m13.Compile(),
                     m20.Compile(), m21.Compile(), m22.Compile(), m23.Compile(),
@@ -64,35 +64,35 @@ inline float4x4& float4x4::operator=(const float4x4& other)
 
 inline TemporaryValueWrapper<f32x4> float4x4::operator[](const u32& index)
 {
-    return CreateTemporaryVariableForExpression<f32x4>(fmt::format("{}[{}]", Compile(), index.Compile()));
+    return CreateTemporaryVariableForExpression<f32x4>(std::format("{}[{}]", Compile(), index.Compile()));
 }
 
 inline const TemporaryValueWrapper<f32x4> float4x4::operator[](const u32& index) const
 {
-    return CreateTemporaryVariableForExpression<f32x4>(fmt::format("{}[{}]", Compile(), index.Compile()));
+    return CreateTemporaryVariableForExpression<f32x4>(std::format("{}[{}]", Compile(), index.Compile()));
 }
 
 inline float4x4 mul(const float4x4 &lhs, const float4x4 &rhs)
 {
-    return CreateTemporaryVariableForExpression<float4x4>(fmt::format(
+    return CreateTemporaryVariableForExpression<float4x4>(std::format(
         "mul({}, {})", lhs.Compile(), rhs.Compile()));
 }
 
 inline f32x4 mul(const float4x4 &lhs, const f32x4 &rhs)
 {
-    return CreateTemporaryVariableForExpression<f32x4>(fmt::format(
+    return CreateTemporaryVariableForExpression<f32x4>(std::format(
         "mul({}, {})", lhs.Compile(), rhs.Compile()));
 }
 
 f32x4 mul(const f32x4 &lhs, const float4x4 &rhs)
 {
-    return CreateTemporaryVariableForExpression<f32x4>(fmt::format(
+    return CreateTemporaryVariableForExpression<f32x4>(std::format(
         "mul({}, {})", lhs.Compile(), rhs.Compile()));
 }
 
 float4x4 transpose(const float4x4 &m)
 {
-    return CreateTemporaryVariableForExpression<float4x4>(fmt::format("transpose({})", m.Compile()));
+    return CreateTemporaryVariableForExpression<float4x4>(std::format("transpose({})", m.Compile()));
 }
 
 RTRC_EDSL_END

@@ -24,7 +24,7 @@ namespace VectorSwizzleDetail
 template <typename Vec, typename TVec, int I0, int I1, int I2, int I3>
 eVectorSwizzle<Vec, TVec, I0, I1, I2, I3>::operator TVec() const
 {
-    return CreateTemporaryVariableForExpression<TVec>(fmt::format(
+    return CreateTemporaryVariableForExpression<TVec>(std::format(
         "{}.{}{}{}{}",
         _vec->Compile(),
         VectorSwizzleDetail::ComponentIndexToName(I0),
@@ -36,7 +36,7 @@ eVectorSwizzle<Vec, TVec, I0, I1, I2, I3>::operator TVec() const
 template <typename Vec, typename TVec, int I0, int I1, int I2, int I3>
 eVectorSwizzle<Vec, TVec, I0, I1, I2, I3>& eVectorSwizzle<Vec, TVec, I0, I1, I2, I3>::operator=(const TVec& value)
 {
-    CreateTemporaryVariableForExpression<TVec>(fmt::format(
+    CreateTemporaryVariableForExpression<TVec>(std::format(
         "{}.{}{}{}{}",
         _vec->Compile(),
         VectorSwizzleDetail::ComponentIndexToName(I0),

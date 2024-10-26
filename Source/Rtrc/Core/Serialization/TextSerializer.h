@@ -244,7 +244,7 @@ public:
             const auto actualName = reader_.NextToken();
             if(actualName != name)
             {
-                throw Exception(fmt::format("TextDeserializer: unmatched name. Given: {}, read: {}", name, actualName));
+                throw Exception(std::format("TextDeserializer: unmatched name. Given: {}, read: {}", name, actualName));
             }
             if(reader_.NextToken() != "=")
             {

@@ -132,7 +132,7 @@ void *DirectX12Buffer::Map(size_t offset, size_t size, const BufferReadRange &ra
     void *result;
     RTRC_D3D12_FAIL_MSG(
         buffer_->Map(0, pReadRange, &result),
-        fmt::format("Fail to map directx12 buffer {}", GetName()));
+        std::format("Fail to map directx12 buffer {}", GetName()));
 
     return result;
 }

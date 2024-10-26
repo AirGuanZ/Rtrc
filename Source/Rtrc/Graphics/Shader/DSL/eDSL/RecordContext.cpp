@@ -52,12 +52,12 @@ void RecordContext::AppendLine(std::string s)
 
 std::string RecordContext::AllocateVariable()
 {
-    return fmt::format("var{}", nextVariableNameIndex_++);
+    return std::format("var{}", nextVariableNameIndex_++);
 }
 
 std::string RecordContext::AllocateFunction()
 {
-    return fmt::format("func{}", nextFunctionNameIndex_++);
+    return std::format("func{}", nextFunctionNameIndex_++);
 }
 
 void RecordContext::SetBuiltinValueRead(BuiltinValue value)

@@ -179,7 +179,7 @@ namespace VkPhysicalDeviceDetail
 
         if(!feature2.features.shaderInt16)
         {
-            unsupportedFeatureString = fmt::format("VkPhysicalDeviceFeatures.shaderInt16");
+            unsupportedFeatureString = std::format("VkPhysicalDeviceFeatures.shaderInt16");
             return false;
         }
 
@@ -192,7 +192,7 @@ namespace VkPhysicalDeviceDetail
                 const bool boolValue = *reinterpret_cast<const VkBool32 *>(current + boolOffset);
                 if(!boolValue)
                 {
-                    unsupportedFeatureString = fmt::format("{}.{}", feature.name, name);
+                    unsupportedFeatureString = std::format("{}.{}", feature.name, name);
                     return false;
                 }
             }

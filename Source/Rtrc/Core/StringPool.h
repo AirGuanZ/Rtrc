@@ -147,7 +147,7 @@ struct std::hash<Rtrc::PooledString<Tag, Index>>
 };
 
 template<typename Tag, typename Index>
-struct fmt::formatter<Rtrc::PooledString<Tag, Index>>
+struct std::formatter<Rtrc::PooledString<Tag, Index>>
 {
     template<typename ParseContext>
     constexpr auto parse(ParseContext &ctx)
@@ -158,6 +158,6 @@ struct fmt::formatter<Rtrc::PooledString<Tag, Index>>
     template<typename FormatContext>
     auto format(const Rtrc::PooledString<Tag, Index> &value, FormatContext &ctx)
     {
-        return fmt::format_to(ctx.out(), "{}", value.GetString());
+        return std::format_to(ctx.out(), "{}", value.GetString());
     }
 };

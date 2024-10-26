@@ -246,7 +246,7 @@ void BindingGroup::Set(int slot, int arrElem, T &&object)
             this->Set(slot, arrElem, object->GetUav(0, 0));
             break;
         default:
-            throw Exception(fmt::format(
+            throw Exception(std::format(
                 "BindingGroup::Set: cannot bind texture to slot {}[{}] (type = {})",
                 slot, arrElem, GetBindingTypeName(type)));
         }

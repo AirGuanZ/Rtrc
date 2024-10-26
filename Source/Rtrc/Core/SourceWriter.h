@@ -13,9 +13,9 @@ class SourceWriter
 public:
 
     template<typename...Args>
-    SourceWriter &operator()(fmt::format_string<Args...> fmtStr, Args&&...args)
+    SourceWriter &operator()(std::format_string<Args...> fmtStr, Args&&...args)
     {
-        std::string content = fmt::format(fmtStr, std::forward<Args>(args)...);
+        std::string content = std::format(fmtStr, std::forward<Args>(args)...);
         if(!content.empty())
         {
             operations_.push_back(AppendOperation{ std::move(content) });

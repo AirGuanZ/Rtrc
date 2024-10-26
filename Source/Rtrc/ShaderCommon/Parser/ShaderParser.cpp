@@ -218,9 +218,9 @@ namespace ShaderParserDetail
                 {
                     for(size_t j = 0; j < keyword.values.size(); ++j)
                     {
-                        macros[fmt::format("{}_{}", keyword.name, keyword.values[j])] = std::to_string(j);
+                        macros[std::format("{}_{}", keyword.name, keyword.values[j])] = std::to_string(j);
                     }
-                    macros[keyword.name] = fmt::format("{}_{}", keyword.name, keyword.values[value]);
+                    macros[keyword.name] = std::format("{}_{}", keyword.name, keyword.values[value]);
                 });
         }
 
@@ -425,7 +425,7 @@ std::string ReadShaderSource(const std::string &filename, std::string_view shade
             return source;
         }
     }
-    throw Exception(fmt::format("Cannot find shader \"{}\" in file {}", shaderName, filename));
+    throw Exception(std::format("Cannot find shader \"{}\" in file {}", shaderName, filename));
 }
 
 ParsedShader ParseShader(

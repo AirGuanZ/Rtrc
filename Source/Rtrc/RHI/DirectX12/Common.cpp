@@ -46,7 +46,7 @@ std::wstring Utf8ToWin32W(std::string_view s)
     auto ThrowError = []
     {
         const DWORD err = GetLastError();
-        throw Exception(fmt::format(
+        throw Exception(std::format(
             "Fail to convert utf8 string to wstring. Error = {}",
             std::system_category().message(static_cast<int>(err))));
     };

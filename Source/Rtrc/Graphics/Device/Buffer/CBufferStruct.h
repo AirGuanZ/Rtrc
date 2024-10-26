@@ -145,11 +145,11 @@ namespace CBufferStructDetail
     }
 
     template<typename T>
-    void DumpDeviceLayoutImpl()
+    void DumpDeviceLayoutImpl(std::ostream &ostream)
     {
         auto PrintFlattenMember = [&]<typename M>(const char *name, size_t hostOffset, size_t deviceOffset)
         {
-            fmt::print("name = {}, hostOffset = {}, deviceOffset = {}\n", name, hostOffset, deviceOffset);
+            std::print(ostream, "name = {}, hostOffset = {}, deviceOffset = {}\n", name, hostOffset, deviceOffset);
         };
         CBufferStructDetail::ForEachFlattenMember<T>("root", PrintFlattenMember, 0, 0);
     }
@@ -175,9 +175,9 @@ void ToDeviceLayout(const void *hostData, void *deviceData, size_t initHostOffse
 }
 
 template<typename T>
-void DumpDeviceLayout()
+void DumpDeviceLayout(std::ostream &ostream)
 {
-    CBufferStructDetail::DumpDeviceLayoutImpl<T>();
+    CBufferStructDetail::DumpDeviceLayoutImpl<T>(ostream);
 }
 
 RTRC_END

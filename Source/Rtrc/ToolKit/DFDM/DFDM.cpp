@@ -91,7 +91,7 @@ Image<Vector2f> DFDM::GenerateCorrectionMap(const Image<Vector3f> &displacementM
         passData.iteration        = i;
 
         RGDispatchWithThreadCount(
-            graph, fmt::format("Optimize iteration {}", i), shader, input->GetSize(), passData);
+            graph, std::format("Optimize iteration {}", i), shader, input->GetSize(), passData);
 
         std::swap(correctionA, correctionB);
     }

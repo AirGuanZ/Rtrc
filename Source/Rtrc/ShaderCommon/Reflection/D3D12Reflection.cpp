@@ -76,13 +76,13 @@ void D3D12Reflection::InitializeRegularReflection(IDxcUtils *dxcUtils, Span<std:
         D3D12_SIGNATURE_PARAMETER_DESC signatureParameterDesc;
         if(FAILED(reflection->GetInputParameterDesc(i, &signatureParameterDesc)))
         {
-            throw Exception(fmt::format( "Fail to get directx12 shader input parameter {}", i));
+            throw Exception(std::format( "Fail to get directx12 shader input parameter {}", i));
         }
 
         const int dimension = std::popcount(signatureParameterDesc.Mask);
         if(dimension <= 0 || dimension > 4)
         {
-            throw Exception(fmt::format("Invalid input variable mask {}", signatureParameterDesc.Mask));
+            throw Exception(std::format("Invalid input variable mask {}", signatureParameterDesc.Mask));
         }
         
         RHI::VertexAttributeType vertexAttributeType;
@@ -126,7 +126,7 @@ void D3D12Reflection::InitializeRegularReflection(IDxcUtils *dxcUtils, Span<std:
         D3D12_SHADER_INPUT_BIND_DESC bindDesc;
         if(FAILED(reflection->GetResourceBindingDesc(i, &bindDesc)))
         {
-            throw Exception(fmt::format("Fail to get directx12 shader resource binding {}", i));
+            throw Exception(std::format("Fail to get directx12 shader resource binding {}", i));
         }
         if(bindDesc.Type <= D3D_SIT_RTACCELERATIONSTRUCTURE && (bindDesc.uFlags & D3D_SVF_USED))
         {
@@ -163,7 +163,7 @@ void D3D12Reflection::InitializeLibraryReflection(IDxcUtils *dxcUtils, Span<std:
         D3D12_FUNCTION_DESC functionDesc;
         if(FAILED(function->GetDesc(&functionDesc)))
         {
-            throw Exception(fmt::format(
+            throw Exception(std::format(
                 "Fail to get directx12 function desc {} from library reflection", functionIndex));
         }
 
@@ -191,7 +191,7 @@ void D3D12Reflection::InitializeLibraryReflection(IDxcUtils *dxcUtils, Span<std:
         case D3D12_SHVER_MISS_SHADER:           stage = RHI::ShaderStage::RT_MissShader;         break;
         case D3D12_SHVER_CALLABLE_SHADER:       stage = RHI::ShaderStage::CallableShader;        break;
         default:
-            throw Exception(fmt::format(
+            throw Exception(std::format(
                 "Invalid directx12 shader program type {} in library", programType));
         }
 

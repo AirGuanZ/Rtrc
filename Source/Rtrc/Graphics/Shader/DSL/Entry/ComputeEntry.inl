@@ -98,7 +98,7 @@ namespace ComputeEntryDetail
                             var.type = ArgumentTrait::eValueTrait<M>::Type;
                             var.name = name;
 
-                            accessor(arg).eVariableName = fmt::format(
+                            accessor(arg).eVariableName = std::format(
                                 "_rtrcBindingGroup{}.{}", bindingGroupIndex, name);
                         }
                         else
@@ -106,9 +106,9 @@ namespace ComputeEntryDetail
                             regAlloc->NewBinding(
                                 resourceCountInBindingGroup, ArgumentTrait::eResourceTrait<M>::GetBindingDesc().type);
 
-                            const std::string resourceName = fmt::format(
+                            const std::string resourceName = std::format(
                                 "_rtrcBindingGroup{}_{}", bindingGroupIndex, name);
-                            result.resourceDefinitions += fmt::format(
+                            result.resourceDefinitions += std::format(
                                 "{}{} {}{};\n",
                                 regAlloc->GetPrefix(), M::GetStaticTypeName(),
                                 resourceName, regAlloc->GetSuffix());
@@ -125,14 +125,14 @@ namespace ComputeEntryDetail
                         std::string uniformPropertyStr;
                         for(auto& var : uniformVariables)
                         {
-                            uniformPropertyStr += fmt::format("{} {};", GetShaderUniformTypeName(var.type), var.name);
+                            uniformPropertyStr += std::format("{} {};", GetShaderUniformTypeName(var.type), var.name);
                         }
 
-                        result.resourceDefinitions += fmt::format(
+                        result.resourceDefinitions += std::format(
                             "struct _rtrc_generated_cbuffer_struct_{} {{ {} }};\n",
                             bindingGroupIndex, uniformPropertyStr);
 
-                        result.resourceDefinitions += fmt::format(
+                        result.resourceDefinitions += std::format(
                             "{}ConstantBuffer<_rtrc_generated_cbuffer_struct_{}> _rtrcBindingGroup{}{};\n",
                             regAlloc->GetPrefix(), bindingGroupIndex, bindingGroupIndex, regAlloc->GetSuffix());
 
@@ -146,14 +146,14 @@ namespace ComputeEntryDetail
                     result.defaultBindingGroupLayoutDesc.bindings.push_back(
                         ArgumentTrait::eResourceTrait<Arg>::GetBindingDesc());
 
-                    partialResourceDefinitionsInDefaultBindingGroup.push_back(fmt::format(
+                    partialResourceDefinitionsInDefaultBindingGroup.push_back(std::format(
                         "{} _rtrcDefaultBindingGroup_Resource{}",
                         Arg::GetStaticTypeName(), resourceCountInDefaultBindingGroup));
 
                     resourceBindingTypesInDefaultBindingGroup.push_back(
                         ArgumentTrait::eResourceTrait<Arg>::GetBindingDesc().type);
 
-                    arg.eVariableName = fmt::format(
+                    arg.eVariableName = std::format(
                         "_rtrcDefaultBindingGroup_Resource{}", resourceCountInDefaultBindingGroup);
 
                     ++resourceCountInDefaultBindingGroup;
@@ -164,7 +164,7 @@ namespace ComputeEntryDetail
 
                     result.defaultUniformTypes.push_back(ArgumentTrait::eValueTrait<Arg>::Type);
 
-                    arg.eVariableName = fmt::format(
+                    arg.eVariableName = std::format(
                         "_rtrcDefaultBindingGroup.Value{}", valueCountInDefaultBindingGroup);
 
                     ++valueCountInDefaultBindingGroup;
@@ -181,7 +181,7 @@ namespace ComputeEntryDetail
                 {
                     regAlloc->NewBinding(i, resourceBindingTypesInDefaultBindingGroup[i]);
 
-                    result.resourceDefinitions += fmt::format(
+                    result.resourceDefinitions += std::format(
                         "{}{}{};\n",
                         regAlloc->GetPrefix(),
                         partialResourceDefinitionsInDefaultBindingGroup[i],
@@ -195,13 +195,13 @@ namespace ComputeEntryDetail
                     std::string uniformPropertyStr;
                     for(auto&& [index, type] : std::ranges::enumerate_view(result.defaultUniformTypes))
                     {
-                        uniformPropertyStr += fmt::format("{} Value{};", GetShaderUniformTypeName(type), index);
+                        uniformPropertyStr += std::format("{} Value{};", GetShaderUniformTypeName(type), index);
                     }
 
-                    result.resourceDefinitions += fmt::format(
+                    result.resourceDefinitions += std::format(
                         "struct _rtrc_generated_cbuffer_struct_default {{ {} }};\n", uniformPropertyStr);
 
-                    result.resourceDefinitions += fmt::format(
+                    result.resourceDefinitions += std::format(
                         "{}ConstantBuffer<_rtrc_generated_cbuffer_struct_default> _rtrcDefaultBindingGroup{};\n",
                         regAlloc->GetPrefix(), regAlloc->GetSuffix());
 

@@ -100,7 +100,7 @@ private:
     {
         if(input_.size() < sizeof(uint32_t))
         {
-            throw Exception(fmt::format(
+            throw Exception(std::format(
                 "BinaryArchiveReader: trying to read next {} bytes, but only {} bytes are available",
                 N, input_.size()));
         }
@@ -115,7 +115,7 @@ private:
         constexpr size_t advancedSize = UpAlignTo<size_t>(sizeof(T), 4);
         if(input_.size() < advancedSize)
         {
-            throw Exception(fmt::format(
+            throw Exception(std::format(
                 "BinaryArchiveReader: trying to read next {} bytes, but only {} bytes are available",
                 advancedSize, input_.size()));
         }

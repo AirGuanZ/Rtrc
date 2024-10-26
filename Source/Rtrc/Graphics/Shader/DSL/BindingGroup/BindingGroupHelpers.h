@@ -282,7 +282,7 @@ namespace BindingGroupDetail
                         using CBufferStruct = typename MemberElement::Struct;
                         if(!cbMgr)
                         {
-                            throw Exception(fmt::format(
+                            throw Exception(std::format(
                                 "ApplyBindingGroup: Constant buffer manager is nullptr when "
                                 "setting constant buffer {} without giving pre-created cb object", name));
                         }

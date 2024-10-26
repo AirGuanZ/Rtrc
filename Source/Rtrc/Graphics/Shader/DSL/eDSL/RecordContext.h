@@ -41,7 +41,7 @@ public:
 
     void AppendLine(std::string s);
     template<typename...Args>
-    void AppendLine(fmt::format_string<Args...> fmtStr, Args&&...args);
+    void AppendLine(std::format_string<Args...> fmtStr, Args&&...args);
 
     std::string AllocateVariable();
     std::string AllocateFunction();
@@ -84,9 +84,9 @@ void PopRecordContext();
 RecordContext &GetCurrentRecordContext();
 
 template <typename... Args>
-void RecordContext::AppendLine(fmt::format_string<Args...> fmtStr, Args&&... args)
+void RecordContext::AppendLine(std::format_string<Args...> fmtStr, Args&&... args)
 {
-    this->AppendLine(fmt::format(fmtStr, std::forward<Args>(args)...));
+    this->AppendLine(std::format(fmtStr, std::forward<Args>(args)...));
 }
 
 RTRC_EDSL_END

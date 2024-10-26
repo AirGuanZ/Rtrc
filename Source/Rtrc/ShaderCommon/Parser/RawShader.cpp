@@ -32,7 +32,7 @@ namespace ShaderDatabaseDetail
             std::string name = tokens.GetCurrentToken();
             if(!ShaderTokenStream::IsNonEmptyStringLiterial(name))
             {
-                tokens.Throw(fmt::format("Invalid refcode name: {}", name));
+                tokens.Throw(std::format("Invalid refcode name: {}", name));
             }
             name = name.substr(1, name.size() - 2); // Remove quotation marks
             tokens.Next();
@@ -80,7 +80,7 @@ namespace ShaderDatabaseDetail
             std::string segmentName = tokens.GetCurrentToken();
             if(!ShaderTokenStream::IsNonEmptyStringLiterial(segmentName))
             {
-                tokens.Throw(fmt::format("Invalid shader/code name: {}", segmentName));
+                tokens.Throw(std::format("Invalid shader/code name: {}", segmentName));
             }
             segmentName = segmentName.substr(1, segmentName.size() - 2); // Remove quotation marks
             tokens.Next();
@@ -120,7 +120,7 @@ namespace ShaderDatabaseDetail
                 }
                 if(!found)
                 {
-                    tokens.Throw(fmt::format("Unknown code dependency {}", strDep));
+                    tokens.Throw(std::format("Unknown code dependency {}", strDep));
                 }
             }
 

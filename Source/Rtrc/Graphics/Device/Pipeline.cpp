@@ -161,7 +161,7 @@ RC<GraphicsPipeline> PipelineManager::CreateGraphicsPipeline(const GraphicsPipel
             const int indexInMeshLayout = desc.meshLayout->GetVertexBufferIndexBySemantic(var.semantic);
             if(indexInMeshLayout < 0)
             {
-                throw Exception(fmt::format(
+                throw Exception(std::format(
                     "Input variable with semantic '{}' is not provided by given mesh layout",
                     var.semantic.ToString()));
             }
@@ -187,7 +187,7 @@ RC<GraphicsPipeline> PipelineManager::CreateGraphicsPipeline(const GraphicsPipel
             assert(attrib);
             if(!PipelineDetail::IsCompatible(attrib->type, var.type))
             {
-                throw Exception(fmt::format(
+                throw Exception(std::format(
                     "Type of semantic '{}' in mesh layout doesn't match shader input attribute",
                     var.semantic.ToString()));
             }

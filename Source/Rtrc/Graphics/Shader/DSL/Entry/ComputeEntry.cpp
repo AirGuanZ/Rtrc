@@ -73,7 +73,7 @@ namespace ComputeEntryDetail
                 samplers[index] = device->CreateSampler(desc);
             }
 
-            resourceDefinitions += fmt::format(
+            resourceDefinitions += std::format(
                 "SamplerState _rtrcStaticSamplers[{}];\n", recordContext.GetAllStaticSamplers().size());
         }
 
@@ -91,7 +91,7 @@ namespace ComputeEntryDetail
         source += typeDefinitions;
         source += resourceDefinitions;
 
-        source += fmt::format("[numthreads({}, {}, {})]\n", threadGroupSize.x, threadGroupSize.y, threadGroupSize.z);
+        source += std::format("[numthreads({}, {}, {})]\n", threadGroupSize.x, threadGroupSize.y, threadGroupSize.z);
 
         std::string systemValueDefinitions;
         for(int i = 0; i < std::to_underlying(RecordContext::BuiltinValue::Count); ++i)
@@ -103,13 +103,13 @@ namespace ComputeEntryDetail
                 {
                     systemValueDefinitions += ", ";
                 }
-                systemValueDefinitions += fmt::format(
+                systemValueDefinitions += std::format(
                     "RTRC_DEFINE_{}(_rtrc{})",
                     RecordContext::GetBuiltinValueName(e),
                     RecordContext::GetBuiltinValueName(e));
             }
         }
-        source += fmt::format("void CSMain({})\n", systemValueDefinitions);
+        source += std::format("void CSMain({})\n", systemValueDefinitions);
 
         source += "{\n";
         source += recordContext.BuildRootScope("    ");

@@ -51,7 +51,7 @@ namespace DirectoryFilter
     {
         auto InvalidPattern = [str]
         {
-            throw Exception(fmt::format("Invalid pattern: '{}'", str));
+            throw Exception(std::format("Invalid pattern: '{}'", str));
         };
 
         SubNamePattern ret;
@@ -173,7 +173,7 @@ namespace DirectoryFilter
 
         if(slash == 0) // Root...?
         {
-            throw Exception(fmt::format("Invalid directory pattern: {}", str));
+            throw Exception(std::format("Invalid directory pattern: {}", str));
         }
 
         str = str.substr(0, slash);

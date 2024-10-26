@@ -362,7 +362,7 @@ UPtr<Swapchain> VulkanDevice::CreateSwapchain(const SwapchainDesc &desc, Window 
     if(!VkDeviceDetail::CheckFormatSupport(
         physicalDevice_.GetNativeHandle(), surface->_internalGetSurface(), requiredFormat))
     {
-        throw Exception(fmt::format("Surface format {} is not supported", GetFormatName(desc.format)));
+        throw Exception(std::format("Surface format {} is not supported", GetFormatName(desc.format)));
     }
 
     // present mode
@@ -799,14 +799,14 @@ UPtr<RayTracingPipeline> VulkanDevice::CreateRayTracingPipeline(const RayTracing
 #if RTRC_DEBUG
         if(lib->_internalGetMaxPayloadSize() != desc.maxRayPayloadSize)
         {
-            throw Exception(fmt::format(
+            throw Exception(std::format(
                 "VulkanDevice::CreateRayTracingPipeline: "
                 "library.maxRayPayloadSize({}) != pipeline.maxRayPayloadSize({})",
                 lib->_internalGetMaxPayloadSize(), desc.maxRayPayloadSize));
         }
         if(lib->_internalGetMaxHitAttributeSize() != desc.maxRayHitAttributeSize)
         {
-            throw Exception(fmt::format(
+            throw Exception(std::format(
                 "VulkanDevice::CreateRayTracingPipeline: "
                 "library.maxRayHitAttributeSize({}) != pipeline.maxRayHitAttributeSize({})",
                 lib->_internalGetMaxHitAttributeSize(), desc.maxRayHitAttributeSize));

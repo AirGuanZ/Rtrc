@@ -75,7 +75,7 @@ template <typename U>
 eNumber<T>& eNumber<T>::operator=(const eNumber<U> &rhs)
 {
     eNumber casted = CreateTemporaryVariableForExpression<eNumber>(
-        fmt::format("{}({})", GetStaticTypeName(), rhs.Compile()));
+        std::format("{}({})", GetStaticTypeName(), rhs.Compile()));
     return *this = casted;
 }
 

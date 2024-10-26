@@ -48,17 +48,17 @@ inline float4x4 transpose(const float4x4 &m);
     inline float4x4 operator OPR(const float4x4 &lhs, const float4x4 &rhs)  \
     {                                                                       \
         return CreateTemporaryVariableForExpression<float4x4>(              \
-            fmt::format("({} " #OPR " {})", lhs.Compile(), rhs.Compile())); \
+            std::format("({} " #OPR " {})", lhs.Compile(), rhs.Compile())); \
     }                                                                       \
     inline float4x4 operator OPR(const float4x4 &lhs, const f32x4 &rhs)    \
     {                                                                       \
         return CreateTemporaryVariableForExpression<float4x4>(              \
-            fmt::format("({} " #OPR " {})", lhs.Compile(), rhs.Compile())); \
+            std::format("({} " #OPR " {})", lhs.Compile(), rhs.Compile())); \
     }                                                                       \
     inline float4x4 operator OPR(const f32x4 &lhs, const float4x4 &rhs)    \
     {                                                                       \
         return CreateTemporaryVariableForExpression<float4x4>(              \
-            fmt::format("({} " #OPR " {})", lhs.Compile(), rhs.Compile())); \
+            std::format("({} " #OPR " {})", lhs.Compile(), rhs.Compile())); \
     }
 
 RTRC_EDSL_ADD_ELEMENT_WISE_MATRIX_OPERATOR(+)
