@@ -746,13 +746,6 @@ void DirectX12CommandBuffer::ExecuteBarriersInternal(
     };
 
     const bool isOnCopyQueue = pool_->GetType() == QueueType::Transfer;
-    auto LowerLayout = [&](D3D12_BARRIER_LAYOUT &layout)
-    {
-        if(isOnCopyQueue)
-        {
-            layout = D3D12_BARRIER_LAYOUT_COMMON;
-        }
-    };
 
     std::vector<D3D12_GLOBAL_BARRIER> d3dGlobalBarriers;
     d3dGlobalBarriers.reserve(globalMemoryBarriers.size());
@@ -793,8 +786,11 @@ void DirectX12CommandBuffer::ExecuteBarriersInternal(
             d3dBarrier.AccessBefore = D3D12_BARRIER_ACCESS_COMMON;
         }
 
-        LowerLayout(d3dBarrier.LayoutBefore);
-        LowerLayout(d3dBarrier.LayoutAfter);
+        if(isOnCopyQueue)
+        {
+            d3dBarrier.LayoutBefore = D3D12_BARRIER_LAYOUT_COMMON;
+            d3dBarrier.LayoutAfter = D3D12_BARRIER_LAYOUT_COMMON;
+        }
 
         if(d3dBarrier.LayoutBefore == D3D12_BARRIER_LAYOUT_UNDEFINED)
         {
@@ -818,7 +814,9 @@ void DirectX12CommandBuffer::ExecuteBarriersInternal(
         if(b.texture->GetConcurrentAccessMode() == QueueConcurrentAccessMode::Concurrent)
         {
             if(d3dBarrier.LayoutBefore != D3D12_BARRIER_LAYOUT_UNDEFINED)
+            {
                 d3dBarrier.LayoutBefore = D3D12_BARRIER_LAYOUT_COMMON;
+            }
             d3dBarrier.LayoutAfter = D3D12_BARRIER_LAYOUT_COMMON;
         }
     }
@@ -881,7 +879,9 @@ void DirectX12CommandBuffer::ExecuteBarriersInternal(
         if(b.texture->GetConcurrentAccessMode() == QueueConcurrentAccessMode::Concurrent)
         {
             if(d3dBarrier.LayoutBefore != D3D12_BARRIER_LAYOUT_UNDEFINED)
+            {
                 d3dBarrier.LayoutBefore = D3D12_BARRIER_LAYOUT_COMMON;
+            }
             d3dBarrier.LayoutAfter = D3D12_BARRIER_LAYOUT_COMMON;
         }
     }
@@ -922,7 +922,9 @@ void DirectX12CommandBuffer::ExecuteBarriersInternal(
         if(b.texture->GetConcurrentAccessMode() == QueueConcurrentAccessMode::Concurrent)
         {
             if(d3dBarrier.LayoutBefore != D3D12_BARRIER_LAYOUT_UNDEFINED)
+            {
                 d3dBarrier.LayoutBefore = D3D12_BARRIER_LAYOUT_COMMON;
+            }
             d3dBarrier.LayoutAfter = D3D12_BARRIER_LAYOUT_COMMON;
         }
     }
@@ -932,8 +934,8 @@ void DirectX12CommandBuffer::ExecuteBarriersInternal(
     {
         barrierGroups.PushBack(D3D12_BARRIER_GROUP
         {
-            .Type = D3D12_BARRIER_TYPE_GLOBAL,
-            .NumBarriers = static_cast<UINT32>(d3dGlobalBarriers.size()),
+            .Type            = D3D12_BARRIER_TYPE_GLOBAL,
+            .NumBarriers     = static_cast<UINT32>(d3dGlobalBarriers.size()),
             .pGlobalBarriers = d3dGlobalBarriers.data()
         });
     }
@@ -941,8 +943,8 @@ void DirectX12CommandBuffer::ExecuteBarriersInternal(
     {
         barrierGroups.PushBack(D3D12_BARRIER_GROUP
         {
-            .Type = D3D12_BARRIER_TYPE_TEXTURE,
-            .NumBarriers = static_cast<UINT32>(d3dTextureBarriers.size()),
+            .Type             = D3D12_BARRIER_TYPE_TEXTURE,
+            .NumBarriers      = static_cast<UINT32>(d3dTextureBarriers.size()),
             .pTextureBarriers = d3dTextureBarriers.data()
         });
     }
@@ -950,8 +952,8 @@ void DirectX12CommandBuffer::ExecuteBarriersInternal(
     {
         barrierGroups.PushBack(D3D12_BARRIER_GROUP
         {
-            .Type = D3D12_BARRIER_TYPE_BUFFER,
-            .NumBarriers = static_cast<UINT32>(d3dBufferBarriers.size()),
+            .Type            = D3D12_BARRIER_TYPE_BUFFER,
+            .NumBarriers     = static_cast<UINT32>(d3dBufferBarriers.size()),
             .pBufferBarriers = d3dBufferBarriers.data()
         });
     }

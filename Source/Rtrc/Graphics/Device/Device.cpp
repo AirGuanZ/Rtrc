@@ -165,7 +165,7 @@ RC<Texture> Device::CreateColorTexture2D(uint8_t r, uint8_t g, uint8_t b, uint8_
         .width                = 1,
         .height               = 1,
         .usage                = RHI::TextureUsage::TransferDst | RHI::TextureUsage::ShaderResource,
-        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Shared
+        .concurrentAccessMode = RHI::QueueConcurrentAccessMode::Concurrent
     });
     if(!name.empty())
     {

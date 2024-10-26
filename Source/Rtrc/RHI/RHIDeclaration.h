@@ -559,8 +559,8 @@ enum class AttachmentStoreOp
 
 enum class QueueConcurrentAccessMode
 {
-    Exclusive,  // Exclusively owned by one queue
-    Shared,     // Exclusively accessed by one queue
+    Exclusive,  // Exclusively accessed by one queue.
+                // Release/acquire barriers are needed to transfer ownership between different queues.
     Concurrent, // Concurrently accessed by graphics/compute queues
 };
 

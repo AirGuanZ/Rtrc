@@ -65,7 +65,7 @@ namespace VkDeviceDetail
     {
         StaticVector<uint32_t, 3> sharingQueueFamilyIndices;
 
-        if(accessMode == QueueConcurrentAccessMode::Shared || accessMode == QueueConcurrentAccessMode::Concurrent)
+        if(accessMode == QueueConcurrentAccessMode::Concurrent)
         {
             auto addIndex = [&](const std::optional<uint32_t> &index)
             {
@@ -79,8 +79,8 @@ namespace VkDeviceDetail
             addIndex(families.transferFamilyIndex);
         }
 
-        const VkSharingMode sharingMode =
-            sharingQueueFamilyIndices.GetSize() > 1 ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
+        const VkSharingMode sharingMode = sharingQueueFamilyIndices.GetSize() > 1 ? VK_SHARING_MODE_CONCURRENT
+                                                                                  : VK_SHARING_MODE_EXCLUSIVE;
 
         return { sharingMode, sharingQueueFamilyIndices };
     }
@@ -164,8 +164,9 @@ namespace VkDeviceDetail
     BufferCreateInfoWrapper TranslateBufferCreateInfo(
         const BufferDesc &desc, const VulkanDevice::QueueFamilyInfo &queueFamilies)
     {
-        const auto [sharingMode, sharingQueueFamilyIndices] =
-            GetVulkanSharingMode(QueueConcurrentAccessMode::Shared, queueFamilies);
+        const auto [sharingMode, sharingQueueFamilyIndices] = GetVulkanSharingMode(
+            QueueConcurrentAccessMode::Concurrent, queueFamilies);
+
         BufferCreateInfoWrapper ret;
         ret.queueFamilyIndices = sharingQueueFamilyIndices;
         ret.createInfo = VkBufferCreateInfo{
