@@ -44,6 +44,7 @@ add_rtrc_sample(16.MeshCorefinement)
 add_rtrc_sample(17.WorkGraph)
 add_rtrc_sample(18.ShortestGeodesicPath)
 add_rtrc_sample(19.Archive)
+add_rtrc_sample(20.MultiLayerOIT)
 
 if(EXISTS "${RTRC_SOURCE_DIR}/Samples/Test.OT2D")
 	add_rtrc_sample(Test.OT2D)
