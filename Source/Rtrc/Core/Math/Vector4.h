@@ -75,6 +75,8 @@ template<typename T>
 Vector4<T> NormalizeIfNotZero(const Vector4<T> &v);
 template<typename T>
 T Cos(const Vector4<T> &a, const Vector4<T> &b);
+template<typename T>
+T AngleBetween(const Vector4<T> &a, const Vector4<T> &b);
 
 template<std::floating_point T>
 Vector4<T> Lerp(const Vector4<T> &lhs, const Vector4<T> &rhs, const Vector4<T> &t);
@@ -277,6 +279,12 @@ template<typename T>
 T Cos(const Vector4<T> &a, const Vector4<T> &b)
 {
     return Rtrc::Dot(Rtrc::NormalizeIfNotZero(a), Rtrc::NormalizeIfNotZero(b));
+}
+
+template<typename T>
+T AngleBetween(const Vector4<T> &a, const Vector4<T> &b)
+{
+    return std::acos(Rtrc::Clamp(Rtrc::Cos(a, b), T(-1), T(1)));
 }
 
 template<std::floating_point T>

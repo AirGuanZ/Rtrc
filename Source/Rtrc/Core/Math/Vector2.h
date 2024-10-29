@@ -2,6 +2,7 @@
 
 #include <Rtrc/Core/Hash.h>
 #include <Rtrc/Core/Archive/ArchiveInterface.h>
+#include <Rtrc/Core/Math/Common.h>
 
 RTRC_BEGIN
 
@@ -82,6 +83,8 @@ template<typename T>
 T Distance(const Vector2<T> &a, const Vector2<T> &b);
 template<typename T>
 T Cos(const Vector2<T> &a, const Vector2<T> &b);
+template<typename T>
+T AngleBetween(const Vector2<T> &a, const Vector2<T> &b);
 
 template<typename T>
 Vector2<T> Min(const Vector2<T> &a, const Vector2<T> &b);
@@ -290,6 +293,12 @@ template<typename T>
 T Cos(const Vector2<T> &a, const Vector2<T> &b)
 {
     return Rtrc::Dot(Rtrc::NormalizeIfNotZero(a), Rtrc::NormalizeIfNotZero(b));
+}
+
+template<typename T>
+T AngleBetween(const Vector2<T> &a, const Vector2<T> &b)
+{
+    return std::acos(Rtrc::Clamp(Rtrc::Cos(a, b), T(-1), T(1)));
 }
 
 template<typename T>

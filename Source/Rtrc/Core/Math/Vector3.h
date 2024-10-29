@@ -90,6 +90,8 @@ template<typename T>
 T Distance(const Vector3<T> &a, const Vector3<T> &b);
 template<typename T>
 T Cos(const Vector3<T> &a, const Vector3<T> &b);
+template<typename T>
+T AngleBetween(const Vector3<T> &a, const Vector3<T> &b);
 
 template<typename T>
 Vector3<T> Min(const Vector3<T> &lhs, const Vector3<T> &rhs);
@@ -316,6 +318,12 @@ template<typename T>
 T Cos(const Vector3<T> &a, const Vector3<T> &b)
 {
     return Rtrc::Dot(Rtrc::NormalizeIfNotZero(a), Rtrc::NormalizeIfNotZero(b));
+}
+
+template<typename T>
+T AngleBetween(const Vector3<T> &a, const Vector3<T> &b)
+{
+    return std::acos(Rtrc::Clamp(Rtrc::Cos(a, b), T(-1), T(1)));
 }
 
 template<typename T>
