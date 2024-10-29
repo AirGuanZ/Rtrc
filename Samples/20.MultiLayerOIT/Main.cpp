@@ -25,6 +25,7 @@ class MultiLayerOITDemo : public SimpleApplication
     EditorCameraController cameraController_;
 
     uint32_t layerCount_ = 4;
+    bool blend_ = true;
     bool discardFarest_ = true;
 
     void InitializeSimpleApplication(GraphRef graph) override
@@ -100,7 +101,14 @@ class MultiLayerOITDemo : public SimpleApplication
         if(imgui_->Begin("Settings", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
         {
             imgui_->Input("Layer count (0 to disable)", &layerCount_);
-            imgui_->CheckBox("Discard farest layer when overflow", &discardFarest_);
+            if(layerCount_ == 0)
+            {
+                imgui_->CheckBox("Enable blending", &blend_);
+            }
+            else
+            {
+                imgui_->CheckBox("Discard farest layer when overflow", &discardFarest_);
+            }
         }
         imgui_->End();
 
@@ -115,7 +123,7 @@ class MultiLayerOITDemo : public SimpleApplication
 
         if(layerCount_ == 0)
         {
-            RenderRaw(graph, framebuffer);
+            RenderRaw(graph, framebuffer, blend_);
         }
         else
         {
@@ -123,8 +131,22 @@ class MultiLayerOITDemo : public SimpleApplication
         }
     }
 
-    void RenderRaw(GraphRef graph, RGTexture framebuffer)
+    void RenderRaw(GraphRef graph, RGTexture framebuffer, bool blend)
     {
+        RGTexture depthBuffer = {};
+        if(!blend)
+        {
+            depthBuffer = graph->CreateTexture(
+                RHI::TextureDesc
+                {
+                    .format     = RHI::Format::D32,
+                    .width      = framebuffer->GetWidth(),
+                    .height     = framebuffer->GetHeight(),
+                    .usage      = RHI::TextureUsage::DepthStencil,
+                    .clearValue = RHI::DepthStencilClearValue{ 1, 0 }
+                });
+        }
+
         RGAddRenderPass<true>(
             graph, "RenderHair",
             RGColorAttachment
@@ -133,7 +155,13 @@ class MultiLayerOITDemo : public SimpleApplication
                 .loadOp     = RHI::AttachmentLoadOp::Clear,
                 .clearValue = { 0, 1, 1, 0 },
             },
-            [this, framebuffer]
+            blend ? RGDepthStencilAttachment{} : RGDepthStencilAttachment
+            {
+                .dsv        = depthBuffer->GetDsv(),
+                .loadOp     = RHI::AttachmentLoadOp::Clear,
+                .clearValue = { 1, 0 }
+            },
+            [this, framebuffer, depthBuffer, blend]
             {
                 using Shader = RtrcShader::Render;
 
@@ -145,9 +173,15 @@ class MultiLayerOITDemo : public SimpleApplication
                             Attribute("POSITION", Float3),
                             Attribute("NORMAL", Float3),
                             Attribute("UV", Float2))),
-                        .blendState = RTRC_STATIC_BLEND_STATE(
+                        .depthStencilState = blend ? DepthStencilState{} : RTRC_STATIC_DEPTH_STENCIL_STATE(
                         {
-                            .enableBlending = true,
+                            .enableDepthTest  = true,
+                            .enableDepthWrite = true,
+                            .depthCompareOp   = RHI::CompareOp::Less
+                        }),
+                        .blendState = RTRC_BLEND_STATE(
+                        {
+                            .enableBlending         = blend,
                             .blendingSrcColorFactor = RHI::BlendFactor::SrcAlpha,
                             .blendingDstColorFactor = RHI::BlendFactor::OneMinusSrcAlpha,
                             .blendingSrcAlphaFactor = RHI::BlendFactor::One,
@@ -155,7 +189,8 @@ class MultiLayerOITDemo : public SimpleApplication
                         }),
                         .attachmentState = RTRC_ATTACHMENT_STATE
                         {
-                            .colorAttachmentFormats = { framebuffer->GetFormat() }
+                            .colorAttachmentFormats = { framebuffer->GetFormat() },
+                            .depthStencilFormat = blend ? RHI::Format::Unknown : depthBuffer->GetFormat()
                         }
                     });
 

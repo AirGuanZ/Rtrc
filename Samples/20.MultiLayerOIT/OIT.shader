@@ -40,7 +40,7 @@ rtrc_shader("Render")
 	{
 		const float4 color = ColorTexture.SampleLevel(Sampler, input.uv, 0);
 		const float4 specular = SpecularTexture.SampleLevel(Sampler, input.uv, 0);
-		const float3 result = color.rgb * max(specular.a, 0.1);
+		const float3 result = color.rgb * max(specular.a, 0.8);
 		return float4(result, color.a);
 	}
 }
