@@ -272,9 +272,9 @@ int InCircle2DHomogeneous(const Expansion3 &pa, const Expansion3 &pb, const Expa
     const E g = pc.x * pc.z * dz2 - pd.x * pd.z * cz2;
     const E h = pc.y * pc.z * dz2 - pd.y * pd.z * cz2;
 
-    const E c = Square(pa.x * pd.z - pd.x * pa.z) + Square(pa.y * pd.z - pd.y * pa.z);
-    const E f = Square(pb.x * pd.z - pd.x * pb.z) + Square(pb.y * pd.z - pd.y * pb.z);
-    const E i = Square(pc.x * pd.z - pd.x * pc.z) + Square(pc.y * pd.z - pd.y * pc.z);
+    const E c = PredicatesDetail::Square(pa.x * pd.z - pd.x * pa.z) + PredicatesDetail::Square(pa.y * pd.z - pd.y * pa.z);
+    const E f = PredicatesDetail::Square(pb.x * pd.z - pd.x * pb.z) + PredicatesDetail::Square(pb.y * pd.z - pd.y * pb.z);
+    const E i = PredicatesDetail::Square(pc.x * pd.z - pd.x * pc.z) + PredicatesDetail::Square(pc.y * pd.z - pd.y * pc.z);
 
     const E sc = d * h - e * g;
     const E sf = a * h - b * g;
