@@ -180,7 +180,11 @@ namespace BindingGroupDetail
             [&]<bool IsUniform, typename M, typename A>
             (const char *, RHI::ShaderStageFlags shaderStages, const A &accessor, BindingFlags)
         {
-            const RHI::PipelineStageFlag pipelineStages = ShaderStagesToPipelineStages(shaderStages) & stages;
+            const RHI::PipelineStageFlag pipelineStages =
+                stages == RHI::PipelineStageFlag::All ?
+                ShaderStagesToPipelineStages(shaderStages) :
+                (ShaderStagesToPipelineStages(shaderStages) & stages);
+
             if constexpr(!IsUniform)
             {
                 using MemberElement = typename MemberProxyTrait<M>::MemberProxyElement;
