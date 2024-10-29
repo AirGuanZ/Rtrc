@@ -148,8 +148,12 @@ rtrc_shader("RenderLayers")
 
 		if(Pass.DiscardFarest)
 		{
-			uint numTries = 0;
-			uint i = 0;
+			// Number of consecutive failed attempts. If it exceeds the layer count,
+			// then the current fragment is farther than all existing layers and should be discarded.
+			uint numFailedTries = 0;
+			
+			// Starting from the layer index, the attempt will succeed immediately if not full.
+			uint i = layerIndex % Pass.LayerCount;
 
 			while(true)
 			{
@@ -162,11 +166,11 @@ rtrc_shader("RenderLayers")
 				if(originalValue > layerValue)
 				{
 					layerValue = originalValue;
-					numTries = 1;
+					numFailedTries = 1;
 				}
 				else
 				{
-					if(++numTries >= Pass.LayerCount)
+					if(++numFailedTries >= Pass.LayerCount)
 					{
 						return;
 					}
