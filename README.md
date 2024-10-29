@@ -41,6 +41,8 @@ Personal graphics toolkits
 | 16.MeshCorefinement<br>Embed all intersection lines between meshes | ![](./Documents/Samples_16.png) |
 | 17.WorkGraph<br>Basic example of work graph | ![](./Documents/Samples_17.png) |
 | 18.ShortestGeodesicPath<br>Find globally shortest geodesic path on triangle mesh | ![](./Documents/Samples_18.png) |
+| 19.Archive<br>Serialize/deserialize to/from JSON/bytes | ![](./Documents/Samples_19.png) |
+| 20.MultiLayerOIT<br>Multi-layered order-independent transparency | ![](./Documents/Samples_20.png) |
 | WIP | ... |
 
 ## Third-party Dependencies
