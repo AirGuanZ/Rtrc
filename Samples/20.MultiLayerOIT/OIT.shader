@@ -148,14 +148,7 @@ rtrc_shader("RenderLayers")
 
 		if(Pass.DiscardFarest)
 		{
-			// Number of consecutive failed attempts. If it exceeds the layer count,
-			// then the current fragment is farther than all existing layers and should be discarded.
-			uint numFailedTries = 0;
-			
-			// Starting from the layer index, the attempt will succeed immediately if not full.
-			uint i = layerIndex % Pass.LayerCount;
-
-			while(true)
+			for(uint i = 0; i < Pass.LayerCount; ++i)
 			{
 				uint64_t originalValue;
 				InterlockedMin(LayerBuffer[pixelIndex * Pass.LayerCount + i], layerValue, originalValue);
@@ -165,17 +158,14 @@ rtrc_shader("RenderLayers")
 				}
 				if(originalValue > layerValue)
 				{
+					// The layerValue must have already successfully replaced the original value at the i'th slot.
+					// Now we need to find another slot to accommodate the original value.
 					layerValue = originalValue;
-					numFailedTries = 1;
 				}
 				else
 				{
-					if(++numFailedTries >= Pass.LayerCount)
-					{
-						return;
-					}
+					// The insertion was unsuccessful. Keep trying in the next iteration.
 				}
-				i = (i + 1) % Pass.LayerCount;
 			}
 		}
 	}
@@ -183,8 +173,6 @@ rtrc_shader("RenderLayers")
 
 rtrc_shader("ResolveLayers")
 {
-	#define MAX_LAYER_COUNT 32
-
 	rtrc_vertex(VSMain)
 	rtrc_fragment(FSMain)
 	
@@ -250,31 +238,12 @@ rtrc_shader("ResolveLayers")
 			return float4(0, 0, 0, 0);
 		}
 
-		uint keys[MAX_LAYER_COUNT], values[MAX_LAYER_COUNT];
-		for(uint layerIndex = 0; layerIndex < layerCount; ++layerIndex)
+		float4 result = float4(0, 0, 0, 1);
+		for(int layerIndex = int(layerCount) - 1; layerIndex >= 0; --layerIndex)
 		{
 			const uint loadIndex = Pass.LayerCount * pixelIndex + layerIndex;
 			const uint64_t layerValue = LayerBuffer[loadIndex];
-			keys[layerIndex] = uint(layerValue >> 32);
-			values[layerIndex] = uint(layerValue & 0xffffffff);
-		}
-
-		for(uint i = 0; i < layerCount - 1; ++i)
-		{
-			for(uint j = 0; j < layerCount - i - 1; ++j)
-			{
-				if(keys[j] < keys[j + 1])
-				{
-					Swap(keys[j], keys[j + 1]);
-					Swap(values[j], values[j + 1]);
-				}
-			}
-		}
-
-		float4 result = float4(0, 0, 0, 1);
-		for(uint k = 0; k < layerCount; ++k)
-		{
-			const float4 value = DecodeUNorm8x4(values[k]);
+			const float4 value = DecodeUNorm8x4(uint(layerValue & 0xffffffff));
 			result.rgb = value.rgb * value.a + result.rgb * (1 - value.a);
 			result.a *= 1 - value.a;
 		}
