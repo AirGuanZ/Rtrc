@@ -241,8 +241,15 @@ rtrc_shader("ResolveLayers")
 	}
 }
 
+rtrc_code("AlphaLayerOIT_Shared")
+{
+	#define MAX_VIEW_DISTANCE 15.0
+}
+
 rtrc_shader("RenderAlphaLayers")
 {
+	rtrc_refcode("AlphaLayerOIT_Shared")
+	
 	rtrc_vertex(VSMain)
 	rtrc_fragment(FSMain)
 
@@ -304,7 +311,7 @@ rtrc_shader("RenderAlphaLayers")
 		}
 		const uint encodedAlpha = PackUNorm8(color.a);
 
-		const float dist = length(input.viewPosition) / 15;
+		const float dist = length(input.viewPosition) / MAX_VIEW_DISTANCE;
 		const uint encodedDist = EncodeFloat24(dist);
 		uint layerValue = (encodedDist & 0xffffff00) | encodedAlpha;
 
@@ -382,6 +389,8 @@ rtrc_shader("BlendBackground")
 
 rtrc_shader("ResolveAlphaLayers")
 {
+	rtrc_refcode("AlphaLayerOIT_Shared")
+
 	rtrc_vertex(VSMain)
 	rtrc_fragment(FSMain)
 	
@@ -452,7 +461,7 @@ rtrc_shader("ResolveAlphaLayers")
 		}
 		const uint encodedAlpha = PackUNorm8(color.a);
 
-		const float dist = length(input.viewPosition) / 15;
+		const float dist = length(input.viewPosition) / MAX_VIEW_DISTANCE;
 		const uint encodedDist = EncodeFloat24(dist) & 0xffffff00;
 		const uint currentLayerValue = encodedDist | encodedAlpha;
 		
