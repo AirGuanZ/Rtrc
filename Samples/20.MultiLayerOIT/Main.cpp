@@ -28,6 +28,8 @@ class MultiLayerOITDemo : public SimpleApplication
     bool blend_ = true;
     bool discardFarest_ = true;
 
+    int mode_ = 0;
+
     void InitializeSimpleApplication(GraphRef graph) override
     {
         {
@@ -100,14 +102,15 @@ class MultiLayerOITDemo : public SimpleApplication
 
         if(imgui_->Begin("Settings", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
         {
-            imgui_->Input("Layer count (0 to disable)", &layerCount_);
-            if(layerCount_ == 0)
+            imgui_->Combo("Mode", &mode_, { "Raw", "ColorLayers", "AlphaLayers" });
+            if(mode_ == 1 || mode_ == 2)
             {
-                imgui_->CheckBox("Enable blending", &blend_);
+                imgui_->Input("Layer count (0 to disable)", &layerCount_);
+                imgui_->CheckBox("Discard farest layer when overflow", &discardFarest_);
             }
             else
             {
-                imgui_->CheckBox("Discard farest layer when overflow", &discardFarest_);
+                imgui_->CheckBox("Enable blending", &blend_);
             }
         }
         imgui_->End();
@@ -116,18 +119,23 @@ class MultiLayerOITDemo : public SimpleApplication
         if(!imgui_->IsAnyItemActive())
         {
             cameraController_.Update(*input_, GetFrameTimer().GetDeltaSecondsF());
+            cameraController_.SetTrackballDistance((std::min)(cameraController_.GetTrackballDistance(), 10.0f));
         }
         camera_.UpdateDerivedData();
 
         auto framebuffer = graph->RegisterSwapchainTexture(GetSwapchain());
 
-        if(layerCount_ == 0)
+        if(mode_ == 0)
         {
             RenderRaw(graph, framebuffer, blend_);
         }
+        else if(mode_ == 1)
+        {
+            RenderColorLayerOIT(graph, framebuffer);
+        }
         else
         {
-            RenderOIT(graph, framebuffer);
+            RenderAlphaLayerOIT(graph, framebuffer);
         }
     }
 
@@ -208,10 +216,9 @@ class MultiLayerOITDemo : public SimpleApplication
             });
     }
 
-    void RenderOIT(GraphRef graph, RGTexture framebuffer)
+    void RenderColorLayerOIT(GraphRef graph, RGTexture framebuffer)
     {
-        assert(layerCount_ > 0);
-        const uint32_t layerCount = (std::min)(layerCount_, 32u);
+        const uint32_t layerCount = (std::clamp)(layerCount_, 1u, 32u);
 
         auto counterBuffer = graph->CreateStructuredBuffer(
             framebuffer->GetWidth() * framebuffer->GetHeight(),
@@ -297,8 +304,8 @@ class MultiLayerOITDemo : public SimpleApplication
                             .blendState = RTRC_STATIC_BLEND_STATE(
                             {
                                 .enableBlending = true,
-                                .blendingSrcColorFactor = RHI::BlendFactor::SrcAlpha,
-                                .blendingDstColorFactor = RHI::BlendFactor::OneMinusSrcAlpha,
+                                .blendingSrcColorFactor = RHI::BlendFactor::One,
+                                .blendingDstColorFactor = RHI::BlendFactor::SrcAlpha,
                                 .blendingSrcAlphaFactor = RHI::BlendFactor::One,
                                 .blendingDstAlphaFactor = RHI::BlendFactor::Zero
                             }),
@@ -312,6 +319,158 @@ class MultiLayerOITDemo : public SimpleApplication
                     commandBuffer.BindGraphicsPipeline(pipeline);
                     commandBuffer.BindGraphicsGroups(passGroup);
                     commandBuffer.Draw(3, 1, 0, 0);
+                });
+
+            DeclareRenderGraphResourceUses(pass, passData, RHI::PipelineStageFlag::All);
+        }
+    }
+
+    void RenderAlphaLayerOIT(GraphRef graph, RGTexture framebuffer)
+    {
+        const uint32_t layerCount = (std::clamp)(layerCount_, 1u, 32u);
+
+        auto layerBuffer = graph->CreateStructuredBuffer(
+            layerCount * framebuffer->GetWidth() * framebuffer->GetHeight(),
+            sizeof(uint32_t),
+            RHI::BufferUsage::ShaderStructuredBuffer | RHI::BufferUsage::ShaderRWStructuredBuffer,
+            "LayerBuffer");
+
+        RGClearRWStructuredBuffer(graph, "ClearLayerBuffer", layerBuffer, 0xffffffff);
+
+        {
+            using Shader = RtrcShader::RenderAlphaLayers;
+            
+            Shader::Pass passData;
+            passData.LayerBuffer     = layerBuffer;
+            passData.FramebufferSize = framebuffer->GetSize();
+            passData.LayerCount      = layerCount;
+            passData.ColorTexture    = colorTexture_;
+            passData.ObjectToClip    = camera_.GetWorldToClip();
+            passData.ObjectToView    = camera_.GetWorldToCamera();
+
+            auto pass = graph->CreatePass("RenderAlphaLayers");
+            DeclareRenderGraphResourceUses(pass, passData, RHI::PipelineStageFlag::All);
+            pass->SetCallback([this, framebuffer, passData]
+            {
+                auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
+                
+                auto pipeline = pipelineCache_.Get(
+                    GraphicsPipelineDesc
+                    {
+                        .shader = device_->GetShader<Shader::Name>(),
+                        .meshLayout = RTRC_STATIC_MESH_LAYOUT(Buffer(
+                            Attribute("POSITION", Float3),
+                            Attribute("NORMAL", Float3),
+                            Attribute("UV", Float2))),
+                    });
+
+                auto &commandBuffer = RGGetCommandBuffer();
+                commandBuffer.BindGraphicsPipeline(pipeline);
+                commandBuffer.BindGraphicsGroups(passGroup);
+                commandBuffer.SetViewports(framebuffer->GetViewport());
+                commandBuffer.SetScissors(framebuffer->GetScissor());
+                commandBuffer.SetVertexBuffer(0, vertexBuffer_, sizeof(Vertex));
+                commandBuffer.Draw(vertexBuffer_->GetSize() / sizeof(Vertex), 1, 0, 0);
+            });
+        }
+
+        {
+            using Shader = RtrcShader::BlendBackground;
+
+            Shader::Pass passData;
+            passData.LayerBuffer     = layerBuffer;
+            passData.FramebufferSize = framebuffer->GetSize();
+            passData.LayerCount      = layerCount;
+            
+            auto pass = RGAddRenderPass<true>(
+                graph, "BlendBackground",
+                RGColorAttachment
+                {
+                    .rtv        = framebuffer->GetRtv(),
+                    .loadOp     = RHI::AttachmentLoadOp::Clear,
+                    .clearValue = { 0, 1, 1, 0 },
+                },
+                [this, passData, framebuffer]
+                {
+                    auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
+
+                    auto pipeline = pipelineCache_.Get(
+                        GraphicsPipelineDesc
+                        {
+                            .shader = device_->GetShader<Shader::Name>(),
+                            .blendState = RTRC_STATIC_BLEND_STATE(
+                            {
+                                .enableBlending = true,
+                                .blendingSrcColorFactor = RHI::BlendFactor::Zero,
+                                .blendingDstColorFactor = RHI::BlendFactor::SrcAlpha,
+                                .blendingSrcAlphaFactor = RHI::BlendFactor::One,
+                                .blendingDstAlphaFactor = RHI::BlendFactor::Zero
+                            }),
+                            .attachmentState = RTRC_ATTACHMENT_STATE
+                            {
+                                .colorAttachmentFormats = { framebuffer->GetFormat() }
+                            }
+                        });
+
+                    auto &commandBuffer = RGGetCommandBuffer();
+                    commandBuffer.BindGraphicsPipeline(pipeline);
+                    commandBuffer.BindGraphicsGroups(passGroup);
+                    commandBuffer.Draw(3, 1, 0, 0);
+                });
+
+            DeclareRenderGraphResourceUses(pass, passData, RHI::PipelineStageFlag::All);
+        }
+
+        {
+            using Shader = RtrcShader::ResolveAlphaLayers;
+            
+            Shader::Pass passData;
+            passData.LayerBuffer     = layerBuffer;
+            passData.FramebufferSize = framebuffer->GetSize();
+            passData.LayerCount      = layerCount;
+            passData.ColorTexture    = colorTexture_;
+            passData.SpecularTexture = specularTexture_;
+            passData.ObjectToClip    = camera_.GetWorldToClip();
+            passData.ObjectToView    = camera_.GetWorldToCamera();
+            
+            auto pass = RGAddRenderPass<true>(
+                graph, "ResolveAlphaLayers",
+                RGColorAttachment
+                {
+                    .rtv    = framebuffer->GetRtv(),
+                    .loadOp = RHI::AttachmentLoadOp::Load
+                },
+                [this, passData, framebuffer]
+                {
+                    auto passGroup = device_->CreateBindingGroupWithCachedLayout(passData);
+
+                    auto pipeline = pipelineCache_.Get(
+                        GraphicsPipelineDesc
+                        {
+                            .shader = device_->GetShader<Shader::Name>(),
+                            .meshLayout = RTRC_STATIC_MESH_LAYOUT(Buffer(
+                                Attribute("POSITION", Float3),
+                                Attribute("NORMAL", Float3),
+                                Attribute("UV", Float2))),
+                            .blendState = RTRC_STATIC_BLEND_STATE(
+                            {
+                                .enableBlending = true,
+                                .blendingSrcColorFactor = RHI::BlendFactor::One,
+                                .blendingDstColorFactor = RHI::BlendFactor::One,
+                                .blendingSrcAlphaFactor = RHI::BlendFactor::Zero,
+                                .blendingDstAlphaFactor = RHI::BlendFactor::Zero
+                            }),
+                            .attachmentState = RTRC_ATTACHMENT_STATE
+                            {
+                                .colorAttachmentFormats = { framebuffer->GetFormat() }
+                            }
+                        });
+
+                    auto &commandBuffer = RGGetCommandBuffer();
+                    commandBuffer.BindGraphicsPipeline(pipeline);
+                    commandBuffer.BindGraphicsGroups(passGroup);
+                    commandBuffer.SetVertexBuffer(0, vertexBuffer_, sizeof(Vertex));
+                    commandBuffer.Draw(vertexBuffer_->GetSize() / sizeof(Vertex), 1, 0, 0);
                 });
 
             DeclareRenderGraphResourceUses(pass, passData, RHI::PipelineStageFlag::All);
