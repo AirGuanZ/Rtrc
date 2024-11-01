@@ -11,10 +11,10 @@ RTRC_BEGIN
 namespace ShaderDatabaseDetail
 {
 
-    std::vector<std::string_view> FindDirectDependencies(
+    std::vector<std::string> FindDirectDependencies(
         std::string_view source, std::string_view sourceForFindingKeyword)
     {
-        std::vector<std::string_view> ret;
+        std::vector<std::string> ret;
 
         size_t keywordBeginPos = 0;
         while(true)
@@ -34,7 +34,10 @@ namespace ShaderDatabaseDetail
             {
                 tokens.Throw(std::format("Invalid refcode name: {}", name));
             }
+
             name = name.substr(1, name.size() - 2); // Remove quotation marks
+            ret.push_back(std::move(name));
+
             tokens.Next();
             tokens.ConsumeOrThrow(")");
         }
