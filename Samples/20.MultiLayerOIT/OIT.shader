@@ -288,13 +288,6 @@ rtrc_shader("RenderAlphaLayers")
 	{
 		return uint(clamp(value * 255, 0.0, 255.0));
 	}
-	
-	uint FloatToUInt32_OrderPreserving(float f32_val)
-	{
-		const uint temp = asuint(f32_val);
-		const uint i32val = temp ^ ((asint(temp) >> 31) | 0x80000000);
-		return i32val;
-	}
 
 	uint EncodeFloat24(float f)
 	{
@@ -432,13 +425,6 @@ rtrc_shader("ResolveAlphaLayers")
 		output.normal = input.normal;
 		output.uv = input.uv;
 		return output;
-	}
-	
-	uint FloatToUInt32_OrderPreserving(float f32_val)
-	{
-		const uint temp = asuint(f32_val);
-		const uint i32val = temp ^ ((asint(temp) >> 31) | 0x80000000);
-		return i32val;
 	}
 
 	uint EncodeFloat24(float f)
