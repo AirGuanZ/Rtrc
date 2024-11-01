@@ -58,7 +58,6 @@ rtrc_shader("RenderLayers")
 		rtrc_define(RWStructuredBuffer<uint>, CounterBuffer)
 		rtrc_uniform(uint2, FramebufferSize)
 		rtrc_uniform(uint, LayerCount)
-		rtrc_uniform(uint, DiscardFarest)
 
 		rtrc_define(Texture2D<float4>, ColorTexture)
 		rtrc_define(Texture2D<float4>, SpecularTexture)
@@ -130,42 +129,28 @@ rtrc_shader("RenderLayers")
 
 		uint layerIndex;
 		InterlockedAdd(CounterBuffer[pixelIndex], 1, layerIndex);
-		if(!Pass.DiscardFarest && layerIndex >= Pass.LayerCount)
-		{
-			return;
-		}
 
 		const float dist = length(input.viewPosition);
 		const uint encodedDist = FloatToUInt32_OrderPreserving(dist);
 		uint64_t layerValue = (uint64_t(encodedDist) << 32) | uint64_t(packedResult);
-
-		if(!Pass.DiscardFarest && layerIndex < Pass.LayerCount)
+		
+		for(uint i = 0; i < Pass.LayerCount; ++i)
 		{
-			const uint outputIndex = pixelIndex * Pass.LayerCount + layerIndex;
-			LayerBuffer[outputIndex] = layerValue;
-			return;
-		}
-
-		if(Pass.DiscardFarest)
-		{
-			for(uint i = 0; i < Pass.LayerCount; ++i)
+			uint64_t originalValue;
+			InterlockedMin(LayerBuffer[pixelIndex * Pass.LayerCount + i], layerValue, originalValue);
+			if(originalValue == 0xffffffff)
 			{
-				uint64_t originalValue;
-				InterlockedMin(LayerBuffer[pixelIndex * Pass.LayerCount + i], layerValue, originalValue);
-				if(originalValue == 0xffffffff)
-				{
-					return;
-				}
-				if(originalValue > layerValue)
-				{
-					// The layerValue must have already successfully replaced the original value at the i'th slot.
-					// Now we need to find another slot to accommodate the original value.
-					layerValue = originalValue;
-				}
-				else
-				{
-					// The insertion was unsuccessful. Keep trying in the next iteration.
-				}
+				return;
+			}
+			if(originalValue > layerValue)
+			{
+				// The layerValue must have already successfully replaced the original value at the i'th slot.
+				// Now we need to find another slot to accommodate the original value.
+				layerValue = originalValue;
+			}
+			else
+			{
+				// The insertion was unsuccessful. Keep trying in the next iteration.
 			}
 		}
 	}

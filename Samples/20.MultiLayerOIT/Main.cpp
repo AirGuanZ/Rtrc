@@ -26,7 +26,6 @@ class MultiLayerOITDemo : public SimpleApplication
 
     uint32_t layerCount_ = 4;
     bool blend_ = true;
-    bool discardFarest_ = true;
 
     int mode_ = 0;
 
@@ -106,7 +105,6 @@ class MultiLayerOITDemo : public SimpleApplication
             if(mode_ == 1 || mode_ == 2)
             {
                 imgui_->Input("Layer count (0 to disable)", &layerCount_);
-                imgui_->CheckBox("Discard farest layer when overflow", &discardFarest_);
             }
             else
             {
@@ -244,7 +242,6 @@ class MultiLayerOITDemo : public SimpleApplication
             passData.CounterBuffer   = counterBuffer;
             passData.FramebufferSize = framebuffer->GetSize();
             passData.LayerCount      = layerCount;
-            passData.DiscardFarest   = discardFarest_ ? 1 : 0;
             passData.ColorTexture    = colorTexture_;
             passData.SpecularTexture = specularTexture_;
             passData.ObjectToClip    = camera_.GetWorldToClip();
