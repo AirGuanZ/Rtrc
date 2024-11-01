@@ -45,7 +45,11 @@ rtrc_shader("Render")
 	}
 }
 
-// Note: these shaders are solely for testing OIT results and are not well-optimized
+// Note: These shaders are intended solely for testing OIT results and are not optimized.
+// Potential optimizations:
+// * Fix the maximum layer count at compile time, to write more efficient code.
+// * Use non-atomic buffer load to perform a binary search, finding a better insertion starting point.
+//   This approach is conservative even without coherence and consistency.
 
 rtrc_shader("RenderLayers")
 {
@@ -469,8 +473,7 @@ rtrc_shader("ResolveAlphaLayers")
 		const uint2 pixelCoordinate = uint2(input.clipPosition.xy);
 		const uint pixelIndex = pixelCoordinate.y * Pass.FramebufferSize.x + pixelCoordinate.x;
 		
-		float accumulatedAlpha = 1;
-		bool found = false;
+		float accumulatedAlpha = 1; bool found = false;
 		for(uint i = 0; i < Pass.LayerCount; ++i)
 		{
 			const uint layerValue = LayerBuffer[pixelIndex * Pass.LayerCount + i];
