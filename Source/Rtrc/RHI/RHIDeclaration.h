@@ -1369,6 +1369,13 @@ struct AliasedTransientResourcePair
     int second;
 };
 
+struct ComputeShaderDispatchLimit
+{
+    uint32_t maxThreadGroupCountX;
+    uint32_t maxThreadGroupCountY;
+    uint32_t maxThreadGroupCountZ;
+};
+
 // =============================== rhi interfaces ===============================
 
 class RHIObject : public ReferenceCounted, public Uncopyable
@@ -1603,6 +1610,7 @@ public:
     RTRC_RHI_API size_t GetConstantBufferSizeAlignment() const RTRC_RHI_API_PURE;
     RTRC_RHI_API size_t GetAccelerationStructureScratchBufferAlignment() const RTRC_RHI_API_PURE;
     RTRC_RHI_API size_t GetTextureBufferCopyRowPitchAlignment(Format texelFormat) const RTRC_RHI_API_PURE;
+    RTRC_RHI_API const ComputeShaderDispatchLimit &GetComputeShaderDispatchLimit() const RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void WaitIdle() RTRC_RHI_API_PURE;
 

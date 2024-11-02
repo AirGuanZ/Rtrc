@@ -984,6 +984,17 @@ size_t DirectX12Device::GetTextureBufferCopyRowPitchAlignment(Format texelFormat
     return D3D12_TEXTURE_DATA_PITCH_ALIGNMENT;
 }
 
+const ComputeShaderDispatchLimit &DirectX12Device::GetComputeShaderDispatchLimit() const
+{
+    static constexpr ComputeShaderDispatchLimit result =
+    {
+        D3D12_CS_DISPATCH_MAX_THREAD_GROUPS_PER_DIMENSION,
+        D3D12_CS_DISPATCH_MAX_THREAD_GROUPS_PER_DIMENSION,
+        D3D12_CS_DISPATCH_MAX_THREAD_GROUPS_PER_DIMENSION,
+    };
+    return result;
+}
+
 void DirectX12Device::WaitIdle()
 {
     if(graphicsQueue_)

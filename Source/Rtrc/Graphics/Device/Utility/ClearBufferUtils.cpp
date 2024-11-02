@@ -12,6 +12,7 @@ rtrc_comp(CSMain)
 rtrc_group(Pass)
 {
     rtrc_define(RWBuffer<uint>, Out)
+    rtrc_uniform(uint, firstElement)
     rtrc_uniform(uint, threadCount)
     rtrc_uniform(uint, value)
 };
@@ -19,13 +20,14 @@ rtrc_group(Pass)
 void CSMain(uint tid : SV_DispatchThreadID)
 {
     if(tid < Pass.threadCount)
-        Out[tid] = Pass.value;
+        Out[Pass.firstElement + tid] = Pass.value;
 }
 )___";
 
     rtrc_group(BindingGroup_RWBuffer_Pass)
     {
         rtrc_define(RWBuffer, Out);
+        rtrc_uniform(uint, firstElement);
         rtrc_uniform(uint, threadCount);
         rtrc_uniform(uint, value);
     };
@@ -35,6 +37,7 @@ rtrc_comp(CSMain)
 rtrc_group(Pass)
 {
     rtrc_define(RWStructuredBuffer<uint>, Out)
+    rtrc_uniform(uint, firstElement)
     rtrc_uniform(uint, threadCount)
     rtrc_uniform(uint, value)
 };
@@ -42,13 +45,14 @@ rtrc_group(Pass)
 void CSMain(uint tid : SV_DispatchThreadID)
 {
     if(tid < Pass.threadCount)
-        Out[tid] = Pass.value;
+        Out[Pass.firstElement + tid] = Pass.value;
 }
 )___";
 
     rtrc_group(BindingGroup_RWStructuredBuffer_Pass)
     {
         rtrc_define(RWStructuredBuffer, Out);
+        rtrc_uniform(uint, firstElement);
         rtrc_uniform(uint, threadCount);
         rtrc_uniform(uint, value);
     };
@@ -76,15 +80,31 @@ void ClearBufferUtils::ClearRWBuffer(CommandBuffer &commandBuffer, const RC<SubB
     assert(buffer->GetSubBufferSize() % sizeof(uint32_t) == 0);
     assert(buffer->GetFullBuffer()->GetDesc().usage.Contains(RHI::BufferUsage::ShaderRWBuffer));
 
-    BindingGroup_RWBuffer_Pass passData;
-    passData.Out         = buffer->GetTexelUav(RHI::Format::R32_UInt);
-    passData.threadCount = buffer->GetSubBufferSize() / sizeof(uint32_t);
-    passData.value       = value;
-    auto passGroup = device_->CreateBindingGroup(passData, clearRWBufferBindingGroupLayout_);
-
     commandBuffer.BindComputePipeline(clearRWBufferShader_->GetComputePipeline());
-    commandBuffer.BindComputeGroup(0, passGroup);
-    commandBuffer.DispatchWithThreadCount(passData.threadCount);
+
+    auto uav = buffer->GetTexelUav(RHI::Format::R32_UInt);
+
+    const uint32_t maxGroupCount = device_->GetRawDevice()->GetComputeShaderDispatchLimit().maxThreadGroupCountX;
+    const uint32_t maxThreadCountPerDispatch = maxGroupCount * clearRWBufferShader_->GetThreadGroupSize().x;
+    const uint32_t totalElementCount = buffer->GetSubBufferSize() / sizeof(uint32_t);
+    
+    uint32_t startElement = 0;
+    while(startElement < totalElementCount)
+    {
+        const uint32_t endElement = (std::min)(totalElementCount, startElement + maxThreadCountPerDispatch);
+        
+        BindingGroup_RWBuffer_Pass passData;
+        passData.Out          = uav;
+        passData.firstElement = startElement;
+        passData.threadCount  = endElement - startElement;
+        passData.value        = value;
+        auto passGroup = device_->CreateBindingGroup(passData, clearRWBufferBindingGroupLayout_);
+
+        commandBuffer.BindComputeGroup(0, passGroup);
+        commandBuffer.DispatchWithThreadCount(passData.threadCount);
+
+        startElement = endElement;
+    }
 }
 
 void ClearBufferUtils::ClearRWStructuredBuffer(CommandBuffer &commandBuffer, const RC<SubBuffer> &buffer, uint32_t value)
@@ -93,15 +113,31 @@ void ClearBufferUtils::ClearRWStructuredBuffer(CommandBuffer &commandBuffer, con
     assert(buffer->GetSubBufferSize() % sizeof(uint32_t) == 0);
     assert(buffer->GetFullBuffer()->GetDesc().usage.Contains(RHI::BufferUsage::ShaderRWStructuredBuffer));
 
-    BindingGroup_RWStructuredBuffer_Pass passData;
-    passData.Out         = buffer->GetStructuredUav(sizeof(uint32_t));
-    passData.threadCount = buffer->GetSubBufferSize() / sizeof(uint32_t);
-    passData.value       = value;
-    auto passGroup = device_->CreateBindingGroup(passData, clearRWStructuredBufferBindingGroupLayout_);
-
     commandBuffer.BindComputePipeline(clearRWStructuredBufferShader_->GetComputePipeline());
-    commandBuffer.BindComputeGroup(0, passGroup);
-    commandBuffer.DispatchWithThreadCount(passData.threadCount);
+
+    auto uav = buffer->GetStructuredUav(sizeof(uint32_t));
+
+    const uint32_t maxGroupCount = device_->GetRawDevice()->GetComputeShaderDispatchLimit().maxThreadGroupCountX;
+    const uint32_t maxThreadCountPerDispatch = maxGroupCount * clearRWBufferShader_->GetThreadGroupSize().x;
+    const uint32_t totalElementCount = buffer->GetSubBufferSize() / sizeof(uint32_t);
+
+    uint32_t startElement = 0;
+    while(startElement < totalElementCount)
+    {
+        const uint32_t endElement = (std::min)(totalElementCount, startElement + maxThreadCountPerDispatch);
+
+        BindingGroup_RWStructuredBuffer_Pass passData;
+        passData.Out          = uav;
+        passData.firstElement = startElement;
+        passData.threadCount  = endElement - startElement;
+        passData.value        = value;
+        auto passGroup = device_->CreateBindingGroup(passData, clearRWStructuredBufferBindingGroupLayout_);
+
+        commandBuffer.BindComputeGroup(0, passGroup);
+        commandBuffer.DispatchWithThreadCount(passData.threadCount);
+
+        startElement = endElement;
+    }
 }
 
 RTRC_END

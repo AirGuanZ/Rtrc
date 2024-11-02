@@ -68,6 +68,7 @@ public:
     size_t GetConstantBufferSizeAlignment() const RTRC_RHI_OVERRIDE;
     size_t GetAccelerationStructureScratchBufferAlignment() const RTRC_RHI_OVERRIDE;
     size_t GetTextureBufferCopyRowPitchAlignment(Format texelFormat) const RTRC_RHI_OVERRIDE;
+    const ComputeShaderDispatchLimit &GetComputeShaderDispatchLimit() const RTRC_RHI_OVERRIDE;
 
     void WaitIdle() RTRC_RHI_OVERRIDE;
 
@@ -116,6 +117,8 @@ private:
 
     std::optional<ShaderGroupRecordRequirements> shaderGroupRecordRequirements_;
     WarpSizeInfo warpSizeInfo_;
+
+    ComputeShaderDispatchLimit computeShaderDispatchLimit_;
 };
 
 RTRC_RHI_VK_END

@@ -317,6 +317,10 @@ VulkanDevice::VulkanDevice(
     deviceProperties2_.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR;
     deviceProperties2_.pNext = &conservativeRasterizationProperties_;
     vkGetPhysicalDeviceProperties2KHR(physicalDevice_.GetNativeHandle(), &deviceProperties2_);
+
+    computeShaderDispatchLimit_.maxThreadGroupCountX = deviceProperties2_.properties.limits.maxComputeWorkGroupCount[0];
+    computeShaderDispatchLimit_.maxThreadGroupCountY = deviceProperties2_.properties.limits.maxComputeWorkGroupCount[1];
+    computeShaderDispatchLimit_.maxThreadGroupCountZ = deviceProperties2_.properties.limits.maxComputeWorkGroupCount[2];
 }
 
 VulkanDevice::~VulkanDevice()
@@ -1232,6 +1236,11 @@ size_t VulkanDevice::GetAccelerationStructureScratchBufferAlignment() const
 size_t VulkanDevice::GetTextureBufferCopyRowPitchAlignment(Format texelFormat) const
 {
     return GetTexelSize(texelFormat);
+}
+
+const ComputeShaderDispatchLimit &VulkanDevice::GetComputeShaderDispatchLimit() const
+{
+    return computeShaderDispatchLimit_;
 }
 
 void VulkanDevice::WaitIdle()
