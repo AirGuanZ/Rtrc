@@ -468,7 +468,10 @@ enum class PipelineStage : uint32_t
     BuildAS          = 1 << 13,
     CopyAS           = 1 << 14,
     IndirectCommand  = 1 << 15,
-    All              = 1 << 16
+
+    // Logically 'All' can be defined as bitwise OR of all other stages. We assign it an individual value to keep
+    // consistent with the low-level graphics API.
+    All = 1 << 16,
 };
 RTRC_DEFINE_ENUM_FLAGS(PipelineStage)
 using PipelineStageFlag = EnumFlagsPipelineStage;
@@ -2013,9 +2016,9 @@ public:
     RTRC_RHI_API RPtr<BufferUav> CreateUav(const BufferUavDesc &desc) const RTRC_RHI_API_PURE;
 
     RTRC_RHI_API void *Map(size_t offset, size_t size, const BufferReadRange &readRange, bool invalidate = false) RTRC_RHI_API_PURE;
-    RTRC_RHI_API void Unmap(size_t offset, size_t size, bool flush = false)     RTRC_RHI_API_PURE;
-    RTRC_RHI_API void InvalidateBeforeRead(size_t offset, size_t size)          RTRC_RHI_API_PURE;
-    RTRC_RHI_API void FlushAfterWrite(size_t offset, size_t size)               RTRC_RHI_API_PURE;
+    RTRC_RHI_API void Unmap(size_t offset, size_t size, bool flush = false) RTRC_RHI_API_PURE;
+    RTRC_RHI_API void InvalidateBeforeRead(size_t offset, size_t size)      RTRC_RHI_API_PURE;
+    RTRC_RHI_API void FlushAfterWrite(size_t offset, size_t size)           RTRC_RHI_API_PURE;
 
     RTRC_RHI_API BufferDeviceAddress GetDeviceAddress() const RTRC_RHI_API_PURE;
 };

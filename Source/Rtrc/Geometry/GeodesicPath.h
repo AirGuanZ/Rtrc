@@ -51,10 +51,10 @@ private:
         bool isInQueue = false;
         int depth = 0;
 
-        Node    *parent = nullptr;
-        Node    *prev   = nullptr;
-        Node    *succ   = nullptr;
-        Node    *child  = nullptr;
+        Node *parent = nullptr;
+        Node *prev   = nullptr;
+        Node *succ   = nullptr;
+        Node *child  = nullptr;
 
         bool     isVertex     = false;
         bool     isLeft       = false; // Is this node the left child of its parent node. Meaningful only for edge node created by another edge node.

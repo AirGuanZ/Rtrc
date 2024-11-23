@@ -41,7 +41,7 @@ GeodesicPathICH::GeodesicPathICH(
             positions[connectivity->VertToOriginalVert(head)] - positions[connectivity->VertToOriginalVert(tail)]);
     }
 
-    // Bias lengths globally so that for every triangle abc is non-degenerate (ab + bc > ac + edgeLengthTolerance)
+    // Bias lengths globally so that every triangle abc is non-degenerate (ab + bc > ac + edgeLengthTolerance)
 
     double eps = 0;
     for(int f = 0; f < connectivity_->F(); ++f)
