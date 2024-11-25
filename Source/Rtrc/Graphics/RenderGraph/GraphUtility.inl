@@ -1,7 +1,5 @@
 #pragma once
 
-RTRC_BEGIN
-
 /**
  * RGClearColor
  * RGClearDepthStencil
@@ -19,10 +17,12 @@ RTRC_BEGIN
  * RGReadbackTexture
  */
 
+RTRC_BEGIN
+
 inline RGPass RGClearColor(
-    GraphRef    graph,
-    std::string name,
-    RGTexture   tex,
+    GraphRef        graph,
+    std::string     name,
+    RGTexture       tex,
     const Vector4f &clearValue)
 {
     auto pass = graph->CreatePass(std::move(name));

@@ -32,8 +32,8 @@ struct DepthStencilStateDesc
     bool            enableStencilTest = false;
     uint8_t         stencilReadMask   = 0;
     uint8_t         stencilWriteMask  = 0;
-    RHI::StencilOps frontStencil;
-    RHI::StencilOps backStencil;
+    RHI::StencilOps frontStencil      = {};
+    RHI::StencilOps backStencil       = {};
 
     auto operator<=>(const DepthStencilStateDesc &) const = default;
 };
@@ -98,7 +98,7 @@ DEFINE_PIPELINE_STATE(AttachmentState)
 struct GraphicsPipelineDesc
 {
     mutable RC<Shader>       shader;
-    mutable Shader::UniqueId shaderId; // Reserved for caching
+    mutable Shader::UniqueId shaderId = {}; // Reserved for caching
 
     RHI::Viewports viewports = 1;
     RHI::Scissors  scissors = 1;
