@@ -43,6 +43,7 @@ Personal graphics toolkits
 | 18.ShortestGeodesicPath<br>Find globally shortest geodesic path on triangle mesh | ![](./Documents/Samples_18.png) |
 | 19.Archive<br>Serialize/deserialize to/from JSON/bytes | ![](./Documents/Samples_19.png) |
 | 20.MultiLayerOIT<br>Multi-layered order-independent transparency | ![](./Documents/Samples_20.png) |
+| 21.HeightMapDownsampling<br>Volume-preserving height map downsampling | ![](./Documents/Samples_21.png) |
 | WIP | ... |
 
 ## Third-party Dependencies
