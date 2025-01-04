@@ -25,6 +25,9 @@ public:
         bool             enableGPUCapturer = false;
     };
 
+    Application() = default;
+    Application(int argc, char *argv[]);
+
     virtual ~Application() = default;
     
     void Run(const Config &config);
@@ -59,6 +62,8 @@ protected:
     Ref<WindowInput>   input_;
     Box<Device>        device_;
     Box<ImGuiInstance> imgui_;
+
+    std::vector<std::string> programArguments_;
 
 private:
     
@@ -101,14 +106,21 @@ public:
 
 #define RTRC_RUN_WITH_EXCEPTION_HANDLING ::Rtrc::RunWithExceptionHandlingHelper{}+[&]
 
-#define RTRC_APPLICATION_MAIN(APP, ...)             \
-    int main()                                      \
-    {                                               \
-        Rtrc::EnableMemoryLeakReporter();           \
-        RTRC_RUN_WITH_EXCEPTION_HANDLING            \
-        {                                           \
-            APP().Run(APP::Config { __VA_ARGS__ }); \
-        };                                          \
+#define RTRC_APPLICATION_MAIN(APP, ...)                          \
+    int main(int argc, char *argv[])                             \
+    {                                                            \
+        Rtrc::EnableMemoryLeakReporter();                        \
+        RTRC_RUN_WITH_EXCEPTION_HANDLING                         \
+        {                                                        \
+            if constexpr(requires { APP(argc, argv); })          \
+            {                                                    \
+                APP(argc, argv).Run(APP::Config{ __VA_ARGS__ }); \
+            }                                                    \
+            else                                                 \
+            {                                                    \
+                APP().Run(APP::Config{ __VA_ARGS__ });           \
+            }                                                    \
+        };                                                       \
     }
 
 RTRC_END

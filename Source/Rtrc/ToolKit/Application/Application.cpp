@@ -3,6 +3,15 @@
 
 RTRC_BEGIN
 
+Application::Application(int argc, char *argv[])
+{
+    programArguments_.reserve(argc);
+    for(int i = 0; i < argc; ++i)
+    {
+        programArguments_.emplace_back(argv[i]);
+    }
+}
+
 void Application::Run(const Config &config)
 {
     window_ = MakeBox<Window>(WindowBuilder()
