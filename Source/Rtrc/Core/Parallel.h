@@ -1,6 +1,7 @@
 #pragma once
 
 #include <execution>
+#include <ranges>
 
 #include <Rtrc/Core/Common.h>
 
