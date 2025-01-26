@@ -19,6 +19,6 @@ set_source_files_properties(${SHADER_SRCS} PROPERTIES HEADER_FILE_ONLY TRUE)
 
 set_property(TARGET RtrcTest PROPERTY CXX_STANDARD 23)
 
-target_link_libraries(RtrcTest PUBLIC RtrcToolKit RtrcGraphics RtrcGeometry Eigen3::Eigen Catch2)
+target_link_libraries(RtrcTest PUBLIC RtrcRHI RtrcGeometry Eigen3::Eigen Catch2)
 
 rtrc_register_target(RtrcTest "${RTRC_SOURCE_DIR}/Source")
