@@ -14,6 +14,8 @@ endforeach()
 
 set_property(TARGET RtrcRHI PROPERTY CXX_STANDARD 23)
 
+target_compile_definitions(RtrcRHI PRIVATE NOMINMAX)
+
 target_link_libraries(RtrcRHI PUBLIC RtrcCore)
 target_link_libraries(RtrcRHI PRIVATE glfw)
 
