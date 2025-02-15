@@ -4,6 +4,8 @@
 
 RTRC_RHI_D3D12_BEGIN
 
+class D3D12Device;
+
 class D3D12CommandAllocator : public Uncopyable
 {
 public:
@@ -32,7 +34,7 @@ class D3D12Queue : public Queue
 {
 public:
 
-    D3D12Queue(ID3D12Device *device, ComPtr<ID3D12CommandQueue> queue, QueueType type);
+    D3D12Queue(D3D12Device *device, ComPtr<ID3D12CommandQueue> queue, QueueType type);
 
     CommandBufferRef NewCommandBuffer() RTRC_RHI_OVERRIDE;
     void Submit(Span<CommandBufferRef> commandBuffer) RTRC_RHI_OVERRIDE;
@@ -41,6 +43,8 @@ public:
 
     void SignalSemaphore(SemaphoreRef semaphore) RTRC_RHI_OVERRIDE;
     void WaitSemaphore(SemaphoreRef semaphore) RTRC_RHI_OVERRIDE;
+
+    void WaitIdle() RTRC_RHI_OVERRIDE;
 
     void NewCommandAllocator();
 
@@ -55,7 +59,7 @@ private:
 
     Ref<QueueSyncPoint> NewSyncPoint();
 
-    ID3D12Device *device_;
+    D3D12Device *device_;
     QueueType type_;
     ComPtr<ID3D12CommandQueue> queue_;
 

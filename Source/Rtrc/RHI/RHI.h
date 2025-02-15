@@ -360,6 +360,8 @@ public:
     RTRC_RHI_API void SignalFence(FenceRef fence) RTRC_RHI_PURE;
     RTRC_RHI_API void SignalSemaphore(SemaphoreRef semaphore) RTRC_RHI_PURE;
     RTRC_RHI_API void WaitSemaphore(SemaphoreRef semaphore) RTRC_RHI_PURE;
+
+    RTRC_RHI_API void WaitIdle() RTRC_RHI_PURE;
 };
 
 class Device : public RHIObject
@@ -378,7 +380,8 @@ public:
     RTRC_RHI_API TextureRef CreateTexture(const TextureDesc &desc) RTRC_RHI_PURE;
     RTRC_RHI_API BufferRef CreateBuffer(const BufferDesc &desc) RTRC_RHI_PURE;
 
-    RTRC_RHI_API FenceRef NewSemaphore() RTRC_RHI_PURE;
+    RTRC_RHI_API FenceRef CreateQueueFence() RTRC_RHI_PURE;
+    RTRC_RHI_API SemaphoreRef CreateQueueSemaphore() RTRC_RHI_PURE;
 };
 
 RTRC_RHI_END

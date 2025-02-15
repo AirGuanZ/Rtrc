@@ -1,6 +1,7 @@
 #include <Rtrc/RHI/D3D12/D3D12Buffer.h>
 #include <Rtrc/RHI/D3D12/D3D12Device.h>
 #include <Rtrc/RHI/D3D12/D3D12Queue.h>
+#include <Rtrc/RHI/D3D12/D3D12QueueSynchronization.h>
 #include <Rtrc/RHI/D3D12/D3D12Texture.h>
 #include <Rtrc/RHI/Window.h>
 
@@ -37,11 +38,12 @@ static void EnableD3D12Debug(bool gpuValidation)
     }
 }
 
-static ReferenceCountedPtr<D3D12Queue> CreateD3D12Queue(ID3D12Device *device, const D3D12_COMMAND_QUEUE_DESC &desc, QueueType type)
+static ReferenceCountedPtr<D3D12Queue> CreateD3D12Queue(
+    D3D12Device *device, const D3D12_COMMAND_QUEUE_DESC &desc, QueueType type)
 {
     ComPtr<ID3D12CommandQueue> queue;
     RTRC_D3D12_FAIL_MSG(
-        device->CreateCommandQueue(&desc, IID_PPV_ARGS(queue.GetAddressOf())),
+        device->GetNativeDevice()->CreateCommandQueue(&desc, IID_PPV_ARGS(queue.GetAddressOf())),
         "Failed to create d3d12 queue");
     return MakeReferenceCountedPtr<D3D12Queue>(device, std::move(queue), type);
 }
@@ -72,6 +74,8 @@ ReferenceCountedPtr<D3D12Device> D3D12Device::Create(const DeviceDesc &desc)
         D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(device.GetAddressOf())),
         "Failed to create directx12 device");
 
+    ret->device_ = device;
+
     // Queues
 
     D3D12_COMMAND_QUEUE_DESC queueDesc;
@@ -83,7 +87,7 @@ ReferenceCountedPtr<D3D12Device> D3D12Device::Create(const DeviceDesc &desc)
     if(desc.graphicsQueue)
     {
         queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-        graphicsQueue = CreateD3D12Queue(device.Get(), queueDesc, QueueType::Graphics);
+        graphicsQueue = CreateD3D12Queue(ret.Get(), queueDesc, QueueType::Graphics);
     }
 
     ReferenceCountedPtr<D3D12Queue> presentQueue;
@@ -91,21 +95,21 @@ ReferenceCountedPtr<D3D12Device> D3D12Device::Create(const DeviceDesc &desc)
     {
         assert(desc.graphicsQueue);
         queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-        presentQueue = CreateD3D12Queue(device.Get(), queueDesc, QueueType::Graphics);
+        presentQueue = CreateD3D12Queue(ret.Get(), queueDesc, QueueType::Graphics);
     }
 
     ReferenceCountedPtr<D3D12Queue> computeQueue;
     if(desc.computeQueue)
     {
         queueDesc.Type = D3D12_COMMAND_LIST_TYPE_COMPUTE;
-        computeQueue = CreateD3D12Queue(device.Get(), queueDesc, QueueType::Compute);
+        computeQueue = CreateD3D12Queue(ret.Get(), queueDesc, QueueType::Compute);
     }
 
     ReferenceCountedPtr<D3D12Queue> copyQueue;
     if(desc.copyQueue)
     {
         queueDesc.Type = D3D12_COMMAND_LIST_TYPE_COPY;
-        copyQueue = CreateD3D12Queue(device.Get(), queueDesc, QueueType::Copy);
+        copyQueue = CreateD3D12Queue(ret.Get(), queueDesc, QueueType::Copy);
     }
 
     // Swapchain
@@ -159,7 +163,7 @@ ReferenceCountedPtr<D3D12Device> D3D12Device::Create(const DeviceDesc &desc)
         {
             ComPtr<ID3D12Resource> image;
             RTRC_D3D12_FAIL_MSG(
-                swapchain_->GetBuffer(i, IID_PPV_ARGS(image.GetAddressOf())),
+                swapchain->GetBuffer(i, IID_PPV_ARGS(image.GetAddressOf())),
                 "Fail to get directx12 swapchain image");
             swapchainImages[i] = MakeReferenceCountedPtr<D3D12Texture>(
                 ret, std::move(image), D3D12MemoryAllocation{ nullptr }, imageDesc);
@@ -192,9 +196,12 @@ ReferenceCountedPtr<D3D12Device> D3D12Device::Create(const DeviceDesc &desc)
         CreateAllocator(&allocatorDesc, allocator.GetAddressOf()),
         "Failed to initialize directx12 memory allocator");
 
+    // Fence & semaphore manager
+
+    auto fenceSemaphoreManager = std::make_unique<D3D12FenceSemaphoreManager>(device.Get());
+
     // Finalize
 
-    ret->device_                     = device;
     ret->swapchain_                  = std::move(swapchain);
     ret->swapchainImages_            = std::move(swapchainImages);
     ret->swapchainSyncInterval_      = desc.vsync ? 1 : 0;
@@ -207,12 +214,25 @@ ReferenceCountedPtr<D3D12Device> D3D12Device::Create(const DeviceDesc &desc)
     ret->computeQueue_  = std::move(computeQueue);
     ret->copyQueue_     = std::move(copyQueue);
 
+    ret->fenceSemaphoreManager_ = std::move(fenceSemaphoreManager);
+
     for(size_t i = 0; i < GetArraySize(CPUDescriptorHeaps); ++i)
     {
         ret->CPUDescriptorHeaps_[i] = std::move(CPUDescriptorHeaps[i]);
     }
 
     return ret;
+}
+
+D3D12Device::~D3D12Device()
+{
+    for(auto &queue : { graphicsQueue_, presentQueue_, computeQueue_, copyQueue_ })
+    {
+        if(queue)
+        {
+            queue->WaitIdle();
+        }
+    }
 }
 
 void D3D12Device::BeginThreadedMode()
@@ -395,6 +415,52 @@ BufferRef D3D12Device::CreateBuffer(const BufferDesc &desc)
 
     D3D12MemoryAllocation alloc = { std::move(rawAlloc) };
     return MakeReferenceCountedPtr<D3D12Buffer>(this, std::move(resource), std::move(alloc), desc);
+}
+
+FenceRef D3D12Device::CreateQueueFence()
+{
+    assert(!isInThreadedMode_);
+    return fenceSemaphoreManager_->NewFence();
+}
+
+SemaphoreRef D3D12Device::CreateQueueSemaphore()
+{
+    assert(!isInThreadedMode_);
+    return fenceSemaphoreManager_->NewSemaphore();
+}
+
+D3D12CPUDescriptor D3D12Device::AllocateCPUDescriptor(D3D12_DESCRIPTOR_HEAP_TYPE type)
+{
+    if(isInThreadedMode_)
+    {
+        auto &context = threadContexts_.local();
+        if(!context.CPUDescriptorHeaps[type])
+        {
+            context.CPUDescriptorHeaps[type] = CPUDescriptorHeaps_[type]->CreateThreadedHeap(128);
+        }
+        return context.CPUDescriptorHeaps[type]->Allocate();
+    }
+    return CPUDescriptorHeaps_[type]->Allocate();
+}
+
+void D3D12Device::FreeCPUDescriptor(D3D12_DESCRIPTOR_HEAP_TYPE type, const D3D12CPUDescriptor &descriptor)
+{
+    if(isInThreadedMode_)
+    {
+        auto &context = threadContexts_.local();
+        if(!context.CPUDescriptorHeaps[type])
+        {
+            context.CPUDescriptorHeaps[type] = CPUDescriptorHeaps_[type]->CreateThreadedHeap(128);
+        }
+        context.CPUDescriptorHeaps[type]->Free(descriptor);
+        return;
+    }
+    CPUDescriptorHeaps_[type]->Free(descriptor);
+}
+
+ID3D12Device *D3D12Device::GetNativeDevice()
+{
+    return device_.Get();
 }
 
 RTRC_RHI_D3D12_END

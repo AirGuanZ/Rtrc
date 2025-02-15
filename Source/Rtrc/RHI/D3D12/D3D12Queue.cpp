@@ -5,9 +5,10 @@
 #include <Rtrc/RHI/D3D12/D3D12CommandBuffer.h>
 #include <Rtrc/RHI/D3D12/D3D12Queue.h>
 
-RTRC_RHI_D3D12_BEGIN
+#include "D3D12Device.h"
 
-D3D12CommandAllocator::D3D12CommandAllocator(ID3D12Device *device, D3D12_COMMAND_LIST_TYPE type)
+RTRC_RHI_D3D12_BEGIN
+    D3D12CommandAllocator::D3D12CommandAllocator(ID3D12Device *device, D3D12_COMMAND_LIST_TYPE type)
     : device_(device), type_(type)
 {
     RTRC_D3D12_FAIL_MSG(
@@ -54,10 +55,11 @@ uint64_t D3D12CommandAllocator::GetLatestSyncPoint() const
     return syncPoint_.load();
 }
 
-D3D12Queue::D3D12Queue(ID3D12Device *device, ComPtr<ID3D12CommandQueue> queue, QueueType type)
+D3D12Queue::D3D12Queue(D3D12Device *device, ComPtr<ID3D12CommandQueue> queue, QueueType type)
     : device_(device), type_(type), queue_(std::move(queue)), nextStamp_(1)
 {
-    currentCommandAllocator_ = std::make_unique<D3D12CommandAllocator>(device_, QueueTypeToD3D12CommandListType(type));
+    currentCommandAllocator_ = std::make_unique<D3D12CommandAllocator>(
+        device_->GetNativeDevice(), QueueTypeToD3D12CommandListType(type));
 }
 
 CommandBufferRef D3D12Queue::NewCommandBuffer()
@@ -110,6 +112,13 @@ void D3D12Queue::WaitSemaphore(SemaphoreRef semaphore)
     NewSyncPoint()->parent = d3d12Semaphore->signaledQueueSyncPoint_;
 }
 
+void D3D12Queue::WaitIdle()
+{
+    auto fence = device_->CreateQueueFence();
+    SignalFence(fence);
+    fence->Wait();
+}
+
 void D3D12Queue::NewCommandAllocator()
 {
     flightCommandAllocators_.push_back(std::move(currentCommandAllocator_));
@@ -132,7 +141,8 @@ void D3D12Queue::NewCommandAllocator()
 
     // All existing allocators are on-the-flight. Create a new one.
 
-    currentCommandAllocator_ = std::make_unique<D3D12CommandAllocator>(device_, QueueTypeToD3D12CommandListType(type_));
+    currentCommandAllocator_ = std::make_unique<D3D12CommandAllocator>(
+        device_->GetNativeDevice(), QueueTypeToD3D12CommandListType(type_));
 }
 
 void D3D12Queue::MarkAsSynchronized(const QueueSyncPoint &point)

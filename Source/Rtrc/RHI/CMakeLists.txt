@@ -19,4 +19,4 @@ target_compile_definitions(RtrcRHI PRIVATE NOMINMAX)
 target_link_libraries(RtrcRHI PUBLIC RtrcCore)
 target_link_libraries(RtrcRHI PRIVATE glfw)
 
-target_link_libraries(RtrcRHI PUBLIC d3d12_1715 winpix_102 D3D12MemoryAllocator)
+target_link_libraries(RtrcRHI PUBLIC d3d12_1715 winpix_102 D3D12MemoryAllocator unordered_dense)

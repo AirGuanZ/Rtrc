@@ -6,11 +6,15 @@
 
 RTRC_RHI_D3D12_BEGIN
 
+class D3D12FenceSemaphoreManager;
+
 class D3D12Device : public Device
 {
 public:
 
-    ReferenceCountedPtr<D3D12Device> Create(const DeviceDesc &desc);
+    static ReferenceCountedPtr<D3D12Device> Create(const DeviceDesc &desc);
+
+    ~D3D12Device() RTRC_RHI_OVERRIDE;
 
     void BeginThreadedMode() RTRC_RHI_OVERRIDE;
     void EndThreadedMode() RTRC_RHI_OVERRIDE;
@@ -22,7 +26,8 @@ public:
     TextureRef CreateTexture(const TextureDesc &desc) RTRC_RHI_OVERRIDE;
     BufferRef CreateBuffer(const BufferDesc &desc) RTRC_RHI_OVERRIDE;
 
-    FenceRef NewSemaphore() RTRC_RHI_OVERRIDE;
+    FenceRef CreateQueueFence() RTRC_RHI_OVERRIDE;
+    SemaphoreRef CreateQueueSemaphore() RTRC_RHI_OVERRIDE;
 
     D3D12CPUDescriptor AllocateCPUDescriptor(D3D12_DESCRIPTOR_HEAP_TYPE type);
     void FreeCPUDescriptor(D3D12_DESCRIPTOR_HEAP_TYPE type, const D3D12CPUDescriptor &descriptor);
@@ -33,7 +38,7 @@ private:
 
     struct ThreadContext
     {
-        std::unique_ptr<D3D12ThreadedCPUDescriptorHeap> CPUDescriptorHeap;
+        std::unique_ptr<D3D12ThreadedCPUDescriptorHeap> CPUDescriptorHeaps[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
     };
 
     ComPtr<ID3D12Device>    device_;
@@ -43,6 +48,8 @@ private:
     uint32_t                currentSwapchainImageIndex_ = 0;
 
     ComPtr<D3D12MA::Allocator> allocator_;
+
+    std::unique_ptr<D3D12FenceSemaphoreManager> fenceSemaphoreManager_;
 
     QueueRef graphicsQueue_;
     QueueRef presentQueue_;
