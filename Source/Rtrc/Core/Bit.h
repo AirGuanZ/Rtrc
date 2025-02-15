@@ -28,4 +28,10 @@ inline uint32_t NextPowerOfTwo<uint32_t>(uint32_t x)
     return x;
 }
 
+template<std::unsigned_integral T>
+bool IsPowerOfTwo(T x)
+{
+    return (x != 0) && ((x & (x - 1)) == 0);
+}
+
 RTRC_END
