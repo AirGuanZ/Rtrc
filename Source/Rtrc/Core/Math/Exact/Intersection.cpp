@@ -54,21 +54,19 @@ int FindMaximalNormalAxis(const Vector3f &a, const Vector3f &b, const Vector3f &
 
 int FindMaximalNormalAxis(const Vector3d &a, const Vector3d &b, const Vector3d &c)
 {
-    using E = SExpansion;
+    const auto ax = SExpansion(a.x);
+    const auto ay = SExpansion(a.y);
+    const auto az = SExpansion(a.z);
+    const auto ux = SExpansion(b.x) - ax;
+    const auto uy = SExpansion(b.y) - ay;
+    const auto uz = SExpansion(b.z) - az;
+    const auto vx = SExpansion(c.x) - ax;
+    const auto vy = SExpansion(c.y) - ay;
+    const auto vz = SExpansion(c.z) - az;
 
-    const E ax = E(a.x);
-    const E ay = E(a.y);
-    const E az = E(a.z);
-    const E ux = E(b.x) - ax;
-    const E uy = E(b.y) - ay;
-    const E uz = E(b.z) - az;
-    const E vx = E(c.x) - ax;
-    const E vy = E(c.y) - ay;
-    const E vz = E(c.z) - az;
-
-    E nx = uy * vz - uz * vy;
-    E ny = uz * vx - ux * vz;
-    E nz = ux * vy - uy * vx;
+    auto nx = uy * vz - uz * vy;
+    auto ny = uz * vx - ux * vz;
+    auto nz = ux * vy - uy * vx;
     if(nx.GetSign() < 0) { nx.SetNegative(); }
     if(ny.GetSign() < 0) { ny.SetNegative(); }
     if(nz.GetSign() < 0) { nz.SetNegative(); }
@@ -202,48 +200,46 @@ Expansion4 IntersectLineTriangle3D(
     const Vector3d &p, const Vector3d &q,
     const Vector3d &a, const Vector3d &b, const Vector3d &c)
 {
-    using E = SExpansion;
-
     // Let A = p - a, B = q - p, C = (c - a) cross (b - a), then (A + B * t) dot C = 0
 
-    const E ux = E(c.x) - E(a.x);
-    const E uy = E(c.y) - E(a.y);
-    const E uz = E(c.z) - E(a.z);
+    const auto ux = SExpansion(c.x) - SExpansion(a.x);
+    const auto uy = SExpansion(c.y) - SExpansion(a.y);
+    const auto uz = SExpansion(c.z) - SExpansion(a.z);
 
-    const E vx = E(b.x) - E(a.x);
-    const E vy = E(b.y) - E(a.y);
-    const E vz = E(b.z) - E(a.z);
+    const auto vx = SExpansion(b.x) - SExpansion(a.x);
+    const auto vy = SExpansion(b.y) - SExpansion(a.y);
+    const auto vz = SExpansion(b.z) - SExpansion(a.z);
 
-    const E Cx = uy * vz - uz * vy;
-    const E Cy = uz * vx - ux * vz;
-    const E Cz = ux * vy - uy * vx;
+    const auto Cx = uy * vz - uz * vy;
+    const auto Cy = uz * vx - ux * vz;
+    const auto Cz = ux * vy - uy * vx;
 
-    const E Ax = E(p.x) - E(a.x);
-    const E Ay = E(p.y) - E(a.y);
-    const E Az = E(p.z) - E(a.z);
+    const auto Ax = SExpansion(p.x) - SExpansion(a.x);
+    const auto Ay = SExpansion(p.y) - SExpansion(a.y);
+    const auto Az = SExpansion(p.z) - SExpansion(a.z);
 
-    const E Bx = E(q.x) - E(p.x);
-    const E By = E(q.y) - E(p.y);
-    const E Bz = E(q.z) - E(p.z);
+    const auto Bx = SExpansion(q.x) - SExpansion(p.x);
+    const auto By = SExpansion(q.y) - SExpansion(p.y);
+    const auto Bz = SExpansion(q.z) - SExpansion(p.z);
 
     // t = -(A dot C) / (B dot C) = tu / td
 
-    const E tu = -(Ax * Cx + Ay * Cy + Az * Cz);
-    const E td = Bx * Cx + By * Cy + Bz * Cz;
+    const auto tu = -(Ax * Cx + Ay * Cy + Az * Cz);
+    const auto td = Bx * Cx + By * Cy + Bz * Cz;
 
     // [dxu, dyu, dzu] / td = (q - p) * t
 
-    const E dxu = Bx * tu;
-    const E dyu = By * tu;
-    const E dzu = Bz * tu;
+    const auto dxu = Bx * tu;
+    const auto dyu = By * tu;
+    const auto dzu = Bz * tu;
 
     // result = p + (q - p) * t = (p * td + [dxu, dyu, dzu]) / td
 
     return
     {
-        Expansion(E(p.x) * td + dxu),
-        Expansion(E(p.y) * td + dyu),
-        Expansion(E(p.z) * td + dzu),
+        Expansion(SExpansion(p.x) * td + dxu),
+        Expansion(SExpansion(p.y) * td + dyu),
+        Expansion(SExpansion(p.z) * td + dzu),
         Expansion(td)
     };
 }

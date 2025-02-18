@@ -41,41 +41,38 @@ namespace PredicatesDetail
     template <typename T>
     int Orient2DExact(const Vector2<T> &pa, const Vector2<T> &pb, const Vector2<T> &pc)
     {
-        using E = SExpansion;
-        const E A = E(pa[0]) - E(pc[0]);
-        const E B = E(pb[0]) - E(pc[0]);
-        const E C = E(pa[1]) - E(pc[1]);
-        const E D = E(pb[1]) - E(pc[1]);
+        const auto A = SExpansion(pa[0]) - SExpansion(pc[0]);
+        const auto B = SExpansion(pb[0]) - SExpansion(pc[0]);
+        const auto C = SExpansion(pa[1]) - SExpansion(pc[1]);
+        const auto D = SExpansion(pb[1]) - SExpansion(pc[1]);
         return (A * D - B * C).GetSign();
     }
 
     template <typename T>
     int Orient3DExact(const Vector3<T> &pa, const Vector3<T> &pb, const Vector3<T> &pc, const Vector3<T> &pd)
     {
-        using E = SExpansion;
+        const auto adx = SExpansion(pa[0]) - SExpansion(pd[0]);
+        const auto bdx = SExpansion(pb[0]) - SExpansion(pd[0]);
+        const auto cdx = SExpansion(pc[0]) - SExpansion(pd[0]);
+        const auto ady = SExpansion(pa[1]) - SExpansion(pd[1]);
+        const auto bdy = SExpansion(pb[1]) - SExpansion(pd[1]);
+        const auto cdy = SExpansion(pc[1]) - SExpansion(pd[1]);
+        const auto adz = SExpansion(pa[2]) - SExpansion(pd[2]);
+        const auto bdz = SExpansion(pb[2]) - SExpansion(pd[2]);
+        const auto cdz = SExpansion(pc[2]) - SExpansion(pd[2]);
 
-        const E adx = E(pa[0]) - E(pd[0]);
-        const E bdx = E(pb[0]) - E(pd[0]);
-        const E cdx = E(pc[0]) - E(pd[0]);
-        const E ady = E(pa[1]) - E(pd[1]);
-        const E bdy = E(pb[1]) - E(pd[1]);
-        const E cdy = E(pc[1]) - E(pd[1]);
-        const E adz = E(pa[2]) - E(pd[2]);
-        const E bdz = E(pb[2]) - E(pd[2]);
-        const E cdz = E(pc[2]) - E(pd[2]);
+        const auto bdxcdy = bdx * cdy;
+        const auto cdxbdy = cdx * bdy;
 
-        const E bdxcdy = bdx * cdy;
-        const E cdxbdy = cdx * bdy;
+        const auto cdxady = cdx * ady;
+        const auto adxcdy = adx * cdy;
 
-        const E cdxady = cdx * ady;
-        const E adxcdy = adx * cdy;
+        const auto adxbdy = adx * bdy;
+        const auto bdxady = bdx * ady;
 
-        const E adxbdy = adx * bdy;
-        const E bdxady = bdx * ady;
-
-        const E det = adz * (bdxcdy - cdxbdy)
-                    + bdz * (cdxady - adxcdy)
-                    + cdz * (adxbdy - bdxady);
+        const auto det = adz * (bdxcdy - cdxbdy)
+                       + bdz * (cdxady - adxcdy)
+                       + cdz * (adxbdy - bdxady);
 
         return det.GetSign();
     }
@@ -83,21 +80,19 @@ namespace PredicatesDetail
     template<typename T>
     int InCircle2DExact(const Vector2<T> &pa, const Vector2<T> &pb, const Vector2<T> &pc, const Vector2<T> &pd)
     {
-        using E = SExpansion;
+        const auto adx = SExpansion(pa[0]) - SExpansion(pd[0]);
+        const auto ady = SExpansion(pa[1]) - SExpansion(pd[1]);
+        const auto bdx = SExpansion(pb[0]) - SExpansion(pd[0]);
+        const auto bdy = SExpansion(pb[1]) - SExpansion(pd[1]);
+        const auto cdx = SExpansion(pc[0]) - SExpansion(pd[0]);
+        const auto cdy = SExpansion(pc[1]) - SExpansion(pd[1]);
 
-        const E adx = E(pa[0]) - E(pd[0]);
-        const E ady = E(pa[1]) - E(pd[1]);
-        const E bdx = E(pb[0]) - E(pd[0]);
-        const E bdy = E(pb[1]) - E(pd[1]);
-        const E cdx = E(pc[0]) - E(pd[0]);
-        const E cdy = E(pc[1]) - E(pd[1]);
-
-        const E abdet = adx * bdy - bdx * ady;
-        const E bcdet = bdx * cdy - cdx * bdy;
-        const E cadet = cdx * ady - adx * cdy;
-        const E alift = adx * adx + ady * ady;
-        const E blift = bdx * bdx + bdy * bdy;
-        const E clift = cdx * cdx + cdy * cdy;
+        const auto abdet = adx * bdy - bdx * ady;
+        const auto bcdet = bdx * cdy - cdx * bdy;
+        const auto cadet = cdx * ady - adx * cdy;
+        const auto alift = adx * adx + ady * ady;
+        const auto blift = bdx * bdx + bdy * bdy;
+        const auto clift = cdx * cdx + cdy * cdy;
 
         return (alift * bcdet + blift * cadet + clift * abdet).GetSign();
     }
@@ -151,65 +146,60 @@ int Orient2D(const Expansion2 &pa, const Expansion2 &pb, const Expansion2 &pc)
 
 int Orient2D(const Expansion *pa, const Expansion *pb, const Expansion *pc)
 {
-    using E = SExpansion;
-    const E A = pa[0] - pc[0];
-    const E B = pb[0] - pc[0];
-    const E C = pa[1] - pc[1];
-    const E D = pb[1] - pc[1];
+    const auto A = pa[0] - pc[0];
+    const auto B = pb[0] - pc[0];
+    const auto C = pa[1] - pc[1];
+    const auto D = pb[1] - pc[1];
     return (A * D - B * C).GetSign();
 }
 
 int Orient2DHomogeneous(const Expansion3 &pa, const Expansion3 &pb, const Expansion3 &pc)
 {
-    using E = SExpansion;
-
     // Fast path for regular coordinate
 
     if(PredicatesDetail::IsOne(pa.z) && PredicatesDetail::IsOne(pb.z) && PredicatesDetail::IsOne(pc.z))
     {
-        const E A = pa[0] - pc[0];
-        const E B = pb[0] - pc[0];
-        const E C = pa[1] - pc[1];
-        const E D = pb[1] - pc[1];
+        const auto A = pa[0] - pc[0];
+        const auto B = pb[0] - pc[0];
+        const auto C = pa[1] - pc[1];
+        const auto D = pb[1] - pc[1];
         return (A * D - B * C).GetSign();
     }
 
     // Homogeneous case
 
     const int signFactor = pa[2].GetSign() * pb[2].GetSign();
-    const E A = pa[0] * pc[2] - pc[0] * pa[2];
-    const E B = pb[0] * pc[2] - pc[0] * pb[2];
-    const E C = pa[1] * pc[2] - pc[1] * pa[2];
-    const E D = pb[1] * pc[2] - pc[1] * pb[2];
+    const auto A = pa[0] * pc[2] - pc[0] * pa[2];
+    const auto B = pb[0] * pc[2] - pc[0] * pb[2];
+    const auto C = pa[1] * pc[2] - pc[1] * pa[2];
+    const auto D = pb[1] * pc[2] - pc[1] * pb[2];
     return signFactor * (A * D - B * C).GetSign();
 }
 
 int Orient3D(const Expansion3 &pa, const Expansion3 &pb, const Expansion3 &pc, const Expansion3 &pd)
 {
-    using E = SExpansion;
+    const auto adx = pa[0] - pd[0];
+    const auto bdx = pb[0] - pd[0];
+    const auto cdx = pc[0] - pd[0];
+    const auto ady = pa[1] - pd[1];
+    const auto bdy = pb[1] - pd[1];
+    const auto cdy = pc[1] - pd[1];
+    const auto adz = pa[2] - pd[2];
+    const auto bdz = pb[2] - pd[2];
+    const auto cdz = pc[2] - pd[2];
 
-    const E adx = pa[0] - pd[0];
-    const E bdx = pb[0] - pd[0];
-    const E cdx = pc[0] - pd[0];
-    const E ady = pa[1] - pd[1];
-    const E bdy = pb[1] - pd[1];
-    const E cdy = pc[1] - pd[1];
-    const E adz = pa[2] - pd[2];
-    const E bdz = pb[2] - pd[2];
-    const E cdz = pc[2] - pd[2];
+    const auto bdxcdy = bdx * cdy;
+    const auto cdxbdy = cdx * bdy;
 
-    const E bdxcdy = bdx * cdy;
-    const E cdxbdy = cdx * bdy;
+    const auto cdxady = cdx * ady;
+    const auto adxcdy = adx * cdy;
 
-    const E cdxady = cdx * ady;
-    const E adxcdy = adx * cdy;
+    const auto adxbdy = adx * bdy;
+    const auto bdxady = bdx * ady;
 
-    const E adxbdy = adx * bdy;
-    const E bdxady = bdx * ady;
-
-    const E det = adz * (bdxcdy - cdxbdy)
-        + bdz * (cdxady - adxcdy)
-        + cdz * (adxbdy - bdxady);
+    const auto det = adz * (bdxcdy - cdxbdy)
+                   + bdz * (cdxady - adxcdy)
+                   + cdz * (adxbdy - bdxady);
 
     return det.GetSign();
 }
@@ -221,21 +211,19 @@ int InCircle2D(const Expansion2 &pa, const Expansion2 &pb, const Expansion2 &pc,
 
 int InCircle2D(const Expansion *pa, const Expansion *pb, const Expansion *pc, const Expansion *pd)
 {
-    using E = SExpansion;
+    const auto adx = pa[0] - pd[0];
+    const auto ady = pa[1] - pd[1];
+    const auto bdx = pb[0] - pd[0];
+    const auto bdy = pb[1] - pd[1];
+    const auto cdx = pc[0] - pd[0];
+    const auto cdy = pc[1] - pd[1];
 
-    const E adx = pa[0] - pd[0];
-    const E ady = pa[1] - pd[1];
-    const E bdx = pb[0] - pd[0];
-    const E bdy = pb[1] - pd[1];
-    const E cdx = pc[0] - pd[0];
-    const E cdy = pc[1] - pd[1];
-
-    const E abdet = adx * bdy - bdx * ady;
-    const E bcdet = bdx * cdy - cdx * bdy;
-    const E cadet = cdx * ady - adx * cdy;
-    const E alift = adx * adx + ady * ady;
-    const E blift = bdx * bdx + bdy * bdy;
-    const E clift = cdx * cdx + cdy * cdy;
+    const auto abdet = adx * bdy - bdx * ady;
+    const auto bcdet = bdx * cdy - cdx * bdy;
+    const auto cadet = cdx * ady - adx * cdy;
+    const auto alift = adx * adx + ady * ady;
+    const auto blift = bdx * bdx + bdy * bdy;
+    const auto clift = cdx * cdx + cdy * cdy;
 
     return (alift * bcdet + blift * cadet + clift * abdet).GetSign();
 }
@@ -250,7 +238,6 @@ int InCircle2DHomogeneous(const Expansion3 &pa, const Expansion3 &pb, const Expa
         return InCircle2D(&pa.x, &pb.x, &pc.x, &pd.x);
     }
 
-    using E = SExpansion;
     using PredicatesDetail::Square;
 
     // Multiple pa.z^2 * pd.z^2 to the first row, pb.z^2 * pd.z^2 to the second row, etc...
@@ -258,27 +245,27 @@ int InCircle2DHomogeneous(const Expansion3 &pa, const Expansion3 &pb, const Expa
     // | d e f |
     // | g h i |
 
-    const E az2 = pa[2] * pa[2];
-    const E bz2 = pb[2] * pb[2];
-    const E cz2 = pc[2] * pc[2];
-    const E dz2 = pd[2] * pd[2];
+    const auto az2 = pa[2] * pa[2];
+    const auto bz2 = pb[2] * pb[2];
+    const auto cz2 = pc[2] * pc[2];
+    const auto dz2 = pd[2] * pd[2];
 
-    const E a = pa.x * pa.z * dz2 - pd.x * pd.z * az2;
-    const E b = pa.y * pa.z * dz2 - pd.y * pd.z * az2;
+    const auto a = pa.x * pa.z * dz2 - pd.x * pd.z * az2;
+    const auto b = pa.y * pa.z * dz2 - pd.y * pd.z * az2;
 
-    const E d = pb.x * pb.z * dz2 - pd.x * pd.z * bz2;
-    const E e = pb.y * pb.z * dz2 - pd.y * pd.z * bz2;
+    const auto d = pb.x * pb.z * dz2 - pd.x * pd.z * bz2;
+    const auto e = pb.y * pb.z * dz2 - pd.y * pd.z * bz2;
 
-    const E g = pc.x * pc.z * dz2 - pd.x * pd.z * cz2;
-    const E h = pc.y * pc.z * dz2 - pd.y * pd.z * cz2;
+    const auto g = pc.x * pc.z * dz2 - pd.x * pd.z * cz2;
+    const auto h = pc.y * pc.z * dz2 - pd.y * pd.z * cz2;
 
-    const E c = PredicatesDetail::Square(pa.x * pd.z - pd.x * pa.z) + PredicatesDetail::Square(pa.y * pd.z - pd.y * pa.z);
-    const E f = PredicatesDetail::Square(pb.x * pd.z - pd.x * pb.z) + PredicatesDetail::Square(pb.y * pd.z - pd.y * pb.z);
-    const E i = PredicatesDetail::Square(pc.x * pd.z - pd.x * pc.z) + PredicatesDetail::Square(pc.y * pd.z - pd.y * pc.z);
+    const auto c = PredicatesDetail::Square(pa.x * pd.z - pd.x * pa.z) + PredicatesDetail::Square(pa.y * pd.z - pd.y * pa.z);
+    const auto f = PredicatesDetail::Square(pb.x * pd.z - pd.x * pb.z) + PredicatesDetail::Square(pb.y * pd.z - pd.y * pb.z);
+    const auto i = PredicatesDetail::Square(pc.x * pd.z - pd.x * pc.z) + PredicatesDetail::Square(pc.y * pd.z - pd.y * pc.z);
 
-    const E sc = d * h - e * g;
-    const E sf = a * h - b * g;
-    const E si = a * e - b * d;
+    const auto sc = d * h - e * g;
+    const auto sf = a * h - b * g;
+    const auto si = a * e - b * d;
 
     return (c * sc - f * sf + i * si).GetSign();
 }
@@ -463,19 +450,17 @@ bool AreCoLinear(const Vector3<T> &a, const Vector3<T> &b, const Vector3<T> &c)
         return false;
     }
 
-    using E = SExpansion;
+    const auto ux = SExpansion(b.x) - SExpansion(a.x);
+    const auto uy = SExpansion(b.y) - SExpansion(a.y);
+    const auto uz = SExpansion(b.z) - SExpansion(a.z);
 
-    const auto ux = E(b.x) - E(a.x);
-    const auto uy = E(b.y) - E(a.y);
-    const auto uz = E(b.z) - E(a.z);
+    const auto vx = SExpansion(c.x) - SExpansion(a.x);
+    const auto vy = SExpansion(c.y) - SExpansion(a.y);
+    const auto vz = SExpansion(c.z) - SExpansion(a.z);
 
-    const auto vx = E(c.x) - E(a.x);
-    const auto vy = E(c.y) - E(a.y);
-    const auto vz = E(c.z) - E(a.z);
-
-    const E dot = ux * vx + uy * vy + uz * vz;
-    const E lu = ux * ux + uy * uy + uz * uz;
-    const E lv = vx * vx + vy * vy + vz * vz;
+    const auto dot = ux * vx + uy * vy + uz * vz;
+    const auto lu = ux * ux + uy * uy + uz * uz;
+    const auto lv = vx * vx + vy * vy + vz * vz;
 
     return dot * dot == lu * lv;
 }

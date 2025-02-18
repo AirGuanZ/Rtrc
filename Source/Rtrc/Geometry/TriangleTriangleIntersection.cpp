@@ -252,17 +252,16 @@ void SymbolicTriangleTriangleIntersection<T>::IntersectColinearEdgeEdge(
 {
     auto DotSign = [](const Vector &i, const Vector &j, const Vector &k)
     {
-        using E = SExpansion;
-        const E ix = E(i.x);
-        const E iy = E(i.y);
-        const E iz = E(i.z);
-        const E ux = E(j.x) - ix;
-        const E uy = E(j.y) - iy;
-        const E uz = E(j.z) - iz;
-        const E vx = E(k.x) - ix;
-        const E vy = E(k.y) - iy;
-        const E vz = E(k.z) - iz;
-        const E dot = ux * vx + uy * vy + uz * vz;
+        const auto ix = SExpansion(i.x);
+        const auto iy = SExpansion(i.y);
+        const auto iz = SExpansion(i.z);
+        const auto ux = SExpansion(j.x) - ix;
+        const auto uy = SExpansion(j.y) - iy;
+        const auto uz = SExpansion(j.z) - iz;
+        const auto vx = SExpansion(k.x) - ix;
+        const auto vy = SExpansion(k.y) - iy;
+        const auto vz = SExpansion(k.z) - iz;
+        const auto dot = ux * vx + uy * vy + uz * vz;
         return dot.GetSign();
     };
 

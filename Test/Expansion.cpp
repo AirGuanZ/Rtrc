@@ -47,38 +47,36 @@ TEST_CASE("CheckNonOverlappingProperty")
 
 TEST_CASE("Expansion")
 {
-    using E = Expansion;
-
-    REQUIRE(E(0.5) < E(0.6));
-    REQUIRE(E(1e30) + E(1e-30) + E(1e-30) - E(1e30) == E(2.0) * E(1e-30));
-    REQUIRE((E(1e30) + E(1e-30) + E(1e-30) - E(1e30)).CheckSanity());
-    REQUIRE(E(1e30) + E(1e-30) + E(1e-30) - E(1e30) != E(1.999999) * E(1e-30));
-    REQUIRE((E(1e10) + E(1e-30)) * E(1e10) == E(1e10) * E(1e10) + E(1e-30) * E(1e10));
+    REQUIRE(SExpansion(0.5) < SExpansion(0.6));
+    REQUIRE(SExpansion(1e30) + SExpansion(1e-30) + SExpansion(1e-30) - SExpansion(1e30) == SExpansion(2.0) * SExpansion(1e-30));
+    REQUIRE((SExpansion(1e30) + SExpansion(1e-30) + SExpansion(1e-30) - SExpansion(1e30)).CheckSanity());
+    REQUIRE(SExpansion(1e30) + SExpansion(1e-30) + SExpansion(1e-30) - SExpansion(1e30) != SExpansion(1.999999) * SExpansion(1e-30));
+    REQUIRE((SExpansion(1e10) + SExpansion(1e-30)) * SExpansion(1e10) == SExpansion(1e10) * SExpansion(1e10) + SExpansion(1e-30) * SExpansion(1e10));
 
     {
-        auto a = E(1e10);
-        auto b = E(1e-20);
-        auto c = E(1e30);
-        auto d = E(1e-40);
+        auto a = SExpansion(1e10);
+        auto b = SExpansion(1e-20);
+        auto c = SExpansion(1e30);
+        auto d = SExpansion(1e-40);
         REQUIRE((a + b) * (c + d) == a * c + a * d + b * c + b * d);
-        REQUIRE((a + b) * (c + d) < a * c + a * d + b * c + b * d + E(1e-200));
-        REQUIRE((a + b) * (c + d) > a * c + a * d + b * c + b * d - E(1e-200));
-        REQUIRE((a + b) * (c + d) == E(0.5) * (a * c + a * d + b * c + b * d + E(1e-200) + a * c + a * d + b * c + b * d - E(1e-200)));
+        REQUIRE((a + b) * (c + d) < a * c + a * d + b * c + b * d + SExpansion(1e-200));
+        REQUIRE((a + b) * (c + d) > a * c + a * d + b * c + b * d - SExpansion(1e-200));
+        REQUIRE((a + b) * (c + d) == SExpansion(0.5) * (a * c + a * d + b * c + b * d + SExpansion(1e-200) + a * c + a * d + b * c + b * d - SExpansion(1e-200)));
     }
 
     {
-        auto a = E(1e10);
-        auto b = E(1e-20);
-        auto c = E(1e30);
-        auto d = E(1e-40);
-        auto m = E(0.5) * (a * c + a * d + b * c + b * d + E(1e-200) + a * c + a * d + b * c + b * d - E(1e-200));
+        auto a = SExpansion(1e10);
+        auto b = SExpansion(1e-20);
+        auto c = SExpansion(1e30);
+        auto d = SExpansion(1e-40);
+        auto m = SExpansion(0.5) * (a * c + a * d + b * c + b * d + SExpansion(1e-200) + a * c + a * d + b * c + b * d - SExpansion(1e-200));
         auto n = m;
         n.Compress();
         REQUIRE(m == n);
     }
 
     {
-        auto a = (E(1e10) + E(1e-30)) * E(1e10);
+        auto a = (SExpansion(1e10) + SExpansion(1e-30)) * SExpansion(1e10);
         auto b = a;
         b.Compress();
         REQUIRE(a == b);

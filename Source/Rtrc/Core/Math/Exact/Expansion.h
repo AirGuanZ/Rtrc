@@ -134,14 +134,14 @@ public:
     void Compress();
     void SetNegative();
 
-    template<int S>
+    template<size_t S>
     int Compare(const SExpansion<Word, S> &rhs) const;
 
     SExpansion operator-() const;
 
-    template<int S>
+    template<size_t S>
     std::strong_ordering operator<=>(const SExpansion<Word, S> &rhs) const;
-    template<int S>
+    template<size_t S>
     bool operator==(const SExpansion<Word, S> &rhs) const;
 
     std::string ToString() const;
@@ -526,7 +526,7 @@ void SExpansion<Word, StaticStorage>::SetNegative()
 }
 
 template <typename Word, size_t StaticStorage>
-template <int S>
+template <size_t S>
 int SExpansion<Word, StaticStorage>::Compare(const SExpansion<Word, S> &rhs) const
 {
     const SExpansion &lhs = *this;
@@ -565,7 +565,7 @@ SExpansion<Word, StaticStorage> SExpansion<Word, StaticStorage>::operator-() con
 }
 
 template <typename Word, size_t StaticStorage>
-template <int S>
+template <size_t S>
 std::strong_ordering SExpansion<Word, StaticStorage>::operator<=>(const SExpansion<Word, S> &rhs) const
 {
     const int compare = this->Compare(rhs);
@@ -575,7 +575,7 @@ std::strong_ordering SExpansion<Word, StaticStorage>::operator<=>(const SExpansi
 }
 
 template <typename Word, size_t StaticStorage>
-template <int S>
+template <size_t S>
 bool SExpansion<Word, StaticStorage>::operator==(const SExpansion<Word, S> &rhs) const
 {
     return this->Compare(rhs) == 0;
