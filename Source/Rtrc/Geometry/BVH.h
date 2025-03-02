@@ -11,6 +11,15 @@ class BVH
 {
 public:
 
+    struct Node
+    {
+        AABB3<T> boundingBox;
+        uint32_t childIndex;
+        uint32_t childCount; // 0 for interior nodes
+
+        bool IsLeaf() const;
+    };
+
     static BVH Build(Span<AABB3<T>> primitiveBounds);
 
     bool IsEmpty() const;
@@ -21,16 +30,10 @@ public:
     template<typename IntersectBoxFunc, typename ProcessPrimitiveFunc>
     void TraversalPrimitives(const IntersectBoxFunc &intersectBox, const ProcessPrimitiveFunc &processPrimitive) const;
 
+    Span<Node> GetNodes() const;
+    Span<uint32_t> GetPrimitiveIndices() const;
+
 private:
-
-    struct Node
-    {
-        AABB3<T> boundingBox;
-        uint32_t childIndex;
-        uint32_t childCount; // 0 for interior nodes
-
-        bool IsLeaf() const;
-    };
 
     std::vector<Node>     nodes_;
     std::vector<uint32_t> primitiveIndices_;
@@ -71,6 +74,12 @@ private:
 
     std::vector<Triangle> triangles_;
 };
+
+template <typename T>
+bool BVH<T>::Node::IsLeaf() const
+{
+    return childCount != 0;
+}
 
 template <typename T>
 bool BVH<T>::IsEmpty() const
@@ -131,9 +140,15 @@ void BVH<T>::TraversalPrimitives(
 }
 
 template <typename T>
-bool BVH<T>::Node::IsLeaf() const
+Span<typename BVH<T>::Node> BVH<T>::GetNodes() const
 {
-    return childCount != 0;
+    return nodes_;
+}
+
+template <typename T>
+Span<uint32_t> BVH<T>::GetPrimitiveIndices() const
+{
+    return primitiveIndices_;
 }
 
 template <typename T>
