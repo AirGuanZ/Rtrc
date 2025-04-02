@@ -78,7 +78,7 @@ std::string_view RawMesh::GetExtension(const std::string& filename)
     return std::string_view(filename).substr(pos);
 }
 
-void RawMesh::RecalculateNormal(float cosAngleThreshold)
+RawMesh &RawMesh::RecalculateNormal(float cosAngleThreshold)
 {
     auto positionData = GetPositionData();
     auto positionIndices = GetPositionIndices();
@@ -199,9 +199,11 @@ void RawMesh::RecalculateNormal(float cosAngleThreshold)
     std::memcpy(normalAttribute.data_.data(), newNormals.data(), normalAttribute.data_.size());
 
     indices_[normalAttributeIndex] = std::move(newNormalIndices);
+
+    return *this;
 }
 
-void RawMesh::SplitByAttributes()
+RawMesh &RawMesh::SplitByAttributes()
 {
     uint32_t newVertexCount = 0;
     std::vector<std::vector<unsigned char>> newAttributeData(attributes_.size());
@@ -242,9 +244,11 @@ void RawMesh::SplitByAttributes()
         attributes_[ai].data_ = std::move(newAttributeData[ai]);
         indices_[ai] = newIndices;
     }
+
+    return *this;
 }
 
-void RawMesh::NormalizePositionTo(const Vector3f &targetLower, const Vector3f &targetUpper)
+RawMesh &RawMesh::NormalizePositionTo(const Vector3f &targetLower, const Vector3f &targetUpper)
 {
     Vector3f currentLower(FLT_MAX), currentUpper(-FLT_MAX);
     for(auto &position : GetPositionData())
@@ -263,6 +267,8 @@ void RawMesh::NormalizePositionTo(const Vector3f &targetLower, const Vector3f &t
     {
         position = scale * position + bias;
     }
+
+    return *this;
 }
 
 RawMesh RawMesh::LoadWavefrontObj(const std::string& filename)

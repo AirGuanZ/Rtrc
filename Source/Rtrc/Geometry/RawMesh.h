@@ -147,14 +147,14 @@ public:
     // ======================== In-place modifier ========================
 
     // Set angle threshold to 1 to use face normals
-    void RecalculateNormal(float cosAngleThreshold = 1);
+    RawMesh &RecalculateNormal(float cosAngleThreshold = 1);
 
     // Split vertices by normal, UV, etc., so that the position index can be used to reference all available attributes.
     // Suitable for rendering.
-    void SplitByAttributes();
+    RawMesh &SplitByAttributes();
 
     // Scale and translate the mesh to fit into the given bounding box
-    void NormalizePositionTo(const Vector3f &targetLower, const Vector3f &targetUpper);
+    RawMesh &NormalizePositionTo(const Vector3f &targetLower, const Vector3f &targetUpper);
 
 private:
 
