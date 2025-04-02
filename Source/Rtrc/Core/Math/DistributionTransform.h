@@ -35,7 +35,7 @@ namespace DistributionTransform
         return r * Vector2f(std::cos(theta), std::sin(theta));
     }
 
-    inline Vector3f UniformSphere(const Vector3f &u)
+    inline Vector3f UniformSphere(const Vector2f &u)
     {
         const float z = 1 - 2 * u.x;
         const float phi = 2 * PI * u.y;
