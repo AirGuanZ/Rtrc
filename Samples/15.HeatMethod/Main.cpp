@@ -12,6 +12,10 @@ using SimplicialLDLT = Eigen::SimplicialLDLT<SparseMatrixXd>;
 
 class HeatMethodDemo : public SimpleApplication
 {
+public:
+
+    using SimpleApplication::SimpleApplication;
+
     void InitializeSimpleApplication(GraphRef graph) override
     {
         rawMesh_ = RawMesh::Load("./Asset/Sample/15.HeatMethod/Bunny_good.obj");

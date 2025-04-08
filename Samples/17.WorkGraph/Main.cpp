@@ -8,6 +8,10 @@ using namespace Rtrc;
 
 class WorkGraphDemo : public SimpleApplication
 {
+public:
+
+    using SimpleApplication::SimpleApplication;
+
     void InitializeSimpleApplication(GraphRef graph) override
     {
         pipeline_ = device_->CreateWorkGraphPipeline(WorkGraphPipeline::Desc

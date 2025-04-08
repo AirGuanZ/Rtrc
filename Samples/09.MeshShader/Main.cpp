@@ -8,6 +8,10 @@ using namespace Rtrc;
 
 class MeshShaderDemo : public SimpleApplication
 {
+public:
+
+    using SimpleApplication::SimpleApplication;
+
     void InitializeSimpleApplication(GraphRef graph) override
     {
         pipelineCache_.SetDevice(device_);

@@ -7,6 +7,10 @@
 // Feature-aware vector displacement map generation
 class FADMDemo : public SimpleApplication
 {
+public:
+
+    using SimpleApplication::SimpleApplication;
+
     enum class RenderMode
     {
         InputMesh,

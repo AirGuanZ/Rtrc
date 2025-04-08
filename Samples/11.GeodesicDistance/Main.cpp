@@ -298,6 +298,10 @@ void FMM3D(
 
 class GeodesicDistanceDemo : public SimpleApplication
 {
+public:
+
+    using SimpleApplication::SimpleApplication;
+
     Mesh mesh_;
 
     uint32_t resolution_ = RTRC_DEBUG ? 128 : 256;

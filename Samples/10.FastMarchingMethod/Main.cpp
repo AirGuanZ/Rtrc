@@ -118,6 +118,10 @@ void FMM2D(const std::vector<Vector2i> &sources, Image<float> &output)
 
 class FMMDemo : public SimpleApplication
 {
+public:
+
+    using SimpleApplication::SimpleApplication;
+
     RC<Texture> sourceTexture;
     RC<Texture> timeTexture;
     float maxT_ = 0;

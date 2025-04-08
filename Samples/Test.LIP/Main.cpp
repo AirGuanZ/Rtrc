@@ -6,6 +6,10 @@ using namespace Rtrc;
 
 class LinearInterpolationPrecisionDemo : public SimpleApplication
 {
+public:
+
+    using SimpleApplication::SimpleApplication;
+
     RC<Texture> texture_;
     RC<GraphicsPipeline> pipeline_;
 

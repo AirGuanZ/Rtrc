@@ -6,6 +6,10 @@ using namespace Rtrc;
 
 class DFDMDemo : public SimpleApplication
 {
+public:
+
+    using SimpleApplication::SimpleApplication;
+
     static constexpr int N = 2048;
     static constexpr float WorldSize = 10.0f;
     static constexpr float HeightScale = 2.0f;

@@ -8,6 +8,10 @@ using namespace Rtrc;
 
 class MultiLayerOITDemo : public SimpleApplication
 {
+public:
+
+    using SimpleApplication::SimpleApplication;
+
     struct Vertex
     {
         Vector3f position;

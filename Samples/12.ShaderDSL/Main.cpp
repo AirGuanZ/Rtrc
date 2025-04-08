@@ -6,6 +6,10 @@ using namespace eDSL;
 
 class ShaderDSLDemo : public SimpleApplication
 {
+public:
+
+    using SimpleApplication::SimpleApplication;
+
     void InitializeSimpleApplication(GraphRef graph) override
     {
         using namespace eDSL;

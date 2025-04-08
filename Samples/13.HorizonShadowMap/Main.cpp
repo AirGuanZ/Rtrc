@@ -7,6 +7,10 @@ using namespace Rtrc;
 
 class HorizonShadowMapDemo : public SimpleApplication
 {
+public:
+
+    using SimpleApplication::SimpleApplication;
+
     void InitializeSimpleApplication(GraphRef graph) override
     {
         ReloadHeightMap(graph);

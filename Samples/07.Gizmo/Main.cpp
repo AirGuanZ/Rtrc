@@ -4,6 +4,10 @@ using namespace Rtrc;
 
 class GizmoDemo : public SimpleApplication
 {
+public:
+
+    using SimpleApplication::SimpleApplication;
+
     void InitializeSimpleApplication(GraphRef graph) override
     {
         gizmoRenderer_ = MakeBox<GizmoRenderer>(device_);

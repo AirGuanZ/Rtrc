@@ -7,6 +7,10 @@ using namespace Geo;
 
 class HalfedgeMeshDemo : public SimpleApplication
 {
+public:
+
+    using SimpleApplication::SimpleApplication;
+
     struct Vertex
     {
         Vector2f position;
