@@ -9,7 +9,7 @@ using namespace Rtrc;
 
 TEST_CASE("Matrix3x3f Rotate")
 {
-    auto m = Matrix3x3f::RotateZ(PI / 2);
+    auto m = Matrix3x3f::RotateZ(std::numbers::pi_v<float> / 2);
     auto v0 = Vector3f(1, 0, 0);
     auto v1 = m * v0;
     REQUIRE(Catch::Approx(v1[0]).margin(1e-5f) == 0);
@@ -69,7 +69,7 @@ TEST_CASE("Inverse Matrix4x4f")
 
 TEST_CASE("Quaternion Rotate")
 {
-    auto m = Quaternionf::FromRotationAlongZ(PI / 2);
+    auto m = Quaternionf::FromRotationAlongZ(std::numbers::pi_v<float> / 2);
     auto v0 = Vector3f(1, 0, 0);
     auto v1 = m.ApplyRotation(v0);
     REQUIRE(Catch::Approx(v1[0]).margin(1e-5f) == 0);

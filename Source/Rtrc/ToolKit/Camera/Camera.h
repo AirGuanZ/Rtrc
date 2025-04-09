@@ -57,6 +57,8 @@ public:
 
 private:
 
+    static constexpr float PI = std::numbers::pi_v<float>;
+
     // Basic
 
     Vector3f position_;
@@ -64,7 +66,7 @@ private:
 
     bool  ortho_       = true;
     float aspectRatio_ = 1;
-    float fovYRad_     = Deg2Rad(60);
+    float fovYRad_     = Deg2Rad(60.0f);
     float near_        = 0.1f;
     float far_         = 1000.0f;
     float orthoWidth_  = 1;

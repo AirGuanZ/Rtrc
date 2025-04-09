@@ -29,6 +29,8 @@ public:
 
 private:
 
+    static constexpr float PI = std::numbers::pi_v<float>;
+
     static Vector3f YawPitchToDirection(const Vector2f &yawPitch);
     static Vector2f DirectionToYawPitch(const Vector3f &direction);
 

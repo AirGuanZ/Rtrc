@@ -64,7 +64,7 @@ namespace ComputeEntryDetail
         {
             using NativeType = typename ArgumentTrait::eValueTrait<T>::NativeType;
             NativeType value;
-            InvokeType(const NativeType &value) : value(std::move(value)) { }
+            InvokeType(const NativeType &_value) : value(std::move(_value)) {}
         };
     };
 
