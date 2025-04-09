@@ -30,6 +30,8 @@ public:
 
     Vector3<T> xyz() const;
 
+    Vector4 &operator+=(const Vector4 &rhs);
+
     T x, y, z, w;
 };
 
@@ -156,6 +158,13 @@ template<typename T>
 Vector3<T> Vector4<T>::xyz() const
 {
     return { x, y, z };
+}
+
+template <typename T>
+Vector4<T> &Vector4<T>::operator+=(const Vector4 &rhs)
+{
+    *this = *this + rhs;
+    return *this;
 }
 
 template<typename T>
