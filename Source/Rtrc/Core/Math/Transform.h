@@ -5,95 +5,110 @@
 
 RTRC_BEGIN
 
+template<typename T>
 class Transform
 {
 public:
 
     Transform();
-    explicit Transform(const Matrix4x4f &m);
+    explicit Transform(const Matrix4x4<T> &m);
 
-    Transform &SetTranslation(const Vector3f &position);
-    const Vector3f &GetTranslation() const;
+    Transform &SetTranslation(const Vector3<T> &position);
+    const Vector3<T> &GetTranslation() const;
 
-    Transform &SetRotation(const Quaternionf &rotation);
-    const Quaternionf &GetRotation() const;
+    Transform &SetRotation(const Quaternion<T> &rotation);
+    const Quaternion<T> &GetRotation() const;
 
-    Transform &SetScale(const Vector3f &scale);
-    const Vector3f &GetScale() const;
+    Transform &SetScale(const Vector3<T> &scale);
+    const Vector3<T> &GetScale() const;
 
-    Matrix4x4f ToMatrix() const;
-    Matrix4x4f ToInverseMatrix() const;
+    Matrix4x4<T> ToMatrix() const;
+    Matrix4x4<T> ToInverseMatrix() const;
 
-    Vector3f ApplyToPoint(const Vector3f &p) const;
-    Vector3f ApplyToVector(const Vector3f &v) const;
+    Vector3<T> ApplyToPoint(const Vector3<T> &p) const;
+    Vector3<T> ApplyToVector(const Vector3<T> &v) const;
 
     Transform Inverse() const;
 
 private:
 
-    Vector3f    translate_;
-    Quaternionf rotate_;
-    Vector3f    scale_;
+    Vector3<T>    translate_;
+    Quaternion<T> rotate_;
+    Vector3<T>    scale_;
 };
 
-Transform Inverse(const Transform &t);
+using Transformf = Transform<float>;
+using Transformd = Transform<double>;
 
-Transform operator*(const Transform &a, const Transform &b);
+template<typename T>
+Transform<T> Inverse(const Transform<T> &t);
 
-inline Transform::Transform()
+template<typename T>
+Transform<T> operator*(const Transform<T> &a, const Transform<T> &b);
+
+template<typename T>
+Transform<T>::Transform()
 {
     rotate_ = { 0, 0, 0, 1 };
     scale_ = { 1, 1, 1 };
 }
 
-inline Transform::Transform(const Matrix4x4f &m)
+template<typename T>
+Transform<T>::Transform(const Matrix4x4<T> &m)
 {
     translate_ = { m[0][3], m[1][3], m[2][3] };
-    const Vector3f ex = { m[0][0], m[1][0], m[2][0] };
-    const Vector3f ey = { m[0][1], m[1][1], m[2][1] };
-    const Vector3f ez = { m[0][2], m[1][2], m[2][2] };
+    const Vector3<T> ex = { m[0][0], m[1][0], m[2][0] };
+    const Vector3<T> ey = { m[0][1], m[1][1], m[2][1] };
+    const Vector3<T> ez = { m[0][2], m[1][2], m[2][2] };
     scale_.x = Length(ex);
     scale_.y = Length(ey);
     scale_.z = Length(ez);
-    rotate_ = Quaternionf::FromMatrix(Matrix3x3f::FromCols(ex / scale_.x, ey / scale_.y, ez / scale_.z));
+    rotate_ = Quaternion<T>::FromMatrix(Matrix3x3<T>::FromCols(ex / scale_.x, ey / scale_.y, ez / scale_.z));
 }
 
-inline Transform &Transform::SetTranslation(const Vector3f &position)
+template<typename T>
+Transform<T> &Transform<T>::SetTranslation(const Vector3<T> &position)
 {
     translate_ = position;
     return *this;
 }
 
-inline const Vector3f &Transform::GetTranslation() const
+template<typename T>
+const Vector3<T> &Transform<T>::GetTranslation() const
 {
     return translate_;
 }
 
-inline Transform &Transform::SetRotation(const Quaternionf &rotation)
+template<typename T>
+Transform<T> &Transform<T>::SetRotation(const Quaternion<T> &rotation)
 {
     rotate_ = rotation;
     return *this;
 }
 
-inline const Quaternionf &Transform::GetRotation() const
+template<typename T>
+const Quaternion<T> &Transform<T>::GetRotation() const
 {
     return rotate_;
 }
 
-inline Transform &Transform::SetScale(const Vector3f &scale)
+template<typename T>
+Transform<T> &Transform<T>::SetScale(const Vector3<T> &scale)
 {
     scale_ = scale;
     return *this;
 }
 
-inline const Vector3f &Transform::GetScale() const
+template<typename T>
+const Vector3<T> &Transform<T>::GetScale() const
 {
     return scale_;
 }
 
-inline Matrix4x4f Transform::ToMatrix() const
+template<typename T>
+Matrix4x4<T> Transform<T>::ToMatrix() const
 {
-    const Matrix3x3f rot = rotate_.ToMatrix();
+    const Matrix3x3<T> rot = rotate_.ToMatrix();
     return {
         scale_.x * rot[0][0], scale_.y * rot[0][1], scale_.z * rot[0][2], translate_.x,
         scale_.x * rot[1][0], scale_.y * rot[1][1], scale_.z * rot[1][2], translate_.y,
@@ -102,28 +117,44 @@ inline Matrix4x4f Transform::ToMatrix() const
     };
 }
 
-inline Matrix4x4f Transform::ToInverseMatrix() const
+template<typename T>
+Matrix4x4<T> Transform<T>::ToInverseMatrix() const
 {
-    const Matrix3x3f invScaleRot = Matrix3x3f(1 / scale_.x, 0, 0, 0, 1 / scale_.y, 0, 0, 0, 1 / scale_.z)
+    const Matrix3x3<T> invScaleRot = Matrix3x3<T>(1 / scale_.x, 0, 0, 0, 1 / scale_.y, 0, 0, 0, 1 / scale_.z)
         * Rtrc::Inverse(rotate_).ToMatrix();
-    const Matrix4x4f invTranslate = Matrix4x4f::Translate(-translate_);
-    return Matrix4x4f(invScaleRot) * invTranslate;
+    const Matrix4x4<T> invTranslate = Matrix4x4<T>::Translate(-translate_);
+    return Matrix4x4<T>(invScaleRot) * invTranslate;
 }
 
-inline Vector3f Transform::ApplyToPoint(const Vector3f &p) const
+template<typename T>
+Vector3<T> Transform<T>::ApplyToPoint(const Vector3<T> &p) const
 {
     return rotate_.ApplyRotation(scale_ * p) + translate_;
 }
 
-inline Vector3f Transform::ApplyToVector(const Vector3f &v) const
+template<typename T>
+Vector3<T> Transform<T>::ApplyToVector(const Vector3<T> &v) const
 {
     return rotate_.ApplyRotation(scale_ * v);
 }
 
-inline Transform Transform::Inverse() const
+template<typename T>
+Transform<T> Transform<T>::Inverse() const
 {
     // TODO: optimize
-    return Transform(ToInverseMatrix());
+    return Transform<T>(ToInverseMatrix());
+}
+
+template <typename T>
+Transform<T> Inverse(const Transform<T> &t)
+{
+    return t.Inverse();
+}
+
+template <typename T>
+Transform<T> operator*(const Transform<T> &a, const Transform<T> &b)
+{
+    return Transform<T>(a.ToMatrix() * b.ToMatrix());
 }
 
 RTRC_END

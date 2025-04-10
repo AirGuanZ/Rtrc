@@ -79,7 +79,7 @@ RTRC_BEGIN
 template<typename T> class Vector2;
 template<typename T> class Vector3;
 template<typename T> class Vector4;
-class Matrix4x4f;
+template<typename T> class Matrix4x4;
 
 class Exception : public std::runtime_error
 {

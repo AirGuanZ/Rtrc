@@ -1,12 +1,8 @@
 #pragma once
 
+#include <Rtrc/Core/Math/Matrix4x4.h>
+
 #include "eVector4.h"
-
-RTRC_BEGIN
-
-class Matrix4x4f;
-
-RTRC_END
 
 RTRC_EDSL_BEGIN
 
