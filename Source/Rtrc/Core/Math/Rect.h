@@ -9,8 +9,8 @@ class Rect
 {
 public:
 
-    Vector2<T> lower = (std::numeric_limits<T>::max)();
-    Vector2<T> upper = std::numeric_limits<T>::lowest();
+    Vector2<T> lower = Vector2<T>((std::numeric_limits<T>::max)());
+    Vector2<T> upper = Vector2<T>(std::numeric_limits<T>::lowest());
 
     bool IsEmpty() const;
     Vector2<T> GetCenter() const;
