@@ -328,7 +328,8 @@ void SetupComputeEntry(
     RC<BindingGroup> defaultBindingGroup;
     if(const int defaultBindingGroupIndex = entry.GetDefaultBindingGroupIndex(); defaultBindingGroupIndex >= 0)
     {
-        auto group = entry.GetShader()->GetBindingGroupLayoutByIndex(defaultBindingGroupIndex)->CreateBindingGroup();
+        RC<BindingGroup> group =
+            entry.GetShader()->GetBindingGroupLayoutByIndex(defaultBindingGroupIndex)->CreateBindingGroup();
 
         RHI::BindingGroupUpdateBatch batch;
         int slot = 0;
@@ -353,6 +354,7 @@ void SetupComputeEntry(
                         constantBuffer->GetSubBufferOffset(),
                         constantBuffer->GetSubBufferSize()
                     });
+                    group->SetHeldElement(slot, 0, std::move(constantBuffer));
                     ++slot;
                 }
                 else if constexpr(IsRC<std::remove_cvref_t<decltype(arg.GetRtrcObject())>>)
@@ -360,14 +362,17 @@ void SetupComputeEntry(
                     if(auto obj = arg.GetRtrcObject())
                     {
                         batch.Append(*group->GetRHIObject(), slot, obj->GetRHIObject());
+                        group->SetHeldElement(slot, 0, std::move(obj));
                     }
                     ++slot;
                 }
                 else
                 {
-                    if(auto rhiObj = arg.GetRtrcObject().GetRHIObject())
+                    auto rtrcObj = arg.GetRtrcObject();
+                    if(auto rhiObj = rtrcObj.GetRHIObject())
                     {
                         batch.Append(*group->GetRHIObject(), slot, std::move(rhiObj));
+                        group->SetHeldElement(slot, 0, std::move(rtrcObj));
                     }
                     ++slot;
                 }
@@ -401,6 +406,7 @@ void SetupComputeEntry(
                 uniformBuffer->GetSubBufferOffset(),
                 uniformBuffer->GetSubBufferSize()
             });
+            group->SetHeldElement(slot, 0, std::move(uniformBuffer));
             ++slot;
         }
 

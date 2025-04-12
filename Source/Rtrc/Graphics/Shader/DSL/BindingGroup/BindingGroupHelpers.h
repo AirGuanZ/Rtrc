@@ -249,13 +249,16 @@ namespace BindingGroupDetail
                                 if(auto obj = (*accessor(&value))[i].GetRtrcObject())
                                 {
                                     batch.Append(*group.GetRHIObject(), actualIndex, i, obj->GetRHIObject());
+                                    group.SetHeldElement(actualIndex, i, std::move(obj));
                                 }
                             }
                             else
                             {
-                                if(auto rhiObj = (*accessor(&value))[i].GetRtrcObject().GetRHIObject())
+                                auto obj = (*accessor(&value))[i].GetRtrcObject();
+                                if(auto rhiObj = obj.GetRHIObject())
                                 {
                                     batch.Append(*group.GetRHIObject(), actualIndex, i, std::move(rhiObj));
+                                    group.SetHeldElement(actualIndex, i, std::move(obj));
                                 }
                             }
                         }
@@ -274,12 +277,14 @@ namespace BindingGroupDetail
                     if(accessor(&value)->GetRtrcObject())
                     {
                         auto cbuffer = accessor(&value)->GetRtrcObject();
-                        batch.Append(*group.GetRHIObject(), index++, RHI::ConstantBufferUpdate
+                        batch.Append(*group.GetRHIObject(), index, RHI::ConstantBufferUpdate
                         {
                             cbuffer->GetFullBufferRHIObject().Get(),
                             cbuffer->GetSubBufferOffset(),
                             cbuffer->GetSubBufferSize()
                         });
+                        group.SetHeldElement(index, 0, std::move(cbuffer));
+                        ++index;
                     }
                     else
                     {
@@ -291,11 +296,13 @@ namespace BindingGroupDetail
                                 "setting constant buffer {} without giving pre-created cb object", name));
                         }
                         auto cbuffer = cbMgr->CreateConstantBuffer(static_cast<const CBufferStruct &>(*accessor(&value)));
-                        batch.Append(*group.GetRHIObject(), index++, RHI::ConstantBufferUpdate{
+                        batch.Append(*group.GetRHIObject(), index, RHI::ConstantBufferUpdate{
                             cbuffer->GetFullBufferRHIObject().Get(),
                             cbuffer->GetSubBufferOffset(),
                             cbuffer->GetSubBufferSize()
                         });
+                        group.SetHeldElement(index, 0, std::move(cbuffer));
+                        ++index;
                     }
                 }
                 else if constexpr(IsRC<std::remove_cvref_t<decltype(accessor(&value)->GetRtrcObject())>>)
@@ -303,14 +310,17 @@ namespace BindingGroupDetail
                     if(auto obj = accessor(&value)->GetRtrcObject())
                     {
                         batch.Append(*group.GetRHIObject(), index, obj->GetRHIObject());
+                        group.SetHeldElement(index, 0, std::move(obj));
                     }
                     ++index;
                 }
                 else
                 {
-                    if(auto rhiObj = accessor(&value)->GetRtrcObject().GetRHIObject())
+                    auto obj = accessor(&value)->GetRtrcObject();
+                    if(auto rhiObj = obj.GetRHIObject())
                     {
                         batch.Append(*group.GetRHIObject(), index, std::move(rhiObj));
+                        group.SetHeldElement(index, 0, std::move(obj));
                     }
                     ++index;
                 }
@@ -331,6 +341,7 @@ namespace BindingGroupDetail
                 cbuffer->GetSubBufferOffset(),
                 cbuffer->GetSubBufferSize()
             });
+            group.SetHeldElement(actualIndex, 0, std::move(cbuffer));
         }
 
         device->UpdateBindingGroups(batch);

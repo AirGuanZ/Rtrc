@@ -1,5 +1,6 @@
 #pragma once
 
+#include <any>
 #include <map>
 
 #include <Rtrc/Graphics/Device/AccelerationStructure.h>
@@ -48,6 +49,10 @@ public:
 
     template<typename T>
     void Set(const T &value); // Impl in BindingGroupHelpers.h
+
+    template<typename T>
+    void SetHeldElement(int slot, int arrayIndex, T &&object);
+    void SetHeldElement(int slot, int arrayIndex); // Clear the element in slot
     
     const RHI::BindingGroupUPtr &GetRHIObject() const;
 
@@ -56,9 +61,10 @@ private:
     friend class BindingGroupManager;
     friend class BindingGroupLayout;
 
-    BindingGroupManager         *manager_ = nullptr;
-    RC<const BindingGroupLayout> layout_;
-    RHI::BindingGroupUPtr        rhiGroup_;
+    BindingGroupManager               *manager_ = nullptr;
+    RC<const BindingGroupLayout>       layout_;
+    RHI::BindingGroupUPtr              rhiGroup_;
+    std::vector<std::vector<std::any>> heldElements_;
 };
 
 class BindingGroupLayout : public InSharedObjectCache, public std::enable_shared_from_this<BindingGroupLayout>
@@ -201,6 +207,7 @@ inline void BindingGroup::Set(int slot, RC<Tlas> tlas)
 inline void BindingGroup::Set(int slot, int arrElem, RC<Buffer> cbuffer, size_t offset, size_t size)
 {
     rhiGroup_->ModifyMember(slot, arrElem, RHI::ConstantBufferUpdate{ cbuffer->GetRHIObject().Get(), offset, size });
+    SetHeldElement(slot, arrElem, std::move(cbuffer));
 }
 
 inline void BindingGroup::Set(int slot, int arrElem, RC<SubBuffer> cbuffer)
@@ -212,16 +219,19 @@ inline void BindingGroup::Set(int slot, int arrElem, RC<SubBuffer> cbuffer)
         cbuffer->GetSubBufferSize()
     };
     rhiGroup_->ModifyMember(slot, arrElem, update);
+    SetHeldElement(slot, arrElem, std::move(cbuffer));
 }
 
 inline void BindingGroup::Set(int slot, int arrElem, RC<Sampler> sampler)
 {
     rhiGroup_->ModifyMember(slot, arrElem, sampler->GetRHIObject());
+    SetHeldElement(slot, arrElem, std::move(sampler));
 }
 
 inline void BindingGroup::Set(int slot, int arrElem, RC<Tlas> tlas)
 {
     rhiGroup_->ModifyMember(slot, arrElem, tlas->GetRHIObject());
+    SetHeldElement(slot, arrElem, std::move(tlas));
 }
 
 template<typename T>
@@ -254,6 +264,29 @@ void BindingGroup::Set(int slot, int arrElem, T &&object)
     else
     {
         rhiGroup_->ModifyMember(slot, arrElem, object.GetRHIObject());
+        this->SetHeldElement(slot, arrElem, std::forward<T>(object));
+    }
+}
+
+template <typename T>
+void BindingGroup::SetHeldElement(int slot, int arrayIndex, T &&object)
+{
+    if(static_cast<int>(heldElements_.size()) <= slot)
+    {
+        heldElements_.resize(slot + 1);
+    }
+    if(static_cast<int>(heldElements_[slot].size()) <= arrayIndex)
+    {
+        heldElements_[slot].resize(arrayIndex + 1);
+    }
+    heldElements_[slot][arrayIndex] = std::forward<T>(object);
+}
+
+inline void BindingGroup::SetHeldElement(int slot, int arrayIndex)
+{
+    if(slot < static_cast<int>(heldElements_.size()) && arrayIndex < static_cast<int>(heldElements_[slot].size()))
+    {
+        heldElements_[slot][arrayIndex] = {};
     }
 }
 
