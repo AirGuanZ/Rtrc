@@ -1158,6 +1158,21 @@ bool ImGuiInstance::IsAnyItemActive() const
     return ImGui::IsAnyItemActive();
 }
 
+bool ImGuiInstance::IsMouseClicked(KeyCode keyCode) const
+{
+    ImGuiMouseButton imguiMouseButton;
+    switch(keyCode)
+    {
+    case KeyCode::MouseLeft:   imguiMouseButton = ImGuiMouseButton_Left;   break;
+    case KeyCode::MouseMiddle: imguiMouseButton = ImGuiMouseButton_Middle; break;
+    case KeyCode::MouseRight:  imguiMouseButton = ImGuiMouseButton_Right;  break;
+    default: assert(false); return false;
+    }
+
+    IMGUI_CONTEXT;
+    return ImGui::IsMouseClicked(imguiMouseButton);
+}
+
 #define RTRC_INST_IMGUI_VECTOR_WIDGETS(TYPE)                                                                                                                             \
 template bool ImGuiInstance::Drag<TYPE>(const char *label, TYPE *value, float vSpeed, TYPE vMin, TYPE vMax, const char *format, ImGuiSliderFlags flags);                 \
 template bool ImGuiInstance::DragVector2<TYPE>(const char *label, TYPE *value, float vSpeed, TYPE vMin, TYPE vMax, const char *format, ImGuiSliderFlags flags);          \

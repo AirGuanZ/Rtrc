@@ -211,6 +211,7 @@ public:
     bool InputText(const char *label, MutSpan<char> buffer, ImGuiInputTextFlags flags = 0);
 
     bool IsAnyItemActive() const;
+    bool IsMouseClicked(KeyCode keyCode) const;
 
     template<typename F>
     void Do(F &&f); // Call f with thread local ImGui context bounded
