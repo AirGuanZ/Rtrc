@@ -22,18 +22,17 @@ namespace SDF
         const Vector3<T> ac = a - c; const Vector3<T> pc = p - c;
         const Vector3<T> nor = Rtrc::Cross(ba, ac);
 
-        if(std::sqrt(
-            (SDF::Sign(Rtrc::Dot(Rtrc::Cross(ba, nor), pa)) +
-             SDF::Sign(Rtrc::Dot(Rtrc::Cross(cb, nor), pb)) +
-             SDF::Sign(Rtrc::Dot(Rtrc::Cross(ac, nor), pc)) < T(2))))
+        if(SDF::Sign(Rtrc::Dot(Rtrc::Cross(ba, nor), pa)) +
+           SDF::Sign(Rtrc::Dot(Rtrc::Cross(cb, nor), pb)) +
+           SDF::Sign(Rtrc::Dot(Rtrc::Cross(ac, nor), pc)) < T(2))
         {
-            return (std::min)((std::min)(
+            return std::sqrt((std::min)((std::min)(
                 Rtrc::LengthSquare(ba * Rtrc::Clamp(Rtrc::Dot(ba, pa) / Rtrc::LengthSquare(ba), 0.0, 1.0) - pa),
                 Rtrc::LengthSquare(cb * Rtrc::Clamp(Rtrc::Dot(cb, pb) / Rtrc::LengthSquare(cb), 0.0, 1.0) - pb)),
-                Rtrc::LengthSquare(ac * Rtrc::Clamp(Rtrc::Dot(ac, pc) / Rtrc::LengthSquare(ac), 0.0, 1.0) - pc));
+                Rtrc::LengthSquare(ac * Rtrc::Clamp(Rtrc::Dot(ac, pc) / Rtrc::LengthSquare(ac), 0.0, 1.0) - pc)));
         }
 
-        return Rtrc::Dot(nor, pa) * Rtrc::Dot(nor, pa) / Rtrc::LengthSquare(nor);
+        return std::sqrt(Rtrc::Dot(nor, pa) * Rtrc::Dot(nor, pa) / Rtrc::LengthSquare(nor));
     }
 
 } // namespace SDF
