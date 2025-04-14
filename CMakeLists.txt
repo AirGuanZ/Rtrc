@@ -13,6 +13,7 @@ list(APPEND CMAKE_MODULE_PATH "${RTRC_SOURCE_DIR}/CMake")
 option(RTRC_ENABLE_DIRECTX12_BACKEND "Enable DirectX12 backend"        ON)
 option(RTRC_ENABLE_VULKAN_BACKEND    "Enable Vulkan backend"	       ON)
 option(RTRC_ENABLE_STATIC_RHI        "Enable static backend selection" OFF)
+option(RTRC_ENABLE_MIMALLOC          "Enable mimalloc"                 ON)
 
 option(RTRC_BUILD_SAMPLES "Build Rtrc samples" ON)
 

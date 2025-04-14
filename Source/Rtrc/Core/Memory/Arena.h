@@ -2,8 +2,7 @@
 
 #include <cassert>
 
-#include <mimalloc.h>
-
+#include <Rtrc/Core/Memory/Malloc.h>
 #include <Rtrc/Core/ScopeGuard.h>
 #include <Rtrc/Core/Uncopyable.h>
 
@@ -104,7 +103,8 @@ void ObjectReleaser::AddDestructor(T *obj)
 {
     if constexpr(std::is_trivially_destructible_v<T>)
         return;
-    void *destructorMem = mi_aligned_alloc(alignof(DestructorImpl<T>), sizeof(DestructorImpl<T>));
+    void *destructorMem = Rtrc::AllocateMemory(sizeof(DestructorImpl<T>));
+    assert(reinterpret_cast<size_t>(destructorMem) % alignof(DestructorImpl<T>) == 0);
     if(!destructorMem)
     {
         throw std::bad_alloc();
@@ -122,12 +122,12 @@ inline ObjectReleaser::~ObjectReleaser()
 template<typename T, typename...Args>
 T *ObjectReleaser::Create(Args&&...args)
 {
-    void *objectMem = mi_aligned_alloc(alignof(T), sizeof(T));
+    void *objectMem = Rtrc::AllocateAlignedMemory(sizeof(T), alignof(T));
     if(!objectMem)
     {
         throw std::bad_alloc();
     }
-    RTRC_SCOPE_FAIL{ mi_free(objectMem); };
+    RTRC_SCOPE_FAIL{ Rtrc::FreeAlignedMemory(objectMem, alignof(T)); };
     T *obj = new(objectMem) T(std::forward<Args>(args)...);
     RTRC_SCOPE_FAIL{ obj->~T(); };
     this->AddDestructor(obj);
@@ -141,7 +141,7 @@ inline void ObjectReleaser::Destroy()
         nd = d->next;
         d->Destruct();
         d->~Destructor();
-        mi_free(d);
+        Rtrc::FreeMemory(d);
     }
     destructorEntry_ = nullptr;
 }
@@ -152,11 +152,11 @@ void LinearAllocator::LargeDestructor<T>::Destruct() noexcept
     ptr->~T();
     if(alignof(T) <= alignof(void *))
     {
-        ::mi_free(ptr);
+        Rtrc::FreeMemory(ptr);
     }
     else
     {
-        ::mi_free_aligned(ptr, alignof(T));
+        Rtrc::FreeAlignedMemory(ptr, alignof(T));
     }
 }
 
@@ -179,7 +179,7 @@ T *LinearAllocator::AllocateSmallObject()
 
 inline void LinearAllocator::AllocateNewChunk()
 {
-    auto memory = static_cast<unsigned char*>(mi_malloc(chunkSize_));
+    auto memory = static_cast<unsigned char*>(Rtrc::AllocateMemory(chunkSize_));
     if(!memory)
     {
         throw Exception("LinearAllocator: failed to allocate new memory chunk");
@@ -220,11 +220,11 @@ T *LinearAllocator::Create(Args &&... args)
         T *ret;
         if constexpr(alignof(T) <= alignof(void*))
         {
-            ret = static_cast<T*>(mi_malloc(sizeof(T)));
+            ret = static_cast<T*>(Rtrc::AllocateMemory(sizeof(T)));
         }
         else
         {
-            ret = static_cast<T *>(mi_aligned_alloc(alignof(T), sizeof(T)));
+            ret = static_cast<T *>(Rtrc::AllocateAlignedMemory(sizeof(T), alignof(T)));
         }
         ret = new(ret) T(std::forward<Args>(args)...);
         destructor = new(destructor) LargeDestructor<T>(ret);
@@ -261,7 +261,7 @@ inline void LinearAllocator::Destroy()
     while(chunkEntry_)
     {
         ChunkHead *nextChunk = chunkEntry_->next;
-        mi_free(chunkEntry_);
+        Rtrc::FreeMemory(chunkEntry_);
         chunkEntry_ = nextChunk;
     }
     destructorEntry_ = nullptr;

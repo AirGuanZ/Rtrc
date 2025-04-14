@@ -1,4 +1,7 @@
+#include <cstdlib>
+#if RTRC_ENABLE_MIMALLOC
 #include <mimalloc.h>
+#endif
 
 #define VMA_IMPLEMENTATION
 #include <volk.h>
@@ -15,17 +18,35 @@ namespace VkCommonDetail
 
     void *VKAPI_PTR VkAlloc(void *pUserData, size_t size, size_t alignment, VkSystemAllocationScope scope)
     {
+#if RTRC_ENABLE_MIMALLOC
         return mi_aligned_alloc(alignment, (size + alignment - 1) / alignment * alignment);
+#elif _WIN32
+        return _aligned_malloc(size, alignment);
+#else
+        return std::aligned_alloc(alignment, size);
+#endif
     }
 
     void *VKAPI_PTR VkRealloc(void *pUserData, void *orig, size_t size, size_t alignment, VkSystemAllocationScope scope)
     {
+#if RTRC_ENABLE_MIMALLOC
         return mi_realloc_aligned(orig, size, alignment);
+#elif _WIN32
+        return _aligned_realloc(orig, size, alignment);
+#else
+#error "TODO"
+#endif
     }
 
     void VKAPI_PTR VkFree(void *pUserData, void *ptr)
     {
+#if RTRC_ENABLE_MIMALLOC
         mi_free(ptr);
+#elif _WIN32
+        _aligned_free(ptr);
+#else
+        std::free(ptr);
+#endif
     }
     
 } // namespace VkCommonDetail

@@ -4,7 +4,10 @@
 #define NOMINMAX
 #endif
 #include <comdef.h>
+
+#if RTRC_ENABLE_MIMALLOC
 #include <mimalloc.h>
+#endif
 
 #include <Rtrc/Core/Unreachable.h>
 #include <Rtrc/RHI/DirectX12/Common.h>
@@ -16,12 +19,20 @@ namespace DirectX12Detail
 
     void *AllocateCallback(size_t size, size_t alignment, void *)
     {
+#if RTRC_ENABLE_MIMALLOC
         return mi_aligned_alloc(alignment, size);
+#else
+        return _aligned_malloc(size, alignment);
+#endif
     }
 
     void FreeCallback(void *ptr, void *)
     {
+#if RTRC_ENABLE_MIMALLOC
         mi_free(ptr);
+#else
+        return _aligned_free(ptr);
+#endif
     }
 
 } // namespace DirectX12Detail

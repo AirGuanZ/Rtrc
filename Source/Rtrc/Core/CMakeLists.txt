@@ -20,10 +20,17 @@ if(MSVC)
 	target_compile_definitions(RtrcCore PUBLIC _CRT_SECURE_NO_WARNINGS _SILENCE_CXX23_ALIGNED_STORAGE_DEPRECATION_WARNING _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING)
 endif()
 
+if(RTRC_ENABLE_MIMALLOC)
+	target_compile_definitions(RtrcCore PUBLIC RTRC_ENABLE_MIMALLOC=1)
+	target_link_libraries(RtrcCore PUBLIC mimalloc-static)
+else()
+	target_compile_definitions(RtrcCore PUBLIC RTRC_ENABLE_MIMALLOC=0)
+endif()
+
 target_include_directories(RtrcCore PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../..")
 target_link_libraries(
 	RtrcCore PUBLIC
-	mimalloc-static spdlog tbbinterface stb tinyexr nlohmann-json
+	spdlog tbbinterface stb tinyexr nlohmann-json
 	half tinyobjloader sigslot avir cy smhasher cista magic_enum ryu
 	boost_multiprecision Eigen3::Eigen)
 
