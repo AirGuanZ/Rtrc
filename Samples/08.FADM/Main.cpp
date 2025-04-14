@@ -29,7 +29,7 @@ public:
 
         const Vector3f center = 0.5f * (inputMesh_.lower + inputMesh_.upper);
         const Vector3f extent = 0.5f * (inputMesh_.upper - inputMesh_.lower);
-        const Vector3f lookDir = Matrix3x3f::RotateY(Deg2Rad(110)) * extent;
+        const Vector3f lookDir = Matrix3x3f::RotateY(Deg2Rad(110.0f)) * extent;
         camera_.SetLookAt(center + 1.5f * Vector3f(2, 1, 2) * lookDir, { 0, 1, 0 }, center);
         camera_.UpdateDerivedData();
         cameraController_.SetCamera(camera_);
@@ -485,7 +485,7 @@ public:
     RC<StatefulTexture> vdmSeamCarving_;
     RC<StatefulTexture> vdmGridAlignment_;
 
-    float sharpEdgeAngleThreshold_ = Deg2Rad(40);
+    float sharpEdgeAngleThreshold_ = Deg2Rad(40.0f);
     Image<GridAlignment::GridPoint> alignedGrid_;
     RC<Texture> alignedGridUVTexture_;
     RC<Buffer> alignedGridIndexBuffer_;

@@ -233,7 +233,7 @@ public:
     RC<Texture> normalMap_;
     RC<StatefulTexture> horizonMap_;
 
-    float sunThetaRad_ = Deg2Rad(30);
+    float sunThetaRad_ = Deg2Rad(30.0f);
     float softnessDeg_ = 16;
 
     RC<Buffer> indexBuffer_;

@@ -142,7 +142,7 @@ public:
             lineIndices.push_back(NewVertex({ end, color }));
 
             const Vector2f e2s = 0.02f * Normalize(start - end);
-            const Vector2f e21 = end + (Matrix3x3f::RotateZ(Deg2Rad(+45)) * Vector3f(e2s, 0)).xy();
+            const Vector2f e21 = end + (Matrix3x3f::RotateZ(Deg2Rad(+45.0f)) * Vector3f(e2s, 0)).xy();
             lineIndices.push_back(NewVertex({ end, color }));
             lineIndices.push_back(NewVertex({ e21, color }));
         };
