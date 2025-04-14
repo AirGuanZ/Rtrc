@@ -51,6 +51,13 @@ public:
         Vector2<T> barycentricCoordinate;
     };
 
+    struct Triangle
+    {
+        Vector3<T> a;
+        Vector3<T> ab;
+        Vector3<T> ac;
+    };
+
     using BVH<T>::IsEmpty;
     using BVH<T>::TraversalPrimitives;
 
@@ -63,14 +70,15 @@ public:
         T                      maxT,
         RayIntersectionResult &result) const;
 
-private:
+    bool HasIntersection(
+        const Vector3<T> &o,
+        const Vector3<T> &d,
+        T                 minT,
+        T                 maxT) const;
 
-    struct Triangle
-    {
-        Vector3<T> a;
-        Vector3<T> ab;
-        Vector3<T> ac;
-    };
+    Span<Triangle> GetTriangles() const { return triangles_; }
+
+private:
 
     std::vector<Triangle> triangles_;
 };
@@ -212,6 +220,30 @@ bool TriangleBVH<T>::FindClosestRayIntersection(
         });
 
     return result.triangleIndex != UINT32_MAX;
+}
+
+template <typename T>
+bool TriangleBVH<T>::HasIntersection(const Vector3<T> &o, const Vector3<T> &d, T minT, T maxT) const
+{
+    const Vector3<T> rcpD = { 1 / d.x, 1 / d.y, 1 / d.z };
+    bool result = false;
+    BVH<T>::TraversalPrimitives(
+        [&](const AABB3<T> &bbox)
+        {
+            return Rtrc::IntersectRayBox(o, rcpD, minT, maxT, &bbox.lower.x);
+        },
+        [&](uint32_t triangleIndex)
+        {
+            float tempT; Vector2<T> tempUV;
+            const Triangle &triangle = triangles_[triangleIndex];
+            if(IntersectRayTriangle(o, d, minT, maxT, triangle.a, triangle.ab, triangle.ac, tempT, tempUV))
+            {
+                result = true;
+                return false;
+            }
+            return true;
+        });
+    return result;
 }
 
 RTRC_GEO_END
