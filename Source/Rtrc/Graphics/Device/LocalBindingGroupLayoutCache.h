@@ -74,7 +74,7 @@ public:
 private:
 
     Ref<Device> device_;
-    tbb::spin_rw_mutex mutex_;
+    std::shared_mutex mutex_;
     std::vector<RC<BindingGroupLayout>> layouts_;
 };
 

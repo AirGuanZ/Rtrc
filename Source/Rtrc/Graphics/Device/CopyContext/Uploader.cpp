@@ -405,7 +405,7 @@ UploadBatch Uploader::CreateBatch()
 Uploader::Batch Uploader::GetBatch()
 {
     Batch result;
-    if(batches_.try_pop(result))
+    if(batches_.TryPop(result))
     {
         result.commandPool->Reset();
         return result;
@@ -417,7 +417,7 @@ Uploader::Batch Uploader::GetBatch()
 
 void Uploader::FreeBatch(Batch batch)
 {
-    batches_.push(std::move(batch));
+    batches_.Push(std::move(batch));
 }
 
 RTRC_END

@@ -6,7 +6,7 @@
 RTRC_BEGIN
 
 GizmoRenderer::GizmoRenderer(Ref<Device> device)
-    : device_(device), pipelineCache_(64)
+    : device_(device)
 {
     pipelineCache_.SetDevice(device);
 }

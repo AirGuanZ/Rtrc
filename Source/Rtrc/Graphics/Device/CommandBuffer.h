@@ -1,8 +1,6 @@
 #pragma once
 
-#include <tbb/concurrent_queue.h>
-#include <tbb/spin_rw_mutex.h>
-
+#include <Rtrc/Core/Container/ConcurrentQueue.h>
 #include <Rtrc/Graphics/Device/BindingGroup.h>
 #include <Rtrc/Graphics/Device/DeviceSynchronizer.h>
 #include <Rtrc/Graphics/Device/Pipeline.h>
@@ -385,9 +383,9 @@ private:
     DeviceSynchronizer &sync_;
 
     std::map<std::thread::id, PerThreadPoolData> threadToActivePoolData_;
-    tbb::spin_rw_mutex threadToActivePoolDataMutex_;
+    std::shared_mutex threadToActivePoolDataMutex_;
 
-    tbb::concurrent_queue<RHI::CommandPoolUPtr> freePools_;
+    ConcurrentQueue<RHI::CommandPoolUPtr> freePools_;
 };
 
 template<typename T> requires std::is_trivially_copyable_v<T>

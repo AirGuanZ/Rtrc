@@ -1,7 +1,6 @@
 #pragma once
 
-#include <oneapi/tbb/concurrent_queue.h>
-
+#include <Rtrc/Core/Container/ConcurrentQueue.h>
 #include <Rtrc/Graphics/Device/Buffer.h>
 #include <Rtrc/Graphics/Device/Texture.h>
 
@@ -144,9 +143,9 @@ private:
     Batch GetBatch();
     void FreeBatch(Batch batch);
 
-    RHI::DeviceOPtr              device_;
-    RHI::QueueRPtr               queue_;
-    tbb::concurrent_queue<Batch> batches_;
+    RHI::DeviceOPtr        device_;
+    RHI::QueueRPtr         queue_;
+    ConcurrentQueue<Batch> batches_;
 };
 
 RTRC_END

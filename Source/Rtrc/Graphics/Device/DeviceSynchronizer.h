@@ -1,7 +1,5 @@
 #pragma once
 
-#include <tbb/spin_mutex.h>
-
 #include <Rtrc/RHI/RHI.h>
 
 RTRC_BEGIN
@@ -50,7 +48,7 @@ private:
     RHI::QueueRPtr queue_;
 
     Callbacks currentFrameCallbacks_;
-    tbb::spin_mutex currentFrameCallbacksMutex_; // TODO: tls optimization
+    std::mutex currentFrameCallbacksMutex_; // TODO: tls optimization
 
     std::vector<RenderLoopFrame> renderLoopFrames_;
     int renderLoopFrameIndex_;

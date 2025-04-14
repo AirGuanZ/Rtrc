@@ -3,8 +3,7 @@
 #include <map>
 #include <mutex>
 #include <limits>
-
-#include <tbb/concurrent_vector.h>
+#include <shared_mutex>
 
 #include <Rtrc/Core/TemplateStringParameter.h>
 
@@ -53,21 +52,27 @@ class StringPool
         {
             return it->second;
         }
-        const Index newIndex = static_cast<Index>(indexToString_.size());
+        Index newIndex;
+        {
+            std::lock_guard lock2(indexToStringMutex_);
+            newIndex = static_cast<Index>(indexToString_.size());
+            indexToString_.push_back(std::string(str));
+        }
         stringToIndex_.insert({ std::string(str), newIndex });
-        indexToString_.push_back(std::string(str));
         return newIndex;
     }
 
     const std::string &GetString(const PooledString<Tag, Index> &str)
     {
+        std::shared_lock lock(indexToStringMutex_);
         return indexToString_[str.GetIndex()];
     }
 
     std::map<std::string, Index, std::less<>> stringToIndex_;
     std::mutex mutex_;
 
-    tbb::concurrent_vector<std::string> indexToString_;
+    std::shared_mutex indexToStringMutex_;
+    std::vector<std::string> indexToString_;
 };
 
 struct GeneralPooledStringTag { };

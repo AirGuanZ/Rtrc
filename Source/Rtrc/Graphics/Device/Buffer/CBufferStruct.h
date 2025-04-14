@@ -149,7 +149,7 @@ namespace CBufferStructDetail
     {
         auto PrintFlattenMember = [&]<typename M>(const char *name, size_t hostOffset, size_t deviceOffset)
         {
-            std::print(ostream, "name = {}, hostOffset = {}, deviceOffset = {}\n", name, hostOffset, deviceOffset);
+            ostream << std::format("name = {}, hostOffset = {}, deviceOffset = {}\n", name, hostOffset, deviceOffset);
         };
         CBufferStructDetail::ForEachFlattenMember<T>("root", PrintFlattenMember, 0, 0);
     }

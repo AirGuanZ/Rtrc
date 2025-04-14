@@ -1,7 +1,7 @@
 #pragma once
 
-#include <tbb/spin_mutex.h>
-#include <tbb/spin_rw_mutex.h>
+#include <mutex>
+#include <shared_mutex>
 
 #include <Rtrc/Graphics/Device/Buffer/Buffer.h>
 #include <Rtrc/Graphics/Device/Buffer/CBufferStruct.h>
@@ -93,7 +93,7 @@ private:
     struct Slab
     {
         std::vector<FreeBufferRecord> freeRecords;
-        tbb::spin_mutex mutex;
+        std::mutex mutex;
     };
 
     // Shared by DynamicBufferManager & DeviceSynchronizer
@@ -113,7 +113,7 @@ private:
     size_t cbufferSizeAlignment_;
 
     SlotVector<Chunk> chunks_;
-    tbb::spin_rw_mutex chunkMutex_;
+    std::shared_mutex chunkMutex_;
 
     RC<SharedData> sharedData_;
 };

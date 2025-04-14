@@ -3,8 +3,6 @@
 #include <atomic>
 #include <vector>
 
-#include <tbb/spin_rw_mutex.h>
-
 #include <Rtrc/Core/SmartPointer/ObserverPtr.h>
 #include <Rtrc/Core/Uncopyable.h>
 #include <Rtrc/Graphics/Shader/ShaderDatabase.h>
@@ -46,7 +44,7 @@ public:
 private:
 
     Ref<ShaderManager> shaderManager_;
-    tbb::spin_rw_mutex mutex_;
+    std::shared_mutex mutex_;
     std::vector<RC<ShaderTemplate>> shaders_;
 };
 

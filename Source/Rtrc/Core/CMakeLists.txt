@@ -30,7 +30,7 @@ endif()
 target_include_directories(RtrcCore PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../..")
 target_link_libraries(
 	RtrcCore PUBLIC
-	spdlog tbbinterface stb tinyexr nlohmann-json
+	spdlog stb tinyexr nlohmann-json
 	half tinyobjloader sigslot avir cy smhasher cista magic_enum ryu
 	boost_multiprecision Eigen3::Eigen)
 

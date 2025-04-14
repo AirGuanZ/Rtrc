@@ -1,7 +1,6 @@
 #pragma once
 
 #include <ankerl/unordered_dense.h>
-#include <tbb/spin_rw_mutex.h>
 
 #include <Rtrc/Graphics/Shader/Compiler.h>
 #include <Rtrc/Graphics/Shader/Keyword.h>
@@ -74,7 +73,7 @@ private:
         RC<ParsedShader>    parsedShader;
         bool                hasBuiltinKeyword[EnumCount<BuiltinKeyword>];
 
-        tbb::spin_rw_mutex shaderTemplateMutex;
+        std::shared_mutex shaderTemplateMutex;
         RC<ShaderTemplate> shaderTemplate;
     };
 

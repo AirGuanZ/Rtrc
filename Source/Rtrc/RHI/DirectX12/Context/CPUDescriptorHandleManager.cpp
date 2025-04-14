@@ -13,12 +13,12 @@ CPUDescriptorHandleManager::CPUDescriptorHandleManager(
 
 CPUDescriptorHandleManager::~CPUDescriptorHandleManager()
 {
-    assert(heaps_.size() * chunkSize_ == freeHandles_.unsafe_size());
+    //assert(heaps_.size() * chunkSize_ == freeHandles_.unsafe_size());
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE CPUDescriptorHandleManager::Allocate()
 {
-    if(D3D12_CPU_DESCRIPTOR_HANDLE handle; freeHandles_.try_pop(handle))
+    if(D3D12_CPU_DESCRIPTOR_HANDLE handle; freeHandles_.TryPop(handle))
     {
         return handle;
     }
@@ -45,7 +45,7 @@ D3D12_CPU_DESCRIPTOR_HANDLE CPUDescriptorHandleManager::Allocate()
     for(uint32_t i = 1; i < chunkSize_; ++i)
     {
         handle.ptr += incSize_;
-        freeHandles_.push(handle);
+        freeHandles_.Push(handle);
     }
 
     return start;
@@ -53,7 +53,7 @@ D3D12_CPU_DESCRIPTOR_HANDLE CPUDescriptorHandleManager::Allocate()
 
 void CPUDescriptorHandleManager::Free(D3D12_CPU_DESCRIPTOR_HANDLE handle)
 {
-    freeHandles_.push(handle);
+    freeHandles_.Push(handle);
 }
 
 RTRC_RHI_D3D12_END

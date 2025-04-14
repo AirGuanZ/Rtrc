@@ -1,5 +1,4 @@
 #include <fstream>
-#include <print>
 #include <ranges>
 
 #include <tiny_obj_loader.h>
@@ -458,17 +457,17 @@ void WriteOBJFile(
 
     for(auto &position : positions)
     {
-        std::println(fout, "v {} {} {}", ToString(position.x), ToString(position.y), ToString(position.z));
+        fout << std::format("v {} {} {}\n", ToString(position.x), ToString(position.y), ToString(position.z));
     }
 
     for(auto &normal : normals)
     {
-        std::println(fout, "vn {} {} {}", ToString(normal.x), ToString(normal.y), ToString(normal.z));
+        fout << std::format("vn {} {} {}\n", ToString(normal.x), ToString(normal.y), ToString(normal.z));
     }
 
     for(auto &uv : uvs)
     {
-        std::println(fout, "vt {} {}", ToString(uv.x), ToString(uv.y));
+        fout << std::format("vt {} {}\n", ToString(uv.x), ToString(uv.y));
     }
 
     const uint32_t wedgeCount = positionIndices.IsEmpty() ? positions.GetSize() : positionIndices.GetSize();
@@ -499,24 +498,24 @@ void WriteOBJFile(
 
         if(i % 3 == 0)
         {
-            std::print(fout, "\nf");
+            fout << "\nf";
         }
 
         if(hasNormal && hasUV)
         {
-            std::print(fout, " {}/{}/{}", positionIndex, uvIndex, normalIndex);
+            fout << std::format(" {}/{}/{}", positionIndex, uvIndex, normalIndex);
         }
         else if(hasNormal && !hasUV)
         {
-            std::print(fout, " {}//{}", positionIndex, normalIndex);
+            fout << std::format(" {}//{}", positionIndex, normalIndex);
         }
         else if(!hasNormal && hasUV)
         {
-            std::print(fout, " {}/{}", positionIndex, uvIndex);
+            fout << std::format(" {}/{}", positionIndex, uvIndex);
         }
         else
         {
-            std::print(fout, " {}", positionIndex);
+            fout << std::format(" {}", positionIndex);
         }
     }
 }

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <tbb/spin_rw_mutex.h>
+#include <shared_mutex>
 
 #include <Rtrc/RHI/DirectX12/Pipeline/BindingGroupLayout.h>
 
@@ -60,7 +60,7 @@ private:
     std::vector<D3D12_STATIC_SAMPLER_DESC> staticSamplers_;
     D3D12_ROOT_SIGNATURE_DESC              rootSignatureDesc_ = {};
 
-    mutable tbb::spin_rw_mutex          rootSignatureMutex_;
+    mutable std::shared_mutex           rootSignatureMutex_;
     mutable ComPtr<ID3D12RootSignature> rootSignature_;
     mutable ComPtr<ID3D12RootSignature> rootSignatureAllowInputAssembler_;
 

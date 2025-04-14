@@ -3,8 +3,6 @@
 #include <map>
 #include <mutex>
 
-#include <tbb/concurrent_vector.h>
-
 #include <Rtrc/Core/Hash.h>
 #include <Rtrc/Core/Uncopyable.h>
 
@@ -59,8 +57,12 @@ public:
             ret.value_ = it->second;
             return ret;
         }
-        const auto value = static_cast<typename Key::Value>(descs_.size());
-        descs_.push_back(new Desc(desc));
+        typename Key::Value value;
+        {
+            std::lock_guard lock2(descsMutex_);
+            value = static_cast<typename Key::Value>(descs_.size());
+            descs_.push_back(new Desc(desc));
+        }
         map_.insert({ desc, value });
         Key ret;
         ret.value_ = value;
@@ -74,6 +76,7 @@ public:
             static const Desc defaultDesc;
             return defaultDesc;
         }
+        std::shared_lock lock(descsMutex_);
         return *descs_[key.value_];
     }
 
@@ -83,6 +86,7 @@ private:
 
     ~PipelineStateCache()
     {
+        std::lock_guard lock(descsMutex_);
         for(auto p : descs_)
         {
             delete p;
@@ -91,7 +95,9 @@ private:
 
     std::mutex                          mutex_;
     std::map<Desc, typename Key::Value> map_;
-    tbb::concurrent_vector<Desc *>      descs_;
+
+    std::shared_mutex   descsMutex_;
+    std::vector<Desc *> descs_;
 };
 
 #define DEFINE_PIPELINE_STATE(STATE)                            \

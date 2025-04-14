@@ -1067,7 +1067,7 @@ void CommandBufferManager::_internalEndFrame()
             sync_.OnFrameComplete([p = std::move(poolData.activePool->rhiPool), &fps = freePools_]() mutable
             {
                 p->Reset();
-                fps.push(std::move(p));
+                fps.Push(std::move(p));
             });
             delete poolData.activePool;
         }
@@ -1117,7 +1117,7 @@ void CommandBufferManager::_internalRelease(CommandBuffer &commandBuffer)
             sync_.OnFrameComplete([p = std::move(commandBuffer.pool_->rhiPool), &fps = freePools_]() mutable
             {
                 p->Reset();
-                fps.push(std::move(p));
+                fps.Push(std::move(p));
             });
             delete commandBuffer.pool_;
         }
@@ -1142,7 +1142,7 @@ CommandBufferManager::PerThreadPoolData &CommandBufferManager::GetPerThreadPoolD
 RHI::CommandPoolUPtr CommandBufferManager::GetFreeCommandPool()
 {
     RHI::CommandPoolUPtr ret;
-    if(!freePools_.try_pop(ret))
+    if(!freePools_.TryPop(ret))
     {
         ret = device_->GetRawDevice()->CreateCommandPool(sync_.GetQueue());
     }

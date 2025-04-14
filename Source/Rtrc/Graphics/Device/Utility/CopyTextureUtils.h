@@ -43,7 +43,7 @@ private:
     RC<Shader> shaderPointSamplingGamma_;
     RC<Shader> shaderLinearSamplingGamma_;
 
-    tbb::spin_rw_mutex mutex_;
+    std::shared_mutex mutex_;
     std::map<Key, RC<GraphicsPipeline>> keyToPipeline_;
 };
 

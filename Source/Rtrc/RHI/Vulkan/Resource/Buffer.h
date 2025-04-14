@@ -1,8 +1,7 @@
 #pragma once
 
 #include <map>
-
-#include <tbb/spin_rw_mutex.h>
+#include <shared_mutex>
 
 #include <Rtrc/RHI/Vulkan/Common.h>
 
@@ -61,7 +60,7 @@ private:
     ResourceOwnership                       ownership_;
     VkDeviceAddress                         deviceAddress_;
     mutable std::map<ViewKey, VkBufferView> views_;
-    mutable tbb::spin_rw_mutex              viewsMutex_;
+    mutable std::shared_mutex               viewsMutex_;
 };
 
 RTRC_RHI_VK_END

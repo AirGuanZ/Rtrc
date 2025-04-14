@@ -2,8 +2,6 @@
 #include <mutex>
 #include <shared_mutex>
 
-#include <tbb/spin_rw_mutex.h>
-
 #include <Rtrc/Core/Enumerate.h>
 #include <Rtrc/Core/Unreachable.h>
 #include <Rtrc/Graphics/Device/MeshLayout.h>
@@ -54,7 +52,7 @@ const VertexBufferLayout *VertexBufferLayout::Create(const MeshLayoutDSL::Buffer
     using namespace MeshLayoutDetail;
 
     static std::map<MeshLayoutDSL::Buffer, Box<VertexBufferLayout>> vertexBufferLayoutCache;
-    static tbb::spin_rw_mutex vertexBufferLayoutCacheMutex;
+    static std::shared_mutex vertexBufferLayoutCacheMutex;
 
     {
         std::shared_lock readLock(vertexBufferLayoutCacheMutex);
@@ -120,7 +118,7 @@ const MeshLayout *MeshLayout::Create(const MeshLayoutDSL::LayoutDesc &_desc)
     using namespace MeshLayoutDetail;
 
     static std::map<MeshLayoutDSL::LayoutDesc, Box<MeshLayout>> meshLayoutCache;
-    static tbb::spin_rw_mutex meshLayoutCacheMutex;
+    static std::shared_mutex meshLayoutCacheMutex;
 
     auto desc = _desc;
     Regularize(desc);

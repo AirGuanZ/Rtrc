@@ -1,7 +1,6 @@
 #pragma once
 
-#include <tbb/spin_mutex.h>
-
+#include <mutex>
 #include <queue>
 
 #include <Rtrc/RHI/Vulkan/Common.h>
@@ -67,7 +66,7 @@ private:
     mutable std::vector<VkDescriptorPool> pools_;
     mutable int poolCount_;
     mutable std::vector<VkDescriptorSet> freeSets_;
-    mutable tbb::spin_mutex poolMutex_;
+    mutable std::mutex poolMutex_;
 };
 
 RTRC_RHI_VK_END

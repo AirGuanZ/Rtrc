@@ -1,8 +1,7 @@
 #pragma once
 
 #include <map>
-
-#include <tbb/spin_rw_mutex.h>
+#include <shared_mutex>
 
 #include <Rtrc/RHI/DirectX12/Common.h>
 
@@ -47,7 +46,7 @@ private:
     mutable std::map<TextureUavDesc, D3D12_CPU_DESCRIPTOR_HANDLE> uavs_;
     mutable std::map<TextureRtvDesc, D3D12_CPU_DESCRIPTOR_HANDLE> rtvs_;
     mutable std::map<TextureDsvDesc, D3D12_CPU_DESCRIPTOR_HANDLE> dsvs_;
-    mutable tbb::spin_rw_mutex viewMutex_;
+    mutable std::shared_mutex viewMutex_;
 };
 
 RTRC_RHI_D3D12_END
