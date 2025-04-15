@@ -13,7 +13,7 @@ class SourceWriter
 public:
 
     template<typename...Args>
-    SourceWriter &operator()(std::format_string<Args...> fmtStr, Args&&...args)
+    SourceWriter &operator()(StdFormatString<Args...> fmtStr, Args&&...args)
     {
         std::string content = std::format(fmtStr, std::forward<Args>(args)...);
         if(!content.empty())

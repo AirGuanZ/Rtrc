@@ -237,26 +237,34 @@ void PopLogIndent();
 
 std::string_view GetLogIndentString();
 
+#if defined(_MSC_VER) && __cpp_lib_format < 202207L
 template<typename...Args>
-void LogVerbose(std::format_string<Args...> fmtStr, Args&&...args)
+using StdFormatString = std::_Fmt_string<Args...>;
+#else
+template<typename...Args>
+using StdFormatString = std::format_string<Args...>;
+#endif
+
+template<typename...Args>
+void LogVerbose(StdFormatString<Args...> fmtStr, Args&&...args)
 {
     Rtrc::LogVerboseUnformatted(std::format(fmtStr, std::forward<Args>(args)...));
 }
 
 template<typename...Args>
-void LogInfo(std::format_string<Args...> fmtStr, Args&&...args)
+void LogInfo(StdFormatString<Args...> fmtStr, Args&&...args)
 {
     Rtrc::LogInfoUnformatted(std::format(fmtStr, std::forward<Args>(args)...));
 }
 
 template<typename...Args>
-void LogWarning(std::format_string<Args...> fmtStr, Args&&...args)
+void LogWarning(StdFormatString<Args...> fmtStr, Args&&...args)
 {
     Rtrc::LogWarningUnformatted(std::format(fmtStr, std::forward<Args>(args)...));
 }
 
 template<typename...Args>
-void LogError(std::format_string<Args...> fmtStr, Args&&...args)
+void LogError(StdFormatString<Args...> fmtStr, Args&&...args)
 {
     Rtrc::LogErrorUnformatted(std::format(fmtStr, std::forward<Args>(args)...));
 }

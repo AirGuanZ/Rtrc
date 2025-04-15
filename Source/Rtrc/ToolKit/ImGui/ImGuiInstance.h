@@ -109,7 +109,7 @@ public:
     void EndDisabled();
 
     template<typename...Args>
-    void Label(const char *label, std::format_string<Args...> fmt, Args&&...args);
+    void Label(const char *label, StdFormatString<Args...> fmt, Args&&...args);
     void LabelUnformatted(const char *label, const std::string &text);
 
     bool Button(const char *label, const Vector2f &size = {});
@@ -206,7 +206,7 @@ public:
     bool ColorPicker4(const char *label, float rgba[4], ImGuiColorEditFlags flags = {});
 
     template<typename...Args>
-    void Text(std::format_string<Args...> fmt, Args&&...args);
+    void Text(StdFormatString<Args...> fmt, Args&&...args);
     void TextUnformatted(std::string_view text);
     bool InputText(const char *label, MutSpan<char> buffer, ImGuiInputTextFlags flags = 0);
 
@@ -252,13 +252,13 @@ private:
 };
 
 template <typename... Args>
-void ImGuiInstance::Label(const char* label, std::format_string<Args...> fmt, Args&&... args)
+void ImGuiInstance::Label(const char* label, StdFormatString<Args...> fmt, Args&&... args)
 {
     this->LabelUnformatted(label, std::format(fmt, std::forward<Args>(args)...));
 }
 
 template<typename... Args>
-void ImGuiInstance::Text(std::format_string<Args...> fmt, Args &&... args)
+void ImGuiInstance::Text(StdFormatString<Args...> fmt, Args &&... args)
 {
     this->TextUnformatted(std::format(fmt, std::forward<Args>(args)...));
 }
