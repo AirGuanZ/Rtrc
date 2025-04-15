@@ -462,8 +462,7 @@ inline HalfedgeMesh RawMesh::CreateHalfEdgeMesh() const
 
 inline AABB3f RawMesh::ComputeBoundingBox() const
 {
-    return std::ranges::fold_left(
-        GetPositionData(), AABB3f{}, [](const auto &lhs, const auto &rhs) { return lhs | rhs; });
+    return std::ranges::fold_left(GetPositionData(), AABB3f{}, [](auto &&lhs, auto &&rhs) { return lhs | rhs; });
 }
 
 inline int RawMesh::GetBuiltinAttributeIndex(BuiltinAttribute attribute) const

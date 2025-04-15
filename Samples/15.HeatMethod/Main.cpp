@@ -261,7 +261,10 @@ public:
 
         // Geodesic distances
 
-        const double minPhi = *std::ranges::fold_left_first(phi, MinOperator{});
+        auto MinOperator = []<typename T>(const T &L, const T &R) { return (std::min)(L, R); };
+        auto MaxOperator = []<typename T>(const T &L, const T &R) { return (std::max)(L, R); };
+
+        const double minPhi = *std::ranges::fold_left_first(phi, MinOperator);
         std::vector<double> geodesicDistances = { phi.begin(), phi.end() };
         for(double &d : geodesicDistances)
         {
@@ -303,11 +306,11 @@ public:
 
         // Visualization
 
-        const double minHeat = *std::ranges::fold_left_first(u, MinOperator{});
-        const double maxHeat = *std::ranges::fold_left_first(u, MaxOperator{});
+        const double minHeat = *std::ranges::fold_left_first(u, MinOperator);
+        const double maxHeat = *std::ranges::fold_left_first(u, MaxOperator);
 
-        const double minDivergence = *std::ranges::fold_left_first(divergence, MinOperator{});
-        const double maxDivergence = *std::ranges::fold_left_first(divergence, MaxOperator{});
+        const double minDivergence = *std::ranges::fold_left_first(divergence, MinOperator);
+        const double maxDivergence = *std::ranges::fold_left_first(divergence, MaxOperator);
         const double maxAbsDivergence = (std::max)(std::abs(minDivergence), std::abs(maxDivergence));
         
         std::vector<Vector3f> vertexGradients(m.V());

@@ -71,24 +71,6 @@ T ComputeCosAngleFromTriangleEdgeLengths(T a, T b, T c)
     return (a * a + b * b - c * c) / (2 * a * b);
 }
 
-struct MinOperator
-{
-    template<typename T>
-    const T &operator()(const T &lhs, const T &rhs) const
-    {
-        return (std::min)(lhs, rhs);
-    }
-};
-
-struct MaxOperator
-{
-    template<typename T>
-    const T &operator()(const T &lhs, const T &rhs) const
-    {
-        return (std::max)(lhs, rhs);
-    }
-};
-
 template<typename T>
 auto Det2x2(const T &a, const T &b,
             const T &c, const T &d)
