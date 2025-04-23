@@ -127,6 +127,11 @@ Device::~Device()
         }
     }
 
+    if(copyQueue_.GetRHIObject())
+    {
+        copyQueue_.GetRHIObject()->WaitIdle();
+    }
+
     if(sync_)
     {
         sync_->PrepareDestruction();
@@ -189,6 +194,10 @@ void Device::InitializeInternal(Flags flags, RHI::DeviceUPtr device, bool isComp
 
     device_ = std::move(device);
     mainQueue_ = Queue(device_->GetQueue(isComputeOnly ? RHI::QueueType::Compute : RHI::QueueType::Graphics));
+    if(auto rhiCopyQueue = device_->GetQueue(RHI::QueueType::Transfer))
+    {
+        copyQueue_ = Queue(std::move(rhiCopyQueue));
+    }
     sync_ = MakeBox<DeviceSynchronizer>(device_, mainQueue_.GetRHIObject());
 
     bufferManager_ = MakeBox<BufferManager>(device_, *sync_);

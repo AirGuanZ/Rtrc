@@ -89,6 +89,7 @@ public:
     void RecreateSwapchain();
 
     Queue &GetQueue();
+    Queue &GetCopyQueue();
     DeviceSynchronizer &GetSynchronizer();
 
     const RHI::SwapchainUPtr &GetSwapchain() const;
@@ -324,6 +325,7 @@ private:
     RHI::InstanceUPtr instance_;
     RHI::DeviceUPtr   device_;
     Queue             mainQueue_;
+    Queue             copyQueue_;
 
     Window            *window_              = nullptr;
     RHI::Format        swapchainFormat_     = RHI::Format::Unknown;
@@ -391,6 +393,11 @@ inline void Device::RecreateSwapchain()
 inline Queue &Device::GetQueue()
 {
     return mainQueue_;
+}
+
+inline Queue &Device::GetCopyQueue()
+{
+    return copyQueue_;
 }
 
 inline DeviceSynchronizer &Device::GetSynchronizer()
