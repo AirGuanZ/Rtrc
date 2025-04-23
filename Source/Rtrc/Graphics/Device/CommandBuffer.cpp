@@ -140,6 +140,18 @@ BarrierBatch &BarrierBatch::Add(const std::vector<RHI::TextureTransitionBarrier>
     return *this;
 }
 
+BarrierBatch &BarrierBatch::Add(const std::vector<RHI::TextureReleaseBarrier> &textureBarriers)
+{
+    TR_.append_range(textureBarriers);
+    return *this;
+}
+
+BarrierBatch &BarrierBatch::Add(const std::vector<RHI::TextureAcquireBarrier> &textureBarriers)
+{
+    TA_.append_range(textureBarriers);
+    return *this;
+}
+
 CommandBuffer::CommandBuffer()
     : device_(nullptr), manager_(nullptr), queueType_(RHI::QueueType::Graphics), pool_(nullptr)
 {
@@ -1009,15 +1021,15 @@ void CommandBuffer::BuildTlas(
 void CommandBuffer::ExecuteBarriers(const BarrierBatch &barriers)
 {
     CheckThreadID();
-    if(barriers.G_ || !barriers.BT_.empty() || !barriers.TT_.empty())
+    if(barriers.G_ || !barriers.BT_.empty() || !barriers.TT_.empty() || !barriers.TA_.empty() || !barriers.TT_.empty())
     {
         if(barriers.G_)
         {
-            rhiCommandBuffer_->ExecuteBarriers(*barriers.G_, barriers.BT_, barriers.TT_);
+            rhiCommandBuffer_->ExecuteBarriers(*barriers.G_, barriers.BT_, barriers.TT_, barriers.TA_, barriers.TT_);
         }
         else
         {
-            rhiCommandBuffer_->ExecuteBarriers(barriers.BT_, barriers.TT_);
+            rhiCommandBuffer_->ExecuteBarriers(barriers.BT_, barriers.TT_, barriers.TA_, barriers.TT_);
         }
     }
 }

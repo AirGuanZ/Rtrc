@@ -76,6 +76,9 @@ public:
     BarrierBatch &Add(const std::vector<RHI::BufferTransitionBarrier> &bufferBarriers);
     BarrierBatch &Add(const std::vector<RHI::TextureTransitionBarrier> &textureBarriers);
 
+    BarrierBatch& Add(const std::vector<RHI::TextureReleaseBarrier> &textureBarriers);
+    BarrierBatch &Add(const std::vector<RHI::TextureAcquireBarrier> &textureBarriers);
+
 private:
 
     friend class CommandBuffer;
@@ -83,6 +86,8 @@ private:
     std::optional<RHI::GlobalMemoryBarrier>    G_;
     std::vector<RHI::BufferTransitionBarrier>  BT_;
     std::vector<RHI::TextureTransitionBarrier> TT_;
+    std::vector<RHI::TextureReleaseBarrier>    TR_;
+    std::vector<RHI::TextureAcquireBarrier>    TA_;
 };
 
 class CommandBuffer : public Uncopyable
