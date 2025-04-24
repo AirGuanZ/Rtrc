@@ -359,7 +359,12 @@ Span<Word> SExpansion<Word, StaticStorage>::GetItems() const
 template <typename Word, size_t StaticStorage>
 Word SExpansion<Word, StaticStorage>::ToWord() const
 {
-    return *std::ranges::fold_right_last(GetItems(), std::plus<>{});
+    Word result = 0;
+    for(auto item : std::views::reverse(GetItems()))
+    {
+        result += item;
+    }
+    return result;
 }
 
 template <typename Word, size_t StaticStorage>
