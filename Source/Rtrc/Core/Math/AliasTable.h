@@ -14,10 +14,10 @@ class AliasTable
 
 public:
 
-    struct table_unit
+    struct TableUnit
     {
-        F accept_prob;
-        T another_idx;
+        F acceptProb;
+        T anotherIndex;
     };
 
     using self_t = AliasTable<F, T>;
@@ -26,13 +26,13 @@ public:
 
     AliasTable(const F *prob, T n);
 
-    AliasTable(self_t &&move_from) noexcept = default;
+    AliasTable(self_t &&moveFrom) noexcept = default;
 
-    AliasTable(const self_t &copy_from) = default;
+    AliasTable(const self_t &copyFrom) = default;
 
-    self_t &operator=(self_t &&move_from) noexcept = default;
+    self_t &operator=(self_t &&moveFrom) noexcept = default;
 
-    self_t &operator=(const self_t &copy_from) = default;
+    self_t &operator=(const self_t &copyFrom) = default;
 
     void Initialize(const F *prob, T n);
 
@@ -40,7 +40,7 @@ public:
 
     void Destroy();
 
-    const std::vector<table_unit> &GetTable() const;
+    const std::vector<TableUnit> &GetTable() const;
 
     T Sample(F u) const noexcept;
 
@@ -48,7 +48,7 @@ public:
 
 private:
 
-    std::vector<table_unit> table_;
+    std::vector<TableUnit> table_;
 };
 
 template<typename F, typename T>
@@ -77,8 +77,8 @@ void AliasTable<F, T>::Initialize(const F *prob, T n)
     {
         const F p = prob[i] * ratio;
 
-        table_[i].accept_prob = p;
-        table_[i].another_idx = i;
+        table_[i].acceptProb = p;
+        table_[i].anotherIndex = i;
 
         if(p > 1)
             overs.push_back(i);
@@ -93,19 +93,19 @@ void AliasTable<F, T>::Initialize(const F *prob, T n)
         overs.pop_back();
         unders.pop_back();
 
-        table_[over].accept_prob -= 1 - table_[under].accept_prob;
-        table_[under].another_idx = over;
+        table_[over].acceptProb -= 1 - table_[under].acceptProb;
+        table_[under].anotherIndex = over;
 
-        if(table_[over].accept_prob > 1)
+        if(table_[over].acceptProb > 1)
             overs.push_back(over);
-        else if(table_[over].accept_prob < 1)
+        else if(table_[over].acceptProb < 1)
             unders.push_back(over);
     }
 
     for(auto i : overs)
-        table_[i].accept_prob = 1;
+        table_[i].acceptProb = 1;
     for(auto i : unders)
-        table_[i].accept_prob = 1;
+        table_[i].acceptProb = 1;
 }
 
 template<typename F, typename T>
@@ -115,7 +115,7 @@ void AliasTable<F, T>::Destroy()
 }
 
 template<typename F, typename T>
-const std::vector<typename AliasTable<F, T>::table_unit> &
+const std::vector<typename AliasTable<F, T>::TableUnit> &
     AliasTable<F, T>::GetTable() const
 {
     return table_;
@@ -139,9 +139,9 @@ T AliasTable<F, T>::Sample(F u) const noexcept
     const T i = (std::min)(static_cast<T>(nu), n - 1);
     const F s = nu - i;
 
-    if(s <= table_[i].accept_prob)
+    if(s <= table_[i].acceptProb)
         return i;
-    return table_[i].another_idx;
+    return table_[i].anotherIndex;
 }
 
 template<typename F, typename T>
@@ -156,9 +156,9 @@ T AliasTable<F, T>::Sample(F u1, F u2) const noexcept
 
     const T i = (std::min)(static_cast<T>(nu), n - 1);
 
-    if(u2 <= table_[i].accept_prob)
+    if(u2 <= table_[i].acceptProb)
         return i;
-    return table_[i].another_idx;
+    return table_[i].anotherIndex;
 }
 
 RTRC_END
