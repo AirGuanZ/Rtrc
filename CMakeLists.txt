@@ -52,12 +52,12 @@ function(rtrc_register_target TARGET_NAME)
         if(RTRC_ENABLE_DIRECTX12_BACKEND)
             rtrc_deploy_d3d12_sdk(${TARGET_NAME})
 	    endif()
-        add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-	        COMMAND
-                ${CMAKE_COMMAND} -E copy_if_different
-                $<TARGET_RUNTIME_DLLS:${TARGET_NAME}>
-                $<TARGET_FILE_DIR:${TARGET_NAME}>
-	        COMMAND_EXPAND_LISTS)
+        #add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+	    #    COMMAND
+        #        ${CMAKE_COMMAND} -E copy_if_different
+        #        $<TARGET_RUNTIME_DLLS:${TARGET_NAME}>
+        #        $<TARGET_FILE_DIR:${TARGET_NAME}>
+	    #    COMMAND_EXPAND_LISTS)
     endif()
 endfunction()
 

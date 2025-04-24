@@ -46,6 +46,7 @@ add_rtrc_sample(18.ShortestGeodesicPath)
 add_rtrc_sample(19.Archive)
 add_rtrc_sample(20.MultiLayerOIT)
 add_rtrc_sample(21.HeightMapDownsampling)
+add_rtrc_sample(22.DynamicDiscreteDistribution)
 
 if(EXISTS "${RTRC_SOURCE_DIR}/Samples/Test.OT2D")
 	add_rtrc_sample(Test.OT2D)

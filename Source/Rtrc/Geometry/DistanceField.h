@@ -63,7 +63,7 @@ namespace SDF
     T SDCone(const Vector3<T> &p, const Vector2<T> &c)
     {
         const Vector2<T> q = Vector2<T>(Rtrc::Length(Vector2<T>(p.x, p.z)), -p.y);
-        const T  d = Rtrc::Length(q - c * (std::max<T>)(Rtrc::Dot(q, c), 0));
+        const T d = Rtrc::Length(q - c * (std::max<T>)(Rtrc::Dot(q, c), 0));
         return d * ((q.x * c.y - q.y * c.x < T(0)) ? T(-1.0) : T(1.0));
     }
 
