@@ -143,7 +143,9 @@ void DynamicDiscreteDistribution<F, Payload>::ExpandLevels(int levelBegin, int l
     if(levelBegin < levelBegin_)
     {
         const int beginDiff = levelBegin_ - levelBegin;
-        std::ranges::move(levels_.begin(), levels_.begin() + levelCount_, levels_.begin() + beginDiff);
+        std::ranges::move_backward(
+            levels_.begin(), levels_.begin() + levelCount_,
+            levels_.begin() + beginDiff + levelCount_);
         for(int i = 0; i < beginDiff; ++i)
         {
             levels_[i].sumWeights = 0;
@@ -194,7 +196,7 @@ template <typename F, typename Payload>
 void DynamicDiscreteDistribution<F, Payload>::Remove(uint32_t index)
 {
     Item &item = items_[index];
-    Level &level = levels_[item.level];
+    Level &level = levels_[item.level - levelBegin_];
 
     const int swappedItemIndex = level.items.back();
     if(swappedItemIndex != index)
@@ -210,7 +212,7 @@ void DynamicDiscreteDistribution<F, Payload>::Remove(uint32_t index)
 
     freeItemIndices_.push_back(index);
 
-    if(level.sumWeights < 0 || sumWeights_ < 0)
+    if((level.sumWeights != 0) != (!level.items.empty()) || level.sumWeights < 0 || sumWeights_ < 0)
     {
         RecomputeWeights();
     }
@@ -269,7 +271,21 @@ uint32_t DynamicDiscreteDistribution<F, Payload>::Sample(Payload &payload)
         }
     }
 
+    if(levels_[levelIndex].items.empty())
+    {
+        for(int i = 0; i < levelCount_; ++i)
+        {
+            if(!levels_[i].items.empty())
+            {
+                levelIndex = i;
+                break;
+            }
+        }
+    }
+
     const Level &level = levels_[levelIndex];
+    assert(!level.items.empty());
+
     while(true)
     {
         const uint32_t indexInLevel = std::uniform_int_distribution<uint32_t>(0, level.items.size() - 1)(rng_);
