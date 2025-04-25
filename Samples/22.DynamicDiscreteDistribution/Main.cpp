@@ -8,7 +8,13 @@ using namespace Rtrc;
 template<typename F>
 void Verify()
 {
-    const std::vector<F> weights = { 1, 2, 3, 4, 5 };
+    const std::vector<F> weights = {
+        static_cast<F>(1.18540),
+        static_cast<F>(2.480),
+        static_cast<F>(3.108),
+        static_cast<F>(4.4078),
+        static_cast<F>(5.94150)
+    };
 
     DynamicDiscreteDistribution<F> sampler(1, 1);
     for(F weight : weights)
