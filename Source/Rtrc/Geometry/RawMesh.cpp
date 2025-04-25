@@ -3,6 +3,7 @@
 
 #include <tiny_obj_loader.h>
 
+#include <Rtrc/Core/Enumerate.h>
 #include <Rtrc/Core/String.h>
 #include <Rtrc/Geometry/RawMesh.h>
 
@@ -387,7 +388,7 @@ RawMesh RawMesh::LoadWavefrontObj(const std::string& filename)
 
     // Name -> attribute
 
-    for(auto&& [index, attribute] : std::views::enumerate(mesh.attributes_))
+    for(auto&& [index, attribute] : Enumerate(mesh.attributes_))
     {
         mesh.nameToAttributeIndex_[attribute.GetName()] = index;
     }

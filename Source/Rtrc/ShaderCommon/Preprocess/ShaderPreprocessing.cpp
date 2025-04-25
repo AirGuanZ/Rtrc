@@ -1,5 +1,6 @@
 #include <ranges>
 
+#include <Rtrc/Core/Enumerate.h>
 #include <Rtrc/Core/String.h>
 #include <Rtrc/ShaderCommon/Preprocess/RegisterAllocator.h>
 #include <Rtrc/ShaderCommon/Preprocess/ShaderPreprocessing.h>
@@ -84,10 +85,10 @@ ShaderPreprocessingOutput PreprocessShader(const ShaderPreprocessingInput &input
     
     // Create regular binding group layouts
 
-    for(auto &&[groupIndex, group] : std::views::enumerate(input.bindingGroups))
+    for(auto &&[groupIndex, group] : Enumerate(input.bindingGroups))
     {
         RHI::BindingGroupLayoutDesc groupLayoutDesc;
-        for(auto &&[bindingIndex, binding] : std::views::enumerate(group.bindings))
+        for(auto &&[bindingIndex, binding] : Enumerate(group.bindings))
         {
             RHI::BindingDesc &bindingDesc = groupLayoutDesc.bindings.emplace_back();
             bindingDesc.type      = binding.type;
@@ -178,7 +179,7 @@ ShaderPreprocessingOutput PreprocessShader(const ShaderPreprocessingInput &input
             [&](const EnumShaderKeyword &keyword)
             {
                 macros.insert({ keyword.name, std::to_string(value) });
-                for(auto &&[valueIndex, valueName] : std::views::enumerate(keyword.values))
+                for(auto &&[valueIndex, valueName] : Enumerate(keyword.values))
                 {
                     macros.insert(
                         {
@@ -229,14 +230,14 @@ ShaderPreprocessingOutput PreprocessShader(const ShaderPreprocessingInput &input
     // Macros for resources and binding groups
 
     auto regAlloc = ShaderResourceRegisterAllocator::Create(backend);
-    for(auto &&[groupIndex, group] : std::views::enumerate(input.bindingGroups))
+    for(auto &&[groupIndex, group] : Enumerate(input.bindingGroups))
     {
         std::string groupLeft = std::format("_rtrc_group_{}", group.name);
         std::string groupDefinition;
 
         regAlloc->NewBindingGroup(groupIndex);
 
-        for(auto &&[bindingIndex, binding] : std::views::enumerate(group.bindings))
+        for(auto &&[bindingIndex, binding] : Enumerate(group.bindings))
         {
             const auto [set, slot] = bindingNameToSlot.at(binding.name);
 
@@ -356,7 +357,7 @@ ShaderPreprocessingOutput PreprocessShader(const ShaderPreprocessingInput &input
     {
         assert(backend == RHI::BackendType::DirectX12);
         const size_t pushConstantRegisterSpace = groupLayoutDescs.size();
-        for(auto &&[rangeIndex, range] : std::views::enumerate(input.pushConstantRanges))
+        for(auto &&[rangeIndex, range] : Enumerate(input.pushConstantRanges))
         {
             std::string content;
             size_t offset = 0, padIndex = 0;
@@ -414,7 +415,7 @@ ShaderPreprocessingOutput PreprocessShader(const ShaderPreprocessingInput &input
         {
             assert(backend == RHI::BackendType::DirectX12);
             std::string generatedShaderPrefix;
-            for(auto &&[i, s] : std::views::enumerate(input.inlineSamplerDescs))
+            for(auto &&[i, s] : Enumerate(input.inlineSamplerDescs))
             {
                 generatedShaderPrefix += std::format(
                     "SamplerState _rtrc_generated_sampler_{} : register(s{}, space{});",
@@ -433,7 +434,7 @@ ShaderPreprocessingOutput PreprocessShader(const ShaderPreprocessingInput &input
     
     // Macros for ungrouped bindings
 
-    for(auto &&[bindingIndex, binding] : std::views::enumerate(input.ungroupedBindings))
+    for(auto &&[bindingIndex, binding] : Enumerate(input.ungroupedBindings))
     {
         nameToBinding.insert({ binding.name, &binding });
 
@@ -479,7 +480,7 @@ ShaderPreprocessingOutput PreprocessShader(const ShaderPreprocessingInput &input
 
     // Macros for aliased bindings
 
-    for(auto &&[aliasIndex, alias] : std::views::enumerate(input.aliases))
+    for(auto &&[aliasIndex, alias] : Enumerate(input.aliases))
     {
         int set, slot;
         if(auto it = bindingNameToSlot.find(alias.aliasedName); it != bindingNameToSlot.end())
@@ -553,7 +554,7 @@ ShaderPreprocessingOutput PreprocessShader(const ShaderPreprocessingInput &input
     std::map<std::string, int, std::less<>> nameToGroupIndex;
     std::vector<std::string> groupNames;
     groupNames.resize(input.bindingGroups.size());
-    for(auto &&[index, group] : std::views::enumerate(input.bindingGroups))
+    for(auto &&[index, group] : Enumerate(input.bindingGroups))
     {
         nameToGroupIndex[group.name] = static_cast<int>(index);
         groupNames[index] = group.name;
@@ -568,7 +569,7 @@ ShaderPreprocessingOutput PreprocessShader(const ShaderPreprocessingInput &input
     
     if(backend == RHI::BackendType::DirectX12)
     {
-        for(auto &&[aliasIndex, alias] : std::views::enumerate(input.aliases))
+        for(auto &&[aliasIndex, alias] : Enumerate(input.aliases))
         {
             output.unboundedAliases.push_back(RHI::UnboundedBindingArrayAliasing
             {

@@ -2,6 +2,7 @@
 #include <ranges>
 #include <set>
 
+#include <Rtrc/Core/Enumerate.h>
 #include <Rtrc/Core/Parallel.h>
 #include <Rtrc/Core/Unreachable.h>
 #include <Rtrc/Core/Math/Exact/Predicates.h>
@@ -290,7 +291,7 @@ namespace MeshCleanDetail
         if(outputVertexMap || outputInverseVertexMap)
         {
             std::map<Vector3d, std::set<uint32_t>> positionToInputVertices;
-            for(auto &&[index, position] : std::views::enumerate(rawInput.GetPositions()))
+            for(auto &&[index, position] : Enumerate(rawInput.GetPositions()))
             {
                 positionToInputVertices[position].insert(index);
             }
