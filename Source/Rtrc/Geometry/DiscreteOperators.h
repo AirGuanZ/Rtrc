@@ -2,7 +2,7 @@
 
 #include <Eigen/Eigen>
 
-#include <Rtrc/Core/Math/Vector3.h>
+#include <Rtrc/Core/Math/Vector.h>
 #include <Rtrc/Geometry/HalfedgeMesh.h>
 
 RTRC_GEO_BEGIN

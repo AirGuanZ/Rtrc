@@ -1,8 +1,6 @@
 #pragma once
 
-#include <Rtrc/Core/Math/Vector2.h>
-#include <Rtrc/Core/Math/Vector3.h>
-#include <Rtrc/Core/Math/Vector4.h>
+#include <Rtrc/Core/Math/Vector.h>
 #include <Rtrc/Core/SelfType.h>
 
 RTRC_BEGIN

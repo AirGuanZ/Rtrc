@@ -2,7 +2,7 @@
 
 #include <Rtrc/Core/Container/Span.h>
 #include <Rtrc/Core/EnumFlags.h>
-#include <Rtrc/Core/Math/Vector2.h>
+#include <Rtrc/Core/Math/Vector.h>
 
 RTRC_GEO_BEGIN
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Rtrc/Core/Math/AABB.h>
-#include <Rtrc/Core/Math/Vector3.h>
+#include <Rtrc/Core/Math/Vector.h>
 #include <Rtrc/Core/StringPool.h>
 #include <Rtrc/Geometry/HalfedgeMesh.h>
 

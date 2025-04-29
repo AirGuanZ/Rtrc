@@ -3,7 +3,7 @@
 #include <memory>
 #include <string>
 
-#include <Rtrc/Core/Math/Vector2.h>
+#include <Rtrc/Core/Math/Vector.h>
 #include <Rtrc/Core/SmartPointer/ReferenceCounted.h>
 #include <Rtrc/RHI/Window/WindowInput.h>
 

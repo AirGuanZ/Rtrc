@@ -2,7 +2,7 @@
 
 #include <Rtrc/Core/Container/Span.h>
 #include <Rtrc/Core/Math/Frame.h>
-#include <Rtrc/Core/Math/Vector3.h>
+#include <Rtrc/Core/Math/Vector.h>
 
 RTRC_GEO_BEGIN
 

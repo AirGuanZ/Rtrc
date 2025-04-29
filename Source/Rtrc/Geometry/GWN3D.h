@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/Core/Math/Vector3.h>
+#include <Rtrc/Core/Math/Vector.h>
 #include <Rtrc/Geometry/BVH.h>
 #include <Rtrc/Geometry/Utility.h>
 

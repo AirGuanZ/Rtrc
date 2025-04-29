@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/Core/Math/Vector2.h>
+#include <Rtrc/Core/Math/Vector.h>
 
 #include "eVector2.h"
 

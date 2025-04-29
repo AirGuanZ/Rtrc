@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Rtrc/Core/Math/Vector4.h>
+#include <Rtrc/Core/Math/Vector.h>
 #include <Rtrc/Core/Math/Exact/Expansion.h>
 
 RTRC_BEGIN

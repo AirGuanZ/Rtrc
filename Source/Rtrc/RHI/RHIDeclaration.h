@@ -8,7 +8,7 @@
 #include <Rtrc/Core/EnumFlags.h>
 #include <Rtrc/Core/Hash.h>
 #include <Rtrc/Core/Math/Rect.h>
-#include <Rtrc/Core/Math/Vector4.h>
+#include <Rtrc/Core/Math/Vector.h>
 #include <Rtrc/Core/SmartPointer/ObserverPtr.h>
 #include <Rtrc/Core/SmartPointer/ReferenceCounted.h>
 #include <Rtrc/Core/SmartPointer/UniquePointer.h>

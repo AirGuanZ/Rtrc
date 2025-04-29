@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Rtrc/Core/Math/Common.h>
-#include <Rtrc/Core/Math/Vector3.h>
+#include <Rtrc/Core/Math/Vector.h>
 
 RTRC_BEGIN
 

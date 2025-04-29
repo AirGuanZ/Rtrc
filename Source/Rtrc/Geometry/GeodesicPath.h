@@ -2,7 +2,7 @@
 
 #include <queue>
 
-#include <Rtrc/Core/Math/Vector3.h>
+#include <Rtrc/Core/Math/Vector.h>
 #include <Rtrc/Core/Memory/Arena.h>
 #include <Rtrc/Core/SmartPointer/ObserverPtr.h>
 #include <Rtrc/Geometry/HalfedgeMesh.h>

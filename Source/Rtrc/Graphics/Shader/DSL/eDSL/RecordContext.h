@@ -4,7 +4,7 @@
 #include <map>
 #include <stack>
 
-#include <Rtrc/Core/Math/Vector3.h>
+#include <Rtrc/Core/Math/Vector.h>
 #include <Rtrc/Core/Uncopyable.h>
 #include <Rtrc/Core/Variant.h>
 #include <Rtrc/RHI/RHI.h>

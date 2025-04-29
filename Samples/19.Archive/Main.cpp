@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include <Rtrc/Core/Archive/Archive.h>
-#include <Rtrc/Core/Math/Vector3.h>
+#include <Rtrc/Core/Math/Vector.h>
 
 using namespace Rtrc;
 

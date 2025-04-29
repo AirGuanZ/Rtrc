@@ -5,8 +5,7 @@
 #include <filesystem>
 #include <vector>
 
-#include <Rtrc/Core/Math/Vector3.h>
-#include <Rtrc/Core/Math/Vector4.h>
+#include <Rtrc/Core/Math/Vector.h>
 #include <Rtrc/Core/Unreachable.h>
 #include <Rtrc/Core/Variant.h>
 
