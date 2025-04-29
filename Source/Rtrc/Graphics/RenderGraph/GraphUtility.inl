@@ -553,14 +553,7 @@ RGPass RGAddRenderPass(
             cmds.SetViewportAndScissorAutomatically();
         }
 
-        if constexpr(requires{ RGPassImpl::Callback(std::move(c)); })
-        {
-            c();
-        }
-        else
-        {
-            c(RGGetPassContext());
-        }
+        c();
     });
     return pass;
 }

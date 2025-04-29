@@ -142,11 +142,6 @@ RGPassImpl *RGPassImpl::SetCallback(Callback callback)
     return this;
 }
 
-RGPassImpl *RGPassImpl::SetCallback(LegacyCallback callback)
-{
-    return SetCallback([c = std::move(callback)] () mutable { c(RGGetPassContext()); });
-}
-
 RGPass RGPassImpl::SyncQueueBeforeExecution()
 {
     assert(!syncBeforeExec_ && "SyncQueueBeforeExecution can only be called once on each render graph pass");

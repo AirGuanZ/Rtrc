@@ -67,7 +67,6 @@ class RGPassImpl
 public:
 
     using Callback = std::move_only_function<void()>;
-    using LegacyCallback = std::move_only_function<void(RGPassContext &)>;
 
     friend void Connect(RGPassImpl *head, RGPassImpl *tail);
 
@@ -77,7 +76,6 @@ public:
     RGPass Use(RGTlas tlas,   const RGUseInfo &info);
 
     RGPass SetCallback(Callback callback);
-    RGPass SetCallback(LegacyCallback callback);
 
     // Wait graph queue to be idle before executing this pass.
     // RenderGraph compiler will not take this into consideration when optimizing device synchronizations.
