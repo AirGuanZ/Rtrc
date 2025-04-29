@@ -65,6 +65,12 @@ inline std::string AlignRight(std::string_view str, size_t width, char padder = 
 
 constexpr uint32_t Hash(std::string_view str);
 
+// std::string <-> std::u8string
+// Here std::string must also be encoded with UTF-8.
+// These two functions only replace the container type and doesn't change the content.
+std::u8string StringToU8String(std::string_view str);
+std::string U8StringToString(std::u8string_view str);
+
 // ========================== impl ==========================
 
 inline bool IsLower(char c)
@@ -362,6 +368,24 @@ constexpr uint32_t Hash(std::string_view str)
         h = 37 * h + static_cast<uint32_t>(c);
     }
     return h;
+}
+
+inline std::u8string StringToU8String(std::string_view str)
+{
+    if(str.empty())
+    {
+        return {};
+    }
+    return std::u8string(std::u8string_view(reinterpret_cast<const char8_t *>(str.data()), str.size()));
+}
+
+inline std::string U8StringToString(std::u8string_view str)
+{
+    if(str.empty())
+    {
+        return {};
+    }
+    return std::string(std::string_view(reinterpret_cast<const char *>(str.data()), str.size()));
 }
 
 RTRC_END
