@@ -2,6 +2,7 @@
 
 #include <cassert>
 
+#include <Rtrc/Core/Enumerate.h>
 #include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/Graphics/Shader/DSL/Entry/ComputeEntry.h>
 #include <Rtrc/Graphics/Shader/DSL/BindingGroup/BindingGroupBuilder_eDSL.h>
@@ -193,7 +194,7 @@ namespace ComputeEntryDetail
                     regAlloc->NewBinding(resourceCountInDefaultBindingGroup++, RHI::BindingType::ConstantBuffer);
 
                     std::string uniformPropertyStr;
-                    for(auto&& [index, type] : std::ranges::enumerate_view(result.defaultUniformTypes))
+                    for(auto&& [index, type] : Enumerate(result.defaultUniformTypes))
                     {
                         uniformPropertyStr += std::format("{} Value{};", GetShaderUniformTypeName(type), index);
                     }
