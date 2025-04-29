@@ -98,7 +98,6 @@ Vector2<T> Ceil(const Vector2<T> &v);
 template<typename T>
 Vector2<T> Round(const Vector2<T> &v);
 
-
 template<typename T>
 Vector2<T> Abs(const Vector2<T> &v);
 template<typename T>
