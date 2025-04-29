@@ -78,6 +78,9 @@ public:
 
     Span<Triangle> GetTriangles() const { return triangles_; }
 
+    const BVH<T> &GetInternalBVH() const { return static_cast<const BVH &>(*this); }
+          BVH<T> &GetInternalBVH()       { return static_cast<const BVH &>(*this); }
+
 private:
 
     std::vector<Triangle> triangles_;
