@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include <Rtrc/Core/Common.h>
 #include <Rtrc/Core/Container/moodycamel/concurrentqueue.h>
 
