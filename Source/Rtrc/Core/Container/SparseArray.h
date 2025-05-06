@@ -108,7 +108,7 @@ SparseArray<T>::~SparseArray()
     }
 
     std::ranges::sort(freeIndices_);
-    SparseArray::ForEachNonFreeElementIndex(storageArray_.size(), freeIndices_.size(), [&](size_t i)
+    SparseArray::ForEachNonFreeElementIndex(storageArray_.size(), freeIndices_, [&](size_t i)
     {
         std::destroy_at(GetPointer(i));
         return true;
@@ -210,7 +210,7 @@ void SparseArray<T>::ExpandStorage(size_t newCount)
         for(size_t i = 0; i < storageArray_.size(); ++i)
         {
             T *dst = reinterpret_cast<T *>(newStorage[i].data);
-            new(dst) T(std::move(GetPointer(i)));
+            new(dst) T(std::move(*GetPointer(i)));
         }
         storageArray_.swap(newStorage);
     }
