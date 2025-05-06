@@ -1,6 +1,6 @@
 ﻿project(tinyobjloader)
 
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 3.20)
 
 set(tinyobjloader-Source
   ${CMAKE_CURRENT_SOURCE_DIR}/tiny_obj_loader.h
