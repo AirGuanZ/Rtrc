@@ -33,14 +33,14 @@ public:
 
 private:
 
-    DirectX12Device           *device_;
-    ComPtr<ID3D12CommandQueue> queue_;
-    QueueType                  type_;
-    std::mutex                 waitIdleMutex_;
-    ComPtr<ID3D12Fence>        waitIdleFence_;
-    uint64_t                   waitIdleFenceValue_;
-    std::atomic<QueueSessionID>     currentSessionID_;
-    std::atomic<QueueSessionID>     synchronizedSessionID_;
+    DirectX12Device            *device_;
+    ComPtr<ID3D12CommandQueue>  queue_;
+    QueueType                   type_;
+    std::mutex                  waitIdleMutex_;
+    ComPtr<ID3D12Fence>         waitIdleFence_;
+    uint64_t                    waitIdleFenceValue_;
+    std::atomic<QueueSessionID> currentSessionID_;
+    std::atomic<QueueSessionID> synchronizedSessionID_;
 };
 
 RTRC_RHI_D3D12_END
