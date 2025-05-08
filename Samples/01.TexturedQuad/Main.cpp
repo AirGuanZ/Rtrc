@@ -141,6 +141,7 @@ void Run()
         {
             window.SetCloseFlag(true);
         }
+        device->EndFrame();
     }
     device->EndRenderLoop();
 }

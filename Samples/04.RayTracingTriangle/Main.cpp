@@ -199,6 +199,7 @@ void Run()
         executer.Execute(graph);
 
         device->Present();
+        device->EndFrame();
     }
 }
 

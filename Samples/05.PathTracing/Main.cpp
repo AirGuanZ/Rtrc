@@ -328,7 +328,9 @@ void Run()
         
         graph->SetCompleteFence(device->GetFrameFence());
         executer.Execute(graph);
+
         device->Present();
+        device->EndFrame();
     }
 }
 

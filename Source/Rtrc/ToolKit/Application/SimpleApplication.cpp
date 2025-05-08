@@ -59,6 +59,8 @@ void SimpleApplication::Update()
     {
         isSwapchainInvalid = true;
     }
+
+    GetDevice()->EndFrame();
 }
 
 void SimpleApplication::Destroy()

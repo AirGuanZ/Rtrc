@@ -132,6 +132,7 @@ void Run()
         renderGraphExecuter.Execute(graph);
 
         device->Present();
+        device->EndFrame();
     }
     device->EndRenderLoop();
 }

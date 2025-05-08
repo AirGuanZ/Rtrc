@@ -107,7 +107,9 @@ public:
     bool Present();
 
     bool BeginFrame(bool processWindowEvents = true);
-    const RHI::FenceUPtr &GetFrameFence();
+    void EndFrame();
+
+    const RHI::FenceUPtr& GetFrameFence();
 
     // Shader
 
@@ -462,11 +464,6 @@ inline bool Device::BeginFrame(bool processWindowEvents)
         }
     }
 
-    // Note: commandBufferManager->_internalEndFrame() should be called before sync_->WaitForOldFrame().
-    // Imagine that binding group B is bound to command buffer C in frame F. After F ends, B can be reused.
-    // If we put commandBufferManager->_internalEndFrame() after sync_->WaitForOldFrame(), C will be reset to initial
-    // state one frame later than B is reused, which means that B can be updated when still bound to C.
-    commandBufferManager_->_internalEndFrame();
     sync_->WaitForOldFrame();
 
     if(swapchain_ && !swapchain_->Acquire())
@@ -475,6 +472,12 @@ inline bool Device::BeginFrame(bool processWindowEvents)
     }
     sync_->BeginNewFrame();
     return true;
+}
+
+inline void Device::EndFrame()
+{
+    assert(sync_->IsInRenderLoop());
+    commandBufferManager_->_internalEndFrame();
 }
 
 inline const RHI::FenceUPtr &Device::GetFrameFence()
