@@ -417,14 +417,15 @@ inline const RHI::TextureDesc &Device::GetSwapchainImageDesc() const
 
 inline void Device::WaitIdle()
 {
+    commandBufferManager_->_internalEndFrame();
     sync_->WaitIdle();
 }
 
 inline void Device::AddSynchronizationPoint()
 {
+    commandBufferManager_->_internalEndFrame();
     if(sync_->IsInRenderLoop())
     {
-        commandBufferManager_->_internalEndFrame();
         sync_->WaitForOldFrame();
         sync_->BeginNewFrame();
     }
