@@ -78,8 +78,8 @@ public:
 
     Span<Triangle> GetTriangles() const { return triangles_; }
 
-    const BVH<T> &GetInternalBVH() const { return static_cast<const BVH &>(*this); }
-          BVH<T> &GetInternalBVH()       { return static_cast<const BVH &>(*this); }
+    const BVH<T> &GetInternalBVH() const { return static_cast<const BVH<T> &>(*this); }
+          BVH<T> &GetInternalBVH()       { return static_cast<BVH<T> &>(*this); }
 
 private:
 
