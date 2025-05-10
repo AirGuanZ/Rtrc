@@ -629,7 +629,7 @@ struct WorkGraphMemoryRequirements
 
 using QueueSessionID = uint64_t;
 
-constexpr QueueSessionID INITIAL_QUEUE_SESSION_ID = 0;
+constexpr QueueSessionID INITIAL_QUEUE_SESSION_ID = 0; // This session is always already considered as synchronized
 
 class VertexSemantic
 {

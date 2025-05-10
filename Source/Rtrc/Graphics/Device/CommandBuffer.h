@@ -98,7 +98,8 @@ public:
 
     virtual ~CommandBufferManagerInterface() = default;
 
-    virtual void _internalRelease(CommandBuffer& commandBuffer) = 0;
+    virtual void _internalAllocate(CommandBuffer &commandBuffer) = 0;
+    virtual void _internalRelease(CommandBuffer &commandBuffer) = 0;
 };
 
 struct RenderTargetBinding
@@ -381,29 +382,27 @@ public:
 
 private:
 
+    friend class Queue;
     friend class DeviceCommandBufferManager;
-
-    struct Pool
-    {
-        RHI::CommandPoolUPtr  rhiPool;
-        std::atomic<uint32_t> historyUserCount = 0;
-        std::atomic<uint32_t> activeUserCount = 0;
-    };
+    friend class SingleThreadCommandBufferManager;
 
     void CheckThreadID() const;
 
     template<typename T>
     void AddHoldObject(T object) { holdingObjects_.emplace_back(std::move(object)); }
 
-    Device                     *device_;
-    DeviceCommandBufferManager *manager_;
-    RHI::QueueType              queueType_;
-    RHI::CommandBufferRPtr      rhiCommandBuffer_;
-    Pool                       *pool_;
+    Device                        *device_;
+    CommandBufferManagerInterface *manager_;
+    RHI::QueueType                 queueType_;
+    RHI::CommandBufferRPtr         rhiCommandBuffer_;
 
+    void *managerCustomData_;
+    
 #if RTRC_DEBUG
     std::thread::id threadID_;
 #endif
+
+    RHI::QueueSessionID submitSessionID_ = RHI::INITIAL_QUEUE_SESSION_ID;
 
     // Temporary data
 
@@ -420,30 +419,36 @@ private:
     std::vector<std::any> holdingObjects_;
 };
 
-//class SingleThreadCommandBufferManager : public CommandBufferManagerInterface, public Uncopyable
-//{
-//public:
-//
-//    SingleThreadCommandBufferManager(Device* device, RHI::QueueRPtr queue);
-//    ~SingleThreadCommandBufferManager() override;
-//
-//    CommandBuffer Create();
-//
-//    void _internalAllocate(CommandBuffer &commandBuffer);
-//    void _internalRelease(CommandBuffer &commandBuffer) override;
-//
-//private:
-//
-//    struct CommandPoolRecord
-//    {
-//        RHI::CommandPoolUPtr pool;
-//    };
-//
-//    Device *device_;
-//    RHI::QueueRPtr queue_;
-//
-//    std::queue<RHI::CommandPoolUPtr> freePools_;
-//};
+class SingleThreadCommandBufferManager : public CommandBufferManagerInterface, public Uncopyable
+{
+public:
+
+    SingleThreadCommandBufferManager(Device* device, RHI::QueueRPtr queue);
+    ~SingleThreadCommandBufferManager() override;
+
+    CommandBuffer Create();
+
+    void _internalAllocate(CommandBuffer &commandBuffer) override;
+    void _internalRelease(CommandBuffer &commandBuffer) override;
+
+private:
+
+    struct CommandPoolRecord
+    {
+        RHI::CommandPoolUPtr pool;
+        RHI::QueueSessionID submitSessionID = RHI::INITIAL_QUEUE_SESSION_ID;
+
+        auto operator<=>(const CommandPoolRecord &record) const
+        {
+            return std::make_tuple(submitSessionID, pool.Get()) <=>
+                   std::make_tuple(record.submitSessionID, record.pool.Get());
+        }
+    };
+
+    Device                     *device_;
+    RHI::QueueRPtr              queue_;
+    std::set<CommandPoolRecord> records_;
+};
 
 class DeviceCommandBufferManager : public CommandBufferManagerInterface, public Uncopyable
 {
@@ -455,17 +460,24 @@ public:
     CommandBuffer Create();
 
     void _internalEndFrame();
-    void _internalAllocate(CommandBuffer &commandBuffer);
+    void _internalAllocate(CommandBuffer &commandBuffer) override;
     void _internalRelease(CommandBuffer &commandBuffer) override;
 
 private:
     
     static constexpr int MAX_COMMAND_BUFFERS_IN_SINGLE_POOL = 8;
 
+    struct Pool
+    {
+        RHI::CommandPoolUPtr  rhiPool;
+        std::atomic<uint32_t> historyUserCount = 0;
+        std::atomic<uint32_t> activeUserCount = 0;
+    };
+
     struct PerThreadPoolData
     {
         // Ownership of full pool is transferred to CommandBuffer object
-        CommandBuffer::Pool *activePool;
+        Pool *activePool;
     };
 
     PerThreadPoolData &GetPerThreadPoolData();

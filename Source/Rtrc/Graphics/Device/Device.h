@@ -95,12 +95,15 @@ public:
     const RHI::SwapchainUPtr &GetSwapchain() const;
     const RHI::TextureDesc   &GetSwapchainImageDesc() const;
 
+    // Custom command buffer management
+
+    Box<SingleThreadCommandBufferManager> CreateCustomCommandBufferManager(RHI::QueueType queue);
+
     // Frame synchronization
 
     void WaitIdle();
 
-    /** Simplified BeginFrame with neither handling window events nor switching swapchain image */
-    void AddSynchronizationPoint();
+    void AddSynchronizationPoint(); // Simplified BeginFrame with neither handling window events nor switching swapchain image
 
     void BeginRenderLoop();
     void EndRenderLoop();
@@ -415,6 +418,12 @@ inline const RHI::SwapchainUPtr &Device::GetSwapchain() const
 inline const RHI::TextureDesc &Device::GetSwapchainImageDesc() const
 {
     return swapchain_->GetRenderTargetDesc();
+}
+
+inline Box<SingleThreadCommandBufferManager> Device::CreateCustomCommandBufferManager(RHI::QueueType queueType)
+{
+    RHI::QueueRPtr queue = device_->GetQueue(queueType);
+    return MakeBox<SingleThreadCommandBufferManager>(this, std::move(queue));
 }
 
 inline void Device::WaitIdle()

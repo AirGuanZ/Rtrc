@@ -12,7 +12,9 @@ public:
 
     explicit Queue(RHI::QueueRPtr rhiQueue = nullptr);
 
-    void Submit(const CommandBuffer &commandBuffer);
+    RHI::QueueSessionID Submit(CommandBuffer &commandBuffer);
+    RHI::QueueSessionID GetCurrentSessionID() const;
+    RHI::QueueSessionID GetSynchronizedSessionID() const;
 
     const RHI::QueueRPtr &GetRHIObject() const;
 
@@ -27,9 +29,22 @@ inline Queue::Queue(RHI::QueueRPtr rhiQueue)
 
 }
 
-inline void Queue::Submit(const CommandBuffer &commandBuffer)
+inline RHI::QueueSessionID Queue::Submit(CommandBuffer &commandBuffer)
 {
+    assert(commandBuffer.submitSessionID_ == RHI::INITIAL_QUEUE_SESSION_ID);
     rhiQueue_->Submit({}, {}, commandBuffer.GetRHIObject(), {}, {}, {});
+    commandBuffer.submitSessionID_ = rhiQueue_->GetCurrentSessionID();
+    return commandBuffer.submitSessionID_;
+}
+
+inline RHI::QueueSessionID Queue::GetCurrentSessionID() const
+{
+    return rhiQueue_->GetCurrentSessionID();
+}
+
+inline RHI::QueueSessionID Queue::GetSynchronizedSessionID() const
+{
+    return rhiQueue_->GetSynchronizedSessionID();
 }
 
 inline const RHI::QueueRPtr &Queue::GetRHIObject() const

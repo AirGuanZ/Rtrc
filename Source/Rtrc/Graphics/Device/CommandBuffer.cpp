@@ -153,7 +153,7 @@ BarrierBatch &BarrierBatch::Add(const std::vector<RHI::TextureAcquireBarrier> &t
 }
 
 CommandBuffer::CommandBuffer()
-    : device_(nullptr), manager_(nullptr), queueType_(RHI::QueueType::Graphics), pool_(nullptr)
+    : device_(nullptr), manager_(nullptr), queueType_(RHI::QueueType::Graphics), managerCustomData_(nullptr)
 {
     
 }
@@ -180,7 +180,7 @@ CommandBuffer &CommandBuffer::operator=(CommandBuffer &&other) noexcept
 
 void CommandBuffer::Swap(CommandBuffer &other) noexcept
 {
-    RTRC_SWAP_MEMBERS(*this, other, device_, manager_, queueType_, rhiCommandBuffer_, pool_);
+    RTRC_SWAP_MEMBERS(*this, other, device_, manager_, queueType_, rhiCommandBuffer_, managerCustomData_);
 #if RTRC_DEBUG
     std::swap(threadID_, other.threadID_);
 #endif
@@ -209,6 +209,11 @@ Ref<Device> CommandBuffer::GetDevice() const
 
 void CommandBuffer::Begin()
 {
+#if RTRC_DEBUG
+    assert(threadID_ == std::thread::id());
+    threadID_ = std::this_thread::get_id();
+#endif
+
     manager_->_internalAllocate(*this);
     assert(rhiCommandBuffer_);
     rhiCommandBuffer_->Begin();
@@ -1122,11 +1127,78 @@ void CommandBuffer::CheckThreadID() const
 #endif
 }
 
-//SingleThreadCommandBufferManager::SingleThreadCommandBufferManager(Device* device, RHI::QueueRPtr queue)
-//    : device_(device), queue_(std::move(queue))
-//{
-//    
-//}
+SingleThreadCommandBufferManager::SingleThreadCommandBufferManager(Device* device, RHI::QueueRPtr queue)
+    : device_(device), queue_(std::move(queue))
+{
+    
+}
+
+SingleThreadCommandBufferManager::~SingleThreadCommandBufferManager()
+{
+    if(records_.empty())
+    {
+        return;
+    }
+
+    if(auto last = std::prev(records_.end());
+       last->submitSessionID <= queue_->GetSynchronizedSessionID())
+    {
+        // All submitted command buffers are already synchronized
+        return;
+    }
+
+    queue_->WaitIdle();
+}
+
+CommandBuffer SingleThreadCommandBufferManager::Create()
+{
+    CommandBuffer commandBuffer;
+    commandBuffer.device_          = device_;
+    commandBuffer.manager_         = this;
+    commandBuffer.queueType_       = queue_->GetType();
+    commandBuffer.submitSessionID_ = RHI::INITIAL_QUEUE_SESSION_ID;
+
+    if(!records_.empty() && records_.begin()->submitSessionID <= queue_->GetSynchronizedSessionID())
+    {
+        auto &record = *records_.begin();
+        record.pool->Reset();
+
+        auto rhiCommandBuffer = record.pool->NewCommandBuffer();
+
+        commandBuffer.rhiCommandBuffer_ = record.pool->NewCommandBuffer();
+        commandBuffer.managerCustomData_ = record.pool.Get();
+
+        auto node = records_.extract(records_.begin());
+        node.value().pool.Release();
+    }
+    else
+    {
+        auto newPool = device_->GetRawDevice()->CreateCommandPool(queue_);
+        commandBuffer.rhiCommandBuffer_ = newPool->NewCommandBuffer();
+        commandBuffer.managerCustomData_ = newPool.Release();
+    }
+
+    return commandBuffer;
+}
+
+void SingleThreadCommandBufferManager::_internalAllocate(CommandBuffer &commandBuffer)
+{
+    
+}
+
+void SingleThreadCommandBufferManager::_internalRelease(CommandBuffer &commandBuffer)
+{
+    if(!commandBuffer.rhiCommandBuffer_)
+    {
+        return;
+    }
+    assert(commandBuffer.manager_ == this);
+
+    CommandPoolRecord record;
+    record.pool = static_cast<RHI::CommandPool *>(commandBuffer.managerCustomData_);
+    record.submitSessionID = commandBuffer.submitSessionID_;
+    records_.insert(std::move(record));
+}
 
 DeviceCommandBufferManager::DeviceCommandBufferManager(Device *device, DeviceSynchronizer &sync)
     : device_(device), sync_(sync)
@@ -1152,6 +1224,7 @@ CommandBuffer DeviceCommandBufferManager::Create()
     ret.device_ = device_;
     ret.manager_ = this;
     ret.queueType_ = sync_.GetQueue()->GetType();
+    ret.submitSessionID_ = RHI::INITIAL_QUEUE_SESSION_ID;
     return ret;
 }
 
@@ -1177,22 +1250,16 @@ void DeviceCommandBufferManager::_internalEndFrame()
 void DeviceCommandBufferManager::_internalAllocate(CommandBuffer &commandBuffer)
 {
     assert(!commandBuffer.rhiCommandBuffer_);
-#if RTRC_DEBUG
-    assert(commandBuffer.threadID_ == std::thread::id());
-#endif
 
     PerThreadPoolData &perThreadData = GetPerThreadPoolData();
     if(!perThreadData.activePool)
     {
-        perThreadData.activePool = new CommandBuffer::Pool;
+        perThreadData.activePool = new Pool;
         perThreadData.activePool->rhiPool = GetFreeCommandPool();
     }
 
     commandBuffer.rhiCommandBuffer_ = perThreadData.activePool->rhiPool->NewCommandBuffer();
-    commandBuffer.pool_ = perThreadData.activePool;
-#if RTRC_DEBUG
-    commandBuffer.threadID_ = std::this_thread::get_id();
-#endif
+    commandBuffer.managerCustomData_ = perThreadData.activePool;
 
     ++perThreadData.activePool->activeUserCount;
     if(++perThreadData.activePool->historyUserCount >= MAX_COMMAND_BUFFERS_IN_SINGLE_POOL)
@@ -1208,17 +1275,18 @@ void DeviceCommandBufferManager::_internalRelease(CommandBuffer &commandBuffer)
         return;
     }
 
-    assert(commandBuffer.pool_);
-    if(!--commandBuffer.pool_->activeUserCount)
+    assert(commandBuffer.managerCustomData_);
+    auto commandBufferPool = static_cast<Pool *>(commandBuffer.managerCustomData_);
+    if(!--commandBufferPool->activeUserCount)
     {
-        if(commandBuffer.pool_->historyUserCount >= MAX_COMMAND_BUFFERS_IN_SINGLE_POOL)
+        if(commandBufferPool->historyUserCount >= MAX_COMMAND_BUFFERS_IN_SINGLE_POOL)
         {
-            sync_.OnFrameComplete([p = std::move(commandBuffer.pool_->rhiPool), &fps = freePools_]() mutable
+            sync_.OnFrameComplete([p = std::move(commandBufferPool->rhiPool), &fps = freePools_]() mutable
             {
                 p->Reset();
                 fps.Push(std::move(p));
             });
-            delete commandBuffer.pool_;
+            delete commandBufferPool;
         }
     }
 }
