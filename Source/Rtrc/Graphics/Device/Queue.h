@@ -12,7 +12,8 @@ public:
 
     explicit Queue(RHI::QueueRPtr rhiQueue = nullptr);
 
-    RHI::QueueSessionID Submit(CommandBuffer &commandBuffer);
+    RHI::QueueSessionID Submit(CommandBuffer &commandBuffer, RHI::FenceOPtr fence = nullptr);
+
     RHI::QueueSessionID GetCurrentSessionID() const;
     RHI::QueueSessionID GetSynchronizedSessionID() const;
 
@@ -29,10 +30,10 @@ inline Queue::Queue(RHI::QueueRPtr rhiQueue)
 
 }
 
-inline RHI::QueueSessionID Queue::Submit(CommandBuffer &commandBuffer)
+inline RHI::QueueSessionID Queue::Submit(CommandBuffer &commandBuffer, RHI::FenceOPtr fence)
 {
     assert(commandBuffer.submitSessionID_ == RHI::INITIAL_QUEUE_SESSION_ID);
-    rhiQueue_->Submit({}, {}, commandBuffer.GetRHIObject(), {}, {}, {});
+    rhiQueue_->Submit({}, {}, commandBuffer.GetRHIObject(), {}, {}, fence);
     commandBuffer.submitSessionID_ = rhiQueue_->GetCurrentSessionID();
     return commandBuffer.submitSessionID_;
 }

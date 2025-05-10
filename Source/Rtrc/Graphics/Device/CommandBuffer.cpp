@@ -128,25 +128,25 @@ BarrierBatch &BarrierBatch::Add(std::vector<RHI::TextureTransitionBarrier> &&tex
     return *this;
 }
 
-BarrierBatch &BarrierBatch::Add(const std::vector<RHI::BufferTransitionBarrier> &bufferBarriers)
+BarrierBatch &BarrierBatch::Add(Span<RHI::BufferTransitionBarrier> bufferBarriers)
 {
     std::ranges::copy(bufferBarriers, std::back_inserter(BT_));
     return *this;
 }
 
-BarrierBatch &BarrierBatch::Add(const std::vector<RHI::TextureTransitionBarrier> &textureBarriers)
+BarrierBatch &BarrierBatch::Add(Span<RHI::TextureTransitionBarrier> textureBarriers)
 {
     std::ranges::copy(textureBarriers, std::back_inserter(TT_));
     return *this;
 }
 
-BarrierBatch &BarrierBatch::Add(const std::vector<RHI::TextureReleaseBarrier> &textureBarriers)
+BarrierBatch &BarrierBatch::Add(Span<RHI::TextureReleaseBarrier> textureBarriers)
 {
     TR_.append_range(textureBarriers);
     return *this;
 }
 
-BarrierBatch &BarrierBatch::Add(const std::vector<RHI::TextureAcquireBarrier> &textureBarriers)
+BarrierBatch &BarrierBatch::Add(Span<RHI::TextureAcquireBarrier> textureBarriers)
 {
     TA_.append_range(textureBarriers);
     return *this;
@@ -291,6 +291,18 @@ void CommandBuffer::CopyColorTexture2DToBuffer(
         src->GetRHIObject(), mipLevel, arrayLayer);
 }
 
+void CommandBuffer::CopyBufferToColorTexture(
+    const RC<Texture> &dst, uint32_t dstMipLevel, uint32_t dstArrayLayer,
+    const RC<Buffer> &src, size_t srcOffset, size_t srcRowBytes)
+{
+    CheckThreadID();
+    AddHoldObject(dst);
+    AddHoldObject(src);
+    rhiCommandBuffer_->CopyBufferToTexture(
+        dst->GetRHIObject(), dstMipLevel, dstArrayLayer,
+        src->GetRHIObject(), srcOffset, srcRowBytes);
+}
+
 void CommandBuffer::CopyBuffer(
     RGBuffer dst, size_t dstOffset, RGBuffer src, size_t srcOffset, size_t size)
 {
@@ -310,9 +322,7 @@ void CommandBuffer::CopyColorTexture(
     const Vector3u &size)
 {
     CheckThreadID();
-    CopyColorTexture(
-        dst->Get(), dstMipLevel, dstArrayLayer, dstOffset,
-        src->Get(), srcMipLevel, srcArrayLayer, srcOffset, size);
+    CopyColorTexture(dst->Get(), dstMipLevel, dstArrayLayer, dstOffset, src->Get(), srcMipLevel, srcArrayLayer, srcOffset, size);
 }
 
 void CommandBuffer::CopyColorTexture2DToBuffer(
@@ -320,6 +330,13 @@ void CommandBuffer::CopyColorTexture2DToBuffer(
     RGTexture src, uint32_t arrayLayer, uint32_t mipLevel)
 {
     CopyColorTexture2DToBuffer(dst->Get(), dstOffset, dstRowBytes, src->Get(), arrayLayer, mipLevel);
+}
+
+void CommandBuffer::CopyBufferToColorTexture(
+    RGTexture dst, uint32_t dstMipLevel, uint32_t dstArrayLayer,
+    RGBuffer src, size_t srcOffset, size_t srcRowBytes)
+{
+    CopyBufferToColorTexture(dst->Get(), dstMipLevel, dstArrayLayer, src->Get(), srcOffset, srcRowBytes);
 }
 
 void CommandBuffer::BeginRenderPass(Span<RenderTargetBinding> colorAttachments, bool setViewportAndScissor)

@@ -75,11 +75,11 @@ public:
     BarrierBatch &Add(std::vector<RHI::BufferTransitionBarrier> &&bufferBarriers);
     BarrierBatch &Add(std::vector<RHI::TextureTransitionBarrier> &&textureBarriers);
 
-    BarrierBatch &Add(const std::vector<RHI::BufferTransitionBarrier> &bufferBarriers);
-    BarrierBatch &Add(const std::vector<RHI::TextureTransitionBarrier> &textureBarriers);
+    BarrierBatch &Add(Span<RHI::BufferTransitionBarrier> bufferBarriers);
+    BarrierBatch &Add(Span<RHI::TextureTransitionBarrier> textureBarriers);
 
-    BarrierBatch& Add(const std::vector<RHI::TextureReleaseBarrier> &textureBarriers);
-    BarrierBatch &Add(const std::vector<RHI::TextureAcquireBarrier> &textureBarriers);
+    BarrierBatch &Add(Span<RHI::TextureReleaseBarrier> textureBarriers);
+    BarrierBatch &Add(Span<RHI::TextureAcquireBarrier> textureBarriers);
 
 private:
 
@@ -182,6 +182,9 @@ public:
     void CopyColorTexture2DToBuffer(
         const RC<Buffer> &dst, size_t dstOffset, size_t dstRowBytes,
         const RC<Texture> &src, uint32_t arrayLayer, uint32_t mipLevel);
+    void CopyBufferToColorTexture(
+        const RC<Texture> &dst, uint32_t dstMipLevel, uint32_t dstArrayLayer,
+        const RC<Buffer> &src, size_t srcOffset, size_t srcRowBytes);
 
     void CopyBuffer(
         RGBuffer dst, size_t dstOffset,
@@ -196,6 +199,9 @@ public:
     void CopyColorTexture2DToBuffer(
         RGBuffer dst, size_t dstOffset, size_t dstRowBytes,
         RGTexture src, uint32_t arrayLayer, uint32_t mipLevel);
+    void CopyBufferToColorTexture(
+        RGTexture dst, uint32_t dstMipLevel, uint32_t dstArrayLayer,
+        RGBuffer src, size_t srcOffset, size_t srcRowBytes);
 
     void BeginRenderPass(
         Span<RenderTargetBinding> colorAttachments,
