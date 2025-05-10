@@ -842,7 +842,6 @@ struct ColorClearValue
     float r = 0, g = 0, b = 0, a = 0;
 
     auto operator<=>(const ColorClearValue &) const = default;
-    bool operator==(const ColorClearValue &) const = default;
 };
 
 struct DepthStencilClearValue
@@ -851,7 +850,6 @@ struct DepthStencilClearValue
     uint8_t stencil = 0;
 
     auto operator<=>(const DepthStencilClearValue &) const = default;
-    bool operator==(const DepthStencilClearValue &) const = default;
 };
 
 using ClearValue = Variant<ColorClearValue, DepthStencilClearValue>;

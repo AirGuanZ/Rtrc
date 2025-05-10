@@ -1,5 +1,7 @@
 #pragma once
 
+#include <queue>
+
 #include <Rtrc/Core/Container/ConcurrentQueue.h>
 #include <Rtrc/Graphics/Device/BindingGroup.h>
 #include <Rtrc/Graphics/Device/DeviceSynchronizer.h>
@@ -11,7 +13,7 @@ RTRC_BEGIN
 
 class Buffer;
 class CommandBuffer;
-class CommandBufferManager;
+class DeviceCommandBufferManager;
 class Device;
 class Texture;
 
@@ -90,6 +92,59 @@ private:
     std::vector<RHI::TextureAcquireBarrier>    TA_;
 };
 
+class CommandBufferManagerInterface
+{
+public:
+
+    virtual ~CommandBufferManagerInterface() = default;
+
+    virtual void _internalRelease(CommandBuffer& commandBuffer) = 0;
+};
+
+struct RenderTargetBinding
+{
+    TextureRtv             RTV;
+    RHI::AttachmentLoadOp  loadOp = RHI::AttachmentLoadOp::Load;
+    RHI::AttachmentStoreOp storeOp = RHI::AttachmentStoreOp::Store;
+    RHI::ColorClearValue   clearValue = { 0, 0, 0, 0 };
+
+    // load & store
+
+    static RenderTargetBinding Create(const RC<Texture> &texture);
+    static RenderTargetBinding Create(TextureRtv rtv);
+    static RenderTargetBinding Create(RGTexture texture);
+    static RenderTargetBinding Create(RGTexRtv rtv);
+
+    // clear & store. Use hinting clear value if not specified.
+
+    static RenderTargetBinding CreateClear(const RC<Texture> &texture, const std::optional<RHI::ColorClearValue> &clearValue = {});
+    static RenderTargetBinding CreateClear(TextureRtv rtv,             const std::optional<RHI::ColorClearValue> &clearValue = {});
+    static RenderTargetBinding CreateClear(RGTexture texture,          const std::optional<RHI::ColorClearValue> &clearValue = {});
+    static RenderTargetBinding CreateClear(RGTexRtv rtv,               const std::optional<RHI::ColorClearValue> &clearValue = {});
+};
+
+struct DepthStencilBinding
+{
+    TextureDsv                  DSV;
+    RHI::AttachmentLoadOp       loadOp = RHI::AttachmentLoadOp::Load;
+    RHI::AttachmentStoreOp      storeOp = RHI::AttachmentStoreOp::Store;
+    RHI::DepthStencilClearValue clearValue;
+
+    // load & store
+
+    static DepthStencilBinding Create(const RC<Texture> &texture);                                             
+    static DepthStencilBinding Create(TextureDsv dsv);
+    static DepthStencilBinding Create(RGTexture texture);
+    static DepthStencilBinding Create(RGTexDsv dsv);
+
+    // clear & store
+
+    static DepthStencilBinding CreateClear(const RC<Texture> &texture, const std::optional<RHI::DepthStencilClearValue> &clearValue = {});
+    static DepthStencilBinding CreateClear(TextureDsv dsv,             const std::optional<RHI::DepthStencilClearValue> &clearValue = {});
+    static DepthStencilBinding CreateClear(RGTexture texture,          const std::optional<RHI::DepthStencilClearValue> &clearValue = {});
+    static DepthStencilBinding CreateClear(RGTexDsv dsv,               const std::optional<RHI::DepthStencilClearValue> &clearValue = {});
+};
+
 class CommandBuffer : public Uncopyable
 {
 public:
@@ -113,16 +168,19 @@ public:
     void BeginDebugEvent(std::string name, const std::optional<Vector4f> &color = std::nullopt);
     void EndDebugEvent();
 
-    void CopyBuffer(const Buffer &dst, size_t dstOffset, const Buffer &src, size_t srcOffset, size_t size);
+    void CopyBuffer(
+        const RC<Buffer> &dst, size_t dstOffset,
+        const RC<Buffer> &src, size_t srcOffset, size_t size);
     void CopyColorTexture(
-        const Texture &dst, uint32_t dstMipLevel, uint32_t dstArrayLayer,
-        const Texture &src, uint32_t srcMipLevel, uint32_t srcArrayLayer);
+        const RC<Texture> &dst, uint32_t dstMipLevel, uint32_t dstArrayLayer,
+        const RC<Texture> &src, uint32_t srcMipLevel, uint32_t srcArrayLayer);
     void CopyColorTexture(
-        const Texture &dst, uint32_t dstMipLevel, uint32_t dstArrayLayer, const Vector3u &dstOffset,
-        const Texture &src, uint32_t srcMipLevel, uint32_t srcArrayLayer, const Vector3u &srcOffset,
+        const RC<Texture> &dst, uint32_t dstMipLevel, uint32_t dstArrayLayer, const Vector3u &dstOffset,
+        const RC<Texture> &src, uint32_t srcMipLevel, uint32_t srcArrayLayer, const Vector3u &srcOffset,
         const Vector3u &size);
     void CopyColorTexture2DToBuffer(
-        Buffer &dst, size_t dstOffset, size_t dstRowBytes, Texture &src, uint32_t arrayLayer, uint32_t mipLevel);
+        const RC<Buffer> &dst, size_t dstOffset, size_t dstRowBytes,
+        const RC<Texture> &src, uint32_t arrayLayer, uint32_t mipLevel);
 
     void CopyBuffer(
         RGBuffer dst, size_t dstOffset,
@@ -139,15 +197,15 @@ public:
         RGTexture src, uint32_t arrayLayer, uint32_t mipLevel);
 
     void BeginRenderPass(
-        Span<RHI::ColorAttachment> colorAttachments,
-        bool                       setViewportAndScissor = false);
+        Span<RenderTargetBinding> colorAttachments,
+        bool                   setViewportAndScissor = false);
     void BeginRenderPass(
-        const RHI::DepthStencilAttachment &depthStencilAttachment,
-        bool                               setViewportAndScissor = false);
+        const DepthStencilBinding &depthStencilAttachment,
+        bool                    setViewportAndScissor = false);
     void BeginRenderPass(
-        Span<RHI::ColorAttachment>         colorAttachments,
-        const RHI::DepthStencilAttachment &depthStencilAttachment,
-        bool                               setViewportAndScissor = false);
+        Span<RenderTargetBinding>  colorAttachments,
+        const DepthStencilBinding &depthStencilAttachment,
+        bool                    setViewportAndScissor = false);
     void EndRenderPass();
 
     Span<RHI::Format> GetCurrentRenderPassColorFormats() const { assert(isInRenderPass_); return currentPassColorFormats_; }
@@ -323,22 +381,25 @@ public:
 
 private:
 
-    friend class CommandBufferManager;
+    friend class DeviceCommandBufferManager;
 
     struct Pool
     {
-        RHI::CommandPoolUPtr rhiPool;
+        RHI::CommandPoolUPtr  rhiPool;
         std::atomic<uint32_t> historyUserCount = 0;
         std::atomic<uint32_t> activeUserCount = 0;
     };
 
     void CheckThreadID() const;
 
-    Device                *device_;
-    CommandBufferManager  *manager_;
-    RHI::QueueType         queueType_;
-    RHI::CommandBufferRPtr rhiCommandBuffer_;
-    Pool                  *pool_;
+    template<typename T>
+    void AddHoldObject(T object) { holdingObjects_.emplace_back(std::move(object)); }
+
+    Device                     *device_;
+    DeviceCommandBufferManager *manager_;
+    RHI::QueueType              queueType_;
+    RHI::CommandBufferRPtr      rhiCommandBuffer_;
+    Pool                       *pool_;
 
 #if RTRC_DEBUG
     std::thread::id threadID_;
@@ -355,20 +416,47 @@ private:
     Vector2u                     currentPassRenderTargetSize_;
     StaticVector<RHI::Format, 8> currentPassColorFormats_;
     RHI::Format                  currentPassDepthStencilFormat_ = RHI::Format::Unknown;
+
+    std::vector<std::any> holdingObjects_;
 };
 
-class CommandBufferManager : public Uncopyable
+//class SingleThreadCommandBufferManager : public CommandBufferManagerInterface, public Uncopyable
+//{
+//public:
+//
+//    SingleThreadCommandBufferManager(Device* device, RHI::QueueRPtr queue);
+//    ~SingleThreadCommandBufferManager() override;
+//
+//    CommandBuffer Create();
+//
+//    void _internalAllocate(CommandBuffer &commandBuffer);
+//    void _internalRelease(CommandBuffer &commandBuffer) override;
+//
+//private:
+//
+//    struct CommandPoolRecord
+//    {
+//        RHI::CommandPoolUPtr pool;
+//    };
+//
+//    Device *device_;
+//    RHI::QueueRPtr queue_;
+//
+//    std::queue<RHI::CommandPoolUPtr> freePools_;
+//};
+
+class DeviceCommandBufferManager : public CommandBufferManagerInterface, public Uncopyable
 {
 public:
 
-    CommandBufferManager(Device *device, DeviceSynchronizer &sync);
-    ~CommandBufferManager();
+    DeviceCommandBufferManager(Device *device, DeviceSynchronizer &sync);
+    ~DeviceCommandBufferManager() override;
 
     CommandBuffer Create();
 
     void _internalEndFrame();
     void _internalAllocate(CommandBuffer &commandBuffer);
-    void _internalRelease(CommandBuffer &commandBuffer);
+    void _internalRelease(CommandBuffer &commandBuffer) override;
 
 private:
     
@@ -381,7 +469,6 @@ private:
     };
 
     PerThreadPoolData &GetPerThreadPoolData();
-
     RHI::CommandPoolUPtr GetFreeCommandPool();
 
     Device *device_;
@@ -403,6 +490,112 @@ template<typename T> requires std::is_trivially_copyable_v<T>
 void CommandBuffer::SetComputePushConstants(uint32_t rangeIndex, const T &data)
 {
     this->SetComputePushConstants(rangeIndex, 0, sizeof(data), &data);
+}
+
+inline RenderTargetBinding RenderTargetBinding::Create(const RC<Texture> &texture)
+{
+    return Create(texture->GetRtv());
+}
+
+inline RenderTargetBinding RenderTargetBinding::Create(TextureRtv rtv)
+{
+    RenderTargetBinding result;
+    result.RTV = std::move(rtv);
+    return result;
+}
+
+inline RenderTargetBinding RenderTargetBinding::Create(RGTexture texture)
+{
+    return Create(texture->Get());
+}
+
+inline RenderTargetBinding RenderTargetBinding::Create(RGTexRtv rtv)
+{
+    return Create(rtv.GetRtv());
+}
+
+inline RenderTargetBinding RenderTargetBinding::CreateClear(const RC<Texture> &texture, const std::optional<RHI::ColorClearValue> &clearValue)
+{
+    return CreateClear(texture->GetRtv(), clearValue);
+}
+
+inline RenderTargetBinding RenderTargetBinding::CreateClear(TextureRtv rtv, const std::optional<RHI::ColorClearValue> &clearValue)
+{
+    RenderTargetBinding result;
+    result.loadOp = RHI::AttachmentLoadOp::Clear;
+    if(clearValue)
+    {
+        result.clearValue = *clearValue;
+    }
+    else if(auto *hintColorClearValue = rtv.GetTexture()->GetDesc().clearValue.AsIf<RHI::ColorClearValue>())
+    {
+        result.clearValue = *hintColorClearValue;
+    }
+    result.RTV = std::move(rtv);
+    return result;
+}
+
+inline RenderTargetBinding RenderTargetBinding::CreateClear(RGTexture texture, const std::optional<RHI::ColorClearValue> &clearValue)
+{
+    return CreateClear(texture->Get(), clearValue);
+}
+
+inline RenderTargetBinding RenderTargetBinding::CreateClear(RGTexRtv rtv, const std::optional<RHI::ColorClearValue> &clearValue)
+{
+    return CreateClear(rtv.GetRtv(), clearValue);
+}
+
+inline DepthStencilBinding DepthStencilBinding::Create(const RC<Texture> &texture)
+{
+    return Create(texture->GetDsv());
+}
+
+inline DepthStencilBinding DepthStencilBinding::Create(TextureDsv dsv)
+{
+    DepthStencilBinding result;
+    result.DSV = std::move(dsv);
+    return result;
+}
+
+inline DepthStencilBinding DepthStencilBinding::Create(RGTexture texture)
+{
+    return Create(texture->Get());
+}
+
+inline DepthStencilBinding DepthStencilBinding::Create(RGTexDsv dsv)
+{
+    return Create(dsv.GetDsv());
+}
+
+inline DepthStencilBinding DepthStencilBinding::CreateClear(const RC<Texture> &texture, const std::optional<RHI::DepthStencilClearValue> &clearValue)
+{
+    return CreateClear(texture->GetDsv(), clearValue);
+}
+
+inline DepthStencilBinding DepthStencilBinding::CreateClear(TextureDsv dsv, const std::optional<RHI::DepthStencilClearValue> &clearValue)
+{
+    DepthStencilBinding result;
+    result.loadOp = RHI::AttachmentLoadOp::Clear;
+    if(clearValue)
+    {
+        result.clearValue = *clearValue;
+    }
+    else if(auto *hintDepthStencilClearValue = dsv.GetTexture()->GetDesc().clearValue.AsIf<RHI::DepthStencilClearValue>())
+    {
+        result.clearValue = *hintDepthStencilClearValue;
+    }
+    result.DSV = std::move(dsv);
+    return result;
+}
+
+inline DepthStencilBinding DepthStencilBinding::CreateClear(RGTexture texture, const std::optional<RHI::DepthStencilClearValue> &clearValue)
+{
+    return CreateClear(texture->Get(), clearValue);
+}
+
+inline DepthStencilBinding DepthStencilBinding::CreateClear(RGTexDsv dsv, const std::optional<RHI::DepthStencilClearValue> &clearValue)
+{
+    return CreateClear(dsv.GetDsv(), clearValue);
 }
 
 inline void CommandBuffer::ExecuteBarrier(

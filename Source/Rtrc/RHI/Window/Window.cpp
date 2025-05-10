@@ -3,16 +3,16 @@
 #include <cassert>
 
 #if RTRC_RHI_VULKAN
-#include <volk.h>
-#endif
-#include <GLFW/glfw3.h>
-
-#if RTRC_RHI_VULKAN
 #include <Rtrc/RHI/Vulkan/Context/Surface.h>
 #endif
 #include <Rtrc/Core/ScopeGuard.h>
 #include <Rtrc/RHI/Window/NativeWindow.h>
 #include <Rtrc/RHI/Window/Window.h>
+
+#if RTRC_RHI_VULKAN
+#include <volk.h>
+#endif
+#include <GLFW/glfw3.h>
 
 RTRC_BEGIN
 

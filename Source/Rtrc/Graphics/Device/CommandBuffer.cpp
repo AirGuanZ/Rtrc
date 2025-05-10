@@ -184,6 +184,11 @@ void CommandBuffer::Swap(CommandBuffer &other) noexcept
 #if RTRC_DEBUG
     std::swap(threadID_, other.threadID_);
 #endif
+    RTRC_SWAP_MEMBERS(
+        *this, other,
+        currentGraphicsPipeline_, currentComputePipeline_, currentRayTracingPipeline_, currentWorkGraphPipeline_,
+        isInRenderPass_, currentPassRenderTargetSize_, currentPassColorFormats_, currentPassDepthStencilFormat_,
+        holdingObjects_);
 }
 
 RHI::QueueType CommandBuffer::GetQueueType() const
@@ -233,55 +238,65 @@ void CommandBuffer::EndDebugEvent()
     rhiCommandBuffer_->EndDebugEvent();
 }
 
-void CommandBuffer::CopyBuffer(const Buffer &dst, size_t dstOffset, const Buffer &src, size_t srcOffset, size_t size)
+void CommandBuffer::CopyBuffer(const RC<Buffer> &dst, size_t dstOffset, const RC<Buffer> &src, size_t srcOffset, size_t size)
 {
     CheckThreadID();
-    rhiCommandBuffer_->CopyBuffer(dst.GetRHIObject(), dstOffset, src.GetRHIObject(), srcOffset, size);
+    AddHoldObject(dst);
+    AddHoldObject(src);
+    rhiCommandBuffer_->CopyBuffer(dst->GetRHIObject(), dstOffset, src->GetRHIObject(), srcOffset, size);
 }
 
 void CommandBuffer::CopyColorTexture(
-    const Texture &dst, uint32_t dstMipLevel, uint32_t dstArrayLayer,
-    const Texture &src, uint32_t srcMipLevel, uint32_t srcArrayLayer)
+    const RC<Texture> &dst, uint32_t dstMipLevel, uint32_t dstArrayLayer,
+    const RC<Texture> &src, uint32_t srcMipLevel, uint32_t srcArrayLayer)
 {
     CheckThreadID();
+    AddHoldObject(dst);
+    AddHoldObject(src);
     rhiCommandBuffer_->CopyColorTexture(
-        dst.GetRHIObject(), dstMipLevel, dstArrayLayer, src.GetRHIObject(), srcMipLevel, srcArrayLayer);
+        dst->GetRHIObject(), dstMipLevel, dstArrayLayer, src->GetRHIObject(), srcMipLevel, srcArrayLayer);
 }
 
 void CommandBuffer::CopyColorTexture(
-    const Texture &dst, uint32_t dstMipLevel, uint32_t dstArrayLayer, const Vector3u &dstOffset,
-    const Texture &src, uint32_t srcMipLevel, uint32_t srcArrayLayer, const Vector3u &srcOffset,
+    const RC<Texture> &dst, uint32_t dstMipLevel, uint32_t dstArrayLayer, const Vector3u &dstOffset,
+    const RC<Texture> &src, uint32_t srcMipLevel, uint32_t srcArrayLayer, const Vector3u &srcOffset,
     const Vector3u &size)
 {
     CheckThreadID();
+    AddHoldObject(dst);
+    AddHoldObject(src);
     assert(size.x >= 1 && size.y >= 1 && size.z >= 1);
-    const auto minDim = (std::min)(std::to_underlying(src.GetDimension()), std::to_underlying(dst.GetDimension()));
+    const auto minDim = (std::min)(std::to_underlying(src->GetDimension()), std::to_underlying(dst->GetDimension()));
     assert(minDim > std::to_underlying(RHI::TextureDimension::Tex1D) || size.y == 1);
     assert(minDim > std::to_underlying(RHI::TextureDimension::Tex2D) || size.z == 1);
     rhiCommandBuffer_->CopyColorTexture(
-        dst.GetRHIObject(), dstMipLevel, dstArrayLayer, dstOffset,
-        src.GetRHIObject(), srcMipLevel, srcArrayLayer, srcOffset, size);
+        dst->GetRHIObject(), dstMipLevel, dstArrayLayer, dstOffset,
+        src->GetRHIObject(), srcMipLevel, srcArrayLayer, srcOffset, size);
 }
 
 void CommandBuffer::CopyColorTexture2DToBuffer(
-    Buffer &dst, size_t dstOffset, size_t dstRowBytes, Texture &src, uint32_t arrayLayer, uint32_t mipLevel)
+    const RC<Buffer> &dst, size_t dstOffset, size_t dstRowBytes,
+    const RC<Texture> &src, uint32_t arrayLayer, uint32_t mipLevel)
 {
     CheckThreadID();
+    AddHoldObject(dst);
+    AddHoldObject(src);
     rhiCommandBuffer_->CopyTextureToBuffer(
-        dst.GetRHIObject(), dstOffset, dstRowBytes, src.GetRHIObject(), mipLevel, arrayLayer);
+        dst->GetRHIObject(), dstOffset, dstRowBytes,
+        src->GetRHIObject(), mipLevel, arrayLayer);
 }
 
 void CommandBuffer::CopyBuffer(
     RGBuffer dst, size_t dstOffset, RGBuffer src, size_t srcOffset, size_t size)
 {
-    CopyBuffer(*dst->Get(), dstOffset, *src->Get(), srcOffset, size);
+    CopyBuffer(dst->Get(), dstOffset, src->Get(), srcOffset, size);
 }
 
 void CommandBuffer::CopyColorTexture(
     RGTexture dst, uint32_t dstMipLevel, uint32_t dstArrayLayer,
     RGTexture src, uint32_t srcMipLevel, uint32_t srcArrayLayer)
 {
-    CopyColorTexture(*dst->Get(), dstMipLevel, dstArrayLayer, *src->Get(), srcMipLevel, srcArrayLayer);
+    CopyColorTexture(dst->Get(), dstMipLevel, dstArrayLayer, src->Get(), srcMipLevel, srcArrayLayer);
 }
 
 void CommandBuffer::CopyColorTexture(
@@ -291,60 +306,84 @@ void CommandBuffer::CopyColorTexture(
 {
     CheckThreadID();
     CopyColorTexture(
-        *dst->Get(), dstMipLevel, dstArrayLayer, dstOffset,
-        *src->Get(), srcMipLevel, srcArrayLayer, srcOffset, size);
+        dst->Get(), dstMipLevel, dstArrayLayer, dstOffset,
+        src->Get(), srcMipLevel, srcArrayLayer, srcOffset, size);
 }
 
 void CommandBuffer::CopyColorTexture2DToBuffer(
     RGBuffer dst, size_t dstOffset, size_t dstRowBytes,
     RGTexture src, uint32_t arrayLayer, uint32_t mipLevel)
 {
-    CopyColorTexture2DToBuffer(*dst->Get(), dstOffset, dstRowBytes, *src->Get(), arrayLayer, mipLevel);
+    CopyColorTexture2DToBuffer(dst->Get(), dstOffset, dstRowBytes, src->Get(), arrayLayer, mipLevel);
 }
 
-void CommandBuffer::BeginRenderPass(Span<RHI::ColorAttachment> colorAttachments,
-                                    bool                       setViewportAndScissor)
+void CommandBuffer::BeginRenderPass(Span<RenderTargetBinding> colorAttachments, bool setViewportAndScissor)
 {
     BeginRenderPass(colorAttachments, {}, setViewportAndScissor);
 }
 
-void CommandBuffer::BeginRenderPass(const RHI::DepthStencilAttachment &depthStencilAttachment,
-                                    bool                               setViewportAndScissor)
+void CommandBuffer::BeginRenderPass(const DepthStencilBinding &depthStencilAttachment, bool setViewportAndScissor)
 {
     BeginRenderPass({}, depthStencilAttachment, setViewportAndScissor);
 }
 
 void CommandBuffer::BeginRenderPass(
-    Span<RHI::ColorAttachment>         colorAttachments,
-    const RHI::DepthStencilAttachment &depthStencilAttachment,
-    bool                               setViewportAndScissor)
+    Span<RenderTargetBinding>  colorAttachments,
+    const DepthStencilBinding &depthStencilAttachment,
+    bool                    setViewportAndScissor)
 {
+    StaticVector<RHI::ColorAttachment, 16> rhiColorAttachments;
+    for (auto& colorAttachment : colorAttachments)
+    {
+        rhiColorAttachments.push_back(RHI::ColorAttachment
+        {
+            .renderTargetView = colorAttachment.RTV.GetRHIObject(),
+            .loadOp = colorAttachment.loadOp,
+            .storeOp = colorAttachment.storeOp,
+            .clearValue = colorAttachment.clearValue
+        });
+        AddHoldObject(colorAttachment.RTV);
+    }
+
+    const RHI::DepthStencilAttachment rhiDepthStencilAttachment =
+    {
+        .depthStencilView = depthStencilAttachment.DSV.GetRHIObject(),
+        .loadOp = depthStencilAttachment.loadOp,
+        .storeOp = depthStencilAttachment.storeOp,
+        .clearValue = depthStencilAttachment.clearValue
+    };
+    AddHoldObject(depthStencilAttachment.DSV);
+
     CheckThreadID();
-    rhiCommandBuffer_->BeginRenderPass(colorAttachments, depthStencilAttachment);
+    rhiCommandBuffer_->BeginRenderPass(rhiColorAttachments, rhiDepthStencilAttachment);
 
     currentPassColorFormats_.Resize(colorAttachments.size());
     for(size_t i = 0; i < colorAttachments.size(); ++i)
     {
-        auto rtv = colorAttachments[i].renderTargetView;
+        auto rtv = rhiColorAttachments[i].renderTargetView;
         currentPassColorFormats_[i] = rtv->GetDesc().format;
     }
     if(!colorAttachments.IsEmpty())
     {
-        currentPassRenderTargetSize_ = colorAttachments[0].renderTargetView->GetSize();
+        currentPassRenderTargetSize_ = rhiColorAttachments[0].renderTargetView->GetSize();
     }
-    else if(depthStencilAttachment.depthStencilView)
+    else if(rhiDepthStencilAttachment.depthStencilView)
     {
-        currentPassRenderTargetSize_ = depthStencilAttachment.depthStencilView->GetSize();
+        currentPassRenderTargetSize_ = rhiDepthStencilAttachment.depthStencilView->GetSize();
     }
     else
     {
         currentPassRenderTargetSize_ = {};
     }
 
-    if(depthStencilAttachment.depthStencilView)
-        currentPassDepthStencilFormat_ = depthStencilAttachment.depthStencilView->GetDesc().format;
+    if(rhiDepthStencilAttachment.depthStencilView)
+    {
+        currentPassDepthStencilFormat_ = rhiDepthStencilAttachment.depthStencilView->GetDesc().format;
+    }
     else
+    {
         currentPassDepthStencilFormat_ = RHI::Format::Unknown;
+    }
 
     assert(!isInRenderPass_);
     isInRenderPass_ = true;
@@ -366,6 +405,7 @@ void CommandBuffer::EndRenderPass()
 void CommandBuffer::BindGraphicsPipeline(const RC<GraphicsPipeline> &graphicsPipeline)
 {
     CheckThreadID();
+    AddHoldObject(graphicsPipeline);
     rhiCommandBuffer_->BindPipeline(graphicsPipeline->GetRHIObject());
     currentGraphicsPipeline_ = graphicsPipeline;
     if(int index = graphicsPipeline->GetShaderInfo()->GetBindingGroupIndexForInlineSamplers(); index >= 0)
@@ -377,6 +417,7 @@ void CommandBuffer::BindGraphicsPipeline(const RC<GraphicsPipeline> &graphicsPip
 void CommandBuffer::BindComputePipeline(const RC<ComputePipeline> &computePipeline)
 {
     CheckThreadID();
+    AddHoldObject(computePipeline);
     rhiCommandBuffer_->BindPipeline(computePipeline->GetRHIObject());
     currentComputePipeline_ = computePipeline;
     if(int index = computePipeline->GetShaderInfo()->GetBindingGroupIndexForInlineSamplers(); index >= 0)
@@ -390,6 +431,7 @@ void CommandBuffer::BindRayTracingPipeline(const RC<RayTracingPipeline> &rayTrac
     auto &bindingLayoutInfo = rayTracingPipeline->GetBindingLayoutInfo();
 
     CheckThreadID();
+    AddHoldObject(rayTracingPipeline);
     rhiCommandBuffer_->BindPipeline(rayTracingPipeline->GetRHIObject());
     currentRayTracingPipeline_ = rayTracingPipeline;
     if(int index = bindingLayoutInfo.GetBindingGroupIndexForInlineSamplers(); index >= 0)
@@ -407,6 +449,9 @@ void CommandBuffer::BindWorkGraphPipeline(
     auto &bindingLayoutInfo = workGraphPipeline->GetBindingLayoutInfo();
 
     CheckThreadID();
+    AddHoldObject(workGraphPipeline);
+    AddHoldObject(backingBuffer);
+
     rhiCommandBuffer_->BindPipeline(
         workGraphPipeline->GetRHIObject(), backingBuffer, backBufferSize, initializeBackingBuffer);
     currentWorkGraphPipeline_ = workGraphPipeline;
@@ -439,6 +484,7 @@ const WorkGraphPipeline *CommandBuffer::GetCurrentWorkGraphPipeline() const
 void CommandBuffer::BindGraphicsGroup(int index, const RC<BindingGroup> &group)
 {
     CheckThreadID();
+    AddHoldObject(group);
 #if RTRC_DEBUG
     auto bindingGroupLayoutInShader = currentGraphicsPipeline_->GetShaderInfo()->GetBindingGroupLayoutByIndex(index);
     if(bindingGroupLayoutInShader != group->GetLayout())
@@ -456,6 +502,7 @@ void CommandBuffer::BindGraphicsGroup(int index, const RC<BindingGroup> &group)
 void CommandBuffer::BindComputeGroup(int index, const RC<BindingGroup> &group)
 {
     CheckThreadID();
+    AddHoldObject(group);
 #if RTRC_DEBUG
     auto bindingGroupLayoutInShader = currentComputePipeline_->GetShaderInfo()->GetBindingGroupLayoutByIndex(index);
     if(bindingGroupLayoutInShader != group->GetLayout())
@@ -473,6 +520,7 @@ void CommandBuffer::BindComputeGroup(int index, const RC<BindingGroup> &group)
 void CommandBuffer::BindRayTracingGroup(int index, const RC<BindingGroup> &group)
 {
     CheckThreadID();
+    AddHoldObject(group);
 #if RTRC_DEBUG
     auto bindingGroupLayoutInShader = currentRayTracingPipeline_->GetBindingLayoutInfo().GetBindingGroupLayoutByIndex(index);
     if(bindingGroupLayoutInShader != group->GetLayout())
@@ -490,6 +538,7 @@ void CommandBuffer::BindRayTracingGroup(int index, const RC<BindingGroup> &group
 void CommandBuffer::BindWorkGraphGroup(int index, const RC<BindingGroup> &group)
 {
     CheckThreadID();
+    AddHoldObject(group);
 #if RTRC_DEBUG
     auto bindingGroupLayoutInShader = currentWorkGraphPipeline_->GetBindingLayoutInfo().GetBindingGroupLayoutByIndex(index);
     if(bindingGroupLayoutInShader != group->GetLayout())
@@ -507,6 +556,10 @@ void CommandBuffer::BindWorkGraphGroup(int index, const RC<BindingGroup> &group)
 void CommandBuffer::BindGraphicsGroups(Span<RC<BindingGroup>> groups)
 {
     CheckThreadID();
+    for(auto &group : groups)
+    {
+        AddHoldObject(group);
+    }
     auto &shaderInfo = currentGraphicsPipeline_->GetShaderInfo();
     for(auto &&[groupIndex, group] : Enumerate(groups))
     {
@@ -550,6 +603,10 @@ void CommandBuffer::BindGraphicsGroups(Span<RC<BindingGroup>> groups)
 void CommandBuffer::BindComputeGroups(Span<RC<BindingGroup>> groups)
 {
     CheckThreadID();
+    for(auto &group : groups)
+    {
+        AddHoldObject(group);
+    }
     auto &shaderInfo = currentComputePipeline_->GetShaderInfo();
     for(auto &&[groupIndex, group] : Enumerate(groups))
     {
@@ -593,6 +650,10 @@ void CommandBuffer::BindComputeGroups(Span<RC<BindingGroup>> groups)
 void CommandBuffer::BindRayTracingGroups(Span<RC<BindingGroup>> groups)
 {
     CheckThreadID();
+    for(auto &group : groups)
+    {
+        AddHoldObject(group);
+    }
     auto &layoutInfo = currentRayTracingPipeline_->GetBindingLayoutInfo();
     for(auto &&[groupIndex, group] : Enumerate(groups))
     {
@@ -636,6 +697,10 @@ void CommandBuffer::BindRayTracingGroups(Span<RC<BindingGroup>> groups)
 void CommandBuffer::BindWorkGraphGroups(Span<RC<BindingGroup>> groups)
 {
     CheckThreadID();
+    for(auto &group : groups)
+    {
+        AddHoldObject(group);
+    }
     auto &layoutInfo = currentWorkGraphPipeline_->GetBindingLayoutInfo();
     for(auto &&[groupIndex, group] : Enumerate(groups))
     {
@@ -708,12 +773,18 @@ void CommandBuffer::SetViewportAndScissorAutomatically()
 
 void CommandBuffer::SetVertexBuffer(int slot, const RC<SubBuffer> &buffer, size_t stride)
 {
+    CheckThreadID();
+    AddHoldObject(buffer);
     SetVertexBuffers(slot, Span(buffer), Span(stride));
 }
 
 void CommandBuffer::SetVertexBuffers(int slot, Span<RC<SubBuffer>> buffers, Span<size_t> byteStrides)
 {
     CheckThreadID();
+    for(auto &buffer : buffers)
+    {
+        AddHoldObject(buffer);
+    }
     std::vector<RHI::BufferRPtr> rhiBuffers(buffers.size());
     std::vector<size_t> rhiByteOffsets(buffers.size());
     for(size_t i = 0; i < buffers.size(); ++i)
@@ -727,6 +798,7 @@ void CommandBuffer::SetVertexBuffers(int slot, Span<RC<SubBuffer>> buffers, Span
 void CommandBuffer::SetIndexBuffer(const RC<SubBuffer> &buffer, RHI::IndexFormat format)
 {
     CheckThreadID();
+    AddHoldObject(buffer);
     rhiCommandBuffer_->SetIndexBuffer(buffer->GetFullBufferRHIObject(), buffer->GetSubBufferOffset(), format);
 }
 
@@ -769,6 +841,7 @@ void CommandBuffer::SetComputePushConstants(uint32_t rangeIndex, const void *dat
 void CommandBuffer::ClearColorTexture2D(const RC<Texture> &tex, const Vector4f &color)
 {
     CheckThreadID();
+    AddHoldObject(tex);
     rhiCommandBuffer_->ClearColorTexture2D(
         tex->GetRHIObject().Get(), RHI::ColorClearValue{ color.x, color.y, color.z, color.w });
 }
@@ -776,6 +849,7 @@ void CommandBuffer::ClearColorTexture2D(const RC<Texture> &tex, const Vector4f &
 void CommandBuffer::ClearDepthStencil(const RC<Texture>& tex, float depth, uint8_t stencil)
 {
     CheckThreadID();
+    AddHoldObject(tex);
     rhiCommandBuffer_->ClearDepthStencilTexture(
         tex->GetRHIObject().Get(), RHI::DepthStencilClearValue{ depth, stencil }, true, true);
 }
@@ -783,6 +857,7 @@ void CommandBuffer::ClearDepthStencil(const RC<Texture>& tex, float depth, uint8
 void CommandBuffer::ClearDepth(const RC<Texture>& tex, float depth)
 {
     CheckThreadID();
+    AddHoldObject(tex);
     rhiCommandBuffer_->ClearDepthStencilTexture(
         tex->GetRHIObject().Get(), RHI::DepthStencilClearValue{ depth, 0 }, true, false);
 }
@@ -790,6 +865,7 @@ void CommandBuffer::ClearDepth(const RC<Texture>& tex, float depth)
 void CommandBuffer::ClearStencil(const RC<Texture>& tex, uint8_t stencil)
 {
     CheckThreadID();
+    AddHoldObject(tex);
     rhiCommandBuffer_->ClearDepthStencilTexture(
         tex->GetRHIObject().Get(), RHI::DepthStencilClearValue{ 0, stencil }, false, true);
 }
@@ -809,13 +885,13 @@ void CommandBuffer::DrawIndexed(int indexCount, int instanceCount, int firstInde
 void CommandBuffer::DispatchMesh(unsigned groupCountX, unsigned groupCountY, unsigned groupCountZ)
 {
     CheckThreadID();
-    rhiCommandBuffer_->DispatchMesh(groupCountX, groupCountY, groupCountZ);
+    rhiCommandBuffer_->DispatchMesh(static_cast<int>(groupCountX), static_cast<int>(groupCountY), static_cast<int>(groupCountZ));
 }
 
 void CommandBuffer::Dispatch(unsigned groupCountX, unsigned groupCountY, unsigned groupCountZ)
 {
     CheckThreadID();
-    rhiCommandBuffer_->Dispatch(groupCountX, groupCountY, groupCountZ);
+    rhiCommandBuffer_->Dispatch(static_cast<int>(groupCountX), static_cast<int>(groupCountY), static_cast<int>(groupCountZ));
 }
 
 void CommandBuffer::Dispatch(const Vector3u &groupCount)
@@ -892,6 +968,7 @@ void CommandBuffer::Trace(
 void CommandBuffer::DispatchIndirect(const RC<SubBuffer> &buffer, size_t byteOffset)
 {
     CheckThreadID();
+    AddHoldObject(buffer);
     byteOffset += buffer->GetSubBufferOffset();
     auto &rhiBuffer = buffer->GetFullBufferRHIObject();
     rhiCommandBuffer_->DispatchIndirect(rhiBuffer, byteOffset);
@@ -929,6 +1006,8 @@ void CommandBuffer::BuildBlas(
     const RC<SubBuffer>              &scratchBuffer)
 {
     CheckThreadID();
+    AddHoldObject(blas);
+    AddHoldObject(scratchBuffer);
 
     if(!blas->GetBuffer())
     {
@@ -982,6 +1061,8 @@ void CommandBuffer::BuildTlas(
     const RC<SubBuffer>                    &scratchBuffer)
 {
     CheckThreadID();
+    AddHoldObject(tlas);
+    AddHoldObject(scratchBuffer);
 
     if(!tlas->GetBuffer())
     {
@@ -1041,13 +1122,19 @@ void CommandBuffer::CheckThreadID() const
 #endif
 }
 
-CommandBufferManager::CommandBufferManager(Device *device, DeviceSynchronizer &sync)
+//SingleThreadCommandBufferManager::SingleThreadCommandBufferManager(Device* device, RHI::QueueRPtr queue)
+//    : device_(device), queue_(std::move(queue))
+//{
+//    
+//}
+
+DeviceCommandBufferManager::DeviceCommandBufferManager(Device *device, DeviceSynchronizer &sync)
     : device_(device), sync_(sync)
 {
     
 }
 
-CommandBufferManager::~CommandBufferManager()
+DeviceCommandBufferManager::~DeviceCommandBufferManager()
 {
     for(PerThreadPoolData &poolData : std::views::values(threadToActivePoolData_))
     {
@@ -1059,7 +1146,7 @@ CommandBufferManager::~CommandBufferManager()
     }
 }
 
-CommandBuffer CommandBufferManager::Create()
+CommandBuffer DeviceCommandBufferManager::Create()
 {
     CommandBuffer ret;
     ret.device_ = device_;
@@ -1068,7 +1155,7 @@ CommandBuffer CommandBufferManager::Create()
     return ret;
 }
 
-void CommandBufferManager::_internalEndFrame()
+void DeviceCommandBufferManager::_internalEndFrame()
 {
     std::unique_lock lock(threadToActivePoolDataMutex_);
     for(PerThreadPoolData &poolData : std::views::values(threadToActivePoolData_))
@@ -1087,7 +1174,7 @@ void CommandBufferManager::_internalEndFrame()
     threadToActivePoolData_.clear();
 }
 
-void CommandBufferManager::_internalAllocate(CommandBuffer &commandBuffer)
+void DeviceCommandBufferManager::_internalAllocate(CommandBuffer &commandBuffer)
 {
     assert(!commandBuffer.rhiCommandBuffer_);
 #if RTRC_DEBUG
@@ -1114,7 +1201,7 @@ void CommandBufferManager::_internalAllocate(CommandBuffer &commandBuffer)
     }
 }
 
-void CommandBufferManager::_internalRelease(CommandBuffer &commandBuffer)
+void DeviceCommandBufferManager::_internalRelease(CommandBuffer &commandBuffer)
 {
     if(!commandBuffer.rhiCommandBuffer_)
     {
@@ -1136,7 +1223,7 @@ void CommandBufferManager::_internalRelease(CommandBuffer &commandBuffer)
     }
 }
 
-CommandBufferManager::PerThreadPoolData &CommandBufferManager::GetPerThreadPoolData()
+DeviceCommandBufferManager::PerThreadPoolData &DeviceCommandBufferManager::GetPerThreadPoolData()
 {
     const std::thread::id id = std::this_thread::get_id();
     {
@@ -1151,7 +1238,7 @@ CommandBufferManager::PerThreadPoolData &CommandBufferManager::GetPerThreadPoolD
     return threadToActivePoolData_[id];
 }
 
-RHI::CommandPoolUPtr CommandBufferManager::GetFreeCommandPool()
+RHI::CommandPoolUPtr DeviceCommandBufferManager::GetFreeCommandPool()
 {
     RHI::CommandPoolUPtr ret;
     if(!freePools_.TryPop(ret))

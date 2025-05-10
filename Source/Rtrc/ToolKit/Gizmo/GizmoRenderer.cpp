@@ -60,12 +60,12 @@ void GizmoRenderer::AddRenderPass(
         if(depthBuffer)
         {
             cmds.BeginRenderPass(
-                RHI::ColorAttachment{ .renderTargetView = framebuffer->GetRtvImm() },
-                RHI::DepthStencilAttachment{ .depthStencilView = depthBuffer->GetDsvImm() });
+                RenderTargetBinding::Create(framebuffer),
+                DepthStencilBinding::Create(depthBuffer));
         }
         else
         {
-            cmds.BeginRenderPass(RHI::ColorAttachment{ .renderTargetView = framebuffer->GetRtvImm() });
+            cmds.BeginRenderPass(RenderTargetBinding::Create(framebuffer));
         }
         RTRC_SCOPE_EXIT{ cmds.EndRenderPass(); };
 

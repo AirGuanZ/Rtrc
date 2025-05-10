@@ -109,12 +109,12 @@ void Run()
         {
             auto &commandBuffer = RGGetCommandBuffer();
 
-            commandBuffer.BeginRenderPass(RHI::ColorAttachment
+            commandBuffer.BeginRenderPass(RenderTargetBinding
             {
-                .renderTargetView = renderTarget->GetRtvImm(),
-                .loadOp           = RHI::AttachmentLoadOp::Clear,
-                .storeOp          = RHI::AttachmentStoreOp::Store,
-                .clearValue       = { 0, 0, 0, 0 }
+                .RTV        = renderTarget->GetRtvImm(),
+                .loadOp     = RHI::AttachmentLoadOp::Clear,
+                .storeOp    = RHI::AttachmentStoreOp::Store,
+                .clearValue = { 0, 0, 0, 0 }
             });
             RTRC_SCOPE_EXIT{ commandBuffer.EndRenderPass(); };
 

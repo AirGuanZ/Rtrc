@@ -44,15 +44,15 @@ public:
         {
             auto &cmds = RGGetCommandBuffer();
             cmds.BeginRenderPass(
-                RHI::ColorAttachment{
-                    .renderTargetView = framebuffer->GetRtvImm(),
-                    .loadOp = RHI::AttachmentLoadOp::Clear,
+                RenderTargetBinding{
+                    .RTV        = framebuffer->GetRtvImm(),
+                    .loadOp     = RHI::AttachmentLoadOp::Clear,
                     .clearValue = { 0, 0, 0, 0 }
                 },
-                RHI::DepthStencilAttachment
+                DepthStencilBinding
                 {
-                    .depthStencilView = depthBuffer->GetDsvImm(),
-                    .loadOp = RHI::AttachmentLoadOp::Clear,
+                    .DSV        = depthBuffer->GetDsvImm(),
+                    .loadOp     = RHI::AttachmentLoadOp::Clear,
                     .clearValue = { 1, 0 }
                 });
             cmds.EndRenderPass();

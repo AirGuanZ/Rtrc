@@ -75,7 +75,7 @@ void Run()
             RHI::TextureLayout::CopySrc,
             RHI::PipelineStage::Copy,
             RHI::ResourceAccess::CopyRead);
-        cmd.CopyColorTexture2DToBuffer(*readbackBuffer, 0, alignedRowSize, *outputTexture, 0, 0);
+        cmd.CopyColorTexture2DToBuffer(readbackBuffer, 0, alignedRowSize, outputTexture, 0, 0);
     });
 
     std::vector<unsigned char> readbackData(readbackBufferSize);

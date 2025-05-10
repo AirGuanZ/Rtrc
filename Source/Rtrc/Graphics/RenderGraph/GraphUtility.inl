@@ -173,7 +173,7 @@ inline RGPass RGCopyColorTexture(
                 const unsigned srcMipLevel = srcSubrscs.mipLevel + mi;
                 const unsigned dstMipLevel = dstSubrscs.mipLevel + mi;
                 assert(tsrc->GetMipLevelSize(srcMipLevel) == tdst->GetMipLevelSize(dstMipLevel));
-                cmds.CopyColorTexture(*tdst, dstMipLevel, dstArrayLayer, *tsrc, srcMipLevel, srcArrayLayer);
+                cmds.CopyColorTexture(tdst, dstMipLevel, dstArrayLayer, tsrc, srcMipLevel, srcArrayLayer);
             }
         }
     });
@@ -528,23 +528,23 @@ RGPass RGAddRenderPass(
     {
         auto &cmds = RGGetCommandBuffer();
 
-        StaticVector<RHI::ColorAttachment, 8> colorAttachments;
+        StaticVector<RenderTargetBinding, 8> colorAttachments;
         for(auto &ca : cas)
         {
-            colorAttachments.PushBack(RHI::ColorAttachment
+            colorAttachments.PushBack(RenderTargetBinding
             {
-                .renderTargetView = ca.rtv.GetRtv().GetRHIObject(),
-                .loadOp           = ca.loadOp,
-                .storeOp          = ca.storeOp,
-                .clearValue       = ca.clearValue
+                .RTV        = ca.rtv.GetRtv(),
+                .loadOp     = ca.loadOp,
+                .storeOp    = ca.storeOp,
+                .clearValue = ca.clearValue
             });
         }
-        cmds.BeginRenderPass(colorAttachments, RHI::DepthStencilAttachment
+        cmds.BeginRenderPass(colorAttachments, DepthStencilBinding
         {
-            .depthStencilView = d.dsv ? d.dsv.GetDsv().GetRHIObject() : nullptr,
-            .loadOp           = d.loadOp,
-            .storeOp          = d.storeOp,
-            .clearValue       = d.clearValue
+            .DSV        = d.dsv ? d.dsv.GetDsv() : TextureDsv{},
+            .loadOp     = d.loadOp,
+            .storeOp    = d.storeOp,
+            .clearValue = d.clearValue
         });
         RTRC_SCOPE_EXIT{ cmds.EndRenderPass(); };
 

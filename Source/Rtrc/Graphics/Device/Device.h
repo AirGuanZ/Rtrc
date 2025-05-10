@@ -343,7 +343,7 @@ private:
     Box<BindingGroupManager>          bindingLayoutManager_;
     Box<BufferManager>                bufferManager_;
     Box<PooledBufferManager>          pooledBufferManager_;
-    Box<CommandBufferManager>         commandBufferManager_;
+    Box<DeviceCommandBufferManager>         deviceCommandBufferManager_;
     Box<DynamicBufferManager>         dynamicBufferManager_;
     Box<PipelineManager>              pipelineManager_;
     Box<SamplerManager>               samplerManager_;
@@ -419,13 +419,13 @@ inline const RHI::TextureDesc &Device::GetSwapchainImageDesc() const
 
 inline void Device::WaitIdle()
 {
-    commandBufferManager_->_internalEndFrame();
+    deviceCommandBufferManager_->_internalEndFrame();
     sync_->WaitIdle();
 }
 
 inline void Device::AddSynchronizationPoint()
 {
-    commandBufferManager_->_internalEndFrame();
+    deviceCommandBufferManager_->_internalEndFrame();
     if(sync_->IsInRenderLoop())
     {
         sync_->WaitForOldFrame();
@@ -477,7 +477,7 @@ inline bool Device::BeginFrame(bool processWindowEvents)
 inline void Device::EndFrame()
 {
     assert(sync_->IsInRenderLoop());
-    commandBufferManager_->_internalEndFrame();
+    deviceCommandBufferManager_->_internalEndFrame();
 }
 
 inline const RHI::FenceUPtr &Device::GetFrameFence()
@@ -798,7 +798,7 @@ inline void Device::CopyBindings(
 
 inline CommandBuffer Device::CreateCommandBuffer()
 {
-    return commandBufferManager_->Create();
+    return deviceCommandBufferManager_->Create();
 }
 
 inline RC<GraphicsPipeline> Device::CreateGraphicsPipeline(const GraphicsPipelineDesc &desc)
@@ -867,7 +867,7 @@ inline void Device::ExecuteAndWait(CommandBuffer commandBuffer)
 template<typename F> requires !std::is_same_v<std::remove_cvref_t<F>, CommandBuffer>
 void Device::ExecuteAndWait(F &&f)
 {
-    auto c = commandBufferManager_->Create();
+    auto c = deviceCommandBufferManager_->Create();
     c.Begin();
     std::invoke(std::forward<F>(f), c);
     c.End();

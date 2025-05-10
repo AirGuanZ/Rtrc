@@ -148,7 +148,7 @@ Device::~Device()
     uploader_.reset();
     bufferManager_.reset();
     pooledBufferManager_.reset();
-    commandBufferManager_.reset();
+    deviceCommandBufferManager_.reset();
     dynamicBufferManager_.reset();
     pipelineManager_.reset();
     samplerManager_.reset();
@@ -208,7 +208,7 @@ void Device::InitializeInternal(Flags flags, RHI::DeviceUPtr device, bool isComp
     pooledTextureManager_ = MakeBox<PooledTextureManager>(device_, *sync_);
 
     bindingLayoutManager_ = MakeBox<BindingGroupManager>(device_, *sync_, dynamicBufferManager_.get());
-    commandBufferManager_ = MakeBox<CommandBufferManager>(this, *sync_);
+    deviceCommandBufferManager_ = MakeBox<DeviceCommandBufferManager>(this, *sync_);
     pipelineManager_ = MakeBox<PipelineManager>(device_, *sync_);
     samplerManager_ = MakeBox<SamplerManager>(device_, *sync_);
 

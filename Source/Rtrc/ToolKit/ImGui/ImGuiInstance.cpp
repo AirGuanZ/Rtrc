@@ -348,12 +348,7 @@ void ImGuiRenderer::RenderImmediately(
     const RHI::Format format = rtv.GetRHIObject()->GetDesc().format;
     RC<GraphicsPipeline> pipeline = GetOrCreatePipeline(format);
 
-    commandBuffer.BeginRenderPass(RHI::ColorAttachment
-    {
-        .renderTargetView = rtv,
-        .loadOp = RHI::AttachmentLoadOp::Load,
-        .storeOp = RHI::AttachmentStoreOp::Store
-    });
+    commandBuffer.BeginRenderPass(RenderTargetBinding::Create(rtv));
     RTRC_SCOPE_EXIT{ commandBuffer.EndRenderPass(); };
 
     commandBuffer.BindGraphicsPipeline(pipeline);

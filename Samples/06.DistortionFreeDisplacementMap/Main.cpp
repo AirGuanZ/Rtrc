@@ -83,20 +83,8 @@ public:
             {
                 auto &cmds = RGGetCommandBuffer();
                 cmds.BeginRenderPass(
-                    RHI::ColorAttachment
-                    {
-                        .renderTargetView = framebuffer->GetRtvImm(),
-                        .loadOp           = RHI::AttachmentLoadOp::Clear,
-                        .storeOp          = RHI::AttachmentStoreOp::Store,
-                        .clearValue       = RHI::ColorClearValue{ 0, 0, 0, 0 }
-                    },
-                    RHI::DepthStencilAttachment
-                    {
-                        .depthStencilView = depthBuffer->GetDsvImm(),
-                        .loadOp           = RHI::AttachmentLoadOp::Clear,
-                        .storeOp          = RHI::AttachmentStoreOp::Store,
-                        .clearValue       = RHI::DepthStencilClearValue{ 1, 0 }
-                    });
+                    RenderTargetBinding::CreateClear(framebuffer),
+                    DepthStencilBinding::CreateClear(depthBuffer));
                 RTRC_SCOPE_EXIT{ cmds.EndRenderPass(); };
 
                 StaticShaderInfo<"DFDM/Render">::Pass passData;
