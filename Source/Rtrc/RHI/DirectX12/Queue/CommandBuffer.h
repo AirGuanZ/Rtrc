@@ -20,6 +20,8 @@ public:
         DirectX12Device                    *device,
         DirectX12CommandPool               *pool,
         ComPtr<ID3D12GraphicsCommandList10> commandList);
+
+    RTRC_D3D12_IMPL_SET_NAME(commandList_)
     
     void Begin() RTRC_RHI_OVERRIDE;
     void End()   RTRC_RHI_OVERRIDE;
