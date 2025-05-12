@@ -195,9 +195,10 @@ bool SparseArray<T>::IsEmpty() const
 template <typename T>
 void SparseArray<T>::ExpandStorage(size_t newCount)
 {
-    assert(newCount > storageArray_.size());
+    const size_t oldCount = storageArray_.size();
+    assert(newCount > oldCount);
 
-    freeIndices_.reserve(freeIndices_.size() + newCount - storageArray_.size());
+    freeIndices_.reserve(freeIndices_.size() + newCount - oldCount);
 
     if constexpr(std::is_trivially_move_constructible_v<T>)
     {
@@ -207,7 +208,7 @@ void SparseArray<T>::ExpandStorage(size_t newCount)
     {
         static_assert(std::is_nothrow_move_constructible_v<T>);
         std::vector<Storage> newStorage(newCount);
-        for(size_t i = 0; i < storageArray_.size(); ++i)
+        for(size_t i = 0; i < oldCount; ++i)
         {
             T *dst = reinterpret_cast<T *>(newStorage[i].data);
             new(dst) T(std::move(*GetPointer(i)));
@@ -215,7 +216,7 @@ void SparseArray<T>::ExpandStorage(size_t newCount)
         storageArray_.swap(newStorage);
     }
 
-    for(size_t i = storageArray_.size(); i < newCount; ++i)
+    for(size_t i = oldCount; i < newCount; ++i)
     {
         freeIndices_.push_back(i);
     }
