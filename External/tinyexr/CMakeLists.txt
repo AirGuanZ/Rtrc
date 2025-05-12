@@ -1,6 +1,6 @@
 ﻿# this cmake file is for compile tests.
 # Not usable for your cmake app.
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.20)
 
 set(BUILD_TARGET "tinyexr")
 set(SAMPLE_TARGET "test_tinyexr")
