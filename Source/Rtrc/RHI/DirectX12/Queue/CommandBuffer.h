@@ -23,8 +23,8 @@ public:
 
     RTRC_D3D12_IMPL_SET_NAME(commandList_)
     
-    void Begin() RTRC_RHI_OVERRIDE;
-    void End()   RTRC_RHI_OVERRIDE;
+    void Begin(CommandBufferFlags flags) RTRC_RHI_OVERRIDE;
+    void End() RTRC_RHI_OVERRIDE;
 
     void BeginRenderPass(
         Span<ColorAttachment>         colorAttachments,
@@ -164,10 +164,14 @@ protected:
         Span<TextureAcquireBarrier>    textureAcquireBarriers) RTRC_RHI_OVERRIDE;
 
 private:
+
+    bool IsBarrierOnly() const;
     
     DirectX12Device                    *device_;
     DirectX12CommandPool               *pool_;
     ComPtr<ID3D12GraphicsCommandList10> commandList_;
+
+    CommandBufferFlags flags_;
 
     OPtr<GraphicsPipeline>   currentGraphicsPipeline_;
     OPtr<ComputePipeline>    currentComputePipeline_;

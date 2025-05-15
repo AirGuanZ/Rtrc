@@ -163,7 +163,7 @@ public:
     Ref<Device>                   GetDevice() const;
 
     // Once begin, the command buffer object is bound with current thread, and cannot be used in any other thread.
-    void Begin();
+    void Begin(RHI::CommandBufferFlags flags = RHI::CommandBufferFlags::None);
     void End();
 
     void BeginDebugEvent(std::string name, const std::optional<Vector4f> &color = std::nullopt);

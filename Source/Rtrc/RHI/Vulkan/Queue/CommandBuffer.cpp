@@ -36,8 +36,10 @@ VulkanCommandBuffer::~VulkanCommandBuffer()
     vkFreeCommandBuffers(device_->_internalGetNativeDevice(), pool_, 1, &commandBuffer_);
 }
 
-void VulkanCommandBuffer::Begin()
+void VulkanCommandBuffer::Begin(CommandBufferFlags flags)
 {
+    (void)flags; // Currently not used
+
     const VkCommandBufferBeginInfo beginInfo = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
         .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT

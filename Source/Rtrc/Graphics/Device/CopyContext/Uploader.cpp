@@ -221,7 +221,7 @@ void UploadBatch::SubmitAndWait()
     RTRC_SCOPE_EXIT{ uploader_->FreeBatch(std::move(batch)); };
 
     auto commandBuffer = batch.commandPool->NewCommandBuffer();
-    commandBuffer->Begin();
+    commandBuffer->Begin(RHI::CommandBufferFlags::None);
 
     std::vector<RHI::BufferTransitionBarrier> beforeBufferBarriers;
     for(auto& task : bufferTasks_)

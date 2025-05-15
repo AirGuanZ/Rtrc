@@ -625,6 +625,14 @@ struct WorkGraphMemoryRequirements
     size_t sizeGranularity = 0;
 };
 
+enum class CommandBufferFlagBit : uint32_t
+{
+    None = 0,
+    BarrierOnly = 1u << 0
+};
+RTRC_DEFINE_ENUM_FLAGS(CommandBufferFlagBit)
+using CommandBufferFlags = EnumFlagsCommandBufferFlagBit;
+
 // =============================== rhi descriptions ===============================
 
 using QueueSessionID = uint64_t;
@@ -1738,8 +1746,8 @@ public:
 
     RTRC_RHI_COMMAND_BUFFER_COMMON_METHODS
 
-    RTRC_RHI_API void Begin() RTRC_RHI_API_PURE;
-    RTRC_RHI_API void End()   RTRC_RHI_API_PURE;
+    RTRC_RHI_API void Begin(CommandBufferFlags flags) RTRC_RHI_API_PURE;
+    RTRC_RHI_API void End() RTRC_RHI_API_PURE;
 
     // Pipeline states
     

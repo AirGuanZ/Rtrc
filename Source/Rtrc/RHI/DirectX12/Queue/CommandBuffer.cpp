@@ -33,10 +33,10 @@ DirectX12CommandBuffer::DirectX12CommandBuffer(
     , currentGraphicsRootSignature_(nullptr)
     , currentComputeRootSignature_(nullptr)
 {
-    
+    flags_ = {};
 }
 
-void DirectX12CommandBuffer::Begin()
+void DirectX12CommandBuffer::Begin(CommandBufferFlags flags)
 {
     RTRC_D3D12_FAIL_MSG(
         commandList_->Reset(pool_->_internalGetNativeAllocator().Get(), nullptr),
@@ -52,6 +52,8 @@ void DirectX12CommandBuffer::Begin()
         commandList_->SetDescriptorHeaps(2, descHeaps);
     }
 
+    flags_ = flags;
+
     currentGraphicsRootSignature_ = nullptr;
     currentComputeRootSignature_ = nullptr;
 }
@@ -65,6 +67,8 @@ void DirectX12CommandBuffer::BeginRenderPass(
     Span<ColorAttachment>         colorAttachments,
     const DepthStencilAttachment &depthStencilAttachment)
 {
+    assert(!IsBarrierOnly());
+
     StaticVector<D3D12_CPU_DESCRIPTOR_HANDLE, 8> rtvs(colorAttachments.size());
     for(size_t i = 0; i < rtvs.size(); ++i)
     {
@@ -97,11 +101,14 @@ void DirectX12CommandBuffer::BeginRenderPass(
 
 void DirectX12CommandBuffer::EndRenderPass()
 {
+    assert(!IsBarrierOnly());
     // Do nothing
 }
 
 void DirectX12CommandBuffer::BindPipeline(const OPtr<GraphicsPipeline> &pipeline)
 {
+    assert(!IsBarrierOnly());
+
     const auto d3dPipeline = static_cast<DirectX12GraphicsPipeline*>(pipeline.Get());
     currentGraphicsPipeline_ = pipeline;
     commandList_->SetPipelineState(d3dPipeline->_internalGetNativePipelineState().Get());
@@ -123,6 +130,8 @@ void DirectX12CommandBuffer::BindPipeline(const OPtr<GraphicsPipeline> &pipeline
 
 void DirectX12CommandBuffer::BindPipeline(const OPtr<ComputePipeline> &pipeline)
 {
+    assert(!IsBarrierOnly());
+
     const auto d3dPipeline = static_cast<DirectX12ComputePipeline*>(pipeline.Get());
     currentComputePipeline_ = pipeline;
 
@@ -153,6 +162,8 @@ void DirectX12CommandBuffer::BindPipeline(const OPtr<ComputePipeline> &pipeline)
 
 void DirectX12CommandBuffer::BindPipeline(const OPtr<RayTracingPipeline> &pipeline)
 {
+    assert(!IsBarrierOnly());
+
     auto d3dPipeline = static_cast<DirectX12RayTracingPipeline*>(pipeline.Get());
     currentRayTracingPipeline_ = pipeline;
     commandList_->SetPipelineState1(d3dPipeline->_internalGetStateObject().Get());
@@ -170,6 +181,8 @@ void DirectX12CommandBuffer::BindPipeline(
     size_t                         backingMemorySize,
     bool                           initializeBakingMemory)
 {
+    assert(!IsBarrierOnly());
+
     auto d3dPipeline = static_cast<DirectX12WorkGraphPipeline *>(pipeline.Get());
     currentWorkGraphPipeline_ = pipeline;
     commandList_->SetPipelineState1(d3dPipeline->_internalGetStateObject().Get());
@@ -208,6 +221,8 @@ void DirectX12CommandBuffer::BindPipeline(
 
 void DirectX12CommandBuffer::BindGroupsToGraphicsPipeline(int startIndex, Span<OPtr<BindingGroup>> groups)
 {
+    assert(!IsBarrierOnly());
+
     for(auto &&[i, group] : Enumerate(groups))
     {
         BindGroupToGraphicsPipeline(static_cast<int>(startIndex + i), group);
@@ -216,6 +231,8 @@ void DirectX12CommandBuffer::BindGroupsToGraphicsPipeline(int startIndex, Span<O
 
 void DirectX12CommandBuffer::BindGroupsToComputePipeline(int startIndex, Span<OPtr<BindingGroup>> groups)
 {
+    assert(!IsBarrierOnly());
+
     for(auto &&[i, group] : Enumerate(groups))
     {
         BindGroupToComputePipeline(static_cast<int>(startIndex + i), group);
@@ -224,6 +241,8 @@ void DirectX12CommandBuffer::BindGroupsToComputePipeline(int startIndex, Span<OP
 
 void DirectX12CommandBuffer::BindGroupsToRayTracingPipeline(int startIndex, Span<OPtr<BindingGroup>> groups)
 {
+    assert(!IsBarrierOnly());
+
     for(auto &&[i, group] : Enumerate(groups))
     {
         BindGroupToRayTracingPipeline(static_cast<int>(startIndex + i), group);
@@ -232,6 +251,8 @@ void DirectX12CommandBuffer::BindGroupsToRayTracingPipeline(int startIndex, Span
 
 void DirectX12CommandBuffer::BindGroupsToWorkGraphPipeline(int startIndex, Span<OPtr<BindingGroup>> groups)
 {
+    assert(!IsBarrierOnly());
+
     for(auto &&[i, group] : Enumerate(groups))
     {
         BindGroupToWorkGraphPipeline(static_cast<int>(startIndex + i), group);
@@ -240,6 +261,8 @@ void DirectX12CommandBuffer::BindGroupsToWorkGraphPipeline(int startIndex, Span<
 
 void DirectX12CommandBuffer::BindGroupToGraphicsPipeline(int index, const OPtr<BindingGroup> &group)
 {
+    assert(!IsBarrierOnly());
+
     const auto bindingLayout = static_cast<DirectX12BindingLayout*>(currentGraphicsPipeline_->GetBindingLayout().Get());
     const auto d3dGroup = static_cast<DirectX12BindingGroup *>(group.Get());
     const int firstRootParamIndex = bindingLayout->_internalGetRootParamIndex(index);
@@ -258,6 +281,8 @@ void DirectX12CommandBuffer::BindGroupToGraphicsPipeline(int index, const OPtr<B
 
 void DirectX12CommandBuffer::BindGroupToComputePipeline(int index, const OPtr<BindingGroup> &group)
 {
+    assert(!IsBarrierOnly());
+
     const auto bindingLayout = static_cast<DirectX12BindingLayout*>(currentComputePipeline_->GetBindingLayout().Get());
     const auto d3dGroup = static_cast<DirectX12BindingGroup *>(group.Get());
     const int firstRootParamIndex = bindingLayout->_internalGetRootParamIndex(index);
@@ -276,6 +301,8 @@ void DirectX12CommandBuffer::BindGroupToComputePipeline(int index, const OPtr<Bi
 
 void DirectX12CommandBuffer::BindGroupToRayTracingPipeline(int index, const OPtr<BindingGroup> &group)
 {
+    assert(!IsBarrierOnly());
+
     const auto bindingLayout = static_cast<DirectX12BindingLayout *>(currentRayTracingPipeline_->GetBindingLayout().Get());
     const auto d3dGroup = static_cast<DirectX12BindingGroup *>(group.Get());
     const int firstRootParamIndex = bindingLayout->_internalGetRootParamIndex(index);
@@ -294,6 +321,8 @@ void DirectX12CommandBuffer::BindGroupToRayTracingPipeline(int index, const OPtr
 
 void DirectX12CommandBuffer::BindGroupToWorkGraphPipeline(int index, const OPtr<BindingGroup> &group)
 {
+    assert(!IsBarrierOnly());
+
     const auto bindingLayout = static_cast<DirectX12BindingLayout *>(currentWorkGraphPipeline_->GetDesc().bindingLayout.Get());
     const auto d3dGroup = static_cast<DirectX12BindingGroup *>(group.Get());
     const int firstRootParamIndex = bindingLayout->_internalGetRootParamIndex(index);
@@ -330,6 +359,8 @@ void DirectX12CommandBuffer::BindGroupToWorkGraphPipeline(int index, const OPtr<
 
 void DirectX12CommandBuffer::SetViewports(Span<Viewport> viewports)
 {
+    assert(!IsBarrierOnly());
+
     std::vector<D3D12_VIEWPORT> d3dViewports;
     d3dViewports.reserve(viewports.size());
     std::ranges::transform(
@@ -340,6 +371,8 @@ void DirectX12CommandBuffer::SetViewports(Span<Viewport> viewports)
 
 void DirectX12CommandBuffer::SetScissors(Span<Scissor> scissors)
 {
+    assert(!IsBarrierOnly());
+
     std::vector<D3D12_RECT> d3dScissors;
     d3dScissors.reserve(scissors.size());
     std::ranges::transform(
@@ -350,16 +383,22 @@ void DirectX12CommandBuffer::SetScissors(Span<Scissor> scissors)
 
 void DirectX12CommandBuffer::SetViewportsWithCount(Span<Viewport> viewports)
 {
+    assert(!IsBarrierOnly());
+
     SetViewports(viewports);
 }
 
 void DirectX12CommandBuffer::SetScissorsWithCount(Span<Scissor> scissors)
 {
+    assert(!IsBarrierOnly());
+
     SetScissors(scissors);
 }
 
 void DirectX12CommandBuffer::SetVertexBuffer(int slot, Span<BufferRPtr> buffers, Span<size_t> byteOffsets, Span<size_t> byteStrides)
 {
+    assert(!IsBarrierOnly());
+
     std::vector<D3D12_VERTEX_BUFFER_VIEW> views;
     views.reserve(buffers.size());
     for(auto &&[i, buffer] : Enumerate(buffers))
@@ -379,6 +418,8 @@ void DirectX12CommandBuffer::SetVertexBuffer(int slot, Span<BufferRPtr> buffers,
 
 void DirectX12CommandBuffer::SetIndexBuffer(const BufferRPtr &buffer, size_t byteOffset, IndexFormat format)
 {
+    assert(!IsBarrierOnly());
+
     DXGI_FORMAT d3dFormat; size_t stride;
     if(format == IndexFormat::UInt16)
     {
@@ -406,12 +447,16 @@ void DirectX12CommandBuffer::SetIndexBuffer(const BufferRPtr &buffer, size_t byt
 
 void DirectX12CommandBuffer::SetStencilReferenceValue(uint8_t value)
 {
+    assert(!IsBarrierOnly());
+
     commandList_->OMSetStencilRef(value);
 }
 
 void DirectX12CommandBuffer::SetGraphicsPushConstants(
     uint32_t rangeIndex, uint32_t offsetInRange, uint32_t size, const void *data)
 {
+    assert(!IsBarrierOnly());
+
     auto d3dBindingLayout = static_cast<DirectX12BindingLayout*>(currentGraphicsPipeline_->GetBindingLayout().Get());
     commandList_->SetGraphicsRoot32BitConstants(
         d3dBindingLayout->_internalGetFirstPushConstantRootParamIndex() + rangeIndex,
@@ -421,6 +466,8 @@ void DirectX12CommandBuffer::SetGraphicsPushConstants(
 void DirectX12CommandBuffer::SetComputePushConstants(
     uint32_t rangeIndex, uint32_t offsetInRange, uint32_t size, const void *data)
 {
+    assert(!IsBarrierOnly());
+
     auto d3dBindingLayout = static_cast<DirectX12BindingLayout *>(currentComputePipeline_->GetBindingLayout().Get());
     commandList_->SetComputeRoot32BitConstants(
         d3dBindingLayout->_internalGetFirstPushConstantRootParamIndex() + rangeIndex,
@@ -429,27 +476,37 @@ void DirectX12CommandBuffer::SetComputePushConstants(
 
 void DirectX12CommandBuffer::Draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance)
 {
+    assert(!IsBarrierOnly());
+
     commandList_->DrawInstanced(vertexCount, instanceCount, firstVertex, firstInstance);
 }
 
 void DirectX12CommandBuffer::DrawIndexed(int indexCount, int instanceCount, int firstIndex, int firstVertex, int firstInstance)
 {
+    assert(!IsBarrierOnly());
+
     commandList_->DrawIndexedInstanced(indexCount, instanceCount, firstIndex, firstVertex, firstInstance);
 }
 
 void DirectX12CommandBuffer::DispatchMesh(int groupCountX, int groupCountY, int groupCountZ)
 {
+    assert(!IsBarrierOnly());
+
     commandList_->DispatchMesh(groupCountX, groupCountY, groupCountZ);
 }
 
 void DirectX12CommandBuffer::Dispatch(int groupCountX, int groupCountY, int groupCountZ)
 {
+    assert(!IsBarrierOnly());
+
     commandList_->Dispatch(groupCountX, groupCountY, groupCountZ);
 }
 
 void DirectX12CommandBuffer::DispatchNode(
     uint32_t entryIndex, uint32_t recordCount, uint32_t recordStride, const void *records)
 {
+    assert(!IsBarrierOnly());
+
     const D3D12_DISPATCH_GRAPH_DESC dispatchDesc =
     {
         .Mode         = D3D12_DISPATCH_MODE_NODE_CPU_INPUT,
@@ -473,6 +530,8 @@ void DirectX12CommandBuffer::TraceRays(
     const ShaderBindingTableRegion &hitSbt,
     const ShaderBindingTableRegion &callableSbt)
 {
+    assert(!IsBarrierOnly());
+
     D3D12_DISPATCH_RAYS_DESC desc;
     desc.RayGenerationShaderRecord.StartAddress = rayGenSbt.deviceAddress.address;
     desc.RayGenerationShaderRecord.SizeInBytes  = rayGenSbt.size;
@@ -493,6 +552,8 @@ void DirectX12CommandBuffer::TraceRays(
 
 void DirectX12CommandBuffer::DispatchIndirect(const BufferRPtr &buffer, size_t byteOffset)
 {
+    assert(!IsBarrierOnly());
+
     auto d3dBuffer = static_cast<DirectX12Buffer*>(buffer.Get())->_internalGetNativeBuffer().Get();
     auto commandSignature = device_->_internalGetIndirectDispatchCommandSignature();
     commandList_->ExecuteIndirect(commandSignature, 1, d3dBuffer, byteOffset, nullptr, 0);
@@ -501,6 +562,8 @@ void DirectX12CommandBuffer::DispatchIndirect(const BufferRPtr &buffer, size_t b
 void DirectX12CommandBuffer::DrawIndexedIndirect(
     const BufferRPtr &buffer, uint32_t drawCount, size_t byteOffset, size_t byteStride)
 {
+    assert(!IsBarrierOnly());
+
     auto d3dBuffer = static_cast<DirectX12Buffer *>(buffer.Get())->_internalGetNativeBuffer().Get();
     auto commandSignature = device_->_internalGetIndirectDrawIndexedCommandSignature();
     if(byteStride == sizeof(D3D12_DRAW_INDEXED_ARGUMENTS))
@@ -519,6 +582,8 @@ void DirectX12CommandBuffer::DrawIndexedIndirect(
 
 void DirectX12CommandBuffer::CopyBuffer(Buffer *dst, size_t dstOffset, Buffer *src, size_t srcOffset, size_t range)
 {
+    assert(!IsBarrierOnly());
+
     auto d3dDst = static_cast<DirectX12Buffer*>(dst)->_internalGetNativeBuffer().Get();
     auto d3dSrc = static_cast<DirectX12Buffer*>(src)->_internalGetNativeBuffer().Get();
     commandList_->CopyBufferRegion(d3dDst, dstOffset, d3dSrc, srcOffset, range);
@@ -528,6 +593,8 @@ void DirectX12CommandBuffer::CopyColorTexture(
     Texture *dst, uint32_t dstMipLevel, uint32_t dstArrayLayer,
     Texture *src, uint32_t srcMipLevel, uint32_t srcArrayLayer)
 {
+    assert(!IsBarrierOnly());
+
     auto d3dDst = static_cast<DirectX12Texture *>(dst)->_internalGetNativeTexture().Get();
     auto d3dSrc = static_cast<DirectX12Texture *>(src)->_internalGetNativeTexture().Get();
     const D3D12_TEXTURE_COPY_LOCATION dstLoc =
@@ -552,6 +619,8 @@ void DirectX12CommandBuffer::CopyColorTexture(
     Texture* src, uint32_t srcMipLevel, uint32_t srcArrayLayer, const Vector3u &srcOffset,
     const Vector3u &size)
 {
+    assert(!IsBarrierOnly());
+
     auto d3dDst = static_cast<DirectX12Texture *>(dst)->_internalGetNativeTexture().Get();
     auto d3dSrc = static_cast<DirectX12Texture *>(src)->_internalGetNativeTexture().Get();
     const D3D12_TEXTURE_COPY_LOCATION dstLoc =
@@ -583,6 +652,8 @@ void DirectX12CommandBuffer::CopyColorTexture(
 void DirectX12CommandBuffer::CopyBufferToTexture(
     Texture *dst, uint32_t mipLevel, uint32_t arrayLayer, Buffer *src, size_t srcOffset, size_t srcRowBytes)
 {
+    assert(!IsBarrierOnly());
+
     assert(srcRowBytes % D3D12_TEXTURE_DATA_PITCH_ALIGNMENT == 0 ||
            ((dst->GetHeight() >> mipLevel) <= 1 &&
             (dst->GetDepth() >> mipLevel) <= 1));
@@ -621,6 +692,8 @@ void DirectX12CommandBuffer::CopyBufferToTexture(
 void DirectX12CommandBuffer::CopyTextureToBuffer(
     Buffer *dst, size_t dstOffset, size_t dstRowBytes, Texture *src, uint32_t mipLevel, uint32_t arrayLayer)
 {
+    assert(!IsBarrierOnly());
+
     assert(dstRowBytes % D3D12_TEXTURE_DATA_PITCH_ALIGNMENT == 0 ||
            ((src->GetHeight() >> mipLevel) <= 1 &&
             (src->GetDepth() >> mipLevel) <= 1));
@@ -658,6 +731,8 @@ void DirectX12CommandBuffer::CopyTextureToBuffer(
 
 void DirectX12CommandBuffer::ClearColorTexture2D(Texture *dst, const ColorClearValue &clearValue)
 {
+    assert(!IsBarrierOnly());
+
     const TextureRtvDesc rtvDesc =
     {
         .format     = Format::Unknown,
@@ -675,6 +750,8 @@ void DirectX12CommandBuffer::ClearColorTexture2D(Texture *dst, const ColorClearV
 void DirectX12CommandBuffer::ClearDepthStencilTexture(
     Texture *dst, const DepthStencilClearValue &clearValue, bool depth, bool stencil)
 {
+    assert(!IsBarrierOnly());
+
     assert(depth || stencil);
     auto dsv = dst->CreateDsv();
     auto d3dDsv = static_cast<DirectX12TextureDsv*>(dsv.Get())->_internalGetDescriptorHandle();
@@ -712,6 +789,8 @@ void DirectX12CommandBuffer::BuildBlas(
     const BlasOPtr              &blas,
     BufferDeviceAddress          scratchBufferAddress)
 {
+    assert(!IsBarrierOnly());
+
     static_cast<DirectX12BlasPrebuildInfo *>(buildInfo.Get())
         ->_internalBuildBlas(commandList_.Get(), geometries, blas, scratchBufferAddress);
 }
@@ -722,6 +801,8 @@ void DirectX12CommandBuffer::BuildTlas(
     const TlasOPtr                    &tlas,
     BufferDeviceAddress                scratchBufferAddress)
 {
+    assert(!IsBarrierOnly());
+
     static_cast<DirectX12TlasPrebuildInfo*>(buildInfo.Get())
         ->_internalBuildTlas(commandList_.Get(), instances, tlas, scratchBufferAddress);
 }
@@ -748,19 +829,27 @@ void DirectX12CommandBuffer::ExecuteBarriersInternal(
     const bool isOnCopyQueue = pool_->GetType() == QueueType::Transfer;
 
     std::vector<D3D12_GLOBAL_BARRIER> d3dGlobalBarriers;
-    d3dGlobalBarriers.reserve(globalMemoryBarriers.size());
-    for(auto &b : globalMemoryBarriers)
+    if(!IsBarrierOnly())
     {
-        auto &d3dBarrier = d3dGlobalBarriers.emplace_back();
-        d3dBarrier.SyncBefore   = TranslateBarrierSync(b.beforeStages, Format::Unknown);
-        d3dBarrier.SyncAfter    = TranslateBarrierSync(b.afterStages, Format::Unknown);
-        d3dBarrier.AccessBefore = TranslateBarrierAccess(b.beforeAccesses);
-        d3dBarrier.AccessAfter  = TranslateBarrierAccess(b.afterAccesses);
+        d3dGlobalBarriers.reserve(globalMemoryBarriers.size());
+        for(auto &b : globalMemoryBarriers)
+        {
+            auto &d3dBarrier = d3dGlobalBarriers.emplace_back();
+            d3dBarrier.SyncBefore = TranslateBarrierSync(b.beforeStages, Format::Unknown);
+            d3dBarrier.SyncAfter = TranslateBarrierSync(b.afterStages, Format::Unknown);
+            d3dBarrier.AccessBefore = TranslateBarrierAccess(b.beforeAccesses);
+            d3dBarrier.AccessAfter = TranslateBarrierAccess(b.afterAccesses);
+        }
     }
 
     std::vector<D3D12_TEXTURE_BARRIER> d3dTextureBarriers;
     for(auto &b : textureTransitions)
     {
+        if(IsBarrierOnly() && b.beforeLayout == b.afterLayout)
+        {
+            continue;
+        }
+
         const Format format = b.texture->GetFormat();
 
         auto &d3dBarrier = d3dTextureBarriers.emplace_back();
@@ -819,27 +908,38 @@ void DirectX12CommandBuffer::ExecuteBarriersInternal(
             }
             d3dBarrier.LayoutAfter = D3D12_BARRIER_LAYOUT_COMMON;
         }
+
+        if(IsBarrierOnly())
+        {
+            d3dBarrier.SyncBefore = D3D12_BARRIER_SYNC_NONE;
+            d3dBarrier.SyncAfter = D3D12_BARRIER_SYNC_NONE;
+            d3dBarrier.AccessBefore = D3D12_BARRIER_ACCESS_NO_ACCESS;
+            d3dBarrier.AccessAfter = D3D12_BARRIER_ACCESS_NO_ACCESS;
+        }
     }
 
     std::vector<D3D12_BUFFER_BARRIER> d3dBufferBarriers;
-    for(auto &b : bufferTransitions)
+    if(!IsBarrierOnly())
     {
-        auto &d3dBarrier = d3dBufferBarriers.emplace_back();
-        d3dBarrier.pResource    = static_cast<DirectX12Buffer *>(b.buffer)->_internalGetNativeBuffer().Get();
-        d3dBarrier.Size         = b.buffer->GetDesc().size;
-        d3dBarrier.Offset       = 0;
-        d3dBarrier.SyncBefore   = TranslateBarrierSync(b.beforeStages, Format::Unknown);
-        d3dBarrier.SyncAfter    = TranslateBarrierSync(b.afterStages, Format::Unknown);
-        d3dBarrier.AccessBefore = TranslateBarrierAccess(b.beforeAccesses);
-        d3dBarrier.AccessAfter  = TranslateBarrierAccess(b.afterAccesses);
+        for(auto &b : bufferTransitions)
+        {
+            auto &d3dBarrier = d3dBufferBarriers.emplace_back();
+            d3dBarrier.pResource    = static_cast<DirectX12Buffer *>(b.buffer)->_internalGetNativeBuffer().Get();
+            d3dBarrier.Size         = b.buffer->GetDesc().size;
+            d3dBarrier.Offset       = 0;
+            d3dBarrier.SyncBefore   = TranslateBarrierSync(b.beforeStages, Format::Unknown);
+            d3dBarrier.SyncAfter    = TranslateBarrierSync(b.afterStages, Format::Unknown);
+            d3dBarrier.AccessBefore = TranslateBarrierAccess(b.beforeAccesses);
+            d3dBarrier.AccessAfter  = TranslateBarrierAccess(b.afterAccesses);
 
-        if(b.beforeAccesses == ResourceAccess::BuildASScratch)
-        {
-            d3dBarrier.SyncBefore = D3D12_BARRIER_SYNC_COMPUTE_SHADING;
-        }
-        if(b.afterAccesses == ResourceAccess::BuildASScratch)
-        {
-            d3dBarrier.SyncAfter = D3D12_BARRIER_SYNC_COMPUTE_SHADING;
+            if(b.beforeAccesses == ResourceAccess::BuildASScratch)
+            {
+                d3dBarrier.SyncBefore = D3D12_BARRIER_SYNC_COMPUTE_SHADING;
+            }
+            if(b.afterAccesses == ResourceAccess::BuildASScratch)
+            {
+                d3dBarrier.SyncAfter = D3D12_BARRIER_SYNC_COMPUTE_SHADING;
+            }
         }
     }
 
@@ -859,9 +959,9 @@ void DirectX12CommandBuffer::ExecuteBarriersInternal(
         d3dBarrier.LayoutBefore = TranslateTextureLayout(b.beforeLayout, format);
         d3dBarrier.LayoutAfter  = TranslateTextureLayout(b.afterLayout, format);
         d3dBarrier.SyncBefore   = TranslateBarrierSync(b.beforeStages, format);
-        d3dBarrier.SyncAfter    = TranslateBarrierSync(D3D12_BARRIER_SYNC_ALL, format);
+        d3dBarrier.SyncAfter    = D3D12_BARRIER_SYNC_NONE;
         d3dBarrier.AccessBefore = TranslateBarrierAccess(b.beforeAccesses);
-        d3dBarrier.AccessAfter  = TranslateBarrierAccess(D3D12_BARRIER_ACCESS_COMMON);
+        d3dBarrier.AccessAfter  = D3D12_BARRIER_ACCESS_NO_ACCESS;
         d3dBarrier.Subresources = TranslateBarrierSubresources(b.subresources, format);
         d3dBarrier.Flags        = D3D12_TEXTURE_BARRIER_FLAG_NONE;
 
@@ -884,6 +984,14 @@ void DirectX12CommandBuffer::ExecuteBarriersInternal(
             }
             d3dBarrier.LayoutAfter = D3D12_BARRIER_LAYOUT_COMMON;
         }
+
+        if(IsBarrierOnly())
+        {
+            d3dBarrier.SyncBefore   = D3D12_BARRIER_SYNC_NONE;
+            d3dBarrier.SyncAfter    = D3D12_BARRIER_SYNC_NONE;
+            d3dBarrier.AccessBefore = D3D12_BARRIER_ACCESS_NO_ACCESS;
+            d3dBarrier.AccessAfter  = D3D12_BARRIER_ACCESS_NO_ACCESS;
+        }
     }
 
     for(auto &b : textureAcquireBarriers)
@@ -901,9 +1009,9 @@ void DirectX12CommandBuffer::ExecuteBarriersInternal(
         d3dBarrier.pResource    = static_cast<DirectX12Texture *>(b.texture)->_internalGetNativeTexture().Get();
         d3dBarrier.LayoutBefore = TranslateTextureLayout(b.beforeLayout, format);
         d3dBarrier.LayoutAfter  = TranslateTextureLayout(b.afterLayout, format);
-        d3dBarrier.SyncBefore   = TranslateBarrierSync(D3D12_BARRIER_SYNC_ALL, format);
+        d3dBarrier.SyncBefore   = D3D12_BARRIER_SYNC_NONE;
         d3dBarrier.SyncAfter    = TranslateBarrierSync(b.afterStages, format);
-        d3dBarrier.AccessBefore = TranslateBarrierAccess(D3D12_BARRIER_ACCESS_COMMON);
+        d3dBarrier.AccessBefore = D3D12_BARRIER_ACCESS_NO_ACCESS;
         d3dBarrier.AccessAfter  = TranslateBarrierAccess(b.afterAccesses);
         d3dBarrier.Subresources = TranslateBarrierSubresources(b.subresources, b.texture->GetFormat());
         d3dBarrier.Flags        = D3D12_TEXTURE_BARRIER_FLAG_NONE;
@@ -926,6 +1034,14 @@ void DirectX12CommandBuffer::ExecuteBarriersInternal(
                 d3dBarrier.LayoutBefore = D3D12_BARRIER_LAYOUT_COMMON;
             }
             d3dBarrier.LayoutAfter = D3D12_BARRIER_LAYOUT_COMMON;
+        }
+
+        if(IsBarrierOnly())
+        {
+            d3dBarrier.SyncBefore   = D3D12_BARRIER_SYNC_NONE;
+            d3dBarrier.SyncAfter    = D3D12_BARRIER_SYNC_NONE;
+            d3dBarrier.AccessBefore = D3D12_BARRIER_ACCESS_NO_ACCESS;
+            d3dBarrier.AccessAfter  = D3D12_BARRIER_ACCESS_NO_ACCESS;
         }
     }
 
@@ -961,6 +1077,11 @@ void DirectX12CommandBuffer::ExecuteBarriersInternal(
     {
         commandList_->Barrier(static_cast<UINT32>(barrierGroups.GetSize()), barrierGroups.GetData());
     }
+}
+
+bool DirectX12CommandBuffer::IsBarrierOnly() const
+{
+    return flags_.Contains(CommandBufferFlags::BarrierOnly);
 }
 
 RTRC_RHI_D3D12_END

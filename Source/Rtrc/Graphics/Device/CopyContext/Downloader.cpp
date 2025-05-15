@@ -72,7 +72,7 @@ void DownloadBatch::SubmitAndWait()
     RTRC_SCOPE_EXIT{ downloader_->FreeBatch(std::move(batch)); };
 
     auto commandBuffer = batch.commandPool->NewCommandBuffer();
-    commandBuffer->Begin();
+    commandBuffer->Begin(RHI::CommandBufferFlags::None);
 
     std::vector<RHI::BufferTransitionBarrier> beforeBufferTransitions;
     for(auto& task : bufferTasks_)

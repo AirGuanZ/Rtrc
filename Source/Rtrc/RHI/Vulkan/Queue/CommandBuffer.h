@@ -18,8 +18,8 @@ public:
 
     ~VulkanCommandBuffer() override;
 
-    void Begin() RTRC_RHI_OVERRIDE;
-    void End()   RTRC_RHI_OVERRIDE;
+    void Begin(CommandBufferFlags flags) RTRC_RHI_OVERRIDE;
+    void End() RTRC_RHI_OVERRIDE;
 
     void BeginRenderPass(
         Span<ColorAttachment>         colorAttachments,

@@ -207,7 +207,7 @@ Ref<Device> CommandBuffer::GetDevice() const
     return device_;
 }
 
-void CommandBuffer::Begin()
+void CommandBuffer::Begin(RHI::CommandBufferFlags flags)
 {
 #if RTRC_DEBUG
     assert(threadID_ == std::thread::id());
@@ -216,7 +216,7 @@ void CommandBuffer::Begin()
 
     manager_->_internalAllocate(*this);
     assert(rhiCommandBuffer_);
-    rhiCommandBuffer_->Begin();
+    rhiCommandBuffer_->Begin(flags);
 }
 
 void CommandBuffer::End()
