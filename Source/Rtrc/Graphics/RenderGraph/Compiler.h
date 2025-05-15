@@ -107,6 +107,8 @@ private:
 
     void FillSections(RGExecutableGraph &output);
 
+    static bool IsUAVAccess(RHI::ResourceAccessFlag accesses);
+
     Options options_;
     bool    forPartialExecution_;
 

@@ -983,7 +983,8 @@ void RGCompiler::GenerateBarriers(const RGExecutableResources &resources)
                 {
                     return true;
                 }
-                if(ua.uavOverlapGroup.IsValid() && ua.uavOverlapGroup == ub.uavOverlapGroup)
+                if(ua.uavOverlapGroup.IsValid() && ua.uavOverlapGroup == ub.uavOverlapGroup &&
+                   IsUAVAccess(ua.usage.accesses) && IsUAVAccess(ub.usage.accesses))
                 {
                     return true;
                 }
@@ -1087,7 +1088,8 @@ void RGCompiler::GenerateBarriers(const RGExecutableResources &resources)
                 }
                 if(ua.uavOverlapGroup.IsValid() &&
                    ua.usage.layout == ub.usage.layout &&
-                   ua.uavOverlapGroup == ub.uavOverlapGroup)
+                   ua.uavOverlapGroup == ub.uavOverlapGroup &&
+                   IsUAVAccess(ua.usage.accesses) && IsUAVAccess(ub.usage.accesses))
                 {
                     return true;
                 }
@@ -1272,8 +1274,8 @@ void RGCompiler::FillSections(RGExecutableGraph &output)
         section.passes.reserve(compileSection->passes.size());
         for(const int compilePassIndex : compileSection->passes)
         {
-            RGPassImpl          *&rawPass     = sortedPasses_[compilePassIndex];
-            CompilePass    &compilePass = *sortedCompilePasses_[compilePassIndex];
+            RGPassImpl      *&rawPass     = sortedPasses_[compilePassIndex];
+            CompilePass      &compilePass = *sortedCompilePasses_[compilePassIndex];
             RGExecutablePass &pass        = section.passes.emplace_back();
 
             pass.preBufferBarriers = std::move(compilePass.preBufferTransitions);
@@ -1335,6 +1337,11 @@ void RGCompiler::FillSections(RGExecutableGraph &output)
 #endif
         }
     }
+}
+
+bool RGCompiler::IsUAVAccess(RHI::ResourceAccessFlag accesses)
+{
+    return RHI::IsUAVOnly(accesses);
 }
 
 RTRC_END
