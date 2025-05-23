@@ -15,6 +15,8 @@ public:
     bool IsEmpty() const;
     Vector2<T> GetCenter() const;
     Vector2<T> GetExtent() const;
+    T GetWidthOverHeight() const;
+    T GetHeightOverWidth() const;
 };
 
 using Rectf = Rect<float>;
@@ -45,6 +47,20 @@ template <typename T>
 Vector2<T> Rect<T>::GetExtent() const
 {
     return upper - lower;
+}
+
+template <typename T>
+T Rect<T>::GetWidthOverHeight() const
+{
+    const Vector2<T> size = GetExtent();
+    return size.x / size.y;
+}
+
+template <typename T>
+T Rect<T>::GetHeightOverWidth() const
+{
+    const Vector2<T> size = GetExtent();
+    return size.y / size.x;
 }
 
 template<typename T>
