@@ -67,7 +67,7 @@ constexpr uint32_t Hash(std::string_view str);
 
 // std::string <-> std::u8string
 // Here std::string must also be encoded with UTF-8.
-// These two functions only replace the container type and doesn't change the content.
+// These two functions only replace the container type and won't change the content.
 std::u8string StringToU8String(std::string_view str);
 std::string U8StringToString(std::u8string_view str);
 

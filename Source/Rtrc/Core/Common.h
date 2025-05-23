@@ -371,16 +371,6 @@ constexpr size_t GetContainerSize(const T(&)[N])
     const TYPE &Get##PROP_NAME() const { return MEMBER_NAME; }        \
     TYPE &Get##PROP_NAME() { return MEMBER_NAME; } 
 
-// Note that this function doesn't convert the input utf-8 string into any other encoding.
-// It just copies the bytes from the input string to the output.
-inline std::string u8StringToString(const std::u8string &s)
-{
-    std::string ret;
-    ret.resize(s.size());
-    std::memcpy(&ret[0], &s[0], s.size());
-    return ret;
-}
-
 inline float Atan2Safe(float y, float x)
 {
     return y == 0 && x == 0 ? 0.0f : std::atan2(y, x);

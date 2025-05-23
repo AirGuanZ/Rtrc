@@ -17,7 +17,7 @@ RTRC_BEGIN
     template void CLASS_NAME::Transfer<Rtrc::JSONFileArchiveWritter>(Rtrc::JSONFileArchiveWritter &ar);         \
     template void CLASS_NAME::Transfer<Rtrc::BinaryArchiveReader<true>>(Rtrc::BinaryArchiveReader<true> &ar);   \
     template void CLASS_NAME::Transfer<Rtrc::BinaryArchiveReader<false>>(Rtrc::BinaryArchiveReader<false> &ar); \
-    template void CLASS_NAME::Transfer<Rtrc::BinaryArchiveWritter<true>>(Rtrc::BinaryArchiveWritter<true> &ar); \
-    template void CLASS_NAME::Transfer<Rtrc::BinaryArchiveWritter<false>>(Rtrc::BinaryArchiveWritter<false> &ar)
+    template void CLASS_NAME::Transfer<Rtrc::BinaryArchiveWriter<true>>(Rtrc::BinaryArchiveWriter<true> &ar);   \
+    template void CLASS_NAME::Transfer<Rtrc::BinaryArchiveWriter<false>>(Rtrc::BinaryArchiveWriter<false> &ar)
 
 RTRC_END

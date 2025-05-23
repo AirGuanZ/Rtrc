@@ -1,5 +1,6 @@
 #pragma once
 
+#include <concepts>
 #include <vector>
 
 #include <Rtrc/Core/Common.h>
@@ -41,6 +42,7 @@ public:
         {
             int i = 0;
             (ar->Transfer(std::to_string(i++), elements), ...);
+            (void)i;
             ar->EndTransferTuple();
         }
     }
@@ -102,6 +104,26 @@ struct ArchiveTransferTrait<T>
     static void Transfer(Archive &ar, std::string_view name, T &object)
     {
         ar.TransferBuiltin(name, object);
+    }
+};
+
+template<typename T> requires std::is_enum_v<T>
+struct ArchiveTransferTrait<T>
+{
+    template<typename Archive>
+    static void Transfer(Archive &ar, std::string_view name, T &object)
+    {
+        if(ar.IsReading())
+        {
+            std::underlying_type_t<T> value = {};
+            ar.TransferBuiltin(name, value);
+            object = static_cast<T>(value);
+        }
+        else
+        {
+            auto value = std::to_underlying(object);
+            ar.TransferBuiltin(name, value);
+        }
     }
 };
 
