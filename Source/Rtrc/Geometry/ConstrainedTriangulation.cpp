@@ -507,9 +507,9 @@ void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
         }
         assert(triangleIndex >= 0);
 
-        // zeroSignCount == 3 means the point lies on three edges simulatiously;
+        // zeroSignCount == 3 means the point lies on three edges simultaneously;
         // zeroSignCount == 2 means the point lies exactly on one exiting vertex.
-        // Both cases indicates this is a degenerate triangle.
+        // Both cases indicate this is a degenerate triangle.
         const int zeroSignCount = (signs[0] == 0) + (signs[1] == 0) + (signs[2] == 0);
         assert(zeroSignCount < 2);
 
