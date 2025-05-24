@@ -541,6 +541,24 @@ void ImGuiInstance::Swap(ImGuiInstance &other) noexcept
     data_.swap(other.data_);
 }
 
+void ImGuiInstance::AddFlags(Flags flags)
+{
+    IMGUI_CONTEXT;
+    if(flags.Contains(ImGuiDetail::FlagBit::EnableDocking))
+    {
+        ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+    }
+}
+
+void ImGuiInstance::ClearFlags(Flags flags)
+{
+    IMGUI_CONTEXT;
+    if(flags.Contains(ImGuiDetail::FlagBit::EnableDocking))
+    {
+        ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_DockingEnable;
+    }
+}
+
 void ImGuiInstance::SetInputEnabled(bool enabled)
 {
     IMGUI_CONTEXT;
@@ -757,6 +775,12 @@ void ImGuiInstance::SameLine()
 {
     IMGUI_CONTEXT;
     ImGui::SameLine();
+}
+
+ImGuiID ImGuiInstance::DockSpaceOverMainViewport(ImGuiID dockspaceID)
+{
+    IMGUI_CONTEXT;
+    return ImGui::DockSpaceOverViewport(dockspaceID);
 }
 
 bool ImGuiInstance::Begin(const char *label, bool *open, ImGuiWindowFlags flags)

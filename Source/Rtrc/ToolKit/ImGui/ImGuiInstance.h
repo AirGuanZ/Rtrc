@@ -11,6 +11,20 @@
 
 RTRC_BEGIN
 
+namespace ImGuiDetail
+{
+
+    enum class FlagBit : uint32_t
+    {
+        None = 0,
+        EnableDocking = 1u << 0
+    };
+
+    RTRC_DEFINE_ENUM_FLAGS(FlagBit);
+    using Flags = EnumFlagsFlagBit;
+
+} // namespace ImGuiDetail
+
 struct ImGuiDrawData
 {
     struct DrawList
@@ -44,7 +58,7 @@ public:
     
     RGPass Render(
         const ImGuiDrawData *drawData,
-        RGTexture                renderTarget,
+        RGTexture            renderTarget,
         GraphRef             renderGraph);
 
     // rt must be externally synchronized
@@ -73,6 +87,8 @@ class ImGuiInstance : public Uncopyable
 {
 public:
 
+    using Flags = ImGuiDetail::Flags;
+
     ImGuiInstance() = default;
     ImGuiInstance(Ref<Device> device, Ref<Window> window);
     ~ImGuiInstance();
@@ -80,6 +96,9 @@ public:
     ImGuiInstance(ImGuiInstance &&other) noexcept;
     ImGuiInstance &operator=(ImGuiInstance &&other) noexcept;
     void Swap(ImGuiInstance &other) noexcept;
+
+    void AddFlags(Flags flags);
+    void ClearFlags(Flags flags);
 
     void SetInputEnabled(bool enabled);
     bool IsInputEnabled() const;
@@ -101,6 +120,8 @@ public:
     void SetNextWindowSize(const Vector2f &size, ImGuiCond cond = 0);
 
     void SameLine();
+
+    ImGuiID DockSpaceOverMainViewport(ImGuiID dockspaceID);
 
     bool Begin(const char *label, bool *open = nullptr, ImGuiWindowFlags flags = 0);
     void End();
@@ -214,11 +235,11 @@ public:
     bool IsMouseClicked(KeyCode keyCode) const;
 
     template<typename F>
-    void Do(F &&f); // Call f with thread local ImGui context bounded
-
-private:
+    decltype(auto) Do(F &&f); // Call f with thread local ImGui context bounded
     
     void RecreateFontTexture();
+
+private:
 
     ImGuiContext *GetImGuiContext();
 
@@ -264,12 +285,12 @@ void ImGuiInstance::Text(StdFormatString<Args...> fmt, Args &&... args)
 }
 
 template<typename F>
-void ImGuiInstance::Do(F &&f)
+decltype(auto) ImGuiInstance::Do(F &&f)
 {
     ImGuiContext *oldContext = ImGui::GetCurrentContext();
     ImGui::SetCurrentContext(GetImGuiContext());
     RTRC_SCOPE_EXIT{ ImGui::SetCurrentContext(oldContext); };
-    std::invoke(std::forward<F>(f));
+    return std::invoke(std::forward<F>(f));
 }
 
 RTRC_END
