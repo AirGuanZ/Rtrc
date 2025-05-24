@@ -17,6 +17,9 @@ public:
     Vector2<T> GetExtent() const;
     T GetWidthOverHeight() const;
     T GetHeightOverWidth() const;
+
+    Rect &operator|=(const Vector2<T> &p);
+    Rect &operator|=(const Rect &r);
 };
 
 using Rectf = Rect<float>;
@@ -61,6 +64,20 @@ T Rect<T>::GetHeightOverWidth() const
 {
     const Vector2<T> size = GetExtent();
     return size.y / size.x;
+}
+
+template <typename T>
+Rect<T> &Rect<T>::operator|=(const Vector2<T> &p)
+{
+    *this = *this | p;
+    return *this;
+}
+
+template <typename T>
+Rect<T> &Rect<T>::operator|=(const Rect &r)
+{
+    *this = *this | r;
+    return *this;
 }
 
 template<typename T>
