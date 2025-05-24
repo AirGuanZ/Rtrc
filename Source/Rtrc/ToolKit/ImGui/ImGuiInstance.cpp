@@ -101,7 +101,7 @@ namespace ImGuiDetail
         case NumPadMul:     return ImGuiKey_KeypadMultiply;
         case NumPadSub:     return ImGuiKey_KeypadSubtract;
         case NumPadAdd:     return ImGuiKey_KeypadAdd;
-        case NumPadEnter:   return ImGuiKey_KeyPadEnter;
+        case NumPadEnter:   return ImGuiKey_KeypadEnter;
         case LeftShift:     return ImGuiKey_LeftShift;
         case LeftCtrl:      return ImGuiKey_LeftCtrl;
         case LeftAlt:       return ImGuiKey_LeftAlt;
@@ -288,7 +288,7 @@ void ImGuiRenderer::RenderImmediately(
     }
 
     const Vector2u rtSize = rtv.GetTexture()->GetSize();
-    if(rtSize.x != drawData->framebufferSize.x || rtSize.y != drawData->framebufferSize.y)
+    if(rtSize.x != static_cast<uint32_t>(drawData->framebufferSize.x) || rtSize.y != static_cast<uint32_t>(drawData->framebufferSize.y))
     {
         return;
     }
@@ -299,11 +299,11 @@ void ImGuiRenderer::RenderImmediately(
     if(drawData->totalVertexCount > 0)
     {
         vertexBuffer = device_->CreateBuffer(RHI::BufferDesc
-            {
-                .size = drawData->totalVertexCount * sizeof(ImDrawVert),
-                .usage = RHI::BufferUsage::VertexBuffer,
-                .hostAccessType = RHI::BufferHostAccessType::Upload
-            });
+        {
+            .size = drawData->totalVertexCount * sizeof(ImDrawVert),
+            .usage = RHI::BufferUsage::VertexBuffer,
+            .hostAccessType = RHI::BufferHostAccessType::Upload
+        });
         auto vertexData = static_cast<ImDrawVert *>(vertexBuffer->GetRHIObject()->Map(0, vertexBuffer->GetSize(), {}));
         size_t vertexOffset = 0;
         for(const ImGuiDrawData::DrawList &drawList : drawData->drawLists)
@@ -316,11 +316,11 @@ void ImGuiRenderer::RenderImmediately(
     if(drawData->totalIndexCount > 0)
     {
         indexBuffer = device_->CreateBuffer(RHI::BufferDesc
-            {
-                .size = drawData->totalIndexCount * sizeof(ImDrawIdx),
-                .usage = RHI::BufferUsage::IndexBuffer,
-                .hostAccessType = RHI::BufferHostAccessType::Upload
-            });
+        {
+            .size = drawData->totalIndexCount * sizeof(ImDrawIdx),
+            .usage = RHI::BufferUsage::IndexBuffer,
+            .hostAccessType = RHI::BufferHostAccessType::Upload
+        });
         auto indexData = static_cast<ImDrawIdx *>(indexBuffer->GetRHIObject()->Map(0, indexBuffer->GetSize(), {}));
         size_t indexOffset = 0;
         for(const ImGuiDrawData::DrawList &drawList : drawData->drawLists)
@@ -421,13 +421,13 @@ void ImGuiRenderer::RenderImmediately(
 
             // Texture
 
-            if(drawCmd.GetTexID() == drawData->fontTexture.get())
+            if(drawCmd.GetTexID() == reinterpret_cast<ImTextureID>(drawData->fontTexture.get()))
             {
                 commandBuffer.BindGraphicsGroup(1, drawData->fontTextureBindingGroup);
             }
             else
             {
-                auto texture = static_cast<Texture *>(drawCmd.GetTexID());
+                auto texture = reinterpret_cast<Texture *>(drawCmd.GetTexID());
                 auto group = passBindingGroupLayout_->CreateBindingGroup();
                 group->Set(0, texture->GetSrv());
                 commandBuffer.BindGraphicsGroup(1, group);
@@ -666,7 +666,7 @@ void ImGuiInstance::RecreateFontTexture()
         }, data, RHI::TextureLayout::ShaderTexture);
     data_->fontTextureBindingGroup = data_->passBindingGroupLayout->CreateBindingGroup();
     data_->fontTextureBindingGroup->Set(0, data_->fontTexture->GetSrv());
-    ImGui::GetIO().Fonts->SetTexID(data_->fontTexture.get());
+    ImGui::GetIO().Fonts->SetTexID(reinterpret_cast<ImTextureID>(data_->fontTexture.get()));
 }
 
 ImGuiContext *ImGuiInstance::GetImGuiContext()
@@ -792,7 +792,7 @@ void ImGuiInstance::LabelUnformatted(const char *label, const std::string &text)
 bool ImGuiInstance::Button(const char *label, const Vector2f &size)
 {
     IMGUI_CONTEXT;
-    return ImGui::Button(label, size);
+    return ImGui::Button(label, { size.x, size.y });
 }
 
 bool ImGuiInstance::SmallButton(const char *label)
@@ -822,7 +822,7 @@ bool ImGuiInstance::RadioButton(const char *label, bool active)
 void ImGuiInstance::ProgressBar(float fraction, const Vector2f &size, const char *overlay)
 {
     IMGUI_CONTEXT;
-    return ImGui::ProgressBar(fraction, size, overlay);
+    return ImGui::ProgressBar(fraction, { size.x, size.y }, overlay);
 }
 
 void ImGuiInstance::Bullet()
@@ -890,7 +890,7 @@ bool ImGuiInstance::Combo(const char *label, int *curr, const ItemGetter &getIte
 bool ImGuiInstance::Selectable(const char *label, bool selected, ImGuiSelectableFlags flags, const Vector2f &size)
 {
     IMGUI_CONTEXT;
-    return ImGui::Selectable(label, selected, flags, size);
+    return ImGui::Selectable(label, selected, flags, { size.x, size.y });
 }
 
 template <ImGuiScalar T>
@@ -1213,9 +1213,3 @@ RTRC_INST_IMGUI_VECTOR_WIDGETS(uint64_t)
 #undef RTRC_INST_IMGUI_VECTOR_WIDGETS
 
 RTRC_END
-
-constexpr ImVec2::ImVec2(const Rtrc::Vector2<float> &v)
-    : ImVec2(v.x, v.y)
-{
-
-}
