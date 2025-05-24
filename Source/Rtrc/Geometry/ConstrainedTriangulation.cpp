@@ -155,7 +155,7 @@ namespace CDTDetail
         Span<int>                edgeToSourceConstraint,
         HalfedgeMesh            &connectivity,
         std::stack<int>         &activeEdges,
-        std::map<Vector4i, int> &cocircleCache,
+        std::map<Vector4i, int> &cocircularCache,
         uint32_t                 maxIterations)
     {
         RTRC_PROFILER_SCOPE_CPU("EnsureDelaunayConditions_Approx");
@@ -200,14 +200,14 @@ namespace CDTDetail
             if(inCircleSign == 0)
             {
                 // Corner case: 4 co-circular points always satisfy the delaunay conditions. To make the triangulation
-                // determinstic, we always connect the lexically smallest point.
-                // The result is cached in cocircleCache to accelerate later computations.
+                // deterministic, we always connect the lexically smallest point.
+                // The result is cached in cocircularCache to accelerate later computations.
 
                 Vector4i key = { v0, v1, v2, v3 };
                 std::sort(&key.x, &key.x + 4);
 
                 int connectedPoint;
-                if(auto it = cocircleCache.find(key); it != cocircleCache.end())
+                if(auto it = cocircularCache.find(key); it != cocircularCache.end())
                 {
                     connectedPoint = it->second;
                 }
@@ -230,7 +230,7 @@ namespace CDTDetail
                         minPointIndex = v3;
                     }
                     connectedPoint = minPointIndex;
-                    cocircleCache.insert({ key, connectedPoint });
+                    cocircularCache.insert({ key, connectedPoint });
                 }
 
                 if(connectedPoint == v0 || connectedPoint == v1)
@@ -263,7 +263,7 @@ namespace CDTDetail
         Span<int>                edgeToSourceConstraint,
         HalfedgeMesh            &connectivity,
         std::stack<int>         &activeEdges,
-        std::map<Vector4i, int> &cocircleCache,
+        std::map<Vector4i, int> &cocircularCache,
         std::map<Vector4i, int>* inCircleCache)
     {
         RTRC_PROFILER_SCOPE_CPU("EnsureDelaunayConditions");
@@ -321,14 +321,14 @@ namespace CDTDetail
                 RTRC_PROFILER_SCOPE_CPU("Handle co-circular case");
 
                 // Corner case: 4 co-circular points always satisfy the delaunay conditions. To make the triangulation
-                // determinstic, we always connect the lexically smallest point.
-                // The result is cached in cocircleCache to accelerate later computations.
+                // deterministic, we always connect the lexically smallest point.
+                // The result is cached in cocircularCache to accelerate later computations.
 
                 Vector4i key = { v0, v1, v2, v3 };
                 std::sort(&key.x, &key.x + 4);
 
                 int connectedPoint;
-                if(auto it = cocircleCache.find(key); it != cocircleCache.end())
+                if(auto it = cocircularCache.find(key); it != cocircularCache.end())
                 {
                     connectedPoint = it->second;
                 }
@@ -351,7 +351,7 @@ namespace CDTDetail
                         minPointIndex = v3;
                     }
                     connectedPoint = minPointIndex;
-                    cocircleCache.insert({ key, connectedPoint });
+                    cocircularCache.insert({ key, connectedPoint });
                 }
 
                 if(connectedPoint == v0 || connectedPoint == v1)
