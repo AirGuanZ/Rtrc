@@ -4,9 +4,10 @@
 #include <Rtrc/Graphics/Device/MeshLayout.h>
 #include <Rtrc/ToolKit/ImGui/ImGuiInstance.h>
 
-RTRC_BEGIN
+#include "imgui_internal.h"
 
-namespace ImGuiDetail
+RTRC_BEGIN
+    namespace ImGuiDetail
 {
 
     ImGuiKey TranslateKey(KeyCode key)
@@ -162,21 +163,38 @@ float4 FSMain(VsToFs input) : SV_TARGET
         rtrc_var(float4x4, Matrix);
     };
 
+    std::stack<ImGuiContext *> &GetThreadLocalImGuiContextStack()
+    {
+        thread_local std::stack<ImGuiContext *> result;
+        return result;
+    }
+
+    void PushImGuiContext(ImGuiContext* context)
+    {
+        GetThreadLocalImGuiContextStack().push(context);
+        ImGui::SetCurrentContext(context);
+    }
+
+    void PopImGuiContext()
+    {
+        auto &stack = GetThreadLocalImGuiContextStack();
+        stack.pop();
+        ImGuiContext *context = stack.empty() ? nullptr : stack.top();
+        ImGui::SetCurrentContext(context);
+    }
+
     class ImGuiContextGuard : public Uncopyable
     {
-        ImGuiContext *oldContext_;
-
     public:
 
         explicit ImGuiContextGuard(ImGuiContext *context)
         {
-            oldContext_ = ImGui::GetCurrentContext();
-            ImGui::SetCurrentContext(context);
+            PushImGuiContext(context);
         }
 
         ~ImGuiContextGuard()
         {
-            ImGui::SetCurrentContext(oldContext_);
+            PopImGuiContext();
         }
     };
 
@@ -669,24 +687,6 @@ Box<ImGuiDrawData> ImGuiInstance::Render()
     return ret;
 }
 
-void ImGuiInstance::RecreateFontTexture()
-{
-    IMGUI_CONTEXT;
-    unsigned char *data;
-    int width, height;
-    ImGui::GetIO().Fonts->GetTexDataAsRGBA32(&data, &width, &height);
-    data_->fontTexture = data_->device->CreateAndUploadTexture(RHI::TextureDesc
-        {
-            .format               = RHI::Format::R8G8B8A8_UNorm,
-            .width                = static_cast<uint32_t>(width),
-            .height               = static_cast<uint32_t>(height),
-            .usage                = RHI::TextureUsage::ShaderResource
-        }, data, RHI::TextureLayout::ShaderTexture);
-    data_->fontTextureBindingGroup = data_->passBindingGroupLayout->CreateBindingGroup();
-    data_->fontTextureBindingGroup->Set(0, data_->fontTexture->GetSrv());
-    ImGui::GetIO().Fonts->SetTexID(reinterpret_cast<ImTextureID>(data_->fontTexture.get()));
-}
-
 ImGuiContext *ImGuiInstance::GetImGuiContext()
 {
     return data_->context;
@@ -793,6 +793,24 @@ void ImGuiInstance::End()
 {
     IMGUI_CONTEXT;
     return ImGui::End();
+}
+
+void ImGuiInstance::OpenPopup(const char* label)
+{
+    IMGUI_CONTEXT;
+    ImGui::OpenPopup(label);
+}
+
+bool ImGuiInstance::BeginPopup(const char* label)
+{
+    IMGUI_CONTEXT;
+    return ImGui::BeginPopup(label);
+}
+
+void ImGuiInstance::EndPopup()
+{
+    IMGUI_CONTEXT;
+    ImGui::EndPopup();
 }
 
 void ImGuiInstance::BeginDisabled()
@@ -1171,6 +1189,48 @@ bool ImGuiInstance::InputText(const char *label, MutSpan<char> buffer, ImGuiInpu
     return ImGui::InputText(label, buffer.GetData(), buffer.GetSize(), flags);
 }
 
+bool ImGuiInstance::BeginMainMenuBar()
+{
+    IMGUI_CONTEXT;
+    return ImGui::BeginMainMenuBar();
+}
+
+void ImGuiInstance::EndMainMenuBar()
+{
+    IMGUI_CONTEXT;
+    ImGui::EndMainMenuBar();
+}
+
+bool ImGuiInstance::BeginMenu(const char* name)
+{
+    IMGUI_CONTEXT;
+    return ImGui::BeginMenu(name);
+}
+
+void ImGuiInstance::EndMenu()
+{
+    IMGUI_CONTEXT;
+    ImGui::EndMenu();
+}
+
+bool ImGuiInstance::MenuItem(const char* name)
+{
+    IMGUI_CONTEXT;
+    return ImGui::MenuItem(name);
+}
+
+float ImGuiInstance::GetWindowWidth() const
+{
+    IMGUI_CONTEXT;
+    return ImGui::GetWindowWidth();
+}
+
+float ImGuiInstance::GetWindowHeight() const
+{
+    IMGUI_CONTEXT;
+    return ImGui::GetWindowHeight();
+}
+
 bool ImGuiInstance::IsAnyItemActive() const
 {
     IMGUI_CONTEXT;
@@ -1190,6 +1250,40 @@ bool ImGuiInstance::IsMouseClicked(KeyCode keyCode) const
 
     IMGUI_CONTEXT;
     return ImGui::IsMouseClicked(imguiMouseButton);
+}
+
+bool ImGuiInstance::IsWindowHovered() const
+{
+    IMGUI_CONTEXT;
+    return ImGui::IsWindowHovered();
+}
+
+void ImGuiInstance::BindContext()
+{
+    ImGuiDetail::PushImGuiContext(data_->context);
+}
+
+void ImGuiInstance::UnbindContext()
+{
+    ImGuiDetail::PopImGuiContext();
+}
+
+void ImGuiInstance::RecreateFontTexture()
+{
+    IMGUI_CONTEXT;
+    unsigned char *data;
+    int width, height;
+    ImGui::GetIO().Fonts->GetTexDataAsRGBA32(&data, &width, &height);
+    data_->fontTexture = data_->device->CreateAndUploadTexture(RHI::TextureDesc
+        {
+            .format               = RHI::Format::R8G8B8A8_UNorm,
+            .width                = static_cast<uint32_t>(width),
+            .height               = static_cast<uint32_t>(height),
+            .usage                = RHI::TextureUsage::ShaderResource
+        }, data, RHI::TextureLayout::ShaderTexture);
+    data_->fontTextureBindingGroup = data_->passBindingGroupLayout->CreateBindingGroup();
+    data_->fontTextureBindingGroup->Set(0, data_->fontTexture->GetSrv());
+    ImGui::GetIO().Fonts->SetTexID(reinterpret_cast<ImTextureID>(data_->fontTexture.get()));
 }
 
 #define RTRC_INST_IMGUI_VECTOR_WIDGETS(TYPE)                                                                                                                             \

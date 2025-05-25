@@ -126,6 +126,10 @@ public:
     bool Begin(const char *label, bool *open = nullptr, ImGuiWindowFlags flags = 0);
     void End();
 
+    void OpenPopup(const char *label);
+    bool BeginPopup(const char *label);
+    void EndPopup();
+
     void BeginDisabled();
     void EndDisabled();
 
@@ -231,11 +235,24 @@ public:
     void TextUnformatted(std::string_view text);
     bool InputText(const char *label, MutSpan<char> buffer, ImGuiInputTextFlags flags = 0);
 
+    bool BeginMainMenuBar();
+    void EndMainMenuBar();
+    bool BeginMenu(const char *name);
+    void EndMenu();
+    bool MenuItem(const char *name);
+
+    float GetWindowWidth() const;
+    float GetWindowHeight() const;
+
     bool IsAnyItemActive() const;
     bool IsMouseClicked(KeyCode keyCode) const;
+    bool IsWindowHovered() const;
 
     template<typename F>
     decltype(auto) Do(F &&f); // Call f with thread local ImGui context bounded
+
+    void BindContext();
+    void UnbindContext();
     
     void RecreateFontTexture();
 
