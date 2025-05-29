@@ -150,13 +150,13 @@ void BVH<T>::TraversalPrimitives(
         T key0, key1;
         if constexpr(requires{ intersectBox(nodes_[childIndex0].boundingBox, key0); })
         {
-            inct0 = intersectBox(nodes_[childIndex0], key0);
-            inct1 = intersectBox(nodes_[childIndex1], key1);
+            inct0 = intersectBox(nodes_[childIndex0].boundingBox, key0);
+            inct1 = intersectBox(nodes_[childIndex1].boundingBox, key1);
         }
         else
         {
-            inct0 = intersectBox(nodes_[childIndex0]);
-            inct1 = intersectBox(nodes_[childIndex1]);
+            inct0 = intersectBox(nodes_[childIndex0].boundingBox);
+            inct1 = intersectBox(nodes_[childIndex1].boundingBox);
             key0 = 0;
             key1 = 0;
         }

@@ -13,9 +13,8 @@ public:
 
     using Component = T;
 
-    AABB2();
-
-    AABB2(const Vector2<T> &lower, const Vector2<T> &upper);
+    constexpr AABB2();
+    constexpr AABB2(const Vector2<T> &lower, const Vector2<T> &upper);
 
     bool IsValid() const;
     bool IsEmpty() const;
@@ -24,6 +23,9 @@ public:
     T ComputeSurfaceArea() const;
 
     Vector2<T> ComputeCenter() const;
+
+    T GetWidthOverHeight() const;
+    T GetHeightOverWidth() const;
 
     bool Contains(const Vector2<T> &point) const;
     bool Contains(const AABB2 &box) const;
@@ -44,9 +46,8 @@ public:
 
     using Component = T;
 
-    AABB3();
-
-    AABB3(const Vector3<T> &lower, const Vector3<T> &upper);
+    constexpr AABB3();
+    constexpr AABB3(const Vector3<T> &lower, const Vector3<T> &upper);
 
     bool IsValid() const;
     bool IsEmpty() const;
@@ -70,10 +71,22 @@ public:
 };
 
 using AABB2f = AABB2<float>;
-using AABB3f = AABB3<float>;
-
 using AABB2d = AABB2<double>;
+using AABB2i = AABB2<int32_t>;
+using AABB2u = AABB2<uint32_t>;
+
+using AABB3f = AABB3<float>;
 using AABB3d = AABB3<double>;
+using AABB3i = AABB3<int32_t>;
+using AABB3u = AABB3<uint32_t>;
+
+template<typename T>
+using Rect = AABB2<T>;
+
+using Rectf = AABB2<float>;
+using Rectd = AABB2<double>;
+using Recti = AABB2<int32_t>;
+using Rectu = AABB2<uint32_t>;
 
 template<typename T>
 AABB2<T> operator|(const AABB2<T> &lhs, const AABB2<T> &rhs);
@@ -92,14 +105,14 @@ AABB3<T> operator|(const Vector3<T> &lhs, const AABB3<T> &rhs);
 inline AABB3f operator*(const Matrix4x4f &mat, const AABB3f &bbox);
 
 template<typename T>
-AABB2<T>::AABB2()
+constexpr AABB2<T>::AABB2()
     : lower((std::numeric_limits<T>::max)()), upper((std::numeric_limits<T>::lowest)())
 {
 
 }
 
 template<typename T>
-AABB2<T>::AABB2(const Vector2<T> &lower, const Vector2<T> &upper)
+constexpr AABB2<T>::AABB2(const Vector2<T> &lower, const Vector2<T> &upper)
     : lower(lower), upper(upper)
 {
 
@@ -153,7 +166,21 @@ template<typename T>
 Vector2<T> AABB2<T>::ComputeCenter() const
 {
     static_assert(std::is_floating_point_v<T>);
-    return static_cast<float>(0.5) * (lower + upper);
+    return static_cast<T>(0.5) * (lower + upper);
+}
+
+template <typename T>
+T AABB2<T>::GetWidthOverHeight() const
+{
+    const Vector2<T> extent = this->ComputeExtent();
+    return extent.x / extent.y;
+}
+
+template <typename T>
+T AABB2<T>::GetHeightOverWidth() const
+{
+    const Vector2<T> extent = this->ComputeExtent();
+    return extent.y / extent.x;
 }
 
 template<typename T>
@@ -177,14 +204,14 @@ bool AABB2<T>::Intersect(const AABB2 &other) const
 }
 
 template<typename T>
-AABB3<T>::AABB3()
+constexpr AABB3<T>::AABB3()
     : lower((std::numeric_limits<T>::max)()), upper((std::numeric_limits<T>::lowest)())
 {
     
 }
 
 template<typename T>
-AABB3<T>::AABB3(const Vector3<T> &lower, const Vector3<T> &upper)
+constexpr AABB3<T>::AABB3(const Vector3<T> &lower, const Vector3<T> &upper)
     : lower(lower), upper(upper)
 {
 
@@ -276,12 +303,24 @@ bool AABB3<T>::Intersect(const AABB3 &other) const
 template<typename T>
 AABB2<T> operator|(const AABB2<T> &lhs, const AABB2<T> &rhs)
 {
+    if(!lhs.IsValid())
+    {
+        return rhs;
+    }
+    if(!rhs.IsValid())
+    {
+        return lhs;
+    }
     return AABB2<T>(Min(lhs.lower, rhs.lower), Max(lhs.upper, rhs.upper));
 }
 
 template<typename T>
 AABB2<T> operator|(const AABB2<T> &lhs, const Vector2<T> &rhs)
 {
+    if(!lhs.IsValid())
+    {
+        return AABB2<T>(rhs, rhs);
+    }
     return AABB2<T>(Min(lhs.lower, rhs), Max(lhs.upper, rhs));
 }
 
@@ -294,12 +333,24 @@ AABB2<T> operator|(const Vector2<T> &lhs, const AABB2<T> &rhs)
 template<typename T>
 AABB3<T> operator|(const AABB3<T> &lhs, const AABB3<T> &rhs)
 {
+    if(!lhs.IsValid())
+    {
+        return rhs;
+    }
+    if(!rhs.IsValid())
+    {
+        return lhs;
+    }
     return AABB3<T>(Min(lhs.lower, rhs.lower), Max(lhs.upper, rhs.upper));
 }
 
 template<typename T>
 AABB3<T> operator|(const AABB3<T> &lhs, const Vector3<T> &rhs)
 {
+    if(!lhs.IsValid())
+    {
+        return AABB3<T>(rhs, rhs);
+    }
     return AABB3<T>(Min(lhs.lower, rhs), Max(lhs.upper, rhs));
 }
 

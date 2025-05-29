@@ -1,4 +1,4 @@
-#include <Rtrc/Core/Math/Rect.h>
+#include <Rtrc/Core/Math/AABB.h>
 #include <Rtrc/Core/Parallel.h>
 #include <Rtrc/Core/Resource/ImageSampler.h>
 
