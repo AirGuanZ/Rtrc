@@ -25,6 +25,9 @@ public:
     bool IsEmpty() const;
 
     // bool intersectBox(const AABB3<T> &boundingBox)
+    // bool intersectBox(const AABB3<T> &boundingBox, T &key)
+    //    When multiple child nodes of the same node are intersected, these child nodes are processed in the order determined by their keys.
+    //    The node with the smaller key will be processed first.
     // void processPrimitive(uint32_t primitiveIndex)
     // bool processPrimitive(uint32_t primitiveIndex), returns false to stop the traversal.
     template<typename IntersectBoxFunc, typename ProcessPrimitiveFunc>
@@ -139,13 +142,45 @@ void BVH<T>::TraversalPrimitives(
         }
 
         assert(top + 2 < STACK_SIZE && "BVH stack overflows!");
-        if(intersectBox(nodes_[node.childIndex].boundingBox))
+
+        const uint32_t childIndex0 = node.childIndex;
+        const uint32_t childIndex1 = node.childIndex + 1;
+
+        bool inct0, inct1;
+        T key0, key1;
+        if constexpr(requires{ intersectBox(nodes_[childIndex0].boundingBox, key0); })
         {
-            stack[top++] = node.childIndex;
+            inct0 = intersectBox(nodes_[childIndex0], key0);
+            inct1 = intersectBox(nodes_[childIndex1], key1);
         }
-        if(intersectBox(nodes_[node.childIndex + 1].boundingBox))
+        else
         {
-            stack[top++] = node.childIndex + 1;
+            inct0 = intersectBox(nodes_[childIndex0]);
+            inct1 = intersectBox(nodes_[childIndex1]);
+            key0 = 0;
+            key1 = 0;
+        }
+
+        if(inct0 && inct1)
+        {
+            if(key0 < key1)
+            {
+                stack[top++] = childIndex1;
+                stack[top++] = childIndex0;
+            }
+            else
+            {
+                stack[top++] = childIndex0;
+                stack[top++] = childIndex1;
+            }
+        }
+        else if(key0)
+        {
+            stack[top++] = childIndex0;
+        }
+        else if(key1)
+        {
+            stack[top++] = childIndex1;
         }
     }
 }
@@ -206,15 +241,16 @@ bool TriangleBVH<T>::FindClosestRayIntersection(
     result.barycentricCoordinate = { 0, 0 };
 
     BVH<T>::TraversalPrimitives(
-        [&](const AABB3<T> &bbox)
+        [&](const AABB3<T> &bbox, T &key)
         {
-            return Rtrc::IntersectRayBox(o, rcpD, minT, result.t, &bbox.lower.x);
+            T t1;
+            return Rtrc::IntersectRayBox(o, rcpD, minT, result.t, key, t1, &bbox.lower.x);
         },
         [&](uint32_t triangleIndex)
         {
             float tempT; Vector2<T> tempUV;
             const Triangle &triangle = triangles_[triangleIndex];
-            if(IntersectRayTriangle(o, d, minT, result.t, triangle.a, triangle.ab, triangle.ac, tempT, tempUV))
+            if(Rtrc::IntersectRayTriangle(o, d, minT, result.t, triangle.a, triangle.ab, triangle.ac, tempT, tempUV))
             {
                 result.t                     = tempT;
                 result.triangleIndex         = triangleIndex;
@@ -239,7 +275,7 @@ bool TriangleBVH<T>::HasIntersection(const Vector3<T> &o, const Vector3<T> &d, T
         {
             float tempT; Vector2<T> tempUV;
             const Triangle &triangle = triangles_[triangleIndex];
-            if(IntersectRayTriangle(o, d, minT, maxT, triangle.a, triangle.ab, triangle.ac, tempT, tempUV))
+            if(Rtrc::IntersectRayTriangle(o, d, minT, maxT, triangle.a, triangle.ab, triangle.ac, tempT, tempUV))
             {
                 result = true;
                 return false;
