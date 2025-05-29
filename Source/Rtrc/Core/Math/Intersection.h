@@ -6,11 +6,15 @@ RTRC_BEGIN
 
 // ================================ Declarations ================================
 
-inline float ComputeDistanceBetweenPointAndAABB(const Vector2f &point, const AABB2f &aabb);
-inline float ComputeSquaredDistanceBetweenPointAndAABB(const Vector2f &point, const AABB2f &aabb);
+template<typename T>
+T ComputeDistanceBetweenPointAndAABB(const Vector2<T> &point, const AABB2<T> &aabb);
+template<typename T>
+T ComputeSquaredDistanceBetweenPointAndAABB(const Vector2<T> &point, const AABB2<T> &aabb);
 
-inline float ComputeDistanceBetweenPointAndAABB(const Vector3f &point, const AABB3f &aabb);
-inline float ComputeSquaredDistanceBetweenPointAndAABB(const Vector3f &point, const AABB3f &aabb);
+template<typename T>
+T ComputeDistanceBetweenPointAndAABB(const Vector3<T> &point, const AABB3<T> &aabb);
+template<typename T>
+T ComputeSquaredDistanceBetweenPointAndAABB(const Vector3<T> &point, const AABB3<T> &aabb);
 
 template<typename T>
 bool IntersectTriangleAABB(
@@ -24,6 +28,16 @@ bool IntersectTriangleAABB(
 // on the plane of a bounding box face.
 // boundingBox[0/1/2]: lower
 // boundingBox[2/3/4]: upper
+template<typename T>
+bool IntersectRayBox(
+    const Vector3<T> &origin,
+    const Vector3<T> &invDir,
+    T                 t0,
+    T                 t1,
+    T                &outT0,
+    T                &outT1,
+    const T          *boundingBox);
+
 template<typename T>
 bool IntersectRayBox(
     const Vector3<T> &origin,
@@ -47,26 +61,30 @@ bool IntersectRayTriangle(
 
 // ================================ Implementations ================================
 
-inline float ComputeDistanceBetweenPointAndAABB(const Vector2f &point, const AABB2f &aabb)
+template<typename T>
+T ComputeSquaredDistanceBetweenPointAndAABB(const Vector2<T> &point, const AABB2<T> &aabb)
 {
-    const Vector2f closestPoint = Max(aabb.lower, Min(point, aabb.upper));
-    return LengthSquare(closestPoint - point);
+    const Vector2<T> closestPoint = Rtrc::Max(aabb.lower, Rtrc::Min(point, aabb.upper));
+    return Rtrc::LengthSquare(closestPoint - point);
 }
 
-inline float ComputeSquaredDistanceBetweenPointAndAABB(const Vector2f &point, const AABB2f &aabb)
+template<typename T>
+T ComputeDistanceBetweenPointAndAABB(const Vector2<T> &point, const AABB2<T> &aabb)
 {
-    return std::sqrt(ComputeDistanceBetweenPointAndAABB(point, aabb));
+    return std::sqrt(Rtrc::ComputeSquaredDistanceBetweenPointAndAABB(point, aabb));
 }
 
-inline float ComputeSquaredDistanceBetweenPointAndAABB(const Vector3f &point, const AABB3f &aabb)
+template<typename T>
+T ComputeSquaredDistanceBetweenPointAndAABB(const Vector3<T> &point, const AABB3<T> &aabb)
 {
-    const Vector3f closestPoint = Max(aabb.lower, Min(point, aabb.upper));
-    return LengthSquare(closestPoint - point);
+    const Vector3<T> closestPoint = Rtrc::Max(aabb.lower, Rtrc::Min(point, aabb.upper));
+    return Rtrc::LengthSquare(closestPoint - point);
 }
 
-inline float ComputeDistanceBetweenPointAndAABB(const Vector3f &point, const AABB3f &aabb)
+template<typename T>
+T ComputeDistanceBetweenPointAndAABB(const Vector3<T> &point, const AABB3<T> &aabb)
 {
-    return std::sqrt(ComputeDistanceBetweenPointAndAABB(point, aabb));
+    return std::sqrt(Rtrc::ComputeSquaredDistanceBetweenPointAndAABB(point, aabb));
 }
 
 // Intersection test based on separating axis theorem
@@ -153,6 +171,8 @@ bool IntersectRayBox(
     const Vector3<T> &invDir,
     T                 t0,
     T                 t1,
+    T                &outT0,
+    T                &outT1,
     const T          *boundingBox)
 {
     const T nx = invDir[0] * (boundingBox[0] - origin[0]);
@@ -171,7 +191,22 @@ bool IntersectRayBox(
     t1 = (std::min)(t1, (std::max)(ny, fy));
     t1 = (std::min)(t1, (std::max)(nz, fz));
 
+    outT0 = t0;
+    outT1 = t1;
+
     return t0 <= t1;
+}
+
+template<typename T>
+bool IntersectRayBox(
+    const Vector3<T> &origin,
+    const Vector3<T> &invDir,
+    T                 t0,
+    T                 t1,
+    const T          *boundingBox)
+{
+    T outT0, outT1;
+    return Rtrc::IntersectRayBox(origin, invDir, t0, t1, outT0, outT1, boundingBox);
 }
 
 template<typename T>
