@@ -1,4 +1,4 @@
-#if defined(WIN32)
+#if defined(WIN32) || defined(_WIN32)
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
@@ -11,7 +11,7 @@ RTRC_BEGIN
 
 std::string GenerateTemporalFilename(const std::string &prefix)
 {
-#if defined(WIN32)
+#if defined(WIN32) || defined(_WIN32)
     TCHAR tempPathBuffer[MAX_PATH];
     if(auto len = GetTempPath(MAX_PATH, tempPathBuffer); len == 0 || len > MAX_PATH)
     {
