@@ -28,6 +28,16 @@ class Window : public Uncopyable
 {
 public:
 
+    enum class BuiltinCursorType
+    {
+        Default,
+        LeftRightArrow,
+        UpDownArrow,
+        LeftUpRightBottomArrow,
+        LeftDownRightUpArrow,
+        Count
+    };
+
     struct Impl;
 
     static void DoEvents();
@@ -71,6 +81,8 @@ public:
     RTRC_DECLARE_EVENT_SENDER(WindowCloseEvent)
     RTRC_DECLARE_EVENT_SENDER(WindowResizeEvent)
     RTRC_DECLARE_EVENT_SENDER(WindowFocusEvent)
+
+    void SetCursor(BuiltinCursorType cursorType);
 
 private:
 

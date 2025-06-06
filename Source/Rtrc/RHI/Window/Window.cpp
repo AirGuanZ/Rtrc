@@ -16,9 +16,74 @@
 
 RTRC_BEGIN
 
+namespace WindowDetail
+{
+
+    class GLFWStandardCursors : public Uncopyable
+    {
+        GLFWcursor *cursors[std::to_underlying(Window::BuiltinCursorType::Count)] = { nullptr };
+
+    public:
+
+        ~GLFWStandardCursors()
+        {
+            Clear();
+        }
+
+        GLFWcursor* GetCursor(Window::BuiltinCursorType type)
+        {
+            if(type == Window::BuiltinCursorType::Default)
+            {
+                return nullptr;
+            }
+
+            const int index = std::to_underlying(type);
+            if(cursors[index])
+            {
+                return cursors[index];
+            }
+
+            GLFWcursor *cursor = nullptr;
+            switch(type)
+            {
+            case Window::BuiltinCursorType::LeftRightArrow:
+                cursor = glfwCreateStandardCursor(GLFW_RESIZE_EW_CURSOR);
+                break;
+            case Window::BuiltinCursorType::UpDownArrow:
+                cursor = glfwCreateStandardCursor(GLFW_RESIZE_NS_CURSOR);
+                break;
+            case Window::BuiltinCursorType::LeftUpRightBottomArrow:
+                cursor = glfwCreateStandardCursor(GLFW_RESIZE_NWSE_CURSOR);
+                break;
+            case Window::BuiltinCursorType::LeftDownRightUpArrow:
+                cursor = glfwCreateStandardCursor(GLFW_RESIZE_NESW_CURSOR);
+                break;
+            default:
+                Unreachable();
+            }
+            cursors[index] = cursor;
+            return cursor;
+        }
+
+        void Clear()
+        {
+            for(auto &cursor : cursors)
+            {
+                if(cursor)
+                {
+                    glfwDestroyCursor(cursor);
+                    cursor = nullptr;
+                }
+            }
+        }
+    };
+
+} // namespace WindowDetail
+
 struct Window::Impl
 {
     GLFWwindow *glfwWindow = nullptr;
+    WindowDetail::GLFWStandardCursors glfwStandardCursors;
     std::unique_ptr<WindowInput> input;
     Sender<WindowCloseEvent, WindowResizeEvent, WindowFocusEvent> sender;
     bool hasFocus = true;
@@ -326,6 +391,7 @@ Window::~Window()
         return;
     }
     assert(impl_->glfwWindow);
+    impl_->glfwStandardCursors.Clear();
     glfwDestroyWindow(impl_->glfwWindow);
     WindowDetail::windowInputs.erase(impl_->input.get());
     impl_.reset();
@@ -425,6 +491,13 @@ uint64_t Window::GetWin32WindowHandle() const
 RTRC_DEFINE_EVENT_SENDER(Window, impl_->sender, WindowCloseEvent)
 RTRC_DEFINE_EVENT_SENDER(Window, impl_->sender, WindowResizeEvent)
 RTRC_DEFINE_EVENT_SENDER(Window, impl_->sender, WindowFocusEvent)
+
+void Window::SetCursor(BuiltinCursorType cursorType)
+{
+    assert(impl_);
+    auto cursor = impl_->glfwStandardCursors.GetCursor(cursorType);
+    glfwSetCursor(impl_->glfwWindow, cursor);
+}
 
 Window::Window(std::unique_ptr<Impl> impl)
     : impl_(std::move(impl))
