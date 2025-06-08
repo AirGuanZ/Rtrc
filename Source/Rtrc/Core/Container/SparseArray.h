@@ -248,13 +248,16 @@ void SparseArray<T>::ForEachNonFreeElementIndex(
             {
                 return;
             }
+        }
+        else
+        {
             ++j;
         }
         ++i;
     }
 
     assert(j == freeIndices.size());
-    if(i < indexCount)
+    while(i < indexCount)
     {
         if(!func(i))
         {
