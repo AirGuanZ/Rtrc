@@ -43,26 +43,23 @@ namespace WindowDetail
                 return cursors[index];
             }
 
-            GLFWcursor *cursor = nullptr;
+            int shape;
             switch(type)
             {
-            case Window::BuiltinCursorType::LeftRightArrow:
-                cursor = glfwCreateStandardCursor(GLFW_RESIZE_EW_CURSOR);
-                break;
-            case Window::BuiltinCursorType::UpDownArrow:
-                cursor = glfwCreateStandardCursor(GLFW_RESIZE_NS_CURSOR);
-                break;
-            case Window::BuiltinCursorType::LeftUpRightBottomArrow:
-                cursor = glfwCreateStandardCursor(GLFW_RESIZE_NWSE_CURSOR);
-                break;
-            case Window::BuiltinCursorType::LeftDownRightUpArrow:
-                cursor = glfwCreateStandardCursor(GLFW_RESIZE_NESW_CURSOR);
-                break;
-            default:
-                Unreachable();
+            case Window::BuiltinCursorType::Arrow:                  shape = GLFW_ARROW_CURSOR;          break;
+            case Window::BuiltinCursorType::LeftRightArrow:         shape = GLFW_RESIZE_EW_CURSOR;      break;
+            case Window::BuiltinCursorType::UpDownArrow:            shape = GLFW_RESIZE_NS_CURSOR;      break;
+            case Window::BuiltinCursorType::LeftUpRightBottomArrow: shape = GLFW_RESIZE_NWSE_CURSOR;    break;
+            case Window::BuiltinCursorType::LeftDownRightUpArrow:   shape = GLFW_RESIZE_NESW_CURSOR;    break;
+            case Window::BuiltinCursorType::IBeam:                  shape = GLFW_IBEAM_CURSOR;          break;
+            case Window::BuiltinCursorType::Crosshair:              shape = GLFW_CROSSHAIR_CURSOR;      break;
+            case Window::BuiltinCursorType::Hand:                   shape = GLFW_POINTING_HAND_CURSOR;  break;
+            case Window::BuiltinCursorType::NotAllowed:             shape = GLFW_NOT_ALLOWED_CURSOR;    break;
+            default: Unreachable();
             }
-            cursors[index] = cursor;
-            return cursor;
+
+            cursors[index] = glfwCreateStandardCursor(shape);
+            return cursors[index];
         }
 
         void Clear()

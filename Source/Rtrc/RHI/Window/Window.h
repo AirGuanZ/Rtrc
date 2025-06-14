@@ -31,10 +31,15 @@ public:
     enum class BuiltinCursorType
     {
         Default,
+        Arrow,
         LeftRightArrow,
         UpDownArrow,
         LeftUpRightBottomArrow,
         LeftDownRightUpArrow,
+        IBeam,
+        Crosshair,
+        Hand,
+        NotAllowed,
         Count
     };
 
