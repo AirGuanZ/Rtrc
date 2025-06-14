@@ -4,7 +4,6 @@
 
 #include <Rtrc/Core/Enumerate.h>
 #include <Rtrc/Graphics/Device/Device.h>
-#include <Rtrc/Graphics/Shader/DSL/Entry/ComputeEntry.h>
 #include <Rtrc/Graphics/Shader/DSL/BindingGroup/BindingGroupBuilder_eDSL.h>
 #include <Rtrc/Graphics/Shader/ShaderBuilder.h>
 #include <Rtrc/ShaderCommon/Preprocess/RegisterAllocator.h>
