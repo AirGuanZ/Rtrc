@@ -277,29 +277,11 @@ void DeclareRenderGraphResourceUses(
     const ComputeEntry<KernelArgs...>                  &entry,
     const ComputeEntryDetail::InvokeType<KernelArgs>&...args)
 {
-    auto HandleBindingGroupStruct = [&]<typename Arg>(const Arg &arg)
+    auto HandleArg = [&]<typename Arg>(const Arg &arg)
     {
-        if constexpr( requires{ arg.GetBindingGroup(); })
-        {
-            arg.bindingGroup.Match(
-                [&](const RC<BindingGroup> &) {},
-                [&]<RtrcGroupStruct T>(const T &data)
-                {
-                    BindingGroupDetail::DeclareRenderGraphResourceUses(
-                        pass, data, RHI::PipelineStageFlag::ComputeShader);
-                });
-        }
+        arg.DeclareRenderGraphResourceUsage(pass, RHI::PipelineStageFlag::ComputeShader);
     };
-    (HandleBindingGroupStruct(args), ...);
-
-    auto HandleResource = [&]<typename Arg>(const Arg &arg)
-    {
-        if constexpr(requires { arg.DeclareRenderGraphResourceUsage(pass, RHI::PipelineStageFlag::ComputeShader); })
-        {
-            arg.DeclareRenderGraphResourceUsage(pass, RHI::PipelineStageFlag::ComputeShader);
-        }
-    };
-    (HandleResource(args), ...);
+    (HandleArg(args), ...);
 }
 
 template<typename...KernelArgs>

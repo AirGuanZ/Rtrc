@@ -52,6 +52,25 @@ namespace ComputeEntryDetail
         BindingGroupArgumentWrapper(RC<BindingGroup> group) : bindingGroup(std::move(group)) { }
 
         RC<BindingGroup> GetBindingGroup(Ref<Device> device) const;
+
+        void DeclareRenderGraphResourceUsage(RGPass pass, RHI::PipelineStageFlag stages) const
+        {
+            this->bindingGroup.Match(
+                [&](const RC<BindingGroup> &) {},
+                [&]<RtrcGroupStruct S>(const S &data)
+            {
+                BindingGroupDetail::DeclareRenderGraphResourceUses(pass, data, stages);
+            });
+        }
+    };
+
+    template<typename T>
+    struct EntryArgumentIdentityInvokeType
+    {
+        T value;
+        EntryArgumentIdentityInvokeType(const T &value): value(value) {}
+
+        void DeclareRenderGraphResourceUsage(RGPass pass, RHI::PipelineStageFlag stages) const {}
     };
 
     template<typename T>
@@ -60,12 +79,8 @@ namespace ComputeEntryDetail
     template<typename T> requires ArgumentTrait::eValueTrait<T>::IsValue
     struct EntryArgumentAux<T>
     {
-        struct InvokeType
-        {
-            using NativeType = typename ArgumentTrait::eValueTrait<T>::NativeType;
-            NativeType value;
-            InvokeType(const NativeType &_value) : value(std::move(_value)) {}
-        };
+        using NativeType = typename ArgumentTrait::eValueTrait<T>::NativeType;
+        using InvokeType = EntryArgumentIdentityInvokeType<NativeType>;
     };
 
     template<typename T> requires ArgumentTrait::eResourceTrait<T>::IsResource
