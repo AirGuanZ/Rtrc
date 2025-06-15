@@ -7,6 +7,8 @@
 
 RTRC_BEGIN
 
+// Note: Producers are assumed to be independent. For multiple producers, the elements may not come out in the same order they were put in.
+// (for each individual producer, the input order is still kept)
 template<typename T>
 class ConcurrentQueue
 {

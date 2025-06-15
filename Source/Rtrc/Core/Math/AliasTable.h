@@ -81,9 +81,13 @@ void AliasTable<F, T>::Initialize(const F *prob, T n)
         table_[i].anotherIndex = i;
 
         if(p > 1)
+        {
             overs.push_back(i);
+        }
         else if(p < 1)
+        {
             unders.push_back(i);
+        }
     }
 
     while(!overs.empty() && !unders.empty())
@@ -97,15 +101,23 @@ void AliasTable<F, T>::Initialize(const F *prob, T n)
         table_[under].anotherIndex = over;
 
         if(table_[over].acceptProb > 1)
+        {
             overs.push_back(over);
+        }
         else if(table_[over].acceptProb < 1)
+        {
             unders.push_back(over);
+        }
     }
 
     for(auto i : overs)
+    {
         table_[i].acceptProb = 1;
+    }
     for(auto i : unders)
+    {
         table_[i].acceptProb = 1;
+    }
 }
 
 template<typename F, typename T>
@@ -140,7 +152,9 @@ T AliasTable<F, T>::Sample(F u) const noexcept
     const F s = nu - i;
 
     if(s <= table_[i].acceptProb)
+    {
         return i;
+    }
     return table_[i].anotherIndex;
 }
 
@@ -157,7 +171,9 @@ T AliasTable<F, T>::Sample(F u1, F u2) const noexcept
     const T i = (std::min)(static_cast<T>(nu), n - 1);
 
     if(u2 <= table_[i].acceptProb)
+    {
         return i;
+    }
     return table_[i].anotherIndex;
 }
 
