@@ -39,6 +39,7 @@ private:
     D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle_  = {};
     size_t                      handleSize_ = 0;
 
+    std::mutex blockMutex_; // TODO: optimize parallel allocation/free
     ComPtr<D3D12MA::VirtualBlock> block_;
 };
 

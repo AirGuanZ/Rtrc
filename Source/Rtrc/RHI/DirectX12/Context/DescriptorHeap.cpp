@@ -49,6 +49,7 @@ void DescriptorHeap::Swap(DescriptorHeap &other) noexcept
 
 bool DescriptorHeap::Allocate(uint32_t count, DescriptorTable &range)
 {
+    std::lock_guard lock(blockMutex_);
     UINT64 offset;
     const D3D12MA::VIRTUAL_ALLOCATION_DESC desc = { .Size = count };
     if(block_->Allocate(&desc, &range.alloc, &offset) != S_OK)
@@ -63,6 +64,7 @@ bool DescriptorHeap::Allocate(uint32_t count, DescriptorTable &range)
 
 void DescriptorHeap::Free(DescriptorTable range)
 {
+    std::lock_guard lock(blockMutex_);
     block_->FreeAllocation(range.alloc);
 }
 
