@@ -5,7 +5,7 @@
 
 RTRC_BEGIN
 
-class JSONFileArchiveWritter : public Uncopyable, public ArchiveCommon<JSONFileArchiveWritter>
+class JSONFileArchiveWritter : public Uncopyable, public ArchiveCommon<JSONFileArchiveWritter, false>
 {
 public:
 
@@ -15,8 +15,6 @@ public:
     void SetVersion(int version);
     int GetVersion() const;
 
-    constexpr bool IsWriting() const { return true; }
-    constexpr bool IsReading() const { return false; }
     constexpr bool DidReadLastProperty() const { return false; }
 
     bool BeginTransferObject(std::string_view name);
@@ -26,10 +24,10 @@ public:
     void EndTransferTuple();
 
     template<std::integral T>
-    void TransferBuiltin(std::string_view name, T &value);
+    void TransferBuiltin(std::string_view name, T value);
     template<std::floating_point T>
-    void TransferBuiltin(std::string_view name, T &value);
-    void TransferBuiltin(std::string_view name, std::string &value);
+    void TransferBuiltin(std::string_view name, T value);
+    void TransferBuiltin(std::string_view name, const std::string &value);
 
 private:
 
@@ -80,18 +78,18 @@ inline void JSONFileArchiveWritter::EndTransferTuple()
 }
 
 template<std::integral T>
-void JSONFileArchiveWritter::TransferBuiltin(std::string_view name, T &value)
+void JSONFileArchiveWritter::TransferBuiltin(std::string_view name, T value)
 {
     jsonWritter_.TransferBuiltin(name, value);
 }
 
 template<std::floating_point T>
-void JSONFileArchiveWritter::TransferBuiltin(std::string_view name, T &value)
+void JSONFileArchiveWritter::TransferBuiltin(std::string_view name, T value)
 {
     jsonWritter_.TransferBuiltin(name, value);
 }
 
-inline void JSONFileArchiveWritter::TransferBuiltin(std::string_view name, std::string &value)
+inline void JSONFileArchiveWritter::TransferBuiltin(std::string_view name, const std::string &value)
 {
     jsonWritter_.TransferBuiltin(name, value);
 }

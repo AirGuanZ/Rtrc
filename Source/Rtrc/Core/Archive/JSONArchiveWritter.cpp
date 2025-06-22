@@ -111,7 +111,7 @@ void JSONArchiveWritter::TransferBuiltin(std::string_view name, T value)
     }
 }
 
-void JSONArchiveWritter::TransferBuiltin(std::string_view name, std::string &value)
+void JSONArchiveWritter::TransferBuiltin(std::string_view name, const std::string &value)
 {
     auto &frame = frames_.back();
     if(frame.json.is_array())

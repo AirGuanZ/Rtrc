@@ -345,6 +345,16 @@ struct ArchiveTransferTrait<Vector2<T>>
             ar.EndTransferTuple();
         }
     }
+    template<typename Archive>
+    static void Transfer(Archive &ar, std::string_view name, const Vector2<T> &object)
+    {
+        if(ar.BeginTransferTuple(name, 2))
+        {
+            ar.Transfer("x", object.x);
+            ar.Transfer("y", object.y);
+            ar.EndTransferTuple();
+        }
+    }
 };
 
 template<typename T>
@@ -361,6 +371,18 @@ struct ArchiveTransferTrait<Vector3<T>>
             ar.EndTransferTuple();
         }
     }
+
+    template<typename Archive>
+    static void Transfer(Archive &ar, std::string_view name, const Vector3<T> &object)
+    {
+        if(ar.BeginTransferTuple(name, 3))
+        {
+            ar.Transfer("x", object.x);
+            ar.Transfer("y", object.y);
+            ar.Transfer("z", object.z);
+            ar.EndTransferTuple();
+        }
+    }
 };
 
 template<typename T>
@@ -368,6 +390,19 @@ struct ArchiveTransferTrait<Vector4<T>>
 {
     template<typename Archive>
     static void Transfer(Archive &ar, std::string_view name, Vector4<T> &object)
+    {
+        if(ar.BeginTransferTuple(name, 4))
+        {
+            ar.Transfer("x", object.x);
+            ar.Transfer("y", object.y);
+            ar.Transfer("y", object.z);
+            ar.Transfer("w", object.w);
+            ar.EndTransferTuple();
+        }
+    }
+
+    template<typename Archive>
+    static void Transfer(Archive &ar, std::string_view name, const Vector4<T> &object)
     {
         if(ar.BeginTransferTuple(name, 4))
         {

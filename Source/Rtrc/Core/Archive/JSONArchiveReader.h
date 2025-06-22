@@ -5,7 +5,7 @@
 
 RTRC_BEGIN
 
-class JSONArchiveReader : public Uncopyable, public ArchiveCommon<JSONArchiveReader>
+class JSONArchiveReader : public Uncopyable, public ArchiveCommon<JSONArchiveReader, true>
 {
 public:
 
@@ -15,8 +15,6 @@ public:
     void SetVersion(uint32_t version);
     uint32_t GetVersion() const;
 
-    constexpr bool IsWriting() const { return false; }
-    constexpr bool IsReading() const { return true; }
     bool DidReadLastProperty() const;
 
     bool BeginTransferObject(std::string_view name);

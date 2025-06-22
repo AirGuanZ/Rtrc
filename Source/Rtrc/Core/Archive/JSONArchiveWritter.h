@@ -5,7 +5,7 @@
 
 RTRC_BEGIN
 
-class JSONArchiveWritter : public Uncopyable, public ArchiveCommon<JSONArchiveWritter>
+class JSONArchiveWritter : public Uncopyable, public ArchiveCommon<JSONArchiveWritter, false>
 {
 public:
 
@@ -15,8 +15,6 @@ public:
     void SetVersion(uint32_t version);
     uint32_t GetVersion() const;
 
-    constexpr bool IsWriting() const { return true; }
-    constexpr bool IsReading() const { return false; }
     constexpr bool DidReadLastProperty() const { return false; }
 
     bool BeginTransferObject(std::string_view name);
@@ -30,7 +28,7 @@ public:
     template<std::floating_point T>
     void TransferBuiltin(std::string_view name, T value);
 
-    void TransferBuiltin(std::string_view name, std::string &value);
+    void TransferBuiltin(std::string_view name, const std::string &value);
 
     std::string ToString() const;
     

@@ -7,7 +7,7 @@
 RTRC_BEGIN
 
 template<bool WriteVersionNumber>
-class BinaryArchiveWriter : public Uncopyable, public ArchiveCommon<BinaryArchiveWriter<WriteVersionNumber>>
+class BinaryArchiveWriter : public Uncopyable, public ArchiveCommon<BinaryArchiveWriter<WriteVersionNumber>, false>
 {
 public:
 
@@ -28,8 +28,6 @@ public:
         return versions_.back().version;
     }
 
-    constexpr bool IsWriting() const { return true; }
-    constexpr bool IsReading() const { return false; }
     constexpr bool DidReadLastProperty() const { return false; }
 
     bool BeginTransferObject(std::string_view name)
@@ -69,7 +67,7 @@ public:
         std::memcpy(output_.data() + offset, &value, sizeof(T));
     }
 
-    void TransferBuiltin(std::string_view name, std::string &value)
+    void TransferBuiltin(std::string_view name, const std::string &value)
     {
         TransferBuiltin({}, static_cast<uint64_t>(value.size()));
         const size_t offset = output_.size();

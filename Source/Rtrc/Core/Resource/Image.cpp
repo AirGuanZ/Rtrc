@@ -230,6 +230,27 @@ namespace ImageDetail
         return ret;
     }
 
+    ImageFileInfo LoadEXRFileInfo(const std::string &filename)
+    {
+        EXRVersion version;
+        if(ParseEXRVersionFromFile(&version, filename.c_str()) != TINYEXR_SUCCESS)
+        {
+            throw Exception(std::format("Fail to parse EXR version from file {}", filename));
+        }
+
+        EXRHeader header;
+        if(ParseEXRHeaderFromFile(&header, &version, filename.c_str(), nullptr) != TINYEXR_SUCCESS)
+        {
+            throw Exception(std::format("Fail to parse EXR header from file {}", filename));
+        }
+
+        ImageFileInfo result;
+        result.width    = header.data_window.max_x - header.data_window.min_x + 1;
+        result.height   = header.data_window.max_y - header.data_window.min_y + 1;
+        result.channels = header.num_channels;
+        return result;
+    }
+
     ImageFormat InferFormat(const std::string &filename)
     {
         auto ext = std::filesystem::path(filename).extension().string();
@@ -254,6 +275,65 @@ namespace ImageDetail
     }
 
 } // namespace image_detail
+
+ImageFileInfo ImageFileInfo::Load(const std::string &filename, ImageFormat format)
+{
+    if(format == ImageFormat::Auto)
+    {
+        format = ImageDetail::InferFormat(filename);
+    }
+
+    if(format == ImageFormat::EXR)
+    {
+        return ImageDetail::LoadEXRFileInfo(filename);
+    }
+
+    std::FILE *file = stbi__fopen(filename.c_str(), "rb");
+    if(file)
+    {
+        throw Exception(std::format("Failed to open file {}", filename));
+    }
+    RTRC_SCOPE_EXIT{ (void)std::fclose(file); };
+
+    const long initialPosition = std::ftell(file);
+    RTRC_SCOPE_EXIT{ (void)std::fseek(file, initialPosition, SEEK_SET); };
+
+    stbi__context context;
+    stbi__start_file(&context, file);
+
+    int x = 0, y = 0, channels = 0;
+    bool loadResult;
+    switch(format)
+    {
+    case ImageFormat::PNG:
+    {
+        loadResult = stbi__png_info(&context, &x, &y, &channels);
+        break;
+    }
+    case ImageFormat::JPG:
+    {
+        loadResult = stbi__jpeg_info(&context, &x, &y, &channels);
+        break;
+    }
+    case ImageFormat::HDR:
+    {
+        loadResult = stbi__hdr_info(&context, &x, &y, &channels);
+        break;
+    }
+    default:
+        Unreachable();
+    }
+    if(!loadResult)
+    {
+        throw Exception(std::format("Fail to load image info from file {}", filename));
+    }
+
+    ImageFileInfo result;
+    result.width    = x;
+    result.height   = y;
+    result.channels = channels;
+    return result;
+}
 
 void ImageDynamic::Swap(ImageDynamic &other) noexcept
 {

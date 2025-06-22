@@ -44,6 +44,16 @@ struct ArchiveTransferTrait<Eigen::SparseMatrix<double>>
             }
         }
     }
+
+    template<typename Archive>
+    static void Transfer(Archive &ar, std::string_view name, const Eigen::SparseMatrix<double> &matrix)
+    {
+        static_assert(Archive::StaticIsWriting());
+        std::vector<unsigned char> data;
+        WriteSparseMatrixToByteStream(matrix, data);
+        std::string base64Str = ToBase64(data);
+        ar.Transfer(name, base64Str);
+    }
 };
 
 template<>
@@ -71,6 +81,16 @@ struct ArchiveTransferTrait<Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>>>
                 ReadSimplicialLDLTFromByteStream(stream, solver);
             }
         }
+    }
+
+    template<typename Archive>
+    static void Transfer(Archive &ar, std::string_view name, const Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> &solver)
+    {
+        static_assert(Archive::StaticIsWriting());
+        std::vector<unsigned char> data;
+        WriteSimplicialLDLTToByteStream(solver, data);
+        std::string base64Str = ToBase64(data);
+        ar.Transfer(name, base64Str);
     }
 };
 

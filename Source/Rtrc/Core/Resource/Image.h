@@ -20,16 +20,23 @@ enum class ImageFormat
     EXR
 };
 
+struct ImageFileInfo
+{
+    uint32_t width = 0;
+    uint32_t height = 0;
+    uint32_t channels = 0;
+
+    static ImageFileInfo Load(const std::string &filename, ImageFormat format = ImageFormat::Auto);
+};
+
 template<typename T>
 class Image
 {
 public:
 
     using Texel = T;
-    using TexelRef = std::conditional_t<
-        std::is_same_v<T, bool>, std::vector<bool>::reference, Texel&>;
-    using TexelConstRef = std::conditional_t<
-        std::is_same_v<T, bool>, std::vector<bool>::const_reference, const Texel &>;
+    using TexelRef = std::conditional_t<std::is_same_v<T, bool>, std::vector<bool>::reference, Texel&>;
+    using TexelConstRef = std::conditional_t<std::is_same_v<T, bool>, std::vector<bool>::const_reference, const Texel &>;
 
     Image();
     explicit Image(const Vector2u &size);
@@ -521,8 +528,8 @@ void Image<T>::Swap(Image &other) noexcept
 template<typename T>
 Image<T>::operator bool() const
 {
-    assert(width_ > 0 == height_ > 0);
-    assert(width_ > 0 == !data_.empty());
+    assert((width_ > 0) == (height_ > 0));
+    assert((width_ > 0) == (!data_.empty()));
     return width_ > 0;
 }
 

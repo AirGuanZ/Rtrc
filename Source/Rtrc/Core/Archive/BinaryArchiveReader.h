@@ -27,7 +27,7 @@ template<bool ReadVersionNumber>
 class BinaryArchiveReader :
     public Uncopyable,
     BinaryArchiveReaderDetail::VersionsMember<ReadVersionNumber>,
-    public ArchiveCommon<BinaryArchiveReader<ReadVersionNumber>>
+    public ArchiveCommon<BinaryArchiveReader<ReadVersionNumber>, true>
 {
 public:
 
@@ -53,8 +53,6 @@ public:
         }
     }
 
-    constexpr bool IsWriting() const { return false; }
-    constexpr bool IsReading() const { return true; }
     constexpr bool DidReadLastProperty() const { return true; }
 
     bool BeginTransferObject(std::string_view name)
