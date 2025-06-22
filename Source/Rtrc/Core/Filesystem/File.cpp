@@ -2,6 +2,11 @@
 #include <sstream>
 
 #include <Rtrc/Core/Filesystem/File.h>
+#include <Rtrc/Core/ScopeGuard.h>
+
+#if WIN32 || _WIN32
+#include <Windows.h>
+#endif
 
 RTRC_BEGIN
 
@@ -43,6 +48,33 @@ namespace File
             throw Exception("Fail to open output text file: " + filename);
         }
         fout << content;
+    }
+
+    uint64_t GetLastWriteTime(const std::string &filename)
+    {
+#if WIN32 || _WIN32
+        const HANDLE fileHandle = CreateFileA(
+            filename.c_str(), GENERIC_READ, 0,
+            nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+        if(fileHandle == INVALID_HANDLE_VALUE)
+        {
+            return {};
+        }
+        RTRC_SCOPE_EXIT{ CloseHandle(fileHandle); };
+
+        FILETIME lastModifyTime;
+        if(!GetFileTime(fileHandle, nullptr, nullptr, &lastModifyTime))
+        {
+            return {};
+        }
+
+        return static_cast<uint64_t>(lastModifyTime.dwLowDateTime) | (static_cast<uint64_t>(lastModifyTime.dwHighDateTime) << 32);
+#else
+        const auto lastWriteTime = last_write_time(path.GetPath());
+        const auto lastWriteSystemTime = std::chrono::clock_cast<std::chrono::system_clock>(lastWriteTime);
+        const auto lastWriteTimeT = std::chrono::system_clock::to_time_t(lastWriteSystemTime);
+        return static_cast<uint64_t>(lastWriteTimeT);
+#endif
     }
 
 } // namespace File

@@ -16,6 +16,8 @@ namespace File
 
     void WriteTextFile(const std::string &filename, std::string_view content);
 
+    uint64_t GetLastWriteTime(const std::string &filename);
+
 } // namespace File
 
 RTRC_END
