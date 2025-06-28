@@ -495,7 +495,7 @@ private:
     std::map<std::thread::id, PerThreadPoolData> threadToActivePoolData_;
     std::shared_mutex threadToActivePoolDataMutex_;
 
-    ConcurrentQueue<RHI::CommandPoolUPtr> freePools_;
+    ConcurrentQueueNonBlocking<RHI::CommandPoolUPtr> freePools_;
 };
 
 template<typename T> requires std::is_trivially_copyable_v<T>

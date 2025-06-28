@@ -97,7 +97,7 @@ private:
 
     RHI::DeviceOPtr        device_;
     RHI::QueueRPtr         queue_;
-    ConcurrentQueue<Batch> batches_;
+    ConcurrentQueueNonBlocking<Batch> batches_;
 };
 
 RTRC_END

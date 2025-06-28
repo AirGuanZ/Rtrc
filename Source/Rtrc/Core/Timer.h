@@ -15,15 +15,15 @@ class Timer
 
     Clock::time_point startPoint_;
     Clock::time_point lastPoint_;
-    Clock::duration deltaTime_;
+    Clock::duration   deltaTime_;
 
-    bool paused_;
+    bool              paused_;
     Clock::time_point pauseStartPoint_;
-    Clock::duration pausedTime_;
+    Clock::duration   pausedTime_;
 
     Clock::time_point secondPoint_;
-    int frames_;
-    int fps_;
+    int               frames_;
+    int               fps_;
 
 public:
 

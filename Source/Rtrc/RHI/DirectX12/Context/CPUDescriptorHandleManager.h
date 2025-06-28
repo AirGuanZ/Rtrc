@@ -23,7 +23,7 @@ private:
     D3D12_DESCRIPTOR_HEAP_TYPE type_;
     size_t                     incSize_;
 
-    ConcurrentQueue<D3D12_CPU_DESCRIPTOR_HANDLE> freeHandles_;
+    ConcurrentQueueNonBlocking<D3D12_CPU_DESCRIPTOR_HANDLE> freeHandles_;
 
     std::vector<ComPtr<ID3D12DescriptorHeap>> heaps_;
     std::mutex heapMutex_;
