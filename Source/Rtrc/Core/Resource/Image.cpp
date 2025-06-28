@@ -289,7 +289,7 @@ ImageFileInfo ImageFileInfo::Load(const std::string &filename, ImageFormat forma
     }
 
     std::FILE *file = stbi__fopen(filename.c_str(), "rb");
-    if(file)
+    if(!file)
     {
         throw Exception(std::format("Failed to open file {}", filename));
     }
@@ -382,6 +382,20 @@ uint32_t ImageDynamic::GetHeight() const
     return image_.Match(
         [](std::monostate) { return 0u; },
         [](auto &image) { return image.GetHeight(); });
+}
+
+uint32_t ImageDynamic::GetTexelCount()
+{
+    return image_.Match(
+        [](std::monostate) { return 0u; },
+        [](auto &image) { return image.GetTexelCount(); });
+}
+
+size_t ImageDynamic::GetByteSize() const
+{
+    return image_.Match(
+        [](std::monostate) { return static_cast<size_t>(0); },
+        [](auto &image) { return image.GetByteSize(); });
 }
 
 void ImageDynamic::Save(const std::string &filename, ImageFormat format) const

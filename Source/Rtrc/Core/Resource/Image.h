@@ -71,6 +71,9 @@ public:
     Vector2u GetSizeMinusOne() const { return { this->GetWidthMinusOne(), this->GetHeightMinusOne() }; }
     Vector2i GetSSizeMinusOne() const { return { this->GetSWidthMinusOne(), this->GetSHeightMinusOne() }; }
 
+    uint32_t GetTexelCount() const { return GetWidth() * GetHeight(); }
+    size_t GetByteSize() const { return GetTexelCount() * sizeof(T); }
+
     TexelRef      operator()(uint32_t x, uint32_t y);
     TexelConstRef operator()(uint32_t x, uint32_t y) const;
 
@@ -163,6 +166,9 @@ public:
 
     Vector2u GetSize() const { return { this->GetWidth(), this->GetHeight() }; }
     Vector2i GetSSize() const { return { this->GetSWidth(), this->GetSHeight() }; }
+
+    uint32_t GetTexelCount();
+    size_t GetByteSize() const;
 
     template<typename...Vs>
     auto Match(Vs &&...vs) const;
