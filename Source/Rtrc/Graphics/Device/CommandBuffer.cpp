@@ -1124,15 +1124,15 @@ void CommandBuffer::BuildTlas(
 void CommandBuffer::ExecuteBarriers(const BarrierBatch &barriers)
 {
     CheckThreadID();
-    if(barriers.G_ || !barriers.BT_.empty() || !barriers.TT_.empty() || !barriers.TA_.empty() || !barriers.TT_.empty())
+    if(barriers.G_ || !barriers.BT_.empty() || !barriers.TT_.empty() || !barriers.TA_.empty() || !barriers.TR_.empty())
     {
         if(barriers.G_)
         {
-            rhiCommandBuffer_->ExecuteBarriers(*barriers.G_, barriers.BT_, barriers.TT_, barriers.TA_, barriers.TT_);
+            rhiCommandBuffer_->ExecuteBarriers(*barriers.G_, barriers.BT_, barriers.TT_, barriers.TA_, barriers.TR_);
         }
         else
         {
-            rhiCommandBuffer_->ExecuteBarriers(barriers.BT_, barriers.TT_, barriers.TA_, barriers.TT_);
+            rhiCommandBuffer_->ExecuteBarriers(barriers.BT_, barriers.TT_, barriers.TA_, barriers.TR_);
         }
     }
 }

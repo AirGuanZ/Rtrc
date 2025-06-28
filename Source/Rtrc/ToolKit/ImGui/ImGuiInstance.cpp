@@ -427,6 +427,8 @@ void ImGuiRenderer::RenderImmediately(
             // Scissor
 
             ImVec2 clipMin(drawCmd.ClipRect.x - drawData->displayPos.x, drawCmd.ClipRect.y - drawData->displayPos.y);
+            clipMin.x = (std::max<float>)(clipMin.x, 0);
+            clipMin.y = (std::max<float>)(clipMin.y, 0);
             ImVec2 clipMax(drawCmd.ClipRect.z - drawData->displayPos.x, drawCmd.ClipRect.w - drawData->displayPos.y);
             if(clipMax.x <= clipMin.x || clipMax.y <= clipMin.y)
             {

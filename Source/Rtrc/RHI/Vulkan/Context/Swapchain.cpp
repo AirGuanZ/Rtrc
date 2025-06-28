@@ -100,12 +100,12 @@ OPtr<BackBufferSemaphore> VulkanSwapchain::GetAcquireSemaphore()
 
 OPtr<BackBufferSemaphore> VulkanSwapchain::GetPresentSemaphore()
 {
-    return OPtr<BackBufferSemaphore>(imagePresentSemaphores_[frameIndex_].Get());
+    return OPtr<BackBufferSemaphore>(imagePresentSemaphores_[imageIndex_].Get());
 }
 
 bool VulkanSwapchain::Present()
 {
-    const auto presentSemaphore = imagePresentSemaphores_[frameIndex_]->_internalGetBinarySemaphore();
+    const auto presentSemaphore = imagePresentSemaphores_[imageIndex_]->_internalGetBinarySemaphore();
     const VkPresentInfoKHR presentInfo = {
         .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
         .waitSemaphoreCount = 1,

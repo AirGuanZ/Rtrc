@@ -44,16 +44,6 @@ namespace VkPhysicalDeviceDetail
             customBorderColorWithoutFormat);
 
         ADD_PHYSICAL_DEVICE_FEATURE(
-            VkPhysicalDeviceDynamicRenderingFeatures,
-            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES,
-            dynamicRendering);
-
-        ADD_PHYSICAL_DEVICE_FEATURE(
-            VkPhysicalDeviceSynchronization2Features,
-            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES,
-            synchronization2);
-
-        ADD_PHYSICAL_DEVICE_FEATURE(
             VkPhysicalDevice16BitStorageFeatures,
             VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES,
             storageBuffer16BitAccess);
@@ -87,9 +77,13 @@ namespace VkPhysicalDeviceDetail
         );
 
         ADD_PHYSICAL_DEVICE_FEATURE(
-            VkPhysicalDeviceMaintenance4Features,
-            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_FEATURES,
-            maintenance4);
+            VkPhysicalDeviceVulkan13Features,
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES,
+            shaderDemoteToHelperInvocation,
+            maintenance4,
+            synchronization2,
+            dynamicRendering
+        );
 
         ADD_PHYSICAL_DEVICE_FEATURE(
             VkPhysicalDeviceDepthClipEnableFeaturesEXT,

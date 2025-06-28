@@ -36,7 +36,7 @@ void DeviceSynchronizer::OnFrameComplete(std::move_only_function<void()> callbac
 
 void DeviceSynchronizer::WaitIdle()
 {
-    queue_->WaitIdle();
+    device_->WaitIdle();
 
     if(renderLoopFrames_.empty())
     {

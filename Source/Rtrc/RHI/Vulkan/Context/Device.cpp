@@ -124,7 +124,7 @@ namespace VkDeviceDetail
             .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
             .imageType             = TranslateTextureDimension(desc.dim),
             .format                = TranslateTexelFormat(desc.format),
-            .extent                = VkExtent3D{ desc.width, desc.width, desc.depth },
+            .extent                = VkExtent3D{ desc.width, desc.height, desc.depth },
             .mipLevels             = desc.mipLevels,
             .arrayLayers           = arrayLayers,
             .samples               = TranslateSampleCount(static_cast<int>(desc.sampleCount)),

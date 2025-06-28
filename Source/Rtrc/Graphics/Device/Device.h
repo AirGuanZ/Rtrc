@@ -346,7 +346,7 @@ private:
     Box<BindingGroupManager>          bindingLayoutManager_;
     Box<BufferManager>                bufferManager_;
     Box<PooledBufferManager>          pooledBufferManager_;
-    Box<DeviceCommandBufferManager>         deviceCommandBufferManager_;
+    Box<DeviceCommandBufferManager>   deviceCommandBufferManager_;
     Box<DynamicBufferManager>         dynamicBufferManager_;
     Box<PipelineManager>              pipelineManager_;
     Box<SamplerManager>               samplerManager_;
