@@ -1,3 +1,5 @@
+#include <cassert>
+#include <filesystem>
 #include <fstream>
 #include <sstream>
 
@@ -75,6 +77,63 @@ namespace File
         const auto lastWriteTimeT = std::chrono::system_clock::to_time_t(lastWriteSystemTime);
         return static_cast<uint64_t>(lastWriteTimeT);
 #endif
+    }
+
+    struct AutoDeleteDirectory::Impl
+    {
+#if WIN32 || _WIN32
+        HANDLE dirHandle;
+#endif
+    };
+
+    AutoDeleteDirectory::AutoDeleteDirectory() = default;
+
+    AutoDeleteDirectory::AutoDeleteDirectory(const std::filesystem::path &path)
+    {
+#if WIN32 || _WIN32
+        auto impl = std::make_unique<Impl>();
+
+        const std::string directory = path.string();
+        const HANDLE dirHandle = CreateFileA(
+            directory.c_str(), DELETE, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr,
+            OPEN_EXISTING, FILE_FLAG_DELETE_ON_CLOSE | FILE_FLAG_BACKUP_SEMANTICS, nullptr);
+        if(dirHandle == INVALID_HANDLE_VALUE)
+        {
+            RemoveDirectoryA(directory.c_str());
+            throw Exception("Fail to set deletion flag on directory" + directory);
+        }
+
+        impl->dirHandle = dirHandle;
+        impl_ = std::move(impl);
+
+#else
+        throw Exception("AutoDeleteDirectory: not implemented");
+#endif
+    }
+
+    AutoDeleteDirectory::~AutoDeleteDirectory()
+    {
+        if(impl_)
+        {
+            assert(impl_->dirHandle != INVALID_HANDLE_VALUE);
+            CloseHandle(impl_->dirHandle);
+        }
+    }
+
+    AutoDeleteDirectory::AutoDeleteDirectory(AutoDeleteDirectory &&other) noexcept
+    {
+        Swap(other);
+    }
+
+    AutoDeleteDirectory &AutoDeleteDirectory::operator=(AutoDeleteDirectory &&other) noexcept
+    {
+        Swap(other);
+        return *this;
+    }
+
+    void AutoDeleteDirectory::Swap(AutoDeleteDirectory &other) noexcept
+    {
+        impl_.swap(other.impl_);
     }
 
 } // namespace File
