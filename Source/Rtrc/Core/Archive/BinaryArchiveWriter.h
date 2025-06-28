@@ -75,6 +75,13 @@ public:
         std::memcpy(output_.data() + offset, value.data(), value.size());
     }
 
+    void TransferBinary(const void* data, size_t bytes)
+    {
+        const size_t offset = output_.size();
+        output_.resize(output_.size() + UpAlignTo<size_t>(bytes, 4));
+        std::memcpy(output_.data() + offset, data, bytes);
+    }
+
     Span<std::byte> GetResult() const
     {
         return output_;

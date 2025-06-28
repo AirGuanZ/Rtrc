@@ -92,6 +92,11 @@ public:
         ConsumeNextNBytes(value.data(), size);
     }
 
+    void TransferBinary(void *data, size_t bytes)
+    {
+        ConsumeNextNBytes(data, bytes);
+    }
+
 private:
 
     void ConsumeNextNBytes(void *output, size_t N)
@@ -103,7 +108,7 @@ private:
                 N, input_.size()));
         }
         std::memcpy(output, input_.GetData(), N);
-        input_ = input_.GetSubSpan(N);
+        input_ = input_.GetSubSpan(UpAlignTo<size_t>(N, 4));
     }
 
     template<typename T>

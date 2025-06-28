@@ -86,6 +86,9 @@ public:
 };
 
 template<typename T>
+concept ArchiveSupportTransferBinaryData = requires{ std::declval<T>().TransferBinary(std::declval<void*>(), std::declval<size_t>()); };
+
+template<typename T>
 struct ArchiveTransferTrait
 {
     template<typename Archive>
@@ -116,9 +119,16 @@ struct ArchiveTransferTrait<T[N]>
     template<typename Archive>
     static void Transfer(Archive &ar, std::string_view name, T (&array)[N])
     {
-        for(size_t i = 0; i < N; ++i)
+        if constexpr(ArchiveSupportTransferBinaryData<Archive> && std::is_trivially_copy_constructible_v<T>)
         {
-            ar.Transfer(std::format("{}[{}]", name, i), array[i]);
+            ar.TransferBinary(&array[0], sizeof(array));
+        }
+        else
+        {
+            for(size_t i = 0; i < N; ++i)
+            {
+                ar.Transfer(std::format("{}[{}]", name, i), array[i]);
+            }
         }
     }
 
@@ -126,9 +136,16 @@ struct ArchiveTransferTrait<T[N]>
     static void Transfer(Archive &ar, std::string_view name, const T(&array)[N])
     {
         static_assert(Archive::StaticIsWriting());
-        for(size_t i = 0; i < N; ++i)
+        if constexpr(ArchiveSupportTransferBinaryData<Archive> && std::is_trivially_copy_constructible_v<T>)
         {
-            ar.Transfer(std::format("{}[{}]", name, i), array[i]);
+            ar.TransferBinary(&array[0], sizeof(array));
+        }
+        else
+        {
+            for(size_t i = 0; i < N; ++i)
+            {
+                ar.Transfer(std::format("{}[{}]", name, i), array[i]);
+            }
         }
     }
 };
@@ -226,9 +243,16 @@ struct ArchiveTransferTrait<std::vector<T>>
             {
                 object.resize(size);
             }
-            for(size_t i = 0; i < object.size(); ++i)
+            if constexpr(ArchiveSupportTransferBinaryData<Archive> && std::is_trivially_copy_constructible_v<T>)
             {
-                ar.Transfer(std::to_string(i), object[i]);
+                ar.TransferBinary(object.data(), sizeof(T) * object.size());
+            }
+            else
+            {
+                for(size_t i = 0; i < object.size(); ++i)
+                {
+                    ar.Transfer(std::to_string(i), object[i]);
+                }
             }
             ar.EndTransferObject();
         }
@@ -242,13 +266,17 @@ struct ArchiveTransferTrait<std::vector<T>>
         {
             uint64_t size = object.size();
             ar.Transfer("size", size);
-            if(ar.DidReadLastProperty())
+            assert(size == object.size());
+            if constexpr(ArchiveSupportTransferBinaryData<Archive> && std::is_trivially_copy_constructible_v<T>)
             {
-                object.resize(size);
+                ar.TransferBinary(object.data(), sizeof(T) * object.size());
             }
-            for(size_t i = 0; i < object.size(); ++i)
+            else
             {
-                ar.Transfer(std::to_string(i), object[i]);
+                for(size_t i = 0; i < object.size(); ++i)
+                {
+                    ar.Transfer(std::to_string(i), object[i]);
+                }
             }
             ar.EndTransferObject();
         }
