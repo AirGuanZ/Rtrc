@@ -1185,6 +1185,12 @@ void ImGuiInstance::TextUnformatted(std::string_view text)
     ImGui::TextUnformatted(text.data(), text.data() + text.size());
 }
 
+void ImGuiInstance::TextUnformattedWrapped(const std::string &text)
+{
+    IMGUI_CONTEXT;
+    ImGui::TextWrapped("%s", text.c_str());
+}
+
 bool ImGuiInstance::InputText(const char *label, MutSpan<char> buffer, ImGuiInputTextFlags flags)
 {
     IMGUI_CONTEXT;

@@ -232,7 +232,10 @@ public:
 
     template<typename...Args>
     void Text(StdFormatString<Args...> fmt, Args&&...args);
+    template<typename...Args>
+    void TextWrapped(StdFormatString<Args...> fmt, Args&&...args);
     void TextUnformatted(std::string_view text);
+    void TextUnformattedWrapped(const std::string &text);
     bool InputText(const char *label, MutSpan<char> buffer, ImGuiInputTextFlags flags = 0);
 
     bool BeginMainMenuBar();
@@ -299,6 +302,12 @@ template<typename... Args>
 void ImGuiInstance::Text(StdFormatString<Args...> fmt, Args &&... args)
 {
     this->TextUnformatted(std::format(fmt, std::forward<Args>(args)...));
+}
+
+template <typename... Args>
+void ImGuiInstance::TextWrapped(StdFormatString<Args...> fmt, Args &&... args)
+{
+    this->TextUnformattedWrapped(std::format(fmt, std::forward<Args>(args)...));
 }
 
 template<typename F>
