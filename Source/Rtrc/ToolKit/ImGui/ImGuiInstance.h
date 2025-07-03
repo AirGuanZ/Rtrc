@@ -73,7 +73,7 @@ private:
 
     RC<GraphicsPipeline> GetOrCreatePipeline(RHI::Format format);
 
-    Ref<Device>                         device_;
+    Ref<Device>                                 device_;
     RC<Shader>                                  shader_;
     RC<BindingGroupLayout>                      cbufferBindingGroupLayout_;
     RC<BindingGroupLayout>                      passBindingGroupLayout_;

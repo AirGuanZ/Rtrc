@@ -32,7 +32,7 @@ target_link_libraries(
 	RtrcCore PUBLIC
 	spdlog stb tinyexr nlohmann-json
 	half tinyobjloader sigslot avir cy smhasher cista magic_enum ryu
-	boost_multiprecision Eigen3::Eigen)
+	boost_multiprecision Eigen3::Eigen unordered_dense)
 
 if(RTRC_ENABLE_TRACY)
 	target_link_libraries(RtrcCore PUBLIC TracyClient)
