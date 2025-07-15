@@ -1,11 +1,14 @@
 #pragma once
 
+#include <bit>
+#include <cassert>
+
 #include <Rtrc/Core/Common.h>
 
 RTRC_BEGIN
 
 template<std::integral T>
-T NextPowerOfTwo(T x)
+constexpr T NextPowerOfTwo(T x)
 {
     T r = 1;
     while(r < x)
@@ -15,8 +18,26 @@ T NextPowerOfTwo(T x)
     return r;
 }
 
+template<typename T>
+constexpr uint32_t NextPowerOfTwo_Power(T x)
+{
+    uint32_t i = 0;
+    while((T(1) << i) < x)
+    {
+        ++i;
+    }
+    return i;
+}
+
+template<typename T>
+constexpr uint32_t Log2PowerOfTwo(T x)
+{
+    const uint32_t result = std::countr_zero(x);
+    return result;
+}
+
 template<>
-inline uint32_t NextPowerOfTwo<uint32_t>(uint32_t x)
+constexpr uint32_t NextPowerOfTwo<uint32_t>(uint32_t x)
 {
     x--;
     x |= x >> 1;
@@ -29,7 +50,7 @@ inline uint32_t NextPowerOfTwo<uint32_t>(uint32_t x)
 }
 
 template<std::unsigned_integral T>
-bool IsPowerOfTwo(T x)
+constexpr bool IsPowerOfTwo(T x)
 {
     return (x != 0) && ((x & (x - 1)) == 0);
 }
