@@ -6,8 +6,7 @@ RTRC_BEGIN
 RGExecuter::RGExecuter(Ref<Device> device)
     : device_(device)
 {
-    constexpr int chunkSizeHint = 128 * 1024 * 1024;
-    transientResourcePool_ = device_->GetRawDevice()->CreateTransientResourcePool({ chunkSizeHint }).ToRC();
+
 }
 
 void RGExecuter::Recycle()
@@ -30,6 +29,12 @@ void RGExecuter::Execute(Ref<RenderGraph> graph, bool enableTransientResourcePoo
 
 void RGExecuter::ExecuteInternal(Ref<RenderGraph> graph, bool enableTransientResourcePool, bool partialExecution)
 {
+    if(enableTransientResourcePool && !transientResourcePool_)
+    {
+        constexpr int chunkSizeHint = 128 * 1024 * 1024;
+        transientResourcePool_ = device_->GetRawDevice()->CreateTransientResourcePool({ chunkSizeHint }).ToRC();
+    }
+
     RGExecutableGraph compiledResult;
     assert(graph->recording_);
     {
