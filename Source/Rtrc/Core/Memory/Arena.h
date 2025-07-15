@@ -90,7 +90,12 @@ public:
 
     explicit LinearAllocator(size_t chunkSize = 2 * 1024 * 1024);
 
+    LinearAllocator(LinearAllocator &&other) noexcept;
+    LinearAllocator &operator=(LinearAllocator &&other) noexcept;
+
     ~LinearAllocator();
+
+    void Swap(LinearAllocator &other) noexcept;
 
     template<typename T, typename...Args>
     T *Create(Args&&...args);
@@ -206,9 +211,31 @@ inline LinearAllocator::LinearAllocator(size_t chunkSize)
     assert(halfChunkSize_ >= sizeof(LargeDestructor<std::string>));
 }
 
+inline LinearAllocator::LinearAllocator(LinearAllocator &&other) noexcept
+    : LinearAllocator()
+{
+    Swap(other);
+}
+
+inline LinearAllocator &LinearAllocator::operator=(LinearAllocator &&other) noexcept
+{
+    Swap(other);
+    return *this;
+}
+
 inline LinearAllocator::~LinearAllocator()
 {
     Destroy();
+}
+
+inline void LinearAllocator::Swap(LinearAllocator &other) noexcept
+{
+    std::swap(chunkSize_, other.chunkSize_);
+    std::swap(halfChunkSize_, other.halfChunkSize_);
+    std::swap(destructorEntry_, other.destructorEntry_);
+    std::swap(chunkEntry_, other.chunkEntry_);
+    std::swap(currentPtr_, other.currentPtr_);
+    std::swap(restBytes_, other.restBytes_);
 }
 
 template<typename T, typename... Args>
