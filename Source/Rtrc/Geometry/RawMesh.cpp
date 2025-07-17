@@ -223,7 +223,7 @@ RawMesh &RawMesh::SplitByAttributes()
         if(it == newIndexMap.end())
         {
             const uint32_t newIndex = newVertexCount++;
-            for(uint32_t ai = 0; ai < attributes_.size(); ++i)
+            for(uint32_t ai = 0; ai < attributes_.size(); ++ai)
             {
                 auto &attribute = GetAttribute(ai);
                 auto srcUnit = GetAttributeBytes(attribute.GetType());
