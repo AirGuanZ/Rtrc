@@ -34,6 +34,8 @@ public:
 
     IntrusiveListIterator &operator--();
     IntrusiveListIterator operator--(int);
+
+    bool operator==(const IntrusiveListIterator &other) const;
 };
 
 template<typename T>
@@ -82,12 +84,13 @@ IntrusiveList<T>::IntrusiveList()
     : size_(0)
 {
     head_ = std::make_unique<IntrusiveListNode<T>>();
+    head_->prev_ = head_->succ_ = head_.get();
 }
 
 template <typename T>
 T &IntrusiveListIterator<T>::operator*() const
 {
-    return static_cast<T&>(node_);
+    return *static_cast<T*>(node_);
 }
 
 template <typename T>
@@ -121,6 +124,12 @@ IntrusiveListIterator<T> IntrusiveListIterator<T>::operator--(int)
 }
 
 template <typename T>
+bool IntrusiveListIterator<T>::operator==(const IntrusiveListIterator &other) const
+{
+    return node_ == other.node_;
+}
+
+template <typename T>
 IntrusiveList<T>::~IntrusiveList()
 {
     Clear();
@@ -137,7 +146,6 @@ template <typename T>
 IntrusiveList<T> &IntrusiveList<T>::operator=(IntrusiveList &&other) noexcept
 {
     this->Swap(other);
-    other.Clear();
     return *this;
 }
 

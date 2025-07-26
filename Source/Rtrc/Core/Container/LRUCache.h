@@ -58,6 +58,7 @@ public:
     {
         if(const auto it = self.map_.find(key); it != self.map_.end())
         {
+            list_.splice(list_.begin(), list_, it->second); 
             return &it->second->second;
         }
         return nullptr;
@@ -72,10 +73,20 @@ public:
             list_.splice(list_.begin(), list_, it->second);
             return false;
         }
+
         list_.emplace_front(key, std::move(value));
-        map_.insert({ key, list_.begin() });
+        try
+        {
+            map_.insert({ key, list_.begin() });
+        }
+        catch(...)
+        {
+            list_.pop_front();
+            throw;
+        }
+
         EvictIfNeeded();
-        return false;
+        return true;
     }
 
     template<typename ValueProvider>
@@ -83,6 +94,7 @@ public:
     {
         if(const auto it = map_.find(key); it != map_.end())
         {
+            list_.splice(list_.begin(), list_, it->second);
             return it->second->second;
         }
 

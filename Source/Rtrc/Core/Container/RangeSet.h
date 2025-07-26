@@ -76,6 +76,10 @@ inline void RangeSet::Free(Index beg, Index end)
     {
         std::advance(prevIt, -1);
     }
+    else
+    {
+        prevIt = offsetToSize_.end();
+    }
 
     const bool hasPrev = prevIt != offsetToSize_.end();
     const bool hasSucc = succIt != offsetToSize_.end();
@@ -168,14 +172,14 @@ RangeSet::Index RangeSet::AllocateImpl(Index size, Index alignment, Policy polic
     {
         if constexpr(HasAlignmentRequirement)
         {
-            for(it = sizeToOffsets_.upper_bound(size); it != sizeToOffsets_.end(); ++it)
+            for(it = sizeToOffsets_.lower_bound(size); it != sizeToOffsets_.end(); ++it)
             {
                 for(jt = it->second.begin(); jt != it->second.end(); ++jt)
                 {
                     const Index offset = *jt;
                     const Index alignedOffset = UpAlignTo(offset, alignment);
                     offsetInJt = alignedOffset - offset;
-                    if(offsetInJt + size < it->first)
+                    if(offsetInJt + size <= it->first)
                     {
                         return true;
                     }
@@ -185,7 +189,7 @@ RangeSet::Index RangeSet::AllocateImpl(Index size, Index alignment, Policy polic
         }
         else
         {
-            it = sizeToOffsets_.upper_bound(size);
+            it = sizeToOffsets_.lower_bound(size);
             if(it == sizeToOffsets_.end())
             {
                 return false;
@@ -219,7 +223,7 @@ RangeSet::Index RangeSet::AllocateImpl(Index size, Index alignment, Policy polic
                     const Index offset = *jt;
                     const Index alignedOffset = UpAlignTo(offset, alignment);
                     offsetInJt = alignedOffset - offset;
-                    if(offsetInJt + size < it->first)
+                    if(offsetInJt + size <= it->first)
                     {
                         return true;
                     }
@@ -274,7 +278,7 @@ RangeSet::Index RangeSet::AllocateImpl(Index size, Index alignment, Policy polic
     const Index retBegin = foundBegin + offsetInJt;
     const Index retEnd = retBegin + size;
 
-    assert(retEnd <= foundSize);
+    assert(retEnd <= foundBegin + foundSize);
     if constexpr(HasAlignmentRequirement)
     {
         if(offsetInJt != 0)

@@ -69,6 +69,7 @@ public:
     StaticVector(const T *begin, const T *end)
         : StaticVector()
     {
+        assert(static_cast<size_t>(end - begin) <= Capacity);
         while(begin < end)
         {
             this->PushBack(*begin++);
@@ -141,7 +142,7 @@ public:
         ++size_;
     }
 
-    void PushBack(T &&value) noexcept
+    void PushBack(T &&value)
     {
         assert(size_ < Capacity);
         new (RawAddr(size_)) T(std::move(value));

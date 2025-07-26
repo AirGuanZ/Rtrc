@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include <Rtrc/Core/Container/BitVector.h>
 #include <Rtrc/Core/Container/Span.h>
 
 RTRC_BEGIN
@@ -45,44 +46,43 @@ private:
           T *GetPointer(size_t index);
     const T *GetPointer(size_t index) const;
 
-    // freeIndices must be sorted
-    // func: return true to continue; return false to stop the traversal
-    template<typename Func>
-    static void ForEachNonFreeElementIndex(size_t indexCount, const std::vector<size_t> &freeIndices, const Func &func);
-
     std::vector<Storage> storageArray_;
     std::vector<size_t> freeIndices_;
+    BitVector<uint32_t> occupiedBits_;
 };
 
 template <typename T>
 SparseArray<T>::SparseArray(const SparseArray &other)
 {
-    storageArray_.resize(other.storageArray_.size());
+    assert(other.storageArray_.size() == other.occupiedBits_.GetSize());
 
+    storageArray_.resize(other.storageArray_.size());
     freeIndices_ = other.freeIndices_;
-    std::ranges::sort(freeIndices_);
+    occupiedBits_ = other.occupiedBits_;
 
     size_t constructedElementCount = 0;
     try
     {
-        SparseArray::ForEachNonFreeElementIndex(other.storageArray_.size(), freeIndices_, [&](size_t i)
+        for(size_t i = 0; i < other.storageArray_.size(); ++i)
         {
-            new (reinterpret_cast<T *>(storageArray_[i].data)) T(*other.GetPointer(i));
-            ++constructedElementCount;
-        });
+            if(other.occupiedBits_[i])
+            {
+                new (reinterpret_cast<T *>(storageArray_[i].data)) T(*other.GetPointer(i));
+                ++constructedElementCount;
+            }
+        }
     }
     catch(...)
     {
-        SparseArray::ForEachNonFreeElementIndex(other.storageArray_.size(), freeIndices_, [&](size_t i)
+        for(size_t i = other.storageArray_.size(); i > 0 && constructedElementCount > 0; --i)
         {
-            if(constructedElementCount == 0)
+            const size_t idx = i - 1;
+            if(other.occupiedBits_[idx])
             {
-                return false;
+                std::destroy_at(GetPointer(idx));
+                --constructedElementCount;
             }
-            std::destroy_at(GetPointer(i));
-            --constructedElementCount;
-            return true;
-        });
+        }
         throw;
     }
 }
@@ -107,12 +107,13 @@ SparseArray<T>::~SparseArray()
         return;
     }
 
-    std::ranges::sort(freeIndices_);
-    SparseArray::ForEachNonFreeElementIndex(storageArray_.size(), freeIndices_, [&](size_t i)
+    for(size_t i = 0; i < storageArray_.size(); ++i)
     {
-        std::destroy_at(GetPointer(i));
-        return true;
-    });
+        if(occupiedBits_[i])
+        {
+            std::destroy_at(GetPointer(i));
+        }
+    }
 }
 
 template <typename T>
@@ -135,6 +136,7 @@ void SparseArray<T>::Swap(SparseArray &other) noexcept
 {
     storageArray_.swap(other.storageArray_);
     freeIndices_.swap(other.freeIndices_);
+    occupiedBits_.Swap(other.occupiedBits_);
 }
 
 template <typename T>
@@ -158,25 +160,35 @@ size_t SparseArray<T>::Allocate(Args &&... args)
         freeIndices_.push_back(index);
         throw;
     }
+
+    assert(!occupiedBits_[index]);
+    occupiedBits_[index] = true;
     return index;
 }
 
 template <typename T>
 void SparseArray<T>::Free(size_t index)
 {
+    assert(index < storageArray_.size());
+    assert(occupiedBits_[index]);
     std::destroy_at(GetPointer(index));
     freeIndices_.push_back(index);
+    occupiedBits_[index] = false;
 }
 
 template <typename T>
 T &SparseArray<T>::operator[](size_t index)
 {
+    assert(index < storageArray_.size());
+    assert(occupiedBits_[index]);
     return *GetPointer(index);
 }
 
 template <typename T>
 const T &SparseArray<T>::operator[](size_t index) const
 {
+    assert(index < storageArray_.size());
+    assert(occupiedBits_[index]);
     return *GetPointer(index);
 }
 
@@ -199,6 +211,7 @@ void SparseArray<T>::ExpandStorage(size_t newCount)
     assert(newCount > oldCount);
 
     freeIndices_.reserve(freeIndices_.size() + newCount - oldCount);
+    occupiedBits_.Reserve(newCount);
 
     if constexpr(std::is_trivially_move_constructible_v<T>)
     {
@@ -210,12 +223,23 @@ void SparseArray<T>::ExpandStorage(size_t newCount)
         std::vector<Storage> newStorage(newCount);
         for(size_t i = 0; i < oldCount; ++i)
         {
-            T *dst = reinterpret_cast<T *>(newStorage[i].data);
-            new(dst) T(std::move(*GetPointer(i)));
+            if(occupiedBits_[i])
+            {
+                T *dst = reinterpret_cast<T *>(newStorage[i].data);
+                new(dst) T(std::move(*GetPointer(i)));
+            }
+        }
+        for(size_t i = 0; i < oldCount; ++i)
+        {
+            if(occupiedBits_[i])
+            {
+                std::destroy_at(GetPointer(i));
+            }
         }
         storageArray_.swap(newStorage);
     }
 
+    occupiedBits_.Resize(newCount);
     for(size_t i = oldCount; i < newCount; ++i)
     {
         freeIndices_.push_back(i);
@@ -232,39 +256,6 @@ template <typename T>
 const T *SparseArray<T>::GetPointer(size_t index) const
 {
     return std::launder(reinterpret_cast<const T *>(storageArray_[index].data));
-}
-
-template <typename T>
-template <typename Func>
-void SparseArray<T>::ForEachNonFreeElementIndex(
-    size_t indexCount, const std::vector<size_t> &freeIndices, const Func &func)
-{
-    size_t i = 0, j = 0;
-    while(i < indexCount && j < freeIndices.size())
-    {
-        if(freeIndices[j] != i)
-        {
-            if(!func(i))
-            {
-                return;
-            }
-        }
-        else
-        {
-            ++j;
-        }
-        ++i;
-    }
-
-    assert(j == freeIndices.size());
-    while(i < indexCount)
-    {
-        if(!func(i))
-        {
-            return;
-        }
-        ++i;
-    }
 }
 
 RTRC_END

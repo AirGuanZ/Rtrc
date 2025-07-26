@@ -26,12 +26,12 @@ public:
     void Swap(SlotVector &other) noexcept;
 
     template<typename...Args>
-    int New(Args &&...args);
-    void Delete(int index);
+    size_t New(Args &&...args);
+    void Delete(size_t index);
     void Clear(bool freeMemory = false);
 
-    const T &At(int index) const;
-    T &At(int index);
+    const T &At(size_t index) const;
+    T &At(size_t index);
 
     template<typename F>
     void ForEach(const F &f);
@@ -42,7 +42,7 @@ private:
 
     void Grow();
 
-    std::vector<int> freeSlots_;
+    std::vector<size_t> freeSlots_;
     std::vector<bool> isUsed_;
     std::vector<ElementStorage> values_;
 };
@@ -57,7 +57,7 @@ SlotVector<T>::SlotVector(size_t initialCapacity)
         freeSlots_.resize(initialCapacity);
         for(size_t i = 0; i < initialCapacity; ++i)
         {
-            freeSlots_[i] = static_cast<int>(i);
+            freeSlots_[i] = i;
         }
     }
 }
@@ -73,7 +73,7 @@ SlotVector<T>::SlotVector(const SlotVector &other)
     }
     else
     {
-        values_.resize(other.values_);
+        values_.resize(other.values_.size());
         size_t i = 0;
         try
         {
@@ -130,7 +130,7 @@ SlotVector<T>::~SlotVector()
         {
             if(isUsed_[i])
             {
-                At(static_cast<int>(i)).~T();
+                At(i).~T();
             }
         }
     }
@@ -146,13 +146,13 @@ void SlotVector<T>::Swap(SlotVector &other) noexcept
 
 template<typename T>
 template<typename...Args>
-int SlotVector<T>::New(Args &&...args)
+size_t SlotVector<T>::New(Args &&...args)
 {
     if(freeSlots_.empty())
     {
         Grow();
     }
-    const int slot = freeSlots_.back();
+    const size_t slot = freeSlots_.back();
     assert(!isUsed_[slot]);
     new(&values_[slot]) T(std::forward<Args>(args)...);
     isUsed_[slot] = true;
@@ -161,7 +161,7 @@ int SlotVector<T>::New(Args &&...args)
 }
 
 template<typename T>
-void SlotVector<T>::Delete(int index)
+void SlotVector<T>::Delete(size_t index)
 {
     assert(isUsed_[index]);
     if constexpr(!std::is_trivially_destructible_v<T>)
@@ -182,10 +182,13 @@ void SlotVector<T>::Clear(bool freeMemory)
             if(isUsed_[i])
             {
                 At(i).~T();
-                freeSlots_.push_back(static_cast<int>(i));
                 isUsed_[i] = false;
             }
         }
+    }
+    else
+    {
+        std::ranges::fill(isUsed_, false);
     }
 
     if(freeMemory)
@@ -194,17 +197,26 @@ void SlotVector<T>::Clear(bool freeMemory)
         isUsed_.clear();
         values_.clear();
     }
+    else
+    {
+        freeSlots_.clear();
+        freeSlots_.reserve(isUsed_.size());
+        for(size_t i = 0; i < isUsed_.size(); ++i)
+        {
+            freeSlots_.push_back(i);
+        }
+    }
 }
 
 template<typename T>
-const T &SlotVector<T>::At(int index) const
+const T &SlotVector<T>::At(size_t index) const
 {
     assert(isUsed_[index]);
     return *std::launder(reinterpret_cast<const T *>(&values_[index]));
 }
 
 template<typename T>
-T &SlotVector<T>::At(int index)
+T &SlotVector<T>::At(size_t index)
 {
     assert(isUsed_[index]);
     return *std::launder(reinterpret_cast<T *>(&values_[index]));
@@ -218,7 +230,7 @@ void SlotVector<T>::ForEach(const F &f)
     {
         if(isUsed_[i])
         {
-            f(At(static_cast<int>(i)));
+            f(At(i));
         }
     }
 }
@@ -233,7 +245,7 @@ void SlotVector<T>::Grow()
     isUsed_.resize(newSize, false);
     for(size_t i = oldSize; i < newSize; ++i)
     {
-        freeSlots_.push_back(static_cast<int>(i));
+        freeSlots_.push_back(i);
     }
 
     if constexpr(std::is_trivially_move_constructible_v<T>)
@@ -248,8 +260,8 @@ void SlotVector<T>::Grow()
         {
             if(isUsed_[i])
             {
-                new(&newValues[i]) T(std::move(At(static_cast<int>(i))));
-                At(static_cast<int>(i)).~T();
+                new(&newValues[i]) T(std::move(At(i)));
+                At(i).~T();
             }
         }
         values_ = std::move(newValues);
