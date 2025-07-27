@@ -88,6 +88,13 @@ namespace RG
         .accesses = RHI::ResourceAccess::TextureRead
     };
 
+    inline constexpr RGUseInfo PS_StructuredBuffer =
+    {
+        .layout   = RHI::TextureLayout::Undefined,
+        .stages   = RHI::PipelineStage::FragmentShader,
+        .accesses = RHI::ResourceAccess::StructuredBufferRead
+    };
+
     inline constexpr RGUseInfo CS_Texture =
     {
         .layout   = RHI::TextureLayout::ShaderTexture,
@@ -116,6 +123,13 @@ namespace RG
         .accesses = RHI::ResourceAccess::BufferRead
     };
 
+    inline constexpr RGUseInfo CS_StructuredBuffer =
+    {
+        .layout   = RHI::TextureLayout::Undefined,
+        .stages   = RHI::PipelineStage::ComputeShader,
+        .accesses = RHI::ResourceAccess::StructuredBufferRead
+    };
+
     inline constexpr RGUseInfo CS_RWBuffer =
     {
         .layout   = RHI::TextureLayout::Undefined,
@@ -128,13 +142,6 @@ namespace RG
         .layout   = RHI::TextureLayout::Undefined,
         .stages   = RHI::PipelineStage::ComputeShader,
         .accesses = RHI::ResourceAccess::RWBufferWrite
-    };
-
-    inline constexpr RGUseInfo CS_StructuredBuffer =
-    {
-        .layout   = RHI::TextureLayout::Undefined,
-        .stages   = RHI::PipelineStage::ComputeShader,
-        .accesses = RHI::ResourceAccess::StructuredBufferRead
     };
 
     inline constexpr RGUseInfo CS_RWStructuredBuffer =
