@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include <iterator>
 #include <string>
 #include <vector>
@@ -70,6 +71,51 @@ constexpr uint32_t Hash(std::string_view str);
 // These two functions only replace the container type and won't change the content.
 std::u8string StringToU8String(std::string_view str);
 std::string U8StringToString(std::u8string_view str);
+
+std::u8string U32StringToU8String(std::u32string_view str);
+std::u32string U8StringToU32String(std::u8string_view str);
+
+class UTF8Charset
+{
+public:
+
+    using CodeUnit = char8_t;
+    using CodePoint = char32_t;
+
+    static constexpr uint32_t MaxCodeUnitsInCodePoint = 4;
+    static uint32_t ComputeNumCodeUnitsInCodePoint(CodePoint cp);
+
+    static uint32_t CodePointToCodeUnits(CodePoint cp, CodeUnit *cu);
+    static uint32_t CodeUnitsToCodePoint(const CodeUnit *cu, CodePoint* cp);
+};
+
+class UTF16Charset
+{
+public:
+
+    using CodeUnit = char16_t;
+    using CodePoint = char32_t;
+
+    static constexpr uint32_t MaxCodeUnitsInCodePoint = 2;
+    static uint32_t ComputeNumCodeUnitsInCodePoint(CodePoint cp);
+
+    static uint32_t CodePointToCodeUnits(CodePoint cp, CodeUnit *cu);
+    static uint32_t CodeUnitsToCodePoint(const CodeUnit *cu, CodePoint *cp);
+};
+
+class UTF32Charset
+{
+public:
+
+    using CodeUnit = char32_t;
+    using CodePoint = char32_t;
+
+    static constexpr uint32_t MaxCodeUnitsInCodePoint = 1;
+    static uint32_t ComputeNumCodeUnitsInCodePoint(CodePoint cp);
+
+    static uint32_t CodePointToCodeUnits(CodePoint cp, CodeUnit *cu);
+    static uint32_t CodeUnitsToCodePoint(const CodeUnit *cu, CodePoint *cp);
+};
 
 // ========================== impl ==========================
 
@@ -386,6 +432,208 @@ inline std::string U8StringToString(std::u8string_view str)
         return {};
     }
     return std::string(std::string_view(reinterpret_cast<const char *>(str.data()), str.size()));
+}
+
+inline std::u8string U32StringToU8String(std::u32string_view str)
+{
+    std::u8string result;
+    for(char32_t ch : str)
+    {
+        char8_t chs[UTF8Charset::MaxCodeUnitsInCodePoint];
+        const uint32_t count = UTF8Charset::CodePointToCodeUnits(ch, chs);
+        for(uint32_t i = 0; i < count; ++i)
+        {
+            result.push_back(chs[i]);
+        }
+    }
+    return result;
+}
+
+inline std::u32string U8StringToU32String(std::u8string_view str)
+{
+    std::u32string result;
+    size_t p = 0;
+    while(p < str.size())
+    {
+        char32_t cp;
+        const uint32_t count = UTF8Charset::CodeUnitsToCodePoint(&str[p], &cp);
+        if(count)
+        {
+            result.push_back(cp);
+            p += count;
+        }
+        else
+        {
+            throw Exception("Invalid UTF-8 string");
+        }
+    }
+    return result;
+}
+
+inline uint32_t UTF8Charset::ComputeNumCodeUnitsInCodePoint(char32_t cp)
+{
+    if(cp <= 0x7f)     return 1;
+    if(cp <= 0x7ff)    return 2;
+    if(cp <= 0xffff)   return 3;
+    if(cp <= 0x10ffff) return 4;
+    return 0;
+}
+
+inline uint32_t UTF8Charset::CodePointToCodeUnits(char32_t cp, char8_t* cu)
+{
+    assert(cu);
+
+    if(cp <= 0x7f)
+    {
+        cu[0] = static_cast<CodeUnit>(cp);
+        return 1;
+    }
+
+    if(cp <= 0x7ff)
+    {
+        cu[0] = static_cast<CodeUnit>(0b11000000 | (cp >> 6));
+        cu[1] = static_cast<CodeUnit>(0b10000000 | (cp & 0b00111111));
+        return 2;
+    }
+
+    if(cp <= 0xffff)
+    {
+        cu[0] = static_cast<CodeUnit>(0b11100000 | (cp >> 12));
+        cu[1] = static_cast<CodeUnit>(0b10000000 | ((cp >> 6) & 0b00111111));
+        cu[2] = static_cast<CodeUnit>(0b10000000 | (cp & 0b00111111));
+        return 3;
+    }
+
+    if(cp <= 0x10ffff)
+    {
+        cu[0] = static_cast<CodeUnit>(0b11110000 | (cp >> 18));
+        cu[1] = static_cast<CodeUnit>(0b10000000 | ((cp >> 12) & 0b00111111));
+        cu[2] = static_cast<CodeUnit>(0b10000000 | ((cp >> 6) & 0b00111111));
+        cu[3] = static_cast<CodeUnit>(0b10000000 | (cp & 0b00111111));
+        return 4;
+    }
+
+    return 0;
+}
+
+inline uint32_t UTF8Charset::CodeUnitsToCodePoint(const CodeUnit* cu, CodePoint* cp)
+{
+    assert(cu && cp);
+
+    CodeUnit fst = *cu++;
+
+    // 1 bytes
+    if(!(fst & 0b10000000))
+    {
+        *cp = static_cast<CodePoint>(fst);
+        return 1;
+    }
+
+#define NEXT(C, DST)                        \
+    do {                                    \
+        CodeUnit ch = (C);                  \
+        if((ch & 0b11000000) != 0b10000000) \
+        {                                   \
+            return 0;                       \
+        }                                   \
+        (DST) = ch & 0b00111111;            \
+    } while(0)
+
+    // 2 bytes
+    if((fst & 0b11100000) == 0b11000000)
+    {
+        CodePoint low;
+        NEXT(*cu, low);
+        *cp = ((fst & 0b00011111) << 6) | low;
+        return 2;
+    }
+
+    // 3 bytes
+    if((fst & 0b11110000) == 0b11100000)
+    {
+        CodePoint high, low;
+        NEXT(*cu++, high); NEXT(*cu, low);
+        *cp = ((fst & 0b00001111) << 12) | (high << 6) | low;
+        return 3;
+    }
+
+    // 4 bytes
+    if((fst & 0b11111000) == 0b11110000)
+    {
+        CodePoint high, medi, low;
+        NEXT(*cu++, high); NEXT(*cu++, medi); NEXT(*cu, low);
+        *cp = ((fst & 0b00000111) << 18) | (high << 12) | (medi << 6) | low;
+        return 4;
+    }
+
+#undef NEXT
+
+    return 0;
+}
+
+inline uint32_t UTF16Charset::ComputeNumCodeUnitsInCodePoint(CodePoint cp)
+{
+    return cp <= 0xffff ? 1 : 2;
+}
+
+inline uint32_t UTF16Charset::CodePointToCodeUnits(CodePoint cp, CodeUnit* cu)
+{
+    if(cp <= 0xd7ff || (0xe000 <= cp && cp <= 0xffff))
+    {
+        *cu = static_cast<CodeUnit>(cp);
+        return 1;
+    }
+    if(0x10000 <= cp && cp <= 0x10ffff)
+    {
+        cp -= 0x10000;
+        *cu++ = static_cast<CodeUnit>(0xd800 | (cp >> 10));
+        *cu = static_cast<CodeUnit>(0xdc00 | (cp & 0x3ff));
+        return 2;
+    }
+    return 0;
+}
+
+inline uint32_t UTF16Charset::CodeUnitsToCodePoint(const CodeUnit* cu, CodePoint* cp)
+{
+    assert(cu);
+    char32_t high = static_cast<char32_t>(*cu);
+
+    // 1 code unit
+    if(high <= 0xd7ff || (0xe000 <= high && high <= 0xffff))
+    {
+        *cp = high;
+        return 1;
+    }
+
+    // 2 code units
+    if(0xd800 <= high && high <= 0xdbff)
+    {
+        char32_t low = static_cast<char32_t>(*++cu);
+        if(low <= 0xdfff)
+        {
+            *cp = 0x10000 + (((high & 0x3ff) << 10) | (low & 0x3ff));
+            return 2;
+        }
+    }
+
+    return 0;
+}
+
+inline uint32_t UTF32Charset::ComputeNumCodeUnitsInCodePoint(CodePoint cp)
+{
+    return 1;
+}
+
+inline uint32_t UTF32Charset::CodePointToCodeUnits(CodePoint cp, CodeUnit* cu)
+{
+    *cu = cp;
+    return 1;
+}
+
+inline uint32_t UTF32Charset::CodeUnitsToCodePoint(const CodeUnit* cu, CodePoint* cp)
+{
+    *cp = *cu;
+    return 1;
 }
 
 RTRC_END
