@@ -134,7 +134,7 @@ public:
     template<bool IsConst>
     class BitIterator;
 
-    class BitProxy : public Uncopyable
+    class BitProxy
     {
         friend class BitVector;
 
