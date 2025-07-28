@@ -1197,6 +1197,28 @@ bool ImGuiInstance::InputText(const char *label, MutSpan<char> buffer, ImGuiInpu
     return ImGui::InputText(label, buffer.GetData(), buffer.GetSize(), flags);
 }
 
+bool ImGuiInstance::InputText(const char* label, std::vector<char> &buffer, ImGuiInputTextFlags flags)
+{
+    IMGUI_CONTEXT;
+    auto ResizeCallback = +[](ImGuiInputTextCallbackData *callbackData)
+    {
+        if(callbackData && callbackData->EventFlag & ImGuiInputTextFlags_CallbackResize)
+        {
+            auto &buffer = *static_cast<std::vector<char>*>(callbackData->UserData);
+            size_t newSize = (std::max)(buffer.size(), 16uz);
+            while(newSize < static_cast<size_t>(callbackData->BufSize))
+            {
+                newSize <<= 1;
+            }
+            buffer.resize(newSize, '\0');
+            callbackData->Buf = buffer.data();
+            callbackData->BufDirty = true;
+        }
+        return 0;
+    };
+    return ImGui::InputText(label, buffer.data(), buffer.size(), ImGuiInputTextFlags_CallbackResize | flags, ResizeCallback, &buffer);
+}
+
 bool ImGuiInstance::BeginMainMenuBar()
 {
     IMGUI_CONTEXT;

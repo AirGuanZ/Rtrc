@@ -237,6 +237,7 @@ public:
     void TextUnformatted(std::string_view text);
     void TextUnformattedWrapped(const std::string &text);
     bool InputText(const char *label, MutSpan<char> buffer, ImGuiInputTextFlags flags = 0);
+    bool InputText(const char *label, std::vector<char> &buffer, ImGuiInputTextFlags flags = 0);
 
     bool BeginMainMenuBar();
     void EndMainMenuBar();
