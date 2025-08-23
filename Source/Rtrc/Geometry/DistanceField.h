@@ -44,7 +44,21 @@ namespace SDF
     }
 
     template<typename T>
+    Vector2<T> UDLineVector(const Vector2<T> &p, const Vector2<T> &a, const Vector2<T> &b)
+    {
+        const Vector2<T> pa = p - a, ba = b - a;
+        const T h = Rtrc::Clamp(Rtrc::Dot(pa, ba) / Rtrc::Dot(ba, ba), T(0.0), T(1.0));
+        return pa - ba * h;
+    }
+
+    template<typename T>
     T UDLine(const Vector3<T> &p, const Vector3<T> &a, const Vector3<T> &b)
+    {
+        return Rtrc::Length(SDF::UDLineVector(p, a, b));
+    }
+
+    template<typename T>
+    T UDLine(const Vector2<T> &p, const Vector2<T> &a, const Vector2<T> &b)
     {
         return Rtrc::Length(SDF::UDLineVector(p, a, b));
     }
