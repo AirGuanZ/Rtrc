@@ -19,7 +19,7 @@ public:
     DynamicDiscreteDistribution(F expectedMinValue, F expectedMaxValue, uint32_t seed);
 
     uint32_t Add(F weight, Payload payload = {});
-    void Update(uint32_t index, uint32_t weight);
+    void Update(uint32_t index, F weight);
     void Remove(uint32_t index);
 
     bool IsEmpty() const;
@@ -184,7 +184,7 @@ void DynamicDiscreteDistribution<F, Payload>::ExpandLevels(int levelBegin, int l
 }
 
 template <typename F, typename Payload>
-void DynamicDiscreteDistribution<F, Payload>::Update(uint32_t index, uint32_t weight)
+void DynamicDiscreteDistribution<F, Payload>::Update(uint32_t index, F weight)
 {
     Payload payload = std::move(items_[index].payload);
     Remove(index);
