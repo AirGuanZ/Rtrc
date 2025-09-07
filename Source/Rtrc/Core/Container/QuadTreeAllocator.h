@@ -26,7 +26,7 @@ public:
     std::optional<Vector2<T>> Allocate(T log2Size);
     void Free(const Vector2<T> &offset, uint32_t log2Size);
 
-    T GetMaxAvailableLog2SideLen() const;
+    T GetMaxAvailableSideLen() const;
 
 private:
 
@@ -34,8 +34,9 @@ private:
     {
         Node *parent = nullptr;
         Node *children[4] = { nullptr };
-        T maxAvailableLog2SideLen = 0; // for leaf nodes, 0 indicates being occupied
 
+        T maxAvailableSideLen = 0; // for leaf nodes, 0 indicates being occupied
+        
         bool IsLeaf() const { return children[0] == nullptr; }
     };
 
@@ -43,8 +44,8 @@ private:
 
     LinearAllocator nodeAllocator_;
     std::vector<Node *> freeNodes_;
-    Node root_;
-    uint32_t log2Size_ = 0;
+    Node *root_ = nullptr;
+    uint32_t size_ = 0;
 };
 
 template <typename T>
@@ -67,38 +68,36 @@ void QuadTreeAllocator<T>::Swap(QuadTreeAllocator &other) noexcept
     nodeAllocator_.Swap(other.nodeAllocator_);
     freeNodes_.swap(other.freeNodes_);
     std::swap(root_, other.root_);
+    std::swap(size_, other.size_);
 }
 
 template <typename T>
 void QuadTreeAllocator<T>::Reset(uint32_t log2Size)
 {
-    std::stack<Node *> nodes;
-    if(root_.children[0])
+    if(root_)
     {
-        for(auto child : root_.children)
-        {
-            nodes.push(child);
-        }
-    }
+        std::stack<Node *> nodes;
+        nodes.push(root_);
 
-    while(!nodes.empty())
-    {
-        auto node = nodes.top();
-        nodes.pop();
-        freeNodes_.push_back(node);
-
-        if(node->children[0])
+        while(!nodes.empty())
         {
-            for(auto child : node->children)
+            auto node = nodes.top();
+            nodes.pop();
+            freeNodes_.push_back(node);
+
+            if(node->children[0])
             {
-                nodes.push(child);
+                for(auto child : node->children)
+                {
+                    nodes.push(child);
+                }
             }
         }
     }
 
-    root_ = Node();
-    root_.maxAvailableLog2SideLen = log2Size;
-    log2Size_ = log2Size;
+    root_ = AllocateNode();
+    root_->maxAvailableSideLen = T(1) << log2Size;
+    size_ = T(1) << log2Size;
 }
 
 template <typename T>
@@ -111,17 +110,18 @@ std::optional<Vector2<T>> QuadTreeAllocator<T>::Allocate(const Vector2<T> &size)
 template <typename T>
 std::optional<Vector2<T>> QuadTreeAllocator<T>::Allocate(T log2Size)
 {
-    if(log2Size > root_.maxAvailableLog2SideLen)
+    const T sideLen = T(1) << log2Size;
+    if(log2Size > root_->maxAvailableSideLen)
     {
         return {};
     }
 
     Vector2<T> offset = { 0, 0 };
-    Node *node = &root_;
+    Node *node = root_;
     uint32_t depth = 0;
     while(true)
     {
-        if(node->maxAvailableLog2SideLen == log2Size && node->IsLeaf())
+        if(node->maxAvailableSideLen == sideLen && node->IsLeaf())
         {
             assert(node->children[0] == nullptr);
             break;
@@ -133,7 +133,7 @@ std::optional<Vector2<T>> QuadTreeAllocator<T>::Allocate(T log2Size)
             {
                 child = AllocateNode();
                 child->parent = node;
-                child->maxAvailableLog2SideLen = node->maxAvailableLog2SideLen - 1;
+                child->maxAvailableSideLen = node->maxAvailableSideLen / 2;
             }
             offset = T(2) * offset;
             node = node->children[0];
@@ -145,7 +145,7 @@ std::optional<Vector2<T>> QuadTreeAllocator<T>::Allocate(T log2Size)
         bool selected = false;
         for(T i = 0; i < 4; ++i)
         {
-            if(auto child = node->children[i]; child->maxAvailableLog2SideLen >= log2Size)
+            if(auto child = node->children[i]; child->maxAvailableSideLen >= sideLen)
             {
                 node = child;
                 selected = true;
@@ -159,44 +159,45 @@ std::optional<Vector2<T>> QuadTreeAllocator<T>::Allocate(T log2Size)
         assert(selected);
     }
 
-    node->maxAvailableLog2SideLen = 0;
+    node->maxAvailableSideLen = 0;
     node = node->parent;
     while(node)
     {
-        node->maxAvailableLog2SideLen = (std::max)(
+        node->maxAvailableSideLen = (std::max)(
         {
-            node->children[0]->maxAvailableLog2SideLen,
-            node->children[1]->maxAvailableLog2SideLen,
-            node->children[2]->maxAvailableLog2SideLen,
-            node->children[3]->maxAvailableLog2SideLen,
+            node->children[0]->maxAvailableSideLen,
+            node->children[1]->maxAvailableSideLen,
+            node->children[2]->maxAvailableSideLen,
+            node->children[3]->maxAvailableSideLen,
         });
         node = node->parent;
     }
 
-    const uint32_t nodeSize = 1u << (log2Size_ - depth);
-    return nodeSize * offset;
+    return sideLen * offset;
 }
 
 template <typename T>
 void QuadTreeAllocator<T>::Free(const Vector2<T> &offset, uint32_t log2Size)
 {
+    const uint32_t sideLen = T(1) << log2Size;
+
     // Find the to-be-freed node
 
-    uint32_t currentLog2SideLen = log2Size_;
+    uint32_t currentSideLen = size_;
     Vector2<T> currentOffset = { 0, 0 };
-    Node *node = &root_;
+    Node *node = root_;
     while(true)
     {
-        if(currentLog2SideLen == log2Size)
+        if(currentSideLen == sideLen)
         {
             break;
         }
-        assert(currentLog2SideLen > 0);
+        assert(currentSideLen > 0);
 
-        const uint32_t childLog2SideLen = currentLog2SideLen - 1;
-        const uint32_t childDepthDiff = childLog2SideLen - log2Size;
+        const uint32_t childSideLen = currentSideLen / 2;
+        const uint32_t childSizeRatio = childSideLen / sideLen;
         const Vector2<T> childBaseOffset = T(2) * currentOffset;
-        const Vector2<T> offsetAtChildLevel = { offset.x >> childDepthDiff, offset.y >> childDepthDiff };
+        const Vector2<T> offsetAtChildLevel = { offset.x / childSizeRatio, offset.y / childSizeRatio };
         assert(offsetAtChildLevel.x == childBaseOffset.x || offsetAtChildLevel.x == childBaseOffset.x + 1);
         assert(offsetAtChildLevel.y == childBaseOffset.y || offsetAtChildLevel.y == childBaseOffset.y + 1);
         const uint32_t localX = offsetAtChildLevel.x == childBaseOffset.x ? 0 : 1;
@@ -205,20 +206,20 @@ void QuadTreeAllocator<T>::Free(const Vector2<T> &offset, uint32_t log2Size)
 
         node = node->children[childIndex];
         currentOffset = childBaseOffset + Vector2<T>(localX, localY);
-        currentLog2SideLen = currentLog2SideLen - 1;
+        currentSideLen = currentSideLen / 2;
     }
     assert(node->IsLeaf());
-    assert(node->maxAvailableLog2SideLen == 0);
+    assert(node->maxAvailableSideLen == 0);
 
     // Mark node as unoccupied
 
-    node->maxAvailableLog2SideLen = currentLog2SideLen;
+    node->maxAvailableSideLen = currentSideLen;
 
     // Update ancestors
 
     node = node->parent;
-    assert(!node || currentLog2SideLen > 0);
-    --currentLog2SideLen;
+    assert(!node || currentSideLen > 0);
+    currentSideLen *= 2;
 
     while(true)
     {
@@ -227,22 +228,22 @@ void QuadTreeAllocator<T>::Free(const Vector2<T> &offset, uint32_t log2Size)
             break;
         }
 
-        T maxChildLog2SideLen = 0;
-        bool hasNonLeafChild = false;
+        T maxChildSideLen = 0;
+        bool dontMerge = false;
         assert(!node->IsLeaf());
         for(int i = 0; i < 4; ++i)
         {
-            maxChildLog2SideLen = (std::max)(maxChildLog2SideLen, node->children[i]->maxAvailableLog2SideLen);
-            hasNonLeafChild |= !node->children[i]->IsLeaf();
+            maxChildSideLen = (std::max)(maxChildSideLen, node->children[i]->maxAvailableSideLen);
+            dontMerge |= node->children[i]->maxAvailableSideLen != currentSideLen / 2;
         }
 
-        if(hasNonLeafChild)
+        if(dontMerge)
         {
-            node->maxAvailableLog2SideLen = maxChildLog2SideLen;
+            node->maxAvailableSideLen = maxChildSideLen;
         }
         else
         {
-            node->maxAvailableLog2SideLen = currentLog2SideLen;
+            node->maxAvailableSideLen = currentSideLen;
             for(int i = 0; i < 4; ++i)
             {
                 freeNodes_.push_back(node->children[i]);
@@ -251,19 +252,19 @@ void QuadTreeAllocator<T>::Free(const Vector2<T> &offset, uint32_t log2Size)
         }
 
         node = node->parent;
-        assert(!node || currentLog2SideLen > 0);
-        --currentLog2SideLen;
+        assert(!node || currentSideLen > 0);
+        currentSideLen *= 2;
     }
 }
 
 template <typename T>
-T QuadTreeAllocator<T>::GetMaxAvailableLog2SideLen() const
+T QuadTreeAllocator<T>::GetMaxAvailableSideLen() const
 {
-    return root_.maxAvailableLog2SideLen;
+    return root_->maxAvailableSideLen;
 }
 
 template <typename T>
-typename QuadTreeAllocator<T>::Node* QuadTreeAllocator<T>::AllocateNode()
+QuadTreeAllocator<T>::Node* QuadTreeAllocator<T>::AllocateNode()
 {
     if(!freeNodes_.empty())
     {
