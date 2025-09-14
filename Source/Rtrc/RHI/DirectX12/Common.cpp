@@ -106,6 +106,7 @@ DXGI_FORMAT TranslateFormat(Format format)
     case R16_UNorm:          return DXGI_FORMAT_R16_UNORM;
     case R16G16_UNorm:       return DXGI_FORMAT_R16G16_UNORM;
     case R16G16_Float:       return DXGI_FORMAT_R16G16_FLOAT;
+    case BC1:                return DXGI_FORMAT_BC1_UNORM;
     case D24S8:              return DXGI_FORMAT_D24_UNORM_S8_UINT;
     case D32:                return DXGI_FORMAT_D32_FLOAT;
     }

@@ -89,6 +89,7 @@ VkFormat TranslateTexelFormat(Format format)
     case Format::R16_UNorm:          return VK_FORMAT_R16_UNORM;
     case Format::R16G16_UNorm:       return VK_FORMAT_R16G16_UNORM;
     case Format::R16G16_Float:       return VK_FORMAT_R16G16_SFLOAT;
+    case Format::BC1:                return VK_FORMAT_BC1_RGB_UNORM_BLOCK;
     case Format::D24S8:              return VK_FORMAT_D24_UNORM_S8_UINT;
     case Format::D32:                return VK_FORMAT_D32_SFLOAT;
     }

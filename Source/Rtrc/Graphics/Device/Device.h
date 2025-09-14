@@ -544,9 +544,10 @@ inline RC<StatefulBuffer> Device::CreateStatefulBuffer(const RHI::BufferDesc &de
 inline RC<Buffer> Device::CreateTexelBuffer(
     size_t count, RHI::Format format, RHI::BufferUsageFlag usages, std::string name)
 {
+    assert(!RHI::IsCompressed(format));
     auto buffer = this->CreateBuffer(RHI::BufferDesc
     {
-        .size = count * RHI::GetTexelSize(format),
+        .size = count * RHI::GetUncompressedTexelBytes(format),
         .usage = usages
     }, std::move(name));
     buffer->SetDefaultTexelFormat(format);
@@ -568,9 +569,10 @@ inline RC<Buffer> Device::CreateStructuredBuffer(
 inline RC<StatefulBuffer> Device::CreateStatefulTexelBuffer(
     size_t count, RHI::Format format, RHI::BufferUsageFlag usages, std::string name)
 {
+    assert(!RHI::IsCompressed(format));
     auto buffer = this->CreateStatefulBuffer(RHI::BufferDesc
     {
-        .size = count * RHI::GetTexelSize(format),
+        .size = count * RHI::GetBlockBytes(format) / MulReduce(RHI::GetBlockSize(format)),
         .usage = usages
     }, std::move(name));
     buffer->SetDefaultTexelFormat(format);
@@ -698,7 +700,8 @@ inline void Device::Download(
 template<typename T>
 RC<Buffer> Device::CreateAndUploadTexelBuffer(RHI::BufferUsageFlag usages, Span<T> data, RHI::Format format)
 {
-    assert(RHI::GetTexelSize(format) == sizeof(T));
+    assert(!RHI::IsCompressed(format));
+    assert(RHI::GetUncompressedTexelBytes(format) == sizeof(T));
     auto buffer = this->CreateAndUploadBuffer(RHI::BufferDesc
         {
             .size = data.GetSize() * sizeof(T),

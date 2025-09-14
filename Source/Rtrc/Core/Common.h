@@ -328,10 +328,16 @@ constexpr size_t GetMemberOffset(M C::* p)
     return reinterpret_cast<size_t>(&(static_cast<C *>(nullptr)->*p));
 }
 
-template<typename T>
+template<std::integral T>
 constexpr T UpAlignTo(T v, T align)
 {
     return (v + (align - 1)) / align * align;
+}
+
+template<std::integral T>
+constexpr T UpAlignDiv(T v, T align)
+{
+    return (v + (align - 1)) / align;
 }
 
 template<typename T>

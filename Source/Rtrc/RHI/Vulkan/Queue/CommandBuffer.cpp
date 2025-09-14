@@ -533,13 +533,15 @@ void VulkanCommandBuffer::CopyColorTexture(
 void VulkanCommandBuffer::CopyBufferToTexture(
     Texture *dst, uint32_t mipLevel, uint32_t arrayLayer, Buffer *src, size_t srcOffset, size_t srcRowBytes)
 {
-    assert(srcRowBytes % GetTexelSize(dst->GetFormat()) == 0);
+    assert(srcRowBytes % GetBlockBytes(dst->GetFormat()) == 0);
     assert(HasColorAspect(dst->GetFormat()));
+
+    const uint32_t bufferRowTexels = srcRowBytes / GetBlockBytes(dst->GetFormat()) * GetBlockSize(dst->GetFormat()).x;
 
     auto &texDesc = dst->GetDesc();
     const VkBufferImageCopy copy = {
         .bufferOffset      = srcOffset,
-        .bufferRowLength   = static_cast<uint32_t>(srcRowBytes / GetTexelSize(dst->GetFormat())),
+        .bufferRowLength   = bufferRowTexels,
         .bufferImageHeight = 0,
         .imageSubresource  = VkImageSubresourceLayers{
             .aspectMask     = GetAllAspects(texDesc.format),
@@ -562,12 +564,15 @@ void VulkanCommandBuffer::CopyBufferToTexture(
 void VulkanCommandBuffer::CopyTextureToBuffer(
     Buffer *dst, size_t dstOffset, size_t dstRowBytes, Texture *src, uint32_t mipLevel, uint32_t arrayLayer)
 {
-    assert(dstRowBytes % GetTexelSize(src->GetFormat()) == 0);
+    assert(dstRowBytes % GetBlockBytes(src->GetFormat()) == 0);
     assert(HasColorAspect(src->GetFormat()));
+
+    const uint32_t bufferRowTexels = dstRowBytes / GetBlockBytes(src->GetFormat()) * GetBlockSize(src->GetFormat()).x;
+
     auto &texDesc = src->GetDesc();
     const VkBufferImageCopy copy = {
         .bufferOffset      = dstOffset,
-        .bufferRowLength   = static_cast<uint32_t>(dstRowBytes / GetTexelSize(src->GetFormat())),
+        .bufferRowLength   = bufferRowTexels,
         .bufferImageHeight = 0,
         .imageSubresource  = VkImageSubresourceLayers{
             .aspectMask     = GetAllAspects(texDesc.format),

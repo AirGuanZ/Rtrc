@@ -81,6 +81,7 @@ void UploadBatch::Record(
     RHI::TextureLayout         afterLayout,
     bool                       takeCopyOfData)
 {
+    assert(!RHI::IsCompressed(texture->GetFormat()));
     assert(texture->GetDesc().usage.Contains(RHI::TextureUsage::TransferDst));
     assert(texture->GetDimension() != RHI::TextureDimension::Tex3D || subrsc.arrayLayer == 0);
 
@@ -90,7 +91,11 @@ void UploadBatch::Record(
                             texture->GetMipLevelDepth(subrsc.mipLevel) : 1;
     if(dataRowBytes == 0)
     {
-        dataRowBytes = width * GetTexelSize(texture->GetFormat());
+        assert(!RHI::IsCompressed(texture->GetFormat()));
+        [[maybe_unused]] const Vector3u blockSize = GetBlockSize(texture->GetFormat());
+        assert(blockSize.x == 1 && blockSize.y == 1 && blockSize.z == 1);
+        const size_t texelBytes = GetBlockBytes(texture->GetFormat());
+        dataRowBytes = width * texelBytes;
     }
 
     auto &task = textureTasks_.emplace_back();

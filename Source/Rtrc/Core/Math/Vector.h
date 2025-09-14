@@ -325,6 +325,13 @@ T MinReduce(const Vector3<T> &v);
 template<typename T>
 T MinReduce(const Vector4<T> &v);
 
+template<typename T>
+T MulReduce(const Vector2<T> &v);
+template<typename T>
+T MulReduce(const Vector3<T> &v);
+template<typename T>
+T MulReduce(const Vector4<T> &v);
+
 template<std::floating_point T>
 Vector2<T> Lerp(const Vector2<T> &lhs, const Vector2<T> &rhs, const Vector2<T> &t);
 template<std::floating_point T>
@@ -1155,6 +1162,24 @@ template<typename T>
 T MinReduce(const Vector4<T> &v)
 {
     return (std::min)({ v.x, v.y, v.z, v.w });
+}
+
+template<typename T>
+T MulReduce(const Vector2<T> &v)
+{
+    return v.x * v.y;
+}
+
+template<typename T>
+T MulReduce(const Vector3<T> &v)
+{
+    return v.x * v.y * v.z;
+}
+
+template<typename T>
+T MulReduce(const Vector4<T> &v)
+{
+    return v.x * v.y * v.z * v.w;
 }
 
 template<std::floating_point T>

@@ -1235,7 +1235,7 @@ size_t VulkanDevice::GetAccelerationStructureScratchBufferAlignment() const
 
 size_t VulkanDevice::GetTextureBufferCopyRowPitchAlignment(Format texelFormat) const
 {
-    return GetTexelSize(texelFormat);
+    return GetBlockBytes(texelFormat);
 }
 
 const ComputeShaderDispatchLimit &VulkanDevice::GetComputeShaderDispatchLimit() const

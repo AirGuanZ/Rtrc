@@ -671,8 +671,11 @@ inline void RGReadbackTexture(
 
     assert(texture->GetDesc().usage.Contains(RHI::TextureUsage::TransferSrc));
 
+    const RHI::Format format = texture->GetFormat();
+    assert(!RHI::IsCompressed(format));
+
     const size_t rowAlignment = graph->GetDevice()->GetTextureBufferCopyRowPitchAlignment(texture->GetFormat());
-    const size_t unalignedRowSize = GetTexelSize(texture->GetFormat()) * texture->GetWidth();
+    const size_t unalignedRowSize = RHI::GetBlockBytes(format) / MulReduce(RHI::GetBlockSize(format)) * texture->GetWidth();
     const size_t alignedRowSize = UpAlignTo(unalignedRowSize, rowAlignment);
     const size_t stagingBufferSize = texture->GetHeight() * alignedRowSize;
 

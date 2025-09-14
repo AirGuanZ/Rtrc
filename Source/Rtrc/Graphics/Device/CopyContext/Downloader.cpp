@@ -40,7 +40,9 @@ void DownloadBatch::Record(const RC<StatefulBuffer> &buffer, void *data, size_t 
 
 void DownloadBatch::Record(const RC<StatefulTexture> &texture, TexSubrsc subrsc, void *outputData, size_t dataRowBytes)
 {
-    const size_t packedRowBytes = texture->GetMipLevelWidth(subrsc.mipLevel) * GetTexelSize(texture->GetFormat());
+    assert(IsCompressed(texture->GetFormat()));
+    const size_t texelBytes = GetBlockBytes(texture->GetFormat());
+    const size_t packedRowBytes = texture->GetMipLevelWidth(subrsc.mipLevel) * texelBytes;
     if(dataRowBytes == 0)
     {
         dataRowBytes = packedRowBytes;

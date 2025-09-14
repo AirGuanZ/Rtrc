@@ -159,8 +159,14 @@ enum class Format : uint32_t
     R16G16_UNorm,
     R16G16_Float,
 
+    BC1, // rgb (without alpha). 0.5 byte/pixel
+
     D24S8,
-    D32
+    D32,
+
+    //----------- Remenber to update this
+
+    Last = D32,
 };
 
 enum class VertexAttributeType : uint32_t
@@ -183,7 +189,8 @@ enum class VertexAttributeType : uint32_t
 struct FormatDesc
 {
     const char *name;
-    size_t texelSize;
+    Vector3u blockSize;
+    size_t blockBytes;
     bool canBeAccessedAsFloatInShader;
     bool canBeAccessedAsIntInShader;
     bool canBeAccessedAsUIntInShader;
@@ -191,19 +198,29 @@ struct FormatDesc
     bool needUNormAsTypedUAV;
     bool hasDepthAspect;
     bool hasStencilAspect;
+    bool isCompressed;
 };
 
 const FormatDesc &GetFormatDesc(Format format);
 
-inline const char *GetFormatName               (Format format) { return GetFormatDesc(format).name;                         }
-inline size_t      GetTexelSize                (Format format) { return GetFormatDesc(format).texelSize;                    }
-inline bool        CanBeAccessedAsFloatInShader(Format format) { return GetFormatDesc(format).canBeAccessedAsFloatInShader; }
-inline bool        CanBeAccessedAsIntInShader  (Format format) { return GetFormatDesc(format).canBeAccessedAsIntInShader;   }
-inline bool        CanBeAccessedAsUIntInShader (Format format) { return GetFormatDesc(format).canBeAccessedAsUIntInShader;  }
-inline bool        NeedUNormAsTypedUAV         (Format format) { return GetFormatDesc(format).needUNormAsTypedUAV;          }
-inline bool        NeedSNormAsTypedUAV         (Format format) { return GetFormatDesc(format).needSNormAsTypedUAV;          }
-inline bool        HasDepthAspect              (Format format) { return GetFormatDesc(format).hasDepthAspect;               }
-inline bool        HasStencilAspect            (Format format) { return GetFormatDesc(format).hasStencilAspect;             }
+inline const char      *GetFormatName               (Format format) { return GetFormatDesc(format).name;                            }
+inline const Vector3u  &GetBlockSize                (Format format) { return GetFormatDesc(format).blockSize;                       }
+inline size_t           GetBlockBytes               (Format format) { return GetFormatDesc(format).blockBytes;                      }
+inline bool             CanBeAccessedAsFloatInShader(Format format) { return GetFormatDesc(format).canBeAccessedAsFloatInShader;    }
+inline bool             CanBeAccessedAsIntInShader  (Format format) { return GetFormatDesc(format).canBeAccessedAsIntInShader;      }
+inline bool             CanBeAccessedAsUIntInShader (Format format) { return GetFormatDesc(format).canBeAccessedAsUIntInShader;     }
+inline bool             NeedUNormAsTypedUAV         (Format format) { return GetFormatDesc(format).needUNormAsTypedUAV;             }
+inline bool             NeedSNormAsTypedUAV         (Format format) { return GetFormatDesc(format).needSNormAsTypedUAV;             }
+inline bool             HasDepthAspect              (Format format) { return GetFormatDesc(format).hasDepthAspect;                  }
+inline bool             HasStencilAspect            (Format format) { return GetFormatDesc(format).hasStencilAspect;                }
+inline bool             IsCompressed                (Format format) { return GetFormatDesc(format).isCompressed;                    }
+
+inline size_t GetUncompressedTexelBytes(Format format)
+{
+    assert(!IsCompressed(format));
+    assert(GetBlockSize(format) == Vector3u(1, 1, 1));
+    return GetBlockBytes(format);
+}
 
 enum class IndexFormat
 {

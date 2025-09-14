@@ -653,13 +653,22 @@ void DirectX12CommandBuffer::CopyBufferToTexture(
     Texture *dst, uint32_t mipLevel, uint32_t arrayLayer, Buffer *src, size_t srcOffset, size_t srcRowBytes)
 {
     assert(!IsBarrierOnly());
-
     assert(srcRowBytes % D3D12_TEXTURE_DATA_PITCH_ALIGNMENT == 0 ||
            ((dst->GetHeight() >> mipLevel) <= 1 &&
             (dst->GetDepth() >> mipLevel) <= 1));
 
     assert(!HasDepthAspect(dst->GetFormat()) && !HasStencilAspect(dst->GetFormat()));
     const DXGI_FORMAT dstFormat = TranslateFormat(dst->GetFormat());
+
+    uint32_t srcWidth = (std::max)(1u, dst->GetWidth() >> mipLevel);
+    uint32_t srcHeight = (std::max)(1u, dst->GetHeight() >> mipLevel);
+    DXGI_FORMAT srcFormat = dstFormat;
+    if(srcFormat == DXGI_FORMAT_BC1_UNORM)
+    {
+        srcFormat = DXGI_FORMAT_R32G32_UINT;
+        srcWidth = (std::max)(1u, UpAlignTo(srcWidth, 4u) / 4u);
+        srcHeight = (std::max)(1u, UpAlignTo(srcHeight, 4u) / 4u);
+    }
 
     auto d3dSrc = static_cast<DirectX12Buffer*>(src)->_internalGetNativeBuffer().Get();
     const D3D12_TEXTURE_COPY_LOCATION srcLoc =
@@ -671,9 +680,9 @@ void DirectX12CommandBuffer::CopyBufferToTexture(
             .Offset = srcOffset,
             .Footprint = D3D12_SUBRESOURCE_FOOTPRINT
             {
-                .Format   = dstFormat,
-                .Width    = (std::max)(1u, dst->GetWidth() >> mipLevel),
-                .Height   = (std::max)(1u, dst->GetHeight() >> mipLevel),
+                .Format   = srcFormat,
+                .Width    = srcWidth,
+                .Height   = srcHeight,
                 .Depth    = dst->GetDimension() == TextureDimension::Tex3D ?
                             (std::max)(1u, dst->GetDepth() >> mipLevel) : 1u,
                 .RowPitch = static_cast<UINT>(srcRowBytes)
@@ -701,6 +710,16 @@ void DirectX12CommandBuffer::CopyTextureToBuffer(
     assert(!HasDepthAspect(src->GetFormat()) && !HasStencilAspect(src->GetFormat()));
     const DXGI_FORMAT srcFormat = TranslateFormat(src->GetFormat());
 
+    uint32_t dstWidth = (std::max)(1u, src->GetWidth() >> mipLevel);
+    uint32_t dstHeight = (std::max)(1u, src->GetHeight() >> mipLevel);
+    DXGI_FORMAT dstFormat = srcFormat;
+    if(dstFormat == DXGI_FORMAT_BC1_UNORM)
+    {
+        dstFormat = DXGI_FORMAT_R32G32_UINT;
+        dstWidth = (std::max)(1u, UpAlignTo(dstWidth, 4u) / 4u);
+        dstHeight = (std::max)(1u, UpAlignTo(dstHeight, 4u) / 4u);
+    }
+
     auto d3dDst = static_cast<DirectX12Buffer *>(dst)->_internalGetNativeBuffer().Get();
     const D3D12_TEXTURE_COPY_LOCATION dstLoc =
     {
@@ -711,9 +730,9 @@ void DirectX12CommandBuffer::CopyTextureToBuffer(
             .Offset    = dstOffset,
             .Footprint = D3D12_SUBRESOURCE_FOOTPRINT
             {
-                .Format   = srcFormat,
-                .Width    = (std::max)(1u, src->GetWidth() >> mipLevel),
-                .Height   = (std::max)(1u, src->GetHeight() >> mipLevel),
+                .Format   = dstFormat,
+                .Width    = dstWidth,
+                .Height   = dstHeight,
                 .Depth    = src->GetDimension() == TextureDimension::Tex3D ?
                             (std::max)(1u, src->GetDepth() >> mipLevel) : 1u,
                 .RowPitch = static_cast<UINT>(dstRowBytes)

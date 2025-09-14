@@ -27,7 +27,8 @@ void Run()
         });
     auto outputTextureUav = outputTexture->GetUav();
 
-    const size_t rowDataSize = outputTexture->GetDesc().width * GetTexelSize(outputTexture->GetFormat());
+    const size_t rowDataSize = outputTexture->GetDesc().width * GetBlockBytes(outputTexture->GetFormat())
+                                                              / MulReduce(GetBlockSize(outputTexture->GetFormat()));
     const size_t rowDataAlignment = device->GetTextureBufferCopyRowPitchAlignment(outputTexture->GetFormat());
     const size_t alignedRowSize = UpAlignTo(rowDataSize, rowDataAlignment);
     const size_t readbackBufferSize = alignedRowSize * outputTexture->GetDesc().height;

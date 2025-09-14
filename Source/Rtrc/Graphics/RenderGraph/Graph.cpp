@@ -63,9 +63,10 @@ RGTexImpl *RenderGraph::CreateTexture(const RHI::TextureDesc &desc, std::string 
 RGBufImpl *RenderGraph::CreateTexelBuffer(
     size_t count, RHI::Format format, RHI::BufferUsageFlag usages, std::string name)
 {
+    assert(!RHI::IsCompressed(format));
     auto ret = this->CreateBuffer(RHI::BufferDesc
     {
-        .size = count * RHI::GetTexelSize(format),
+        .size = count * RHI::GetBlockBytes(format) / MulReduce(RHI::GetBlockSize(format)),
         .usage = usages
     }, std::move(name));
     ret->SetDefaultTexelFormat(format);

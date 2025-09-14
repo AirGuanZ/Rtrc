@@ -53,7 +53,9 @@ RPtr<BufferSrv> DirectX12Buffer::CreateSrv(const BufferSrvDesc &desc) const
     }
 
     const bool isRawBufferView = desc.format == Format::Unknown && desc.stride == 0;
-    const size_t actualStride = desc.stride != 0 ? desc.stride : (isRawBufferView ? 4 : GetTexelSize(desc.format));
+    const size_t actualStride =
+        desc.stride != 0 ? desc.stride :
+        (isRawBufferView ? 4 : RHI::GetBlockBytes(desc.format) / MulReduce(RHI::GetBlockSize(desc.format)));
 
     D3D12_SHADER_RESOURCE_VIEW_DESC viewDesc;
     viewDesc.Format                     = isRawBufferView ? DXGI_FORMAT_R32_TYPELESS : TranslateFormat(desc.format);
@@ -90,7 +92,9 @@ RPtr<BufferUav> DirectX12Buffer::CreateUav(const BufferUavDesc &desc) const
     }
     
     const bool isRawBufferView = desc.format == Format::Unknown && desc.stride == 0;
-    const size_t actualStride = desc.stride != 0 ? desc.stride : (isRawBufferView ? 4 : GetTexelSize(desc.format));
+    const size_t actualStride =
+        desc.stride != 0 ? desc.stride :
+        (isRawBufferView ? 4 : RHI::GetBlockBytes(desc.format) / MulReduce(RHI::GetBlockSize(desc.format)));
 
     D3D12_UNORDERED_ACCESS_VIEW_DESC viewDesc;
     viewDesc.Format                      = isRawBufferView ? DXGI_FORMAT_R32_TYPELESS : TranslateFormat(desc.format);
