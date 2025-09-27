@@ -4,6 +4,11 @@ project(Core)
 
 file(GLOB_RECURSE CORE_SRCS CONFIGURE_DEPENDS "*.cpp" "*.h")
 
+if(MSVC)
+	file(GLOB_RECURSE CORE_NATVIS_SRCS CONFIGURE_DEPENDS "*.natvis")
+	set(CORE_SRCS ${CORE_SRCS} ${CORE_NATVIS_SRCS})
+endif()
+
 add_library(RtrcCore STATIC ${CORE_SRCS})
 
 foreach(SRC IN ITEMS ${CORE_SRCS})

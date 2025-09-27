@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cassert>
+#include <array>
 #include <vector>
 
 #include <Rtrc/Core/Container/StaticVector.h>
@@ -278,7 +279,7 @@ public:
                     prod *= s;
                 }
                 return prod;
-            });
+            }());
     }
 
     MultiDimSpan(Span<T> data, Span<uint32_t> sizes)

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>  
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">  
+
+  <!-- Rtrc::MutSpan<T> -->  
+  <Type Name="Rtrc::MutSpan&lt;*&gt;">  
+    <DisplayString>{{size = {size_}}}</DisplayString>  
+    <Expand>  
+      <ArrayItems>  
+        <Size>size_</Size>  
+        <ValuePointer>data_</ValuePointer>  
+      </ArrayItems>  
+    </Expand>  
+  </Type>  
+
+  <!-- Rtrc::Span<T> -->  
+  <Type Name="Rtrc::Span&lt;*&gt;">  
+    <DisplayString>{{size = {size_}}}</DisplayString>  
+    <Expand>  
+      <ArrayItems>  
+        <Size>size_</Size>  
+        <ValuePointer>data_</ValuePointer>  
+      </ArrayItems>  
+    </Expand>  
+  </Type>  
+
+  <!-- Specialization for 1D Multi-dimensional Spans -->  
+  <Type Name="Rtrc::MultiDimSpan&lt;*,1&gt;">  
+    <AlternativeType Name="Rtrc::MultiDimMutSpan&lt;*,1&gt;" />  
+    <DisplayString>{sizes_}</DisplayString>  
+    <Expand>  
+      <ArrayItems>  
+        <Size>data_.size_</Size>  
+        <ValuePointer>data_.data_</ValuePointer>  
+      </ArrayItems>  
+    </Expand>  
+  </Type>  
+  
+  <!-- Specialization for 2D Multi-dimensional Spans -->  
+  <Type Name="Rtrc::MultiDimSpan&lt;*,2&gt;">  
+    <AlternativeType Name="Rtrc::MultiDimMutSpan&lt;*,2&gt;" />  
+    <DisplayString>{sizes_}</DisplayString>  
+    <Expand>  
+      <ArrayItems >  
+        <Rank>2</Rank>  
+        <Size>sizes_[$i]</Size>  
+        <ValuePointer>data_.data_</ValuePointer>  
+      </ArrayItems >  
+    </Expand>  
+  </Type>
+
+
+  <!-- Specialization for 3D Multi-dimensional Spans -->  
+  <Type Name="Rtrc::MultiDimSpan&lt;*,3&gt;">  
+    <AlternativeType Name="Rtrc::MultiDimMutSpan&lt;*,3&gt;" />  
+    <DisplayString>{sizes_}</DisplayString>  
+    <Expand>  
+      <ArrayItems >  
+        <Rank>3</Rank>  
+        <Size>sizes_[$i]</Size>  
+        <ValuePointer>data_.data_</ValuePointer>  
+      </ArrayItems >  
+    </Expand>  
+  </Type>  
+
+  <!-- Fallback for 4D+ Multi-dimensional Spans (displays as a flat array) -->  
+  <Type Name="Rtrc::MultiDimSpan&lt;*,*&gt;">  
+    <AlternativeType Name="Rtrc::MultiDimMutSpan&lt;*,*&gt;" />  
+    <DisplayString>{sizes_}</DisplayString>  
+    <Expand>  
+        <Item Name="[sizes]">sizes_</Item>  
+        <ArrayItems>  
+            <Size>data_.size_</Size>  
+            <ValuePointer>data_.data_</ValuePointer>  
+        </ArrayItems>  
+    </Expand>  
+  </Type>  
+
+</AutoVisualizer>
