@@ -669,6 +669,10 @@ void DirectX12CommandBuffer::CopyBufferToTexture(
         srcWidth = (std::max)(1u, UpAlignTo(srcWidth, 4u) / 4u);
         srcHeight = (std::max)(1u, UpAlignTo(srcHeight, 4u) / 4u);
     }
+    else
+    {
+        assert(!IsCompressed(dst->GetFormat()) && "support of other compressed formats are not yet implemented");
+    }
 
     auto d3dSrc = static_cast<DirectX12Buffer*>(src)->_internalGetNativeBuffer().Get();
     const D3D12_TEXTURE_COPY_LOCATION srcLoc =
