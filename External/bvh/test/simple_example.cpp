@@ -1,84 +1,105 @@
-#include <vector>
+#include <bvh/v2/bvh.h>
+#include <bvh/v2/vec.h>
+#include <bvh/v2/ray.h>
+#include <bvh/v2/node.h>
+#include <bvh/v2/default_builder.h>
+#include <bvh/v2/thread_pool.h>
+#include <bvh/v2/executor.h>
+#include <bvh/v2/stack.h>
+#include <bvh/v2/tri.h>
+
 #include <iostream>
-#include <type_traits>
 
-#include <bvh/bvh.hpp>
-#include <bvh/vector.hpp>
-#include <bvh/triangle.hpp>
-#include <bvh/sphere.hpp>
-#include <bvh/ray.hpp>
-#include <bvh/sweep_sah_builder.hpp>
-#include <bvh/single_ray_traverser.hpp>
-#include <bvh/primitive_intersectors.hpp>
+using Scalar  = float;
+using Vec3    = bvh::v2::Vec<Scalar, 3>;
+using BBox    = bvh::v2::BBox<Scalar, 3>;
+using Tri     = bvh::v2::Tri<Scalar, 3>;
+using Node    = bvh::v2::Node<Scalar, 3>;
+using Bvh     = bvh::v2::Bvh<Node>;
+using Ray     = bvh::v2::Ray<Scalar, 3>;
 
-using Scalar   = float;
-using Vector3  = bvh::Vector3<Scalar>;
-using Triangle = bvh::Triangle<Scalar>;
-using Sphere   = bvh::Sphere<Scalar>;
-using Ray      = bvh::Ray<Scalar>;
-using Bvh      = bvh::Bvh<Scalar>;
-
-// This function builds a BVH from a vector of primitives, and intersects it with a ray.
-template <typename Primitive>
-static bool build_and_intersect_bvh(const std::vector<Primitive>& primitives) {
-    Bvh bvh;
-
-    // Compute the global bounding box and the centers of the primitives.
-    // This is the input of the BVH construction algorithm.
-    // Note: Using the bounding box centers instead of the primitive centers is possible,
-    // but usually leads to lower-quality BVHs.
-    auto [bboxes, centers] = bvh::compute_bounding_boxes_and_centers(primitives.data(), primitives.size());
-    auto global_bbox = bvh::compute_bounding_boxes_union(bboxes.get(), primitives.size());
-
-    // Create an acceleration data structure on the primitives
-    bvh::SweepSahBuilder<Bvh> builder(bvh);
-    builder.build(global_bbox, bboxes.get(), centers.get(), primitives.size());
-
-    // Intersect a ray with the data structure
-    Ray ray(
-        Vector3(0.0, 0.0, 0.0), // origin
-        Vector3(0.0, 0.0, 1.0), // direction
-        0.0,                    // minimum distance
-        100.0                   // maximum distance
-    );
-    bvh::ClosestPrimitiveIntersector<Bvh, Primitive> primitive_intersector(bvh, primitives.data());
-    bvh::SingleRayTraverser<Bvh> traverser(bvh);
-
-    if (auto hit = traverser.traverse(ray, primitive_intersector)) {
-        auto triangle_index = hit->primitive_index;
-        auto intersection = hit->intersection;
-        std::cout
-            << "Hit primitive " << triangle_index << "\n"
-            << "distance: "     << intersection.t << "\n";
-        if constexpr (std::is_same_v<Primitive, Triangle>) {
-            std::cout
-                << "u: " << intersection.u << "\n"
-                << "v: " << intersection.v << "\n";
-        }
-        return true;
-    }
-    return false;
-}
+using PrecomputedTri = bvh::v2::PrecomputedTri<Scalar>;
 
 int main() {
-    std::vector<Triangle> triangles;
-    triangles.emplace_back(
-        Vector3( 1.0, -1.0, 1.0),
-        Vector3( 1.0,  1.0, 1.0),
-        Vector3(-1.0,  1.0, 1.0)
+    // This is the original data, which may come in some other data type/structure.
+    std::vector<Tri> tris;
+    tris.emplace_back(
+        Vec3( 1.0, -1.0, 1.0),
+        Vec3( 1.0,  1.0, 1.0),
+        Vec3(-1.0,  1.0, 1.0)
     );
-    triangles.emplace_back(
-        Vector3( 1.0, -1.0, 1.0),
-        Vector3(-1.0, -1.0, 1.0),
-        Vector3(-1.0,  1.0, 1.0)
+    tris.emplace_back(
+        Vec3( 1.0, -1.0, 1.0),
+        Vec3(-1.0, -1.0, 1.0),
+        Vec3(-1.0,  1.0, 1.0)
     );
-    if (!build_and_intersect_bvh(triangles))
-        return 1;
 
-    std::vector<Sphere> spheres;
-    spheres.emplace_back(Vector3( 1.0, -1.0, 1.0), Scalar(1.0));
-    spheres.emplace_back(Vector3( 0.0,  0.0, 2.0), Scalar(0.5));
-    if (!build_and_intersect_bvh(spheres))
+    bvh::v2::ThreadPool thread_pool;
+    bvh::v2::ParallelExecutor executor(thread_pool);
+
+    // Get triangle centers and bounding boxes (required for BVH builder)
+    std::vector<BBox> bboxes(tris.size());
+    std::vector<Vec3> centers(tris.size());
+    executor.for_each(0, tris.size(), [&] (size_t begin, size_t end) {
+        for (size_t i = begin; i < end; ++i) {
+            bboxes[i]  = tris[i].get_bbox();
+            centers[i] = tris[i].get_center();
+        }
+    });
+
+    typename bvh::v2::DefaultBuilder<Node>::Config config;
+    config.quality = bvh::v2::DefaultBuilder<Node>::Quality::High;
+    auto bvh = bvh::v2::DefaultBuilder<Node>::build(thread_pool, bboxes, centers, config);
+
+    // Permuting the primitive data allows to remove indirections during traversal, which makes it faster.
+    static constexpr bool should_permute = true;
+
+    // This precomputes some data to speed up traversal further.
+    std::vector<PrecomputedTri> precomputed_tris(tris.size());
+    executor.for_each(0, tris.size(), [&] (size_t begin, size_t end) {
+        for (size_t i = begin; i < end; ++i) {
+            auto j = should_permute ? bvh.prim_ids[i] : i;
+            precomputed_tris[i] = tris[j];
+        }
+    });
+
+    auto ray = Ray {
+        Vec3(0., 0., 0.), // Ray origin
+        Vec3(0., 0., 1.), // Ray direction
+        0.,               // Minimum intersection distance
+        100.              // Maximum intersection distance
+    };
+
+    static constexpr size_t invalid_id = std::numeric_limits<size_t>::max();
+    static constexpr size_t stack_size = 64;
+    static constexpr bool use_robust_traversal = false;
+
+    auto prim_id = invalid_id;
+    Scalar u, v;
+
+    // Traverse the BVH and get the u, v coordinates of the closest intersection.
+    bvh::v2::SmallStack<Bvh::Index, stack_size> stack;
+    bvh.intersect<false, use_robust_traversal>(ray, bvh.get_root().index, stack,
+        [&] (size_t begin, size_t end) {
+            for (size_t i = begin; i < end; ++i) {
+                size_t j = should_permute ? i : bvh.prim_ids[i];
+                if (auto hit = precomputed_tris[j].intersect(ray)) {
+                    prim_id = i;
+                    std::tie(ray.tmax, u, v) = *hit;
+                }
+            }
+            return prim_id != invalid_id;
+        });
+
+    if (prim_id != invalid_id) {
+        std::cout
+            << "Intersection found\n"
+            << "  primitive: " << prim_id << "\n"
+            << "  distance: " << ray.tmax << "\n"
+            << "  barycentric coords.: " << u << ", " << v << std::endl;
+        return 0;
+    } else {
+        std::cout << "No intersection found" << std::endl;
         return 1;
-    return 0;
+    }
 }

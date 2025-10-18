@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 3.12)
 set(SPDLOG_USE_STD_FORMAT ON)
 
 add_subdirectory(avir)
-add_subdirectory(bvh)
 add_subdirectory(Catch2)
 add_subdirectory(cista)
 add_subdirectory(cy)
@@ -28,6 +27,9 @@ add_subdirectory(stb)
 add_subdirectory(tinyexr)
 add_subdirectory(tinyobjloader)
 add_subdirectory(unordered_dense)
+
+add_library(bvh INTERFACE)
+target_include_directories(bvh INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/bvh/src")
 
 if(RTRC_ENABLE_MIMALLOC)
     add_subdirectory(mimalloc)

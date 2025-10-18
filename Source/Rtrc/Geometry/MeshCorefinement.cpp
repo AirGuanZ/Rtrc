@@ -681,7 +681,7 @@ void MeshCorefinement::Corefine(
 
     // Compute triangle-triangle symbolic intersections
 
-    BVH<double> bvhB;
+    BVH3D<double> bvhB;
     {
         std::vector<AABB3d> primitiveBoundingsB;
         primitiveBoundingsB.reserve(triangleCountB);
@@ -693,7 +693,7 @@ void MeshCorefinement::Corefine(
             bbox |= inputB[3 * f + 2];
             primitiveBoundingsB.push_back(bbox);
         }
-        bvhB = BVH<double>::Build(primitiveBoundingsB);
+        bvhB = BVH3D<double>::Build(primitiveBoundingsB);
     }
 
     std::vector<std::vector<TrianglePairIntersection>> triangleAToPairwiseIntersections(triangleCountA);
@@ -864,7 +864,7 @@ void MeshSelfIntersectionRefinement::Refine(Span<Vector3d> inputPositions, Span<
 
     // BVH for all triangles
 
-    BVH<double> bvh;
+    BVH3D<double> bvh;
     std::vector<AABB3d> triangleBoundingBoxes;
     {
         triangleBoundingBoxes.reserve(triangleCount);
@@ -876,7 +876,7 @@ void MeshSelfIntersectionRefinement::Refine(Span<Vector3d> inputPositions, Span<
             bbox |= input[3 * f + 2];
             triangleBoundingBoxes.push_back(bbox);
         }
-        bvh = BVH<double>::Build(triangleBoundingBoxes);
+        bvh = BVH3D<double>::Build(triangleBoundingBoxes);
     }
 
     // Adjacent triangles are guaranteed to intersect. However, computing these intersections is

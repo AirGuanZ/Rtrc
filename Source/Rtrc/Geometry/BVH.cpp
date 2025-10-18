@@ -1,74 +1,98 @@
 #include <Rtrc/Geometry/BVH.h>
 
-#include <bvh/bvh.hpp>
-#include <bvh/leaf_collapser.hpp>
-#include <bvh/locally_ordered_clustering_builder.hpp>
+#include <bvh/v2/default_builder.h>
 
 RTRC_GEO_BEGIN
 
 namespace BVHDetail
 {
 
+    namespace b2 = bvh::v2;
+
     template<typename T>
-    bvh::Vector3<T> ConvertVector3(const Vector3<T> &v)
+    b2::Vec<T, 2> ConvertVector(const Vector2<T> &v)
+    {
+        return { v.x, v.y };
+    }
+
+    template<typename T>
+    b2::Vec<T, 3> ConvertVector(const Vector3<T> &v)
     {
         return { v.x, v.y, v.z };
     }
 
     template<typename T>
-    bvh::BoundingBox<T> ConvertBoundingBox(const AABB3<T> &boundingBox)
+    b2::BBox<T, 2> ConvertBoundingBox(const AABB2<T> &boundingBox)
     {
-        return { BVHDetail::ConvertVector3(boundingBox.lower), BVHDetail::ConvertVector3(boundingBox.upper) };
+        return { BVHDetail::ConvertVector(boundingBox.lower), BVHDetail::ConvertVector(boundingBox.upper) };
+    }
+
+    template<typename T>
+    b2::BBox<T, 3> ConvertBoundingBox(const AABB3<T> &boundingBox)
+    {
+        return { BVHDetail::ConvertVector(boundingBox.lower), BVHDetail::ConvertVector(boundingBox.upper) };
     }
 
 } // namespace BVHDetail
 
-template <typename T>
-BVH<T> BVH<T>::Build(Span<AABB3<T>> primitiveBounds)
+template <typename T, int Dim>
+BVHImpl<T, Dim> BVHImpl<T, Dim>::Build(Span<BoundingBox> primitiveBounds)
 {
+    namespace b2 = bvh::v2;
+
     if(primitiveBounds.IsEmpty())
     {
         return {};
     }
 
-    AABB3<T> globalBoundingBoxes;
-    std::vector<bvh::BoundingBox<T>> bvhPrimitiveBounds(primitiveBounds.GetSize());
-    std::vector<bvh::Vector3<T>> bvhPrimitiveCenters(primitiveBounds.GetSize());
+    BoundingBox globalBoundingBoxes;
+    std::vector<b2::BBox<T, Dim>> bvhPrimitiveBounds(primitiveBounds.GetSize());
+    std::vector<b2::Vec<T, Dim>> bvhPrimitiveCenters(primitiveBounds.GetSize());
     for(uint32_t i = 0; i < primitiveBounds.size(); ++i)
     {
         globalBoundingBoxes |= primitiveBounds[i];
         bvhPrimitiveBounds[i] = BVHDetail::ConvertBoundingBox(primitiveBounds[i]);
-        bvhPrimitiveCenters[i] = BVHDetail::ConvertVector3(primitiveBounds[i].ComputeCenter());
+        bvhPrimitiveCenters[i] = BVHDetail::ConvertVector(primitiveBounds[i].ComputeCenter());
     }
 
-    bvh::Bvh<T> tree;
-    bvh::LocallyOrderedClusteringBuilder<bvh::Bvh<T>, uint32_t>(tree).build(
-        BVHDetail::ConvertBoundingBox(globalBoundingBoxes),
-        bvhPrimitiveBounds.data(), bvhPrimitiveCenters.data(), bvhPrimitiveBounds.size());
-    bvh::LeafCollapser<bvh::Bvh<T>>(tree).collapse();
+    const auto tree = b2::DefaultBuilder<b2::Node<T, Dim>>().build(bvhPrimitiveBounds, bvhPrimitiveCenters);
 
-    BVH ret;
-    ret.nodes_.resize(tree.node_count);
+    BVHImpl ret;
+    ret.nodes_.resize(tree.nodes.size());
 
-    for(uint32_t ni = 0; ni < tree.node_count; ++ni)
+    for(uint32_t ni = 0; ni < tree.nodes.size(); ++ni)
     {
         auto &src = tree.nodes[ni];
         auto &dst = ret.nodes_[ni];
 
-        dst.boundingBox.lower.x = src.bounds[0];
-        dst.boundingBox.lower.y = src.bounds[2];
-        dst.boundingBox.lower.z = src.bounds[4];
-        dst.boundingBox.upper.x = src.bounds[1];
-        dst.boundingBox.upper.y = src.bounds[3];
-        dst.boundingBox.upper.z = src.bounds[5];
+        static_assert(Dim == 2 || Dim == 3);
+        if constexpr(Dim == 2)
+        {
+            dst.boundingBox.lower.x = src.bounds[0];
+            dst.boundingBox.lower.y = src.bounds[2];
+            dst.boundingBox.upper.x = src.bounds[1];
+            dst.boundingBox.upper.y = src.bounds[3];
+        }
+        else
+        {
+            dst.boundingBox.lower.x = src.bounds[0];
+            dst.boundingBox.lower.y = src.bounds[2];
+            dst.boundingBox.lower.z = src.bounds[4];
+            dst.boundingBox.upper.x = src.bounds[1];
+            dst.boundingBox.upper.y = src.bounds[3];
+            dst.boundingBox.upper.z = src.bounds[5];
+        }
+
+        const size_t srcPrimitiveBegin = src.index.first_id();
 
         if(src.is_leaf())
         {
             const size_t primitiveOffset = ret.primitiveIndices_.size();
-            const size_t srcPrimitiveEnd = src.first_child_or_primitive + src.primitive_count;
-            for(size_t i = src.first_child_or_primitive; i < srcPrimitiveEnd; ++i)
+            const size_t srcPrimitiveEnd = srcPrimitiveBegin + src.index.prim_count();
+            for(size_t i = srcPrimitiveBegin; i < srcPrimitiveEnd; ++i)
             {
-                ret.primitiveIndices_.push_back(static_cast<uint32_t>(tree.primitive_indices[i]));
+                const uint32_t primitiveID = tree.prim_ids[i];
+                ret.primitiveIndices_.push_back(primitiveID);
             }
             const size_t newPrimitiveOffset = ret.primitiveIndices_.size();
 
@@ -78,7 +102,7 @@ BVH<T> BVH<T>::Build(Span<AABB3<T>> primitiveBounds)
         }
         else
         {
-            dst.childIndex = static_cast<uint32_t>(src.first_child_or_primitive);
+            dst.childIndex = static_cast<uint32_t>(srcPrimitiveBegin);
             dst.childCount = 0;
         }
     }
@@ -86,7 +110,9 @@ BVH<T> BVH<T>::Build(Span<AABB3<T>> primitiveBounds)
     return ret;
 }
 
-template BVH<float> BVH<float>::Build(Span<AABB3<float>>);
-template BVH<double> BVH<double>::Build(Span<AABB3<double>>);
+template BVHImpl<float, 2> BVHImpl<float, 2>::Build(Span<AABB2<float>>);
+template BVHImpl<float, 3> BVHImpl<float, 3>::Build(Span<AABB3<float>>);
+template BVHImpl<double, 2> BVHImpl<double, 2>::Build(Span<AABB2<double>>);
+template BVHImpl<double, 3> BVHImpl<double, 3>::Build(Span<AABB3<double>>);
 
 RTRC_GEO_END

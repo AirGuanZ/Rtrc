@@ -1,26 +1,21 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.21)
+project(bvh VERSION 2.0)
 
-project(bvh CXX)
+option(BVH_BUILD_C_API "Builds the C API library wrapper" OFF)
+option(BVH_C_API_STATIC_LINK_STDLIB "Link the C API library statically against the standard C++ library (only supported by clang/gcc)" OFF)
+option(BVH_C_API_UNSAFE_CASTS "Enable unsafe casts in C API" OFF)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
-add_library(bvh INTERFACE)
-target_include_directories(bvh INTERFACE include/)
+add_subdirectory(src/bvh/v2)
 
-if (NOT MSVC)
-    find_package(OpenMP QUIET)
-    if (OpenMP_CXX_FOUND)
-        target_link_libraries(bvh INTERFACE OpenMP::OpenMP_CXX)
-    endif ()
-else ()
-    message(STATUS "OpenMP is disabled because MSVC only supports OpenMP 2.0.")
-endif ()
-
-# Make sure to only build tests when building this project,
-# and not when importing it into another one.
-if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+if (PROJECT_IS_TOP_LEVEL)
     include(CTest)
     if (BUILD_TESTING)
         add_subdirectory(test)
-    endif ()
-endif ()
+    endif()
+
+    include(cmake/Install.cmake)
+endif()

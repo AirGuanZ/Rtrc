@@ -27,7 +27,7 @@ GWN3D GWN3D::Build(const IndexedPositions<double> &input)
     std::vector<uint32_t> indices;
     MergeCoincidentVertices(input, positions, indices);
 
-    BVH<double> bvh;
+    BVH3D<double> bvh;
     {
         std::vector<AABB3d> triangleBounds;
         triangleBounds.reserve(indices.size() / 3);
@@ -38,7 +38,7 @@ GWN3D GWN3D::Build(const IndexedPositions<double> &input)
             bound |= positions[indices[i + 1]];
             bound |= positions[indices[i + 2]];
         }
-        bvh = BVH<double>::Build(triangleBounds);
+        bvh = BVH3D<double>::Build(triangleBounds);
     }
 
     auto bvhNodes = bvh.GetNodes();

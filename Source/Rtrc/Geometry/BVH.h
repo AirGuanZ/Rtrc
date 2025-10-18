@@ -6,26 +6,29 @@
 
 RTRC_GEO_BEGIN
 
-template<typename T>
-class BVH
+template<typename T, int Dim>
+class BVHImpl
 {
 public:
 
+    static_assert(Dim == 2 || Dim == 3);
+    using BoundingBox = std::conditional_t<Dim == 2, AABB2<T>, AABB3<T>>;
+
     struct Node
     {
-        AABB3<T> boundingBox;
+        BoundingBox boundingBox;
         uint32_t childIndex;
         uint32_t childCount; // 0 for interior nodes
 
         bool IsLeaf() const;
     };
 
-    static BVH Build(Span<AABB3<T>> primitiveBounds);
+    static BVHImpl Build(Span<BoundingBox> primitiveBounds);
 
     bool IsEmpty() const;
 
-    // bool intersectBox(const AABB3<T> &boundingBox)
-    // bool intersectBox(const AABB3<T> &boundingBox, T &key)
+    // bool intersectBox(const BoundingBox &boundingBox)
+    // bool intersectBox(const BoundingBox &boundingBox, T &key)
     //    When multiple child nodes of the same node are intersected, these child nodes are processed in the order determined by their keys.
     //    The node with the smaller key will be processed first.
     // void processPrimitive(uint32_t primitiveIndex)
@@ -43,7 +46,13 @@ private:
 };
 
 template<typename T>
-class TriangleBVH : BVH<T>
+using BVH2D = BVHImpl<T, 2>;
+
+template<typename T>
+using BVH3D = BVHImpl<T, 3>;
+
+template<typename T>
+class TriangleBVH : BVH3D<T>
 {
 public:
 
@@ -61,8 +70,8 @@ public:
         Vector3<T> ac;
     };
 
-    using BVH<T>::IsEmpty;
-    using BVH<T>::TraversalPrimitives;
+    using BVH3D<T>::IsEmpty;
+    using BVH3D<T>::TraversalPrimitives;
 
     static TriangleBVH Build(const IndexedPositions<T> &positions);
 
@@ -81,29 +90,29 @@ public:
 
     Span<Triangle> GetTriangles() const { return triangles_; }
 
-    const BVH<T> &GetInternalBVH() const { return static_cast<const BVH<T> &>(*this); }
-          BVH<T> &GetInternalBVH()       { return static_cast<BVH<T> &>(*this); }
+    const BVH3D<T> &GetInternalBVH() const { return static_cast<const BVH3D<T> &>(*this); }
+          BVH3D<T> &GetInternalBVH()       { return static_cast<BVH3D<T> &>(*this); }
 
 private:
 
     std::vector<Triangle> triangles_;
 };
 
-template <typename T>
-bool BVH<T>::Node::IsLeaf() const
+template <typename T, int Dim>
+bool BVHImpl<T, Dim>::Node::IsLeaf() const
 {
     return childCount != 0;
 }
 
-template <typename T>
-bool BVH<T>::IsEmpty() const
+template <typename T, int Dim>
+bool BVHImpl<T, Dim>::IsEmpty() const
 {
     return primitiveIndices_.empty();
 }
 
-template <typename T>
+template <typename T, int Dim>
 template <typename IntersectBoxFunc, typename ProcessPrimitiveFunc>
-void BVH<T>::TraversalPrimitives(
+void BVHImpl<T, Dim>::TraversalPrimitives(
     const IntersectBoxFunc &intersectBox, const ProcessPrimitiveFunc &processPrimitive) const
 {
     if(IsEmpty())
@@ -185,14 +194,14 @@ void BVH<T>::TraversalPrimitives(
     }
 }
 
-template <typename T>
-Span<typename BVH<T>::Node> BVH<T>::GetNodes() const
+template <typename T, int Dim>
+Span<typename BVHImpl<T, Dim>::Node> BVHImpl<T, Dim>::GetNodes() const
 {
     return nodes_;
 }
 
-template <typename T>
-Span<uint32_t> BVH<T>::GetPrimitiveIndices() const
+template <typename T, int Dim>
+Span<uint32_t> BVHImpl<T, Dim>::GetPrimitiveIndices() const
 {
     return primitiveIndices_;
 }
@@ -212,7 +221,7 @@ TriangleBVH<T> TriangleBVH<T>::Build(const IndexedPositions<T> &positions)
     }
 
     TriangleBVH ret;
-    static_cast<BVH<T> &>(ret) = BVH<T>::Build(boundingBoxes);
+    static_cast<BVH3D<T> &>(ret) = BVH3D<T>::Build(boundingBoxes);
 
     ret.triangles_.resize(triangleCount);
     for(uint32_t f = 0; f < triangleCount; ++f)
@@ -240,7 +249,7 @@ bool TriangleBVH<T>::FindClosestRayIntersection(
     result.triangleIndex         = UINT32_MAX;
     result.barycentricCoordinate = { 0, 0 };
 
-    BVH<T>::TraversalPrimitives(
+    BVH3D<T>::TraversalPrimitives(
         [&](const AABB3<T> &bbox, T &key)
         {
             T t1;
@@ -266,7 +275,7 @@ bool TriangleBVH<T>::HasIntersection(const Vector3<T> &o, const Vector3<T> &d, T
 {
     const Vector3<T> rcpD = { 1 / d.x, 1 / d.y, 1 / d.z };
     bool result = false;
-    BVH<T>::TraversalPrimitives(
+    BVH3D<T>::TraversalPrimitives(
         [&](const AABB3<T> &bbox)
         {
             return Rtrc::IntersectRayBox(o, rcpD, minT, maxT, &bbox.lower.x);
