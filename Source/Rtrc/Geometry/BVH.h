@@ -174,11 +174,11 @@ void BVH<T>::TraversalPrimitives(
                 stack[top++] = childIndex1;
             }
         }
-        else if(key0)
+        else if(inct0)
         {
             stack[top++] = childIndex0;
         }
-        else if(key1)
+        else if(inct1)
         {
             stack[top++] = childIndex1;
         }
