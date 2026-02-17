@@ -15,6 +15,10 @@ option(RTRC_ENABLE_VULKAN_BACKEND    "Enable Vulkan backend"	       ON)
 option(RTRC_ENABLE_STATIC_RHI        "Enable static backend selection" OFF)
 option(RTRC_ENABLE_MIMALLOC          "Enable mimalloc"                 ON)
 
+option(RTRC_ENABLE_GEOMETRY "Enable Rtrc Geometry" ON)
+option(RTRC_ENABLE_WINDOW "Enable Rtrc Graphics" ON)
+option(RTRC_ENABLE_GRAPHICS "Enable Rtrc Graphics" ON)
+option(RTRC_ENABLE_TEST "Enable Rtrc Test" ON)
 option(RTRC_BUILD_SAMPLES "Build Rtrc samples" ON)
 
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
@@ -39,39 +43,51 @@ add_subdirectory(External)
 ############## core
 
 add_subdirectory(Source/Rtrc/Core)
-add_subdirectory(Source/Rtrc/RHI)
-add_subdirectory(Source/Rtrc/Geometry)
-add_subdirectory(Source/Rtrc/Graphics)
-add_subdirectory(Source/Rtrc/ShaderCommon)
-add_subdirectory(Source/Rtrc/ShaderPreprocessor)
+set_property(TARGET RtrcCore PROPERTY FOLDER "Rtrc/Library")
 
-function(rtrc_register_target TARGET_NAME)
-    rtrc_register_shaders(${TARGET_NAME} ${ARGN})
-    get_target_property(TARGET_TYPE ${TARGET_NAME} TYPE)
-    if (TARGET_TYPE STREQUAL "EXECUTABLE")
-        if(RTRC_ENABLE_DIRECTX12_BACKEND)
-            rtrc_deploy_d3d12_sdk(${TARGET_NAME})
-	    endif()
-        add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-	        COMMAND
-                ${CMAKE_COMMAND} -E copy_if_different
-                $<TARGET_RUNTIME_DLLS:${TARGET_NAME}>
-                $<TARGET_FILE_DIR:${TARGET_NAME}>
-	        COMMAND_EXPAND_LISTS)
-    endif()
-endfunction()
+if(RTRC_ENABLE_GEOMETRY)
+	add_subdirectory(Source/Rtrc/Geometry)
+	set_property(TARGET RtrcGeometry PROPERTY FOLDER "Rtrc/Library")
+endif()
+if(RTRC_ENABLE_WINDOW)
+	add_subdirectory(Source/Rtrc/Window)
+	set_property(TARGET RtrcWindow PROPERTY FOLDER "Rtrc/Library")
+endif()
+if(RTRC_ENABLE_GRAPHICS)
+	add_subdirectory(Source/Rtrc/RHI)
+	add_subdirectory(Source/Rtrc/Graphics)
+	add_subdirectory(Source/Rtrc/ShaderCommon)
+	add_subdirectory(Source/Rtrc/ShaderPreprocessor)
+	
+	function(rtrc_register_target TARGET_NAME)
+		rtrc_register_shaders(${TARGET_NAME} ${ARGN})
+		get_target_property(TARGET_TYPE ${TARGET_NAME} TYPE)
+		if (TARGET_TYPE STREQUAL "EXECUTABLE")
+			if(RTRC_ENABLE_DIRECTX12_BACKEND)
+				rtrc_deploy_d3d12_sdk(${TARGET_NAME})
+			endif()
+			add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+				COMMAND
+					${CMAKE_COMMAND} -E copy_if_different
+					$<TARGET_RUNTIME_DLLS:${TARGET_NAME}>
+					$<TARGET_FILE_DIR:${TARGET_NAME}>
+				COMMAND_EXPAND_LISTS)
+		endif()
+	endfunction()
+	
+	add_subdirectory(Source/Rtrc/ToolKit)
+	
+	set_property(TARGET RtrcRHI                PROPERTY FOLDER "Rtrc/Library")
+	set_property(TARGET RtrcGraphics           PROPERTY FOLDER "Rtrc/Library")
+	set_property(TARGET RtrcShaderCommon       PROPERTY FOLDER "Rtrc/Library")
+	set_property(TARGET RtrcShaderPreprocessor PROPERTY FOLDER "Rtrc/Library")
+	set_property(TARGET RtrcToolKit            PROPERTY FOLDER "Rtrc/Library")
+endif()
 
-add_subdirectory(Source/Rtrc/ToolKit)
-add_subdirectory(Test)
-
-set_property(TARGET RtrcCore               PROPERTY FOLDER "Rtrc/Library")
-set_property(TARGET RtrcRHI                PROPERTY FOLDER "Rtrc/Library")
-set_property(TARGET RtrcGeometry           PROPERTY FOLDER "Rtrc/Library")
-set_property(TARGET RtrcGraphics           PROPERTY FOLDER "Rtrc/Library")
-set_property(TARGET RtrcShaderCommon       PROPERTY FOLDER "Rtrc/Library")
-set_property(TARGET RtrcShaderPreprocessor PROPERTY FOLDER "Rtrc/Library")
-set_property(TARGET RtrcToolKit            PROPERTY FOLDER "Rtrc/Library")
-set_property(TARGET RtrcTest               PROPERTY FOLDER "Rtrc/Library")
+if(RTRC_ENABLE_TEST)
+	add_subdirectory(Test)
+	set_property(TARGET RtrcTest PROPERTY FOLDER "Rtrc/Library")
+endif()
 
 ############## samples
 

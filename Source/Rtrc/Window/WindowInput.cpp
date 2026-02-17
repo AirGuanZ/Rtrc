@@ -3,7 +3,7 @@
 #endif
 #include <GLFW/glfw3.h>
 
-#include <Rtrc/RHI/Window/WindowInput.h>
+#include <Rtrc/Window/WindowInput.h>
 
 RTRC_BEGIN
 

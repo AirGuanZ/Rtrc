@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Rtrc/Graphics/RenderGraph/Executable.h>
 #include <Rtrc/ToolKit/Application/Application.h>
 
 RTRC_BEGIN

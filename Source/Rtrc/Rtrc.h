@@ -41,7 +41,7 @@
 
 #include <Rtrc/Graphics/Shader/DSL/BindingGroup.h>
 
-#include <Rtrc/RHI/Window/WindowInput.h>
-#include <Rtrc/RHI/Window/Window.h>
+#include <Rtrc/Window/WindowInput.h>
+#include <Rtrc/Window/Window.h>
 
 #include <Rtrc/ToolKit/ToolKit.h>

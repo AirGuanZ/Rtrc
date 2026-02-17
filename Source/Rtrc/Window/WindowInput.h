@@ -3,7 +3,7 @@
 #include <bitset>
 #include <Rtrc/Core/Event.h>
 #include <Rtrc/Core/Uncopyable.h>
-#include <Rtrc/RHI/Window/KeyCode.h>
+#include <Rtrc/Window/KeyCode.h>
 
 RTRC_BEGIN
 

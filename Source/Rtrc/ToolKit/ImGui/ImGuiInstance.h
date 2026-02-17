@@ -5,7 +5,7 @@
 #include <imgui.h>
 #include <imfilebrowser.h>
 
-#include <Rtrc/RHI/Window/WindowInput.h>
+#include <Rtrc/Window/WindowInput.h>
 #include <Rtrc/Graphics/Device/Device.h>
 #include <Rtrc/Graphics/RenderGraph/Graph.h>
 

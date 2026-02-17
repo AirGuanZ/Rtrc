@@ -2,7 +2,7 @@
 
 #include <Rtrc/Core/SmartPointer/ObserverPtr.h>
 #include <Rtrc/Core/Variant.h>
-#include <Rtrc/RHI/Window/WindowInput.h>
+#include <Rtrc/Window/WindowInput.h>
 #include <Rtrc/ToolKit/Camera/Camera.h>
 
 RTRC_BEGIN

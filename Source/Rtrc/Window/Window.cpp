@@ -7,8 +7,8 @@
 #endif
 #include <Rtrc/Core/ScopeGuard.h>
 #include <Rtrc/Core/Unreachable.h>
-#include <Rtrc/RHI/Window/NativeWindow.h>
-#include <Rtrc/RHI/Window/Window.h>
+#include <Rtrc/Window/NativeWindow.h>
+#include <Rtrc/Window/Window.h>
 
 #if RTRC_RHI_VULKAN
 #include <volk.h>

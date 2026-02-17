@@ -15,7 +15,7 @@
 #include <Rtrc/Core/StringPool.h>
 #include <Rtrc/Core/Uncopyable.h>
 #include <Rtrc/Core/Variant.h>
-#include <Rtrc/RHI/Window/Window.h>
+#include <Rtrc/Window/Window.h>
 
 RTRC_RHI_BEGIN
     

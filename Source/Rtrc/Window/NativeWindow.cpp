@@ -1,4 +1,4 @@
-#include <Rtrc/RHI/Window/NativeWindow.h>
+#include <Rtrc/Window/NativeWindow.h>
 
 #if RTRC_IS_WIN32
 

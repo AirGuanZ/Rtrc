@@ -5,7 +5,7 @@
 
 #include <Rtrc/Core/Math/Vector.h>
 #include <Rtrc/Core/SmartPointer/ReferenceCounted.h>
-#include <Rtrc/RHI/Window/WindowInput.h>
+#include <Rtrc/Window/WindowInput.h>
 
 RTRC_RHI_BEGIN
 
