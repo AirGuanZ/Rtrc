@@ -11,7 +11,7 @@ class Transform
 public:
 
     Transform();
-    explicit Transform(const Matrix4x4<T> &m);
+    explicit Transform(const Matrix4x4<T> &m); // Assuming no shearing
 
     Transform &SetTranslation(const Vector3<T> &position);
     const Vector3<T> &GetTranslation() const;
@@ -56,13 +56,23 @@ Transform<T>::Transform()
 template<typename T>
 Transform<T>::Transform(const Matrix4x4<T> &m)
 {
-    translate_ = { m[0][3], m[1][3], m[2][3] };
-    const Vector3<T> ex = { m[0][0], m[1][0], m[2][0] };
+          Vector3<T> ex = { m[0][0], m[1][0], m[2][0] };
     const Vector3<T> ey = { m[0][1], m[1][1], m[2][1] };
     const Vector3<T> ez = { m[0][2], m[1][2], m[2][2] };
+
+    const T det = Det3x3(
+        m[0][0], m[0][1], m[0][2],
+        m[1][0], m[1][1], m[1][2],
+        m[2][0], m[2][1], m[2][2]);
+    translate_ = { m[0][3], m[1][3], m[2][3] };
     scale_.x = Length(ex);
     scale_.y = Length(ey);
     scale_.z = Length(ez);
+    if(det < 0)
+    {
+        scale_.x = -scale_.x;
+        ex = -ex;
+    }
     rotate_ = Quaternion<T>::FromMatrix(Matrix3x3<T>::FromCols(ex / scale_.x, ey / scale_.y, ez / scale_.z));
 }
 

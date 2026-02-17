@@ -14,6 +14,8 @@
 #include <Rtrc/Core/Math/Exact/Predicates.h>
 #include <Rtrc/Core/Math/Exact/Vector.h>
 #include <Rtrc/Core/Math/Intersection.h>
+#include <Rtrc/Core/Math/Transform.h>
+#include <Rtrc/Core/Math/Transform2.h>
 #include <Rtrc/Core/Memory/Malloc.h>
 #include <Rtrc/Core/Memory/StackAllocation.h>
 #include <Rtrc/Core/Parallel.h>
