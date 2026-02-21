@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Rtrc/Core/Math/AABB.h>
 #include <Rtrc/Core/Math/Matrix4x4.h>
 #include <Rtrc/Core/Math/Quaternion.h>
 
@@ -27,6 +28,7 @@ public:
 
     Vector3<T> ApplyToPoint(const Vector3<T> &p) const;
     Vector3<T> ApplyToVector(const Vector3<T> &v) const;
+    AABB3<T> ApplyToAABB(const AABB3<T> &bbox) const;
 
     Transform Inverse() const;
 
@@ -146,6 +148,27 @@ template<typename T>
 Vector3<T> Transform<T>::ApplyToVector(const Vector3<T> &v) const
 {
     return rotate_.ApplyRotation(scale_ * v);
+}
+
+template <typename T>
+AABB3<T> Transform<T>::ApplyToAABB(const AABB3<T> &bbox) const
+{
+    AABB3<T> result;
+    for(const Vector3<T> p : 
+        {
+            { bbox.lower.x, bbox.lower.y, bbox.lower.z },
+            { bbox.lower.x, bbox.lower.y, bbox.upper.z },
+            { bbox.lower.x, bbox.upper.y, bbox.lower.z },
+            { bbox.lower.x, bbox.upper.y, bbox.upper.z },
+            { bbox.upper.x, bbox.lower.y, bbox.lower.z },
+            { bbox.upper.x, bbox.lower.y, bbox.upper.z },
+            { bbox.upper.x, bbox.upper.y, bbox.lower.z },
+            { bbox.upper.x, bbox.upper.y, bbox.upper.z },
+        })
+    {
+        result |= this->ApplyToPoint(p);
+    }
+    return result;
 }
 
 template<typename T>
