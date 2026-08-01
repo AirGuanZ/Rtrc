@@ -134,12 +134,15 @@ RC<QueueSyncQuery> DirectX12TransientResourcePool::Allocate(
 
         RTRC_SCOPE_EXIT
         {
-            const std::vector<int> dependencies = memorySegmentUsageTracker.AddNewUser(
-                output.allocation, allocate.resource, output.offset, output.size);
-
-            for(const int d : dependencies)
+            if(output.size > 0)
             {
-                aliasRelation.push_back({ d, allocate.resource });
+                const std::vector<int> dependencies = memorySegmentUsageTracker.AddNewUser(
+                    output.allocation, allocate.resource, output.offset, output.size);
+
+                for(const int d : dependencies)
+                {
+                    aliasRelation.push_back({ d, allocate.resource });
+                }
             }
         };
 

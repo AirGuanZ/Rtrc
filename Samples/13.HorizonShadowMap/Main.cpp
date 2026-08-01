@@ -33,9 +33,8 @@ public:
             imgui.SliderAngle("SunAngle", &sunThetaRad_, 0.0f, 90.0f);
             imgui.Input("Softness", &softnessDeg_);
 
-            if(imgui.Input("Height Scale", &heightScale_, nullptr, ImGuiInputTextFlags_EnterReturnsTrue))
+            if(imgui.Input("Height Scale", &heightScale_, nullptr))
             {
-                heightScale_ = std::clamp(heightScale_, 0.0f, 1024.0f);
                 ReloadHeightMap(graph);
             }
         }
@@ -54,6 +53,7 @@ public:
 
     void ReloadHeightMap(GraphRef graph)
     {
+        const float heightScale = std::clamp(heightScale_, 0.0f, 1024.0f);
         auto heightMapData = Image<float>::Load("Asset/Sample/13.HorizonShadowMap/Height.png");
         float minHeight = FLT_MAX;
         for(float h : heightMapData)
@@ -62,7 +62,7 @@ public:
         }
         for(float &h : heightMapData)
         {
-            h = (h - minHeight) * heightScale_;
+            h = (h - minHeight) * heightScale;
         }
 
         auto LoadHeight =

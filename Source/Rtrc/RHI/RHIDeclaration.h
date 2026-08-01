@@ -501,7 +501,7 @@ inline PipelineStageFlag ShaderStagesToPipelineStages(ShaderStageFlags stages)
     if(stages.Contains(ShaderStage::ComputeShader))  { ret |= PipelineStage::ComputeShader; }
     if(stages.Contains(ShaderStage::TaskShader))     { ret |= PipelineStage::TaskShader; }
     if(stages.Contains(ShaderStage::MeshShader))     { ret |= PipelineStage::MeshShader; }
-    if(stages | ShaderStage::AllRT)                  { ret |= PipelineStage::RayTracingShader; }
+    if(stages & ShaderStage::AllRT)                  { ret |= PipelineStage::RayTracingShader; }
     return ret;
 }
 
@@ -587,7 +587,7 @@ enum class QueueConcurrentAccessMode
 enum class RayTracingGeometryType
 {
     Triangles,
-    Precodural
+    Procedural
 };
 
 enum class RayTracingVertexFormat
@@ -904,7 +904,7 @@ struct TextureDesc
                     sampleCount, usage, initialLayout, concurrentAccessMode, clearValue, linearHint)
            <=> std::make_tuple(
                     rhs.dim, rhs.format, rhs.width, rhs.height, rhs.arraySize, rhs.mipLevels,
-                    rhs.sampleCount, rhs.usage, rhs.initialLayout, rhs.concurrentAccessMode, rhs.clearValue, linearHint);
+                    rhs.sampleCount, rhs.usage, rhs.initialLayout, rhs.concurrentAccessMode, rhs.clearValue, rhs.linearHint);
     }
 
     bool operator==(const TextureDesc &rhs) const
@@ -915,7 +915,7 @@ struct TextureDesc
             == std::make_tuple(
                      rhs.dim, rhs.format, rhs.width, rhs.height, rhs.arraySize,
                      rhs.mipLevels, rhs.sampleCount, rhs.usage, rhs.initialLayout,
-                     rhs.concurrentAccessMode, rhs.clearValue, linearHint);
+                     rhs.concurrentAccessMode, rhs.clearValue, rhs.linearHint);
     }
 
     size_t Hash() const

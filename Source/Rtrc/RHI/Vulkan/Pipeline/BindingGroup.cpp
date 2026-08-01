@@ -358,7 +358,6 @@ void VulkanBindingGroup::_internalTranslate(
         .descriptorType  = VK_DESCRIPTOR_TYPE_SAMPLER,
         .pImageInfo      = samplerInfo
     };
-    vkUpdateDescriptorSets(device_, 1, &write, 0, nullptr);
 }
 
 void VulkanBindingGroup::_internalTranslate(

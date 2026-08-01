@@ -396,7 +396,7 @@ D3D12_BARRIER_SYNC TranslateBarrierSync(PipelineStageFlag stages, Format format)
     constexpr D3D12_BARRIER_SYNC syncs[] =
     {
         D3D12_BARRIER_SYNC_INDEX_INPUT,                             // VertexInput
-        D3D12_BARRIER_SYNC_VERTEX_SHADING,                          // IndexInput
+        D3D12_BARRIER_SYNC_INDEX_INPUT,                             // IndexInput
         D3D12_BARRIER_SYNC_VERTEX_SHADING,                          // VertexShader
         D3D12_BARRIER_SYNC_PIXEL_SHADING,                           // FragmentShader
         D3D12_BARRIER_SYNC_COMPUTE_SHADING,                         // ComputeShader
@@ -416,7 +416,7 @@ D3D12_BARRIER_SYNC TranslateBarrierSync(PipelineStageFlag stages, Format format)
     constexpr D3D12_BARRIER_SYNC syncsForDepthStencil[] =
     {
         D3D12_BARRIER_SYNC_INDEX_INPUT,                             // VertexInput
-        D3D12_BARRIER_SYNC_VERTEX_SHADING,                          // IndexInput
+        D3D12_BARRIER_SYNC_INDEX_INPUT,                             // IndexInput
         D3D12_BARRIER_SYNC_VERTEX_SHADING,                          // VertexShader
         D3D12_BARRIER_SYNC_PIXEL_SHADING,                           // FragmentShader
         D3D12_BARRIER_SYNC_COMPUTE_SHADING,                         // ComputeShader

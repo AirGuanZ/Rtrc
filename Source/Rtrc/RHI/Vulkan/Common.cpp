@@ -417,7 +417,7 @@ VkViewport TranslateViewport(const Viewport &viewport)
     return VkViewport
     {
         .x        = viewport.topLeftCorner.x,
-        .y        = viewport.size.y - viewport.topLeftCorner.y,
+        .y        = viewport.topLeftCorner.y + viewport.size.y,
         .width    = viewport.size.x,
         .height   = -viewport.size.y,
         .minDepth = viewport.minDepth,
@@ -664,7 +664,7 @@ VkGeometryTypeKHR TranslateGeometryType(RayTracingGeometryType type)
     {
         return VK_GEOMETRY_TYPE_TRIANGLES_KHR;
     }
-    assert(type == RayTracingGeometryType::Precodural);
+    assert(type == RayTracingGeometryType::Procedural);
     return VK_GEOMETRY_TYPE_AABBS_KHR;
 }
 

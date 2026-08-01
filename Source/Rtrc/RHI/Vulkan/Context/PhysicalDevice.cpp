@@ -489,6 +489,7 @@ VulkanPhysicalDevice::VulkanPhysicalDevice(VkPhysicalDevice device, bool enableR
         vkGetPhysicalDeviceProperties2(physicalDevice_, &properties);
         asProperties_ = asProperties;
         rtPipelineProperties_ = rtPipelineProperties;
+        rtPipelineProperties_->pNext = &*asProperties_;
     }
 }
 

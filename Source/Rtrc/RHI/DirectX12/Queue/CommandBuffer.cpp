@@ -405,6 +405,7 @@ void DirectX12CommandBuffer::SetVertexBuffer(int slot, Span<BufferRPtr> buffers,
     {
         const size_t byteOffset = byteOffsets[i];
         const size_t stride = byteStrides[i];
+        assert(buffer->GetDesc().size >= byteOffsets[i]);
         const size_t size = buffer->GetDesc().size - byteOffsets[i];
         views.push_back(
         {
@@ -435,6 +436,7 @@ void DirectX12CommandBuffer::SetIndexBuffer(const BufferRPtr &buffer, size_t byt
     {
         Unreachable();
     }
+    assert(buffer->GetDesc().size >= byteOffset);
     const size_t size = buffer->GetDesc().size - byteOffset;
     D3D12_INDEX_BUFFER_VIEW view =
     {
@@ -778,7 +780,7 @@ void DirectX12CommandBuffer::ClearDepthStencilTexture(
     assert(depth || stencil);
     auto dsv = dst->CreateDsv();
     auto d3dDsv = static_cast<DirectX12TextureDsv*>(dsv.Get())->_internalGetDescriptorHandle();
-    D3D12_CLEAR_FLAGS flags = {};
+    D3D12_CLEAR_FLAGS flags = static_cast<D3D12_CLEAR_FLAGS>(0);
     if(depth)
     {
         flags |= D3D12_CLEAR_FLAG_DEPTH;

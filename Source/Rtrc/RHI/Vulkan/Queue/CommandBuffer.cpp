@@ -152,7 +152,7 @@ void VulkanCommandBuffer::BindPipeline(const OPtr<ComputePipeline> &pipeline)
     if(!pipeline)
     {
         vkCmdBindPipeline(commandBuffer_, VK_PIPELINE_BIND_POINT_COMPUTE, VK_NULL_HANDLE);
-        currentGraphicsPipeline_ = nullptr;
+        currentComputePipeline_ = nullptr;
         return;
     }
     auto vkPipeline = static_cast<VulkanComputePipeline *>(pipeline.Get());
@@ -467,9 +467,9 @@ void VulkanCommandBuffer::CopyColorTexture(
         .dstOffset = { 0, 0, 0 },
         .extent =
         {
-            dst->GetDesc().width,
-            dst->GetDesc().height,
-            dst->GetDesc().depth
+            .width = (std::max)(1u, dst->GetDesc().width >> dstMipLevel),
+            .height = (std::max)(1u, dst->GetDesc().height >> dstMipLevel),
+            .depth = (std::max)(1u, dst->GetDesc().depth >> dstMipLevel)
         }
     };
     auto vkSrc = CommandBufferDetail::GetVulkanImage(src);
@@ -800,7 +800,7 @@ void VulkanCommandBuffer::ExecuteBarriersInternal(
                 .srcStageMask        = srcStage,
                 .srcAccessMask       = srcAccess,
                 .dstStageMask        = srcStage,
-                .dstAccessMask       = VK_PIPELINE_STAGE_2_NONE,
+                .dstAccessMask       = VK_ACCESS_2_NONE,
                 .oldLayout           = srcLayout,
                 .newLayout           = dstLayout,
                 .srcQueueFamilyIndex = beforeQueueFamilyIndex,
@@ -882,7 +882,7 @@ void VulkanCommandBuffer::ExecuteBarriersInternal(
         });
     }
 
-    if(!bufferBarriers.empty() || !imageBarriers.empty())
+    if(!bufferBarriers.empty() || !imageBarriers.empty() || !globalBarriers.empty())
     {
         const VkDependencyInfo dependencyInfo = {
             .sType                    = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,

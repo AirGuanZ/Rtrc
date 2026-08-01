@@ -21,7 +21,7 @@ DirectX12Swapchain::DirectX12Swapchain(
     imageCount_ = swapchainDesc.BufferCount;
 
     acquireSemaphore_ = MakeRPtr<DirectX12BackBufferSemaphore>();
-    presentSemaphore_ = acquireSemaphore_;
+    presentSemaphore_ = acquireSemaphore_; // D3D12 doesn't really need this
 
     images_.resize(imageCount_);
     for(uint32_t i = 0; i < imageCount_; ++i)
@@ -52,7 +52,7 @@ OPtr<BackBufferSemaphore> DirectX12Swapchain::GetAcquireSemaphore()
 
 OPtr<BackBufferSemaphore> DirectX12Swapchain::GetPresentSemaphore()
 {
-    return { acquireSemaphore_.Get() };
+    return { presentSemaphore_.Get() };
 }
 
 bool DirectX12Swapchain::Present()

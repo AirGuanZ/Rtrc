@@ -32,7 +32,10 @@ void RGExecuter::ExecuteInternal(Ref<RenderGraph> graph, bool enableTransientRes
     if(enableTransientResourcePool && !transientResourcePool_)
     {
         constexpr int chunkSizeHint = 128 * 1024 * 1024;
-        transientResourcePool_ = device_->GetRawDevice()->CreateTransientResourcePool({ chunkSizeHint }).ToRC();
+        if(auto rawTransientResourcePool = device_->GetRawDevice()->CreateTransientResourcePool({ chunkSizeHint }))
+        {
+            transientResourcePool_ = rawTransientResourcePool.ToRC();
+        }
     }
 
     RGExecutableGraph compiledResult;

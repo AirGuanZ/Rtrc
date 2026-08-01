@@ -575,6 +575,7 @@ UPtr<RayTracingPipeline> DirectX12Device::CreateRayTracingPipeline(const RayTrac
         }
     };
     std::vector<EntryRecord> entryRecords;
+    std::vector<std::unique_ptr<std::wstring>> exportedNames;
 
     for(auto &&[shaderIndex, shader] : Enumerate(desc.rawShaders))
     {
@@ -589,9 +590,8 @@ UPtr<RayTracingPipeline> DirectX12Device::CreateRayTracingPipeline(const RayTrac
                 entry.name, (std::numeric_limits<int>::max)(),
                 static_cast<int>(shaderIndex), static_cast<int>(entryIndex), {}
             });
-            dxilLibrary->DefineExport(
-                entryRecords.back().GetExportName().c_str(),
-                Utf8ToWin32W(entry.name).c_str());
+            exportedNames.push_back(std::make_unique<std::wstring>(Utf8ToWin32W(entry.name)));
+            dxilLibrary->DefineExport(entryRecords.back().GetExportName().c_str(), exportedNames.back()->c_str());
         }
     }
 
@@ -609,9 +609,8 @@ UPtr<RayTracingPipeline> DirectX12Device::CreateRayTracingPipeline(const RayTrac
         for(auto &&[entryIndex, entry] : Enumerate(d3dShader->_internalGetEntries()))
         {
             entryRecords.push_back({ entry.name, static_cast<int>(libraryIndex), 0, static_cast<int>(entryIndex), {} });
-            dxilLibrary->DefineExport(
-                entryRecords.back().GetExportName().c_str(),
-                Utf8ToWin32W(entry.name).c_str());
+            exportedNames.push_back(std::make_unique<std::wstring>(Utf8ToWin32W(entry.name)));
+            dxilLibrary->DefineExport(entryRecords.back().GetExportName().c_str(), exportedNames.back()->c_str());
         }
     }
 
@@ -718,11 +717,14 @@ UPtr<WorkGraphPipeline> DirectX12Device::CreateWorkGraphPipeline(const WorkGraph
         dxilObject->Finalize();
     }
 
+    std::vector<std::unique_ptr<std::wstring>> wNames;
+
     auto workGraphObject = stateObjectDesc.CreateSubobject<CD3DX12_WORK_GRAPH_SUBOBJECT>();
     workGraphObject->SetProgramName(L"DefaultWorkGraphProgramName");
     for(auto &entryPoint : desc.entryPoints)
     {
-        const std::wstring name = Utf8ToWin32W(entryPoint.name);
+        wNames.push_back(std::make_unique<std::wstring>(Utf8ToWin32W(entryPoint.name)));
+        const std::wstring &name = *wNames.back();
         workGraphObject->AddEntrypoint(D3D12_NODE_ID
         {
             .Name = name.c_str(),

@@ -1353,9 +1353,9 @@ uint32_t VulkanDevice::_internalGetQueueFamilyIndex(QueueType type) const
 {
     switch(type)
     {
-    case QueueType::Graphics: return graphicsQueue_->_internalGetNativeFamilyIndex();
-    case QueueType::Compute:  return computeQueue_->_internalGetNativeFamilyIndex();
-    case QueueType::Transfer: return transferQueue_->_internalGetNativeFamilyIndex();
+    case QueueType::Graphics: assert(graphicsQueue_); return graphicsQueue_->_internalGetNativeFamilyIndex();
+    case QueueType::Compute:  assert(computeQueue_); return computeQueue_->_internalGetNativeFamilyIndex();
+    case QueueType::Transfer: assert(transferQueue_); return transferQueue_->_internalGetNativeFamilyIndex();
     }
     Unreachable();
 }

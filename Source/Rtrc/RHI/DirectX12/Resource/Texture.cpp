@@ -284,7 +284,7 @@ RPtr<TextureUav> DirectX12Texture::CreateUav(const TextureUavDesc &_desc) const
     }
 
     uint32_t arraySize = desc.layerCount;
-    if(!arraySize)
+    if(!arraySize && desc_.dim != TextureDimension::Tex3D)
     {
         arraySize = desc_.arraySize - desc.baseArrayLayer;
     }

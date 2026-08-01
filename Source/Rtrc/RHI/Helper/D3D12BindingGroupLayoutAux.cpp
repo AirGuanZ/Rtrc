@@ -63,6 +63,7 @@ namespace Helper
                 auto &table = tables.emplace_back();
                 table.type = tableType;
                 table.shaderVisibility = shaderVisibility;
+                classToTableIndex.insert({ { shaderVisibility, tableType }, tableIndex });
             }
 
             bindingAssignment.tableIndex = tableIndex;
@@ -181,18 +182,18 @@ namespace Helper
             case BindingType::AccelerationStructure:
             case BindingType::Sampler:
                 bindingAssignment.rangeIndexInTable = 0;
-                bindingAssignment.offsetInTable = 0;
+                bindingAssignment.offsetInTable = bindingAssignment.offsetInRange;
                 break;
             case BindingType::RWTexture:
             case BindingType::RWBuffer:
             case BindingType::RWStructuredBuffer:
             case BindingType::RWByteAddressBuffer:
                 bindingAssignment.rangeIndexInTable = table.srvCount != 0 ? 1 : 0;
-                bindingAssignment.offsetInTable = table.srvCount;
+                bindingAssignment.offsetInTable = bindingAssignment.offsetInRange + table.srvCount;
                 break;
             case BindingType::ConstantBuffer:
                 bindingAssignment.rangeIndexInTable = (table.srvCount != 0) + (table.uavCount != 0);
-                bindingAssignment.offsetInTable = table.srvCount + table.uavCount;
+                bindingAssignment.offsetInTable = bindingAssignment.offsetInRange + table.srvCount + table.uavCount;
                 break;
             }
 

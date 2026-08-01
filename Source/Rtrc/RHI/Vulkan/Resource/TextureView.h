@@ -47,7 +47,7 @@ public:
     const Vector2u GetSize() const RTRC_RHI_OVERRIDE
     {
         auto &desc = tex_->GetDesc();
-        return { desc.width, desc.height };
+        return { (std::max)(1u, desc.width >> desc_.mipLevel), (std::max)(1u, desc.height >> desc_.mipLevel) };
     }
 
     const TextureRtvDesc &GetDesc() const RTRC_RHI_OVERRIDE;
@@ -79,7 +79,7 @@ public:
     const Vector2u GetSize() const RTRC_RHI_OVERRIDE
     {
         auto &desc = tex_->GetDesc();
-        return { desc.width, desc.height };
+        return { (std::max)(1u, desc.width >> desc_.mipLevel), (std::max)(1u, desc.height >> desc_.mipLevel) };
     }
 
     const TextureDsvDesc &GetDesc() const RTRC_RHI_OVERRIDE { return desc_; }

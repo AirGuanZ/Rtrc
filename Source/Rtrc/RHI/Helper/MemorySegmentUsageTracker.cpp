@@ -8,6 +8,8 @@ RTRC_RHI_BEGIN
 std::vector<int> MemorySegmentUsageTracker::AddNewUser(
     const void *memoryBlockKey, int resource, size_t offset, size_t size)
 {
+    assert(size > 0);
+
     // Initialize new memory block if necessary
 
     auto memoryBlockIt = memoryBlocks_.find(memoryBlockKey);
@@ -38,6 +40,7 @@ std::vector<int> MemorySegmentUsageTracker::AddNewUser(
     }
 
     // Find first segment whose end is greater than offset
+    // TODO: std::upper_bound/lower_bound on std::set is O(n). optimize this.
 
     const MemoryBlockSegment dummyKey1 = { .begin = 0, .end = offset, .resource = -1 };
     auto firstIt = std::upper_bound(
