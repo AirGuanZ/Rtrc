@@ -67,6 +67,8 @@ namespace ComputeEntryDetail
     template<typename T>
     struct EntryArgumentIdentityInvokeType
     {
+        using NativeType = T;
+
         T value;
         EntryArgumentIdentityInvokeType(const T &value): value(value) {}
 

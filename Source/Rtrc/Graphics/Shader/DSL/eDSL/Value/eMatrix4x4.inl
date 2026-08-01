@@ -38,7 +38,7 @@ inline float4x4::float4x4(
     : float4x4()
 {
     *this = CreateTemporaryVariableForExpression<float4x4>(
-        std::format("float4x4({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})",
+        std::format("float4x4({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})",
                     m00.Compile(), m01.Compile(), m02.Compile(), m03.Compile(),
                     m10.Compile(), m11.Compile(), m12.Compile(), m13.Compile(),
                     m20.Compile(), m21.Compile(), m22.Compile(), m23.Compile(),

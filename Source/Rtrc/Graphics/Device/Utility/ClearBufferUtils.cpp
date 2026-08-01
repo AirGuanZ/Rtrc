@@ -118,7 +118,7 @@ void ClearBufferUtils::ClearRWStructuredBuffer(CommandBuffer &commandBuffer, con
     auto uav = buffer->GetStructuredUav(sizeof(uint32_t));
 
     const uint32_t maxGroupCount = device_->GetRawDevice()->GetComputeShaderDispatchLimit().maxThreadGroupCountX;
-    const uint32_t maxThreadCountPerDispatch = maxGroupCount * clearRWBufferShader_->GetThreadGroupSize().x;
+    const uint32_t maxThreadCountPerDispatch = maxGroupCount * clearRWStructuredBufferShader_->GetThreadGroupSize().x;
     const uint32_t totalElementCount = buffer->GetSubBufferSize() / sizeof(uint32_t);
 
     uint32_t startElement = 0;

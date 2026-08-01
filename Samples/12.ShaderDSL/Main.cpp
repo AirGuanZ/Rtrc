@@ -10,6 +10,8 @@ public:
 
     using SimpleApplication::SimpleApplication;
 
+protected:
+
     void InitializeSimpleApplication(GraphRef graph) override
     {
         using namespace eDSL;

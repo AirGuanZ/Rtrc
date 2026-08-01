@@ -26,7 +26,7 @@ void WhileBuilder::operator+(BodyFunc bodyFunc)
         context.BeginScope();
         RTRC_SCOPE_EXIT{ context.EndScope(); };
         eNumber<bool> condVar = std::invoke(std::move(conditionFunc));
-        context.AppendLine("if({}) break;", condVar.Compile());
+        context.AppendLine("if(!({})) break;", condVar.Compile());
     }
 
     if constexpr(std::is_same_v<std::invoke_result_t<BodyFunc>, void>)

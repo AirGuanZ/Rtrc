@@ -1180,8 +1180,6 @@ CommandBuffer SingleThreadCommandBufferManager::Create()
         auto &record = *records_.begin();
         record.pool->Reset();
 
-        auto rhiCommandBuffer = record.pool->NewCommandBuffer();
-
         commandBuffer.rhiCommandBuffer_ = record.pool->NewCommandBuffer();
         commandBuffer.managerCustomData_ = record.pool.Get();
 

@@ -76,7 +76,7 @@ namespace ArgumentTrait
         static BindingGroupLayout::BindingDesc GetBindingDesc()
         {
             BindingGroupLayout::BindingDesc ret;
-            ret.type = IsRW ? RHI::BindingType::Texture : RHI::BindingType::RWTexture;
+            ret.type = IsRW ? RHI::BindingType::RWTexture : RHI::BindingType::Texture;
             return ret;
         }
     };
@@ -94,7 +94,7 @@ namespace ArgumentTrait
         static BindingGroupLayout::BindingDesc GetBindingDesc()
         {
             BindingGroupLayout::BindingDesc ret;
-            ret.type = IsRW ? RHI::BindingType::Texture : RHI::BindingType::RWTexture;
+            ret.type = IsRW ? RHI::BindingType::RWTexture : RHI::BindingType::Texture;
             return ret;
         }
     };
@@ -112,7 +112,7 @@ namespace ArgumentTrait
         static BindingGroupLayout::BindingDesc GetBindingDesc()
         {
             BindingGroupLayout::BindingDesc ret;
-            ret.type = IsRW ? RHI::BindingType::Texture : RHI::BindingType::RWTexture;
+            ret.type = IsRW ? RHI::BindingType::RWTexture : RHI::BindingType::Texture;
             return ret;
         }
     };
@@ -130,7 +130,7 @@ namespace ArgumentTrait
         static BindingGroupLayout::BindingDesc GetBindingDesc()
         {
             BindingGroupLayout::BindingDesc ret;
-            ret.type = IsRW ? RHI::BindingType::Texture : RHI::BindingType::RWTexture;
+            ret.type = IsRW ? RHI::BindingType::RWTexture : RHI::BindingType::Texture;
             return ret;
         }
     };
@@ -148,7 +148,7 @@ namespace ArgumentTrait
         static BindingGroupLayout::BindingDesc GetBindingDesc()
         {
             BindingGroupLayout::BindingDesc ret;
-            ret.type = IsRW ? RHI::BindingType::Texture : RHI::BindingType::RWTexture;
+            ret.type = IsRW ? RHI::BindingType::RWTexture : RHI::BindingType::Texture;
             return ret;
         }
     };
@@ -166,7 +166,7 @@ namespace ArgumentTrait
         static BindingGroupLayout::BindingDesc GetBindingDesc()
         {
             BindingGroupLayout::BindingDesc ret;
-            ret.type = IsRW ? RHI::BindingType::Texture : RHI::BindingType::RWTexture;
+            ret.type = IsRW ? RHI::BindingType::RWTexture : RHI::BindingType::Texture;
             return ret;
         }
     };
@@ -192,7 +192,7 @@ namespace ArgumentTrait
     {
         static constexpr bool IsResource = true;
 
-        using ArgumentWrapperTrait =
+        using ArgumentWrapperType =
             ArgumentWrapper::ResourceArgumentWrapper<ArgumentWrapper::RaytracingAccelerationStructureProxy>;
 
         static BindingGroupLayout::BindingDesc GetBindingDesc()
@@ -208,7 +208,7 @@ namespace ArgumentTrait
     {
         static constexpr bool IsResource = true;
 
-        using ArgumentWrapperTrait = ArgumentWrapper::ResourceArgumentWrapper<ArgumentWrapper::SamplerStateProxy>;
+        using ArgumentWrapperType = ArgumentWrapper::ResourceArgumentWrapper<ArgumentWrapper::SamplerStateProxy>;
 
         static BindingGroupLayout::BindingDesc GetBindingDesc()
         {

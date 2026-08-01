@@ -548,7 +548,12 @@ void RGCompiler::GenerateSemaphores()
         CompileSection *firstSection = passToSection_.at(users[0].passIndex);
         firstSection->waitBackbufferSemaphore = true;
         firstSection->waitBackbufferSemaphoreStages |= users[0].usage.stages;
-        for(int j = 1; j < static_cast<int>(users.size()) && DontNeedBarrier(users[j].usage, users[0].usage); ++j)
+        // Only fold in stages from swapchain users living in the same section: the acquire
+        // semaphore is waited exactly once at firstSection's submit, so stages belonging to
+        // later sections must not be attributed here.
+        for(int j = 1; j < static_cast<int>(users.size())
+                      && passToSection_.at(users[j].passIndex) == firstSection
+                      && DontNeedBarrier(users[j].usage, users[0].usage); ++j)
         {
             firstSection->waitBackbufferSemaphoreStages |= users[j].usage.stages;
         }
@@ -556,8 +561,11 @@ void RGCompiler::GenerateSemaphores()
         CompileSection *lastSection = passToSection_.at(users.back().passIndex);
         lastSection->signalBackbufferSemaphore = true;
         lastSection->signalBackbufferSemaphoreStages |= users.back().usage.stages;
+        // Symmetric to the wait side: only fold stages from users in the same section as
+        // lastSection, since the present semaphore is signaled exactly once at its submit.
         for(int j = static_cast<int>(users.size()) - 1;
-            j >= 0 && DontNeedBarrier(users[j].usage, users.back().usage); --j)
+            j >= 0 && passToSection_.at(users[j].passIndex) == lastSection
+                   && DontNeedBarrier(users[j].usage, users.back().usage); --j)
         {
             lastSection->signalBackbufferSemaphoreStages |= users[j].usage.stages;
         }
@@ -957,7 +965,10 @@ void RGCompiler::GenerateBarriers(const RGExecutableResources &resources)
                 {
                     auto &prevFinalState = resources.indexToBuffer[prev].finalState;
                     lastState.stages |= prevFinalState.stages;
-                    lastState.accesses |= prevFinalState.accesses & ~RHI::ResourceAccessWriteOnlyMask;
+                    // An aliasing barrier only needs to make the previous alias's *writes* available
+                    // before the new alias can begin. Reads require no availability, so we keep only
+                    // the write bits instead of dropping them (the original code did the inverse).
+                    lastState.accesses |= prevFinalState.accesses & RHI::ResourceAccessWriteOnlyMask;
                 }
                 else
                 {
@@ -966,7 +977,7 @@ void RGCompiler::GenerateBarriers(const RGExecutableResources &resources)
                         if(prevFinalState)
                         {
                             lastState.stages |= prevFinalState->stages;
-                            lastState.accesses |= prevFinalState->accesses & ~RHI::ResourceAccessWriteOnlyMask;
+                            lastState.accesses |= prevFinalState->accesses & RHI::ResourceAccessWriteOnlyMask;
                         }
                     }
                 }
@@ -1060,7 +1071,8 @@ void RGCompiler::GenerateBarriers(const RGExecutableResources &resources)
                 {
                     auto &prevFinalState = resources.indexToBuffer[prev].finalState;
                     lastState.stages |= prevFinalState.stages;
-                    lastState.accesses |= prevFinalState.accesses & ~RHI::ResourceAccessWriteOnlyMask;
+                    // See the buffer case above: make only the previous alias's writes available.
+                    lastState.accesses |= prevFinalState.accesses & RHI::ResourceAccessWriteOnlyMask;
                 }
                 else
                 {
@@ -1069,7 +1081,7 @@ void RGCompiler::GenerateBarriers(const RGExecutableResources &resources)
                         if(prevFinalState)
                         {
                             lastState.stages |= prevFinalState->stages;
-                            lastState.accesses |= prevFinalState->accesses & ~RHI::ResourceAccessWriteOnlyMask;
+                            lastState.accesses |= prevFinalState->accesses & RHI::ResourceAccessWriteOnlyMask;
                         }
                     }
                 }
@@ -1158,7 +1170,7 @@ void RGCompiler::GenerateBarriers(const RGExecutableResources &resources)
                         .arrayLayer = subrsc.arrayLayer,
                         .layerCount = 1
                     },
-                    .beforeStages   = currState.stages,
+                    .beforeStages   = lastState.stages,
                     .beforeAccesses = lastState.accesses,
                     .beforeLayout   = RHI::TextureLayout::Present,
                     .afterStages    = currState.stages,

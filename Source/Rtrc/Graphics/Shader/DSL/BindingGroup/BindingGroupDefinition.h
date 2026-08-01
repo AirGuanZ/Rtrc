@@ -106,7 +106,7 @@ using BindingGroupDetail::RtrcDSLBindingGroup;
 #define rtrc_define2(TYPE, NAME)         RTRC_DEFINE_BINDING_GROUP_VAR(TYPE, NAME, , _rtrcSelf##NAME::_rtrcGroupDefaultStages, false, false)
 #define rtrc_define3(TYPE, NAME, STAGES) RTRC_DEFINE_BINDING_GROUP_VAR(TYPE, NAME, , RTRC_INLINE_STAGE_EXPRESSION(STAGES), false, false)
 
-#define rtrc_define_array(...)                       RTRC_MACRO_OVERLOADING(rtrc_define, __VA_ARGS__)
+#define rtrc_define_array(...)                       RTRC_MACRO_OVERLOADING(rtrc_define_array, __VA_ARGS__)
 #define rtrc_define_array3(TYPE, NAME, SIZE)         RTRC_DEFINE_BINDING_GROUP_VAR(TYPE, NAME, SIZE, _rtrcSelf##NAME::_rtrcGroupDefaultStages, false, false)
 #define rtrc_define_array4(TYPE, NAME, SIZE, STAGES) RTRC_DEFINE_BINDING_GROUP_VAR(TYPE, NAME, SIZE, RTRC_INLINE_STAGE_EXPRESSION(STAGES), false, false)
 

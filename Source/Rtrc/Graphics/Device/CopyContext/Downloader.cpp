@@ -40,7 +40,7 @@ void DownloadBatch::Record(const RC<StatefulBuffer> &buffer, void *data, size_t 
 
 void DownloadBatch::Record(const RC<StatefulTexture> &texture, TexSubrsc subrsc, void *outputData, size_t dataRowBytes)
 {
-    assert(IsCompressed(texture->GetFormat()));
+    assert(!IsCompressed(texture->GetFormat()));
     const size_t texelBytes = GetBlockBytes(texture->GetFormat());
     const size_t packedRowBytes = texture->GetMipLevelWidth(subrsc.mipLevel) * texelBytes;
     if(dataRowBytes == 0)
@@ -156,7 +156,10 @@ void DownloadBatch::SubmitAndWait()
 
     for(auto &task : textureTasks_)
     {
-        auto stagingBuffer = GetStagingBuffer(task.stagingRowBytes * task.texture->GetMipLevelHeight(task.subrsc.mipLevel));
+        const size_t stagingSize = task.stagingRowBytes
+                                 * task.texture->GetMipLevelHeight(task.subrsc.mipLevel)
+                                 * task.texture->GetMipLevelDepth (task.subrsc.mipLevel);
+        auto stagingBuffer = GetStagingBuffer(stagingSize);
         commandBuffer->CopyTextureToBuffer(
             stagingBuffer.Get(), 0, task.stagingRowBytes,
             task.texture->GetRHIObject().Get(), task.subrsc.mipLevel, task.subrsc.arrayLayer);
@@ -182,18 +185,24 @@ void DownloadBatch::SubmitAndWait()
         auto &stagingBuffer = stagingBuffers[stagingBufferIndex++];
         const size_t stagingBufferSize = stagingBuffer->GetDesc().size;
         auto p = stagingBuffer->Map(0, stagingBufferSize, RHI::BufferReadRange{ 0, stagingBufferSize }, true);
+        const uint32_t height = task.texture->GetMipLevelHeight(task.subrsc.mipLevel);
+        const uint32_t depth  = task.texture->GetMipLevelDepth (task.subrsc.mipLevel);
         if(task.dataRowBytes == task.stagingRowBytes)
         {
             std::memcpy(task.outputData, p, stagingBufferSize);
         }
         else
         {
-            const uint32_t height = task.texture->GetMipLevelHeight(task.subrsc.mipLevel);
-            for(unsigned y = 0; y < height; ++y)
+            for(unsigned z = 0; z < depth; ++z)
             {
-                auto src = reinterpret_cast<const uint8_t*>(p) + y * task.stagingRowBytes;
-                auto dst = reinterpret_cast<uint8_t*>(task.outputData) + y * task.dataRowBytes;
-                std::memcpy(dst, src, task.packedRowBytes);
+                for(unsigned y = 0; y < height; ++y)
+                {
+                    auto src = reinterpret_cast<const uint8_t*>(p)
+                             + (z * height + y) * task.stagingRowBytes;
+                    auto dst = reinterpret_cast<uint8_t*>(task.outputData)
+                             + (z * height + y) * task.dataRowBytes;
+                    std::memcpy(dst, src, task.packedRowBytes);
+                }
             }
         }
         stagingBuffer->Unmap(0, stagingBufferSize);

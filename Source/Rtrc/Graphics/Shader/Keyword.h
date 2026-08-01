@@ -77,7 +77,7 @@ public:
 
     unsigned int Get(FastShaderKeyword keyword) const
     {
-        return keyword.GetIndex() < records_.size() ? records_[keyword.GetIndex()].valid : 0;
+        return keyword.GetIndex() < records_.size() ? records_[keyword.GetIndex()].value : 0;
     }
 
 private:
@@ -138,7 +138,7 @@ public:
             auto &contextRecord = context.records_[record.keyword.GetIndex()];
             if(contextRecord.valid)
             {
-                ret.value_ |= contextRecord.valid << record.bitOffset;
+                ret.value_ |= contextRecord.value << record.bitOffset;
                 ret.mask_ |= BitCountToBitMask(record.bitCount) << record.bitOffset;
             }
         }
