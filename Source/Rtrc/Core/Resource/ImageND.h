@@ -18,9 +18,9 @@ namespace ImageNDDetail
         struct Type { private: Type() { } };
         struct TypeS { private: TypeS() { } };
     };
-    template<> struct Dim2SizeVec<2> { using Type = Vector2u; using TypeS = Vector3i; };
+    template<> struct Dim2SizeVec<2> { using Type = Vector2u; using TypeS = Vector2i; };
     template<> struct Dim2SizeVec<3> { using Type = Vector3u; using TypeS = Vector3i; };
-    template<> struct Dim2SizeVec<4> { using Type = Vector4u; using TypeS = Vector3i; };
+    template<> struct Dim2SizeVec<4> { using Type = Vector4u; using TypeS = Vector4i; };
 
 } // namespace ImageNDDetail
 
@@ -278,7 +278,7 @@ auto ImageND<T, D>::Map(const F& func) const
     {
         return ImageND<DstTexel, D>();
     }
-    const size_t elemCount = 1;
+    size_t elemCount = 1;
     for(size_t i = 0; i < D; ++i)
     {
         elemCount *= dims_[i];

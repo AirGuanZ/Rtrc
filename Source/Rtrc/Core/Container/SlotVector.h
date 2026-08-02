@@ -93,8 +93,10 @@ SlotVector<T>::SlotVector(const SlotVector &other)
                 if(isUsed_[j])
                 {
                     At(j).~T();
+                    isUsed_[j] = false;
                 }
             }
+            throw;
         }
     }
 }

@@ -53,10 +53,9 @@ public:
         return map_.empty();
     }
 
-    template<typename Self>
-    auto Find(this Self &&self, const KeyType &key) -> std::conditional_t<std::is_const_v<Self>, const ValueType *, ValueType *>
+    ValueType* Find(const KeyType &key)
     {
-        if(const auto it = self.map_.find(key); it != self.map_.end())
+        if(const auto it = map_.find(key); it != map_.end())
         {
             list_.splice(list_.begin(), list_, it->second); 
             return &it->second->second;

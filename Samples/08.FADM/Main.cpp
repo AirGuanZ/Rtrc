@@ -116,7 +116,7 @@ public:
                 }
             }
 
-            if(imgui.Input("Grid Resolution", &gridResolution_, 1, 100, nullptr, ImGuiInputTextFlags_EnterReturnsTrue))
+            if(imgui.Input("Grid Resolution", &gridResolution_, 1, 100, nullptr) && imgui.IsItemDeactivatedAfterEdit())
             {
                 gridResolution_ = (std::max)(gridResolution_, 1);
                 OnGridResolutionChanged();

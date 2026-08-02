@@ -162,9 +162,19 @@ std::vector<size_t> MeshData::MergeIdenticalPositions()
         return newIndex;
     };
 
-    for(auto oldIndex : indexData)
+    if(indexData.empty())
     {
-        mergedMesh.indexData.push_back(GetIndex(positionData[oldIndex], oldIndex));
+        for(uint32_t oldIndex = 0; oldIndex < positionData.size(); ++oldIndex)
+        {
+            mergedMesh.indexData.push_back(GetIndex(positionData[oldIndex], oldIndex));
+        }
+    }
+    else
+    {
+        for(auto oldIndex : indexData)
+        {
+            mergedMesh.indexData.push_back(GetIndex(positionData[oldIndex], oldIndex));
+        }
     }
 
     *this = mergedMesh;

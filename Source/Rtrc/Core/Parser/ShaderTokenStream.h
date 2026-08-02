@@ -22,13 +22,13 @@ public:
         {
             return false;
         }
-        if(!std::isalpha(str[0]) && str[0] != '_')
+        if(!std::isalpha(static_cast<unsigned char>(str[0])) && str[0] != '_')
         {
             return false;
         }
         for(char c : str)
         {
-            if(!std::isalnum(c) && c != '_')
+            if(!std::isalnum(static_cast<unsigned char>(c)) && c != '_')
             {
                 return false;
             }
@@ -43,7 +43,7 @@ public:
 
     static bool IsNonIdentifierChar(char c)
     {
-        return !std::isalnum(c) && c != '_';
+        return !std::isalnum(static_cast<unsigned char>(c)) && c != '_';
     }
 
     ShaderTokenStream(std::string_view source, size_t startPos, ErrorMode errMode = ErrorMode::PreprocessedShader)
@@ -114,7 +114,7 @@ public:
     {
         // Skip empty chars
 
-        while(nextPos_ < source_.size() && std::isspace(source_[nextPos_]))
+        while(nextPos_ < source_.size() && std::isspace(static_cast<unsigned char>(source_[nextPos_])))
         {
             ++nextPos_;
         }
@@ -143,7 +143,7 @@ public:
 
         const char ch = source_[nextPos_];
 
-        if(ch == ':' && source_[nextPos_ + 1] == ':') // ::
+        if(ch == ':' && nextPos_ + 1 < source_.size() && source_[nextPos_ + 1] == ':') // ::
         {
             currentToken_ = "::";
             nextPos_ += 2;
@@ -161,7 +161,7 @@ public:
 
         // Number
 
-        if(std::isdigit(ch))
+        if(std::isdigit(static_cast<unsigned char>(ch)))
         {
             const size_t endPos = FindEndOfNumber(nextPos_);
             currentToken_ = source_.substr(nextPos_, endPos - nextPos_);
@@ -178,7 +178,7 @@ public:
             {
                 ++strEndPos;
             }
-            if(source_[strEndPos] != ch)
+            if(strEndPos >= source_.size() || source_[strEndPos] != ch)
             {
                 Throw("Unclosed string");
             }
@@ -189,13 +189,13 @@ public:
 
         // Identifier
 
-        if(!std::isalpha(ch) && ch != '_')
+        if(!std::isalpha(static_cast<unsigned char>(ch)) && ch != '_')
         {
             Throw(std::format("Unknown token starting with '{}'", ch));
         }
 
         size_t endPos = nextPos_ + 1;
-        while(endPos < source_.size() && (std::isalnum(source_[endPos]) || source_[endPos] == '_'))
+        while(endPos < source_.size() && (std::isalnum(static_cast<unsigned char>(source_[endPos])) || source_[endPos] == '_'))
         {
             ++endPos;
         }
@@ -231,12 +231,12 @@ private:
             }
             
             // #line LINE "Filename"
-            if(source_[i + 1] == '#')
+            if(source_.substr(i + 1).starts_with("#line "))
             {
                 const size_t lineStart = i + 7;
                 assert(lineStart < source_.size());
                 size_t lineEnd = lineStart + 1;
-                while(lineEnd < source_.size() && std::isdigit(source_[lineEnd]))
+                while(lineEnd < source_.size() && std::isdigit(static_cast<unsigned char>(source_[lineEnd])))
                 {
                     ++lineEnd;
                 }
@@ -287,7 +287,7 @@ private:
 
     size_t FindEndOfNumber(size_t start) const
     {
-        assert(std::isdigit(source_[start]) || source_[start] == '.');
+        assert(std::isdigit(static_cast<unsigned char>(source_[start])) || source_[start] == '.');
         bool meetDot = false;
         if(source_[start] == '.')
         {
@@ -296,17 +296,17 @@ private:
         }
         if(!meetDot)
         {
-            while(std::isdigit(source_[start]))
+            while(start < source_.size() && std::isdigit(static_cast<unsigned char>(source_[start])))
             {
                 ++start;
             }
-            if(source_[start] != '.')
+            if(start >= source_.size() || source_[start] != '.')
             {
                 return start;
             }
             ++start;
         }
-        while(std::isdigit(source_[start]))
+        while(start < source_.size() && std::isdigit(static_cast<unsigned char>(source_[start])))
         {
             ++start;
         }

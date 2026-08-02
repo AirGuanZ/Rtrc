@@ -195,17 +195,17 @@ Matrix4x4<T> Matrix4x4<T>::Rotate(const Vector3<T> &_axis, T rad)
     Matrix4x4<T> ret;
 
     ret.rows[0][0] = axis.x * axis.x + (1 - axis.x * axis.x) * cosv;
-    ret.rows[1][0] = axis.x * axis.y * (1 - cosv) - axis.z * sinv;
-    ret.rows[2][0] = axis.x * axis.z * (1 - cosv) + axis.y * sinv;
+    ret.rows[1][0] = axis.x * axis.y * (1 - cosv) - axis.z * -sinv;
+    ret.rows[2][0] = axis.x * axis.z * (1 - cosv) + axis.y * -sinv;
     ret.rows[3][0] = 0;
 
-    ret.rows[0][1] = axis.x * axis.y * (1 - cosv) + axis.z * sinv;
+    ret.rows[0][1] = axis.x * axis.y * (1 - cosv) + axis.z * -sinv;
     ret.rows[1][1] = axis.y * axis.y + (1 - axis.y * axis.y) * cosv;
-    ret.rows[2][1] = axis.y * axis.z * (1 - cosv) - axis.x * sinv;
+    ret.rows[2][1] = axis.y * axis.z * (1 - cosv) - axis.x * -sinv;
     ret.rows[3][1] = 0;
 
-    ret.rows[0][2] = axis.x * axis.z * (1 - cosv) - axis.y * sinv;
-    ret.rows[1][2] = axis.y * axis.z * (1 - cosv) + axis.x * sinv;
+    ret.rows[0][2] = axis.x * axis.z * (1 - cosv) - axis.y * -sinv;
+    ret.rows[1][2] = axis.y * axis.z * (1 - cosv) + axis.x * -sinv;
     ret.rows[2][2] = axis.z * axis.z + (1 - axis.z * axis.z) * cosv;
     ret.rows[3][2] = 0;
 

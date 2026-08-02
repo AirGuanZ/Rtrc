@@ -44,7 +44,7 @@ public:
 
     constexpr bool operator==(const TypeIndex &rhs) const
     {
-        return hash_ == rhs.hash_ && name_.data() == rhs.name_.data() && name_ == rhs.name_;
+        return hash_ == rhs.hash_ && name_ == rhs.name_;
     }
 
 private:

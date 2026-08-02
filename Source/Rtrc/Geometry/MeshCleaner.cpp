@@ -156,7 +156,7 @@ namespace MeshCleanDetail
             const uint32_t vb = vs[(middleIndex + 2) % 3];
             if(shouldKeepVertex[va] && shouldKeepVertex[vb])
             {
-                edgeToTriangles[Edge(va, vb)].push_back(vm);
+                edgeToSplitPoints[Edge(va, vb)].push_back(vm);
             }
         }
 

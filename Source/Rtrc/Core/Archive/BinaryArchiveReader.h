@@ -101,7 +101,7 @@ private:
 
     void ConsumeNextNBytes(void *output, size_t N)
     {
-        if(input_.size() < sizeof(uint32_t))
+        if(input_.size() < UpAlignTo<size_t>(N, 4))
         {
             throw Exception(std::format(
                 "BinaryArchiveReader: trying to read next {} bytes, but only {} bytes are available",

@@ -23,8 +23,8 @@ namespace GenerateMipmapDetail
     template<typename Texel, typename Component, int Channels>
     Image<Texel> GenerateImpl(const Image<Texel> &input)
     {
-        const uint32_t newWidth = (input.GetWidth() + 1) >> 1;
-        const uint32_t newHeight = (input.GetHeight() + 1) >> 1;
+        const uint32_t newWidth = (std::max)((input.GetWidth() >> 1), 1u);
+        const uint32_t newHeight = (std::max)((input.GetHeight() >> 1), 1u);
         return ResizeImpl<Texel, Component, Channels>(input, { newWidth, newHeight });
     }
 
@@ -66,7 +66,7 @@ ImageDynamic GenerateNextImageMipmapLevel(const ImageDynamic &image)
 uint32_t ComputeFullMipmapChainSize(uint32_t width, uint32_t height)
 {
     uint32_t ret = 1;
-    while(width > 1 && height > 1)
+    while(width > 1 || height > 1)
     {
         width >>= 1;
         height >>= 1;

@@ -402,7 +402,7 @@ struct ArchiveTransferTrait<Vector4<T>>
         {
             ar.Transfer("x", object.x);
             ar.Transfer("y", object.y);
-            ar.Transfer("y", object.z);
+            ar.Transfer("z", object.z);
             ar.Transfer("w", object.w);
             ar.EndTransferTuple();
         }
@@ -415,7 +415,7 @@ struct ArchiveTransferTrait<Vector4<T>>
         {
             ar.Transfer("x", object.x);
             ar.Transfer("y", object.y);
-            ar.Transfer("y", object.z);
+            ar.Transfer("z", object.z);
             ar.Transfer("w", object.w);
             ar.EndTransferTuple();
         }

@@ -46,7 +46,7 @@ constexpr uint32_t NextPowerOfTwo<uint32_t>(uint32_t x)
     x |= x >> 8;
     x |= x >> 16;
     x++;
-    return x;
+    return (std::max)(x, 1u);
 }
 
 template<std::unsigned_integral T>

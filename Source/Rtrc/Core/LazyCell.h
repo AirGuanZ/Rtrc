@@ -4,6 +4,8 @@
 
 RTRC_BEGIN
 
+// Wrap a callable object which construct a new object lazily iff needed.
+// Usually used as function parameters so that we don't need to worry about the lifetime of the callable object.
 template<typename tResultType, typename tOperator>
 class LazyCellImpl
 {

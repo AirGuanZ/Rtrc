@@ -23,7 +23,7 @@ public:
 #if RTRC_DEBUG
         for(char c : content)
         {
-            if(std::isspace(c))
+            if(std::isspace(static_cast<unsigned char>(c)))
             {
                 throw Exception("Space character cannot be written by TextTokenWriter");
             }
@@ -117,7 +117,7 @@ public:
         if(source_[pos_] != '"')
         {
             size_t end = pos_ + 1;
-            while(end < source_.size() && !std::isspace(source_[end]))
+            while(end < source_.size() && !std::isspace(static_cast<unsigned char>(source_[end])))
             {
                 ++end;
             }
@@ -175,7 +175,7 @@ private:
 
     void SkipSpaces()
     {
-        while(pos_ < source_.size() && std::isspace(source_[pos_]))
+        while(pos_ < source_.size() && std::isspace(static_cast<unsigned char>(source_[pos_])))
         {
             ++pos_;
         }
@@ -606,16 +606,15 @@ bool CheckTextSerializationAndDeserialization(const T &value)
 
     TextSerializer ser2;
     ser2(newValue, "");
-    const std::string valueStr2 = ser.ResolveResult();
+    const std::string valueStr2 = ser2.ResolveResult();
 
     const bool ret = valueStr == valueStr2;
     if((ret && PrintWhenOk) || (!ret && PrintWhenFail))
     {
         std::cerr << valueStr;
         std::cerr << valueStr2;
-        return false;
     }
-    return true;
+    return ret;
 }
 
 RTRC_END

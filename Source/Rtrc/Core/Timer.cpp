@@ -3,7 +3,7 @@
 RTRC_BEGIN
 
 Timer::Timer()
-    : deltaTime_{}, paused_(false), pausedTime_{}, frames_(0), fps_(0)
+    : deltaTime_{}, paused_(false), accumulatedPausedTime_{}, frames_(0), fps_(0)
 {
     Restart();
 }
@@ -14,7 +14,7 @@ void Timer::Restart()
     lastPoint_ = Clock::now();
     deltaTime_ = {};
     paused_ = false;
-    pausedTime_ = {};
+    accumulatedPausedTime_ = {};
     secondPoint_ = Clock::now();
     frames_ = 0;
     fps_ = 0;
@@ -50,7 +50,7 @@ void Timer::Continue()
 {
     if(paused_)
     {
-        pausedTime_ = Clock::now() - pauseStartPoint_;
+        accumulatedPausedTime_ += Clock::now() - pauseStartPoint_;
         paused_ = false;
     }
 }
@@ -68,8 +68,8 @@ double Timer::GetDeltaSeconds() const
 
 double Timer::GetAccumulatedSeconds() const
 {
-    auto delta = Clock::now() - startPoint_;
-    delta -= paused_ ? (Clock::now() - pauseStartPoint_) : pausedTime_;
+    auto delta = (paused_ ? pauseStartPoint_ : Clock::now()) - startPoint_;
+    delta -= accumulatedPausedTime_;
     const auto us = std::chrono::duration_cast<std::chrono::microseconds>(delta).count();
     return (std::max)(0.0, 1e-6 * static_cast<double>(us));
 }

@@ -32,7 +32,6 @@
 #include <Rtrc/Geometry/HalfedgeMesh.h>
 #include <Rtrc/Geometry/MeshCorefinement.h>
 #include <Rtrc/Geometry/RawMesh.h>
-#include <Rtrc/Geometry/SignpostsMesh.h>
 #include <Rtrc/Geometry/TriangleTriangleIntersection.h>
 #include <Rtrc/Geometry/Utility.h>
 

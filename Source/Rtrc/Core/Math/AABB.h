@@ -140,7 +140,7 @@ template<typename T>
 T AABB2<T>::ComputeSurfaceArea() const
 {
     assert(IsValid());
-    const Vector3<T> extent = ComputeExtent();
+    const Vector2<T> extent = ComputeExtent();
     return extent.x * extent.y;
 }
 
@@ -240,7 +240,7 @@ T AABB3<T>::ComputeSurfaceArea() const
 {
     assert(IsValid());
     const Vector3<T> extent = ComputeExtent();
-    return extent.x * extent.y + extent.y * extent.z + extent.x * extent.z;
+    return 2 * (extent.x * extent.y + extent.y * extent.z + extent.x * extent.z);
 }
 
 template<typename T>

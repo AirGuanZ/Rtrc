@@ -31,13 +31,16 @@ void ComputeAngleAveragedNormals(
         const T cos0 = Rtrc::Dot(+n01, -n20);
         const T cos1 = Rtrc::Dot(+n12 ,-n01);
         const T cos2 = Rtrc::Dot(+n20 ,-n12);
-        const T theta0 = std::acos(Rtrc::Saturate(cos0));
-        const T theta1 = std::acos(Rtrc::Saturate(cos1));
-        const T theta2 = std::acos(Rtrc::Saturate(cos2));
-        const Vector3<T> normal = Rtrc::Normalize(Rtrc::Cross(p2 - p0, p1 - p0));
-        outNormals[v0] += normal * theta0;
-        outNormals[v1] += normal * theta1;
-        outNormals[v2] += normal * theta2;
+        const T theta0 = std::acos(Rtrc::Clamp(cos0, T(-1), T(+1)));
+        const T theta1 = std::acos(Rtrc::Clamp(cos1, T(-1), T(+1)));
+        const T theta2 = std::acos(Rtrc::Clamp(cos2, T(-1), T(+1)));
+        if(const auto un = Rtrc::Cross(p2 - p0, p1 - p0); un != Vector3<T>())
+        {
+            const Vector3<T> normal = Rtrc::Normalize(un);
+            outNormals[v0] += normal * theta0;
+            outNormals[v1] += normal * theta1;
+            outNormals[v2] += normal * theta2;
+        }
     }
 
     for(Vector3<T> &normal : outNormals)
@@ -48,9 +51,9 @@ void ComputeAngleAveragedNormals(
 
 template<typename T>
 void MergeCoincidentVertices(
-    const IndexedPositions<double> &input,
-    std::vector<Vector3<T>>        &outputPositions,
-    std::vector<uint32_t>          &outputIndices)
+    const IndexedPositions<T> &input,
+    std::vector<Vector3<T>>   &outputPositions,
+    std::vector<uint32_t>     &outputIndices)
 {
     outputPositions.clear();
     outputIndices.clear();

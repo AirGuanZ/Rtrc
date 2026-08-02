@@ -243,6 +243,7 @@ namespace ImageDetail
         {
             throw Exception(std::format("Fail to parse EXR header from file {}", filename));
         }
+        RTRC_SCOPE_EXIT{ FreeEXRHeader(&header); };
 
         ImageFileInfo result;
         result.width    = header.data_window.max_x - header.data_window.min_x + 1;

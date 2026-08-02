@@ -61,6 +61,7 @@ SparseArray<T>::SparseArray(const SparseArray &other)
     occupiedBits_ = other.occupiedBits_;
 
     size_t constructedElementCount = 0;
+    size_t maxConstructedEnd = 0;
     try
     {
         for(size_t i = 0; i < other.storageArray_.size(); ++i)
@@ -69,12 +70,13 @@ SparseArray<T>::SparseArray(const SparseArray &other)
             {
                 new (reinterpret_cast<T *>(storageArray_[i].data)) T(*other.GetPointer(i));
                 ++constructedElementCount;
+                maxConstructedEnd = i + 1;
             }
         }
     }
     catch(...)
     {
-        for(size_t i = other.storageArray_.size(); i > 0 && constructedElementCount > 0; --i)
+        for(size_t i = maxConstructedEnd; i > 0 && constructedElementCount > 0; --i)
         {
             const size_t idx = i - 1;
             if(other.occupiedBits_[idx])

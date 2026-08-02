@@ -107,7 +107,7 @@ size_t FindKeyword(std::string_view source, std::string_view keyword, size_t beg
             return std::string::npos;
         }
         const bool isPrevCharOk = p == 0 || ShaderTokenStream::IsNonIdentifierChar(source[p - 1]);
-        const bool isNextCharOk = ShaderTokenStream::IsNonIdentifierChar(source[p + keyword.size()]);
+        const bool isNextCharOk = p + keyword.size() >= source.size() || ShaderTokenStream::IsNonIdentifierChar(source[p + keyword.size()]);
         if(isPrevCharOk && isNextCharOk)
         {
             return p;

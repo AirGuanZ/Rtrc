@@ -153,13 +153,13 @@ Matrix3x3<T> Matrix3x3<T>::Rotate(const Vector3<T> &_axis, T rad)
     const T sinv = std::sin(rad), cosv = std::cos(rad);
     Matrix3x3<T> ret;
     ret[0][0] = axis.x * axis.x + (1 - axis.x * axis.x) * cosv;
-    ret[1][0] = axis.x * axis.y * (1 - cosv) - axis.z * sinv;
-    ret[2][0] = axis.x * axis.z * (1 - cosv) + axis.y * sinv;
-    ret[0][1] = axis.x * axis.y * (1 - cosv) + axis.z * sinv;
+    ret[1][0] = axis.x * axis.y * (1 - cosv) - axis.z * -sinv;
+    ret[2][0] = axis.x * axis.z * (1 - cosv) + axis.y * -sinv;
+    ret[0][1] = axis.x * axis.y * (1 - cosv) + axis.z * -sinv;
     ret[1][1] = axis.y * axis.y + (1 - axis.y * axis.y) * cosv;
-    ret[2][1] = axis.y * axis.z * (1 - cosv) - axis.x * sinv;
-    ret[0][2] = axis.x * axis.z * (1 - cosv) - axis.y * sinv;
-    ret[1][2] = axis.y * axis.z * (1 - cosv) + axis.x * sinv;
+    ret[2][1] = axis.y * axis.z * (1 - cosv) - axis.x * -sinv;
+    ret[0][2] = axis.x * axis.z * (1 - cosv) - axis.y * -sinv;
+    ret[1][2] = axis.y * axis.z * (1 - cosv) + axis.x * -sinv;
     ret[2][2] = axis.z * axis.z + (1 - axis.z * axis.z) * cosv;
     return ret;
 }

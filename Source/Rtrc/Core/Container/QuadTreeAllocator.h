@@ -111,7 +111,7 @@ template <typename T>
 std::optional<Vector2<T>> QuadTreeAllocator<T>::Allocate(T log2Size)
 {
     const T sideLen = T(1) << log2Size;
-    if(log2Size > root_->maxAvailableSideLen)
+    if(sideLen > root_->maxAvailableSideLen)
     {
         return {};
     }

@@ -82,9 +82,9 @@ void Camera::UpdateDerivedData()
         clipToCamera_ * Vector4f(+1.0f, -1.0f, 1.0f, 1.0f)
     };
     cameraRays_[0] = Normalize(cameraSpaceRays[0].xyz() / cameraSpaceRays[0].w);
-    cameraRays_[1] = Normalize(cameraSpaceRays[1].xyz() / cameraSpaceRays[0].w);
-    cameraRays_[2] = Normalize(cameraSpaceRays[2].xyz() / cameraSpaceRays[0].w);
-    cameraRays_[3] = Normalize(cameraSpaceRays[3].xyz() / cameraSpaceRays[0].w);
+    cameraRays_[1] = Normalize(cameraSpaceRays[1].xyz() / cameraSpaceRays[1].w);
+    cameraRays_[2] = Normalize(cameraSpaceRays[2].xyz() / cameraSpaceRays[2].w);
+    cameraRays_[3] = Normalize(cameraSpaceRays[3].xyz() / cameraSpaceRays[3].w);
 
     const Vector4f worldSpaceRays[4] =
     {
@@ -94,9 +94,9 @@ void Camera::UpdateDerivedData()
         clipToWorld_ * Vector4f(+1.0f, -1.0f, 1.0f, 1.0f)
     };
     worldRays_[0] = worldSpaceRays[0].xyz() / worldSpaceRays[0].w - position_;
-    worldRays_[1] = worldSpaceRays[1].xyz() / worldSpaceRays[0].w - position_;
-    worldRays_[2] = worldSpaceRays[2].xyz() / worldSpaceRays[0].w - position_;
-    worldRays_[3] = worldSpaceRays[3].xyz() / worldSpaceRays[0].w - position_;
+    worldRays_[1] = worldSpaceRays[1].xyz() / worldSpaceRays[1].w - position_;
+    worldRays_[2] = worldSpaceRays[2].xyz() / worldSpaceRays[2].w - position_;
+    worldRays_[3] = worldSpaceRays[3].xyz() / worldSpaceRays[3].w - position_;
     worldRays_[0] = 1.0f / Dot(worldRays_[0], front_) * worldRays_[0];
     worldRays_[1] = 1.0f / Dot(worldRays_[1], front_) * worldRays_[1];
     worldRays_[2] = 1.0f / Dot(worldRays_[2], front_) * worldRays_[2];

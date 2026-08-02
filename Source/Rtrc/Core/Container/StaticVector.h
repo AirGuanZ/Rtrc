@@ -263,9 +263,10 @@ private:
             }
             catch(...)
             {
-                for(size_t i = oldSize; i < size_; ++i)
+                while(size_ > oldSize)
                 {
-                    At(i).~T();
+                    At(size_ - 1).~T();
+                    --size_;
                 }
                 throw;
             }

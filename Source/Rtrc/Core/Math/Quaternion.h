@@ -20,7 +20,7 @@ public:
     // Yaw:   along y, look around
     // Pitch: along z, look up/down
     static Quaternion FromClassicalRotation(T roll, T yaw, T pitch);
-    static Quaternion FromMatrix(const Matrix3x3f &m);
+    static Quaternion FromMatrix(const Matrix3x3<T> &m);
     static Quaternion FromRotationAlongAxis(const Vector3<T> &axis, T rad);
     static Quaternion FromRotationAlongNormalizedAxis(const Vector3<T> &axis, T rad);
     static Quaternion FromRotationAlongX(T rad);
@@ -33,7 +33,7 @@ public:
 
     Vector3<T> ApplyRotation(const Vector3<T> &v) const;
 
-    Matrix3x3f ToMatrix() const;
+    Matrix3x3<T> ToMatrix() const;
 
     T  operator[](size_t i) const;
     T &operator[](size_t i);
@@ -65,7 +65,7 @@ Quaternion<T> Quaternion<T>::FromClassicalRotation(T roll, T yaw, T pitch)
 
 // Shepperds¡¯s method. See [Accurate Computation of Quaternions from Rotation Matrices].
 template<typename T>
-Quaternion<T> Quaternion<T>::FromMatrix(const Matrix3x3f &m)
+Quaternion<T> Quaternion<T>::FromMatrix(const Matrix3x3<T> &m)
 {
     Quaternion ret;
     const T s = m[0][0] + m[1][1] + m[2][2];
@@ -174,15 +174,15 @@ Vector3<T> Quaternion<T>::ApplyRotation(const Vector3<T> &v) const
 }
 
 template<typename T>
-Matrix3x3f Quaternion<T>::ToMatrix() const
+Matrix3x3<T> Quaternion<T>::ToMatrix() const
 {
     const T q1 = w;
     const T q2 = x;
     const T q3 = y;
     const T q4 = z;
     return {
-        q1 * q1 + q2 * q2 + q3 * q3 + q4 * q4, 2 * (q2 * q3 - q1 * q4), 2 * (q2 * q4 + q1 * q3),
-        2 * (q2 * q3 + q1 * q4), q1 * q1 - q2 * q2 + q3 * q3 - q4 * q4, 2 * (q2 * q4 - q1 * q2),
+        q1 * q1 + q2 * q2 - q3 * q3 - q4 * q4, 2 * (q2 * q3 - q1 * q4), 2 * (q2 * q4 + q1 * q3),
+        2 * (q2 * q3 + q1 * q4), q1 * q1 - q2 * q2 + q3 * q3 - q4 * q4, 2 * (q3 * q4 - q1 * q2),
         2 * (q2 * q4 - q1 * q3), 2 * (q3 * q4 + q1 * q2), q1 * q1 - q2 * q2 - q3 * q3 + q4 * q4
     };
 }

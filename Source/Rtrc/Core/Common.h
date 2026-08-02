@@ -133,7 +133,7 @@ Box<D> DynamicCast(Box<T> ptr)
     if(auto ret = dynamic_cast<D*>(ptr.get()))
     {
         ptr.release();
-        return Unique<D>(ret);
+        return Box<D>(ret);
     }
     return nullptr;
 }

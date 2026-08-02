@@ -232,6 +232,11 @@ std::set<std::filesystem::path> DirectoryFilter::FilterFiles(Span<CommandVariant
 void DirectoryFilter::Apply(std::set<std::filesystem::path> &set, const IncludeCommand &command)
 {
     const DirectoryPattern directoryPattern = ParseDirectoryPattern(command.range);
+    if(directoryPattern.directory.empty())
+    {
+        throw Exception("Empty directory pattern!");
+    }
+
     const NamePattern namePattern = ParseNamePattern(command.range);
 
     auto ProcessFile = [&](const std::filesystem::path &path)
@@ -278,6 +283,11 @@ void DirectoryFilter::Apply(std::set<std::filesystem::path> &set, const IncludeC
 void DirectoryFilter::Apply(std::set<std::filesystem::path> &set, const ExcludeCommand &command)
 {
     const DirectoryPattern directoryPattern = ParseDirectoryPattern(command.range);
+    if(directoryPattern.directory.empty())
+    {
+        throw Exception("Empty directory pattern!");
+    }
+
     const NamePattern namePattern = ParseNamePattern(command.range);
 
     const std::filesystem::path directory = std::filesystem::absolute(directoryPattern.directory).lexically_normal();

@@ -278,7 +278,7 @@ namespace ImageDetail
         {
             static_assert(std::is_same_v<From, float> || std::is_same_v<From, double>);
             return static_cast<uint8_t>(
-                (std::min)(static_cast<int>(from * 256), 255));
+                (std::min)(static_cast<int>(Rtrc::Saturate(from) * 256), 255));
         }
         else
         {

@@ -559,6 +559,8 @@ void CDT2D::Triangulate(Span<Expansion3> points, Span<Constraint> constraints)
 
         if(needExactDelaunay)
         {
+            cocircleCache.clear();
+
             activeEdges = {};
             for(int e = 0; e < connectivity.E(); ++e)
             {

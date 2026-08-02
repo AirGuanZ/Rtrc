@@ -347,7 +347,7 @@ public:
             imgui.InputVector3("Max", volumeUpper_);
             imgui.EndDisabled();
             isSourcePositionChanged = imgui.InputVector3("Source", sourcePosition_);
-            isResolutionChanged = imgui.Input("Resolution", &resolution_, nullptr, ImGuiInputTextFlags_EnterReturnsTrue);
+            isResolutionChanged = imgui.Input("Resolution", &resolution_, nullptr) && imgui.IsItemDeactivatedAfterEdit();
             imgui.Slider("Segments", &visualizeSegments_, 1u, 100u);
             imgui.Slider("LineWidthScale", &lineWidthScale_, 0.0f, 5.0f);
             resolution_ = std::clamp(resolution_, 5u, 512u);

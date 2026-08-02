@@ -178,13 +178,17 @@ constexpr bool EndsWith(std::string_view str, std::string_view suffix)
 inline void TrimLeft_(std::string &str)
 {
     if(str.empty())
+    {
         return;
+    }
 
     auto it = str.begin();
     while(it != str.end())
     {
-        if(!std::isspace(*it))
+        if(!std::isspace(static_cast<unsigned char>(*it)))
+        {
             break;
+        }
         ++it;
     }
 
@@ -194,13 +198,17 @@ inline void TrimLeft_(std::string &str)
 inline void TrimRight_(std::string &str)
 {
     if(str.empty())
+    {
         return;
+    }
 
     auto it = str.end();
     do
     {
-        if(!std::isspace(*(it - 1)))
+        if(!std::isspace(static_cast<unsigned char>(*(it - 1))))
+        {
             break;
+        }
         --it;
     } while(it != str.begin());
 
@@ -269,64 +277,68 @@ std::string Join(std::string_view joiner, TIt begin, TIt end)
 template<typename TIt>
 size_t Split(std::string_view src, char splitter, TIt outIter, bool removeEmptyResult)
 {
-    size_t beg = 0, ret = 0;
-    while(beg < src.size())
+    size_t count = 0;
+    size_t beg = 0;
+
+    while(true)
     {
-        size_t end = beg;
-        while(end < src.size() && src[end] != splitter)
-            ++end;
-        if(end != beg || !removeEmptyResult)
+        const size_t end = src.find(splitter, beg);
+        const size_t length = end == std::string_view::npos ? src.size() - beg : end - beg;
+
+        if(length != 0 || !removeEmptyResult)
         {
-            ++ret;
-            outIter = typename TIt::container_type::value_type(
-                src.substr(beg, end - beg));
-            ++outIter;
+            *outIter++ = typename TIt::container_type::value_type(src.substr(beg, length));
+            ++count;
         }
+
+        if(end == std::string_view::npos)
+        {
+            break;
+        }
+
         beg = end + 1;
     }
-    return ret;
+
+    return count;
 }
 
 template<typename TIt>
 size_t Split(std::string_view src, std::string_view splitter, TIt outIter, bool removeEmptyResult)
 {
-    size_t beg = 0, ret = 0;
-    while(beg < src.size())
-    {
-        size_t end = src.find(splitter, beg);
+    assert(!splitter.empty());
+    size_t count = 0;
+    size_t beg = 0;
 
-        if(end == std::string::npos)
+    while(true)
+    {
+        const size_t end = src.find(splitter, beg);
+        const size_t length = end == std::string_view::npos ? src.size() - beg : end - beg;
+
+        if(length != 0 || !removeEmptyResult)
         {
-            ++ret;
-            outIter = typename TIt::container_type::value_type(
-                src.substr(beg, src.size() - beg));
-            ++outIter;
-            break;
+            *outIter++ = typename TIt::container_type::value_type(src.substr(beg, length));
+            ++count;
         }
 
-        if(end != beg || !removeEmptyResult)
+        if(end == std::string_view::npos)
         {
-            ++ret;
-            outIter = typename TIt::container_type::value_type(
-                src.substr(beg, end - beg));
-            ++outIter;
+            break;
         }
 
         beg = end + splitter.size();
     }
-    return ret;
+
+    return count;
 }
 
-inline std::vector<std::string> Split(
-    std::string_view src, char splitter, bool removeEmptyResult)
+inline std::vector<std::string> Split(std::string_view src, char splitter, bool removeEmptyResult)
 {
     std::vector<std::string> ret;
     Split(src, splitter, std::back_inserter(ret), removeEmptyResult);
     return ret;
 }
 
-inline std::vector<std::string> Split(
-    std::string_view src, std::string_view splitter, bool removeEmptyResult)
+inline std::vector<std::string> Split(std::string_view src, std::string_view splitter, bool removeEmptyResult)
 {
     std::vector<std::string> ret;
     Split(src, splitter, std::back_inserter(ret), removeEmptyResult);
@@ -609,7 +621,7 @@ inline uint32_t UTF16Charset::CodeUnitsToCodePoint(const CodeUnit* cu, CodePoint
     if(0xd800 <= high && high <= 0xdbff)
     {
         char32_t low = static_cast<char32_t>(*++cu);
-        if(low <= 0xdfff)
+        if(0xdc00 <= low && low <= 0xdfff)
         {
             *cp = 0x10000 + (((high & 0x3ff) << 10) | (low & 0x3ff));
             return 2;

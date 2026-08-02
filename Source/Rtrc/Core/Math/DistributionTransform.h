@@ -32,7 +32,7 @@ namespace DistributionTransform
         else
         {
             r = uoffset.y;
-            theta = (std::numbers::pi_v<T> / 4) * (uoffset.x / uoffset.y);
+            theta = (std::numbers::pi_v<T> / 2) - (std::numbers::pi_v<T> / 4) * (uoffset.x / uoffset.y);
         }
         return r * Vector2<T>(std::cos(theta), std::sin(theta));
     }

@@ -58,9 +58,9 @@ void ComputeAngleAveragedNormals(
 // By setting inputIndices to empty, they will be implicitly defined as 0, 1, 2, ...
 template<typename T>
 void MergeCoincidentVertices(
-    const IndexedPositions<double> &input,
-    std::vector<Vector3<T>>        &outputPositions,
-    std::vector<uint32_t>          &outputIndices);
+    const IndexedPositions<T> &input,
+    std::vector<Vector3<T>>   &outputPositions,
+    std::vector<uint32_t>     &outputIndices);
 
 RTRC_GEO_END
 

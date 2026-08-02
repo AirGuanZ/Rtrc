@@ -45,7 +45,7 @@ public:
     void TransferTuple(std::string_view name, Ts&...elements)
     {
         auto ar = static_cast<Archive *>(this);
-        if(ar->BeginTransferTuple(name))
+        if(ar->BeginTransferTuple(name, sizeof...(Ts)))
         {
             int i = 0;
             (ar->Transfer(std::to_string(i++), elements), ...);
@@ -58,7 +58,7 @@ public:
     void TransferTuple(std::string_view name, const Ts&...elements)
     {
         auto ar = static_cast<Archive *>(this);
-        if(ar->BeginTransferTuple(name))
+        if(ar->BeginTransferTuple(name, sizeof...(Ts)))
         {
             int i = 0;
             (ar->Transfer(std::to_string(i++), elements), ...);
@@ -194,7 +194,10 @@ struct ArchiveTransferTrait<T>
         {
             std::underlying_type_t<T> value = {};
             ar.TransferBuiltin(name, value);
-            object = static_cast<T>(value);
+            if(ar.DidReadLastProperty())
+            {
+                object = static_cast<T>(value);
+            }
         }
         else
         {

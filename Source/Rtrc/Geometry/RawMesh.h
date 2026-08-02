@@ -164,7 +164,7 @@ private:
         Normal,
         UV,
         Color,
-        Count
+        Count // Update builtinAttributeIndices_ initialization when adding new builtin attributes
     };
 
     static std::string_view GetExtension(const std::string &filename);
@@ -176,7 +176,7 @@ private:
     uint32_t triangleCount_ = 0;
     std::vector<RawMeshAttributeData> attributes_;
     std::vector<std::vector<uint32_t>> indices_;
-    std::array<int, EnumCount<BuiltinAttribute>> builtinAttributeIndices_ = {};
+    std::array<int, EnumCount<BuiltinAttribute>> builtinAttributeIndices_ = { -1, -1, -1, -1 };
     std::map<std::string, int, std::less<>> nameToAttributeIndex_;
 };
 

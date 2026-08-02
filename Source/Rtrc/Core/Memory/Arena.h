@@ -22,7 +22,7 @@ class ObjectReleaser : public Uncopyable
     {
         T *ptr = nullptr;
         explicit DestructorImpl(T *ptr) noexcept: ptr(ptr) { }
-        void Destruct() noexcept override { ptr->~T(); mi_free(ptr); }
+        void Destruct() noexcept override { ptr->~T(); Rtrc::FreeAlignedMemory(ptr, alignof(T)); }
     };
     
     Destructor *destructorEntry_ = nullptr;
@@ -107,7 +107,9 @@ template<typename T>
 void ObjectReleaser::AddDestructor(T *obj)
 {
     if constexpr(std::is_trivially_destructible_v<T>)
+    {
         return;
+    }
     void *destructorMem = Rtrc::AllocateMemory(sizeof(DestructorImpl<T>));
     assert(reinterpret_cast<size_t>(destructorMem) % alignof(DestructorImpl<T>) == 0);
     if(!destructorMem)

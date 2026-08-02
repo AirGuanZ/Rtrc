@@ -1155,6 +1155,12 @@ bool ImGuiInstance::InputVector4(const char *label, Vector4<T> &value, T step, T
     return this->InputVector4(label, &value.x, step, stepFast, format, flags);
 }
 
+bool ImGuiInstance::IsItemDeactivatedAfterEdit() const
+{
+    IMGUI_CONTEXT;
+    return ImGui::IsItemDeactivatedAfterEdit();
+}
+
 bool ImGuiInstance::ColorEdit3(const char *label, float rgb[3], ImGuiColorEditFlags flags)
 {
     IMGUI_CONTEXT;

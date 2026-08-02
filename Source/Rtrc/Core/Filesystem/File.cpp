@@ -72,7 +72,7 @@ namespace File
 
         return static_cast<uint64_t>(lastModifyTime.dwLowDateTime) | (static_cast<uint64_t>(lastModifyTime.dwHighDateTime) << 32);
 #else
-        const auto lastWriteTime = last_write_time(path.GetPath());
+        const auto lastWriteTime = last_write_time(filename.GetPath());
         const auto lastWriteSystemTime = std::chrono::clock_cast<std::chrono::system_clock>(lastWriteTime);
         const auto lastWriteTimeT = std::chrono::system_clock::to_time_t(lastWriteSystemTime);
         return static_cast<uint64_t>(lastWriteTimeT);

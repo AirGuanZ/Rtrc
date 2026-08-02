@@ -56,7 +56,7 @@ class StringPool
         {
             std::lock_guard lock2(indexToStringMutex_);
             newIndex = static_cast<Index>(indexToString_.size());
-            indexToString_.push_back(std::string(str));
+            indexToString_.push_back(std::make_unique<std::string>(str));
         }
         stringToIndex_.insert({ std::string(str), newIndex });
         return newIndex;
@@ -65,14 +65,14 @@ class StringPool
     const std::string &GetString(const PooledString<Tag, Index> &str)
     {
         std::shared_lock lock(indexToStringMutex_);
-        return indexToString_[str.GetIndex()];
+        return *indexToString_[str.GetIndex()];
     }
 
     std::map<std::string, Index, std::less<>> stringToIndex_;
     std::mutex mutex_;
 
     std::shared_mutex indexToStringMutex_;
-    std::vector<std::string> indexToString_;
+    std::vector<std::unique_ptr<std::string>> indexToString_;
 };
 
 struct GeneralPooledStringTag { };

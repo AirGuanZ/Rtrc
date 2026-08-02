@@ -225,6 +225,8 @@ public:
     template<ImGuiScalar T>
     bool InputVector4(const char *label, Vector4<T> &value, T step, T stepFast, const char *format = nullptr, ImGuiInputFlags flags = 0);
 
+    bool IsItemDeactivatedAfterEdit() const;
+
     bool ColorEdit3  (const char *label, float rgb [3], ImGuiColorEditFlags flags = {});
     bool ColorEdit4  (const char *label, float rgba[4], ImGuiColorEditFlags flags = {});
     bool ColorPicker3(const char *label, float rgb [3], ImGuiColorEditFlags flags = {});

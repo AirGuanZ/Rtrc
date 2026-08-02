@@ -56,7 +56,7 @@ bool IntersectRayTriangle(
     const Vector3<T> &a,
     const Vector3<T> &ab,
     const Vector3<T> &ac,
-    float            &outT,
+    T                &outT,
     Vector2<T>       &outUV);
 
 // ================================ Implementations ================================
@@ -108,13 +108,13 @@ bool IntersectTriangleAABB(
 
     auto IntersectProjected = [&](const Vector3<T> &axis)
     {
-        const float pa = Rtrc::Dot(a, axis);
-        const float pb = Rtrc::Dot(b, axis);
-        const float pc = Rtrc::Dot(c, axis);
-        const float triMin = (std::min)({ pa, pb, pc });
-        const float triMax = (std::max)({ pa, pb, pc });
-        const float aabbMax = Rtrc::AddReduce(Rtrc::Abs(axis * aabbHalfSize));
-        const float aabbMin = -aabbMax;
+        const T pa = Rtrc::Dot(a, axis);
+        const T pb = Rtrc::Dot(b, axis);
+        const T pc = Rtrc::Dot(c, axis);
+        const T triMin = (std::min)({ pa, pb, pc });
+        const T triMax = (std::max)({ pa, pb, pc });
+        const T aabbMax = Rtrc::AddReduce(Rtrc::Abs(axis * aabbHalfSize));
+        const T aabbMin = -aabbMax;
         const bool missed = triMax < aabbMin || aabbMax < triMin;
         return !missed;
     };
@@ -124,10 +124,6 @@ bool IntersectTriangleAABB(
     const Vector3<T> ab = b - a;
     const Vector3<T> bc = c - b;
     const Vector3<T> ca = a - c;
-
-    const Vector3<T> e0 = ab - Rtrc::Dot(ab, bc) * bc / Rtrc::LengthSquare(bc);
-    const Vector3<T> e1 = bc - Rtrc::Dot(bc, ca) * ca / Rtrc::LengthSquare(ca);
-    const Vector3<T> e2 = ca - Rtrc::Dot(ca, ab) * ab / Rtrc::LengthSquare(ab);
 
     // Primary axis
 
@@ -141,23 +137,23 @@ bool IntersectTriangleAABB(
 
     // Crossing axis
 
-    if(!IntersectProjected(Rtrc::Cross({ 1, 0, 0 }, e0)) ||
-       !IntersectProjected(Rtrc::Cross({ 1, 0, 0 }, e1)) ||
-       !IntersectProjected(Rtrc::Cross({ 1, 0, 0 }, e2)))
+    if(!IntersectProjected(Rtrc::Cross({ 1, 0, 0 }, ab)) ||
+       !IntersectProjected(Rtrc::Cross({ 1, 0, 0 }, bc)) ||
+       !IntersectProjected(Rtrc::Cross({ 1, 0, 0 }, ca)))
     {
         return false;
     }
 
-    if(!IntersectProjected(Rtrc::Cross({ 0, 1, 0 }, e0)) ||
-       !IntersectProjected(Rtrc::Cross({ 0, 1, 0 }, e1)) ||
-       !IntersectProjected(Rtrc::Cross({ 0, 1, 0 }, e2)))
+    if(!IntersectProjected(Rtrc::Cross({ 0, 1, 0 }, ab)) ||
+       !IntersectProjected(Rtrc::Cross({ 0, 1, 0 }, bc)) ||
+       !IntersectProjected(Rtrc::Cross({ 0, 1, 0 }, ca)))
     {
         return false;
     }
 
-    if(!IntersectProjected(Rtrc::Cross({ 0, 0, 1 }, e0)) ||
-       !IntersectProjected(Rtrc::Cross({ 0, 0, 1 }, e1)) ||
-       !IntersectProjected(Rtrc::Cross({ 0, 0, 1 }, e2)))
+    if(!IntersectProjected(Rtrc::Cross({ 0, 0, 1 }, ab)) ||
+       !IntersectProjected(Rtrc::Cross({ 0, 0, 1 }, bc)) ||
+       !IntersectProjected(Rtrc::Cross({ 0, 0, 1 }, ca)))
     {
         return false;
     }
@@ -218,7 +214,7 @@ bool IntersectRayTriangle(
     const Vector3<T> &a,
     const Vector3<T> &ab,
     const Vector3<T> &ac,
-    float            &outT,
+    T                &outT,
     Vector2<T>       &outUV)
 {
     const Vector3<T> s1 = Cross(d, ac);

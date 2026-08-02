@@ -180,18 +180,18 @@ using StructDetail::RtrcStruct;
     using _rtrcMemberType##NAME = typename B::template Member<TYPE>; \
     _rtrcMemberType##NAME NAME
 #else
-#define rtrc_var(TYPE, NAME)                                                          \
-    RTRC_DEFINE_SELF_TYPE(_rtrcSelf##NAME)                                            \
-    RTRC_META_STRUCT_SETUP_MEMBER(NAME)                                               \
-    using _rtrcMemberType##NAME = typename B::template Member<TYPE>;                  \
-    [[non_unique_address]] B::template PreMember<                                     \
-        _rtrcSelf##NAME, TYPE, _rtrcMemberCounter##NAME, #NAME> _rtrcPreMember##NAME; \
-    _rtrcMemberType##NAME NAME;                                                       \
-    RTRC_META_STRUCT_PRE_MEMBER_ACCESS(NAME)                                          \
-        f.template operator()(&_rtrcSelf##NAME::NAME, #NAME);                         \
-    RTRC_META_STRUCT_POST_MEMBER_ACCESS(NAME)                                         \
-    [[non_unique_address]] B::template PostMember<                                    \
-        _rtrcSelf##NAME, TYPE, _rtrcMemberCounter##NAME> _rtrcPostMember##NAME;       \
+#define rtrc_var(TYPE, NAME)                                                            \
+    RTRC_DEFINE_SELF_TYPE(_rtrcSelf##NAME)                                              \
+    RTRC_META_STRUCT_SETUP_MEMBER(NAME)                                                 \
+    using _rtrcMemberType##NAME = typename B::template Member<TYPE>;                    \
+    [[no_unique_address]] B::template PreMember<                                        \
+        _rtrcSelf##NAME, TYPE, _rtrcMemberCounter##NAME, #NAME> _rtrcPreMember##NAME;   \
+    _rtrcMemberType##NAME NAME;                                                         \
+    RTRC_META_STRUCT_PRE_MEMBER_ACCESS(NAME)                                            \
+        f.template operator()(&_rtrcSelf##NAME::NAME, #NAME);                           \
+    RTRC_META_STRUCT_POST_MEMBER_ACCESS(NAME)                                           \
+    [[no_unique_address]] B::template PostMember<                                       \
+        _rtrcSelf##NAME, TYPE, _rtrcMemberCounter##NAME> _rtrcPostMember##NAME;         \
     using _rtrcRequireComma##NAME = int
 #endif
 

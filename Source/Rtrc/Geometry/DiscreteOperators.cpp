@@ -284,7 +284,7 @@ Eigen::SparseMatrix<Scalar> BuildCotanLaplacianMatrix(
 template<typename Scalar>
 Eigen::SparseMatrix<Scalar> BuildFaceToVertexMatrix(const HalfedgeMesh &mesh, Span<Vector3<Scalar>> positions)
 {
-    std::vector<Eigen::Triplet<double>> triplets;
+    std::vector<Eigen::Triplet<Scalar>> triplets;
     std::vector<Scalar> innerAngles;
     for(int v = 0; v < mesh.V(); ++v)
     {
@@ -341,5 +341,8 @@ template Eigen::SparseMatrix<double> BuildVertexDivergenceMatrix_NormalizedByBou
 
 template Eigen::SparseMatrix<float>  BuildCotanLaplacianMatrix<float>(const HalfedgeMesh &, Span<Vector3<float>>, CotanLaplacianBoundaryType);
 template Eigen::SparseMatrix<double> BuildCotanLaplacianMatrix<double>(const HalfedgeMesh &, Span<Vector3<double>>, CotanLaplacianBoundaryType);
+
+template Eigen::SparseMatrix<float> BuildFaceToVertexMatrix(const HalfedgeMesh &mesh, Span<Vector3<float>> positions);
+template Eigen::SparseMatrix<double> BuildFaceToVertexMatrix(const HalfedgeMesh &mesh, Span<Vector3<double>> positions);
 
 RTRC_GEO_END

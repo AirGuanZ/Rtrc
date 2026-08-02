@@ -506,9 +506,11 @@ SExpansion<Word, StaticStorage> &SExpansion<Word, StaticStorage>::operator*=(con
 template <typename Word, size_t StaticStorage>
 SExpansion<Word, StaticStorage> &SExpansion<Word, StaticStorage>::operator*=(Word rhs)
 {
+    auto BackupThis = *this;
+
     static_assert(SupportDynamicStorage);
     Reserve(GetLength() * 2);
-    size_ = ExpansionUtility::ScaleExpansion(GetItemPointer(), GetLength(), rhs, GetItemPointer());
+    size_ = ExpansionUtility::ScaleExpansion(BackupThis.GetItemPointer(), GetLength(), rhs, GetItemPointer());
     return *this;
 }
 

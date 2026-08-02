@@ -283,9 +283,10 @@ public:
     }
 
     MultiDimSpan(Span<T> data, Span<uint32_t> sizes)
-        : data_(data), sizes_(sizes)
+        : data_(data)
     {
-
+        assert(sizes.size() == D);
+        std::copy(sizes.begin(), sizes.end(), sizes_.begin());
     }
 
     MultiDimSpan(MultiDimMutSpan<T, D> mutSpan)

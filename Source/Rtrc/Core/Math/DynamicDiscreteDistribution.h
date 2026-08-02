@@ -87,6 +87,8 @@ DynamicDiscreteDistribution<F, Payload>::DynamicDiscreteDistribution(
 template <typename F, typename Payload>
 uint32_t DynamicDiscreteDistribution<F, Payload>::Add(F weight, Payload payload)
 {
+    assert(weight > 0);
+
     if(freeItemIndices_.empty())
     {
         const uint32_t newIndex = static_cast<uint32_t>(items_.size());

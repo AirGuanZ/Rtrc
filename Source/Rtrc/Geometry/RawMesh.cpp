@@ -141,24 +141,22 @@ RawMesh &RawMesh::RecalculateNormal(float cosAngleThreshold)
             const float cb = Dot(Normalize(pc - pb), Normalize(pa - pb));
             const float cc = Dot(Normalize(pa - pc), Normalize(pb - pc));
 
-            vertexToFaceNormals[va].push_back({ faceNormal, std::acos(ca) });
-            vertexToFaceNormals[vb].push_back({ faceNormal, std::acos(cb) });
-            vertexToFaceNormals[vc].push_back({ faceNormal, std::acos(cc) });
+            vertexToFaceNormals[va].push_back({ faceNormal, std::acos(Clamp(ca, -1.0f, 1.0f)) });
+            vertexToFaceNormals[vb].push_back({ faceNormal, std::acos(Clamp(cb, -1.0f, 1.0f)) });
+            vertexToFaceNormals[vc].push_back({ faceNormal, std::acos(Clamp(cc, -1.0f, 1.0f)) });
         }
 
         auto ComputeAverageNormal = [&](const Vector3f &referenceNormal, Span<FaceNormalRecord> records)
         {
             Vector3f sumNormal(0, 0, 0);
-            float sumWeight = 0;
             for(auto &record : records)
             {
                 if(Dot(referenceNormal, record.normal) >= cosAngleThreshold)
                 {
                     sumNormal += record.normal * record.angle;
-                    sumWeight += record.angle;
                 }
             }
-            return sumNormal / (std::max)(sumWeight, 1e-5f);
+            return NormalizeIfNotZero(sumNormal);
         };
 
         for(uint32_t f0 = 0; f0 < positionIndices.size(); f0 += 3)

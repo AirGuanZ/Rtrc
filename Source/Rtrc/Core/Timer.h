@@ -19,7 +19,7 @@ class Timer
 
     bool              paused_;
     Clock::time_point pauseStartPoint_;
-    Clock::duration   pausedTime_;
+    Clock::duration   accumulatedPausedTime_;
 
     Clock::time_point secondPoint_;
     int               frames_;

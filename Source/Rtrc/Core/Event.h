@@ -56,16 +56,12 @@ public:
 
     void Send(const Event &e) const;
 
+    // Shouldn't call attach or detach on the same receiver set in handlers
     void Attach(Receiver<Event> *handler);
-
     void Attach(std::shared_ptr<Receiver<Event>> handlerWithOwnership);
-
     void Detach(const Receiver<Event> *handler);
-
     void Detach(const std::shared_ptr<Receiver<Event>> &handler);
-
     void Detach(const std::shared_ptr<const Receiver<Event>> &handler);
-
     void DetachAll();
 
 private:

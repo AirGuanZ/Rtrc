@@ -41,8 +41,10 @@ public:
         {
             imgui.CheckBox("Enable Correction", &enableCorrection_);
             imgui.CheckBox("Enable Checkboard", &enableCheckboard_);
-            if(imgui.Input("Area Preservation", &areaPreservation_, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue))
+            if(imgui.Input("Area Preservation", &areaPreservation_, "%.3f") && ImGui::IsItemDeactivatedAfterEdit())
+            {
                 reinitGeometryImage = true;
+            }
         }
         imgui.End();
 

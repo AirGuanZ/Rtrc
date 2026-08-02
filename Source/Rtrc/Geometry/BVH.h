@@ -257,7 +257,7 @@ bool TriangleBVH<T>::FindClosestRayIntersection(
         },
         [&](uint32_t triangleIndex)
         {
-            float tempT; Vector2<T> tempUV;
+            T tempT; Vector2<T> tempUV;
             const Triangle &triangle = triangles_[triangleIndex];
             if(Rtrc::IntersectRayTriangle(o, d, minT, result.t, triangle.a, triangle.ab, triangle.ac, tempT, tempUV))
             {
@@ -282,7 +282,7 @@ bool TriangleBVH<T>::HasIntersection(const Vector3<T> &o, const Vector3<T> &d, T
         },
         [&](uint32_t triangleIndex)
         {
-            float tempT; Vector2<T> tempUV;
+            T tempT; Vector2<T> tempUV;
             const Triangle &triangle = triangles_[triangleIndex];
             if(Rtrc::IntersectRayTriangle(o, d, minT, maxT, triangle.a, triangle.ab, triangle.ac, tempT, tempUV))
             {
