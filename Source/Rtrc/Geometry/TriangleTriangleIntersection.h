@@ -49,7 +49,9 @@ public:
         auto operator<=>(const Point &) const = default;
     };
 
-    // Note: both input triangles must be non-degenerate
+    // Both input triangles must be non-degenerate: no duplicated vertices, and the three vertices
+    // of each triangle must not be collinear. Degenerate inputs are rejected with an exception.
+    // (The degeneracy check uses exact predicates, so 'almost degenerate' triangles are accepted.)
     static SymbolicTriangleTriangleIntersection Intersect(
         const Vector &a0, const Vector &b0, const Vector &c0,
         const Vector &a1, const Vector &b1, const Vector &c1, bool sortForPolygon);

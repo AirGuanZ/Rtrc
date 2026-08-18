@@ -12,8 +12,10 @@ SymbolicTriangleTriangleIntersection<T> SymbolicTriangleTriangleIntersection<T>:
     const Vector &a1, const Vector &b1, const Vector &c1,
     bool sortForPolygon)
 {
-    assert(a0 != b0 && a0 != c0 && b0 != c0);
-    assert(a1 != b1 && a1 != c1 && b1 != c1);
+    if(AreCoLinear(a0, b0, c0) || AreCoLinear(a1, b1, c1))
+    {
+        throw Exception("SymbolicTriangleTriangleIntersection: input triangles must be non-degenerate");
+    }
 
     IntermediatePointVector points;
     IntersectEdgeTriangle(Element::E01, Element::V0, Element::V1, a0, b0, a1, b1, c1, points);
