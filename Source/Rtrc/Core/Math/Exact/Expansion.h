@@ -452,8 +452,7 @@ void SExpansion<Word, StaticStorage>::SetMul(const SExpansion<Word, SL> &lhs, co
     static_assert(ExpansionUtility::StaticStorageGreaterEqual(
         StaticStorage, ExpansionUtility::StaticStorageMul(SL, SR)));
 
-    size_ = 1;
-    GetItemPointer()[0] = 0.0;
+    size_ = 0;
     for(uint32_t i = 0; i < rhs.GetLength(); ++i)
     {
         const auto t = lhs * rhs.GetItemPointer()[i];

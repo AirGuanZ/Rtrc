@@ -83,6 +83,29 @@ TEST_CASE("Expansion")
     }
 }
 
+TEST_CASE("Expansion SetMul static storage")
+{
+    // 'SetMul(SExpansion, SExpansion)' starts the accumulator as empty instead of seeding it with a
+    // zero component, so the worst-case result length is exactly '2 * SL * SR'. These multiplications
+    // previously requested one more component than the static storage contract allowed and failed the
+    // 'capacity <= StaticStorage' assertion in debug builds (and overflowed the inlined storage in
+    // release builds). Reaching them is the point of this test.
+    auto a = SExpansion(1.999999);
+    auto b = SExpansion(1e-30);
+    REQUIRE(a * b == b * a);
+    REQUIRE((a * b).CheckSanity());
+
+    auto c = SExpansion(1e10) + SExpansion(1e-30);
+    auto d = SExpansion(1e10);
+    REQUIRE(c * d == d * c);
+    REQUIRE((c * d).CheckSanity());
+
+    auto e = SExpansion(3.3) + SExpansion(3.3e-20);
+    auto f = SExpansion(1.7) + SExpansion(1.7e-15);
+    REQUIRE(e * f == f * e);
+    REQUIRE((e * f).CheckSanity());
+}
+
 TEST_CASE("CompareHomo")
 {
     struct CompareHomogeneousPoint
