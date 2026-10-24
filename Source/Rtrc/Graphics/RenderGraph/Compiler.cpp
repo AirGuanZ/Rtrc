@@ -425,7 +425,10 @@ void RGCompiler::CollectResourceUsers()
             {
                 if(!IsReadOnly(bufferUsage.accesses))
                 {
-                    throw Exception("External readonly buffer cannot be written into");
+                    throw Exception(std::format(
+                        "External readonly buffer cannot be written into (pass '{}', accesses 0x{:x})",
+                        pass.nameNode_ ? pass.nameNode_->name : std::string("<unnamed>"),
+                        static_cast<uint32_t>(bufferUsage.accesses.GetInteger())));
                 }
             }
 #endif

@@ -288,6 +288,7 @@ bool IsReadOnly(ResourceAccessFlag access)
       | TextureRead
       | RWTextureRead
       | BufferRead
+      | StructuredBufferRead // Also covers ByteAddressBufferRead, which aliases it
       | RWBufferRead
       | RWStructuredBufferRead
       | CopyRead
